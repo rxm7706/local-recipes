@@ -1,0 +1,46 @@
+{% set name = "sqllineage" %}
+{% set version = "1.4.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/sqllineage-{{ version }}.tar.gz
+  sha256: 8ff265019b973e80978b07baa29b924825929eaf812bf3471b36d124c7339ccd
+
+build:
+  entry_points:
+    - sqllineage = sqllineage.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - sqlparse >=0.4.4
+    - networkx >=2.4
+    - sqlfluff >=2.0.0,<=2.0.3
+
+test:
+  imports:
+    - sqllineage
+  commands:
+    - pip check
+    - sqllineage --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/reata/sqllineage
+  summary: SQL Lineage Analysis Tool powered by Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

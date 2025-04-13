@@ -1,0 +1,55 @@
+{% set name = "burr" %}
+{% set version = "0.37.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/burr-{{ version }}.tar.gz
+  sha256: c140812cdd1623a86130df3ee63edaad5be00a30da84f36e916f62359252649e
+
+build:
+  entry_points:
+    - burr = burr.cli.__main__:cli_run_server
+    - burr-demo = burr.cli.__main__:cli_demo_server
+    - burr-admin-server = burr.cli.__main__:cli_run_server
+    - burr-admin-publish = burr.cli.__main__:cli_build_and_publish
+    - burr-admin-build-ui = burr.cli.__main__:cli_build_ui
+    - burr-admin-generate-demo-data = burr.cli.__main__:cli_generate_demo_data
+    - burr-test-case = burr.cli.__main__:cli_test_case
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=3.9
+
+test:
+  imports:
+    - burr
+  commands:
+    - pip check
+    - burr --help
+    - burr-demo --help
+    - burr-admin-server --help
+    - burr-admin-publish --help
+    - burr-admin-build-ui --help
+    - burr-admin-generate-demo-data --help
+    - burr-test-case --help
+  requires:
+    - pip
+
+about:
+  summary: A state machine for data projects
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

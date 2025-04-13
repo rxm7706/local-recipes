@@ -1,0 +1,43 @@
+{% set name = "wagtail-grapple" %}
+{% set version = "0.25.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_grapple-{{ version }}.tar.gz
+  sha256: e317641ab611b4b77d6546d9c44b314191a28ae518830d1a2219b9e7d640ae6d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=3.8
+    - wagtail >=5.2
+    - graphene-django >=3,<4
+    - wagtail-headless-preview
+
+test:
+  imports:
+    - wagtail_grapple
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A Wagtail package that speeds up and simplifies implementing a GraphQL endpoint!
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,40 @@
+{% set name = "uiautomation" %}
+{% set version = "2.0.24" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/uiautomation-{{ version }}.tar.gz
+  sha256: 0058d6b71ff1b56e688dcc4113bbc380c02e3e277e95a8bca845d3a29bfdd606
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - comtypes >=1.2.1
+
+test:
+  imports:
+    - uiautomation
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
+  summary: Python UIAutomation for Windows
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

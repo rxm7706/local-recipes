@@ -1,0 +1,43 @@
+{% set name = "wagtail-tenants" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_tenants-{{ version }}.tar.gz
+  sha256: 0db4085eab19f5cb878906e12fd9de48bff27108139fba61ffaea49cde506153
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.9.0,<4.0.0
+    - django-tenants >=3.3.4,<4.0.0
+    - django-dbbackup >=3.3.0,<4.0.0
+
+test:
+  imports:
+    - wagtail_tenants
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://wagtail-tenants.readthedocs.io/en/latest/
+  summary: Adds multitenancy based on django_tenants to wagtail cms
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

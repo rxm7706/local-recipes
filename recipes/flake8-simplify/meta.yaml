@@ -1,0 +1,43 @@
+{% set name = "flake8-simplify" %}
+{% set version = "0.20.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/flake8_simplify-{{ version }}.tar.gz
+  sha256: 7b8796bbea8aed45f56621c389d0556cc86f0afa5d992581139451240a8fbeca
+
+build:
+  skip: true  # [py2k]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6.1
+    - setuptools >=61.2
+    - pip
+  run:
+    - python >=3.6.1
+    - astor >=0.1
+    - flake8 >=3.7
+    - importlib-metadata >=0.9  # [py<38]
+
+test:
+  imports:
+    - flake8_simplify
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: flake8 plugin which checks for code that can be simplified
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

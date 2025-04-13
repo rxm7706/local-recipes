@@ -1,0 +1,56 @@
+{% set name = "pynessie" %}
+{% set version = "0.67.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pynessie-{{ version }}.tar.gz
+  sha256: cb46e072542e5978d4a27e2115294e3828414d1527fca70d84b6f0f585f6ac1a
+
+build:
+  entry_points:
+    - nessie=pynessie.cli:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - attrs
+    - botocore
+    - click <9.0.0,>6.0.0
+    - confuse ==2.0.1
+    - desert
+    - marshmallow
+    - marshmallow-oneofschema
+    - python-dateutil
+    - requests
+    - requests-aws4auth
+    - simplejson
+
+test:
+  imports:
+    - pynessie
+  commands:
+    - pip check
+    - nessie --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/projectnessie/nessie
+  summary: 'Project Nessie: Transactional Catalog for Data Lakes with Git-like semantics'
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,42 @@
+{% set name = "wagtail-heroicons" %}
+{% set version = "0.1.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_heroicons-{{ version }}.tar.gz
+  sha256: e6313b31b10c61c23eea63c06c8ef96241edc2339f421a6c95741a0471fc5ec3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - pip
+  run:
+    - python >=3.9
+    - wagtail >=2.15
+
+test:
+  imports:
+    - wagtail_heroicons
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/joshuadavidthomas/wagtail-heroicons
+  summary: Add Heroicons to your Wagtail site
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

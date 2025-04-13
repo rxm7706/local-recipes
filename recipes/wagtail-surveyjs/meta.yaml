@@ -1,0 +1,43 @@
+{% set name = "wagtail-surveyjs" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-surveyjs-{{ version }}.tar.gz
+  sha256: 0c231d0344b2993d9e7f08a6f59346e700d8c07ebce3e005d1a82070191983a3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools
+    - pip
+  run:
+    - python >=3.9
+    - wagtail >=5.2
+    - wagtail-modeladmin >=2.0.0
+
+test:
+  imports:
+    - wagtail_surveyjs
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wmo-raf/wagtail-surveyjs
+  summary: Integrate SurveyJS in Wagtail Projects.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

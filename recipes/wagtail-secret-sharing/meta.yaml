@@ -1,0 +1,40 @@
+{% set name = "wagtail-secret-sharing" %}
+{% set version = "0.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-secret-sharing-{{ version }}.tar.gz
+  sha256: 3bb305130d5206ab6669ff7db0f03139356f99bd8599e61cd007ff231d776c00
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django-secret-sharing >=0.5.0
+    - wagtail >=2
+
+test:
+  imports:
+    - wagtail_secret_sharing
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

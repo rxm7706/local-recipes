@@ -1,0 +1,43 @@
+{% set name = "wagtail-freezer" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-freezer-{{ version }}.tar.gz
+  sha256: e894f3fd2b45c720f0c7fcfc670082919152fe0d4eb23716c9e0c7a228969b91
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django >=3.0,<5.0
+    - wagtail >=3.0,<4.0
+    - beautifulsoup4 >=4.9,<5.0
+
+test:
+  imports:
+    - wagtail_freezer
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/gasman/wagtail-freezer
+  summary: Generates static HTML sites from a Wagtail project
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

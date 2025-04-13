@@ -1,0 +1,153 @@
+package:
+  name: dot-pyalt
+  version: 2.1.2.1
+
+source:
+  sha256: 1f62794d9abe48f461d83ec2826cd86b4ee24d3d6e6741ea23a83c482311d2d3
+  url: https://files.pythonhosted.org/packages/1c/c4/1da7022ecdadd256023fd6de4440626e2ab3a3613a74181dc4edc227762b/ayx_python_sdk-2.1.2-py3-none-any.whl
+
+# 2.2.0
+# fcb65f3b6437c161d1967311d14b606c3f30aac95ef89ec939957cb073f5b194
+# https://files.pythonhosted.org/packages/4b/bd/ba34ac0d6e745481c9e2bdd5dc899543c74f6a2a203f1bf9b5fcd45a58c4/ayx_python_sdk-2.2.0-py3-none-any.whl
+
+# 2.1.2
+# https://files.pythonhosted.org/packages/1c/c4/1da7022ecdadd256023fd6de4440626e2ab3a3613a74181dc4edc227762b/ayx_python_sdk-2.1.2-py3-none-any.whl
+# 1f62794d9abe48f461d83ec2826cd86b4ee24d3d6e6741ea23a83c482311d2d3
+ 
+# 1.0.2
+# https://files.pythonhosted.org/packages/84/f7/2c3c219ba25a2604328bd44f9de350d30d36aa2a97a180ca8d7a33105000/ayx_python_sdk-1.0.2-py3-none-any.whl
+# 35a2f6966091f86df4ce4be311434bfb8fb3ce8bc3604b03cfb4408f46a959bb
+
+#  sha256: 556c0217a855f4291063f5af834939f1b8b7f1a9b7e79b0d8633ce998cd0c4ee
+#  url: https://files.pythonhosted.org/packages/cf/8a/4fc8059846ee61ce53077ab1f252ddfc4ce09860c218a38f8ffa293ae598/powerbiclient-3.0.0-py2.py3-none-any.whl
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install ayx_python_sdk-2.1.2-py3-none-any.whl -vv
+#  script: pip install powerbiclient-3.0.0-py2.py3-none-any.whl -vv
+  number: 0
+  string: py3
+  #skip: true  # [not win]
+  #skip: true  # [py<37 or py>38]
+
+requirements:
+  build:
+    - nodejs >14.0,<19.0
+    - pip
+    - python >=3.8,<3.9
+    - setuptools
+#    - yarn
+#    - {{ compiler('c') }}
+#  host:
+#    - pip
+#    - python >=3.7,<3.8
+#    - nodejs >14.0,<19.0
+
+  run:
+    - python >=3.7,<3.12
+    - doit
+    - nodejs >14.0,<19.0
+
+    #- pypac ==0.15.0
+    #- wincertstore ==0.15.0
+    - boto3>=1.15.16
+    - click>=7.1.2
+    - deprecation #==2.1.0
+    - grpcio #==1.44.0
+    - numpy #>=1.24.3
+    - pandas>=1.3.5
+    - protobuf>=3.20.1
+    - psutil>=5.6.3
+    - pyarrow>=8.0.0
+    - pydantic>=1.8.2
+    - python-dateutil # ==2.8.2
+    - pytz>=2020.1
+    - requests-toolbelt>=0.9.1
+    - requests>=2.24.0
+    - shiv #==0.3.1
+    - six  #==1.16
+    - typer>=0.3.1
+    - tzdata #>=2023.3
+    - tld #>=0.9
+    - dukpy #>=0.2.2    
+    - xmltodict>=0.12.0
+
+    - ayx-plugin-cli
+    #- nodejs >14.0,<19.0
+    #- doit ==0.36.0
+    - jinja2 >=2.11.2
+    - markupsafe >=1.1.1
+    - packaging >=20.4
+    #- pydantic ==1.8.2
+    - pyparsing >=2.0.2
+    - pytest >=5.4.1
+    #- requests ==2.24.0
+    #- typer ==0.3.1
+    #- xmltodict ==0.12.0
+
+
+
+    - woodwork
+    - composeml
+    - evalml
+    - featuretools
+    #- featuretools_sql
+    #- featuretools-tsfresh-primitives
+
+    - sas7bdat-converter
+    - dremio-arrow
+    
+    - kedro>=0.18.10
+
+test:
+  #imports:
+    #- ayx_plugin_cli
+  commands:
+    - pip check
+#    - from powerbiclient import Report
+#    - ayx_plugin_cli version
+  requires:
+    - pip
+
+about:
+  summary: The Python plugin SDK for Alteryx Designer.
+  doc_url: https://help.alteryx.com/developer-help/ayx-python-sdk-v2
+  home: https://alteryx.github.io/ayx-python-sdk/getting_started.html
+  license: Other/Proprietary License
+  license_file: 
+    - LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+## conda create -n ayx_python_sdk "python==3.8.5" "nodejs=14" doit "jinja2==2.11.2" "markupsafe==1.1.1" "packaging==20.4" "pydantic==1.8.2" "pyparsing>=2.0.2" "pytest>=5.4.1" "requests==2.24.0" "typer==0.3.1" "xmltodict==0.12.0" "boto3>=1.15.16" "click>=7.1.2" "deprecation>=2.1.0" "grpcio>=1.44.0" "numpy" "pandas>=1.3.5" "protobuf>=3.20.1" "psutil>=5.6.3" "pyarrow>=8.0.0" "pydantic>=1.8.2" "python-dateutil>=2.8.2" "pytz>=2020.1" "requests-toolbelt>=0.9.1" "requests>=2.24.0" "shiv>=0.3.1" "six>=1.16" "typer>=0.3.1" "tld>=0.9" "dukpy>=0.2.2" "xmltodict>=0.12.0"
+## python -m pip install ayx_python_sdk ayx_plugin_cli
+## Successfully installed PyPAC-0.15.0 ayx_plugin_cli-1.1.0 ayx_python_sdk-2.2.0 boto3-1.15.16 botocore-1.18.18 grpcio-1.44.0 jmespath-0.10.0 pandas-2.0.1 protobuf-3.20.1 psutil-5.6.3 pyarrow-8.0.0 pytz-2020.1 requests-toolbelt-0.9.1 s3transfer-0.3.7 shiv-0.3.1 wincertstore-0.2
+
+## + pip check
+## ayx-python-sdk 2.2.0 requires pypac, which is not installed.
+## ayx-python-sdk 2.2.0 requires wincertstore, which is not installed.
+## dremio-arrow 1.0.1 requires mkdocs-material-extensions, which is not installed.
+## ayx-python-sdk 2.2.0 has requirement boto3==1.15.16, but you have boto3 1.26.150.
+## ayx-python-sdk 2.2.0 has requirement Click==7.1.2, but you have click 8.1.3.
+## ayx-python-sdk 2.2.0 has requirement grpcio==1.44.0; sys_platform == "linux", but you have grpcio 1.54.2.
+## ayx-python-sdk 2.2.0 has requirement numpy>=1.24.3, but you have numpy 1.23.5.
+## ayx-python-sdk 2.2.0 has requirement pandas==2.0.1, but you have pandas 1.5.3.
+## ayx-python-sdk 2.2.0 has requirement protobuf==3.20.1, but you have protobuf 4.21.12.
+## ayx-python-sdk 2.2.0 has requirement psutil==5.6.3, but you have psutil 5.9.5.
+## ayx-python-sdk 2.2.0 has requirement pyarrow==8.0.0, but you have pyarrow 12.0.0.
+## ayx-python-sdk 2.2.0 has requirement pydantic==1.8.2, but you have pydantic 1.10.8.
+## ayx-python-sdk 2.2.0 has requirement pytz==2020.1, but you have pytz 2023.3.
+## ayx-python-sdk 2.2.0 has requirement requests==2.24.0, but you have requests 2.31.0.
+## ayx-python-sdk 2.2.0 has requirement requests-toolbelt==0.9.1, but you have requests-toolbelt 1.0.0.
+## ayx-python-sdk 2.2.0 has requirement shiv==0.3.1, but you have shiv 1.0.3.
+## ayx-python-sdk 2.2.0 has requirement typer==0.3.1, but you have typer 0.9.0.
+## ayx-python-sdk 2.2.0 has requirement xmltodict==0.12.0, but you have xmltodict 0.13.0.
+## dremio-arrow 1.0.1 has requirement pandas<=1.4,>=1.3, but you have pandas 1.5.3.
+## dremio-arrow 1.0.1 has requirement pyarrow<=8.0,>=7.0, but you have pyarrow 12.0.0.
+## Tests failed for doit-python-sdk-1.2.0-py3.tar.bz2 - moving package to /home/rxm/programs/miniconda3/conda-bld/broken
+## WARNING:conda_build.build:Tests failed for doit-python-sdk-1.2.0-py3.tar.bz2 - moving package to /home/rxm/programs/miniconda3/conda-bld/broken
+## TESTS FAILED: doit-python-sdk-1.2.0-py3.tar.bz2
+
+conda create -n ayx-plugin-cli "python==3.8.5" "typer==0.3.1" "doit==0.36.0" "pydantic==1.8.2" "packaging==20.4" "requests==2.24.0" "xmltodict==0.12.0" "jinja2==2.11.2" "MarkupSafe==1.1.1" "pytest>=5.4.1" 

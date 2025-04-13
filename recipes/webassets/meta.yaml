@@ -1,0 +1,53 @@
+{% set name = "webassets" %}
+{% set version = "2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/webassets-{{ version }}.tar.gz
+  sha256: 167132337677c8cedc9705090f6d48da3fb262c8e0b2773b29f3352f050181cd
+
+build:
+  entry_points:
+    - webassets = webassets.script:run
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python >=3.8
+    - sphinx
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - webassets
+    - webassets.ext
+    - webassets.filter
+    - webassets.filter.cssrewrite
+    - webassets.filter.jspacker
+    - webassets.filter.rjsmin
+  commands:
+    - pip check
+    - webassets --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/miracle2k/webassets/
+  license: BSD-2-Clause
+  license_file: LICENSE
+  license_family: BSD
+  summary: 'Media asset management for Python, with glue code for various web frameworks'
+  doc_url: https://webassets.readthedocs.io/
+  dev_url: https://github.com/miracle2k/webassets/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - pmlandwehr

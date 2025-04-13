@@ -1,0 +1,43 @@
+{% set name = "google-re2" %}
+{% set version = "1.1.20240702" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/google_re2-{{ version }}.tar.gz
+  sha256: 8788db69f6c93cb229df62c74b2d9aa8e64bf754e9495700f85812afa32efd2b
+
+build:
+  skip: true  # [py<38]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - pybind11
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - re2
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/google/re2
+  summary: RE2 Python bindings
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

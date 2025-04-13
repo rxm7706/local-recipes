@@ -1,0 +1,43 @@
+{% set name = "dbt-dremio" %}
+{% set version = "1.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dbt-dremio-{{ version }}.tar.gz
+  sha256: f3d64fe3d43a544fa4deab01c8052df6aa9beca35a91ebd1d159723007be896e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >={{ python_min }}
+    - dbt-core >=1.2,<=1.7.13
+    - requests >=2.31.0
+
+test:
+  imports:
+    - dbt
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/dremio/dbt-dremio
+  summary: The Dremio adapter plugin for dbt
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

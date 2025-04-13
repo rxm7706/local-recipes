@@ -1,0 +1,54 @@
+{% set name = "jira" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/jira-{{ version }}.tar.gz
+  sha256: e2a94adff98e45b29ded030adc76103eab34fa7d4d57303f211f572bedba0e93
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pbr >=3.0.0
+    - setuptools >=17.1
+    - pytest-runner
+    - sphinx >=1.6.5
+    - pip
+  run:
+    - python >=3.8
+    - defusedxml
+    - oauthlib >=1.0.0
+    - pbr >=3.0.0
+    - requests-oauthlib >=0.6.1
+    - requests >=2.10.0
+    - requests-toolbelt
+    - setuptools >=20.10.1
+    - six >=1.10.0
+
+test:
+  imports:
+    - jira
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/pycontribs/jira
+  summary: Python library for interacting with JIRA via REST APIs.
+  doc_url: https://pythonhosted.org/jira/
+  license: BSD-3-Clause AND BSD-2-Clause
+  license_file:
+    - LICENSE
+    - jira/utils/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

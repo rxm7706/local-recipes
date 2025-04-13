@@ -1,0 +1,73 @@
+{% set name = "openmetadata-ingestion" %}
+{% set version = "1.6.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openmetadata_ingestion-{{ version }}.tar.gz
+  sha256: c2960631133ff66cb7e1d86dbbefed1a668f82107dd57a551a98edc1a2ba065a
+
+build:
+  entry_points:
+    - metadata = metadata.cmd:metadata
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=70.3.0,<70.4.dev0
+    - pip
+  run:
+    - python >=3.8
+    - pydantic >=2.0,<3.dev0,>=2.7.0
+    - tabulate ==0.9.0
+    - requests-aws4auth >=1.1,<2.dev0
+    - email-validator >=2.0
+    - pymysql >=1.0,<2.dev0
+    - collate-sqllineage >=1.5.0,<1.6.dev0
+    - mypy_extensions >=0.4.3
+    - azure-keyvault-secrets
+    - jsonpatch <2.0,>=1.24
+    - cached-property ==1.5.2
+    - azure-identity >=1.12,<2.dev0
+    - shapely
+    - cryptography >=42.0.0
+    - packaging
+    - google-cloud-secret-manager ==2.19.0
+    - importlib-metadata >=4.13.0
+    - typing_inspect
+    - collate-data-diff
+    - memory_profiler
+    - pyyaml >=6.0,<7.dev0
+    - boto3 >=1.20,<2.0
+    - antlr4-python3-runtime ==4.9.2
+    - requests >=2.23
+    - google-crc32c
+    - jinja2 >=2.11.3
+    - python-dateutil >=2.8.1
+    - chardet ==4.0.0
+    - sqlalchemy >=1.4.0,<2
+
+test:
+  imports:
+    - airflow_provider_openmetadata
+    - metadata
+  commands:
+    - pip check
+    - metadata --help
+  requires:
+    - pip
+
+about:
+  summary: Ingestion Framework for OpenMetadata
+  dev_url: https://github.com/open-metadata/OpenMetadata
+  license: CC0-1.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

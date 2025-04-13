@@ -1,0 +1,41 @@
+{% set name = "wagtailmenus" %}
+{% set version = "4.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/jazzband/wagtailmenus/archive/v{{ version }}.tar.gz
+  sha256: 33cdeb418fee672538b5848b312aeaea0877aa4f1bfe19780996d45f7f5da7fb
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - wagtail >=5.2
+    - django-cogwheels ==0.3
+
+test:
+  imports:
+    - wagtailmenus
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jazzband/wagtailmenus/tree/stable/4.0.x
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

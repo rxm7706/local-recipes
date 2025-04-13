@@ -1,0 +1,40 @@
+{% set name = "draftjs_exporter" %}
+{% set version = "2.1.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/draftjs_exporter-{{ version }}.tar.gz
+  sha256: 5839cbc29d7bce2fb99837a404ca40c3a07313f2a20e2700de7ad6aa9a9a18fb
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - draftjs_exporter
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/springload/draftjs_exporter
+  summary: Library to convert rich text from Draft.js raw ContentState to HTML
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

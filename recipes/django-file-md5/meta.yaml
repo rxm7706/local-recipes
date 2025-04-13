@@ -1,0 +1,40 @@
+{% set name = "django-file-md5" %}
+{% set version = "1.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-file-md5-{{ version }}.tar.gz
+  sha256: 97d06c53ec8ff106c1f1ef2e58cad05c41b17dfa452fb0b0d3f614592fd14ef7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - django_file_md5
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-xxx/django-file-md5
+  summary: Django File Md5
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

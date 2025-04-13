@@ -1,0 +1,1 @@
+${PYTHON} -m pip install ./opentelemetry-api -vv --no-deps

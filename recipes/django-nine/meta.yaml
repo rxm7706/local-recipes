@@ -1,0 +1,43 @@
+{% set name = "django-nine" %}
+{% set version = "0.2.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-nine-{{ version }}.tar.gz
+  sha256: 304e0f83cea5a35359375fc919d00f9917b655c1d388244cbfc7363f59489177
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django
+    - packaging
+
+test:
+  imports:
+    - django_nine
+    - nine
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/barseghyanartur/django-nine/
+  summary: Version checking library.
+  license: GPL-2.0-or-later
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

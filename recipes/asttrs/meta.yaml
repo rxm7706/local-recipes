@@ -1,0 +1,44 @@
+{% set name = "asttrs" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/asttrs-{{ version }}.tar.gz
+  sha256: e60d02cd336b72fa22882629efbb22526663f4ef9c868ae13266c293a383e660
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - attrs
+    - black
+    - cattrs
+    - isort
+    - ast-decompiler
+
+test:
+  imports:
+    - asttrs
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A attrs-style wrapper for python ast
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

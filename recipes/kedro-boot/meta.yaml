@@ -1,0 +1,41 @@
+{% set name = "kedro-boot" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro-boot-{{ version }}.tar.gz
+  sha256: e68538408670cdb0cc17a1e2fac604242edd3ac6b201401402b70e8526e8b0f5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - kedro <0.20,>=0.19.1
+
+test:
+  imports:
+    - kedro_boot
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/takikadiri/kedro-boot
+  summary: A kedro plugin that streamlines the integration between Kedro projects and external applications, making it easier for you to develop production-ready data science applications.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

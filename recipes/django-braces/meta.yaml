@@ -1,0 +1,43 @@
+{% set name = "django-braces" %}
+{% set version = "1.16.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_braces-{{ version }}.tar.gz
+  sha256: 1de7c2ba92147fc265ec034880aa5f2a714a5d1f1c1280278ca1fdd6f2a08e03
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools >=40.6.6
+    - wheel
+    - pip
+  run:
+    - python
+    - django >=2.2
+
+test:
+  imports:
+    - braces
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/brack3t/django-braces/
+  summary: Reusable, generic mixins for Django
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

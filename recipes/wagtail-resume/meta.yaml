@@ -1,0 +1,46 @@
+{% set name = "wagtail-resume" %}
+{% set version = "2.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_resume-{{ version }}.tar.gz
+  sha256: 34fd0aa45811ffac7c4537cbe0d3bc30492bf078b08bfe86edfb0ab2a79a3ee2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - django >=3.2.0,<4.0.0
+    - wagtail >=4.0.0,<5.0.0
+    - wagtail-markdown >=0.10.0,<0.11.0
+    - wagtail-metadata >=4.0.0,<5.0.0
+    - weasyprint >=59.0.0,<60.0.0
+
+test:
+  imports:
+    - wagtail_resume
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/adinhodovic/wagtail-resume
+  summary: A Wagtail project made to simplify creation of resumes for developers.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

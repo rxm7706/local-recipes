@@ -1,0 +1,48 @@
+{% set name = "behave-django" %}
+{% set version = "1.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/behave_django-{{ version }}.tar.gz
+  sha256: e1c4d7e02ad6343a862246fb20ed9f850aa678d61497aad378b67d9b659f3f59
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=64
+    - setuptools-scm >=8
+    - pip
+  run:
+    - python >=3.8
+    - behave >=1.2.7.dev6
+    - django >=4.2
+    - beautifulsoup4
+
+test:
+  imports:
+    - behave_django
+    - dist
+    - docs
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Behave BDD integration for Django
+  doc_url: https://pythonhosted.org/behave-django/
+  dev_url: https://github.com/behave/behave-django
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,55 @@
+package:
+  name: ayx-plugin-cli
+  version: 1.1.0
+
+source:
+  sha256: f0783811f3ae2982c4129fe3502c148aa69e23230e812c9bc0e2bc05322dc30d
+  url: https://files.pythonhosted.org/packages/86/8c/3d6c606c4193f5d6971e8ff799e279409536f81f438fea68fe2248a74b00/ayx_plugin_cli-1.1.0-py3-none-any.whl
+
+build:
+  noarch: python
+  script: pip install ayx_plugin_cli-1.1.0-py3-none-any.whl -vv
+  number: 0
+  string: py3
+
+requirements:
+  build:
+    - python >=3.7,<3.12
+    - pip
+
+  run:
+    - python >=3.7,<3.12
+    - doit ==0.36.0
+    - jinja2 ==2.11.2
+    - markupsafe ==1.1.1
+    - packaging ==20.4
+    - pydantic ==1.8.2
+    - pytest >=5.4.1
+    - requests ==2.24.0
+    - typer ==0.3.1
+    - xmltodict ==0.12.0
+
+test:
+  imports:
+    - ayx_plugin_cli
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: The Alteryx command line interface for using Alteryx SDKs.
+  doc_url: https://help.alteryx.com/developer-help/ayx-plugin-cli
+  home: https://alteryx.github.io/ayx-python-sdk/getting_started.html
+  license: Other/Proprietary License
+  license_file: 
+    - LICENSE.txt
+
+extra:
+  copy_test_source_files: true
+  final: true
+  recipe-maintainers:
+    - rxm7706
+# anaconda upload /home/rxm/programs/miniconda3/conda-bld/noarch/ayx-plugin-cli-1.1.0-py3.tar.bz2
+# conda create -n ayx_python_sdk         "python==3.8.5" "nodejs=14" doit "jinja2==2.11.2" "markupsafe==1.1.1" "packaging==20.4" "pydantic==1.8.2" "pyparsing>=2.0.2" "pytest>=5.4.1" "requests==2.24.0" "typer==0.3.1" "xmltodict==0.12.0"
+# conda create --force -n ayx-plugin-cli "python==3.8.5" "typer==0.3.1" "doit==0.36.0" "pydantic==1.8.2" "packaging==20.4" "requests==2.24.0" "xmltodict==0.12.0" "jinja2==2.11.2" "MarkupSafe==1.1.1" "pytest>=5.4.1"

@@ -1,0 +1,45 @@
+From 3042a419d4da57ab86189c64c2c244a00c91441c Mon Sep 17 00:00:00 2001
+From: Nehal J Wani <nehaljw.kkd1@gmail.com>
+Date: Mon, 25 Dec 2023 19:04:54 +0000
+Subject: [PATCH] Fix output for --help
+
+---
+ src/ansi2html/converter.py | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/ansi2html/converter.py b/src/ansi2html/converter.py
+index 5e13814..68d3ded 100644
+--- a/src/ansi2html/converter.py
++++ b/src/ansi2html/converter.py
+@@ -25,6 +25,7 @@ import io
+ import re
+ import sys
+ from collections import OrderedDict
++from argparse import RawTextHelpFormatter
+ from typing import Iterator, List, Optional, Set, Tuple, Union
+ 
+ from ansi2html.style import (
+@@ -663,7 +664,8 @@ def main() -> None:
+ 
+     scheme_names = sorted(SCHEME.keys())
+     version_str = version("ansi2html")
+-    parser = argparse.ArgumentParser(usage=main.__doc__)
++    parser = argparse.ArgumentParser(usage=main.__doc__,
++                                     formatter_class=RawTextHelpFormatter)
+     parser.add_argument(
+         "-V", "--version", action="version", version=f"%(prog)s {version_str}"
+     )
+@@ -769,8 +771,8 @@ def main() -> None:
+         default="ansi2html",
+         choices=scheme_names,
+         help=(
+-            "Specify color palette scheme. Default: %%default. Choices: %s"
+-            % scheme_names
++            "Specify color palette scheme. Default: %(default)s.\n" +
++            "Choices: %s" % scheme_names
+         ),
+     )
+     parser.add_argument(
+-- 
+2.33.1
+

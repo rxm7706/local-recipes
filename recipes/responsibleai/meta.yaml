@@ -1,0 +1,57 @@
+{% set name = "responsibleai" %}
+{% set version = "0.36.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/responsibleai-{{ version }}.tar.gz
+  sha256: 5730ac8bcffda5cbe6698da5eb2ef191422f99a167c4aac718b116430d20cee1
+
+build:
+  skip: true  # [py<37]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - dice-ml >=0.11,<0.12
+    - econml >=0.14.1
+    - statsmodels <0.14.0
+    - jsonschema
+    - erroranalysis >=0.5.4
+    - interpret-community >=0.31.0
+    - lightgbm >=2.0.11
+    - numpy >=1.17.2,<=1.26.2
+    - numba <=0.58.1
+    - pandas >=0.25.1,<2.0.0
+    - scikit-learn >=0.22.1,!=1.1,<=1.5.1
+    - scipy >=1.4.1
+    - semver >=2.13.0,<2.14.dev0
+    - ml-wrappers
+    - networkx <=2.5
+    - ipykernel <=6.8.0  # [py<=37]
+    - raiutils >=0.4.2
+
+test:
+  imports:
+    - responsibleai
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/microsoft/responsible-ai-toolbox
+  summary: SDK API to explain models, generate counterfactual examples, analyze causal effects and analyze errors in Machine Learning models.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

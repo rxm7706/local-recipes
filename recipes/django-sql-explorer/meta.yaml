@@ -1,0 +1,48 @@
+{% set name = "django-sql-explorer" %}
+{% set version = "5.0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_sql_explorer-{{ version }}.tar.gz
+  sha256: 6e5c1c414a6f1f9fdbfa8c714bac1ffbf28e081e9df53ace834426124c8c2e54
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - sphinx
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2
+    - sqlparse >=0.4.0
+    - requests >=2.2
+    - django-cryptography-django5 ==2.2
+    - cryptography >=42.0
+
+test:
+  imports:
+    - explorer
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://www.sqlexplorer.io
+  summary: A pluggable app that allows users (admins) to execute SQL, view, and export the results.
+  license: MIT
+  license_file:
+    - LICENSE
+    - explorer/ee/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,41 @@
+{% set name = "django-crequest" %}
+{% set version = "2018.5.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-crequest-{{ version }}.tar.gz
+  sha256: e623ec6b2933790717307d5a59cf9db39ff4928b53c506948e1d05776ef4a034
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django >=1.2
+
+test:
+  imports:
+    - crequest
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Alir3z4/django-crequest
+  summary: Middleware that makes the current request available from anywhere.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

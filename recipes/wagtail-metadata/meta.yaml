@@ -1,0 +1,41 @@
+{% set name = "wagtail-metadata" %}
+{% set version = "4.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-metadata-{{ version }}.tar.gz
+  sha256: c9a297ffe14ec9f1ce269ba6f11127d55f3af0c3ad0b92d66d69727c48c38c46
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.0
+    - pip
+  run:
+    - python >=3.0
+    - wagtail >=3.0
+
+test:
+  imports:
+    - wagtailmetadata
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/neon-jungle/wagtail-metadata
+  summary: A tool to assist with metadata for social media.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

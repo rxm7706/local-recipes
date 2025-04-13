@@ -1,0 +1,132 @@
+{% set name = "openlineage-suite" %}
+{% set version = "0.28.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  - url: https://pypi.io/packages/source/{{ name[0] }}/openlineage-dbt/openlineage-dbt-{{ version }}.tar.gz
+    folder: openlineage-dbt
+    sha256: 08b6328857ea1ecad368b5fc5f6d6f7fb0beacc1b9c9d26883cc393022587a5c
+  - url: https://pypi.io/packages/source/{{ name[0] }}/openlineage-dagster/openlineage-dagster-{{ version }}.tar.gz
+    sha256: f8b3cacfb0774173eb8f281d5ed603f7b0c32fd31d905e2c9fa6ebc266e0875a
+    folder: openlineage-dagster
+  - url: https://pypi.io/packages/source/{{ name[0] }}/openlineage-airflow/openlineage-airflow-{{ version }}.tar.gz
+  - sha256: af58a0c681110251f12bb0a3b2813b01c73e84de098068d5c9872eac8cea343a
+    folder: openlineage-airflow
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - name: openlineage-python
+    build:
+      noarch: python
+      script: python -m pip install . -vv
+
+    requirements:
+      host:
+        - python >=3.7
+        - hatchling >=1.15
+        - pip
+      run:
+        - python >=3.7
+        - attrs >=23.1
+        - python-dateutil >=2.8.2
+        - pyyaml >=6
+        - requests >=2.30
+
+    test:
+      imports:
+        - openlineage.client
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: openlineage-dbt
+    build:
+      noarch: python
+      script: python -m pip install . -vv
+
+    requirements:
+      host:
+        - python >=3.7
+        - pip
+      run:
+        - python >=3.7
+        - tqdm >=4.62.0
+        - {{ pin_subpackage("openlineage-integration-common", exact=True) }}
+        - dbt >=0.20
+
+    test:
+      imports:
+        - openlineage.common.provider.dbt
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: openlineage-dagster
+    build:
+      noarch: python
+      script: python -m pip install . -vv
+
+    requirements:
+      host:
+        - python >=3.7
+        - pip
+      run:
+        - python >=3.7
+        - attrs >=19.3
+        - cattrs
+        - protobuf <=3.20.0
+        - {{ pin_subpackage("openlineage-python", exact=True) }}
+        - dagster >=0.13.8,<=0.14.5
+
+    test:
+      imports:
+        - openlineage.dagster
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: openlineage-airflow
+    build:
+      noarch: python
+      script: python -m pip install . -vv
+
+    requirements:
+      host:
+        - python >=3.7
+        - pip
+      run:
+        - python >=3.7
+        - attrs >=19.3
+        - requests >=2.20.0
+        - {{ pin_subpackage("openlineage-integration-common", exact=True) }}
+        - {{ pin_subpackage("openlineage-python", exact=True) }}
+        - apache-airflow >=2.1
+
+    test:
+      imports:
+        - openlineage.airflow
+        - openlineage.airflow.extractors
+      commands:
+        - pip check
+      requires:
+        - pip
+
+about:
+  home: https://github.com/OpenLineage/OpenLineage
+  summary: OpenLineage is an Open standard for metadata and lineage collection.
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

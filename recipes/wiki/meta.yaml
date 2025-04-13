@@ -1,0 +1,52 @@
+{% set name = "wiki" %}
+{% set version = "0.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wiki-{{ version }}.tar.gz
+  sha256: 67020e57067be4a3d7fb3b2f587b56490741e44e7de01e320b3c7bc4853638f7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling
+    - pip
+  run:
+    - python >=3.7
+    - django >=2.2,<4.3
+    - bleach >=6,<7
+    - pillow
+    - django-nyt >=1.2.2
+    - django-mptt >=0.13,<0.15
+    - django-sekizai >=0.10
+    - sorl-thumbnail >=12.8,<13
+    - markdown >=3.3,<3.4
+
+test:
+  imports:
+    - wiki
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A wiki system written for the Django framework.
+  dev_url: https://github.com/django-wiki/django-wiki
+  license: GPL-3.0 AND GPL-3.0-only AND MIT
+  license_file:
+    - COPYING
+    - src/wiki/static/wiki/bootstrap/LICENSE
+    - src/wiki/static/wiki/font-awesome/LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

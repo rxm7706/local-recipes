@@ -1,0 +1,49 @@
+{% set name = "diazo" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/diazo-{{ version }}.tar.gz
+  sha256: a0322e7ce85e5f18cef4618e3018bd8ea63696e35da6640a97bb6fea9a19bea9
+
+build:
+  entry_points:
+    - diazocompiler = diazo.compiler:main
+    - diazorun = diazo.run:main
+    - diazopreprocessor = diazo.rules:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - lxml
+    - cssselect
+
+test:
+  imports:
+    - diazo
+  commands:
+    - pip check
+    - diazocompiler --help
+    - diazorun --help
+    - diazopreprocessor --help
+  requires:
+    - pip
+
+about:
+  home: http://diazo.org
+  summary: Diazo implements a Deliverance like language using a pure XSLT engine. With Diazo, you "compile" your theme and ruleset in one step, then use a superfast/simple transform on each request thereafter. Alternatively, compile your theme during development, check it into version control, and not touch Diazo during deployment.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,63 @@
+package:
+  name: teradataml
+  version: 17.20.0.3
+
+source:
+#  sha256: 9ba7e72c58852d297b41dcf2f0cd7627c7a14e0cf8f8bc572b54f109c064ccf0
+#  url: https://files.pythonhosted.org/packages/7a/00/575454fd468a7dec987b691bdca11e42df744ea5ed0f2504b9c89b67edeb/teradatasql-17.20.0.12-py3-none-any.whl
+  sha256: 1583e33cc22314350b4953e20fdef69af208828afad640a2f90476b65e5b0a37
+  url: https://files.pythonhosted.org/packages/31/b7/405b7296bcc6a992a00c36076542d8904f220d6aa31438421cff311df906/teradataml-17.20.0.3-py3-none-any.whl
+
+build:
+  noarch: python
+  script: pip install teradataml-17.20.0.3-py3-none-any.whl -vv
+  number: 1
+  string: py3_1
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+#    - {{ compiler('fortran') }}
+#    - {{ compiler('go') }}
+#    - {{ compiler('rust') }}
+  host:
+    - pip
+    - python >=3.7,<3.12
+    - setuptools >=38.0
+
+  run:
+    - python >=3.7,<3.12
+    - docker-py>=4.2.0
+    - pandas>=0.22
+    - setuptools
+    - psutil
+    - teradatasql >=17.0.0.2
+    - teradatasqlalchemy >=17.0.0.0
+    - sqlalchemy >=1.3.0
+    - httpx >=0.22.0
+
+test:
+  imports:
+    - teradatasql
+    - teradataml
+    - sqlalchemy
+#  commands:
+#    - pip check
+#  requires:
+#    - pip
+
+about:
+  summary: Teradata SQL Driver for Python
+  doc_url: https://github.com/Teradata/python-driver
+  home: http://www.teradata.com
+  license: Proprietary
+  license_file: 
+    - LICENSE
+    - THIRDPARTYLICENSE
+    - LICENSE-3RD-PARTY.pdf
+    - LICENSE.pdf
+
+extra:
+    copy_test_source_files: true
+    final: true

@@ -1,0 +1,42 @@
+{% set name = "django-registration" %}
+{% set version = "5.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_registration-{{ version }}.tar.gz
+  sha256: e64b0b1d24886fc740122862630ec00b8c2ffd4ab6d0e0a9bced870374d1436b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - pdm-backend
+    - pip
+  run:
+    - python >=3.9
+    - django >=4.2
+    - confusable-homoglyphs >=3.0
+
+test:
+  imports:
+    - django_registration
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: An extensible user-registration application for Django.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

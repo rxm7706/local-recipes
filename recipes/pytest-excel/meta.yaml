@@ -1,0 +1,42 @@
+{% set name = "pytest-excel" %}
+{% set version = "1.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pytest-excel-{{ version }}.tar.gz
+  sha256: aec2819291894791fcd39263e49da8afb814053b2109c45ce179242f4d0dd325
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - pytest >3.6
+    - pandas
+
+test:
+  imports:
+    - pytest_excel
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ssrikanta/pytest-excel
+  summary: pytest plugin for generating excel reports
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

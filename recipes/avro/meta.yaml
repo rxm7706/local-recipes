@@ -1,0 +1,50 @@
+{% set name = "avro" %}
+{% set version = "1.12.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/avro-{{ version }}.tar.gz
+  sha256: cad9c53b23ceed699c7af6bddced42e2c572fd6b408c257a7d4fc4e8cf2e2d6b
+
+build:
+  noarch: python
+  entry_points:
+    - avro = avro.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=40.8.0
+    - wheel
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - avro
+  commands:
+    - pip check
+    - avro --help
+    #- test -f ${PREFIX}/lib/libavro.a  # [unix]
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://avro.apache.org/
+  summary: Avro is a serialization and RPC framework.
+  license: Apache-2.0
+  license_file:
+    - avro/LICENSE
+    - avro/NOTICE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

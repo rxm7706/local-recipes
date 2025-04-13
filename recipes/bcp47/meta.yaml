@@ -1,0 +1,40 @@
+{% set name = "bcp47" %}
+{% set version = "0.0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/bcp47-{{ version }}.tar.gz
+  sha256: 4878d2f3e697ef39ef3891a147280705e4377d5a8d7eb0702129b8d4a3718702
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - bcp47
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/highfestiva/bcp47.py
+  summary: Language tags made easy
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

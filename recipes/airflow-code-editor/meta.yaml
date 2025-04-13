@@ -1,0 +1,46 @@
+{% set name = "airflow-code-editor" %}
+{% set version = "7.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/airflow_code_editor-{{ version }}.tar.gz
+  sha256: e5ea2894e002db294e53cd3df1a018f9f072a7243324398d874648b00b006fe3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - pip
+  run:
+    - python >=3.8
+    - apache-airflow
+    - fs >=2.4.16
+    - pss >=1.44
+
+test:
+  imports:
+    - airflow_code_editor
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/andreax79/airflow-code-editor
+  summary: Apache Airflow code editor and file manager
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - airflow_code_editor/static/fonts/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

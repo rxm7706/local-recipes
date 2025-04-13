@@ -1,0 +1,54 @@
+{% set name = "pygithub" %}
+{% set version = "2.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/PyGithub-{{ version }}.tar.gz
+  sha256: ecf12c2809c44147bce63b047b3d2e9dac8a41b63e90fcb263c703f64936b97c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - pynacl >=1.4.0
+    - python-dateutil
+    - requests >=2.14.0
+    - pyjwt >=2.4.0
+    - typing-extensions >=4.0.0
+    - urllib3 >=1.26.0
+    - deprecated
+
+test:
+  imports:
+    - github
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/pygithub/pygithub
+  summary: Use the full Github API v3
+  dev_url: https://github.com/pygithub/pygithub
+  license: BSD-4-Clause AND LGPL-3.0 AND BSD-3-Clause AND GPL-3.0
+  license_file:
+    - COPYING.LESSER
+    - COPYING
+    - github/License.py
+    - tests/License.py
+    - tests/ReplayData/License.setUp.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

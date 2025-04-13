@@ -1,0 +1,41 @@
+{% set name = "opencensus-ext-logging" %}
+{% set version = "0.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opencensus-ext-logging-{{ version }}.tar.gz
+  sha256: c203b70f034151dada529f543af330ba17aaffec27d8a5267d03c713eb1de334
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - opencensus <1.0.0,>=0.8.0
+
+test:
+  imports:
+    - opencensus
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/census-instrumentation/opencensus-python/tree/master/contrib/opencensus-ext-logging
+  summary: OpenCensus logging Integration
+  license: Apache-2.0
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,43 @@
+{% set name = "django-timezone-field" %}
+{% set version = "6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_timezone_field-{{ version }}.tar.gz
+  sha256: b0c6faf495cc22b5a8367250b9a13929c9149273e42ae8ae04e5f6e4245d488f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - django >=3.2,<5.0
+    - pytz
+    - backports.zoneinfo >=0.2.1,<0.3.0
+
+test:
+  commands:
+    - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,USE_DEPRECATED_PYTZ=[' VERSION < (4, 0))']); django.setup(); import timezone_field"
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/mfogel/django-timezone-field/
+  summary: A Django app providing DB, form, and REST framework fields for zoneinfo and pytz timezone objects.
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

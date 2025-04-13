@@ -1,0 +1,93 @@
+{% set name = "kedro-datasets" %}
+{% set version = "1.4.0" %}
+{% set build_number = "0" %}
+# https://github.com/conda-forge/junit-xml-feedstock/blob/main/recipe/meta.yaml
+{% set python_tag = "py3" %}
+{% set use_source = "Wheel" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+# Local Build Test
+  #path: ../
+
+# GitHub Source Main Test
+#  git_url: https://github.com/kedro-org/kedro-plugins.git
+#  git_tag: main
+#  git_depth: 1
+
+# Pypi Wheel Test
+  url: https://files.pythonhosted.org/packages/48/6c/290d5496125ebcec6408100a89d0de3b625e031525d71a2904a8a9865a38/kedro_datasets-1.4.0-py3-none-any.whl
+  sha256: 06793b4984b17b6d0b00a306c60580fd76b999e50fcbca296bf17c7ba8426827
+# curl -sL https://files.pythonhosted.org/packages/e4/7c/d766334797cdbdf1cab941701c85c259bc6d27d20d6221481507c4b36963/kedro_datasets-1.3.0-py3-none-any.whl | sha256sum
+
+# Pypi Build Target
+  #url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro-datasets-{{ version }}.tar.gz
+  #sha256: dc99e8409667e3a8e73410c9c85f47075330197c9aa27eec7c9365a6a515bf37
+
+build:
+  noarch: python
+  number: {{ build_number }}
+  string: py3_wheel_{{ build_number }}
+#  error_overlinking: false
+#  skip: true  # [py>=39 or py2k or py<37]
+#  skip: true  # [win or osx]
+
+# Local Build Test
+  #script: {{ PYTHON }} -m pip install . -vv
+
+# GitHub Source Main Test
+  #script: cd kedro-datasets && {{ PYTHON }} -m pip install . -vv
+
+# Pypi Wheel Test
+  script: {{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv kedro_datasets-1.4.0-py3-none-any.whl
+
+# Pypi Build Target
+  #script:
+   #- cp -R {{ RECIPE_DIR }}/package.json {{ SRC_DIR }}/package.json
+   #- npm install -g sass
+   #- NODE_OPTIONS=--openssl-legacy-provider npm run build
+   #- cp -R build package/kedro_viz/html
+   #- {{ PYTHON }} -m pip install . -vv
+
+
+
+requirements:
+  build:
+    - setuptools >=61.2
+#    - {{ compiler('c') }}
+#    - {{ compiler('cxx') }}
+#    - {{ compiler('fortran') }}
+#    - {{ compiler('go') }}
+#    - {{ compiler('rust') }}
+  host:
+    - python >=3.7,<3.11
+    - pip
+#    - cmake
+#    - maturin >=0.12,<0.13
+  run:
+    - python >=3.7,<3.11
+    - kedro >=0.18.4,<0.19.0
+    #- pyspark <4.0,>=2.2  # [not win]
+    #- matplotlib-base <3.4,>=3.0.3  # [py<39]
+    
+test:
+  imports:
+    - kedro_datasets
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
+  license: Apache-2.0
+  license_file: 
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

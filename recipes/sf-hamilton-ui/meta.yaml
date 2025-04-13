@@ -1,0 +1,53 @@
+{% set name = "sf-hamilton-ui" %}
+{% set version = "0.0.17" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sf_hamilton_ui-{{ version }}.tar.gz
+  sha256: 056f2ccfc734fe3610486afb52d2edbd9f163520ac80e68bbe8f5b84e6a94b3e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6,<4.0
+    - pip
+  run:
+    - python >=3.6,<4.0
+    - typer
+    - django
+    - aiofiles
+    - requests
+    - aiohttp
+    - loguru
+    - passlib
+    - psycopg2-binary
+    - colorlog
+    - django-extensions
+    - click
+    - django-ninja >=1.1.0
+
+test:
+  imports:
+    - hamilton_ui
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/dagworks-inc/hamilton
+  summary: Hamilton, the micro-framework for creating dataframes.
+  dev_url: https://github.com/dagworks-inc/hamilton
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

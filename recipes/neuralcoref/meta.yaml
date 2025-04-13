@@ -1,0 +1,65 @@
+{% set name = "neuralcoref" %}
+{% set version = "4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/neuralcoref-{{ version }}.tar.gz
+  sha256: 23aee7418edf5c2e90b3f9f15931563b07ded8c59de386ae654b403322430ad9
+
+build:
+  #skip: true  # [py==30 or py==31 or py==32 or py==33]
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ compiler('c') }}
+    - cython >=0.25,<3.0.0
+  host:
+    - python >=3.8
+    - wheel
+    - spacy >=2.1.0
+    - cython >=0.25,<3.0.0
+    - pip
+  run:
+    - python >=3.8
+    - numpy >=1.15.0
+    - boto3
+    - requests >=2.13.0,<3.0.0
+    - jsonschema >=2.6.0,<5.0.0
+    #- cython >=0.25
+    - spacy >=2.1.0
+
+test:
+  requires:
+    - pip
+    - pytest
+    #- cython >=0.25,<3.0.0
+    - spacy-model-en_core_web_sm >=2.1,<4.0.0
+  imports:
+    - neuralcoref
+    - neuralcoref.tests
+    - neuralcoref.train
+  commands:
+    - pytest --pyargs neuralcoref
+    - pip check
+
+about:
+  home: https://github.com/huggingface/neuralcoref
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: "Coreference Resolution in spaCy with Neural Networks"
+  doc_url: https://huggingface.co/coref/
+  dev_url: https://github.com/huggingface/neuralcoref
+
+  recipe-maintainers:
+    - oblute
+    - benhuff
+    - rluria14
+    - rxm7706

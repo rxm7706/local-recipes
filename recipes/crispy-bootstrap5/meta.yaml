@@ -1,0 +1,42 @@
+{% set name = "crispy-bootstrap5" %}
+{% set version = "2024.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/crispy_bootstrap5-{{ version }}.tar.gz
+  sha256: 55b442fe675dd95ad280123c7fe464f454186e90b8e5642e751f436c87627c44
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=61
+    - pip
+  run:
+    - python >=3.8
+    - django >=4.2
+    - django-crispy-forms >=2.3
+
+test:
+  imports:
+    - crispy_bootstrap5
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Bootstrap5 template pack for django-crispy-forms
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

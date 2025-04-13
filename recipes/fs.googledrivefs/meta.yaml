@@ -1,0 +1,43 @@
+{% set name = "fs.googledrivefs" %}
+{% set version = "2.4.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fs_googledrivefs-{{ version }}.tar.gz
+  sha256: 7ccdb62f399624500224d5f6298e5ddb12c4657644cda5b98f9d4b3840324db4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - fs >=2.4.13
+    - google-api-python-client >=1.7.10
+    - google-auth >=1.5.1
+
+test:
+  imports:
+    - fs.googledrivefs
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Pyfilesystem2 implementation for Google Drive
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

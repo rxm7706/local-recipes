@@ -1,0 +1,42 @@
+{% set name = "django-bootstrap5" %}
+{% set version = "25.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_bootstrap5-{{ version }}.tar.gz
+  sha256: e81c77eb710356f94e426a51f4f469890d5720f5e7e53d650f4405d4cc94da04
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - pip
+  run:
+    - python >=3.9
+    - django >=4.2
+
+test:
+  imports:
+    - django_bootstrap5
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Bootstrap 5 for Django
+  dev_url: https://github.com/zostera/django-bootstrap5
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

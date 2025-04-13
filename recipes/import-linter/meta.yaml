@@ -1,0 +1,47 @@
+{% set name = "import-linter" %}
+{% set version = "2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/import_linter-{{ version }}.tar.gz
+  sha256: 393fadb2e91304c22c5ceab575213ed2b6a794abc7bd05ab345f2430930b2eae
+
+build:
+  skip: true  # [py<39]
+  entry_points:
+    - lint-imports = importlinter.cli:lint_imports_command
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=61.2
+    - pip
+  run:
+    - python >=3.9
+    - click >=6
+    - grimp >=3.2
+    - tomli >=1.2.1  # [py<311]
+    - typing_extensions >=3.10.0.0
+
+test:
+  imports:
+    - importlinter
+  commands:
+    - pip check
+    - lint-imports --help
+  requires:
+    - pip
+
+about:
+  summary: Enforces rules for the imports within and between Python packages.
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

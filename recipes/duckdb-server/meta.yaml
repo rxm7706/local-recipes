@@ -1,0 +1,49 @@
+{% set name = "duckdb-server" %}
+{% set version = "0.12.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/duckdb_server-{{ version }}.tar.gz
+  sha256: f82871cc8c07c6bdfe1bebe62141cde4210f14c7d59ae701b98e06dfc2dd6ac3
+
+build:
+  entry_points:
+    - duckdb-server = pkg.__main__:serve
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - hatchling
+    - pip
+  run:
+    - python >=3.10
+    - diskcache
+    - python-duckdb >=1.1.3
+    - pandas
+    - pyarrow
+    - socketify
+    - ujson
+
+test:
+  imports:
+    - duckdb_server
+  commands:
+    - pip check
+    - duckdb-server --help
+  requires:
+    - pip
+
+about:
+  summary: A DuckDB server for Mosaic
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

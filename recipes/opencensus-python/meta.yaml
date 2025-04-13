@@ -1,0 +1,41 @@
+{% set name = "opencensus-python" %}
+{% set version = "0.11.4-1.1.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/census-instrumentation/opencensus-python/archive/v{{ version }}.tar.gz
+  sha256: 807fa8eedc936d80c72f399b1e385da868caceb57dac676508a1d104d06f8427
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - opencensus-context >=0.1.3
+    - google-api-core >=1.0.0,<2.0.0  # [py<36]
+    - six >=1.16,<2.dev0
+
+test:
+  imports:
+    - opencensus
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/census-instrumentation/opencensus-python
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

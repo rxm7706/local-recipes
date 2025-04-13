@@ -1,0 +1,86 @@
+{% set name = "bigframes" %}
+{% set version = "1.31.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/bigframes-{{ version }}.tar.gz
+  sha256: b888f20d6844d241ebd5a40f88c0897850bd4b3b876f391494c6d2e848db2209
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools
+    - pip
+  run:
+    - python >=3.9
+    - cloudpickle >=2.0.0
+    - fsspec >=2023.3.0
+    - gcsfs >=2023.3.0
+    - geopandas >=0.12.2
+    - google-auth >=2.15.0,<3.0dev
+    - google-cloud-bigtable >=2.24.0
+    - google-cloud-pubsub >=2.21.4
+    - google-cloud-bigquery-core >=3.18.0
+    - google-cloud-functions >=1.12.0
+    - google-cloud-bigquery-connection >=1.12.0
+    - google-cloud-iam >=2.12.1
+    - google-cloud-resource-manager >=1.10.3
+    - google-cloud-storage >=2.0.0
+    - jellyfish >=0.8.9,<1.1.2
+    - numpy >=1.24.0
+    - pandas >=1.5.3
+    - pandas-gbq >=0.26.0
+    - pyarrow >=10.0.1
+    - pydata-google-auth >=1.8.2
+    - requests >=2.27.1
+    - scikit-learn >=1.2.2
+    - sqlalchemy >=1.4,<3.0dev
+    - sqlglot >=23.6.3,<25.2
+    - tabulate >=0.9
+    - ipywidgets >=7.7.1
+    - humanize >=4.6.0
+    - matplotlib-base >=3.7.1
+    - atpublic >=2.3,<6
+    - parsy >=2,<3
+    - python-dateutil >=2.8.2,<3
+    - pytz >=2022.7
+    - toolz >=0.11,<2
+    - typing_extensions >=4.3.0,<5
+    - rich >=12.4.4,<14
+
+test:
+  imports:
+    - bigframes
+    - bigframes_vendored
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/googleapis/python-bigquery-dataframes
+  summary: BigQuery DataFrames -- scalable analytics and machine learning with BigQuery
+  license: MPL-2.0 AND BSD-4-Clause AND MIT AND Apache-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - third_party/bigframes_vendored/ibis/LICENSE.txt
+    - third_party/bigframes_vendored/cpython/LICENSE
+    - third_party/bigframes_vendored/db_benchmark/LICENSE
+    - third_party/bigframes_vendored/pandas/LICENSE
+    - third_party/bigframes_vendored/geopandas/LICENSE.txt
+    - third_party/bigframes_vendored/tpch/LICENSE
+    - third_party/bigframes_vendored/google_cloud_bigquery/LICENSE
+    - third_party/bigframes_vendored/xgboost/LICENSE
+    - third_party/bigframes_vendored/sklearn/COPYING
+
+extra:
+  recipe-maintainers:
+    - rxm7706

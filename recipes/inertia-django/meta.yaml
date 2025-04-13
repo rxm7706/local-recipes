@@ -1,0 +1,43 @@
+{% set name = "inertia-django" %}
+{% set version = "0.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/inertia_django-{{ version }}.tar.gz
+  sha256: fdaf2557d357b755d7762b3fc0f39864b59071326f6524487ad0af173b4f8ec6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - django >=4
+    - requests >=2.0.0,<3.0.0
+
+test:
+  imports:
+    - inertia_django
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/inertiajs/inertia-django
+  summary: Django adapter for the InertiaJS framework
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

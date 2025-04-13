@@ -1,0 +1,43 @@
+{% set name = "buenavista" %}
+{% set version = "0.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/buenavista-{{ version }}.tar.gz
+  sha256: 151b980bf02807885724dc7e7cb670847ce2e0f838669c6edd0be4076ca7b896
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - fastapi >=0.80.0,<1.0.0
+    - pydantic >=1.2.0,<2.0.0
+    - sqlglot
+
+test:
+  imports:
+    - buenavista
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jwills/buenavista
+  summary: Programmable Presto and Postgres Proxies
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

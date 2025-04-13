@@ -1,0 +1,54 @@
+{% set name = "vizro" %}
+{% set version = "0.1.27" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/vizro-{{ version }}.tar.gz
+  sha256: 848c1a7a27253b0154c7436874cdba388eca68f5d79cbf8b7038715e01682357
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - pip
+  run:
+    - python >=3.9
+    - dash >=2.17.1,<3
+    - dash-bootstrap-components
+    - dash-ag-grid >=31.0.0
+    - pandas >=2
+    - plotly >=5.12.0
+    - pydantic >=1.10.16
+    - dash-mantine-components <0.13.0
+    - flask-caching >=2
+    - wrapt >=1
+    - black
+    - autoflake
+
+test:
+  imports:
+    - vizro
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Vizro is a package to facilitate visual analytics.
+  dev_url: https://github.com/mckinsey/vizro
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - examples/visual-vocabulary/LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

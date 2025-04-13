@@ -1,0 +1,41 @@
+{% set name = "openlineage-dbt" %}
+{% set version = "1.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/openlineage-dbt-{{ version }}.tar.gz
+  sha256: 673dad9f82f7c43ce9b37cf1214c6a137e71db4e8e3e4196a01f227dbad92637
+
+build:
+  skip: true  # [py<38]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - tqdm >=4.62.0
+    - openlineage-integration-common  =={{ version }}
+
+test:
+  imports:
+    - openlineage_dbt
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: OpenLineage integration with dbt
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

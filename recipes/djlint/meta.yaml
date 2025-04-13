@@ -1,0 +1,55 @@
+{% set name = "djlint" %}
+{% set version = "1.35.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/djlint-{{ version }}.tar.gz
+  sha256: 780ea3e25662fca89033fa96ecf656099954d6f81dce039eac90f4bba3cbe850
+
+build:
+  skip: true  # [py<39]
+  entry_points:
+    - djlint = djlint:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - pip
+  run:
+    - python >=3.9
+    - click >=8.0.1
+    - colorama >=0.4.4
+    - cssbeautifier >=1.14.4
+    - html-tag-names >=0.1.2
+    - html-void-elements >=0.1
+    - jsbeautifier >=1.14.4
+    - json5 >=0.9.11
+    - pathspec >=0.12
+    - pyyaml >=6
+    - regex >=2023
+    - tomli >=2.0.1  # [py<311]
+    - tqdm >=4.62.2
+
+test:
+  imports:
+    - djlint
+  commands:
+    - pip check
+    - djlint --help
+  requires:
+    - pip
+
+about:
+  summary: HTML Template Linter and Formatter
+  license: GPL-3.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,46 @@
+{% set name = "robotframework-databaselibrary" %}
+{% set version = "2.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/robotframework_databaselibrary-{{ version }}.tar.gz
+  sha256: 0867ff31df8e1db63033708d36ee09e321b4edf6626320c213eab9a6c42c0bc7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8.1
+    - setuptools >=61.0
+    - robotframework >=5.0.1
+    - robotframework-assertion-engine
+    - pip
+  run:
+    - python >=3.8.1
+    - robotframework >=5.0.1
+    - robotframework-excellib
+    - robotframework-assertion-engine
+
+test:
+  imports:
+    - DatabaseLibrary
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Database Library for Robot Framework
+  doc_url: https://pythonhosted.org/robotframework-databaselibrary/
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

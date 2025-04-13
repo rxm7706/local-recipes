@@ -1,0 +1,40 @@
+{% set name = "markov_draftjs" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/markov_draftjs-{{ version }}.tar.gz
+  sha256: aad60a213eba9ed6c572c7a9cd35ead47875759f789e57334a75b345ffcb919e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - markov_draftjs
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/thibaudcolas/markov_draftjs
+  summary: Draft.js sample content generated with Markov chains of Project Gutenberg books.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

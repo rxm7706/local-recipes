@@ -1,0 +1,42 @@
+{% set name = "django-click" %}
+{% set version = "2.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-click-{{ version }}.tar.gz
+  sha256: bffb0d10c3f3dfe3f5b116ce902c7a7a9aa4e9c046de95259dc044462eb746b4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - click >=7.1
+    - django >=3.2
+
+test:
+  imports:
+    - djclick
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/GaretJax/django-click
+  summary: Build Django management commands using the click CLI package.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

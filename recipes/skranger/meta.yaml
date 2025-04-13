@@ -1,0 +1,46 @@
+{% set name = "skranger" %}
+{% set version = "0.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/skranger-{{ version }}.tar.gz
+  sha256: e5776c8ac4a353599949747235abc6a7e4d2217ba3a8f76531613422d5ff9c80
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<3.11
+    - poetry >=0.12
+    - cython <3.0.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.7,<3.11
+    - scikit-learn <1
+
+test:
+  imports:
+    - skranger
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/crflynn/skranger
+  summary: Python bindings for C++ ranger random forests
+  license: GPL-3.0-or-later
+  license_file:
+    - LICENSE.txt
+    - skranger/ranger/COPYING
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,500 @@
+name: django-kedro
+
+channels:
+  #- rapidsai
+  #- nvidia
+  #- intel
+  #- bodo.ai
+  - nodefaults
+  - pyg
+  - pytorch
+  - microsoft
+  - conda-forge
+  - selfexplainml
+  #- pyviz
+  #- anaconda
+
+
+
+
+
+
+
+
+
+
+
+
+dependencies:
+# ------------------------------------------------------------------------------
+  - python =3.10 #
+  - django >=4.2.4
+  - mlflow >=2.6.0
+  - pandas >=2.0
+  - pyarrow >=12.0
+  - pyspark =3.3.0
+
+
+
+
+  - tensorflow-cpu >=2.12.0  # [not win]
+  - tensorboard-plugin-wit >=1.8.1  # [not win]
+  - tensorboard-data-server >=0.7.0  # [not win]
+  - tensorboardx >=2.6.2  # [not win]
+  - tensorflow-probability >=0.16.0  # [not win]
+  - cpuonly >=2.0  # [not win]  # Not on conda-forge, on pytorch
+  - pytorch >=2.0  # [not win]  # Not on conda-forge, on pytorch
+  - pyg >=2.3.1  # [not win]  # Not on conda-forge, on pyg
+  - pytorch-cluster >=1.6.1  # [not win]  # Not on conda-forge, on pyg
+  - pytorch-scatter >=2.1.1  # [not win]  # Not on conda-forge, on pyg
+  - pytorch-sparse >=0.6.17  # [not win]  # Not on conda-forge, on pyg
+  - pytorch-spline-conv >=1.2.2  # [not win]  # Not on conda-forge, on pyg
+
+  #- pycaret >=3.0.5 # Note downgrades pandas <2.0 # https://github.com/pycaret/pycaret/pull/3683
+
+  #- datacompy
+  - dataprofiler >=0.10.3
+  - synthetic-data >= 1.1.0
+  - ydata-profiling >=4.5.1
+  - ydata-synthetic >=1.3.0
+
+
+
+
+
+  - interpret >=0.4.3
+  #- interpret-community >=0.30.0 # needs upgrade first
+  #- omnixai >=1.3.1 # pillow 10.0.0 numpy 1.24.4 scikit-learn 1.3.0 
+  #- responsibleai >=0.29.0 #
+  #- dice-ml >=0.10 # - pandas <2.0.0
+  #- econml >=0.14.1 # scikit-learn >0.22.0,<1.3 # shap >=0.38.1,<0.42.0
+
+
+##### Kedro
+# ------------------------------------------------------------------------------
+  - kedro >=0.18.12,<0.19.0  #
+  - kedro-datasets >=1.6.0,<2.0.0  #
+  - kedro-airflow >=0.6.0,<1.0.0  #
+  - kedro-mlflow >=0.11.9,<1.0.0  #
+  - kedro-viz >=6.4.0,<7.0.0  #
+  - kedro-light >=2023.3.13  #
+
+
+##### GCP VertexAI
+# ------------------------------------------------------------------------------
+  #- kedro-vertexai >=0.9.1,<1.0.0  # [not win]
+  #- fs-gcsfs >=1.5.1  # [not win]
+  - gcsfs >=2022.1  #
+  - google-api-core-grpc >=1.34.0,<3.0.0  #
+  - google-api-python-client >=2.0.0,<3.0.0  #
+  - google-auth >=2.0.0,<3.0.0  #
+  - google-cloud-iam >=2.0.0,<3.0.0  #
+  - google-cloud-scheduler >=2.3.2,<3.0.0  #
+  - google-cloud-storage >=2.0.0,<3.0.0  #
+  #- google-cloud-bigquery >=2.0.0,<3.0.0  #
+  #- google-cloud-bigquery-datatransfer >=2.0.0,<4.0.0  #
+
+
+
+
+
+
+
+##### Azure ML
+# ------------------------------------------------------------------------------
+#  - kedro-azureml >=0.5.0  # Not on conda-forge
+  - azure-ai-ml >=1.9.0  #
+#  - azure-common >=1.1.28  #
+#  - azure-identity >= 1.12.0  #
+#  - azure-storage-blob >=12.17.0  #
+#  - azureml-core >=1.52.0,<2.0.0  # Packages missing on conda-forgee, no source on pypi
+#  - azureml-dataset-runtime >=1.52.0,<2.0.0  # Packages missing on conda-forge, no source on pypi
+#  - azureml-fsspec >=1.1.1,<2.0.0  # Packages missing on conda-forge, no source on pypi
+
+
+
+
+
+##### Bodo.ai / Other Cloud Tools
+# ------------------------------------------------------------------------------
+#  - bodosql >=2023.5  # [not win]
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+
+  #- elasticsearch >=7.17.6  # Official Python client for Elasticsearch
+  #- elasticsearch-dsl >=7.4.0  #  High level Python client for Elasticsearch, built on top of the official low-level client Elasticsearch
+  #- kfp >=1.3.0,<2.0,!=1.7.2  # Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
+  #- kfp-pipeline-spec  # Kubeflow Pipelines pipeline spec # Tensorflow Incompatiblity
+
+
+
+##### https://github.com/ResponsibleAIML/cookiecutter-django-kedro-serving
+##### https://github.com/cookiecutter/cookiecutter-django
+##### https://github.com/cookiecutter/cookiecutter-django/blob/master/requirements.txt
+  - cookiecutter >=2.2.3  # https://github.com/cookiecutter/cookiecutter
+  - cruft >=2.15.0  # https://github.com/cruft/cruft
+  #- sh  # [not win] # https://github.com/amoffat/sh
+  - binaryornot >=0.4.4  # https://github.com/binaryornot/binaryornot
+### Code quality
+### ------------------------------------------------------------------------------
+  #- black  #
+  - isort >=5.12.0  #
+  #- flake8  #
+  - django-upgrade >=1.14.0  #
+  #- djlint  #
+  #- pre-commit  #
+### Testing
+### ------------------------------------------------------------------------------
+  - tox >=3.27.1 # Note PiPReq >=4.6.4  # Note tox-conda Limitation
+  #- pytest  #
+  - pytest-xdist >=3.3.1  #
+  - pytest-cookies >=0.7.0  # https://github.com/hackebrot/pytest-cookies
+  - pytest-instafail >=0.5.0  #
+  - pyyaml >=6.0  #
+### Scripting
+### ------------------------------------------------------------------------------
+  - pygithub >=1.59.0  #
+  - gitpython >=3.1.32  #
+  - jinja2 >=3.1.2  #
+  - requests >=2.31.0  #
+### ------------------------------------------------------------------------------
+
+## ------------------------------------------------------------------------------
+## ------------------START COMMENT THIS SECTION OUT FOR WINDOWS------------------
+## ------------------------------------------------------------------------------
+## ------------------------------------------------------------------------------
+  - sh >=2.0.4  # [not win] # https://github.com/amoffat/sh
+  - postgresql >=14.0  # use sqlite for local development, postpresql will work on windows though
+  - gunicorn >=21.2.0  # [not win]  # Note PiPReq 21.2.0 # https://github.com/benoitc/gunicorn
+
+
+
+
+# Note Adding apache-airflow Downgrades SqlAlchemy,Pathspec & Flask
+  - apache-airflow >=2.7.0  # [not win]
+  - airflow-code-editor >=7.3.0  # [not win]
+  # flask 2.3.2 to 2.2.3
+  # pathspec 0.11.1 to 0.9.0
+  # sqlalchemy 2.0.17 to 1.4.48
+  # opentelemetry-api 1.19.0 to 1.15.0
+  # opentelemetry-instrumentation 0.40b0 to 0.36b0
+  - apache-airflow-providers-openlineage >=1.0.1  # [not win]
+  - openmetadata-managed-apis >=1.1.1.1  # [not win]
+
+
+
+
+## ------------------------------------------------------------------------------
+## ------------------------------------------------------------------------------
+## ------------------END COMMENT THIS SECTION OUT FOR WINDOWS--------------------
+## ------------------------------------------------------------------------------
+##### https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+  - python-slugify >=8.0.1  # https://github.com/un33k/python-slugify
+  - pillow >=10.0.0  # https://github.com/python-pillow/Pillow # Note robocorp-excel Limitation is <10.0
+  - argon2-cffi >=23.1.0  # https://github.com/hynek/argon2_cffi
+  - whitenoise >=6.5.0  # https://github.com/evansd/whitenoise
+  - redis-py >=5.0.0  # https://github.com/redis/redis-py
+  - celery >=5.3.1  # pyup: < 6.0  # https://github.com/celery/celery
+  - django-celery-beat >=2.5.0  # https://github.com/celery/django-celery-beat
+  - uvicorn-standard >=0.22.0  # Note PiPReq 0.23.1 # pyup: < 0.23.0 # https://github.com/encode/uvicorn # Note Kedro-Viz Limitation
+##### Django
+# ------------------------------------------------------------------------------
+  #- django >=4.2.4 # pyup: < 5.0  # https://www.djangoproject.com/
+  - django-environ >=0.10.0  # https://github.com/joke2k/django-environ
+  - django-model-utils >=4.3.1  # https://github.com/jazzband/django-model-utils
+  - django-allauth >=0.54.0  # https://github.com/pennersr/django-allauth
+  - django-crispy-forms >=2.0  # https://github.com/django-crispy-forms/django-crispy-forms
+  - crispy-bootstrap5 >=0.7  # https://github.com/django-crispy-forms/crispy-bootstrap5
+  - django-redis >=5.3.0  # https://github.com/jazzband/django-redis
+##### Django REST Framework
+# ------------------------------------------------------------------------------
+  - djangorestframework >=3.14.0  # https://github.com/encode/django-rest-framework
+  - django-cors-headers >=4.2.0  # https://github.com/adamchainz/django-cors-headers
+##### DRF-spectacular for api documentation
+# ------------------------------------------------------------------------------
+  - drf-spectacular >=0.26.4  # https://github.com/tfranzel/drf-spectacular
+  - django-webpack-loader >=2.0.1  # https://github.com/django-webpack/django-webpack-loader
+  - nodejs >=18.15.0 # https://nodejs.org/, https://github.com/conda-forge/nodejs-feedstock
+
+
+
+
+
+
+
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+##### https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+  - werkzeug >=2.3.7 # https://github.com/pallets/werkzeug
+  - ipdb >=0.13.13  # https://github.com/gotcha/ipdb
+  - psycopg2-binary >=2.9.6  # Note PiPReq 3.1.9 # https://github.com/psycopg/psycopg2
+  - watchfiles >=0.19.0  # https://github.com/samuelcolvin/watchfiles
+# Testing
+# ------------------------------------------------------------------------------
+  - mypy >=1.4.1  # https://github.com/python/mypy
+  - django-stubs >=4.2.3  # https://github.com/typeddjango/django-stubs
+  - pytest >=7.4.0  # https://github.com/pytest-dev/pytest
+  - pytest-sugar >=0.9.7  # https://github.com/Frozenball/pytest-sugar
+  - djangorestframework-stubs >=3.14.2  # https://github.com/typeddjango/djangorestframework-stubs
+# Documentation
+# ------------------------------------------------------------------------------
+  - sphinx >=6.2.1  # https://github.com/sphinx-doc/sphinx
+  - sphinx-autobuild >=2021.3.14 # https://github.com/GaretJax/sphinx-autobuild
+# Code quality
+# ------------------------------------------------------------------------------
+  - flake8 >=6.1.0  # https://github.com/PyCQA/flake8
+  - flake8-isort >=6.0.0  # https://github.com/gforcada/flake8-isort
+  - coverage >=7.3.0  # https://github.com/nedbat/coveragepy
+  - black >=23.7.0  # https://github.com/psf/black
+  - djlint >=1.32.1  # https://github.com/Riverside-Healthcare/djLint
+  - pylint-django >=2.5.3  # https://github.com/PyCQA/pylint-django
+  - pylint-celery >=0.3  # https://github.com/PyCQA/pylint-celery
+  - pre-commit >=3.3.3  # https://github.com/pre-commit/pre-commit
+# Django
+# ------------------------------------------------------------------------------
+  - factory_boy >=3.3.0  # https://github.com/FactoryBoy/factory_boy
+  - django-debug-toolbar >=4.2.0  # https://github.com/jazzband/django-debug-toolbar
+  - django-extensions >=3.2.3  # https://github.com/django-extensions/django-extensions
+  - django_coverage_plugin >=3.1.0  # https://github.com/nedbat/django_coverage_plugin
+  - pytest-django >=4.5.2  # https://github.com/pytest-dev/pytest-django
+
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+##### https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/production.txt
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+  #- gunicorn  # [not win]  # https://github.com/benoitc/gunicorn
+  - psycopg2 >=2.9.6  # https://github.com/psycopg/psycopg2
+  - sentry-sdk >=1.29.2  # https://github.com/getsentry/sentry-python
+  - hiredis >=2.2.3  # https://github.com/redis/hiredis-py
+# Django
+# ------------------------------------------------------------------------------
+  - django-anymail >=10.1  # https://github.com/anymail/django-anymail
+
+# Django Add Ons
+# ------------------------------------------------------------------------------
+  #- django-viewflow >=2.0.0b6  # Not on conda-forge  # https://github.com/viewflow/viewflow#
+  - djangorestframework-jsonapi >=6.1.0 # Added https://github.com/django-json-api/django-rest-framework-json-api
+  - django-guardian >=2.4.0
+  #- django-mptt2 >=0.2.0  # Not on conda-forge
+  #- django-orghierarchy >=0.3.0  # Not on conda-forge  # No Django 4.0 Version
+  - django-treebeard >=4.7
+
+  - django-grappelli >=3.0.7
+  #- django-constance >=2.9.1  # Not on conda-forge # No Django 4.0 Version
+  - django-filebrowser >=4.0.3
+  - django-import-export >=3.2.0
+  - django-reversion >=3.0.5
+
+
+
+
+
+
+
+
+
+
+
+
+# ------------------------------------------------------------------------------
+# The packages above are used - They should match pyproject.toml
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# The packages below are not used - They are for development evniornment consistency
+# ------------------------------------------------------------------------------
+  #- bentoml >=1.1.1  # Not on conda-forge
+  - clearml >=1.12.1
+  - dvc >=3.16.0
+  - grafana-client >=3.6.0
+  - prometheus_client >=0.17.1
+  #- mlserver-mlflow >=1.3.5  # Not on conda-forge
+
+  - jupyterlab >=3.2 # Perpective Limitation
+
+  - perspective >=2.5.0 # jupyterlab >=3.2,<4
+  #- voila >=0.5.0
+  #- solara >=1.19.0
+
+  - jupyterhub >=4.0
+  - jupyterhub-ldapauthenticator >=1.3.2
+  #- jupyter_enterprise_gateway >=2.5.0
+
+#  - jupyterlab-git
+#  - jupyterlab-github
+#  - jupyterlab-python-file jupyterlab-filesystem-access
+#
+#  - jupyterlab-pullrequests jupyterlab-code-snippets # Note NA for jupterlab >=4.0
+
+
+
+  - robocorp >=0.10.0
+  - robocorp-excel >=0.4.0  # Downgrades pillow <10.0
+  - robocorp-http >=0.4.0
+  - playwright >=1.37.0  # Not on conda-forge, on microsoft
+  - pytest-playwright >=0.4.2  # Not on conda-forge, on microsoft
+  - robocorp-browser >=2.1.0  # Not on conda-forge, on selfexplainml
+
+
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+##### requirements/datapipelines.txt
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+  - numba >=0.56.3
+  - numpy >=1.21.6
+
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+  - ibis-framework >=6.0.0
+# N/A    - ibis-bigquery >=6.0.0
+  - ibis-dask >=6.0.0
+  #- ibis-datafusion >=6.0.0
+  - ibis-duckdb >=6.0.0
+  - ibis-mssql >=6.0.0
+  - ibis-mysql >=6.0.0
+  - ibis-oracle >=6.0.0
+  - ibis-polars >=6.0.0
+  - ibis-postgres >=6.0.0
+  - ibis-pyspark >=6.0.0
+  - ibis-sqlite >=6.0.0
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+  - intake >=0.7.0
+  - intake-dataframe-catalog >=0.2.2
+  - intake-dremio >=0.2.3
+  - intake-elasticsearch >=0.2.0
+  - intake-excel >=0.1.4
+  - intake-odbc >=0.1.0
+  - intake-parquet >=0.3.0
+  - intake-pattern-catalog >=2023.3.0
+  - intake-salesforce >=0.0.10
+  - intake-spark >=0.1.2
+  - intake-sql >=0.4.0
+  - intake-streamz >=0.0.1
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+  - bandit >=1.7.5
+  - boa >=0.14.0
+  - datashader >=0.15.1
+  - dbt-core >=1.5.1
+  - dbt-dremio >=1.5.0
+  - dbt-spark >=1.5.0
+  - djangorestframework-yaml >=2.0.0
+  - dremio-arrow >=1.0.1
+  - drf-spectacular-sidecar >=2023.6.1
+  - edgetest >=2023.6.1
+  - edgetest-conda >=2023.4.0
+  - edgetest-pip-tools >=2023.6.0
+  - fabric >=3.1.0
+  - flake8-black >=0.3.6
+  - flake8-bugbear >=23.6.5
+  - flake8-builtins >=2.1.0
+  - flake8-cognitive-complexity >=0.1.0
+  - flake8-comprehensions >=3.13.0
+  - flake8-docstrings >=1.7.0
+  - flake8-eradicate >=1.5.0
+  - flake8-logging-format >=0.9.0
+  - flake8-mutable >=1.2.0
+  - flake8-print >=5.0.0
+  - flake8-pylint >=0.2.0
+  - flake8-pyproject >=1.2.3
+  - flake8-quotes >=3.3.2
+  - flake8-unused-arguments >=0.0.13
+  - flake8-use-fstring >=1.4
+  - flake8-use-pathlib >=0.3.0
+  - fsspec >=2023.6.0
+  - great-expectations >=0.17.12
+  - holoviews >=1.16.2
+  - ipyvizzu-story >=0.7.0
+  - jupyter >=1.0
+  - loguru >=0.7.0
+  - lumen >=0.5.1
+  - mamba >=1.4.4
+  - matplotlib >=3.7.0
+  - nbstripout >=0.4
+  - openlineage-airflow >=1.1.0 # moving the openlineage-airflow package from the OpenLineage project to an apache-airflow-providers-openlineage provider in the base Airflow Docker image, where it can be easily enabled by configuration.
+  - openlineage-integration-common >=1.1.0
+  - openlineage-python >=1.1.0
+  - openlineage-sql >=1.1.0
+  - openmetadata-ingestion >=1.1.2.0
+  - openmetadata-sqllineage >=1.1.2.0 # Fix SqlParse downgrade Broken https://github.com/open-metadata/openmetadata-sqllineage/pull/20
+  - openpyxl >=3.0.6
+  - opentelemetry-api >=1.15.0 # Airflow Pin https://github.com/conda-forge/airflow-feedstock/blob/main/recipe/meta.yaml#L82
+  - opentelemetry-instrumentation >=0.36b0
+  - opentelemetry-instrumentation-asgi >=0.36b0
+  - opentelemetry-instrumentation-dbapi >=0.36b0
+  - opentelemetry-instrumentation-django >=0.36b0
+  - opentelemetry-instrumentation-logging >=0.36b0
+  - opentelemetry-instrumentation-wsgi >=0.36b0
+  - opentelemetry-semantic-conventions >=0.36b0
+  - opentelemetry-util-http >=0.36b0
+  - panel >=1.2.0
+  - pep8-naming >=0.13.3
+  - pip >=23.1.2
+  - poetry >=1.3.2
+  - poetry-core >=1.3.2
+  - pydantic >=1.9
+  - pylint >=2.17.4
+  - pyodbc >=4.0.39
+  - pysqlite3 >=0.4.6
+  - pytest-cov >=4.1.0
+  - pytest-env >=1.0.1
+  - pytest-html >=3.2.0
+  - pytest-mock >=3.11.0
+  - pytest-timeout >=2.1.0
+  - ruff >=0.0.284
+  - sas7bdat-converter >=2.0.0
+  - seaborn >=0.11.2
+  - semver >=2.10.0
+  - setuptools >=67.7.2
+  - setuptools-scm >=7.0.0
+  - tabulate >=0.9.0
+  - tox-conda >=0.10.2
+  - tox-current-env >=0.0.11
+  - typeguard >=4.0.0
+  - types-cryptography >=3.3.23.2
+  - types-enum34 >=1.1.8
+  - types-ipaddress >=1.0.8
+  - types-paramiko >=3.2.0.0
+  - types-pyyaml >=6.0.12.10
+  - types-requests >=2.31.0.1
+  - types-tabulate >=0.9.0.2
+  - types-urllib3 >=1.26.25.13
+
+
+
+
+
+
+
+
+##  - responsibleai interpret-community interpret omnixai ydata-profiling ydata-synthetic datacompy dataprofiler synthetic-data
+##  mamba env update --prune --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/environment.yaml
+##  mamba env create --force --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/environment.yaml
+##  cd /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/local-recipes/recipes/
+
+##  Development Enviornment - Same as enviornment.yaml 
+##  mamba env create --force --file  /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/local-recipes/recipes/kedro-hub/kedro-hub.yaml
+##  mamba env update --prune --file  /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/local-recipes/recipes/kedro-hub/kedro-hub.yaml
+##  Package for Conda-Forge Distribution - Same as django-kedro.conda
+##  mamba mambabuild /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/local-recipes/recipes/kedro-hub/meta.yaml
+##  conda list | grep -E "grpc|google|kedro|proto|selfexp|cache|azure"
+##  mamba install jupyterhub jupyterhub-ldapauthenticator jupyter_enterprise_gateway dask-gateway-server dask-gateway nebari nebari-dask "apache-superset>=3.0.0rc2" airflow-with-github_enterprise
+##  conda env create --force --file C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\local-recipes\recipes\kedro-hub\kedro-hub-win.yaml
+##  mamba env update --prune --file C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\local-recipes\recipes\kedro-hub\kedro-hub-win.yaml
+##  mamba env update --prune --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/environment.yaml
+##  mamba env update --prune --file C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\django-kedro\environment-win.yaml

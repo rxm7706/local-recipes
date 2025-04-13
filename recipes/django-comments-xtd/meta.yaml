@@ -1,0 +1,46 @@
+{% set name = "django-comments-xtd" %}
+{% set version = "2.10.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_comments_xtd-{{ version }}.tar.gz
+  sha256: dfa3521d32b683154f6b790180c10a43164140ceb2449190e84de3e90bcdc313
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - setuptools
+    - pip
+  run:
+    - python >=3.10
+    - django >=4,<6
+    - django-contrib-comments >=2.2,<2.3
+    - djangorestframework >=3.12,<3.16
+    - docutils
+    - pytz
+    - six
+
+test:
+  imports:
+    - django_comments_xtd
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Commenting Django app with threads, follow up notifications and email confirmation.
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

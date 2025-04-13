@@ -1,0 +1,47 @@
+{% set name = "StringZilla" %}
+{% set version = "3.10.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/ashvardanian/StringZilla/archive/v{{ version }}.tar.gz
+  sha256: 69729a1403c4609256f861a0221e5331f836b4945f6848472e81183726e436e6
+
+build:
+  entry_points:
+    - sz_split=cli.split:main
+    - sz_wc=cli.wc:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - setuptools >=42
+    - wheel
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - cli
+  commands:
+    - pip check
+    - sz_split --help
+    - sz_wc --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ashvardanian/stringzilla
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

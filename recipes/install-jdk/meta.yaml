@@ -1,0 +1,41 @@
+{% set name = "install-jdk" %}
+{% set version = "1.0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/install_jdk-{{ version }}.tar.gz
+  sha256: 25c1a78c1531d28a47361dafd2d31bfae7db5b4a3fc14ea5f5eda438216be8a1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.8,<4.0
+
+test:
+  imports:
+    - install_jdk
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jyksnw/install-jdk
+  summary: install-jdk allows you to easily install latest Java OpenJDK version. Supports OpenJDK builds from Adoptium (previously AdoptOpenJDK), Corretto, and Zulu. Simplify your Java development with the latest OpenJDK builds.
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

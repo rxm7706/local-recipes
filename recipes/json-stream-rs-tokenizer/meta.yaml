@@ -1,0 +1,42 @@
+{% set name = "json-stream-rs-tokenizer" %}
+{% set version = "0.4.26" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/json-stream-rs-tokenizer-{{ version }}.tar.gz
+  sha256: 19333ccda9121b1224598d67178665f77e142862800cb1edd7797a62936f7a1c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<4.0
+    - setuptools
+    - wheel
+    - setuptools-rust >=1,<2
+    - pip
+  run:
+    - python >=3.7,<4.0
+
+test:
+  imports:
+    - json_stream_rs_tokenizer
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A faster tokenizer for the json-stream Python library
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,46 @@
+{% set name = "office365-rest-python-client" %}
+{% set version = "2.5.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/office365_rest_python_client-{{ version }}.tar.gz
+  sha256: 2617f9e45e843397195f8e900eadd3fc88ec7e70a4a724c8b2cc7fd4bac608ed
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - requests
+    - msal
+    - pytz
+    - typing_extensions >=4.0.0
+
+test:
+  imports:
+    - office365
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/vgrem/Office365-REST-Python-Client
+  summary: Microsoft 365 & Microsoft Graph Library for Python
+  license: MIT
+  license_file:
+    - LICENSE
+    - office365/sharepoint/apps/license.py
+
+extra:
+  recipe-maintainers:
+    - rxm7706
