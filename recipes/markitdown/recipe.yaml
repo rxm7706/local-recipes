@@ -1,0 +1,68 @@
+schema_version: 1
+
+context:
+  name: markitdown
+  version: 0.1.1
+  python_min: 3.10
+  python_max: 4.0
+  python_test_max: 3.13
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markitdown-${{ version }}.tar.gz
+  sha256: da97a55a45a3d775ea758e88a344d5cac94ee97115fb0293f99027d32c2fc3f6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - markitdown = markitdown.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<${{ python_max }}
+    - beautifulsoup4
+    - requests
+    - markdownify
+    - magika >=0.6.1,<0.7.dev0
+    - charset-normalizer
+
+tests:
+  - python:
+      imports:
+        - markitdown
+      pip_check: true
+      python_version: ["${{ python_min ~ '.*' }}", "${{ python_test_max }}.*"]
+      #python_version:
+      #  - ${{ python_min }}.*
+      #  - ${{ python_test_max }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - markitdown --help
+
+about:
+  summary: Utility tool for converting various files to Markdown
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/markitdown
+  description: |
+    Python tool for converting files and office documents to Markdown.
+  repository: https://github.com/microsoft/markitdown
+
+extra:
+  recipe-maintainers:
+    - johnhany97
+    - sarthakpati
+    - rxm7706
