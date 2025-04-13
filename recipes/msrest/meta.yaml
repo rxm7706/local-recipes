@@ -1,0 +1,45 @@
+{% set name = "msrest" %}
+{% set version = "0.7.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/msrest-{{ version }}.zip
+  sha256: 6e7661f46f3afd88b75667b7187a92829924446c7ea1d169be8c4bb7eeb788b9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - azure-core >=1.24.0
+    - certifi >=2017.4.17
+    - isodate >=0.6.0
+    - requests-oauthlib >=0.5.0
+    - requests >=2.16,<3.dev0
+
+test:
+  imports:
+    - msrest
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Azure/msrest-for-python
+  summary: AutoRest swagger generator Python client runtime.
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

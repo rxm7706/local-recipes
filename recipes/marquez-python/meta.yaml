@@ -1,0 +1,45 @@
+{% set name = "marquez-python" %}
+{% set version = "0.50.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/marquez-python-{{ version }}.tar.gz
+  sha256: c450a56d0513f94e1769d0d3801ee96b064c0a17f0510ab0c77d034bcbc81c85
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+    - setuptools
+  run:
+    - python >=3.6
+    - requests
+    - six
+    - pyrfc3339
+    - deprecation
+
+test:
+  imports:
+    - examples
+    - marquez_client
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Marquez Python Client
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

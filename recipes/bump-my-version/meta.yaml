@@ -1,0 +1,59 @@
+{% set name = "bump-my-version" %}
+{% set version = "0.21.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/bump_my_version-{{ version }}.tar.gz
+  sha256: ec612474e9e790c3fbbfed153a10b356f84fc15096ceff181b399d5e985bfacc
+
+build:
+  entry_points:
+    - bump-my-version = bumpversion.cli:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - pip
+  run:
+    - python >=3.8
+    - click
+    - pydantic >=2.0.0
+    - pydantic-settings
+    - questionary
+    - rich-click
+    - rich
+    - tomlkit
+    - wcmatch >=8.5.1
+
+test:
+  imports:
+    - bumpversion
+  commands:
+    - pip check
+    - bump-my-version --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/callowayproject/bump-my-version
+  summary: Version bump your Python project
+  description: >-
+    A small command line tool to simplify releasing software by updating all version strings in your source code by the correct increment and optionally commit and tag the changes.
+
+    * version formats are highly configurable * works without any source code manager, but happily reads tag information from and writes commits and tags to Git and Mercurial if available * just handles text files, so it's not specific to any programming language * supports Python 3.8+ and PyPy3. Python 3.7 should work but
+    isn't actively tested.
+  license: MIT
+  license_file: LICENSE
+  doc_url: https://callowayproject.github.io/bump-my-version/
+
+extra:
+  recipe-maintainers:
+    - coordt
+    - mfisher87

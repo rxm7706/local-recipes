@@ -1,0 +1,46 @@
+{% set name = "kedro-popmon" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro-popmon-{{ version }}.tar.gz
+  sha256: 6655c0d2c445999606853ad86a3d6999bf1ab54e17dd906554015aeaa30e1fd3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - kedro ==0.17.3
+    - click <8.0
+    - pandas
+    - semver
+    - popmon ==0.4.0
+    - matplotlib-base ==3.3.4
+
+test:
+  imports:
+    - kedro_popmon
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/stephanecollot/kedro-popmon
+  summary: Kedro Popmon makes integrating Popmon with Kedro easy!
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

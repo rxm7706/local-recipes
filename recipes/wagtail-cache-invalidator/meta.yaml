@@ -1,0 +1,43 @@
+{% set name = "wagtail-cache-invalidator" %}
+{% set version = "0.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-cache-invalidator-{{ version }}.tar.gz
+  sha256: 7c5d974d3fea9aae7ebf42b8afd58cd150cc95244502a23826bc208d8bfcc44d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=4
+    - wagtail >=6
+
+test:
+  imports:
+    - wagtail_cache_invalidator
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+about:
+  home: https://github.com/vicktornl/wagtail-cache-invalidator
+  summary: Invalidate and purge (frontend) cache via an user-friendly interface in the Wagtail CMS.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,43 @@
+{% set name = "dash-auth" %}
+{% set version = "2.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dash_auth-{{ version }}.tar.gz
+  sha256: 72df43248c15e121f8d5d710981e880deb2df546b564f2951a10ca50d7d92f6d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - dash >=1.1.1
+    - flask
+    - werkzeug
+
+test:
+  imports:
+    - dash_auth
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://plotly.com/dash
+  summary: Dash Authorization Package.
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

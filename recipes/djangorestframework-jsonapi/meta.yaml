@@ -1,0 +1,43 @@
+{% set name = "djangorestframework-jsonapi" %}
+{% set version = "6.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/djangorestframework-jsonapi-{{ version }}.tar.gz
+  sha256: 237a6ed3780f0b6571c838c33fde57286152166213ad2986cb1d0f45cff45425
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - inflection >=0.5.0
+    - djangorestframework >=3.13
+    - django >=3.2
+
+test:
+  imports:
+    - rest_framework_json_api
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-json-api/django-rest-framework-json-api
+  summary: A Django REST framework API adapter for the JSON:API spec.
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

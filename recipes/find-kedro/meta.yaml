@@ -1,0 +1,47 @@
+{% set name = "find-kedro" %}
+{% set version = "0.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/find-kedro-{{ version }}.tar.gz
+  sha256: 7df8d2ebd8f419049ad0ea42c626211413167d88f21813d4321c5093e10125f3
+
+build:
+  entry_points:
+    - find-kedro = find_kedro.cli:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - kedro
+    - click
+    - colorama
+    - pygments
+
+test:
+  imports:
+    - find_kedro
+  commands:
+    - pip check
+    - find-kedro --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/WaylonWalker/find-kedro.git
+  summary: finds nodes for your kedro pipeline
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,79 @@
+{% set name = "pyiceberg" %}
+{% set version = "0.9.0rc2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyiceberg-{{ version }}.tar.gz
+  sha256: c9d1d40735544297ed9d14c08b39d0d9b6b8a22bd0f19b62e5376b88bbb1dbcd
+
+build:
+  skip: true  # [py<39]
+  entry_points:
+    - pyiceberg = pyiceberg.cli.console:run
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - poetry-core
+    - wheel
+    - cython >=3.0.0
+    - setuptools
+    - pip
+  run:
+    - python >=3.9.2,<4.0.0,!=3.9.7
+    - mmh3 >=4.0.0,<6.0.0
+    - requests >=2.20.0,<3.0.0
+    - click >=7.1.1,<9.0.0
+    - rich >=10.11.0,<14.0.0
+    - strictyaml >=1.7.0,<2.0.0
+    - pydantic >=2.0,<3.0,!=2.4.0,!=2.4.1
+    - sortedcontainers 2.4.0
+    - fsspec >=2023.1.0
+    - pyparsing >=3.1.0,<4.0.0
+    - zstandard >=0.13.0,<1.0.0
+    - tenacity >=8.2.3,<10.0.0
+    - ray ==2.10.0  # [py<39]
+    - ray >=2.10.0,<3.0.0  # [py>=39]
+    - cachetools >=5.5.0,<6.0.0
+  run_constrained:
+    - pyarrow >=17.0.0,<20.0.0
+    - pandas >=1.0.0,<3.0.0
+    - python-duckdb >=0.5.0,<2.0.0
+    - python-snappy >=0.6.0,<1.0.0
+    - thrift >=0.13.0,<1.0.0
+    - mypy-boto3-glue >=1.28.18
+    - boto3 >=1.24.59
+    - s3fs >=2023.1.0
+    - adlfs >=2023.1.0
+    - gcsfs >=2023.1.0
+    - psycopg2-binary >=2.9.6
+    - sqlalchemy >=2.0.18,<3.0.0
+    - getdaft >=0.2.12
+    - pyiceberg-core >=0.4.0,<0.5.0
+    - polars >=1.21.0,<2.0.0
+    - thrift-sasl >=0.4.3
+
+test:
+  imports:
+    - pyiceberg
+  commands:
+    - pip check
+    - pyiceberg --help
+  requires:
+    - pip
+
+about:
+  summary: Apache Iceberg is an open table format for huge analytic datasets
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,45 @@
+{% set name = "pyobjc-framework-quartz" %}
+{% set version = "10.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pyobjc-framework-Quartz-{{ version }}.tar.gz
+  sha256: 9b947e081f5bd6cd01c99ab5d62c36500d2d6e8d3b87421c1cbb7f9c885555eb
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - pyobjc-core >=10.2
+    - pyobjc-framework-cocoa >=10.2
+
+test:
+  imports:
+    - pyobjc_framework_quartz
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ronaldoussoren/pyobjc
+  summary: Wrappers for the Quartz frameworks on macOS
+  doc_url: https://pythonhosted.org/pyobjc-framework-Quartz/
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

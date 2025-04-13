@@ -1,0 +1,42 @@
+{% set name = "django-visits" %}
+{% set version = "0.1.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-visits-{{ version }}.tar.gz
+  sha256: 2204928e2a44e39685f9fccc362d4bef27505bfc47489869c400d97d9b5a265a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - versiontools >=1.8
+    - pip
+  run:
+    - python
+    - distribute
+
+test:
+  imports:
+    - visits
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://bitbucket.org/jespino/django-visits
+  summary: Visit counter for Django
+  license: LGPLLR
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

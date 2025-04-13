@@ -1,0 +1,48 @@
+{% set name = "pysqlite3" %}
+{% set version = "0.5.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pysqlite3-{{ version }}.tar.gz
+  sha256: 54a98e05b087c2c064c8d5b58e9b8f403082eadf830d7d30ede4ecf6a5a5f143
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - sqlite
+  host:
+    - pip
+    - python >=3.8
+    - sqlite
+  run:
+    - python >=3.8
+    - sqlite
+
+test:
+  imports:
+    - pysqlite3
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/coleifer/pysqlite3
+  summary: DB-API 2.0 interface for Sqlite 3.x
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - psortos
+    - rxm7706
+    - mxr-conda

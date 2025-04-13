@@ -1,0 +1,66 @@
+{% set name = "django-environ" %}
+{% set version = "0.11.0" %}
+{% set sha256 = "b0fb330ad306fd279c4badae067ff99334f2e39e7648949c128119ae16b759b1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=1.8
+
+test:
+  imports:
+    - environ
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/joke2k/django-environ
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Django-environ allows you to utilize 12factor inspired environment variables to configure your Django application.
+  description: |
+    Django-environ allows you to utilize 12factor inspired environment variables to configure your Django application.
+    This module is a merge of:
+      -envparse
+      -honcho
+      -dj-database-url
+      -dj-search-url
+      -dj-config-url
+      -django-cache-url
+
+    and inspired by:
+      -12factor
+      -12factor-django
+      -Two Scoops of Django
+
+  doc_url: https://django-environ.readthedocs.io/en/latest/
+  dev_url: https://github.com/joke2k/django-environ
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley
+    - rxm7706
+    - millsks
+    - elanqo
+    - zaigner

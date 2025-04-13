@@ -1,0 +1,48 @@
+{% set name = "datatables" %}
+{% set version = "0.4.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/datatables-{{ version }}.zip
+  sha256: c9cbe8261e2abf134987de22a3313558c7f4b1b842596d0987c06326b1ea7a2b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - datatables
+  commands:
+    - pip check
+  requires:
+    - pip
+    - numpy
+    - pandas
+    - xlrd
+    - pytest >=3.1
+    - pytest-cov
+    - docutils >=0.14
+
+about:
+  home: https://github.com/orf/datatables/
+  summary: Integrates SQLAlchemy with DataTables (framework agnostic)
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

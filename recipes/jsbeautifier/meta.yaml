@@ -1,0 +1,46 @@
+{% set name = "jsbeautifier" %}
+{% set version = "1.14.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/jsbeautifier-{{ version }}.tar.gz
+  sha256: d4c4e263a42dd6194afb9dbe54710be3c5604492cbec3e89c92dd98513f98b9f
+
+build:
+  entry_points:
+    - js-beautify = jsbeautifier:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<4.0
+    - pytest
+    - pip
+  run:
+    - python >=3.7,<4.0
+    - six >=1.13.0
+    - editorconfig >=0.12.2
+
+test:
+  imports:
+    - jsbeautifier
+  commands:
+    - pip check
+    - js-beautify --help
+  requires:
+    - pip
+
+about:
+  home: https://beautifier.io
+  summary: JavaScript unobfuscator and beautifier.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,47 @@
+{% set name = "openmetadata-sqllineage" %}
+{% set version = "1.1.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openmetadata-sqllineage-{{ version }}.tar.gz
+  sha256: 52dc215825733dccff0ffc590ef0c323340f4a7ccebf5ce4701024f4354d1437
+
+build:
+  entry_points:
+    - sqllineage = sqllineage.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - sqllineage
+    - pip
+  run:
+    - python >=3.7
+    - sqlparse ==0.4.3
+    - networkx >=2.4
+    - sqlfluff ==2.1.4
+
+test:
+  imports:
+    - sqllineage
+  commands:
+    - pip check
+    - sqllineage --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/open-metadata/openmetadata-sqllineage
+  summary: OpenMetadata SQL Lineage for Analysis Tool powered by Python and sqlfluff based on sqllineage.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,39 @@
+{% set name = "nitro" %}
+{% set version = "0.20.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/h2oai/nitro/archive/v{{ version }}.tar.gz
+  sha256: a4bbc1871575ede63d068b342b642bd94fc71a206dc723e8cfa058ca220de470
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - py/web/LICENSE
+    - py/pkg/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

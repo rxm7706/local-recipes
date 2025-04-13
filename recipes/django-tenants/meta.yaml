@@ -1,0 +1,40 @@
+{% set name = "django-tenants" %}
+{% set version = "3.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django-tenants-{{ version }}.tar.gz
+  sha256: 3836a2bae2c88504889a3226525930dfac8d3621f577cefdfde03db8115e88ac
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django >=2.1,<5.2
+
+test:
+  imports:
+    - django_tenants
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-tenants/django-tenants
+  summary: Tenant support for Django using PostgreSQL schemas.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

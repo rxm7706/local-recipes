@@ -1,0 +1,41 @@
+{% set name = "wagtail-favicon" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_favicon-{{ version }}.tar.gz
+  sha256: 0b90dbd28da864172c90ba2fafb72068086e6c22fee34ca530d35990dfd50637
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - wagtail_favicon
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/octavenz/wagtail-favicon
+  summary: Easily add shortcut icons to any wagtail site.
+  license: BSD-3-Clause
+  license_file: LICENCE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

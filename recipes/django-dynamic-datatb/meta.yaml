@@ -1,0 +1,43 @@
+{% set name = "django-dynamic-datatb" %}
+{% set version = "1.0.25" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-dynamic-datatb-{{ version }}.tar.gz
+  sha256: c4c670694aa5f507aba354a05ddb8005b2bcd726e652af048aa3596345e8e437
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - djangorestframework
+    - pandas
+    - matplotlib-base
+
+test:
+  imports:
+    - django_dyn_dt
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://appseed.us/developer-tools/django-dynamic-datatables/
+  summary: Django Dynamic Datatables
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

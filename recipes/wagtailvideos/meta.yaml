@@ -1,0 +1,44 @@
+{% set name = "wagtailvideos" %}
+{% set version = "7.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtailvideos-{{ version }}.tar.gz
+  sha256: 6972a6bdd1e9f75b1150b35bbf11a10703dd21fa9dd3d7306b7a1cd702486c60
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - wagtail >=6.1
+    - django >=3.2
+    - bcp47 ==0.0.4
+    - wagtail-modeladmin >=2.0.0
+
+test:
+  imports:
+    - wagtailvideos
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/neon-jungle/wagtailvideos
+  summary: A wagtail module for uploading and displaying videos in various codecs.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

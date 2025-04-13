@@ -1,0 +1,46 @@
+{% set name = "django-atlassian" %}
+{% set version = "0.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-atlassian-{{ version }}.tar.gz
+  sha256: a8856874f4bddf4a78bc8d64d98d98c6dc2b22a1725790783c3cad113c1bada6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=1.11
+    - pyjwt >=1.6.4
+    - atlassian-jwt >=1.8.1
+    - requests >=2.18.4
+    - requests-jwt ==0.5.3
+    - jira ==2.0.0
+
+test:
+  imports:
+    - django_atlassian
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://www.fluendo.com/
+  summary: Django app for interact with atlassian libraries such as JIRA and Confluence.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

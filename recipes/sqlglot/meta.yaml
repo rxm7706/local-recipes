@@ -1,0 +1,44 @@
+{% set name = "sqlglot" %}
+{% set version = "25.31.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sqlglot-{{ version }}.tar.gz
+  sha256: 1cabcbb835fc49c485d4ea84ecdb571f244b6ba78acdfabca9492dbd39b8f091
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - maturin >=1.4,<2.0
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+
+test:
+  imports:
+    - sqlglot
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/tobymao/sqlglot
+  summary: An easily customizable SQL parser and transpiler
+  license: MIT AND BSD-2-Clause
+  license_file:
+    - LICENSE
+    - tests/fixtures/jsonpath/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

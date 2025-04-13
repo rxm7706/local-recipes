@@ -1,0 +1,58 @@
+{% set name = "django-sphinx-hosting" %}
+{% set version = "1.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-sphinx-hosting-{{ version }}.tar.gz
+  sha256: 0a9700ce4e53af64937c30d4231170458f28665aa2b0eb8438a2c4dd530ac052
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools >=48
+    - wheel >=0.29.0
+    - pip
+  run:
+    - python >=3.7
+    - django-braces >=1.15.0
+    - django-crispy-forms >=1.14.0
+    - django-extensions >=3.2.1
+    - django-filter >=22.1
+    - django-haystack >=3.2.1
+    - django-rest-framework-helpers >=8.5.0
+    - django-theme-academy >=0.3.5
+    - django-wildewidgets >=0.16.7
+    - djangorestframework >=3.14.0
+    - drf-spectacular >=0.25.1
+    - crispy-bootstrap5
+    - humanize
+    - lxml >=4.9.1
+    - cssselect >=1.2.0
+    - rich
+
+test:
+  imports:
+    - sphinx_hosting
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/caltechads/django-sphinx-hosting
+  summary: Reusable Django app for hosting Sphinx documentation privately.
+  dev_url: https://github.com/caltechads/django-sphinx-hosting
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

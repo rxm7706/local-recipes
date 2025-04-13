@@ -1,0 +1,43 @@
+{% set name = "openlineage-airflow" %}
+{% set version = "1.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/openlineage-airflow-{{ version }}.tar.gz
+  sha256: 7547d6422ed6b97c4f699081bb1c88957e911d2969d4b6d0153625faa944e6aa
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - attrs >=20.0
+    - openlineage-integration-common ==1.7.0
+    - openlineage-python ==1.7.0
+
+test:
+  imports:
+    - openlineage.airflow
+    - openlineage.airflow.extractors
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: OpenLineage integration with Airflow
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

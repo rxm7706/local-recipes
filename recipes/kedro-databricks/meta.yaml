@@ -1,0 +1,41 @@
+{% set name = "kedro-databricks" %}
+{% set version = "0.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro_databricks-{{ version }}.tar.gz
+  sha256: 245765606da6e2d1783600ffec4e8a32949aba7400defb33c24295936a52adf1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<3.11
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.8,<3.11
+
+test:
+  imports:
+    - kedro_databricks
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/getindata/kedro-databricks
+  summary: Kedro plugin with Databricks support
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

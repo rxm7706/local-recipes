@@ -1,0 +1,40 @@
+{% set name = "tagui" %}
+{% set version = "1.50.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/tagui-{{ version }}.tar.gz
+  sha256: 5ae59f774cb5f267ceeebd5c0738128154933009dc60bfe8deae76b27dd68cd2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - tagui
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/tebelorg/RPA-Python
+  summary: RPA for Python is a Python package for RPA (robotic process automation)
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

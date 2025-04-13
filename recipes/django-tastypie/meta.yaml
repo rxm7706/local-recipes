@@ -1,0 +1,43 @@
+{% set name = "django-tastypie" %}
+{% set version = "0.15.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_tastypie-{{ version }}.tar.gz
+  sha256: baddce528e53646ee400e7c2dbee9a7c61b98a9fb67c8be2c3cf0f70eb10aa3c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - ez_setup
+    - pip
+  run:
+    - python
+    - python-mimeparse >=0.1.4,!=1.5
+    - python-dateutil >=2.1
+
+test:
+  imports:
+    - tastypie
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-tastypie/django-tastypie
+  summary: A flexible & capable API layer for Django.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

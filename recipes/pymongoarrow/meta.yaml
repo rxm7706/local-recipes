@@ -1,0 +1,86 @@
+{% set name = "pymongoarrow" %}
+{% set version = "1.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/pymongoarrow/pymongoarrow-{{ version }}.tar.gz
+  sha256: 32917d27c547b74dc4f8576d655cf3c86fb062e4d87baa69b54d5c4158bf5d0b
+
+build:
+  number: 0
+  script:
+    - set eux  # [unix]
+    - export MONGO_NO_COPY_LIBARROW=1             # [unix]
+    - export MONGO_LIBARROW_DIR="${PREFIX}/lib"   # [unix]
+    - export MONGO_NO_COPY_LIBBSON=1              # [unix]
+    - export LIBBSON_INSTALL_DIR="${PREFIX}"      # [unix]
+    - export MONGO_CREATE_LIBARROW_SYMLINKS=""    # [unix]
+    - export MONGO_ADD_GLIBCXX_OVERRIDE=""        # [unix]
+    - set MONGO_NO_COPY_LIBARROW=1                # [win]
+    - set "MONGO_LIBARROW_DIR=%LIBRARY_LIB%"      # [win]
+    - set MONGO_NO_COPY_LIBBSON=1                 # [win]
+    - set "LIBBSON_INSTALL_DIR=%LIBRARY_PREFIX%"  # [win]
+    - {{ PYTHON }} -m pip install . --no-deps -vvv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - libarrow                               # [build_platform != target_platform]
+    - pyarrow                                # [build_platform != target_platform]
+    - libbson                                # [build_platform != target_platform]
+    - pkg-config                             # [build_platform != target_platform]
+    - pip
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+
+  host:
+    - python
+    - libarrow
+    - pyarrow
+    - cython >=0.29
+    - libbson >=1,<2
+    - pip
+    - pkg-config
+
+  run:
+    - pymongo >=4.4,<5
+    - pyarrow
+    - python
+    - pandas >=1.3.5,<3
+    - packaging >=23.2
+
+test:
+  source_files:
+    - .
+  files:
+    - run_the_tests.sh
+  requires:
+    - pip
+    - pandas
+    - numpy
+    - pytest
+    # TODO: replace with mongodb install once https://github.com/conda-forge/mongodb-feedstock/pull/72 is resolved
+    - icu
+    - yaml-cpp
+    - boost-cpp
+    - curl
+
+  commands:
+    - bash run_the_tests.sh  # [osx]
+
+about:
+  home: https://pypi.org/project/pymongoarrow/
+  summary: Tools for using NumPy, Pandas and PyArrow with MongoDB
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - blink1073
+    - ShaneHarvey

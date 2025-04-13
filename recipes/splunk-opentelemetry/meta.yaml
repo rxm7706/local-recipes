@@ -1,0 +1,59 @@
+{% set name = "splunk-opentelemetry" %}
+{% set version = "1.18.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/splunk_opentelemetry-{{ version }}.tar.gz
+  sha256: 97163b6611165317464ed269f750184b0dae7c84e45d9d0330eecee7f256db22
+
+build:
+  entry_points:
+    - splunk-py-trace = splunk_otel.cmd.trace:run
+    - splunk-py-trace-bootstrap = splunk_otel.cmd.bootstrap:run
+    - splk-py-trace = splunk_otel.cmd.trace:run_deprecated
+    - splk-py-trace-bootstrap = splunk_otel.cmd.bootstrap:run_deprecated
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - poetry-core
+    - pip
+  run:
+    - python >=3.8
+    - cryptography >=2.0,<=42.0.5
+    - protobuf >=4.23.0,<5.0.0
+    - opentelemetry-api ==1.23.0
+    - opentelemetry-sdk ==1.23.0
+    - opentelemetry-instrumentation ==0.44b0
+    - opentelemetry-instrumentation-system-metrics ==0.44b0
+    - opentelemetry-semantic-conventions ==0.44b0
+    - opentelemetry-propagator-b3 ==1.23.0
+    - opentelemetry-exporter-otlp-proto-grpc ==1.23.0
+
+test:
+  imports:
+    - splunk_otel
+  commands:
+    #- pip check
+    - splunk-py-trace --help
+    - splunk-py-trace-bootstrap --help
+    - splk-py-trace --help
+    - splk-py-trace-bootstrap --help
+  requires:
+    - pip
+
+about:
+  summary: The Splunk distribution of OpenTelemetry Python Instrumentation provides a Python agent that automatically instruments your Python application to capture and report distributed traces to SignalFx APM.
+  home: https://github.com/signalfx/splunk-otel-python
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

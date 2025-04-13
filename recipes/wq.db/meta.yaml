@@ -1,0 +1,49 @@
+{% set name = "wq.db" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wq.db-{{ version }}.tar.gz
+  sha256: a8f8fa9e2281534c83cd03185ae5c2f09bba31d3e84368288cec4b9eb165ad9d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - django >=1.11,<5.0
+    - djangorestframework >=3.8.0,<4.0
+    - html-json-forms
+    - natural-keys >=2.1.0
+    - drf-writable-nested
+    - pystache
+
+test:
+  imports:
+    - wq.db
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wq/wq.db
+  summary: Django REST API for offline mobile surveys and field data collection.
+  dev_url: https://github.com/wq/wq.db
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

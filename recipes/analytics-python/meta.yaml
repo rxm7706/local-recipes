@@ -1,0 +1,45 @@
+{% set name = "analytics-python" %}
+{% set version = "1.4.post1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/analytics-python-{{ version }}.tar.gz
+  sha256: b083e69c149c39e7ad17067f0e5c1742fbd15fdc469ade36c4d1ad5edf31ee5e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - requests >=2.7,<3.0
+    - six >=1.5
+    - monotonic >=1.5
+    - backoff ==1.10.0
+    - python-dateutil >2.1
+
+test:
+  imports:
+    - analytics
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/segmentio/analytics-python
+  summary: The hassle-free way to integrate analytics into any python application.
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

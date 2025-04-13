@@ -1,0 +1,44 @@
+{% set name = "django-bakery" %}
+{% set version = "0.13.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_bakery-{{ version }}.tar.gz
+  sha256: cf63dabcf8cf16fbda48629a3c2fe4dc635f2549d6f32d9864dc503ed309c08b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools-scm
+    - pip
+  run:
+    - python
+    - six >1.5.2
+    - boto3 >=1.4.4
+    - fs >=2.0.17
+
+test:
+  imports:
+    - bakery
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://www.github.com/palewire/django-bakery/
+  summary: A set of helpers for baking your Django site out as flat files
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

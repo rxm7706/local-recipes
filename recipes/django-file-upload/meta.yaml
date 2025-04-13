@@ -1,0 +1,46 @@
+{% set name = "django-file-upload" %}
+{% set version = "1.1.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-file-upload-{{ version }}.tar.gz
+  sha256: 294b1dcfbfbe4c06ad3a7e696dd9e9dc40715fdbac33c8105f4faccb5f41aabe
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - timeconvert
+    - django-file-md5 >=1.0.2
+    - django-logit >=1.1.2
+    - django-query
+    - django-response
+    - django-six
+
+test:
+  imports:
+    - django_file_upload
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-xxx/django-file-upload
+  summary: Django File Upload
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

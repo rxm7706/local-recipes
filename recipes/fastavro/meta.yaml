@@ -1,0 +1,52 @@
+{% set version = "1.8.2" %}
+
+package:
+  name: fastavro
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/f/fastavro/fastavro-{{ version }}.tar.gz
+  sha256: ab9d9226d4b66b6b3d0661a57cd45259b0868fed1c0cd4fac95249b9e0973320
+
+build:
+  number: 0
+  script:
+    - export FASTAVRO_USE_CYTHON=1  # [not win]
+    - set FASTAVRO_USE_CYTHON=1  # [win]
+    - {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - fastavro = fastavro.__main__:main
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+  host:
+    - python
+    - cython <3
+    - pip
+  run:
+    - python
+    - pytz
+
+test:
+  requires:
+    - nose
+    - flake8
+  imports:
+    - fastavro
+
+about:
+  home: https://github.com/fastavro/fastavro
+  license: MIT
+  license_file: LICENSE
+  summary: Fast read/write of AVRO files
+  dev_url: https://github.com/fastavro/fastavro
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - scottbelden
+    - tebeka

@@ -1,0 +1,42 @@
+{% set name = "opentelemetry-exporter-otlp-proto-common" %}
+{% set version = "1.21.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_otlp_proto_common-{{ version }}.tar.gz
+  sha256: 61db274d8a68d636fb2ec2a0f281922949361cdd8236e25ff5539edf942b3226
+
+build:
+  skip: true  # [py<37]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling
+    - pip
+  run:
+    - python >=3.7
+    - opentelemetry-proto ==1.21.0
+    - backoff >=1.10.0,<2.0.0  # [py<37]
+
+test:
+  imports:
+    - opentelemetry_exporter_otlp_proto_common
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: OpenTelemetry Protobuf encoding
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

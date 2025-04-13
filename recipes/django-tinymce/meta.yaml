@@ -1,0 +1,46 @@
+{% set name = "django-tinymce" %}
+{% set version = "3.7.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-tinymce-{{ version }}.tar.gz
+  sha256: 29086daffb337bdd2178413e600693dff846aa4efd557c3924b8c3cba9a37e8c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2
+
+test:
+  imports:
+    - tinymce
+    #- tests
+    #- tests.testapp
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A Django application that contains a widget to render a
+  home: https://github.com/jazzband/django-tinymce
+  license: MIT
+  license_file:
+    - LICENSE.txt
+    - tinymce/static/tinymce/license.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

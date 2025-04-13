@@ -1,0 +1,52 @@
+{% set name = "behave" %}
+{% set version = "1.2.7.dev6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/behave-{{ version }}.tar.gz
+  sha256: 6e8791901c518bdbd41a99df6574127f53d9cb651e451268d3c50741941de0bf
+
+build:
+  noarch: python
+  entry_points:
+    - behave = behave.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10,<4.0
+    - setuptools
+    - pip
+  run:
+    - python >=3.10,<4.0
+    - cucumber-tag-expressions >=4.1.0
+    - cucumber-expressions >=17.1.0
+    - parse >=1.18.0
+    - parse_type >=0.6.0
+    - six >=1.15.0
+    - colorama >=0.3.7
+    - tomli >=1.1.0
+
+test:
+  imports:
+    - behave
+  commands:
+    #- pip check
+    # behave 1.2.7.dev6 has requirement parse-type>=0.6.0, but you have parse-type 0.0.0.
+    - behave --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/behave/behave
+  summary: behave is behaviour-driven development, Python style
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

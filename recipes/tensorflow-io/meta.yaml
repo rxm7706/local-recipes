@@ -1,0 +1,43 @@
+{% set name = "tensorflow-io" %}
+{% set version = "0.34.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/tensorflow/io/archive/v{{ version }}.tar.gz
+  sha256: 3a34c42f567324cf02bd4955cf91f911fa2e3e363ab2ea004445361fa55451b0
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<3.12
+    - pip
+  run:
+    - python >=3.7,<3.12
+    - tensorflow-io-gcs-filesystem ==0.34.0
+
+test:
+  imports:
+    - tensorflow_io
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/tensorflow/io
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - tests/test_http/LICENSE-2.0.txt
+    - tensorflow_io/core/kernels/gsmemcachedfs/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

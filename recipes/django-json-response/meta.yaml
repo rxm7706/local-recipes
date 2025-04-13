@@ -1,0 +1,40 @@
+{% set name = "django-json-response" %}
+{% set version = "1.1.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-json-response-{{ version }}.tar.gz
+  sha256: f00a65c4981be3a1194668b69abc622a62dfc274f3db9f309c3f63d61cc7694f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - json_response
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-xxx/django-json-response
+  summary: DIY Django's JsonResponse and JsonpResponse
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

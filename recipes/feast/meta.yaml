@@ -1,0 +1,76 @@
+{% set name = "feast" %}
+{% set version = "0.38.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/feast-{{ version }}.tar.gz
+  sha256: bdd80d925d45729ac88a000953c5dd102ce36f2a6592bd9f366a4973d8041434
+
+build:
+  entry_points:
+    - feast=feast.cli:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=60
+    - wheel
+    - setuptools-scm >=6.2
+    - grpcio
+    - grpcio-tools >=1.47.0
+    - mypy-protobuf >=3.1 # Pinned
+    - sphinx !=4.0.0
+    - pybindgen >=0.22.1 # Pinned
+    - pip
+  run:
+    - python >=3.8
+    - click >=7.0.0,<9.0.0
+    - colorama >=0.3.9,<1
+    - dill >=0.3.0,<0.4.0
+    - mypy-protobuf >=3.1
+    - jinja2 >=2,<4
+    - jsonschema
+    - mmh3
+    - numpy >=1.22,<2.0
+    - pandas >=1.4.3,<3
+    - protobuf >=4.24.0,<5.0.0
+    - pyarrow >=4
+    - pydantic >=2.0.0
+    - pygments >=2.12.0,<3
+    - pyyaml >=5.4.0,<7
+    - requests
+    - sqlalchemy >1
+    - tabulate >=0.8.0,<1
+    - tenacity >=7,<9
+    - toml >=0.10.0,<1
+    - tqdm >=4,<5
+    - typeguard >=4.0.0
+    - fastapi >=0.68.0
+    - uvicorn >=0.14.0,<1
+    - gunicorn
+    - dask-core >=2024.4.2
+
+test:
+  imports:
+    - feast
+  commands:
+    - feast --help
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/feast-dev/feast
+  summary: Python SDK for Feast
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

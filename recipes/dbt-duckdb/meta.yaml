@@ -1,0 +1,45 @@
+{% set name = "dbt-duckdb" %}
+{% set version = "1.9.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dbt_duckdb-{{ version }}.tar.gz
+  sha256: 56c82f511f96fde696ee0c86e34b784a75dfad0997b249f87faf2fc9dee7830e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pbr
+    - pip
+  run:
+    - python >={{ python_min }}
+    - dbt-common >=1,<2
+    - dbt-adapters >=1,<2
+    - python-duckdb >=1.0.0
+    - dbt-core >=1.8.0
+
+test:
+  imports:
+    - dbt
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jwills/dbt-duckdb
+  summary: The duckdb adapter plugin for dbt (data build tool)
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

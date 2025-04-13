@@ -1,0 +1,44 @@
+{% set name = "hdf5tools" %}
+{% set version = "0.4.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/hdf5tools-{{ version }}.tar.gz
+  sha256: 209999bd3fe17e709606ac58ca6d62780b290c63f9761013ff2faa0178e09e7f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - hatchling
+    - pip
+  run:
+    - python
+    - cftime
+    - h5py >=3.6.0
+    - hdf5plugin >=3.3.1
+    - xarray >=2022.03.0
+
+test:
+  imports:
+    - hdf5tools
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Python hdf5 tools
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

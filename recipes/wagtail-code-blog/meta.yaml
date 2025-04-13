@@ -1,0 +1,48 @@
+{% set name = "wagtail-code-blog" %}
+{% set version = "0.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_code_blog-{{ version }}.tar.gz
+  sha256: 5220c16a1bd69765baf021e828a3668e794cd91a1dcbb01f04d3b99a31abcb99
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.9,<4.0
+    - wagtail 5.*
+    - wagtail-metadata 5.*
+    - readtime >=1.1.1,<2.0.0
+    - beautifulsoup4 >=4.0.0,<5.0.0
+    - django-json-ld >=0.0.5,<0.0.6
+    - django-model-utils >=4.2.0,<5.0.0
+    - django 4.*
+
+test:
+  imports:
+    - wagtail_code_blog
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/honeylogic-io/wagtail-code-blog
+  summary: A wagtail code blog
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

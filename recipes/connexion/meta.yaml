@@ -1,0 +1,68 @@
+{% set name = "connexion" %}
+{% set version = "3.0.0a7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/connexion-{{ version }}.tar.gz
+  sha256: d66349e6ee5865e44b1ff060fdbda41bb2c49010e9acb861b33b4ca1a3881129
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - connexion = connexion.cli:main
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8.0,<4.0
+    - poetry-core >=1.2.0
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - asgiref >=3.4
+    - clickclick >=1.2
+    - httpx >=0.23
+    - importlib-metadata >=6.0.0
+    - inflection >=0.3.1
+    - jsonschema >=4.0.1
+    - jinja2 >=3.0.0
+    - python-multipart >=0.0.5
+    - pyyaml >=5.1
+    - requests >=2.27
+    - starlette >=0.25
+    - typing-extensions >=4
+    - werkzeug >=2.2.1
+  run_constrained:
+    - a2wsgi >=1.7
+    - flask >=2.2
+    - py-swagger-ui >=1.1.0
+    - uvicorn >=0.17.6
+
+test:
+  imports:
+    - connexion
+    - connexion.apps
+    - connexion.decorators
+  commands:
+    - connexion --version
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/zalando/connexion
+  license: Apache-2.0
+  summary: Swagger/OpenAPI First framework for Python on top of Flask with automatic endpoint validation & OAuth2 support
+  license_family: APACHE
+  license_file: LICENSE.txt
+  dev_url: https://github.com/zalando/connexion
+  doc_url: https://connexion.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rvalieris
+    - xylar

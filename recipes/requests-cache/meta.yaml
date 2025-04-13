@@ -1,0 +1,67 @@
+{% set name = "requests-cache" %}
+{% set version = "1.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/requests_cache-{{ version }}.tar.gz
+  sha256: 41b79166aa8e300cc4de982f7ab7c52af914a785160be1eda25c6e9265969a67
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.7.0,<4.0.0
+    - requests >=2.22
+    - urllib3 >=1.25.5
+    - attrs >=21.2
+    - cattrs >=22.2
+    - platformdirs >=2.5
+    - url-normalize >=1.4
+  run_constrained:
+    - boto3 >=1.15
+    - botocore >=1.18
+    - pymongo >=3
+    - redis-py >=3
+    - bson >=0.5
+    - itsdangerous >=2.0
+    - pyyaml >=5.4
+    - ujson >=5.4
+    - furo >=2023.3.0,<2024.0.0
+    - linkify-it-py >=2.0.0,<3.0.0
+    - myst-parser >=1.0.0,<2.0.0
+    - sphinx >=5.0.2,<6.0.0
+    - sphinx-autodoc-typehints >=1.19
+    - sphinx-automodapi >=0.14
+    - sphinx-copybutton >=0.5
+    - sphinx-design >=0.2
+    - sphinx-notfound-page >=0.8
+    - sphinxcontrib-apidoc >=0.3
+    - sphinxext-opengraph >=0.6
+
+test:
+  imports:
+    - requests_cache
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/requests-cache/requests-cache
+  summary: A persistent cache for python requests
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

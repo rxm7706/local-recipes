@@ -1,0 +1,61 @@
+{% set name = "kedro-vertexai" %}
+{% set version = "0.10.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro_vertexai-{{ version }}.tar.gz
+  sha256: bde9592b03b2e50c9e43a86251350cd8b5f6ac350a3977c28a7d1203a901e5a6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<3.11
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.8,<3.11
+    - kedro >=0.18.8,<0.19.0
+    - click >=8.0.4
+    - kfp >=1.8.21,<2.0
+    - tabulate >=0.8.7
+    - semver >=2.10,<4.0.0
+    - toposort >1.0,<2.0
+    - pyarrow >=14.0.1
+    - pydantic >=1.9.0,<2.0.0
+    - google-auth <3
+    - google-cloud-scheduler >=2.3.2
+    - google-cloud-iam <3
+    - gcsfs >=2022.1
+    - fsspec >=2022.1
+    - google-cloud-storage <3.0.0
+    - grpcio >=1.4.0,<2.0.0
+    - grpcio-status >=1.4.0,<2.0.0
+    - protobuf >=3.18.0,<21.0
+    - cachetools >=3.0,<6.0
+  run_constrained:
+    - kedro-mlflow >=0.11.8,<0.12.0
+
+test:
+  imports:
+    - kedro_vertexai
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/getindata/kedro-vertexai
+  summary: Kedro plugin with GCP Vertex AI support
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

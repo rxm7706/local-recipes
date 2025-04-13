@@ -1,0 +1,41 @@
+{% set name = "django-rest-framework" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-rest-framework-{{ version }}.tar.gz
+  sha256: 47a8f496fa69e3b6bd79f68dd7a1527d907d6b77f009e9db7cf9bb21cc565e4a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - djangorestframework
+
+test:
+  imports:
+    - empty
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://www.django-rest-framework.org
+  summary: alias.
+  license: BSD-3-Clause-LBNL
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

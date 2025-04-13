@@ -1,0 +1,41 @@
+{% set name = "textstat" %}
+{% set version = "0.7.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/textstat/textstat/archive/{{ version }}.tar.gz
+  sha256: 88708e35d228ac7bd8a7e6119882690b926e4757b065ef165153ba0331519e04
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - pyphen
+    - setuptools
+
+test:
+  imports:
+    - textstat
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/textstat/textstat
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

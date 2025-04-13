@@ -1,0 +1,54 @@
+{% set name = "validate-pyproject" %}
+{% set version = "0.23" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/validate_pyproject-{{ version }}.tar.gz
+  sha256: 12b2714bf647265c60e4f24a20674428bd891a8aa168a1be535bb99f8c0af0e3
+
+build:
+  entry_points:
+    - validate-pyproject = validate_pyproject.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=61.2
+    - setuptools-scm >=7.1
+    - pip
+  run:
+    - python >=3.8
+    - python-fastjsonschema >=2.16.2,<=3
+
+test:
+  imports:
+    - validate_pyproject
+  commands:
+    - pip check
+    - validate-pyproject --help
+  requires:
+    - pip
+
+about:
+  summary: Validation library and CLI tool for checking on 'pyproject.toml' files using JSON Schema
+  dev_url: https://github.com/abravalheri/validate-pyproject
+  license: MPL-2.0 AND BSD-3-Clause AND MIT
+  license_file:
+    - NOTICE.txt
+    - LICENSE.txt
+    - src/validate_pyproject/pre_compile/NOTICE.template
+    - tests/invalid-examples/pdm/LICENSE
+    - tests/examples/flit/LICENSE
+    - tests/examples/atoml/LICENSE
+    - tests/examples/trampolim/LICENSE
+    - tests/examples/pdm/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,42 @@
+{% set name = "django-reversion" %}
+{% set version = "5.0.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-reversion-{{ version }}.tar.gz
+  sha256: 253c691b0a4e0be1deec0b62c38c9fbb75b6e5a8fd81d3b58a26f46135970106
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - babel
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2
+
+test:
+  imports:
+    - reversion
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/etianen/django-reversion
+  summary: An extension to the Django web framework that provides version control for model instances.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

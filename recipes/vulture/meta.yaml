@@ -1,0 +1,46 @@
+{% set name = "vulture" %}
+{% set version = "2.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/vulture-{{ version }}.tar.gz
+  sha256: f0fbb60bce6511aad87ee0736c502456737490a82d919a44e6d92262cb35f1c2
+
+build:
+  noarch: python
+  entry_points:
+    - vulture = vulture.core:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - toml
+
+test:
+  requires:
+    - pip
+  imports:
+    - vulture
+  commands:
+    - pip check
+    - vulture --help
+
+about:
+  home: https://github.com/jendrikseipp/vulture
+  summary: Find dead code
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - Zeitsperre
+    - jakirkham
+    - rxm7706

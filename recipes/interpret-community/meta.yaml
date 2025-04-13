@@ -1,0 +1,48 @@
+{% set name = "interpret-community" %}
+{% set version = "0.31.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/interpret_community-{{ version }}.tar.gz
+  sha256: 05a18a573a96c4a02c7e5c560b37a69af0332283ef6608ea53a7e315977db915
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - numpy
+    - pandas <2.0.0
+    - scipy
+    - ml-wrappers >=0.5.4,<0.6.dev0
+    - scikit-learn
+    - packaging
+    - interpret-core >=0.1.20,<0.5.0  # [py<=37]
+    - shap >=0.20.0,<=0.44.0
+    - raiutils >=0.4.0,<0.5.dev0
+
+test:
+  imports:
+    - interpret_community
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/interpretml/interpret-community
+  summary: Microsoft Interpret Extensions SDK for Python
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

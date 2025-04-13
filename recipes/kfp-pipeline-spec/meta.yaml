@@ -1,0 +1,43 @@
+{% set name = "kfp-pipeline-spec" %}
+{% set version = "0.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  - url: https://pypi.io/packages/py3/{{ name[0] }}/{{ name }}/kfp_pipeline_spec-{{ version }}-py3-none-any.whl
+    sha256: e83b58ffed3f7ca154d62ab20e14dc9a1a3c9dad589e856dd2b421e226f3b8d0
+build:
+  number: 0
+  noarch: python
+  script:
+    - python -m pip install --no-deps --ignore-installed ./kfp_pipeline_spec-{{ version }}-py3-none-any.whl
+
+requirements:
+  host:
+    - python >=3.5.3
+    - pip
+  run:
+    - python >=3.5.3
+    - protobuf >=3.13.0,<4
+    - googleapis-common-protos
+
+test:
+  imports:
+    - kfp.pipeline_spec.pipeline_spec_pb2
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/kubeflow/pipelines
+  summary: Kubeflow Pipelines pipeline spec
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - chensun
+    - manuelwalserqc

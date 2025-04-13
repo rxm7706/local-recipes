@@ -1,0 +1,74 @@
+{% set name = "pygwalker" %}
+{% set version = "0.4.9.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pygwalker-{{ version }}.tar.gz
+  sha256: 010eb5bb6725e87327561473f5162a401bac9a4174e9b3ca62bf048bbd941ba6
+
+build:
+  entry_points:
+    - pygwalker = bin.pygwalker_command:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - jinja2
+    - ipython
+    - astor
+    - typing_extensions
+    - ipywidgets
+    - pydantic
+    - psutil
+    - python-duckdb >=0.10.1,<2.0.0
+    - pyarrow
+    - sqlglot >=23.15.8
+    - requests
+    - arrow
+    - sqlalchemy
+    #- gw-dsl-parser ==0.1.49.1
+    - appdirs
+    #- segment-analytics-python ==2.2.3 is called analytics-python
+    - analytics-python ==2.2.3
+    - pandas
+    - pytz
+    - kanaries-track ==0.0.5
+    - cachetools
+    - packaging
+    - numpy <2.0.0
+    - ipylab <=1.0.0
+    - python-quickjs
+    - traitlets
+    - anywidget
+
+test:
+  imports:
+    - pygwalker
+  commands:
+    - pip check
+    - pygwalker --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/pygwalker/
+  summary: 'pygwalker: turn your data into an interactive UI for data exploration and visualization'
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - gabrielcnr
+    - Asm-Def
+    - longxiaofei

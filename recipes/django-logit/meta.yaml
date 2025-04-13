@@ -1,0 +1,40 @@
+{% set name = "django-logit" %}
+{% set version = "1.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-logit-{{ version }}.tar.gz
+  sha256: 7896fdd5e8260cfab0bdcad8d10f337b10ec246c924f8aef3a9244efe19476cb
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - django_logit
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Brightcells/django-logit
+  summary: Django Decorator of Logging Request Params/Response Content
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

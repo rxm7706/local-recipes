@@ -1,0 +1,41 @@
+{% set name = "qh3" %}
+{% set version = "1.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/qh3-{{ version }}.tar.gz
+  sha256: a5dd385ab77df9fe5459712968179c0dcf446082911b40da5204abee6f8b6dbf
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - maturin >=1.2,<2.0
+    - pip
+  run:
+    - python >=3.7
+
+test:
+  imports:
+    - qh3
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jawah/qh3
+  summary: A lightway and fast implementation of QUIC and HTTP/3
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

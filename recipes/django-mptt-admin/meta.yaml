@@ -1,0 +1,41 @@
+{% set name = "django-mptt-admin" %}
+{% set version = "2.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-mptt-admin-{{ version }}.tar.gz
+  sha256: e9ffc56cca1b1fbe79da0408ffdf03971077e4716b08b68028a22007b0852c40
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django-mptt
+
+test:
+  imports:
+    - django_mptt_admin
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/mbraak/django-mptt-admin
+  summary: Django-mptt-admin provides a nice Django Admin interface for Mptt models
+  license: Apache-2.0
+  license_file: LICENSE.rst
+
+extra:
+  recipe-maintainers:
+    - rxm7706

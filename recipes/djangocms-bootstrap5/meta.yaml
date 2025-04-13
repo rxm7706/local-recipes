@@ -1,0 +1,47 @@
+{% set name = "djangocms-bootstrap5" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/djangocms-bootstrap5-{{ version }}.tar.gz
+  sha256: 917f812d8756680c0d570d7de458935389055c843edde27075995e8991fb27a1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django-cms >=3.7
+    - django-filer >=1.7
+    - djangocms-attributes-field >=1
+    - djangocms-text-ckeditor >=3.1.0
+    - djangocms-icon >=1.4.0
+    - djangocms-link >=2.5.0
+    - djangocms-picture >=2.3.0
+
+test:
+  imports:
+    - djangocms_bootstrap5
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/divio/djangocms-bootstrap5
+  summary: Adds Bootstrap 5 components as plugins.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

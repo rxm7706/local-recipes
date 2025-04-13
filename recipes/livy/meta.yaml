@@ -1,0 +1,44 @@
+{% set name = "livy" %}
+{% set version = "0.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/livy-{{ version }}.tar.gz
+  sha256: 26ee2d1e4c6f27208bc83e4a80c1ceb678c2d3dc17ccd4592cb55d48181747f5
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - wheel
+    - setuptools-scm
+    - pip
+  run:
+    - python
+    - dataclasses  # [py<37]
+    - requests
+    - pandas
+
+test:
+  imports:
+    - livy
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/acroz/pylivy
+  summary: A Python client for Apache Livy
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

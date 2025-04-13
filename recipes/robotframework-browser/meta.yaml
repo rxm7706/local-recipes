@@ -1,0 +1,65 @@
+{% set name = "robotframework-browser" %}
+{% set version = "19.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/robotframework_browser-{{ version }}.tar.gz
+  sha256: b81e7bba0c84f782b8bb61c0b412a6a0205ae0f6d029dd2e82a17ed9da036028
+
+build:
+  entry_points:
+    - rfbrowser=Browser.entry.__main__:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - nodejs >=18.0
+  run:
+    - python >={{ python_min }}
+    - grpcio >=1.67.1
+    - grpcio-tools
+    - protobuf
+    - robotframework >=5.0.1,<8.0.0
+    - robotframework-pythonlibcore >=4.4.1,<5.0.0
+    - robotframework-assertion-engine >=3.0.3,<4.0.0
+    - typing-extensions >=4.5.0
+    - wrapt >=1.15.0
+    - overrides >=7.3.1
+    - click >=8.1.7
+    - seedir >=0.5.0
+
+test:
+  imports:
+    - Browser
+# RuntimeError: The grpc package installed is at version 1.67.1, but the generated code in playwright_pb2_grpc.py depends on grpcio>=1.68.0. Please upgrade your grpc module to grpcio>=1.68.0 or downgrade your generated code using grpcio-tools<=1.67.1.
+  commands:
+    - rfbrowser --help
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/MarketSquare/robotframework-browser
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Robot Framework Browser library powered by Playwright.
+  description: |
+    Robot Framework Browser library powered by Playwright. Moving browser automation to year 2020 (or 2021)!
+    Aiming for speed, reliability and visibility.
+  doc_url: https://marketsquare.github.io/robotframework-browser/Browser.html
+  dev_url: https://github.com/MarketSquare/robotframework-browser
+
+extra:
+  recipe-maintainers:
+    - martinRenou
+    - xylix
+    - conda-forge/rpaframework-core

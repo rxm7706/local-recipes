@@ -1,0 +1,43 @@
+{% set name = "pandavro" %}
+{% set version = "1.7.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pandavro-{{ version }}.tar.gz
+  sha256: 4f2b7b6823522f54e8bfe33c091fb29898349892b70634f46c928e6a42a76e69
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - fastavro >=1.8.2
+    - pandas >=1.1
+    - numpy >=1.15.4
+
+test:
+  imports:
+    - pandavro
+  commands:
+    #- pip check pandavro 1.7.2 has requirement fastavro~=1.5.1, but you have fastavro 1.8.0.
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ynqa/pandavro
+  summary: The interface between Avro and pandas DataFrame
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

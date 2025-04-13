@@ -1,0 +1,60 @@
+package:
+  name: powerbiclient
+  version: 3.1.1
+
+source:
+  sha256: d54242c146ed2d9204ee3ab942f724bd7a5fc55dbd2f4870a5574afe8ad8d0e1
+  url: https://files.pythonhosted.org/packages/95/06/6ca62f807ed6a441d31ab179e708deefa544d128d067aa45e34b39df0728/powerbiclient-3.1.1-py2.py3-none-any.whl
+
+#  sha256: 556c0217a855f4291063f5af834939f1b8b7f1a9b7e79b0d8633ce998cd0c4ee
+#  url: https://files.pythonhosted.org/packages/cf/8a/4fc8059846ee61ce53077ab1f252ddfc4ce09860c218a38f8ffa293ae598/powerbiclient-3.0.0-py2.py3-none-any.whl
+
+build:
+  noarch: python
+  #script: pip install powerbiclient-2.0.1-py2.py3-none-any.whl -vv
+  script: pip install powerbiclient-3.1.1-py2.py3-none-any.whl -vv
+  number: 0
+  string: py3
+
+requirements:
+  build:
+    - nodejs >18.0,<19.0
+    - pip
+    - setuptools
+    - yarn
+#    - {{ compiler('c') }}
+  host:
+    - pip
+    - python >=3.7,<3.12
+
+  run:
+    - python >=3.7,<3.12
+    - ipywidgets >=7.0.0
+    - jupyter-ui-poll >=0.1.2
+    - msal >=1.8.0
+    - requests >=2.25.1
+    - pandas
+    - pyspark
+
+test:
+#  imports:
+#    - powerbiclient
+  commands:
+    - pip check
+#    - from powerbiclient import Report
+  requires:
+    - pip
+
+about:
+  summary: Powerbi-jupyter is a python IPyWidget that enables customers to use Power BI embedding and reporting capabilities in a Jupyter notebook seamlessly.
+  doc_url: https://github.com/microsoft/powerbi-jupyter/blob/main/DOCUMENTATION.md
+  home: https://github.com/microsoft/powerbi-jupyter
+  license: MIT
+  license_file: 
+    - LICENSE
+
+extra:
+  copy_test_source_files: true
+  final: true
+  recipe-maintainers:
+    - rxm7706

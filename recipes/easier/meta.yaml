@@ -1,0 +1,48 @@
+{% set name = "easier" %}
+{% set version = "1.3.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/easier-{{ version }}.tar.gz
+  sha256: c9198916e710f5007e5ef434992e96c099940f4481a483e32ea5a6be77be8928
+
+build:
+  entry_points:
+    - ezr.gsheet = easier.cli:gsheet
+    - ezr.gsheet_push = easier.cli:gsheet_push
+    - ezr.sfdc = easier.cli:sfdc
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - click
+
+test:
+  imports:
+    - easier
+  commands:
+    - pip check
+    - ezr.gsheet --help
+    - ezr.gsheet_push --help
+    - ezr.sfdc --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/robdmc/easier
+  summary: Tools for analysis
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

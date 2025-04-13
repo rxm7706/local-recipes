@@ -1,0 +1,42 @@
+{% set name = "wasmtime-py" %}
+{% set version = "27.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/bytecodealliance/wasmtime-py/archive/{{ version }}.tar.gz
+  sha256: ca7d5e12cae206bd4553896fea6542aab2d0854de4384a17a37cdb351e1693bb
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=3.9
+    - importlib_resources >=5.10
+
+test:
+  imports:
+    - wasmtime
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/bytecodealliance/wasmtime-py
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,45 @@
+{% set name = "openlineage-dagster" %}
+{% set version = "0.30.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/openlineage-dagster-{{ version }}.tar.gz
+  sha256: 620b18ebf403d14487c0828ec81784826d4c85f0a603af0128e4f792a8207758
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - attrs >=19.3
+    - cattrs
+    - protobuf <=3.20.0
+    - dagster >=0.13.8,<=0.14.5
+    - openlineage-python =={{ version }}
+
+test:
+  imports:
+    - openlineage.dagster
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: OpenLineage integration with Dagster
+  home: https://github.com/OpenLineage/OpenLineage
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+extra:
+  recipe-maintainers:
+    - rxm7706

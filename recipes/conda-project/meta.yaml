@@ -1,0 +1,59 @@
+{% set name = "conda-project" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  #url: https://github.com/conda-incubator/conda-project/archive/{{ version }}.tar.gz
+  #sha256: 3551fbe1161b997385de1498c686c1bf1711aea3578c7a9bce3f5b2b9a525fbd
+  git_url: https://github.com/rxm7706/conda-project
+  git_tag: main
+  #path: ../../conda-project
+
+build:
+  entry_points:
+    - conda-project=conda_project.cli.main:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<3.11
+    - pip
+    - setuptools
+  run:
+    - python >=3.7,<3.11
+    - conda-lock >=1.2
+    - lockfile
+    - pexpect
+    - ruamel.yaml
+    - pydantic
+    - shellingham
+    - python-dotenv
+
+test:
+  imports:
+    - conda_project
+  commands:
+    - conda-project --help
+
+about:
+  home: https://github.com/conda-incubator/conda-project
+  summary: Tool for encapsulating, running, and reproducing projects with conda environments.
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  description: |
+    Sharing your work is more than sharing your code in a script file or notebook. To make your
+    work properly reproducible, it is necessary to include the list of required third-party
+    dependencies, specifications for how to run your code, and any other files that it may need.
+  doc_url: https://conda-incubator.github.io/conda-project/user_guide.html
+  dev_url: https://github.com/conda-incubator/conda-project
+
+extra:
+  recipe-maintainers:
+    - AlbertDeFusco
+    - mattkram

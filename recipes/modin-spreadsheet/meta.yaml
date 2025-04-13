@@ -1,0 +1,44 @@
+{% set name = "modin-spreadsheet" %}
+{% set version = "0.1.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/modin-spreadsheet-v{{ version }}.tar.gz
+  sha256: 0517b21a2e36002a7e04a0dd4ee925b23e00293efd7df93aa30645bf4c5a8cc1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - jupyter >=1.0.0
+    - notebook >=6.0.3
+    - ipywidgets >=7.0.0
+    - modin-core
+
+test:
+  imports:
+    - modin_spreadsheet
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/modin-project/modin-spreadsheet
+  summary: An implementation for the Spreadsheet API of Modin
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

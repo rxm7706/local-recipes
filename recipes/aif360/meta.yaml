@@ -1,0 +1,45 @@
+{% set name = "aif360" %}
+{% set version = "0.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/aif360-{{ version }}.tar.gz
+  sha256: a03b3a61fa6a912ede3cc75724a95b4ab06695e500f957527da0dfc40d664f5d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - numpy >=1.16
+    - scipy >=1.2.0
+    - pandas >=0.24.0
+    - scikit-learn >=1.0
+    - matplotlib-base
+
+test:
+  imports:
+    - aif360
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Trusted-AI/AIF360
+  summary: IBM AI Fairness 360
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

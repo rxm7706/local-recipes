@@ -1,0 +1,49 @@
+{% set name = "django-configurations" %}
+{% set version = "2.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-configurations-{{ version }}.tar.gz
+  sha256: a6c25c143834e67b20d34751512d08b3290684f25098ee212b1ee36804a59085
+
+build:
+  noarch: python
+  entry_points:
+    - django-cadmin = configurations.management:execute_from_command_line
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.8,<4.0
+    - django >=3.2
+
+test:
+  imports:
+    - configurations
+  commands:
+    - pip check
+    - DJANGO_CONFIGURATION=core.settings DJANGO_SETTINGS_MODULE=django django-cadmin --help
+  requires:
+    - pip
+
+about:
+  home: https://django-configurations.readthedocs.io/
+  summary: A helper for organizing Django settings.
+  dev_url: https://github.com/jazzband/django-configurations
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - millsks
+    - rxm7706

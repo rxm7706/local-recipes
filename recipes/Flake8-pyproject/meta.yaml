@@ -1,0 +1,44 @@
+{% set name = "Flake8-pyproject" %}
+{% set version = "1.2.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/john-hen/Flake8-pyproject/archive/{{ version }}.tar.gz
+  sha256: 8f065721c53c1fe22d423d82db99eef6559b463a8701aa03b03668d43abfc851
+
+build:
+  entry_points:
+    - flake8p = flake8p:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - flit-core >=3.4
+    - pip
+  run:
+    - python >=3.6
+    - flake8 >=5
+    - tomli  # [py<311]
+    - tomli <2  # [py<37]
+
+test:
+  imports:
+    - Flake8_pyproject
+  commands:
+    - pip check
+    - flake8p --help
+  requires:
+    - pip
+
+about:
+  license: MIT
+  license_file: license.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

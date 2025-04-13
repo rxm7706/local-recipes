@@ -1,0 +1,46 @@
+{% set name = "antlr4-tools" %}
+{% set version = "0.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/antlr4-tools-{{ version }}.tar.gz
+  sha256: eabad95c7d6b2e15b9875f630e6695395f90ed557721aeef7844d5821ac1ca6a
+
+build:
+  entry_points:
+    - antlr4=antlr4_tool_runner:tool
+    - antlr4-parse=antlr4_tool_runner:interp
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - install-jdk
+
+test:
+  imports:
+    - antlr4_tool_runner
+  commands:
+    - pip check
+    - antlr4 --help
+    - antlr4-parse --help
+  requires:
+    - pip
+
+about:
+  home: http://www.antlr.org
+  summary: Tools to run ANTLR4 tool and grammar interpreter/profiler
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

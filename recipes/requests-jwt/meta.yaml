@@ -1,0 +1,42 @@
+{% set name = "requests-jwt" %}
+{% set version = "0.5.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/requests-jwt-{{ version }}.tar.gz
+  sha256: 4df3606a22c27b2dc4edad0ae6e83868945ca564f7ca49f82e4fd768fea6f879
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - requests
+    - pyjwt
+
+test:
+  imports:
+    - requests_jwt
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/tgs/requests-jwt
+  summary: This package allows for HTTP JSON Web Token (JWT) authentication using the requests library.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

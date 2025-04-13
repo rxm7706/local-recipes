@@ -1,0 +1,44 @@
+{% set name = "synthetic-data" %}
+{% set version = "1.2.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/synthetic-data-{{ version }}.tar.gz
+  sha256: eeef55fe2fb2f3d3a1e71861817ebad5cbb2b9df8cb915fc98fbddbbd70b92ae
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - numpy >=1.22.0
+    - scikit-learn >=1.1.0
+    - scipy >=1.10.0
+    - dataprofiler >=0.10.3
+
+test:
+  imports:
+    - synthetic_data
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/capitalone/synthetic-data
+  summary: Generates complex, nonlinear datasets for use         with deep learning/black box models
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

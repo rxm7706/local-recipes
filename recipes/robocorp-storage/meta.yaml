@@ -1,0 +1,47 @@
+{% set name = "robocorp-storage" %}
+{% set version = "1.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/robocorp_storage-{{ version }}.tar.gz
+  sha256: 8583894654e66a8adc2b3a080da4a1e12b98d857e77f61069750d6aae874b70d
+
+build:
+  noarch: python
+  script:
+    - echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md  # [win]
+    - cp -R {{ RECIPE_DIR }}/README.md {{ SRC_DIR }}/README.md  # [unix]
+    - {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.7.2,<4.0.0
+    - requests >=2.28.2,<3.0.0
+    - tenacity >=8.0.1,<9.0.0
+    - typing-extensions >=4.5.0,<5.0.0
+
+test:
+  imports:
+    - robocorp.storage
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/robocorp/robo/
+  summary: Robocorp Asset Storage library
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

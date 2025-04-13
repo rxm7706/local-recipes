@@ -1,0 +1,44 @@
+{% set name = "django-livesettings3" %}
+{% set version = "1.6.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-livesettings3-{{ version }}.tar.gz
+  sha256: 4df2395a741b60172c4d17f1445dde71421a9118f83754805292610254daf5fc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=1.8,<5
+    - django-keyedcache3
+
+test:
+  imports:
+    - livesettings
+    - livesettings.migrations
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/kunaldeo/django-livesettings3/
+  summary: Python 3 port of django-livesettings
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rxm7706

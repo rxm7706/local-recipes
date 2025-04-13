@@ -1,0 +1,51 @@
+{% set name = "pigar" %}
+{% set version = "2.1.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pigar-{{ version }}.tar.gz
+  sha256: a524cd7b9aa67efba3a403988e4630676b05831fcbcb7ecaa01377e88abb5e96
+
+build:
+  entry_points:
+    - pigar = pigar.__main__:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=69.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - click >=8.1
+    - nbformat >=5.7
+    - aiohttp >=3.9
+    - colorama
+
+test:
+  imports:
+    - pigar
+  commands:
+    - pip check
+    - pigar --help
+  requires:
+    - pip
+
+about:
+  summary: A tool to generate requirements.txt for Python project.
+  dev_url: https://github.com/damnever/pigar
+  license: MIT AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - pigar/_vendor/pip/LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

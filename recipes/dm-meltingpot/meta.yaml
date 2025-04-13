@@ -1,0 +1,55 @@
+{% set name = "dm-meltingpot" %}
+{% set version = "2.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-meltingpot-{{ version }}.tar.gz
+  sha256: 919189ab13e986a0e42c790d01d7a0e8304946ce8d3a90b252d79d52c1fb19e7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - setuptools >=42
+    - pip
+  run:
+    - python >=3.10
+    - absl-py
+    - chex <0.1.81
+    - dm-env
+    - dmlab2d
+    - dm-tree
+    - immutabledict
+    - ml-collections
+    - networkx
+    - numpy
+    - opencv
+    - pandas
+    - pygame
+    - reactivex
+    - tensorflow
+
+test:
+  imports:
+    - dm_meltingpot
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/deepmind/meltingpot
+  summary: A suite of test scenarios for multi-agent reinforcement learning.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,46 @@
+{% set name = "robocorp-workitems" %}
+{% set version = "1.4.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/robocorp_workitems-{{ version }}.tar.gz
+  sha256: 45676d42b0e462b9768056b4be48742b93dff8fb096c122252620dcbcc357f8c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.9.0,<4.0.0
+    - robocorp-tasks >=1,<4
+    - requests >=2.28.2,<3.0.0
+    - tenacity >=8.0.1,<9.0.0
+    - dataclasses-json >=0.6.1,<0.7.0
+    - python-dateutil >=2.8.2,<3.0.0
+
+test:
+  imports:
+    - robocorp_workitems
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/robocorp/robocorp/
+  summary: Robocorp Work Items library
+  license: Apache-2.0
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

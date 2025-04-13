@@ -1,0 +1,42 @@
+{% set name = "datasette-cluster-map" %}
+{% set version = "0.18.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/datasette_cluster_map-{{ version }}.tar.gz
+  sha256: 6ae34faf0f2e3198cbfdc06faaf65ac43a4e3be02d916e4d69dd5e25abcc8b28
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - datasette >=0.54
+    - datasette-leaflet >=0.2.2
+
+test:
+  imports:
+    - datasette_cluster_map
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/simonw/datasette-cluster-map
+  summary: Datasette plugin that shows a map for any data with latitude/longitude columns
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

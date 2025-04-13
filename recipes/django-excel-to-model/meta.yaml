@@ -1,0 +1,44 @@
+{% set name = "django-excel-to-model" %}
+{% set version = "0.1.16" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-excel-to-model-{{ version }}.tar.gz
+  sha256: 205c4ba73d9c0272e3acd6e6f8974d7fdb7142e23396407e2f0a1b35a089396e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - django-background-tasks
+    - pyxlsb
+    - pinyin
+
+test:
+  imports:
+    - django_excel_to_model
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/weijia/django-excel-to-model
+  summary: Create model file from excel
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,45 @@
+{% set name = "django-compat" %}
+{% set version = "1.0.15" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-compat-{{ version }}.tar.gz
+  sha256: 3ac9a3bedc56b9365d9eb241bc5157d0c193769bf995f9a78dc1bc24e7c2331b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pypandoc
+    - pip
+  run:
+    - python >=3.8
+    - django-utils-six
+    #- django
+    - six >=1.10.0
+
+test:
+  commands:
+    - python -c "import django; from django.conf import settings; settings.configure(); django.setup(); import compat"
+    - pip check
+  requires:
+    - pip
+    - django <2.0.0
+    - django-utils-six
+
+about:
+  home: https://github.com/arteria/django-compat
+  summary: Forward and backwards compatibility layer for Django 1.4, 1.7, 1.8, 1.9, 1.10, and 1.11
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

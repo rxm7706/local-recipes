@@ -1,0 +1,39 @@
+{% set name = "django-cryptography" %}
+{% set version = "2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/chrisclark/django-cryptography/archive/{{ version }}.tar.gz
+  sha256: a250af91c6d7b01845caa14eda65255323d1d9900358fcdd53c24945c8b382e6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - django
+    - setuptools >=40.8.0
+    - wheel
+    - pip
+  run:
+    - python
+
+test:
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

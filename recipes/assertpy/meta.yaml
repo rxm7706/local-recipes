@@ -1,0 +1,41 @@
+{% set name = "assertpy" %}
+{% set version = "1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/assertpy-{{ version }}.tar.gz
+  sha256: acc64329934ad71a3221de185517a43af33e373bb44dc05b5a9b174394ef4833
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - assertpy
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/assertpy/assertpy
+  summary: Simple assertion library for unit testing in python with a fluent API
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - dwyatte
+    - saturnboy

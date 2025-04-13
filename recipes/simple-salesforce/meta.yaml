@@ -1,0 +1,46 @@
+{% set name = "simple-salesforce" %}
+{% set version = "1.12.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/simple-salesforce-{{ version }}.tar.gz
+  sha256: ef65f72438e3b215619f6835d3d4356e147adf3a7ece6896d239127dd6aefcd1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - requests >=2.22.0
+    - cryptography
+    - zeep
+    - pyjwt
+    - more-itertools
+    - pendulum
+
+test:
+  imports:
+    - simple_salesforce
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/simple-salesforce/simple-salesforce
+  summary: A basic Salesforce.com REST API client.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,63 @@
+{% set name = "django-cms" %}
+{% set version = "4.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: a8e700f84d5fc780e492aef777a3d6ad3372f5e87e04e121b60813cece0e6f31
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - django >=2.2
+    - django-classy-tags >=0.7.2
+    - django-formtools >=2.1
+    - django-treebeard >=4.3
+    - django-sekizai >=0.7
+    - djangocms-admin-style >=1.2
+    - packaging
+    - setuptools
+
+test:
+  imports:
+    - cms
+    - menus
+  commands:
+    - pip check
+    - djangocms --help
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://www.django-cms.org/
+  summary: Lean enterprise content management powered by Django.
+  license: Apache-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - cms/static/cms/js/select2/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+# Must Have Extensions
+# django-file - Old https://github.com/django-xxx/django-query
+# django-filer - existing - cshaley
+# djangocms-alias
+# djangocms-history - submitted pending cms
+# djangocms-icon
+# djangocms-text-ckeditor - submitted pending cms
+# easy-thumbnails - existing - cshaley

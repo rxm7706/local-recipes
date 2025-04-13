@@ -1,0 +1,41 @@
+{% set name = "django-api-generator" %}
+{% set version = "1.0.17" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-api-generator-{{ version }}.tar.gz
+  sha256: b1aa74b26107719279d001971ea5420e31ccb9f424179646ba4f53a19efd0b85
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - djangorestframework
+
+test:
+  imports:
+    - django_api_gen
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://appseed.us/developer-tools/django-dynamic-api/
+  summary: Django API generator over DRF
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

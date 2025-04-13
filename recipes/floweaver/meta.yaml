@@ -1,0 +1,45 @@
+{% set name = "floweaver" %}
+{% set version = "2.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/floweaver-{{ version }}.tar.gz
+  sha256: f2f7bb67af1a20137bbb05f95187d7f9be9c106b37e71650b71d6be0ac6276a3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.5
+    - pip
+  run:
+    - python >=3.5
+    - numpy
+    - pandas
+    - networkx >=2.1
+    - attrs >=17.4
+    - palettable
+
+test:
+  imports:
+    - floweaver
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ricklupton/floweaver
+  summary: View flow data as Sankey diagrams.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

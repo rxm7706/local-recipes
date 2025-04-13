@@ -1,0 +1,51 @@
+{% set name = "pywebview" %}
+{% set version = "4.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pywebview-{{ version }}.tar.gz
+  sha256: 85be4215cd65ceacca5c7faef9d271e10bfe3ca25d2498c1c6d2e59a4d56e86c
+
+build:
+  skip: true  # [py<37]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - setuptools-scm
+    - py2app
+    - pip
+  run:
+    - python >=3.7
+    - pythonnet  # [win]
+    - pyobjc-core  # [darwin]
+    - pyobjc-framework-cocoa  # [darwin]
+    - pyobjc-framework-webkit  # [darwin]
+    - pyobjc-framework-security  # [darwin]
+    - qtpy  # [openbsd]
+    - proxy-tools
+    - bottle
+    - typing-extensions
+
+test:
+  imports:
+    - pywebview
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Build GUI for your Python program with JavaScript, HTML, and CSS
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

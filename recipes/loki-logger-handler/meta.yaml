@@ -1,0 +1,40 @@
+{% set name = "loki-logger-handler" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/loki_logger_handler-{{ version }}.tar.gz
+  sha256: 198832d8d1fde37001cd07f05310eb28289d665742f8d7cae7dd0260fee0cfcf
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - loki_logger_handler
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/xente/loki-logger-handler
+  summary: Handler designed for transmitting logs to Grafana Loki in JSON format.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

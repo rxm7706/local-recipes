@@ -1,0 +1,53 @@
+{% set name = "google-auth" %}
+{% set version = "2.23.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/google-auth-{{ version }}.tar.gz
+  sha256: 753a26312e6f1eaeec20bc6f2644a10926697da93446e1f8e24d6d32d45a922a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - cachetools >=2.0.0,<6.0
+    - pyasn1-modules >=0.2.1
+    - rsa >=3.1.4,<5
+    - urllib3 <2.0
+    # aiohttp and requests extras
+    - aiohttp >=3.6.2,<4.0.0
+    - requests >= 2.20.0,<3.0.0
+    # pyopenssl extra
+    - pyopenssl >=20.0.0
+    - cryptography >=38.0.3
+    # reauth extra
+    - pyu2f >=0.1.5
+
+test:
+  imports:
+    - google
+    - google.auth
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/googleapis/google-auth-library-python
+  summary: Google Authentication Library
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

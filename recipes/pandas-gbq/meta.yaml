@@ -1,0 +1,62 @@
+{% set name = "pandas-gbq" %}
+{% set version = "0.24.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pandas_gbq-{{ version }}.tar.gz
+  sha256: 264415277059821497e74ed0b2240b538cba9646ee627fb4668cac5cf274e4c3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+    - setuptools
+  run:
+    - python >=3.8
+    - setuptools
+    - db-dtypes >=1.0.4,<2.0.0
+    - numpy >=1.18.1
+    - pandas >=1.1.4
+    - pyarrow >=4.0.0
+    - pydata-google-auth >=1.5.0
+    - google-api-core >=2.10.2,<3.0.0dev
+    - google-auth >=2.13.0
+    - google-auth-oauthlib >=0.7.0
+    - google-cloud-bigquery-core >=3.4.2,<4.0.0dev
+    - google-cloud-bigquery-storage >=2.16.2,<3.0.0dev
+    - packaging >=22.0.0
+  run_constrained:
+    - tqdm >=4.23.0
+
+test:
+  imports:
+    - pandas_gbq
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/googleapis/python-bigquery-pandas
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Pandas interface to Google BigQuery
+
+  doc_url: https://googleapis.dev/python/pandas-gbq/latest/index.html
+  dev_url: https://github.com/googleapis/python-bigquery-pandas
+
+extra:
+  recipe-maintainers:
+    - chalmerlowe
+    - jreback
+    - leahecole
+    - parthea
+    - tswast

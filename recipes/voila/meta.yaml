@@ -1,0 +1,53 @@
+{% set name = "voila" %}
+{% set version = "0.5.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/voila-{{ version }}.tar.gz
+  sha256: 3d9078c252a8b1f3fe58d465749d31cdc241b29c8f4ab77f123be35a17e2da95
+
+build:
+  entry_points:
+    - voila = voila.app:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling >=1.8.1
+    - jupyterlab >=4.0,<5.dev0
+    - jupyter_core
+    - pip
+  run:
+    - python >=3.8
+    - jupyter_client >=7.4.4,<9
+    - jupyter_core >=4.11.0
+    - jupyter_server >=1.18,<3
+    - jupyterlab_server >=2.3.0,<3
+    - nbclient >=0.4.0
+    - nbconvert >=6.4.5,<8
+    - traitlets >=5.0.3,<6
+    - websockets >=9.0
+
+test:
+  imports:
+    - voila
+  commands:
+    - pip check
+    - voila --help
+  requires:
+    - pip
+
+about:
+  summary: Voilà turns Jupyter notebooks into standalone web applications
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

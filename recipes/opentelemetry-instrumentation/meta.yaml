@@ -1,0 +1,49 @@
+{% set name = "opentelemetry-instrumentation" %}
+{% set version = "0.49b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation-{{ version }}.tar.gz
+  sha256: 398a93e0b9dc2d11cc8627e1761665c506fe08c6b2df252a2ab3ade53d751c46
+
+build:
+  entry_points:
+    - opentelemetry-bootstrap = opentelemetry.instrumentation.bootstrap:run
+    - opentelemetry-instrument = opentelemetry.instrumentation.auto_instrumentation:run
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - opentelemetry-api >=1.4,<2.dev0
+    - opentelemetry-semantic-conventions ==0.49b0
+    - wrapt >=1.0.0,<2.0.0
+    - packaging >=18.0
+
+test:
+  imports:
+    - opentelemetry_instrumentation
+  commands:
+    - pip check
+    - opentelemetry-bootstrap --help
+    - opentelemetry-instrument --help
+  requires:
+    - pip
+
+about:
+  summary: Instrumentation Tools & Auto Instrumentation for OpenTelemetry Python
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

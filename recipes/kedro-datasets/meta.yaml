@@ -1,0 +1,45 @@
+{% set name = "kedro-datasets" %}
+{% set version = "3.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro-datasets-{{ version }}.tar.gz
+  sha256: c2919f137d7e52661d4ee15436ca57a8c2f8d21678e22481cc4b995e82620868
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  script_env:
+    - PYTHONWARNINGS="ignore::UserWarning"
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=61.2
+    - pip
+  run:
+    - python >=3.9
+    - kedro >=0.19
+    - lazy_loader
+
+test:
+  imports:
+    - kedro_datasets
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
+  license: Apache-2.0
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

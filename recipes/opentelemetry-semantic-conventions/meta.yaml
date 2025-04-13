@@ -1,0 +1,47 @@
+{% set name = "opentelemetry-semantic-conventions" %}
+{% set version = "0.50b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_semantic_conventions-{{ version }}.tar.gz
+  sha256: 02dc6dbcb62f082de9b877ff19a3f1ffaa3c306300fa53bfac761c4567c83d38
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ==1.29.0
+    - deprecated >=1.2.6
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.semconv
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-semantic-conventions
+  summary: OpenTelemetry Semantic Conventions
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk
+    - conda-forge/opentelemetry-api

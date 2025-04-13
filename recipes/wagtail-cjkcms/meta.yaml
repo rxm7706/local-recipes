@@ -1,0 +1,50 @@
+{% set name = "wagtail-cjkcms" %}
+{% set version = "23.12.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-cjkcms-{{ version }}.tar.gz
+  sha256: f119f78301fbe9a1061633695ce773127b6ad60eb8c1b0212660a3bc488df8be
+
+build:
+  entry_points:
+    - cjkcms = cjkcms.bin.cjkcms:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=60
+    - wheel >=0.35
+    - pip
+  run:
+    - python >=3.9
+    - django-bootstrap5
+    - django >=4.2
+    - wagtail >=5.1
+    - wagtail-cache
+    - cjkcms-color-panel
+    - cjkcms-seo
+
+test:
+  imports:
+    - wagtail_cjkcms
+  commands:
+    - pip check
+    - cjkcms --help
+  requires:
+    - pip
+
+about:
+  summary: Wagtail Content Management System, installable as a Django app into any Wagtail 4.1.x/5.x site.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

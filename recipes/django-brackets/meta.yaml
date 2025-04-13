@@ -1,0 +1,43 @@
+{% set name = "django-brackets" %}
+{% set version = "2024" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_brackets-{{ version }}.tar.gz
+  sha256: 9203e55605eb23a757764488621d3fb8f514c8c733e92162fa00ad26a16882bd
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=3.10
+    - django-rest-framework >=0.1.0
+    - django <6,>=4.2
+    - flit <4,>=3.2
+
+test:
+  imports:
+    - django_brackets
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Mixins to make class-based generic views simpler and neater.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

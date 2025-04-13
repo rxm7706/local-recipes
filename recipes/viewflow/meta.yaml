@@ -1,0 +1,54 @@
+{% set name = "viewflow" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/viewflow/viewflow/archive/{{ version }}.tar.gz
+  sha256: 18f9913c1881a943f324a8596cedb65dac75f995d6488ee256555c450443a2db
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=4.2
+    - django-filter >=2.3.0
+
+test:
+  commands:
+    - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,INSTALLED_APPS=['viewflow']); django.setup(); import viewflow; import viewflow.apps; import viewflow.conf; import viewflow.contrib; import viewflow.fields; import viewflow.forms; import viewflow.fsm; import viewflow.jsonstore; import viewflow.locale; import viewflow.management; import viewflow.middleware; import viewflow.static; import viewflow.templates; import viewflow.templatetags; import viewflow.urls; import viewflow.utils; import viewflow.views; import viewflow.workflow"    
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://viewflow.io/
+  license: AGPL-3.0-or-later
+  license_family: GPL3
+  license_file: 
+    - LICENSE
+    - LICENSE_EXCEPTION
+  summary: 'Reusable workflow library for Django'
+  description: |
+    Viewflow takes the best parts from two worlds. It is based on BPMN - 
+    business process modeling and notation standard - and plays well with the 
+    django web development toolchain. BPMN provides a standard notation, 
+    readily understandable by all business stakeholders. Viewflow bridges 
+    the gap between a picture and an executable, ready to use web application.
+  doc_url: http://docs.viewflow.io/
+  dev_url: https://github.com/viewflow/viewflow/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - millsks
+    - rxm7706

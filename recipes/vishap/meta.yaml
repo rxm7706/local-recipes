@@ -1,0 +1,41 @@
+{% set name = "vishap" %}
+{% set version = "0.1.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/vishap-{{ version }}.tar.gz
+  sha256: 5a2cb56c77cd40c8a9967ba9975a23667b765d4e2d216a8b3aea7ef70a0bae3a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - six >=1.4.1
+
+test:
+  imports:
+    - vishap
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/barseghyanartur/vishap
+  summary: Generate embed (HTML) code of services like Youtube or Vimeo from URLs given. Rules are specified in the plugins.
+  license: ZPL-2.1
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

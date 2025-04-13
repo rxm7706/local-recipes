@@ -1,0 +1,45 @@
+{% set name = "opentelemetry-instrumentation-grpc" %}
+{% set version = "0.42b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_grpc-{{ version }}.tar.gz
+  sha256: 4c5701b1e54765f9000336a243ddfd4ecf3f76cd62070a8e7f3054a3b928679e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling
+    - pip
+  run:
+    - python >=3.7
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation ==0.42b0
+    - opentelemetry-sdk >=1.12,<2.dev0
+    - opentelemetry-semantic-conventions ==0.42b0
+    - wrapt >=1.0.0,<2.0.0
+
+test:
+  imports:
+    - opentelemetry_instrumentation_grpc
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: OpenTelemetry gRPC instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

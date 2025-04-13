@@ -1,0 +1,41 @@
+{% set name = "django-multidb" %}
+{% set version = "0.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_multidb-{{ version }}.tar.gz
+  sha256: c8f690afc9177cab694bbd0bf8514a9e455daed9565941bbc60bed581d257260
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - django 4.1.13
+
+test:
+  imports:
+    - django_multidb
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: ''
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

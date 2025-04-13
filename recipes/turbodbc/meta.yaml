@@ -1,0 +1,46 @@
+{% set name = "turbodbc" %}
+{% set version = "4.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/turbodbc-{{ version }}.tar.gz
+  sha256: 9132140d6c7f0bf8bfd68be4dd3b2a92a4268d31c66932c87fe3cbc94d33935d
+
+build:
+  skip: true  # [py<39]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - pybind11 >=2.10.4
+    - pyarrow >=7,<15
+    - numpy >=1.20
+    - pip
+  run:
+    - python
+    - {{ pin_compatible('numpy') }}
+
+test:
+  imports:
+    - turbodbc
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/blue-yonder/turbodbc
+  summary: turbodbc is a Python DB API 2.0 compatible ODBC driver
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

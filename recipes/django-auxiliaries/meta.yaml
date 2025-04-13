@@ -1,0 +1,43 @@
+{% set name = "django-auxiliaries" %}
+{% set version = "4.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-auxiliaries-{{ version }}.tar.gz
+  sha256: 3e2af0ef1cd264dad6a05510bd0a2ebaa3d8ab554795d506d22ebd20a05f5e08
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=53.0.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - django <4.2,>=4.1
+
+test:
+  imports:
+    - django_auxiliaries
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/high-dimensional/django-auxiliaries
+  summary: Helpful code for managing Django app dependencies and other useful utilities when developing with Django.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,44 @@
+{% set name = "pandas-profiling" %}
+{% set version = "3.6.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pandas-profiling-{{ version }}.tar.gz
+  sha256: 1ef14a9cfa647ff95e13fd0b589f74897c0b078ef8ebcd44760b4031dcbf52a2
+
+build:
+  entry_points:
+    - pandas_profiling = pandas_profiling.controller.console:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<3.11
+    - pip
+  run:
+    - python >=3.7,<3.11
+    - ydata-profiling
+
+test:
+  imports:
+    - pandas_profiling
+  commands:
+    - pip check
+    - pandas_profiling --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ydataai/pandas-profiling
+  summary: Deprecated 'pandas-profiling' package, use 'ydata-profiling' instead
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

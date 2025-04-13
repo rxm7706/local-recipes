@@ -1,0 +1,41 @@
+{% set name = "googleapis-common-protos" %}
+{% set version = "1.61.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/googleapis-common-protos-{{ version }}.tar.gz
+  sha256: 8a64866a97f6304a7179873a465d6eee97b7a24ec6cfd78e0f575e96b821240b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - protobuf >=3.19.5,<5.0.0.dev0,!=3.20.0,!=3.20.1,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5
+
+test:
+  imports:
+    - google
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/googleapis/python-api-common-protos
+  summary: Common protobufs used in Google APIs
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

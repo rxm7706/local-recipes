@@ -1,0 +1,49 @@
+{% set name = "auditwheel" %}
+{% set version = "5.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/auditwheel-{{ version }}.tar.gz
+  sha256: aaf8153ab7a29cc99a663ce2498804daf1887ea1b7a3231ba0d3fee68a3ccf19
+
+build:
+  noarch: python
+  entry_points:
+    - auditwheel = auditwheel.main:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=45
+    - wheel
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=3.8
+    - pyelftools >=0.24
+
+test:
+  imports:
+    - auditwheel
+  commands:
+    - pip check
+    - auditwheel --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/pypa/auditwheel
+  summary: Cross-distribution Linux wheels
+  license: MIT
+  license_file:
+    - LICENSE
+    - src/auditwheel/_vendor/wheel/LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

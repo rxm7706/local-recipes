@@ -1,0 +1,40 @@
+{% set name = "pyCalverter" %}
+{% set version = "1.6.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pyCalverter-{{ version }}.tar.gz
+  sha256: 91e26c5d06dfe1495e5b946a724ae691e57ea634ee4a9529a7952b837c041111
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - ''
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://bitbucket.org/bayazee/pycalverter/overview
+  summary: Python Calendar Converter
+  license: GPL-2.0-or-later
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

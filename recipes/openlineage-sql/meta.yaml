@@ -1,0 +1,40 @@
+{% set name = "openlineage-sql" %}
+{% set version = "1.29.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openlineage_sql-{{ version }}.tar.gz
+  sha256: c0717244a93f2bbee3bc03ac17a94efe0e1172a9bf609ea3bef04c69ec0b0137
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - maturin >=1.0
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - openlineage_sql
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Python interface for the Rust OpenLineage lineage extraction library
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,56 @@
+{% set name = "lumen" %}
+{% set version = "0.6.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lumen-{{ version }}.tar.gz
+  sha256: 4bc77e95cd204bcf394c24243f270090272570644255fddb0b7ab2d3924604d6
+
+build:
+  entry_points:
+    - lumen = lumen.command:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - param >=1.7.0
+    - pyct-core >=0.4.4
+    - setuptools >=30.3.0
+    - pip
+  run:
+    - python >=3.9
+    - numpy
+    - bokeh
+    - param >=1.9.0
+    - panel >=1.3.0
+    - pandas
+    - hvplot
+    - holoviews >=1.17.0
+    - packaging
+    - intake <2
+    - jinja2 >3.0
+
+test:
+  imports:
+    - lumen
+  commands:
+    - pip check
+    - lumen --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/holoviz/lumen
+  summary: A monitoring solution built on Panel.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

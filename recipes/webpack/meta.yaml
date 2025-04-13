@@ -1,0 +1,42 @@
+{% set name = "webpack" %}
+{% set version = "5.88.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/webpack/webpack/archive/v{{ version }}.tar.gz
+  sha256: 564b9e65f5b6cea6cd54d6b1e8d693365e58d1a62ad273b929f43a0cdd973485
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - requests >=2.5.0
+    - optional-django ==0.3.0
+
+test:
+  imports:
+    - webpack
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/markfinger/python-webpack
+  summary: Python bindings to Webpack
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

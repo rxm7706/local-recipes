@@ -1,0 +1,40 @@
+{% set name = "simgrep" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/simgrep-{{ version }}.tar.gz
+  sha256: 9e25b10cadab01a356b6eecf46ab36874e70eea784ca14be1ebbfb5187fa1938
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - simgrep
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/returntocorp/semgrep
+  summary: This package is parked by the Semgrep team. See https://github.com/returntocorp/semgrep for more information.
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,45 @@
+{% set name = "parsec" %}
+{% set version = "3.15" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/parsec-{{ version }}.tar.gz
+  sha256: f3fe44674d2064eb69146de8fa70f134f16e771ff19a462d78f0eb1778dd96db
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=3.7
+    - enum34
+
+test:
+  imports:
+    - parsec
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/sighingnow/parsec.py
+  summary: parser combinator.
+  doc_url: https://pythonhosted.org/parsec/
+  dev_url: https://github.com/sighingnow/parsec.py
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

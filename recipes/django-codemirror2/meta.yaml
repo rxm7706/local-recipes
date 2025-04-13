@@ -1,0 +1,43 @@
+{% set name = "django-codemirror2" %}
+{% set version = "0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-codemirror2-{{ version }}.tar.gz
+  sha256: 5ab23891d410206ee36e1b8f834b17ff2eab7a5b82238b22eaa82e26c92c5ea5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2,<5.0
+
+test:
+  imports:
+    - codemirror2
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/sk1p/django-codemirror2
+  summary: Django widgets for replacing textareas with CodeMirror2, an in-browser code editor
+  license: MIT
+  license_file:
+    - LICENSE
+    - codemirror2/static/codemirror2/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,44 @@
+{% set name = "django-jazzmin" %}
+{% set version = "2.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_jazzmin-{{ version }}.tar.gz
+  sha256: 5bb07055cf19183030724f976904fd8b6337559727959340a43832fab0531812
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - poetry >=0.12
+    - poetry-core
+    - pip
+  run:
+    - python >=3.6.2
+    - django >=2.2
+
+test:
+  imports:
+    - jazzmin
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/farridav/django-jazzmin
+  summary: Drop-in theme for django admin, that utilises AdminLTE 3 & Bootstrap 4 to make yo' admin look jazzy
+  dev_url: https://github.com/farridav/django-jazzmin
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

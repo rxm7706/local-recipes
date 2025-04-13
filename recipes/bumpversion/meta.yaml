@@ -1,0 +1,41 @@
+{% set name = "bumpversion" %}
+{% set version = "0.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/bumpversion-{{ version }}.tar.gz
+  sha256: 4ba55e4080d373f80177b4dabef146c07ce73c7d1377aabf9d3c3ae1f94584a6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - bump2version
+
+test:
+  imports:
+    - bumpversion
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/peritus/bumpversion
+  summary: Version-bump your software with a single command!
+  license: MIT
+  license_file: LICENSE.rst
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,42 @@
+{% set name = "mitosheet-private" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/mitosheet_private-{{ version }}.tar.gz
+  sha256: d36eb9d1a48e5f505b979ea2627a13dc2e9df681a244716fc96c9bdf6ed82a0f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools >=61.0
+    - pip
+  run:
+    - python
+    - mitosheet >0.1.504
+
+test:
+  imports:
+    - mitosheet_private
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/mito-ds/mito
+  summary: The mitosheet_private package is a wrapper around the mitosheet package.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

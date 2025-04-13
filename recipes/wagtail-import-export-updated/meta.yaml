@@ -1,0 +1,40 @@
+{% set name = "wagtail-import-export-updated" %}
+{% set version = "0.1.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-import-export-updated-{{ version }}.tar.gz
+  sha256: 447c734a870e363205a00bfbbefabd853e99cc92632c10b120d0d0e83b2c7a6d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - wagtailimportexport
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/besarbertasholli/wagtail-import-export-updated
+  summary: Import/Export for Wagtail CMS pages, images and documents.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

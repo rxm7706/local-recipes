@@ -1,0 +1,45 @@
+{% set name = "alt-profanity-check" %}
+{% set version = "1.4.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/alt-profanity-check-{{ version }}.tar.gz
+  sha256: 7d9305b885c4373fc17a7aa0d858dc7eb9e60224b11f3ae07f2338ec24f02853
+
+build:
+  entry_points:
+    - profanity_check=profanity_check.command_line:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - scikit-learn ==1.4.2
+    - joblib >=1.4.0
+
+test:
+  imports:
+    - profanity_check
+  commands:
+    - pip check
+    - profanity_check --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/dimitrismistriotis/alt-profanity-check
+  summary: A fast, robust library to check for offensive language in strings. Dropdown replacement of "profanity-check".
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

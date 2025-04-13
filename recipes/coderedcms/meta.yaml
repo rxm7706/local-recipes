@@ -1,0 +1,56 @@
+{% set name = "coderedcms" %}
+{% set version = "5.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/coderedcms-{{ version }}.tar.gz
+  sha256: 110ec68a8a83b8c88ae70432c3d47fc4da32a6015aead2cba4bea94054723b17
+
+build:
+  entry_points:
+    - coderedcms = coderedcms.bin.coderedcms:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=65.5
+    - pip
+  run:
+    - python >=3.9
+    - beautifulsoup4 >=4.8,<4.13
+    - django-eventtools ==1.0.*
+    - django-bootstrap5 ==24.3
+    - django >=4.2,<6.0
+    - geocoder ==1.38.*
+    - icalendar ==6.1.*
+    - wagtail >=6.3,<7.0
+    - wagtail-cache >=2.4,<3
+    - wagtail-flexible-forms ==2.*
+    - wagtail-seo ==3.*
+
+test:
+  imports:
+    - coderedcms
+  commands:
+    - pip check
+    - coderedcms --help
+  requires:
+    - pip
+
+about:
+  summary: Wagtail + CodeRed Extensions enabling rapid development of marketing-focused websites.
+  dev_url: https://github.com/coderedcorp/coderedcms
+  license: BSD-3-Clause AND MIT
+  license_file:
+    - LICENSE.txt
+    - coderedcms/static/coderedcms/vendor/bootstrap/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

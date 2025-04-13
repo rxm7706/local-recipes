@@ -1,0 +1,40 @@
+{% set name = "quickjs" %}
+{% set version = "1.19.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/quickjs-{{ version }}.tar.gz
+  sha256: 1205953abc24ff757f4a795304d5d61e4bf1e555c9ef6ec96a132d4b95535484
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - quickjs
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/PetterS/quickjs
+  summary: Wrapping the quickjs C library.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

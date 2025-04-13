@@ -1,0 +1,42 @@
+{% set name = "dash_handsontable" %}
+{% set version = "0.1.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dash_handsontable-{{ version }}.tar.gz
+  sha256: 74f63c41263a0f05c914a7527f08a3b57e75f41c41702ca2d105a1e1fb9ffc96
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - dash >=2.5.1
+
+test:
+  imports:
+    - dash_handsontable
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/DhiraPT/dash-handsontable
+  summary: Handsontable for Plotly Dash
+  dev_url: https://github.com/DhiraPT/dash-handsontable
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

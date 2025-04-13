@@ -1,0 +1,43 @@
+{% set name = "opentelemetry-instrumentation-logging" %}
+{% set version = "0.42b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_logging-{{ version }}.tar.gz
+  sha256: 222922cb666bcada986db5b3574656589dbd118ddf976a0f1c75098f2d8fb40f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - hatchling
+    - pip
+  run:
+    - python
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation =={{ version }}
+
+test:
+  imports:
+    - opentelemetry.instrumentation.logging
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: OpenTelemetry Logging instrumentation
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/master/instrumentation/opentelemetry-instrumentation-logging
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

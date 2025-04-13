@@ -1,0 +1,47 @@
+{% set name = "wq" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wq-{{ version }}.tar.gz
+  sha256: c302ccebb3d18f3c499ebdd147217688195a5bc8e781ea4e1bc2847fb871156e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - wq.app >=2.0.0,<2.1.0
+    - wq.build >=2.0.0,<2.1.0
+    - wq.create >=2.0.0,<2.1.0
+    - wq.db >=2.0.0,<2.1.0
+
+test:
+  imports:
+    - wq
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wq/wq
+  summary: A modular framework for mobile surveys and field data collection via offline-capable mobile web apps.
+  dev_url: https://github.com/wq/wq
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

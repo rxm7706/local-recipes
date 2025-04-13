@@ -1,0 +1,42 @@
+{% set name = "robotframework-requests" %}
+{% set version = "0.9.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/robotframework-requests-{{ version }}.tar.gz
+  sha256: 0ee7d90146f1a7f4d312deeedbd39245823ba337cbcc84a4e9a32babb165715b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - robotframework
+    - requests
+
+test:
+  imports:
+    - RequestsLibrary
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/MarketSquare/robotframework-requests
+  summary: Robot Framework keyword library wrapper around requests
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

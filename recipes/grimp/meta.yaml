@@ -1,0 +1,41 @@
+{% set name = "grimp" %}
+{% set version = "3.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/grimp-{{ version }}.tar.gz
+  sha256: 5ec7e7475a3616b1bec14d852784fa2e3829a4331fd2309a055f1e75ba5a4f50
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - maturin >=1.0,<2.0
+    - pip
+  run:
+    - python >=3.8
+    - typing-extensions >=3.10.0.0
+
+test:
+  imports:
+    - grimp
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Builds a queryable graph of the imports within one or more Python packages.
+  license: BSD-2-Clause-Views
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

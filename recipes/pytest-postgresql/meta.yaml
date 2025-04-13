@@ -1,0 +1,49 @@
+{% set name = "pytest-postgresql" %}
+{% set version = "5.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pytest-postgresql-{{ version }}.tar.gz
+  sha256: 22edcbafab8995ee85b8d948ddfaad4f70c2c7462303d7477ecd2f77fc9d15bd
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=61.0.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - pytest >=6.2
+    - port-for >=0.6.0
+    - mirakuru
+    - setuptools
+    - psycopg >=3.0.0
+
+test:
+  imports:
+    - pytest_postgresql
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Postgresql fixtures and fixture factories for Pytest.
+  dev_url: https://github.com/ClearcodeHQ/pytest-postgresql
+  license: GPL-3.0 AND LGPL-3.0
+  license_file:
+    - COPYING.lesser
+    - COPYING
+
+extra:
+  recipe-maintainers:
+    - rxm7706

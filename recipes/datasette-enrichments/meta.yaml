@@ -1,0 +1,43 @@
+{% set name = "datasette-enrichments" %}
+{% set version = "0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/datasette_enrichments-{{ version }}.tar.gz
+  sha256: 1bbc454a72f238b49cfdc9a01df70626d92b04abae81851010d150eb895168a9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - datasette
+    - wtforms
+    - datasette-secrets >=0.2
+
+test:
+  imports:
+    - datasette_enrichments
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/simonw/datasette-enrichments
+  summary: Tools for running enrichments against data stored in Datasette
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

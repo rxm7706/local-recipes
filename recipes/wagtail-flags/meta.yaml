@@ -1,0 +1,44 @@
+{% set name = "wagtail-flags" %}
+{% set version = "5.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_flags-{{ version }}.tar.gz
+  sha256: f8139be3cd4dd2cfc96fd2157cbe8d7e8f042af2df4c331d7629663e23b8d710
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=43.0.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - wagtail >=4
+    - django-flags >4.2
+
+test:
+  imports:
+    - wagtailflags
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Feature flags for Wagtail sites
+  dev_url: https://github.com/cfpb/wagtail-flags
+  license: CC0-1.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

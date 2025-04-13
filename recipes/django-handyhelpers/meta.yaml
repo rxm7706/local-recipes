@@ -1,0 +1,53 @@
+{% set name = "django-handyhelpers" %}
+{% set version = "0.3.37" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_handyhelpers-{{ version }}.tar.gz
+  sha256: 0cda45ece86a4a0628f8b950f2b7f4427adaca86e92ee9371c4724873028d3f0
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - django
+    - djangorestframework
+    - djangorestframework-filters ==1.0.0.dev0
+    - drf-dynamic-fields
+    - hurry.filesize
+    - jinja2
+    - markupsafe
+    - python-dateutil
+    - sqlparse
+    - xlwt ==1.3.0
+    - py-lief # <0.15
+
+test:
+  imports:
+    - handyhelpers
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/davidslusser/django-handyhelpers
+  summary: A collection of handy utilities to support django operations
+  license: GPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

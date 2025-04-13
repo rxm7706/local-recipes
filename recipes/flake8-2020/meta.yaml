@@ -1,0 +1,41 @@
+{% set name = "flake8-2020" %}
+{% set version = "1.8.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/flake8_2020-{{ version }}.tar.gz
+  sha256: 094ea95e8b614c3bd123fd4f007be28ec117ca57a6169903d4baaabe78e3e590
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - flake8 >=5
+
+test:
+  imports:
+    - flake8_2020
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/asottile/flake8-2020
+  summary: flake8 plugin which checks for misuse of `sys.version` or `sys.version_info`
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

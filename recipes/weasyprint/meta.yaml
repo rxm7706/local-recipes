@@ -1,0 +1,51 @@
+{% set name = "weasyprint" %}
+{% set version = "60.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/weasyprint-{{ version }}.tar.gz
+  sha256: 0c0cdd617a78699262b80026e67fa1692e3802cfa966395436eeaf6f787dd126
+
+build:
+  entry_points:
+    - weasyprint = weasyprint.__main__:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=3.7
+    - pydyf >=0.8.0
+    - cffi >=0.6
+    - html5lib >=1.1
+    - tinycss2 >=1.0.0
+    - cssselect2 >=0.1
+    - pyphen >=0.9.1
+    - pillow >=9.1.0
+    - fonttools >=4.0.0
+
+test:
+  imports:
+    - weasyprint
+  commands:
+    - pip check
+    - weasyprint --help
+  requires:
+    - pip
+
+about:
+  summary: The Awesome Document Factory
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

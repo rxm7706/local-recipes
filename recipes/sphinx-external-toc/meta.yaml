@@ -1,0 +1,46 @@
+{% set name = "sphinx-external-toc" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/sphinx_external_toc-{{ version }}.tar.gz
+  sha256: f7dd095ff3ab0fb74a310d410b0a3618fc1ddc6f2ce435897d659acaa4a3eb24
+
+build:
+  entry_points:
+    - sphinx-etoc = sphinx_external_toc.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - flit-core >=3.4,<4
+    - pip
+  run:
+    - python >=3.9
+    - click >=7.1
+    - pyyaml
+    - sphinx >=5
+
+test:
+  imports:
+    - sphinx_external_toc
+  commands:
+    - pip check
+    - sphinx-etoc --help
+  requires:
+    - pip
+
+about:
+  summary: A sphinx extension that allows the site-map to be defined in a single YAML file.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

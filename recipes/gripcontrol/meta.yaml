@@ -1,0 +1,43 @@
+{% set name = "gripcontrol" %}
+{% set version = "4.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/gripcontrol-{{ version }}.tar.gz
+  sha256: f1532a94d5f7d2a2eecf8ecd3a0bb0991728addc02b6bafe9c8b050b667b7b86
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - pyjwt >=1.5,<3
+    - pubcontrol >=3.0,<4
+    - six >=1.10.0,<2
+
+test:
+  imports:
+    - gripcontrol
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/fanout/pygripcontrol
+  summary: GRIP library
+  license: MIT
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - rxm7706

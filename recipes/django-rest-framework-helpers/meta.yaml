@@ -1,0 +1,45 @@
+{% set name = "django-rest-framework-helpers" %}
+{% set version = "8.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-rest-framework-helpers-{{ version }}.tar.gz
+  sha256: 683f1602dea1f32491b98ddfbfd1dae2961c2aee14fc6dafad78743efbf97820
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setup_utils
+    - setuptools
+    - pip
+  run:
+    - python >=3.8
+    - django >=2.0
+    - djangorestframework
+
+test:
+  imports:
+    - django_rest_framework_helpers
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/alexseitsinger/django-rest-framework-helpers
+  summary: A collection of useful modules for Django Rest Framework
+  dev_url: https://github.com/alexseitsinger/django-rest-framework-helpers
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

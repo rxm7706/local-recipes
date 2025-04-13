@@ -1,0 +1,40 @@
+{% set name = "jellyfish" %}
+{% set version = "1.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/jellyfish-{{ version }}.tar.gz
+  sha256: ddb22b7155f208e088352283ee78cb4ef2d2067a76e148a8bb43d177f32b37d2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - maturin >=0.14,<2
+    - pip
+  run:
+    - python >=3.7
+
+test:
+  imports:
+    - jellyfish
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Approximate and phonetic matching of strings.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

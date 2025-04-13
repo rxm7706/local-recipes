@@ -1,0 +1,41 @@
+{% set name = "wagtail-autocomplete" %}
+{% set version = "0.12.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_autocomplete-{{ version }}.tar.gz
+  sha256: d1cd315475e8c776c85a75ba5eb76ceb2eb680c18334e7e9424040d7faa9b538
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - wagtail >=4.1
+
+test:
+  imports:
+    - wagtailautocomplete
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wagtail/wagtail-autocomplete
+  summary: An Autocomplete edit handler for Pages, Snippets, and more.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

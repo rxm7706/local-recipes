@@ -1,0 +1,50 @@
+{% set name = "wq.build" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wq.build-{{ version }}.tar.gz
+  sha256: 518399073b8fad4121522259ff0af27c2d8e113bc9d80553fc4a659dc11c331b
+
+build:
+  entry_points:
+    - wq = wq.build:wq
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - click >8
+    - django-click
+    - pyyaml
+    - pillow
+
+test:
+  imports:
+    - wq.build
+  commands:
+    - pip check
+    - wq --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wq/wq.build
+  summary: The wq command line tool.
+  dev_url: https://github.com/wq/wq.build
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

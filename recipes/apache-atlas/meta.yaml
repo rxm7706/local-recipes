@@ -1,0 +1,41 @@
+{% set name = "apache-atlas" %}
+{% set version = "0.0.16" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/apache_atlas-{{ version }}.tar.gz
+  sha256: 926fddaa080aa4f2c4cb787763eb3426aa972100ad7e4f2e3f8f3cfdae52d450
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - requests >=2.24
+
+test:
+  imports:
+    - apache_atlas
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/apache/atlas/tree/master/intg/src/main/python
+  summary: Apache Atlas Python Client
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

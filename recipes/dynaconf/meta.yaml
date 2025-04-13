@@ -1,0 +1,46 @@
+{% set name = "dynaconf" %}
+{% set version = "3.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dynaconf-{{ version }}.tar.gz
+  sha256: a28442d12860a44fad5fa1d9db918c710cbfc971e8b7694697429fb8f1c3c620
+
+build:
+  entry_points:
+    - dynaconf=dynaconf.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=38.6.0
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - dynaconf
+  commands:
+    - pip check
+    - dynaconf --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/dynaconf/dynaconf
+  summary: The dynamic configurator for your Python Project
+  license: MIT
+  license_file:
+    - LICENSE
+    - vendor_licenses/licenses.sh
+
+extra:
+  recipe-maintainers:
+    - rxm7706

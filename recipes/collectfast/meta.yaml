@@ -1,0 +1,43 @@
+{% set name = "collectfast" %}
+{% set version = "2.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/Collectfast-{{ version }}.tar.gz
+  sha256: 2f6abc8cab7ec5114a7a9a3660ab629ec142556957220aa82857dc9b4381490d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=2.2
+    - django-storages >=1.6
+    - typing-extensions
+
+test:
+  imports:
+    - collectfast
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/antonagestam/collectfast/
+  summary: A Faster Collectstatic
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,52 @@
+{% set name = "kedro-grpc-server" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro_grpc_server-{{ version }}.tar.gz
+  sha256: f2e607189bf375bffce2da83b20bda53ee1fcaaeb6b0e99604e294db3e074f1a
+
+build:
+  noarch: python
+  script:
+   - cp -R {{ RECIPE_DIR }}/requirements.txt {{ SRC_DIR }}/requirements.txt  # [unix]
+   - cp -R {{ RECIPE_DIR }}/test_requirements.txt {{ SRC_DIR }}/test_requirements.txt  # [unix]
+   - cp -R {{ RECIPE_DIR }}/setup.py {{ SRC_DIR }}/setup.py  # [unix]
+   - cp -R {{ RECIPE_DIR }}/LEGAL_NOTICE.md {{ SRC_DIR }}/LEGAL_NOTICE.md  # [unix]
+   - echo f | xcopy /f /y /S %RECIPE_DIR%\*requirements.txt %SRC_DIR%\  # [win]
+   - echo f | xcopy /f /y /S %RECIPE_DIR%\setup.py %SRC_DIR%\setup.py  # [win]
+   - echo f | xcopy /f /y /S %RECIPE_DIR%\LEGAL_NOTICE.md %SRC_DIR%\LEGAL_NOTICE.md  # [win]
+   - {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - click >=7.0
+    - grpcio >=1.54.0,<2.0.0
+    - grpcio-tools >=1.54.0,<2.0.0
+    - kedro >=0.18.13
+
+test:
+  imports:
+    - kedro_grpc_server
+  commands:
+    #- pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/mmchougule/kedro-grpc-server
+  summary: Kedro gRPC Server, a Kedro plugin that creates a gRPC server for your kedro pipelines
+  license: UNKNOWN
+  license_file: LEGAL_NOTICE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,53 @@
+{% set name = "opentelemetry-instrumentation-wsgi" %}
+{% set version = "0.50b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_wsgi-{{ version }}.tar.gz
+  sha256: c25b5f1b664d984a41546a34cf2f893dcde6cf56922f88c475864e7df37edf4a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api >=1.12,<2.0
+    - opentelemetry-instrumentation =={{ version }}
+    - opentelemetry-semantic-conventions =={{ version }}
+    - opentelemetry-util-http =={{ version }}
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+    - opentelemetry.instrumentation.wsgi
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-wsgi
+  summary: WSGI Middleware for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk
+    - conda-forge/opentelemetry-api
+    - conda-forge/opentelemetry-instrumentation
+    - conda-forge/opentelemetry-semantic-conventions
+    - conda-forge/opentelemetry-util-http

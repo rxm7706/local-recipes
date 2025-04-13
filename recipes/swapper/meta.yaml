@@ -1,0 +1,41 @@
+{% set name = "swapper" %}
+{% set version = "1.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/swapper-{{ version }}.tar.gz
+  sha256: bcd162c85d3906f6aabd3970e854041b4327e67d0fc96d07e234a85d96131425
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=4.2
+
+test:
+  imports:
+    - swapper
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wq/django-swappable-models
+  summary: The unofficial Django swappable models API.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

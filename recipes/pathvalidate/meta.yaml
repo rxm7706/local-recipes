@@ -1,0 +1,44 @@
+{% set name = "pathvalidate" %}
+{% set version = "3.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pathvalidate-{{ version }}.tar.gz
+  sha256: f5d07b1e2374187040612a1fcd2bcb2919f8db180df254c9581bb90bf903377d
+
+build:
+  skip: true  # [py<37]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools >=64
+    - setuptools-scm >=7,<8  # [py<38]
+    - releasecmd
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - pathvalidate
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/thombashi/pathvalidate
+  summary: pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.
+  dev_url: https://github.com/thombashi/pathvalidate
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

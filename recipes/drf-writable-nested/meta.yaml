@@ -1,0 +1,45 @@
+{% set name = "drf-writable-nested" %}
+{% set version = "0.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/beda-software/drf-writable-nested/archive/v{{ version }}.tar.gz
+  sha256: 3a3f3985c97ee9288e691a290fc991a5811af5e03511660f084065e06c7de0fe
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+  entry_points:
+    - django-admin = django.core.management:execute_from_command_line
+
+requirements:
+  host:
+    - python >=3.8,<3.12
+    - pip
+  run:
+    - python >=3.8,<3.12
+    - django >=3.2,<5.0
+    - djangorestframework >=3.8
+
+test:
+  commands:
+    - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,INSTALLED_APPS=['django.contrib','rest_framework','rest_framework.authtoken','drf_writable_nested']); django.setup(); import drf_writable_nested;"
+  # - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,USE_DEPRECATED_PYTZ=[' VERSION < (4, 0))']); django.setup(); import timezone_field"
+  #- python -c "import django; from django.conf import settings; settings.configure(INSTALLED_APPS=['django_rq'], RQ_QUEUES={}); django.setup(); import django_rq"        
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://github.com/beda-software/drf-writable-nested
+  summary: Writable nested model serializer for Django REST Framework
+  license: BSD-2-Clause
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

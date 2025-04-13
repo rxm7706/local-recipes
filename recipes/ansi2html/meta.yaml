@@ -1,0 +1,55 @@
+{% set name = "ansi2html" %}
+{% set version = "1.9.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/ansi2html-{{ version }}.tar.gz
+  sha256: 5c6837a13ecc1903aab7a545353312049dfedfe5105362ad3a8d9d207871ec71
+  patches:
+    - 0001-Fix-output-for-help.patch
+
+build:
+  noarch: python
+  entry_points:
+    - ansi2html = ansi2html.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=45.0.0
+    - setuptools-scm >=7.0.0
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  source_files:
+    - tests
+  imports:
+    - ansi2html
+  commands:
+    - pytest tests/test_ansi2html.py
+    - ansi2html --help
+  requires:
+    - pytest
+
+about:
+  home: https://pypi.python.org/pypi/ansi2html
+  license: LGPL-3.0-or-later
+  license_family: LGPL
+  license_file: LICENSE
+  summary: Convert text with ANSI color codes to HTML or to LaTeX.
+  description: ansi2html allows users to convert text with ANSI color codes to HTML or to Latex.
+  doc_url: https://pypi.python.org/pypi/ansi2html/
+  doc_source_url: https://github.com/pycontribs/ansi2html/blob/master/README.rst
+  dev_url: https://github.com/pycontribs/ansi2html
+
+extra:
+  recipe-maintainers:
+    - nehaljwani
+    - rxm7706

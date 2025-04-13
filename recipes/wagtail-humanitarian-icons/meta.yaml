@@ -1,0 +1,42 @@
+{% set name = "wagtail-humanitarian-icons" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-humanitarian-icons-{{ version }}.tar.gz
+  sha256: ce719fcaa8d1944e47a5b43b22dcf763fc52fee249b6bc8b4cda9d948510737c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools
+    - pip
+  run:
+    - python >=3.9
+    - wagtail >=4.2.2
+
+test:
+  imports:
+    - wagtailhumanitarianicons
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wmo-raf/wagtail-humanitarian-icons
+  summary: Ocha Humanitarian Icons, for use in  Wagtail projects, with an icon chooser widget.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,43 @@
+{% set name = "opentelemetry-exporter-jaeger-thrift" %}
+{% set version = "1.21.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_jaeger_thrift-{{ version }}.tar.gz
+  sha256: 41119bc7e5602cec83dd7d7060f061ecbc91de231272e8f515b07ef9a4b6e41c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling
+    - pip
+  run:
+    - python >=3.7
+    - opentelemetry-api >=1.3,<2.dev0
+    - opentelemetry-sdk >=1.11,<2.dev0
+    - thrift >=0.10.0
+
+test:
+  imports:
+    - opentelemetry_exporter_jaeger_thrift
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Jaeger Thrift Exporter for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

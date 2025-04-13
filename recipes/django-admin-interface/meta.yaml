@@ -1,0 +1,45 @@
+{% set name = "django-admin-interface" %}
+{% set version = "0.28.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-admin-interface-{{ version }}.tar.gz
+  sha256: e3c4545037f05db3b2e799f36222e9c0b86bc2c04f3f2d3042d7e81f6a5bc570
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+    - django-colorfield >=0.8.0,<1.0.0
+    - python-slugify >=7.0.0,<9.0.0
+
+test:
+  imports:
+    - admin_interface
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/fabiocaccamo/django-admin-interface
+  summary: django's default admin interface with superpowers - customizable themes, popup windows replaced by modals and many other features.
+  license: MIT
+  license_file:
+    - LICENSE.txt
+    - admin_interface/static/ckeditor/ckeditor/skins/light/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

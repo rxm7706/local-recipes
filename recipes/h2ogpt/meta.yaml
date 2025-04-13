@@ -1,0 +1,178 @@
+{% set name = "h2ogpt" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/h2oai/h2ogpt/archive/{{ version }}.tar.gz
+  sha256: cbbcf64a29eecb44adbd8a75b26e3c6f098f565f933c2497bf25bd72db86a873
+
+build:
+  skip: true  # [py<310]
+  entry_points:
+    - h2ogpt_finetune=h2ogpt.finetune:entrypoint_main
+    - h2ogpt_generate=h2ogpt.generate:entrypoint_main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - poetry-core
+    - pip
+
+  run:
+    - python >=3.8.0,<4.0.0 # IsConda
+    - gradio-client >=0.6.1,<0.7.0 # IsConda  # IsCondaRemovePin
+    - datasets ==2.16.1 # IsPinned # IsConda
+    - sentencepiece ==0.1.99 # IsPinned # IsConda
+    - gradio @https://h2o-release.s3.amazonaws.com/h2ogpt/gradio-4.19.2-py3-none-any.whl # IsConda
+    - sse-starlette ==1.8.2 # IsPinned # MissingCondaVersion
+    - huggingface_hub ==0.19.4 # IsPinned # IsConda
+    - appdirs ==1.4.4 # IsPinned # IsConda
+    - fire ==0.5.0 # IsPinned # IsConda
+    - docutils ==0.20.1 # IsPinned # IsConda
+    - pytorch ==2.1.2  # [not darwin]  # IsPinned # IsConda
+    - evaluate ==0.4.0 # IsPinned # IsConda
+    - rouge-score ==0.1.2 # IsPinned # IsConda
+    - sacrebleu ==2.3.1 # IsPinned # IsConda
+    - scikit-learn ==1.2.2 # IsPinned # IsConda
+    - numpy >=1.23.4,<2.0
+    - pandas ==2.0.2 # IsPinned
+    - matplotlib-base >=3.7.1
+    - loralib >=0.1.1
+    - bitsandbytes >=0.41.0
+    - accelerate >=0.27.2 # MissingCondaVersion
+    - peft >=0.7.0
+    - transformers >=4.38.1
+    - tokenizers >=0.15.1
+    - apscheduler >=3.10.1
+    - hf_transfer >=0.1.5 # IsMissingConda
+    - pynvml >=11.5.0
+    - psutil >=5.9.5
+    - boto3 >=1.26.101
+    - botocore >=1.29.101
+    - beautifulsoup4 >=4.12.2
+    - markdown >=3.4.3
+    - pytest >=7.2.2
+    - pytest-xdist >=3.2.1
+    - nltk >=3.8.1
+    - textstat >=0.7.3 # MissingCondaVersion
+    - pypandoc >=1.11  # [darwin]
+    - pypandoc_binary >=1.11 # IsMissingConda
+    - python-magic-bin >=0.4.14  # [win] # IsMissingConda
+    - openpyxl >=3.1.2
+    - lm_dataformat >=0.0.20 # IsMissingConda
+    - bioc >=2.0 # IsMissingConda
+    - einops >=0.6.1
+    - instructorembedding >=1.0.1 # MissingCondaVersion
+    - python-dotenv >=1.0.0
+    - text-generation >=0.6.1 # IsMissingConda
+    - tiktoken >=0.5.2
+    - openai >=1.12.0
+    - requests >=2.31.0
+    - httpx >=0.24.1
+    - urllib3 >=1.26.16
+    - filelock >=3.12.2
+    - joblib >=1.3.1
+    - tqdm >=4.65.0
+    - tabulate >=0.9.0
+    - packaging >=23.1
+    - langchain ==0.0.354 # IsPinned # IsConda # IsCondaRemovePin
+    - langchain_experimental ==0.0.47 # IsPinned # IsMissingConda
+    - langchain-community ==0.0.8 # IsPinned # IsConda # IsCondaRemovePin
+    - langsmith ==0.0.77 # IsPinned # IsConda # IsCondaRemovePin
+    - langchain-core ==0.1.6 # IsPinned
+    - pypdf >=3.17.1
+    - pypdfium2 >=4.24.0 # IsMissingConda
+    - sentence-transformers >=2.2.2,<2.3.0
+    - replicate ==0.20.0 # IsPinned
+    - anthropic ==0.8.1 # IsPinned
+    - langchain-google-genai ==0.0.6 # IsPinned # IsMissingConda
+    - google-generativeai ==0.3.2 # IsPinned # IsMissingConda
+    - langchain_mistralai ==0.0.2 # IsPinned # IsMissingConda
+    - mistralai ==0.0.8 # IsPinned # IsMissingConda
+    - chromadb ==0.4.23 # IsPinned # IsConda
+    - chroma-migrate ==0.0.7 # IsPinned # IsMissingConda
+    - duckdb ==0.7.1 # IsPinned # IsConda
+    - hnswmiglib @https://h2o-release.s3.amazonaws.com/h2ogpt/hnswmiglib-0.7.0.tgz # IsMissingConda
+    - pydantic-settings ==2.1.0 # IsPinned # IsConda
+    - unstructured ==0.12.5 # IsPinned # IsMissingConda
+    - pillow >=9.5.0
+    - posthog
+    - pdfminer.six ==20221105 # IsPinned # IsConda
+    - requests-file
+    - jq >=1.4.1
+    - pip-licenses >=4.3.0 # IsMissingConda
+    - weaviate-client >=3.25.3 # IsMissingConda
+    - gradio_pdf >=0.0.4 # IsMissingConda
+    - gradio_tools >=0.0.9 # IsMissingConda
+    - gpt4all ==1.0.5 # IsPinned # IsMissingConda
+    - llama-cpp-python ==0.2.26  # [not linux and not win and not osx] # IsPinned
+    - llama_cpp_python_cuda @https://github.com/jllllll/llama-cpp-python-cublas-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.26+cu121-cp310-cp310-manylinux_2_31_x86_64.whl  # [linux] # IsMissingConda
+    - arxiv ==1.4.8 # IsPinned # IsConda
+    - pymupdf >=1.23.8 # IsMissingConda
+    - google-search-results >=2.4.2 # IsMissingConda
+    - duckduckgo-search >=4.1.1 # IsMissingConda
+    - wikipedia >=1.4.0
+    - wolframalpha >=5.0.0 # IsMissingConda
+    - semanticscholar >=0.7.0 # IsMissingConda
+    - sympy >=1.12
+    - playwright >=1.37.0 # IsMissingConda
+    - selenium >=4.11.2
+    - html2text >=2020.1.16
+    - bs4 >=0.0.1
+    - python-doctr @git+https://github.com/h2oai/doctr.git@aee9b1c369e37af9e18265660935bce2c4447d65 # IsMissingConda
+    - weasyprint >=60.1
+    - imutils >=0.5.4
+    - opencv-python-headless >=4.8.1.78 # IsMissingConda
+    - pydub >=0.25.1
+    - librosa >=0.10.1
+    - ffmpeg >=1.4
+    - yt-dlp >=2023.10.13
+    - wavio >=0.0.8 # IsMissingConda
+    - soundfile ==0.12.1 # IsPinned # IsMissingConda
+    - torchaudio # IsMissingConda
+    - noisereduce # IsMissingConda
+    - emoji
+    - ffmpeg-python
+    - trainer # IsMissingConda
+    - pysbd
+    - coqpit
+    - cutlet >=0.3.0 # IsMissingConda
+    - langid >=1.1.6 # IsMissingConda
+    - g2pkk >=0.1.2 # IsMissingConda
+    - jamo >=0.4.1
+    - gruut >=2.2.3
+    - jieba >=0.42.1
+    - fiftyone # IsMissingConda
+    - pytube
+    - diffusers ==0.24.0 # IsPinned # IsConda
+
+test:
+  imports:
+    - h2ogpt
+  commands:
+    - pip check
+    - h2ogpt_finetune --help
+    - h2ogpt_generate --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/h2oai/h2ogpt
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+
+######################
+
+### mamba create -c conda-forge -c pytorch -n wagtail-h2ogpt python=3.10 pip poetry "pandas==2.0.2" "cpuonly>=2.0" "pytorch==2.1.2" "appdirs ==1.4.4" "arxiv ==1.4.8" "chromadb ==0.4.23" "datasets ==2.16.1" "diffusers ==0.24.0" "docutils ==0.20.1" "duckdb ==0.7.1" "evaluate ==0.4.0" "fire ==0.5.0" "huggingface_hub ==0.19.4" "langchain >=0.0.354" "langchain-core >=0.1.6" "langsmith >=0.0.77" "pdfminer.six ==20221105" "pydantic-settings ==2.1.0" "rouge-score ==0.1.2" "sacrebleu ==2.3.1" "scikit-learn ==1.2.2" "sentencepiece ==0.1.99" "gradio-client >=0.6.1" "gradio ==4.19.2" "numpy >=1.23.4,<2.0" "matplotlib-base >=3.7.1" "loralib >=0.1.1" "bitsandbytes >=0.41.0" "peft >=0.7.0" "transformers >=4.38.1" "tokenizers >=0.15.1" "apscheduler >=3.10.1" "pynvml >=11.5.0" "psutil >=5.9.5" "boto3 >=1.26.101" "botocore >=1.29.101" "beautifulsoup4 >=4.12.2" "markdown >=3.4.3" "pytest >=7.2.2" "pytest-xdist >=3.2.1" "nltk >=3.8.1" "pypandoc >=1.11" "openpyxl >=3.1.2" "einops >=0.6.1" "python-dotenv >=1.0.0" "tiktoken >=0.5.2" "openai >=1.12.0" "requests >=2.31.0" "httpx >=0.24.1" "urllib3 >=1.26.16" "filelock >=3.12.2" "joblib >=1.3.1" "tqdm >=4.65.0" "tabulate >=0.9.0" "packaging >=23.1" "pypdf >=3.17.1" "sentence-transformers >=2.2.2,<2.3.0"
+
+######################

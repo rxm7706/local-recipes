@@ -1,0 +1,53 @@
+{% set name = "pip-audit" %}
+{% set version = "2.7.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pip_audit-{{ version }}.tar.gz
+  sha256: 08891bbf179bffe478521f150818112bae998424f58bf9285c0078965aef38bc
+
+build:
+  entry_points:
+    - pip-audit = pip_audit._cli:audit
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=3.8
+    - cachecontrol >=0.13.0
+    - cyclonedx-python-lib >=5,<8
+    - html5lib >=1.1
+    - packaging >=23.0.0
+    - pip-api >=0.0.28
+    - pip-requirements-parser >=32.0.0
+    - requests >=2.31.0
+    - rich >=12.4
+    - toml >=0.10
+
+test:
+  imports:
+    - pip_audit
+  commands:
+    - pip check
+    - pip-audit --help
+  requires:
+    - pip
+
+about:
+  summary: A tool for scanning Python environments for known vulnerabilities
+  dev_url: https://github.com/pypa/pip-audit
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,46 @@
+{% set name = "wq.app" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wq.app-{{ version }}.tar.gz
+  sha256: e76a8a54f00f66dee15789375a20ef0fcfe08dee9a032ade0888c7e805bc1fe6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - wq.build
+
+test:
+  imports:
+    - wq.app
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wq/wq.app
+  summary: Offline-capable web/native apps for mobile surveys and field data collection.
+  dev_url: https://github.com/wq/wq.app
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSES.md
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,42 @@
+{% set name = "grunnur" %}
+{% set version = "0.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/grunnur-{{ version }}.tar.gz
+  sha256: b76182b7045e67d9eb7e0902e39d9cc6940dc3221aa3d1c168007183dc01ce89
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - pdm-pep517
+    - pip
+  run:
+    - python >=3.10
+    - numpy >=2
+    - mako >=1
+
+test:
+  imports:
+    - grunnur
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Uniform API for PyOpenCL and PyCUDA.
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

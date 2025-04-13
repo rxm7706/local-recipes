@@ -1,0 +1,40 @@
+{% set name = "django-tabular-permissions" %}
+{% set version = "2.9.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-tabular-permissions-{{ version }}.tar.gz
+  sha256: c3e292ec9c8caf4ef6c854b10695fb547d0aceed3f954403003efc351f341b43
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - tabular_permissions
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/RamezIssac/django-tabular-permissions
+  summary: Display django permissions in a tabular format that is user friendly, and highly customisable
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,44 @@
+{% set name = "hubspot-api-client" %}
+{% set version = "8.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/hubspot-api-client-{{ version }}.tar.gz
+  sha256: e8c25c2a12ab3801a6ab051ad7b25766a2e743928ed6ce9a309672c53b973044
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - urllib3 >=1.15
+    - six >=1.10
+    - certifi
+    - python-dateutil
+
+test:
+  imports:
+    - hubspot_api_client
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/HubSpot/hubspot-api-python
+  summary: HubSpot API client
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

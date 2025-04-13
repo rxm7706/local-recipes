@@ -1,0 +1,47 @@
+{% set name = "behave-restful" %}
+{% set version = "0.4.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/behave-restful-{{ version }}.tar.gz
+  sha256: 3b35841db24f53aa7a83b2eef4e5c81219b395c2e712b7131c44773954c541b9
+
+build:
+  noarch: python
+  script:
+   - cp -R {{ RECIPE_DIR }}/dependencies.txt {{ SRC_DIR }}/dependencies.txt  # [unix]
+   - echo f | xcopy /f /y /S %RECIPE_DIR%\dependencies.txt %SRC_DIR%\dependencies.txt  # [win]
+   - {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - m2r2
+    - pip
+  run:
+    - python >=3.8
+    - assertpy
+    - behave
+    - jsonpath
+    - jsonref
+    - jsonschema
+    - pyyaml
+    - requests
+
+test:
+  imports:
+    - behave_restful
+
+about:
+  home: https://github.com/behave-restful/behave-restful
+  summary: Implements Gherking language for REST services.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

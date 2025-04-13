@@ -1,0 +1,53 @@
+{% set name = "airfly" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/airfly-{{ version }}.tar.gz
+  sha256: d7f04b6bd4d20b93b7e7ec87d9cf78eae65cd7ccc1140091a314954c1969f646
+
+build:
+  entry_points:
+    - airfly = airfly.cli.main:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pdm-backend
+    - pip
+  run:
+    - python >=3.8
+    - attrs
+    - cattrs
+    - regex
+    - networkx
+    - black
+    - isort
+    - click
+    - libcst
+    - asttrs
+    - loguru
+
+test:
+  imports:
+    - airfly
+  commands:
+    - pip check
+    - airfly --help
+  requires:
+    - pip
+
+about:
+  summary: Auto generate Airflow's dag.py on the fly
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

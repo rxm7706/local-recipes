@@ -1,0 +1,4 @@
+click>=7.0
+grpcio>=1.54.0
+grpcio-tools>=1.54.0
+kedro >= 0.18.13  # to work with modular pipelines

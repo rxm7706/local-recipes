@@ -1,0 +1,51 @@
+{% set name = "lambdaprompt" %}
+{% set version = "0.6.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/lambdaprompt-{{ version }}.tar.gz
+  sha256: 5571d6235e0b32940ac17f5b2e38b4f09df618ed6b48e6209d5d05a3c4351699
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools >=45
+    - wheel
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=3.7
+    - requests
+    - aiohttp
+    - python-dotenv
+    - jinja2
+    - nest-asyncio
+    - pyyaml
+    - tenacity
+    - pydantic
+    - pydantic-settings
+
+test:
+  imports:
+    - lambdaprompt
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A functional programming interface for building AI systems
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

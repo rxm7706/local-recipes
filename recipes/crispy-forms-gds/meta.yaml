@@ -1,0 +1,43 @@
+{% set name = "crispy-forms-gds" %}
+{% set version = "0.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/crispy-forms-gds-{{ version }}.tar.gz
+  sha256: 9766764d48b2572c414b5c7853f4ea1a0c4d26881ad074a99139fdf97200d43a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+    - setuptools
+  run:
+    - python >=3.6
+    - django >=3.2
+    - django-crispy-forms >=1.9
+
+test:
+  imports:
+    - crispy_forms_gds
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wildfish/crispy-forms-gds
+  summary: Django application to add 'django-crispy-forms' layout objects for the GOV.UK Design System.
+  license: GD
+  license_file: LICENCE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

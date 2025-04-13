@@ -1,0 +1,41 @@
+{% set name = "wagtail-liveedit" %}
+{% set version = "0.0.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-liveedit-{{ version }}.tar.gz
+  sha256: 9f1b29979f6358af168a3c559b4c21107821e17b8e68f16f605a07a6f3121df8
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - wagtail >=2.16,<=5.1.2
+
+test:
+  imports:
+    - liveedit
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jonny5532/wagtail-liveedit
+  summary: Live editing add-on for Wagtail CMS
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

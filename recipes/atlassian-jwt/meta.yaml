@@ -1,0 +1,42 @@
+{% set name = "atlassian-jwt" %}
+{% set version = "3.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/atlassian-jwt-{{ version }}.tar.gz
+  sha256: a7a15aab8f9d1dda38ea1c261f6ad37a556bea598c039b055cda45c51061c641
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pypandoc
+    - pip
+  run:
+    - python >=3.8
+    - pyjwt >=2.2.0
+
+test:
+  imports:
+    - atlassian_jwt
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://bitbucket.org/atlassian/atlassian-jwt-py
+  summary: 'JSON web token: pyjwt plus Atlassian query-string-hash claim'
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

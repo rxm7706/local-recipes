@@ -1,0 +1,49 @@
+{% set name = "apache-airflow-providers-apache-livy" %}
+{% set version = "3.5.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/apache-airflow-providers-apache-livy-{{ version }}.tar.gz
+  sha256: 447e4bf4b8497ac0fd92a74d8c07a3cb5810619ef43d01ea5d7e126697d1c29b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools ==67.2.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - aiohttp
+    - apache-airflow-providers-http
+    - apache-airflow >=2.4.0
+    - asgiref
+
+test:
+  imports:
+    - airflow.providers.apache.livy
+    - airflow.providers.apache.livy.hooks
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://airflow.apache.org/
+  summary: Provider for Apache Airflow. Implements apache-airflow-providers-apache-livy package
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

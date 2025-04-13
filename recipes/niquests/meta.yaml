@@ -1,0 +1,48 @@
+{% set name = "niquests" %}
+{% set version = "3.10.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/niquests-{{ version }}.tar.gz
+  sha256: 948df009a55da59d532d07b69dc46902796033e43cd2d2d683474e7aa086ad0e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling >=1.6.0,<2
+    - pip
+  run:
+    - python >=3.7
+    - charset-normalizer >=2,<4
+    - idna >=2.5,<4
+    - urllib3.future >=2.11.900,<3
+    - wassima >=1.0.1,<2
+    - kiss-headers >=2,<4
+    - urllib3-future <3,>=2.11.900
+
+test:
+  imports:
+    - niquests
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Niquests is a simple, yet elegant, HTTP library. It is a drop-in replacement for Requests, which is under feature freeze.
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,43 @@
+{% set name = "intake-dataframe-catalog" %}
+{% set version = "0.2.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/intake_dataframe_catalog-{{ version }}.tar.gz
+  sha256: 2379d25b2951c65ca3928ff7d98f7c79c5dedece2e70699ef85a54afee8efe91
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=61.0.0
+    - versioneer
+    - pip
+  run:
+    - python >=3.9
+    - intake <2.0.0
+    - pandas
+
+test:
+  imports:
+    - intake_dataframe_catalog
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: An intake driver for a searchable table of intake sources and associated metadata
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

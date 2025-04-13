@@ -1,0 +1,40 @@
+{% set name = "django-social-share" %}
+{% set version = "2.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-social-share-{{ version }}.tar.gz
+  sha256: 37844f3b4f88a2008604ece7eaedd52fd5914f111f13525200ce1101b750757f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - django_social_share
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/fcurella/django-social-share
+  summary: Templatetags for 'tweet this' and 'share on facebook'
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

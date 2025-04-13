@@ -1,0 +1,42 @@
+{% set name = "django-hatchway" %}
+{% set version = "0.5.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-hatchway-{{ version }}.tar.gz
+  sha256: c866158e2a47502decdc95da7ce8e97fa9b4b783ce3a43af67291e2fdaad9799
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - pip
+  run:
+    - python >=3.10
+    - django >=4.0
+    - pydantic >=1.10,<2.0
+
+test:
+  imports:
+    - hatchway
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: An unsurprising Django API framework
+  home: https://github.com/andrewgodwin/django-hatchway
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

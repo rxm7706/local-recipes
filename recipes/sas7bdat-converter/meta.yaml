@@ -1,0 +1,45 @@
+{% set name = "sas7bdat-converter" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/sas7bdat_converter-{{ version }}.tar.gz
+  sha256: dcd2b729eea2368530f50b79582ca12574cffea05cac7810debbb76361bec423
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - pandas >=1.2.0
+  run_constrained:
+    - openpyxl >=3.0.5
+    - pyarrow >=9.0.0
+
+test:
+  imports:
+    - sas7bdat_converter
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/sanders41/sas7bdat-converter
+  summary: Convert sas7bdat and xport files into other formats
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

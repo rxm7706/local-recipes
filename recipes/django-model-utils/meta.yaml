@@ -1,0 +1,42 @@
+{% set name = "django-model-utils" %}
+{% set version = "4.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-model-utils-{{ version }}.tar.gz
+  sha256: 7b73179480e4d4a737d0188e7c49da03776bbadedad569a534c4e9f1afc004d4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2
+
+test:
+  imports:
+    - model_utils
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jazzband/django-model-utils
+  summary: Django model mixins and utilities
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

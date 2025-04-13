@@ -1,0 +1,50 @@
+{% set name = "dagster-webserver" %}
+{% set version = "1.8.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dagster-webserver-{{ version }}.tar.gz
+  sha256: 725457515d825a35c5defc6fc1fa897309ea168c90eb146936d2f48c9a4501f9
+
+build:
+  entry_points:
+    - dagster-webserver = dagster_webserver.cli:main
+    - dagster-webserver-debug = dagster_webserver.debug:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<3.13
+    - pip
+  run:
+    - python >=3.8,<3.13
+    - click >=7.0,<9.0
+    - dagster ==1.8.6
+    - dagster-graphql ==1.8.6
+    - starlette !=0.36.0
+    - uvicorn
+
+test:
+  imports:
+    - dagster_webserver
+  commands:
+    - pip check
+    - dagster-webserver --help
+    - dagster-webserver-debug --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/dagster-io/dagster
+  summary: Web UI for dagster.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

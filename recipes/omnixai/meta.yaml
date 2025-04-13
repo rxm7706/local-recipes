@@ -1,0 +1,60 @@
+{% set name = "OmniXAI" %}
+{% set version = "1.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/omnixai-{{ version }}.tar.gz
+  sha256: 060a77f5accdab388097f92ed7635c7bd94e0ecebe9b4730445527857b0609dc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7,<4.0
+    - pip
+  run:
+    - python >=3.7,<4.0
+    - numpy >=1.17,<1.24
+    - pandas >=1.1.0
+    - scikit-learn >=0.24,<1.2
+    - scipy >=1.5.0
+    - scikit-image >=0.17.2
+    - matplotlib-base
+    - pillow <10.0
+    - lime
+    - shap >=0.40.0
+    - salib
+    - hnswlib >=0.5.0
+    - dill
+    - tqdm
+    - wheel
+    - packaging
+    - ipython >=8.10.0
+    - tabulate
+    - statsmodels >=0.10.1
+    - openai
+
+test:
+  imports:
+    - docs
+    - omnixai
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/salesforce/omnixai
+  summary: 'OmniXAI: An Explainable AI Toolbox'
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

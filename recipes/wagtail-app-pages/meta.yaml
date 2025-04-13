@@ -1,0 +1,43 @@
+{% set name = "wagtail-app-pages" %}
+{% set version = "0.3.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_app_pages-{{ version }}.tar.gz
+  sha256: 5c3d3ba032355714f8514f7912f768b1161996c0dd4ef4f5c3334bd8f3cbc0f9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - wagtail >=6.0,<6.4
+
+test:
+  imports:
+    - wagtail_app_pages
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mwesterhof/wagtail_app_pages
+  summary: Full MVC support for wagtail pages
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

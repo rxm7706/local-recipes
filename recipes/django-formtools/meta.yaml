@@ -1,0 +1,43 @@
+{% set name = "django-formtools" %}
+{% set version = "2.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-formtools-{{ version }}.tar.gz
+  sha256: 47cb34552c6efca088863d693284d04fc36eaaf350eb21e1a1d935e0df523c93
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=61.2
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2
+
+test:
+  imports:
+    - django_formtools
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A set of high-level abstractions for Django forms
+  dev_url: https://github.com/jazzband/django-formtools
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

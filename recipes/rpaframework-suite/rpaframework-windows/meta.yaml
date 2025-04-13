@@ -1,0 +1,51 @@
+{% set name = "rpaframework-windows" %}
+{% set version = "7.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/rpaframework_windows-{{ version }}.tar.gz
+  sha256: ae12dd45734f29e61dc5eb369368d19ddbd6830d2aa1aee633caa369b981dfda
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - dataclasses >=0.7.0,<0.8.0
+    - rpaframework-core >=11.0.0,<12.0.0
+    - robotframework >=4.0.0,!=4.0.1,!=6.1.0,<7.0.0
+    - robotframework-pythonlibcore >=4.2.0,<5.0.0
+    - pynput-robocorp-fork >=5.0.0,<6.0.0
+    #- uiautomation >=2.0.15,<3.0.0
+    - comtypes >=1.1.11,<2.0.0
+    - psutil >=5.9.0,<6.0.0
+    - pywin32-on-windows >=300,<304
+    - fire >=0.4.0,<0.5.0
+
+test:
+  imports:
+    - rpaframework_windows
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://rpaframework.org/
+  summary: Windows library for RPA Framework
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

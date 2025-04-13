@@ -1,0 +1,43 @@
+{% set name = "django-file" %}
+{% set version = "1.0.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-file-{{ version }}.tar.gz
+  sha256: f77dd4d923dde0754731377ec5c51703d407197545fa03cc00eff5e4d89e7b0e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django-file-download >=1.0.1
+    - django-file-md5 >=1.0.3
+    - django-file-upload
+
+test:
+  imports:
+    - django_file
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-xxx/django-file
+  summary: Django File Relative
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

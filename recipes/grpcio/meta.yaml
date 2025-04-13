@@ -1,0 +1,42 @@
+{% set name = "grpcio" %}
+{% set version = "1.56.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/grpcio-{{ version }}.tar.gz
+  sha256: 4c08ee21b3d10315b8dc26f6c13917b20ed574cdbed2d2d80c53d5508fdcc0f2
+
+build:
+  skip: true  # [py<37]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - grpc
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://grpc.io
+  summary: HTTP/2-based RPC framework
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

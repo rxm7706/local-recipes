@@ -1,0 +1,46 @@
+{% set name = "watchfiles" %}
+{% set version = "0.20.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/watchfiles-{{ version }}.tar.gz
+  sha256: 728575b6b94c90dd531514677201e8851708e6e4b5fe7028ac506a200b622019
+
+build:
+  entry_points:
+    - watchfiles = watchfiles.cli:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - maturin >=0.14.16,<2
+    - pip
+  run:
+    - python >=3.7
+    - anyio >=3.0.0
+
+test:
+  imports:
+    - watchfiles
+  commands:
+    - pip check
+    - watchfiles --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/samuelcolvin/watchfiles/watchfiles
+  summary: Simple, modern and high performance file watching and code reload in python.
+  dev_url: https://github.com/samuelcolvin/watchfiles
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

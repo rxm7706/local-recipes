@@ -1,0 +1,44 @@
+{% set name = "gptq" %}
+{% set version = "0.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/gptq-{{ version }}.tar.gz
+  sha256: 05121652e59fd5cc9c6cf9530bb999bb4d843fdbbe81ee532e06c6f8023b812f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pytorch
+    - pip
+  run:
+    - python
+    - pytorch
+    - transformers
+    - datasets
+    - numpy
+
+test:
+  imports:
+    - gptq
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: 'GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers'
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

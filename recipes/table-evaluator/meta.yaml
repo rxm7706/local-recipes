@@ -1,0 +1,70 @@
+{% set name = "table-evaluator" %}
+{% set version = "1.7.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/table_evaluator-{{ version }}.tar.gz
+  sha256: a41ad25302b5a7bc131a28a0fa486c032a48fb5ff5ff8902584f10b96c357067
+
+build:
+  noarch: python
+  script:
+    - sed -i.bak 's/dython = [\"]0.7.7[\"]/dython/g' pyproject.toml
+    #- sed -i.bak "s/Werkzeug<3.1/werkzeug/g" requirements/install.txt    
+    # dython = "0.7.7"
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - sed     # [unix]
+    - m2-sed  # [win]
+  host:
+    - python >=3.10,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - pyarrow >=17.0.0,<18.0.0
+    - scikit-learn >=1.5.1,<2.0.0
+    - tqdm >=4.66.5,<5.0.0
+    - matplotlib-base >=3.9.2,<4.0.0
+    - numpy >=1.26.4
+    - seaborn >=0.13.2,<0.14.0
+    - pandas >=2.0.0,<3.0.0
+    - scipy <=1.11.4
+    - dython >=0.7.7,<0.8.0
+    #- pre-commit >=3.8.0,<4.0.0
+    #- ruff >=0.6.9,<0.7.0
+    #- ipython >=8.28.0,<9.0.0
+
+    #- python >=3.6
+    #- pandas ==2.0.*
+    #- numpy
+    #- tqdm
+    #- psutil
+    #- dython >=0.7.3,<0.8.0
+    #- seaborn
+    #- matplotlib-base
+    #- scikit-learn
+    #- scipy <=1.11.4
+
+test:
+  imports:
+    - table_evaluator
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Baukebrenninkmeijer/Table-Evaluator
+  summary: A package to evaluate how close a synthetic data set is to real data.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

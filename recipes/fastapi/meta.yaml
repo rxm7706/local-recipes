@@ -1,0 +1,43 @@
+{% set name = "fastapi" %}
+{% set version = "0.110.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/fastapi-{{ version }}.tar.gz
+  sha256: 6feac43ec359dfe4f45b2c18ec8c94edb8dc2dfc461d417d9e626590c071baad
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling >=1.13.0
+    - pip
+  run:
+    - python >=3.8
+    - starlette >=0.37.2,<0.38.0
+    - pydantic >=1.7.4,!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0
+    - typing-extensions >=4.8.0
+
+test:
+  imports:
+    - fastapi
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: FastAPI framework, high performance, easy to learn, fast to code, ready for production
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

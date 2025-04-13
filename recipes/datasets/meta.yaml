@@ -1,0 +1,57 @@
+{% set name = "datasets" %}
+{% set version = "3.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/datasets-{{ version }}.tar.gz
+  sha256: 40d63b09e76a3066c32e746d6fdc36fd3f29ed2acd49bf5b1a2100da32936511
+
+build:
+  entry_points:
+    - datasets-cli=datasets.commands.datasets_cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - filelock
+    - numpy >=1.17
+    - pyarrow >=15.0.0
+    - dill >=0.3.0,<0.3.9
+    - pandas
+    - requests >=2.32.2
+    - tqdm >=4.66.3
+    - python-xxhash
+    - multiprocess
+    - fsspec >=2023.1.0,<=2024.6.1
+    - aiohttp
+    - huggingface_hub >=0.22.0
+    - packaging
+    - pyyaml >=5.1
+
+test:
+  imports:
+    - datasets
+  commands:
+    - pip check
+    - datasets-cli --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/huggingface/datasets
+  summary: HuggingFace community-driven open-source library of datasets
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
