@@ -247,11 +247,11 @@ assimp:
 attr:
   - 2.5
 aws_c_auth:
-  - 0.8.7
+  - 0.9.0
 aws_c_cal:
-  - 0.8.7
+  - 0.8.9
 aws_c_common:
-  - 0.12.1
+  - 0.12.2
 aws_c_compression:
   - 0.3.1
 aws_c_event_stream:
@@ -259,17 +259,17 @@ aws_c_event_stream:
 aws_c_http:
   - 0.9.5
 aws_c_io:
-  - 0.17.0
+  - 0.18.0
 aws_c_mqtt:
-  - 0.12.2
+  - 0.12.3
 aws_c_s3:
-  - 0.7.13
+  - 0.7.15
 aws_c_sdkutils:
   - 0.2.3
 aws_checksums:
-  - 0.2.3
+  - 0.2.5
 aws_crt_cpp:
-  - 0.31.1
+  - 0.32.4
 aws_sdk_cpp:
   - 1.11.510
 azure_core_cpp:
@@ -301,7 +301,7 @@ capnproto:
 ccr:
   - 1.3
 cfitsio:
-  - 4.6.0
+  - 4.6.2
 coin_or_cbc:
   - 2.10
 coincbc:
@@ -408,8 +408,11 @@ googleapis_cpp:
   - '0.10'
 graphviz:
   - '12'
+# Harfbuzz guarantees total ABI compatibiblity
+# The first version to have this new ABI pin is 11.0.1
+# https://github.com/conda-forge/harfbuzz-feedstock/pull/125
 harfbuzz:
-  - '11'
+  - '11.0.1'
 hdf4:
   - 4.2.15
 hdf5:
@@ -449,7 +452,7 @@ krb5:
 ldas_tools_framecpp:
   - '2.9'
 libabseil:
-  - '20240722'
+  - 20250127
 libaec:
   - '1'
 libamd:
@@ -473,11 +476,11 @@ libblitz:
 libblst:
   - '0.3'
 libboost_devel:
-  - '1.84'
+  - '1.86'
 libboost_headers:
-  - '1.84'
+  - '1.86'
 libboost_python_devel:
-  - '1.84'
+  - '1.86'
 libbtf:
   - '2'
 libcamd:
@@ -559,7 +562,7 @@ libgoogle_cloud_speech_devel:
 libgoogle_cloud_storage_devel:
   - '2.36'
 libgrpc:
-  - "1.67"
+  - "1.71"
 libgsasl:
   - '2'
 libheif:
@@ -569,7 +572,7 @@ libhugetlbfs:
 libhwloc:
   - 2.11.2
 libhwy:
-  - '1.1'
+  - '1.2'
 libiconv:
   - 1
 libidn2:
@@ -623,9 +626,11 @@ libpcap:
 libpng:
   - 1.6
 libprotobuf:
-  - 5.28.3
+  - 5.29.3
 libpq:
   - '17'
+libpulsar:
+  - '3.7.0'
 libraw:
   - '0.21'
 librbio:
@@ -796,9 +801,9 @@ pcl:
 perl:
   - 5.32.1
 petsc:
-  - '3.22'
+  - '3.23'
 petsc4py:
-  - '3.22'
+  - '3.23'
 plutovg:
   - 1.0.0
 plutosvg:
@@ -806,9 +811,9 @@ plutosvg:
 pugixml:
   - '1.15'
 slepc:
-  - '3.22'
+  - '3.23'
 slepc4py:
-  - '3.22'
+  - '3.23'
 svt_av1:
   - 3.0.2
 p11_kit:
@@ -887,7 +892,7 @@ qt:
 qt_main:
   - 5.15
 qt6_main:
-  - '6.8'
+  - 6.9
 qtkeychain:
   - '0.15'
 rdma_core:
@@ -919,7 +924,7 @@ s2geography:
 s2geometry:
   - 0.11.1
 s2n:
-  - 1.5.15
+  - 1.5.17
 sdl2:
   - '2'
 sdl2_image:
@@ -931,7 +936,7 @@ sdl2_net:
 sdl2_ttf:
   - '2'
 singular:
-  - 4.4.0
+  - 4.4.1
 snappy:
   - 1.2
 soapysdr:
@@ -940,6 +945,8 @@ sox:
   - 14.4.2
 spdlog:
   - '1.13'
+spirv_tools:
+  - 2024
 sqlite:
   - 3
 srm_ifce:
@@ -961,7 +968,7 @@ tensorflow:
 thrift_cpp:
   - 0.21.0
 tinyxml2:
-  - '10.0'
+  - '11.0'
 tk:
   - 8.6                # [not ppc64le]
 tiledb:
@@ -989,7 +996,7 @@ vtk_base:
 wcslib:
   - '8'
 wxwidgets:
-  - 3.2.6
+  - 3.2.7
 x264:
   - '1!164.*'
 x265:
