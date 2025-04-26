@@ -1,5 +1,5 @@
-{% set name = "teradataml" %}
-{% set version = "20.0.0.4" %}
+{% set name = "teradatamlwidgets" %}
+{% set version = "20.0.0.5" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,13 +7,13 @@ package:
   version: {{ version }}
 
 source:
-  sha256: 70e855d56a7700d4e835481b1348a5b44e5a991345f3239e7a87d6df47c55ec3
-  url: https://pypi.org/packages/py3/t/teradataml/teradataml-{{ version }}-py3-none-any.whl
+  sha256: 2d77980d79b456a294836441db782fdbd58b361405f4c4f5162b2aeadb9f7556
+  url: https://pypi.org/packages/py3/t/teradatamlwidgets/teradatamlwidgets-{{ version }}-py3-none-any.whl
 
 build:
   noarch: python
   script:
-    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps teradataml
+    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps teradatamlwidgets
   number: 0
 
 requirements:
@@ -37,12 +37,17 @@ requirements:
     - python-dotenv
     - requests
     - sqlalchemy >=2.0
-    - teradatamlwidgets >=20.0.0
     - teradatasql >=20.0.0
     - teradatasqlalchemy >=20.0.0
+    - teradataml >=20.0.0
+    - httpx >=0.22.0
+    - ipywidgets >=8.1.1
+    - nbconvert
+    - nbformat
 
 test:
   imports:
+    - teradatamlwidgets
     - teradataml
     - teradatasql
     - sqlalchemy
