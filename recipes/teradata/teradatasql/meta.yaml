@@ -1,29 +1,29 @@
+{% set name = "teradatasql" %}
+{% set version = "20.0.0.30" %}
+{% set python_min = "3.10" %}
+
 package:
-  name: teradatasql
-  version: 17.20.0.24
+  name: {{ name|lower }}
+  version: {{ version }}
 
 source:
-#  sha256: 9ba7e72c58852d297b41dcf2f0cd7627c7a14e0cf8f8bc572b54f109c064ccf0
-#  url: https://files.pythonhosted.org/packages/7a/00/575454fd468a7dec987b691bdca11e42df744ea5ed0f2504b9c89b67edeb/teradatasql-17.20.0.12-py3-none-any.whl
-  sha256: 23675f19f3f16e53dd7375dc45b0304f448b99224ebd8eb561462ad0873565d1
-  url: https://files.pythonhosted.org/packages/1a/8c/6b00ecab80d9aea26f74d7a979953ddc1ca0a6f305fe25dd5d1aabe6803f/teradatasql-17.20.0.24-py3-none-any.whl
+  sha256: 182b72aac3c1fb4b78a90fa1d62c523866edfaa38e1464e14e5dbc18f0aa3c6d
+  url: https://pypi.org/packages/py3/t/teradatasql/teradatasql-{{ version }}-py3-none-any.whl
 
 build:
   noarch: python
-  script: pip install teradatasql-17.20.0.24-py3-none-any.whl -vv
+  script:
+    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps teradatasql
   number: 0
-  string: py3_0
 
 requirements:
   build:
     - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-#    - {{ compiler('fortran') }}
-#    - {{ compiler('go') }}
-#    - {{ compiler('rust') }}
+    - {{ stdlib('c') }}
+
   host:
+    - python {{ python_min }}
     - pip
-    - python >=3.7,<3.12
     - setuptools >=38.0
 
   run:
@@ -37,6 +37,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: Teradata SQL Driver for Python
