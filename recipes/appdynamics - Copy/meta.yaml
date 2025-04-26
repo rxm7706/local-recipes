@@ -1,0 +1,59 @@
+{% set name = "appdynamics" %}
+{% set version = "25.1.0.7425" %}
+{% set python_min = "3.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  sha256: 8c7ea0523ff5c36cd8634f709e710726d6da42d15827f236ab8d324046d81b77
+  url: https://pypi.org/packages/py2.py3/a/appdynamics/appdynamics-{{ version }}-py2.py3-none-any.whl
+
+build:
+  noarch: python
+  number: 0
+  string: py2.py3
+  script:
+    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps appdynamics
+  ignore_run_exports_from:
+    - {{ stdlib('c') }}
+    - {{ compiler('c') }}
+  missing_dso_whitelist:
+    - '*/libjvm.so'
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - cmake
+    - ninja
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=38.0
+  run:
+    - python >={{ python_min }},<4.0
+    - appdynamics-proxysupport-linux-x64
+    - appdynamics-bindeps-linux-x64 >=24.12.0
+
+test:
+  imports:
+    - appdynamics
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Python Agent for AppDynamics
+  doc_url: https://pypi.org/project/appdynamics/
+  home: https://www.appdynamics.com/python
+  license: Proprietary
+  license_file:
+    - LICENSE
+
+extra:
+    copy_test_source_files: true
+    final: true

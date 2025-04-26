@@ -1,0 +1,62 @@
+{% set name = "appdynamics-proxysupport-linux-x64" %}
+{% set version = "11.72.3" %}
+{% set python_min = "3.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  sha256: 0689aaa801c9d675aa70500fbe002fbb600ef23671667846a0419abdae3d9740
+  url: https://pypi.org/packages/py2.py3/a/appdynamics-proxysupport-linux-x64/appdynamics_proxysupport_linux_x64-{{ version }}-py2.py3-none-any.whl
+
+build:
+  noarch: python
+  script:
+    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps appdynamics-proxysupport-linux-x64
+  #ignore_run_exports:
+   #- openjdk
+   #- python >={{ python_min }},<4.0
+  ignore_run_exports_from:
+    - {{ stdlib('c') }}
+    - {{ compiler('c') }}
+  number: 0
+  string: py2.py3
+  missing_dso_whitelist:
+    - '*/libjvm.so'
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - cmake
+    - ninja
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=38.0
+    #- openjdk =8
+  run:
+    - python >={{ python_min }},<4.0
+    #- openjdk
+
+test:
+  #imports:
+  #  - appdynamics_proxysupport_linux_x64
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Proxysupport for AppDynamics Python agent
+  doc_url: https://pypi.org/project/appdynamics-proxysupport-linux-x64/
+  home: https://www.appdynamics.com/python
+  license: Proprietary
+  license_file:
+    - LICENSE
+
+extra:
+    copy_test_source_files: true
+    final: true

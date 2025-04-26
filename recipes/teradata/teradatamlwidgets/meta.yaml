@@ -24,7 +24,6 @@ requirements:
     - python {{ python_min }}
     - pip
     - setuptools >=38.0
-
   run:
     - cryptography>=42.0.5
     - httpx >=0.22.0
