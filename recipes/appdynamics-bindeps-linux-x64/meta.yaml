@@ -1,0 +1,72 @@
+{% set name = "appdynamics-bindeps-linux-x64" %}
+{% set version = "24.12.0" %}
+{% set python_min = "3.12" %}
+# {% set python_min = "3.7" %}
+# {% set version = "23.10.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  sha256: 36df259ea54470c5feab416bf5a6571abc3cf0081bef903d978ae6fa7e4f9c87
+  url: https://pypi.org/packages/cp312/a/appdynamics-bindeps-linux-x64/appdynamics_bindeps_linux_x64-{{ version }}-cp312-none-any.whl
+  # sha256: a3f70fa3bb6887f5260cba24d2e8babbcdfac79c55230011d16adcfe06726696
+  # url: https://pypi.org/packages/cp311/a/appdynamics-bindeps-linux-x64/appdynamics_bindeps_linux_x64-{{ version }}-cp311-none-any.whl
+  # sha256: ec80710d9a31a15e58236226332c3a8c47c52aef4e1d8806ad6f0d12e5e91aee
+  # url: https://pypi.org/packages/cp310/a/appdynamics-bindeps-linux-x64/appdynamics_bindeps_linux_x64-{{ version }}-cp310-none-any.whl
+  # sha256: 922bae511dba4b2dad50f6e8a54f0a8c5536d1ff5266bf2fc8642aa8a1eb3909
+  # url: https://pypi.org/packages/cp39/a/appdynamics-bindeps-linux-x64/appdynamics_bindeps_linux_x64-{{ version }}-cp39-none-any.whl
+  # sha256: ad9ae0d49ef1a9fa23c39c31a7a663eb9328e913239d299cf2f3de6cc63dec2f
+  # url: https://pypi.org/packages/cp38/a/appdynamics-bindeps-linux-x64/appdynamics_bindeps_linux_x64-{{ version }}-cp38-none-any.whl
+  # sha256: e5f7b4c334aad8d7c7d1813a3e9cfdc3131856b22c186676efc0829544ceca0f
+  # url: https://pypi.org/packages/cp37/a/appdynamics-bindeps-linux-x64/appdynamics_bindeps_linux_x64-{{ version }}-cp37-none-any.whl
+
+build:
+  noarch: python
+  number: 0
+  string: cp12
+  script:
+    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps appdynamics-bindeps-linux-x64
+  ignore_run_exports_from:
+    - {{ stdlib('c') }}
+    - {{ compiler('c') }}
+    #- python >={{ python_min }},<4.0
+  missing_dso_whitelist:
+    - '*/libjvm.so'
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - cmake
+    - ninja
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=38.0
+    #- openjdk =8
+  run:
+    - python >={{ python_min }},<4.0
+    #- openjdk
+
+test:
+#  imports:
+#    - appdynamics_bindeps_linux_x64
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Dependencies for AppDynamics Python agent
+  doc_url: https://pypi.org/project/appdynamics-bindeps-linux-x64/
+  home: https://www.appdynamics.com/python
+  license: Proprietary
+  license_file:
+    - LICENSE
+
+extra:
+    copy_test_source_files: true
+    final: true
