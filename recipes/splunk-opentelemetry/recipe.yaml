@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: splunk-opentelemetry
+  version: "2.2.0"
+  python_min: '3.9'
+  python_max: '4.0'
+  python_test_max: '3.13'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name | replace("-", "_") }}/${{ name | replace("-", "_") }}-${{ version }}.tar.gz
+  sha256: 50def11cfef3994b312c47d741e5991918507a564a69cb696456db25adb98490
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<${{ python_max }}
+    - opentelemetry-api ==1.31.1
+    - opentelemetry-sdk ==1.31.1
+    - opentelemetry-propagator-b3 ==1.31.1
+    - opentelemetry-exporter-otlp-proto-grpc ==1.31.1
+    - opentelemetry-exporter-otlp-proto-http ==1.31.1
+    - opentelemetry-instrumentation ==0.52b1
+    - opentelemetry-instrumentation-system-metrics ==0.52b1
+    - opentelemetry-semantic-conventions ==0.52b1
+
+tests:
+  - python:
+      imports:
+        - splunk_otel
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_test_max }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: The Splunk distribution of OpenTelemetry Python Instrumentation provides a Python agent that automatically instruments your Python application to capture and report distributed traces to SignalFx APM.
+  homepage: https://github.com/signalfx/splunk-otel-python
+  license: Apache-2.0
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSE.txt
+  description: |
+    This package provides entrypoints to configure OpenTelemetry.
+  repository: https://github.com/signalfx/splunk-otel-python
+  documentation: https://docs.splunk.com/observability/en/gdi/get-data-in/application/python/get-started.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
