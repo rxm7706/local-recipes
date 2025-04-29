@@ -1,0 +1,46 @@
+{% set name = "patch" %}
+{% set version = "1.16" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: python-{{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/patch-{{ version }}.zip
+  sha256: c62073f356cff054c8ac24496f1a3d7cfa137835c31e9af39a9f5292fd75bd9f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - patch
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/techtonik/python-patch/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Cross-platform alternative to unix patch utility capable to apply unified diffs
+  dev_url: https://github.com/techtonik/python-patch/
+
+extra:
+  recipe-maintainers:
+    - windelbouwman
+    - abloemert
