@@ -1,49 +1,137 @@
-{% set name = "xformers" %}
-{% set version = "0.0.26.post1" %}
+context:
+  name: xformers
+  version: "0.0.29.post1"
+  build_number: 2
+  cuda_version: ${{ env.get("CONDA_OVERRIDE_CUDA", default="None")}}
+  cuda: ${{ "enabled" if cuda_version != "None" else "disabled" }}
+  cuda_build_string: cuda_${{ cuda_version | version_to_buildstring }}
+  string_prefix: ${{ cuda_build_string if cuda ==  "enabled" else "cpu_" }}
 
 package:
-  name: {{ name|lower }}
-  version: {{ version }}
+  name: ${{ name|lower }}
+  version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/xformers-{{ version }}.tar.gz
-  sha256: 1d14b5f999ede649198379b0470ebdd25007ba224ae336ef958124158a6de8b1
+  - url: https://pypi.io/packages/source/x/xformers/xformers-${{ version }}.tar.gz
+    sha256: d78c256e4c24ecc00f6f374d5b96afd0b56b3fb197f02d9efff4357fd5a399b4
+  - url: https://raw.githubusercontent.com/NVIDIA/cutlass/main/LICENSE.txt
+    sha256: 42fec630f410aa308f70a51a89fadcd19586fa620f9831a32bee528a9a10000e
+    file_name: third_party/cutlass/LICENSE.txt
+  - url: https://raw.githubusercontent.com/Dao-AILab/flash-attention/main/LICENSE
+    sha256: 8c9ccb96c065e706135b6cbad279b721da6156e51f3a5f27c6b3329af9416d73
+    file_name: third_party/flash-attention/LICENSE
 
 build:
-  skip: true  # [py<37]
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: ${{ build_number }}
+  skip: win or cuda_compiler_version == "11.8"
+  string: ${{ string_prefix }}py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+  variant:
+    use_keys:
+      # use cuda from the variant config, e.g. to build multiple CUDA variants
+      - ${{ "cuda" if cuda == "enabled" }}
+    # this will down-prioritize the cuda variant versus other variants of the package
+    down_prioritize_variant: ${{ 1 if cuda == "enabled" else 0 }}
+  script:
+    file: build
+    env:
+      cuda_compiler_version: ${{ cuda_version | default('None') }}
+      package_version: ${{ version }}
 
 requirements:
   build:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - pytorch >=2.4
+
+        - if: match(cuda_version, ">=12")
+          then:
+            - cuda-driver-dev
+            - cuda-cudart-dev
+            - cuda-nvrtc-dev
+            - cuda-nvtx-dev
+            - cuda-nvml-dev
+            - libcublas-dev
+            - libcufft-dev
+            - libcurand-dev
+            - libcusolver-dev
+            - libcusparse-dev
+
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - git
+
+    - if: cuda == "enabled"
+      then:
+        - ${{ compiler('cuda') }}
+        - cuda-version ==${{ cuda_version }}
+
   host:
     - python
-    - pytorch
     - pip
+    - setuptools
+    - ${{ "pytorch * cuda*" if cuda == "enabled" }}
+    - ${{ "pytorch * cpu*" if cuda == "disabled" }}
+    - pytorch
+
+    - if: cuda == "enabled"
+      then:
+        - cuda-version ==${{ cuda_version }}
+
+    - if: match(cuda_version, ">=12")
+      then:
+        - cuda-driver-dev
+        - cuda-cudart-dev
+        - cuda-nvrtc-dev
+        - cuda-nvtx-dev
+        - cuda-nvml-dev
+        - libcublas-dev
+        - libcufft-dev
+        - libcurand-dev
+        - libcusolver-dev
+        - libcusparse-dev
   run:
     - python
-    - pytorch >=2.1
     - numpy
+    - pyre-extensions >=0.0.29
+    - ${{ "pytorch * cuda*" if cuda == "enabled" }}
+    - ${{ "pytorch * cpu*" if cuda == "disabled" }}
 
-test:
-  imports:
-    - xformers
-  commands:
-    - pip check
-  requires:
-    - pip
+  ignore_run_exports:
+    # not identical to list of host deps; we do need cuda-cudart,
+    # cuda-driver-dev & cuda-nvml-dev have no run-exports
+    from_package:
+      - if: match(cuda_version, ">=12")
+        then:
+          - cuda-nvrtc-dev
+          - cuda-nvtx-dev
+          - libcublas-dev
+          - libcufft-dev
+          - libcurand-dev
+          - libcusolver-dev
+          - libcusparse-dev
+
+tests:
+  - python:
+      imports:
+        - xformers
+      pip_check: true
+  - script:
+      - python -m xformers.info
 
 about:
-  home: https://facebookresearch.github.io/xformers/
-  summary: 'XFormers: A collection of composable Transformer building blocks.'
-  license: Apache-2.0 AND BSD-3-Clause
+  license: BSD-3-Clause AND Apache-2.0
   license_file:
     - LICENSE
+    - third_party/cutlass/LICENSE.txt
+    - third_party/flash-attention/LICENSE
     - third_party/sputnik/LICENSE
-    - third_party/flash-attention/csrc/cutlass/LICENSE.txt
+  summary: "XFormers: A collection of composable Transformer building blocks."
+  homepage: https://facebookresearch.github.io/xformers/
+  repository: https://github.com/facebookresearch/xformers
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - jan-janssen
+    - h-vetinari
