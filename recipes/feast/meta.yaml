@@ -1,13 +1,13 @@
 {% set name = "feast" %}
-{% set version = "0.38.0" %}
+{% set version = "0.47.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/feast-{{ version }}.tar.gz
-  sha256: bdd80d925d45729ac88a000953c5dd102ce36f2a6592bd9f366a4973d8041434
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/feast-{{ version }}.tar.gz
+  sha256: bb257cfe238496e0bac4e62360f4b7af6c1d4265b0c32a96c4b3d37cd7e7a3a3
 
 build:
   entry_points:
@@ -18,7 +18,7 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools >=60
     - wheel
     - setuptools-scm >=6.2
@@ -29,18 +29,23 @@ requirements:
     - pybindgen >=0.22.1 # Pinned
     - pip
   run:
-    - python >=3.8
+    - bigtree >=0.19.2
+    - prometheus_client
+    - psutil
+    - pyjwt
+    - uvicorn-worker
+    - python >={{ python_min }}
     - click >=7.0.0,<9.0.0
     - colorama >=0.3.9,<1
-    - dill >=0.3.0,<0.4.0
+    - dill >=0.3.0,<0.4.dev0
     - mypy-protobuf >=3.1
     - jinja2 >=2,<4
     - jsonschema
     - mmh3
-    - numpy >=1.22,<2.0
+    - numpy >=1.22,<2
     - pandas >=1.4.3,<3
-    - protobuf >=4.24.0,<5.0.0
-    - pyarrow >=4
+    - protobuf >=4.24.0
+    - pyarrow <18.1.0
     - pydantic >=2.0.0
     - pygments >=2.12.0,<3
     - pyyaml >=5.4.0,<7
@@ -54,7 +59,7 @@ requirements:
     - fastapi >=0.68.0
     - uvicorn >=0.14.0,<1
     - gunicorn
-    - dask-core >=2024.4.2
+    - dask-core >=2024.2.1
 
 test:
   imports:
@@ -64,6 +69,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/feast-dev/feast
