@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: patch
+  version: "1.16"
+  python_min: '3.9'
+  python_max: '4.0'
+  python_test_max: '3.13'
+
+package:
+  name: python-${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/patch-${{ version }}.zip
+  sha256: c62073f356cff054c8ac24496f1a3d7cfa137835c31e9af39a9f5292fd75bd9f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<${{ python_max }}
+
+tests:
+  - python:
+      imports:
+        - patch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_test_max }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Cross-platform alternative to unix patch utility capable to apply unified diffs
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/techtonik/python-patch/
+  repository: https://github.com/techtonik/python-patch/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - windelbouwman
+    - abloemert
