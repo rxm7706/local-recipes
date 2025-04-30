@@ -1,24 +1,31 @@
-{% set name = "feast" %}
-{% set version = "0.49.0" %}
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: feast
+  version: "0.49.0"
+  python_min: '3.9'
+  python_test_max: '3.13'
 
 package:
-  name: {{ name|lower }}
-  version: {{ version }}
+  name: ${{ name|lower }}
+  version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/feast-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/feast-${{ version }}.tar.gz
   sha256: 3e64f0dd7d994a6c4d0a3c2bfa5880f2bfefe8026a8959228c871f3d1acaedba
 
 build:
-  entry_points:
-    - feast = feast.cli.cli:cli
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - feast = feast.cli.cli:cli
 
 requirements:
   host:
-    - python {{ python_min }}
+    - python ${{ python_min }}.*
     - pybindgen >=0.22.1  # Pinned to ==0.22.0, which is not available
     - setuptools >=60,<77
     - setuptools-scm >=6.2
@@ -26,7 +33,7 @@ requirements:
     - wheel
     - pip
   run:
-    - python >={{ python_min }}
+    - python >=${{ python_min }},<4.0
     - click >=7.0.0,<9.0.0
     - colorama >=0.3.9,<1
     - dill >=0.3.0,<0.4.dev0
@@ -57,22 +64,29 @@ requirements:
     - bigtree >=0.19.2
     - pyjwt
 
-test:
-  imports:
-    - feast
-  commands:
-    - pip check
-    - feast --help
-  requires:
-    - pip
-    - python {{ python_min }}
+tests:
+  - python:
+      imports:
+        - feast
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - feast --help
+      - pip check
 
 about:
-  home: https://github.com/feast-dev/feast
   summary: Python SDK for Feast
   license: Apache-2.0
   license_file: LICENSE
+  homepage: https://github.com/feast-dev/feast
 
 extra:
   recipe-maintainers:
+    - johnhany97
+    - sarthakpati
     - rxm7706
