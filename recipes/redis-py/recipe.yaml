@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: redis-py
+  version: "6.0.0"
+  python_min: '3.8'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/redis/redis-py/archive/v${{ version }}.tar.gz
+  sha256: 5ebdb60dc099960106d40e132d4a5d3454eae2ad318bacc4f0c2b6739589548a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - async-timeout >=4.0.3
+
+tests:
+  - python:
+      imports:
+        - redis
+      pip_check: true
+
+about:
+  summary: Python client for Redis database and key-value store
+  homepage: https://redis.io/
+  description: |
+    The Python interface to the Redis key-value store. Requires a running
+    Redis server.
+  repository: https://github.com/signalfx/splunk-otel-python
+  documentation: https://redis.io/docs/latest/
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  license_url: https://github.com/redis/redis-py/blob/master/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - kwilcox
+    - daf
