@@ -40,7 +40,7 @@ about:
   description: |
     The Python interface to the Redis key-value store. Requires a running
     Redis server.
-  repository: https://github.com/signalfx/splunk-otel-python
+  repository: https://github.com/redis/redis-py
   documentation: https://redis.io/docs/latest/
   license: MIT
   license_file: LICENSE
