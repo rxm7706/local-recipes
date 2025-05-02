@@ -1,5 +1,6 @@
-{% set name = "cookiecutter-django-core" %}
-{% set version = "2024.10.25" %}
+{% set name = "cookiecutter-django" %}
+{% set version = "2025.04.30" %}
+{% set python_min = "3.12" %}
 
 {% set cookiecutter = "{{cookiecutter" %}
 {% set project_slug = "project_slug}}" %}
@@ -10,7 +11,7 @@ package:
 
 source:
   url: https://github.com/cookiecutter/cookiecutter-django/archive/{{ version }}.tar.gz
-  sha256: ef824e523fa2f6ea930575873ca1bc4bcbfe009401e034d4fd1d63b7ece01b20
+  sha256: c5e4ee3127c852ebc4f5a240e83fc6f5f5503672b0fba0a14cfc6591cb1e3cf9
 
 build:
   noarch: python
@@ -19,15 +20,15 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<3.13
+    - python {{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=3.8,<3.13
-# https://github.com/cookiecutter/cookiecutter-django/blob/master/requirements.txt
+    - python >={{ python_min }},<4.0
+# https://github.com/cookiecutter/cookiecutter-django/blob/master/pyproject.toml
 # ------------------------------------------------------------------------------
     - cookiecutter >=2.6.0
-    - sh >=2.0.7  # [unix]
+    - sh >=2.1  # [unix]
     # Keep the package noarch but allow for the osx and linux only dep
     - __linux  # [linux]
     - __osx    # [osx]
@@ -35,139 +36,97 @@ requirements:
     - binaryornot >=0.4.4
 # Code quality
 # ------------------------------------------------------------------------------
-    ##- black >=23.9.1 # NOTE # Removed from cookiecutter-django
-    ##- isort >=5.12.0 # NOTE # Removed from cookiecutter-django
-    ##- flake8 >=6.1.0 # NOTE # Removed from cookiecutter-django
-    - ruff >=0.7
-    - django-upgrade >=1.21.0
-    - djlint >=1.35.2
-    - pre-commit >=3.8.0
+    - ruff >=0.11.7
+    - django-upgrade >=1.22.2
+    - djlint >=1.36.4
+    - pre-commit >=4.1.0
 # Testing
 # ------------------------------------------------------------------------------
-    - tox >=4.21.2
-    - tox-uv >=1.11.2
-    - pytest >=8.3.3 
+    - tox >=4.23.2
+    - tox-uv >=1.17.0
+    - pytest >=8.3.4
     - pytest-xdist >=3.6.1
     - pytest-cookies >=0.7.0
     - pytest-instafail >=0.5.0
     - pyyaml >=6.0.2
 # Scripting
 # ------------------------------------------------------------------------------
-    - pygithub >=2.4.0
+    - pygithub >=2.5.0
     - gitpython >=3.1.43
-    - jinja2 >=3.1.4
+    - jinja2 >=3.1.5
     - requests >=2.32.3
+# Base Not Optional ; Limit to Django LTS and Include DRF, Redis and Asyc
+# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
+    - python-slugify >=8.0.4  # https://github.com/un33k/python-slugify
+    - pillow >=11.1.0  # https://github.com/python-pillow/Pillow
+    - argon2-cffi >=23.1.0  # https://github.com/hynek/argon2_cffi
+    - redis-py >=5.3.0  # https://github.com/redis/redis-py
+# Base
+# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
+# ------------------------------------------------------------------------------
+    - django >=4.2.20,<5.3  # https://www.djangoproject.com/
+    - django-environ >=0.12.0  # https://github.com/joke2k/django-environ
+    - django-model-utils >=5.0.0  # https://github.com/jazzband/django-model-utils
+    - django-allauth >=65.7.0  # https://github.com/pennersr/django-allauth
+    - django-crispy-forms >=2.4  # https://github.com/django-crispy-forms/django-crispy-forms
+    - crispy-bootstrap5 >=2025.4  # https://github.com/django-crispy-forms/crispy-bootstrap5
+    - django-redis >=5.4.0  # https://github.com/jazzband/django-redis
+# Base - # Django REST Framework
+    - djangorestframework >=3.15.0  # https://github.com/encode/django-rest-framework
+    - django-cors-headers >=4.7.0  # https://github.com/adamchainz/django-cors-headers
+# Base - # DRF-spectacular for api documentation
+    - drf-spectacular >=0.28.0  # https://github.com/tfranzel/drf-spectacular
+# Base - # Use Async
+    - uvicorn-standard >=0.34.2  # https://github.com/encode/uvicorn
+    - uvicorn-worker >=0.3.0  # [not win]  # https://github.com/Kludex/uvicorn-worker
+# Local
+# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt
+    - psycopg >=3.2.7  # https://github.com/psycopg/psycopg
+    - werkzeug >=3.1.3  # https://github.com/pallets/werkzeug
+    # https://github.com/pallets/werkzeug/blob/main/pyproject.toml#L36C22-L36C27
+    - watchdog >=2.3  # https://github.com/pallets/werkzeug
+    - ipdb >=0.13.13  # https://github.com/gotcha/ipdb
+    - watchfiles >=1.0.5  # https://github.com/samuelcolvin/watchfiles
+# Local # Testing
+    - mypy >=1.15.0  # https://github.com/python/mypy
+    - django-stubs >=5.1.3  # https://github.com/typeddjango/django-stubs
+    - pytest-sugar >=1.0.0  # https://github.com/Teemu/pytest-sugar
+    - djangorestframework-stubs >=3.15.3  # https://github.com/typeddjango/djangorestframework-stubs
+# Local # Documentation
+# Local # Code quality
+# ------------------------------------------------------------------------------
+# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt#L29
+    - coverage >=7.8.0  # https://github.com/nedbat/coveragepy
+    - djlint >=1.36.3  # https://github.com/Riverside-Healthcare/djLint
+# Local # Django
+# ------------------------------------------------------------------------------
+# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt#L36C
+    - factory_boy >=3.3.2  # https://github.com/FactoryBoy/factory_boy
+    - django-debug-toolbar >=5.1.0  # https://github.com/jazzband/django-debug-toolbar
+    - django-extensions >=4.1  # https://github.com/django-extensions/django-extensions
+    - django_coverage_plugin >=3.1.0  # https://github.com/nedbat/django_coverage_plugin
+    - pytest-django >=4.11.1  # https://github.com/pytest-dev/pytest-django
+# ------------------------------------------------------------------------------
+# Production
+# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/production.txt
+# ------------------------------------------------------------------------------
+    - gunicorn >=23.0.0  # [not win]  # https://github.com/benoitc/gunicorn
   run_constrained:
 # Database
 # ------------------------------------------------------------------------------
     - postgresql >=12.0,<17.0
     - sqlite >=3.46.0
-    - psycopg-c >=3.2.3
-    - psycopg >=3.2.3
+    - psycopg-c >=3.2.7
 # Docs
 # ------------------------------------------------------------------------------
 # https://github.com/cookiecutter/cookiecutter-django/blob/master/docs/requirements.txt
     - sphinx >=8.0.2
     - sphinx-autobuild >=2024.10.3
-    - sphinx-rtd-theme >=2.0.0
+    - sphinx-rtd-theme >=3.0.0
     - myst-parser >=4.0.0
-
 # Docker
 # ------------------------------------------------------------------------------
     - docker-py >=6.0.0
-# Base
-# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
-# ------------------------------------------------------------------------------
-    - python-slugify >=8.0.4  # https://github.com/un33k/python-slugify # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - pillow >=10.4.0  # https://github.com/python-pillow/Pillow # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - rcssmin >=1.1.2  # https://github.com/ndparker/rcssmin 
-    #- rjsmin >=1.2.2  # https://github.com/ndparker/rjsmin # NOTE # Removed from cookiecutter-django
-    - argon2-cffi >=23.1.0  # https://github.com/hynek/argon2_cffi
-    - whitenoise >=6.7.0  # https://github.com/evansd/whitenoise
-    - redis-py >=5.0.8  # https://github.com/redis/redis-py # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - hiredis >=3.0.0  # https://github.com/redis/hiredis-py # NOTE TODO NA 3.0.0 conda-forge 
-    - celery >=5.4.0  # https://github.com/celery/celery
-    - django-celery-beat >=2.7.0  # https://github.com/celery/django-celery-beat
-    - flower >=2.0.1  # https://github.com/mher/flower
-    - uvicorn-standard >=0.32.0  # https://github.com/encode/uvicorn
-    - uvicorn-worker >=0.2.0  # https://github.com/Kludex/uvicorn-worker # NOTE TODO NA conda-forge
-# Base - # Django
-    # ------------------------------------------------------------------------------
-    - django >=4.2.16,<5.1  # https://www.djangoproject.com/ # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - django-environ >=0.11.2  # https://github.com/joke2k/django-environ # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - django-model-utils >=5.0.0  # https://github.com/jazzband/django-model-utils # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - django-allauth >=65.1.0  # https://github.com/pennersr/django-allauth # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - django-crispy-forms >=2.3  # https://github.com/django-crispy-forms/django-crispy-forms # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - crispy-bootstrap5 >=2024.10  # https://github.com/django-crispy-forms/crispy-bootstrap5 # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - django-compressor >=4.5.1  # https://github.com/django-compressor/django-compressor
-    - django-redis >=5.4.0  # https://github.com/jazzband/django-redis # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-# Base - # Django REST Framework
-    - djangorestframework >=3.15.2  # https://github.com/encode/django-rest-framework # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - django-cors-headers >=4.5.0  # https://github.com/adamchainz/django-cors-headers # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-# Base - # DRF-spectacular for api documentation
-    - drf-spectacular >=0.27.2  # https://github.com/tfranzel/drf-spectacular # NOTE # Moved to Base Non Optional for cookiecutter-django-core
-    - django-webpack-loader >=3.1.1  # https://github.com/django-webpack/django-webpack-loader
-# Local
-# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt
-# ------------------------------------------------------------------------------
-    - werkzeug >=3.0.6 # https://github.com/pallets/werkzeug
-    - ipdb >=0.13.13  # https://github.com/gotcha/ipdb
-    - psycopg-c >=3.2.3  # https://github.com/psycopg/psycopg
-    - psycopg >=3.2.3  # https://github.com/psycopg/psycopg
-    - watchfiles >=0.24.0  # https://github.com/samuelcolvin/watchfiles
-    - watchdog >=2.3  # http://github.com/gorakhargosh/watchdog
-# Local - # Testing
-    # ------------------------------------------------------------------------------
-    - mypy >=1.11.2  # https://github.com/python/mypy
-    - django-stubs >=5.1.0  # https://github.com/typeddjango/django-stubs
-    - pytest >=8.3.3  # https://github.com/pytest-dev/pytest
-    - pytest-sugar >=1.0.0  # https://github.com/Frozenball/pytest-sugar
-    - djangorestframework-stubs >=3.15.1  # https://github.com/typeddjango/djangorestframework-stubs
-# Local - # Documentation
-    # ------------------------------------------------------------------------------
-    #- sphinx >=7.4.7  # https://github.com/sphinx-doc/sphinx # NOTE # Duplicate In cookiecutter-django # Docs Section already
-    #- sphinx-autobuild >=2024.10.3  # https://github.com/GaretJax/sphinx-autobuild
-# Local - # Code quality
-    # ------------------------------------------------------------------------------
-    ##- flake8 >=6.1.0  # https://github.com/PyCQA/flake8 # NOTE # Removed from cookiecutter-django
-    ##- flake8-isort >=6.1.0  # https://github.com/gforcada/flake8-isort # NOTE # Removed from cookiecutter-django
-    ##- black >=23.9.1  # https://github.com/psf/black # NOTE # Removed from cookiecutter-django
-    ##- pylint-django >=2.5.3  # https://github.com/PyCQA/pylint-django # NOTE # Removed from cookiecutter-django
-    ##- pylint-celery >=0.3  # https://github.com/PyCQA/pylint-celery # NOTE # Removed from cookiecutter-django
-    #- ruff >=0.6.3  # https://github.com/astral-sh/ruff ## NOTE Duplicate In cookiecutter-django # Code quality Section already
-    - coverage >=7.6.4  # https://github.com/nedbat/coveragepy
-    #- djlint >=1.34.0  # https://github.com/Riverside-Healthcare/djLint # NOTE # Duplicate In cookiecutter-django # Code quality Section already
-    #- pre-commit >=3.4.0  # https://github.com/pre-commit/pre-commit # NOTE # Duplicate In cookiecutter-django # Code quality Section already
-# Local - # Django
-    # ------------------------------------------------------------------------------
-    - factory_boy >=3.3.1  # https://github.com/FactoryBoy/factory_boy
-    # NOTE PiP package is factory-boy
-    - django-debug-toolbar >=4.4.6  # https://github.com/jazzband/django-debug-toolbar
-    - django-extensions >=3.2.3  # https://github.com/django-extensions/django-extensions
-    - django_coverage_plugin >=3.1.0  # https://github.com/nedbat/django_coverage_plugin 
-    # NOTE PiP package is django-coverage-plugin
-    - pytest-django >=4.9.0  # https://github.com/pytest-dev/pytest-django
-# Production
-# https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/production.txt
-# ------------------------------------------------------------------------------
-    - gunicorn >=23.0.0  # [not win]  # https://github.com/benoitc/gunicorn
-    #- psycopg-c >=3.1.9  # https://github.com/psycopg/psycopg # NOTE # Duplicate In cookiecutter-django # Database Section already
-    - collectfasta >=3.2.0  # https://github.com/jasongi/collectfasta # NOTE TODO NA conda-forge 
-    - sentry-sdk >=2.17.0  # https://github.com/getsentry/sentry-python
-    #- hiredis >=3.0.0  # https://github.com/redis/hiredis-py # NOTE # Duplicate In cookiecutter-django # Base Section already
-# Production - # Django
-    # ------------------------------------------------------------------------------
-    #- django-storages[s3]==1.14.4  # https://github.com/jschneier/django-storages
-    - boto3 >=1.4.4  # https://github.com/boto/boto3
-    - paramiko >=1.15  # https://github.com/paramiko/paramiko/
-    - apache-libcloud >=3.0.0  # https://github.com/apache/libcloud
-    #- django-storages[google]==1.14.4  # https://github.com/jschneier/django-storages
-    - google-cloud-storage >=1.27  # https://github.com/googleapis/python-storage
-    #- django-storages[azure]==1.14.4  # https://github.com/jschneier/django-storages
-    - azure-core >=1.13  # https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-core
-    - azure-storage-blob >=12  # https://pypi.org/project/azure-storage-blob/
-    - django-anymail >=12.0  # https://github.com/anymail/django-anymail
-    - django-storages >=1.14.4  # https://github.com/jschneier/django-storages
 
 test:
   imports:
@@ -175,9 +134,31 @@ test:
   commands:
     #- cookiecutter cookiecutter-django --no-input --directory {{ SRC_DIR }}  # [unix]
     - cookiecutter cookiecutter-django --help
-    - pip check
+    - pip check  # [unix]
+    # pip check
+    #cookiecutter-django 2025.4.30 has requirement django-upgrade==1.22.2, but you have django-upgrade 1.24.0.
+    #cookiecutter-django 2025.4.30 has requirement gitpython==3.1.43, but you have gitpython 3.1.44.
+    #cookiecutter-django 2025.4.30 has requirement jinja2==3.1.5, but you have jinja2 3.1.6.
+    #cookiecutter-django 2025.4.30 has requirement pre-commit==4.1.0, but you have pre-commit 4.2.0.
+    #cookiecutter-django 2025.4.30 has requirement pygithub==2.5, but you have pygithub 2.6.1.
+    #cookiecutter-django 2025.4.30 has requirement pytest==8.3.4, but you have pytest 8.3.5.
+    #cookiecutter-django 2025.4.30 has requirement ruff==0.11.7, but you have ruff 0.11.8.
+    #cookiecutter-django 2025.4.30 has requirement sh==2.1; sys_platform != "win23", but you have sh 2.2.2.
+    #cookiecutter-django 2025.4.30 has requirement tox==4.23.2, but you have tox 4.25.0.
+    #tox-uv 1.25.0 has requirement tox<5,>=4.24.1, but you have tox 4.23.2
   requires:
+    - python {{ python_min }}
     - pip
+    - django-upgrade ==1.22.2
+    - gitpython ==3.1.43
+    - jinja2 ==3.1.5
+    - pre-commit ==4.1.0
+    - pygithub ==2.5
+    - pytest ==8.3.4
+    - ruff ==0.11.7
+    - sh ==2.1  # [unix]
+    - tox ==4.23.2
+    - tox-uv ==1.19.1
 
 about:
   summary: A Cookiecutter template for creating production-ready Django projects quickly
@@ -193,41 +174,9 @@ about:
   license: BSD-3-Clause
   license_file:
     - LICENSE
-    - README.rst
     - '{{ cookiecutter }}.{{ project_slug }}/LICENSE'
     - '{{ cookiecutter }}.{{ project_slug }}/COPYING'
 
 extra:
   recipe-maintainers:
     - rxm7706
-
-# mamba install "cookiecutter-django==2023.09.23=pyha63b06e_0"
-
-#  Package                    Version  Build            Channel                    Size
-#────────────────────────────────────────────────────────────────────────────────────────
-#  Install:
-#────────────────────────────────────────────────────────────────────────────────────────
-#
-#  + apache-libcloud            3.8.0  pyhd8ed1ab_0     conda-forge/noarch       Cached
-#  + cookiecutter-django   2023.09.23  pyha63b06e_0     selfexplainml/noarch     Cached
-#  + django-storages             1.14  pyhd8ed1ab_0     conda-forge/noarch       Cached
-#  + flower                     2.0.1  py310hff52083_0  conda-forge/linux-64     Cached
-#  + humanize                   4.8.0  pyhd8ed1ab_0     conda-forge/noarch       Cached
-#  + myst-parser                2.0.0  pyhd8ed1ab_0     conda-forge/noarch       Cached
-#  + psycopg                   3.1.11  py310hc2daae2_0  conda-forge/linux-64     Cached
-#  + psycopg-c                 3.1.11  py310h76c1b15_0  conda-forge/linux-64     Cached
-#  + sphinx-rtd-theme           1.3.0  hd8ed1ab_0       conda-forge/noarch       Cached
-#  + sphinx_rtd_theme           1.3.0  pyha770c72_0     conda-forge/noarch       Cached
-#  + sphinxcontrib-jquery         4.1  pyhd8ed1ab_0     conda-forge/noarch       Cached
-#  + watchdog                   3.0.0  py310hff52083_1  conda-forge/linux-64     Cached
-#
-#  Downgrade:
-#────────────────────────────────────────────────────────────────────────────────────────
-#
-#  - docutils                  0.20.1  py310hff52083_2  conda-forge
-#  + docutils                  0.18.1  py310hff52083_1  conda-forge/linux-64     Cached
-#
-#  Summary:
-#
-#  Install: 12 packages
-#  Downgrade: 1 packages
