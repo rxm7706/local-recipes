@@ -1,0 +1,45 @@
+schema_version: 1
+
+context:
+  name: djangorestframework
+  version: 3.16.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djangorestframework-${{ version }}.tar.gz
+  sha256: f022ff46613584de994c0c6a4aebbace5fd700555fbe9d33b865ebf173eba6c9
+
+build:
+  number: 0
+  skip: match(python, "<3.9")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django >=4.2
+    - if: match(python, "<3.9")
+      then: backports.zoneinfo
+
+tests:
+  - python:
+      imports:
+        - rest_framework
+      pip_check: true
+
+about:
+  summary: Web APIs for Django, made easy.
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  homepage: https://www.django-rest-framework.org/
+  repository: https://github.com/encode/django-rest-framework
+
+extra:
+  recipe-maintainers:
+    - rxm7706
