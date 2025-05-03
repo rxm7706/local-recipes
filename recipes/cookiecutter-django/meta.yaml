@@ -1,5 +1,5 @@
 {% set name = "cookiecutter-django" %}
-{% set version = "2025.04.30" %}
+{% set version = "2025.05.02" %}
 {% set python_min = "3.12" %}
 
 {% set cookiecutter = "{{cookiecutter" %}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/cookiecutter/cookiecutter-django/archive/{{ version }}.tar.gz
-  sha256: c5e4ee3127c852ebc4f5a240e83fc6f5f5503672b0fba0a14cfc6591cb1e3cf9
+  sha256: 4a616ee50b6e8ed4ca01b06e73d766fec1c74e4a5fb7622afb784739b38e6e71
 
 build:
   noarch: python
@@ -36,7 +36,7 @@ requirements:
     - binaryornot >=0.4.4
 # Code quality
 # ------------------------------------------------------------------------------
-    - ruff >=0.11.7
+    - ruff >=0.11.8
     - django-upgrade >=1.22.2
     - djlint >=1.36.4
     - pre-commit >=4.1.0
@@ -72,7 +72,7 @@ requirements:
     - crispy-bootstrap5 >=2025.4  # https://github.com/django-crispy-forms/crispy-bootstrap5
     - django-redis >=5.4.0  # https://github.com/jazzband/django-redis
 # Base - # Django REST Framework
-    - djangorestframework >=3.15.0  # https://github.com/encode/django-rest-framework
+    - djangorestframework >=3.16.0  # https://github.com/encode/django-rest-framework
     - django-cors-headers >=4.7.0  # https://github.com/adamchainz/django-cors-headers
 # Base - # DRF-spectacular for api documentation
     - drf-spectacular >=0.28.0  # https://github.com/tfranzel/drf-spectacular
@@ -142,7 +142,7 @@ test:
     #cookiecutter-django 2025.4.30 has requirement pre-commit==4.1.0, but you have pre-commit 4.2.0.
     #cookiecutter-django 2025.4.30 has requirement pygithub==2.5, but you have pygithub 2.6.1.
     #cookiecutter-django 2025.4.30 has requirement pytest==8.3.4, but you have pytest 8.3.5.
-    #cookiecutter-django 2025.4.30 has requirement ruff==0.11.7, but you have ruff 0.11.8.
+    #cookiecutter-django 2025.4.30 has requirement ruff==0.11.8, but you have ruff 0.11.7.
     #cookiecutter-django 2025.4.30 has requirement sh==2.1; sys_platform != "win23", but you have sh 2.2.2.
     #cookiecutter-django 2025.4.30 has requirement tox==4.23.2, but you have tox 4.25.0.
     #tox-uv 1.25.0 has requirement tox<5,>=4.24.1, but you have tox 4.23.2
@@ -155,7 +155,7 @@ test:
     - pre-commit ==4.1.0
     - pygithub ==2.5
     - pytest ==8.3.4
-    - ruff ==0.11.7
+    - ruff ==0.11.8
     - sh ==2.1  # [unix]
     - tox ==4.23.2
     - tox-uv ==1.19.1
