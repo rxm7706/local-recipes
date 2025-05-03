@@ -3,12 +3,10 @@ schema_version: 1
 
 context:
   name: cookiecutter-django
-  version: "2025.04.30"
+  version: "2025.05.02"
   python_min: '3.12'
   python_max: '3.13'
   python_test_max: '3.12'
-  cookiecutter: "{{cookiecutter"
-  project_slug: "project_slug}}"
 
 package:
   name: ${{ name|lower }}
@@ -16,7 +14,7 @@ package:
 
 source:
   url: https://github.com/cookiecutter/cookiecutter-django/archive/${{ version }}.tar.gz
-  sha256: c5e4ee3127c852ebc4f5a240e83fc6f5f5503672b0fba0a14cfc6591cb1e3cf9
+  sha256: 4a616ee50b6e8ed4ca01b06e73d766fec1c74e4a5fb7622afb784739b38e6e71
 
 build:
   number: 0
@@ -36,11 +34,6 @@ requirements:
     - if: unix
       then:
         - sh >=2.1
-
-    # Keep the package noarch but allow for the osx and linux only dep
-    #- __linux  # [linux]
-    #- __osx    # [osx]
-    #- __win    # [win]
     - binaryornot >=0.4.4
     # Code quality
     # ------------------------------------------------------------------------------
@@ -51,7 +44,7 @@ requirements:
     # Testing
     # ------------------------------------------------------------------------------
     - tox >=4.23.2
-    - tox-uv >=1.17.0
+    - tox-uv >=1.18.0
     - pytest >=8.3.4
     - pytest-xdist >=3.6.1
     - pytest-cookies >=0.7.0
@@ -80,13 +73,15 @@ requirements:
     - crispy-bootstrap5 >=2025.4  # https://github.com/django-crispy-forms/crispy-bootstrap5
     - django-redis >=5.4.0  # https://github.com/jazzband/django-redis
     # Base - # Django REST Framework
-    - djangorestframework >=3.15.0  # https://github.com/encode/django-rest-framework
+    - djangorestframework >=3.16.0  # https://github.com/encode/django-rest-framework
     - django-cors-headers >=4.7.0  # https://github.com/adamchainz/django-cors-headers
     # Base - # DRF-spectacular for api documentation
     - drf-spectacular >=0.28.0  # https://github.com/tfranzel/drf-spectacular
     # Base - # Use Async
     - uvicorn-standard >=0.34.2  # https://github.com/encode/uvicorn
-    - uvicorn-worker >=0.3.0  # [not win]  # https://github.com/Kludex/uvicorn-worker
+    - if: unix
+      then:
+        - uvicorn-worker >=0.3.0  # https://github.com/Kludex/uvicorn-worker
     # Local
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt
     - psycopg >=3.2.7  # https://github.com/psycopg/psycopg
@@ -118,7 +113,9 @@ requirements:
     # Production
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/production.txt
     # ------------------------------------------------------------------------------
-    - gunicorn >=23.0.0  # [not win]  # https://github.com/benoitc/gunicorn
+    - if: unix
+      then:
+        - gunicorn >=23.0.0  # https://github.com/benoitc/gunicorn
   run_constraints:
     # Database
     # ------------------------------------------------------------------------------
@@ -141,16 +138,16 @@ tests:
       imports:
         - cookiecutter
       pip_check: false
-        #cookiecutter-django 2025.4.30 has requirement django-upgrade==1.22.2, but you have django-upgrade 1.24.0.
-        #cookiecutter-django 2025.4.30 has requirement gitpython==3.1.43, but you have gitpython 3.1.44.
-        #cookiecutter-django 2025.4.30 has requirement jinja2==3.1.5, but you have jinja2 3.1.6.
-        #cookiecutter-django 2025.4.30 has requirement pre-commit==4.1.0, but you have pre-commit 4.2.0.
-        #cookiecutter-django 2025.4.30 has requirement pygithub==2.5, but you have pygithub 2.6.1.
-        #cookiecutter-django 2025.4.30 has requirement pytest==8.3.4, but you have pytest 8.3.5.
-        #cookiecutter-django 2025.4.30 has requirement ruff==0.11.7, but you have ruff 0.11.8.
-        #cookiecutter-django 2025.4.30 has requirement sh==2.1; sys_platform != "win23", but you have sh 2.2.2.
-        #cookiecutter-django 2025.4.30 has requirement tox==4.23.2, but you have tox 4.25.0.
-        #tox-uv 1.25.0 has requirement tox<5,>=4.24.1, but you have tox 4.23.2
+      # cookiecutter-django 2025.4.30 has requirement django-upgrade==1.22.2, but you have django-upgrade 1.24.0.
+      # cookiecutter-django 2025.4.30 has requirement gitpython==3.1.43, but you have gitpython 3.1.44.
+      # cookiecutter-django 2025.4.30 has requirement jinja2==3.1.5, but you have jinja2 3.1.6.
+      # cookiecutter-django 2025.4.30 has requirement pre-commit==4.1.0, but you have pre-commit 4.2.0.
+      # cookiecutter-django 2025.4.30 has requirement pygithub==2.5, but you have pygithub 2.6.1.
+      # cookiecutter-django 2025.4.30 has requirement pytest==8.3.4, but you have pytest 8.3.5.
+      # cookiecutter-django 2025.4.30 has requirement ruff==0.11.8, but you have ruff 0.11.7.
+      # cookiecutter-django 2025.4.30 has requirement sh==2.1; sys_platform != "win23", but you have sh 2.2.2.
+      # cookiecutter-django 2025.4.30 has requirement tox==4.23.2, but you have tox 4.25.0.
+      # tox-uv 1.25.0 has requirement tox<5,>=4.24.1, but you have tox 4.23.2
       python_version:
         - ${{ python_min }}.*
         - ${{ python_test_max }}.*
@@ -164,7 +161,7 @@ tests:
         - pre-commit ==4.1.0
         - pygithub ==2.5
         - pytest ==8.3.4
-        - ruff ==0.11.7
+        - ruff ==0.11.8
         - if: unix
           then:
             - sh ==2.1
