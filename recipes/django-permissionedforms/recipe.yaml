@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: django-permissionedforms
-  version: 0.1
+  version: "0.1"
+  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}
@@ -13,16 +15,17 @@ source:
   sha256: 4340bb20c4477fffb13b4cc5cccf9f1b1010b64f79956c291c72d2ad2ed243f8
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
 
 requirements:
   host:
-    - python >=3.7
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.7
+    - python >=${{ python_min }},<4.0
     - django
 
 tests:
@@ -33,10 +36,16 @@ tests:
 
 about:
   summary: Django extension for creating forms that vary according to user permissions
-  license: BSD-3-Clause
-  license_file: LICENSE
   homepage: https://github.com/wagtail/django-permissionedforms
+  description: |
+    django-permissionedforms is an extension to Django's forms framework, 
+    allowing you to define forms where certain fields are shown or omitted according to the user's permissions.
+  repository: https://github.com/wagtail/django-permissionedforms
+  documentation: https://github.com/wagtail/django-permissionedforms/blob/main/README.md
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - darynwhite

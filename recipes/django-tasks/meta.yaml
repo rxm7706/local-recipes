@@ -1,0 +1,46 @@
+{% set name = "django-tasks" %}
+{% set version = "0.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_tasks-{{ version }}.tar.gz
+  sha256: 499f80d1a051566443cfa88a300d8b03435af7fc5708cad4d8da6d285614f739
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django >=4.2
+    - typing_extensions
+    - django-stubs-ext
+
+test:
+  imports:
+    - django_tasks
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  summary: An implementation and backport of background workers and tasks in Django
+  home: https://github.com/RealOrangeOne/django-tasks
+  dev_url: https://github.com/RealOrangeOne/django-tasks
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - darynwhite
