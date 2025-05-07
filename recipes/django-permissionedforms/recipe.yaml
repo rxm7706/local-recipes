@@ -1,0 +1,42 @@
+schema_version: 1
+
+context:
+  name: django-permissionedforms
+  version: 0.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-permissionedforms-${{ version }}.tar.gz
+  sha256: 4340bb20c4477fffb13b4cc5cccf9f1b1010b64f79956c291c72d2ad2ed243f8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - django
+
+tests:
+  - python:
+      imports:
+        - permissionedforms
+      pip_check: true
+
+about:
+  summary: Django extension for creating forms that vary according to user permissions
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/wagtail/django-permissionedforms
+
+extra:
+  recipe-maintainers:
+    - rxm7706
