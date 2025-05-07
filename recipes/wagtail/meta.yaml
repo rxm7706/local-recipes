@@ -30,16 +30,16 @@ requirements:
     - django-treebeard >=4.5.1,<5.0
     - djangorestframework >=3.15.1,<4.0
     - django-filter >=23.3
-    - django-tasks >=0.7,<0.8
     - draftjs_exporter >=2.1.5,<6.0
     - pillow >=9.1.0,<12.0.0
-    - beautifulsoup4 <5,>=4.8
+    - beautifulsoup4 >=4.8,<5
     - willow >=1.10.0,<2
     - requests >=2.11.1,<3.0
     - openpyxl >=3.0.10,<4.0
     - anyascii >=0.1.5
     - telepath >=0.3.1,<1
     - laces >=0.1,<0.2
+    - django-tasks >=0.7,<0.8
 
 test:
   imports:
