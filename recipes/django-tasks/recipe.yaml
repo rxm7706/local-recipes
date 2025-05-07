@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-tasks
+  version: "0.7.0"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_tasks-${{ version }}.tar.gz
+  sha256: 499f80d1a051566443cfa88a300d8b03435af7fc5708cad4d8da6d285614f739
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=4.2
+    - typing_extensions
+    - django-stubs-ext
+
+tests:
+  - python:
+      imports:
+        - django_tasks
+      pip_check: true
+
+about:
+  summary: An implementation and backport of background workers and tasks in Django
+  homepage: https://github.com/RealOrangeOne/django-tasks
+  description: |
+    An implementation and backport of background workers and tasks in Django, as defined in [DEP 0014](https://github.com/django/deps/blob/main/accepted/0014-background-workers.rst)
+  repository: https://github.com/RealOrangeOne/django-tasks
+  documentation: https://github.com/RealOrangeOne/django-tasks/blob/master/README.md
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - darynwhite
