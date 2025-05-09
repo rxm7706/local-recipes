@@ -3,10 +3,12 @@ schema_version: 1
 
 context:
   name: splunk-opentelemetry
-  version: "2.2.0"
+  version: "2.3.0"
   python_min: '3.9'
   python_max: '4.0'
   python_test_max: '3.13'
+  opentelemetry_api_version: '1.32.1'
+  opentelemetry_instrumentation_version: '0.53b1'
 
 package:
   name: ${{ name|lower }}
@@ -14,7 +16,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name | replace("-", "_") }}/${{ name | replace("-", "_") }}-${{ version }}.tar.gz
-  sha256: 50def11cfef3994b312c47d741e5991918507a564a69cb696456db25adb98490
+  sha256: ef4de0d779bd25eed8be4d0782b0a14e868d030bb5cc9fa6cff1553f42a8f69a
 
 build:
   number: 0
@@ -28,14 +30,14 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<${{ python_max }}
-    - opentelemetry-api ==1.31.1
-    - opentelemetry-sdk ==1.31.1
-    - opentelemetry-propagator-b3 ==1.31.1
-    - opentelemetry-exporter-otlp-proto-grpc ==1.31.1
-    - opentelemetry-exporter-otlp-proto-http ==1.31.1
-    - opentelemetry-instrumentation ==0.52b1
-    - opentelemetry-instrumentation-system-metrics ==0.52b1
-    - opentelemetry-semantic-conventions ==0.52b1
+    - opentelemetry-api ==${{ opentelemetry_api_version }}
+    - opentelemetry-sdk ==${{ opentelemetry_api_version }}
+    - opentelemetry-propagator-b3 ==${{ opentelemetry_api_version }}
+    - opentelemetry-exporter-otlp-proto-grpc ==${{ opentelemetry_api_version }}
+    - opentelemetry-exporter-otlp-proto-http ==${{ opentelemetry_api_version }}
+    - opentelemetry-instrumentation ==${{ opentelemetry_instrumentation_version }}
+    - opentelemetry-instrumentation-system-metrics ==${{ opentelemetry_instrumentation_version }}
+    - opentelemetry-semantic-conventions ==${{ opentelemetry_instrumentation_version }}
 
 tests:
   - python:
