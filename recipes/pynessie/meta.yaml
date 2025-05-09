@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pynessie-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pynessie-{{ version }}.tar.gz
   sha256: cb46e072542e5978d4a27e2115294e3828414d1527fca70d84b6f0f585f6ac1a
 
 build:
@@ -14,14 +14,15 @@ build:
     - nessie=pynessie.cli:cli
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - attrs
     - botocore
     - click <9.0.0,>6.0.0
@@ -42,6 +43,7 @@ test:
     - nessie --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/projectnessie/nessie
