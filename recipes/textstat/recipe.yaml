@@ -1,0 +1,44 @@
+schema_version: 1
+
+context:
+  name: textstat
+  version: 0.7.7
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/textstat-${{ version }}.tar.gz
+  sha256: 290034cd7d3144f3b967b70fb70820bdc5531a7831baebfd7d0347d3422f48c7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - pyphen
+    - cmudict
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - textstat
+      pip_check: true
+
+about:
+  summary: Calculate statistical features from text
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/textstat/textstat
+
+extra:
+  recipe-maintainers:
+    - rxm7706
