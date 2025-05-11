@@ -1,0 +1,43 @@
+{% set name = "uvenv" %}
+{% set version = "3.9.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/robinvandernoord/uvenv/archive/{{ version }}.tar.gz
+  sha256: aa0546763e1bd0916854392bcadd5a222bfd0d5085a10accbb22973345a82099
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - maturin >=1.5,<2.0
+    - please-use-uvx-v1-on-this-platform  # [( not linux and not darwin )]
+    - pip
+  run:
+    - python
+    - uv ==0.7.0
+    - pip
+    - patchelf  # [linux]
+
+test:
+  imports:
+    - uvenv
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: 'uvenv: pipx for uv (🦀)'
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

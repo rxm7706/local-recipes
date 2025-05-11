@@ -1,0 +1,44 @@
+{% set name = "uvx" %}
+{% set version = "2.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/uvx-{{ version }}.tar.gz
+  sha256: 8c940376cc5b17b878c5e642674cc8d9ccae6a6b9cfb340f551acb010551f3c4
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - maturin >=1.5,<2.0
+    - please-use-uvx-v1-on-this-platform  # [not linux]
+    - pip
+  run:
+    - python
+    - uv
+    - pip
+    - patchelf
+    - uvenv
+
+test:
+  imports:
+    - uvx
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: 'uvx: pipx for uv (🦀)'
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,8 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: textstat
-  version: 0.7.7
+  version: "0.7.7"
+  python_min: '3.9'
+
 
 package:
   name: ${{ name|lower }}
@@ -13,16 +16,17 @@ source:
   sha256: 290034cd7d3144f3b967b70fb70820bdc5531a7831baebfd7d0347d3422f48c7
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }},<4.0
     - pyphen
     - cmudict
     - setuptools
@@ -32,13 +36,25 @@ tests:
       imports:
         - textstat
       pip_check: true
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Calculate statistical features from text
+  homepage: https://textstat.org/
+  description: |
+    " Textstat is a Python library to calculate statistics from text.
+    It provides utilities for calculating text metrics and comes with built-in functions 
+    to help determine readability, complexity, and grade level. "
+  repository: https://github.com/textstat/textstat
+  documentation: https://docs.textstat.org/
   license: MIT
-  license_file: LICENSE
-  homepage: https://github.com/textstat/textstat
+  license_file:
+    - LICENSE
 
 extra:
   recipe-maintainers:
+    - mxr-conda
+    - mwilson8
+    - oblute
+    - benhuff
     - rxm7706
