@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fido2
+  version: "2.0.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fido2-${{ version }}.tar.gz
+  sha256: 3061cd05e73b3a0ef6afc3b803d57c826aa2d6a9732d16abd7277361f58e7964
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - cryptography >=2.6,!=35,<48
+
+tests:
+  - python:
+      imports:
+        - fido2
+      python_version:
+        - ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+
+about:
+  summary: FIDO2/WebAuthn library for implementing clients and servers.
+  homepage: https://github.com/Yubico/python-fido2
+  description: |
+     FIDO2/WebAuthn library for implementing clients and servers.
+  repository: https://github.com/Yubico/python-fido2
+  documentation: https://developers.yubico.com/python-fido2/
+  license: BSD-2-Clause AND MPL-2.0 AND Apache-2.0
+  license_file:
+    - COPYING.MPLv2
+    - COPYING.APLv2
+    - COPYING
+
+extra:
+  recipe-maintainers:
+    - swainn
+    - gagelarsen
+    - rxm7706
