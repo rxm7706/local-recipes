@@ -5,8 +5,6 @@ context:
   name: behave-html-formatter
   version: "0.9.10"
   python_min: '3.9'
-  python_max: '4.0'
-  python_test_max: '3.13'
 
 package:
   name: ${{ name|lower }}
@@ -19,7 +17,7 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
 
 requirements:
   host:
@@ -27,14 +25,13 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<${{ python_max }}
+    - python >=${{ python_min }},<4
     - behave
 
 tests:
   - python:
       imports:
         - behave_html_formatter
-      pip_check: true
       python_version:
         - ${{ python_min }}.*
   - requirements:
@@ -46,11 +43,13 @@ tests:
 
 about:
   summary: HTML formatter for Behave
-  license: GPL-3.0-only
-  license_file: LICENSE
   homepage: https://github.com/behave-contrib/behave-html-formatter
   description: |
-     HTML formatter for Behave 
+     HTML formatter for Behave
+  repository: https://github.com/behave-contrib/behave-html-formatter
+  documentation: https://github.com/behave-contrib/behave-html-formatter
+  license: GPL-3.0-only
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:

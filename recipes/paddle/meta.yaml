@@ -1,0 +1,39 @@
+{% set name = "paddle" %}
+{% set version = "3.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/paddlepaddle/paddle/archive/v{{ version }}.tar.gz
+  sha256: 7779a5db9de65f13f1198efd33c1527b5444b5946657831b4725c4fcfcf77c8c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - tools/codestyle/copyright.py
+    - paddle/fluid/framework/fleet/heter_ps/cudf/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

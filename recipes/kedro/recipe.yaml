@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: kedro
+  version: "0.19.13"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kedro-${{ version }}.tar.gz
+  sha256: f3363e6a566631d24c8af0d5c5d08c9621f41cab1bf4562c52d680010c79b031
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - kedro = kedro.framework.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=65.5.1
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - attrs >=21.3
+    - python-build >=0.7.0
+    - cachetools >=4.1
+    - click >=4.0,<8.2.0
+    - cookiecutter >=2.1.1,<3.0
+    - dynaconf >=3.1.2,<4.0
+    - fsspec >=2021.4
+    - gitpython >=3.0
+    - importlib-metadata >=3.6,<9.0
+    - importlib_resources >=1.3,<7.0  # The `files()` API was introduced in `importlib_resources` 1.3 and Python 3.9.
+    - kedro-datasets  # Only required for tests Now
+    - kedro-telemetry >=0.5.0
+    - more-itertools >=8.14.0
+    - omegaconf >=2.1.1
+    - parse >=1.19.0
+    - pluggy >=1.0
+    - pre-commit-hooks
+    - pyyaml >=4.2,<7.0
+    - rich >=12.0,<15.0
+    - rope >=0.21,<2.0
+    - toml >=0.10.0
+    - typing_extensions >=4.0
+
+tests:
+  - python:
+      imports:
+        - kedro
+        - kedro_benchmarks
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+    - kedro --help
+    - pip check
+
+about:
+  summary: Kedro helps you build production-ready data and analytics pipelines.
+  homepage: https://kedro.org/
+  description: |
+     A Python framework for creating reproducible, maintainable and modular data science code.
+  repository: https://github.com/kedro-org/kedro
+  documentation: https://kedro.readthedocs.io/
+  license: Apache-2.0
+  license_file:
+    - LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - marcelotrevisani
+    - yetudada
+    - idanov
+    - merelcht
+    - noklam
+    - SajidAlamQB
+    - lrcouto
+    - DimedS
+    - ElenaKhaustova
