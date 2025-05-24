@@ -34,7 +34,7 @@ requirements:
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/pyproject.toml
     # ------------------------------------------------------------------------------
     - cookiecutter >=2.6.0
-    - if: noarch_platform == "unix"
+    - if: noarch_platform != "win"
       then:
         - sh >=2.1
     - binaryornot >=0.4.4
@@ -64,7 +64,7 @@ requirements:
     - python-slugify >=8.0.4  # https://github.com/un33k/python-slugify
     - pillow >=11.1.0  # https://github.com/python-pillow/Pillow
     - argon2-cffi >=23.1.0  # https://github.com/hynek/argon2_cffi
-    - redis-py >=6.1.0  # https://github.com/redis/redis-py
+    - redis-py #>=6.1.0  # https://github.com/redis/redis-py
     # Base
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
     # ------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ requirements:
     - drf-spectacular >=0.28.0  # https://github.com/tfranzel/drf-spectacular
     # Base - # Use Async
     - uvicorn-standard >=0.34.2  # https://github.com/encode/uvicorn
-    - if: noarch_platform == "unix"
+    - if: noarch_platform != "win"
       then:
         - uvicorn-worker >=0.3.0  # https://github.com/Kludex/uvicorn-worker
     # Local
@@ -117,7 +117,7 @@ requirements:
     # Production
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/production.txt
     # ------------------------------------------------------------------------------
-    - if: unix
+    - if: noarch_platform != "win"
       then:
         - gunicorn >=23.0.0  # https://github.com/benoitc/gunicorn
   run_constraints:
@@ -166,14 +166,14 @@ tests:
         - pygithub ==2.5
         - pytest ==8.3.4
         - ruff ==0.11.11
-        - if: noarch_platform == "unix"
+        - if: noarch_platform != "win"
           then:
             - sh ==2.1
         - tox ==4.23.2
         - tox-uv ==1.19.1
         - cryptography >=2.6,!=35,<45
     script:
-      - if: noarch_platform == "unix"
+      - if: noarch_platform != "win"
         then:
           - cookiecutter cookiecutter-django --help
           - pip check
