@@ -35,14 +35,9 @@ tests:
   - python:
       imports:
         - kedro_docker
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-        - click >=4.0,<8.2.0
-    script:
-    - kedro --help
-    - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
 
 about:
   summary: Kedro-Docker makes it easy to package Kedro projects with Docker.
