@@ -37,16 +37,13 @@ tests:
   - python:
       imports:
         - pygetimportables
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-    - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
 
 about:
   summary: Python functions to get top-level importable names
-  homepage: https://pypi.org/project/kedro-init/
+  homepage: https://github.com/astrojuanlu/pygetimportables
   description: |
        Python functions to get top-level importable names from a source tree or an already built wheel.
   repository: https://github.com/astrojuanlu/pygetimportables
