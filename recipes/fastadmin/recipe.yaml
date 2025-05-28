@@ -1,0 +1,51 @@
+schema_version: 1
+
+context:
+  name: fastadmin
+  version: 0.2.22
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastadmin-${{ version }}.tar.gz
+  sha256: 51703a9e0a892ce2baeceb43cafef7f5ecbbc70ee17dd3f93f25277f81bdcbe0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.10,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - pyjwt >=2.6.0,<3.0.0
+    - asgiref >=3.7.0,<4.0.0
+  run_constraints:
+    - fastapi 0.*
+    - flask 3.*
+    - django 5.*
+    - tortoise-orm 0.*
+    - sqlalchemy 2.*
+    - pony 0.*
+
+tests:
+  - python:
+      imports:
+        - fastadmin
+      pip_check: true
+
+about:
+  summary: FastAdmin is an easy-to-use Admin Dashboard App for FastAPI/Flask/Django inspired by Django Admin.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/vsdudakov/fastadmin
+
+extra:
+  recipe-maintainers:
+    - rxm7706
