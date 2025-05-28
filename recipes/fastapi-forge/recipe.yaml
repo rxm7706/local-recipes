@@ -1,0 +1,59 @@
+schema_version: 1
+
+context:
+  name: fastapi-forge
+  version: 0.13.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastapi_forge-${{ version }}.tar.gz
+  sha256: aa3f113575cb565e426254dad6ebd5d40ac832e2a809b470608ef12344634d26
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - fastapi-forge = fastapi_forge.__main__:main
+
+requirements:
+  host:
+    - python >=3.12
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.12
+    - click
+    - nicegui
+    - cookiecutter
+    - pytest
+    - ruff
+    - psycopg2-binary >=2.9.10
+    - inflect >=7.5.0
+    - pytest-cov >=6.1.1
+    - mypy >=1.15.0
+
+tests:
+  - python:
+      imports:
+        - fastapi_forge
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - fastapi-forge --help
+
+about:
+  summary: Generate FastAPI projects based on database schema.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
