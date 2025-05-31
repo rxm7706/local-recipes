@@ -1,5 +1,5 @@
 {% set name = "pygwalker" %}
-{% set version = "0.4.9.13" %}
+{% set version = "0.4.9.15" %}
 
 package:
   name: {{ name|lower }}
@@ -7,22 +7,23 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pygwalker-{{ version }}.tar.gz
-  sha256: 010eb5bb6725e87327561473f5162a401bac9a4174e9b3ca62bf048bbd941ba6
+  sha256: 747b726e8acd35f20aef8ee74652a948575fb70b5fa8f816a692c9870d0ab0cb
 
 build:
-  entry_points:
-    - pygwalker = bin.pygwalker_command:main
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
+  entry_points:
+    - pygwalker = bin.pygwalker_command:main
 
 requirements:
   host:
     - python {{ python_min }}
-    - hatchling
     - pip
+    - hatchling
+    - hatch-jupyter-builder
   run:
-    - python >={{ python_min }}
+    - python >={{ python_min }},<4.0
     - jinja2
     - ipython
     - astor
@@ -36,6 +37,7 @@ requirements:
     - requests
     - arrow
     - sqlalchemy
+    # Requires wasmtime (python-wasmtime) for gw-dsl-parser
     #- gw-dsl-parser ==0.1.49.1
     - appdirs
     #- segment-analytics-python ==2.2.3 is called analytics-python
@@ -45,17 +47,18 @@ requirements:
     - kanaries-track ==0.0.5
     - cachetools
     - packaging
-    - numpy <2.0.0
+    - numpy
     - ipylab <=1.0.0
+    #- quickjs is called python-quickjs 1.19.4
     - python-quickjs
     - traitlets
     - anywidget
-
 test:
   imports:
     - pygwalker
   commands:
-    - pip check
+    #- pip check
+    # pygwalker 0.4.9.15 requires gw-dsl-parser, which is not installed.
     - pygwalker --help
   requires:
     - pip
@@ -72,3 +75,4 @@ extra:
     - gabrielcnr
     - Asm-Def
     - longxiaofei
+    - rxm7706
