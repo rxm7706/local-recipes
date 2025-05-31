@@ -1,0 +1,50 @@
+schema_version: 1
+
+context:
+  name: django-pygwalker
+  version: 0.0.9
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_pygwalker-${{ version }}.tar.gz
+  sha256: f816ec074aeb0a95252cd819221f91374ba8823780255885afd51c8e9cc61274
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - python-build
+    - setuptools >=67.7.2
+    - setuptools-scm >=7.1
+    - wheel >=0.40.0
+    - pip
+  run:
+    - python >=3.8
+    - django
+    - django-handyhelpers >=0.3.10
+    - pandas
+    - pygwalker
+
+tests:
+  - python:
+      imports:
+        - djangoaddicts
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: PyGWalker views for Django projects
+  homepage: https://pypi.org/project/pygwalker/
+  license: GPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
