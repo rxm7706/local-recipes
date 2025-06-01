@@ -24,7 +24,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*,<3.12
+    - python ${{ python_min }}.*
     #- python >=3.9,<4.dev0
     - setuptools >=40.9.0
     - wheel
@@ -108,7 +108,7 @@ tests:
         - superset
         - superset.cli
       pip_check: false
-      python_version: ${{ python_min }}.*,<3.12
+      python_version: ${{ python_min }}.*
 
 about:
   summary: A modern, enterprise-ready business intelligence web application
