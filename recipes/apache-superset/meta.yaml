@@ -10,7 +10,7 @@ source:
   sha256: 197bcb2ff79de2a079a52be600e6a16e35d6e2ce69472d411d1d4460a7945360
 
 build:
-  skip: true  # [py<39 or py>313]
+  skip: true  # [py<39 or py>311]
   entry_points:
     - superset=superset.cli.main:superset
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
@@ -53,6 +53,8 @@ requirements:
     - jsonpath-ng >=1.6.1, <2
     - Mako >=1.2.2
     - markdown >=3.0
+    # marshmallow>=4 has issues: https://github.com/apache/superset/issues/33162
+    - marshmallow <4
     - msgpack-python >=1.0.0, <1.1
     - nh3 >=0.2.11, <0.3
     - numpy ==1.23.5
