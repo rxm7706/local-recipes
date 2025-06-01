@@ -4,7 +4,7 @@ schema_version: 1
 context:
   name: apache-superset
   version: "4.1.2"
-  python_min: '3.12'
+  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}
@@ -24,13 +24,13 @@ build:
 
 requirements:
   host:
-    #- python ${{ python_min }}.*
-    - python >=3.9,<4.dev0
+    - python ${{ python_min }}.*,<3.12
+    #- python >=3.9,<4.dev0
     - setuptools >=40.9.0
     - wheel
     - pip
   run:
-    #- python >=${{ python_min }},<4.0
+    - python >=${{ python_min }},<3.12
     - python >=3.9,<4.dev0
     - backoff >=1.8.0
     - celery >=5.3.6,<6.0.0
@@ -62,6 +62,8 @@ requirements:
     - jsonpath-ng >=1.6.1,<2
     - mako >=1.2.2
     - markdown >=3.0
+    # marshmallow>=4 has issues: https://github.com/apache/superset/issues/33162
+    - marshmallow <4
     - msgpack-python >=1.0.0,<1.1
     - nh3 >=0.2.11,<0.3
     - numpy ==1.23.5
@@ -106,7 +108,7 @@ tests:
         - superset
         - superset.cli
       pip_check: false
-      #python_version: ${{ python_min }}.*
+      python_version: ${{ python_min }}.*,<3.12
 
 about:
   summary: A modern, enterprise-ready business intelligence web application
