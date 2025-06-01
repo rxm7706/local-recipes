@@ -1,0 +1,10 @@
+noarch_platform:
+  - linux  # [linux]
+  - osx    # [osx]
+  - win    # [win]
+  - win_no_pw32  # [win]
+  - unix   # [linux]
+
+# https://github.com/conda-forge/jupyter_core-feedstock/blob/main/recipe/meta.yaml
+# https://github.com/conda-forge/jupyter_core-feedstock/blob/main/recipe/conda_build_config.yaml
+# https://github.com/conda-forge/jupyter_core-feedstock/blob/main/conda-forge.yml

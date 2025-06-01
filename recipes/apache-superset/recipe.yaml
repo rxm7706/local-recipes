@@ -4,7 +4,7 @@ schema_version: 1
 context:
   name: apache-superset
   version: "4.1.2"
-  python_min: '3.9'
+  python_min: '3.12'
 
 package:
   name: ${{ name|lower }}
@@ -16,7 +16,7 @@ source:
 
 build:
   number: 0
-  skip: match(python, "<3.9") and match(python, ">3.13")
+  #skip: match(python, "<3.9") and match(python, ">3.13")
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
