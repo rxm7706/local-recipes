@@ -249,27 +249,27 @@ attr:
 aws_c_auth:
   - 0.9.0
 aws_c_cal:
-  - 0.8.9
+  - 0.9.1
 aws_c_common:
-  - 0.12.2
+  - 0.12.3
 aws_c_compression:
   - 0.3.1
 aws_c_event_stream:
   - 0.5.4
 aws_c_http:
-  - 0.9.5
+  - 0.10.1
 aws_c_io:
-  - 0.18.0
+  - 0.19.1
 aws_c_mqtt:
-  - 0.12.3
+  - 0.13.0
 aws_c_s3:
-  - 0.7.15
+  - 0.8.0
 aws_c_sdkutils:
-  - 0.2.3
+  - 0.2.4
 aws_checksums:
-  - 0.2.5
+  - 0.2.7
 aws_crt_cpp:
-  - 0.32.4
+  - 0.32.6
 aws_sdk_cpp:
   - 1.11.510
 azure_core_cpp:
@@ -333,7 +333,7 @@ dbus:
 dcap:
   - 2.47
 eclib:
-  - '20250122'
+  - '20250530'
 elfutils:
   - '0.192'
 exiv2:
@@ -373,11 +373,11 @@ gstreamer:
 gst_plugins_base:
   - '1.24'
 gdal:
-  - '3.10'
+  - '3.11'
 libgdal:
-  - '3.10'
+  - '3.11'
 libgdal_core:
-  - '3.10'
+  - '3.11'
 geos:
   - 3.13.0
 geotiff:
@@ -460,15 +460,15 @@ libamd:
 libarchive:
   - '3.7'
 libarrow:
+  - '20.0'
   - '19.0'
   - '18.1'
   - '17.0'
-  - '16.1'
 libarrow_all:
+  - '20.0'
   - '19.0'
-  - '18.0'
+  - '18.1'
   - '17.0'
-  - '16.1'
 libavif:
   - 1
 libblitz:
@@ -504,7 +504,7 @@ libcxsparse:
 libdap4:
   - 3.20.6
 libdeflate:
-  - '1.23'
+  - '1.24'
 libduckdb_devel:
   - '1'
 libeantic:
@@ -614,7 +614,7 @@ libode:
 libopencv:
   - 4.11.0
 libopentelemetry_cpp:
-  - '1.20'
+  - '1.21'
 libosqp:
   - 0.6.3
 libopenvino_dev:
@@ -623,6 +623,8 @@ libparu:
   - '1'
 libpcap:
   - '1.10'
+libpnetcdf:
+  - 1.14.0
 libpng:
   - 1.6
 libprotobuf:
@@ -630,7 +632,7 @@ libprotobuf:
 libpq:
   - '17'
 libpulsar:
-  - '3.7.0'
+  - 3.7.1
 libraw:
   - '0.21'
 librbio:
@@ -638,7 +640,7 @@ librbio:
 librdkafka:
   - '2.6'
 librealsense:
-  - '2.54'
+  - '2.55'
 librsvg:
   - 2
 libsecret:
@@ -741,6 +743,8 @@ mumps_mpi:
   - 5.7.3
 mumps_seq:
   - 5.7.3
+mysql_devel:
+  - '9.3'
 nccl:
   - 2
 ncurses:
@@ -750,7 +754,7 @@ netcdf_cxx4:
 netcdf_fortran:
   - '4.6'
 nettle:
-  - '3.9'
+  - '3.10'
 nodejs:
   - '22'
   - '20'
@@ -791,11 +795,11 @@ openslide:
 openssl:
   - '3'
 orc:
-  - 2.1.1
+  - 2.1.2
 pango:
   - '1'
 pari:
-  - 2.15.* *_pthread
+  - 2.17.* *_pthread
 pcl:
   - 1.15.0
 perl:
@@ -805,9 +809,9 @@ petsc:
 petsc4py:
   - '3.23'
 plutovg:
-  - 1.0.0
+  - 1.1.0
 plutosvg:
-  - 0.0.6
+  - 0.0.7
 pugixml:
   - '1.15'
 slepc:
@@ -821,7 +825,7 @@ p11_kit:
 pcre:
   - '8'
 pcre2:
-  - '10.44'
+  - '10.45'
 pdal:
   - 2.8.4
 libpdal:
@@ -831,7 +835,7 @@ libpdal_core:
 pixman:
   - 0
 poco:
-  - 1.14.0
+  - 1.14.2
 poppler:
   - '24.12'
 portaudio:
@@ -895,8 +899,10 @@ qt6_main:
   - 6.9
 qtkeychain:
   - '0.15'
+rav1e:
+  - '0.7'
 rdma_core:
-  - '55'
+  - '57'
 re2:
   - 2024.07.02
 readline:
@@ -905,6 +911,7 @@ rocksdb:
   - '9.11'
 root_base:
   - 6.32.10
+  - 6.34.4
 ruby:
   - 2.5
   - 2.6
@@ -924,7 +931,7 @@ s2geography:
 s2geometry:
   - 0.11.1
 s2n:
-  - 1.5.17
+  - 1.5.19
 sdl2:
   - '2'
 sdl2_image:
@@ -972,7 +979,7 @@ tinyxml2:
 tk:
   - 8.6                # [not ppc64le]
 tiledb:
-  - '2.27'
+  - '2.28'
 ucc:
   - 1
 ucx:
