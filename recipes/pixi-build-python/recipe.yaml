@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pixi-build-python
+  version: "0.1.13"
+  python_min: '3.12'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/prefix-dev/pixi-build-backends/archive/refs/tags/pixi-build-rattler-build-v${{ version }}.tar.gz
+  sha256: c8ab582488eff0f76a1d9923a131d934a6af5d11b7bdf37a53b6d9debeaedd56
+  #    https://github.com/prefix-dev/pixi-build-backends/releases/tag/pixi-build-rattler-build-v0.1.13
+  #url: https://github.com/prefix-dev/pixi-build-backends/archive/refs/tags/{{ version }}.tar.gz
+  #path: ..
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+  host:
+    - pkg-config
+    - libzlib
+    - liblzma
+    - if: unix
+      then: openssl
+
+build:
+  script:
+    - if: osx and x86_64
+      then:
+        # use the default linker for osx-64 as we are hitting a bug with the conda-forge linker
+        # https://github.com/rust-lang/rust/issues/140686
+        - unset CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER
+
+    - if: unix
+      then:
+        - export OPENSSL_DIR="$PREFIX"
+        - cargo install --locked --root $PREFIX --path crates/pixi-build-python --no-track
+      else:
+        - cargo install --locked --root %PREFIX% --path crates/pixi-build-python --no-track
+  files:
+    - bin/pixi-build-python
+    - bin/pixi-build-python.exe
+
+tests:
+  - script: pixi-build-python --help
