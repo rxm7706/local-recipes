@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  name: pixi-build-python
-  version: "0.1.10"
+  name: pixi-build-rattler-build
+  version: "0.1.13"
   python_min: '3.12'
 
 package:
@@ -11,9 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/prefix-dev/pixi-build-backends/archive/refs/tags/pixi-build-python-v${{ version }}.tar.gz
-  sha256: aaa17d6737d84ee5583697d97c22a227fa7e26791fdfd96bf9598a663eed932c
-
+  url: https://github.com/prefix-dev/pixi-build-backends/archive/refs/tags/pixi-build-rattler-build-v${{ version }}.tar.gz
+  sha256: c8ab582488eff0f76a1d9923a131d934a6af5d11b7bdf37a53b6d9debeaedd56
 
 requirements:
   build:
@@ -36,12 +35,12 @@ build:
     - if: unix
       then:
         - export OPENSSL_DIR="$PREFIX"
-        - cargo install --locked --root $PREFIX --path crates/pixi-build-python --no-track
+        - cargo install --locked --root $PREFIX --path crates/pixi-build-rattler-build --no-track
       else:
-        - cargo install --locked --root %PREFIX% --path crates/pixi-build-python --no-track
+        - cargo install --locked --root %PREFIX% --path crates/pixi-build-rattler-build --no-track
   files:
-    - bin/pixi-build-python
-    - bin/pixi-build-python.exe
+    - bin/pixi-build-rattler-build
+    - bin/pixi-build-rattler-build.exe
 
 tests:
-  - script: pixi-build-python --help
+  - script: pixi-build-rattler-build --help
