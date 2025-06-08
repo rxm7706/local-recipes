@@ -1,0 +1,47 @@
+{% set name = "dash-auth-plus" %}
+{% set version = "0.0.1a1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dash_auth_plus-{{ version }}.tar.gz
+  sha256: 6a1bc96e5d8eca7d3b63b9b15c53f9db9a14b8bc93449a64837635cc888060e2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }},<4.0
+    - dash >=1.1.1
+    - flask
+    - werkzeug
+
+test:
+  imports:
+    - dash_auth_plus
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/BSd3v
+  summary: Dash Authorization Package.
+  description: |
+    Branch off of Plotly Dash-Auth with enhanced features.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
