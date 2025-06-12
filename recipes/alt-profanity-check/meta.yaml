@@ -1,13 +1,13 @@
 {% set name = "alt-profanity-check" %}
-{% set version = "1.4.2" %}
+{% set version = "1.7.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/alt-profanity-check-{{ version }}.tar.gz
-  sha256: 7d9305b885c4373fc17a7aa0d858dc7eb9e60224b11f3ae07f2338ec24f02853
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/alt_profanity_check-{{ version }}.tar.gz
+  sha256: bd89e7f25dc1eb74c2829f104f0aeafe717745c0bb19a7e157e082d78cbd794b
 
 build:
   entry_points:
@@ -18,12 +18,12 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python >=3.9
     - pip
   run:
-    - python >=3.8
-    - scikit-learn ==1.4.2
-    - joblib >=1.4.0
+    - python >=3.9
+    - scikit-learn ==1.7.0
+    - joblib ==1.5.1
 
 test:
   imports:

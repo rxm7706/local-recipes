@@ -1,5 +1,5 @@
 {% set name = "django-health-check" %}
-{% set version = "3.18.3" %}
+{% set version = "3.19.2" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_health_check-{{ version }}.tar.gz
-  sha256: 18b75daca4551c69a43f804f9e41e23f5f5fb9efd06cf6a313b3d5031bb87bd0
+  sha256: 126560fee249b1e6f976b19af170dceb7abef6d023a9d02387a11eeb15bb4f77
 
 build:
   noarch: python
@@ -16,24 +16,25 @@ build:
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools-scm
+    - python >=3.9
+    - flit-core >=3.2
+    - flit_scm
+    - wheel
     - pip
   run:
-    - python >=3.8
-    - django >=2.2
+    - python >=3.9
+    - django >=4.2
 
 test:
   imports:
-    - health_check
+    - django_health_check
   commands:
     - pip check
   requires:
     - pip
 
 about:
-  home: https://github.com/revsys/django-health-check
-  summary: Run checks on services like databases, queue servers, celery processes, etc.
+  summary: Monitor the health of your Django app and its connected services.
   license: MIT
   license_file: LICENSE
 
