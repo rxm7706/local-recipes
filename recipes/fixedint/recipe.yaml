@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fixedint
+  version: "0.1.6"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fixedint-${{ version }}.tar.gz
+  sha256: 703005d090499d41ce7ce2ee7eae8f7a5589a81acdc6b79f1728a56495f2c799
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - fixedint
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: simple fixed-width integers
+  homepage: https://github.com/nneonneo/fixedint
+  description: |
+       Simple fixed-width integers.
+  repository: https://github.com/nneonneo/fixedint
+  documentation: https://github.com/nneonneo/fixedint/blob/master/README.rst
+  license: PSF-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

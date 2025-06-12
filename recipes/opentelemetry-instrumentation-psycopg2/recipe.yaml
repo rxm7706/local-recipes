@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-psycopg2
+  version: "0.52b1"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_psycopg2-${{ version }}.tar.gz
+  sha256: 5bbdb2a2973aae9402946c995e277b1f76e467faebc40ac0f8da51c701918bb4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation ==${{ version }}
+    - opentelemetry-instrumentation-dbapi ==${{ version }}
+
+tests:
+  - script:
+    - pip check
+    requirements:
+      run:
+        - pip
+        - psycopg2-binary >= 2.7.3.1
+        - python ${{ python_min }}.*
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation
+
+about:
+  summary: OpenTelemetry psycopg2 instrumentation
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
+  description: |
+       OpenTelemetry psycopg2 instrumentation.
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
+  documentation: https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/psycopg2/psycopg2.html
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - conda-forge/opentelemetry-api
+    - conda-forge/opentelemetry-sdk
+    - conda-forge/opentelemetry-dbapi
+    - mariusvniekerk

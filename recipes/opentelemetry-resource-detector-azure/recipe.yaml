@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-resource-detector-azure
+  version: "0.1.5"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_resource_detector_azure-${{ version }}.tar.gz
+  sha256: e0ba658a87c69eebc806e75398cd0e9f68a8898ea62de99bc1b7083136403710
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - opentelemetry-sdk >=1.21,<2.dev0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.resource.detector.azure
+        - opentelemetry.resource.detector.azure.app_service
+        - opentelemetry.resource.detector.azure.functions
+        - opentelemetry.resource.detector.azure.vm
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Azure Resource Detector for OpenTelemetry
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/resource/opentelemetry-resource-detector-azure
+  description: |
+       Azure Resource Detector for OpenTelemetry.
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/resource/opentelemetry-resource-detector-azure
+  documentation: https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/resource/opentelemetry-resource-detector-azure/README.rst
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - conda-forge/opentelemetry-api
+    - conda-forge/opentelemetry-sdk

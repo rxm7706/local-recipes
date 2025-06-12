@@ -1,5 +1,5 @@
 {% set name = "opentelemetry-instrumentation-psycopg2" %}
-{% set version = "0.49b2" %}
+{% set version = "0.55b1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_psycopg2-{{ version }}.tar.gz
-  sha256: 4116a7f3f8fdef5759a087bc46bcf2370ad5d41f2e2110b8ebee90eadf7153ac
+  sha256: fa7035b328b77196e03a631921e0fc10f4b1d4d36d9b66fe9a38971bb88af6d4
 
 build:
   noarch: python
@@ -29,12 +29,10 @@ test:
   imports:
     - opentelemetry
     - opentelemetry.instrumentation
-    - opentelemetry.instrumentation.psycopg2
   commands:
     - pip check
   requires:
     - pip
-    - psycopg2 >= 2.7.3.1
     - psycopg2-binary >= 2.7.3.1
     - python {{ python_min }}
 
@@ -50,3 +48,4 @@ extra:
     - conda-forge/opentelemetry-api
     - conda-forge/opentelemetry-sdk
     - conda-forge/opentelemetry-dbapi
+    - mariusvniekerk
