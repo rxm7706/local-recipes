@@ -20,7 +20,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >={{ python_min }}
+    - python >={{ python_min }},4.0
     - azure-core <2.0.0,>=1.28.0
     - fixedint ==0.1.6
     - msrest >=0.6.10

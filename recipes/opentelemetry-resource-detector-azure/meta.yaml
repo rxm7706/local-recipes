@@ -20,7 +20,7 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >={{ python_min }}
+    - python >={{ python_min }},<4.0
     - opentelemetry-sdk >=1.21,<2.dev0
 
 test:

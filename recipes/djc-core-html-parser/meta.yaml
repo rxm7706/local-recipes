@@ -1,0 +1,40 @@
+{% set name = "djc-core-html-parser" %}
+{% set version = "1.0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/djc_core_html_parser-{{ version }}.tar.gz
+  sha256: 8e98741832b1c0c36348022107d9536c466a952c8f07343f3632165db6f393c2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - maturin >=1.8,<2.0
+    - pip
+  run:
+    - python >=3.8,<4.0
+
+test:
+  imports:
+    - djc_core_html_parser
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: HTML parser used by django-components written in Rust.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
