@@ -5,8 +5,8 @@ context:
   name: cookiecutter-django
   version: "2025.06.13"
   python_min: '3.12'
-  python_max: '3.13'
-  python_test_max: '3.12'
+  python_max: '4.0'
+  python_test_max: '3.13'
   cookiecutter: "{{cookiecutter"
   project_slug: "project_slug}}"
 
@@ -16,7 +16,7 @@ package:
 
 source:
   url: https://github.com/cookiecutter/cookiecutter-django/archive/${{ version }}.tar.gz
-  sha256: 06461f1069ef01ce78ce9dc37cd28b56e81536eb1691039097f6cce0e4880bea
+  sha256: 791c9442aed18881c71a68f0856890a979e7a6a7ff4daf64a1f3855ae03acda5
 
 build:
   number: 1
@@ -138,9 +138,59 @@ requirements:
     - docker-py >=6.0.0
 
 tests:
+  - script:
+      - if: noarch_platform != "win"
+        then:
+          - cookiecutter cookiecutter-django --help
+          - pip check
+        else:
+          - echo "no win tests"
+    requirements:
+      run:
+      - if: noarch_platform != "win"
+        then:
+          - python >=${{ python_min }},<${{ python_max }}
+          - pip
+          - django-upgrade ==1.22.2
+          - gitpython ==3.1.43
+          - jinja2 ==3.1.5
+          - pre-commit ==4.1.0
+          - pygithub ==2.5
+          - pytest ==8.3.4
+          - pytest-xdist ==3.6.1
+          - ruff ==0.11.13
+          - if: noarch_platform != "win"
+            then:
+              - sh ==2.1
+          - tox ==4.23.2
+          - tox-uv ==1.19.1
+          - cryptography >=2.6,!=35,<45
+          - requests ==2.32.3
+        else:
+          - python >=${{ python_min }},<${{ python_max }}
+          - pip
+          - django-upgrade ==1.22.2
+          - gitpython ==3.1.43
+          - jinja2 ==3.1.5
+          - pre-commit ==4.1.0
+          - pygithub ==2.5
+          - pytest ==8.3.4
+          - pytest-xdist ==3.6.1
+          - ruff ==0.11.13
+          - if: noarch_platform != "win"
+            then:
+              - sh ==2.1
+          - tox ==4.23.2
+          - tox-uv ==1.19.1
+          - cryptography >=2.6,!=35,<45
+          - requests ==2.32.3
   - python:
       imports:
         - cookiecutter
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_test_max }}.*
         #cookiecutter-django 2025.4.30 has requirement django-upgrade==1.22.2, but you have django-upgrade 1.24.0.
         #cookiecutter-django 2025.4.30 has requirement gitpython==3.1.43, but you have gitpython 3.1.44.
         #cookiecutter-django 2025.4.30 has requirement jinja2==3.1.5, but you have jinja2 3.1.6.
@@ -154,52 +204,6 @@ tests:
         #fido2 1.1.3 has requirement cryptography!=35,<45,>=2.6, but you have cryptography 45.0.2.
         #cookiecutter-django 2025.5.27 has requirement pytest-xdist==3.6.1, but you have pytest-xdist 3.7.0.
         #cookiecutter-django 2025.6.10 has requirement requests==2.32.3, but you have requests 2.32.4.
-  - requirements:
-      run:
-      - if: noarch_platform != "win"
-        then:
-          - python ${{ python_min }}.*
-          - pip
-          - django-upgrade ==1.22.2
-          - gitpython ==3.1.43
-          - jinja2 ==3.1.5
-          - pre-commit ==4.1.0
-          - pygithub ==2.5
-          - pytest ==8.3.4
-          - pytest-xdist ==3.6.1
-          - ruff ==0.11.13
-          - if: noarch_platform != "win"
-            then:
-              - sh ==2.1
-          - tox ==4.23.2
-          - tox-uv ==1.19.1
-          - cryptography >=2.6,!=35,<45
-          - requests ==2.32.3
-        else:
-          - python ${{ python_min }}.*
-          - pip
-          - django-upgrade ==1.22.2
-          - gitpython ==3.1.43
-          - jinja2 ==3.1.5
-          - pre-commit ==4.1.0
-          - pygithub ==2.5
-          - pytest ==8.3.4
-          - pytest-xdist ==3.6.1
-          - ruff ==0.11.13
-          - if: noarch_platform != "win"
-            then:
-              - sh ==2.1
-          - tox ==4.23.2
-          - tox-uv ==1.19.1
-          - cryptography >=2.6,!=35,<45
-          - requests ==2.32.3
-    script:
-      - if: noarch_platform != "win"
-        then:
-          - cookiecutter cookiecutter-django --help
-          - pip check
-        else:
-          - echo "no win tests"
 
 about:
   summary: A Cookiecutter template for creating production-ready Django projects quickly
