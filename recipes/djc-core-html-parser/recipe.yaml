@@ -15,34 +15,48 @@ source:
   sha256: 8e98741832b1c0c36348022107d9536c466a952c8f07343f3632165db6f393c2
 
 build:
-  number: 0
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }}  -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        #- crossenv
+        - maturin >=1,<2
+
+    - ${{ compiler("c") }}
+    #- ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
   host:
-    - python ${{ python_min }}.*
-    - maturin >=1.8,<2.0
+    - python
     - pip
+    - maturin >=1,<2
   run:
-    - python >=${{ python_min }},<4.0
+    - python
 
 tests:
   - python:
       imports:
         - djc_core_html_parser
       pip_check: true
-      python_version: ${{ python_min }}.*
 
 about:
   summary: HTML parser used by django-components written in Rust.
   homepage: https://github.com/django-components/djc-core-html-parser
   description: |
-       HTML parser used by django-components written in Rust.
+    HTML parser used by django-components written in Rust.
   repository: https://github.com/django-components/djc-core-html-parser
   documentation: https://github.com/django-components/djc-core-html-parser/blob/main/README.md
   license: MIT
-  license_file: NOTICE.txt
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
 
 extra:
   recipe-maintainers:
