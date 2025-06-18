@@ -1,0 +1,42 @@
+schema_version: 1
+
+context:
+  name: contextvars
+  version: 2.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/contextvars-${{ version }}.tar.gz
+  sha256: f38c908aaa59c14335eeea12abea5f443646216c4e29380d7bf34d2018e2c39e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - immutables >=0.9
+
+tests:
+  - python:
+      imports:
+        - contextvars
+      pip_check: true
+
+about:
+  summary: PEP 567 Backport
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: http://github.com/MagicStack/contextvars
+
+extra:
+  recipe-maintainers:
+    - rxm7706
