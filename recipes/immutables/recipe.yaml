@@ -1,0 +1,51 @@
+schema_version: 1
+
+context:
+  name: immutables
+  version: 0.21
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/immutables-${{ version }}.tar.gz
+  sha256: b55ffaf0449790242feb4c56ab799ea7af92801a0a43f9e2f4f8af2ab24dfc4a
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+  host:
+    - python >=3.8.0
+    - setuptools >=42
+    - wheel
+    - pip
+  run:
+    - python >=3.8.0
+
+tests:
+  - python:
+      imports:
+        - immutables
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+
+about:
+  summary: Immutable Collections
+  license: OGC-1.0 AND Apache-2.0
+  license_file:
+    - LICENSE
+    - LICENSE-APACHE
+    - NOTICE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
