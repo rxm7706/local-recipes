@@ -36,13 +36,11 @@ tests:
   - python:
       imports:
         - wagtail_resume
-      #pip_check: false
   - requirements:
       run:
         - python ${{ python_min }}.*
     script:
-      #- pip check
-      - fastmcp --help
+      - pip check
 
 about:
   summary: A Wagtail project made to simplify creation of resumes for developers.
