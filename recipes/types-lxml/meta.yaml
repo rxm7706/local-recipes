@@ -1,0 +1,49 @@
+{% set name = "types-lxml" %}
+{% set version = "2025.3.30" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+    sha256: ea4da0d2b61a73e114e14e2dcca1f62671182d80016a483369c553a24ba8f163
+  - url: https://raw.githubusercontent.com/python/typeshed/main/LICENSE
+    sha256: 295f8538c94ae5c3043301cf7cff1c852dab6a786a8ddee471e061b40d5ecabe
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - pdm
+    - pdm-backend
+  run:
+    - python >={{ python_min }}
+    - typing-extensions >=4.10,<5.0
+    - cssselect >=1.2,<2.0
+    - beautifulsoup4 >=4.13,<5.0
+    - types-html5lib >=1.1.11.20241018,<1.1.12.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+    - test -f $SP_DIR/lxml-stubs/__init__.pyi                 # [unix]
+    - if not exist %SP_DIR%\\lxml-stubs\\__init__.pyi exit 1  # [win]
+
+about:
+  home: https://github.com/python/typeshed
+  summary: Typing stubs for lxml
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - zwelz3
