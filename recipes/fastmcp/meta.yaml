@@ -1,0 +1,52 @@
+{% set name = "fastmcp" %}
+{% set version = "2.3.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fastmcp-{{ version }}.tar.gz
+  sha256: f3fe004b8735b365a65ec2547eeb47db8352d5613697254854bc7c9c3c360eea
+
+build:
+  entry_points:
+    - fastmcp = fastmcp.cli:app
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - hatchling
+    - uv-dynamic-versioning >=0.7.0
+    - pip
+  run:
+    - python >=3.10
+    - python-dotenv >=1.1.0
+    - exceptiongroup >=1.2.2
+    - httpx >=0.28.1
+    - mcp >=1.8.1,<2.0.0
+    - openapi-pydantic >=0.5.1
+    - rich >=13.9.4
+    - typer >=0.15.2
+    - websockets >=14.0
+
+test:
+  imports:
+    - fastmcp
+  commands:
+    - pip check
+    - fastmcp --help
+  requires:
+    - pip
+
+about:
+  summary: The fast, Pythonic way to build MCP servers.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

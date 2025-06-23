@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mcp-atlassian
+  version: "0.11.7"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/sooperset/mcp-atlassian/archive/v${{ version }}.tar.gz
+  sha256: 1918e2b2538b5fe0f16da7a56ed8f13e2489458420b0cc54865eec14962a5f9a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - mcp-atlassian = mcp_atlassian:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - uv-dynamic-versioning >=0.7.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - atlassian-python-api >=4.0.0
+    - requests >=2.31.0
+    - beautifulsoup4 >=4.12.3
+    - httpx >=0.28.0
+    - mcp >=1.8.0,<2.0.0
+    - fastmcp >=2.3.4,<2.4.0
+    - python-dotenv >=1.0.1
+    - markdownify >=0.11.6
+    - markdown >=3.7.0
+    - markdown-to-confluence >=0.3.0
+    - pydantic >=2.10.6
+    - trio >=0.29.0
+    - click >=8.1.7
+    - uvicorn >=0.27.1
+    - starlette >=0.37.1
+    - thefuzz >=0.22.1
+    - python-dateutil >=2.9.0.post0
+    - types-python-dateutil >=2.9.0.20241206
+    - keyring >=25.6.0
+    - cachetools >=5.0.0
+    - types-cachetools >=5.5.0.20240820
+
+tests:
+  - python:
+      imports:
+        - mcp_atlassian
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+    script:
+      - mcp-atlassian --help
+
+about:
+  summary: "The Model Context Protocol (MCP) Atlassian integration is an open-source implementation that bridges Atlassian products (Jira and Confluence) with AI language models following Anthropic's MCP specification. This project enables secure, contextual AI interactions with Atlassian tools while maintaining data privacy and security. Key features include:"
+  homepage: https://github.com/sooperset/mcp-atlassian
+  repository: https://github.com/sooperset/mcp-atlassian
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

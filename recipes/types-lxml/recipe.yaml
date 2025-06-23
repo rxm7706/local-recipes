@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: types-lxml
+  version: "2025.3.30"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types_lxml-${{ version }}.tar.gz
+  sha256: ea4da0d2b61a73e114e14e2dcca1f62671182d80016a483369c553a24ba8f163
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pdm-backend >=2.4,<3.dev0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - typing-extensions >=4.10,<5.0
+    - cssselect >=1.2,<2.0
+    - beautifulsoup4 >=4.13,<5.0
+    - types-html5lib >=1.1.11.20241018,<1.1.12.0
+
+tests:
+#  - script:
+#      - test -f $SP_DIR/lxml-stubs/__init__.pyi                 # [unix]
+#      - if not exist %SP_DIR%\\lxml-stubs\\__init__.pyi exit 1  # [win]
+
+  - python:
+      imports:
+        - pip
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Complete lxml external type annotation
+  homepage: https://github.com/python/typeshed
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
