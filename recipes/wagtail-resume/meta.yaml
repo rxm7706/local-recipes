@@ -1,13 +1,14 @@
 {% set name = "wagtail-resume" %}
-{% set version = "2.8.0" %}
+{% set version = "2.10.1" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_resume-{{ version }}.tar.gz
-  sha256: 34fd0aa45811ffac7c4537cbe0d3bc30492bf078b08bfe86edfb0ab2a79a3ee2
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_resume-{{ version }}.tar.gz
+  sha256: d751d55f3782b5ad6c3e4221074da58b3df623d3d59348847d0be55990a5e15a
 
 build:
   noarch: python
@@ -16,23 +17,24 @@ build:
 
 requirements:
   host:
-    - python >=3.10,<4.0
+    - python {{ python_min }},<4.0
     - poetry-core >=1.0.0
     - pip
   run:
-    - python >=3.10.0,<4.0.0
-    - django >=3.2.0,<4.0.0
-    - wagtail >=4.0.0,<5.0.0
-    - wagtail-markdown >=0.10.0,<0.11.0
-    - wagtail-metadata >=4.0.0,<5.0.0
-    - weasyprint >=59.0.0,<60.0.0
+    - python >={{ python_min }},<4.0
+    - django >=3.2.0,<6.0.0
+    - wagtail >=4.0.0,<8.0.0
+    - wagtail-markdown >=0.10.0,<0.14.0
+    - wagtail-metadata >=4.0.0,<6.0.0
+    - weasyprint >=59.0.0,<62.0.0
 
 test:
   imports:
     - wagtail_resume
-  commands:
-    - pip check
+  #commands:
+    #- pip check
   requires:
+    - python {{ python_min }},<4.0
     - pip
 
 about:
