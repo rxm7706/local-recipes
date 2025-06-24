@@ -1,5 +1,5 @@
 {% set name = "sqlmesh" %}
-{% set version = "0.141.1" %}
+{% set version = "0.196.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sqlmesh-{{ version }}.tar.gz
-  sha256: b1b789d5f97301c381b1c92b1298e99e862172ca87c905ab39c569986b614717
+  sha256: e09bed5024451cbdaa0de4081e29f8a1b526363d5bb37c75fa3b54e03d2cdbca
 
 build:
   noarch: python
@@ -28,27 +28,22 @@ requirements:
     - astor
     - click
     - croniter
-    - python-duckdb !=0.10.3
+    - python-duckdb >=0.10.0,!=0.10.3
     - dateparser
-    - freezegun
     - hyperscript >=0.1.0
     - importlib-metadata
     - ipywidgets
     - jinja2
+    - packaging
     - pandas
-    - pydantic
+    - pydantic >=2.0.0
     - requests
     - rich
     - ruamel.yaml
-    - setuptools
-    - sqlglot >=26.0.1,<26.1.dev0
-    # https://github.com/TobikoData/sqlmesh/blob/main/setup.py#L50
-    #   "sqlglot[rs]~=25.31.4"
-    # https://github.com/tobymao/sqlglot/blob/main/CHANGELOG.md
-    # https://github.com/tobymao/sqlglot/blob/v25.32.1/sqlglotrs/Cargo.toml
-    - sqlglotrs >=0.3.0
+    - sqlglot >=26.30.0,<26.31.dev0
     - tenacity
     - time-machine
+    - json_stream
 
 test:
   imports:
@@ -71,3 +66,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - fhoehle

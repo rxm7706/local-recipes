@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlmesh
+  version: "0.196.2"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlmesh-${{ version }}.tar.gz
+  sha256: c31c8cee87d333cb5127b9273eec0e05e793db3ab8715798dc87fba7a48579b0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - sqlmesh = sqlmesh.cli.main:cli
+      - sqlmesh_cicd = sqlmesh.cicd.bot:bot
+      - sqlmesh_lsp = sqlmesh.lsp.main:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - setuptools-scm
+    - toml
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - astor
+    - click
+    - croniter
+    - python-duckdb >=0.10.0,!=0.10.3
+    - dateparser
+    - hyperscript >=0.1.0
+    - importlib-metadata
+    - ipywidgets
+    - jinja2
+    - packaging
+    - pandas
+    - pydantic >=2.0.0
+    - requests
+    - rich
+    - ruamel.yaml
+    - sqlglot >=26.30.0,<26.31.dev0
+    - tenacity
+    - time-machine
+    - json_stream
+
+tests:
+  - python:
+      imports:
+        - sqlmesh
+        - web
+      pip_check: true
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - sqlmesh --help
+      - sqlmesh_cicd --help
+      - sqlmesh_lsp --help
+
+about:
+  homepage: https://github.com/TobikoData/sqlmes
+  summary: Next-generation data transformation framework
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - fhoehle
