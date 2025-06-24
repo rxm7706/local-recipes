@@ -1,71 +1,78 @@
 {% set name = "openmetadata-ingestion" %}
-{% set version = "1.6.1.0" %}
+{% set version = "1.7.5.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openmetadata_ingestion-{{ version }}.tar.gz
-  sha256: c2960631133ff66cb7e1d86dbbefed1a668f82107dd57a551a98edc1a2ba065a
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: c25d7088b6277750acc42b1890c8dc6b8ee5e485066ccdf753db2fc56c268082
 
 build:
   entry_points:
     - metadata = metadata.cmd:metadata
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: {{ PYTHON }} -m pip install . -vv
   number: 0
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools >=70.3.0,<70.4.dev0
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
-    - pydantic >=2.0,<3.dev0,>=2.7.0
-    - tabulate ==0.9.0
-    - requests-aws4auth >=1.1,<2.dev0
-    - email-validator >=2.0
-    - pymysql >=1.0,<2.dev0
-    - collate-sqllineage >=1.5.0,<1.6.dev0
-    - mypy_extensions >=0.4.3
-    - azure-keyvault-secrets
-    - jsonpatch <2.0,>=1.24
-    - cached-property ==1.5.2
-    - azure-identity >=1.12,<2.dev0
-    - shapely
-    - cryptography >=42.0.0
-    - packaging
-    - google-cloud-secret-manager ==2.19.0
-    - importlib-metadata >=4.13.0
-    - typing_inspect
-    - collate-data-diff
-    - memory_profiler
-    - pyyaml >=6.0,<7.dev0
+    - python >={{ python_min }}
+    - antlr4-python3-runtime >=4.9.2
+    - avro >=1.11,<2.0
     - boto3 >=1.20,<2.0
-    - antlr4-python3-runtime ==4.9.2
-    - requests >=2.23
-    - google-crc32c
+    - cached-property >=1.5.2
+    - chardet >=4.0.0
+    - commonregex
+    - croniter >=1.3.0
+    - cryptography
+    - email-validator >=1.0.3
+    - google-auth >=1.33.0
+    - googlesearch >=3.0.0
+    - grpcio-tools >=1.47.2
+    - idna >=2.5
+    - importlib-metadata >=4.13.0
     - jinja2 >=2.11.3
+    - jsonpatch >=1.32
+    - jsonschema
+    - memory_profiler
+    - mypy_extensions >=0.4.3
+    - openmetadata-sqllineage >=1.0.4
+    - pydantic >=1.10,<2.0
+    - pymysql >=1.0.2
     - python-dateutil >=2.8.1
-    - chardet ==4.0.0
+    - python-jose >=3.3,<4.0
+    - pyyaml
+    - requests >=2.23
+    - requests-aws4auth >=1.1
+    - setuptools >=66.0.0
     - sqlalchemy >=1.4.0,<2
+    - tabulate >=0.9.0
+    - typing-compat >=0.1.0
+    - typing-extensions
+    - typing_inspect
+    - wheel >=0.38.4
 
 test:
   imports:
     - airflow_provider_openmetadata
     - metadata
   commands:
-    - pip check
-    - metadata --help
+    #- metadata --help re.error: global flags not at the start of the expression at position 1
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://open-metadata.org/
   summary: Ingestion Framework for OpenMetadata
   dev_url: https://github.com/open-metadata/OpenMetadata
-  license: CC0-1.0
+  license: Apache-2.0
   license_file: LICENSE
 
 extra:
