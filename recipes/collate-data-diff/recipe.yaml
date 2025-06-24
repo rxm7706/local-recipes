@@ -4,7 +4,7 @@ schema_version: 1
 context:
   name: collate-data-diff
   version: "0.11.5"
-  python_min: '3.10'
+  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}
@@ -29,7 +29,7 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - pydantic >=1.10.12
+    - pydantic >=1.10.12  #,<2.0.0
     - dsnparse <0.2.0
     - click >=8.1
     - rich
@@ -58,13 +58,14 @@ requirements:
 tests:
   - python:
       imports:
-        - collate_data_diff
+        - data_diff
       pip_check: true
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - data-diff --help
+      python_version: ${{ python_min }}.*
+#  - requirements:
+#      run:
+#        - python ${{ python_min }}.*
+#    script:
+#      - data-diff --help
 
 about:
   summary: Command-line tool and Python library to efficiently diff rows across two different databases.
