@@ -4,6 +4,7 @@ schema_version: 1
 context:
   name: json-stream-rs-tokenizer
   version: "0.4.29"
+  python_min: "3.9"
 
 package:
   name: ${{ name|lower }}
@@ -28,8 +29,11 @@ build:
         - if errorlevel 1 exit 1
     - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  skip:
-    - match(python, "<3.9")
+#  skip:
+#    - match(python, "<3.9")
+  skip: not (match(python, python_min ~ ".*") and is_abi3)
+  python:
+    version_independent: true
 
 requirements:
   build:
@@ -41,8 +45,10 @@ requirements:
     - ${{ compiler("cxx") }}
     #- ${{ stdlib("c") }}
     - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
   host:
     - python
+    - python-abi3
     - setuptools
     - wheel
     - setuptools-rust >=1,<2
