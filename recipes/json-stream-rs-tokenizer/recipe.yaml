@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: json-stream-rs-tokenizer
   version: "0.4.29"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}
@@ -16,18 +15,40 @@ source:
 
 build:
   number: 0
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - if: unix
+      then:
+        # Unix recipe
+        - export OPENSSL_DIR="$PREFIX"
+      else:
+        # Win recipe  # work around long path problem,
+        # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
+        - set CARGO_HOME=C:\.cargo
+        - md %CARGO_HOME%
+        - if errorlevel 1 exit 1
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip:
+    - match(python, "<3.9")
 
 requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        #- maturin >=1,<2
+    - ${{ compiler("cxx") }}
+    #- ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
   host:
-    - python ${{ python_min }}.*
+    - python
     - setuptools
     - wheel
     - setuptools-rust >=1,<2
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python
 
 tests:
   - python:
@@ -35,7 +56,7 @@ tests:
         - json_stream_rs_tokenizer
   - requirements:
       run:
-        - python ${{ python_min }}.*
+        - python
     script:
       - pip check
 
@@ -43,7 +64,9 @@ about:
   homepage: https://github.com/smheidrich/py-json-stream-rs-tokenizer
   summary: A faster tokenizer for the json-stream Python library
   license: MIT
-  license_file: LICENSE
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
 
 extra:
   recipe-maintainers:

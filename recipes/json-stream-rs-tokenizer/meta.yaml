@@ -10,19 +10,27 @@ source:
   sha256: cfb63413cd38cf887d374b7e8969ec635eeb0cbfd136be0ea0c5eae2bb6f6932
 
 build:
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
 
 requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('rust') }}
+    - cargo-bundle-licenses
   host:
-    - python {{ python_min }}
+    - python
     - setuptools
     - wheel
     - setuptools-rust >=1,<2
     - pip
   run:
-    - python >={{ python_min }},<4.0
+    - python
 
 test:
   imports:
@@ -31,13 +39,14 @@ test:
     - pip check
   requires:
     - pip
-    - python {{ python_min }}
 
 about:
   summary: A faster tokenizer for the json-stream Python library
   home: https://github.com/smheidrich/py-json-stream-rs-tokenizer
   license: MIT
-  license_file: LICENSE
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
 
 extra:
   recipe-maintainers:
