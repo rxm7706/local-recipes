@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: boring-semantic-layer
+  version: "0.1.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/boring_semantic_layer-${{ version }}.tar.gz
+  sha256: a167a6e079c15146f8b2ea6a88299f777e533937bc48116c74546eb2f87d404b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - hello = boring_semantic_layer:hello
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - attrs >=25.3.0
+    - ibis-framework >=10.6.0
+
+tests:
+  - python:
+      imports:
+        - boring_semantic_layer
+      pip_check: true
+      python_version: ${{ python_min }}.*
+#  - script:
+#      - hello --help
+#      - pip check
+#    requirements:
+#      run:
+#        - python ${{ python_min }}.*
+#        - pip
+
+about:
+  summary: A boring semantic layer built with ibis
+  homepage: https://github.com/boringdata/boring-semantic-layer
+  license: Apache-2.0
+  license_file: License.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
