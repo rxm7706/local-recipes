@@ -32,11 +32,13 @@ tests:
   - python:
       imports:
         - tinyhtml5
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version: ${{ python_min }}.*
+#  - requirements:
+#      run:
+#        - python ${{ python_min }}.*
+#    script:
+#      - pip check
 
 about:
   summary: HTML parser based on the WHATWG HTML specification
