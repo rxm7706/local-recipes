@@ -1,25 +1,29 @@
 {% set name = "django-material" %}
 {% set version = "1.12.0" %}
+{% set python_min = "3.9" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-material-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django-material-{{ version }}.tar.gz
   sha256: 5e3b9b6c67bd7013d08c879d1a18729015d826109d498c8079cb220e3d96de8e
 
 build:
+  number: 0
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }},<3.10
+    - django >=4.2,<5.0
     - six
 
 test:
@@ -29,13 +33,24 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
+    - django >=4.2,<5.0
+    - six
 
 about:
   home: http://github.com/viewflow/django-material
   summary: Material design for django forms and admin
   license: BSD-3-Clause
   license_file: LICENSE.txt
+  description: |
+    Django-Material offers an alternative approach to rendering forms in django.
+    Strong Python/HTML code separation keeps your code DRY and free from underlying
+    HTML/CSS rendering details. Field rendering customization happens in a template,
+    not in code. Layouts allow setting relative location and size of fields.
+  doc_url: http://docs.viewflow.io/material_forms.html
+  dev_url: https://github.com/viewflow/django-material
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - cshaley
