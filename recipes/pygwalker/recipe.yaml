@@ -18,8 +18,9 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  entry_points:
-    - pygwalker = bin.pygwalker_command:main
+  python:
+    entry_points:
+      - pygwalker = bin.pygwalker_command:main
 
 requirements:
   host:
@@ -63,7 +64,8 @@ tests:
   - python:
       imports:
         - kanaries_track
-      pip_check: true
+      # pygwalker 0.4.9.15 requires gw-dsl-parser, which is not installed. gw-dsl-parser requires wasmtime (python-wasmtime) which is not available on conda-forge
+      pip_check: false
       python_version: ${{ python_min }}.*
   - requirements:
       run:
@@ -71,7 +73,6 @@ tests:
         - python ${{ python_min }}.*
     script:
       - pygwalker --help
-      - pip check
 
 about:
   homepage: https://pypi.org/project/pygwalker/

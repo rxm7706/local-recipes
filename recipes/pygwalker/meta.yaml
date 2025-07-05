@@ -58,7 +58,7 @@ test:
     - pygwalker
   commands:
     #- pip check
-    # pygwalker 0.4.9.15 requires gw-dsl-parser, which is not installed.
+    # pygwalker 0.4.9.15 requires gw-dsl-parser, which is not installed. gw-dsl-parser requires wasmtime (python-wasmtime) which is not available on conda-forge
     - pygwalker --help
   requires:
     - pip
