@@ -66,7 +66,8 @@ test:
 
 about:
   home: https://pypi.org/project/pygwalker/
-  summary: 'pygwalker: turn your data into an interactive UI for data exploration and visualization'
+  summary: 'pygwalker: Combining Jupyter Notebook with a Tableau-like UI'
+  description: 'pygwalker: turn your data into an interactive UI for data exploration and visualization'
   license: Apache-2.0
   license_file: LICENSE
 
