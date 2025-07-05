@@ -1,20 +1,25 @@
-{% set name = "pygwalker" %}
-{% set version = "0.4.9.15" %}
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pygwalker
+  version: "0.4.9.15"
+  python_min: '3.9'
 
 package:
-  name: {{ name|lower }}
-  version: {{ version }}
+  name: ${{ name|lower }}
+  version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pygwalker-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pygwalker-${{ version }}.tar.gz
   sha256: 747b726e8acd35f20aef8ee74652a948575fb70b5fa8f816a692c9870d0ab0cb
 
 build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   entry_points:
     - pygwalker = bin.pygwalker_command:main
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
 
 requirements:
   host:
@@ -55,19 +60,23 @@ requirements:
     - anywidget
 
 tests:
-  - script:
-      - pygwalker --help
-
   - python:
       imports:
         - kanaries_track
       pip_check: true
       python_version: ${{ python_min }}.*
-
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pygwalker --help
+      - pip check
 
 about:
   homepage: https://pypi.org/project/pygwalker/
   summary: 'pygwalker: turn your data into an interactive UI for data exploration and visualization'
+  description: 'pygwalker: turn your data into an interactive UI for data exploration and visualization'
   license: Apache-2.0
   license_file: LICENSE
 
