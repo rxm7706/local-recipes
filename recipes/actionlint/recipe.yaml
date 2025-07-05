@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 1.7.7
+  skip_extras: ${{ aarch64 or ppc64le or osx or win }}
+  basic_test: >-
+    actionlint --version
+    && actionlint --help
+    && actionlint --version | grep -iE "${{ version | replace(".", "\\.") }}"
+
+recipe:
+  name: actionlint
+  version: ${{ version }}
+
+source:
+  target_directory: src/github.com/rhysd/actionlint
+  url: https://github.com/rhysd/actionlint/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 237aec651a903bf4e9f9c8eb638da6aa4d89d07c484f45f11cfb89c2dbf277a5
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: actionlint
+    build:
+      script:
+        - if: win
+          then: call "%RECIPE_DIR%/bld_actionlint.bat"
+          else: bash "${RECIPE_DIR}/build_actionlint.sh"
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - ${{ compiler("go-cgo") }}
+        - ${{ stdlib("c") }}
+        - go-licenses
+        - if: win
+          then: posix
+    tests:
+      - requirements:
+          run:
+            - if: win
+              then: m2-grep
+        script: ${{ basic_test }}
+
+  - package:
+      name: actionlint-with-shellcheck
+    build:
+      noarch: generic
+      skip: skip_extras
+    requirements:
+      run:
+        - ${{ pin_subpackage("actionlint", upper_bound="x.x.x") }}
+        - shellcheck
+    tests:
+      - requirements:
+          run:
+            - if: win
+              then: m2-grep
+        script: ${{ basic_test }}
+
+  - package:
+      name: actionlint-with-pyflakes
+    build:
+      noarch: generic
+      skip: skip_extras
+    requirements:
+      run:
+        - ${{ pin_subpackage("actionlint", upper_bound="x.x.x") }}
+        - pyflakes
+    tests:
+      - requirements:
+          run:
+            - if: win
+              then: m2-grep
+        script: ${{ basic_test }}
+
+  - package:
+      name: actionlint-with-all
+    build:
+      noarch: generic
+      skip: skip_extras
+    requirements:
+      run:
+        - ${{ pin_subpackage("actionlint", upper_bound="x.x.x") }}
+        - ${{ pin_subpackage("actionlint-with-pyflakes", upper_bound="x.x.x") }}
+        - ${{ pin_subpackage("actionlint-with-shellcheck", upper_bound="x.x.x") }}
+        - pyflakes
+    tests:
+      - requirements:
+          run:
+            - if: win
+              then: m2-grep
+        script: ${{ basic_test }}
+
+about:
+  homepage: https://github.com/rhysd/actionlint
+  license: MIT
+  license_file:
+    - src/github.com/rhysd/actionlint/LICENSE.txt
+    - license-files/
+  summary: Static checker for GitHub Actions workflow files
+  documentation: https://rhysd.github.io/actionlint
+
+extra:
+  feedstock-name: actionlint
+  recipe-maintainers:
+    - bollwyvl
