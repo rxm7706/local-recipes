@@ -1,5 +1,5 @@
 {% set name = "django-plotly-dash" %}
-{% set version = "2.4.2" %}
+{% set version = "2.4.7" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django-plotly-dash-{{ version }}.tar.gz
-  sha256: 2b05251e4cceb12677cd20c55c9e57dc6f2c568db93bb71ca38efa37fd07df88
+  sha256: 1cdc2459a7f3e7c2a86b465ad83b96dcc1899a158ad86171e914ba5251edfd69
 
 build:
   noarch: python
@@ -16,14 +16,18 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - plotly
     - dash >=2.0,<3.0
     - dpd_components
-    - dash-bootstrap-components
+    - dash-bootstrap-components <2.0.0
+    - dash-core-components
+    - dash-html-components
+    - dash-table
     - channels >=4.0
     - django >=4.0.0
     - flask >=1.0.2
@@ -36,6 +40,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/GibbsConsulting/django-plotly-dash
