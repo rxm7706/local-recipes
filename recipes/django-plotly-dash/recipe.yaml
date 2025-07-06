@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-plotly-dash
+  version: "2.4.7"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_plotly_dash-${{ version }}.tar.gz
+  sha256: 1cdc2459a7f3e7c2a86b465ad83b96dcc1899a158ad86171e914ba5251edfd69
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - plotly
+    - dash >=2.0,<3.0
+    - dpd_components
+    - dash-bootstrap-components <2.0.0
+    - channels >=4.0
+    - django >=4.0.0
+    - flask >=1.0.2
+    - werkzeug
+
+tests:
+  - python:
+      imports:
+        - django_plotly_dash
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Django use of plotly dash apps through template tags
+  homepage: https://github.com/GibbsConsulting/django-plotly-dash
+  repository: https://github.com/GibbsConsulting/django-plotly-dash
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
