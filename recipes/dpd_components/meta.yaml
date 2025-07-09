@@ -1,5 +1,5 @@
 {% set name = "dpd_components" %}
-{% set version = "0.1.0" %}
+{% set version = "0.2.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dpd_components-{{ version }}.tar.gz
-  sha256: 613a6b17d3d7dd449be060e739e4ce36692b46fa012c3a86ee947f6337d09548
+  sha256: 5db0f68abf2f8d3b0219876b6bac78eca1e311ae71062ea7531508f10f28f6b5
 
 build:
   noarch: python
@@ -16,10 +16,14 @@ build:
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
+    - plotly
+    - dash >=2.0
+    - dash-bootstrap-components
 
 test:
   imports:
@@ -27,13 +31,19 @@ test:
   commands:
     - pip check
   requires:
+    - python {{ python_min }}
     - pip
 
 about:
   summary: Django Plotly Dash component suite
+  home: https://github.com/GibbsConsulting/dpd-components
   license: MIT
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_family: MIT
+  license_file: LICENSE.txt
+  doc_url: https://dash.plotly.com/plugins
+  dev_url: https://github.com/GibbsConsulting/dpd-components
 
 extra:
   recipe-maintainers:
+    - karthick1304
     - rxm7706
