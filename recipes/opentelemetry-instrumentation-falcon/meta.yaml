@@ -1,4 +1,4 @@
-{% set name = "opentelemetry-instrumentation-wsgi" %}
+{% set name = "opentelemetry-instrumentation-falcon" %}
 {% set version = "0.57b0" %}
 
 package:
@@ -6,8 +6,8 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_wsgi-{{ version }}.tar.gz
-  sha256: d7e16b3b87930c30fc4c1bbc8b58c5dd6eefade493a3a5e7343bc24d572bc5b7
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_falcon-{{ version }}.tar.gz
+  sha256: 8b37cd9868e7ef276ce85a6d95a16d91bcc67f3819060a1beea2ff5ba8fb9bc1
 
 build:
   noarch: python
@@ -21,16 +21,19 @@ requirements:
     - hatchling
   run:
     - python >={{ python_min }}
-    - opentelemetry-api ~=1.12
+    - opentelemetry-api >=1.12,<2.0
+    - opentelemetry-instrumentation-wsgi =={{ version }}
     - opentelemetry-instrumentation =={{ version }}
     - opentelemetry-semantic-conventions =={{ version }}
     - opentelemetry-util-http =={{ version }}
+    - packaging >=20.0
+    - falcon >=1.4.1,<5.0.0
 
 test:
   imports:
     - opentelemetry
     - opentelemetry.instrumentation
-    - opentelemetry.instrumentation.wsgi
+    - opentelemetry.instrumentation.falcon
   commands:
     - pip check
   requires:
@@ -38,8 +41,8 @@ test:
     - python {{ python_min }}
 
 about:
-  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-wsgi
-  summary: WSGI Middleware for OpenTelemetry
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-falcon
+  summary: Falcon instrumentation for OpenTelemetry
   license: Apache-2.0
   license_file: LICENSE
 
@@ -48,6 +51,3 @@ extra:
     - rxm7706
     - mariusvniekerk
     - conda-forge/opentelemetry-api
-    - conda-forge/opentelemetry-instrumentation
-    - conda-forge/opentelemetry-semantic-conventions
-    - conda-forge/opentelemetry-util-http
