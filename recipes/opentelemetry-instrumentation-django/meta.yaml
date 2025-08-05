@@ -1,4 +1,4 @@
-{% set name = "opentelemetry-instrumentation-wsgi" %}
+{% set name = "opentelemetry-instrumentation-django" %}
 {% set version = "0.57b0" %}
 
 package:
@@ -6,8 +6,8 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_wsgi-{{ version }}.tar.gz
-  sha256: d7e16b3b87930c30fc4c1bbc8b58c5dd6eefade493a3a5e7343bc24d572bc5b7
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_django-{{ version }}.tar.gz
+  sha256: df4116d2ea2c6bbbbf8853b843deb74d66bd0d573ddd372ec84fd60adaf977c6
 
 build:
   noarch: python
@@ -22,15 +22,17 @@ requirements:
   run:
     - python >={{ python_min }}
     - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation-wsgi =={{ version }}
     - opentelemetry-instrumentation =={{ version }}
     - opentelemetry-semantic-conventions =={{ version }}
     - opentelemetry-util-http =={{ version }}
+    - django >=1.10
 
 test:
   imports:
     - opentelemetry
     - opentelemetry.instrumentation
-    - opentelemetry.instrumentation.wsgi
+    - opentelemetry.instrumentation.django
   commands:
     - pip check
   requires:
@@ -38,8 +40,8 @@ test:
     - python {{ python_min }}
 
 about:
-  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-wsgi
-  summary: WSGI Middleware for OpenTelemetry
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-django
+  summary: OpenTelemetry Instrumentation for Django
   license: Apache-2.0
   license_file: LICENSE
 
@@ -48,6 +50,3 @@ extra:
     - rxm7706
     - mariusvniekerk
     - conda-forge/opentelemetry-api
-    - conda-forge/opentelemetry-instrumentation
-    - conda-forge/opentelemetry-semantic-conventions
-    - conda-forge/opentelemetry-util-http
