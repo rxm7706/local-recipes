@@ -13,6 +13,7 @@ package:
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/excel_mcp_server-${{ version }}.tar.gz
   sha256: c0c3a11238822e2b93f07e9fd3cdebd1fd7fec2ab60b34424a788bc597d534b2
+  target_directory: src/
 
 build:
   number: 0
@@ -33,11 +34,12 @@ requirements:
     - fastmcp >=2.0.0,<3.0.0
     - openpyxl >=3.1.5
     - typer >=0.16.0
+    - python-dotenv >=1.0.0
 
 tests:
   - python:
       imports:
-        - excel_mcp_server
+        - src/excel_mcp.__main__
       pip_check: true
       python_version: ${{ python_min }}.*
   - requirements:
