@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cityhash
+  version: "0.4.9"
+  python_min: '3.10'
+
+package:
+  name: python-${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cityhash-${{ version }}.tar.gz
+  sha256: e897d5d4faa6eff7c6c706d488e5e9eee129b7f41f9db498a4ba8701ce89122f
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    version_independent: true
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - cython
+    - py-cpuinfo
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - cityhash
+        - cityhashcrc
+        - farmhash
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+
+about:
+  summary: Python bindings for CityHash and FarmHash
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/escherba/python-cityhash
+
+extra:
+  recipe-maintainers:
+    - rxm7706
