@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: teradatasql
+  version: "20.0.0.34"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/t/teradatasql/teradatasql-${{ version }}-py3-none-any.whl
+  sha256: 908784337b61d8ecf9f9dc74be6d9a72ddbd7046db45f2e7389b3a8aec461717
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install --find-links . --no-index --ignore-installed -vv --no-deps --no-build-isolation teradatasql
+  python:
+    version_independent: true
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+
+    - ${{ compiler("c") }}
+    #- ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools >=38.0
+  run:
+    - python
+    - sqlalchemy >=1.3.5
+    - pycryptodome
+  ignore_run_exports:
+    from_package:
+      - cross-python_${{ target_platform }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - teradatasql
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+      - python -c "import teradatasql; print(teradatasql.__version__)"
+
+about:
+  summary: Teradata SQL Driver for Python
+  documentation: https://github.com/Teradata/python-driver
+  homepage: http://www.teradata.com
+  license: 'LicenseRef-Proprietary'
+  license_file: 
+    - LICENSE
+    - THIRDPARTYLICENSE
+
+extra:
+  recipe-maintainers:
+    - Teradata
+  copy_test_source_files: true
+  final: true

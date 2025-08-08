@@ -1,5 +1,5 @@
 {% set name = "teradatasql" %}
-{% set version = "20.0.0.30" %}
+{% set version = "20.0.0.34" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,19 +7,20 @@ package:
   version: {{ version }}
 
 source:
-  sha256: 182b72aac3c1fb4b78a90fa1d62c523866edfaa38e1464e14e5dbc18f0aa3c6d
+  sha256: 908784337b61d8ecf9f9dc74be6d9a72ddbd7046db45f2e7389b3a8aec461717
   url: https://pypi.org/packages/py3/t/teradatasql/teradatasql-{{ version }}-py3-none-any.whl
 
 build:
   noarch: python
   script:
-    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps teradatasql
+    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed -vv --no-deps --no-build-isolation teradatasql
   number: 0
 
 requirements:
   build:
     - {{ compiler('c') }}
-    - {{ stdlib('c') }}
+    - {{ compiler('cxx') }}
+    #- {{ stdlib('c') }}
   host:
     - python {{ python_min }}
     - pip
@@ -33,6 +34,7 @@ test:
     - teradatasql
   commands:
     - pip check
+    - python -c "import teradatasql; print(teradatasql.__version__)"
   requires:
     - pip
     - python {{ python_min }}
@@ -41,11 +43,13 @@ about:
   summary: Teradata SQL Driver for Python
   doc_url: https://github.com/Teradata/python-driver
   home: http://www.teradata.com
-  license: Proprietary
+  license: 'LicenseRef-Proprietary'
   license_file: 
     - LICENSE
     - THIRDPARTYLICENSE
 
 extra:
-    copy_test_source_files: true
-    final: true
+  recipe-maintainers:
+    - Teradata
+  copy_test_source_files: true
+  final: true
