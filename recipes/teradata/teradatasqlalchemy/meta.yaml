@@ -1,5 +1,5 @@
 {% set name = "teradatasqlalchemy" %}
-{% set version = "20.0.0.4" %}
+{% set version = "20.0.0.6" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,7 +7,7 @@ package:
   version: {{ version }}
 
 source:
-  sha256: 08326c907b80b376960fe6f9747b6c1def832837dd8cfecca29398dd589a527f
+  sha256: 65cdabc1f1579a2adfbe6a08d1c35fc7bb4d5ad583c56bfc1423f10d1256bdd8
   url: https://pypi.org/packages/py3/t/teradatasqlalchemy/teradatasqlalchemy-{{ version }}-py3-none-any.whl
 
 build:
@@ -15,6 +15,8 @@ build:
   script:
     - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps teradatasqlalchemy
   number: 0
+  entry_points:
+    - sqlalchemy.dialects = teradatasqlalchemy.dialect:TeradataDialect
 
 requirements:
   host:
@@ -32,6 +34,12 @@ test:
     - sqlalchemy
   commands:
     - pip check
+    - echo "Testing teradatasql imported version is"
+    - python -c "import teradatasql; print(teradatasql.__version__)"
+    - echo "Testing sqlalchemy imported version is"
+    - python -c "import sqlalchemy; print(sqlalchemy.__version__)"
+    - echo "Testing teradatasqlalchemy imported version is"
+    - python -c "import teradatasqlalchemy; print(teradatasqlalchemy.__version__)"
   requires:
     - pip
     - python {{ python_min }}
@@ -40,10 +48,12 @@ about:
   summary: Teradata SQL Driver Dialect for SQLAlchemy
   doc_url: https://github.com/Teradata/python-driver
   home: http://www.teradata.com
-  license: Proprietary
+  license: 'LicenseRef-Proprietary'
   license_file: 
     - LICENSE
 
 extra:
-    copy_test_source_files: true
-    final: true
+  recipe-maintainers:
+    - Teradata
+  copy_test_source_files: true
+  final: true
