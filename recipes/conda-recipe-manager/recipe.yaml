@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: conda-recipe-manager
+  version: "0.6.1"
+  python_min: '3.11'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/conda/conda-recipe-manager/archive/v${{ version }}.tar.gz
+  sha256: 2610deb8019357e8152af7382915230f71f76943b75e3347db7b8f072c08551c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - conda-recipe-manager = conda_recipe_manager.commands.conda_recipe_manager:conda_recipe_manager
+      - crm = conda_recipe_manager.commands.conda_recipe_manager:conda_recipe_manager
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - pip
+    - wheel  # Note note in the original recipe
+  run:
+    - python >=${{ python_min }},<4.0
+    - click
+    #- click >=8.1.7,<8.2.0
+    - conda
+    - jinja2
+    - pyyaml
+    - jsonschema
+    - requests
+    - gitpython
+    - networkx
+    - matplotlib-base
+    - pygraphviz
+
+tests:
+  - python:
+      imports:
+        - conda_recipe_manager
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+        - pytest
+        - pytest-xdist
+        - pytest-socket
+        - pyfakefs >=5.9.1
+        - click
+        #- click >=8.1.7,<8.2.0
+        - git  # Required for `gitpython` tests
+    script:
+      - conda-recipe-manager --help
+      - crm --help
+      - pip check
+      - python -m pytest -n auto --ignore=tests/test_aux_files tests/
+
+about:
+  homepage: https://github.com/conda/conda-recipe-manager
+  summary: Helper tool for recipes on aggregate.
+  description: |
+    Renders local recipes, provides build orders, find outdated recipes.
+  documentation: https://conda.github.io/conda-recipe-manager/index.html
+  repository: https://github.com/conda/conda-recipe-manager
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - schuylermartin45
