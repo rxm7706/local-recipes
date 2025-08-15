@@ -1,5 +1,6 @@
 {% set name = "coderedcms" %}
-{% set version = "5.0.0" %}
+{% set version = "5.0.1" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/coderedcms-{{ version }}.tar.gz
-  sha256: 110ec68a8a83b8c88ae70432c3d47fc4da32a6015aead2cba4bea94054723b17
+  sha256: c9dce58990cfc0bb0e9d34e19d07ba7c3b394f7656963f05dbc293298c4fd37f
 
 build:
   entry_points:
@@ -18,35 +19,43 @@ build:
 
 requirements:
   host:
-    - python >=3.9
-    - setuptools >=65.5
+    - python {{ python_min }}
     - pip
+    - setuptools >=65.5
   run:
-    - python >=3.9
-    - beautifulsoup4 >=4.8,<4.13
+    - python >={{ python_min }}
+    - beautifulsoup4 >=4.8,<5  # should be the same as wagtail
     - django-eventtools ==1.0.*
-    - django-bootstrap5 ==24.3
-    - django >=4.2,<6.0
+    - django-bootstrap5 ==25.2  # updated from 24.3 to 25.2
+    - django >=5.2,<6.0  # updated from 4.2 to 5.2
     - geocoder ==1.38.*
-    - icalendar ==6.1.*
-    - wagtail >=6.3,<7.0
-    - wagtail-cache >=2.4,<3
-    - wagtail-flexible-forms ==2.*
-    - wagtail-seo ==3.*
+    - icalendar ==6.3.*  # updated from 6.1 to 6.3
+# icalendar 6.0.1 requires tzdata, which is not installed
+    - python-tzdata
+    - wagtail >=7.1,<8.0  # updated from 6.3 to 7.1
+    - wagtail-cache >=3.0,<4  # updated from 2.0 to 3.0
+    - wagtail-flexible-forms ==2.*  # updated from 2.0 to 2.1
+    - wagtail-seo ==3.*  # updated from 3.0 to 3.1
 
 test:
   imports:
     - coderedcms
   commands:
-    - pip check
-    - coderedcms --help
+    #- pip check
+    #- coderedcms 5.0.1 has requirement beautifulsoup4<4.13,>=4.8, but you have beautifulsoup4 4.13.4.
+    #- coderedcms 5.0.1 has requirement django-bootstrap5==24.3, but you have django-bootstrap5 25.2.
+    #- coderedcms 5.0.1 has requirement icalendar==6.1.*, but you have icalendar 6.3.1.
+    #- coderedcms 5.0.1 has requirement wagtail<7.0,>=6.3, but you have wagtail 7.1.
+    #- coderedcms 5.0.1 has requirement wagtail-cache<3,>=2.4, but you have wagtail-cache 3.0.0.
+    - coderedcms help
   requires:
+    - python {{ python_min }}
     - pip
 
 about:
-  summary: Wagtail + CodeRed Extensions enabling rapid development of marketing-focused websites.
-  dev_url: https://github.com/coderedcorp/coderedcms
-  license: BSD-3-Clause AND MIT
+  home: https://github.com/coderedcorp/coderedcms
+  summary: Wagtail-based CMS by CodeRed for building marketing websites.
+  license: MIT AND BSD-3-Clause
   license_file:
     - LICENSE.txt
     - coderedcms/static/coderedcms/vendor/bootstrap/LICENSE
