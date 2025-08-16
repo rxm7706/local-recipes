@@ -1,0 +1,54 @@
+{% set name = "python-cityhash" %}
+{% set version = "0.4.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cityhash/cityhash-{{ version }}.tar.gz
+  sha256: e897d5d4faa6eff7c6c706d488e5e9eee129b7f41f9db498a4ba8701ce89122f
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+  host:
+    - python
+    - cython
+    - py-cpuinfo
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - cityhash
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/escherba/python-cityhash
+  summary: Python bindings for CityHash and FarmHash
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - charlesbluca
+    - rxm7706
