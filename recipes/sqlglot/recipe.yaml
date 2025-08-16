@@ -1,0 +1,103 @@
+# from `sqlglotrs/Cargo.toml#package/version`
+# handle undefined PYTHON in `noarch: generic` outputs
+schema_version: 1
+
+context:
+  version: "27.6.0"
+  sqlglotrs_version: 0.6.1
+  PYTHON: $PYTHON
+
+recipe:
+  name: sqlglot
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sqlglot/sqlglot-${{ version }}.tar.gz
+  sha256: 413bc6c9978710bd97110e9a4363c517dfb92954d0a9fd2922e87c5707395deb
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: sqlglot
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}.*
+        - setuptools_scm
+        - setuptools
+      run:
+        - python >=${{ python_min }}
+      run_constraints:
+        - sqlglotrs ==${{ sqlglotrs_version }}
+    tests:
+      - python:
+          imports:
+            - sqlglot
+          pip_check: true
+          python_version: ${{ python_min }}.*
+      - files:
+          source:
+            - tests/
+        requirements:
+          run:
+            - openjdk
+            - pandas
+            - pip
+            - pyspark
+            - pytest
+            - python-dateutil
+            - python-duckdb >=0.6
+            - python ${{ python_min }}.*
+        script:
+          - pytest -vvv --capture=tee-sys --color=yes --tb=long tests
+  - package:
+      name: sqlglot-rs
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('sqlglot', exact=True) }}
+        - sqlglotrs
+    tests:
+      - python:
+          imports:
+            - sqlglot
+          pip_check: true
+          python_version: ${{ python_min }}.*
+      - files:
+          recipe:
+            - test_sqlglotrs_version.py
+          source:
+            - tests/
+            - sqlglotrs/Cargo.toml
+        requirements:
+          run:
+            - openjdk
+            - pandas
+            - pip
+            - pyspark
+            - pytest
+            - python-dateutil
+            - python-duckdb >=0.6
+            - tomli
+            - python ${{ python_min }}.*
+        script:
+          - pytest -vvv --capture=tee-sys --color=yes --tb=long test_sqlglotrs_version.py
+          - pytest -vvv --capture=tee-sys --color=yes --tb=long -k "not test_token_repr" tests
+
+about:
+  summary: An easily customizable SQL parser and transpiler
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tobymao/sqlglot
+
+extra:
+  recipe-maintainers:
+    - tobymao
+    - thewchan
