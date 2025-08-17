@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: markitdown-pro
+  version: "1.0.2"
+  python_min: '3.12'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markitdown_pro-${{ version }}.tar.gz
+  sha256: 1112dbdf8c62fea30b5042a5f233d9ca5c868ea5669820987ea150dbe7084734
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - pillow ==11.1.0
+    - requests
+    - httpx
+    - python-dotenv
+    - azure-core
+    - azure-ai-documentintelligence ==1.0.2
+    - azure-cognitiveservices-speech ==1.42.0 # Not Available on conda-forge, but required for speech-to-text functionality
+    - azure-common ==1.1.28
+    - whisper # Not Available on conda-forge, but required for speech-to-text functionality
+    - markitdown
+    - langchain ==0.3.27
+    - langchain-core ==0.3.74
+    - langchain-openai ==0.3.29
+    - langchain-text-splitters ==0.3.9
+    - langdetect ==1.0.9
+    - langsmith ==0.4.13
+    - openai ==1.99.6
+    - pymupdf
+    - tabulate ==0.9.0
+    - chardet ==5.2.0
+    - unstructured
+    - youtube-transcript-api
+    - pyexiftool # Not Available on conda-forge, but required for metadata extraction
+    - pydub
+    - nbformat
+
+tests:
+  - python:
+      imports:
+        - markitdown_pro
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A package that converts almost any file format to Markdown.
+  homepage: https://pypi.org/project/markitdown-pro/
+  repository: https://github.com/coolgogi/markitdown-pro
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

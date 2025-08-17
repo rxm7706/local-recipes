@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyexiftool
+  version: "0.5.6"
+  python_min: '3.9'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/PyExifTool-${{ version }}.tar.gz
+  sha256: 22a972c1c212d1ad5f61916fded5057333dcc48fb8e42eed12d2ff9665b367ae
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - exiftool
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Python wrapper for exiftool
+  license: GPL-3.0-only AND BSD-3-Clause AND 0BSD
+  license_file:
+    - LICENSE
+    - COPYING.GPL
+    - COPYING.BSD
+  homepage: http://github.com/sylikc/pyexiftool
+  repository: https://github.com/sylikc/pyexiftool
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: whisper
+  version: "1.1.10"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/whisper-${{ version }}.tar.gz
+  sha256: 435b4fb843c4c752719bdf0511a652d5be710e9bb35ad9ebe3b133268ee31c44
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - six
+
+tests:
+  - python:
+      imports:
+        - whisper
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Fixed size round-robin style database
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: http://graphiteapp.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
