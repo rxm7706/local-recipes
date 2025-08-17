@@ -46,7 +46,7 @@ tests:
       - markitdown-mcp --help
 
 about:
-  summary: "An MCP server for the \"markitdown\" library."
+  summary: An MCP server for the markitdown library
   license: MIT
   license_file: LICENSE
   repository: https://github.com/microsoft/markitdown
