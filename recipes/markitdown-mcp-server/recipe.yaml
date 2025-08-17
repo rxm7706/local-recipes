@@ -2,17 +2,17 @@
 schema_version: 1
 
 context:
-  name: html-to-markdown
-  version: "1.9.0"
-  python_min: '3.10'
+  name: markitdown-mcp-server
+  version: "0.1.11"
+  python_min: '3.12'
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/html_to_markdown-${{ version }}.tar.gz
-  sha256: 9cd066d33612a0fc00119f65bee7b5da98093c2fdd10493694fb08d15d1b2a2c
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markitdown_mcp_server-${{ version }}.tar.gz
+  sha256: 52b58a3a968bda782faa57ff9cfab79e70837eebfb74051726b6ac39ada6b2c9
 
 build:
   number: 0
@@ -20,23 +20,22 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - html-to-markdown = html_to_markdown.__main__:cli
-      - html_to_markdown = html_to_markdown.__main__:cli
+      - markitdown-mcp-server = markitdown_mcp_server:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=78.1
+    - hatchling
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - beautifulsoup4 >=4.13.4
-    - nh3 >=0.3
+    - markitdown >=0.1.1
+    - mcp >=1.9.1
 
 tests:
   - python:
       imports:
-        - html_to_markdown
+        - markitdown_mcp_server
       pip_check: true
       python_version: ${{ python_min }}.*
   - requirements:
@@ -44,14 +43,13 @@ tests:
         - pip
         - python ${{ python_min }}.*
     script:
-      - html-to-markdown --help
-      - html_to_markdown --help
+      - markitdown-mcp-server --help
 
 about:
-  summary: A modern, type-safe Python library for converting HTML to Markdown with comprehensive tag support and customizable options
+  summary: MCP server for converting documents to markdown using MarkItDown
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/Goldziher/html-to-markdown
+  homepage: https://github.com/KorigamiK/markitdown_mcp_server
 
 extra:
   recipe-maintainers:
