@@ -1,5 +1,5 @@
 {% set name = "pytest-robotframework" %}
-{% set version = "4.3.0" %}
+{% set version = "4.4.0.post2" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pytest_robotframework-{{ version }}.tar.gz
-  sha256: 8d3e8850e148f690a9d378fdd67f3031a67d2cea39092faf41dce031746f7de4
+  sha256: 2a1ac0d5712eb0e1afde19ab2c498a21697a2a235912291c80ec9ae81a4996e4
 
 build:
   noarch: python
@@ -16,14 +16,14 @@ build:
 
 requirements:
   host:
-    - python >=3.9,<4.0
-    - pdm-backend
+    - python {{ python_min }}
+    - uv-build
     - pip
   run:
-    - python >=3.9,<4.0
-    - pytest <9,>=7
-    - robotframework <8.0.0,>=6.1
-    - basedtyping <0.2,>=0.1.0
+    - python >={{ python_min }},<4.0
+    - pytest >=7,<9
+    - robotframework >=6.1,<8.0.0
+    - basedtyping >=0.1.0,<0.2
     - ansi2html >=1.9.1
 
 test:
@@ -33,12 +33,15 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://github.com/detachhead/pytest-robotframework
   summary: a pytest plugin that can run both python and robotframework tests while generating robot reports for them
   license: MIT
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
+    - DetachHead
     - rxm7706
