@@ -3,14 +3,14 @@ schema_version: 1
 
 context:
   name: azure-monitor-opentelemetry
-  version: "1.6.13"
-  opentelemetry_sdk_version: '1.36.0'
-  opentelemetry_sdk_version_max: '1.37.dev0'
-  opentelemetry_instrumentation_version: '0.57b0'
+  version: "1.7.0"
   azure_core_tracing_opentelemetry: '1.0.0b11'
   azure_monitor_opentelemetry_exporter: '1.0.0b40'
+  opentelemetry_instrumentation_version: '0.57b0'
   opentelemetry_resource_detector_azure: '0.1.5'
   opentelemetry_resource_detector_azure_max: '0.2.dev0'
+  opentelemetry_sdk_version: '1.36.0'
+  opentelemetry_sdk_version_max: '1.37.dev0'
 
 package:
   name: ${{ name|lower }}
@@ -18,7 +18,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_monitor_opentelemetry-${{ version }}.tar.gz
-  sha256: 59b1b01e64318d78f0d2909c8fa9b3008dbf88e7ea6e491d2042afa5bbe94971
+  sha256: eba75e793a95d50f6e5bc35dd2781744e2c1a5cc801b530b688f649423f2ee00
 
 build:
   number: 0

@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: boringcatalog
+  version: "0.4.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/boringcatalog-${{ version }}.tar.gz
+  sha256: 8d3dad2e3bcd35311f1070c1cb4a0efdb8ff44078d3f7fdd06b4a14050fb24cf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ice = boringcatalog.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - s3fs >=2023.12.0
+    - pyiceberg >=0.9.0
+    - click >=8.0.0
+    - python-duckdb >=0.9.0
+
+tests:
+  - python:
+      imports:
+        - boringcatalog
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - ice --help
+
+about:
+  summary: A DuckDB-based Iceberg catalog implementation
+  homepage: https://github.com/boringdata/boring-catalog
+  license: Apache-2.0
+  license_file: License.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
