@@ -1,8 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: conda
-  version: 25.7.0
+  version: "25.7.0"
+  python_min: '3.9'
+  sha256: "f27a1e13f0ec6f6597e1a3f02963dd1f5a6343746a34f4f28ad2352f91543899"
+  # Running pytest requires the inclusion of test files which baloons
+  # the size of the package; values can be "yes" or "no"
+  run_pytest: "no"
 
 package:
   name: ${{ name|lower }}
@@ -14,19 +20,19 @@ source:
 
 build:
   number: 0
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install conda-src/ --no-deps --no-build-isolation -vv && ${{ PYTHON }} -m conda init --install
   python:
     entry_points:
       - conda = conda.cli.main_pip:main
 
 requirements:
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - hatchling >=1.12.2
     - hatch-vcs >=0.2.0
     - pip
   run:
-    - python >=3.9
+    - python >=${{ python_min }},<4.0
     - archspec >=0.2.3
     - boltons >=23.0.0
     - charset-normalizer
@@ -52,9 +58,11 @@ tests:
       imports:
         - constantly
       pip_check: true
+      python_version: ${{ python_min }}.*
   - requirements:
       run:
         - pip
+        - python ${{ python_min }}.*
     script:
       - conda --help
 
@@ -88,4 +96,12 @@ about:
 
 extra:
   recipe-maintainers:
+    - dbast
+    - isuruf
+    - jakirkham
+    - jezdez
+    - kenodegard
+    - mbargull
+    - ocefpaf
+    - beeankha
     - rxm7706
