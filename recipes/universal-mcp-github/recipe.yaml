@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  name: boring-semantic-layer
-  version: "0.1.4"
+  name: universal-mcp-github
+  version: "0.1.2"
   python_min: '3.10'
 
 package:
@@ -11,8 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/boring_semantic_layer-${{ version }}.tar.gz
-  sha256: 537a739babfb0184ac7662cc8c80cf4eb6e0c3c84ab24c102747e485b84a34d9
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/universal_mcp_github-${{ version }}.tar.gz
+  sha256: 799d7b4ead70cb21c1edb8d4a09fb9749fd151363edc1ee76cc75fb330b251ff
 
 build:
   number: 0
@@ -20,7 +20,7 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - hello = boring_semantic_layer:hello
+      - universal_mcp_github = universal_mcp_github:main
 
 requirements:
   host:
@@ -29,13 +29,12 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - attrs >=25.3.0
-    - ibis-framework >=10.6.0
+    - universal-mcp >=0.1.20
 
 tests:
   - python:
       imports:
-        - boring_semantic_layer
+        - universal_mcp_github
       pip_check: true
       python_version: ${{ python_min }}.*
   - requirements:
@@ -43,13 +42,13 @@ tests:
         - pip
         - python ${{ python_min }}.*
     script:
-      - hello --help
+      - universal_mcp_github --help
 
 about:
-  summary: A boring semantic layer built with ibis
-  homepage: https://github.com/boringdata/boring-semantic-layer
-  license: Apache-2.0
-  license_file: License.md
+  summary: "A Universal MCP Application: universal_mcp_github"
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/universal-mcp/github
 
 extra:
   recipe-maintainers:
