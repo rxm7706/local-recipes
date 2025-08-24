@@ -1,0 +1,42 @@
+schema_version: 1
+
+context:
+  name: limeade
+  version: 0.1.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/limeade-${{ version }}.tar.gz
+  sha256: 2ae76a8a1f8c65e43d7c0161be4f98bd1c7b4bed83bd3324aecfef786e38d17b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pytest-runner
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - limeade
+      pip_check: true
+
+about:
+  summary: Library for hot reloading Python code at runtime
+  license: BSD-3-Clause
+  license_file: PLEASE_ADD_LICENSE_FILE
+  homepage: https://github.com/CFSworks/limeade
+
+extra:
+  recipe-maintainers:
+    - rxm7706
