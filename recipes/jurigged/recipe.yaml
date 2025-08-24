@@ -1,0 +1,53 @@
+schema_version: 1
+
+context:
+  name: jurigged
+  version: 0.6.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jurigged-${{ version }}.tar.gz
+  sha256: 840a53bee6963a85d0a4ea5055472526c6b1114ed78ef5a91bde146e9280b04b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - jurigged = jurigged.live:cli
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - pip
+  run:
+    - python >=3.9
+    - blessed >=1.20.0
+    - codefind >=0.1.7,<0.2.dev0
+    - ovld >=0.4.0
+    - watchdog >=4.0.2
+
+tests:
+  - python:
+      imports:
+        - jurigged
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - jurigged --help
+
+about:
+  summary: Live update of Python functions
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

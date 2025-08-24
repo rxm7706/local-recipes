@@ -1,0 +1,51 @@
+schema_version: 1
+
+context:
+  name: python-ulid
+  version: 3.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python_ulid-${{ version }}.tar.gz
+  sha256: ff0410a598bc5f6b01b602851a3296ede6f91389f913a5d5f8c496003836f636
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ulid = ulid.__main__:entrypoint
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - hatch-vcs
+    - hatch-fancy-pypi-readme
+    - pip
+  run:
+    - python >=3.9
+
+tests:
+  - python:
+      imports:
+        - python_ulid
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - ulid --help
+
+about:
+  summary: Universally unique lexicographically sortable identifier
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

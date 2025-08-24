@@ -1,0 +1,53 @@
+schema_version: 1
+
+context:
+  name: cmd2
+  version: 2.7.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cmd2-${{ version }}.tar.gz
+  sha256: 81d8135b46210e1d03a5a810baf859069a62214788ceeec3588f44eed86fbeeb
+
+build:
+  number: 0
+  skip: match(python, "<3.9")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - python-build >=1.2.1
+    - setuptools >=64
+    - setuptools-scm >=8
+    - pip
+  run:
+    - python >=3.9
+    - if: osx
+      then: gnureadline >=8
+    - pyperclip >=1.8
+    - if: win
+      then: pyreadline3 >=3.4
+    - rich-argparse >=1.7.1
+    - wcwidth >=0.2.10
+
+tests:
+  - python:
+      imports:
+        - cmd2_myplugin
+      pip_check: true
+
+about:
+  summary: cmd2 - quickly build feature-rich and user-friendly interactive command line applications in Python
+  license: MIT
+  license_file:
+    - LICENSE
+    - plugins/template/LICENSE
+  homepage: https://github.com/python-cmd2/cmd2-plugin-template
+
+extra:
+  recipe-maintainers:
+    - rxm7706
