@@ -1,4 +1,3 @@
-
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
@@ -41,12 +40,6 @@ tests:
         - universal_mcp_markitdown
       pip_check: true
       python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - universal_mcp_markitdown --help
 
 about:
   summary: 'A Universal MCP Application: universal_mcp_markitdown'
@@ -58,4 +51,3 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
-

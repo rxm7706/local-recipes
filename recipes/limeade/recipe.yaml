@@ -1,8 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
-
 context:
   name: limeade
-  version: 0.1.1
+  version: "0.1.1"
+  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}
@@ -19,22 +20,34 @@ build:
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pytest-runner
     - pip
+    - setuptools
+    - importlib-metadata
   run:
-    - python
+   - python >=${{ python_min }},<4.0
+   - setuptools
+   - importlib_metadata
 
 tests:
   - python:
       imports:
         - limeade
       pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+    - pip check
 
 about:
   summary: Library for hot reloading Python code at runtime
   license: BSD-3-Clause
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_file: LICENSE
   homepage: https://github.com/CFSworks/limeade
 
 extra:

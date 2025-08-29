@@ -19,17 +19,18 @@ build:
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }},<4.0
 
 tests:
   - python:
       imports:
         - gorilla
       pip_check: true
-
+      python_version: ${{ python_min }}.*
 about:
   summary: Convenient approach to monkey patching
   license: MIT
@@ -39,3 +40,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - xhochy
