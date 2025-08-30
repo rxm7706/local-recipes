@@ -34,7 +34,7 @@ requirements:
 tests:
   - python:
       imports:
-        - guidance_stitch
+        - stitch
       pip_check: true
       python_version: ${{ python_min }}.*
 
