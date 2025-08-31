@@ -33,8 +33,18 @@ tests:
   - python:
       imports:
         - blessed
+        - ${{ "jinxed" if win }}
+        - ${{ "wcwidth" if unix }}
       pip_check: true
       python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - echo "Test Importing Terminal for unix and windows"
+      - python -c "from blessed import Terminal; assert Terminal"
+      - ${{ "echo \"Test Importing jinxed for windows\"" if win }}
+      - ${{ "python -c \"from jinxed import setupterm\"" if win }}
 
 about:
   summary: Easy, practical library for making terminal apps, by providing an elegant, well-documented interface to Colors, Keyboard input, and screen Positioning capabilities.
