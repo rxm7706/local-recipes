@@ -25,26 +25,44 @@ requirements:
     - pip
     - setuptools
   run:
+    - __${{ noarch_platform }}
     - python >=${{ python_min }},<4.0
-    - wcwidth >=0.1.4
-    - ${{ "jinxed >=1.1.0" if win }}
+#    - wcwidth >=0.1.4
+#    - ${{ "jinxed >=1.1.0" if win }}
+    - if: noarch_platform != "win"
+      then:
+        - wcwidth >=0.1.4
+      else:
+        - wcwidth >=0.1.4
+        - jinxed >=1.1.0
 
 tests:
   - python:
       imports:
         - blessed
-        - ${{ "jinxed" if win }}
-        - ${{ "wcwidth" if unix }}
+        - ${{ "jinxed" if noarch_platform == "win" }}
+        - ${{ "wcwidth" if noarch_platform == "osx" or noarch_platform == "linux" or noarch_platform == "win" }}
       pip_check: true
       python_version: ${{ python_min }}.*
   - requirements:
       run:
         - python ${{ python_min }}.*
     script:
-      - echo "Test Importing Terminal for unix and windows"
-      - python -c "from blessed import Terminal; assert Terminal"
-      - ${{ "echo \"Test Importing jinxed for windows\"" if win }}
-      - ${{ "python -c \"from jinxed import setupterm\"" if win }}
+      - echo "Test Script Imports for unix and windows Started"
+#      - python -c "from blessed import Terminal; assert Terminal"
+#      - ${{ "echo \"Test Importing jinxed for windows\"" if win }}
+#      - ${{ "python -c \"from jinxed import setupterm\"" if win }}
+      - if: noarch_platform  != "win"
+        then:
+          - echo "Test Script Importing blessed and terminal for unix and windows"
+          - python -c "from blessed import Terminal; assert Terminal"
+          - python -c "assert __import__('blessed').__version__ == '${{ version }}'"
+        else:
+          - echo "Test Script Importing jinxed, blessed and terminal for windows"
+          - python -c "from jinxed import setupterm; assert setupterm"
+          - python -c "from blessed import Terminal; assert Terminal"
+          - python -c "assert __import__('blessed').__version__ == '${{ version }}'"
+      - echo "Test Script Imports for unix and windows Completed"
 
 about:
   summary: Easy, practical library for making terminal apps, by providing an elegant, well-documented interface to Colors, Keyboard input, and screen Positioning capabilities.
