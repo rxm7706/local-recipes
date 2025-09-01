@@ -1,0 +1,42 @@
+schema_version: 1
+
+context:
+  name: tencentcloud-sdk-python
+  version: 3.0.1336
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tencentcloud-sdk-python-${{ version }}.tar.gz
+  sha256: 1c6a1413267030c142ba2a2e4f64ce12026157efd0f4c446efca1856dbae6f35
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - requests >=2.16.0
+
+tests:
+  - python:
+      imports:
+        - QcloudApi
+        - tencentcloud
+      pip_check: true
+
+about:
+  summary: Tencent Cloud SDK for Python
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/TencentCloud/tencentcloud-sdk-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706

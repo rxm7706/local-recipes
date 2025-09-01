@@ -1,0 +1,52 @@
+schema_version: 1
+
+context:
+  name: ddgs
+  version: 9.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ddgs-${{ version }}.tar.gz
+  sha256: 53b47c74a8060457cb02cbb64acdf59655d799ce8e0934e945bcd878fcab3a7f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ddgs = ddgs.cli:safe_entry_point
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools
+    - pip
+  run:
+    - python >=3.9
+    - click >=8.1.8
+    - primp >=0.15.0
+    - lxml >=5.3.0
+
+tests:
+  - python:
+      imports:
+        - ddgs
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - ddgs --help
+
+about:
+  summary: Dux Distributed Global Search. A metasearch library that aggregates results from diverse web search services.
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

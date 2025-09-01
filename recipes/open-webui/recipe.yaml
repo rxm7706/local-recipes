@@ -109,15 +109,15 @@ requirements:
     #- azure-ai-documentintelligence ==1.0.2  # Conda Forge does not have azure-ai-documentintelligence 1.0.2, only 1.0.1
     - pillow ==11.3.0
     #- opencv ==4.11.0.86  # Conda Forge does not have opencv 4.11.0.86, only 4.12
-    #- rapidocr-onnxruntime ==1.4.4  # Not available on conda-forge
+    #- rapidocr-onnxruntime ==1.4.4  # Not available on conda-forge, no sdist package
     - rank-bm25 ==0.2.2
     - onnxruntime ==1.20.1
-    #- faster-whisper ==1.1.1  # Not available on conda-forge
+    #- faster-whisper ==1.1.1  # Not available on conda-forge, requires ctranslate2 which has no sdist package
     - black ==25.1.0
     - youtube-transcript-api ==1.1.0
     - pytube ==15.0.0
     - pydub
-    #- ddgs ==9.0.0  # Not available on conda-forge
+    #- ddgs ==9.0.0  # Not available on conda-forge, requires primp >=0.15.0
     - google-api-python-client
     - google-auth-httplib2
     - google-auth-oauthlib

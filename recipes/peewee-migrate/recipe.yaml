@@ -1,0 +1,54 @@
+schema_version: 1
+
+context:
+  name: peewee-migrate
+  version: 1.12.2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/peewee_migrate-${{ version }}.tar.gz
+  sha256: c8187c97b756909ea57e77cce06ae66395219e86764ef0b286a7bc72ff7405ad
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pw_migrate = peewee_migrate.cli:cli
+      - pw-migrate = peewee_migrate.cli:cli
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - peewee >=3.0.0,<4.0.0
+    - click
+
+tests:
+  - python:
+      imports:
+        - peewee_migrate
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - pw_migrate --help
+      - pw-migrate --help
+
+about:
+  summary: Support for migrations in Peewee ORM
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+  homepage: https://github.com/klen/peewee_migrate
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,44 @@
+schema_version: 1
+
+context:
+  name: soundfile
+  version: 0.13.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/soundfile-${{ version }}.tar.gz
+  sha256: b2c68dab1e30297317080a5b43df57e302584c49e2942defdde0acccc53f0e5b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - cffi >=1.0
+    - pip
+  run:
+    - python
+    - cffi >=1.0
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - soundfile
+      pip_check: true
+
+about:
+  summary: An audio library based on libsndfile, CFFI and NumPy
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/bastibe/python-soundfile
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,46 @@
+schema_version: 1
+
+context:
+  name: starlette-compress
+  version: 1.6.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/starlette_compress-${{ version }}.tar.gz
+  sha256: af1c15d1892fae3ac1c46762250850d6eea2f03c2382e9640ca94aebfeb32455
+
+build:
+  number: 0
+  skip: match(python, "<3.9")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - pip
+  run:
+    - python >=3.9
+    - brotli >=1
+    - brotlicffi >=1
+    - starlette
+    - if: match(python, "<3.14")
+      then: zstandard >=0.15
+
+tests:
+  - python:
+      imports:
+        - starlette_compress
+      pip_check: true
+
+about:
+  summary: Compression middleware for Starlette - supporting ZStd, Brotli, and GZip
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

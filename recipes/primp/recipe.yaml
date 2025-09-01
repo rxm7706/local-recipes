@@ -1,0 +1,41 @@
+schema_version: 1
+
+context:
+  name: primp
+  version: 0.15.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/primp-${{ version }}.tar.gz
+  sha256: 1af8ea4b15f57571ff7fc5e282a82c5eb69bc695e19b8ddeeda324397965b30a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - maturin >=1.5,<2.0
+    - pip
+  run:
+    - python >=3.8
+
+tests:
+  - python:
+      imports:
+        - primp
+      pip_check: true
+
+about:
+  summary: HTTP client that can impersonate web browsers, mimicking their headers and `TLS/JA3/JA4/HTTP2` fingerprints
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,41 @@
+schema_version: 1
+
+context:
+  name: asyncio
+  version: 4.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/asyncio-${{ version }}.tar.gz
+  sha256: 570cd9e50db83bc1629152d4d0b7558d6451bb1bfd5dfc2e935d96fc2f40329b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.4
+    - setuptools >=77
+    - pip
+  run:
+    - python >=3.4
+
+tests:
+  - python:
+      imports:
+        - asyncio
+      pip_check: true
+
+about:
+  summary: Deprecated backport of asyncio; use the stdlib package instead
+  license: Apache-2.0
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - rxm7706
