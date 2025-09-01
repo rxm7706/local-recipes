@@ -43,11 +43,21 @@ tests:
       python_version: ${{ python_min }}.*
 
 about:
-  summary: A guidance language for controlling large language models.
+  homepage: https://github.com/microsoft/guidance
+  summary: 'A guidance language for controlling large language models'
+  description: |
+    Guidance enables you to control modern language models more effectively and efficiently
+    than traditional prompting or chaining. Guidance programs allow you to interleave generation,
+    prompting, and logical control into a single continuous flow matching how the language model
+    actually processes the text. Simple output structures like Chain of Thought and its many
+    variants (e.g., ART, Auto-CoT, etc.) have been shown to improve LLM performance.
+    The advent of more powerful LLMs like GPT-4 allows for even richer structure, and guidance
+    makes that structure easier and cheaper.
   license: MIT
   license_file: LICENSE.md
-  homepage: https://github.com/guidance-ai/guidance
+  repository: https://github.com/microsoft/guidance
 
 extra:
   recipe-maintainers:
+    - johnhany97
     - rxm7706
