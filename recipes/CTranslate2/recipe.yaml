@@ -1,0 +1,66 @@
+schema_version: 1
+
+context:
+  name: CTranslate2
+  version: 4.6.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/OpenNMT/CTranslate2/archive/v${{ version }}.tar.gz
+  sha256: 9421d846668573466ceb713b27f71fb16fed8486ed7bdb654583c48c3c20621b
+
+build:
+  number: 0
+  skip: match(python, "<3.9")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ct2-fairseq-converter=ctranslate2.converters.fairseq:main
+      - ct2-marian-converter=ctranslate2.converters.marian:main
+      - ct2-openai-gpt2-converter=ctranslate2.converters.openai_gpt2:main
+      - ct2-opennmt-py-converter=ctranslate2.converters.opennmt_py:main
+      - ct2-opennmt-tf-converter=ctranslate2.converters.opennmt_tf:main
+      - ct2-opus-mt-converter=ctranslate2.converters.opus_mt:main
+      - ct2-transformers-converter=ctranslate2.converters.transformers:main
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+  host:
+    - python
+    - pybind11
+    - pip
+  run:
+    - python
+    - setuptools
+    - numpy
+    - pyyaml >=5.3,<7
+
+tests:
+  - python:
+      imports:
+        - ctranslate2
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+      - ct2-fairseq-converter --help
+      - ct2-marian-converter --help
+      - ct2-openai-gpt2-converter --help
+      - ct2-opennmt-py-converter --help
+      - ct2-opennmt-tf-converter --help
+      - ct2-opus-mt-converter --help
+      - ct2-transformers-converter --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  homepage: https://opennmt.net
+
+extra:
+  recipe-maintainers:
+    - rxm7706
