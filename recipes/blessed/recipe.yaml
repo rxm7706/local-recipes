@@ -15,7 +15,7 @@ source:
   sha256: ece8bbc4758ab9176452f4e3a719d70088eb5739798cd5582c9e05f2a28337ec
 
 build:
-  number: 0
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -27,8 +27,6 @@ requirements:
   run:
     - __${{ noarch_platform }}
     - python >=${{ python_min }},<4.0
-#    - wcwidth >=0.1.4
-#    - ${{ "jinxed >=1.1.0" if win }}
     - if: noarch_platform != "win"
       then:
         - wcwidth >=0.1.4
@@ -49,9 +47,6 @@ tests:
         - python ${{ python_min }}.*
     script:
       - echo "Test Script Imports for unix and windows Started"
-#      - python -c "from blessed import Terminal; assert Terminal"
-#      - ${{ "echo \"Test Importing jinxed for windows\"" if win }}
-#      - ${{ "python -c \"from jinxed import setupterm\"" if win }}
       - if: noarch_platform  != "win"
         then:
           - echo "Test Script Importing blessed and terminal for unix and windows"
