@@ -3,8 +3,7 @@ schema_version: 1
 
 context:
   name: confluence-markdown-exporter
-  version: "2.1.0"
-  python_min: '3.10'
+  version: "3.0.3"
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/confluence_markdown_exporter-${{ version }}.tar.gz
-  sha256: e52a65fb9d9475e799596b2f4308a7eb0c0a67dbc8a0b8442b2b96ea8f641c7a
+  sha256: c850dce2b55121d85ddd1387c790d0a3a79197f9cf7ee2db8bae4370419a8998
 
 build:
   number: 0
@@ -26,9 +25,7 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=64
-    - setuptools-scm >=8
-    - wheel
+    - hatchling
     - pip
   run:
     - python >=${{ python_min }},<4.0
@@ -42,6 +39,7 @@ requirements:
     - tabulate
     - tqdm
     - typer
+    - python-dateutil
 
 tests:
   - python:
