@@ -1,0 +1,264 @@
+schema_version: 1
+
+context:
+  name: reactpy-django
+  version: 5.2.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reactpy_django-${{ version }}.tar.gz
+  sha256: ba0d221cef62cb8ecbe44756ccdac6855f4775f8c34c31db7400d9c8c6a58db4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - hatch-build-scripts
+    - pip
+  run:
+    - python >=3.9
+    - channels >=4.0.0
+    - django >=4.2.0
+    - reactpy >=1.1.0,<2.0.0
+    - reactpy-router >=1.0.3,<2.0.0
+    - dill >=0.3.5
+    - orjson >=3.6.0
+    - nest-asyncio >=1.5.0
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - reactpy_django
+      pip_check: true
+
+about:
+  summary: It's React, but in Python. Now with Django integration.
+  license: BSD-2-Clause AND Apache-2.0 AND MIT AND EPL-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE.md
+    - src/js/node_modules/path-exists/license
+    - src/js/node_modules/safe-regex-test/LICENSE
+    - src/js/node_modules/react-is/LICENSE
+    - src/js/node_modules/json-buffer/LICENSE
+    - src/js/node_modules/@ungap/raw-json/LICENSE
+    - src/js/node_modules/@ungap/structured-clone/LICENSE
+    - src/js/node_modules/is-number-object/LICENSE
+    - src/js/node_modules/isarray/LICENSE
+    - src/js/node_modules/available-typed-arrays/LICENSE
+    - src/js/node_modules/strip-json-comments/license
+    - src/js/node_modules/is-weakmap/LICENSE
+    - src/js/node_modules/cross-spawn/LICENSE
+    - src/js/node_modules/is-boolean-object/LICENSE
+    - src/js/node_modules/is-core-module/LICENSE
+    - src/js/node_modules/eslint/LICENSE
+    - src/js/node_modules/which-boxed-primitive/LICENSE
+    - src/js/node_modules/basic-devtools/LICENSE
+    - src/js/node_modules/string.prototype.repeat/LICENSE-MIT.txt
+    - src/js/node_modules/is-map/LICENSE
+    - src/js/node_modules/object.fromentries/LICENSE
+    - src/js/node_modules/es-object-atoms/LICENSE
+    - src/js/node_modules/object.entries/LICENSE
+    - src/js/node_modules/acorn-jsx/LICENSE
+    - src/js/node_modules/object-keys/LICENSE
+    - src/js/node_modules/csstype/LICENSE
+    - src/js/node_modules/is-generator-function/LICENSE
+    - src/js/node_modules/react/LICENSE
+    - src/js/node_modules/is-callable/LICENSE
+    - src/js/node_modules/uri-js/LICENSE
+    - src/js/node_modules/which/LICENSE
+    - src/js/node_modules/array.prototype.flatmap/LICENSE
+    - src/js/node_modules/sticky-module/LICENSE
+    - src/js/node_modules/object-inspect/LICENSE
+    - src/js/node_modules/es-to-primitive/LICENSE
+    - src/js/node_modules/is-negative-zero/LICENSE
+    - src/js/node_modules/callsites/license
+    - src/js/node_modules/has-tostringtag/LICENSE
+    - src/js/node_modules/which-builtin-type/LICENSE
+    - src/js/node_modules/has-symbols/LICENSE
+    - src/js/node_modules/levn/LICENSE
+    - src/js/node_modules/is-weakset/LICENSE
+    - src/js/node_modules/find-up/license
+    - src/js/node_modules/prop-types/LICENSE
+    - src/js/node_modules/lodash.merge/LICENSE
+    - src/js/node_modules/eslint-scope/LICENSE
+    - src/js/node_modules/jsx-ast-utils/LICENSE.md
+    - src/js/node_modules/fast-deep-equal/LICENSE
+    - src/js/node_modules/text-table/LICENSE
+    - src/js/node_modules/set-function-name/LICENSE
+    - src/js/node_modules/resolve/LICENSE
+    - src/js/node_modules/semver/LICENSE
+    - src/js/node_modules/is-array-buffer/LICENSE
+    - src/js/node_modules/concat-map/LICENSE
+    - src/js/node_modules/add-promise-listener/LICENSE
+    - src/js/node_modules/p-locate/license
+    - src/js/node_modules/functions-have-names/LICENSE
+    - src/js/node_modules/is-extglob/LICENSE
+    - src/js/node_modules/morphdom/LICENSE
+    - src/js/node_modules/has-proto/LICENSE
+    - src/js/node_modules/p-limit/license
+    - src/js/node_modules/ansi-styles/license
+    - src/js/node_modules/loose-envify/LICENSE
+    - src/js/node_modules/polyscript/LICENSE
+    - src/js/node_modules/punycode/LICENSE-MIT.txt
+    - src/js/node_modules/is-symbol/LICENSE
+    - src/js/node_modules/set-function-length/LICENSE
+    - src/js/node_modules/internal-slot/LICENSE
+    - src/js/node_modules/globals/license
+    - src/js/node_modules/doctrine/LICENSE.esprima
+    - src/js/node_modules/doctrine/LICENSE
+    - src/js/node_modules/doctrine/LICENSE.closure-compiler
+    - src/js/node_modules/@humanwhocodes/retry/LICENSE
+    - src/js/node_modules/@humanwhocodes/module-importer/LICENSE
+    - src/js/node_modules/@webreflection/fetch/LICENSE
+    - src/js/node_modules/@webreflection/idb-map/LICENSE
+    - src/js/node_modules/flatted/LICENSE
+    - src/js/node_modules/string.prototype.matchall/LICENSE
+    - src/js/node_modules/object.values/LICENSE
+    - src/js/node_modules/data-view-byte-offset/LICENSE
+    - src/js/node_modules/js-tokens/LICENSE
+    - src/js/node_modules/es-abstract/LICENSE
+    - src/js/node_modules/object.assign/LICENSE
+    - src/js/node_modules/is-weakref/LICENSE
+    - src/js/node_modules/@eslint-community/regexpp/LICENSE
+    - src/js/node_modules/@eslint-community/eslint-utils/LICENSE
+    - src/js/node_modules/@eslint-community/eslint-utils/node_modules/eslint-visitor-keys/LICENSE
+    - src/js/node_modules/esquery/license.txt
+    - src/js/node_modules/plain-tag/LICENSE
+    - src/js/node_modules/estraverse/LICENSE.BSD
+    - src/js/node_modules/is-date-object/LICENSE
+    - src/js/node_modules/escape-string-regexp/license
+    - src/js/node_modules/typed-array-buffer/LICENSE
+    - src/js/node_modules/acorn/LICENSE
+    - src/js/node_modules/proxy-target/LICENSE
+    - src/js/node_modules/function-bind/LICENSE
+    - src/js/node_modules/eslint-visitor-keys/LICENSE
+    - src/js/node_modules/string.prototype.trim/LICENSE
+    - src/js/node_modules/deep-is/LICENSE
+    - src/js/node_modules/json-stable-stringify-without-jsonify/LICENSE
+    - src/js/node_modules/is-set/LICENSE
+    - src/js/node_modules/iterator.prototype/LICENSE
+    - src/js/node_modules/es-define-property/LICENSE
+    - src/js/node_modules/function.prototype.name/LICENSE
+    - src/js/node_modules/prettier/LICENSE
+    - src/js/node_modules/color-name/LICENSE
+    - src/js/node_modules/esutils/LICENSE.BSD
+    - src/js/node_modules/is-data-view/LICENSE
+    - src/js/node_modules/object-assign/license
+    - src/js/node_modules/shebang-command/license
+    - src/js/node_modules/is-glob/LICENSE
+    - src/js/node_modules/which-collection/LICENSE
+    - src/js/node_modules/balanced-match/LICENSE.md
+    - src/js/node_modules/chalk/license
+    - src/js/node_modules/call-bind/LICENSE
+    - src/js/node_modules/react-dom/LICENSE
+    - src/js/node_modules/string.prototype.trimstart/LICENSE
+    - src/js/node_modules/path-parse/LICENSE
+    - src/js/node_modules/es-errors/LICENSE
+    - src/js/node_modules/arraybuffer.prototype.slice/LICENSE
+    - src/js/node_modules/optionator/LICENSE
+    - src/js/node_modules/safe-array-concat/LICENSE
+    - src/js/node_modules/unbox-primitive/LICENSE
+    - src/js/node_modules/shebang-regex/license
+    - src/js/node_modules/get-symbol-description/LICENSE
+    - src/js/node_modules/which-typed-array/LICENSE
+    - src/js/node_modules/prelude-ls/LICENSE
+    - src/js/node_modules/has-bigints/LICENSE
+    - src/js/node_modules/is-typed-array/LICENSE
+    - src/js/node_modules/is-async-function/LICENSE
+    - src/js/node_modules/typed-array-byte-offset/LICENSE
+    - src/js/node_modules/isexe/LICENSE
+    - src/js/node_modules/fast-levenshtein/LICENSE.md
+    - src/js/node_modules/ignore/LICENSE-MIT
+    - src/js/node_modules/data-view-buffer/LICENSE
+    - src/js/node_modules/eslint-plugin-react/LICENSE
+    - src/js/node_modules/string.prototype.trimend/LICENSE
+    - src/js/node_modules/coincident/LICENSE
+    - src/js/node_modules/coincident/node_modules/sabayon/LICENSE
+    - src/js/node_modules/reflect.getprototypeof/LICENSE
+    - src/js/node_modules/hasown/LICENSE
+    - src/js/node_modules/typed-array-length/LICENSE
+    - src/js/node_modules/@eslint/plugin-kit/LICENSE
+    - src/js/node_modules/@eslint/object-schema/LICENSE
+    - src/js/node_modules/@eslint/core/LICENSE
+    - src/js/node_modules/@eslint/eslintrc/LICENSE
+    - src/js/node_modules/@eslint/js/LICENSE
+    - src/js/node_modules/@eslint/config-array/LICENSE
+    - src/js/node_modules/array.prototype.flat/LICENSE
+    - src/js/node_modules/debug/LICENSE
+    - src/js/node_modules/html-escaper/LICENSE.txt
+    - src/js/node_modules/is-finalizationregistry/LICENSE
+    - src/js/node_modules/fast-json-stable-stringify/LICENSE
+    - src/js/node_modules/regexp.prototype.flags/LICENSE
+    - src/js/node_modules/json-schema-traverse/LICENSE
+    - src/js/node_modules/json-pointer/LICENSE
+    - src/js/node_modules/yocto-queue/license
+    - src/js/node_modules/supports-color/license
+    - src/js/node_modules/path-key/license
+    - src/js/node_modules/typed-array-byte-length/LICENSE
+    - src/js/node_modules/locate-path/license
+    - src/js/node_modules/globalthis/LICENSE
+    - src/js/node_modules/@aashutoshrathi/word-wrap/LICENSE
+    - src/js/node_modules/parent-module/license
+    - src/js/node_modules/type-check/LICENSE
+    - src/js/node_modules/sabayon/LICENSE
+    - src/js/node_modules/define-data-property/LICENSE
+    - src/js/node_modules/glob-parent/LICENSE
+    - src/js/node_modules/@humanfs/node/LICENSE
+    - src/js/node_modules/@humanfs/core/LICENSE
+    - src/js/node_modules/flat-cache/LICENSE
+    - src/js/node_modules/array-buffer-byte-length/LICENSE
+    - src/js/node_modules/for-each/LICENSE
+    - src/js/node_modules/ajv/LICENSE
+    - src/js/node_modules/is-string/LICENSE
+    - src/js/node_modules/foreach/LICENSE
+    - src/js/node_modules/scheduler/LICENSE
+    - src/js/node_modules/possible-typed-array-names/LICENSE
+    - src/js/node_modules/type-checked-collections/LICENSE
+    - src/js/node_modules/is-bigint/LICENSE
+    - src/js/node_modules/color-convert/LICENSE
+    - src/js/node_modules/define-properties/LICENSE
+    - src/js/node_modules/minimatch/LICENSE
+    - src/js/node_modules/@types/react/LICENSE
+    - src/js/node_modules/@types/prop-types/LICENSE
+    - src/js/node_modules/@types/json-schema/LICENSE
+    - src/js/node_modules/@types/react-dom/LICENSE
+    - src/js/node_modules/@types/scheduler/LICENSE
+    - src/js/node_modules/@types/estree/LICENSE
+    - src/js/node_modules/brace-expansion/LICENSE
+    - src/js/node_modules/gopd/LICENSE
+    - src/js/node_modules/ms/license.md
+    - src/js/node_modules/side-channel/LICENSE
+    - src/js/node_modules/es-set-tostringtag/LICENSE
+    - src/js/node_modules/is-shared-array-buffer/LICENSE
+    - src/js/node_modules/has-flag/license
+    - src/js/node_modules/has-property-descriptors/LICENSE
+    - src/js/node_modules/is-regex/LICENSE
+    - src/js/node_modules/file-entry-cache/LICENSE
+    - src/js/node_modules/supports-preserve-symlinks-flag/LICENSE
+    - src/js/node_modules/array-includes/LICENSE
+    - src/js/node_modules/data-view-byte-length/LICENSE
+    - src/js/node_modules/array.prototype.findlast/LICENSE
+    - src/js/node_modules/es-shim-unscopables/LICENSE
+    - src/js/node_modules/js-yaml/LICENSE
+    - src/js/node_modules/es-iterator-helpers/LICENSE
+    - src/js/node_modules/array.prototype.tosorted/LICENSE
+    - src/js/node_modules/espree/LICENSE
+    - src/js/node_modules/js-proxy/LICENSE
+    - src/js/node_modules/get-intrinsic/LICENSE
+    - src/js/node_modules/import-fresh/license
+    - src/js/node_modules/argparse/LICENSE
+    - src/js/node_modules/resolve-from/license
+  repository: https://github.com/reactive-python/reactpy-django
+
+extra:
+  recipe-maintainers:
+    - rxm7706
