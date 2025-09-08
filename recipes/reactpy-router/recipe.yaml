@@ -1,0 +1,45 @@
+schema_version: 1
+
+context:
+  name: reactpy-router
+  version: 2.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reactpy_router-${{ version }}.tar.gz
+  sha256: 9dc4d082bf4acd3df946849358dd1040274f4125982820868f9a6354138f376e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - hatch-build-scripts
+    - pip
+  run:
+    - python >=3.9
+    - reactpy >=1.1.0,<2.0.0
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - reactpy_router
+      pip_check: true
+
+about:
+  summary: A URL router for ReactPy.
+  license: MIT
+  license_file: LICENSE.md
+  repository: https://github.com/reactive-python/reactpy-router
+
+extra:
+  recipe-maintainers:
+    - rxm7706
