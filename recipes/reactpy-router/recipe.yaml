@@ -1,44 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: reactpy-router
-  version: 2.0.0
+  version: "1.0.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reactpy_router-${{ version }}.tar.gz
-  sha256: 9dc4d082bf4acd3df946849358dd1040274f4125982820868f9a6354138f376e
+  - url: https://github.com/reactive-python/reactpy-router/archive/${{ version }}.tar.gz
+    sha256: 1bbe4c9ddb017cdb9075e26fd6c8b3984eef7fcf196e4a460147d9ded8329cf2
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - nodeenv --node=18.16.0 .env
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - ${{ compiler("c") }}
+    #- ${{ stdlib("c") }}
+    - python ${{ python_min }}.*
+    - nodejs >18.0,<19.0
+    - nodeenv
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - hatchling
     - hatch-build-scripts
+    - hatch-nodejs-version
     - pip
+    - setuptools
+    - wheel
+    - twine
+    - nodejs >18.0,<19.0
   run:
-    - python >=3.9
+    - python >=${{ python_min }},<4.0
     - reactpy >=1.1.0,<2.0.0
     - typing_extensions
+    - nodejs >18.0,<19.0
+    - setuptools
 
 tests:
   - python:
       imports:
         - reactpy_router
       pip_check: true
+      python_version: ${{ python_min }}.*
 
 about:
   summary: A URL router for ReactPy.
   license: MIT
   license_file: LICENSE.md
   repository: https://github.com/reactive-python/reactpy-router
+  homepage: https://reactive-python.github.io/reactpy-router/latest/
 
 extra:
   recipe-maintainers:
