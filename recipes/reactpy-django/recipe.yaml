@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: reactpy-django
-  version: 5.2.1
+  version: "5.2.1"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -19,12 +21,12 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - hatchling
     - hatch-build-scripts
     - pip
   run:
-    - python >=3.9
+    - python >=${{ python_min }},<4.0
     - channels >=4.0.0
     - django >=4.2.0
     - reactpy >=1.1.0,<2.0.0
@@ -39,6 +41,7 @@ tests:
       imports:
         - reactpy_django
       pip_check: true
+      python_version: ${{ python_min }}.*
 
 about:
   summary: It's React, but in Python. Now with Django integration.
@@ -258,6 +261,7 @@ about:
     - src/js/node_modules/argparse/LICENSE
     - src/js/node_modules/resolve-from/license
   repository: https://github.com/reactive-python/reactpy-django
+  homepage: https://reactpy.dev/
 
 extra:
   recipe-maintainers:
