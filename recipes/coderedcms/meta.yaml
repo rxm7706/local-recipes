@@ -42,7 +42,7 @@ test:
     - coderedcms
   commands:
     - pip check
-    - coderedcms --help
+    - coderedcms help
   requires:
     - pip
     - python {{ python_min }}
