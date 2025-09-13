@@ -1,13 +1,16 @@
 {% set name = "StringZilla" %}
-{% set version = "3.10.0" %}
+{% set version = "4.0.7" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
+  #url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/stringzilla-{{ version }}.tar.gz
+  #sha256: dfad212c34d8a611367d30d7e98d2664c213b87256f178c59d17c61d4b6bf732
   url: https://github.com/ashvardanian/StringZilla/archive/v{{ version }}.tar.gz
-  sha256: 69729a1403c4609256f861a0221e5331f836b4945f6848472e81183726e436e6
+  sha256: 1255cac3aced48b4b73e045829a80e3122c54eca5621274073839c9036f48fe8
+
 
 build:
   entry_points:
@@ -18,10 +21,13 @@ build:
 
 requirements:
   build:
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - python                                 # [build_platform != target_platform]
     - {{ compiler('c') }}
+    - {{ stdlib("c") }}
   host:
     - python
-    - setuptools >=42
+    - setuptools >=61
     - wheel
     - pip
   run:
@@ -39,6 +45,7 @@ test:
 
 about:
   home: https://github.com/ashvardanian/stringzilla
+  summary: Search, hash, sort, fingerprint, and fuzzy-match strings faster via SWAR, SIMD, and GPGPU
   license: Apache-2.0
   license_file: LICENSE
 
