@@ -1,0 +1,24 @@
+From 4475f44106222e44e1a49150a7a9d77a3f563a5b Mon Sep 17 00:00:00 2001
+From: Ryan <mukhery@gmail.com>
+Date: Tue, 7 Jan 2025 00:05:15 -0500
+Subject: [PATCH] remove incompatible -mfloat-abi build option
+
+---
+ setup.py | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/setup.py b/setup.py
+index a3afd45..300f29c 100644
+--- a/setup.py
++++ b/setup.py
+@@ -76,7 +76,6 @@ def darwin_settings() -> Tuple[List[str], List[str], List[Tuple[str]]]:
+         "-Wno-incompatible-pointer-types",  # like: passing argument 4 of ‘sz_export_prefix_u32’ from incompatible pointer type
+         "-Wno-discarded-qualifiers",  # like: passing argument 1 of ‘free’ discards ‘const’ qualifier from pointer target type
+         "-fPIC",  # to enable dynamic dispatch
+-        "-mfloat-abi=hard",  # NEON intrinsics not available with the soft-float ABI
+         "-mmacosx-version-min=11.0",  # minimum macOS version
+     ]
+     link_args = [
+-- 
+2.34.1
+
