@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: reactpy-apexcharts
+  version: 0.0.12
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reactpy_apexcharts-${{ version }}.tar.gz
+  sha256: 2a34c88a39415a1b92bba2c59753bb294355fdb9891122cd01d829516a562d66
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.9,<4.0.0
+    - reactpy >=1.0.2,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - reactpy_apexcharts
+      pip_check: true
+
+about:
+  summary:
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/stevej2608/reactpy-apexcharts
+
+extra:
+  recipe-maintainers:
+    - rxm7706

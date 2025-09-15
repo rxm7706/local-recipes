@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: reactpy-table
+  version: 0.0.15
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reactpy_table-${{ version }}.tar.gz
+  sha256: a21c9283d3c5a30f2aa7e06afbe8ac63510b5c90f3befcc4b749f4fe4b9220b4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.11,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.11.0,<4.0.0
+    - reactpy >=1.1.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - reactpy_table
+      pip_check: true
+
+about:
+  summary: Headless UI for building powerful tables
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/stevej2608/reactpy-table/blob/master/README.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,51 @@
+schema_version: 1
+
+context:
+  name: reactpy-jupyter
+  version: 0.9.5
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reactpy_jupyter-${{ version }}.tar.gz
+  sha256: 05e075deacaef3bd5ec0ab052276b7eccbd1d39ba86f9b04dac656a7d82449a5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.7
+    - jupyter_packaging >=0.12.3,<0.13.dev0
+    - setuptools >=42
+    - wheel
+    - pip
+  run:
+    - python >=3.7
+    - anywidget <1
+    - reactpy >=1.0.0
+    - appdirs
+    - requests
+    - jupyter_server
+    - notebook
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - reactpy_jupyter
+      pip_check: true
+
+about:
+  summary: It's React, but in Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/reactive-python/reactpy
+
+extra:
+  recipe-maintainers:
+    - rxm7706

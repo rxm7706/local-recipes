@@ -1,0 +1,46 @@
+schema_version: 1
+
+context:
+  name: reactpy-utils
+  version: 0.0.33
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reactpy_utils-${{ version }}.tar.gz
+  sha256: 32f5c5c7a4976d298bf34d965e76fbe826ad5601d2892e5997de7f5d93ac0d2b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - pip
+  run:
+    - python >=3.9
+    - reactpy >=1.0.0
+    - reactpy-router >=1.0.3
+    - typing_extensions
+    - pydantic
+
+tests:
+  - python:
+      imports:
+        - reactpy_utils
+      pip_check: true
+
+about:
+  summary: A collection of utilities for ReactPy.
+  license: MIT
+  license_file: LICENSE.md
+  repository: https://github.com/stevej2608/reactpy-utils
+
+extra:
+  recipe-maintainers:
+    - rxm7706
