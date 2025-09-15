@@ -1,0 +1,41 @@
+schema_version: 1
+
+context:
+  name: reactpy-query
+  version: 0.2.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reactpy_query-${{ version }}.tar.gz
+  sha256: ca1fd3a44cec487382fd4fc3bec9b82436bd3dcb5824e6d7ccc10a5d2b6690d1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - reactpy >=1.0.0
+    - asyncio >=3.4.3
+
+tests:
+  - python:
+      imports:
+        - reactpy-query
+      pip_check: true
+
+about:
+  license:
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

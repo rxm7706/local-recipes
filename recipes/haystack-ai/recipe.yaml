@@ -1,0 +1,59 @@
+schema_version: 1
+
+context:
+  name: haystack-ai
+  version: 2.17.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/haystack_ai-${{ version }}.tar.gz
+  sha256: dffd79c2202a93a95dbf31bbb888027f8e78791902ef984974f0409059a9eb30
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling >=1.8.0
+    - pip
+  run:
+    - python >=3.9
+    - tqdm
+    - tenacity !=8.4.0
+    - lazy-imports
+    - openai >=1.56.1
+    - pydantic
+    - jinja2
+    - posthog !=3.12.0
+    - pyyaml
+    - more-itertools
+    - networkx
+    - typing_extensions >=4.7
+    - requests
+    - numpy
+    - python-dateutil
+    - jsonschema
+    - docstring_parser
+    - filetype
+    - haystack-experimental
+
+tests:
+  - python:
+      imports:
+        - haystack_ai
+      pip_check: true
+
+about:
+  summary: LLM framework to build customizable, production-ready LLM applications. Connect components (models, vector DBs, file converters) to pipelines or agents that can interact with your data.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
