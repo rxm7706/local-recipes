@@ -1,0 +1,46 @@
+schema_version: 1
+
+context:
+  name: reflex-hosting-cli
+  version: 0.1.55
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reflex_hosting_cli-${{ version }}.tar.gz
+  sha256: f5d5b0c26cefdc7ba3356954b7be6bfa8ec50267c13a2247f6cf18a140e95918
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.10
+    - hatchling
+    - pip
+  run:
+    - python >=3.10
+    - click >=8.2
+    - httpx >=0.25.1,<1.0
+    - packaging >=24.2
+    - platformdirs >=3.10.0,<5.0
+    - rich >=13,<15
+
+tests:
+  - python:
+      imports:
+        - reflex_hosting_cli
+      pip_check: true
+
+about:
+  summary: Reflex Hosting CLI
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
