@@ -1,30 +1,48 @@
 {% set name = "reactpy-router" %}
-{% set version = "1.0.3" %}
+{% set version = "1.0.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/reactpy_router-{{ version }}.tar.gz
-  sha256: bc9cdf7a93d036ab62dbc288a823e4731ff6fa8722e7eb4c70fa9a854cf47fc1
+  #         url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/reactpy_router-{{ version }}.tar.gz
+  # "1.0.3" sha256: bc9cdf7a93d036ab62dbc288a823e4731ff6fa8722e7eb4c70fa9a854cf47fc1
+  url: https://github.com/reactive-python/reactpy-router/archive/{{ version }}.tar.gz
+  sha256: 1bbe4c9ddb017cdb9075e26fd6c8b3984eef7fcf196e4a460147d9ded8329cf2
 
 build:
-  skip: true
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - node -v
+    - npm -v
+    - npm install nodejs pnpm
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
+  build:
+    - python {{ python_min }}.*,<3.13
+    - nodejs >=18.0,<22.0
+    - pnpm
+#    - setuptools
+#    - wheel
+#    - twine
   host:
     - python {{ python_min }}
     - hatchling
     - hatch-build-scripts >=0.0.4
     - hatch-requirements-txt
+    - hatch-nodejs-version
     - pip
-    - nodejs >18.0,<22.0
+    - setuptools
+#    - wheel
+#    - twine
+    - nodejs >=18.0,<19.0
   run:
-    - python >={{ python_min }}
+    - python >={{ python_min }},<3.13
+    - nodejs >=18.0,<19.0
     - reactpy >=1.0.0
     - typing_extensions
 
@@ -35,6 +53,7 @@ test:
     - pip check
   requires:
     - pip
+    - nodejs >=18.0,<19.0
     - python {{ python_min }}
 
 about:
