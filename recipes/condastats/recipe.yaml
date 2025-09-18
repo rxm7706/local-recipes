@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: condastats
+  version: "0.2.1"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/condastats-${{ version }}.tar.gz
+  sha256: 013dfb759b78fc7088411cdf55e015cda25888efee0e21b57c946a7c9d4afb36
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - condastats=condastats.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - numpy >=1.16.5,<2.0.0
+    - pandas >=1.0.5,<2.0.0
+    - dask-core <2024.7.0  # 2024.7.0 drops support for pandas<2
+    - pyarrow
+    - s3fs
+    - python-snappy
+
+tests:
+  - python:
+      imports:
+        - condastats
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - condastats --help
+
+about:
+  summary: Conda package stats CLI
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/conda-incubator/condastats
+  documentation: https://condastats.readthedocs.io/en/latest/
+  repository: https://github.com/conda-incubator/condastats
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - seibert
+    - sophiamyang
