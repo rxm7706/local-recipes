@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: reactpy-router
+  version: "2.0.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/reactive-python/reactpy-router/archive/${{ version }}.tar.gz
+    sha256: 1c89f3cd0b2762cb4e47e569ad6e87872b5bf084898df17044bd105f25a14f7e
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - npm install -g bun
+    #- git config --global core.symlinks true
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - npm uninstall -g bun
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-build-scripts
+    - pip
+#    - git
+#    - nodejs >18.0,<19.0
+#    - reactpy >=1.0.0,<2.0.0
+  run:
+    - python >=${{ python_min }},<4.0
+    - reactpy ==1.1.0
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - reactpy_router
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+#        - reactpy >=1.0.0,<2.0.0
+    script:
+      - pip check
+
+about:
+  summary: A URL router for ReactPy.
+  license: MIT
+  license_file: LICENSE.md
+  repository: https://github.com/reactive-python/reactpy-router
+  homepage: https://reactive-python.github.io/reactpy-router/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

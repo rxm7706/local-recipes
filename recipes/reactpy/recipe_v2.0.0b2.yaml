@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: reactpy
+  version: "2.0.0b2"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/reactive-python/reactpy/archive/reactpy-v${{ version }}.tar.gz
+    sha256: 029b17b2ad2c8becca368e89499db56ba5c23ddddda26a80789e57ed8e076bf6
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - npm install -g bun
+    #- git config --global core.symlinks true
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - npm uninstall -g bun
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-build-scripts >=0.0.4
+    - pip
+    #- git
+    #- nodejs >18.0,<19.0
+  run:
+    - python >=${{ python_min }},<4.0
+    - python-fastjsonschema >=2.14.5
+    - requests >=2
+    - lxml >=4
+    - anyio >=3
+    - typing_extensions >=3.10
+    - jsonpointer
+#    - exceptiongroup >=1.0
+#    - mypy_extensions >=0.4.3
+#    - jsonpatch >=1.32
+#    - colorlog >=6
+#    - asgiref >=3
+
+tests:
+  - python:
+      imports:
+        - reactpy
+      pip_check: true
+      python_version: ${{ python_min }}.*
+#  - requirements:
+#      run:
+#        - python ${{ python_min }}.*
+#        - pip
+#        - pytest-sugar
+#        - pytest-asyncio
+#        - responses
+#        - exceptiongroup
+#        - jsonpointer
+#        - starlette
+#    script:
+#      - pip check
+
+about:
+  summary: Reactive user interfaces with pure Python
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/reactive-python/reactpy
+  homepage: https://reactpy.dev/docs/index.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
