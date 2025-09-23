@@ -1,0 +1,49 @@
+schema_version: 1
+
+context:
+  name: argo-jupyter-scheduler
+  version: 2024.6.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/argo_jupyter_scheduler-${{ version }}.tar.gz
+  sha256: 2a7645e952226602fbc70b046e3a649c81a1e06a815e5bcace5d2390599c026c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling
+    - hatch-vcs
+    - pip
+  run:
+    - python >=3.7
+    - hera-workflows
+    - jupyter-scheduler
+    - jupyter_server
+    - psutil
+    - traitlets
+    - urllib3
+
+tests:
+  - python:
+      imports:
+        - argo_jupyter_scheduler
+      pip_check: true
+
+about:
+  summary: Argo-Workflow backend extension for Jupyter-Scheduler.
+  license: MIT
+  license_file: LICENSE.txt
+  repository: https://github.com/nebari-dev/argo-jupyter-scheduler
+
+extra:
+  recipe-maintainers:
+    - rxm7706

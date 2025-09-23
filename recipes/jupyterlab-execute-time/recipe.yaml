@@ -1,0 +1,44 @@
+schema_version: 1
+
+context:
+  name: jupyterlab-execute-time
+  version: 3.2.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyterlab_execute_time-${{ version }}.tar.gz
+  sha256: 9b13b65c2c139bfabb3f6ff1706c4d33ed5a56203a89d0297608334e15bc9c0b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.7
+    - jupyter_packaging >=0.10,<1.dev0,<2
+    - jupyterlab >=4.0.0,<4.1.dev0
+    - pip
+  run:
+    - python >=3.7
+    - jupyterlab >=4,<5
+
+tests:
+  - python:
+      imports:
+        - jupyterlab_execute_time
+      pip_check: true
+
+about:
+  summary: Display cell timings in Jupyter Lab
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/deshaw/jupyterlab-execute-time
+
+extra:
+  recipe-maintainers:
+    - rxm7706

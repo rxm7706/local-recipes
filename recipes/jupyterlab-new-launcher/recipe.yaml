@@ -1,0 +1,46 @@
+schema_version: 1
+
+context:
+  name: jupyterlab-new-launcher
+  version: 0.5.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyterlab_new_launcher-${{ version }}.tar.gz
+  sha256: f3abe72a9b4459622442e58f8c112492de88a71f868a4b5e19a17c8b4112d36e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
+    - hatch-nodejs-version >=0.3.2
+    - pip
+  run:
+    - python >=3.8
+    - jupyter_server >=2.0.1,<3
+
+tests:
+  - python:
+      imports:
+        - jupyterlab_new_launcher
+      pip_check: true
+
+about:
+  summary: A redesigned JupyterLab launcher
+  license: Apache-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - style/icons/md/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

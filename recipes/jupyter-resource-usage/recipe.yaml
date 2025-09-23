@@ -1,0 +1,46 @@
+schema_version: 1
+
+context:
+  name: jupyter-resource-usage
+  version: 1.2.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_resource_usage-${{ version }}.tar.gz
+  sha256: cf69d5025ef72d078619154ec262e8d6a55b4b18a891395908a57c532bb9178e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0,<5
+    - pip
+  run:
+    - python >=3.9
+    - jupyter_server >=2.0
+    - prometheus_client
+    - psutil >=5.6
+    - pyzmq >=19
+
+tests:
+  - python:
+      imports:
+        - jupyter_resource_usage
+      pip_check: true
+
+about:
+  summary: Jupyter Extension to show resource usage
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: nebari-plugin-mlflow-aws
+  version: 0.0.16
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nebari_plugin_mlflow_aws-${{ version }}.tar.gz
+  sha256: 3d2bd12cde5951a0f1b768c6c53a0513531d058924eb206643a04c1c5dfb050b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling
+    - pip
+  run:
+    - python >=3.7
+    - nebari
+
+tests:
+  - python:
+      imports:
+        - nebari_plugin_mlflow_aws
+      pip_check: true
+
+about:
+  summary: MetroStar - MLFlow Plugin for AWS Nebari Platform
+  license: Apache-2.0
+  license_file: LICENSE.md
+  repository: https://github.com/MetroStar/nebari-mlflow-aws
+
+extra:
+  recipe-maintainers:
+    - rxm7706

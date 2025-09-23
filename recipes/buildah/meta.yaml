@@ -5,8 +5,9 @@ package:
   version: {{ version }}
 
 source:
-  url: https://github.com/containers/buildah/archive/v{{ version }}.tar.gz
-  sha256: 87f4c1e03c1cb513f1a15d7d94865d1f5cd80321dfcac4c57e31934e1c75d59d
+  #url: https://github.com/containers/buildah/archive/v{{ version }}.tar.gz
+  #sha256: 87f4c1e03c1cb513f1a15d7d94865d1f5cd80321dfcac4c57e31934e1c75d59d
+  path:
   #sha256: 70803ee34350d9cce905b9b6af9300231145885a20bb21f08daa764af914139d  # 1.41.4
   patches:
     # NOTE: This adds the memfd_create syscall which is not available on CentOS 6's kernels.
@@ -24,7 +25,7 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
-    #- {{ stdlib('c') }}
+    - {{ stdlib('c') }}
     - {{ compiler('cgo') }}
     - go-licenses
     - make
