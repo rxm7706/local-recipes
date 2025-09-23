@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: jupyterlab-jhub-apps
+  version: 0.3.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyterlab_jhub_apps-${{ version }}.tar.gz
+  sha256: 755480361ae6804f458d6ee8e0da8c3d8166a1fd70d80b88a03e34dbcd225327
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
+    - hatch-nodejs-version >=0.3.2
+    - pip
+  run:
+    - python >=3.8
+
+tests:
+  - python:
+      imports:
+        - jupyterlab_jhub_apps
+      pip_check: true
+
+about:
+  summary: Customizations for jhub-apps.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,49 @@
+schema_version: 1
+
+context:
+  name: nebari-workflow-controller
+  version: 2023.7.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nebari_workflow_controller-${{ version }}.tar.gz
+  sha256: 26a17c151b90d54c76b8e8147e21d71adcd73cd4284957d7babd71315fad81cd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - hatch-vcs
+    - pip
+  run:
+    - python >=3.8
+    - python-keycloak ==2.15.3
+    - fastapi ==0.95.1
+    - uvicorn ==0.21.1
+    - pydantic ==1.10.7
+    - jsonpatch ==1.32
+    - python-kubernetes ==26.1.0
+
+tests:
+  - python:
+      imports:
+        - nebari_workflow_controller
+      pip_check: true
+
+about:
+  summary: An admission controller for argo workflows in Nebari
+  license: BSD-3-Clause
+  license_file: LICENSE
+  repository: https://github.com/nebari-dev/nebari-workflow-controller
+
+extra:
+  recipe-maintainers:
+    - rxm7706

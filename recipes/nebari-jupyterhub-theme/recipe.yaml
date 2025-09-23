@@ -1,0 +1,42 @@
+schema_version: 1
+
+context:
+  name: nebari-jupyterhub-theme
+  version: 2024.7.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nebari_jupyterhub_theme-${{ version }}.tar.gz
+  sha256: b131e520f4df91dc868bddc4467af5667da0dfad1819fb430c84ca5a6dd87e4a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - jupyterhub >=5.0.0
+
+tests:
+  - python:
+      imports:
+        - nebari_jupyterhub_theme
+      pip_check: true
+
+about:
+  summary: Nebari JupyterHub theme
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

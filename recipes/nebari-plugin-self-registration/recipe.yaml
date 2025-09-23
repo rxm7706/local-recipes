@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: nebari-plugin-self-registration
+  version: 0.0.15
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nebari_plugin_self_registration-${{ version }}.tar.gz
+  sha256: dbcd7578489a2b21b04dbbea3c8a6a1aa0a8afca1e832327333b31283274ca23
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - hatchling
+    - pip
+  run:
+    - python >=3.9
+    - nebari
+
+tests:
+  - python:
+      imports:
+        - nebari_plugin_self_registration
+      pip_check: true
+
+about:
+  summary: MetroStar - Self-Registration Plugin for Nebari Platform
+  license: Apache-2.0
+  license_file: LICENSE
+  repository: https://github.com/MetroStar/nebari-self-registration
+
+extra:
+  recipe-maintainers:
+    - rxm7706

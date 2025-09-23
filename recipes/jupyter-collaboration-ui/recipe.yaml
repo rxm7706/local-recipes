@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: jupyter-collaboration-ui
+  version: 2.1.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_collaboration_ui-${{ version }}.tar.gz
+  sha256: 7aa3ecb1884540c3a2dcc74fc02a06ad820c2bc04de8769f406d86aba16d9fad
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling >=1.4.0
+    - jupyterlab >=4.0.0
+    - pip
+  run:
+    - python >=3.8
+
+tests:
+  - python:
+      imports:
+        - jupyter_collaboration_ui
+      pip_check: true
+
+about:
+  summary: JupyterLab/Jupyter Notebook 7+ extension providing user interface integration for real time collaboration
+  license: BSD-3-Clause
+  license_file: LICENSE
+  repository: https://github.com/jupyterlab/jupyter-collaboration/tree/main/packages/collaboration-extension
+
+extra:
+  recipe-maintainers:
+    - rxm7706

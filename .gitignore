@@ -2,6 +2,7 @@ django-kedro-src/
 pypi_source_distribution/
 pypi_built_distribution/
 output/
+work/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

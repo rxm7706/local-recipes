@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: jupyter-docprovider
+  version: 2.1.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_docprovider-${{ version }}.tar.gz
+  sha256: 7303f352853477d8a96e3de61000f30a9b7dee7f7c0237d552caeea4f4444779
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling >=1.4.0
+    - jupyterlab >=4.0.0
+    - pip
+  run:
+    - python >=3.8
+
+tests:
+  - python:
+      imports:
+        - jupyter_docprovider
+      pip_check: true
+
+about:
+  summary: JupyterLab/Jupyter Notebook 7+ extension integrating collaborative shared models.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  repository: https://github.com/jupyterlab/jupyter-collaboration/tree/main/packages/docprovider-extension
+
+extra:
+  recipe-maintainers:
+    - rxm7706

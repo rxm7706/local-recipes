@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: nebari-plugin-metrics-server
+  version: 0.0.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nebari_plugin_metrics_server-${{ version }}.tar.gz
+  sha256: 7e23c6f69000df71e31b556ec44a03c0dc5005566b43d1801e3c0e256e011dcd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - nebari
+
+tests:
+  - python:
+      imports:
+        - nebari_plugin_metrics_server
+      pip_check: true
+
+about:
+  summary: MetroStar Onyx - Metrics Server plugin for Nebari platform
+  license: Apache-2.0
+  license_file: LICENSE
+  repository: https://github.com/MetroStar/nebari-metrics-server
+
+extra:
+  recipe-maintainers:
+    - rxm7706

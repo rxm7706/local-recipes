@@ -1,0 +1,49 @@
+schema_version: 1
+
+context:
+  name: nebari-doctor
+  version: 2025.3.1rc3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nebari_doctor-${{ version }}.tar.gz
+  sha256: 3ed8b6fe75add1b58de8f1c436ff07b8d45c81de5b46b7bdc14be6929a68810a
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - hatchling
+    - hatch-vcs
+    - pip
+  run:
+    - python
+    - nebari >=2025.3.1
+    - pydantic-ai ==0.0.23
+    - questionary ==2.0.0
+    - rich ==13.9.4
+    - markdown-it-py >=2.2.0
+    - pygments >=2.15.0
+    - loguru
+    - if: win
+      then: pywin32-on-windows
+
+tests:
+  - python:
+      imports:
+        - nebari_doctor
+      pip_check: true
+
+about:
+  license: BSD-3-Clause
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
