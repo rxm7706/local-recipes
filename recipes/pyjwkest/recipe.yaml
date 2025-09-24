@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  name: django-oidc-provider
-  version: "0.9.0"
+  name: pyjwkest
+  version: "1.4.2"
   python_min: '3.10'
 
 package:
@@ -11,12 +11,11 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_oidc_provider-${{ version }}.tar.gz
-  sha256: 34b902577274feee71bd15bbb1b5622b4114a4f0b1efbbccb8f7a5dd4091a92a
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyjwkest-${{ version }}.tar.gz
+  sha256: 5560fd5ba08655f29ff6ad1df1e15dc05abc9d976fcbcec8d2b5167f49b70222
 
 build:
   number: 0
-  noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
@@ -26,22 +25,25 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }},<4.0
-    - pyjwt >=2.8.0
-    - cryptography >=3.4.0
+    - pycryptodomex
+    - requests
+    - six
+    - future
 
 tests:
   - python:
       imports:
-        - oidc_provider
+        - jwkest
       pip_check: true
       python_version: ${{ python_min }}.*
 
 about:
-  summary: OpenID Connect Provider implementation for Django.
-  license: MIT
-  license_file: LICENSE
-  homepage: http://github.com/juanifioren/django-oidc-provider
+  homepage: https://github.com/IdentityPython/pyjwkest
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Python implementation of JWT, JWE, JWS and JWK
 
 extra:
   recipe-maintainers:
+    - mariusvniekerk
     - rxm7706
