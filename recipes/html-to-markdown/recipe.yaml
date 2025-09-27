@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: html-to-markdown
-  version: "1.9.0"
+  version: "1.16.0"
   python_min: '3.10'
 
 package:
@@ -12,10 +12,10 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/html_to_markdown-${{ version }}.tar.gz
-  sha256: 9cd066d33612a0fc00119f65bee7b5da98093c2fdd10493694fb08d15d1b2a2c
+  sha256: f730872b62b7552b7f86d26f0e8a28f24934b0a47fd8cc8ed428b3d3027dfbf8
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -31,7 +31,7 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - beautifulsoup4 >=4.13.4
-    - nh3 >=0.3
+    - nh3 >=0.2.21
 
 tests:
   - python:
@@ -49,9 +49,9 @@ tests:
 
 about:
   summary: A modern, type-safe Python library for converting HTML to Markdown with comprehensive tag support and customizable options
+  homepage: https://github.com/Goldziher/html-to-markdown
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/Goldziher/html-to-markdown
 
 extra:
   recipe-maintainers:
