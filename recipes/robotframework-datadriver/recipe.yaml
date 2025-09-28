@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  name: robotframework-assertion-engine
-  version: "3.0.3"
+  name: robotframework-datadriver
+  version: "1.11.2"
   python_min: '3.10'
 
 package:
@@ -11,8 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_assertion_engine-${{ version }}.tar.gz
-  sha256: 1c608d4c69d96520986a1ddc6def0fc7f7e849520f1e6882a633b51dbb98fd88
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_datadriver-${{ version }}.tar.gz
+  sha256: c75a3b8856e141331e65a22a6bed1a8263221ee6dad821d526f932918576fffd
 
 build:
   number: 0
@@ -22,26 +22,33 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }},<4.0
-    - robotframework >=5.0.1
-    - robotframework-pythonlibcore >=3.0.0,<5.0.0
+    - robotframework >=4.0.2,<8.0
+    - docutils
+    - pygments
 
 tests:
   - python:
       imports:
-        - assertionengine
+        - DataDriver
+        - DataDriver.csv_reader
+        - DataDriver.json_reader
+        - DataDriver.pict_reader
       pip_check: true
       python_version: ${{ python_min }}.*
 
 about:
-  summary: Generic way to create meaningful and easy to use assertions for the Robot Framework libraries.
+  summary: A library for Data-Driven Testing.
   license: Apache-2.0
-  license_file: LICENSE
-  homepage: https://github.com/MarketSquare/AssertionEngine
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSE
+  homepage: https://github.com/Snooz82/robotframework-datadriver
 
 extra:
   recipe-maintainers:
+    - bollwyvl
     - rxm7706

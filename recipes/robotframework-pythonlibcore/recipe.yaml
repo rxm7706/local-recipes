@@ -26,6 +26,7 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }},<4.0
+    - robotframework
 
 tests:
   - python:
