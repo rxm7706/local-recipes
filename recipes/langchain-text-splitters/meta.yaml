@@ -1,13 +1,13 @@
 {% set name = "langchain-text-splitters" %}
-{% set version = "0.0.1" %}
+{% set version = "0.3.11" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/langchain_text_splitters-{{ version }}.tar.gz
-  sha256: ac459fa98799f5117ad5425a9330b21961321e30bc19a2a2f9f761ddadd62aa1
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/langchain_text_splitters-{{ version }}.tar.gz
+  sha256: 7a50a04ada9a133bbabb80731df7f6ddac51bc9f1b9cab7fa09304d71d38a6cc
 
 build:
   noarch: python
@@ -16,14 +16,16 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<4.0
-    - poetry-core >=1.0.0
+    - python {{ python_min }}
+    - pdm-backend
     - pip
   run:
-    - python >=3.8.1,<4.0
-    - langchain-core >=0.1.28,<0.2.0
+    - pip >=25.2
+    - python >={{ python_min }}
+    - langchain-core <2.0.0,>=0.3.75
   run_constrained:
-    - lxml >=5.1.0,<6.0.0
+    - lxml >=4.9.3,<6.0.0
+    - beautifulsoup4 >=4.12.3,<5.0.0
 
 test:
   imports:
@@ -32,13 +34,17 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/langchain-ai/langchain
+  dev_url: https://github.com/langchain-ai/langchain/tree/master/libs/text-splitters
   summary: LangChain text splitting utilities
   license: MIT
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
+    - jan-janssen
+    - pavelzw
     - rxm7706

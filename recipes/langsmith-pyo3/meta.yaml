@@ -1,0 +1,55 @@
+{% set name = "langsmith-pyo3" %}
+{% set version = "0.1.0rc5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/langsmith_pyo3-{{ version }}.tar.gz
+  sha256: 50088d21a6a52a5b2365a02df7ad38f8fd52afe11477dbc636d76afd2921cbe0
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - maturin >=1.7,<2.0
+    - pip
+  run:
+    - python >=3.9
+
+test:
+  imports:
+    - langsmith_pyo3
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: Apache-2.0 AND MIT
+  license_file:
+    - vendor/pyo3/LICENSE-APACHE
+    - vendor/pyo3/LICENSE-MIT
+    - vendor/pyo3/pyo3-macros/LICENSE-APACHE
+    - vendor/pyo3/pyo3-macros/LICENSE-MIT
+    - vendor/pyo3/pyo3-ffi/LICENSE-APACHE
+    - vendor/pyo3/pyo3-ffi/LICENSE-MIT
+    - vendor/pyo3/pyo3-macros-backend/LICENSE-APACHE
+    - vendor/pyo3/pyo3-macros-backend/LICENSE-MIT
+    - vendor/pyo3/pyo3-runtime/LICENSE-APACHE
+    - vendor/pyo3/pyo3-runtime/LICENSE-MIT
+    - vendor/pyo3/pyo3-build-config/LICENSE-APACHE
+    - vendor/pyo3/pyo3-build-config/LICENSE-MIT
+    - vendor/orjson/LICENSE-APACHE
+    - vendor/orjson/LICENSE-MIT
+    - vendor/orjson/include/pyo3/LICENSE-APACHE
+    - vendor/orjson/include/pyo3/LICENSE-MIT
+
+extra:
+  recipe-maintainers:
+    - rxm7706
