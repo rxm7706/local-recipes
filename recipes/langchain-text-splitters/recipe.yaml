@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  name: langchain-mcp-adapters
-  version: "0.1.10"
+  name: langchain-text-splitters
+  version: "0.3.11"
   python_min: '3.10'
 
 package:
@@ -11,8 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_mcp_adapters-${{ version }}.tar.gz
-  sha256: ef963bb64526b156de75fb48bb2f921e4f571f9d996185afcacc1d2f5c72fd8d
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_text_splitters-${{ version }}.tar.gz
+  sha256: 7a50a04ada9a133bbabb80731df7f6ddac51bc9f1b9cab7fa09304d71d38a6cc
 
 build:
   number: 0
@@ -26,24 +26,27 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - langchain-core >=0.3.36,<0.4
-    - mcp >=1.9.2
-    - typing_extensions >=4.14.0
+    - langchain-core <2.0.0,>=0.3.75
+  run_constraints:
+    - lxml >=4.9.3,<6.0.0
+    - beautifulsoup4 >=4.12.3,<5.0.0
 
 tests:
   - python:
       imports:
-        - langchain_mcp_adapters
+        - langchain_text_splitters
       pip_check: true
       python_version: ${{ python_min }}.*
 
 about:
-  summary: Make Anthropic Model Context Protocol (MCP) tools compatible with LangChain and LangGraph agents.
+  homepage: https://github.com/langchain-ai/langchain
+  documentation: https://github.com/langchain-ai/langchain/tree/master/libs/text-splitters
+  summary: LangChain text splitting utilities
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/langchain-mcp-adapters/
-  repository: https://github.com/langchain-ai/langchain-mcp-adapters
 
 extra:
   recipe-maintainers:
+    - jan-janssen
+    - pavelzw
     - rxm7706
