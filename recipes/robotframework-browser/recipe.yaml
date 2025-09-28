@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: robotframework-browser
+  version: "19.8.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_browser-${{ version }}.tar.gz
+  sha256: 5bcf63046bda3eae85b3e03b0b0fb8b85d6dfcd1fc8d09cad3c1aadeff2b8350
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - rfbrowser = Browser.entry.__main__:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - grpcio ==1.75.0
+    - grpcio-tools ==1.75.0
+    - protobuf ==6.32.1
+    - robotframework >=5.0.1,<8.0.0
+    - robotframework-pythonlibcore >=4.4.1,<5.0.0
+    - robotframework-assertion-engine >=3.0.3,<4.0.0
+    - wrapt >=1.17.2
+    - overrides >=7.7.0
+    - click >=8.1.8
+    - seedir >=0.5.1
+
+tests:
+  - python:
+      imports:
+        - Browser
+        - browser_batteries
+        - dist
+        - docker
+        - protobuf
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - rfbrowser --help
+
+about:
+  homepage: https://github.com/MarketSquare/robotframework-browser
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Robot Framework Browser library powered by Playwright.
+  description: |
+    Robot Framework Browser library powered by Playwright. Moving browser automation to year 2020 (or 2021)!
+    Aiming for speed, reliability and visibility.
+  documentation: https://marketsquare.github.io/robotframework-browser/Browser.html
+  repository: https://github.com/MarketSquare/robotframework-browser
+
+extra:
+  recipe-maintainers:
+    - martinRenou
+    - xylix
+    - rxm7706
+    - conda-forge/rpaframework-core

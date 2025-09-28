@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: robotframework-pythonlibcore
+  version: "4.4.1"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework-pythonlibcore-${{ version }}.tar.gz
+  sha256: 2d695b2ea906f5815179643e29182466675e682d82c5fa9d1009edfae2f84b16
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - robotlibcore
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/robotframework/PythonLibCore
+  summary: Tools to ease creating larger test libraries for Robot Framework using Python.
+  license: Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - COPYRIGHT.txt
+  description: |-
+    The Robot Framework hybrid and dynamic library API gives more flexibility for
+    library than the static library API, but they also sets requirements for
+    libraries which needs to be implemented in the library side. PythonLibCore
+    eases the problem by providing simpler interface and handling all the
+    requirements towards the Robot Framework library APIs.
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - martinRenou
+    - rxm7706
