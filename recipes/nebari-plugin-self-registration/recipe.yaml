@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: nebari-plugin-self-registration
-  version: 0.0.15
+  version: "0.0.15"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -19,24 +21,29 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
-    - python >=3.9
-    - nebari
+    - python >=${{ python_min }},<4.0
+    - __${{ noarch_platform }}
+    - ${{ "nebari" if noarch_platform != "win" else "python" }}
 
 tests:
   - python:
       imports:
-        - nebari_plugin_self_registration
+        - ${{ "nebari.hookspecs" if noarch_platform == "osx" or noarch_platform == "linux" }}
+        - ${{ "nebari.schema" if noarch_platform == "osx" or noarch_platform == "linux" }}
+        - ${{ "os" if noarch_platform != "win" }}
       pip_check: true
+      python_version: ${{ python_min }}.*
 
 about:
-  summary: MetroStar - Self-Registration Plugin for Nebari Platform
+  summary: Self-Registration Plugin for Nebari Platform
   license: Apache-2.0
   license_file: LICENSE
-  repository: https://github.com/MetroStar/nebari-self-registration
+  homepage: https://github.com/nebari-dev/nebari-self-registration
+  repository: https://github.com/nebari-dev/nebari-self-registration
 
 extra:
   recipe-maintainers:
