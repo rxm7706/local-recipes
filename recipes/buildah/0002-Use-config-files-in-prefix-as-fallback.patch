@@ -85,70 +85,17 @@ index bc88e513..6f902323 100644
  			}
  		}
  		cniConfig = filepath.Join(configHome, _cniConfigDirRootless)
-diff --git a/vendor/github.com/containers/image/v5/docker/lookaside.go b/vendor/github.com/containers/image/v5/docker/lookaside.go
-index 515e5932..83a15ec1 100644
---- a/vendor/github.com/containers/image/v5/docker/lookaside.go
-+++ b/vendor/github.com/containers/image/v5/docker/lookaside.go
-@@ -9,6 +9,7 @@ import (
- 	"path/filepath"
- 	"strings"
-
-+	"github.com/containers/common/pkg/config"
- 	"github.com/containers/image/v5/docker/reference"
- 	"github.com/containers/image/v5/internal/rootless"
- 	"github.com/containers/image/v5/types"
-@@ -113,7 +114,7 @@ func registriesDirPathWithHomeDir(sys *types.SystemContext, homeDir string) stri
- 		return filepath.Join(sys.RootForImplicitAbsolutePaths, systemRegistriesDirPath)
- 	}
-
--	return systemRegistriesDirPath
-+	return config.FallbackToPathInPrefix(systemRegistriesDirPath)
- }
-
- // builtinDefaultSignatureStorageDir returns default signature storage URL as per euid
-diff --git a/vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go b/vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go
-index 4c1629f5..388a3700 100644
---- a/vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go
-+++ b/vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go
-@@ -11,6 +11,7 @@ import (
- 	"sync"
-
- 	"github.com/BurntSushi/toml"
-+	"github.com/containers/common/pkg/config"
- 	"github.com/containers/image/v5/docker/reference"
- 	"github.com/containers/image/v5/types"
- 	"github.com/containers/storage/pkg/homedir"
-@@ -522,7 +523,7 @@ func newConfigWrapperWithHomeDir(ctx *types.SystemContext, homeDir string) confi
- 	} else if ctx != nil && ctx.RootForImplicitAbsolutePaths != "" {
- 		wrapper.configPath = filepath.Join(ctx.RootForImplicitAbsolutePaths, systemRegistriesConfPath)
- 	} else {
--		wrapper.configPath = systemRegistriesConfPath
-+		wrapper.configPath = config.FallbackToPathInPrefix(systemRegistriesConfPath)
- 	}
-
- 	// potentially use both system and per-user dirs if not using per-user config file
-@@ -533,7 +534,7 @@ func newConfigWrapperWithHomeDir(ctx *types.SystemContext, homeDir string) confi
- 		wrapper.configDirPath = filepath.Join(ctx.RootForImplicitAbsolutePaths, systemRegistriesConfDirPath)
- 		wrapper.userConfigDirPath = userRegistriesDirPath
- 	} else {
--		wrapper.configDirPath = systemRegistriesConfDirPath
-+		wrapper.configDirPath = config.FallbackToPathInPrefix(systemRegistriesConfDirPath)
- 		wrapper.userConfigDirPath = userRegistriesDirPath
- 	}
-
 diff --git a/vendor/github.com/containers/image/v5/signature/policy_config.go b/vendor/github.com/containers/image/v5/signature/policy_config.go
 index 82fbb68c..b8bbc1b8 100644
 --- a/vendor/github.com/containers/image/v5/signature/policy_config.go
 +++ b/vendor/github.com/containers/image/v5/signature/policy_config.go
 @@ -21,6 +21,7 @@ import (
  	"path/filepath"
- 	"regexp"
+- 	"regexp"
 
 +	"github.com/containers/common/pkg/config"
  	"github.com/containers/image/v5/docker/reference"
- 	"github.com/containers/image/v5/transports"
- 	"github.com/containers/image/v5/types"
-@@ -75,7 +76,7 @@ func defaultPolicyPathWithHomeDir(sys *types.SystemContext, homeDir string) stri
+@@ -72,7 +73,7 @@ func defaultPolicyPathWithHomeDir(sys *types.SystemContext, homeDir string) stri
  	if sys != nil && sys.RootForImplicitAbsolutePaths != "" {
  		return filepath.Join(sys.RootForImplicitAbsolutePaths, systemDefaultPolicyPath)
  	}
