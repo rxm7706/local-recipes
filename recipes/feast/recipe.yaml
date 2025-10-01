@@ -3,9 +3,8 @@ schema_version: 1
 
 context:
   name: feast
-  version: "0.49.0"
-  python_min: '3.9'
-  python_test_max: '3.13'
+  version: "0.54.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -13,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/feast-${{ version }}.tar.gz
-  sha256: 3e64f0dd7d994a6c4d0a3c2bfa5880f2bfefe8026a8959228c871f3d1acaedba
+  sha256: 9e7f9be608902febbf813f8cf5730d3227d4d18262039d3601427319d1da3800
 
 build:
   number: 0
@@ -26,8 +25,8 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pybindgen >=0.22.1  # Pinned to ==0.22.0, which is not available
-    - setuptools >=60,<77
+    - pybindgen >=0.22.0  # Pinned to ==0.22.0, which is not available
+    - setuptools >=60,<81
     - setuptools-scm >=6.2
     - sphinx !=4.0.0
     - wheel
@@ -41,7 +40,7 @@ requirements:
     - jinja2 >=2,<4
     - jsonschema
     - mmh3
-    - numpy >=1.22,<2
+    - numpy >=2.0.0,<3
     - pandas >=1.4.3,<3
     - pyarrow <=17.0.0
     - pydantic ==2.10.6
@@ -55,7 +54,7 @@ requirements:
     - tqdm >=4,<5
     - typeguard >=4.0.0
     - fastapi >=0.68.0
-    - uvicorn ==0.34.0
+    - uvicorn >=0.30.6,<=0.34.0
     - uvicorn-worker
     - gunicorn
     - dask-core >=2024.2.1
@@ -69,15 +68,14 @@ tests:
       imports:
         - feast
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
+      # multiprocess 0.70.18 has requirement dill>=0.4.0, but you have dill 0.3.9.
+      python_version: ${{ python_min }}.*
   - requirements:
       run:
-        - pip
         - python ${{ python_min }}.*
+        - pip
     script:
       - feast --help
-      - pip check
 
 about:
   summary: Python SDK for Feast
@@ -87,6 +85,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - johnhany97
-    - sarthakpati
     - rxm7706
