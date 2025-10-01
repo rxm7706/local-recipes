@@ -1,5 +1,6 @@
 {% set name = "feast" %}
-{% set version = "0.49.0" %}
+{% set version = "0.52.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/feast-{{ version }}.tar.gz
-  sha256: 3e64f0dd7d994a6c4d0a3c2bfa5880f2bfefe8026a8959228c871f3d1acaedba
+  sha256: d10846e66c6f333713f9c954c3b06660404eb998902387345511084c9d279471
 
 build:
   entry_points:
@@ -26,6 +27,7 @@ requirements:
     - wheel
     - pip
   run:
+    - transformers >=4.36.0
     - python >={{ python_min }}
     - click >=7.0.0,<9.0.0
     - colorama >=0.3.9,<1
@@ -34,7 +36,7 @@ requirements:
     - jinja2 >=2,<4
     - jsonschema
     - mmh3
-    - numpy >=1.22,<2
+    - numpy >=2.0.0,<3
     - pandas >=1.4.3,<3
     - pyarrow <=17.0.0
     - pydantic ==2.10.6
@@ -48,7 +50,7 @@ requirements:
     - tqdm >=4,<5
     - typeguard >=4.0.0
     - fastapi >=0.68.0
-    - uvicorn ==0.34.0
+    - uvicorn >=0.30.6,<=0.34.0
     - uvicorn-worker
     - gunicorn
     - dask-core >=2024.2.1
