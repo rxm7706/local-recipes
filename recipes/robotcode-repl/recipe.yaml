@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: robotcode-repl
+  version: 1.9.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotcode_repl-${{ version }}.tar.gz
+  sha256: 309cbdab128d84a5cf3d55136c9d9313c4d45b3dd97333c96ed9203a9d939238
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - robotcode-runner ==1.9.0
+
+tests:
+  - python:
+      imports:
+        - robotcode_repl
+      pip_check: true
+
+about:
+  summary: RobotCode REPL for Robot Framework
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  repository: https://github.com/robotcodedev/robotcode
+
+extra:
+  recipe-maintainers:
+    - rxm7706

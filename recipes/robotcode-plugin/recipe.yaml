@@ -1,0 +1,46 @@
+schema_version: 1
+
+context:
+  name: robotcode-plugin
+  version: 1.9.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotcode_plugin-${{ version }}.tar.gz
+  sha256: bc44dd4580aeaa88bce43191e06d59a96373c9fd7ef619bad16763e2711c5df8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - click >=8.1.0
+    - pluggy >=1.0.0
+    - tomli-w >=1.0.0
+    - colorama >=0.4.6
+
+tests:
+  - python:
+      imports:
+        - robotcode_plugin
+      pip_check: true
+
+about:
+  summary: Some classes for RobotCode plugin management
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  repository: https://github.com/robotcodedev/robotcode
+
+extra:
+  recipe-maintainers:
+    - rxm7706

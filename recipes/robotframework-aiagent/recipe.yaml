@@ -1,0 +1,44 @@
+schema_version: 1
+
+context:
+  name: robotframework-aiagent
+  version: 0.0.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_aiagent-${{ version }}.tar.gz
+  sha256: fc0b2286094dfd2fe9fc0b88b2da62dc7b885ea58911e293f9a0b89db01db852
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.10
+    - hatchling >=1.27.0
+    - uv-dynamic-versioning >=0.10.0
+    - pip
+  run:
+    - python >=3.10
+    - robotframework-aiagent-slim ==0.0.1
+
+tests:
+  - python:
+      imports:
+        - robotframework_aiagent
+      pip_check: true
+
+about:
+  summary: A Robot Framework library for AI agents
+  license: Apache-2.0
+  license_file: LICENSE
+  repository: https://github.com/d-biehl/robotframework-aiagent
+
+extra:
+  recipe-maintainers:
+    - rxm7706

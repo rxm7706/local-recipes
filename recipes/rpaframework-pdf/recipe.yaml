@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rpaframework-pdf
+  version: "10.0.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rpaframework_pdf-${{ version }}.tar.gz
+  sha256: f27c546023a982ebb408babbba1baec7bfc059fb0a3d53203a5cfea2bc2adca2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - rpaframework-core >=12.0.2
+    - robotframework >=4.0.0,!=4.0.1,!=6.1.0,<8.0.0
+    - pdfminer.six ==20250506
+    - pypdf >=6.0.0
+    - fpdf2 >=2.8.4
+    - docutils >=0.21.2
+    - pdfminer-six ==20250506
+
+tests:
+  - python:
+      imports:
+        - RPA
+        - RPA.PDF
+      pip_check: false
+      # rpaframework-pdf 10.0.0 has requirement pdfminer-six==20250506, but you have pdfminer-six 0.0.0.
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://rpaframework.org/
+  summary: PDF library of RPA Framework
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - conda-forge/rpaframework-core
+    - rxm7706

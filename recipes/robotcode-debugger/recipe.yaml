@@ -1,0 +1,45 @@
+schema_version: 1
+
+context:
+  name: robotcode-debugger
+  version: 1.9.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotcode_debugger-${{ version }}.tar.gz
+  sha256: 0c7f72504b2b1e4b4ea35fd9fec6278886acfaeee9f91a2e67ac3fd276c6406a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - robotframework >=4.1.0
+    - robotcode-jsonrpc2 ==1.9.0
+    - robotcode-runner ==1.9.0
+
+tests:
+  - python:
+      imports:
+        - robotcode_debugger
+      pip_check: true
+
+about:
+  summary: RobotCode Debugger for Robot Framework
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  repository: https://github.com/robotcodedev/robotcode
+
+extra:
+  recipe-maintainers:
+    - rxm7706

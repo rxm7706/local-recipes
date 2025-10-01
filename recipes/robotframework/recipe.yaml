@@ -35,8 +35,8 @@ outputs:
           - libdoc = robot.libdoc:libdoc_cli
     requirements:
       host:
-        - pip
         - python ${{ python_min }}.*
+        - pip
         - setuptools
       run:
         - python >=${{ python_min }}

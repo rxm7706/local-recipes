@@ -1,0 +1,52 @@
+schema_version: 1
+
+context:
+  name: robotcode
+  version: 1.9.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/robotcodedev/robotcode/archive/v${{ version }}.tar.gz
+  sha256: 5a11ae7c95b62c737fdcd2d8b24b4d24213a7bdbb2d9d0a28cd4e0a1581cfef5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - robotcode = robotcode.cli.__main__:main
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling >=1.24.2
+    - pip
+  run:
+    - python >=3.8
+    - robotcode-core ==1.9.0
+    - robotcode-plugin ==1.9.0
+    - robotcode-robot ==1.9.0
+
+tests:
+  - python:
+      imports:
+        - robotcode
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - robotcode --help
+
+about:
+  summary: Command line interface for RobotCode
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

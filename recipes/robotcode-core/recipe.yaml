@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: robotcode-core
+  version: 1.9.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotcode_core-${{ version }}.tar.gz
+  sha256: a626b0292f4f1bea459cf8b7b7a37cbe7c215b3611beaa8fdac69025993a15d2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - typing_extensions >=4.4.0
+
+tests:
+  - python:
+      imports:
+        - robotcode_core
+      pip_check: true
+
+about:
+  summary: Some core classes for RobotCode
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  repository: https://github.com/robotcodedev/robotcode
+
+extra:
+  recipe-maintainers:
+    - rxm7706
