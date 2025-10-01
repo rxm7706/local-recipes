@@ -1,0 +1,47 @@
+schema_version: 1
+
+context:
+  name: robotcode-robot
+  version: 1.9.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotcode_robot-${{ version }}.tar.gz
+  sha256: ef65581e8d4a7eb0b42ae95b08ce85b05465241ed1b7b32067398a50123e419c
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - robotframework >=4.1.0
+    - if: match(python, "<3.11")
+      then: tomli >=1.1.0
+    - platformdirs >=3.2.0,<4.4.0
+    - robotcode-core ==1.9.0
+
+tests:
+  - python:
+      imports:
+        - robotcode_robot
+      pip_check: true
+
+about:
+  summary: Support classes for RobotCode for handling Robot Framework projects.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  repository: https://github.com/robotcodedev/robotcode
+
+extra:
+  recipe-maintainers:
+    - rxm7706

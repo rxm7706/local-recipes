@@ -1,0 +1,45 @@
+schema_version: 1
+
+context:
+  name: robotframework-aiagent-slim
+  version: 0.0.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_aiagent_slim-${{ version }}.tar.gz
+  sha256: b4e7f67898e5fff9cf4f8fdd6c7fd67ea085c893e9e4489181b78f23b3546dfa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.10
+    - hatchling >=1.27.0
+    - uv-dynamic-versioning >=0.10.0
+    - pip
+  run:
+    - python >=3.10
+    - pydantic-ai-slim >=1.0.0
+    - robotframework >=7.0
+    - typing_extensions >=4.14.0
+
+tests:
+  - python:
+      imports:
+        - robotframework_aiagent_slim
+      pip_check: true
+
+about:
+  summary: Robot Framework AI Agent core library
+  license: Apache-2.0
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
