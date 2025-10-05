@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: ydata-core
-  version: "0.2.0"
+  version: "0.7.0"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://github.com/ydataai/python-core/archive/${{ version }}.tar.gz
-  sha256: 53c52230a4cf261fef32b8eb1ec7df697e736448488fa54f59b85de6d9942c04
+  sha256: 8655a78b478139dc7c8cf6e0ab29cd9bd1ab74e684502ab1422147d5002ae459
 
 build:
   number: 0
@@ -31,6 +31,7 @@ tests:
   - python:
       imports:
         - core
+        - datascience
       pip_check: false
       python_version: ${{ python_min }}.*
 
