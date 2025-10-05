@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ydata-sdk
+  version: "1.0.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ydataai/ydata-sdk/archive/${{ version }}.tar.gz
+  sha256: c583b99cc9c4b8d0ecb65677374647fd7e1c862c96441ef59acb92b02653b8ca
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=67.4.0,<68.0.0
+    - setuptools-scm >=7.1.0,<8.0.0
+    - wheel >=0.38.4,<1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - httpx ==0.23.3
+    - ydata-core >=0.2.0
+    - pandas >=1.5.0
+    - prettytable ==3.6.0
+    - pydantic ==1.10.9
+    - typeguard ==2.13.3
+    #- ydata-datascience
+
+tests:
+  - python:
+      imports:
+        - ydata
+        #- sdk
+        #- ydata_sdk
+        #- ydata_fabric_sdk
+
+      pip_check: false
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: YData SDK allows to use the *Data-Centric* tools from the YData ecosystem to accelerate AI development
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
