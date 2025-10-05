@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: collate-sqllineage
+  version: "1.6.21"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/collate_sqllineage-${{ version }}.tar.gz
+  sha256: f4239dc8d7b8f287bab00ba2eb582d364c1e2d26ce94e5ae9a75b39361087b69
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - sqllineage = collate_sqllineage.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - sqlparse >=0.5,<0.6
+    - networkx >=2.4
+    - collate-sqlfluff ==3.3.5
+    #- sqlfluff >=3.0.0,<3.1.0
+
+tests:
+  - python:
+      imports:
+        - collate_sqllineage
+      python_version: ${{ python_min }}.*
+      pip_check: true
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - sqllineage --help
+
+about:
+  summary: Collate SQL Lineage for Analysis Tool powered by Python and sqlfluff based on sqllineage.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/reata/sqllineage
+
+extra:
+  recipe-maintainers:
+    - rxm7706
