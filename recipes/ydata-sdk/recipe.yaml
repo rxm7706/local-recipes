@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: ydata-sdk
-  version: "1.0.0"
+  version: "1.0.2"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://github.com/ydataai/ydata-sdk/archive/${{ version }}.tar.gz
-  sha256: c583b99cc9c4b8d0ecb65677374647fd7e1c862c96441ef59acb92b02653b8ca
+  sha256: f2b6971a9494b6a4bdf6e2578521c3594ce6486912565a16536dde652bd940bf
 
 build:
   number: 0
@@ -40,10 +40,8 @@ tests:
   - python:
       imports:
         - ydata
-        #- sdk
         #- ydata_sdk
         #- ydata_fabric_sdk
-
       pip_check: false
       python_version: ${{ python_min }}.*
 
