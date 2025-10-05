@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: ydata-sdk
-  version: "1.0.2"
+  version: "1.1.4"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://github.com/ydataai/ydata-sdk/archive/${{ version }}.tar.gz
-  sha256: f2b6971a9494b6a4bdf6e2578521c3594ce6486912565a16536dde652bd940bf
+  sha256: 7c8028eecc16cae6c60906d5faa0dde323d2d773e7592901c3447297428468c0
 
 build:
   number: 0
@@ -28,12 +28,12 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - httpx ==0.23.3
+    - httpx ==0.28
     - ydata-core >=0.2.0
     - pandas >=1.5.0
-    - prettytable ==3.6.0
-    - pydantic ==1.10.9
-    - typeguard ==2.13.3
+    - prettytable ==3.13
+    - pydantic >=2.0.0
+    - typeguard >=2.13.3
     #- ydata-datascience
 
 tests:
