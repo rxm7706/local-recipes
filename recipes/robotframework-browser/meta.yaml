@@ -1,0 +1,64 @@
+{% set name = "robotframework-browser" %}
+{% set version = "19.7.2" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/robotframework_browser-{{ version }}.tar.gz
+  sha256: 6249d0c72f2df8eb70c2f2897e969a95ee24a642c1b7bce15333f52982f8dd87
+
+build:
+  entry_points:
+    - rfbrowser = Browser.entry.__main__:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >={{ python_min }},<4.0
+    - grpcio >=1.74.0
+    - grpcio-tools >=1.74.0
+    - protobuf #>=6.32.0
+    - robotframework >=5.0.1,<8.0.0
+    - robotframework-pythonlibcore >=4.4.1,<5.0.0
+    - robotframework-assertion-engine >=3.0.3,<4.0.0
+    - wrapt >=1.17.2
+    - overrides >=7.7.0
+    - click >=8.1.8
+    - seedir >=0.5.1
+
+test:
+  imports:
+    - Browser
+  commands:
+    - rfbrowser --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/MarketSquare/robotframework-browser
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Robot Framework Browser library powered by Playwright.
+  description: |
+    Robot Framework Browser library powered by Playwright. Moving browser automation to year 2020 (or 2021)!
+    Aiming for speed, reliability and visibility.
+  doc_url: https://marketsquare.github.io/robotframework-browser/Browser.html
+  dev_url: https://github.com/MarketSquare/robotframework-browser
+
+extra:
+  recipe-maintainers:
+    - martinRenou
+    - xylix
+    - rxm7706
+    - conda-forge/rpaframework-core
