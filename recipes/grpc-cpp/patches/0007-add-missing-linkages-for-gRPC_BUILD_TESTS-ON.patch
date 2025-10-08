@@ -1,0 +1,107 @@
+From 397b9d531851178caf29f75f2f89983cbcedc924 Mon Sep 17 00:00:00 2001
+From: "H. Vetinari" <h.vetinari@gmx.com>
+Date: Tue, 26 Sep 2023 18:25:54 +1100
+Subject: [PATCH 07/14] add missing linkages for gRPC_BUILD_TESTS=ON
+
+grpc_event_engine::experimental::MockEndpoint::MockEndpoint() sits in
+https://github.com/grpc/grpc/blob/v1.73.1/test/core/test_util/mock_endpoint.cc
+which only gets included for grpc_test_util{,_unsecure}. In other words, statusor
+is not missing in some other library's link interface, this is the right place.
+
+For some tests, re2 and c-ares have just been forgotten as dependencies.
+---
+ CMakeLists.txt | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 66be39e..b0f1347 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -3229,6 +3229,7 @@ target_link_libraries(grpc_test_util
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   absl::failure_signal_handler
+   absl::stacktrace
++  absl::statusor
+   absl::symbolize
+   absl::log_initialize
+   grpc
+@@ -3304,6 +3305,7 @@ target_link_libraries(grpc_test_util_unsecure
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   absl::failure_signal_handler
+   absl::stacktrace
++  absl::statusor
+   absl::symbolize
+   absl::log_initialize
+   grpc_unsecure
+@@ -8335,6 +8337,7 @@ target_include_directories(authorization_matchers_test
+ )
+ 
+ target_link_libraries(authorization_matchers_test
++  ${_gRPC_RE2_LIBRARIES}
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   gtest
+   grpc_test_util
+@@ -17316,6 +17319,7 @@ target_include_directories(grpc_authorization_engine_test
+ )
+ 
+ target_link_libraries(grpc_authorization_engine_test
++  ${_gRPC_RE2_LIBRARIES}
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   gtest
+   grpc_test_util
+@@ -19776,6 +19780,7 @@ if(_gRPC_PLATFORM_LINUX OR _gRPC_PLATFORM_MAC OR _gRPC_PLATFORM_POSIX)
+   )
+ 
+   target_link_libraries(httpcli_test
++    ${_gRPC_CARES_LIBRARIES}
+     ${_gRPC_ALLTARGETS_LIBRARIES}
+     gtest
+     grpc++_test_util
+@@ -21869,6 +21874,7 @@ target_include_directories(matchers_test
+ )
+ 
+ target_link_libraries(matchers_test
++  ${_gRPC_RE2_LIBRARIES}
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   gtest
+   grpc_test_util
+@@ -26804,6 +26810,7 @@ target_include_directories(resolve_address_using_ares_resolver_test
+ )
+ 
+ target_link_libraries(resolve_address_using_ares_resolver_test
++  ${_gRPC_CARES_LIBRARIES}
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   gtest
+   grpc_test_util
+@@ -26892,6 +26899,7 @@ target_include_directories(resolve_address_using_native_resolver_test
+ )
+ 
+ target_link_libraries(resolve_address_using_native_resolver_test
++  ${_gRPC_CARES_LIBRARIES}
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   gtest
+   grpc_test_util
+@@ -35879,6 +35887,7 @@ target_include_directories(xds_common_types_test
+ )
+ 
+ target_link_libraries(xds_common_types_test
++  ${_gRPC_RE2_LIBRARIES}
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   gtest
+   grpc++
+@@ -36530,6 +36539,7 @@ target_include_directories(xds_credentials_test
+ )
+ 
+ target_link_libraries(xds_credentials_test
++  ${_gRPC_RE2_LIBRARIES}
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   gtest
+   grpc_test_util
+@@ -41495,6 +41505,7 @@ target_include_directories(xds_listener_resource_type_test
+ )
+ 
+ target_link_libraries(xds_listener_resource_type_test
++  ${_gRPC_RE2_LIBRARIES}
+   ${_gRPC_ALLTARGETS_LIBRARIES}
+   gtest
+   grpc++
