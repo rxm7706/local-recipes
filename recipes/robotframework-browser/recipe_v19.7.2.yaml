@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: robotframework-browser
-  version: "19.9.0"
+  version: "19.7.2"
   python_min: '3.10'
 
 package:
@@ -11,8 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/MarketSquare/robotframework-browser/archive/v${{ version }}.tar.gz
-  sha256: 209bb37c939c1229e27009e6b8adae2a6429e300af96ecc9d06425743d8f9e96
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_browser-${{ version }}.tar.gz
+  sha256: 6249d0c72f2df8eb70c2f2897e969a95ee24a642c1b7bce15333f52982f8dd87
 
 build:
   number: 0
@@ -27,15 +27,11 @@ requirements:
     - python ${{ python_min }}.*
     - setuptools >=61.0
     - pip
-    - nodejs  # for playwright
-    - playwright #>=1.55.0,<2.0.0
   run:
     - python >=${{ python_min }},<4.0
-    - nodejs  # for playwright
-    - playwright #>=1.55.0,<2.0.0
-    - grpcio #>=1.75.1
-    - grpcio-tools #>=1.75.1
-    - protobuf #>=6.32.1
+    - grpcio >=1.74.0
+    - grpcio-tools >=1.74.0
+    - protobuf #>=6.32.0
     - robotframework >=5.0.1,<8.0.0
     - robotframework-pythonlibcore >=4.4.1,<5.0.0
     - robotframework-assertion-engine >=3.0.3,<4.0.0
@@ -43,23 +39,19 @@ requirements:
     - overrides >=7.7.0
     - click >=8.1.8
     - seedir >=0.5.1
-    - psutil >=3.3.11
 
 tests:
-#  - python:
-#      imports:
-#        - Browser
-#      pip_check: false
-#      # robotframework-browser 19.7.2 has requirement protobuf==6.32.0, but you have protobuf 6.31.1.
-#      python_version: ${{ python_min }}.*
+  - python:
+      imports:
+        - Browser
+      pip_check: false
+      # robotframework-browser 19.7.2 has requirement protobuf==6.32.0, but you have protobuf 6.31.1.
+      python_version: ${{ python_min }}.*
   - requirements:
       run:
         - python ${{ python_min }}.*
         - pip
     script:
-      #- pip check
-#      - rfbrowser init
-#      - python -c "import Browser;"
       - rfbrowser --help
 
 about:
