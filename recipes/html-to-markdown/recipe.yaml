@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: html-to-markdown
-  version: "1.16.0"
+  version: "2.0.1"
   python_min: '3.10'
 
 package:
@@ -12,46 +12,64 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/html_to_markdown-${{ version }}.tar.gz
-  sha256: f730872b62b7552b7f86d26f0e8a28f24934b0a47fd8cc8ed428b3d3027dfbf8
+  sha256: 33cec38b8b604c2e750e3cea86fc31555553c19b98f48a8b289682934c368a7a
 
 build:
-  number: 1
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+  script:
+    - if: unix
+      then:
+        # Unix recipe
+        - export OPENSSL_DIR="$PREFIX"
+      else:
+        # Win recipe  # work around long path problem,
+        # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
+        - set CARGO_HOME=C:\.cargo
+        - md %CARGO_HOME%
+        - if errorlevel 1 exit 1
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
-    entry_points:
-      - html-to-markdown = html_to_markdown.__main__:cli
-      - html_to_markdown = html_to_markdown.__main__:cli
+    version_independent: true
 
 requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
   host:
-    - python ${{ python_min }}.*
-    - setuptools >=78.1
+    - python
+    - maturin >=1.9,<2
+    - tomli >=2
     - pip
   run:
-    - python >=${{ python_min }},<4.0
-    - beautifulsoup4 >=4.13.4
-    - nh3 >=0.2.21
+    - python
 
 tests:
   - python:
       imports:
         - html_to_markdown
       pip_check: true
-      python_version: ${{ python_min }}.*
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}.*
+        - python
     script:
+      - pip check
       - html-to-markdown --help
       - html_to_markdown --help
+      - "python -c \"import html_to_markdown\""
 
 about:
-  summary: A modern, type-safe Python library for converting HTML to Markdown with comprehensive tag support and customizable options
-  homepage: https://github.com/Goldziher/html-to-markdown
+  summary: High-performance HTML to Markdown converter powered by Rust with a clean Python API
   license: MIT
-  license_file: LICENSE
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/Goldziher/html-to-markdown
 
 extra:
   recipe-maintainers:
