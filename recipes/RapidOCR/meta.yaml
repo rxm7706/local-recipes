@@ -1,0 +1,66 @@
+{% set name = "RapidOCR" %}
+{% set version = "3.4.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/RapidAI/RapidOCR/archive/v{{ version }}.tar.gz
+  sha256: f5802814571beadbb19620adc61e39d9ccc8dfa31737168787f9fe4f21bc479f
+
+build:
+  entry_points:
+    - rapidocr=rapidocr.main:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install python/ -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    #- get_pypi_latest_version
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }},<4.0
+    - pyclipper >=1.2.0
+    - opencv
+    #- opencv_python >=4.5.1.48
+    #- opencv-python-headless >=4.5.1.48
+    - numpy >=1.19.5,<3.0.0
+    - six >=1.15.0
+    - shapely >=1.7.1,!=2.0.4
+    - pyyaml
+    - pillow
+    - tqdm
+    - omegaconf
+    - requests
+    - colorlog
+
+test:
+  imports:
+    - cal_rec_boxes
+    - ch_ppocr_cls
+    - ch_ppocr_det
+    - ch_ppocr_rec
+    - inference_engine
+    - models
+    - networks
+    - utils
+  commands:
+    - pip check
+    - rapidocr --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/RapidAI/RapidOCR
+  summary: Awesome OCR Library
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

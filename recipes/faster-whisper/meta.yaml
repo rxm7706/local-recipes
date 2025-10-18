@@ -1,0 +1,46 @@
+{% set name = "faster-whisper" %}
+{% set version = "1.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/faster-whisper-{{ version }}.tar.gz
+  sha256: 56b20d616a575049a79f33b04f02db0868ce38c5d057a0b816d36ca59a6d2598
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - pip
+  run:
+    - python >=3.9
+    - ctranslate2 >=4.0,<5
+    - huggingface_hub >=0.13
+    - tokenizers >=0.13,<1
+    - onnxruntime >=1.14,<2
+    - av >=11
+    - tqdm
+
+test:
+  imports:
+    - faster_whisper
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/SYSTRAN/faster-whisper
+  summary: Faster Whisper transcription with CTranslate2
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

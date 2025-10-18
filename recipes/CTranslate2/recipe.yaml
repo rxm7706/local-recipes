@@ -14,8 +14,8 @@ source:
 
 build:
   number: 0
-  skip: match(python, "<3.9")
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  #skip: match(python, "<3.9")
+  script: ${{ PYTHON }} -m pip install CTRANSLATE2/ -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - ct2-fairseq-converter=ctranslate2.converters.fairseq:main
@@ -28,11 +28,19 @@ build:
 
 requirements:
   build:
-    - ${{ compiler('c') }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+
+    - ${{ compiler("c") }}
+    #- ${{ stdlib("c") }}
   host:
     - python
     - pybind11
     - pip
+    - setuptools
+    - wheel
   run:
     - python
     - setuptools
@@ -60,6 +68,8 @@ about:
   license: MIT
   license_file: LICENSE
   homepage: https://opennmt.net
+  summary: Fast inference engine for Transformer models
+  repository: https://github.com/OpenNMT/CTranslate2
 
 extra:
   recipe-maintainers:
