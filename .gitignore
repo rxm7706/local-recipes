@@ -648,3 +648,5 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 /.idea/sqldialects.xml
+/recipes/.webui_secret_key
+/recipes/open-webui/openhands
