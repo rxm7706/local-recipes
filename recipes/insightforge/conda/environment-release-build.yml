@@ -1,0 +1,151 @@
+name: build-release-deploy
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+
+  - nodejs >=24.4.1,<24.10
+  - uv >=0.9.3,<0.10
+  - pixi >=0.56.0,<0.57
+  - pip >=25.2,<26
+  - setuptools >=80.9.0,<81
+  - wheel >=0.45.1,<0.46
+  - pyarrow-all =20.0.0
+  - pandas =2.2.3
+  - numpy =1.26.4
+  - scikit-learn =1.7.2
+  - python-duckdb =1.4.1
+
+  # build
+  - boto3
+  - python-build
+  - colorama
+  - conda-build >=3.22.0
+  - libiconv
+  - nodejs 24.*
+  - ripgrep >=0.10.0
+  - setuptools
+  - yaml
+
+  # Run
+  - argon2-cffi >=23.1.0
+  - bcrypt >=3.1.0
+  - datasets >=2.20.0
+  - faiss-cpu >=1.8.0.post1
+  - langchain >=0.2.16
+  - langchain-community >=0.2.16
+  - langchain-core >=0.2.41
+  - langchain-google-genai >=0.1.0
+  - langchain-openai >=0.1.21
+  - matplotlib >=3.9.2
+  - numpy >=1.26.4
+  - openai >=1.45.0
+  - pandas >=2.2.3
+  - passlib >=1.7.4
+  - plotly >=5.24.1
+  - pydantic >=2.9.2
+  - python-dotenv >=1.0.1
+  - ragas >=0.1.14
+  - scikit-learn >=1.4.2
+  - sentence-transformers >=3.1.1
+  - streamlit >=1.38.0
+  - tiktoken >=0.7.0
+
+  # docs
+  - colorcet
+  - firefox >=96
+  - geckodriver
+  - icalendar
+  - ipython
+  - networkx
+  - pygments
+  - pygraphviz
+  - pyshp
+  - scikit-learn
+  - scipy
+  - squarify
+  - sympy
+  - toml
+
+  # deploy
+  - anaconda-client
+  - boto3
+  - colorama
+  - nodejs 24.*
+  - packaging
+  - setuptools
+  - twine
+  - yaml
+
+  # pip dependencies
+  - pip
+  - pip:
+    # docs
+    - bokeh_sampledata
+    - pydata_sphinx_theme
+    - sphinx >= 7.1.0
+    - sphinx-copybutton
+    - sphinx-design
+    - sphinx-favicon
+    - sphinxext-opengraph >= 0.11.0
+
+    # InsightForge
+    - python-dotenv >=1.0.1
+    - argon2-cffi>=23.1.0
+    - datasets==2.20.0
+    - faiss-cpu==1.8.0.post1
+    - langchain-community==0.2.16
+    - langchain-core==0.2.41
+    - langchain-google-genai>=0.1.0 # Use a more recent compatible version
+    - langchain-openai==0.1.21
+    - langchain==0.2.16
+    - matplotlib==3.9.2
+    - numpy==1.26.4
+    - openai==1.45.0
+    - pandas==2.2.3
+    - passlib[bcrypt]==1.7.4
+    - plotly==5.24.1
+    - pydantic==2.9.2
+    - python-dotenv==1.0.1
+    - ragas==0.1.14
+    - scikit-learn==1.4.2
+    - sentence-transformers==3.1.1
+    - streamlit==1.38.0
+    - tiktoken==0.7.0
+    - requests==2.32.5
+
+# # conda create -n InsightForge "python >=3.12,<3.13" "nodejs >=24.0,<25.0" anaconda-client argon2-cffi bcrypt boto3 colorama colorcet conda-build datasets faiss-cpu firefox geckodriver icalendar ipython langchain langchain-community langchain-core langchain-google-genai langchain-openai libiconv matplotlib networkx numpy openai packaging pandas passlib plotly pydantic pygments pygraphviz pyshp python-build python-dotenv ragas ripgrep scikit-learn scipy sentence-transformers setuptools squarify streamlit sympy tiktoken toml twine yaml
+
+#[dependencies]
+#python = ">=3.12.11,<3.13"
+#nodejs = ">=24.9.0,<24.10"
+#nebari = ">=2025.6.1,<2026"
+#nebari-dask = ">=2025.6.1,<2026"
+#bokeh = ">=3.8.0,<4"
+#panel = ">=1.8.2,<2"
+#streamlit = ">=1.50.0,<2"
+#matplotlib = ">=3.10.6,<4"
+#plotly = ">=6.3.1,<7"
+#django = ">=5.2.7,<6"
+#wagtail-ai = ">=3.0.0,<4"
+#faiss-cpu = ">=1.9.0,<2"
+#langchain = ">=0.3.25,<0.4"
+#langchain-community = ">=0.3.24,<0.4"
+#langchain-core = ">=0.3.63,<0.4"
+#langchain-google-genai = ">=2.0.10,<3"
+#langchain-openai = ">=0.3.19,<0.4"
+#langsmith = ">=0.2.11,<0.3"
+#ollama = ">=0.12.3,<0.13"
+#openai = ">=1.109.1,<2"
+#sentence-transformers = ">=5.1.1,<6"
+#datasets = ">=4.0.0,<5"
+#numpy = ">=1.26.4,<2"
+#pandas = ">=2.3.3,<3"
+#pydantic = ">=2.9.2,<3"
+#ragas = ">=0.3.1,<0.4"
+#scikit-learn = ">=1.7.2,<2"
+#argon2-cffi = ">=25.1.0,<26"
+#bcrypt = ">=4.0.1,<5"
+#passlib = ">=1.7.4,<2"
+#python-dotenv = ">=1.1.1,<2"
+#tiktoken = ">=0.12.0,<0.13"

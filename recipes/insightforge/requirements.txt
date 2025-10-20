@@ -1,0 +1,21 @@
+argon2-cffi>=23.1.0
+datasets==2.20.0
+faiss-cpu==1.8.0.post1
+langchain-community==0.2.16
+langchain-core==0.2.41
+langchain-google-genai>=0.1.0 # Use a more recent compatible version
+langchain-openai==0.1.21
+langchain==0.2.16
+matplotlib==3.9.2
+numpy==1.26.4
+openai==1.45.0
+pandas==2.2.3
+passlib[bcrypt]==1.7.4
+plotly==5.24.1
+pydantic==2.9.2
+python-dotenv==1.0.1
+ragas==0.1.14
+scikit-learn==1.4.2
+sentence-transformers==3.1.1
+streamlit==1.38.0
+tiktoken==0.7.0

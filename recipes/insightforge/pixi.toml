@@ -1,0 +1,108 @@
+[workspace]
+authors = ["vijay <vijay@users.noreply.github.com>"]
+channels = ["conda-forge"]
+name = "InsightForge"
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = ">=3.12.12,<3.13"
+nodejs = ">=24.4.1,<24.10"
+uv = ">=0.9.3,<0.10"
+pixi = ">=0.56.0,<0.57"
+pip = ">=25.2, <26"
+setuptools = ">=80.9.0, <81"
+wheel = ">=0.45.1, <0.46"
+pyarrow-all = "=20.0.0"
+pandas = "=2.2.3"
+numpy = "=1.26.4"
+scikit-learn = "=1.7.2"
+python-duckdb = "=1.4.1"
+
+# Specific to working of InsightForge
+    #argon2-cffi = ">=25.1.0, <26"
+    #bcrypt = ">=5.0.0, <6"
+    #datasets = ">=4.0.0, <5"
+    ##faiss-cpu = ">=1.12.0, <2"
+    #langchain = ">=0.3.27, <0.4"
+    #langchain-community = ">=0.3.29, <0.4"
+    #langchain-core = ">=0.3.79, <0.4"
+    #langchain-google-genai = ">=2.0.10, <3"
+    #langchain-openai = ">=0.3.32, <0.4"
+    #matplotlib = ">=3.10.7, <4"
+    #openai = ">=1.99.9, <2"
+    #passlib = ">=1.7.4, <2"
+    #plotly = ">=6.3.1, <7"
+    #pydantic = ">=2.11.9, <3"
+    #python-dotenv = ">=1.1.1, <2"
+    #ragas = ">=0.3.7, <0.4"
+    #sentence-transformers = ">=5.1.1, <6"
+    #streamlit = ">=1.50.0, <2"
+    #tiktoken = ">=0.12.0, <0.13"
+
+[target.linux-64.dependencies]
+#nebari = ">=2025.6.1,<2026"
+#jhub-apps = ">=2024.8.1,<2026"
+zed = ">=0.205.9,<0.206"
+
+[target.osx-64.dependencies]
+#nebari = ">=2025.6.1,<2026"
+zed = ">=0.208.5,<0.209"
+
+[target.win-64.dependencies]
+m2-bash = ">=5.2.37.2,<6"
+
+[target.osx-arm64.dependencies]
+#nebari = ">=2025.6.1,<2026"
+zed = ">=0.208.5,<0.209"
+
+[pypi-dependencies]
+pip = ">=25.2, <26"
+setuptools = ">=80.9.0, <81"
+wheel = ">=0.45.1, <0.46"
+# Pypi Packages for Local LLM usage and OpenHands
+openhands-ai = ">=0.59.0"
+open-webui = ">=0.6.34, <0.7"
+openhands = ">=0.0.0, <0.0.1"
+# Installed Through Conda forge based on dependencies of InsightForge
+pyarrow = ">=20.0.0, <21"
+pandas = ">=2.2.3, <3"
+numpy = ">=1.26.4, <2"
+scikit-learn = ">=1.7.2, <2"
+duckdb = ">=1.4.1,<2"
+# Specific to working of InsightForge
+argon2-cffi = ">=25.1.0, <26"
+bcrypt = ">=5.0.0, <6"
+datasets = ">=4.0.0, <5"
+faiss-cpu = ">=1.12.0, <2"
+langchain = ">=0.3.27, <0.4"
+langchain-community = ">=0.3.29, <0.4"
+langchain-core = ">=0.3.79, <0.4"
+langchain-google-genai = ">=2.0.10, <3"
+langchain-openai = ">=0.3.32, <0.4"
+matplotlib = ">=3.10.7, <4"
+openai = ">=1.99.9, <2"
+passlib = ">=1.7.4, <2"
+plotly = ">=6.3.1, <7"
+pydantic = ">=2.11.9, <3"
+python-dotenv = ">=1.1.1, <2"
+ragas = ">=0.3.7, <0.4"
+sentence-transformers = ">=5.1.1, <6"
+streamlit = ">=1.50.0, <2"
+tiktoken = ">=0.12.0, <0.13"
+daft = ">=0.6.6, <0.7"
+langchain-ollama = ">=0.3.10, <0.4"
+llm = ">=0.27.1, <0.28"
+llm-ollama = ">=0.15.0, <0.16"
+ollama = ">=0.6.0, <0.7"
+#Added for Web App Framework
+bokeh = ">=3.8.0, <4"
+bokeh-django = ">=0.2.1, <0.3"
+claude-code-sdk = ">=0.0.25, <0.0.26"
+coderedcms = ">=6.0.0, <7"
+django = ">=5.2.7, <6"
+panel = ">=1.8.2, <2"
+wagtail = ">=7.1.1, <8"
+wagtail-ai = ">=3.0.0, <4"
