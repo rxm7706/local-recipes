@@ -1,0 +1,56 @@
+schema_version: 1
+
+context:
+  name: teradata-mcp-server
+  version: 0.1.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Teradata/teradata-mcp-server/archive/v${{ version }}.tar.gz
+  sha256: 24676c0cccf321f0deba5dcede3aa8c2d113d16c4c990d47d6d1729014e5b94a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - teradata-mcp-server = teradata_mcp_server:main
+
+requirements:
+  host:
+    - python >=3.11
+    - hatchling >=1.17.0
+    - pip
+  run:
+    - python >=3.11
+    - pydantic >=2.8.0,<3.0.0
+    - fastmcp ==2.11.3
+    - mcp >=1.0.0,<2.0.0
+    - teradatasqlalchemy >=20.0.0.0
+    - python-dotenv >=1.0.0
+    - pyyaml >=6.0.0
+    - sqlalchemy >=2.0.0,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - teradata_mcp_server
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - teradata-mcp-server --help
+
+about:
+  summary: Model Context Protocol (MCP) server for Teradata, Community edition
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

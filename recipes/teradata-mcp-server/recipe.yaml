@@ -1,0 +1,55 @@
+context:
+  version: 0.1.5
+
+package:
+  name: teradata-mcp-server
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/t/teradata-mcp-server/teradata_mcp_server-${{ version }}.tar.gz
+  sha256: 3259c4a37dc73e8ad4b984e8595d9ba7f3319823a6db0e06f7a9f0469ba576d0
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  python:
+    entry_points:
+    - teradata-mcp-server = teradata_mcp_server:main
+  noarch: python
+
+requirements:
+  host:
+  - python >=3.11
+  - hatchling>=1.17.0
+  - pip
+  run:
+  - python >=3.11
+  - fastmcp <3.0.0,>=2.12.0
+  - mcp <2.0.0,>=1.0.0
+  - pydantic <3.0.0,>=2.8.0
+  - python-dotenv >=1.0.0
+  - pyyaml >=6.0.0
+  - sqlalchemy <3.0.0,>=2.0.0
+  - teradatasqlalchemy >=20.0.0.0
+  # - mypy >=1.5.0 # extra == "dev"
+  # - ruff >=0.1.0 # extra == "dev"
+  # - types-pyyaml  # extra == "dev"
+  # - teradatagenai >=20.0.0.0 # extra == "evs"
+  # - tdfs4ds >=0.2.4.0 # extra == "fs"
+  # - teradataml >=20.0.0.5 # extra == "fs"
+
+tests:
+  - python:
+      imports:
+        - teradata_mcp_server
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - teradata-mcp-server --help
+
+about:
+  summary: Model Context Protocol (MCP) server for Teradata, Community edition
+  description: "# Teradata MCP Server\n\n## Overview\nThe Teradata MCP server provides sets of tools and prompts, grouped as modules for interacting with Teradata databases. Enabling AI agents and users to query, analyze, and manage their data efficiently. \n\n![Getting Started](https://raw.githubusercontent.com/Teradata/teradata-mcp-server/main/docs/media/client-server-platform.png)\n\n## Key features\n\n### Available tools and prompts\n\nWe are providing groupings of tools and associated helpful prompts to support all type of agentic applications on the data platform.\n\n![Teradata MCP Server diagram](https://raw.githubusercontent.com/Teradata/teradata-mcp-server/main/docs/media/teradata-mcp-server.png)\n\n- **Search** tools, prompts and resources to search and manage vector stores.\n  - [RAG Tools](https://github.com/Teradata/teradata-mcp-server/blob/main/src/teradata_mcp_server/tools/rag/README.md) rapidly build RAG applications.\n- **Query** tools, prompts and resources to query and navigate your Teradata platform:\n  - [Base Tools](https://github.com/Teradata/teradata-mcp-server/blob/main/src/teradata_mcp_server/tools/base/README.md)\n- **Table** tools, to efficiently and predictably access structured data models:\n  - [Feature Store Tools](https://github.com/Teradata/teradata-mcp-server/blob/main/src/teradata_mcp_server/tools/fs/README.md) to access and manage the Teradata Enterprise Feature Store.\n  - [Semantic layer definitions](https://github.com/Teradata/teradata-mcp-server/blob/main/docs/server_guide/CUSTOMIZING.md) to easily implement domain-specific tools, prompts and resources for your own business data models. \n- **Data Quality** tools, prompts and resources accelerate exploratory data analysis:\n  - [Data Quality Tools](https://github.com/Teradata/teradata-mcp-server/blob/main/src/teradata_mcp_server/tools/qlty/README.md)\n- **DBA** tools, prompts and resources to facilitate your platform administration tasks:\n  - [DBA Tools](https://github.com/Teradata/teradata-mcp-server/blob/main/src/teradata_mcp_server/tools/dba/README.md)\n  - [Security Tools](https://github.com/Teradata/teradata-mcp-server/blob/main/src/teradata_mcp_server/tools/sec/README.md)\n\n## Quick start with Claude Desktop (no installation)\n> Prefer to use other tools? Check out our Quick Starts for [VS Code/Copilot](https://github.com/Teradata/teradata-mcp-server/blob/main/docs/server_guide/QUICK_START_VSCODE.md), [Open WebUI](https://github.com/Teradata/teradata-mcp-server/blob/main/docs/server_guide/QUICK_START_OPEN_WEBUI.md), or dive into [simple code examples](https://github.com/Teradata/teradata-mcp-server/blob/main/examples/README.md#client-applications)!\nYou can use Claude Desktop to give the  Teradata MCP server a quick try, Claude can manage the server in the background using `uv`. No permanent installation needed.\n\n**Pre-requisites**\n1. Get your Teradata database credentials or create a free sandbox at [Teradata Clearscape Experience](https://www.teradata.com/getting-started/demos/clearscape-analytics).\n2. Install [Claude Desktop](https://claude.ai/download).\n3. Install [uv](https://docs.astral.sh/uv/getting-started/installation/). If you are on MacOS, Use Homebrew: `brew install uv`.\n\nConfigure the claude_desktop_config.json (Settings>Developer>Edit Config) by adding the configuration below, updating the database username, password and URL:\n\n```json\n{\n  \"mcpServers\": {\n    \"teradata\": {\n      \"command\": \"uvx\",\n      \"args\": [\"teradata-mcp-server\"],\n      \"env\": {\n        \"DATABASE_URI\": \"teradata://<USERNAME>:<PASSWORD>@<HOST_URL>:1025/<USERNAME>\"\n      }\n    }\n  }\n}\n```\n\n## Setting up your environment\n\nFollow this process to install your server, connect it to your Teradata platform and integrated your tools.\n\n**Step 1.** - Identify the running Teradata System, you need username, password and host details. If you do not have a Teradata system to connect to, then leverage [Teradata Clearscape Experience](https://www.teradata.com/getting-started/demos/clearscape-analytics)\n\n**Step 2.** - To install, configure and run the MCP server, refer to the [Getting started guide](https://github.com/Teradata/teradata-mcp-server/blob/main/docs/server_guide/GETTING_STARTED.md), or see below for a quick [CLI installation](#CLI-Installation). You can easily [customize the server with your own tools, prompts and resources](docs/server_guide/CUSTOMIZING.md).\n\n**Step 3.** - There are many client options available, the [Client Guide](https://github.com/Teradata/teradata-mcp-server/blob/main/docs/README.md#-client-guide) explains how to configure and run a sample of different clients.\n\n<br>\n\nCheck out our [documentation](https://github.com/Teradata/teradata-mcp-server/blob/main/docs/README.md) and libraries of [curated examples](https://github.com/Teradata/teradata-mcp-server/blob/main/examples/) or [video guides](https://github.com/Teradata/teradata-mcp-server/blob/doc-v1.4/docs/server_guide/VIDEO_LIBRARY.md).\n\n<br>\n\n## CLI Installation\n\nWe recommend `uv` or `pipx` to install teradata-mcp-server as a CLI tool on your system. \nThey provide isolated environments and ensure the `teradata-mcp-server` command is available system-wide without interfering with system Python.\n\n```bash\nuv tool install \"teradata-mcp-server\"\n```\n\nor with pipx\n\n```bash\npipx install \"teradata-mcp-server\"\n```\n\nTo install the optional Enterprise Feature Store (fs) and Enterprise Vector Store (evs) packages:\n```bash\nuv tool install \"teradata-mcp-server[fs,evs]\"\n```\n\nAlternatively, you may use pip in a virtual environment (Python>=3.11):\n\n```bash\npip install teradata-mcp-server\n```\n\nFor usage:\n\n```bash\nteradata-mcp-server --help\n```\n\n\n## Build from Source (Development)\n\nFor development or customization, you can build from source:\n\n1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/). If you are on macOS, use Homebrew: `brew install uv`\n2. Clone this repository: `git clone https://github.com/Teradata/teradata-mcp-server.git`\n3. Navigate to the directory: `cd teradata-mcp-server`\n4. Run the server: `uv run teradata-mcp-server`\n\nFor Claude Desktop with development build, use this configuration:\n\n```json\n{\n  \"mcpServers\": {\n    \"teradata\": {\n      \"command\": \"uv\",\n      \"args\": [\n        \"--directory\",\n        \"<PATH_TO_DIRECTORY>/teradata-mcp-server\",\n        \"run\",\n        \"teradata-mcp-server\"\n      ],\n      \"env\": {\n        \"DATABASE_URI\": \"teradata://<USERNAME>:<PASSWORD>@<HOST_URL>:1025/<USERNAME>\",\n        \"MCP_TRANSPORT\": \"stdio\"\n      }\n    }\n  }\n}\n```\n\n## Contributing\nPlease refer to the [Contributing](https://github.com/Teradata/teradata-mcp-server/blob/main/docs/developer_guide/CONTRIBUTING.md) guide and the [Developer Guide](https://github.com/Teradata/teradata-mcp-server/blob/main/docs/developer_guide/DEVELOPER_GUIDE.md).\n\n\n---------------------------------------------------------------------\n## Certification\n<a href=\"https://glama.ai/mcp/servers/@Teradata/teradata-mcp-server\">\n  <img width=\"380\" height=\"200\" src=\"https://glama.ai/mcp/servers/@Teradata/teradata-mcp-server/badge\" alt=\"Teradata Server MCP server\" />\n</a>\n"
+  license: MIT
+  documentation: https://github.com/Teradata/teradata-mcp-server#readme
