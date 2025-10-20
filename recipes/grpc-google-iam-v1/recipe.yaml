@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: grpc-google-iam-v1
+  version: "0.14.3"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grpc_google_iam_v1-${{ version }}.tar.gz
+  sha256: 879ac4ef33136c5491a6300e27575a9ec760f6cdf9a2518798c1b8977a5dc389
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - grpcio >=1.44.0,<2.0.0
+    - googleapis-common-protos >=1.56.0,<2.0.0
+    - protobuf >=3.20.2,<7.0.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5
+
+tests:
+  - python:
+      imports:
+        - google
+        - google.iam.v1
+        - google.iam.v1.iam_policy_pb2
+        - google.iam.v1.logging
+        - google.iam.v1.logging.audit_data_pb2
+        - google.iam.v1.policy_pb2
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/grpc-google-iam-v1
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: GRPC library for the google-iam-v1 service
+  description: |
+    grpc-google-iam-v1 is the IDL-derived library for the
+    google-iam v1 service in the googleapis repository.
+  documentation: https://github.com/googleapis/google-cloud-python/blob/main/packages/grpc-google-iam-v1/README.rst
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/grpc-google-iam-v1
+
+extra:
+  recipe-maintainers:
+    - BrentDorsey
+    - rxm7706
+    - xylar
