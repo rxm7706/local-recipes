@@ -1,5 +1,5 @@
 {% set name = "openmetadata-ingestion" %}
-{% set version = "1.8.1.0" %}
+{% set version = "1.10.3.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openmetadata_ingestion-{{ version }}.tar.gz
-  sha256: b54844377f552724fc890e5b2fb045fc91fec1c5d93fb814f165ef9c4de44e1a
+  sha256: 9e6eb198da46126fe97938194bc24deb28a0c3a9a658944dc3b5b86080a2f745
 
 build:
   noarch: python
@@ -18,56 +18,59 @@ build:
 
 requirements:
   host:
-    - python {{ python_min }}
+    - python {{ python_min }}.*
+    - setuptools >=70.3.0,<70.4.0
     - pip
-    - setuptools
   run:
-    - python >={{ python_min }}
-    - shapely
-    - requests-aws4auth >=1.1,<2.0
-    - collate-sqllineage >=1.6.0,<1.7.0
-    - collate-sqlfluff  # Needed for collate-sqllineage
-    - memory_profiler
-    - cached-property ==1.5.2  # Need Equal
-    - azure-keyvault-secrets
-    - pyyaml >=6.0,<7.0
-    - google-cloud-secret-manager ==2.22.1  # Need Equal
-    - cryptography >=42.0.0
-    - jaraco.functools <4.2.0
-    - chardet ==4.0.0  # Need Equal
-    - google-crc32c
-    - python-dateutil >=2.8.1
-    - mysql-connector-python >=9.1
-    - jinja2 >=2.11.3
-    - antlr4-python3-runtime ==4.9.2  # Need Equal
-    - jsonpatch <2.0,>=1.24
-    - collate-data-diff
-    - boto3 >=1.20,<2.0
-    - python-dotenv >=0.19.0
-    - tabulate ==0.9.0  # Need Equal
-    - requests >=2.23
-    - packaging
-    - typing_inspect
-    - snowflake-connector-python >=3.13.1,<4.0.0
-    - setuptools >=70.0,<71.0
-    - mypy_extensions >=0.4.3
-    - pydantic-settings >=2.0,<3.0,>=2.7.0
+    - python >={{ python_min }},<4.0
     - importlib-metadata >=4.13.0
+    - boto3 >=1.20,<2.0
+    - jsonpatch >=1.24,<2.0
+    - mypy_extensions >=0.4.3
+    - antlr4-python3-runtime ==4.9.2  # Needs Equal
     - email-validator >=2.0
-    - sqlalchemy >=1.4.0,<2
-    - pydantic >=2.7.0,<3.0
-    - pymysql >=1.0,<2.0
+    - google-cloud-secret-manager ==2.24.0  # Needs Equal
     - azure-identity >=1.12,<2.0
+    - cryptography >=42.0.0
+    - python-dateutil >=2.8.1
+    - shapely
+    - google-crc32c
+    - collate-sqllineage >=1.6.0,<1.7.0
+    # Manual Add of collate-sqlfluff
+    - collate-sqlfluff  # Needed for collate-sqllineage
+    - python-kubernetes >=21.0.0
+    - python-dotenv >=0.19.0
+    - typing_inspect
+    - pymysql >=1.0,<2.0
+    - azure-keyvault-secrets
+    - memory_profiler
+    - requests-aws4auth >=1.1,<2.0
+    - pydantic-settings >=2.7.0,<3.0
+    - jinja2 >=2.11.3
+    - chardet ==4.0.0  # Needs Equal
+    - setuptools >=70.0,<71.0
+    - mysql-connector-python >=9.1
+    - snowflake-connector-python >=3.13.1,<4.0.0
+    - pydantic >=2.7.0,<2.12
+    - collate-data-diff >=0.11.6
+    - sqlalchemy >=1.4.0,<2
+    - requests >=2.23
+    - cached-property ==1.5.2  # Needs Equal
+    - jaraco.functools <4.2.0
+    - packaging
+    - tabulate ==0.9.0  # Needs Equal
+    - pyyaml >=6.0,<7.0
 
 test:
   imports:
     - airflow_provider_openmetadata
     - metadata
   commands:
-    #- metadata --help re.error: global flags not at the start of the expression at position 1
+    - pip check
+    - metadata --help
   requires:
     - pip
-    - python {{ python_min }}
+    - python {{ python_min }}.*
 
 about:
   home: https://open-metadata.org/
