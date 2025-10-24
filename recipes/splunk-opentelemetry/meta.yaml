@@ -1,5 +1,5 @@
 {% set name = "splunk-opentelemetry" %}
-{% set version = "2.1.0" %}
+{% set version = "2.8.0" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,15 +7,10 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name.replace('-', '_') }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: 3063382f7dacbec9d15394d37ec9c8bd157053900b74d48e9bcf7c98b112b434
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/splunk_opentelemetry-{{ version }}.tar.gz
+  sha256: 901a430e1500ac3bdc5158dfd5ced923597fae9f138bed89e8cac5973123de2b
 
 build:
-  entry_points:
-    - splk-py-trace = splunk_otel.cmd.trace:run_deprecated
-    - splk-py-trace-bootstrap = splunk_otel.cmd.bootstrap:run_deprecated
-    - splunk-py-trace = splunk_otel.cmd.trace:run
-    - splunk-py-trace-bootstrap = splunk_otel.cmd.bootstrap:run
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
@@ -27,28 +22,21 @@ requirements:
     - pip
   run:
     - python >={{ python_min }}
-    #- cryptography >=2.0,<=42.0.5
-    #- protobuf >=4.23.0,<5.0.0
-    - opentelemetry-api ==1.30.0
-    - opentelemetry-sdk ==1.30.0
-    - opentelemetry-instrumentation ==0.51b0
-    - opentelemetry-instrumentation-system-metrics ==0.51b0
-    - opentelemetry-semantic-conventions ==0.51b0
-    - opentelemetry-propagator-b3 ==1.30.0
-    - opentelemetry-exporter-otlp-proto-grpc ==1.30.0
-    - opentelemetry-exporter-otlp-proto-http ==1.30.0
-    # opentelemetry-instrumentation-system-metrics 0.51b0 has requirement psutil<7,>=5.9.0, but you have psutil 7.0.0.
-    - psutil >=5.9.0,<7
+    - opentelemetry-api ==1.38.0
+    - opentelemetry-sdk ==1.38.0
+    - opentelemetry-propagator-b3 ==1.38.0
+    - opentelemetry-exporter-otlp-proto-grpc ==1.38.0
+    - opentelemetry-exporter-otlp-proto-http ==1.38.0
+    - opentelemetry-instrumentation ==0.59b0
+    - opentelemetry-instrumentation-system-metrics ==0.59b0
+    - opentelemetry-semantic-conventions ==0.59b0
+    - protobuf >=6.31.1
 
 test:
   imports:
     - splunk_otel
   commands:
     - pip check
-    # - splunk-py-trace --help
-    # - splunk-py-trace-bootstrap --help
-    # - splk-py-trace --help
-    # - splk-py-trace-bootstrap --help
   requires:
     - pip
     - python {{ python_min }}
@@ -64,6 +52,10 @@ about:
     This package provides entrypoints to configure OpenTelemetry.
   doc_url: https://github.com/signalfx/splunk-otel-python
   dev_url: https://github.com/signalfx/splunk-otel-python
+  license: Apache-2.0
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSE.txt
 
 extra:
   recipe-maintainers:
