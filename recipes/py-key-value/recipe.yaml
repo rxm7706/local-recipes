@@ -504,7 +504,7 @@ outputs:
       run:
         - python >=${{ python_min }},<4
         - ${{ pin_subpackage("py-key-value-shared", exact=True) }}
-        - rocksdict >=0.3.23
+        #- rocksdict >=0.3.23
     tests:
       - python:
           imports:
@@ -512,7 +512,7 @@ outputs:
             - key_value.shared
             - key_value.aio
             - key_value.aio.stores.base
-            - key_value.aio.stores.rocksdb.store
+            #- key_value.aio.stores.rocksdb.store
           pip_check: true
           python_version:
             - ${{ python_min }}.*
