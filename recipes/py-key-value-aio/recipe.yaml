@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: py-key-value-aio
+  version: "0.2.8"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/py_key_value_aio-${{ version }}.tar.gz
+  sha256: c0cfbb0bd4e962a3fa1a9fa6db9ba9df812899bd9312fa6368aaea7b26008b36
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - uv-build >=0.8.2,<0.9.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - beartype >=0.22.2
+    - py-key-value-shared ==0.2.8
+
+tests:
+  - python:
+      imports:
+        - py_key_value_aio
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/strawgate/py-key-value
+  summary: Async Key-Value, A pluggable interface for KV Stores
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
