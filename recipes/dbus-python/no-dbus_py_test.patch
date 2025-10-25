@@ -1,0 +1,11 @@
+--- Makefile.in	2020-01-14 01:22:12.000000000 -0800
++++ Makefile.in	2021-09-21 05:57:51.000000000 -0700
+@@ -813,7 +813,7 @@
+ 	$(NULL)
+ 
+ @ENABLE_INSTALLED_TESTS_TRUE@nobase_installed_test_LTLIBRARIES = test/dbus_py_test.la
+-@ENABLE_INSTALLED_TESTS_FALSE@noinst_LTLIBRARIES = test/dbus_py_test.la
++@ENABLE_INSTALLED_TESTS_FALSE@noinst_LTLIBRARIES =
+ _dbus_bindings_la_LDFLAGS = \
+ 	$(pymod_ldflags) \
+ 	-export-symbols-regex \(PyInit__\|init_\)dbus_bindings \

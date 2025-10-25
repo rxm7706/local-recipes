@@ -1,0 +1,33 @@
+From a1be07b0dac1f1b04e1dae5cbf5136a503e784a1 Mon Sep 17 00:00:00 2001
+From: "duncan.macleod" <duncan.macleod@ligo.org>
+Date: Tue, 20 Sep 2022 15:12:42 +0100
+Subject: [PATCH 2/3] setup.py: read MESON_ARGS
+
+---
+ setup.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/setup.py b/setup.py
+index 6edf234..55937e5 100755
+--- a/setup.py
++++ b/setup.py
+@@ -93,6 +93,8 @@ class Build(Distribution().get_command_class('build')):
+             subprocess.check_call(['make', '-C', builddir] + make_args)
+             subprocess.check_call(['make', '-C', builddir, 'install'] + make_args)
+         else:
++            meson_args_str = os.getenv("MESON_ARGS", "")
++            meson_args = meson_args_str.split(" ") if meson_args_str else []
+             subprocess.check_call(
+                 [
+                     sys.executable,
+@@ -104,6 +106,7 @@ class Build(Distribution().get_command_class('build')):
+                     '-Dpython.platlibdir=' + os.path.join(srcdir, self.build_lib),
+                     '-Dpython.purelibdir=' + os.path.join(srcdir, self.build_lib),
+                     '-Dtests=false',
++                ] + meson_args + [
+                     srcdir,
+                     builddir,
+                 ]
+-- 
+2.35.3
+

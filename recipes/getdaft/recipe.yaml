@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: "getdaft"
-  version: "0.6.1"
+  version: "0.6.7"
+  python_min: '3.10'
 
 package:
   name: ${{ name | lower }}
@@ -10,14 +12,14 @@ package:
 
 source:
   url: https://github.com/Eventual-Inc/Daft/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: ab91ec480a7de04c02cbe4285c01e6b47b7d1afa37d7a1e1da72ee1ed839fd3c
+  sha256: 6db23da58825e1418666313dae5cafb8a1dc97d8390ca527f512bb996a2771b6
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
-    - ${{ stdlib('c') }}
+    #- ${{ stdlib('c') }}
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ compiler('rust') }}
@@ -63,4 +65,5 @@ about:
 extra:
   recipe-maintainers:
     - thewchan
+    - rxm7706
     - whophil

@@ -32,7 +32,8 @@ requirements:
 tests:
   - python:
       imports:
-        - py_key_value_shared
+        - key_value
+        - key_value.shared
       pip_check: true
       python_version: ${{ python_min }}.*
 
