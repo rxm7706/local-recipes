@@ -40,9 +40,25 @@ requirements:
     - cyclopts >=3.0.0
     - authlib >=1.5.2
     - pydantic >=2.11.7
+    # "pydantic[email]>=2.11.7",
+    # https://github.com/jlowin/fastmcp/blob/v2.13.0/pyproject.toml#L16
+    # https://github.com/pydantic/pydantic/blob/main/pyproject.toml#L56
+    - email-validator >=2.0.0
     - pyperclip >=1.9.0
     - openapi-core >=0.19.5
     - py-key-value-aio >=0.2.6,<0.3.0
+    # "py-key-value-aio[disk,keyring,memory]>=0.2.6,<0.3.0",
+    # https://github.com/jlowin/fastmcp/blob/v2.13.0/pyproject.toml#L19
+    # py-key-value-aio[disk]
+    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L36
+    - diskcache >=5.6.0
+    - pathvalidate >=3.3.1
+    # py-key-value-aio[memory]
+    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L35
+    - cachetools >=6.0.0
+    # py-key-value-aio[keyring]
+    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L44
+    - keyring >=25.6.0
     - websockets >=15.0.1
 
 tests:

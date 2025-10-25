@@ -1,0 +1,77 @@
+{% set name = "dbus-python" %}
+{% set version = "1.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 991666e498f60dbf3e49b8b7678f5559b8a65034fdf61aae62cdecdb7d89c770
+  patches:
+    - 0001-build-with-setuptools.patch
+    - 0002-setup.py-read-MESON_ARGS.patch  # [build_platform != target_platform]
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  script_env:
+    # need to specify PKG_CONFIG (only when cross-compiling, since it's not included
+    # in the meson cross file).
+    - PKG_CONFIG="{{ BUILD_PREFIX }}/bin/pkg-config"  # [build_platform != target_platform]
+  skip: true  # [win]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - make
+    - pkg-config  # [unix]
+    # extras for cross-compilation
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+    - meson >=0.60.0                      # [build_platform != target_platform]
+    - python                              # [build_platform != target_platform]
+  host:
+    - dbus
+    - glib
+    - meson-python >=0.8.1
+    - meson >=0.60.0
+    - ninja
+    - patchelf
+    - pip >=21.3
+    - python
+    - setuptools
+    - wheel
+  run:
+    - dbus
+    - python
+
+test:
+  imports:
+    - dbus
+  requires:
+    - pip
+  commands:
+    # check requirements
+    - python -m pip check
+
+about:
+  home: http://www.freedesktop.org/wiki/Software/DBusBindings/#python
+  dev_url: https://gitlab.freedesktop.org/dbus/dbus-python
+  doc_url: https://dbus.freedesktop.org/doc/dbus-python/
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: Python bindings for dbus
+  description: |
+    D-Bus is a message bus, used for sending messages between applications.
+    Conceptually, it fits somewhere in between raw sockets and CORBA in
+    terms of complexity.
+
+    This package provides a Python interface to D-Bus.
+
+    See the dbus description for more information about D-Bus in general.
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod

@@ -1,0 +1,30 @@
+From faef1097e7b58adb562e501bf7bdc474fb0c6bbf Mon Sep 17 00:00:00 2001
+From: "duncan.macleod" <duncan.macleod@ligo.org>
+Date: Tue, 20 Sep 2022 14:31:22 +0100
+Subject: [PATCH 1/3] build with setuptools
+
+---
+ pyproject.toml | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/pyproject.toml b/pyproject.toml
+index 3949d8f..0125f41 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -2,12 +2,10 @@
+ # SPDX-License-Identifier: MIT
+ 
+ [build-system]
+-build-backend = 'mesonpy'
++build-backend = 'setuptools.build_meta'
+ requires = [
+-    'meson-python>=0.8.1',
+     'meson>=0.60.0',
+     'ninja',
+-    'patchelf',
+     'setuptools',
+     'wheel',
+ ]
+-- 
+2.35.3
+

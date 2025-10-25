@@ -28,11 +28,26 @@ requirements:
     - python >=${{ python_min }},<4
     - beartype >=0.22.2
     - py-key-value-shared ==0.2.8
+    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L36
+    - diskcache >=5.6.0
+    - pathvalidate >=3.3.1
+    # py-key-value-aio[memory]
+    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L35
+    - cachetools >=6.0.0
+    # py-key-value-aio[keyring]
+    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L44
+    - keyring >=25.6.0
 
 tests:
   - python:
       imports:
-        - py_key_value_aio
+        - key_value
+        - key_value.shared
+        - key_value.aio
+        - key_value.aio.stores.base
+        - key_value.aio.stores.disk
+        - key_value.aio.stores.memory
+        - key_value.aio.stores.keyring.store
       pip_check: true
       python_version: ${{ python_min }}.*
 
