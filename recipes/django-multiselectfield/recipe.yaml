@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-multiselectfield
+  version: "1.0.1"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_multiselectfield-${{ version }}.tar.gz
+  sha256: 3f8b4fff3e07d4a91c8bb4b809bc35caeb22b41769b606f4c9edc53b8d72a667
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools <81.0.0
+  run:
+    - python >=${{ python_min }},<4
+    - django >=3.2
+
+tests:
+  - python:
+      imports:
+        - multiselectfield
+      pip_check: false
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Django multiple select field
+  license: LGPL-3.0-only
+  license_file: COPYING.LGPLv3
+  homepage: https://github.com/goinnn/django-multiselectfield
+
+extra:
+  recipe-maintainers:
+    - rxm7706

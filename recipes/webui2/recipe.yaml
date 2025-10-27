@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: webui2
+  version: "2.5.6"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/webui2-${{ version }}.tar.gz
+  sha256: db0f578bd7e182b15cda3a9561a38b7f78774f52228848901c2e455c171b6b28
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+
+tests:
+  - python:
+      imports:
+        - webui
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Use any web browser as GUI
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/webui-dev/webui
+  repository: https://github.com/webui-dev/python-webui
+
+extra:
+  recipe-maintainers:
+    - rxm7706
