@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: reflex-hosting-cli
-  version: 0.1.55
+  version: "0.1.58"
+  python_min: '3.11'
 
 package:
   name: ${{ name|lower }}
@@ -10,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/reflex_hosting_cli-${{ version }}.tar.gz
-  sha256: f5d5b0c26cefdc7ba3356954b7be6bfa8ec50267c13a2247f6cf18a140e95918
+  sha256: c903aa44944a724fbdd0a6cc66bd174f9be32967daaf6092b7204a1ab3a9272f
 
 build:
   number: 0
@@ -19,11 +21,11 @@ build:
 
 requirements:
   host:
-    - python >=3.10
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
-    - python >=3.10
+    - python >=${{ python_min }},<4
     - click >=8.2
     - httpx >=0.25.1,<1.0
     - packaging >=24.2
@@ -33,10 +35,11 @@ requirements:
 tests:
   - python:
       imports:
-        - reflex_hosting_cli
+        - rich
       pip_check: true
 
 about:
+  homepage: https://github.com/reflex-dev/reflex
   summary: Reflex Hosting CLI
   license: Apache-2.0
   license_file: LICENSE
