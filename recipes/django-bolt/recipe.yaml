@@ -1,0 +1,128 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-bolt
+  version: "0.2.4"
+  python_min: '3.10'
+  maturin_min: "1.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_bolt-${{ version }}.tar.gz
+  sha256: 349e98a5234226e742562ca72a4373e34e751146faa1b77a6fada3ee39cbbae4
+
+build:
+  python:
+    version_independent: true
+    entry_points:
+      - django-bolt = django_bolt.cli:main
+  # only build for the minimal python version
+  skip: not (match(python, python_min ~ ".*") and is_abi3)
+  #skip: is_abi3 and not is_python_min
+  script:
+    - if: unix
+      then:
+        - export CARGO_PROFILE_RELEASE_STRIP=symbols
+        - export CARGO_PROFILE_RELEASE_LTO=fat
+        # Unix recipe
+        - export OPENSSL_DIR="$PREFIX"
+    - if: win
+      then:
+        - set CARGO_PROFILE_RELEASE_STRIP=symbols
+        - set CARGO_PROFILE_RELEASE_LTO=fat
+        # Win recipe  # work around long path problem,
+        # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
+        - set CARGO_HOME=C:\.cargo
+        - md %CARGO_HOME%
+        - if errorlevel 1 exit 1
+    - if: build_platform != target_platform and unix and python is startingwith('3.14')
+      then:
+        - rm -f $PREFIX/lib/python3.14/build-details.json
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        #- maturin >=1.9,<2.0
+        - maturin >=${{ maturin_min }},<2.0
+        - crossenv
+        - puccinialin
+    - ${{ compiler("rust") }}
+    - ${{ compiler("c") }}
+    #- ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - if: is_abi3
+      then: python-abi3
+    - maturin >=${{ maturin_min }},<2.0
+    - pip
+    - tomli
+    - if: unix
+      then:
+        - openssl
+  run:
+    - python
+    - django >=4.2
+    - click >=8.1
+    - msgspec >=0.18
+    - multipart >=1.3
+    - pyjwt >=2.10.1
+  ignore_run_exports:
+    from_package:
+      - cross-python_${{ target_platform }}
+tests:
+  - python:
+      imports:
+        - django_bolt
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.14.*
+#      python_version:
+#        - if: is_abi3
+#          then: "${{ python_min ~ '.*' }}"
+#        - "*"
+#  - if: is_abi3
+#    then:
+#      script:
+#        - if: win
+#          then: abi3audit %PREFIX%/Lib/site-packages/rattler/rattler.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+#        - if: not win
+#          then:
+#            # Need to set SP_DIR because of https://github.com/prefix-dev/rattler-build/issues/1733
+#            - export SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+#            - abi3audit $SP_DIR/rattler/rattler.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+#      requirements:
+#        run:
+#          - abi3audit
+
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - django-bolt --help
+      - pip check
+      - python -c "from django_bolt import BoltAPI"
+      - "python -c \"import django_bolt\""
+
+about:
+  summary: High-performance API framework for Django with Rust-powered endpoints delivering 60k+ RPS
+  license: MIT
+  license_file:
+    - python/django_bolt/openapi/spec/license.py
+    - THIRDPARTY.yml
+  homepage: https://github.com/FarhanAliRaza/django-bolt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
