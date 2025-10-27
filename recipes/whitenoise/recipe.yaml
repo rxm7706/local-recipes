@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: whitenoise
+  version: "6.11.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/whitenoise-${{ version }}.tar.gz
+  sha256: 0f5bfce6061ae6611cd9396a8231e088722e4fc67bc13a111be74c738d99375f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=77,<81.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+
+tests:
+  - python:
+      imports:
+        - whitenoise
+        - whitenoise.runserver_nostatic
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Radically simplified static file serving for WSGI applications
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/evansd/whitenoise
+  description: |
+    With a couple of lines of config WhiteNoise allows your web app to serve its own static files, 
+    making it a self-contained unit that can be deployed anywhere without relying on nginx, Amazon 
+    S3 or any other external service. (Especially useful on Heroku, OpenShift and other PaaS providers.)
+    It's designed to work nicely with a CDN for high-traffic sites so you don't have to sacrifice 
+    performance to benefit from simplicity. WhiteNoise works with any WSGI-compatible app but has some 
+    special auto-configuration features for Django.
+  documentation: http://whitenoise.evans.io/en/stable/
+  repository: https://github.com/evansd/whitenoise
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - rxm7706

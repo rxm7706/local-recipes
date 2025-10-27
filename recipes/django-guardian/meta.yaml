@@ -1,34 +1,44 @@
 {% set name = "django-guardian" %}
-{% set version = "2.4.0" %}
+{% set version = "3.2.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-guardian-{{ version }}.tar.gz
-  sha256: c58a68ae76922d33e6bdc0e69af1892097838de56e93e78a8361090bcd9f89a0
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 9e18ecd2e211b665972690c2d03d27bce0ea4932b5efac24a4bb9d526950a69e
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
+    - setuptools >=61
+    - wheel
     - pip
   run:
-    - python >=3.8
-    - django >=2.2
+    - typing_extensions >=4.12.0
+    - django-environ
+    - guardian
+    - python >={{ python_min }}
+    - django >=3.2
 
 test:
   imports:
     - guardian
   commands:
     - pip check
+    - DJANGO_SETTINGS_MODULE=guardian.testapp.testsettings pytest --pyargs guardian
   requires:
+    - django-environ >=0.12.0
     - pip
+    - pytest >=8.3.4
+    - pytest-django >=4.9.0
+    - python {{ python_min }}
 
 about:
   home: http://github.com/django-guardian/django-guardian
@@ -38,4 +48,6 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - cshaley
+    - sannykr
+    - abraha2d

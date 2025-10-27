@@ -1,0 +1,47 @@
+{% set name = "django-cachalot" %}
+{% set version = "2.1.0" %}
+{% set sha256 = "2da574b7e88890243ad048883fd95789b9d7be895642ff6fb531c71672f3994b" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - django >=1.8
+
+test:
+  imports:
+    - cachalot
+
+about:
+  home: https://github.com/BertrandBordage/django-cachalot
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: 'No effort, no worry, maximum performance. '
+  description: |
+    Caches your Django ORM queries and automatically invalidates them.
+  doc_url: http://django-cachalot.readthedocs.io/en/latest/
+  dev_url: https://github.com/BertrandBordage/django-cachalot
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - rxm7706
