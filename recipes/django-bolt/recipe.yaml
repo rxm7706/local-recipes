@@ -21,7 +21,7 @@ build:
     entry_points:
       - django-bolt = django_bolt.cli:main
   # only build for the minimal python version
-  skip: not (match(python, python_min ~ ".*") and is_abi3)
+  #skip: not (match(python, python_min ~ ".*") and is_abi3)
   #skip: is_abi3 and not is_python_min
   script:
     - if: unix
