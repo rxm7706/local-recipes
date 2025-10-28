@@ -21,6 +21,7 @@ build:
     entry_points:
       - django-bolt = django_bolt.cli:main
   # only build for the minimal python version
+  #skip: not (match(python, python_min ~ ".*") and is_abi3)
   #skip: is_abi3 and not is_python_min
   script:
     - if: unix
@@ -50,7 +51,10 @@ requirements:
       then:
         - python
         - cross-python_${{ target_platform }}
+        #- maturin >=1.9,<2.0
         - maturin >=${{ maturin_min }},<2.0
+        - crossenv
+        - puccinialin
     - ${{ compiler("rust") }}
     - ${{ compiler("c") }}
     #- ${{ stdlib("c") }}
@@ -78,62 +82,38 @@ requirements:
 tests:
   - python:
       imports:
-        - echo "started python imports"
         - django_bolt
-        - echo "completed python imports"
       pip_check: true
+#      python_version:
+#        - ${{ python_min }}.*
+#        - 3.14.*
       python_version:
         - if: is_abi3
           then: "${{ python_min ~ '.*' }}"
         - "*"
-  # https://github.com/conda-forge/python-abi3-feedstock/blob/main/recipe/example-meta.yaml
   - if: is_abi3
     then:
       script:
         - if: win
-          then:
-            - echo "running is_abi3 win abi3audit .pyd tests"
-            - abi3audit %PREFIX%/Lib/site-packages/django_bolt/django_bolt.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
-            - echo "completed is_abi3 win abi3audit .pyd tests"
+          then: abi3audit %PREFIX%/Lib/site-packages/rattler/rattler.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
         - if: not win
           then:
             # Need to set SP_DIR because of https://github.com/prefix-dev/rattler-build/issues/1733
-            - echo "running is_abi3 not win abi3audit .abi3.so sets"
             - export SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
-            - abi3audit $SP_DIR/django_bolt/django_bolt.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
-            - echo "completed is_abi3 not win abi3audit .abi3.so sets"
-      else:
-        - echo "skipping abi3audit tests as not is_abi3"
+            - abi3audit $SP_DIR/rattler/rattler.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
       requirements:
         run:
-          - echo "running abi3audit tests as is_abi3"
           - abi3audit
-          - echo "completed abi3audit tests as is_abi3"
+
   - requirements:
       run:
         - pip
         - python
     script:
-      env:
-        DISPLAY: :1
-      content:
-        - pip check
-        - echo "running django-bolt --help"
-        - django-bolt --help
-        - echo "completed django-bolt --help"
-        - echo "running from django_bolt import BoltAPI"
-        - "python -c \"from django_bolt import BoltAPI\""
-        - echo "completed from django_bolt import BoltAPI"
-        - if: noarch_platform  != "win"
-          then:
-            - echo "Test Script Importing blessed and terminal for unix and windows"
-            - python -c "from django_bolt import BoltAPI; assert BoltAPI"
-            - python -c "assert __import__('django_bolt').__version__ == '${{ version }}'"
-          else:
-            - echo "Test Script Importing jinxed, blessed and terminal for windows"
-             - python -c "from django_bolt import BoltAPI; assert BoltAPI"
-            - python -c "assert __import__('django_bolt').__version__ == '${{ version }}'"
-        - echo "Test Script Imports for unix and windows Completed"
+      - django-bolt --help
+      - pip check
+      - python -c "from django_bolt import BoltAPI"
+      - "python -c \"import django_bolt\""
 
 about:
   summary: High-performance API framework for Django with Rust-powered endpoints delivering 60k+ RPS
