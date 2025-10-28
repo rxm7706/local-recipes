@@ -2,6 +2,7 @@ c_compiler:
   - gcc                        # [linux]
   - clang                      # [osx]
   - vs2022                     # [win]
+# Please remember to update gcc_compiler_version & clang_compiler_version too.
 c_compiler_version:            # [unix]
   - 14                         # [linux]
   - 19                         # [osx]
@@ -24,6 +25,7 @@ cxx_compiler:
   - gxx                        # [linux]
   - clangxx                    # [osx]
   - vs2022                     # [win]
+# Please remember to update gxx_compiler_version & clangxx_compiler_version too.
 cxx_compiler_version:          # [unix]
   - 14                         # [linux]
   - 19                         # [osx]
@@ -51,6 +53,28 @@ m2w64_fortran_compiler:           # [win]
   - gfortran                      # [win]
 m2w64_fortran_compiler_version:   # [win]
   - 14                            # [win]
+
+# enable `{{ compiler("gcc") }}`, `{{ compiler("clang") }}` & co.
+gcc_compiler:
+  - gcc
+gcc_compiler_version:
+  - 14
+gxx_compiler:
+  - gxx
+gxx_compiler_version:
+  - 14
+clang_compiler:
+  - clang     # [unix]
+  # stay compatible with MSVC
+  - clang-cl  # [win]
+clang_compiler_version:
+  - 19
+clangxx_compiler:
+  - clangxx   # [unix]
+  # stay compatible with MSVC
+  - clang-cl  # [win]
+clangxx_compiler_version:
+  - 19
 
 cuda_compiler:
   - cuda-nvcc
@@ -206,7 +230,7 @@ assimp:
 attr:
   - 2.5
 aws_c_auth:
-  - 0.9.0
+  - 0.9.1
 aws_c_cal:
   - 0.9.2
 aws_c_common:
@@ -214,7 +238,7 @@ aws_c_common:
 aws_c_compression:
   - 0.3.1
 aws_c_event_stream:
-  - 0.5.5
+  - 0.5.6
 aws_c_http:
   - 0.10.4
 aws_c_io:
@@ -228,25 +252,25 @@ aws_c_sdkutils:
 aws_checksums:
   - 0.2.7
 aws_crt_cpp:
-  - 0.33.1
+  - 0.34.4
 aws_sdk_cpp:
   - 1.11.606
 azure_core_cpp:
-  - 1.16.0
+  - 1.16.1
 azure_identity_cpp:
-  - 1.12.0
+  - 1.13.2
 azure_storage_blobs_cpp:
-  - 12.14.0
+  - 12.15.0
 azure_storage_common_cpp:
-  - 12.10.0
+  - 12.11.0
 azure_storage_files_datalake_cpp:
-  - 12.12.0
+  - 12.13.0
 azure_storage_files_shares_cpp:
-  - 12.14.0
+  - 12.15.0
 azure_storage_queues_cpp:
-  - 12.4.0
+  - 12.5.0
 brotli:
-  - '1.0'
+  - '1.1'
 bullet_cpp:
   - 3.25
 bzip2:
@@ -308,7 +332,7 @@ fftw:
 flann:
   - 1.9.2
 flatbuffers:
-  - 24.12.23
+  - 25.2.10
 fmt:
   - '11.2'
 fontconfig:
@@ -352,7 +376,7 @@ giflib:
 givaro:
   - 4.2.0
 glew:
-  - 2.1
+  - '2.2'
 glib:
   - '2'
 glog:
@@ -387,7 +411,7 @@ icu:
 idyntree:
   - '13'
 imath:
-  - 3.2.1
+  - 3.2.2
 impi_devel:
   - "2021.14"
 ipopt:
@@ -447,17 +471,17 @@ libboost_headers:
 libboost_python_devel:
   - '1.86'
 libbrotlicommon:
-  - '1.0'
+  - '1.1'
 libbrotlidec:
-  - '1.0'
+  - '1.1'
 libbrotlienc:
-  - '1.0'
+  - '1.1'
 libbtf:
   - '2'
 libcamd:
   - '3'
 libcap:
-  - 2.75
+  - '2.76'
 libcint:
   - '6.1'
 libccolamd:
@@ -485,7 +509,7 @@ libevent:
 libexactreal:
   - '4'
 libffi:
-  - '3.4'
+  - '3.5'
 libflatsurf:
   - 3
 libflint:
@@ -549,9 +573,9 @@ libheif:
 libhugetlbfs:
   - 2
 libhwloc:
-  - 2.11.2
+  - 2.12.1
 libhwy:
-  - '1.2'
+  - '1.3'
 libiconv:
   - 1
 libidn2:
@@ -574,6 +598,8 @@ libldl:
   - '3'
 libmagma:
   - '2.9'
+libmagma_devel:
+  - '2.9'
 libmagma_sparse:
   - '2.9'
 libmed:
@@ -589,7 +615,7 @@ libnetcdf:
 libntlm:
   - 1
 libode:
-  - 0.16.5
+  - 0.16.6
 libopencv:
   - 4.12.0
 libopentelemetry_cpp:
@@ -619,13 +645,13 @@ librbio:
 librdkafka:
   - '2.6'
 librealsense:
-  - '2.55'
+  - '2.56'
 librsvg:
   - 2
 libsecret:
   - '0.21'
 libsentencepiece:
-  - 0.2.0
+  - 0.2.1
 libsndfile:
   - '1.2'
 libsoup:
@@ -655,13 +681,13 @@ libthrift:
 libtiff:
   - '4.7'
 libtorch:
-  - '2.6'
+  - '2.7'
 libumfpack:
   - '6'
 libunwind:
   - '1.8'
 libutf8proc:
-  - '2.10'
+  - '2.11'
 libv8:
   - 8.9.83
 libvigra:
@@ -687,7 +713,7 @@ libxsmm:
 libuuid:
   - 2
 libyarp:
-  - 3.12.0
+  - 3.12.1
 libzip:
   - 1
 lmdb:
@@ -767,37 +793,41 @@ openh264:
 openjpeg:
   - '2'
 openjph:
-  - '0.22'
+  - '0.24'
 openmpi:
   - 4
 openslide:
   - 4
+# although openssl follows SemVer for ABI/API stability, we stay on
+# LTS version at build time to avoid forcing newer version at runtime
 openssl:
-  - '3'
+  - '3.5'
 orc:
-  - 2.2.0
+  - 2.2.1
+osqp_eigen:
+  - '0.11'
 pango:
   - '1'
 pari:
   - 2.17.* *_pthread
 pcl:
-  - 1.15.0
+  - 1.15.1
 perl:
   - 5.32.1
 petsc:
-  - '3.23'
+  - '3.24'
 petsc4py:
-  - '3.23'
+  - '3.24'
 plutovg:
-  - 1.3.0
+  - 1.3.1
 plutosvg:
   - 0.0.7
 pugixml:
   - '1.15'
 slepc:
-  - '3.23'
+  - '3.24'
 slepc4py:
-  - '3.23'
+  - '3.24'
 svt_av1:
   - 3.1.2
 p11_kit:
@@ -805,13 +835,13 @@ p11_kit:
 pcre:
   - '8'
 pcre2:
-  - '10.45'
+  - '10.46'
 pdal:
-  - 2.9.1
+  - 2.9.2
 libpdal:
-  - 2.9.1
+  - 2.9.2
 libpdal_core:
-  - 2.9.1
+  - 2.9.2
 pixman:
   - 0
 poco:
@@ -825,7 +855,7 @@ postgresql:
 postgresql_plpython:
   - '17'
 proj:
-  - '9.6'
+  - '9.7'
 pulseaudio:
   - '17.0'
 pulseaudio_client:
@@ -857,7 +887,7 @@ is_python_min:
 is_abi3:
   - true
 pytorch:
-  - '2.6'
+  - '2.7'
 pyqt:
   - 5.15
 pyqtwebengine:
@@ -885,7 +915,7 @@ re2:
 readline:
   - "8"
 rocksdb:
-  - '10.5'
+  - '10.6'
 root_base:
   - 6.32.10
   - 6.34.4
@@ -893,19 +923,19 @@ r_base:
   - 4.3
   - 4.4
 libscotch:
-  - 7.0.8
+  - 7.0.10
 libptscotch:
-  - 7.0.8
+  - 7.0.10
 scotch:
-  - 7.0.8
+  - 7.0.10
 ptscotch:
-  - 7.0.8
+  - 7.0.10
 s2geography:
   - 0.1.2
 s2geometry:
   - 0.11.1
 s2n:
-  - 1.5.23
+  - 1.5.26
 sdl2:
   - '2'
 sdl2_image:
@@ -933,7 +963,7 @@ sqlite:
 srm_ifce:
   - 1.24.6
 starlink_ast:
-  - 9.2.13
+  - 9.3.0
 suitesparse:
   - '7'
 suitesparse_mongoose:
@@ -953,7 +983,7 @@ tinyxml2:
 tk:
   - 8.6                # [not ppc64le]
 tiledb:
-  - '2.28'
+  - '2.29'
 ucc:
   - 1
 ucx:
@@ -971,9 +1001,9 @@ vlfeat:
 volk:
   - '3.2'
 vtk:
-  - 9.4.2
+  - 9.5.1
 vtk_base:
-  - 9.4.2
+  - 9.5.1
 wcslib:
   - '8'
 wxwidgets:
