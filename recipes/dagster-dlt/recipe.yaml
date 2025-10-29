@@ -1,0 +1,43 @@
+schema_version: 1
+
+context:
+  name: dagster-dlt
+  version: 0.27.16
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dagster_dlt-${{ version }}.tar.gz
+  sha256: d0dfa920b2f20b26c9e18d02a074832bdead87fef53ad1c2e85ebc1880049f29
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9,<3.14
+    - pip
+  run:
+    - python >=3.9,<3.14
+    - dagster ==1.11.16
+    - dlt >=0.4
+
+tests:
+  - python:
+      imports:
+        - dagster_dlt
+      pip_check: true
+
+about:
+  summary: Package for performing ETL/ELT tasks with dlt in Dagster.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-dlt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

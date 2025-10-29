@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ordeq-packages
+  version: "1.2.1"
+  python_check_max: "3.14"
+  python_min: '3.10'
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/ordeq/ordeq-${{ version }}.tar.gz
+    sha256: 046a54e33ff5ffd2aeea5212af09fe2f3b1847898c63f190086e3330c1b78c08
+    target_directory: ordeq
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: ordeq
+    build:
+      script:
+        - cd ${{ SRC_DIR }}/ordeq && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - setuptools >=75.0
+        - setuptools-scm >=8.1.0
+        - pip
+      run:
+        - python >=${{ python_min }},<4
+        # [project.dependencies]
+        # https://github.com/ing-bank/ordeq/blob/main/pyproject.toml
+    tests:
+      - python:
+          imports:
+            - ordeq
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+            - pip
+        script:
+          - python -c "from importlib.metadata import version; v = version('ordeq'); print(v); assert v == '${{ version }}'"
+          - pip check
+
+    about:
+      license: Apache-2.0
+      license_file: MIT
+      summary: Ordeq is a framework that simplifies IO and modularizes pipeline logic
+      homepage: https://github.com/ing-bank/ordeq
+      repository: https://github.com/ing-bank/ordeq
+      documentation: https://ing-bank.github.io/ordeq/
+
+
+about:
+  summary: Ordeq is a framework that simplifies IO and modularizes pipeline logic
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ing-bank/ordeq
+
+extra:
+  recipe-maintainers:
+    - rxm7706

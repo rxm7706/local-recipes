@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: fastmcp
-  version: "2.13.0"
+  version: "2.13.0.2"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastmcp-${{ version }}.tar.gz
-  sha256: 57f7b7503363e1babc0d1a13af18252b80366a409e1de85f1256cce66a4bee35
+  sha256: d35386561b6f3cde195ba2b5892dc89b8919a721e6b39b98e7a16f9a7c0b8e8b
 
 build:
   number: 0
@@ -45,8 +45,7 @@ requirements:
     # https://github.com/pydantic/pydantic/blob/main/pyproject.toml#L56
     - email-validator >=2.0.0
     - pyperclip >=1.9.0
-    - openapi-core >=0.19.5
-    - py-key-value-aio >=0.2.6,<0.3.0
+    - py-key-value-aio >=0.2.8,<0.3.0
     # "py-key-value-aio[disk,keyring,memory]>=0.2.6,<0.3.0",
     # https://github.com/jlowin/fastmcp/blob/v2.13.0/pyproject.toml#L19
     # py-key-value-aio[disk]
@@ -60,6 +59,7 @@ requirements:
     # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L44
     - keyring >=25.6.0
     - websockets >=15.0.1
+    - jsonschema-path >=0.3.4
 
 tests:
   - python:
