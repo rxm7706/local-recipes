@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  name: ordeq-packages
+  name: ordeq
   version: "1.2.1"
   python_check_max: "3.14"
   python_min: '3.10'
@@ -29,11 +29,12 @@ outputs:
     requirements:
       host:
         - python ${{ python_min }}.*
-        - setuptools >=75.0
+        - setuptools >=75.0,<81.0.0
         - setuptools-scm >=8.1.0
         - pip
       run:
         - python >=${{ python_min }},<4
+        - typing_extensions
         # [project.dependencies]
         # https://github.com/ing-bank/ordeq/blob/main/pyproject.toml
     tests:
@@ -53,8 +54,8 @@ outputs:
           - pip check
 
     about:
-      license: Apache-2.0
-      license_file: MIT
+      license: MIT
+      license_file: LICENSE
       summary: Ordeq is a framework that simplifies IO and modularizes pipeline logic
       homepage: https://github.com/ing-bank/ordeq
       repository: https://github.com/ing-bank/ordeq
@@ -66,6 +67,8 @@ about:
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/ing-bank/ordeq
+  repository: https://github.com/ing-bank/ordeq
+  documentation: https://ing-bank.github.io/ordeq/
 
 extra:
   recipe-maintainers:
