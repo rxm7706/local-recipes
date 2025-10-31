@@ -1,7 +1,7 @@
 #                             VVVVVV  minimum `pixi` version
 "$schema" = "https://pixi.sh/v0.36.0/schema/manifest/schema.json"
 
-[project]
+[workspace]
 name = "staged-recipes"
 description = "The entry point to conda-forge"
 version = "0.1.0"
@@ -82,3 +82,6 @@ win = ["win", "python", "build"]
 build = ["python", "build"]
 grayskull = ["python", "grayskull"]
 conda-smithy = ["python", "conda-smithy"]
+
+[dependencies]
+pixi-pycharm = ">=0.0.9,<0.0.10"
