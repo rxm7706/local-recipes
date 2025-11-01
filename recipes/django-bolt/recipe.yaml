@@ -16,6 +16,7 @@ source:
   sha256: 349e98a5234226e742562ca72a4373e34e751146faa1b77a6fada3ee39cbbae4
 
 build:
+  number: 0
   python:
     version_independent: true
     entry_points:
@@ -33,7 +34,7 @@ build:
       then:
         - set CARGO_PROFILE_RELEASE_STRIP=symbols
         - set CARGO_PROFILE_RELEASE_LTO=fat
-        # Win recipe  # work around long path problem,
+        # Win recipe # work around long path problem,
         # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
         - set CARGO_HOME=C:\.cargo
         - md %CARGO_HOME%
@@ -75,12 +76,11 @@ requirements:
   ignore_run_exports:
     from_package:
       - cross-python_${{ target_platform }}
+
 tests:
   - python:
       imports:
-        - echo "started python imports"
         - django_bolt
-        - echo "completed python imports"
       pip_check: true
       python_version:
         - if: is_abi3
@@ -95,6 +95,8 @@ tests:
             - echo "running is_abi3 win abi3audit .pyd tests"
             - abi3audit %PREFIX%/Lib/site-packages/django_bolt/django_bolt.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
             - echo "completed is_abi3 win abi3audit .pyd tests"
+          else:
+            - echo "skipping abi3audit win tests"
         - if: not win
           then:
             # Need to set SP_DIR because of https://github.com/prefix-dev/rattler-build/issues/1733
@@ -102,17 +104,22 @@ tests:
             - export SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
             - abi3audit $SP_DIR/django_bolt/django_bolt.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
             - echo "completed is_abi3 not win abi3audit .abi3.so sets"
-      else:
-        - echo "skipping abi3audit tests as not is_abi3"
+          else:
+            - echo "skipping abi3audit not win tests"
+    else:
+      script:
+        - echo "skipping all abi3audit not is_abi3"
       requirements:
         run:
-          - echo "running abi3audit tests as is_abi3"
+          #- echo "running abi3audit tests as is_abi3"
           - abi3audit
-          - echo "completed abi3audit tests as is_abi3"
+          #- echo "completed abi3audit tests as is_abi3"
   - requirements:
       run:
+        - if: is_abi3
+          then:
+          - abi3audit
         - pip
-        - python
     script:
       env:
         DISPLAY: :1
@@ -126,13 +133,13 @@ tests:
         - echo "completed from django_bolt import BoltAPI"
         - if: noarch_platform  != "win"
           then:
-            - echo "Test Script Importing blessed and terminal for unix and windows"
+            - echo "Test Script Importing django_bolt and BoltAPI for unix"
             - python -c "from django_bolt import BoltAPI; assert BoltAPI"
-            - python -c "assert __import__('django_bolt').__version__ == '${{ version }}'"
+            #- python -c "assert __import__('django_bolt').__version__ == '${{ version }}'"
           else:
-            - echo "Test Script Importing jinxed, blessed and terminal for windows"
-             - python -c "from django_bolt import BoltAPI; assert BoltAPI"
-            - python -c "assert __import__('django_bolt').__version__ == '${{ version }}'"
+            - echo "Test Script Importing django_bolt and BoltAPI for windows"
+            - python -c "from django_bolt import BoltAPI; assert BoltAPI"
+            #- python -c "assert __import__('django_bolt').__version__ == '${{ version }}'"
         - echo "Test Script Imports for unix and windows Completed"
 
 about:

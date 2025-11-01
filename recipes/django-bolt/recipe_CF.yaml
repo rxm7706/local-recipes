@@ -16,6 +16,7 @@ source:
   sha256: 349e98a5234226e742562ca72a4373e34e751146faa1b77a6fada3ee39cbbae4
 
 build:
+  number: 0
   python:
     version_independent: true
     entry_points:
@@ -34,7 +35,7 @@ build:
       then:
         - set CARGO_PROFILE_RELEASE_STRIP=symbols
         - set CARGO_PROFILE_RELEASE_LTO=fat
-        # Win recipe  # work around long path problem,
+        # Win recipe # work around long path problem,
         # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
         - set CARGO_HOME=C:\.cargo
         - md %CARGO_HOME%
@@ -51,7 +52,6 @@ requirements:
       then:
         - python
         - cross-python_${{ target_platform }}
-        #- maturin >=1.9,<2.0
         - maturin >=${{ maturin_min }},<2.0
         - crossenv
         - puccinialin
@@ -84,9 +84,6 @@ tests:
       imports:
         - django_bolt
       pip_check: true
-#      python_version:
-#        - ${{ python_min }}.*
-#        - 3.14.*
       python_version:
         - if: is_abi3
           then: "${{ python_min ~ '.*' }}"
