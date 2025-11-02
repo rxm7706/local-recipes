@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-mcp
+  version: "0.3.1"
+  python_check_max: "3.14"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_mcp-${{ version }}.tar.gz
+  sha256: 0da6abe8e3d57d955bbcb2efb389d22a495cb631b52b4abcf430dc8558c3636b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - mcp >=1.9.2,<1.10.dev0
+
+tests:
+  - python:
+      imports:
+        - django_mcp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+
+about:
+  summary: django-mcp adds MCP tool hosting to Django.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/kitespark/django-mcp
+
+extra:
+  recipe-maintainers:
+    - rxm7706
