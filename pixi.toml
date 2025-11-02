@@ -113,6 +113,8 @@ jinja2-ospath = ">=0.3.0,<1.0.0"
 pip = ">=25.2"
 setuptools = "<81.0.0"
 setuptools-scm = ">=9.2.2"
+hatchling = ">=1.27.0"
+python-build = ">=1.3.0"
 twine = ">=6.2.0"
 uv = ">=0.9.7"
 wheel = ">=0.45.1"
@@ -145,6 +147,13 @@ duckdb = ">=1.4.1,<2"
 pandas = ">=2.3.3,<3"
 polars = ">=1.35.1,<2"
 pyarrow = ">=22.0.0,<23"
+pyarrow-all = ">=22.0.0"
+ibis-duckdb = ">=11.0.0"
+ibis-polars = ">=11.0.0"
+ibis-sqlite = ">=11.0.0"
+ibis-postgres = ">=11.0.0"
+ibis-mssql = ">=11.0.0"
+ibis-oracle = ">=11.0.0"
 pydantic = ">=2.12.3,<3"
 ruff = ">=0.14.3,<0.15"
 pyright = ">=1.1.407,<2"
@@ -166,71 +175,15 @@ yarn = ">=4.10.3,<5"
 [dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"
-##[feature.build.dependencies]
-conda = ">=25.9.0"
-conda-libmamba-solver = ">=24.9.0"
-conda-build = ">=25.3.1"
-conda-index = ">=0.3.0"
-conda-forge-ci-setup = ">=4.9.3,<5.0"
-conda-forge-pinning = "*"
-frozendict = "*"
-networkx = "2.4.*"
-rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"
-##[feature.grayskull.dependencies]
-grayskull = ">=2.7.3"
-##[feature.conda-smithy.dependencies]
-conda-smithy = ">=3.44.6,<4"
-shellcheck = "*"
-#### Unleash Pixi - Added to ensure single a build pack with pixi will work for cookiecutters, plain python, conda, nodejs, rust, c, c++ code.
-## For use with CookieCutters
-cookiecutter = ">=2.6.0,<3.0.0"
-cruft = ">=2.16.0,<3.0.0"
-jinja2-ospath = ">=0.3.0,<1.0.0"
-## For Building Plain Python Projects
-# cibuildwheel = ">=3.2.1" # Dependency bashlex Failed for platform 'linux-aarch64'
-pip = ">=25.2"
-setuptools = "<81.0.0"
-setuptools-scm = ">=9.2.2"
-twine = ">=6.2.0"
-uv = ">=0.9.7"
-wheel = ">=0.45.1"
-## For Building Javsscript and nodejs Projects
-nodejs = ">=24.0.0,<25.0.0"  # Pin to LTS version
-pnpm = ">=10.14.0,<11.0.0"
-## Extensions for Conda and Conda-build Projects
-conda-lock = ">=3.0.4,<4.0.0"
-conda-pack = ">=0.8.1,<1.0.0"
-conda-tree = ">=1.1.1,<2.0.0"
-feedrattler = ">=0.3.4,<1.0.0"
-### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.59.0,<1.0.0"
-rattler-build = ">=0.49.0,<1.0.0"
-pixi-build-rattler-build = ">=0.3.4,<1.0.0"
-pixi-build-cmake = ">=0.3.4,<1.0.0"
-pixi-build-python = ">=0.4.1,<1.0.0"
-pixi-build-rust = ">=0.4.1,<1.0.0"
-pixi-diff = ">=0.1.3,<1.0.0"
-pixi-inject = ">=0.1.1,<1.0.0"
-pixi-install-to-prefix = ">=0.1.2,<1.0.0"
-pixi-kernel = ">=0.7.0,<1.0.0"
-pixi-outdated = ">=0.2.1,<1.0.0"
-pixi-pack = ">=0.7.4,<1.0.0"
-pixi-pycharm = ">=0.0.9,<1.0.0"
-pixi-unpack = ">=0.7.4,<1.0.0"
-py-rattler = ">=0.16.0,<1.0.0"
-py-rattler-build = ">=0.47.0,<1.0.0"
-pyarrow-all = ">=22.0.0"
-ibis-duckdb = ">=11.0.0"
-ibis-polars = ">=11.0.0"
-ibis-sqlite = ">=11.0.0"
-ibis-postgres = ">=11.0.0"
-ibis-mssql = ">=11.0.0"
-ibis-oracle = ">=11.0.0"
+conda = ">=25.9.0"
+pip = ">=25.2"
+uv = ">=0.9.7"
 
 [pypi-dependencies]
 daft = ">=0.6.8"
 pyarrow= ">=22.0.0"
-ibis-framework = { version = ">=11.0.0", extras = ["datafusion", "bigquery"] }
+ibis-framework = { version = ">=11.0.0", extras = ["datafusion", "bigquery", "duckdb"] }
 
 [target.linux-64.dependencies]
 pyarrow-all = ">=22.0.0"
