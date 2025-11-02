@@ -229,34 +229,35 @@ ibis-oracle = ">=11.0.0"
 
 [pypi-dependencies]
 daft = ">=0.6.8"
-ibis-framework = { version = ">=11.0.0", extras = ["bigquery", "datafusion"] }
+pyarrow= ">=22.0.0"
+ibis-framework = { version = ">=11.0.0", extras = ["datafusion", "bigquery"] }
 
 [target.linux-64.dependencies]
-getdaft = ">=0.6.1,<0.7"
+pyarrow-all = ">=22.0.0"
 
 [target.linux-64.pypi-dependencies]
-daft = ">=0.6.1"
+daft = ">=0.6.8"
 pyarrow = ">=22.0.0"
 
 [target.win-64.dependencies]
-getdaft = ">=0.6.1,<0.7"
+pyarrow-all = ">=22.0.0"
 m2-bash = ">=4.3.42,<5"
 posix = ">=1.0.0,<2"
 
 [target.win-64.pypi-dependencies]
-daft = ">=0.6.1"
+daft = ">=0.6.8"
 pyarrow = ">=22.0.0"
 
 [target.osx-64.dependencies]
-getdaft = ">=0.6.1,<0.7"
+pyarrow-all = ">=22.0.0"
 
 [target.osx-64.pypi-dependencies]
-daft = ">=0.6.1"
+daft = ">=0.6.8"
 pyarrow = ">=22.0.0"
 
 [target.osx-arm64.dependencies]
-getdaft = ">=0.6.1,<0.7"
+pyarrow-all = ">=22.0.0"
 
 [target.osx-arm64.pypi-dependencies]
-daft = ">=0.6.1"
+daft = ">=0.6.8"
 pyarrow = ">=22.0.0"
