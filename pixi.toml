@@ -180,37 +180,37 @@ conda = ">=25.9.0"
 pip = ">=25.2"
 uv = ">=0.9.7"
 
-[pypi-dependencies]
-daft = ">=0.6.8"
-pyarrow= ">=22.0.0"
-ibis-framework = { version = ">=11.0.0", extras = ["datafusion", "bigquery", "duckdb"] }
-
-[target.linux-64.dependencies]
-pyarrow-all = ">=22.0.0"
-
-[target.linux-64.pypi-dependencies]
-daft = ">=0.6.8"
-pyarrow = ">=22.0.0"
-
-[target.win-64.dependencies]
-pyarrow-all = ">=22.0.0"
-m2-bash = ">=4.3.42,<5"
-posix = ">=1.0.0,<2"
-
-[target.win-64.pypi-dependencies]
-daft = ">=0.6.8"
-pyarrow = ">=22.0.0"
-
-[target.osx-64.dependencies]
-pyarrow-all = ">=22.0.0"
-
-[target.osx-64.pypi-dependencies]
-daft = ">=0.6.8"
-pyarrow = ">=22.0.0"
-
-[target.osx-arm64.dependencies]
-pyarrow-all = ">=22.0.0"
-
-[target.osx-arm64.pypi-dependencies]
-daft = ">=0.6.8"
-pyarrow = ">=22.0.0"
+#[pypi-dependencies]
+#daft = ">=0.6.8"
+#pyarrow= ">=22.0.0"
+#ibis-framework = { version = ">=11.0.0", extras = ["datafusion", "bigquery", "duckdb"] }
+#
+#[target.linux-64.dependencies]
+#pyarrow-all = ">=22.0.0"
+#
+#[target.linux-64.pypi-dependencies]
+#daft = ">=0.6.8"
+#pyarrow = ">=22.0.0"
+#
+#[target.win-64.dependencies]
+#pyarrow-all = ">=22.0.0"
+#m2-bash = ">=4.3.42,<5"
+#posix = ">=1.0.0,<2"
+#
+#[target.win-64.pypi-dependencies]
+#daft = ">=0.6.8"
+#pyarrow = ">=22.0.0"
+#
+#[target.osx-64.dependencies]
+#pyarrow-all = ">=22.0.0"
+#
+#[target.osx-64.pypi-dependencies]
+#daft = ">=0.6.8"
+#pyarrow = ">=22.0.0"
+#
+#[target.osx-arm64.dependencies]
+#pyarrow-all = ">=22.0.0"
+#
+#[target.osx-arm64.pypi-dependencies]
+#daft = ">=0.6.8"
+#pyarrow = ">=22.0.0"
