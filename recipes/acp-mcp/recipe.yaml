@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: acp-mcp
+  version: "0.4.2"
+  python_check_max: "3.14"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/acp_mcp-${{ version }}.tar.gz
+  sha256: ea41fbbdf8ebbb25d709641e8cec52dd7c8a1f4634c8967b798ff8ccbf3e3199
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - acp-mcp = acp_mcp:main
+      - serve = acp_mcp:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - acp-sdk >=0.8.4
+    - mcp >=1.6.0
+
+tests:
+  - python:
+      imports:
+        - acp_mcp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - acp-mcp --help
+      - serve --help
+
+about:
+  summary: Serve ACP agents over MCP
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/i-am-bee/acp-mcp
+
+extra:
+  recipe-maintainers:
+    - rxm7706
