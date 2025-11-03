@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
@@ -45,7 +46,7 @@ about:
   summary: A Model Context Protocol (MCP) server for Django integration with LLM assistants.
   license: MIT
   license_file: LICENSE
-  repository: https://github.com/joshuadavidthomas/mcp-django
+  homepage: https://github.com/joshuadavidthomas/mcp-django
 
 extra:
   recipe-maintainers:
