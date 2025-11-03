@@ -1,0 +1,55 @@
+{% set name = "nbqa" %}
+{% set version = "1.9.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/nbqa-{{ version }}.tar.gz
+  sha256: a1f4bcf587c597302fed295951001fc4e1be4ce0e77e1ab1b25ac2fbe3db0cdd
+
+build:
+  entry_points:
+    - nbqa = nbqa.__main__:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools <81.0.0
+  run:
+    - python >={{ python_min }},<4
+    - autopep8 >=1.5
+    - ipython >=7.8.0
+    - tokenize-rt >=3.2.0
+    - tomli
+
+test:
+  imports:
+    - nbqa
+  commands:
+    - pip check
+    - nbqa --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/nbQA-dev/nbQA
+  summary: Run any Python code quality tool on a Jupyter Notebook!
+  license: MIT
+  license_file: LICENSE
+  dev_url: https://github.com/nbQA-dev/nbQA
+
+
+extra:
+  recipe-maintainers:
+    - s-weigand
+    - MarcoGorelli
+    - girip11
+    - rxm7706
