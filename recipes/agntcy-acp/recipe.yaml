@@ -5,6 +5,7 @@ context:
   name: agntcy-acp
   version: "1.5.2"
   python_min: '3.10'
+  python_check_max: "3.14"
 
 package:
   name: ${{ name|lower }}
@@ -45,7 +46,9 @@ tests:
       imports:
         - agntcy_acp
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
   - requirements:
       run:
         - python ${{ python_min }}.*
