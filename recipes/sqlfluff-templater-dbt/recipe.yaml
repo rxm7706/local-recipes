@@ -43,6 +43,7 @@ about:
   license: MIT
   license_file: LICENSE.md
   repository: https://github.com/sqlfluff/sqlfluff
+  homepage: https://github.com/sqlfluff/sqlfluff
 
 extra:
   recipe-maintainers:
