@@ -1,13 +1,13 @@
 {% set name = "django-countries" %}
-{% set version = "7.5.1" %}
+{% set version = "7.8" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-countries-{{ version }}.tar.gz
-  sha256: 22915d9b9403932b731622619940a54894a3eb0da9a374e7249c8fc453c122d7
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: b8413065160bc93efe1293d746bbde32951d9a1fe7e44f1fe2add1bebbb6962f
 
 build:
   noarch: python
@@ -16,12 +16,13 @@ build:
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools >=48
+    - python {{ python_min }}
+    - setuptools >=48,<81.0.0
     - wheel >=0.29.0
     - pip
   run:
-    - python >=3.8
+    - typing_extensions
+    - python >={{ python_min }}
     - django >=3.2,<5.0
     - asgiref
     - typing-extensions
@@ -34,6 +35,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/SmileyChris/django-countries/
