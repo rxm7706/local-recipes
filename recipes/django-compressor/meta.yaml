@@ -20,8 +20,6 @@ requirements:
     - python {{ python_min }}
     - pip
     - setuptools >=77.0.3,<81.0.0
-    - rcssmin ==1.1.2
-    - rjsmin ==1.2.2
   run:
     - python >={{ python_min }},<4.0
     - django >=4.2
@@ -33,15 +31,11 @@ test:
   imports:
     - compressor
   commands:
-    # Working python -c "import django; from django.conf import settings; settings.configure(DEBUG=True, STATIC_URL='/',STATIC_ROOT='',COMPRESS_PRECOMPILERS = (('text/x-scss', 'django_libsass.SassCompiler'),),INSTALLED_APPS=['compressor', 'django.contrib.contenttypes', 'django.contrib.auth']); django.setup(); import compressor"
     - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True, STATIC_URL='/',STATIC_ROOT='',MEDIA_ROOT='media',MEDIA_URL='/media/',COMPRESS_PRECOMPILERS = (('text/x-scss', 'django_libsass.SassCompiler'),),INSTALLED_APPS=['compressor', 'django.contrib.contenttypes', 'django.contrib.auth']); django.setup(); import compressor"
     # Not Working - pip check
-    #- pip check
   requires:
     - pip
     - python {{ python_min }}
-    - rcssmin ==1.1.2
-    - rjsmin ==1.2.2
 
 about:
   home: https://github.com/django-compressor/django-compressor
