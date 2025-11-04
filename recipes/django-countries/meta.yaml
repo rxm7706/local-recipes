@@ -1,12 +1,13 @@
 {% set name = "django-countries" %}
 {% set version = "7.8" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_countries-{{ version }}.tar.gz
   sha256: b8413065160bc93efe1293d746bbde32951d9a1fe7e44f1fe2add1bebbb6962f
 
 build:
@@ -17,15 +18,13 @@ build:
 requirements:
   host:
     - python {{ python_min }}
-    - setuptools >=48,<81.0.0
-    - wheel >=0.29.0
+    - uv-build >=0.9.6,<0.10.0
     - pip
   run:
-    - typing_extensions
     - python >={{ python_min }}
-    - django >=3.2,<5.0
     - asgiref
-    - typing-extensions
+    - typing_extensions
+    - django >=3.2,<6.0
 
 test:
   imports:
