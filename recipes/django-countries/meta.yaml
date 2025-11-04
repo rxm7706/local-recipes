@@ -21,7 +21,7 @@ requirements:
     - uv-build >=0.9.6,<0.10.0
     - pip
   run:
-    - python >={{ python_min }}
+    - python >={{ python_min }},<4.0
     - asgiref
     - typing_extensions
     - django >=3.2,<6.0
