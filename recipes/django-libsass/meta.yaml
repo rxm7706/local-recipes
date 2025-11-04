@@ -25,16 +25,20 @@ requirements:
     - django >=4.2,<6.0.0
     - django-compressor >=1.3
     - libsass >=0.7.0,<1
-
+    - rcssmin ==1.1.2
+    - rjsmin ==1.2.2
 
 test:
-  imports:
-    - django_libsass
+#  imports:
+#    - django_libsass
   commands:
+    - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True); django.setup(); import django_libsass"
     - pip check
   requires:
     - pip
     - python {{ python_min }}
+    - rcssmin ==1.1.2
+    - rjsmin ==1.2.2
 
 about:
   home: https://github.com/torchbox/django-libsass
