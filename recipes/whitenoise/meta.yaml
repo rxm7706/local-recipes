@@ -1,25 +1,28 @@
 {% set name = "whitenoise" %}
-{% set version = "6.7.0" %}
+{% set version = "6.11.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/whitenoise-{{ version }}.tar.gz
-  sha256: 58c7a6cd811e275a6c91af22e96e87da0b1109e9a53bb7464116ef4c963bf636
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/whitenoise-{{ version }}.tar.gz
+  sha256: 0f5bfce6061ae6611cd9396a8231e088722e4fc67bc13a111be74c738d99375f
 
 build:
-  number: 0
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
 
 requirements:
   host:
-    - python >=3.5,<4.0
+    - python {{ python_min }}
     - pip
+    - setuptools >=77,<81.0.0
+
   run:
-    - python >=3.5,<4.0
+    - python >={{ python_min }},<4.0
 
 test:
   imports:
@@ -29,6 +32,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/evansd/whitenoise
@@ -48,5 +52,6 @@ about:
 
 extra:
   recipe-maintainers:
+    - rxm7706
     - cshaley
     - sannykr

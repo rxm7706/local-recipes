@@ -1,5 +1,6 @@
 {% set name = "django-compressor" %}
 {% set version = "4.5.1" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -18,9 +19,9 @@ requirements:
   host:
     - python {{ python_min }}
     - pip
-    - setuptools
+    - setuptools <81.0.0
   run:
-    - python >={{ python_min }}
+    - python >={{ python_min }},<4.0
     - django >=4.2
     - django-appconf >=1.0.3
     - rcssmin ==1.1.2
