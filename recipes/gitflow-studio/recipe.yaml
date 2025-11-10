@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: gitflow-studio
   version: "1.0.4"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -21,9 +20,8 @@ build:
     env:
       PYTHONIOENCODING: utf-8
       PYTHONLEGACYTEXTENCODING: utf-8
+      PYTHONUTF8: 1
     content:
-      - export "PYTHONIOENCODING=utf8"  # [unix]
-      - set "PYTHONIOENCODING=utf8"  # [win]
       - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
   python:
     entry_points:
@@ -59,9 +57,12 @@ tests:
         - pip
         - python ${{ python_min }}.*
     script:
-      - export "PYTHONIOENCODING=utf8"  # [unix]
-      - set "PYTHONIOENCODING=utf8"  # [win]
-      - gitflow-studio --help
+      env:
+        PYTHONIOENCODING: utf-8
+        PYTHONLEGACYTEXTENCODING: utf-8
+        PYTHONUTF8: 1
+      content:
+        - gitflow-studio --help
 
 about:
   summary: A comprehensive Git workflow management CLI tool
