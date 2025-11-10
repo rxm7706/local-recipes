@@ -1,45 +1,61 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-schema_version: 1
-
 context:
   name: zensical
   version: "0.0.5"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/zensical-${{ version }}.tar.gz
-  sha256: e64ac31897602a6c4ab1d58d76386e0abc428539cbb2f7432111b6f8afa8f19e
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: e64ac31897602a6c4ab1d58d76386e0abc428539cbb2f7432111b6f8afa8f19e
+  # https://github.com/zensical/ui/issues/1
+  - url: https://raw.githubusercontent.com/zensical/ui/refs/heads/master/LICENSE
+    sha256: 58e749c581576a39a77e51af3f45bcfb93ce0fc3a983faa4b3fe7416bdfc14d4
+    file_name: LICENSE-zensical-ui
+  - url: https://raw.githubusercontent.com/lucide-icons/lucide/refs/heads/main/LICENSE
+    sha256: 3c57143f22dac950efebf84002e360bba5458c7b90fe583b0667aaaef1a7256e
+    file_name: LICENSE-lucide
 
 build:
-  number: 0
-  script:
-    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     version_independent: true
     entry_points:
-      - zensical = zensical.main:cli
+      - zensical=zensical.main:cli
+  skip:
+    - not (match(python, python_min ~ ".*") and is_abi3)
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+      CARGO: cargo-auditable-wrapper${{ '' if unix else '.bat' }}
+    content:
+      - if: unix
+        then:
+          - cp ${RECIPE_DIR}/cargo-auditable-wrapper.sh ${BUILD_PREFIX}/bin/cargo-auditable-wrapper
+        else:
+          - copy %RECIPE_DIR%\cargo-auditable-wrapper.bat %BUILD_PREFIX%\Library\bin\cargo-auditable-wrapper.bat
+      - python -m pip install . -vv
+      - cargo-bundle-licenses --format yaml --output ./THIRD_PARTY.yml
+  number: 0
 
 requirements:
   build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - cargo-auditable
     - if: build_platform != target_platform
       then:
         - python
         - cross-python_${{ target_platform }}
         - maturin >=1.8,<2.0
-    - ${{ compiler("c") }}
-    #- ${{ stdlib("c") }}
-    - ${{ compiler("rust") }}
-    - cargo-bundle-licenses
   host:
     - python
-    - maturin >=1.8,<2.0
+    - python-abi3
     - pip
-    - puccinialin
+    - maturin >=1.8,<2.0
   run:
     - python
     - click >=8.1.8
@@ -49,28 +65,48 @@ requirements:
     - pymdown-extensions >=10.15
     - pyyaml >=6.0.2
     - tomli >=2.0
+  ignore_run_exports:
+    from_package:
+      - cross-python_${{ target_platform }}
 
 tests:
   - python:
       imports:
         - zensical
       pip_check: true
-  - requirements:
+      python_version: ${{ python_min }}.*
+  - script:
+      content:
+        - if: win
+          then: abi3audit %PREFIX%/Lib/site-packages/zensical/zensical.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+          else:
+            - export SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+            - abi3audit $SP_DIR/zensical/zensical.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+    requirements:
       run:
-        - pip
-    script:
-      - zensical --help
+        - abi3audit
+  - script:
+      - zensical --version
 
 about:
-  summary: A modern static site generator built by the creators of Material for MkDocs
+  homepage: https://zensical.org
+  summary: 'A modern static site generator by the creators of Material for MkDocs'
+  description: |
+    Write your documentation in Markdown and create a professional static site for your Open Source or commercial project in minutes – searchable, customizable, more than 60 languages, for all devices.
   license: MIT
   license_file:
-    - THIRDPARTY.yml
     - LICENSE.md
-    - python/zensical/templates/partials/copyright.html
-  homepage: https://github.com/zensical/zensical
-  repository: https://github.com/zensical/zensical/
+    - THIRD_PARTY.yml
+    - python/zensical/templates/.icons/fontawesome/LICENSE.txt
+    - python/zensical/templates/.icons/material/LICENSE
+    - python/zensical/templates/.icons/octicons/LICENSE
+    - python/zensical/templates/.icons/simple/LICENSE.md
+    # https://github.com/zensical/ui/issues/1
+    - LICENSE-lucide
+    - LICENSE-zensical-ui
+  documentation: https://zensical.org
+  repository: https://github.com/zensical/zensical
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - pavelzw
