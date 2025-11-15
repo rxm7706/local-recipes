@@ -1,5 +1,5 @@
 {% set name = "django-mongodb-backend" %}
-{% set version = "5.2.0b0" %}
+{% set version = "5.2.2" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_mongodb_backend-{{ version }}.tar.gz
-  sha256: 755f26f6478669f5f04b63fc573b119682494fbf0ea43aefd5fd77d849db4502
+  sha256: 2ab1e892fbd936a194c5881aa2a4dce3707ece3c4b2f9744233b8ff785263d46
 
 build:
   noarch: python
@@ -22,9 +22,9 @@ requirements:
     - hatch-requirements-txt >=0.4.1
     - pip
   run:
-    - python >={{ python_min }},<4.0
-    - django <6.0,>=5.2
-    - pymongo <5.0,>=4.7
+    - python >={{ python_min }}
+    - django >=5.2,<6.0
+    - pymongo >=4.7,<5.0
 
 test:
   imports:
@@ -35,10 +35,11 @@ test:
     - pip
     - python {{ python_min }}
 
+
 about:
   summary: Django MongoDB Backend
   home: https://www.mongodb.com/docs/languages/python/django-mongodb/current/
-  dev_url: https://github.comcom/mongodb/django-mongodb-backend
+  dev_url: https://github.com/mongodb-labs/django-mongodb-backend
   license: Apache-2.0
   license_file: LICENSE
 

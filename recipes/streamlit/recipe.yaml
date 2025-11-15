@@ -1,0 +1,68 @@
+schema_version: 1
+
+context:
+  name: streamlit
+  version: 1.51.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/streamlit-${{ version }}.tar.gz
+  sha256: 1e742a9c0b698f466c6f5bf58d333beda5a1fbe8de660743976791b5c1446ef6
+
+build:
+  number: 0
+  skip: match(python, "<3.10")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - streamlit = streamlit.web.cli:main
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - altair >=4.0,<6,!=5.4.0,!=5.4.1
+    - blinker >=1.5.0,<2
+    - cachetools >=4.0,<7
+    - click >=7.0,<9
+    - numpy >=1.23,<3
+    - packaging >=20,<26
+    - pandas >=1.4.0,<3
+    - pillow >=7.1.0,<13
+    - protobuf >=3.20,<7
+    - pyarrow >=7.0,<22
+    - requests >=2.27,<3
+    - tenacity >=8.1.0,<10
+    - toml >=0.10.1,<2
+    - typing_extensions >=4.4.0,<5
+    - if: not osx
+      then: watchdog >=2.1.5,<7
+    - gitpython >=3.0.7,<4,!=3.1.19
+    - pydeck >=0.8.0b4,<1
+    - tornado >=6.0.3,<7,!=6.5.0
+
+tests:
+  - python:
+      imports:
+        - streamlit
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - streamlit --help
+
+about:
+  summary: A faster way to build and share data apps
+  license: Apache-2.0
+  license_file: PLEASE_ADD_LICENSE_FILE
+  homepage: https://streamlit.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706

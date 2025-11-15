@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bokeh-django
+  version: "0.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bokeh/bokeh-django/archive/v${{ version }}.tar.gz
+  sha256: 9a0a2f4a1044cf7a513b5cb3af8c336ee9aa966b014034970035675479187e74
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - bokeh
+    - django
+    - channels
+
+tests:
+  - python:
+      imports:
+        - bokeh_django
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Utility to integrate Bokeh with Django Channels
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/bokeh/bokeh-django
+
+extra:
+  recipe-maintainers:
+    - rxm7706
