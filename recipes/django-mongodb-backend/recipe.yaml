@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-mongodb-backend
-  version: "5.2.0b1"
+  version: "5.2.2"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_mongodb_backend-${{ version }}.tar.gz
-  sha256: 755f26f6478669f5f04b63fc573b119682494fbf0ea43aefd5fd77d849db4502
+  sha256: 2ab1e892fbd936a194c5881aa2a4dce3707ece3c4b2f9744233b8ff785263d46
 
 build:
   number: 0

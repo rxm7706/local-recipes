@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: kedro
-  version: "0.19.13"
-  python_min: '3.9'
+  version: "1.0.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -12,15 +12,19 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kedro-${{ version }}.tar.gz
-  sha256: f3363e6a566631d24c8af0d5c5d08c9621f41cab1bf4562c52d680010c79b031
+  sha256: 33a7d1ff02a49af3cae187d8799591f8d58b214614e20e34f68030eb5fcd6bb8
 
 build:
-  number: 1
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  number: 0
   python:
     entry_points:
       - kedro = kedro.framework.cli:main
+  noarch: python
+  script:
+    env:
+      PYTHONWARNINGS: 'ignore::UserWarning'
+    content:
+      - "${{ PYTHON }} -m pip install -vv --use-pep517 --no-deps --no-build-isolation ."
 
 requirements:
   host:
@@ -28,7 +32,7 @@ requirements:
     - setuptools >=65.5.1
     - pip
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }},<3.14
     - attrs >=21.3
     - python-build >=0.7.0
     - cachetools >=4.1
@@ -37,8 +41,8 @@ requirements:
     - dynaconf >=3.1.2,<4.0
     - fsspec >=2021.4
     - gitpython >=3.0
-    - importlib-metadata >=3.6,<9.0
     - importlib_resources >=1.3,<7.0  # The `files()` API was introduced in `importlib_resources` 1.3 and Python 3.9.
+    - importlib-metadata >=3.6,<9.0
     - kedro-datasets  # Only required for tests Now
     - kedro-telemetry >=0.5.0
     - more-itertools >=8.14.0
@@ -57,13 +61,17 @@ tests:
       imports:
         - kedro
         - kedro_benchmarks
+      #pip_check: true
   - requirements:
       run:
         - pip
         - python ${{ python_min }}.*
     script:
-    - kedro --help
-    - pip check
+      env:
+        PYTHONWARNINGS: 'ignore::UserWarning'
+      content:
+        - kedro --help
+        - pip check
 
 about:
   summary: Kedro helps you build production-ready data and analytics pipelines.

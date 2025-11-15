@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: supervisor-win
+  version: "4.7.0"
+  python_min: '3.10'
+  python_check_max: "3.14"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/supervisor-win-${{ version }}.tar.gz
+  sha256: c474d92edc7050b55adae2f7c7789d5d69f180dee7868a27673b1d38f8bea484
+
+build:
+  noarch: generic
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - supervisord = supervisor.supervisord:main
+      - supervisorctl = supervisor.supervisorctl:main
+      - supervisor_service = supervisor.services:main
+      - echo_supervisord_conf = supervisor.confecho:main
+      - pidproxy = supervisor.pidproxy:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4
+    - setuptools
+    - meld3 >=1.0.0
+    - ${{ "pywin32-on-windows  <=306" if win }}
+    - #- pywin32-on-windows >=306  # pywin32-on-windows >=306 * does not exist (perhaps a typo or a missing channel).
+    - ${{ "pywin32 >=228,<=306" if win }}
+    #- pywin32-on-windows <=306,>228
+
+tests:
+#  - python:
+##      imports:
+##        - supervisord
+#      pip_check: true
+#      python_version:
+#        - ${{ python_min }}.*
+#        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - pip
+        - psutil
+        - python ${{ python_min }}.*
+        - ${{ "pywin32 <=306" if win }}
+        - ${{ "pywin32-on-windows  <=306" if win }}
+    script:
+      - supervisord --help
+      - supervisor_service --help
+      - supervisorctl --help
+      - echo_supervisord_conf --help
+      - pidproxy --help
+
+about:
+  summary: A system for controlling process state under WINDOWS
+  license: 0BSD
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSES.txt
+  homepage: http://supervisord.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
