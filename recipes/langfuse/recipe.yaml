@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: langfuse-python
+  version: "2.60.10"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/l/langfuse/langfuse-${{ version }}.tar.gz
+    sha256: a26d0d927a28ee01b2d12bb5b862590b643cc4e60a28de6e2b0c2cfff5dbfc6a
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install .
+  python:
+    entry_points:
+      - release = scripts.release:main
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.15.4,<1.0
+    - pydantic >=1.10.7,<3.0
+    - backoff >=1.10.0
+    - wrapt >=1.14,<2.0
+    - packaging >=23.2,<25.0
+    - idna >=3.7,<4.0
+    - anyio >=4.4.0,<5.0.0
+    - requests >=2,<3
+    - opentelemetry-api >=1.33.1,<2
+    - opentelemetry-sdk >=1.33.1,<2
+    - opentelemetry-exporter-otlp >=1.33.1,<2
+
+tests:
+  - python:
+      imports:
+        - langfuse
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A client library for accessing langfuse
+  homepage: https://github.com/langfuse/langfuse-python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch
