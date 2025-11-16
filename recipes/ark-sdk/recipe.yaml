@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ark-sdk
+  version: "0.1.43"
+  python_min: '3.12'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mckinsey/agents-at-scale-ark/archive/v${{ version }}.tar.gz
+  sha256: 3a06157d62b413adb1a71c4da1973ca5f0925aac0d7b9d6f9e8a940b79b1d906
+
+build:
+  number: 0
+  noarch: python
+  script: cd lib/ark-sdk/gen_sdk/overlay/python && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - urllib3 >=2.1.0,<3.0.0
+    - python-dateutil >=2.8.2
+    - pydantic >=2
+    - typing-extensions >=4.7.1
+    - python-kubernetes >=32.0.0
+    - kubernetes_asyncio >=24.2.0
+    - pytest >=8.0.0
+    - python-build >=1.0.0
+    - fastapi >=0.115.0
+    - httpx >=0.24.0
+    - python-jose ==3.5.0
+    - cryptography
+    - pydantic-settings >=2.0.0
+    - uvicorn >=0.24.0
+
+tests:
+  - python:
+      imports:
+        - ark_sdk
+        - ark_sdk.auth
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - ark-evaluator --help
+
+about:
+  summary: Evaluator for Ark - AI-powered query evaluation service
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/mckinsey/agents-at-scale-ark
+
+extra:
+  recipe-maintainers:
+    - rxm7706
