@@ -62,8 +62,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - hinthornw
-    - jan-janssen
     - pavelzw
-    - rxm7706
+    - hinthornw
     - vowelparrot
+    - jan-janssen
