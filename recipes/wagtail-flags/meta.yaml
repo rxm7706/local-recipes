@@ -1,43 +1,53 @@
-{% set name = "wagtail-flags" %}
-{% set version = "5.3.1" %}
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-flags
+  version: "5.1.0"
+  python_min: '3.10'
 
 package:
-  name: {{ name|lower }}
-  version: {{ version }}
+  name: ${{ name|lower }}
+  version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_flags-{{ version }}.tar.gz
-  sha256: f8139be3cd4dd2cfc96fd2157cbe8d7e8f042af2df4c331d7629663e23b8d710
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 47f33efba238fe83a2c1f6f5764147fe62d770039f64b3a039e0e461bbc36e79
 
 build:
+  number: 1
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools >=43.0.0
-    - wheel
+    - python ${{ python_min }}.*
+    - setuptools >=63
+    - setuptools-scm >=8
     - pip
+    #- wheel
   run:
-    - python >=3.8
-    - wagtail >=4
-    - django-flags >4.2
+    - python >=${{ python_min }},<4.0
+    - django >=4.2
+    # - pymdown-extensions >=4.11
+    # - mkdocs-rtd-dropdown >=0.0.11
+    # - mkdocs >=0.17
+    # - jinja2
+    # - django-debug-toolbar
+    # - coverage
 
-test:
-  imports:
-    - wagtailflags
-  commands:
-    - pip check
-  requires:
-    - pip
+tests:
+  - python:
+      imports:
+        - flags
+      python_version: ${{ python_min }}.*
+      pip_check: true
 
 about:
-  summary: Feature flags for Wagtail sites
-  dev_url: https://github.com/cfpb/wagtail-flags
+  summary: Feature flags for Django projects
   license: CC0-1.0
   license_file: LICENSE
+  homepage: https://github.com/cfpb/django-flags
 
 extra:
   recipe-maintainers:

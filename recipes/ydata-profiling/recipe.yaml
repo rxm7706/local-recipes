@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: ydata-profiling
-  version: "4.17.0"
+  version: "4.18.0"
   python_min: '3.10'
 
 package:
@@ -11,8 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ydata-profiling-${{ version }}.tar.gz
-  sha256: 6ead76a9bffe170a6fcb6195248cd5110bdfc7971af9257c0e6716b4f1e65815
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ydata_profiling-${{ version }}.tar.gz
+  sha256: c3a0afd82e605c6903dd140b5fc41dabad8ee690601ad3d6c27da28e80b07cc6
 
 build:
   number: 0
@@ -32,27 +32,28 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - scipy >=1.4.1,<1.16
-    - pandas >1.1,<3.0,!=1.4.0
+    - scipy >=1.8,<1.17
+    - pandas >1.5,<3.0,!=1.4.0
     - matplotlib-base >=3.5,<=3.10
-    - pydantic >=2
-    - pyyaml >=5.0.0,<6.1
-    - jinja2 >=2.11.1,<3.2
+    - pydantic >=2,<3
+    - pyyaml >=6.0.3,<6.1
+    - jinja2 >=3.1.6,<3.2
     - visions >=0.7.5,<0.8.2
-    - numpy >=1.16.0,<2.2
+    - numpy >=1.22,<2.4
     - minify-html >=0.15.0
     - filetype >=1.0.0
-    - phik >=0.11.1,<0.13
-    - requests >=2.24.0,<3
-    - tqdm >=4.48.2,<5
+    - phik >=0.12.5,<0.13
+    - requests >=2.32.0,<3
+    - tqdm >=4.66.3,<5
     - seaborn >=0.10.1,<0.14
     - multimethod >=1.4,<2
     - statsmodels >=0.13.2,<1
-    - typeguard >=3,<5
-    - imagehash ==4.3.1
-    - wordcloud >=1.9.3
-    - dacite >=1.8
-    - numba >=0.56.0,<=0.61
+    - typeguard >=4,<5
+    - imagehash ==4.3.2
+    - wordcloud >=1.9.4
+    - dacite >=1.9,<2
+    - numba >=0.60,<0.63
+    #- ipython <9.0
   run_constraints:
     - jupyter >=1.0.0
     - ipywidgets >=7.5.1
@@ -62,7 +63,7 @@ requirements:
 tests:
   - python:
       imports:
-        - pandas_profiling
+        #- pandas_profiling
         - ydata_profiling
       pip_check: true
       python_version: ${{ python_min }}.*
@@ -71,6 +72,7 @@ tests:
         - pip
         - python ${{ python_min }}.*
     script:
+      - pip check
       - ydata_profiling --help
       #- pandas_profiling --help
       # make sure the version reported by pip is correct

@@ -4,7 +4,7 @@ schema_version: 1
 context:
   name: "gibr"
   python_min: '3.11'
-  version: 0.5.1
+  version: "0.10.0"
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gibr-${{ version }}.tar.gz
-  sha256: 5e50ac136e79f4ae87db1ce5468e70cd4274163e7c56780f330953395551d892
+  sha256: 6c949e21493ef5c2a86e0a4b305c0e1af67fda40a3504d977dae75fceff803a2
 
 build:
   number: 0
@@ -31,12 +31,14 @@ requirements:
   run:
     - python >=${{ python_min }},<4
     - gitpython >=3.1.43
-    - pygithub >=2.8.1
-    - python-gitlab >=6.5.0
     - click >=8.3.0
+    - python-dotenv >=1.2.1
     - python-slugify >=8.0.4
     - tabulate >=0.9.0
-    - jira >=3.9.2
+    - requests >=2.32.5
+    #- pygithub >=2.8.1
+    #- python-gitlab >=6.5.0
+    #- jira >=3.9.2
 
 tests:
   - python:
