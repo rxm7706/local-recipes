@@ -1,0 +1,44 @@
+schema_version: 1
+
+context:
+  name: django-flags
+  version: 5.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_flags-${{ version }}.tar.gz
+  sha256: 47f33efba238fe83a2c1f6f5764147fe62d770039f64b3a039e0e461bbc36e79
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.10
+    - setuptools >=63
+    - setuptools-scm >=8
+    - pip
+  run:
+    - python >=3.10
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - flags
+      pip_check: true
+
+about:
+  summary: Feature flags for Django projects
+  license: CC0-1.0
+  license_file: LICENSE
+  repository: https://github.com/cfpb/django-flags
+
+extra:
+  recipe-maintainers:
+    - rxm7706
