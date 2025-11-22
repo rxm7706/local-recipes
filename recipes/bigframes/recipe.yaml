@@ -3,10 +3,10 @@ schema_version: 1
 
 context:
   name: bigframes
-  version: "2.27.0"
+  version: "2.29.1"
   python_min: '3.10'
   python_max: '4.0'
-  python_test_max: '3.13'
+  python_test_max: '3.15'
 
 package:
   name: ${{ name|lower }}
@@ -14,7 +14,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bigframes-${{ version }}.tar.gz
-  sha256: 3b9624658f5030b8bcb8d368185cc17bb66fa408f64e9520d1a9a073c0267f75
+  sha256: 2d0eb520fc969f47dd66f4ffa2f27e5120d5832743fd1c35b09eb8962a419bb8
 
 build:
   number: 0
@@ -47,7 +47,7 @@ requirements:
     - pydata-google-auth >=1.8.2
     - requests >=2.27.1
     - shapely >=1.8.5
-    - sqlglot >=23.6.3
+    - sqlglot >=25.20.0,<28.0.0
     - tabulate >=0.9
     - ipywidgets >=7.7.1
     - humanize >=4.6.0
