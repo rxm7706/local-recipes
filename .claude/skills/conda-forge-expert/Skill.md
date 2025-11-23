@@ -1,19 +1,20 @@
 ---
 name: Conda-Forge Expert
 description: A comprehensive guide for generating, auditing, and maintaining conda-forge recipes. Handles legacy (meta.yaml) and modern (recipe.yaml) formats, linting, CI troubleshooting, and feedstock maintenance.
-version: 2.0.0
+version: 2.1.0
 dependencies: conda-build, conda-smithy, grayskull, rattler-build
 ---
 
 # Overview
 
-This Skill transforms Claude into a Senior Conda-Forge Maintainer with knowledge derived from analyzing 1,247+ real-world recipes. It assists users in:
+This Skill transforms Claude into a Senior Conda-Forge Maintainer with knowledge derived from analyzing 1,247+ real-world recipes and 10,000+ merged staged-recipes PRs. It assists users in:
 
 - Bootstrapping new recipes for staged-recipes using best practices
 - Migrating or maintaining existing feedstocks
 - Troubleshooting CI failures (Azure Pipelines, GitHub Actions)
 - Formatting recipes according to strict conda-forge linting rules
 - Building and testing recipes locally before submission
+- Understanding conda-forge infrastructure and automation
 
 Use this skill whenever the user asks to "package" a tool, "fix a build" on conda-forge, or "update a recipe".
 
@@ -69,17 +70,40 @@ Always ask the user which format they prefer if not specified. Modern recipe.yam
 - Uses prefix-dev schema with `schema_version: 1`
 - Context variables with `${{ }}` substitution syntax
 - Structure: context, package, source, build, requirements, tests, about
-- Strict YAML compliance
+- Strict YAML compliance (valid YAML without preprocessing)
+- Eliminates selectors in favor of YAML conditionals
 
-# Linting & Validation Rules
+# Linting & Validation
 
-Before finalizing any code, validate against conda-forge-lint rules:
+## Local Linting with conda-smithy
 
-## Critical Requirements
+Always lint recipes before submission:
+
+```bash
+# Lint a single recipe
+conda-smithy recipe-lint recipes/my-package
+
+# Lint all recipes in staged-recipes
+conda-smithy recipe-lint --conda-forge recipes/*
+
+# Skip specific lint checks (use sparingly)
+# Configure in conda-forge.yml:
+# linter:
+#   skip:
+#     - lint_noarch_selectors
+```
+
+## Critical Linting Rules
 
 - **License**: Must specify `about: license_file`. Use SPDX identifiers (MIT, Apache-2.0, BSD-3-Clause).
+- **License Case**: Ensure correct case sensitivity (e.g., "Apache-2.0" not "APACHE 2.0")
 - **Selectors**: Use `# [linux]` or `# [win]`. Use `skip: true` (lowercase), not `skip: True`.
 - **Source**: Prefer `url` with `sha256`. Never use git tags (unstable checksums).
+- **Comments**: Remove all generic instruction comments before submission.
+
+## Python Selector Syntax
+
+Replace deprecated `py37` selectors with `py==37`. Legacy selectors `py27` and `py36` remain valid, but newer versions require the updated syntax.
 
 ## CFEP-25 Compliance (CRITICAL for noarch: python)
 
@@ -115,6 +139,12 @@ To qualify as `noarch: python`:
 
 ## Compilers
 
+By platform:
+- **Linux**: GCC (C/C++/Fortran)
+- **macOS**: Clang (C/C++), GNU Fortran
+- **Windows**: MSVC (C/C++), Flang (Fortran)
+
+Syntax:
 - Classic: `{{ compiler('c') }}`, `{{ compiler('cxx') }}`, `{{ compiler('rust') }}`
 - Modern: `${{ compiler('c') }}`
 
@@ -149,6 +179,38 @@ requirements:
 3. **setuptools** (traditional): Legacy projects
 4. **flit-core**: Minimal, lightweight
 5. **meson-python**: Meson-based projects
+
+## Dependency Pinning
+
+### Global Pinning
+
+Global pins are defined in `conda_build_config.yaml` within the `conda-forge-pinning` feedstock. Packages are automatically built against these versions.
+
+### Overriding Pins
+
+Make pinning stricter:
+```yaml
+requirements:
+  run:
+    - {{ pin_compatible('gmp', max_pin='x.x.x') }}
+```
+
+Remove pinning:
+```yaml
+build:
+  ignore_run_exports:
+    - libfoo
+```
+
+### run_exports
+
+Automatically specifies ABI-compatible versions for dependent packages:
+
+```yaml
+build:
+  run_exports:
+    - {{ pin_subpackage('mylib', max_pin='x.x') }}
+```
 
 ## Advanced Requirements Patterns
 
@@ -217,8 +279,15 @@ grayskull cran <package-name>
 - Add missing test commands
 - Ensure license_file is correct
 - Apply CFEP-25 for noarch: python
+- Remove all instructional comments
 
-## 4. Local Build & Test
+## 4. Lint Locally
+
+```bash
+conda-smithy recipe-lint --conda-forge recipes/my-package
+```
+
+## 5. Local Build & Test
 
 ### For staged-recipes
 
@@ -250,16 +319,149 @@ conda build recipe/ -c conda-forge
 
 # Modern format
 rattler-build build -r recipe.yaml
+
+# Use mambabuild for faster debugging
+conda mambabuild recipe/ -c conda-forge
 ```
 
-## 5. Submission to staged-recipes
+## 6. Submission to staged-recipes
 
 1. Fork conda-forge/staged-recipes
 2. Create branch from main
 3. Add recipe in `recipes/<package-name>/`
 4. Push and create PR
-5. Request review from language-specific team
-6. After merge, bot creates feedstock automatically
+5. Complete submission checklist (see below)
+6. Request review from language-specific team
+7. After merge, bot creates feedstock automatically (several times hourly)
+
+# PR Submission Checklist
+
+Before submitting, verify all items:
+
+- [ ] **License correct**: SPDX identifier with correct case
+- [ ] **License file included**: `license_file` points to actual file
+- [ ] **Source is tarball**: Not a git repository URL
+- [ ] **SHA256 verified**: From PyPI or generated locally
+- [ ] **Dependencies in conda-forge**: All requirements available
+- [ ] **Tests included**: Import tests and/or `pip check`
+- [ ] **Comments removed**: No generic instruction comments
+- [ ] **Recipe order correct**: Follows example structure
+- [ ] **Local build tested**: Used `build-locally.py`
+- [ ] **Linting passed**: `conda-smithy recipe-lint`
+
+# Review Teams
+
+Request review by commenting on your PR:
+
+| Language | Team |
+|----------|------|
+| Python | `@conda-forge/help-python` |
+| C/C++ | `@conda-forge/help-c-cpp` |
+| R | `@conda-forge/help-r` |
+| Go | `@conda-forge/help-go` |
+| Java | `@conda-forge/help-java` |
+| Julia | `@conda-forge/help-julia` |
+| Node.js | `@conda-forge/help-nodejs` |
+| Perl | `@conda-forge/help-perl` |
+| Ruby | `@conda-forge/help-ruby` |
+| Rust | `@conda-forge/help-rust` |
+| Other | `@conda-forge/staged-recipes` |
+
+**First-time contributors**: Use a bot command to ping review teams if you cannot mention them directly.
+
+**Review timeline**: Variable (days to weeks) depending on team capacity. Ask on Zulip chat if your PR needs attention.
+
+# Bot Commands & Automation
+
+## @conda-forge-admin Commands
+
+Use these in PR/issue comments:
+
+| Command | Action |
+|---------|--------|
+| `@conda-forge-admin, please rerender` | Regenerate CI configuration |
+| `@conda-forge-admin, please lint` | Run recipe linting |
+| `@conda-forge-admin, please update team` | Sync maintainer team |
+| `@conda-forge-admin, please restart ci` | Restart failed CI jobs |
+| `@conda-forge-admin, please add user @username` | Add maintainer |
+| `@conda-forge-admin, please update version` | Trigger version update |
+| `@conda-forge-admin, please add noarch: python` | Convert to noarch |
+
+## regro-cf-autotick-bot
+
+Automatically:
+- Monitors upstream version changes (PyPI, GitHub)
+- Creates version update PRs
+- Handles dependency migrations
+- Updates build matrices for new Python versions
+
+**Handling bot PRs**: You can commit directly to the bot's branch instead of creating new PRs. No approval needed—any maintainer can merge.
+
+# conda-forge.yml Configuration
+
+Key configuration options for feedstocks:
+
+## Provider Configuration
+
+```yaml
+provider:
+  linux_64: azure
+  osx_64: azure
+  win_64: azure
+  linux_aarch64: default
+  linux_ppc64le: default
+```
+
+## Build Tools
+
+```yaml
+conda_build_tool: mamba  # or conda, rattler-build
+conda_install_tool: micromamba  # default
+```
+
+## OS Versions
+
+```yaml
+os_version:
+  linux_64: alma9  # default; also cos7, alma8, ubi8
+```
+
+## Noarch Platforms
+
+```yaml
+noarch_platforms:
+  - linux_64
+  - win_64  # for multiple platforms
+```
+
+## Shell Script Linting
+
+```yaml
+shellcheck:
+  enabled: true
+```
+
+## Azure-Specific
+
+```yaml
+azure:
+  store_build_artifacts: true
+  max_parallel: 4
+```
+
+## Upload Control
+
+```yaml
+upload_on_branch: main  # Restrict uploads to specific branch
+```
+
+## Skip Rendering
+
+```yaml
+skip_render:
+  - .gitignore
+  - LICENSE.txt
+```
 
 # Templates
 
@@ -534,30 +736,56 @@ The `regro-cf-autotick-bot` monitors PyPI/GitHub for new versions and creates PR
 
 - **Version changes**: Reset to `0`
 - **Metadata-only changes**: Increment by `1`
+- **Build numbers over 1000**: Relics from compiler migrations. Reset to `0` when updating version.
 
 ## Rerendering
 
 Run when configuration changes:
 
 ```bash
+# Local
 conda smithy rerender -c auto
+
+# Or via web service (in PR comment)
+@conda-forge-admin, please rerender
 ```
 
-Triggers:
+**Triggers**:
 - Platform/skip changes
 - `yum_requirements.txt` or `conda-forge.yml` modified
 - Build matrix updates (Python versions)
 - conda-forge pinning updates
-
-## Handling Bot PRs
-
-You can commit directly to the bot's branch instead of creating new PRs.
 
 ## Forking Strategy
 
 Always fork feedstocks to avoid:
 - Wasteful CI duplication
 - Premature package publication (branches auto-publish)
+
+# Infrastructure & Build Pipeline
+
+## Build Workflow
+
+1. CI builds packages and uploads to `cf-staging` channel
+2. CI sends API call with feedstock token to webservices
+3. Webservices validates: token, package integrity, feedstock authorization
+4. Valid packages move to `cf-post-staging` for final verification
+5. Approved packages copy to `conda-forge` channel
+6. CDN replication (~15 minutes typical)
+
+## CI Providers
+
+| Provider | Platforms | Max Duration |
+|----------|-----------|--------------|
+| Azure Pipelines | Windows, macOS, Linux (native + emulated ARM/PPC) | 6 hours |
+| GitHub Actions | Administrative tasks, automerge | N/A |
+| Cirun | GPU, custom architectures | Varies |
+
+## Package Validation
+
+- New package names require manual registration via admin-requests (prevents typosquatting)
+- Feedstocks receive unique tokens for authentication
+- Glob patterns supported for dynamic package names (e.g., `libllvm*`)
 
 # CI Troubleshooting
 
@@ -568,6 +796,7 @@ Always fork feedstocks to avoid:
 - Split long-running tests
 - Use `pytest -x` to fail fast
 - Skip slow tests in CI with markers
+- Set `idle_timeout_minutes` in conda-forge.yml for packages with minimal output
 
 ### Missing Dependencies
 
@@ -587,6 +816,24 @@ Always fork feedstocks to avoid:
 - Split into multiple outputs
 
 ## Platform-Specific Issues
+
+### Windows CMake/MSBuild
+
+MSBuild.exe isn't properly configured in Azure Windows images. Use alternatives:
+
+```yaml
+requirements:
+  build:
+    - cmake
+    - ninja  # or jom
+```
+
+Then in build script:
+```bash
+cmake -G"Ninja" ..
+# or
+cmake -G"NMake Makefiles JOM" ..
+```
 
 ### Windows Linking Errors
 
@@ -627,6 +874,28 @@ build:
     - "*/libcuda.so*"  # [linux]
 ```
 
+### libGL.so.1 Import Error
+
+Add as Linux host dependency:
+
+```yaml
+requirements:
+  host:
+    - libgl-devel  # [linux]
+```
+
+### Qt Platform Plugin Error
+
+For headless CI testing:
+
+```yaml
+test:
+  commands:
+    - export QT_QPA_PLATFORM=offscreen && python -c "import mypackage"  # [linux]
+```
+
+Or set in meta.yaml script environment.
+
 # Common Errors & Solutions
 
 ## "ImportError: No module named..."
@@ -645,7 +914,7 @@ build:
 ## "Hash mismatch"
 
 **Diagnosis**: Upstream tarball changed or wrong SHA.
-**Fix**: Verify source URL. Generate hash: `openssl sha256 <file>`
+**Fix**: Verify source URL. Generate hash: `openssl sha256 <file>` or `curl -sL <url> | sha256sum`
 
 ## "CMake can't find Python"
 
@@ -676,26 +945,52 @@ requirements:
     - cross-python_{{ target_platform }}  # [build_platform != target_platform]
 ```
 
+## conda-verify Import Error
+
+**Safe to ignore**: conda-forge doesn't use conda-verify for validation despite the warning message.
+
+## Build Failed - Retrigger
+
+For infrastructure issues (not recipe errors):
+```bash
+git commit --amend --no-edit
+git push -f
+```
+
+# Common Mistakes to Avoid
+
+1. **Missing dependencies**: Verify all required packages exist in conda-forge before submission
+2. **Incorrect hashes**: Double-check SHA256 values against official sources
+3. **Platform issues**: Test across platforms or explicitly exclude unsupported ones
+4. **Incomplete testing**: Include basic import tests to verify installation success
+5. **Generic comments left**: Remove all instruction comments from example recipes
+6. **Wrong license case**: Use exact SPDX identifiers (Apache-2.0, not APACHE 2.0)
+7. **Git URLs for source**: Use tarballs, not repository URLs
+8. **Branching feedstocks**: Always fork instead of branch to avoid auto-publishing
+9. **Forgetting to rerender**: Run after any conda-forge.yml or platform changes
+10. **Hardcoded versions**: Use jinja2/context variables for version and sha256
+
 # Best Practices Checklist
 
 ## Recipe Quality
 - [ ] **License File**: Is `license_file` populated with correct path?
+- [ ] **License SPDX**: Using correct SPDX identifier with proper case?
 - [ ] **CFEP-25 Compliance**: For `noarch: python`, uses `python_min` variable?
 - [ ] **Tests**: Includes `pip check` (Python) or binary execution tests?
 - [ ] **Dependencies**: All available in conda-forge?
 - [ ] **Build Number**: Reset to `0` for new versions?
-- [ ] **Maintainers**: Valid GitHub handles?
+- [ ] **Maintainers**: Valid GitHub handles with consent?
 
 ## Code Quality
 - [ ] **No Hardcoded Versions**: Uses jinja2/context variables?
 - [ ] **Correct Selectors**: Platform selectors are accurate?
 - [ ] **Pin Compatible**: Binary packages use `{{ pin_compatible() }}`?
-- [ ] **Source Hash**: SHA256 is correct?
+- [ ] **Source Hash**: SHA256 is correct and from official source?
 
 ## Submission
 - [ ] **Local Build**: Tested with `build-locally.py`?
+- [ ] **Linting Passed**: `conda-smithy recipe-lint`?
 - [ ] **Removed Comments**: Generic instruction comments removed?
-- [ ] **License Check**: SPDX identifier used?
 - [ ] **Fork Strategy**: Using fork, not branch?
 
 # Advanced Patterns
@@ -747,6 +1042,15 @@ source:
     - 0001-update-deps.patch
 ```
 
+## Platform Exclusion (Modern Format)
+
+```yaml
+build:
+  skip:
+    - win
+    - osx and arm64
+```
+
 # References
 
 - [conda-forge Documentation](https://conda-forge.org/docs/)
@@ -754,3 +1058,6 @@ source:
 - [conda-smithy](https://github.com/conda-forge/conda-smithy)
 - [Grayskull](https://github.com/conda/grayskull)
 - [CFEP-25: python_min](https://github.com/conda-forge/cfep/blob/main/cfep-25.md)
+- [conda-forge Status Dashboard](https://conda-forge.org/status)
+- [Feedstock Outputs](https://conda-forge.org/feedstock-outputs)
+- [Zulip Chat](https://conda-forge.zulipchat.com/)
