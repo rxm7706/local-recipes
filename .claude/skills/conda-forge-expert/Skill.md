@@ -17,6 +17,8 @@ This Skill transforms Claude into a Senior Conda-Forge Maintainer with knowledge
 - Understanding conda-forge infrastructure and automation
 - Using modern tools like rattler-build and pixi
 
+**IMPORTANT**: Always run `build-locally.py` to test recipes before submission. This is a mandatory step in the workflow.
+
 Use this skill whenever the user asks to "package" a tool, "fix a build" on conda-forge, or "update a recipe".
 
 # Modern Build Tools
@@ -442,6 +444,56 @@ Syntax:
 - Classic: `{{ compiler('c') }}`, `{{ compiler('cxx') }}`, `{{ compiler('rust') }}`
 - Modern: `${{ compiler('c') }}`
 
+# Mandatory Local Testing with build-locally.py
+
+**CRITICAL**: You MUST always run `build-locally.py` to test recipes before submission. This step is non-negotiable and catches issues that linting alone cannot detect.
+
+## Running build-locally.py
+
+```bash
+# Navigate to repository root
+cd ~/staged-recipes  # or ~/my-feedstock
+
+# Run the local build script
+python build-locally.py
+
+# Or specify a variant directly
+python build-locally.py linux64
+python build-locally.py osx64
+python build-locally.py win64
+python build-locally.py linux64_cuda118
+```
+
+## Requirements
+
+- **Linux builds**: Requires Docker installed and running
+- **macOS builds**: Prompts for SDK location (set `OSX_SDK_DIR` environment variable)
+- **Windows builds**: Requires native Windows environment
+
+## What build-locally.py Tests
+
+1. **Dependency resolution**: Verifies all dependencies can be resolved
+2. **Build scripts**: Runs actual build.sh/build.bat scripts
+3. **Test commands**: Executes all tests defined in the recipe
+4. **Package creation**: Creates the actual conda package
+5. **Import checks**: Verifies Python imports and `pip check`
+
+## Interpreting Results
+
+- **Success**: Package builds and all tests pass - ready for PR
+- **Dependency errors**: Missing packages in conda-forge - add them first
+- **Build failures**: Fix build scripts or requirements
+- **Test failures**: Fix tests or recipe configuration
+
+## Always Run Before
+
+- Submitting a new recipe to staged-recipes
+- Creating a PR for feedstock updates
+- After any recipe modifications
+- After rerendering with conda-smithy
+
+This step is **mandatory** and should never be skipped, even for "simple" changes.
+
 # Requirements Structure
 
 ## Three-Tier System
@@ -581,7 +633,9 @@ grayskull cran <package-name>
 conda-smithy recipe-lint --conda-forge recipes/my-package
 ```
 
-## 5. Local Build & Test
+## 5. Local Build & Test (MANDATORY)
+
+**You MUST run `build-locally.py` before submitting any recipe.** This is a required step that validates your recipe actually builds and passes tests.
 
 ### For staged-recipes
 
@@ -605,7 +659,7 @@ cd ~/my-feedstock
 python build-locally.py
 ```
 
-### Direct conda-build
+### Alternative: Direct conda-build (for debugging only)
 
 ```bash
 # Classic format
@@ -617,6 +671,8 @@ rattler-build build -r recipe.yaml
 # Use mambabuild for faster debugging
 conda mambabuild recipe/ -c conda-forge
 ```
+
+**Note**: Even if using direct conda-build for debugging, you should still run `build-locally.py` before final submission to ensure CI compatibility.
 
 ## 6. Submission to staged-recipes
 
@@ -640,8 +696,10 @@ Before submitting, verify all items:
 - [ ] **Tests included**: Import tests and/or `pip check`
 - [ ] **Comments removed**: No generic instruction comments
 - [ ] **Recipe order correct**: Follows example structure
-- [ ] **Local build tested**: Used `build-locally.py`
+- [ ] **Local build tested (REQUIRED)**: Must have run `python build-locally.py` successfully
 - [ ] **Linting passed**: `conda-smithy recipe-lint`
+
+**IMPORTANT**: The local build test with `build-locally.py` is mandatory. PRs should not be submitted until this step passes successfully.
 
 # Review Teams
 
@@ -1282,7 +1340,7 @@ git push -f
 - [ ] **Source Hash**: SHA256 is correct and from official source?
 
 ## Submission
-- [ ] **Local Build**: Tested with `build-locally.py`?
+- [ ] **Local Build (REQUIRED)**: Tested with `python build-locally.py`? This is mandatory!
 - [ ] **Linting Passed**: `conda-smithy recipe-lint`?
 - [ ] **Removed Comments**: Generic instruction comments removed?
 - [ ] **Fork Strategy**: Using fork, not branch?
