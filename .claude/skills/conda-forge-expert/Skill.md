@@ -47,6 +47,11 @@ Before finalizing any code, you must mentally run the conda-forge-lint rules:
 - **License**: Must be in `about: license_file`.
 - **Selectors**: Use `# [linux]` or `# [win]`. Do not use `skip: True`. Use `skip: true`.
 - **Noarch**: Use `noarch: python` only for pure Python packages with no OS-specific dependencies or compilation.
+- **CFEP-25 Compliance** (CRITICAL for noarch: python): All `noarch: python` packages MUST use the `python_min` variable from global pinnings:
+  - `host: python {{ python_min }}` - Build against minimum supported Python
+  - `run: python >={{ python_min }}` - Allow any Python >= minimum
+  - `test: requires: python {{ python_min }}` - Test against minimum version
+  - Maintainers may override `python_min` in `recipe/conda_build_config.yaml` if their package requires a newer minimum.
 - **Source**: Prefer `url` with `sha256`. Do not use git tags unless absolutely necessary (unstable).
 - **Compilers**: Use `{{ compiler('c') }}` (classic) or `c` (modern) in `requirements: build`.
 
@@ -76,6 +81,8 @@ Before finalizing any code, you must mentally run the conda-forge-lint rules:
 
 ## Template 1: Python Package (Classic meta.yaml)
 
+This template follows CFEP-25 requirements for `noarch: python` packages.
+
 ```yaml
 {% set name = "example-package" %}
 {% set version = "1.0.0" %}
@@ -95,12 +102,12 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
     - setuptools
     - wheel
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - numpy
     - pandas
 
@@ -111,6 +118,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/example/package
@@ -121,6 +129,13 @@ about:
 extra:
   recipe-maintainers:
     - your-github-username
+```
+
+**Note on CFEP-25**: The `python_min` variable is provided by conda-forge's global pinnings and represents the oldest supported Python version (e.g., 3.9). If your package requires a newer minimum Python version, override it in `recipe/conda_build_config.yaml`:
+
+```yaml
+python_min:
+  - "3.10"
 ```
 
 ## Template 2: Rust/C++ Application (Modern recipe.yaml)
@@ -189,7 +204,8 @@ extra:
 # Best Practices Checklist
 
 - [ ] **License File**: Is `license_file` populated? (Critical for conda-forge).
+- [ ] **CFEP-25 Compliance**: For `noarch: python` packages, does the recipe use `python_min` variable? (`host: python {{ python_min }}`, `run: python >={{ python_min }}`, `test: requires: python {{ python_min }}`).
 - [ ] **Tests**: Does the recipe include `pip check` (for Python) or binary execution tests?
-- [ ] **Pinned Dependencies**: Are `numpy` or `python` constrained correctly? (e.g., `numpy >=1.21`).
+- [ ] **Pinned Dependencies**: Are `numpy` or other deps constrained correctly? (e.g., `numpy >=1.21`).
 - [ ] **Build Number**: Reset to `0` for new versions? Incremented for metadata changes?
 - [ ] **Maintainers**: Is the GitHub handle valid?
