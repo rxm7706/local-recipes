@@ -85,6 +85,9 @@ grayskull = ["python", "grayskull"]
 conda-smithy = ["python", "conda-smithy"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
 
+[feature.local-recipes.activation]
+scripts = ["scripts/load-env.sh"]
+
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"
