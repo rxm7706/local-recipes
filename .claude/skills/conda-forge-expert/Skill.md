@@ -1,8 +1,8 @@
 ---
 name: Conda-Forge Expert
 description: A comprehensive guide for generating, auditing, and maintaining conda-forge recipes. Handles legacy (meta.yaml) and modern (recipe.yaml) formats, linting, CI troubleshooting, and feedstock maintenance.
-version: 2.1.0
-dependencies: conda-build, conda-smithy, grayskull, rattler-build
+version: 2.2.0
+dependencies: conda-build, conda-smithy, grayskull, rattler-build, pixi
 ---
 
 # Overview
@@ -15,8 +15,159 @@ This Skill transforms Claude into a Senior Conda-Forge Maintainer with knowledge
 - Formatting recipes according to strict conda-forge linting rules
 - Building and testing recipes locally before submission
 - Understanding conda-forge infrastructure and automation
+- Using modern tools like rattler-build and pixi
 
 Use this skill whenever the user asks to "package" a tool, "fix a build" on conda-forge, or "update a recipe".
+
+# Modern Build Tools
+
+## rattler-build
+
+A fast, standalone Conda package builder written in Rust. No Python or conda-build dependency required.
+
+### Installation
+
+```bash
+# Via pixi (recommended)
+pixi global install rattler-build
+
+# Via conda/mamba
+micromamba install rattler-build -c conda-forge
+
+# Via Homebrew
+brew install rattler-build
+
+# Via Arch Linux
+pacman -S rattler-build
+```
+
+### Key Commands
+
+```bash
+# Build a package
+rattler-build build -r recipe.yaml
+
+# Build with specific channel
+rattler-build build -r recipe.yaml -c conda-forge
+
+# Build for specific platform
+rattler-build build -r recipe.yaml --target-platform linux-64
+
+# Test an existing package
+rattler-build test --package-file my-package.conda
+
+# Generate recipe from PyPI
+rattler-build generate-recipe pypi numpy
+
+# Generate recipe from CRAN
+rattler-build generate-recipe cran ggplot2
+
+# Render recipe without building
+rattler-build build -r recipe.yaml --render-only
+
+# Publish to prefix.dev
+rattler-build publish --to prefix.dev my-package.conda
+
+# Publish to anaconda.org
+rattler-build publish --to anaconda.org my-package.conda
+```
+
+### System Dependencies
+
+- **macOS**: `install_name_tool` for library path rewriting
+- **Linux**: `patchelf` for runtime path modifications
+- **All**: `git` for repository checkouts
+
+## pixi
+
+A cross-platform package manager and workflow tool built on the conda ecosystem.
+
+### Installation
+
+```bash
+# macOS/Linux
+curl -fsSL https://pixi.sh/install.sh | sh
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm -useb https://pixi.sh/install.ps1 | iex"
+
+# Homebrew
+brew install pixi
+
+# Arch Linux
+pacman -S pixi
+```
+
+### Key Commands
+
+```bash
+# Initialize a project
+pixi init
+
+# Add dependencies
+pixi add numpy pandas
+
+# Add PyPI dependency
+pixi add --pypi requests
+
+# Run a task
+pixi run test
+
+# Enter environment shell
+pixi shell
+
+# Install global tool
+pixi global install cowpy
+
+# Lock dependencies
+pixi lock
+```
+
+### pixi.toml Configuration
+
+```toml
+[project]
+name = "my-project"
+version = "0.1.0"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
+
+[dependencies]
+python = ">=3.9"
+numpy = "*"
+
+[pypi-dependencies]
+requests = "*"
+
+[tasks]
+test = "pytest -v"
+lint = "ruff check ."
+build = "rattler-build build -r recipe.yaml"
+
+[feature.test.dependencies]
+pytest = "*"
+
+[environments]
+test = ["test"]
+```
+
+### pixi-build-backends
+
+Build packages directly from source with specialized backends:
+
+```toml
+[build-system]
+# For Python projects
+build-backend = { name = "pixi-build-python", version = "*" }
+# For CMake projects
+build-backend = { name = "pixi-build-cmake", version = "*" }
+# For Rust projects
+build-backend = { name = "pixi-build-rust", version = "*" }
+# For recipe.yaml files
+build-backend = { name = "pixi-build-rattler-build", version = "*" }
+
+channels = ["https://prefix.dev/conda-forge"]
+```
 
 # Recipe Generation Tools
 
@@ -71,7 +222,150 @@ Always ask the user which format they prefer if not specified. Modern recipe.yam
 - Context variables with `${{ }}` substitution syntax
 - Structure: context, package, source, build, requirements, tests, about
 - Strict YAML compliance (valid YAML without preprocessing)
-- Eliminates selectors in favor of YAML conditionals
+- Uses if/then/else conditionals instead of `# [selector]` comments
+
+### if/then/else Syntax (Modern Selectors)
+
+Replace classic selectors with YAML conditionals:
+
+```yaml
+requirements:
+  host:
+    - if: unix
+      then: unix-tool
+    - if: win
+      then: win-tool
+    # Multiple items
+    - if: linux
+      then:
+        - libfoo
+        - libbar
+    # Complex conditions
+    - if: osx and arm64
+      then: special-arm-lib
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+```
+
+### Available Selector Variables
+
+**Platform**: `unix`, `win`, `linux`, `osx`
+
+**Architecture**: `x86`, `x86_64`, `aarch64`/`arm64`, `ppc64`, `ppc64le`, `s390x`
+
+**Build Context**: `target_platform`, `build_platform`
+
+### Conditional Operators
+
+- Comparisons: `==`, `!=`
+- Logical: `and`, `or`, `not`
+- Version matching: `match(python, ">=3.8")`
+- Grouping: `(osx and arm64) or (linux and aarch64)`
+
+### Scalar Field Conditionals
+
+For non-list fields, use Jinja:
+
+```yaml
+build:
+  script: ${{ "build.sh" if unix else "build.bat" }}
+```
+
+### Variants Configuration
+
+Create `variants.yaml` or `variant_config.yaml`:
+
+```yaml
+python:
+  - "3.9"
+  - "3.10"
+  - "3.11"
+
+numpy:
+  - "1.24"
+  - "1.26"
+
+# Zip keys pair versions positionally (same length required)
+zip_keys:
+  - [python, numpy]
+
+# Pin run dependencies based on build
+pin_run_as_build:
+  numpy:
+    max_pin: 'x.x'
+```
+
+### Tests Section (Modern Format)
+
+```yaml
+tests:
+  # Python import test
+  - python:
+      imports:
+        - mypackage
+        - mypackage.submodule
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+  # Script test
+  - script:
+      - mycommand --help
+      - mycommand --version
+    requirements:
+      run:
+        - pytest
+
+  # Package contents test
+  - package_contents:
+      lib:
+        - mylib.so  # [unix]
+        - mylib.dll  # [win]
+      include:
+        - mylib/*.h
+      bin:
+        - mytool
+
+  # Downstream test
+  - downstream:
+      - dependent-package
+```
+
+### Advanced Build Options
+
+```yaml
+build:
+  number: 0
+
+  # Python-specific
+  python:
+    entry_points:
+      - mycli = mypackage.cli:main
+    skip_pyc_compilation: ["mypackage/templates/**"]
+
+  # File inclusion control
+  files:
+    include:
+      - include/**/*.h
+    exclude:
+      - include/**/private.h
+
+  # Dynamic linking
+  dynamic_linking:
+    rpaths:
+      - lib/
+    missing_dso_allowlist:
+      - "*/libcuda.so*"
+    overlinking_behavior: error
+    overdepending_behavior: ignore
+
+  # Variant control
+  variant:
+    use_keys:
+      - python
+    ignore_keys:
+      - numpy
+    down_prioritize_variant: 1
+```
 
 # Linting & Validation
 
@@ -1051,8 +1345,46 @@ build:
     - osx and arm64
 ```
 
+# Format Comparison: meta.yaml vs recipe.yaml
+
+| Feature | meta.yaml (Classic) | recipe.yaml (Modern) |
+|---------|---------------------|----------------------|
+| **Syntax** | Jinja2 `{{ }}` | Context `${{ }}` |
+| **Selectors** | `# [linux]` comments | `if/then/else` YAML |
+| **Variables** | Top-level `{% set %}` | `context:` section |
+| **Tests** | `test:` section | `tests:` list |
+| **Compliance** | Requires preprocessing | Valid YAML directly |
+| **Build tool** | conda-build | rattler-build |
+| **Python imports** | `test: imports:` | `tests: - python: imports:` |
+
+## Converting meta.yaml to recipe.yaml
+
+Key transformations:
+
+```yaml
+# meta.yaml
+{% set name = "pkg" %}
+{% set version = "1.0" %}
+requirements:
+  host:
+    - openssl  # [unix]
+    - openssl-windows  # [win]
+
+# recipe.yaml
+context:
+  name: pkg
+  version: "1.0"
+requirements:
+  host:
+    - if: unix
+      then: openssl
+    - if: win
+      then: openssl-windows
+```
+
 # References
 
+## conda-forge
 - [conda-forge Documentation](https://conda-forge.org/docs/)
 - [staged-recipes Repository](https://github.com/conda-forge/staged-recipes)
 - [conda-smithy](https://github.com/conda-forge/conda-smithy)
@@ -1061,3 +1393,12 @@ build:
 - [conda-forge Status Dashboard](https://conda-forge.org/status)
 - [Feedstock Outputs](https://conda-forge.org/feedstock-outputs)
 - [Zulip Chat](https://conda-forge.zulipchat.com/)
+
+## prefix-dev (Modern Tools)
+- [rattler-build](https://github.com/prefix-dev/rattler-build)
+- [rattler-build Documentation](https://rattler.build/latest/)
+- [pixi](https://github.com/prefix-dev/pixi)
+- [pixi Documentation](https://pixi.sh/latest/)
+- [pixi-build-backends](https://github.com/prefix-dev/pixi-build-backends)
+- [recipe-format Schema](https://github.com/prefix-dev/recipe-format)
+- [prefix.dev](https://prefix.dev/) - Package discovery and publishing
