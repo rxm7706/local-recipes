@@ -1,0 +1,40 @@
+{% set name = "openai-apps-sdk-ui" %}
+{% set npm_name = "@openai/apps-sdk-ui" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://registry.npmjs.org/{{ npm_name }}/-/apps-sdk-ui-{{ version }}.tgz
+  sha256: 68f7833cf3c7b8babf7453fa317ba46c3a9365d326f881b83c10fffa6a08cc66
+
+build:
+  number: 0
+
+requirements:
+  host:
+    - nodejs
+  run:
+    - nodejs
+
+test:
+  commands:
+    - test -f $PREFIX/lib/node_modules/@openai/apps-sdk-ui/package.json  # [not win]
+    - if not exist %PREFIX%\\lib\\node_modules\\@openai\\apps-sdk-ui\\package.json exit 1  # [win]
+
+about:
+  home: https://github.com/openai/apps-sdk-ui
+  license: MIT
+  license_file: LICENSE
+  summary: Design system for building apps for ChatGPT with Apps SDK
+  description: |
+    A lightweight, accessible design system for building high-quality ChatGPT apps.
+    Includes Tailwind-integrated design tokens, React components built on Radix
+    primitives, and utilities optimized for consistent experiences inside ChatGPT.
+  dev_url: https://github.com/openai/apps-sdk-ui
+
+extra:
+  recipe-maintainers:
+    - rxm7706
