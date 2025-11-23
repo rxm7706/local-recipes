@@ -59,7 +59,7 @@ CONDA_BLD_PATH = "$PIXI_PROJECT_ROOT/build_artifacts"
 MINIFORGE_HOME = "$CONDA_PREFIX"
 
 [feature.grayskull.dependencies]
-grayskull = ">=2.9.2,<3"
+grayskull = ">=2.7.3"
 [feature.grayskull.tasks.pypi]
 description = "generate a recipe for a PyPI package name with `grayskull`"
 cmd = "cd recipes && grayskull pypi --strict-conda-forge"
