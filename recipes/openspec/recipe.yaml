@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openspec
+  npm_name: "@fission-ai/openspec"
+  npm_scope: fission-ai
+  version: "0.16.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/${{ npm_name }}/-/${{ name }}-${{ version }}.tgz
+  sha256: d58717a3cb0d59a9ab09095ddf73c4fddc99affbf3d1d6515a9f1d9038e7cd60
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+        - npm pack
+        - npm install -g fission-ai-${PKG_NAME}-${PKG_VERSION}.tgz
+    - if: win
+      then:
+        - npm config set prefix "%PREFIX%"
+        - npm pack
+        - npm install --userconfig nonexistentrc -g fission-ai-%PKG_NAME%-%PKG_VERSION%.tgz
+
+requirements:
+  host:
+    - nodejs >=20.19.0
+  run:
+    - nodejs >=20.19.0
+
+tests:
+  - script:
+      - ${{ name }} --help
+  - script:
+      - if: unix
+        then: test -f $PREFIX/bin/${{ name }}
+      - if: win
+        then: if not exist %PREFIX%\bin\${{ name }} exit 1
+
+about:
+  summary: AI-native system for spec-driven development
+  description: |
+    OpenSpec is a specification-driven development framework that aligns humans
+    and AI coding assistants through structured specs before implementation.
+    It enables spec-driven development for AI coding assistants with no API keys required.
+  homepage: https://github.com/Fission-AI/OpenSpec
+  repository: https://github.com/Fission-AI/OpenSpec
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

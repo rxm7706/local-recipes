@@ -1,7 +1,7 @@
 ---
 name: Conda-Forge Expert
 description: A comprehensive guide for generating, auditing, and maintaining conda-forge recipes. Handles legacy (meta.yaml) and modern (recipe.yaml) formats, linting, CI troubleshooting, and feedstock maintenance.
-version: 2.2.0
+version: 2.3.0
 dependencies: conda-build, conda-smithy, grayskull, rattler-build, pixi
 ---
 
@@ -1217,6 +1217,12 @@ cp -r . "${PREFIX}/lib/node_modules/@scope/package-name/"
 
 Modern format with schema_version: 1 for rattler-build. Uses if/then/else conditionals.
 
+**IMPORTANT**: rattler-build uses `build.bat` (not `bld.bat`) for Windows builds. Using `bld.bat` will trigger a linting warning.
+
+### Recommended: Inline Scripts (Most Reliable)
+
+Inline scripts are recommended for simple Node.js packages as they are more reliable with rattler-build. External script files may not be copied to the work directory correctly.
+
 ```yaml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
@@ -1239,9 +1245,16 @@ build:
   number: 0
   script:
     - if: unix
-      then: bash build.sh
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+        - npm pack
+        - npm install -g ${{ npm_scope }}-${PKG_NAME}-${PKG_VERSION}.tgz
     - if: win
-      then: cmd /c bld.bat
+      then:
+        - npm config set prefix "%PREFIX%"
+        - npm pack
+        - npm install --userconfig nonexistentrc -g ${{ npm_scope }}-%PKG_NAME%-%PKG_VERSION%.tgz
 
 requirements:
   host:
@@ -1269,9 +1282,19 @@ extra:
     - your-github-username
 ```
 
-### Modern Format Build Scripts
+### Alternative: External Build Scripts
 
-The same build scripts work for both meta.yaml and recipe.yaml since both conda-build and rattler-build set the `PKG_NAME` and `PKG_VERSION` environment variables.
+If you prefer external script files for complex builds, use `build.sh` and `build.bat` (not `bld.bat`):
+
+```yaml
+build:
+  number: 0
+  script:
+    - if: unix
+      then: bash build.sh
+    - if: win
+      then: cmd /c build.bat
+```
 
 **build.sh** (Unix):
 ```bash
@@ -1286,7 +1309,7 @@ npm pack
 npm install -g ${npm_scope}-${PKG_NAME}-${PKG_VERSION}.tgz
 ```
 
-**bld.bat** (Windows):
+**build.bat** (Windows):
 ```batch
 @echo on
 
