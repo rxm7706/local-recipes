@@ -1180,6 +1180,104 @@ mkdir -p "${PREFIX}/lib/node_modules/@scope/package-name"
 cp -r . "${PREFIX}/lib/node_modules/@scope/package-name/"
 ```
 
+## Template 7: Node.js/npm Package (Modern recipe.yaml)
+
+Modern format with schema_version: 1 for rattler-build. Uses if/then/else conditionals.
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: my-cli-tool
+  npm_name: "@scope/my-cli-tool"
+  npm_scope: scope
+  version: "1.0.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/${{ npm_name }}/-/${{ name }}-${{ version }}.tgz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: bash build.sh
+    - if: win
+      then: cmd /c bld.bat
+
+requirements:
+  host:
+    - nodejs
+  run:
+    - nodejs
+
+tests:
+  - script:
+      - ${{ name }} --help
+  - script:
+      - if: unix
+        then: test -f $PREFIX/bin/${{ name }}
+      - if: win
+        then: if not exist %PREFIX%\bin\${{ name }} exit 1
+
+about:
+  summary: A Node.js CLI tool.
+  homepage: https://github.com/user/my-cli-tool
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Modern Format Build Scripts
+
+The same build scripts work for both meta.yaml and recipe.yaml since both conda-build and rattler-build set the `PKG_NAME` and `PKG_VERSION` environment variables.
+
+**build.sh** (Unix):
+```bash
+#!/bin/bash
+set -ex
+
+export npm_config_prefix="${PREFIX}"
+export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+
+npm pack
+# For scoped packages: scope-name-VERSION.tgz
+npm install -g ${npm_scope}-${PKG_NAME}-${PKG_VERSION}.tgz
+```
+
+**bld.bat** (Windows):
+```batch
+@echo on
+
+call npm config set prefix "%PREFIX%"
+if errorlevel 1 exit 1
+
+call npm pack
+if errorlevel 1 exit 1
+
+call npm install --userconfig nonexistentrc -g %npm_scope%-%PKG_NAME%-%PKG_VERSION%.tgz
+if errorlevel 1 exit 1
+```
+
+### Key Differences: meta.yaml vs recipe.yaml for Node.js
+
+| Feature | meta.yaml (Classic) | recipe.yaml (Modern) |
+|---------|---------------------|----------------------|
+| **Variables** | `{% set name = "pkg" %}` | `context: name: pkg` |
+| **Substitution** | `{{ name }}` | `${{ name }}` |
+| **Platform tests** | `# [not win]` / `# [win]` | `if: unix` / `if: win` |
+| **Build script** | `script: build.sh` | `script: - if: unix then: bash build.sh` |
+| **Test section** | `test: commands:` | `tests: - script:` |
+| **Build tool** | conda-build | rattler-build |
+
 # Feedstock Maintenance
 
 ## Version Updates
