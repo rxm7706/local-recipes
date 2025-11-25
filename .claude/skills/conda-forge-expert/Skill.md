@@ -371,12 +371,12 @@ build:
 
 # Linting & Validation
 
-## Local Linting with conda-smithy
+## Mandatory Local Linting with conda-smithy
 
-Always lint recipes before submission:
+**CRITICAL**: You MUST always run `conda-smithy recipe-lint` before submission. This step is mandatory and catches common recipe errors before CI runs.
 
 ```bash
-# Lint a single recipe
+# Lint a single recipe (REQUIRED before submission)
 conda-smithy recipe-lint recipes/my-package
 
 # Lint all recipes in staged-recipes
@@ -388,6 +388,27 @@ conda-smithy recipe-lint --conda-forge recipes/*
 #   skip:
 #     - lint_noarch_selectors
 ```
+
+### Installing conda-smithy
+
+```bash
+# Via conda/mamba (recommended)
+conda install -c conda-forge conda-smithy
+
+# Via pixi
+pixi global install conda-smithy
+```
+
+### What conda-smithy recipe-lint Checks
+
+1. **License validation**: Correct SPDX identifier and license_file present
+2. **Maintainer format**: Valid GitHub usernames in recipe-maintainers
+3. **Source integrity**: SHA256 checksums present, no git URLs for releases
+4. **Selector syntax**: Correct platform selector format
+5. **Recipe structure**: Required fields present and properly formatted
+6. **CFEP compliance**: python_min usage for noarch packages
+
+**IMPORTANT**: Run linting BEFORE `build-locally.py` to catch simple errors early.
 
 ## Critical Linting Rules
 
@@ -632,11 +653,21 @@ curl -sL https://registry.npmjs.org/<package>/-/<package>-<version>.tgz | sha256
 - Apply CFEP-25 for noarch: python
 - Remove all instructional comments
 
-## 4. Lint Locally
+## 4. Lint Locally (MANDATORY)
+
+**You MUST run `conda-smithy recipe-lint` before proceeding to build.** This catches common errors early.
 
 ```bash
-conda-smithy recipe-lint --conda-forge recipes/my-package
+# Install if needed
+conda install -c conda-forge conda-smithy
+
+# Lint your recipe (REQUIRED)
+conda-smithy recipe-lint recipes/my-package
+
+# Fix any errors before proceeding to step 5
 ```
+
+**Do NOT proceed to build-locally.py until linting passes.**
 
 ## 5. Local Build & Test (MANDATORY)
 
@@ -701,10 +732,12 @@ Before submitting, verify all items:
 - [ ] **Tests included**: Import tests and/or `pip check`
 - [ ] **Comments removed**: No generic instruction comments
 - [ ] **Recipe order correct**: Follows example structure
+- [ ] **Linting passed (REQUIRED)**: Must have run `conda-smithy recipe-lint` successfully
 - [ ] **Local build tested (REQUIRED)**: Must have run `python build-locally.py` successfully
-- [ ] **Linting passed**: `conda-smithy recipe-lint`
 
-**IMPORTANT**: The local build test with `build-locally.py` is mandatory. PRs should not be submitted until this step passes successfully.
+**CRITICAL**: Both linting AND local build tests are mandatory. PRs should not be submitted until BOTH steps pass successfully:
+1. First run: `conda-smithy recipe-lint recipes/my-package`
+2. Then run: `python build-locally.py`
 
 # Review Teams
 
@@ -1548,8 +1581,8 @@ git push -f
 - [ ] **Source Hash**: SHA256 is correct and from official source?
 
 ## Submission
+- [ ] **Linting Passed (REQUIRED)**: Tested with `conda-smithy recipe-lint`? This is mandatory!
 - [ ] **Local Build (REQUIRED)**: Tested with `python build-locally.py`? This is mandatory!
-- [ ] **Linting Passed**: `conda-smithy recipe-lint`?
 - [ ] **Removed Comments**: Generic instruction comments removed?
 - [ ] **Fork Strategy**: Using fork, not branch?
 
