@@ -371,12 +371,12 @@ build:
 
 # Linting & Validation
 
-## Local Linting with conda-smithy
+## Mandatory Local Linting with conda-smithy
 
-Always lint recipes before submission:
+**CRITICAL**: You MUST always run `conda-smithy recipe-lint` before submission. This step is mandatory and catches common recipe errors before CI runs.
 
 ```bash
-# Lint a single recipe
+# Lint a single recipe (REQUIRED before submission)
 conda-smithy recipe-lint recipes/my-package
 
 # Lint all recipes in staged-recipes
@@ -388,6 +388,27 @@ conda-smithy recipe-lint --conda-forge recipes/*
 #   skip:
 #     - lint_noarch_selectors
 ```
+
+### Installing conda-smithy
+
+```bash
+# Via conda/mamba (recommended)
+conda install -c conda-forge conda-smithy
+
+# Via pixi
+pixi global install conda-smithy
+```
+
+### What conda-smithy recipe-lint Checks
+
+1. **License validation**: Correct SPDX identifier and license_file present
+2. **Maintainer format**: Valid GitHub usernames in recipe-maintainers
+3. **Source integrity**: SHA256 checksums present, no git URLs for releases
+4. **Selector syntax**: Correct platform selector format
+5. **Recipe structure**: Required fields present and properly formatted
+6. **CFEP compliance**: python_min usage for noarch packages
+
+**IMPORTANT**: Run linting BEFORE `build-locally.py` to catch simple errors early.
 
 ## Critical Linting Rules
 
@@ -602,10 +623,11 @@ requirements:
 ## 1. Analysis
 
 Identify:
-- Language (Python, R, Rust, C++, Go)
-- Build system (setuptools, hatchling, poetry, cargo, cmake)
+- Language (Python, R, Rust, C++, Go, Node.js/TypeScript)
+- Build system (setuptools, hatchling, poetry, cargo, cmake, npm)
 - Dependencies and their conda-forge availability
 - License type
+- For npm packages: Check if scoped (@scope/name) or unscoped
 
 ## 2. Generate Skeleton
 
@@ -615,6 +637,10 @@ grayskull pypi <package-name>
 
 # R
 grayskull cran <package-name>
+
+# Node.js - check npm registry and create manually
+curl -s https://registry.npmjs.org/<package-name> | jq '.["dist-tags"].latest'
+curl -sL https://registry.npmjs.org/<package>/-/<package>-<version>.tgz | sha256sum
 
 # Rust/Go/C++ - create manually
 ```
@@ -627,11 +653,21 @@ grayskull cran <package-name>
 - Apply CFEP-25 for noarch: python
 - Remove all instructional comments
 
-## 4. Lint Locally
+## 4. Lint Locally (MANDATORY)
+
+**You MUST run `conda-smithy recipe-lint` before proceeding to build.** This catches common errors early.
 
 ```bash
-conda-smithy recipe-lint --conda-forge recipes/my-package
+# Install if needed
+conda install -c conda-forge conda-smithy
+
+# Lint your recipe (REQUIRED)
+conda-smithy recipe-lint recipes/my-package
+
+# Fix any errors before proceeding to step 5
 ```
+
+**Do NOT proceed to build-locally.py until linting passes.**
 
 ## 5. Local Build & Test (MANDATORY)
 
@@ -696,10 +732,12 @@ Before submitting, verify all items:
 - [ ] **Tests included**: Import tests and/or `pip check`
 - [ ] **Comments removed**: No generic instruction comments
 - [ ] **Recipe order correct**: Follows example structure
+- [ ] **Linting passed (REQUIRED)**: Must have run `conda-smithy recipe-lint` successfully
 - [ ] **Local build tested (REQUIRED)**: Must have run `python build-locally.py` successfully
-- [ ] **Linting passed**: `conda-smithy recipe-lint`
 
-**IMPORTANT**: The local build test with `build-locally.py` is mandatory. PRs should not be submitted until this step passes successfully.
+**CRITICAL**: Both linting AND local build tests are mandatory. PRs should not be submitted until BOTH steps pass successfully:
+1. First run: `conda-smithy recipe-lint recipes/my-package`
+2. Then run: `python build-locally.py`
 
 # Review Teams
 
@@ -1070,6 +1108,209 @@ extra:
     - your-github-username
 ```
 
+## Template 6: Node.js/npm Package (Classic meta.yaml)
+
+For Node.js packages from the npm registry. Includes handling for scoped packages (@scope/package-name).
+
+```yaml
+{% set name = "my-cli-tool" %}
+{% set npm_name = "@scope/my-cli-tool" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  # For scoped packages, npm uses: @scope/package/-/package-version.tgz
+  url: https://registry.npmjs.org/{{ npm_name }}/-/{{ name }}-{{ version }}.tgz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+
+requirements:
+  host:
+    - nodejs
+  run:
+    - nodejs
+
+test:
+  commands:
+    - {{ name }} --help
+    - test -f $PREFIX/bin/{{ name }}  # [not win]
+    - if not exist %PREFIX%\bin\{{ name }} exit 1  # [win]
+
+about:
+  home: https://github.com/user/my-cli-tool
+  license: MIT
+  license_file: LICENSE
+  summary: A Node.js CLI tool.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Node.js Build Scripts
+
+**build.sh** (Unix):
+```bash
+#!/bin/bash
+set -ex
+
+# Set npm prefix to install globally into the conda environment
+export npm_config_prefix="${PREFIX}"
+
+# Use a non-existent config file to avoid user-level npm config
+export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+
+# Pack the source (we're already in the extracted tarball)
+npm pack
+
+# Install globally with dependencies
+# For scoped packages (@scope/name), npm pack creates: scope-name-VERSION.tgz
+npm install -g scope-${PKG_NAME}-${PKG_VERSION}.tgz
+```
+
+**bld.bat** (Windows):
+```batch
+@echo on
+
+:: Set npm prefix to install globally into the conda environment
+call npm config set prefix "%PREFIX%"
+if errorlevel 1 exit 1
+
+:: Pack the source
+call npm pack
+if errorlevel 1 exit 1
+
+:: Install globally with dependencies
+:: For scoped packages (@scope/name), npm pack creates: scope-name-VERSION.tgz
+call npm install --userconfig nonexistentrc -g scope-%PKG_NAME%-%PKG_VERSION%.tgz
+if errorlevel 1 exit 1
+```
+
+### Node.js Package Notes
+
+1. **Scoped packages**: npm registry URLs use `@scope/package/-/package-version.tgz` (note: only the package name after `/` in the path)
+2. **npm pack naming**: Creates `scope-package-version.tgz` (scope without @, hyphens instead of slashes)
+3. **Dependencies**: npm install -g automatically installs all dependencies into `$PREFIX/lib/node_modules`
+4. **Binary linking**: npm automatically creates symlinks in `$PREFIX/bin` for packages with `bin` entries
+5. **Getting sha256**: `curl -sL <tarball-url> | sha256sum`
+6. **Unscoped packages**: For packages without a scope, use `${PKG_NAME}-${PKG_VERSION}.tgz` directly
+
+### Simple Copy Method (for packages without CLI)
+
+For Node.js libraries that don't need CLI binaries or dependencies bundled at runtime:
+
+**build.sh**:
+```bash
+#!/bin/bash
+set -ex
+
+mkdir -p "${PREFIX}/lib/node_modules/@scope/package-name"
+cp -r . "${PREFIX}/lib/node_modules/@scope/package-name/"
+```
+
+## Template 7: Node.js/npm Package (Modern recipe.yaml)
+
+Modern format with schema_version: 1 for rattler-build. Uses if/then/else conditionals.
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: my-cli-tool
+  npm_name: "@scope/my-cli-tool"
+  npm_scope: scope
+  version: "1.0.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/${{ npm_name }}/-/${{ name }}-${{ version }}.tgz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: bash build.sh
+    - if: win
+      then: cmd /c bld.bat
+
+requirements:
+  host:
+    - nodejs
+  run:
+    - nodejs
+
+tests:
+  - script:
+      - ${{ name }} --help
+  - script:
+      - if: unix
+        then: test -f $PREFIX/bin/${{ name }}
+      - if: win
+        then: if not exist %PREFIX%\bin\${{ name }} exit 1
+
+about:
+  summary: A Node.js CLI tool.
+  homepage: https://github.com/user/my-cli-tool
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Modern Format Build Scripts
+
+The same build scripts work for both meta.yaml and recipe.yaml since both conda-build and rattler-build set the `PKG_NAME` and `PKG_VERSION` environment variables.
+
+**build.sh** (Unix):
+```bash
+#!/bin/bash
+set -ex
+
+export npm_config_prefix="${PREFIX}"
+export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+
+npm pack
+# For scoped packages: scope-name-VERSION.tgz
+npm install -g ${npm_scope}-${PKG_NAME}-${PKG_VERSION}.tgz
+```
+
+**bld.bat** (Windows):
+```batch
+@echo on
+
+call npm config set prefix "%PREFIX%"
+if errorlevel 1 exit 1
+
+call npm pack
+if errorlevel 1 exit 1
+
+call npm install --userconfig nonexistentrc -g %npm_scope%-%PKG_NAME%-%PKG_VERSION%.tgz
+if errorlevel 1 exit 1
+```
+
+### Key Differences: meta.yaml vs recipe.yaml for Node.js
+
+| Feature | meta.yaml (Classic) | recipe.yaml (Modern) |
+|---------|---------------------|----------------------|
+| **Variables** | `{% set name = "pkg" %}` | `context: name: pkg` |
+| **Substitution** | `{{ name }}` | `${{ name }}` |
+| **Platform tests** | `# [not win]` / `# [win]` | `if: unix` / `if: win` |
+| **Build script** | `script: build.sh` | `script: - if: unix then: bash build.sh` |
+| **Test section** | `test: commands:` | `tests: - script:` |
+| **Build tool** | conda-build | rattler-build |
+
 # Feedstock Maintenance
 
 ## Version Updates
@@ -1340,8 +1581,8 @@ git push -f
 - [ ] **Source Hash**: SHA256 is correct and from official source?
 
 ## Submission
+- [ ] **Linting Passed (REQUIRED)**: Tested with `conda-smithy recipe-lint`? This is mandatory!
 - [ ] **Local Build (REQUIRED)**: Tested with `python build-locally.py`? This is mandatory!
-- [ ] **Linting Passed**: `conda-smithy recipe-lint`?
 - [ ] **Removed Comments**: Generic instruction comments removed?
 - [ ] **Fork Strategy**: Using fork, not branch?
 

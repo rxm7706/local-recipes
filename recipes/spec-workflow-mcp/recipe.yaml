@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: spec-workflow-mcp
+  npm_name: "@pimzino/spec-workflow-mcp"
+  npm_scope: pimzino
+  version: "2.0.9"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/${{ npm_name }}/-/${{ name }}-${{ version }}.tgz
+  sha256: 462be30e36b4ce36f61b6182cb77ae3b6b46bd832f62fbd28216aee0b256239e
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: bash build.sh
+    - if: win
+      then: cmd /c bld.bat
+
+requirements:
+  host:
+    - nodejs
+  run:
+    - nodejs
+
+tests:
+  - script:
+      - ${{ name }} --help
+  - script:
+      - if: unix
+        then: test -f $PREFIX/bin/${{ name }}
+      - if: win
+        then: if not exist %PREFIX%\bin\${{ name }} exit 1
+
+about:
+  summary: MCP server for spec-driven development workflow with real-time web dashboard
+  description: |
+    A Model Context Protocol (MCP) server that implements structured spec-driven
+    development workflow tools for AI-assisted software development, featuring
+    a real-time web dashboard and VSCode extension.
+  homepage: https://github.com/Pimzino/spec-workflow-mcp
+  repository: https://github.com/Pimzino/spec-workflow-mcp
+  license: GPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
