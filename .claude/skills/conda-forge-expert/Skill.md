@@ -602,10 +602,11 @@ requirements:
 ## 1. Analysis
 
 Identify:
-- Language (Python, R, Rust, C++, Go)
-- Build system (setuptools, hatchling, poetry, cargo, cmake)
+- Language (Python, R, Rust, C++, Go, Node.js/TypeScript)
+- Build system (setuptools, hatchling, poetry, cargo, cmake, npm)
 - Dependencies and their conda-forge availability
 - License type
+- For npm packages: Check if scoped (@scope/name) or unscoped
 
 ## 2. Generate Skeleton
 
@@ -615,6 +616,10 @@ grayskull pypi <package-name>
 
 # R
 grayskull cran <package-name>
+
+# Node.js - check npm registry and create manually
+curl -s https://registry.npmjs.org/<package-name> | jq '.["dist-tags"].latest'
+curl -sL https://registry.npmjs.org/<package>/-/<package>-<version>.tgz | sha256sum
 
 # Rust/Go/C++ - create manually
 ```
@@ -1068,6 +1073,111 @@ about:
 extra:
   recipe-maintainers:
     - your-github-username
+```
+
+## Template 6: Node.js/npm Package (Classic meta.yaml)
+
+For Node.js packages from the npm registry. Includes handling for scoped packages (@scope/package-name).
+
+```yaml
+{% set name = "my-cli-tool" %}
+{% set npm_name = "@scope/my-cli-tool" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  # For scoped packages, npm uses: @scope/package/-/package-version.tgz
+  url: https://registry.npmjs.org/{{ npm_name }}/-/{{ name }}-{{ version }}.tgz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+
+requirements:
+  host:
+    - nodejs
+  run:
+    - nodejs
+
+test:
+  commands:
+    - {{ name }} --help
+    - test -f $PREFIX/bin/{{ name }}  # [not win]
+    - if not exist %PREFIX%\bin\{{ name }} exit 1  # [win]
+
+about:
+  home: https://github.com/user/my-cli-tool
+  license: MIT
+  license_file: LICENSE
+  summary: A Node.js CLI tool.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Node.js Build Scripts
+
+**build.sh** (Unix):
+```bash
+#!/bin/bash
+set -ex
+
+# Set npm prefix to install globally into the conda environment
+export npm_config_prefix="${PREFIX}"
+
+# Use a non-existent config file to avoid user-level npm config
+export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+
+# Pack the source (we're already in the extracted tarball)
+npm pack
+
+# Install globally with dependencies
+# For scoped packages (@scope/name), npm pack creates: scope-name-VERSION.tgz
+npm install -g scope-${PKG_NAME}-${PKG_VERSION}.tgz
+```
+
+**bld.bat** (Windows):
+```batch
+@echo on
+
+:: Set npm prefix to install globally into the conda environment
+call npm config set prefix "%PREFIX%"
+if errorlevel 1 exit 1
+
+:: Pack the source
+call npm pack
+if errorlevel 1 exit 1
+
+:: Install globally with dependencies
+:: For scoped packages (@scope/name), npm pack creates: scope-name-VERSION.tgz
+call npm install --userconfig nonexistentrc -g scope-%PKG_NAME%-%PKG_VERSION%.tgz
+if errorlevel 1 exit 1
+```
+
+### Node.js Package Notes
+
+1. **Scoped packages**: npm registry URLs use `@scope/package/-/package-version.tgz` (note: only the package name after `/` in the path)
+2. **npm pack naming**: Creates `scope-package-version.tgz` (scope without @, hyphens instead of slashes)
+3. **Dependencies**: npm install -g automatically installs all dependencies into `$PREFIX/lib/node_modules`
+4. **Binary linking**: npm automatically creates symlinks in `$PREFIX/bin` for packages with `bin` entries
+5. **Getting sha256**: `curl -sL <tarball-url> | sha256sum`
+6. **Unscoped packages**: For packages without a scope, use `${PKG_NAME}-${PKG_VERSION}.tgz` directly
+
+### Simple Copy Method (for packages without CLI)
+
+For Node.js libraries that don't need CLI binaries or dependencies bundled at runtime:
+
+**build.sh**:
+```bash
+#!/bin/bash
+set -ex
+
+mkdir -p "${PREFIX}/lib/node_modules/@scope/package-name"
+cp -r . "${PREFIX}/lib/node_modules/@scope/package-name/"
 ```
 
 # Feedstock Maintenance
