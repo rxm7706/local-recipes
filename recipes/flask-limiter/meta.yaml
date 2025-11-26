@@ -1,0 +1,51 @@
+{% set name = "flask-limiter" %}
+{% set version = "4.0.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flask_limiter-{{ version }}.tar.gz
+  sha256: 536a8df0bb2033f415a2212e19a3b7ddfea38585ac5a2444e1cfa986a697847c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling >=1.14.0
+    - hatch-vcs >=0.4.0
+  run:
+    - python >={{ python_min }}
+    - limits >=3.13
+    - flask >=2
+    - ordered-set >4,<5
+    - rich >=12,<15
+    - typing_extensions >=4.3
+
+test:
+  imports:
+    - flask_limiter
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://flask-limiter.readthedocs.org
+  summary: Rate limiting for flask applications
+  dev_url: https://github.com/alisaifee/flask-limiter
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - xylar
