@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RuffConfigService">
+    <option name="globalRuffExecutablePath" value="$PROJECT_DIR$/../../../../Apps/LocalConda/Miniforge/Py312-24710/bin/ruff" />
+  </component>
+</project>
