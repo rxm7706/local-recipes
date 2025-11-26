@@ -1,0 +1,73 @@
+{% set name = "flask-appbuilder" %}
+{% set version = "5.0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: f577b982a1ae40bc213238cedb93c39c67cf2199aa1e006e087ea1b3507d5450
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+
+  run:
+    - python >={{ python_min }}
+    - apispec >=6.0.0,<7
+    - colorama >=0.3.9,<1
+    - click >=8,<9
+    - email-validator >=1.0.5
+    - flask >=2,<4
+    - flask-babel >=3,<5
+    - flask-limiter >3,<4
+    - flask-login >=0.3,<0.7
+    - flask-sqlalchemy >=2.4.0,<4
+    - flask-wtf >=0.14.2,<2
+    - flask-jwt-extended >=4.0.0,<5.0.0
+    - jsonschema >=3,<5
+    - marshmallow >=3.18.0,<5
+    - marshmallow-sqlalchemy >=0.22.0,<3.0.0
+    - prison >=0.2.1,<1.0.0
+    - pyjwt >=2.0.0,<3.0.0
+    - python-dateutil >=2.3,<3
+    - sqlalchemy >=1.4.0,<3
+    - sqlalchemy-utils >=0.32.21,<1
+    - wtforms <4
+    - werkzeug <4
+
+test:
+  imports:
+    - flask_appbuilder
+    - flask_appbuilder.babel
+    - flask_appbuilder.charts
+    - flask_appbuilder.models
+    - flask_appbuilder.security
+    - flask_appbuilder.translations
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: http://flaskappbuilder.pythonanywhere.com/
+  license_file: LICENSE
+  license: BSD-3-Clause
+  license_family: BSD
+  summary: Simple and rapid application development framework, built on top of Flask. includes detailed security, auto CRUD generation for your models, google charts and much more.
+  dev_url: https://github.com/dpgaspar/flask-appbuilder/
+  doc_url: https://github.com/dpgaspar/flask-appbuilder/
+
+extra:
+  recipe-maintainers:
+    - halldc
+    - xylar
