@@ -1,13 +1,13 @@
 {% set name = "java-access-bridge-wrapper" %}
-{% set version = "0.14.1" %}
+{% set version = "2.0.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/java_access_bridge_wrapper-{{ version }}.tar.gz
-  sha256: 8ee085b6257b23037e84c0572821e636402b14450ec7d396b0b04ab85ce40476
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/java_access_bridge_wrapper-{{ version }}.tar.gz
+  sha256: eb7d067f5c9fe951110cc532ee6045fd204b31ab7294208eb1db2bbd31ea690e
 
 build:
   noarch: python
@@ -18,13 +18,13 @@ build:
 
 requirements:
   host:
-    - python >=3.6,<4.0
+    - python {{ python_min }}
     - poetry >=0.12
     - poetry-core
     - pip
   run:
-    - python >=3.6.2,<4.0.0
-    - pywin32-on-windows
+    - python >={{ python_min }},<4.0.0
+    - pywin32-on-windows >=300,<=311
     - pywin32 >=300,<304
     - __win
 
@@ -35,6 +35,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/robocorp/java-access-bridge-wrapper.git
