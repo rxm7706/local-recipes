@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: weasyprint
-  version: "65.1"
-  python_min: '3.9'
+  version: "67.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/weasyprint-${{ version }}.tar.gz
-  sha256: 120281bdbd42ffaa7d7e5cedbe3182a2cef36ea5ad97fe9f357e43be6a1e58ea
+  sha256: fdfbccf700e8086c8fd1607ec42e25d4b584512c29af2d9913587a4e448dead4
 
 build:
   number: 0
@@ -32,11 +32,11 @@ requirements:
     - pydyf >=0.11.0
     - cffi >=0.6
     - tinyhtml5 >=2.0.0b1
-    - tinycss2 >=1.4.0
+    - tinycss2 >=1.5.0
     - cssselect2 >=0.8.0
     - pyphen >=0.9.1
     - pillow >=9.1.0
-    - fonttools >=4.0.0
+    - fonttools >=4.59.2
     # OSError: cannot load library 'libpango-1.0-0':
     - pango >=1.44.0
     #- html5lib >=1.1
@@ -46,9 +46,11 @@ tests:
   - python:
       imports:
         - weasyprint
+      pip_check: true
   - requirements:
       run:
         - python ${{ python_min }}.*
+        - pip
     script:
       - weasyprint --help
       - pip check

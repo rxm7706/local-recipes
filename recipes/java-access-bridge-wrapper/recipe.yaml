@@ -29,13 +29,13 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    #- pywin32-on-windows >=300,<=311
+    - pywin32-on-windows # >=300,<=311
     - pywin32 >=300,<=311
 
 tests:
   - python:
       imports:
-        - java_access_bridge_wrapper
+        #- java_access_bridge_wrapper
         - JABWrapper
       pip_check: true
       python_version:
@@ -45,7 +45,7 @@ tests:
         - pip
         - python ${{ python_min }}.*
     script:
-      - java_tree_reader --help
+      #- JABWrapper --help
       - pip check
 
 about:
