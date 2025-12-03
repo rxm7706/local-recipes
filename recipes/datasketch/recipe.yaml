@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasketch
+  version: "1.8.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datasketch-${{ version }}.tar.gz
+  sha256: 1cb7af36d57d3d22382bdb52629ff44e6708d147dcbfbf70e6b66d8944b14b77
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }},<4.0
+    - numpy >=1.11
+    - scipy >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - datasketch
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Probabilistic data structures for processing and searching very large datasets
+  license: MIT
+  license_file: LICENSE
+  homepage: https://ekzhu.github.io/datasketch
+  repository: https://github.com/ekzhu/datasketch
+
+extra:
+  recipe-maintainers:
+    - rxm7706
