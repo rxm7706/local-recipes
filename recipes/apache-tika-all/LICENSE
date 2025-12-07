@@ -1,6 +1,4 @@
 Apache License 2.0
 
-This recipe builds multiple Java packages with various licenses.
-See individual package sources for their respective licenses.
-
-Apache Tika: https://github.com/apache/tika/blob/main/LICENSE
+This recipe packages Apache Tika and various Java libraries.
+See https://github.com/apache/tika/blob/main/LICENSE

@@ -1,14 +1,8 @@
 # =============================================================================
 # Apache Tika 3.2.3 All-In-One Conda-Forge Recipe
 # =============================================================================
-# This single meta.yaml builds ALL 66+ packages as outputs in one conda-build.
-# Similar pattern to: https://github.com/conda-forge/airflow-feedstock
 # All SHA256 checksums VERIFIED from Maven Central on 2024-12-07
 # Dependency versions from tika-parent-3.2.3.pom
-#
-# Usage:
-#   conda-build . --channel conda-forge
-#
 # Maintainer: rxm7706
 # =============================================================================
 
@@ -324,7 +318,7 @@ outputs:
       home: https://tika.apache.org/
       license: Apache-2.0
       license_family: Apache
-      summary: Apache Tika Application, complete bundled toolkit - uber-jar with CLI
+      summary: Apache Tika Application (uber-jar with CLI)
 
   - name: apache-tika
     version: {{ tika_version }}
@@ -342,34 +336,20 @@ outputs:
       license_family: Apache
       summary: Apache Tika (metapackage)
 
-# =============================================================================
-# ABOUT SECTION
-# =============================================================================
 about:
   home: https://tika.apache.org/
   license: Apache-2.0
   license_family: Apache
   license_file: LICENSE
-  summary: Apache Tika 3.2.3 - Content detection and analysis toolkit with all Java dependencies - builds 66+ packages in one recipe
+  summary: Apache Tika 3.2.3 - Content detection and analysis toolkit
   description: |
     Apache Tika 3.2.3 - The Apache Tika toolkit detects and extracts 
     metadata and text from over a thousand different file types.
     
     Dependency versions from tika-parent-3.2.3.pom.
     All SHA256 checksums verified from Maven Central.
-    This mega-recipe builds Apache Tika and all 60+ Java dependencies
-    in a single conda-build command. Pattern based on airflow-feedstock.
-
-    Outputs include:
-    - 42 Tier 1 packages (zero dependencies)
-    - 14 Tier 2 packages (simple dependencies)
-    - 5 Tier 3 packages (medium dependencies)
-    - 5 Tier 4 packages (complex dependencies)
-    - 4 Apache Tika packages (core, parsers, app, metapackage)
   dev_url: https://github.com/apache/tika
-  doc_url: https://tika.apache.org/documentation.html
 
 extra:
-  feedstock-name: apache-tika-all
   recipe-maintainers:
     - rxm7706
