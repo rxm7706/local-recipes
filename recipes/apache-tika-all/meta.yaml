@@ -1164,7 +1164,7 @@ outputs:
       summary: Jackson Annotations
 
   - name: guava
-    version: "33.4.8-jre"
+    version: "33.4.8"
     build:
       noarch: generic
       script:
