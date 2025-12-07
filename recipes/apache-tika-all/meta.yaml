@@ -1834,11 +1834,6 @@ about:
 
     Outputs include:
     - Individual packages for each dependency
-    - apache-tika-core: Core library
-    - apache-tika-parsers: Parser packages
-    - apache-tika-app: Modular app using individual packages
-    - apache-tika-all-app: Standalone uber-jar
-    - apache-tika: Metapackage
     - 42 Tier 1 packages (zero dependencies)
     - 14 Tier 2 packages (simple dependencies)
     - 5 Tier 3 packages (medium dependencies)
