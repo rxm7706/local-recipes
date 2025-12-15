@@ -1,0 +1,48 @@
+{% set name = "dagster-contrib-gcp" %}
+{% set version = "0.0.8" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dagster_contrib_gcp-{{ version }}.tar.gz
+  sha256: 091314fea9a0443bc5a768b699ed9bb3adeb8aaba2c76f2260130517d0e6df7c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=42
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - dagster >=1.9.0
+    - google-cloud-run >=0.10.10
+    - google-cloud-secret-manager >=2.23.1
+    - tenacity >=8.0.0
+
+test:
+  imports:
+    - dagster_contrib_gcp
+    - dist
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Community contributed Google Cloud Platform integration
+  license: 'Apache-2.0'
+  license_file: LICENSE
+  home: https://github.com/dagster-io/community-integrations
+
+extra:
+  recipe-maintainers:
+    - rxm7706

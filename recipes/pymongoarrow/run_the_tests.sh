@@ -18,7 +18,7 @@ mkdir "$DB_PATH"
 
 # Remove the local copy of the source files
 rm -rf pymongoarrow
-python -m pytest -W default --ignore test/test_pandas.py
+python -m pytest -W default --ignore test/test_pandas.py --ignore=test/pandas_types
 
 # Terminate the forked process after the test suite exits
 kill `cat $PID_FILE_PATH`

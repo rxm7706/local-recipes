@@ -1,0 +1,46 @@
+{% set name = "dagster-sftp" %}
+{% set version = "0.0.2" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dagster_sftp-{{ version }}.tar.gz
+  sha256: 748e65ef3b7f03bcdfd46993fa0724088e60626d40f493561fc846bf84bebada
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=42
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - anyio >=4.11.0
+    - asyncssh >=2.21.1
+    - dagster >=1.8.0
+
+test:
+  imports:
+    - dagster_sftp
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Dagster integration library for interacting with SFTP Servers
+  license: 'Apache-2.0'
+  license_file: LICENSE
+  home: https://github.com/dagster-io/community-integrations
+
+extra:
+  recipe-maintainers:
+    - rxm7706

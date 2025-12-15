@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bentoml
+  version: "1.4.30"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bentoml-${{ version }}.tar.gz
+  sha256: 59b9e9805d3a9a16dd5be5c250449ee9ebef8767a03f0d2811a9af11203641cc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - bentoml = bentoml_cli.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-vcs >=0.3.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - jinja2 >=3.0.1
+    - pyyaml >=5.0
+    - aiohttp
+    - attrs >=22.2.0
+    - cattrs >=22.1.0,<23.2.0
+    - kantoku >=0.18.3
+    - click >=7.0
+    - click-option-group
+    - cloudpickle >=2.0.0
+    - httpx
+    - numpy
+    - nvidia-ml-py
+    - opentelemetry-api >=1.20,<2.0
+    - opentelemetry-sdk >=1.20,<2.0
+    - opentelemetry-instrumentation >=0.41b0,<1.0
+    - opentelemetry-instrumentation-aiohttp-client >=0.41b0,<1.0
+    - opentelemetry-instrumentation-asgi >=0.41b0,<1.0
+    - opentelemetry-semantic-conventions >=0.41b0,<1.0
+    - opentelemetry-util-http >=0.41b0,<1.0
+    - packaging >=22.0
+    - pathspec
+    - pip-requirements-parser >=31.2.0
+    # prometheus_client is conda-forge package name for prometheus-client pip package
+    - prometheus_client >=0.10.0
+    - psutil
+    - pydantic <3
+    - python-dateutil
+    - python-multipart
+    - python-json-logger
+    - rich >=11.2.0
+    - schema
+    - simple-di >=0.1.4
+    - starlette >=0.24.0
+    - uvicorn >=0.22.0
+    - watchfiles >=0.15.0
+    - tomli >=1.1.0
+    - tomli-w
+    - httpx-ws >=0.6.0
+    - aiosqlite >=0.20.0
+    - a2wsgi >=1.10.7
+    - fsspec >=2025.7.0
+    - rich-toolkit >=0.15.1
+    - aiohttp-asgi-connector >=1.1.2
+
+tests:
+  - python:
+      imports:
+        - bentoml
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - bentoml --help
+
+about:
+  summary: "BentoML: The easiest way to serve AI apps and models"
+  license: Apache-2.0
+  license_file: LICENSE
+  repository: https://github.com/bentoml/BentoML
+  homepage: https://docs.bentoml.org/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - sugatoray
+    # co-maintainers from upstream

@@ -1,17 +1,17 @@
 {% set name = "py-grpc-prometheus" %}
-{% set version = "0.7.0" %}
+{% set version = "0.8.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/py_grpc_prometheus-{{ version }}.tar.gz
-  sha256: 72248c4dfa48c4d9f628f89a90cb9dd27674d6a21b252c53700c3adc50e9552e
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/py_grpc_prometheus-{{ version }}.tar.gz
+  sha256: 364311dc88aaf4e74f8664e7f2bb8471f1822fd082e0aac174f72d35213bba6a
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:

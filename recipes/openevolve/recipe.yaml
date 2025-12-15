@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openevolve
+  version: "0.2.23"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openevolve-${{ version }}.tar.gz
+  sha256: c6d58980111b307a0d18a8868aa572599ad891aecb3e1c57c6d5d1989997d56a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - openevolve-run = openevolve.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=42
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - openai >=1.0.0
+    - pyyaml >=6.0
+    - numpy >=1.22.0
+    - tqdm >=4.64.0
+    - flask
+
+tests:
+  - python:
+      imports:
+        - openevolve
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - openevolve-run --help
+
+about:
+  summary: Open-source implementation of AlphaEvolve
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/algorithmicsuperintelligence/openevolve
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,16 +1,15 @@
 {% set name = "StringZilla" %}
-{% set version = "4.0.7" %}
+{% set version = "4.4.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  #url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/stringzilla-{{ version }}.tar.gz
-  #sha256: dfad212c34d8a611367d30d7e98d2664c213b87256f178c59d17c61d4b6bf732
   url: https://github.com/ashvardanian/StringZilla/archive/v{{ version }}.tar.gz
-  sha256: 1255cac3aced48b4b73e045829a80e3122c54eca5621274073839c9036f48fe8
-
+  sha256: 5c49782bc7f5a7392c8b960248d3cc9ba87b3a9629b665f731a2d407fefe425b
+  #patches:
+  #  - patches/0001-fix-build-option.patch
 
 build:
   entry_points:
