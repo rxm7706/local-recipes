@@ -1,0 +1,48 @@
+{% set name = "dagster-iceberg" %}
+{% set version = "0.3.8" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dagster_iceberg-{{ version }}.tar.gz
+  sha256: 1cb7dfaa774634acec43e7fc00d06e4c4db93cdfbdb74c9db747be38038f97fc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - dagster >=1.8.2
+    - pendulum >=3.0.0
+    - pydantic >=2.0.0
+    - pyiceberg >=0.8
+    - tenacity >=8.5.0
+
+test:
+  imports:
+    - dagster_iceberg
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Package for PyIceberg-specific Dagster framework op and resource components.
+  license: 'Apache-2.0'
+  license_file: LICENSE
+  home: https://github.com/dagster-io/community-integrations
+
+extra:
+  recipe-maintainers:
+    - rxm7706

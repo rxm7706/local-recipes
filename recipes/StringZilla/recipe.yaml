@@ -1,0 +1,54 @@
+schema_version: 1
+
+context:
+  name: StringZilla
+  version: 4.4.2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ashvardanian/StringZilla/archive/v${{ version }}.tar.gz
+  sha256: 5c49782bc7f5a7392c8b960248d3cc9ba87b3a9629b665f731a2d407fefe425b
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - sz_split=cli.split:main
+      - sz_wc=cli.wc:main
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+  host:
+    - python
+    - setuptools >=61
+    - wheel
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - cli
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+      - sz_split --help
+      - sz_wc --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/ashvardanian/StringZilla
+
+extra:
+  recipe-maintainers:
+    - rxm7706
