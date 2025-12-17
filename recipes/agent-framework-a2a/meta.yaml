@@ -1,0 +1,46 @@
+{% set name = "agent-framework-a2a" %}
+{% set version = "1.0.0b251211" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/agent_framework_a2a-{{ version }}.tar.gz
+  sha256: 01e7dc4bc3ee6a2ad3c774e1a7146ff9ad8466e4cc2a1b54a887263092322feb
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.11,<4.0
+    - pip
+  run:
+    - python >={{ python_min }}
+    - agent-framework-core
+    - a2a-sdk >=0.3.5
+
+test:
+  imports:
+    - agent_framework_a2a
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: A2A integration for Microsoft Agent Framework.
+  license: MIT
+  license_file: LICENSE
+  home: https://pypi.org/project/agent-framework-a2a/
+  dev_url: https://github.com/microsoft/agent-framework/tree/main/python
+
+extra:
+  recipe-maintainers:
+    - rxm7706

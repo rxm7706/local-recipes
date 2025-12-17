@@ -1,0 +1,59 @@
+{% set name = "deepsearcher" %}
+{% set version = "0.0.2" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/deepsearcher-{{ version }}.tar.gz
+  sha256: 058bcd0d465717b4664f17b1dab7e061fd4491705405ad9c6921f1815479c5a2
+
+build:
+  entry_points:
+    - deepsearcher = deepsearcher.cli:main
+  noarch: python
+  script:
+    - sed -i.bak "/argparse/d" pyproject.toml
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - fastapi >=0.115.12
+    - firecrawl-py >=2.5.3
+    - langchain-text-splitters >=0.3.8
+    - numpy >=1.26.4
+    - openai >=1.77.0
+    - pdfplumber >=0.11.6
+    - pymilvus >=2.5.8
+    - requests >=2.32.3
+    - termcolor >=3.1.0
+    - tqdm >=4.67.1
+    - uvicorn >=0.34.2
+
+test:
+  imports:
+    - deepsearcher
+  commands:
+    - pip check
+    - deepsearcher --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Open Source Deep Research Alternative to Reason and Search on Private Data.
+  license: Apache-2.0
+  license_file: LICENSE
+  home: https://github.com/zilliztech/deep-searcher
+
+extra:
+  recipe-maintainers:
+    - rxm7706

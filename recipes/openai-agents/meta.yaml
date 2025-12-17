@@ -1,0 +1,50 @@
+{% set name = "openai-agents" %}
+{% set version = "0.6.3" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openai_agents-{{ version }}.tar.gz
+  sha256: 436479f201910cfc466893854b47d0f3acbf7b3bdafa95eedb590ed0d40393ef
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - openai >=2.9.0,<3
+    - pydantic >=2.12.3,<3
+    - griffe >=1.5.6,<2
+    - typing_extensions >=4.12.2,<5
+    - requests >=2.0,<3
+    - types-requests >=2.0,<3
+    - mcp >=1.11.0,<2  # [py>=310]
+
+test:
+  imports:
+    - openai_agents
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: OpenAI Agents SDK
+  license: MIT
+  license_file: LICENSE
+  home: https://github.com/openai/openai-agents-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
