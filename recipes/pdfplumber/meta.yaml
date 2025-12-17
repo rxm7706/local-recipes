@@ -1,0 +1,55 @@
+{% set name = "pdfplumber" %}
+{% set version = "0.11.8" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pdfplumber-{{ version }}.tar.gz
+  sha256: db29b04bc8bb62f39dd444533bcf2e0ba33584bd24f5a54644f3ba30f4f22d31
+
+build:
+  entry_points:
+    - pdfplumber = pdfplumber.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61.0,<81.0
+    - setuptools_scm >=8
+    #- setuptools-git-versioning <2
+  run:
+    - python >={{ python_min }}
+    - pdfminer-six ==20251107
+    - pillow >=9.1
+    - pypdfium2 >=4.18.0
+
+test:
+  imports:
+    - pdfplumber
+  commands:
+    - pip check
+    - pdfplumber --help
+    - python -c "from importlib.metadata import version; v = version('pdfplumber'); print(v); assert v == '{{ version }}'"
+    - python -c "from importlib.metadata import version; print(version('{{ name }}'))"
+    #- python -c "from importlib.metadata import version; assert '{{ version }}' == version('{{ name }}')"
+  requires:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/jsvine/pdfplumber
+  summary: Plumb a PDF for detailed information about each char, rectangle, and line.
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
