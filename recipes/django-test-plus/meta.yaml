@@ -1,13 +1,14 @@
 {% set name = "django-test-plus" %}
-{% set version = "2.2.3" %}
+{% set version = "2.4.1" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-test-plus-{{ version }}.tar.gz
-  sha256: 72e1ca5dcaaf4ad73c9c796ad6e0dc165db39f706c3ad822074d961f72eed743
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_test_plus-{{ version }}.tar.gz
+  sha256: 5bc0e2248c25020f7056056c4173250213f93464b4ceb6a53ab79804a1968d0d
 
 build:
   noarch: python
@@ -16,20 +17,20 @@ build:
 
 requirements:
   host:
-    - python >=3.8
-    - pytest-runner
-    - pytest-django
+    - python {{ python_min }}
+    - hatchling
     - pip
   run:
-    - python >=3.8
-    - django >=1.8
- 
+    - python >={{ python_min }}
+    - packaging
+
 test:
   imports:
     - test_plus
   commands:
     - pip check
   requires:
+    - python {{ python_min }}
     - pip
 
 about:

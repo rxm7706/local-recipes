@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: mozilla-django-oidc
-  version: "4.0.1"
+  version: "5.0.1"
   python_min: '3.10'
 
 package:
@@ -11,8 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mozilla-django-oidc-${{ version }}.tar.gz
-  sha256: 4ff8c64069e3e05c539cecf9345e73225a99641a25e13b7a5f933ec897b58918
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mozilla_django_oidc-${{ version }}.tar.gz
+  sha256: ed9eaba7b0023e984f4859f01504e5006fad6ff132c9741a01318cc045bf2c7f
 
 build:
   number: 0
@@ -22,12 +22,13 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - setuptools >=75.0.0
     - wheel
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - django >=3.2
-    - josepy
+    - django >=4.2
+    - pyjwt
     - requests
     - cryptography
 
