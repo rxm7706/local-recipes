@@ -1,6 +1,5 @@
-# WriteFreely conda-forge recipe (v1 format)
-# This is the newer rattler-build compatible format
-# See: https://conda-forge.org/docs/maintainer/example_recipes/go/
+#yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+  schema_version: 1
 
 context:
   name: writefreely
@@ -16,26 +15,12 @@ source:
 
 build:
   number: 0
-  # Windows CGO builds are complex; skip for now
-  skip:
-    - win
+  # Use external build scripts for reliability
   script:
-    # Collect licenses first
-    - go-licenses save ./... --save_path=library_licenses --ignore=github.com/writefreely/writefreely || true
-    # Build the binary with SQLite and netgo support
-    - cd cmd/writefreely
     - if: unix
-      then: |
-        go build -v -tags='netgo sqlite' \
-          -ldflags="-s -w -X 'github.com/writefreely/writefreely.softwareVer=${{ version }}'" \
-          -o $PREFIX/bin/writefreely .
-    # Copy static assets for reference
-    - cd ../..
-    - if: unix
-      then: |
-        mkdir -p $PREFIX/share/writefreely
-        cp -r pages templates static keys $PREFIX/share/writefreely/ 2>/dev/null || true
-        cp schema.sql sqlite.sql $PREFIX/share/writefreely/ 2>/dev/null || true
+      then: bash $RECIPE_DIR/build.sh
+    - if: win
+      then: call %RECIPE_DIR%\bld.bat
 
 requirements:
   build:
@@ -43,6 +28,7 @@ requirements:
     - ${{ compiler("go-cgo") }}
     - ${{ compiler("c") }}
     #- ${{ stdlib("c") }}
+    # For collecting dependency licenses
     - go-licenses
   host:
     - sqlite
@@ -51,11 +37,20 @@ requirements:
 
 tests:
   - script:
-      - writefreely --version
-      - writefreely --help
+      - if: unix
+        then:
+          - writefreely --version
+          - writefreely --help
+      - if: win
+        then:
+          - writefreely.exe --version
+          - writefreely.exe --help
   - package_contents:
       bin:
-        - writefreely
+        - if: unix
+          then: writefreely
+        - if: win
+          then: writefreely.exe
 
 about:
   homepage: https://writefreely.org
@@ -74,8 +69,8 @@ about:
   license_file:
     - LICENSE
     - library_licenses/
-  documentation: https://writefreely.org/docs
   repository: https://github.com/writefreely/writefreely
+  documentation: https://writefreely.org/docs
 
 extra:
   recipe-maintainers:
