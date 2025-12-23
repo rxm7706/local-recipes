@@ -9,10 +9,10 @@ This folder contains **two recipe formats** - you only need one:
 
 | File | Format | Tool | When to Use |
 |------|--------|------|-------------|
-| `meta.yaml` + `build.sh` | v0 (traditional) | conda-build | Most staged-recipes PRs |
+| `meta.yaml` + `build.sh` + `bld.bat` | v0 (traditional) | conda-build | Most staged-recipes PRs |
 | `recipe.yaml` | v1 (new) | rattler-build | Simple Go/Rust packages |
 
-**For staged-recipes submission**, use `meta.yaml` + `build.sh` (delete `recipe.yaml`).
+**For staged-recipes submission**, use `meta.yaml` + `build.sh` + `bld.bat` (delete `recipe.yaml`).
 
 ## About WriteFreely
 
@@ -23,64 +23,110 @@ WriteFreely is a Go-based blogging platform with the following features:
 - SQLite or MySQL database support
 - Multi-user/community hosting
 
+## Supported Platforms
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Linux x86_64 | ✅ Tested | Primary platform |
+| macOS x86_64/arm64 | ✅ Should work | Same as Linux, CGO supported |
+| Windows x86_64 | ✅ Should work | Uses `bld.bat`, requires conda-forge CGO |
+
 ## Prerequisites for Local Testing
 
-You'll need:
-- `conda` or `mamba` (or `pixi`)
-- `conda-build` package
-
+### Linux/macOS
 ```bash
-# Using conda
-conda install conda-build
+# Install conda/mamba
+curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+# or
+curl -fsSL https://pixi.sh/install.sh | bash
 
-# Or using pixi (your preferred tool)
-pixi global install conda-build
+# Install conda-build
+micromamba create -n build-env conda-build -c conda-forge -y
+micromamba activate build-env
+```
+
+### Windows
+```powershell
+# Install miniforge or mambaforge from:
+# https://github.com/conda-forge/miniforge/releases
+
+# Install conda-build
+conda install conda-build -c conda-forge -y
 ```
 
 ## Local Build Testing
 
-### Option 1: Using conda-build directly
+### Linux/macOS - Quick Manual Test
+
+If you want to quickly verify the build works without full conda-build:
 
 ```bash
-# Clone staged-recipes if you haven't already
+# Install Go 1.23+ and SQLite
+# Ubuntu/Debian:
+sudo apt install golang sqlite3 libsqlite3-dev
+# macOS:
+brew install go sqlite3
+
+# Clone and build
+git clone https://github.com/writefreely/writefreely.git
+cd writefreely
+git checkout v0.16.0
+export CGO_ENABLED=1
+cd cmd/writefreely
+go build -v -tags='netgo sqlite' -ldflags="-s -w" -o writefreely .
+./writefreely --version
+```
+
+### Linux/macOS - Full conda-build Test
+
+```bash
+# Clone staged-recipes
 git clone https://github.com/conda-forge/staged-recipes.git
 cd staged-recipes
 
-# Copy this recipe to the recipes folder
+# Copy recipe files
 cp -r /path/to/writefreely-recipe recipes/writefreely
 
-# Build the recipe
+# Build
 conda build recipes/writefreely
 ```
 
-### Option 2: Using the conda-forge docker image (recommended)
+### Windows - Full conda-build Test
 
-This ensures your build environment matches the CI:
+```powershell
+# Clone staged-recipes
+git clone https://github.com/conda-forge/staged-recipes.git
+cd staged-recipes
 
-```bash
-# Pull the conda-forge build image
-docker pull quay.io/condaforge/linux-anvil-cos7-x86_64
+# Copy recipe files
+Copy-Item -Recurse C:\path\to\writefreely-recipe recipes\writefreely
 
-# Run the build in the container
-docker run --rm -v $(pwd):/recipe quay.io/condaforge/linux-anvil-cos7-x86_64 \
-    conda build /recipe
+# Build (requires Visual Studio build tools for C compiler)
+conda build recipes\writefreely
 ```
 
-### Option 3: Using pixi with rattler-build
-
-If you prefer the newer v1 recipe format with rattler-build:
+### Docker Test (Recommended - matches CI)
 
 ```bash
-pixi global install rattler-build
-rattler-build build --recipe .
+# Linux build
+docker run --rm -v $(pwd):/recipe quay.io/condaforge/linux-anvil-cos7-x86_64 \
+    conda build /recipe
+
+# macOS cross-compile (from Linux)
+docker run --rm -v $(pwd):/recipe quay.io/condaforge/linux-anvil-cos7-x86_64 \
+    conda build /recipe --target-platform osx-64
 ```
 
 ## Submitting to conda-forge
 
 1. Fork https://github.com/conda-forge/staged-recipes
-2. Create a new branch for your recipe
-3. Copy the recipe files to `recipes/writefreely/`
-4. Update `YOUR_GITHUB_USERNAME` in meta.yaml with your actual GitHub username
+2. Create a new branch: `git checkout -b add-writefreely`
+3. Copy recipe files to `recipes/writefreely/`:
+   - `meta.yaml`
+   - `build.sh`
+   - `bld.bat`
+   - (optionally) `conda_build_config.yaml`
+4. Replace `YOUR_GITHUB_USERNAME` in meta.yaml with your actual GitHub username
 5. Commit and push your changes
 6. Open a Pull Request to `conda-forge/staged-recipes`
 
@@ -91,46 +137,73 @@ After installation, you can run WriteFreely:
 ```bash
 # Initialize a new WriteFreely instance
 mkdir my-blog && cd my-blog
-writefreely config start
 
-# Or generate a config file
+# Copy static assets from conda installation
+# Linux/macOS:
+cp -r $CONDA_PREFIX/share/writefreely/* .
+# Windows:
+xcopy /E %CONDA_PREFIX%\Library\share\writefreely\* .
+
+# Generate configuration
 writefreely config generate
 
+# Initialize database
+writefreely db init
+
+# Create admin user
+writefreely user create --admin <username>
+
 # Start the server
-writefreely
+writefreely serve
 ```
 
-WriteFreely needs its static assets (templates, CSS, etc.) in the working directory.
-The package includes these in `$CONDA_PREFIX/share/writefreely/` for reference.
+## Technical Notes
 
-You can copy them to your working directory:
-```bash
-cp -r $CONDA_PREFIX/share/writefreely/* .
-```
+### CGO Requirement
 
-## Notes
+WriteFreely uses SQLite via `github.com/mattn/go-sqlite3`, which requires CGO.
+The recipe uses:
+- `{{ compiler('cgo') }}` - Go compiler with CGO enabled
+- `{{ compiler('c') }}` - C compiler for SQLite bindings
+- `{{ stdlib('c') }}` - C standard library
 
-- **Windows Support**: Currently skipped due to CGO cross-compilation complexity.
-  Windows users can use WSL2 or the official pre-built binaries.
+### Build Tags
 
-- **SQLite vs MySQL**: This build includes SQLite support by default.
-  For MySQL, WriteFreely will connect to an external MySQL server.
+The build uses these Go tags:
+- `sqlite` - Enables SQLite database support
+- `netgo` - Uses pure Go network stack (more portable)
 
-- **License Collection**: The recipe uses `go-licenses` to collect all
-  dependency licenses as required by conda-forge policy.
+### License Collection
+
+The recipe uses `go-licenses` to collect all dependency licenses as required
+by conda-forge policy. Licenses are stored in `library_licenses/`.
 
 ## Troubleshooting
 
 ### Build fails with CGO errors
-Make sure you have the C compiler available. The recipe uses `{{ compiler('c') }}`
-along with `{{ compiler('cgo') }}`.
-
-### Tests fail
-Ensure the binary was built correctly:
+Ensure the C compiler is available and CGO is enabled:
 ```bash
-./writefreely --version
+export CGO_ENABLED=1
+go build -v -tags='netgo sqlite' ...
 ```
 
-### Missing static assets
-WriteFreely expects certain files in its working directory. See the
-post-installation usage section above.
+### Windows build fails
+- Ensure Visual Studio Build Tools are installed
+- The conda-forge CGO compiler should handle most cases
+- Check that `%LIBRARY_BIN%` is set correctly
+
+### Tests fail
+```bash
+# Unix
+./writefreely --version
+
+# Windows
+writefreely.exe --version
+```
+
+### Missing static assets at runtime
+WriteFreely requires templates/static files in its working directory:
+```bash
+# Copy from conda installation
+cp -r $CONDA_PREFIX/share/writefreely/* ./
+```

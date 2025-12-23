@@ -11,8 +11,6 @@ source:
 
 build:
   number: 0
-  # Windows CGO builds are complex; start with Unix only
-  skip: true  # [win]
 
 requirements:
   build:
@@ -20,6 +18,7 @@ requirements:
     - {{ compiler('cgo') }}
     - {{ compiler('c') }}
     - {{ stdlib('c') }}
+    # For collecting dependency licenses
     - go-licenses
   host:
     - sqlite
@@ -28,8 +27,10 @@ requirements:
 
 test:
   commands:
-    - writefreely --version
-    - writefreely --help
+    - writefreely --version  # [unix]
+    - writefreely --help  # [unix]
+    - writefreely.exe --version  # [win]
+    - writefreely.exe --help  # [win]
 
 about:
   home: https://writefreely.org
@@ -54,5 +55,4 @@ about:
 
 extra:
   recipe-maintainers:
-    # Add your GitHub username here
-    - YOUR_GITHUB_USERNAME
+    - rxm7706
