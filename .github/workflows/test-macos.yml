@@ -145,6 +145,7 @@ jobs:
         with:
           miniforge-version: latest
           conda-solver: libmamba
+          conda-remove-defaults: true
           activate-environment: build
           python-version: '3.12'
 
@@ -272,6 +273,7 @@ jobs:
         with:
           miniforge-version: latest
           conda-solver: libmamba
+          conda-remove-defaults: true
           activate-environment: build
           python-version: '3.12'
 
