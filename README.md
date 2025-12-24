@@ -1,5 +1,10 @@
 # local-recipes
 
+[![Test All Platforms](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml)
+[![Test Linux](https://github.com/rxm7706/local-recipes/actions/workflows/test-linux.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-linux.yml)
+[![Test Windows](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml)
+[![Test macOS](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml)
+
 A local conda-forge style staged-recipes workspace for building and testing Conda/Rattler Build recipes on your machine. This repo lets you:
 - Author recipes in either legacy conda-build format (`meta.yaml`) or modern Rattler Build format (`recipe.yaml`).
 - Bootstrap a minimal build environment and build all recipes locally with pinned variants.
@@ -118,20 +123,33 @@ Commonly used variables (some set by our scripts):
 local-recipes/
 ├─ LICENSE, LICENSE.txt
 ├─ README.md                      # This file
+├─ CLAUDE.md                      # Claude Code project context
 ├─ environment.yaml               # Bootstrap environment for build tooling
 ├─ conda_build_config.yaml        # Global pinning and variants
+├─ test-recipes.py                # Direct recipe testing script
 ├─ .ci_support/
 │  ├─ build_all.py               # Build orchestration (mode detection, graph, variants)
-│  └─ <platform>.yaml            # Variant configs, e.g., win64.yaml
+│  ├─ linux64.yaml               # Linux x86_64 variant config
+│  ├─ linux_aarch64.yaml         # Linux ARM64 variant config
+│  ├─ win64.yaml                 # Windows x64 variant config
+│  ├─ osx64.yaml                 # macOS x86_64 variant config
+│  └─ osxarm64.yaml              # macOS ARM64 variant config
+├─ .github/workflows/
+│  ├─ test-all.yml               # Orchestrates all platform builds
+│  ├─ test-linux.yml             # Linux builds (Docker)
+│  ├─ test-windows.yml           # Windows builds (native)
+│  └─ test-macos.yml             # macOS builds (x86_64 + ARM64)
 ├─ .scripts/
 │  └─ run_win_build.bat          # Windows provisioning/build runner
 ├─ build-locally.py               # Cross-platform dispatcher
 ├─ recipes/
 │  ├─ <recipe>/recipe.yaml       # Rattler Build format (modern)
-│  └─ <recipe>/meta.yaml         # conda-build format (legacy)
+│  ├─ <recipe>/meta.yaml         # conda-build format (legacy)
+│  └─ sample/docs/               # Documentation
+│     └─ conda-forge-expert-skills.md  # Comprehensive guide
 ├─ setup.cfg                      # flake8 / Python style config
-├─ conda-forge.yml, azure-pipelines.yml  # CI config (if used)
-├─ pixi.toml, pixi.lock           # Present; not wired into scripts (see TODO)
+├─ conda-forge.yml                # conda-forge configuration
+├─ pixi.toml                      # Pixi environment configuration
 ```
 
 ## Style and linting
@@ -153,6 +171,51 @@ local-recipes/
   print("Sanity test passed")
   ```
   Run from repo root: save as `temp_test_recipe_yaml.py` and execute with `python temp_test_recipe_yaml.py`.
+
+## Direct Recipe Testing (test-recipes.py)
+
+For testing individual recipes without the full CI workflow (which removes recipes in main), use `test-recipes.py`:
+
+```bash
+# Install with pixi
+pixi install -e build
+
+# Check available build tools and platforms
+pixi run -e build python test-recipes.py --check
+
+# Test a specific recipe
+pixi run -e build python test-recipes.py --recipe pandas
+
+# Test on all available platforms
+pixi run -e build python test-recipes.py --recipe pandas --all
+
+# Test random recipes (dry-run)
+pixi run -e build python test-recipes.py --random 5 --dry-run
+```
+
+### Platform Support
+
+| Platform | Build Method |
+|----------|--------------|
+| win-64 | Native (Windows host) |
+| linux-64 | WSL or Docker |
+| osx-64 | Native (macOS Intel) |
+| osx-arm64 | Native (macOS Apple Silicon) |
+
+**Note:** macOS builds require a Mac. Linux builds from Windows prefer WSL for `recipe.yaml` (rattler-build) and Docker for `meta.yaml` (conda-build).
+
+## GitHub Actions Workflows
+
+On-demand CI workflows for all platforms (manual trigger only to preserve quota):
+
+| Workflow | Command | Description |
+|----------|---------|-------------|
+| Test All | `gh workflow run test-all.yml -f recipes="NAME"` | All platforms |
+| Test Linux | `gh workflow run test-linux.yml -f recipes="NAME"` | Docker builds |
+| Test Windows | `gh workflow run test-windows.yml -f recipes="NAME"` | Native builds |
+| Test macOS | `gh workflow run test-macos.yml -f recipes="NAME"` | x86_64 + ARM64 |
+
+For detailed documentation, see [Conda-Forge Expert Skills Guide](recipes/sample/docs/conda-forge-expert-skills.md).
 
 ## Known limitations and tips
 - Do not mix `meta.yaml` and `recipe.yaml` recipes in a single run.
