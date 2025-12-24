@@ -1,0 +1,556 @@
+name: Test Linux Builds
+
+# Only run on manual trigger or when called by another workflow
+# Automatic triggers disabled to preserve GitHub Actions quota
+on:
+  workflow_call:
+    inputs:
+      recipes:
+        description: 'Recipes to build'
+        required: false
+        type: string
+        default: ''
+      linux_version:
+        description: 'Linux base image version'
+        required: false
+        type: string
+        default: 'alma9'
+      architecture:
+        description: 'Target architecture'
+        required: false
+        type: string
+        default: 'linux-64'
+      cuda_version:
+        description: 'CUDA version'
+        required: false
+        type: string
+        default: ''
+      python_version:
+        description: 'Python version'
+        required: false
+        type: string
+        default: '3.12'
+  workflow_dispatch:
+    inputs:
+      recipes:
+        description: 'Recipes to build (comma-separated, or "all" for all recipes)'
+        required: false
+        default: ''
+        type: string
+      linux_version:
+        description: 'Linux base image version'
+        required: false
+        default: 'alma9'
+        type: choice
+        options:
+          - 'alma9'
+          - 'alma8'
+          - 'cos7'
+      architecture:
+        description: 'Target architecture'
+        required: false
+        default: 'linux-64'
+        type: choice
+        options:
+          - 'linux-64'
+          - 'linux-aarch64'
+          - 'both'
+      cuda_version:
+        description: 'CUDA version (leave empty for no CUDA)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - '12.6'
+          - '12.0'
+          - '11.8'
+      python_version:
+        description: 'Python version for builds'
+        required: false
+        default: '3.12'
+        type: choice
+        options:
+          - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
+
+env:
+  CI: github_actions
+  AZURE: False
+
+jobs:
+  detect-recipes:
+    runs-on: ubuntu-latest
+    outputs:
+      recipes: ${{ steps.detect.outputs.recipes }}
+      has_recipes: ${{ steps.detect.outputs.has_recipes }}
+      need_cuda: ${{ steps.detect.outputs.need_cuda }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for skip keywords
+        id: skip-check
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if echo "$COMMIT_MSG" | grep -qiE '\[(skip ci|ci skip|skip linux|linux skip)\]'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect changed recipes
+        id: detect
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          if [ -n "${{ github.event.inputs.recipes }}" ]; then
+            if [ "${{ github.event.inputs.recipes }}" = "all" ]; then
+              RECIPES=$(ls -d recipes/*/ 2>/dev/null | xargs -I {} basename {} | grep -v -E '^(example|example-new-recipe|broken-recipes)$' | head -50)
+            else
+              RECIPES=$(echo "${{ github.event.inputs.recipes }}" | tr ',' '\n')
+            fi
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            RECIPES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+          else
+            RECIPES=$(git diff --name-only HEAD~1 HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+          fi
+
+          if [ -z "$RECIPES" ]; then
+            echo "No recipes to build"
+            echo "has_recipes=false" >> $GITHUB_OUTPUT
+            echo "recipes=[]" >> $GITHUB_OUTPUT
+            echo "need_cuda=false" >> $GITHUB_OUTPUT
+          else
+            echo "Recipes to build:"
+            echo "$RECIPES"
+            echo "has_recipes=true" >> $GITHUB_OUTPUT
+            JSON_ARRAY=$(echo "$RECIPES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "recipes=$JSON_ARRAY" >> $GITHUB_OUTPUT
+
+            # Check if any recipe needs CUDA
+            NEED_CUDA="false"
+            for recipe in $RECIPES; do
+              if [ -f "recipes/$recipe/meta.yaml" ]; then
+                if grep -q "cuda" "recipes/$recipe/meta.yaml" 2>/dev/null; then
+                  NEED_CUDA="true"
+                  break
+                fi
+              fi
+              if [ -f "recipes/$recipe/recipe.yaml" ]; then
+                if grep -q "cuda" "recipes/$recipe/recipe.yaml" 2>/dev/null; then
+                  NEED_CUDA="true"
+                  break
+                fi
+              fi
+            done
+            echo "need_cuda=$NEED_CUDA" >> $GITHUB_OUTPUT
+          fi
+
+  build-linux-64:
+    needs: detect-recipes
+    if: |
+      needs.detect-recipes.outputs.has_recipes == 'true' &&
+      (github.event.inputs.architecture == 'linux-64' || github.event.inputs.architecture == 'both' || github.event.inputs.architecture == '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
+    env:
+      CONFIG: linux64
+      DEFAULT_LINUX_VERSION: ${{ github.event.inputs.linux_version || 'alma9' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Free disk space
+        run: |
+          # Remove unnecessary tools to free up disk space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Determine Docker image
+        id: docker-image
+        run: |
+          LINUX_VERSION="${{ github.event.inputs.linux_version || 'alma9' }}"
+          CUDA_VERSION="${{ github.event.inputs.cuda_version }}"
+
+          if [ -n "$CUDA_VERSION" ]; then
+            # CUDA builds use specific images
+            IMAGE="quay.io/condaforge/linux-anvil-cuda:${CUDA_VERSION}"
+          else
+            # Standard builds
+            IMAGE="quay.io/condaforge/linux-anvil-x86_64:${LINUX_VERSION}"
+          fi
+
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "Using Docker image: $IMAGE"
+
+      - name: Detect recipe type
+        id: recipe-type
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          if [ -f "recipes/${RECIPE}/recipe.yaml" ]; then
+            echo "type=recipe.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "type=meta.yaml" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build with Docker (rattler-build)
+        if: steps.recipe-type.outputs.type == 'recipe.yaml'
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          DOCKER_IMAGE="${{ steps.docker-image.outputs.image }}"
+
+          echo "Building $RECIPE with rattler-build in Docker"
+
+          mkdir -p build_artifacts
+
+          docker run --rm \
+            -v "${{ github.workspace }}:/home/conda/staged-recipes:rw" \
+            -v "${{ github.workspace }}/build_artifacts:/home/conda/build_artifacts:rw" \
+            -e CI=true \
+            -e CONFIG=linux64 \
+            "$DOCKER_IMAGE" \
+            bash -c "
+              set -ex
+              cd /home/conda/staged-recipes
+
+              # Install rattler-build
+              micromamba install -y -n base rattler-build conda-index
+
+              # Build the recipe
+              rattler-build build \
+                --recipe recipes/${RECIPE}/recipe.yaml \
+                --target-platform linux-64 \
+                -c conda-forge \
+                --variant-config .ci_support/linux64.yaml \
+                --output-dir /home/conda/build_artifacts
+
+              # Index the output
+              conda index /home/conda/build_artifacts
+            "
+
+      - name: Build with Docker (conda-build)
+        if: steps.recipe-type.outputs.type == 'meta.yaml'
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          DOCKER_IMAGE="${{ steps.docker-image.outputs.image }}"
+
+          echo "Building $RECIPE with conda-build in Docker"
+
+          mkdir -p build_artifacts
+
+          docker run --rm \
+            -v "${{ github.workspace }}:/home/conda/staged-recipes:rw" \
+            -v "${{ github.workspace }}/build_artifacts:/home/conda/build_artifacts:rw" \
+            -e CI=true \
+            -e CONFIG=linux64 \
+            -e CONDA_BLD_PATH=/home/conda/build_artifacts \
+            "$DOCKER_IMAGE" \
+            bash -c "
+              set -ex
+              cd /home/conda/staged-recipes
+
+              # Install conda-build
+              micromamba install -y -n base conda-build conda-index
+
+              # Configure conda
+              conda config --set channel_priority strict
+              conda config --add channels conda-forge
+
+              # Build the recipe
+              conda-build recipes/${RECIPE} \
+                -c conda-forge \
+                --variant-config-files .ci_support/linux64.yaml \
+                --output-folder /home/conda/build_artifacts
+
+              # Index the output
+              conda index /home/conda/build_artifacts
+            "
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-64-${{ matrix.recipe }}
+          path: |
+            build_artifacts/linux-64/*.conda
+            build_artifacts/linux-64/*.tar.bz2
+            build_artifacts/noarch/*.conda
+            build_artifacts/noarch/*.tar.bz2
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build-linux-aarch64:
+    needs: detect-recipes
+    if: |
+      needs.detect-recipes.outputs.has_recipes == 'true' &&
+      (github.event.inputs.architecture == 'linux-aarch64' || github.event.inputs.architecture == 'both')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
+    env:
+      CONFIG: linux_aarch64
+      DEFAULT_LINUX_VERSION: ${{ github.event.inputs.linux_version || 'alma9' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Determine Docker image
+        id: docker-image
+        run: |
+          LINUX_VERSION="${{ github.event.inputs.linux_version || 'alma9' }}"
+          IMAGE="quay.io/condaforge/linux-anvil-aarch64:${LINUX_VERSION}"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "Using Docker image: $IMAGE"
+
+      - name: Detect recipe type
+        id: recipe-type
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          if [ -f "recipes/${RECIPE}/recipe.yaml" ]; then
+            echo "type=recipe.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "type=meta.yaml" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build with Docker (rattler-build)
+        if: steps.recipe-type.outputs.type == 'recipe.yaml'
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          DOCKER_IMAGE="${{ steps.docker-image.outputs.image }}"
+
+          echo "Building $RECIPE with rattler-build for linux-aarch64"
+
+          mkdir -p build_artifacts
+
+          docker run --rm --platform linux/arm64 \
+            -v "${{ github.workspace }}:/home/conda/staged-recipes:rw" \
+            -v "${{ github.workspace }}/build_artifacts:/home/conda/build_artifacts:rw" \
+            -e CI=true \
+            -e CONFIG=linux_aarch64 \
+            "$DOCKER_IMAGE" \
+            bash -c "
+              set -ex
+              cd /home/conda/staged-recipes
+
+              micromamba install -y -n base rattler-build conda-index
+
+              rattler-build build \
+                --recipe recipes/${RECIPE}/recipe.yaml \
+                --target-platform linux-aarch64 \
+                -c conda-forge \
+                --output-dir /home/conda/build_artifacts
+
+              conda index /home/conda/build_artifacts
+            "
+
+      - name: Build with Docker (conda-build)
+        if: steps.recipe-type.outputs.type == 'meta.yaml'
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          DOCKER_IMAGE="${{ steps.docker-image.outputs.image }}"
+
+          echo "Building $RECIPE with conda-build for linux-aarch64"
+
+          mkdir -p build_artifacts
+
+          docker run --rm --platform linux/arm64 \
+            -v "${{ github.workspace }}:/home/conda/staged-recipes:rw" \
+            -v "${{ github.workspace }}/build_artifacts:/home/conda/build_artifacts:rw" \
+            -e CI=true \
+            -e CONFIG=linux_aarch64 \
+            -e CONDA_BLD_PATH=/home/conda/build_artifacts \
+            "$DOCKER_IMAGE" \
+            bash -c "
+              set -ex
+              cd /home/conda/staged-recipes
+
+              micromamba install -y -n base conda-build conda-index
+              conda config --set channel_priority strict
+              conda config --add channels conda-forge
+
+              conda-build recipes/${RECIPE} \
+                -c conda-forge \
+                --output-folder /home/conda/build_artifacts
+
+              conda index /home/conda/build_artifacts
+            "
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-aarch64-${{ matrix.recipe }}
+          path: |
+            build_artifacts/linux-aarch64/*.conda
+            build_artifacts/linux-aarch64/*.tar.bz2
+            build_artifacts/noarch/*.conda
+            build_artifacts/noarch/*.tar.bz2
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build-linux-64-cuda:
+    needs: [detect-recipes, build-linux-64]
+    if: |
+      needs.detect-recipes.outputs.has_recipes == 'true' &&
+      (needs.detect-recipes.outputs.need_cuda == 'true' || github.event.inputs.cuda_version != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
+    env:
+      CONFIG: linux64_cuda${{ github.event.inputs.cuda_version || '126' }}
+      CF_CUDA_ENABLED: True
+      CUDA_VERSION: ${{ github.event.inputs.cuda_version || '12.6' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Check if recipe needs CUDA
+        id: check-cuda
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          NEEDS_CUDA="false"
+
+          if [ -f "recipes/$RECIPE/meta.yaml" ]; then
+            if grep -q "cuda" "recipes/$RECIPE/meta.yaml" 2>/dev/null; then
+              NEEDS_CUDA="true"
+            fi
+          fi
+          if [ -f "recipes/$RECIPE/recipe.yaml" ]; then
+            if grep -q "cuda" "recipes/$RECIPE/recipe.yaml" 2>/dev/null; then
+              NEEDS_CUDA="true"
+            fi
+          fi
+
+          # Also build if CUDA is explicitly requested
+          if [ -n "${{ github.event.inputs.cuda_version }}" ]; then
+            NEEDS_CUDA="true"
+          fi
+
+          echo "needs_cuda=$NEEDS_CUDA" >> $GITHUB_OUTPUT
+
+      - name: Detect recipe type
+        id: recipe-type
+        if: steps.check-cuda.outputs.needs_cuda == 'true'
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          if [ -f "recipes/${RECIPE}/recipe.yaml" ]; then
+            echo "type=recipe.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "type=meta.yaml" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build CUDA recipe with Docker
+        if: steps.check-cuda.outputs.needs_cuda == 'true'
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          CUDA_VERSION="${{ env.CUDA_VERSION }}"
+          DOCKER_IMAGE="quay.io/condaforge/linux-anvil-cuda:${CUDA_VERSION}"
+          RECIPE_TYPE="${{ steps.recipe-type.outputs.type }}"
+
+          echo "Building $RECIPE with CUDA $CUDA_VERSION"
+
+          mkdir -p build_artifacts
+
+          if [ "$RECIPE_TYPE" = "recipe.yaml" ]; then
+            BUILD_CMD="rattler-build build --recipe recipes/${RECIPE}/recipe.yaml --target-platform linux-64 -c conda-forge --output-dir /home/conda/build_artifacts"
+            INSTALL_CMD="micromamba install -y -n base rattler-build conda-index"
+          else
+            BUILD_CMD="conda-build recipes/${RECIPE} -c conda-forge --output-folder /home/conda/build_artifacts"
+            INSTALL_CMD="micromamba install -y -n base conda-build conda-index && conda config --set channel_priority strict && conda config --add channels conda-forge"
+          fi
+
+          docker run --rm \
+            -v "${{ github.workspace }}:/home/conda/staged-recipes:rw" \
+            -v "${{ github.workspace }}/build_artifacts:/home/conda/build_artifacts:rw" \
+            -e CI=true \
+            -e CF_CUDA_ENABLED=True \
+            -e CUDA_VERSION=${CUDA_VERSION} \
+            "$DOCKER_IMAGE" \
+            bash -c "
+              set -ex
+              cd /home/conda/staged-recipes
+              ${INSTALL_CMD}
+              ${BUILD_CMD}
+              conda index /home/conda/build_artifacts
+            "
+
+      - name: Upload CUDA artifacts
+        uses: actions/upload-artifact@v4
+        if: steps.check-cuda.outputs.needs_cuda == 'true'
+        with:
+          name: linux-64-cuda-${{ matrix.recipe }}
+          path: |
+            build_artifacts/linux-64/*.conda
+            build_artifacts/linux-64/*.tar.bz2
+          if-no-files-found: ignore
+          retention-days: 7
+
+  summary:
+    needs: [detect-recipes, build-linux-64, build-linux-aarch64, build-linux-64-cuda]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## Linux Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux version: ${{ github.event.inputs.linux_version || 'alma9' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Architecture: ${{ github.event.inputs.architecture || 'linux-64' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CUDA: ${{ github.event.inputs.cuda_version || 'disabled' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Python: ${{ github.event.inputs.python_version || '3.12' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| linux-64 | ${{ needs.build-linux-64.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| linux-aarch64 | ${{ needs.build-linux-aarch64.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| linux-64-cuda | ${{ needs.build-linux-64-cuda.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Recipes" >> $GITHUB_STEP_SUMMARY
+          echo '${{ needs.detect-recipes.outputs.recipes }}' | jq -r '.[]' 2>/dev/null | while read recipe; do
+            echo "- $recipe" >> $GITHUB_STEP_SUMMARY
+          done || echo "No recipes" >> $GITHUB_STEP_SUMMARY

@@ -650,3 +650,18 @@ FodyWeavers.xsd
 /.idea/sqldialects.xml
 /recipes/.webui_secret_key
 /recipes/open-webui/openhands
+
+# Conda/Rattler Build Artifacts
+build_artifacts/
+*.conda
+*.tar.bz2
+
+# Pixi
+.pixi/
+pixi.lock
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# macOS SDK downloads
+.sdk/

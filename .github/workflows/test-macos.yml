@@ -1,0 +1,379 @@
+name: Test macOS Builds
+
+# Only run on manual trigger or when called by another workflow
+# Automatic triggers disabled to preserve GitHub Actions quota
+on:
+  workflow_call:
+    inputs:
+      recipes:
+        description: 'Recipes to build'
+        required: false
+        type: string
+        default: ''
+      osx_64_deployment_target:
+        description: 'macOS x86_64 deployment target'
+        required: false
+        type: string
+        default: '10.13'
+      osx_arm64_deployment_target:
+        description: 'macOS ARM64 deployment target'
+        required: false
+        type: string
+        default: '11.0'
+      platforms:
+        description: 'Platforms to build (both, osx-64, osx-arm64)'
+        required: false
+        type: string
+        default: 'both'
+  workflow_dispatch:
+    inputs:
+      recipes:
+        description: 'Recipes to build (comma-separated, or "all" for all recipes)'
+        required: false
+        default: ''
+        type: string
+      osx_64_deployment_target:
+        description: 'macOS x86_64 deployment target'
+        required: false
+        default: '10.13'
+        type: choice
+        options:
+          - '10.13'
+          - '10.14'
+          - '10.15'
+          - '11.0'
+          - '12.0'
+          - '13.0'
+          - '14.0'
+      osx_arm64_deployment_target:
+        description: 'macOS ARM64 deployment target'
+        required: false
+        default: '11.0'
+        type: choice
+        options:
+          - '11.0'
+          - '12.0'
+          - '13.0'
+          - '14.0'
+      osx_64_sdk_version:
+        description: 'macOS x86_64 SDK version (leave empty for default)'
+        required: false
+        default: ''
+        type: string
+      osx_arm64_sdk_version:
+        description: 'macOS ARM64 SDK version (leave empty for default)'
+        required: false
+        default: ''
+        type: string
+      platforms:
+        description: 'Platforms to build'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - 'both'
+          - 'osx-64'
+          - 'osx-arm64'
+
+env:
+  # Default SDK versions from conda_build_config.yaml
+  DEFAULT_OSX_64_DEPLOYMENT_TARGET: '10.13'
+  DEFAULT_OSX_ARM64_DEPLOYMENT_TARGET: '11.0'
+
+jobs:
+  detect-recipes:
+    runs-on: ubuntu-latest
+    outputs:
+      recipes: ${{ steps.detect.outputs.recipes }}
+      has_recipes: ${{ steps.detect.outputs.has_recipes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed recipes
+        id: detect
+        run: |
+          if [ -n "${{ github.event.inputs.recipes }}" ]; then
+            # Manual trigger with specific recipes
+            if [ "${{ github.event.inputs.recipes }}" = "all" ]; then
+              RECIPES=$(ls -d recipes/*/ 2>/dev/null | xargs -I {} basename {} | grep -v -E '^(example|example-new-recipe|broken-recipes)$' | head -50)
+            else
+              RECIPES=$(echo "${{ github.event.inputs.recipes }}" | tr ',' '\n')
+            fi
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Get recipes changed in PR
+            RECIPES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+          else
+            # Push to main - get recipes changed in last commit
+            RECIPES=$(git diff --name-only HEAD~1 HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+          fi
+
+          if [ -z "$RECIPES" ]; then
+            echo "No recipes to build"
+            echo "has_recipes=false" >> $GITHUB_OUTPUT
+            echo "recipes=[]" >> $GITHUB_OUTPUT
+          else
+            echo "Recipes to build:"
+            echo "$RECIPES"
+            echo "has_recipes=true" >> $GITHUB_OUTPUT
+            # Convert to JSON array
+            JSON_ARRAY=$(echo "$RECIPES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "recipes=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          fi
+
+  build-osx-64:
+    needs: detect-recipes
+    if: |
+      needs.detect-recipes.outputs.has_recipes == 'true' &&
+      (github.event.inputs.platforms == 'both' || github.event.inputs.platforms == 'osx-64' || github.event.inputs.platforms == '')
+    runs-on: macos-13  # x86_64 runner
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
+    env:
+      CONFIG: osx64
+      MACOSX_DEPLOYMENT_TARGET: ${{ github.event.inputs.osx_64_deployment_target || '10.13' }}
+      MACOSX_SDK_VERSION: ${{ github.event.inputs.osx_64_sdk_version || '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Miniforge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          conda-solver: libmamba
+          activate-environment: build
+          python-version: '3.12'
+
+      - name: Install build tools
+        shell: bash -el {0}
+        run: |
+          conda install -y conda-build rattler-build conda-forge-ci-setup
+
+      - name: Download macOS SDK
+        shell: bash -el {0}
+        run: |
+          # Determine SDK version
+          SDK_VERSION="${MACOSX_SDK_VERSION:-${MACOSX_DEPLOYMENT_TARGET}}"
+
+          # SDK download location
+          SDK_DIR="${GITHUB_WORKSPACE}/.sdk"
+          mkdir -p "$SDK_DIR"
+
+          echo "Downloading macOS SDK ${SDK_VERSION}..."
+          curl -fsSL "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX${SDK_VERSION}.sdk.tar.xz" \
+            -o "$SDK_DIR/MacOSX${SDK_VERSION}.sdk.tar.xz" || \
+          curl -fsSL "https://github.com/joseluisq/macosx-sdks/releases/download/14.5/MacOSX${SDK_VERSION}.sdk.tar.xz" \
+            -o "$SDK_DIR/MacOSX${SDK_VERSION}.sdk.tar.xz" || true
+
+          if [ -f "$SDK_DIR/MacOSX${SDK_VERSION}.sdk.tar.xz" ]; then
+            tar -xf "$SDK_DIR/MacOSX${SDK_VERSION}.sdk.tar.xz" -C "$SDK_DIR"
+            echo "OSX_SDK_DIR=${SDK_DIR}" >> $GITHUB_ENV
+            echo "CONDA_BUILD_SYSROOT=${SDK_DIR}/MacOSX${SDK_VERSION}.sdk" >> $GITHUB_ENV
+          else
+            echo "SDK download failed, using system SDK"
+          fi
+
+      - name: Update variant config
+        shell: bash -el {0}
+        run: |
+          # Update osx64.yaml with workflow inputs
+          cat > .ci_support/osx64.yaml << EOF
+          c_compiler:
+            - clang
+          cxx_compiler:
+            - clangxx
+          c_stdlib:
+            - macosx_deployment_target
+          c_stdlib_version:
+            - ${MACOSX_DEPLOYMENT_TARGET}
+          MACOSX_DEPLOYMENT_TARGET:
+            - ${MACOSX_DEPLOYMENT_TARGET}
+          fortran_compiler:
+            - gfortran
+          go_compiler:
+            - go-nocgo
+          cgo_compiler:
+            - go-cgo
+          channel_sources:
+            - conda-forge
+          target_platform:
+            - osx-64
+          EOF
+
+          if [ -n "${MACOSX_SDK_VERSION}" ]; then
+            echo "MACOSX_SDK_VERSION:" >> .ci_support/osx64.yaml
+            echo "  - ${MACOSX_SDK_VERSION}" >> .ci_support/osx64.yaml
+          fi
+
+          cat .ci_support/osx64.yaml
+
+      - name: Build recipe
+        shell: bash -el {0}
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          RECIPE_PATH="recipes/${RECIPE}"
+
+          if [ ! -d "$RECIPE_PATH" ]; then
+            echo "Recipe $RECIPE not found"
+            exit 1
+          fi
+
+          echo "Building $RECIPE for osx-64"
+
+          if [ -f "${RECIPE_PATH}/recipe.yaml" ]; then
+            echo "Using rattler-build"
+            rattler-build build \
+              --recipe "${RECIPE_PATH}/recipe.yaml" \
+              --target-platform osx-64 \
+              -c conda-forge \
+              --variant-config .ci_support/osx64.yaml
+          else
+            echo "Using conda-build"
+            conda-build "${RECIPE_PATH}" \
+              -c conda-forge \
+              --variant-config-files .ci_support/osx64.yaml
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osx-64-${{ matrix.recipe }}
+          path: |
+            ${{ env.CONDA_PREFIX }}/conda-bld/osx-64/*.conda
+            ${{ env.CONDA_PREFIX }}/conda-bld/osx-64/*.tar.bz2
+            ${{ env.CONDA_PREFIX }}/conda-bld/noarch/*.conda
+            ${{ env.CONDA_PREFIX }}/conda-bld/noarch/*.tar.bz2
+          if-no-files-found: ignore
+
+  build-osx-arm64:
+    needs: detect-recipes
+    if: |
+      needs.detect-recipes.outputs.has_recipes == 'true' &&
+      (github.event.inputs.platforms == 'both' || github.event.inputs.platforms == 'osx-arm64' || github.event.inputs.platforms == '')
+    runs-on: macos-14  # ARM64 runner
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
+    env:
+      CONFIG: osxarm64
+      MACOSX_DEPLOYMENT_TARGET: ${{ github.event.inputs.osx_arm64_deployment_target || '11.0' }}
+      MACOSX_SDK_VERSION: ${{ github.event.inputs.osx_arm64_sdk_version || '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Miniforge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          conda-solver: libmamba
+          activate-environment: build
+          python-version: '3.12'
+
+      - name: Install build tools
+        shell: bash -el {0}
+        run: |
+          conda install -y conda-build rattler-build conda-forge-ci-setup
+
+      - name: Update variant config
+        shell: bash -el {0}
+        run: |
+          # Update osxarm64.yaml with workflow inputs
+          cat > .ci_support/osxarm64.yaml << EOF
+          c_compiler:
+            - clang
+          cxx_compiler:
+            - clangxx
+          c_stdlib:
+            - macosx_deployment_target
+          c_stdlib_version:
+            - ${MACOSX_DEPLOYMENT_TARGET}
+          MACOSX_DEPLOYMENT_TARGET:
+            - ${MACOSX_DEPLOYMENT_TARGET}
+          fortran_compiler:
+            - gfortran
+          go_compiler:
+            - go-nocgo
+          cgo_compiler:
+            - go-cgo
+          channel_sources:
+            - conda-forge
+          target_platform:
+            - osx-arm64
+          EOF
+
+          if [ -n "${MACOSX_SDK_VERSION}" ]; then
+            echo "MACOSX_SDK_VERSION:" >> .ci_support/osxarm64.yaml
+            echo "  - ${MACOSX_SDK_VERSION}" >> .ci_support/osxarm64.yaml
+          fi
+
+          cat .ci_support/osxarm64.yaml
+
+      - name: Build recipe
+        shell: bash -el {0}
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          RECIPE_PATH="recipes/${RECIPE}"
+
+          if [ ! -d "$RECIPE_PATH" ]; then
+            echo "Recipe $RECIPE not found"
+            exit 1
+          fi
+
+          echo "Building $RECIPE for osx-arm64"
+
+          if [ -f "${RECIPE_PATH}/recipe.yaml" ]; then
+            echo "Using rattler-build"
+            rattler-build build \
+              --recipe "${RECIPE_PATH}/recipe.yaml" \
+              --target-platform osx-arm64 \
+              -c conda-forge \
+              --variant-config .ci_support/osxarm64.yaml
+          else
+            echo "Using conda-build"
+            conda-build "${RECIPE_PATH}" \
+              -c conda-forge \
+              --variant-config-files .ci_support/osxarm64.yaml
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osx-arm64-${{ matrix.recipe }}
+          path: |
+            ${{ env.CONDA_PREFIX }}/conda-bld/osx-arm64/*.conda
+            ${{ env.CONDA_PREFIX }}/conda-bld/osx-arm64/*.tar.bz2
+            ${{ env.CONDA_PREFIX }}/conda-bld/noarch/*.conda
+            ${{ env.CONDA_PREFIX }}/conda-bld/noarch/*.tar.bz2
+          if-no-files-found: ignore
+
+  summary:
+    needs: [detect-recipes, build-osx-64, build-osx-arm64]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## macOS Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Recipes" >> $GITHUB_STEP_SUMMARY
+          echo "${{ needs.detect-recipes.outputs.recipes }}" | tr ',' '\n' | while read recipe; do
+            echo "- $recipe" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| osx-64 | ${{ needs.build-osx-64.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| osx-arm64 | ${{ needs.build-osx-arm64.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- osx-64 deployment target: ${{ github.event.inputs.osx_64_deployment_target || '10.13' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- osx-arm64 deployment target: ${{ github.event.inputs.osx_arm64_deployment_target || '11.0' }}" >> $GITHUB_STEP_SUMMARY
