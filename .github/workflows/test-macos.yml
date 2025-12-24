@@ -14,7 +14,7 @@ on:
         description: 'macOS x86_64 deployment target'
         required: false
         type: string
-        default: '10.14'
+        default: '10.15'
       osx_arm64_deployment_target:
         description: 'macOS ARM64 deployment target'
         required: false
@@ -35,7 +35,7 @@ on:
       osx_64_deployment_target:
         description: 'macOS x86_64 deployment target'
         required: false
-        default: '10.14'
+        default: '10.15'
         type: choice
         options:
           - '10.13'
@@ -77,7 +77,7 @@ on:
 
 env:
   # Default SDK versions from conda_build_config.yaml
-  DEFAULT_OSX_64_DEPLOYMENT_TARGET: '10.14'
+  DEFAULT_OSX_64_DEPLOYMENT_TARGET: '10.15'
   DEFAULT_OSX_ARM64_DEPLOYMENT_TARGET: '11.0'
 
 jobs:
@@ -134,7 +134,7 @@ jobs:
         recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
     env:
       CONFIG: osx64
-      MACOSX_DEPLOYMENT_TARGET: ${{ github.event.inputs.osx_64_deployment_target || '10.14' }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ github.event.inputs.osx_64_deployment_target || '10.15' }}
       MACOSX_SDK_VERSION: ${{ github.event.inputs.osx_64_sdk_version || '' }}
 
     steps:
@@ -373,5 +373,5 @@ jobs:
           echo "| osx-arm64 | ${{ needs.build-osx-arm64.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Configuration" >> $GITHUB_STEP_SUMMARY
-          echo "- osx-64 deployment target: ${{ github.event.inputs.osx_64_deployment_target || '10.14' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- osx-64 deployment target: ${{ github.event.inputs.osx_64_deployment_target || '10.15' }}" >> $GITHUB_STEP_SUMMARY
           echo "- osx-arm64 deployment target: ${{ github.event.inputs.osx_arm64_deployment_target || '11.0' }}" >> $GITHUB_STEP_SUMMARY
