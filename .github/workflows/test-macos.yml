@@ -127,7 +127,7 @@ jobs:
     if: |
       needs.detect-recipes.outputs.has_recipes == 'true' &&
       (github.event.inputs.platforms == 'both' || github.event.inputs.platforms == 'osx-64' || github.event.inputs.platforms == '')
-    runs-on: macos-13  # x86_64 runner
+    runs-on: macos-15-large  # x86_64 runner (macOS 15 Intel)
     strategy:
       fail-fast: false
       matrix:
