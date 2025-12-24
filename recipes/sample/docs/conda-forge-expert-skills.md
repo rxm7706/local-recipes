@@ -559,6 +559,93 @@ build_platform:
   osx_arm64: osx_64  # Build ARM64 packages on Intel Mac
 ```
 
+#### Go CGO builds failing on Windows with "/Werror" error
+
+**Error**: `cl : Command line error D8021 : invalid numeric argument '/Werror'`
+
+**Root Cause**: Go's CGO runtime passes GCC-style compiler flags that MSVC doesn't understand. This occurs during compilation of `runtime/cgo` or other CGO-enabled packages.
+
+**Solution**: Use MinGW-w64 compilers instead of MSVC for Windows CGO builds.
+
+For `meta.yaml` recipes:
+```yaml
+requirements:
+  build:
+    - {{ compiler('cgo') }}
+    - {{ compiler('c') }}          # [unix]
+    - {{ stdlib('c') }}             # [unix]
+    - {{ compiler('m2w64_c') }}     # [win]
+    - {{ stdlib('m2w64_c') }}       # [win]
+    - m2-base                       # [win]
+```
+
+For `recipe.yaml` recipes:
+```yaml
+requirements:
+  build:
+    - ${{ compiler("go-cgo") }}
+    - if: unix
+      then:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+    - if: win
+      then:
+        - ${{ compiler("m2w64_c") }}      # MinGW-w64 C compiler
+        - ${{ stdlib("m2w64_c") }}        # MinGW-w64 C stdlib
+        - m2-base                          # MSYS2 base utilities
+```
+
+**Why this works**: MinGW-w64 provides a GCC-compatible compiler toolchain on Windows that understands the flags Go CGO expects, unlike MSVC which uses different flag syntax.
+
+**Example Recipes**: See `recipes/writefreely`, `recipes/git-hound`, or `recipes/mailpit` for complete working examples.
+
+### Testing macOS Builds Without macOS Hardware
+
+If you're building from Windows/WSL or Linux and don't have access to macOS hardware, you can use GitHub Actions to test macOS builds remotely.
+
+#### Method 1: Via GitHub Web UI
+
+1. **Push your changes** to your repository
+2. **Navigate to Actions tab**: `https://github.com/<user>/<repo>/actions`
+3. **Select "Test macOS Builds"** workflow from the left sidebar
+4. **Click "Run workflow"** button (top right)
+5. **Configure options**:
+   - **Recipes to build**: Enter recipe name (e.g., `writefreely`)
+   - **Platforms to build**: Select `both` (builds osx-64 + osx-arm64)
+   - **macOS x86_64 deployment target**: Keep default `10.13` or choose newer
+   - **macOS ARM64 deployment target**: Keep default `11.0` or choose newer
+6. **Click "Run workflow"** to start the build
+
+#### Method 2: Via GitHub CLI
+
+```bash
+# After pushing your changes
+gh workflow run test-macos.yml \
+  -f recipes="writefreely" \
+  -f platforms=both \
+  -f osx_64_deployment_target=10.13 \
+  -f osx_arm64_deployment_target=11.0
+
+# Watch the workflow run
+gh run watch
+```
+
+#### Expected Results
+
+When the workflow completes successfully, you'll get:
+- ✅ **osx-64 package**: Built on macos-13 (Intel Mac runner)
+- ✅ **osx-arm64 package**: Built on macos-14 (Apple Silicon runner)
+- Both packages uploaded as downloadable artifacts (retained for 7 days)
+
+#### macOS Build Configuration Notes
+
+The macOS config files (`.ci_support/osx64.yaml` and `.ci_support/osxarm64.yaml`) automatically use:
+- **Compiler**: `clang` for C/C++ (macOS's native compiler)
+- **CGO support**: Works with standard clang compiler (no special MinGW-w64 needed like Windows)
+- **Platform selectors**: Use `# [unix]` which applies to both Linux and macOS
+
+**Example**: Go packages with CGO work on macOS using `# [unix]` selector for standard `compiler('c')`, while Windows requires the MinGW-w64 variant.
+
 ---
 
 ## Best Practices
@@ -608,8 +695,19 @@ build_platform:
 
 ### 2025-12-24
 
+#### Initial Release
 - Initial documentation
 - Added local testing script (`test-recipes.py`)
 - Created GitHub Actions workflows for all platforms
 - Added WSL support for Linux builds on Windows
 - Configured on-demand-only CI to preserve quotas
+
+#### Go CGO Support & macOS CI Testing
+- **Added**: Comprehensive Go CGO Windows build troubleshooting
+  - Documented MinGW-w64 compiler requirement for Windows CGO builds
+  - Explained MSVC `/Werror` error and solution
+  - Added platform-specific compiler selector patterns
+- **Added**: macOS CI testing instructions for non-Mac users
+  - GitHub Actions workflow dispatch via web UI
+  - GitHub CLI commands for triggering macOS builds
+  - Expected results and artifact retention information

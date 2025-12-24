@@ -491,6 +491,51 @@ python build-locally.py linux64_cuda118
 - **macOS builds**: Prompts for SDK location (set `OSX_SDK_DIR` environment variable)
 - **Windows builds**: Requires native Windows environment
 
+## Testing macOS Builds Without macOS Hardware
+
+If you don't have access to macOS hardware (e.g., building from Windows/WSL or Linux), you can use GitHub Actions to test macOS builds remotely.
+
+### Method 1: Via GitHub Web UI
+
+1. **Push your changes** to your repository
+2. **Navigate to Actions tab**: `https://github.com/<user>/<repo>/actions`
+3. **Select "Test macOS Builds"** workflow from the left sidebar
+4. **Click "Run workflow"** button (top right)
+5. **Configure options**:
+   - **Recipes to build**: Enter recipe name (e.g., `writefreely`)
+   - **Platforms to build**: Select `both` (builds osx-64 + osx-arm64)
+   - **macOS x86_64 deployment target**: Keep default `10.13` or choose newer
+   - **macOS ARM64 deployment target**: Keep default `11.0` or choose newer
+6. **Click "Run workflow"** to start the build
+
+### Method 2: Via GitHub CLI
+
+```bash
+# After pushing your changes
+gh workflow run test-macos.yml \
+  -f recipes="writefreely" \
+  -f platforms=both \
+  -f osx_64_deployment_target=10.13 \
+  -f osx_arm64_deployment_target=11.0
+
+# Watch the workflow run
+gh run watch
+```
+
+### Expected Results
+
+When the workflow completes successfully, you'll get:
+- ✅ **osx-64 package**: Built on macos-13 (Intel Mac runner)
+- ✅ **osx-arm64 package**: Built on macos-14 (Apple Silicon runner)
+- Both packages uploaded as downloadable artifacts (retained for 7 days)
+
+### macOS Build Configuration
+
+The macOS config files (`.ci_support/osx64.yaml` and `.ci_support/osxarm64.yaml`) automatically use:
+- **Compiler**: `clang` for C/C++ (macOS's native compiler)
+- **CGO support**: Works with standard clang compiler (no special MinGW-w64 needed)
+- **Platform selectors**: Use `# [unix]` which applies to both Linux and macOS
+
 ## What build-locally.py Tests
 
 1. **Dependency resolution**: Verifies all dependencies can be resolved
@@ -1771,6 +1816,42 @@ Or set in meta.yaml script environment.
 **Diagnosis**: Upstream tarball changed or wrong SHA.
 **Fix**: Verify source URL. Generate hash: `openssl sha256 <file>` or `curl -sL <url> | sha256sum`
 
+## "cl : Command line error D8021 : invalid numeric argument '/Werror'" (Windows CGO)
+
+**Diagnosis**: Go CGO passing GCC-style flags to MSVC compiler on Windows.
+**Symptom**: Windows build fails during runtime/cgo compilation with error about invalid `/Werror` argument.
+**Root Cause**: Go's CGO runtime passes GCC-style compiler flags that MSVC doesn't understand.
+
+**Fix**: Use MinGW-w64 compilers instead of MSVC for Windows CGO builds:
+
+```yaml
+# meta.yaml
+requirements:
+  build:
+    - {{ compiler('cgo') }}
+    - {{ compiler('c') }}          # [unix]
+    - {{ stdlib('c') }}             # [unix]
+    - {{ compiler('m2w64_c') }}     # [win]
+    - {{ stdlib('m2w64_c') }}       # [win]
+    - m2-base                       # [win]
+
+# recipe.yaml
+requirements:
+  build:
+    - ${{ compiler("go-cgo") }}
+    - if: unix
+      then:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+    - if: win
+      then:
+        - ${{ compiler("m2w64_c") }}
+        - ${{ stdlib("m2w64_c") }}
+        - m2-base
+```
+
+**Why**: MinGW-w64 provides a GCC-compatible compiler toolchain on Windows that works correctly with Go's CGO expectations.
+
 ## "CMake can't find Python"
 
 **Diagnosis**: Wrong FindPython module.
@@ -2100,6 +2181,8 @@ extra:
 
 For Go packages requiring C interoperability:
 
+**CRITICAL**: Go's CGO on Windows does NOT work with MSVC. You MUST use MinGW-w64 compilers on Windows platforms.
+
 ```yaml
 schema_version: 1
 
@@ -2124,8 +2207,16 @@ build:
 requirements:
   build:
     - ${{ compiler("go-cgo") }}
-    - ${{ compiler("c") }}
-    - ${{ stdlib("c") }}
+    # Platform-specific C compilers for CGO
+    - if: unix
+      then:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+    - if: win
+      then:
+        - ${{ compiler("m2w64_c") }}      # MinGW-w64 C compiler
+        - ${{ stdlib("m2w64_c") }}        # MinGW-w64 C stdlib
+        - m2-base                          # MSYS2 base utilities
     - go-licenses
   host:
     - openssl
@@ -2143,6 +2234,54 @@ about:
     - LICENSE
     - license-files/
   summary: A Go tool with CGO dependencies.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Go with CGO (Classic meta.yaml format)
+
+```yaml
+{% set name = "my-cgo-tool" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/user/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('cgo') }}
+    - {{ compiler('c') }}          # [unix]
+    - {{ stdlib('c') }}             # [unix]
+    - {{ compiler('m2w64_c') }}     # [win]
+    - {{ stdlib('m2w64_c') }}       # [win]
+    - m2-base                       # [win]
+    - go-licenses
+  host:
+    - sqlite
+  run:
+    - sqlite
+
+test:
+  commands:
+    - {{ name }} --version  # [unix]
+    - {{ name }}.exe --version  # [win]
+
+about:
+  home: https://github.com/user/{{ name }}
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - library_licenses/
 
 extra:
   recipe-maintainers:
