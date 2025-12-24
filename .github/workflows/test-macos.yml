@@ -229,7 +229,6 @@ jobs:
             rattler-build build \
               --recipe "${RECIPE_PATH}/recipe.yaml" \
               --target-platform osx-64 \
-              -c conda-forge \
               --variant-config .ci_support/osx64.yaml
           else
             echo "Using conda-build"
@@ -333,7 +332,6 @@ jobs:
             rattler-build build \
               --recipe "${RECIPE_PATH}/recipe.yaml" \
               --target-platform osx-arm64 \
-              -c conda-forge \
               --variant-config .ci_support/osxarm64.yaml
           else
             echo "Using conda-build"
