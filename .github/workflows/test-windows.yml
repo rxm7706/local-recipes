@@ -1,0 +1,223 @@
+name: Test Windows Builds
+
+# Only run on manual trigger or when called by another workflow
+# Automatic triggers disabled to preserve GitHub Actions quota
+on:
+  workflow_call:
+    inputs:
+      recipes:
+        description: 'Recipes to build'
+        required: false
+        type: string
+        default: ''
+      python_version:
+        description: 'Python version'
+        required: false
+        type: string
+        default: '3.12'
+  workflow_dispatch:
+    inputs:
+      recipes:
+        description: 'Recipes to build (comma-separated, or "all" for all recipes)'
+        required: false
+        default: ''
+        type: string
+      python_version:
+        description: 'Python version for builds'
+        required: false
+        default: '3.12'
+        type: choice
+        options:
+          - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
+      vc_version:
+        description: 'Visual C++ version'
+        required: false
+        default: '14'
+        type: choice
+        options:
+          - '14'
+      use_rattler_build:
+        description: 'Prefer rattler-build for recipe.yaml'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  # Match conda-forge Azure Pipelines configuration
+  CI: github_actions
+  CONFIG: win64
+  CONDA_BLD_PATH: D:\bld
+  MINIFORGE_HOME: D:\Miniforge
+
+jobs:
+  detect-recipes:
+    runs-on: ubuntu-latest
+    outputs:
+      recipes: ${{ steps.detect.outputs.recipes }}
+      has_recipes: ${{ steps.detect.outputs.has_recipes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for skip keywords
+        id: skip-check
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if echo "$COMMIT_MSG" | grep -qiE '\[(skip ci|ci skip|skip windows|windows skip)\]'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect changed recipes
+        id: detect
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          if [ -n "${{ github.event.inputs.recipes }}" ]; then
+            if [ "${{ github.event.inputs.recipes }}" = "all" ]; then
+              RECIPES=$(ls -d recipes/*/ 2>/dev/null | xargs -I {} basename {} | grep -v -E '^(example|example-new-recipe|broken-recipes)$' | head -50)
+            else
+              RECIPES=$(echo "${{ github.event.inputs.recipes }}" | tr ',' '\n')
+            fi
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            RECIPES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+          else
+            RECIPES=$(git diff --name-only HEAD~1 HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+          fi
+
+          if [ -z "$RECIPES" ]; then
+            echo "No recipes to build"
+            echo "has_recipes=false" >> $GITHUB_OUTPUT
+            echo "recipes=[]" >> $GITHUB_OUTPUT
+          else
+            echo "Recipes to build:"
+            echo "$RECIPES"
+            echo "has_recipes=true" >> $GITHUB_OUTPUT
+            JSON_ARRAY=$(echo "$RECIPES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "recipes=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          fi
+
+  build-win-64:
+    needs: detect-recipes
+    if: needs.detect-recipes.outputs.has_recipes == 'true'
+    runs-on: windows-2022
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
+    env:
+      PYTHONUNBUFFERED: 1
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniforge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          conda-solver: libmamba
+          activate-environment: build
+          python-version: ${{ github.event.inputs.python_version || '3.12' }}
+
+      - name: Install build tools
+        shell: bash -el {0}
+        run: |
+          conda install -y conda-build rattler-build conda-forge-ci-setup conda-index
+
+      - name: Configure conda
+        shell: bash -el {0}
+        run: |
+          conda config --set always_yes yes
+          conda config --set channel_priority strict
+          conda config --add channels conda-forge
+
+      - name: Create build directories
+        shell: cmd
+        run: |
+          if not exist "D:\bld\win-64" mkdir "D:\bld\win-64"
+          if not exist "D:\bld\noarch" mkdir "D:\bld\noarch"
+
+      - name: Detect recipe type
+        id: recipe-type
+        shell: bash -el {0}
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          if [ -f "recipes/${RECIPE}/recipe.yaml" ]; then
+            echo "type=recipe.yaml" >> $GITHUB_OUTPUT
+            echo "tool=rattler-build" >> $GITHUB_OUTPUT
+          else
+            echo "type=meta.yaml" >> $GITHUB_OUTPUT
+            echo "tool=conda-build" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build with rattler-build
+        if: steps.recipe-type.outputs.type == 'recipe.yaml'
+        shell: bash -el {0}
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          echo "Building $RECIPE with rattler-build for win-64"
+
+          rattler-build build \
+            --recipe "recipes/${RECIPE}/recipe.yaml" \
+            --target-platform win-64 \
+            -c conda-forge \
+            --variant-config .ci_support/win64.yaml \
+            --output-dir "${CONDA_BLD_PATH}"
+
+      - name: Build with conda-build
+        if: steps.recipe-type.outputs.type == 'meta.yaml'
+        shell: bash -el {0}
+        run: |
+          RECIPE="${{ matrix.recipe }}"
+          echo "Building $RECIPE with conda-build for win-64"
+
+          conda-build "recipes/${RECIPE}" \
+            -c conda-forge \
+            --variant-config-files .ci_support/win64.yaml \
+            --output-folder "${CONDA_BLD_PATH}"
+
+      - name: Index build artifacts
+        shell: bash -el {0}
+        run: |
+          conda index "${CONDA_BLD_PATH}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: win-64-${{ matrix.recipe }}
+          path: |
+            D:\bld\win-64\*.conda
+            D:\bld\win-64\*.tar.bz2
+            D:\bld\noarch\*.conda
+            D:\bld\noarch\*.tar.bz2
+          if-no-files-found: ignore
+          retention-days: 7
+
+  summary:
+    needs: [detect-recipes, build-win-64]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## Windows Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- Platform: win-64" >> $GITHUB_STEP_SUMMARY
+          echo "- Runner: windows-2022" >> $GITHUB_STEP_SUMMARY
+          echo "- Python: ${{ github.event.inputs.python_version || '3.12' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Status: ${{ needs.build-win-64.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Recipes" >> $GITHUB_STEP_SUMMARY
+          echo '${{ needs.detect-recipes.outputs.recipes }}' | jq -r '.[]' 2>/dev/null | while read recipe; do
+            echo "- $recipe" >> $GITHUB_STEP_SUMMARY
+          done || echo "No recipes" >> $GITHUB_STEP_SUMMARY

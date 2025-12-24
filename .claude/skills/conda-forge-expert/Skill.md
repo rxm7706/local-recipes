@@ -1,7 +1,7 @@
 ---
 name: Conda-Forge Expert
-description: A comprehensive guide for generating, auditing, and maintaining conda-forge recipes. Handles legacy (meta.yaml) and modern (recipe.yaml) formats, linting, CI troubleshooting, and feedstock maintenance.
-version: 2.3.0
+description: A comprehensive guide for generating, auditing, and maintaining conda-forge recipes. Handles legacy (meta.yaml) and modern (recipe.yaml) formats, linting, CI troubleshooting, and feedstock maintenance. Enhanced with patterns from real conda-forge feedstocks (2025).
+version: 3.0.0
 dependencies: conda-build, conda-smithy, grayskull, rattler-build, pixi
 ---
 
@@ -491,6 +491,51 @@ python build-locally.py linux64_cuda118
 - **macOS builds**: Prompts for SDK location (set `OSX_SDK_DIR` environment variable)
 - **Windows builds**: Requires native Windows environment
 
+## Testing macOS Builds Without macOS Hardware
+
+If you don't have access to macOS hardware (e.g., building from Windows/WSL or Linux), you can use GitHub Actions to test macOS builds remotely.
+
+### Method 1: Via GitHub Web UI
+
+1. **Push your changes** to your repository
+2. **Navigate to Actions tab**: `https://github.com/<user>/<repo>/actions`
+3. **Select "Test macOS Builds"** workflow from the left sidebar
+4. **Click "Run workflow"** button (top right)
+5. **Configure options**:
+   - **Recipes to build**: Enter recipe name (e.g., `writefreely`)
+   - **Platforms to build**: Select `both` (builds osx-64 + osx-arm64)
+   - **macOS x86_64 deployment target**: Keep default `10.13` or choose newer
+   - **macOS ARM64 deployment target**: Keep default `11.0` or choose newer
+6. **Click "Run workflow"** to start the build
+
+### Method 2: Via GitHub CLI
+
+```bash
+# After pushing your changes
+gh workflow run test-macos.yml \
+  -f recipes="writefreely" \
+  -f platforms=both \
+  -f osx_64_deployment_target=10.13 \
+  -f osx_arm64_deployment_target=11.0
+
+# Watch the workflow run
+gh run watch
+```
+
+### Expected Results
+
+When the workflow completes successfully, you'll get:
+- ✅ **osx-64 package**: Built on macos-13 (Intel Mac runner)
+- ✅ **osx-arm64 package**: Built on macos-14 (Apple Silicon runner)
+- Both packages uploaded as downloadable artifacts (retained for 7 days)
+
+### macOS Build Configuration
+
+The macOS config files (`.ci_support/osx64.yaml` and `.ci_support/osxarm64.yaml`) automatically use:
+- **Compiler**: `clang` for C/C++ (macOS's native compiler)
+- **CGO support**: Works with standard clang compiler (no special MinGW-w64 needed)
+- **Platform selectors**: Use `# [unix]` which applies to both Linux and macOS
+
 ## What build-locally.py Tests
 
 1. **Dependency resolution**: Verifies all dependencies can be resolved
@@ -698,14 +743,14 @@ python build-locally.py
 ### Alternative: Direct conda-build (for debugging only)
 
 ```bash
-# Classic format
+# Classic format (meta.yaml)
 conda build recipe/ -c conda-forge
 
-# Modern format
-rattler-build build -r recipe.yaml
+# Modern format (recipe.yaml) - faster builds
+rattler-build build -r recipe.yaml -c conda-forge
 
-# Use mambabuild for faster debugging
-conda mambabuild recipe/ -c conda-forge
+# Render-only to check for errors before building
+rattler-build build -r recipe.yaml --render-only
 ```
 
 **Note**: Even if using direct conda-build for debugging, you should still run `build-locally.py` before final submission to ensure CI compatibility.
@@ -1334,6 +1379,245 @@ if errorlevel 1 exit 1
 | **Test section** | `test: commands:` | `tests: - script:` |
 | **Build tool** | conda-build | rattler-build |
 
+# Patch Creation Workflow
+
+When upstream source code has bugs or requires modifications for conda-forge compatibility:
+
+## Creating Patches with Git
+
+```bash
+# 1. Clone the upstream repository
+git clone https://github.com/upstream/project.git
+cd project
+
+# 2. Checkout the exact version being packaged
+git checkout tags/v1.2.3
+
+# 3. Make necessary modifications to fix issues
+
+# 4. Generate the patch file
+git diff -p > fix-issue-description.patch
+
+# 5. Move patch to recipe folder
+mv fix-issue-description.patch /path/to/recipe/
+```
+
+## Applying Patches in Recipes
+
+```yaml
+# meta.yaml
+source:
+  url: https://github.com/upstream/project/archive/v{{ version }}.tar.gz
+  sha256: <checksum>
+  patches:
+    - fix-windows-build.patch
+    - 0001-update-cmake-minimum.patch
+    - 0002-fix-numpy2-compat.patch
+
+# recipe.yaml
+source:
+  url: https://github.com/upstream/project/archive/v${{ version }}.tar.gz
+  sha256: <checksum>
+  patches:
+    - fix-windows-build.patch
+```
+
+## Patch Best Practices
+
+1. **Name patches descriptively**: Use names like `fix-numpy2-compat.patch` or `0001-add-missing-include.patch`
+2. **Document upstream**: Try to submit fixes upstream first, note PR links in patch headers
+3. **Line endings**: Ensure Unix-style line endings (LF, not CRLF) - use `dos2unix` if needed
+4. **Minimal patches**: Keep patches focused on single issues for easier maintenance
+5. **Version awareness**: Remove patches when upstream releases fixed versions
+
+## Common Patch Use Cases
+
+- **CMake fixes**: Adjusting minimum versions, finding conda dependencies
+- **Compiler compatibility**: Fixing C++17/20 issues, MSVC-specific code
+- **Python version support**: Adding Python 3.12+ compatibility
+- **NumPy 2.0 compatibility**: Updating deprecated NumPy API calls
+- **Cross-platform fixes**: Windows path handling, macOS SDK issues
+
+# Advanced Testing Patterns
+
+## Dynamic Test Skipping (from PyTorch, Pandas feedstocks)
+
+```yaml
+# Build a dynamic skip list based on platform and capabilities
+{% set tests_to_skip = "_not_a_real_test" %}
+{% set tests_to_skip = tests_to_skip + " or test_network" %}
+{% set tests_to_skip = tests_to_skip + " or test_gpu" %}  # [cuda_compiler_version == "None"]
+{% set tests_to_skip = tests_to_skip + " or test_slow" %}  # [aarch64 or ppc64le]
+{% set tests_to_skip = tests_to_skip + " or test_memory_heavy" %}  # [aarch64]
+{% set tests_to_skip = tests_to_skip + " or test_windows_only" %}  # [not win]
+{% set tests_to_skip = tests_to_skip + " or test_accuracy_sensitive" %}  # [osx and arm64]
+
+test:
+  commands:
+    - pytest -v -k "not ({{ tests_to_skip }})" --durations=20 --ignore=tests/integration
+```
+
+## Platform-Specific Test Commands
+
+```yaml
+test:
+  commands:
+    # Unix-specific
+    - test -f $PREFIX/lib/libmylib.so  # [linux]
+    - test -f $PREFIX/lib/libmylib.dylib  # [osx]
+    # Windows-specific
+    - if not exist %LIBRARY_BIN%\mylib.dll exit 1  # [win]
+    # Headless GUI testing
+    - export QT_QPA_PLATFORM=offscreen && python -c "from mypackage import gui"  # [linux]
+```
+
+## Test Markers and Categories
+
+Common markers to exclude in CI:
+- `network` - Tests requiring internet access
+- `slow` - Long-running tests (>30s)
+- `gpu` / `cuda` - GPU-dependent tests
+- `db` - Database connection tests
+- `clipboard` - System clipboard tests
+- `single_cpu` - Tests that must run single-threaded
+- `flaky` - Known intermittent failures
+
+# Build Number Strategies (from PyTorch feedstock)
+
+## Variant Preference Hierarchy
+
+```yaml
+{% set build_number = 0 %}
+
+build:
+  # CUDA variants get highest priority (users explicitly want GPU)
+  number: {{ build_number + 200 }}  # [cuda_compiler_version != "None"]
+  # MKL variants get medium priority (performance optimization)
+  number: {{ build_number + 100 }}  # [blas_impl == "mkl"]
+  # OpenBLAS/default gets base priority
+  number: {{ build_number }}
+```
+
+This ensures:
+- `pytorch-2.0.0-cuda12_mkl_py311_1` (build 301) > `pytorch-2.0.0-mkl_py311_1` (build 101) > `pytorch-2.0.0-py311_1` (build 1)
+
+# Multi-Output Recipe Patterns (from GDAL, OpenCV feedstocks)
+
+## Modular Plugin Architecture (GDAL pattern)
+
+```yaml
+# Split large library into core + plugins
+outputs:
+  - name: libgdal-core
+    script: build-core.sh
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+      run_exports:
+        - {{ pin_subpackage('libgdal-core', max_pin='x.x.x') }}
+
+  - name: libgdal-pdf
+    script: install-plugin.sh
+    requirements:
+      host:
+        - {{ pin_subpackage('libgdal-core', exact=True) }}
+        - poppler
+      run:
+        - {{ pin_subpackage('libgdal-core', exact=True) }}
+
+  - name: libgdal  # Metapackage with all plugins
+    requirements:
+      run:
+        - {{ pin_subpackage('libgdal-core', exact=True) }}
+        - {{ pin_subpackage('libgdal-pdf', exact=True) }}
+        - {{ pin_subpackage('libgdal-netcdf', exact=True) }}
+```
+
+## Library + Python Bindings Pattern (OpenCV pattern)
+
+```yaml
+outputs:
+  - name: libopencv
+    script: build-lib.sh
+    build:
+      run_exports:
+        - {{ pin_subpackage('libopencv', max_pin='x.x') }}
+
+  - name: py-opencv
+    script: install-python.sh
+    requirements:
+      host:
+        - {{ pin_subpackage('libopencv', exact=True) }}
+        - python
+        - numpy
+      run:
+        - {{ pin_subpackage('libopencv', exact=True) }}
+        - python
+        - {{ pin_compatible('numpy') }}
+
+  - name: opencv  # Compatibility wrapper
+    requirements:
+      run:
+        - {{ pin_subpackage('py-opencv', exact=True) }}
+```
+
+# Global Pinning Reference (2025)
+
+Key pinned versions from `conda-forge-pinning`:
+
+## Compilers
+- **GCC**: 14 (Linux), 15 (macOS)
+- **Clang**: 19
+- **MSVC**: vs2022
+- **Rust**: Latest stable
+
+## Python Ecosystem
+- **Python**: 3.10, 3.11, 3.12, 3.13
+- **NumPy**: 2.x
+- **python_min**: 3.10 (for noarch packages)
+
+## Core Libraries
+- **Boost**: 1.86
+- **OpenSSL**: 3.5
+- **Arrow**: 19-22
+- **GDAL**: 3.11
+
+## Platform Targets
+- **Linux glibc**: 2.17 (CentOS 7 default)
+- **macOS x86_64**: 10.13
+- **macOS arm64**: 11.0
+
+# HPC and MPI Patterns
+
+## External MPI for HPC Systems
+
+```yaml
+# Allow users to use system MPI instead of conda-forge MPI
+requirements:
+  host:
+    - {{ mpi }}
+  run:
+    - {{ mpi }}
+
+# In conda_build_config.yaml
+mpi:
+  - nompi
+  - mpich
+  - openmpi
+
+# Build number offset for MPI preference
+build:
+  number: {{ build_number + 100 }}  # [mpi == "nompi"]
+  number: {{ build_number }}  # [mpi != "nompi"]
+```
+
+Users can install external MPI with:
+```bash
+conda install "mpich=*=external_*"
+conda install "openmpi=*=external_*"
+```
+
 # Feedstock Maintenance
 
 ## Version Updates
@@ -1532,6 +1816,42 @@ Or set in meta.yaml script environment.
 **Diagnosis**: Upstream tarball changed or wrong SHA.
 **Fix**: Verify source URL. Generate hash: `openssl sha256 <file>` or `curl -sL <url> | sha256sum`
 
+## "cl : Command line error D8021 : invalid numeric argument '/Werror'" (Windows CGO)
+
+**Diagnosis**: Go CGO passing GCC-style flags to MSVC compiler on Windows.
+**Symptom**: Windows build fails during runtime/cgo compilation with error about invalid `/Werror` argument.
+**Root Cause**: Go's CGO runtime passes GCC-style compiler flags that MSVC doesn't understand.
+
+**Fix**: Use MinGW-w64 compilers instead of MSVC for Windows CGO builds:
+
+```yaml
+# meta.yaml
+requirements:
+  build:
+    - {{ compiler('cgo') }}
+    - {{ compiler('c') }}          # [unix]
+    - {{ stdlib('c') }}             # [unix]
+    - {{ compiler('m2w64_c') }}     # [win]
+    - {{ stdlib('m2w64_c') }}       # [win]
+    - m2-base                       # [win]
+
+# recipe.yaml
+requirements:
+  build:
+    - ${{ compiler("go-cgo") }}
+    - if: unix
+      then:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+    - if: win
+      then:
+        - ${{ compiler("m2w64_c") }}
+        - ${{ stdlib("m2w64_c") }}
+        - m2-base
+```
+
+**Why**: MinGW-w64 provides a GCC-compatible compiler toolchain on Windows that works correctly with Go's CGO expectations.
+
 ## "CMake can't find Python"
 
 **Diagnosis**: Wrong FindPython module.
@@ -1678,31 +1998,586 @@ build:
 | **Compliance** | Requires preprocessing | Valid YAML directly |
 | **Build tool** | conda-build | rattler-build |
 | **Python imports** | `test: imports:` | `tests: - python: imports:` |
+| **Build scripts** | `bld.bat` / `build.sh` | `build.bat` / `build.sh` |
+| **run_exports location** | `build.run_exports` | `requirements.run_exports` |
+| **run_constrained** | `requirements.run_constrained` | `requirements.run_constraints` |
+| **ignore_run_exports** | `build.ignore_run_exports` | `requirements.ignore_run_exports.by_name` |
+| **git source** | `git_url`, `git_rev` | `git`, `tag` |
 
-## Converting meta.yaml to recipe.yaml
+## Automatic Conversion Tool
 
-Key transformations:
+Use `conda-recipe-manager` to automatically convert recipes:
+
+```bash
+# Install the tool
+pixi global install conda-recipe-manager
+
+# Convert a recipe (outputs to stdout)
+conda-recipe-manager convert my-recipe/meta.yaml > recipe.yaml
+
+# Or use rattler-build's built-in converter
+rattler-build generate-recipe convert meta.yaml
+```
+
+## Complete Conversion Guide
+
+### Jinja Variables
 
 ```yaml
 # meta.yaml
-{% set name = "pkg" %}
-{% set version = "1.0" %}
-requirements:
-  host:
-    - openssl  # [unix]
-    - openssl-windows  # [win]
+{% set version = "1.2.3" %}
+{% set sha256 = "abc123..." %}
+package:
+  version: "{{ version }}"
 
 # recipe.yaml
 context:
-  name: pkg
-  version: "1.0"
+  version: "1.2.3"
+  sha256: abc123...
+package:
+  version: ${{ version }}
+```
+
+### Selectors
+
+```yaml
+# meta.yaml
 requirements:
   host:
-    - if: unix
-      then: openssl
+    - pywin32  # [win]
+    - posix  # [not win]
+
+# recipe.yaml - Option 1 (inline Jinja)
+requirements:
+  host:
+    - ${{ "pywin32" if win }}
+    - ${{ "posix" if unix }}
+
+# recipe.yaml - Option 2 (if/then structure) - RECOMMENDED
+requirements:
+  host:
     - if: win
-      then: openssl-windows
+      then: pywin32
+    - if: unix
+      then: posix
 ```
+
+### Tests Section
+
+```yaml
+# meta.yaml
+test:
+  imports:
+    - mypackage
+  commands:
+    - mypackage --version
+  requires:
+    - pytest
+
+# recipe.yaml
+tests:
+  - python:
+      imports:
+        - mypackage
+      pip_check: true  # default is true
+  - script:
+      - mypackage --version
+    requirements:
+      run:
+        - pytest
+```
+
+### Git Sources
+
+```yaml
+# meta.yaml
+source:
+  git_url: https://github.com/user/repo.git
+  git_rev: v1.0.0
+
+# recipe.yaml
+source:
+  git: https://github.com/user/repo.git
+  tag: v1.0.0
+```
+
+### run_exports and ignore_run_exports
+
+```yaml
+# meta.yaml
+build:
+  run_exports:
+    - {{ pin_subpackage('mylib', max_pin='x.x') }}
+  ignore_run_exports:
+    - libfoo
+  ignore_run_exports_from:
+    - {{ compiler('cuda') }}
+
+# recipe.yaml
+requirements:
+  run_exports:
+    - ${{ pin_subpackage('mylib', max_pin='x.x') }}
+  ignore_run_exports:
+    by_name:
+      - libfoo
+    from_package:
+      - ${{ compiler('cuda') }}
+```
+
+# Language-Specific Recipe Templates
+
+## Go Package Template (Modern recipe.yaml)
+
+For pure Go packages without CGO:
+
+```yaml
+schema_version: 1
+
+context:
+  name: my-go-tool
+  version: "1.0.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/user/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+  script:
+    - go-licenses save . --save_path=./license-files
+    - go build -v -o $PREFIX/bin/${{ name }}
+
+requirements:
+  build:
+    - ${{ compiler("go-nocgo") }}
+    - go-licenses
+
+tests:
+  - script:
+      - ${{ name }} --help
+      - ${{ name }} --version
+  - package_contents:
+      bin:
+        - ${{ name }}
+
+about:
+  homepage: https://github.com/user/${{ name }}
+  license: MIT
+  license_file:
+    - LICENSE
+    - license-files/
+  summary: A Go CLI tool.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Go with CGO Template
+
+For Go packages requiring C interoperability:
+
+**CRITICAL**: Go's CGO on Windows does NOT work with MSVC. You MUST use MinGW-w64 compilers on Windows platforms.
+
+```yaml
+schema_version: 1
+
+context:
+  name: my-cgo-tool
+  version: "1.0.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/user/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+  script:
+    - go-licenses save . --save_path=./license-files
+    - go build -v -o $PREFIX/bin/${{ name }}
+
+requirements:
+  build:
+    - ${{ compiler("go-cgo") }}
+    # Platform-specific C compilers for CGO
+    - if: unix
+      then:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+    - if: win
+      then:
+        - ${{ compiler("m2w64_c") }}      # MinGW-w64 C compiler
+        - ${{ stdlib("m2w64_c") }}        # MinGW-w64 C stdlib
+        - m2-base                          # MSYS2 base utilities
+    - go-licenses
+  host:
+    - openssl
+  run:
+    - openssl
+
+tests:
+  - script:
+      - ${{ name }} --version
+
+about:
+  homepage: https://github.com/user/${{ name }}
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - license-files/
+  summary: A Go tool with CGO dependencies.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Go with CGO (Classic meta.yaml format)
+
+```yaml
+{% set name = "my-cgo-tool" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/user/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('cgo') }}
+    - {{ compiler('c') }}          # [unix]
+    - {{ stdlib('c') }}             # [unix]
+    - {{ compiler('m2w64_c') }}     # [win]
+    - {{ stdlib('m2w64_c') }}       # [win]
+    - m2-base                       # [win]
+    - go-licenses
+  host:
+    - sqlite
+  run:
+    - sqlite
+
+test:
+  commands:
+    - {{ name }} --version  # [unix]
+    - {{ name }}.exe --version  # [win]
+
+about:
+  home: https://github.com/user/{{ name }}
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - library_licenses/
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Go Package Notes
+
+1. **Compiler choice**: Use `go-nocgo` for pure Go, `go-cgo` when C libs are needed
+2. **License bundling**: `go-licenses save` extracts licenses from statically linked deps
+3. **Multi-binary packages**: Run separate `go build` for each binary with specific paths
+4. **Legacy packages**: Non-modular packages need `go mod init` + `go mod tidy` first
+5. **Cross-compilation**: go-activation package sets GOARCH/GOOS automatically
+
+## Rust Package Template (Modern recipe.yaml)
+
+For Rust CLI tools:
+
+```yaml
+schema_version: 1
+
+context:
+  name: my-rust-tool
+  version: "1.0.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/user/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - cargo install --locked --root $PREFIX --path .
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - openssl  # [unix]
+
+tests:
+  - script:
+      - ${{ name }} --help
+      - ${{ name }} --version
+
+about:
+  homepage: https://github.com/user/${{ name }}
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: A Rust CLI tool.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Rust-Python Hybrid (maturin/pyo3)
+
+```yaml
+schema_version: 1
+
+context:
+  name: my-rust-python
+  version: "1.0.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/m/my-rust-python/my_rust_python-${{ version }}.tar.gz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - maturin >=1,<2
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - my_rust_python
+      pip_check: true
+
+about:
+  homepage: https://github.com/user/${{ name }}
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: A Python package with Rust extensions.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Rust Package Notes
+
+1. **License bundling**: `cargo-bundle-licenses` extracts licenses from Cargo dependencies
+2. **Cross-compilation**: Add cross-python for building on different platforms
+3. **maturin vs setuptools-rust**: maturin is preferred for simpler configuration
+4. **Freethreading support**: Add `python-freethreading` for Python 3.13+ free-threaded builds
+
+## Java/Maven Package Template
+
+```yaml
+{% set name = "my-java-tool" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://repo1.maven.org/maven2/org/example/{{ name }}/{{ version }}/{{ name }}-{{ version }}-bin.tar.gz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - openjdk >=11
+
+test:
+  commands:
+    - {{ name }} --version
+
+about:
+  home: https://example.org/{{ name }}
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A Java application.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### Java Package Notes
+
+1. **Binary vs source**: Pre-built JARs are simpler; source builds require Maven in build deps
+2. **JDK version**: Specify minimum JDK in run requirements
+3. **noarch: generic**: Java packages are platform-independent
+4. **Maven builds**: Add `maven` to build requirements if building from source
+5. **Classpath**: May need wrapper scripts to set CLASSPATH correctly
+
+## .NET Package Template
+
+```yaml
+{% set name = "my-dotnet-tool" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/user/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: <insert_sha256_here>
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}  # [linux]
+  host:
+    - dotnet-sdk >=8
+  run:
+    - dotnet-runtime >=8
+
+test:
+  commands:
+    - {{ name }} --version
+
+about:
+  home: https://github.com/user/{{ name }}
+  license: MIT
+  license_file: LICENSE
+  summary: A .NET application.
+
+extra:
+  recipe-maintainers:
+    - your-github-username
+```
+
+### .NET Package Notes
+
+1. **Multi-output**: .NET feedstock produces dotnet, dotnet-runtime, dotnet-sdk, dotnet-aspnetcore
+2. **Self-contained**: Can build self-contained apps with `dotnet publish --self-contained`
+3. **Platform handling**: Different SHA256 per platform (Linux/macOS/Windows, x64/arm64)
+4. **NuGet deps**: NuGet packages restored during build, license with `nuget-license` tool
+
+## npm Package Build Scripts
+
+### build.sh (Unix)
+```bash
+#!/bin/bash
+set -ex
+
+export npm_config_prefix="${PREFIX}"
+export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+
+npm pack
+npm install -g ${PKG_NAME}-${PKG_VERSION}.tgz
+```
+
+### build.bat (Windows)
+```batch
+@echo on
+
+call npm config set prefix "%PREFIX%"
+if errorlevel 1 exit 1
+
+call npm pack
+if errorlevel 1 exit 1
+
+call npm install --userconfig nonexistentrc -g %PKG_NAME%-%PKG_VERSION%.tgz
+if errorlevel 1 exit 1
+```
+
+### npm Package Notes
+
+1. **Scoped packages**: `@scope/name` uses URL `registry.npmjs.org/@scope/name/-/name-version.tgz`
+2. **npm pack naming**: Creates `scope-name-version.tgz` (@ removed, / becomes -)
+3. **Binary linking**: npm auto-creates symlinks in `$PREFIX/bin` for `bin` entries
+4. **Getting SHA256**: `curl -sL <tarball-url> | sha256sum`
+
+# Migrating Feedstocks to rattler-build
+
+## Step-by-Step Migration
+
+1. **Update conda-forge.yml**:
+   ```yaml
+   conda_build_tool: rattler-build
+   ```
+
+2. **Convert the recipe**:
+   ```bash
+   conda-recipe-manager convert recipe/meta.yaml > recipe/recipe.yaml
+   ```
+
+3. **Remove old files**:
+   - Delete `recipe/meta.yaml`
+   - Rename `bld.bat` to `build.bat` if present
+
+4. **Rerender the feedstock**:
+   ```bash
+   conda smithy rerender -c auto
+   ```
+
+5. **Test locally**:
+   ```bash
+   rattler-build build -r recipe/recipe.yaml -c conda-forge --render-only
+   rattler-build build -r recipe/recipe.yaml -c conda-forge
+   ```
+
+6. **Push and create PR**
+
+## Common Migration Issues
+
+1. **Script naming**: `bld.bat` must be renamed to `build.bat`
+2. **Variant keys in scripts**: Need explicit `env:` section in recipe
+3. **Complex Jinja logic**: May need manual adjustment after conversion
+4. **Multi-output recipes**: Each output needs individual test configuration
 
 # References
 
