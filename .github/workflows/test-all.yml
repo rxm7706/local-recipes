@@ -1,0 +1,225 @@
+name: Test All Platforms
+
+# Only run on manual trigger to preserve GitHub Actions quota
+on:
+  workflow_dispatch:
+    inputs:
+      recipes:
+        description: 'Recipes to build (comma-separated, or "all" for all recipes)'
+        required: false
+        default: ''
+        type: string
+      platforms:
+        description: 'Platforms to build'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'linux'
+          - 'windows'
+          - 'macos'
+          - 'linux,windows'
+          - 'linux,macos'
+          - 'windows,macos'
+      linux_version:
+        description: 'Linux base image (alma9, alma8, cos7)'
+        required: false
+        default: 'alma9'
+        type: choice
+        options:
+          - 'alma9'
+          - 'alma8'
+          - 'cos7'
+      macos_deployment_target:
+        description: 'macOS deployment target'
+        required: false
+        default: 'default'
+        type: choice
+        options:
+          - 'default'
+          - '10.13'
+          - '11.0'
+          - '12.0'
+          - '13.0'
+          - '14.0'
+      cuda_version:
+        description: 'CUDA version (empty for no CUDA)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - '12.6'
+          - '12.0'
+          - '11.8'
+      python_version:
+        description: 'Python version'
+        required: false
+        default: '3.12'
+        type: choice
+        options:
+          - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
+
+jobs:
+  # Check for skip keywords and detect recipes
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      recipes: ${{ steps.detect.outputs.recipes }}
+      has_recipes: ${{ steps.detect.outputs.has_recipes }}
+      skip: ${{ steps.skip-check.outputs.skip }}
+      run_linux: ${{ steps.platforms.outputs.linux }}
+      run_windows: ${{ steps.platforms.outputs.windows }}
+      run_macos: ${{ steps.platforms.outputs.macos }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for skip keywords
+        id: skip-check
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if echo "$COMMIT_MSG" | grep -qiE '\[(skip ci|ci skip)\]'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping CI due to commit message"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine platforms
+        id: platforms
+        run: |
+          PLATFORMS="${{ github.event.inputs.platforms || 'all' }}"
+
+          if [ "$PLATFORMS" = "all" ]; then
+            echo "linux=true" >> $GITHUB_OUTPUT
+            echo "windows=true" >> $GITHUB_OUTPUT
+            echo "macos=true" >> $GITHUB_OUTPUT
+          else
+            echo "linux=$(echo $PLATFORMS | grep -q 'linux' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+            echo "windows=$(echo $PLATFORMS | grep -q 'windows' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+            echo "macos=$(echo $PLATFORMS | grep -q 'macos' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect changed recipes
+        id: detect
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          if [ -n "${{ github.event.inputs.recipes }}" ]; then
+            if [ "${{ github.event.inputs.recipes }}" = "all" ]; then
+              RECIPES=$(ls -d recipes/*/ 2>/dev/null | xargs -I {} basename {} | grep -v -E '^(example|example-new-recipe|broken-recipes)$' | head -20)
+            else
+              RECIPES=$(echo "${{ github.event.inputs.recipes }}" | tr ',' '\n')
+            fi
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            RECIPES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+          else
+            RECIPES=$(git diff --name-only HEAD~1 HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+          fi
+
+          if [ -z "$RECIPES" ]; then
+            echo "No recipes to build"
+            echo "has_recipes=false" >> $GITHUB_OUTPUT
+            echo "recipes=[]" >> $GITHUB_OUTPUT
+          else
+            echo "Recipes to build:"
+            echo "$RECIPES"
+            echo "has_recipes=true" >> $GITHUB_OUTPUT
+            JSON_ARRAY=$(echo "$RECIPES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "recipes=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          fi
+
+  # Linux builds
+  linux:
+    needs: preflight
+    if: |
+      needs.preflight.outputs.skip != 'true' &&
+      needs.preflight.outputs.has_recipes == 'true' &&
+      needs.preflight.outputs.run_linux == 'true'
+    uses: ./.github/workflows/test-linux.yml
+    with:
+      recipes: ${{ github.event.inputs.recipes || '' }}
+      linux_version: ${{ github.event.inputs.linux_version || 'alma9' }}
+      architecture: 'linux-64'
+      cuda_version: ${{ github.event.inputs.cuda_version || '' }}
+      python_version: ${{ github.event.inputs.python_version || '3.12' }}
+
+  # Windows builds
+  windows:
+    needs: preflight
+    if: |
+      needs.preflight.outputs.skip != 'true' &&
+      needs.preflight.outputs.has_recipes == 'true' &&
+      needs.preflight.outputs.run_windows == 'true'
+    uses: ./.github/workflows/test-windows.yml
+    with:
+      recipes: ${{ github.event.inputs.recipes || '' }}
+      python_version: ${{ github.event.inputs.python_version || '3.12' }}
+
+  # macOS builds
+  macos:
+    needs: preflight
+    if: |
+      needs.preflight.outputs.skip != 'true' &&
+      needs.preflight.outputs.has_recipes == 'true' &&
+      needs.preflight.outputs.run_macos == 'true'
+    uses: ./.github/workflows/test-macos.yml
+    with:
+      recipes: ${{ github.event.inputs.recipes || '' }}
+      osx_64_deployment_target: ${{ github.event.inputs.macos_deployment_target == 'default' && '10.13' || github.event.inputs.macos_deployment_target }}
+      osx_arm64_deployment_target: ${{ github.event.inputs.macos_deployment_target == 'default' && '11.0' || github.event.inputs.macos_deployment_target }}
+      platforms: 'both'
+
+  # Final summary
+  summary:
+    needs: [preflight, linux, windows, macos]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- Python: ${{ github.event.inputs.python_version || '3.12' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux version: ${{ github.event.inputs.linux_version || 'alma9' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS target: ${{ github.event.inputs.macos_deployment_target || 'default' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CUDA: ${{ github.event.inputs.cuda_version || 'disabled' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Platform Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Linux status
+          if [ "${{ needs.preflight.outputs.run_linux }}" = "true" ]; then
+            echo "| Linux | ${{ needs.linux.result }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Linux | skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Windows status
+          if [ "${{ needs.preflight.outputs.run_windows }}" = "true" ]; then
+            echo "| Windows | ${{ needs.windows.result }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Windows | skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # macOS status
+          if [ "${{ needs.preflight.outputs.run_macos }}" = "true" ]; then
+            echo "| macOS | ${{ needs.macos.result }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| macOS | skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Recipes" >> $GITHUB_STEP_SUMMARY
+          echo '${{ needs.preflight.outputs.recipes }}' | jq -r '.[]' 2>/dev/null | while read recipe; do
+            echo "- $recipe" >> $GITHUB_STEP_SUMMARY
+          done || echo "No recipes detected" >> $GITHUB_STEP_SUMMARY
