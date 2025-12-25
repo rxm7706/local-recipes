@@ -1,5 +1,5 @@
 #yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-  schema_version: 1
+schema_version: 1
 
 context:
   name: writefreely
@@ -15,6 +15,10 @@ source:
 
 build:
   number: 0
+  # Skip osx-64: Go crypto/x509 requires macOS 10.15+ symbols but conda-forge
+  # go-cgo compiler targets darwin13 (macOS 10.13)
+  skip:
+    - osx and x86_64
   # Use external build scripts for reliability
   script:
     - if: unix
@@ -26,8 +30,16 @@ requirements:
   build:
     # CGO is required for SQLite support
     - ${{ compiler("go-cgo") }}
-    - ${{ compiler("c") }}
-    #- ${{ stdlib("c") }}
+    # Platform-specific C compilers for CGO
+    - if: unix
+      then:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+    - if: win
+      then:
+        - ${{ compiler("m2w64_c") }}      # MinGW-w64 C compiler
+        - ${{ stdlib("m2w64_c") }}        # MinGW-w64 C stdlib
+        - m2-base                          # MSYS2 base utilities
     # For collecting dependency licenses
     - go-licenses
   host:
