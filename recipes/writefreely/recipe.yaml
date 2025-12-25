@@ -15,6 +15,10 @@ source:
 
 build:
   number: 0
+  # Skip osx-64: Go crypto/x509 requires macOS 10.15+ symbols but conda-forge
+  # go-cgo compiler targets darwin13 (macOS 10.13)
+  skip:
+    - osx and x86_64
   # Use external build scripts for reliability
   script:
     - if: unix
