@@ -1,11 +1,8 @@
 # =============================================================================
 # Apache Tika 3.2.3 All-In-One Conda-Forge Recipe
 # =============================================================================
-# This single meta.yaml builds ALL 66+ packages as outputs in one conda-build.
-# Similar pattern to: https://github.com/conda-forge/airflow-feedstock
-# All SHA256 checksums VERIFIED from Maven Central on 2024-12-07
+# All SHA256 checksums VERIFIED from Maven Central
 # Dependency versions from tika-parent-3.2.3.pom
-#
 # Maintainer: rxm7706
 # =============================================================================
 
@@ -16,9 +13,6 @@ package:
   version: {{ tika_version }}
 
 source:
-  # =========================================================================
-  # TIER 1: Zero Dependencies (41 JARs)
-  # =========================================================================
   - url: https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar
     sha256: 7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832
     folder: slf4j-api
@@ -183,9 +177,6 @@ source:
     sha256: 959a2ffb2d591436f51f183c6a521fc89347912f711bf0cae008cdf045d95319
     folder: jackson-annotations
 
-  # =========================================================================
-  # TIER 2: Simple Dependencies (12 JARs)
-  # =========================================================================
   - url: https://repo1.maven.org/maven2/com/google/guava/guava/33.4.8-jre/guava-33.4.8-jre.jar
     sha256: f3d7f57f67fd622f4d468dfdd692b3a5e3909246c28017ac3263405f0fe617ed
     folder: guava
@@ -234,9 +225,6 @@ source:
     sha256: 7eb4084596ae25bd3c61698e48e8d0ab65a9260758884ed5cbb9c6e55c44a56a
     folder: log4j-core
 
-  # =========================================================================
-  # TIER 3: Medium Dependencies (5 JARs)
-  # =========================================================================
   - url: https://repo1.maven.org/maven2/org/glassfish/jaxb/jaxb-core/4.0.5/jaxb-core-4.0.5.jar
     sha256: ad3fd9bf00de3eda9859f70b6cfb011e2fe9904804e16a2665092888ece0fdca
     folder: jaxb-core
@@ -257,9 +245,6 @@ source:
     sha256: cdaac22e40ec30c4096e1ebe8c454c8826c0d1c378d7db5d7b3ad166354b0bd3
     folder: log4j-slf4j2-impl
 
-  # =========================================================================
-  # TIER 4: Complex Dependencies (5 JARs)
-  # =========================================================================
   - url: https://repo1.maven.org/maven2/org/glassfish/jaxb/jaxb-runtime/4.0.5/jaxb-runtime-4.0.5.jar
     sha256: 485d8940e76373a7f300815ea5504bf5b726c234425ad30971019d133124cca4
     folder: jaxb-runtime
@@ -280,9 +265,7 @@ source:
     sha256: d40a7871ac1dc6343cd2e433c3ee484eb59cdff728b7a1e22dcfc8b3f400a18a
     folder: jackcess-encrypt
 
-  # =========================================================================
-  # TIER 5: Apache Tika 3.2.3 (3 JARs)
-  # =========================================================================
+  # Apache Tika 3.2.3
   - url: https://repo1.maven.org/maven2/org/apache/tika/tika-core/{{ tika_version }}/tika-core-{{ tika_version }}.jar
     sha256: 4b697ae09a76b50102750816e9bd3ad26d89161ba65ddabdeee7ef3830428fd1
     folder: tika-core
@@ -1822,23 +1805,12 @@ about:
   license: Apache-2.0
   license_family: Apache
   license_file: LICENSE
-  summary: Apache Tika 3.2.3 - Content detection and analysis toolkit with all Java dependencies - builds 66+ packages in one recipe
+  summary: Apache Tika 3.2.3 and all dependencies
   description: |
-    Apache Tika 3.2.3 - The Apache Tika toolkit detects and extracts 
-    metadata and text from over a thousand different file types.
-
-    Dependency versions from tika-parent-3.2.3.pom.
-    All SHA256 checksums verified from Maven Central.
-    This mega-recipe builds Apache Tika and all 60+ Java dependencies
-    in a single conda-build command. Pattern based on airflow-feedstock.    
-
-    Outputs include:
+    This mega-recipe builds Apache Tika 3.2.3 and all 60+ Java dependencies.
+    
+    Outputs:
     - Individual packages for each dependency
-    - 42 Tier 1 packages (zero dependencies)
-    - 14 Tier 2 packages (simple dependencies)
-    - 5 Tier 3 packages (medium dependencies)
-    - 5 Tier 4 packages (complex dependencies)
-    - 5 Apache Tika packages (core, parsers, app, all-app, metapackage)
     - apache-tika-core: Core library
     - apache-tika-parsers: Parser packages
     - apache-tika-app: Modular app using individual packages
