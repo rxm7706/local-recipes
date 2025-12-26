@@ -1,0 +1,56 @@
+# Template: Python noarch package (pure Python, no compiled extensions)
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - {{ name }} = {{ name|replace("-", "_") }}.cli:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    # Build backend - choose one:
+    - hatchling
+    # - setuptools
+    # - flit-core
+    # - poetry-core
+  run:
+    - python >={{ python_min }}
+    # Add runtime dependencies here
+
+test:
+  imports:
+    - {{ name|replace("-", "_") }}
+  commands:
+    - pip check
+    - {{ name }} --version
+    - {{ name }} --help
+  requires:
+    - pip
+
+about:
+  home: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_family: REPLACE_LICENSE_FAMILY
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+  doc_url: REPLACE_DOCS_URL
+  dev_url: REPLACE_REPO_URL
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

@@ -711,3 +711,148 @@ The macOS config files (`.ci_support/osx64.yaml` and `.ci_support/osxarm64.yaml`
   - GitHub Actions workflow dispatch via web UI
   - GitHub CLI commands for triggering macOS builds
   - Expected results and artifact retention information
+
+# Conda-Forge Expert Skill
+
+A comprehensive Claude Code skill for generating, auditing, and maintaining conda-forge recipes.
+
+## Overview
+
+The Conda-Forge Expert skill transforms Claude into a Senior Conda-Forge Maintainer with knowledge derived from analyzing 1,247+ real-world recipes and 10,000+ merged staged-recipes PRs.
+
+## Key Features
+
+- **Recipe Generation**: Bootstrap new recipes using best practices
+- **Format Support**: Handles both legacy (meta.yaml) and modern (recipe.yaml) formats
+- **Linting**: Integration with conda-smithy recipe-lint
+- **CI Troubleshooting**: Debug Azure Pipelines and GitHub Actions failures
+- **PyPI-Conda Name Mapping**: Automated translation of package names
+- **Modern Tooling**: Native support for rattler-build and pixi
+
+## File Structure
+
+```
+.claude/skills/conda-forge-expert/
+├── Skill.md                    # Main skill definition (~2800 lines)
+└── pypi_conda_mappings/        # Package name mapping system
+    ├── custom.yaml             # User-defined overrides (TRACKED)
+    ├── different_names.json    # Packages where names differ (TRACKED)
+    ├── stats.json              # Sync metadata (TRACKED)
+    ├── unified.json            # All mappings (CACHE - gitignored)
+    ├── by_pypi_name.json       # PyPI lookup index (CACHE - gitignored)
+    └── by_conda_name.json      # Conda lookup index (CACHE - gitignored)
+```
+
+## PyPI-Conda Mapping System
+
+### Design Philosophy
+
+To reduce repository size, only essential files are tracked in git:
+- **custom.yaml** (~4KB): User-defined overrides
+- **different_names.json** (~148KB): Only packages where names actually differ
+- **stats.json** (~4KB): Sync metadata and cache TTL
+
+Large index files (~8MB total) are generated locally and gitignored.
+
+### Caching Behavior
+
+- **TTL**: 7 days (configurable)
+- **Auto-fetch**: If cache is expired/missing, fetches from parselmouth
+- **Warning**: User sees a message when network fetch occurs
+- **Sources**: parselmouth (primary), cf-graph (secondary), grayskull (tertiary)
+
+### CLI Commands
+
+```bash
+# Check cache status
+python scripts/sync_pypi_mappings.py --check-cache
+
+# Normal sync (respects TTL)
+python scripts/sync_pypi_mappings.py
+
+# Force refresh
+python scripts/sync_pypi_mappings.py --force-refresh
+
+# Custom TTL (e.g., 3 days)
+python scripts/sync_pypi_mappings.py --ttl-days 3
+```
+
+### Programmatic Usage
+
+```python
+import sys
+sys.path.insert(0, 'scripts')
+from sync_pypi_mappings import get_conda_name
+
+# Automatic lookup with caching
+conda_name = get_conda_name("tree-sitter")  # Returns "tree_sitter"
+conda_name = get_conda_name("docker")       # Returns "docker-py"
+conda_name = get_conda_name("requests")     # Returns "requests" (same)
+```
+
+## GitHub Actions Integration
+
+### Automated Sync Workflow
+
+The `sync-pypi-mappings.yml` workflow:
+- Runs weekly (Sunday midnight UTC)
+- Triggers on custom.yaml changes
+- Can be manually dispatched
+- Creates PRs for mapping updates
+
+```bash
+# Manual trigger
+gh workflow run sync-pypi-mappings.yml
+```
+
+### CI Dependencies
+
+Uses pixi for dependency management:
+- No pip installs in CI
+- Uses `prefix-dev/setup-pixi` action
+- Global install of python and pyyaml
+
+## Usage Patterns
+
+### When Generating Recipes
+
+1. **Check package name mapping** before using dependencies
+2. **Run lint** before building: `conda-smithy recipe-lint recipes/<pkg>`
+3. **Test locally**: `python build-locally.py`
+4. **Verify CFEP-25 compliance** for noarch:python packages
+
+### Common Name Mappings
+
+| PyPI Name | conda-forge Name | Notes |
+|-----------|------------------|-------|
+| `tree-sitter` | `tree_sitter` | Underscore vs hyphen |
+| `docker` | `docker-py` | Completely different |
+| `torch` | `pytorch` | Different name |
+| `opencv-python` | `opencv` | Simplified |
+| `tables` | `pytables` | Different name |
+
+### Adding Custom Mappings
+
+Edit `pypi_conda_mappings/custom.yaml`:
+
+```yaml
+my-package:
+  conda_name: my_package
+  import_name: my_package
+  reason: "Custom build with patches"
+```
+
+## Best Practices
+
+1. **Always lint before building**: Catches simple errors early
+2. **Use modern recipe.yaml format** for new packages
+3. **Check name mappings** for all PyPI dependencies
+4. **Keep custom.yaml minimal**: Only add when upstream sources are wrong
+5. **Run build-locally.py** before submitting to staged-recipes
+
+## References
+
+- [Skill.md](/path/to/.claude/skills/conda-forge-expert/Skill.md) - Full skill definition
+- [conda-forge docs](https://conda-forge.org/docs/) - Official documentation
+- [rattler-build](https://rattler.build/) - Modern build tool
+- [pixi](https://pixi.sh/) - Package manager

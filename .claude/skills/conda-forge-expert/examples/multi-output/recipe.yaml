@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Example: Multi-output package (library + Python bindings)
+schema_version: 1
+
+context:
+  name: example-multi
+  version: "1.0.0"
+
+package:
+  name: ${{ name }}-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/example/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+# Shared build cache - compiled once, used by all outputs
+cache:
+  requirements:
+    build:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - ${{ stdlib("c") }}
+      - cmake
+      - ninja
+    host:
+      - zlib
+  build:
+    script:
+      - cmake -B build -G Ninja ${CMAKE_ARGS}
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_PYTHON=OFF
+      - cmake --build build
+      - cmake --install build --prefix ${{ PREFIX }}
+
+outputs:
+  # C/C++ library output
+  - package:
+      name: lib${{ name }}
+    build:
+      run_exports:
+        - ${{ pin_subpackage("lib" ~ name, upper_bound="x.x") }}
+      files:
+        include:
+          - lib/lib${{ name }}*
+          - include/${{ name }}/
+    tests:
+      - script:
+          - if: unix
+            then: test -f $PREFIX/lib/lib${{ name }}${{ shlib_ext }}
+      - package_contents:
+          lib:
+            - lib${{ name }}${{ shlib_ext }}
+          include:
+            - ${{ name }}/*.h
+
+  # Python bindings output
+  - package:
+      name: ${{ name }}
+    build:
+      script:
+        - ${{ PYTHON }} -m pip install ./python -vv --no-deps --no-build-isolation
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+        - if: build_platform != target_platform
+          then:
+            - python
+            - cross-python_${{ target_platform }}
+      host:
+        - ${{ pin_subpackage("lib" ~ name, exact=true) }}
+        - python
+        - pip
+        - pybind11
+      run:
+        - ${{ pin_subpackage("lib" ~ name, exact=true) }}
+        - python
+    tests:
+      - python:
+          imports:
+            - ${{ name }}
+          pip_check: true
+      - script:
+          - python -c "import ${{ name }}; print(${{ name }}.__version__)"
+
+about:
+  homepage: https://github.com/example/example-multi
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Example multi-output package
+  description: |
+    This example demonstrates a multi-output recipe that builds
+    a C++ library and Python bindings as separate packages,
+    using the cache section for shared compilation.
+
+extra:
+  feedstock-name: ${{ name }}
+  recipe-maintainers:
+    - example-maintainer

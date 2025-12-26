@@ -1,0 +1,42 @@
+# Template: Perl module from CPAN
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+{% set dist_name = name|replace("::", "-") %}
+
+package:
+  name: perl-{{ dist_name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://cpan.metacpan.org/authors/id/REPLACE_AUTHOR_PATH/{{ dist_name }}-{{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - perl Makefile.PL INSTALLDIRS=vendor
+    - make
+    - make install DESTDIR=$PREFIX
+
+requirements:
+  build:
+    - perl
+    - perl-extutils-makemaker
+  run:
+    - perl
+
+test:
+  commands:
+    - perl -e "use {{ name }}"
+    - perl -M{{ name }} -e "print {{ name }}->VERSION"
+
+about:
+  home: https://metacpan.org/pod/{{ name }}
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

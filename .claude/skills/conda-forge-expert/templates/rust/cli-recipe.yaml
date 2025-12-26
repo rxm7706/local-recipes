@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Rust CLI application
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+  # OR from crates.io:
+  # url: https://static.crates.io/crates/${{ name }}/${{ name }}-${{ version }}.crate
+  # sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - cargo install --locked --root ${{ PREFIX }} --path .
+    # OR for workspace with specific binary:
+    # - cargo install --locked --root ${{ PREFIX }} --path crates/${{ name }}
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+
+tests:
+  - script:
+      - ${{ name }} --version
+      - ${{ name }} --help
+  - package_contents:
+      bin:
+        - ${{ name }}${{ executable_ext }}
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: REPLACE_SUMMARY
+  repository: REPLACE_REPO_URL
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

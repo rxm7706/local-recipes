@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Ruby gem package
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://rubygems.org/downloads/${{ name }}-${{ version }}.gem
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+    - ruby
+  run:
+    - ruby >=2.7
+
+tests:
+  - script:
+      - ruby -e "require '${{ name }}'"
+      - gem list ${{ name }}
+
+about:
+  homepage: https://rubygems.org/gems/${{ name }}
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

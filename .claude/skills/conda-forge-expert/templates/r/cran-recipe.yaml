@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: R package from CRAN
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+  posix_name: ${{ name | replace("-", "_") }}
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://cran.r-project.org/src/contrib/${{ posix_name }}_${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+  rpaths:
+    - lib/R/lib/
+    - lib/
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: cross-r-base ${{ r_base }}
+  host:
+    - r-base
+    # Add R package dependencies here
+  run:
+    - r-base
+    # Add R runtime dependencies here
+
+tests:
+  - script:
+      - R -e "library('${{ posix_name }}')"
+      - R -e "packageVersion('${{ posix_name }}')"
+
+about:
+  homepage: https://cran.r-project.org/package=${{ posix_name }}
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

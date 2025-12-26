@@ -484,3 +484,330 @@ If the build and tests pass, the artifact is validated and uploaded to the `cond
 
 * **`conda-forge-ci-setup`**: This is a helper package installed in every CI run. It contains the logic that says "If user asked for pixi, ensure pixi is on the PATH".
 * **Rerendering**: If you change `conda-forge.yml` to use `pixi`, you generally must run `conda-smithy rerender` locally and push the changes, or let the bot do it in a PR, to update the CI scripts to use the new logic.
+# Conda-Forge Expert Skill - Spec Kit
+
+This document provides a complete specification for building the Conda-Forge Expert skill from scratch.
+
+## Overview
+
+The Conda-Forge Expert skill is a Claude Code managed skill that provides deep expertise in conda-forge recipe creation and maintenance.
+
+## Architecture
+
+```
+Repository Root
+├── .claude/
+│   └── skills/
+│       └── conda-forge-expert/
+│           ├── Skill.md                    # Main skill definition
+│           └── pypi_conda_mappings/        # Name mapping subsystem
+│               ├── custom.yaml             # User overrides (tracked)
+│               ├── different_names.json    # Name differences (tracked)
+│               ├── stats.json              # Metadata (tracked)
+│               ├── unified.json            # Full mappings (cache)
+│               ├── by_pypi_name.json       # PyPI index (cache)
+│               └── by_conda_name.json      # Conda index (cache)
+├── .github/
+│   ├── actions/
+│   │   └── sync-pypi-mappings/
+│   │       └── action.yml                  # Composite action
+│   └── workflows/
+│       └── sync-pypi-mappings.yml          # Sync workflow
+├── scripts/
+│   └── sync_pypi_mappings.py               # Sync script
+└── .gitignore                              # Excludes cache files
+```
+
+## Components
+
+### 1. Skill Definition (Skill.md)
+
+The main skill file contains:
+
+**Header** (YAML frontmatter):
+```yaml
+---
+name: Conda-Forge Expert
+description: A comprehensive guide for generating, auditing, and maintaining conda-forge recipes...
+version: 3.0.0
+dependencies: conda-build, conda-smithy, grayskull, rattler-build, pixi
+---
+```
+
+**Content Sections** (~2800 lines):
+1. Overview and package installation preferences
+2. Modern build tools (rattler-build, pixi)
+3. Recipe generation tools (grayskull)
+4. Recipe formats (meta.yaml vs recipe.yaml)
+5. Linting and validation rules
+6. Local testing with build-locally.py
+7. Requirements structure
+8. Workflow templates
+9. Advanced patterns (patches, test skipping, multi-output)
+10. CI troubleshooting
+11. Common errors and solutions
+12. Language-specific templates (Python, Rust, Go, Node.js)
+
+### 2. PyPI-Conda Mapping Subsystem
+
+**Purpose**: Translate PyPI package names to conda-forge equivalents.
+
+**Design Decisions**:
+- Store only essential files in git (~156KB vs ~8MB)
+- Use cache with 7-day TTL
+- Fetch from parselmouth on-demand when needed
+- Merge from multiple sources with priority
+
+**Data Sources** (priority order):
+1. `custom.yaml` - User overrides (highest priority)
+2. parselmouth (prefix-dev) - Hourly updates
+3. cf-graph-countyfair (regro) - Comprehensive
+4. grayskull (conda) - Curated
+
+**File Specifications**:
+
+`custom.yaml`:
+```yaml
+# User-defined overrides
+package-name:
+  conda_name: conda_package_name
+  import_name: python_import_name
+  reason: "Why this override exists"
+```
+
+`different_names.json`:
+```json
+{
+  "normalized-pypi-name": {
+    "pypi_name": "Original-PyPI-Name",
+    "conda_name": "conda_name",
+    "import_name": "import_name",
+    "source": "parselmouth|cf_graph|grayskull|custom"
+  }
+}
+```
+
+`stats.json`:
+```json
+{
+  "last_updated": "2025-01-15T00:00:00+00:00",
+  "total_mappings": 73000,
+  "different_names_count": 2500,
+  "sources": { "parselmouth": 70000, "cf_graph": 12000 },
+  "cache_ttl_days": 7
+}
+```
+
+### 3. Sync Script (sync_pypi_mappings.py)
+
+**Key Functions**:
+
+```python
+def check_cache_validity(output_dir, ttl_days=7) -> tuple[bool, str]:
+    """Check if cache is valid (exists and within TTL)."""
+
+def fetch_parselmouth_direct() -> dict[str, dict]:
+    """Fetch mappings directly from parselmouth."""
+
+def get_conda_name(pypi_name, output_dir, ttl_days=7) -> str:
+    """Get conda-forge name with caching and fallback."""
+
+def main():
+    """CLI entrypoint with --force-refresh, --check-cache, --ttl-days."""
+```
+
+**CLI Interface**:
+```
+python scripts/sync_pypi_mappings.py [-h] [--output-dir PATH] [--custom-file PATH]
+                                      [--force-refresh] [--check-cache]
+                                      [--ttl-days N] [--quiet]
+```
+
+### 4. GitHub Action (action.yml)
+
+**Composite Action Steps**:
+1. Setup pixi (prefix-dev/setup-pixi)
+2. Install dependencies (pixi global install python pyyaml)
+3. Create output directory
+4. Run sync script (inline Python)
+5. Output statistics via GITHUB_OUTPUT
+
+**Inputs**:
+- `output-dir`: Where to write mapping files
+- `custom-mappings`: Path to custom.yaml
+- `python-version`: Python version (default: 3.12)
+
+**Outputs**:
+- `total-mappings`: Number of merged mappings
+- `different-names`: Number with different names
+- `last-updated`: ISO timestamp
+
+### 5. GitHub Workflow (sync-pypi-mappings.yml)
+
+**Triggers**:
+- Schedule: Weekly (Sunday 00:00 UTC)
+- Push: When custom.yaml changes
+- Manual: workflow_dispatch
+
+**Key Steps**:
+1. Checkout repository
+2. Run sync action
+3. Show results in job summary
+4. Stage only tracked files (custom.yaml, different_names.json, stats.json)
+5. Create PR with changes
+
+**Important**: Only staged tracked files are committed, not cache files.
+
+### 6. .gitignore Entries
+
+```gitignore
+# PyPI-Conda mapping cache files (generated locally)
+.claude/skills/conda-forge-expert/pypi_conda_mappings/unified.json
+.claude/skills/conda-forge-expert/pypi_conda_mappings/by_pypi_name.json
+.claude/skills/conda-forge-expert/pypi_conda_mappings/by_conda_name.json
+```
+
+## Build Instructions
+
+### Step 1: Create Directory Structure
+
+```bash
+mkdir -p .claude/skills/conda-forge-expert/pypi_conda_mappings
+mkdir -p .github/actions/sync-pypi-mappings
+mkdir -p .github/workflows
+mkdir -p scripts
+```
+
+### Step 2: Create Skill.md
+
+Create `.claude/skills/conda-forge-expert/Skill.md` with:
+- YAML frontmatter (name, description, version, dependencies)
+- All content sections (see Skill.md in repo for full content)
+
+### Step 3: Create Sync Script
+
+Create `scripts/sync_pypi_mappings.py` with:
+- Data source URLs
+- Parsing functions for JSON/YAML
+- Name normalization
+- Cache validity checking
+- Merge logic with priority
+- CLI with argparse
+
+### Step 4: Create GitHub Action
+
+Create `.github/actions/sync-pypi-mappings/action.yml`:
+- Use prefix-dev/setup-pixi for environment
+- Install pyyaml via pixi global
+- Inline Python for sync logic
+- Output to GITHUB_OUTPUT
+
+### Step 5: Create Workflow
+
+Create `.github/workflows/sync-pypi-mappings.yml`:
+- Schedule and manual triggers
+- Use the composite action
+- Stage only tracked files
+- Create PR with peter-evans/create-pull-request
+
+### Step 6: Configure .gitignore
+
+Add entries to exclude large cache files.
+
+### Step 7: Initialize Mappings
+
+```bash
+# Run initial sync
+python scripts/sync_pypi_mappings.py --force-refresh
+
+# Create custom.yaml template if needed
+touch .claude/skills/conda-forge-expert/pypi_conda_mappings/custom.yaml
+```
+
+## Testing
+
+### Local Testing
+
+```bash
+# Check cache status
+python scripts/sync_pypi_mappings.py --check-cache
+
+# Force sync
+python scripts/sync_pypi_mappings.py --force-refresh
+
+# Verify files created
+ls -la .claude/skills/conda-forge-expert/pypi_conda_mappings/
+```
+
+### Workflow Testing
+
+```bash
+# Trigger workflow manually
+gh workflow run sync-pypi-mappings.yml
+
+# Watch run
+gh run watch
+```
+
+### Integration Testing
+
+```python
+# Test the get_conda_name function
+import sys
+sys.path.insert(0, 'scripts')
+from sync_pypi_mappings import get_conda_name
+
+assert get_conda_name("tree-sitter") == "tree_sitter"
+assert get_conda_name("docker") == "docker-py"
+assert get_conda_name("requests") == "requests"
+```
+
+## Maintenance
+
+### Weekly Tasks (Automated)
+- Sync workflow runs Sunday 00:00 UTC
+- Creates PR if changes detected
+- Review and merge PRs
+
+### Manual Tasks
+- Update custom.yaml for new edge cases
+- Review Skill.md for accuracy
+- Update templates for new patterns
+
+### Version Updates
+- Bump version in Skill.md frontmatter
+- Update CHANGELOG if maintained
+- Tag release if using semantic versioning
+
+## Troubleshooting
+
+### Cache Issues
+```bash
+# Force rebuild cache
+python scripts/sync_pypi_mappings.py --force-refresh
+
+# Clear cache files manually
+rm .claude/skills/conda-forge-expert/pypi_conda_mappings/*.json
+```
+
+### Network Errors
+- Script handles URLError gracefully
+- Falls back to cached data if available
+- Empty content returns empty dict
+
+### Missing Dependencies
+```bash
+# Install with pixi
+pixi global install python pyyaml
+
+# Or with conda
+conda install pyyaml
+```
+
+## Future Enhancements
+
+1. **Web UI**: Dashboard for viewing/editing mappings
+2. **API Endpoint**: REST API for name lookups
+3. **Incremental Sync**: Only fetch changed packages
+4. **Validation**: Verify conda-forge package exists
+5. **Stats Reporting**: Track mapping usage patterns

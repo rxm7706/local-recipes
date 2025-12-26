@@ -634,7 +634,8 @@ FodyWeavers.xsd
 !.vscode/launch.json
 !.vscode/extensions.json
 *.code-workspace
-
+*.swp
+*.swo
 # Local History for Visual Studio Code
 .history/
 
@@ -653,6 +654,7 @@ FodyWeavers.xsd
 
 # Conda/Rattler Build Artifacts
 build_artifacts/
+conda-bld/
 *.conda
 *.tar.bz2
 
@@ -665,3 +667,14 @@ pixi.lock
 
 # macOS SDK downloads
 .sdk/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PyPI-Conda mapping cache files (generated locally, not tracked in git)
+# These files are large (~8MB total) and can be regenerated from parselmouth
+# Only custom.yaml, different_names.json, and stats.json are tracked
+.claude/skills/conda-forge-expert/pypi_conda_mappings/unified.json
+.claude/skills/conda-forge-expert/pypi_conda_mappings/by_pypi_name.json
+.claude/skills/conda-forge-expert/pypi_conda_mappings/by_conda_name.json

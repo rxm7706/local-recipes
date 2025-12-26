@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Multi-output package with C library + Python bindings
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name }}-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+# Shared build configuration
+cache:
+  requirements:
+    build:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - ${{ stdlib("c") }}
+      - cmake
+      - ninja
+    host:
+      - zlib
+  build:
+    script:
+      - cmake -B build -G Ninja ${CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Release
+      - cmake --build build
+      - cmake --install build --prefix ${{ PREFIX }}
+
+outputs:
+  # C/C++ library output
+  - package:
+      name: lib${{ name }}
+    build:
+      run_exports:
+        - ${{ pin_subpackage("lib" ~ name, upper_bound="x.x") }}
+      files:
+        include:
+          - lib/lib${{ name }}*
+          - include/${{ name }}/
+    tests:
+      - package_contents:
+          lib:
+            - lib${{ name }}${{ shlib_ext }}
+          include:
+            - ${{ name }}/*.h
+
+  # Python bindings output
+  - package:
+      name: ${{ name }}
+    build:
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+        - if: build_platform != target_platform
+          then:
+            - python
+            - cross-python_${{ target_platform }}
+      host:
+        - ${{ pin_subpackage("lib" ~ name, exact=true) }}
+        - python
+        - pip
+        - cython
+      run:
+        - ${{ pin_subpackage("lib" ~ name, exact=true) }}
+        - python
+    tests:
+      - python:
+          imports:
+            - ${{ name }}
+          pip_check: true
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  feedstock-name: ${{ name }}
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

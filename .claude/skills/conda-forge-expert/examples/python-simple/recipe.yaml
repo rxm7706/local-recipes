@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Example: Simple Python noarch package
+schema_version: 1
+
+context:
+  name: example-simple
+  version: "1.0.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  # This is a placeholder - replace with actual source
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0
+
+tests:
+  - python:
+      imports:
+        - example_simple
+      pip_check: true
+  - script:
+      - example-simple --help
+
+about:
+  homepage: https://github.com/example/example-simple
+  license: MIT
+  license_file: LICENSE
+  summary: A simple example Python package
+  description: |
+    This is an example package demonstrating the basic structure
+    of a noarch Python recipe for conda-forge.
+
+extra:
+  recipe-maintainers:
+    - example-maintainer

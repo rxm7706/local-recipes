@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Header-only C/C++ library
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    # Add header-only dependencies here
+
+tests:
+  - package_contents:
+      include:
+        - ${{ name }}/*.hpp
+        - ${{ name }}/*.h
+  - script:
+      - if: unix
+        then: test -d $PREFIX/include/${{ name }}
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: C/C++ library using Autotools (configure/make)
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://example.com/${{ name }}-${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  skip:
+    - win
+  run_exports:
+    - ${{ pin_subpackage(name, upper_bound="x.x") }}
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+    - make
+    - autoconf
+    - automake
+    - libtool
+    - pkg-config
+  host:
+    - zlib
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/lib${{ name }}${{ shlib_ext }}
+  - package_contents:
+      lib:
+        - lib${{ name }}${{ shlib_ext }}
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

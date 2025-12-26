@@ -1,0 +1,143 @@
+# Enterprise Configuration Template
+# Copy this file to enterprise-config.yaml and customize for your environment
+#
+# Usage:
+#   cp enterprise-config.yaml.template enterprise-config.yaml
+#   # Edit enterprise-config.yaml with your settings
+#
+# This file is gitignored to prevent accidental commit of internal URLs
+
+# Enable enterprise mode
+features:
+  enable_enterprise: true
+  enable_airgapped: true        # Set to true for fully air-gapped environments
+
+# Artifactory Configuration
+artifactory:
+  # Base Artifactory URL
+  url: "https://artifactory.your-company.com/artifactory"
+
+  # Repository names
+  repositories:
+    # Remote repo that mirrors conda-forge (proxy/cache)
+    conda_remote: "conda-forge-remote"
+
+    # Local repo for internally built packages
+    conda_local: "conda-internal"
+
+    # Virtual repo aggregating remote + local (use this for resolving)
+    conda_virtual: "conda-forge-virtual"
+
+    # Generic repo for tools/binaries (pixi, rattler-build)
+    tools: "generic-tools"
+
+  # Full channel URLs (computed from above)
+  channels:
+    primary: "https://artifactory.your-company.com/artifactory/conda-forge-virtual"
+    upload: "https://artifactory.your-company.com/artifactory/conda-internal"
+
+  # Authentication
+  auth:
+    # Use environment variable for token
+    token_env_var: "ARTIFACTORY_TOKEN"
+    # Or specify username (token still from env)
+    username: ""
+
+# Enterprise GitHub Configuration
+github_enterprise:
+  # Enterprise GitHub URL
+  url: "https://github.your-company.com"
+  api_url: "https://github.your-company.com/api/v3"
+
+  # Organization for internal packages
+  org: "your-org"
+
+  # Authentication
+  auth:
+    token_env_var: "GH_ENTERPRISE_TOKEN"
+
+# Self-Hosted CI Configuration
+ci:
+  # CI platform: jenkins, gitlab, github-actions
+  platform: "jenkins"
+
+  # Jenkins-specific
+  jenkins:
+    url: "https://jenkins.your-company.com"
+    credentials_id: "artifactory-token"
+    docker_image: "artifactory.your-company.com/docker/conda-build:latest"
+
+  # GitLab-specific
+  gitlab:
+    url: "https://gitlab.your-company.com"
+    runner_tags:
+      - conda-build
+      - linux
+
+  # GitHub Actions self-hosted
+  github_actions:
+    runner_labels:
+      - self-hosted
+      - conda-build
+
+# Developer Workstation Configuration
+workstation:
+  # pixi configuration to distribute to developers
+  pixi_config: |
+    # ~/.pixi/config.toml
+    default_channels = ["https://artifactory.your-company.com/artifactory/conda-forge-virtual"]
+    tls_no_verify = false
+
+  # conda/mamba configuration
+  condarc: |
+    channels:
+      - https://artifactory.your-company.com/artifactory/conda-forge-virtual
+    ssl_verify: true
+
+# Security Configuration
+security:
+  # Require GPG signing for all built packages
+  require_signing: true
+  gpg_key_id: ""
+
+  # Generate SBOM with each build (CycloneDX or SPDX)
+  sbom:
+    enabled: true
+    format: "cyclonedx"         # cyclonedx or spdx
+
+  # Integration with Artifactory Xray for vulnerability scanning
+  vulnerability_scanning:
+    enabled: true
+    fail_on_critical: true
+    fail_on_high: false
+
+# Air-Gap Bootstrap
+bootstrap:
+  # Tools to pre-download for air-gapped deployment
+  tools:
+    pixi:
+      version: "0.40.0"
+      platforms:
+        - linux-64
+        - win-64
+        - osx-arm64
+    rattler_build:
+      version: "0.35.0"
+      platforms:
+        - linux-64
+        - win-64
+        - osx-arm64
+
+  # Location to store bootstrap tools in Artifactory
+  tools_repo: "generic-tools"
+
+# Network Configuration
+network:
+  # Proxy settings (if needed)
+  http_proxy: ""
+  https_proxy: ""
+  no_proxy: "localhost,127.0.0.1,.your-company.com"
+
+  # TLS/SSL settings
+  ssl_verify: true
+  ca_bundle: ""                 # Path to custom CA bundle if needed

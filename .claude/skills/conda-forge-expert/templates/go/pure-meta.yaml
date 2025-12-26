@@ -1,0 +1,39 @@
+# Template: Pure Go application (no CGO)
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  script:
+    - go-licenses save . --save_path=THIRDPARTY
+    - go build -o $PREFIX/bin/{{ name }}{{ environ.get('EXE', '') }} .
+
+requirements:
+  build:
+    - {{ compiler('go') }}
+    - go-licenses
+
+test:
+  commands:
+    - {{ name }} --version
+    - {{ name }} --help
+
+about:
+  home: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file:
+    - LICENSE
+    - THIRDPARTY/
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

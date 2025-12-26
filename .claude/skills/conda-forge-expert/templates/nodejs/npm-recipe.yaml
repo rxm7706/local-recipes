@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Node.js package from npm (pure JavaScript)
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/${{ name }}/-/${{ name }}-${{ version }}.tgz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+    - nodejs
+    - npm
+  run:
+    - nodejs >=18
+
+tests:
+  - script:
+      - ${{ name }} --version
+      - ${{ name }} --help
+      - npm list -g ${{ name }}
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

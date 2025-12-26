@@ -1,0 +1,290 @@
+name: 'Sync PyPI-Conda Mappings'
+description: 'Fetches and merges PyPI to conda-forge package name mappings from multiple sources'
+author: 'rxm7706'
+
+branding:
+  icon: 'refresh-cw'
+  color: 'green'
+
+inputs:
+  output-dir:
+    description: 'Output directory for mapping files'
+    required: false
+    default: '.claude/skills/conda-forge-expert/pypi_conda_mappings'
+  custom-mappings:
+    description: 'Path to custom mappings YAML file (relative to output-dir)'
+    required: false
+    default: 'custom.yaml'
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.12'
+
+outputs:
+  total-mappings:
+    description: 'Total number of mappings after merge'
+    value: ${{ steps.sync.outputs.total_mappings }}
+  different-names:
+    description: 'Number of packages where PyPI and conda names differ'
+    value: ${{ steps.sync.outputs.different_names }}
+  last-updated:
+    description: 'ISO timestamp of sync completion'
+    value: ${{ steps.sync.outputs.last_updated }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up pixi
+      uses: prefix-dev/setup-pixi@v0.9.3
+      with:
+        pixi-version: v0.59.0
+        cache: true
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        # Install pyyaml in a temporary pixi environment
+        pixi global install python pyyaml
+
+    - name: Create output directory
+      shell: bash
+      run: mkdir -p "${{ inputs.output-dir }}"
+
+    - name: Sync mappings
+      id: sync
+      shell: python
+      env:
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+        CUSTOM_FILE: ${{ inputs.output-dir }}/${{ inputs.custom-mappings }}
+      run: |
+        import json
+        import os
+        import sys
+        import urllib.request
+        import urllib.error
+        from datetime import datetime, timezone
+        from pathlib import Path
+
+        import yaml
+
+        SOURCES = {
+            "parselmouth": {
+                "url": "https://raw.githubusercontent.com/prefix-dev/parselmouth/main/files/mapping_as_grayskull.json",
+                "format": "json",
+            },
+            "cf_graph": {
+                "url": "https://raw.githubusercontent.com/regro/cf-graph-countyfair/master/mappings/pypi/name_mapping.yaml",
+                "format": "yaml",
+            },
+            "grayskull": {
+                "url": "https://raw.githubusercontent.com/conda/grayskull/main/grayskull/strategy/config.yaml",
+                "format": "yaml",
+            },
+        }
+
+        output_dir = Path(os.environ["OUTPUT_DIR"])
+        custom_file = Path(os.environ["CUSTOM_FILE"])
+
+        def fetch_url(url, timeout=30):
+            print(f"Fetching: {url}")
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "sync-pypi-mappings-action/1.0"})
+                with urllib.request.urlopen(req, timeout=timeout) as response:
+                    return response.read().decode("utf-8")
+            except urllib.error.URLError as e:
+                print(f"Error fetching {url}: {e}", file=sys.stderr)
+                return ""
+
+        def normalize_name(name):
+            if not name:
+                return ""
+            return name.lower().replace("_", "-").replace(".", "-")
+
+        def fetch_parselmouth(content):
+            mappings = {}
+            try:
+                data = json.loads(content)
+                for pypi_name, info in data.items():
+                    if isinstance(info, dict):
+                        conda_name = info.get("conda_name", info.get("conda_forge", pypi_name))
+                        mappings[normalize_name(pypi_name)] = {
+                            "pypi_name": pypi_name,
+                            "conda_name": conda_name,
+                            "import_name": info.get("import_name", ""),
+                            "source": "parselmouth",
+                        }
+                    elif isinstance(info, str):
+                        mappings[normalize_name(pypi_name)] = {
+                            "pypi_name": pypi_name,
+                            "conda_name": info,
+                            "import_name": "",
+                            "source": "parselmouth",
+                        }
+            except json.JSONDecodeError as e:
+                print(f"Error parsing parselmouth JSON: {e}", file=sys.stderr)
+            return mappings
+
+        def fetch_cf_graph(content):
+            mappings = {}
+            try:
+                data = yaml.safe_load(content)
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict):
+                            pypi_name = item.get("pypi_name", "")
+                            conda_name = item.get("conda_name", "")
+                            if pypi_name and conda_name:
+                                mappings[normalize_name(pypi_name)] = {
+                                    "pypi_name": pypi_name,
+                                    "conda_name": conda_name,
+                                    "import_name": item.get("import_name", ""),
+                                    "source": "cf_graph",
+                                }
+            except Exception as e:
+                print(f"Error parsing cf-graph YAML: {e}", file=sys.stderr)
+            return mappings
+
+        def fetch_grayskull(content):
+            mappings = {}
+            try:
+                data = yaml.safe_load(content)
+                if isinstance(data, dict):
+                    for pypi_name, info in data.items():
+                        if isinstance(info, dict):
+                            conda_name = info.get("conda_forge", pypi_name)
+                            if conda_name != pypi_name:
+                                mappings[normalize_name(pypi_name)] = {
+                                    "pypi_name": pypi_name,
+                                    "conda_name": conda_name,
+                                    "import_name": info.get("import_name", ""),
+                                    "source": "grayskull",
+                                }
+            except Exception as e:
+                print(f"Error parsing grayskull YAML: {e}", file=sys.stderr)
+            return mappings
+
+        def load_custom_mappings(path):
+            mappings = {}
+            if path.exists():
+                try:
+                    data = yaml.safe_load(path.read_text())
+                    if isinstance(data, dict):
+                        for pypi_name, info in data.items():
+                            if isinstance(info, dict):
+                                mappings[normalize_name(pypi_name)] = {
+                                    "pypi_name": pypi_name,
+                                    "conda_name": info.get("conda_name", pypi_name),
+                                    "import_name": info.get("import_name", ""),
+                                    "source": "custom",
+                                    "reason": info.get("reason", ""),
+                                }
+                    print(f"Loaded {len(mappings)} custom mappings")
+                except Exception as e:
+                    print(f"Error loading custom mappings: {e}", file=sys.stderr)
+            return mappings
+
+        # Collect all mappings
+        all_mappings = []
+        source_stats = {}
+
+        # Custom overrides (highest priority)
+        custom = load_custom_mappings(custom_file)
+        all_mappings.append(custom)
+        source_stats["custom"] = len(custom)
+
+        # parselmouth
+        print("\n--- Fetching parselmouth ---")
+        content = fetch_url(SOURCES["parselmouth"]["url"])
+        if content:
+            parselmouth = fetch_parselmouth(content)
+            all_mappings.append(parselmouth)
+            source_stats["parselmouth"] = len(parselmouth)
+            print(f"Found {len(parselmouth)} mappings")
+
+        # cf-graph
+        print("\n--- Fetching cf-graph ---")
+        content = fetch_url(SOURCES["cf_graph"]["url"])
+        if content:
+            cf_graph = fetch_cf_graph(content)
+            all_mappings.append(cf_graph)
+            source_stats["cf_graph"] = len(cf_graph)
+            print(f"Found {len(cf_graph)} mappings")
+
+        # grayskull
+        print("\n--- Fetching grayskull ---")
+        content = fetch_url(SOURCES["grayskull"]["url"])
+        if content:
+            grayskull = fetch_grayskull(content)
+            all_mappings.append(grayskull)
+            source_stats["grayskull"] = len(grayskull)
+            print(f"Found {len(grayskull)} mappings")
+
+        # Merge with priority
+        print("\n--- Merging mappings ---")
+        merged = {}
+        for mappings in all_mappings:
+            for key, value in mappings.items():
+                if key not in merged:
+                    merged[key] = value
+
+        # Create indices
+        by_pypi = {}
+        by_conda = {}
+        different_names = {}
+
+        for norm_name, info in merged.items():
+            pypi_name = info.get("pypi_name", "")
+            conda_name = info.get("conda_name", "")
+
+            if pypi_name:
+                by_pypi[pypi_name] = info
+                by_pypi[normalize_name(pypi_name)] = info
+
+            if conda_name:
+                by_conda[conda_name] = info
+                by_conda[normalize_name(conda_name)] = info
+
+            if pypi_name and conda_name and normalize_name(pypi_name) != normalize_name(conda_name):
+                different_names[normalize_name(pypi_name)] = info
+
+        # Write outputs
+        print("\n--- Writing output files ---")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        (output_dir / "unified.json").write_text(json.dumps(merged, indent=2, sort_keys=True))
+        (output_dir / "by_pypi_name.json").write_text(json.dumps(by_pypi, indent=2, sort_keys=True))
+        (output_dir / "by_conda_name.json").write_text(json.dumps(by_conda, indent=2, sort_keys=True))
+        (output_dir / "different_names.json").write_text(json.dumps(different_names, indent=2, sort_keys=True))
+
+        last_updated = datetime.now(timezone.utc).isoformat()
+        stats = {
+            "last_updated": last_updated,
+            "total_mappings": len(merged),
+            "different_names_count": len(different_names),
+            "sources": source_stats,
+        }
+        (output_dir / "stats.json").write_text(json.dumps(stats, indent=2))
+
+        # Create custom.yaml template if missing
+        if not custom_file.exists():
+            template = """# Custom PyPI to conda-forge package name mappings
+        # Format:
+        #   pypi-package-name:
+        #     conda_name: conda-package-name
+        #     import_name: python_import_name
+        #     reason: "Why this override exists"
+        """
+            custom_file.write_text(template)
+
+        print(f"\nTotal mappings: {len(merged)}")
+        print(f"Different names: {len(different_names)}")
+
+        # Set outputs for GitHub Actions
+        github_output = os.environ.get("GITHUB_OUTPUT", "")
+        if github_output:
+            with open(github_output, "a") as f:
+                f.write(f"total_mappings={len(merged)}\n")
+                f.write(f"different_names={len(different_names)}\n")
+                f.write(f"last_updated={last_updated}\n")
+
+        print("\nSync complete!")

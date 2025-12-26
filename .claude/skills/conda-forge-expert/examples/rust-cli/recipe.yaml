@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Example: Rust command-line application
+schema_version: 1
+
+context:
+  name: example-cli
+  version: "1.0.0"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/example/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  script:
+    # Bundle third-party licenses from Cargo dependencies
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    # Build and install
+    - cargo install --locked --root ${{ PREFIX }} --path .
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+
+tests:
+  - script:
+      - ${{ name }} --version
+      - ${{ name }} --help
+  - package_contents:
+      bin:
+        - ${{ name }}${{ executable_ext }}
+
+about:
+  homepage: https://github.com/example/example-cli
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Example Rust command-line application
+  description: |
+    This example demonstrates packaging a Rust CLI tool
+    for conda-forge, including proper license handling
+    for Cargo dependencies.
+
+extra:
+  recipe-maintainers:
+    - example-maintainer

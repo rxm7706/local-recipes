@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Multi-output package with CUDA variant support
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+  # Build number offset for CUDA variants (higher priority)
+  cuda_build_offset: ${{ 200 if cuda_compiler_version != "None" else 0 }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: ${{ cuda_build_offset }}
+  skip:
+    - win and cuda_compiler_version != "None"
+  # Whitelist CUDA libraries that won't be in package
+  dynamic_linking:
+    missing_dso_allowlist:
+      - if: linux
+        then:
+          - "*/libcuda.so*"
+          - "*/libnvidia-ml.so*"
+      - if: win
+        then:
+          - "*/nvcuda.dll"
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+    - if: cuda_compiler_version != "None"
+      then: ${{ compiler("cuda") }}
+    - cmake
+    - ninja
+  host:
+    - if: cuda_compiler_version != "None"
+      then: cuda-version ${{ cuda_compiler_version }}
+  run:
+    - if: cuda_compiler_version != "None"
+      then: __cuda >=${{ cuda_compiler_version_min }}
+
+tests:
+  - script:
+      - ${{ name }} --version
+  - python:
+      imports:
+        - ${{ name }}
+      pip_check: true
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER
