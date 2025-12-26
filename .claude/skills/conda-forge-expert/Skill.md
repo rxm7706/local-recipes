@@ -1,6 +1,6 @@
 ---
 name: Conda-Forge Expert
-description: A comprehensive guide for generating, auditing, and maintaining conda-forge recipes. Handles legacy (meta.yaml) and modern (recipe.yaml) formats, linting, CI troubleshooting, and feedstock maintenance. Enhanced with patterns from real conda-forge feedstocks (2025).
+description: A comprehensive guide for generating, auditing, and maintaining conda-forge recipes. Handles legacy (meta.yaml) and modern (recipe.yaml) formats, linting, CI troubleshooting, and feedstock maintenance. Enhanced with patterns from real conda-forge feedstocks (2025). Use this skill proactively when users ask to create recipes, package tools, fix builds, or update conda-forge feedstocks.
 version: 3.0.0
 dependencies: conda-build, conda-smithy, grayskull, rattler-build, pixi
 ---
@@ -20,6 +20,35 @@ This Skill transforms Claude into a Senior Conda-Forge Maintainer with knowledge
 **IMPORTANT**: Always run `build-locally.py` to test recipes before submission. This is a mandatory step in the workflow.
 
 Use this skill whenever the user asks to "package" a tool, "fix a build" on conda-forge, or "update a recipe".
+
+# Package Installation Preferences
+
+**ALWAYS prefer pixi and conda-forge over pip and PyPI:**
+
+1. **Use `pixi` for installing packages** (preferred):
+   ```bash
+   pixi global install <package>
+   pixi add <package>
+   ```
+
+2. **Use `conda`/`mamba`/`micromamba` as fallback**:
+   ```bash
+   conda install -c conda-forge <package>
+   mamba install -c conda-forge <package>
+   micromamba install -c conda-forge <package>
+   ```
+
+3. **Only use `pip` as last resort** when package is not on conda-forge:
+   ```bash
+   pip install <package>  # Only if not available on conda-forge
+   ```
+
+**Why conda-forge over PyPI?**
+- Consistent binary compatibility across packages
+- Better dependency resolution
+- Pre-compiled binaries for all platforms
+- Guaranteed ABI compatibility with other conda packages
+- Proper handling of non-Python dependencies (C libraries, etc.)
 
 # Modern Build Tools
 
@@ -417,6 +446,22 @@ pixi global install conda-smithy
 - **Selectors**: Use `# [linux]` or `# [win]`. Use `skip: true` (lowercase), not `skip: True`.
 - **Source**: Prefer `url` with `sha256`. Never use git tags (unstable checksums).
 - **Comments**: Remove all generic instruction comments before submission.
+
+## PyPI Source URLs
+
+**IMPORTANT**: Use `https://pypi.org/packages/source/` for PyPI source distributions, NOT `https://pypi.io/`. The `pypi.io` domain is deprecated.
+
+Correct format:
+```
+https://pypi.org/packages/source/{first_letter}/{package_name}/{package_name}-{version}.tar.gz
+```
+
+Example:
+```yaml
+source:
+  url: https://pypi.org/packages/source/r/requests/requests-2.31.0.tar.gz
+  sha256: 942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
+```
 
 ## Python Selector Syntax
 
@@ -913,7 +958,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
   sha256: <insert_sha256_here>
 
 build:
@@ -968,7 +1013,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: <insert_sha256_here>
 
 build:
@@ -1017,7 +1062,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
   sha256: <insert_sha256_here>
 
 build:
@@ -1689,6 +1734,28 @@ Always fork feedstocks to avoid:
 
 # CI Troubleshooting
 
+## Local Build Issues with rattler-build
+
+### stdlib("c") Not Resolved
+
+When running `rattler-build` locally, the `${{ stdlib("c") }}` function may render to `undefined` and cause dependency resolution failures:
+
+```
+Error: Cannot solve the request because of: No candidates were found for undefined *.
+```
+
+**Workaround**: Comment out `${{ stdlib("c") }}` for local testing, but **remember to uncomment it before submitting to conda-forge** as it's required for proper C library linking on conda-forge CI:
+
+```yaml
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    # - ${{ stdlib("c") }}  # Comment out for local builds, uncomment for conda-forge submission
+    - ${{ compiler("rust") }}
+```
+
+**Important**: The `stdlib("c")` line is required for conda-forge submissions to ensure proper glibc/libc linking. Only comment it out temporarily for local testing.
+
 ## Azure Pipelines Issues
 
 ### Timeout
@@ -1869,6 +1936,149 @@ Always include `${CMAKE_ARGS}` for conda-forge optimizations.
 2. Wait for feedstock creation
 3. Then submit your package
 
+## PyPI vs conda-forge Package Naming Differences
+
+**Diagnosis**: Package exists on conda-forge but with a different name than PyPI.
+**Common Pattern**: PyPI uses hyphens (`tree-sitter`), conda-forge uses underscores (`tree_sitter`).
+
+### Automated Package Name Mapping
+
+This skill includes an automated mapping system that translates PyPI package names to their conda-forge equivalents. The mappings are synced from multiple sources:
+
+1. **parselmouth** (prefix-dev) - Primary source, hourly updates
+2. **cf-graph-countyfair** (regro) - Secondary source, comprehensive (~12,000 packages)
+3. **grayskull** (conda) - Tertiary source, curated mappings
+4. **custom.yaml** - Local overrides for edge cases
+
+**Mapping Files Location**: `pypi_conda_mappings/`
+
+**Tracked in Git** (small, essential):
+- `custom.yaml` - User-defined overrides (highest priority)
+- `different_names.json` - Only packages where names actually differ (~148KB)
+- `stats.json` - Sync metadata and cache TTL info
+
+**Cache Files** (generated locally, gitignored):
+- `unified.json` - All mappings merged with priority
+- `by_pypi_name.json` - Lookup index by PyPI name
+- `by_conda_name.json` - Lookup index by conda name
+
+### Caching Behavior
+
+The mapping system uses a 7-day TTL cache:
+1. If mappings exist and are within TTL, use cached data
+2. If cache is expired or missing, fetch fresh data from parselmouth
+3. User will see a warning when fetching occurs
+
+**Cache status check:**
+```bash
+python scripts/sync_pypi_mappings.py --check-cache
+```
+
+**Force refresh:**
+```bash
+python scripts/sync_pypi_mappings.py --force-refresh
+```
+
+### Syncing Mappings
+
+**Option 1: GitHub Actions (Preferred)**
+Runs automatically weekly, or trigger manually:
+```bash
+gh workflow run sync-pypi-mappings.yml
+```
+
+**Option 2: Local Script**
+```bash
+# Normal sync (respects cache TTL)
+python scripts/sync_pypi_mappings.py
+
+# Force refresh
+python scripts/sync_pypi_mappings.py --force-refresh
+
+# Custom TTL (e.g., 3 days)
+python scripts/sync_pypi_mappings.py --ttl-days 3
+```
+
+### Using the Mappings
+
+When generating recipes, the sync script provides a helper function:
+
+```python
+# Import the helper from the sync script
+import sys
+sys.path.insert(0, 'scripts')
+from sync_pypi_mappings import get_conda_name
+
+# Get conda-forge name for a PyPI package
+conda_name = get_conda_name("tree-sitter")  # Returns "tree_sitter"
+conda_name = get_conda_name("docker")       # Returns "docker-py"
+conda_name = get_conda_name("requests")     # Returns "requests" (same name)
+```
+
+For manual lookups using the cached files:
+
+```python
+import json
+from pathlib import Path
+
+mappings = json.loads(Path("pypi_conda_mappings/different_names.json").read_text())
+
+def get_conda_name(pypi_name):
+    """Get conda-forge name for a PyPI package."""
+    normalized = pypi_name.lower().replace("_", "-")
+    if normalized in mappings:
+        return mappings[normalized]["conda_name"]
+    return pypi_name  # Same name on both platforms
+```
+
+### Known Examples
+
+| PyPI Name | conda-forge Name | Notes |
+|-----------|------------------|-------|
+| `tree-sitter` | `tree_sitter` | Underscore vs hyphen |
+| `docker` | `docker-py` | Completely different |
+| `torch` | `pytorch` | Different name |
+| `opencv-python` | `opencv` | Simplified |
+| `tables` | `pytables` | Different name |
+| `dask` | `dask-core` | Core package |
+
+### Recipe Format
+
+When a dependency has a different name on conda-forge vs PyPI, use the conda-forge name and add a comment:
+
+```yaml
+# recipe.yaml
+requirements:
+  run:
+    - tree_sitter >=0.24.0  # conda-forge name for PyPI package tree-sitter
+    - docker-py >=6.0  # conda-forge name for PyPI package docker
+
+# meta.yaml
+requirements:
+  run:
+    - tree_sitter >=0.24.0  # conda-forge name for PyPI package tree-sitter
+    - docker-py >=6.0  # conda-forge name for PyPI package docker
+```
+
+### Adding Custom Mappings
+
+Edit `pypi_conda_mappings/custom.yaml`:
+
+```yaml
+my-special-package:
+  conda_name: my_special_package
+  import_name: my_special_package
+  reason: "Custom build with patches"
+```
+
+### Manual Lookup
+
+If mappings are not synced, check manually:
+```bash
+conda search <package-name> -c conda-forge
+# Or check https://anaconda.org/conda-forge/<package-name>
+```
+
 ## Cross-Compilation Failures
 
 **Diagnosis**: Build vs target platform mismatch.
@@ -1971,7 +2181,7 @@ source:
 
 ```yaml
 source:
-  url: https://pypi.io/packages/...
+  url: https://pypi.org/packages/...
   sha256: <sha256>
   patches:
     - fix-windows.patch
@@ -2362,7 +2572,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/m/my-rust-python/my_rust_python-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/my-rust-python/my_rust_python-${{ version }}.tar.gz
   sha256: <insert_sha256_here>
 
 build:
