@@ -1,0 +1,44 @@
+# Template: Go application with CGO (C dependencies)
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  skip: true  # [win]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - {{ compiler('go-cgo') }}
+    - go-licenses
+    - pkg-config
+  host:
+    - zlib
+    - openssl
+
+test:
+  commands:
+    - {{ name }} --version
+    - {{ name }} --help
+    - test -f $PREFIX/bin/{{ name }}  # [unix]
+
+about:
+  home: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Example: CMake-based C library
+schema_version: 1
+
+context:
+  name: libexample
+  version: "1.0.0"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/example/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  run_exports:
+    # Allow linking against minor versions
+    - ${{ pin_subpackage(name, upper_bound="x.x") }}
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - ninja
+    - pkg-config
+  host:
+    - zlib
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -f $PREFIX/lib/lib${{ name }}${{ shlib_ext }}
+          - test -f $PREFIX/include/${{ name }}.h
+      - if: win
+        then:
+          - if not exist %LIBRARY_BIN%\${{ name }}.dll exit 1
+          - if not exist %LIBRARY_INC%\${{ name }}.h exit 1
+  - package_contents:
+      lib:
+        - if: unix
+          then: lib${{ name }}${{ shlib_ext }}
+        - if: win
+          then: ${{ name }}.dll
+      include:
+        - ${{ name }}.h
+
+about:
+  homepage: https://github.com/example/libexample
+  license: MIT
+  license_file: LICENSE
+  summary: Example C library built with CMake
+  description: |
+    This example demonstrates packaging a C library
+    using CMake for conda-forge, including proper
+    run_exports for ABI compatibility.
+
+extra:
+  recipe-maintainers:
+    - example-maintainer

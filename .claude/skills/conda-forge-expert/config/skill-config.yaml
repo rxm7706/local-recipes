@@ -1,0 +1,138 @@
+# Conda-Forge Expert Skill Configuration
+# This file controls skill behavior and can be customized for different environments
+
+skill:
+  name: conda-forge-expert
+  version: 4.0.0
+  description: |
+    Comprehensive guide for conda-forge recipe development. Handles meta.yaml
+    and recipe.yaml formats, linting, CI troubleshooting, and feedstock maintenance.
+
+# Environment Configuration
+environment:
+  # Default channels (override for enterprise)
+  default_channels:
+    - conda-forge
+
+  # Enterprise channel override (uncomment to use)
+  # channels:
+  #   - https://artifactory.corp/artifactory/conda-forge-virtual
+
+  # Build tool preferences
+  build_tools:
+    primary: rattler-build      # Modern, fast Rust-based builder
+    fallback: conda-build       # Legacy Python-based builder
+
+  # Package manager preferences
+  package_manager:
+    primary: pixi               # Cross-platform, fast
+    fallback: mamba             # Faster conda alternative
+    legacy: conda               # Original package manager
+
+# Feature Flags
+features:
+  # Enterprise features (air-gapped, private channels)
+  enable_enterprise: false
+  enable_airgapped: false
+
+  # PyPI-Conda name mapping
+  pypi_mapping_enabled: true
+  pypi_mapping_cache_ttl_days: 7
+  pypi_mapping_source: parselmouth  # parselmouth, cf_graph, grayskull
+
+  # Recipe format preferences
+  prefer_recipe_yaml: true      # Recommend recipe.yaml over meta.yaml
+  enforce_cfep25: true          # Require python_min for noarch:python
+  require_stdlib: true          # Require stdlib("c") for compiled packages
+
+# Integration Settings
+integrations:
+  # CI Platforms
+  ci:
+    azure_pipelines: true
+    github_actions: true
+    jenkins: false              # Enable for enterprise
+    gitlab_ci: false            # Enable for enterprise
+
+  # Package Registries
+  registries:
+    anaconda_org: true
+    prefix_dev: true
+    artifactory: false          # Enable for enterprise
+
+  # Source Code Hosts
+  source_hosts:
+    github_com: true
+    gitlab_com: true
+    enterprise_github: false    # Enable for enterprise
+
+# Linting Configuration
+linting:
+  # Mandatory checks (cannot be skipped)
+  mandatory:
+    - license_file_present
+    - license_spdx_valid
+    - maintainers_present
+    - source_sha256_present
+
+  # Recommended checks (warnings only)
+  recommended:
+    - cfep25_python_min
+    - no_git_url_for_releases
+    - tests_present
+    - pip_check_in_tests
+
+  # Skip these checks (use sparingly)
+  skip: []
+  # skip:
+  #   - lint_noarch_selectors
+
+# Template Defaults
+templates:
+  # Default maintainer for generated recipes
+  default_maintainer: ""        # Set your GitHub username
+
+  # Default license for new recipes
+  default_license: MIT
+
+  # Include schema header in recipe.yaml
+  include_schema_header: true
+
+  # Python minimum version (CFEP-25)
+  python_min: "3.10"
+
+# Enterprise Configuration (when features.enable_enterprise is true)
+enterprise:
+  # Artifactory Settings
+  artifactory:
+    url: ""                     # https://artifactory.corp/artifactory
+    conda_remote_repo: ""       # conda-forge-remote
+    conda_local_repo: ""        # conda-internal
+    conda_virtual_repo: ""      # conda-forge-virtual
+
+  # Enterprise GitHub
+  github:
+    url: ""                     # https://github.enterprise.com
+    api_url: ""                 # https://github.enterprise.com/api/v3
+
+  # Self-Hosted CI
+  ci_runner:
+    type: ""                    # jenkins, gitlab, github-actions-self-hosted
+    docker_image: ""            # custom build image
+
+  # Security Settings
+  security:
+    require_package_signing: false
+    require_sbom: false
+    vulnerability_scanning: false
+
+# Paths (relative to skill directory)
+paths:
+  templates: templates/
+  reference: reference/
+  guides: guides/
+  enterprise: enterprise/
+  scripts: scripts/
+  quickref: quickref/
+  examples: examples/
+  pypi_mappings: pypi_conda_mappings/

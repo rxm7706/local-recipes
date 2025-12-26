@@ -1,0 +1,40 @@
+# Template: Node.js package from npm (pure JavaScript)
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://registry.npmjs.org/{{ name }}/-/{{ name }}-{{ version }}.tgz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - npm install -g --prefix $PREFIX {{ name }}@{{ version }}
+
+requirements:
+  build:
+    - nodejs
+    - npm
+  run:
+    - nodejs >=18
+
+test:
+  commands:
+    - {{ name }} --version
+    - {{ name }} --help
+    - npm list -g {{ name }}
+
+about:
+  home: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER
