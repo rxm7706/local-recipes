@@ -1,0 +1,49 @@
+# Template: .NET application from NuGet
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  skip: true  # [not x86_64]
+  script:
+    - dotnet publish -c Release -o $PREFIX/lib/{{ name }}
+    # Create wrapper script
+    - mkdir -p $PREFIX/bin
+    - |
+      cat > $PREFIX/bin/{{ name }} << 'EOF'
+      #!/bin/bash
+      exec dotnet "$CONDA_PREFIX/lib/{{ name }}/{{ name }}.dll" "$@"
+      EOF
+    - chmod +x $PREFIX/bin/{{ name }}  # [unix]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+  host:
+    - dotnet-sdk >=8.0
+  run:
+    - dotnet-runtime >=8.0
+
+test:
+  commands:
+    - {{ name }} --version
+    - {{ name }} --help
+
+about:
+  home: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

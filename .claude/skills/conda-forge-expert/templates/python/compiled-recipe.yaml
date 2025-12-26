@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Python package with C/C++ extensions
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  # Skip unsupported platforms
+  skip:
+    - py < 39
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+    # Cross-compilation support
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython
+    # Add host libraries here (e.g., numpy for numpy API)
+    - numpy
+  run:
+    - python
+    - ${{ pin_compatible("numpy") }}
+    # Add runtime dependencies here
+
+tests:
+  - python:
+      imports:
+        - ${{ name | replace("-", "_") }}
+      pip_check: true
+  - script:
+      - python -c "from ${{ name | replace('-', '_') }} import __version__; print(__version__)"
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  repository: REPLACE_REPO_URL
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

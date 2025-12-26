@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Multi-output package with library + CLI tool
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name }}-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+cache:
+  requirements:
+    build:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - ${{ stdlib("c") }}
+      - cmake
+      - ninja
+  build:
+    script:
+      - cmake -B build -G Ninja ${CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Release
+      - cmake --build build
+      - cmake --install build --prefix ${{ PREFIX }}
+
+outputs:
+  # Library output
+  - package:
+      name: lib${{ name }}
+    build:
+      run_exports:
+        - ${{ pin_subpackage("lib" ~ name, upper_bound="x.x") }}
+      files:
+        include:
+          - lib/lib${{ name }}*
+          - include/${{ name }}/
+    tests:
+      - package_contents:
+          lib:
+            - lib${{ name }}${{ shlib_ext }}
+
+  # CLI tool output
+  - package:
+      name: ${{ name }}
+    build:
+      files:
+        include:
+          - bin/${{ name }}*
+    requirements:
+      run:
+        - ${{ pin_subpackage("lib" ~ name, exact=true) }}
+    tests:
+      - script:
+          - ${{ name }} --version
+          - ${{ name }} --help
+      - package_contents:
+          bin:
+            - ${{ name }}${{ executable_ext }}
+
+  # Development headers output (optional)
+  - package:
+      name: ${{ name }}-devel
+    build:
+      files:
+        include:
+          - lib/cmake/${{ name }}/
+          - lib/pkgconfig/${{ name }}.pc
+    requirements:
+      run:
+        - ${{ pin_subpackage("lib" ~ name, exact=true) }}
+    tests:
+      - script:
+          - if: unix
+            then: test -f $PREFIX/lib/pkgconfig/${{ name }}.pc
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  feedstock-name: ${{ name }}
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

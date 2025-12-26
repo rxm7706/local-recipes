@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Template: Java application built with Gradle
+schema_version: 1
+
+context:
+  name: REPLACE_NAME
+  version: "REPLACE_VERSION"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+    - gradle
+    - openjdk >=11
+  run:
+    - openjdk >=11
+
+tests:
+  - script:
+      - ${{ name }} --version
+  - package_contents:
+      share:
+        - ${{ name }}/${{ name }}.jar
+
+about:
+  homepage: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

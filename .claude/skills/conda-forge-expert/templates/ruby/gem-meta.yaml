@@ -1,0 +1,38 @@
+# Template: Ruby gem package
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://rubygems.org/downloads/{{ name }}-{{ version }}.gem
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - gem install --local --install-dir $PREFIX/lib/ruby/gems {{ name }}-{{ version }}.gem
+
+requirements:
+  build:
+    - ruby
+  run:
+    - ruby >=2.7
+
+test:
+  commands:
+    - ruby -e "require '{{ name }}'"
+    - gem list {{ name }}
+
+about:
+  home: https://rubygems.org/gems/{{ name }}
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

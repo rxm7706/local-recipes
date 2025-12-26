@@ -1,0 +1,16 @@
+{
+  "last_updated": "2025-12-25T15:19:12.334268+00:00",
+  "total_mappings": 19296,
+  "different_names_count": 1014,
+  "sources": {
+    "custom": 0,
+    "parselmouth": 19042,
+    "cf_graph": 12534,
+    "grayskull": 104
+  },
+  "source_urls": {
+    "parselmouth": "https://raw.githubusercontent.com/prefix-dev/parselmouth/main/files/mapping_as_grayskull.json",
+    "cf_graph": "https://raw.githubusercontent.com/regro/cf-graph-countyfair/master/mappings/pypi/name_mapping.yaml",
+    "grayskull": "https://raw.githubusercontent.com/conda/grayskull/main/grayskull/strategy/config.yaml"
+  }
+}

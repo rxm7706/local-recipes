@@ -1,0 +1,6086 @@
+{
+  "-dvc": {
+    "conda_name": "dvc",
+    "import_name": "",
+    "pypi_name": "_dvc",
+    "source": "parselmouth"
+  },
+  "0164e082b29777fbc56c2373b68da93d23a29a040787e7f1c65e1562f133": {
+    "conda_name": "django-jsoneditor",
+    "import_name": "jsoneditor",
+    "pypi_name": "0164e082b29777fbc56c2373b68da93d23a29a040787e7f1c65e1562f133",
+    "source": "cf_graph"
+  },
+  "33162c0a7b28a4d8c83da07bc2b12cee58c120b4a9e8bba31c41c8d35a16": {
+    "conda_name": "vcversioner",
+    "import_name": "vcversioner",
+    "pypi_name": "33162c0a7b28a4d8c83da07bc2b12cee58c120b4a9e8bba31c41c8d35a16",
+    "source": "cf_graph"
+  },
+  "9e118aa3f6684187e7ba3727864cfd8e8209ad2d4c59b668f1d41e76f241": {
+    "conda_name": "pyelastix",
+    "import_name": "pyelastix",
+    "pypi_name": "9e118aa3f6684187e7ba3727864cfd8e8209ad2d4c59b668f1d41e76f241",
+    "source": "cf_graph"
+  },
+  "absolv-base": {
+    "conda_name": "absolv",
+    "import_name": "",
+    "pypi_name": "absolv-base",
+    "source": "parselmouth"
+  },
+  "ada-py-core": {
+    "conda_name": "ada-py",
+    "import_name": "",
+    "pypi_name": "ada-py-core",
+    "source": "parselmouth"
+  },
+  "aeppl-base": {
+    "conda_name": "aeppl",
+    "import_name": "",
+    "pypi_name": "aeppl-base",
+    "source": "parselmouth"
+  },
+  "aesara-base": {
+    "conda_name": "aesara",
+    "import_name": "",
+    "pypi_name": "aesara-base",
+    "source": "parselmouth"
+  },
+  "agriculture-vlab": {
+    "conda_name": "avl",
+    "import_name": "",
+    "pypi_name": "agriculture-vlab",
+    "source": "parselmouth"
+  },
+  "ahead-python": {
+    "conda_name": "ahead",
+    "import_name": "",
+    "pypi_name": "ahead_python",
+    "source": "parselmouth"
+  },
+  "aihwkit-gpu": {
+    "conda_name": "aihwkit",
+    "import_name": "",
+    "pypi_name": "aihwkit-gpu",
+    "source": "parselmouth"
+  },
+  "airflow": {
+    "conda_name": "apache-airflow",
+    "import_name": "",
+    "pypi_name": "airflow",
+    "source": "parselmouth"
+  },
+  "alchemiscale-client": {
+    "conda_name": "alchemiscale",
+    "import_name": "",
+    "pypi_name": "alchemiscale-client",
+    "source": "parselmouth"
+  },
+  "alchemiscale-compute": {
+    "conda_name": "alchemiscale",
+    "import_name": "",
+    "pypi_name": "alchemiscale-compute",
+    "source": "parselmouth"
+  },
+  "alchemiscale-server": {
+    "conda_name": "alchemiscale",
+    "import_name": "",
+    "pypi_name": "alchemiscale-server",
+    "source": "parselmouth"
+  },
+  "aliyun-python-sdk-core-v3": {
+    "conda_name": "aliyun-python-sdk-core",
+    "import_name": "",
+    "pypi_name": "aliyun-python-sdk-core-v3",
+    "source": "parselmouth"
+  },
+  "ambertools": {
+    "conda_name": "amberutils",
+    "import_name": "",
+    "pypi_name": "ambertools",
+    "source": "parselmouth"
+  },
+  "analytics-python": {
+    "conda_name": "segment-analytics-python",
+    "import_name": "",
+    "pypi_name": "analytics-python",
+    "source": "parselmouth"
+  },
+  "annoy": {
+    "conda_name": "python-annoy",
+    "import_name": "annoy",
+    "pypi_name": "annoy",
+    "source": "cf_graph"
+  },
+  "antlr-python-runtime": {
+    "conda_name": "antlr4-python3-runtime",
+    "import_name": "",
+    "pypi_name": "antlr-python-runtime",
+    "source": "parselmouth"
+  },
+  "apache-airflow": {
+    "conda_name": "airflow",
+    "import_name": "airflow",
+    "pypi_name": "apache-airflow",
+    "source": "cf_graph"
+  },
+  "apache-superset": {
+    "conda_name": "superset",
+    "import_name": "superset",
+    "pypi_name": "apache-superset",
+    "source": "cf_graph"
+  },
+  "apoc": {
+    "conda_name": "apoc-backend",
+    "import_name": "apoc",
+    "pypi_name": "apoc",
+    "source": "cf_graph"
+  },
+  "apoc-backend": {
+    "conda_name": "apoc",
+    "import_name": "",
+    "pypi_name": "apoc-backend",
+    "source": "parselmouth"
+  },
+  "arch": {
+    "conda_name": "arch-py",
+    "import_name": "arch",
+    "pypi_name": "arch",
+    "source": "cf_graph"
+  },
+  "arch-py": {
+    "conda_name": "arch",
+    "import_name": "",
+    "pypi_name": "arch-py",
+    "source": "parselmouth"
+  },
+  "aria-tools": {
+    "conda_name": "ariatools",
+    "import_name": "",
+    "pypi_name": "aria-tools",
+    "source": "parselmouth"
+  },
+  "arrakis": {
+    "conda_name": "arrakis-python",
+    "import_name": "arrakis",
+    "pypi_name": "arrakis",
+    "source": "grayskull"
+  },
+  "arrakis-python": {
+    "conda_name": "arrakis",
+    "import_name": "",
+    "pypi_name": "arrakis-python",
+    "source": "parselmouth"
+  },
+  "arrakis-schema": {
+    "conda_name": "python-arrakis-schema",
+    "import_name": "arrakis_schema",
+    "pypi_name": "arrakis-schema",
+    "source": "cf_graph"
+  },
+  "art": {
+    "conda_name": "ascii-art",
+    "import_name": "art",
+    "pypi_name": "art",
+    "source": "grayskull"
+  },
+  "artificial-adversary": {
+    "conda_name": "adversary",
+    "import_name": "",
+    "pypi_name": "artificial-adversary",
+    "source": "parselmouth"
+  },
+  "asana": {
+    "conda_name": "python-asana",
+    "import_name": "asana",
+    "pypi_name": "asana",
+    "source": "cf_graph"
+  },
+  "asap": {
+    "conda_name": "asap3",
+    "import_name": "",
+    "pypi_name": "asap",
+    "source": "parselmouth"
+  },
+  "asapdiscovery": {
+    "conda_name": "asapdiscovery-alchemy",
+    "import_name": "",
+    "pypi_name": "asapdiscovery",
+    "source": "parselmouth"
+  },
+  "ascii-art": {
+    "conda_name": "art",
+    "import_name": "",
+    "pypi_name": "ascii-art",
+    "source": "parselmouth"
+  },
+  "asf-search-base": {
+    "conda_name": "asf-search",
+    "import_name": "",
+    "pypi_name": "asf_search-base",
+    "source": "parselmouth"
+  },
+  "astropy-base": {
+    "conda_name": "astropy",
+    "import_name": "",
+    "pypi_name": "astropy-base",
+    "source": "parselmouth"
+  },
+  "austin": {
+    "conda_name": "python-austin",
+    "import_name": "",
+    "pypi_name": "austin",
+    "source": "parselmouth"
+  },
+  "authzed": {
+    "conda_name": "authzed-py",
+    "import_name": "authzed",
+    "pypi_name": "authzed",
+    "source": "cf_graph"
+  },
+  "authzed-py": {
+    "conda_name": "authzed",
+    "import_name": "",
+    "pypi_name": "authzed-py",
+    "source": "parselmouth"
+  },
+  "autorift": {
+    "conda_name": "geo-autorift",
+    "import_name": "",
+    "pypi_name": "autorift",
+    "source": "parselmouth"
+  },
+  "b2": {
+    "conda_name": "backblaze-b2",
+    "import_name": "b2",
+    "pypi_name": "b2",
+    "source": "cf_graph"
+  },
+  "backblaze-b2": {
+    "conda_name": "b2",
+    "import_name": "",
+    "pypi_name": "backblaze-b2",
+    "source": "parselmouth"
+  },
+  "backports-ssl-match-hostname": {
+    "conda_name": "ssl_match_hostname",
+    "import_name": "backports.ssl_match_hostname",
+    "pypi_name": "backports-ssl-match-hostname",
+    "source": "cf_graph"
+  },
+  "backtrace": {
+    "conda_name": "python-backtrace",
+    "import_name": "backtrace",
+    "pypi_name": "backtrace",
+    "source": "cf_graph"
+  },
+  "bake": {
+    "conda_name": "bake-cli",
+    "import_name": "",
+    "pypi_name": "bake",
+    "source": "parselmouth"
+  },
+  "bake-cli": {
+    "conda_name": "bake",
+    "import_name": "bake",
+    "pypi_name": "bake-cli",
+    "source": "cf_graph"
+  },
+  "bash-completion": {
+    "conda_name": "py-bash-completion",
+    "import_name": "bash_completion",
+    "pypi_name": "bash-completion",
+    "source": "cf_graph"
+  },
+  "basictools-core": {
+    "conda_name": "basictools",
+    "import_name": "",
+    "pypi_name": "basictools-core",
+    "source": "parselmouth"
+  },
+  "batman": {
+    "conda_name": "ot-batman",
+    "import_name": "",
+    "pypi_name": "batman",
+    "source": "parselmouth"
+  },
+  "bd261fdff9f6a6e8e28abbb1b007b812b1feb1b6bfaf43191f042f4e1c3c": {
+    "conda_name": "jupyter_pivottablejs",
+    "import_name": "pivottablejs",
+    "pypi_name": "bd261fdff9f6a6e8e28abbb1b007b812b1feb1b6bfaf43191f042f4e1c3c",
+    "source": "cf_graph"
+  },
+  "bgzip": {
+    "conda_name": "py-bgzip",
+    "import_name": "bgzip",
+    "pypi_name": "bgzip",
+    "source": "cf_graph"
+  },
+  "bigdft-suite": {
+    "conda_name": "pybigdft",
+    "import_name": "",
+    "pypi_name": "bigdft-suite",
+    "source": "parselmouth"
+  },
+  "biomechanical-analysis-framework-kpi": {
+    "conda_name": "baf-kpi",
+    "import_name": "",
+    "pypi_name": "biomechanical-analysis-framework-kpi",
+    "source": "parselmouth"
+  },
+  "biomechanical-analysis-framework-python": {
+    "conda_name": "biomechanical-analysis-framework",
+    "import_name": "",
+    "pypi_name": "biomechanical-analysis-framework-python",
+    "source": "parselmouth"
+  },
+  "bipedal-locomotion-framework-python": {
+    "conda_name": "bipedal-locomotion-framework",
+    "import_name": "",
+    "pypi_name": "bipedal-locomotion-framework-python",
+    "source": "parselmouth"
+  },
+  "birdhouse-birdy": {
+    "conda_name": "birdy",
+    "import_name": "birdy",
+    "pypi_name": "birdhouse-birdy",
+    "source": "cf_graph"
+  },
+  "birdhouse-raven": {
+    "conda_name": "raven-wps",
+    "import_name": "raven",
+    "pypi_name": "birdhouse-raven",
+    "source": "cf_graph"
+  },
+  "birdy": {
+    "conda_name": "birdhouse-birdy",
+    "import_name": "",
+    "pypi_name": "birdy",
+    "source": "parselmouth"
+  },
+  "blender-mathutils": {
+    "conda_name": "mathutils",
+    "import_name": "",
+    "pypi_name": "blender-mathutils",
+    "source": "parselmouth"
+  },
+  "blis": {
+    "conda_name": "cython-blis",
+    "import_name": "blis",
+    "pypi_name": "blis",
+    "source": "cf_graph"
+  },
+  "blosc": {
+    "conda_name": "python-blosc",
+    "import_name": "blosc",
+    "pypi_name": "blosc",
+    "source": "cf_graph"
+  },
+  "bluesky-base": {
+    "conda_name": "bluesky",
+    "import_name": "",
+    "pypi_name": "bluesky-base",
+    "source": "parselmouth"
+  },
+  "bmf": {
+    "conda_name": "babitmf",
+    "import_name": "",
+    "pypi_name": "bmf",
+    "source": "parselmouth"
+  },
+  "boruta": {
+    "conda_name": "boruta_py",
+    "import_name": "boruta",
+    "pypi_name": "boruta",
+    "source": "cf_graph"
+  },
+  "boruta-py": {
+    "conda_name": "boruta",
+    "import_name": "",
+    "pypi_name": "boruta_py",
+    "source": "parselmouth"
+  },
+  "bowtie": {
+    "conda_name": "bowtie-py",
+    "import_name": "bowtie",
+    "pypi_name": "bowtie",
+    "source": "cf_graph"
+  },
+  "bowtie-py": {
+    "conda_name": "bowtie",
+    "import_name": "",
+    "pypi_name": "bowtie-py",
+    "source": "parselmouth"
+  },
+  "braggedgemodeling": {
+    "conda_name": "bem",
+    "import_name": "",
+    "pypi_name": "braggedgemodeling",
+    "source": "parselmouth"
+  },
+  "brotli-python": {
+    "conda_name": "brotli",
+    "import_name": "",
+    "pypi_name": "brotli-python",
+    "source": "parselmouth"
+  },
+  "bullet": {
+    "conda_name": "bullet-python",
+    "import_name": "bullet",
+    "pypi_name": "bullet",
+    "source": "cf_graph"
+  },
+  "bullet-python": {
+    "conda_name": "bullet",
+    "import_name": "",
+    "pypi_name": "bullet-python",
+    "source": "parselmouth"
+  },
+  "caelus": {
+    "conda_name": "py-caelus",
+    "import_name": "",
+    "pypi_name": "caelus",
+    "source": "parselmouth"
+  },
+  "captest": {
+    "conda_name": "pvcaptest",
+    "import_name": "captest",
+    "pypi_name": "captest",
+    "source": "cf_graph"
+  },
+  "carterbox-torch-radon": {
+    "conda_name": "torch-radon",
+    "import_name": "",
+    "pypi_name": "carterbox-torch-radon",
+    "source": "parselmouth"
+  },
+  "ccc": {
+    "conda_name": "cost-of-capital-calculator",
+    "import_name": "",
+    "pypi_name": "ccc",
+    "source": "parselmouth"
+  },
+  "cccl-python": {
+    "conda_name": "cuda-cccl",
+    "import_name": "",
+    "pypi_name": "cccl-python",
+    "source": "parselmouth"
+  },
+  "ccxt-py": {
+    "conda_name": "ccxt",
+    "import_name": "",
+    "pypi_name": "ccxt-py",
+    "source": "parselmouth"
+  },
+  "cdo": {
+    "conda_name": "python-cdo",
+    "import_name": "cdo",
+    "pypi_name": "cdo",
+    "source": "grayskull"
+  },
+  "ceci": {
+    "conda_name": "lsstdesc-ceci",
+    "import_name": "ceci",
+    "pypi_name": "ceci",
+    "source": "cf_graph"
+  },
+  "charliecloud": {
+    "conda_name": "lark",
+    "import_name": "",
+    "pypi_name": "charliecloud",
+    "source": "parselmouth"
+  },
+  "chebfun": {
+    "conda_name": "chebpy",
+    "import_name": "",
+    "pypi_name": "chebfun",
+    "source": "parselmouth"
+  },
+  "chemfiles-python": {
+    "conda_name": "chemfiles",
+    "import_name": "",
+    "pypi_name": "chemfiles-python",
+    "source": "parselmouth"
+  },
+  "chi2comb": {
+    "conda_name": "chi2comb-py",
+    "import_name": "chi2comb",
+    "pypi_name": "chi2comb",
+    "source": "cf_graph"
+  },
+  "chi2comb-py": {
+    "conda_name": "chi2comb",
+    "import_name": "",
+    "pypi_name": "chi2comb-py",
+    "source": "parselmouth"
+  },
+  "cibots": {
+    "conda_name": "cibot",
+    "import_name": "",
+    "pypi_name": "cibots",
+    "source": "parselmouth"
+  },
+  "cityhash": {
+    "conda_name": "python-cityhash",
+    "import_name": "cityhash",
+    "pypi_name": "cityhash",
+    "source": "cf_graph"
+  },
+  "clingo-dl": {
+    "conda_name": "clingodl",
+    "import_name": "",
+    "pypi_name": "clingo-dl",
+    "source": "parselmouth"
+  },
+  "clingo-lpx": {
+    "conda_name": "clingolpx",
+    "import_name": "",
+    "pypi_name": "clingo-lpx",
+    "source": "parselmouth"
+  },
+  "cloudpathlib-all": {
+    "conda_name": "cloudpathlib",
+    "import_name": "",
+    "pypi_name": "cloudpathlib-all",
+    "source": "parselmouth"
+  },
+  "cloudpathlib-azure": {
+    "conda_name": "cloudpathlib",
+    "import_name": "",
+    "pypi_name": "cloudpathlib-azure",
+    "source": "parselmouth"
+  },
+  "cloudpathlib-gs": {
+    "conda_name": "cloudpathlib",
+    "import_name": "",
+    "pypi_name": "cloudpathlib-gs",
+    "source": "parselmouth"
+  },
+  "cloudpathlib-s3": {
+    "conda_name": "cloudpathlib",
+    "import_name": "",
+    "pypi_name": "cloudpathlib-s3",
+    "source": "parselmouth"
+  },
+  "cmiles-base": {
+    "conda_name": "cmiles",
+    "import_name": "",
+    "pypi_name": "cmiles-base",
+    "source": "parselmouth"
+  },
+  "cockroachdb-python": {
+    "conda_name": "cockroachdb",
+    "import_name": "",
+    "pypi_name": "cockroachdb-python",
+    "source": "parselmouth"
+  },
+  "code-aster": {
+    "conda_name": "astk",
+    "import_name": "",
+    "pypi_name": "code-aster",
+    "source": "parselmouth"
+  },
+  "collatex": {
+    "conda_name": "collatex-python",
+    "import_name": "collatex",
+    "pypi_name": "collatex",
+    "source": "cf_graph"
+  },
+  "collatex-python": {
+    "conda_name": "collatex",
+    "import_name": "",
+    "pypi_name": "collatex-python",
+    "source": "parselmouth"
+  },
+  "compass-interface-http": {
+    "conda_name": "compass-interface",
+    "import_name": "",
+    "pypi_name": "compass-interface-http",
+    "source": "parselmouth"
+  },
+  "compass-interface-pandas": {
+    "conda_name": "compass-interface",
+    "import_name": "",
+    "pypi_name": "compass-interface-pandas",
+    "source": "parselmouth"
+  },
+  "confluent-kafka": {
+    "conda_name": "python-confluent-kafka",
+    "import_name": "confluent_kafka",
+    "pypi_name": "confluent-kafka",
+    "source": "grayskull"
+  },
+  "cookiecutter-django-core": {
+    "conda_name": "cookiecutter-django",
+    "import_name": "",
+    "pypi_name": "cookiecutter-django-core",
+    "source": "parselmouth"
+  },
+  "copc-lib": {
+    "conda_name": "copclib",
+    "import_name": "",
+    "pypi_name": "copc-lib",
+    "source": "parselmouth"
+  },
+  "couchdb": {
+    "conda_name": "python-couchdb",
+    "import_name": "couchdb",
+    "pypi_name": "couchdb",
+    "source": "cf_graph"
+  },
+  "couchdb-python": {
+    "conda_name": "couchdb",
+    "import_name": "",
+    "pypi_name": "couchdb-python",
+    "source": "parselmouth"
+  },
+  "craftr": {
+    "conda_name": "craftr-build",
+    "import_name": "",
+    "pypi_name": "craftr",
+    "source": "parselmouth"
+  },
+  "crlibm": {
+    "conda_name": "pycrlibm",
+    "import_name": "crlibm",
+    "pypi_name": "crlibm",
+    "source": "cf_graph"
+  },
+  "crossref-commons-py": {
+    "conda_name": "crossref-commons",
+    "import_name": "",
+    "pypi_name": "crossref_commons_py",
+    "source": "parselmouth"
+  },
+  "csp-gateway-client": {
+    "conda_name": "csp-gateway",
+    "import_name": "",
+    "pypi_name": "csp-gateway-client",
+    "source": "parselmouth"
+  },
+  "ctapipe-base": {
+    "conda_name": "ctapipe",
+    "import_name": "",
+    "pypi_name": "ctapipe-base",
+    "source": "parselmouth"
+  },
+  "ctypesgen-pypdfium2-team": {
+    "conda_name": "ctypesgen",
+    "import_name": "",
+    "pypi_name": "ctypesgen-pypdfium2-team",
+    "source": "parselmouth"
+  },
+  "cufflinks": {
+    "conda_name": "python-cufflinks",
+    "import_name": "cufflinks",
+    "pypi_name": "cufflinks",
+    "source": "cf_graph"
+  },
+  "cufflinks-py": {
+    "conda_name": "cufflinks",
+    "import_name": "",
+    "pypi_name": "cufflinks-py",
+    "source": "parselmouth"
+  },
+  "cupy-core": {
+    "conda_name": "cupy",
+    "import_name": "",
+    "pypi_name": "cupy-core",
+    "source": "parselmouth"
+  },
+  "cuquantum-python": {
+    "conda_name": "cuquantum-python-cu12",
+    "import_name": "",
+    "pypi_name": "cuquantum-python",
+    "source": "parselmouth"
+  },
+  "cvat-sdk-masks": {
+    "conda_name": "cvat-sdk",
+    "import_name": "",
+    "pypi_name": "cvat-sdk-masks",
+    "source": "parselmouth"
+  },
+  "cvat-sdk-pytorch": {
+    "conda_name": "cvat-sdk",
+    "import_name": "",
+    "pypi_name": "cvat-sdk-pytorch",
+    "source": "parselmouth"
+  },
+  "cvxpy-base": {
+    "conda_name": "cvxpy",
+    "import_name": "",
+    "pypi_name": "cvxpy-base",
+    "source": "parselmouth"
+  },
+  "cyclus-d3ploy": {
+    "conda_name": "d3ploy",
+    "import_name": "",
+    "pypi_name": "cyclus-d3ploy",
+    "source": "parselmouth"
+  },
+  "cylc-flow-base": {
+    "conda_name": "cylc-flow",
+    "import_name": "",
+    "pypi_name": "cylc-flow-base",
+    "source": "parselmouth"
+  },
+  "cylc-uiserver-base": {
+    "conda_name": "cylc-uiserver",
+    "import_name": "",
+    "pypi_name": "cylc-uiserver-base",
+    "source": "parselmouth"
+  },
+  "cylc-uiserver-hub-base": {
+    "conda_name": "cylc-uiserver",
+    "import_name": "",
+    "pypi_name": "cylc-uiserver-hub-base",
+    "source": "parselmouth"
+  },
+  "cython-blis": {
+    "conda_name": "blis",
+    "import_name": "",
+    "pypi_name": "cython-blis",
+    "source": "parselmouth"
+  },
+  "daal4py": {
+    "conda_name": "scikit-learn-intelex",
+    "import_name": "",
+    "pypi_name": "daal4py",
+    "source": "parselmouth"
+  },
+  "dashing": {
+    "conda_name": "python-dashing",
+    "import_name": "dashing",
+    "pypi_name": "dashing",
+    "source": "cf_graph"
+  },
+  "dask-core": {
+    "conda_name": "dask",
+    "import_name": "",
+    "pypi_name": "dask-core",
+    "source": "parselmouth"
+  },
+  "datadotworld": {
+    "conda_name": "datadotworld-py",
+    "import_name": "datadotworld",
+    "pypi_name": "datadotworld",
+    "source": "cf_graph"
+  },
+  "datadotworld-py": {
+    "conda_name": "datadotworld",
+    "import_name": "",
+    "pypi_name": "datadotworld-py",
+    "source": "parselmouth"
+  },
+  "datalab": {
+    "conda_name": "datalab-platform",
+    "import_name": "",
+    "pypi_name": "datalab",
+    "source": "parselmouth"
+  },
+  "datalab-platform": {
+    "conda_name": "datalab",
+    "import_name": "datalab",
+    "pypi_name": "datalab-platform",
+    "source": "cf_graph"
+  },
+  "datalabsimpleclient": {
+    "conda_name": "cdlclient",
+    "import_name": "",
+    "pypi_name": "datalabsimpleclient",
+    "source": "parselmouth"
+  },
+  "datapackage-py": {
+    "conda_name": "datapackage",
+    "import_name": "",
+    "pypi_name": "datapackage-py",
+    "source": "parselmouth"
+  },
+  "dave": {
+    "conda_name": "usedave",
+    "import_name": "",
+    "pypi_name": "dave",
+    "source": "parselmouth"
+  },
+  "de-forcefields": {
+    "conda_name": "deforcefields",
+    "import_name": "",
+    "pypi_name": "de-forcefields",
+    "source": "parselmouth"
+  },
+  "decoupler": {
+    "conda_name": "decoupler-py",
+    "import_name": "decoupler",
+    "pypi_name": "decoupler",
+    "source": "cf_graph"
+  },
+  "decoupler-py": {
+    "conda_name": "decoupler",
+    "import_name": "",
+    "pypi_name": "decoupler-py",
+    "source": "parselmouth"
+  },
+  "deepspeech": {
+    "conda_name": "deepspeech-training",
+    "import_name": "",
+    "pypi_name": "deepspeech",
+    "source": "parselmouth"
+  },
+  "delegator": {
+    "conda_name": "delegator-py",
+    "import_name": "",
+    "pypi_name": "delegator",
+    "source": "parselmouth"
+  },
+  "delegator-py": {
+    "conda_name": "delegator",
+    "import_name": "delegator",
+    "pypi_name": "delegator-py",
+    "source": "cf_graph"
+  },
+  "delta-sharing-python": {
+    "conda_name": "delta-sharing",
+    "import_name": "",
+    "pypi_name": "delta-sharing-python",
+    "source": "parselmouth"
+  },
+  "delta2": {
+    "conda_name": "delta-blah",
+    "import_name": "",
+    "pypi_name": "delta2",
+    "source": "parselmouth"
+  },
+  "des-desimage": {
+    "conda_name": "desimage",
+    "import_name": "",
+    "pypi_name": "des-desimage",
+    "source": "parselmouth"
+  },
+  "des-desmeds": {
+    "conda_name": "desmeds",
+    "import_name": "",
+    "pypi_name": "des-desmeds",
+    "source": "parselmouth"
+  },
+  "des-despyastro": {
+    "conda_name": "despyastro",
+    "import_name": "",
+    "pypi_name": "des-despyastro",
+    "source": "parselmouth"
+  },
+  "des-despyfits": {
+    "conda_name": "despyfits",
+    "import_name": "",
+    "pypi_name": "des-despyfits",
+    "source": "parselmouth"
+  },
+  "des-despymisc": {
+    "conda_name": "despymisc",
+    "import_name": "",
+    "pypi_name": "des-despymisc",
+    "source": "parselmouth"
+  },
+  "des-eastlake": {
+    "conda_name": "eastlake",
+    "import_name": "",
+    "pypi_name": "des-eastlake",
+    "source": "parselmouth"
+  },
+  "des-easyaccess": {
+    "conda_name": "easyaccess",
+    "import_name": "",
+    "pypi_name": "des-easyaccess",
+    "source": "parselmouth"
+  },
+  "des-fitvd": {
+    "conda_name": "fitvd",
+    "import_name": "",
+    "pypi_name": "des-fitvd",
+    "source": "parselmouth"
+  },
+  "des-montara": {
+    "conda_name": "montara",
+    "import_name": "",
+    "pypi_name": "des-montara",
+    "source": "parselmouth"
+  },
+  "des-pixcorrect": {
+    "conda_name": "pixcorrect",
+    "import_name": "",
+    "pypi_name": "des-pixcorrect",
+    "source": "parselmouth"
+  },
+  "des-pizza-cutter": {
+    "conda_name": "pizza-cutter",
+    "import_name": "",
+    "pypi_name": "des-pizza-cutter",
+    "source": "parselmouth"
+  },
+  "des-pizza-cutter-masking": {
+    "conda_name": "pizza-cutter-masking",
+    "import_name": "",
+    "pypi_name": "des-pizza-cutter-masking",
+    "source": "parselmouth"
+  },
+  "des-pizza-cutter-metadetect": {
+    "conda_name": "pizza-cutter-metadetect",
+    "import_name": "",
+    "pypi_name": "des-pizza-cutter-metadetect",
+    "source": "parselmouth"
+  },
+  "des-pizza-patches": {
+    "conda_name": "pizza-patches",
+    "import_name": "",
+    "pypi_name": "des-pizza-patches",
+    "source": "parselmouth"
+  },
+  "des-sxdes": {
+    "conda_name": "sxdes",
+    "import_name": "",
+    "pypi_name": "des-sxdes",
+    "source": "parselmouth"
+  },
+  "dftbplus-python": {
+    "conda_name": "dftbplus",
+    "import_name": "",
+    "pypi_name": "dftbplus-python",
+    "source": "parselmouth"
+  },
+  "dftbplus-tools": {
+    "conda_name": "dptools",
+    "import_name": "",
+    "pypi_name": "dftbplus-tools",
+    "source": "parselmouth"
+  },
+  "dftd3": {
+    "conda_name": "dftd3-python",
+    "import_name": "dftd3",
+    "pypi_name": "dftd3",
+    "source": "grayskull"
+  },
+  "dftd3-python": {
+    "conda_name": "dftd3",
+    "import_name": "",
+    "pypi_name": "dftd3-python",
+    "source": "parselmouth"
+  },
+  "dftd4": {
+    "conda_name": "dftd4-python",
+    "import_name": "dftd4",
+    "pypi_name": "dftd4",
+    "source": "grayskull"
+  },
+  "dftd4-python": {
+    "conda_name": "dftd4",
+    "import_name": "",
+    "pypi_name": "dftd4-python",
+    "source": "parselmouth"
+  },
+  "dhall-python": {
+    "conda_name": "dhall",
+    "import_name": "",
+    "pypi_name": "dhall-python",
+    "source": "parselmouth"
+  },
+  "diffusioncma": {
+    "conda_name": "dcma",
+    "import_name": "",
+    "pypi_name": "diffusioncma",
+    "source": "parselmouth"
+  },
+  "dinosaur": {
+    "conda_name": "dinosaur-dycore",
+    "import_name": "dinosaur",
+    "pypi_name": "dinosaur",
+    "source": "cf_graph"
+  },
+  "dinosaur-dycore": {
+    "conda_name": "dinosaur",
+    "import_name": "",
+    "pypi_name": "dinosaur-dycore",
+    "source": "parselmouth"
+  },
+  "diplib-python": {
+    "conda_name": "diplib",
+    "import_name": "",
+    "pypi_name": "diplib-python",
+    "source": "parselmouth"
+  },
+  "dirac-grid": {
+    "conda_name": "dirac",
+    "import_name": "",
+    "pypi_name": "dirac-grid",
+    "source": "parselmouth"
+  },
+  "distcc": {
+    "conda_name": "include-server",
+    "import_name": "",
+    "pypi_name": "distcc",
+    "source": "parselmouth"
+  },
+  "django-emailhub": {
+    "conda_name": "emailhub",
+    "import_name": "",
+    "pypi_name": "django-emailhub",
+    "source": "parselmouth"
+  },
+  "docker": {
+    "conda_name": "docker-py",
+    "import_name": "docker",
+    "pypi_name": "docker",
+    "source": "cf_graph"
+  },
+  "docker-py": {
+    "conda_name": "docker",
+    "import_name": "",
+    "pypi_name": "docker-py",
+    "source": "parselmouth"
+  },
+  "dremio-client": {
+    "conda_name": "python-dremio-client",
+    "import_name": "dremio_client",
+    "pypi_name": "dremio-client",
+    "source": "cf_graph"
+  },
+  "dry-attr": {
+    "conda_name": "attr",
+    "import_name": "",
+    "pypi_name": "dry-attr",
+    "source": "parselmouth"
+  },
+  "dspy-ai": {
+    "conda_name": "dspy",
+    "import_name": "",
+    "pypi_name": "dspy-ai",
+    "source": "parselmouth"
+  },
+  "duet": {
+    "conda_name": "duet-python",
+    "import_name": "duet",
+    "pypi_name": "duet",
+    "source": "cf_graph"
+  },
+  "duet-python": {
+    "conda_name": "duet",
+    "import_name": "",
+    "pypi_name": "duet-python",
+    "source": "parselmouth"
+  },
+  "dvc-base": {
+    "conda_name": "dvc",
+    "import_name": "",
+    "pypi_name": "dvc-base",
+    "source": "parselmouth"
+  },
+  "dydxprotocol-v4-proto-py": {
+    "conda_name": "v4-proto",
+    "import_name": "",
+    "pypi_name": "dydxprotocol-v4-proto-py",
+    "source": "parselmouth"
+  },
+  "eccodes": {
+    "conda_name": "python-eccodes",
+    "import_name": "eccodes",
+    "pypi_name": "eccodes",
+    "source": "grayskull"
+  },
+  "edgedb": {
+    "conda_name": "edgedb-python",
+    "import_name": "edgedb",
+    "pypi_name": "edgedb",
+    "source": "cf_graph"
+  },
+  "edgedb-python": {
+    "conda_name": "edgedb",
+    "import_name": "",
+    "pypi_name": "edgedb-python",
+    "source": "parselmouth"
+  },
+  "emsarray-core": {
+    "conda_name": "emsarray",
+    "import_name": "",
+    "pypi_name": "emsarray-core",
+    "source": "parselmouth"
+  },
+  "ensmallen-graph": {
+    "conda_name": "ensmallen",
+    "import_name": "",
+    "pypi_name": "ensmallen_graph",
+    "source": "parselmouth"
+  },
+  "enso-metrics": {
+    "conda_name": "ensometrics",
+    "import_name": "",
+    "pypi_name": "enso_metrics",
+    "source": "parselmouth"
+  },
+  "epiweeks": {
+    "conda_name": "epiweeks4cf",
+    "import_name": "epiweeks",
+    "pypi_name": "epiweeks",
+    "source": "cf_graph"
+  },
+  "epiweeks4cf": {
+    "conda_name": "epiweeks",
+    "import_name": "",
+    "pypi_name": "epiweeks4cf",
+    "source": "parselmouth"
+  },
+  "eppy": {
+    "conda_name": "eppy-core",
+    "import_name": "eppy",
+    "pypi_name": "eppy",
+    "source": "cf_graph"
+  },
+  "eppy-core": {
+    "conda_name": "eppy",
+    "import_name": "",
+    "pypi_name": "eppy-core",
+    "source": "parselmouth"
+  },
+  "esmf-regrid": {
+    "conda_name": "iris-esmf-regrid",
+    "import_name": "esmf_regrid",
+    "pypi_name": "esmf-regrid",
+    "source": "cf_graph"
+  },
+  "esmvaltool-python": {
+    "conda_name": "esmvaltool",
+    "import_name": "",
+    "pypi_name": "esmvaltool-python",
+    "source": "parselmouth"
+  },
+  "esprima": {
+    "conda_name": "esprima-python",
+    "import_name": "esprima",
+    "pypi_name": "esprima",
+    "source": "cf_graph"
+  },
+  "esprima-python": {
+    "conda_name": "esprima",
+    "import_name": "",
+    "pypi_name": "esprima-python",
+    "source": "parselmouth"
+  },
+  "evalml": {
+    "conda_name": "evaml-core",
+    "import_name": "evalml",
+    "pypi_name": "evalml",
+    "source": "grayskull"
+  },
+  "evalml-core": {
+    "conda_name": "evalml",
+    "import_name": "",
+    "pypi_name": "evalml-core",
+    "source": "parselmouth"
+  },
+  "evaml-core": {
+    "conda_name": "evalml",
+    "import_name": "",
+    "pypi_name": "evaml-core",
+    "source": "parselmouth"
+  },
+  "extract-msg": {
+    "conda_name": "msg-extractor",
+    "import_name": "extract_msg",
+    "pypi_name": "extract-msg",
+    "source": "cf_graph"
+  },
+  "facilyst-core": {
+    "conda_name": "facilyst",
+    "import_name": "",
+    "pypi_name": "facilyst-core",
+    "source": "parselmouth"
+  },
+  "fastapi-core": {
+    "conda_name": "fastapi",
+    "import_name": "",
+    "pypi_name": "fastapi-core",
+    "source": "parselmouth"
+  },
+  "fastapi-utils-core": {
+    "conda_name": "fastapi-utils",
+    "import_name": "",
+    "pypi_name": "fastapi_utils-core",
+    "source": "parselmouth"
+  },
+  "fastjsonschema": {
+    "conda_name": "python-fastjsonschema",
+    "import_name": "fastjsonschema",
+    "pypi_name": "fastjsonschema",
+    "source": "cf_graph"
+  },
+  "fastscapelib-f2py": {
+    "conda_name": "fastscapelib-fortran",
+    "import_name": "",
+    "pypi_name": "fastscapelib-f2py",
+    "source": "parselmouth"
+  },
+  "fastscapelib-python": {
+    "conda_name": "fastscapelib",
+    "import_name": "",
+    "pypi_name": "fastscapelib-python",
+    "source": "parselmouth"
+  },
+  "fasttext-for-deepsearch-glm": {
+    "conda_name": "fasttext",
+    "import_name": "",
+    "pypi_name": "fasttext-for-deepsearch-glm",
+    "source": "parselmouth"
+  },
+  "felyxcontrib-metrics-workflow": {
+    "conda_name": "felyxcontribs-metrics-workflow",
+    "import_name": "",
+    "pypi_name": "felyxcontrib-metrics-workflow",
+    "source": "parselmouth"
+  },
+  "fenics": {
+    "conda_name": "fenics-dijitso",
+    "import_name": "",
+    "pypi_name": "fenics",
+    "source": "parselmouth"
+  },
+  "fenics-oasis": {
+    "conda_name": "oasis",
+    "import_name": "",
+    "pypi_name": "fenics-oasis",
+    "source": "parselmouth"
+  },
+  "ff3": {
+    "conda_name": "python-fpe",
+    "import_name": "ff3",
+    "pypi_name": "ff3",
+    "source": "cf_graph"
+  },
+  "fief-client": {
+    "conda_name": "fief-client-fastapi",
+    "import_name": "fief_client",
+    "pypi_name": "fief-client",
+    "source": "cf_graph"
+  },
+  "fief-client-fastapi": {
+    "conda_name": "fief-client",
+    "import_name": "",
+    "pypi_name": "fief-client-fastapi",
+    "source": "parselmouth"
+  },
+  "fileinspector": {
+    "conda_name": "python-fileinspector",
+    "import_name": "",
+    "pypi_name": "fileinspector",
+    "source": "parselmouth"
+  },
+  "filesendercli": {
+    "conda_name": "filesender",
+    "import_name": "",
+    "pypi_name": "filesendercli",
+    "source": "parselmouth"
+  },
+  "filesystem-spec": {
+    "conda_name": "fsspec",
+    "import_name": "",
+    "pypi_name": "filesystem-spec",
+    "source": "parselmouth"
+  },
+  "flair": {
+    "conda_name": "python-flair",
+    "import_name": "flair",
+    "pypi_name": "flair",
+    "source": "grayskull"
+  },
+  "flatbuffers": {
+    "conda_name": "python-flatbuffers",
+    "import_name": "flatbuffers",
+    "pypi_name": "flatbuffers",
+    "source": "cf_graph"
+  },
+  "flex": {
+    "conda_name": "flex-swagger",
+    "import_name": "flex",
+    "pypi_name": "flex",
+    "source": "cf_graph"
+  },
+  "flex-swagger": {
+    "conda_name": "flex",
+    "import_name": "",
+    "pypi_name": "flex-swagger",
+    "source": "parselmouth"
+  },
+  "fmpy-base": {
+    "conda_name": "fmpy",
+    "import_name": "",
+    "pypi_name": "fmpy-base",
+    "source": "parselmouth"
+  },
+  "foamalgo": {
+    "conda_name": "pyfoamalgo",
+    "import_name": "",
+    "pypi_name": "foamalgo",
+    "source": "parselmouth"
+  },
+  "freesasa-python": {
+    "conda_name": "freesasa",
+    "import_name": "",
+    "pypi_name": "freesasa-python",
+    "source": "parselmouth"
+  },
+  "freud": {
+    "conda_name": "freud-analysis",
+    "import_name": "",
+    "pypi_name": "freud",
+    "source": "parselmouth"
+  },
+  "freva-rest-server": {
+    "conda_name": "freva-rest",
+    "import_name": "",
+    "pypi_name": "freva-rest-server",
+    "source": "parselmouth"
+  },
+  "frozendict-noarch": {
+    "conda_name": "frozendict",
+    "import_name": "",
+    "pypi_name": "frozendict-noarch",
+    "source": "parselmouth"
+  },
+  "fts-rest": {
+    "conda_name": "fts3-rest",
+    "import_name": "",
+    "pypi_name": "fts-rest",
+    "source": "parselmouth"
+  },
+  "gel-python": {
+    "conda_name": "gel",
+    "import_name": "",
+    "pypi_name": "gel-python",
+    "source": "parselmouth"
+  },
+  "gems3k": {
+    "conda_name": "solmod4rkt",
+    "import_name": "",
+    "pypi_name": "gems3k",
+    "source": "parselmouth"
+  },
+  "geoalchemy-odm2": {
+    "conda_name": "geoalchemy",
+    "import_name": "",
+    "pypi_name": "geoalchemy-odm2",
+    "source": "parselmouth"
+  },
+  "geojsonio-py": {
+    "conda_name": "geojsonio",
+    "import_name": "",
+    "pypi_name": "geojsonio.py",
+    "source": "parselmouth"
+  },
+  "geopandas-base": {
+    "conda_name": "geopandas",
+    "import_name": "",
+    "pypi_name": "geopandas-base",
+    "source": "parselmouth"
+  },
+  "geotiff": {
+    "conda_name": "python-geotiff",
+    "import_name": "geotiff",
+    "pypi_name": "geotiff",
+    "source": "cf_graph"
+  },
+  "geoviews-core": {
+    "conda_name": "geoviews",
+    "import_name": "",
+    "pypi_name": "geoviews-core",
+    "source": "parselmouth"
+  },
+  "getdaft": {
+    "conda_name": "daft",
+    "import_name": "",
+    "pypi_name": "getdaft",
+    "source": "parselmouth"
+  },
+  "git-privacy": {
+    "conda_name": "gitprivacy",
+    "import_name": "",
+    "pypi_name": "git-privacy",
+    "source": "parselmouth"
+  },
+  "gitflow": {
+    "conda_name": "nu-gitflow",
+    "import_name": "",
+    "pypi_name": "gitflow",
+    "source": "parselmouth"
+  },
+  "glfw": {
+    "conda_name": "pyglfw",
+    "import_name": "glfw",
+    "pypi_name": "glfw",
+    "source": "cf_graph"
+  },
+  "glmnet-py": {
+    "conda_name": "glmnet-python",
+    "import_name": "",
+    "pypi_name": "glmnet_py",
+    "source": "parselmouth"
+  },
+  "glow": {
+    "conda_name": "glow-py",
+    "import_name": "",
+    "pypi_name": "glow",
+    "source": "parselmouth"
+  },
+  "glpk": {
+    "conda_name": "pyglpk",
+    "import_name": "glpk",
+    "pypi_name": "glpk",
+    "source": "cf_graph"
+  },
+  "gnupg": {
+    "conda_name": "gnupg-py",
+    "import_name": "gnupg",
+    "pypi_name": "gnupg",
+    "source": "cf_graph"
+  },
+  "gnupg-py": {
+    "conda_name": "gnupg",
+    "import_name": "",
+    "pypi_name": "gnupg-py",
+    "source": "parselmouth"
+  },
+  "google": {
+    "conda_name": "googlesearch",
+    "import_name": "googlesearch",
+    "pypi_name": "google",
+    "source": "cf_graph"
+  },
+  "google-cloud-bigquery-core": {
+    "conda_name": "google-cloud-bigquery",
+    "import_name": "",
+    "pypi_name": "google-cloud-bigquery-core",
+    "source": "parselmouth"
+  },
+  "google-cloud-bigquery-storage-core": {
+    "conda_name": "google-cloud-bigquery-storage",
+    "import_name": "",
+    "pypi_name": "google-cloud-bigquery-storage-core",
+    "source": "parselmouth"
+  },
+  "google-cloud-sdk": {
+    "conda_name": "cffi",
+    "import_name": "",
+    "pypi_name": "google-cloud-sdk",
+    "source": "parselmouth"
+  },
+  "googlesearch": {
+    "conda_name": "google",
+    "import_name": "",
+    "pypi_name": "googlesearch",
+    "source": "parselmouth"
+  },
+  "gpiod-python": {
+    "conda_name": "gpiod",
+    "import_name": "",
+    "pypi_name": "gpiod-python",
+    "source": "parselmouth"
+  },
+  "grace-tensorpotential": {
+    "conda_name": "tensorpotential",
+    "import_name": "",
+    "pypi_name": "grace-tensorpotential",
+    "source": "parselmouth"
+  },
+  "graphvite-mini": {
+    "conda_name": "graphvite",
+    "import_name": "",
+    "pypi_name": "graphvite-mini",
+    "source": "parselmouth"
+  },
+  "graphviz": {
+    "conda_name": "python-graphviz",
+    "import_name": "graphviz",
+    "pypi_name": "graphviz",
+    "source": "cf_graph"
+  },
+  "groovy": {
+    "conda_name": "groovy-python",
+    "import_name": "groovy",
+    "pypi_name": "groovy",
+    "source": "cf_graph"
+  },
+  "groovy-python": {
+    "conda_name": "groovy",
+    "import_name": "",
+    "pypi_name": "groovy-python",
+    "source": "parselmouth"
+  },
+  "grove": {
+    "conda_name": "quantum-grove",
+    "import_name": "",
+    "pypi_name": "grove",
+    "source": "parselmouth"
+  },
+  "gssapi": {
+    "conda_name": "python-gssapi",
+    "import_name": "gssapi",
+    "pypi_name": "gssapi",
+    "source": "cf_graph"
+  },
+  "gw-sklearn-xarray": {
+    "conda_name": "sklearn-xarray",
+    "import_name": "",
+    "pypi_name": "gw-sklearn-xarray",
+    "source": "parselmouth"
+  },
+  "h2o": {
+    "conda_name": "h2o-py",
+    "import_name": "h2o",
+    "pypi_name": "h2o",
+    "source": "cf_graph"
+  },
+  "h2o-py": {
+    "conda_name": "h2o",
+    "import_name": "",
+    "pypi_name": "h2o-py",
+    "source": "parselmouth"
+  },
+  "h3": {
+    "conda_name": "h3-py",
+    "import_name": "h3",
+    "pypi_name": "h3",
+    "source": "grayskull"
+  },
+  "h3-py": {
+    "conda_name": "h3",
+    "import_name": "",
+    "pypi_name": "h3-py",
+    "source": "parselmouth"
+  },
+  "halide-python": {
+    "conda_name": "halide",
+    "import_name": "",
+    "pypi_name": "halide-python",
+    "source": "parselmouth"
+  },
+  "hapi": {
+    "conda_name": "hapi-nile",
+    "import_name": "",
+    "pypi_name": "hapi",
+    "source": "parselmouth"
+  },
+  "hdfs": {
+    "conda_name": "python-hdfs",
+    "import_name": "hdfs.ext",
+    "pypi_name": "hdfs",
+    "source": "cf_graph"
+  },
+  "helios": {
+    "conda_name": "pyhelios",
+    "import_name": "",
+    "pypi_name": "helios",
+    "source": "parselmouth"
+  },
+  "hist-base": {
+    "conda_name": "hist",
+    "import_name": "",
+    "pypi_name": "hist-base",
+    "source": "parselmouth"
+  },
+  "hjson": {
+    "conda_name": "hjson-py",
+    "import_name": "hjson",
+    "pypi_name": "hjson",
+    "source": "cf_graph"
+  },
+  "hjson-py": {
+    "conda_name": "hjson",
+    "import_name": "",
+    "pypi_name": "hjson-py",
+    "source": "parselmouth"
+  },
+  "hpc": {
+    "conda_name": "hpc-utils",
+    "import_name": "",
+    "pypi_name": "hpc",
+    "source": "parselmouth"
+  },
+  "htcondor": {
+    "conda_name": "python-htcondor",
+    "import_name": "htcondor",
+    "pypi_name": "htcondor",
+    "source": "grayskull"
+  },
+  "human-dynamics-estimation-python": {
+    "conda_name": "hde",
+    "import_name": "",
+    "pypi_name": "human-dynamics-estimation-python",
+    "source": "parselmouth"
+  },
+  "hunspell": {
+    "conda_name": "pyhunspell",
+    "import_name": "hunspell",
+    "pypi_name": "hunspell",
+    "source": "cf_graph"
+  },
+  "hyperspy-base": {
+    "conda_name": "hyperspy",
+    "import_name": "",
+    "pypi_name": "hyperspy-base",
+    "source": "parselmouth"
+  },
+  "i-pi": {
+    "conda_name": "ipi",
+    "import_name": "",
+    "pypi_name": "i-pi",
+    "source": "parselmouth"
+  },
+  "ibis-clickhouse": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-clickhouse",
+    "source": "parselmouth"
+  },
+  "ibis-dask": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-dask",
+    "source": "parselmouth"
+  },
+  "ibis-framework-core": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-framework-core",
+    "source": "parselmouth"
+  },
+  "ibis-hdf5": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-hdf5",
+    "source": "parselmouth"
+  },
+  "ibis-impala": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-impala",
+    "source": "parselmouth"
+  },
+  "ibis-mysql": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-mysql",
+    "source": "parselmouth"
+  },
+  "ibis-parquet": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-parquet",
+    "source": "parselmouth"
+  },
+  "ibis-postgres": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-postgres",
+    "source": "parselmouth"
+  },
+  "ibis-pyspark": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-pyspark",
+    "source": "parselmouth"
+  },
+  "ibis-sqlite": {
+    "conda_name": "ibis-framework",
+    "import_name": "",
+    "pypi_name": "ibis-sqlite",
+    "source": "parselmouth"
+  },
+  "icc": {
+    "conda_name": "python-icc",
+    "import_name": "icc",
+    "pypi_name": "icc",
+    "source": "cf_graph"
+  },
+  "idyntree-python": {
+    "conda_name": "idyntree",
+    "import_name": "",
+    "pypi_name": "idyntree-python",
+    "source": "parselmouth"
+  },
+  "igl": {
+    "conda_name": "libigl",
+    "import_name": "",
+    "pypi_name": "igl",
+    "source": "parselmouth"
+  },
+  "igraph": {
+    "conda_name": "python-igraph",
+    "import_name": "igraph",
+    "pypi_name": "igraph",
+    "source": "cf_graph"
+  },
+  "image-meta-tag": {
+    "conda_name": "imagemetatag",
+    "import_name": "",
+    "pypi_name": "image-meta-tag",
+    "source": "parselmouth"
+  },
+  "impactutils": {
+    "conda_name": "earthquake-impact-utils",
+    "import_name": "",
+    "pypi_name": "impactutils",
+    "source": "parselmouth"
+  },
+  "inferno": {
+    "conda_name": "inferno-pytorch",
+    "import_name": "",
+    "pypi_name": "inferno",
+    "source": "parselmouth"
+  },
+  "inkscape": {
+    "conda_name": "lxml",
+    "import_name": "",
+    "pypi_name": "inkscape",
+    "source": "parselmouth"
+  },
+  "installer": {
+    "conda_name": "python-installer",
+    "import_name": "installer",
+    "pypi_name": "installer",
+    "source": "cf_graph"
+  },
+  "intake-accumulo": {
+    "conda_name": "intake-astro",
+    "import_name": "",
+    "pypi_name": "intake-accumulo",
+    "source": "parselmouth"
+  },
+  "ipi": {
+    "conda_name": "i-pi",
+    "import_name": "ipi",
+    "pypi_name": "ipi",
+    "source": "cf_graph"
+  },
+  "ipopt": {
+    "conda_name": "cyipopt",
+    "import_name": "cyipopt",
+    "pypi_name": "ipopt",
+    "source": "cf_graph"
+  },
+  "ipyleaflet-gl-vector-layer-plugin": {
+    "conda_name": "ipyleaflet-gl-vector-layer",
+    "import_name": "",
+    "pypi_name": "ipyleaflet-gl-vector-layer-plugin",
+    "source": "parselmouth"
+  },
+  "iris": {
+    "conda_name": "scitools-iris",
+    "import_name": "",
+    "pypi_name": "iris",
+    "source": "parselmouth"
+  },
+  "iris-esmf-regrid": {
+    "conda_name": "esmf-regrid",
+    "import_name": "",
+    "pypi_name": "iris-esmf-regrid",
+    "source": "parselmouth"
+  },
+  "isal": {
+    "conda_name": "python-isal",
+    "import_name": "isal",
+    "pypi_name": "isal",
+    "source": "cf_graph"
+  },
+  "isce2": {
+    "conda_name": "pip",
+    "import_name": "",
+    "pypi_name": "isce2",
+    "source": "parselmouth"
+  },
+  "ismip6-antarctic-ocean-forcing": {
+    "conda_name": "ismip6-ocean-forcing",
+    "import_name": "",
+    "pypi_name": "ismip6-antarctic-ocean-forcing",
+    "source": "parselmouth"
+  },
+  "ismrmrd-python": {
+    "conda_name": "ismrmrd",
+    "import_name": "",
+    "pypi_name": "ismrmrd-python",
+    "source": "parselmouth"
+  },
+  "itk": {
+    "conda_name": "itk-core",
+    "import_name": "",
+    "pypi_name": "itk",
+    "source": "parselmouth"
+  },
+  "itt-python": {
+    "conda_name": "itt",
+    "import_name": "",
+    "pypi_name": "itt-python",
+    "source": "parselmouth"
+  },
+  "jacqq": {
+    "conda_name": "pyjacqq",
+    "import_name": "",
+    "pypi_name": "jacqq",
+    "source": "parselmouth"
+  },
+  "jaxlib": {
+    "conda_name": "jax-cuda12-pjrt",
+    "import_name": "",
+    "pypi_name": "jaxlib",
+    "source": "parselmouth"
+  },
+  "jina-core": {
+    "conda_name": "jina",
+    "import_name": "",
+    "pypi_name": "jina-core",
+    "source": "parselmouth"
+  },
+  "jina-perf": {
+    "conda_name": "jina",
+    "import_name": "",
+    "pypi_name": "jina-perf",
+    "source": "parselmouth"
+  },
+  "jira-base": {
+    "conda_name": "jira",
+    "import_name": "",
+    "pypi_name": "jira-base",
+    "source": "parselmouth"
+  },
+  "jq-py": {
+    "conda_name": "jq",
+    "import_name": "",
+    "pypi_name": "jq.py",
+    "source": "parselmouth"
+  },
+  "jsii": {
+    "conda_name": "python-jsii",
+    "import_name": "jsii",
+    "pypi_name": "jsii",
+    "source": "cf_graph"
+  },
+  "juliacall": {
+    "conda_name": "pyjuliacall",
+    "import_name": "juliacall",
+    "pypi_name": "juliacall",
+    "source": "cf_graph"
+  },
+  "juliapkg": {
+    "conda_name": "pyjuliapkg",
+    "import_name": "juliapkg",
+    "pypi_name": "juliapkg",
+    "source": "cf_graph"
+  },
+  "juliaup": {
+    "conda_name": "pyjuliaup",
+    "import_name": "juliaup",
+    "pypi_name": "juliaup",
+    "source": "cf_graph"
+  },
+  "jupyter-pivottablejs": {
+    "conda_name": "pivottablejs",
+    "import_name": "",
+    "pypi_name": "jupyter_pivottablejs",
+    "source": "parselmouth"
+  },
+  "jupyterhub-base": {
+    "conda_name": "jupyterhub",
+    "import_name": "",
+    "pypi_name": "jupyterhub-base",
+    "source": "parselmouth"
+  },
+  "jupyterlab-omnisci": {
+    "conda_name": "omnisci-pytools",
+    "import_name": "jupyterlab_omnisci",
+    "pypi_name": "jupyterlab-omnisci",
+    "source": "cf_graph"
+  },
+  "jupyterlab-transient-display-data": {
+    "conda_name": "transient-display-data",
+    "import_name": "",
+    "pypi_name": "jupyterlab-transient-display-data",
+    "source": "parselmouth"
+  },
+  "jupyterlab-variableinspector": {
+    "conda_name": "lckr-jupyterlab-variableinspector",
+    "import_name": "",
+    "pypi_name": "jupyterlab-variableinspector",
+    "source": "parselmouth"
+  },
+  "kaleido": {
+    "conda_name": "python-kaleido",
+    "import_name": "kaleido",
+    "pypi_name": "kaleido",
+    "source": "grayskull"
+  },
+  "kalpy": {
+    "conda_name": "kalpy-kaldi",
+    "import_name": "",
+    "pypi_name": "kalpy",
+    "source": "parselmouth"
+  },
+  "kalpy-kaldi": {
+    "conda_name": "kalpy",
+    "import_name": "kalpy",
+    "pypi_name": "kalpy-kaldi",
+    "source": "cf_graph"
+  },
+  "kerberos": {
+    "conda_name": "python-kerberos",
+    "import_name": "kerberos",
+    "pypi_name": "kerberos",
+    "source": "cf_graph"
+  },
+  "kikuchipy-base": {
+    "conda_name": "kikuchipy",
+    "import_name": "",
+    "pypi_name": "kikuchipy-base",
+    "source": "parselmouth"
+  },
+  "krb5": {
+    "conda_name": "pykrb5",
+    "import_name": "krb5",
+    "pypi_name": "krb5",
+    "source": "cf_graph"
+  },
+  "krtc": {
+    "conda_name": "lcls-krtc",
+    "import_name": "",
+    "pypi_name": "krtc",
+    "source": "parselmouth"
+  },
+  "kubernetes": {
+    "conda_name": "python-kubernetes",
+    "import_name": "kubernetes",
+    "pypi_name": "kubernetes",
+    "source": "cf_graph"
+  },
+  "labjack": {
+    "conda_name": "labjackpython",
+    "import_name": "",
+    "pypi_name": "labjack",
+    "source": "parselmouth"
+  },
+  "langfuse-python": {
+    "conda_name": "langfuse",
+    "import_name": "",
+    "pypi_name": "langfuse-python",
+    "source": "parselmouth"
+  },
+  "lantz": {
+    "conda_name": "lantz-drivers",
+    "import_name": "",
+    "pypi_name": "lantz",
+    "source": "parselmouth"
+  },
+  "lava": {
+    "conda_name": "lava-nc",
+    "import_name": "",
+    "pypi_name": "lava",
+    "source": "parselmouth"
+  },
+  "lazrs-python": {
+    "conda_name": "lazrs",
+    "import_name": "",
+    "pypi_name": "lazrs-python",
+    "source": "parselmouth"
+  },
+  "legacy-suitcase": {
+    "conda_name": "suitcase",
+    "import_name": "",
+    "pypi_name": "legacy-suitcase",
+    "source": "parselmouth"
+  },
+  "leveldb": {
+    "conda_name": "python-leveldb",
+    "import_name": "leveldb",
+    "pypi_name": "leveldb",
+    "source": "cf_graph"
+  },
+  "lib3mf-python": {
+    "conda_name": "lib3mf",
+    "import_name": "",
+    "pypi_name": "lib3mf-python",
+    "source": "parselmouth"
+  },
+  "libaio": {
+    "conda_name": "python-libaio",
+    "import_name": "libaio",
+    "pypi_name": "libaio",
+    "source": "cf_graph"
+  },
+  "libbladerf-python": {
+    "conda_name": "bladerf",
+    "import_name": "",
+    "pypi_name": "libbladerf-python",
+    "source": "parselmouth"
+  },
+  "libgpuarray": {
+    "conda_name": "pygpu",
+    "import_name": "",
+    "pypi_name": "libgpuarray",
+    "source": "parselmouth"
+  },
+  "libigl": {
+    "conda_name": "igl",
+    "import_name": "igl",
+    "pypi_name": "libigl",
+    "source": "cf_graph"
+  },
+  "libnacl": {
+    "conda_name": "libnacl-python-bindings",
+    "import_name": "libnacl",
+    "pypi_name": "libnacl",
+    "source": "grayskull"
+  },
+  "libnacl-python-bindings": {
+    "conda_name": "libnacl",
+    "import_name": "",
+    "pypi_name": "libnacl-python-bindings",
+    "source": "parselmouth"
+  },
+  "libopencv": {
+    "conda_name": "opencv-python",
+    "import_name": "",
+    "pypi_name": "libopencv",
+    "source": "parselmouth"
+  },
+  "libopenvino-python": {
+    "conda_name": "openvino",
+    "import_name": "",
+    "pypi_name": "libopenvino-python",
+    "source": "parselmouth"
+  },
+  "libsemigroups-python-bindings": {
+    "conda_name": "semigroups",
+    "import_name": "",
+    "pypi_name": "libsemigroups-python-bindings",
+    "source": "parselmouth"
+  },
+  "libsmu": {
+    "conda_name": "pysmu",
+    "import_name": "",
+    "pypi_name": "libsmu",
+    "source": "parselmouth"
+  },
+  "libssr": {
+    "conda_name": "libssr-py",
+    "import_name": "libssr",
+    "pypi_name": "libssr",
+    "source": "cf_graph"
+  },
+  "libssr-py": {
+    "conda_name": "libssr",
+    "import_name": "",
+    "pypi_name": "libssr-py",
+    "source": "parselmouth"
+  },
+  "libsvm": {
+    "conda_name": "libsvm-python",
+    "import_name": "libsvm",
+    "pypi_name": "libsvm",
+    "source": "cf_graph"
+  },
+  "libsvm-python": {
+    "conda_name": "libsvm",
+    "import_name": "",
+    "pypi_name": "libsvm-python",
+    "source": "parselmouth"
+  },
+  "libtiledb-sql-py": {
+    "conda_name": "tiledb-sql",
+    "import_name": "",
+    "pypi_name": "libtiledb-sql-py",
+    "source": "parselmouth"
+  },
+  "libvalkey-py": {
+    "conda_name": "libvalkey",
+    "import_name": "",
+    "pypi_name": "libvalkey-py",
+    "source": "parselmouth"
+  },
+  "lidar": {
+    "conda_name": "gdal",
+    "import_name": "",
+    "pypi_name": "lidar",
+    "source": "parselmouth"
+  },
+  "light-curve": {
+    "conda_name": "light-curve-python",
+    "import_name": "light_curve",
+    "pypi_name": "light-curve",
+    "source": "cf_graph"
+  },
+  "light-curve-python": {
+    "conda_name": "light-curve",
+    "import_name": "",
+    "pypi_name": "light-curve-python",
+    "source": "parselmouth"
+  },
+  "lightpath-base": {
+    "conda_name": "lightpath",
+    "import_name": "",
+    "pypi_name": "lightpath-base",
+    "source": "parselmouth"
+  },
+  "liknorm": {
+    "conda_name": "liknorm-py",
+    "import_name": "liknorm",
+    "pypi_name": "liknorm",
+    "source": "cf_graph"
+  },
+  "liknorm-py": {
+    "conda_name": "liknorm",
+    "import_name": "",
+    "pypi_name": "liknorm-py",
+    "source": "parselmouth"
+  },
+  "lit-nlp": {
+    "conda_name": "lit",
+    "import_name": "",
+    "pypi_name": "lit-nlp",
+    "source": "parselmouth"
+  },
+  "llmtuner": {
+    "conda_name": "llamafactory",
+    "import_name": "",
+    "pypi_name": "llmtuner",
+    "source": "parselmouth"
+  },
+  "lmdb": {
+    "conda_name": "python-lmdb",
+    "import_name": "lmdb",
+    "pypi_name": "lmdb",
+    "source": "grayskull"
+  },
+  "locustio": {
+    "conda_name": "locust",
+    "import_name": "",
+    "pypi_name": "locustio",
+    "source": "parselmouth"
+  },
+  "lrcalc": {
+    "conda_name": "python-lrcalc",
+    "import_name": "lrcalc",
+    "pypi_name": "lrcalc",
+    "source": "cf_graph"
+  },
+  "lsst-ts-xml": {
+    "conda_name": "ts-xml",
+    "import_name": "",
+    "pypi_name": "lsst-ts-xml",
+    "source": "parselmouth"
+  },
+  "lsstdesc-bpz": {
+    "conda_name": "desc-bpz",
+    "import_name": "",
+    "pypi_name": "lsstdesc-bpz",
+    "source": "parselmouth"
+  },
+  "lsstdesc-ceci": {
+    "conda_name": "ceci",
+    "import_name": "",
+    "pypi_name": "lsstdesc-ceci",
+    "source": "parselmouth"
+  },
+  "lsstdesc-dc2-dm-data": {
+    "conda_name": "desc-dc2-dm-data",
+    "import_name": "",
+    "pypi_name": "lsstdesc-dc2-dm-data",
+    "source": "parselmouth"
+  },
+  "lsstdesc-galsampler": {
+    "conda_name": "galsampler",
+    "import_name": "",
+    "pypi_name": "lsstdesc-galsampler",
+    "source": "parselmouth"
+  },
+  "lsstdesc-smokescreen": {
+    "conda_name": "smokescreen",
+    "import_name": "",
+    "pypi_name": "lsstdesc-smokescreen",
+    "source": "parselmouth"
+  },
+  "lsstdesc-weaklensingdeblending": {
+    "conda_name": "descwl",
+    "import_name": "",
+    "pypi_name": "lsstdesc.weaklensingdeblending",
+    "source": "parselmouth"
+  },
+  "lsstdesc-wl-shear-sims": {
+    "conda_name": "descwl-shear-sims",
+    "import_name": "",
+    "pypi_name": "lsstdesc-wl-shear-sims",
+    "source": "parselmouth"
+  },
+  "lume-gpt": {
+    "conda_name": "gpt",
+    "import_name": "",
+    "pypi_name": "lume-gpt",
+    "source": "parselmouth"
+  },
+  "magics-python": {
+    "conda_name": "magics",
+    "import_name": "",
+    "pypi_name": "magics-python",
+    "source": "parselmouth"
+  },
+  "mapserver": {
+    "conda_name": "mapscript",
+    "import_name": "",
+    "pypi_name": "mapserver",
+    "source": "parselmouth"
+  },
+  "marray": {
+    "conda_name": "marray-python",
+    "import_name": "marray",
+    "pypi_name": "marray",
+    "source": "cf_graph"
+  },
+  "marray-python": {
+    "conda_name": "marray",
+    "import_name": "",
+    "pypi_name": "marray-python",
+    "source": "parselmouth"
+  },
+  "matplotlib-base": {
+    "conda_name": "matplotlib",
+    "import_name": "",
+    "pypi_name": "matplotlib-base",
+    "source": "parselmouth"
+  },
+  "mbuild-base": {
+    "conda_name": "mbuild",
+    "import_name": "",
+    "pypi_name": "mbuild-base",
+    "source": "parselmouth"
+  },
+  "mdahole2-base": {
+    "conda_name": "mdahole2",
+    "import_name": "",
+    "pypi_name": "mdahole2-base",
+    "source": "parselmouth"
+  },
+  "mdal-python": {
+    "conda_name": "mdal",
+    "import_name": "",
+    "pypi_name": "mdal-python",
+    "source": "parselmouth"
+  },
+  "mdsplus": {
+    "conda_name": "mdsplus-unknown",
+    "import_name": "",
+    "pypi_name": "mdsplus",
+    "source": "parselmouth"
+  },
+  "meilisearch-python": {
+    "conda_name": "meilisearch",
+    "import_name": "",
+    "pypi_name": "meilisearch-python",
+    "source": "parselmouth"
+  },
+  "meshcat": {
+    "conda_name": "meshcat-python",
+    "import_name": "meshcat",
+    "pypi_name": "meshcat",
+    "source": "cf_graph"
+  },
+  "meshcat-python": {
+    "conda_name": "meshcat",
+    "import_name": "",
+    "pypi_name": "meshcat-python",
+    "source": "parselmouth"
+  },
+  "mesmer": {
+    "conda_name": "mesmer-emulator",
+    "import_name": "",
+    "pypi_name": "mesmer",
+    "source": "parselmouth"
+  },
+  "mesmer-emulator": {
+    "conda_name": "mesmer",
+    "import_name": "mesmer",
+    "pypi_name": "mesmer-emulator",
+    "source": "cf_graph"
+  },
+  "metatensor-core": {
+    "conda_name": "python-metatensor-core",
+    "import_name": "metatensor",
+    "pypi_name": "metatensor-core",
+    "source": "cf_graph"
+  },
+  "metatensor-learn": {
+    "conda_name": "python-metatensor-learn",
+    "import_name": "metatensor.learn",
+    "pypi_name": "metatensor-learn",
+    "source": "cf_graph"
+  },
+  "metatensor-operations": {
+    "conda_name": "python-metatensor-operations",
+    "import_name": "metatensor",
+    "pypi_name": "metatensor-operations",
+    "source": "cf_graph"
+  },
+  "metatomic-torch": {
+    "conda_name": "python-metatomic-torch",
+    "import_name": "metatomic.torch",
+    "pypi_name": "metatomic-torch",
+    "source": "cf_graph"
+  },
+  "metis-python": {
+    "conda_name": "metis",
+    "import_name": "",
+    "pypi_name": "metis-python",
+    "source": "parselmouth"
+  },
+  "metomi-rose-base": {
+    "conda_name": "metomi-rose",
+    "import_name": "",
+    "pypi_name": "metomi-rose-base",
+    "source": "parselmouth"
+  },
+  "metview-python": {
+    "conda_name": "metview",
+    "import_name": "",
+    "pypi_name": "metview-python",
+    "source": "parselmouth"
+  },
+  "miranda": {
+    "conda_name": "python-miranda",
+    "import_name": "miranda",
+    "pypi_name": "miranda",
+    "source": "cf_graph"
+  },
+  "mlflow-ui": {
+    "conda_name": "mlflow",
+    "import_name": "",
+    "pypi_name": "mlflow-ui",
+    "source": "parselmouth"
+  },
+  "mmgp-core": {
+    "conda_name": "mmgp",
+    "import_name": "",
+    "pypi_name": "mmgp-core",
+    "source": "parselmouth"
+  },
+  "mne-base": {
+    "conda_name": "mne",
+    "import_name": "",
+    "pypi_name": "mne-base",
+    "source": "parselmouth"
+  },
+  "moab": {
+    "conda_name": "pymoab",
+    "import_name": "",
+    "pypi_name": "moab",
+    "source": "parselmouth"
+  },
+  "mobie-utils": {
+    "conda_name": "mobie",
+    "import_name": "",
+    "pypi_name": "mobie_utils",
+    "source": "parselmouth"
+  },
+  "modal": {
+    "conda_name": "modal-python",
+    "import_name": "",
+    "pypi_name": "modal",
+    "source": "parselmouth"
+  },
+  "modal-client": {
+    "conda_name": "modal",
+    "import_name": "",
+    "pypi_name": "modal-client",
+    "source": "parselmouth"
+  },
+  "modin-core": {
+    "conda_name": "modin",
+    "import_name": "",
+    "pypi_name": "modin-core",
+    "source": "parselmouth"
+  },
+  "mpl-probscale": {
+    "conda_name": "probscale",
+    "import_name": "",
+    "pypi_name": "mpl-probscale",
+    "source": "parselmouth"
+  },
+  "msg-extractor": {
+    "conda_name": "extract-msg",
+    "import_name": "",
+    "pypi_name": "msg-extractor",
+    "source": "parselmouth"
+  },
+  "msgpack": {
+    "conda_name": "msgpack-python",
+    "import_name": "msgpack",
+    "pypi_name": "msgpack",
+    "source": "cf_graph"
+  },
+  "msgpack-python": {
+    "conda_name": "msgpack",
+    "import_name": "",
+    "pypi_name": "msgpack-python",
+    "source": "parselmouth"
+  },
+  "mt-940": {
+    "conda_name": "mt940",
+    "import_name": "mt940",
+    "pypi_name": "mt-940",
+    "source": "cf_graph"
+  },
+  "mt940": {
+    "conda_name": "mt-940",
+    "import_name": "",
+    "pypi_name": "mt940",
+    "source": "parselmouth"
+  },
+  "mujoco-python": {
+    "conda_name": "mujoco",
+    "import_name": "",
+    "pypi_name": "mujoco-python",
+    "source": "parselmouth"
+  },
+  "multicore-tsne": {
+    "conda_name": "multicoretsne",
+    "import_name": "",
+    "pypi_name": "multicore-tsne",
+    "source": "parselmouth"
+  },
+  "muscat-core": {
+    "conda_name": "muscat",
+    "import_name": "",
+    "pypi_name": "muscat-core",
+    "source": "parselmouth"
+  },
+  "namaster": {
+    "conda_name": "pymaster",
+    "import_name": "",
+    "pypi_name": "namaster",
+    "source": "parselmouth"
+  },
+  "napari-base": {
+    "conda_name": "napari",
+    "import_name": "",
+    "pypi_name": "napari-base",
+    "source": "parselmouth"
+  },
+  "nbconvert-core": {
+    "conda_name": "nbconvert",
+    "import_name": "",
+    "pypi_name": "nbconvert-core",
+    "source": "parselmouth"
+  },
+  "nco": {
+    "conda_name": "pynco",
+    "import_name": "nco",
+    "pypi_name": "nco",
+    "source": "cf_graph"
+  },
+  "neo": {
+    "conda_name": "python-neo",
+    "import_name": "neo",
+    "pypi_name": "neo",
+    "source": "cf_graph"
+  },
+  "neo4j": {
+    "conda_name": "neo4j-python-driver",
+    "import_name": "neo4j",
+    "pypi_name": "neo4j",
+    "source": "cf_graph"
+  },
+  "neo4j-python-driver": {
+    "conda_name": "neo4j",
+    "import_name": "",
+    "pypi_name": "neo4j-python-driver",
+    "source": "parselmouth"
+  },
+  "neo4j-python-driver-rust-ext": {
+    "conda_name": "neo4j-rust-ext",
+    "import_name": "",
+    "pypi_name": "neo4j-python-driver-rust-ext",
+    "source": "parselmouth"
+  },
+  "ngmix-core": {
+    "conda_name": "ngmix",
+    "import_name": "",
+    "pypi_name": "ngmix-core",
+    "source": "parselmouth"
+  },
+  "nidaqmx-python": {
+    "conda_name": "nidaqmx",
+    "import_name": "",
+    "pypi_name": "nidaqmx-python",
+    "source": "parselmouth"
+  },
+  "node-semver": {
+    "conda_name": "python-node-semver",
+    "import_name": "nodesemver",
+    "pypi_name": "node-semver",
+    "source": "cf_graph"
+  },
+  "nodejs-wheel": {
+    "conda_name": "nodejs-wheel-binaries",
+    "import_name": "",
+    "pypi_name": "nodejs-wheel",
+    "source": "parselmouth"
+  },
+  "nputop": {
+    "conda_name": "ascend-nputop",
+    "import_name": "",
+    "pypi_name": "nputop",
+    "source": "parselmouth"
+  },
+  "nsbm": {
+    "conda_name": "trisbm",
+    "import_name": "",
+    "pypi_name": "nsbm",
+    "source": "parselmouth"
+  },
+  "nsight-compute": {
+    "conda_name": "pip",
+    "import_name": "",
+    "pypi_name": "nsight-compute",
+    "source": "parselmouth"
+  },
+  "nu-gitflow": {
+    "conda_name": "gitflow",
+    "import_name": "gitflow",
+    "pypi_name": "nu-gitflow",
+    "source": "cf_graph"
+  },
+  "numcosmo": {
+    "conda_name": "numcosmo-py",
+    "import_name": "",
+    "pypi_name": "numcosmo",
+    "source": "parselmouth"
+  },
+  "numpy-quaternion": {
+    "conda_name": "quaternion",
+    "import_name": "quaternion",
+    "pypi_name": "numpy-quaternion",
+    "source": "cf_graph"
+  },
+  "nvcomp": {
+    "conda_name": "nvidia-nvcomp-cu13",
+    "import_name": "",
+    "pypi_name": "nvcomp",
+    "source": "parselmouth"
+  },
+  "nvidia-apex": {
+    "conda_name": "apex",
+    "import_name": "",
+    "pypi_name": "nvidia-apex",
+    "source": "parselmouth"
+  },
+  "nvidia-dali-python": {
+    "conda_name": "nvidia-dali-cuda120",
+    "import_name": "",
+    "pypi_name": "nvidia-dali-python",
+    "source": "parselmouth"
+  },
+  "nvidia-ml": {
+    "conda_name": "nvidia-ml-py3",
+    "import_name": "",
+    "pypi_name": "nvidia-ml",
+    "source": "parselmouth"
+  },
+  "nvidia-ml-py3": {
+    "conda_name": "nvidia-ml",
+    "import_name": "pynvml",
+    "pypi_name": "nvidia-ml-py3",
+    "source": "cf_graph"
+  },
+  "nvimgcodec": {
+    "conda_name": "nvidia-nvimgcodec-cu13",
+    "import_name": "",
+    "pypi_name": "nvimgcodec",
+    "source": "parselmouth"
+  },
+  "nvshmem4py": {
+    "conda_name": "nvshmem4py-cu12",
+    "import_name": "",
+    "pypi_name": "nvshmem4py",
+    "source": "parselmouth"
+  },
+  "oasis": {
+    "conda_name": "oasis-optimization",
+    "import_name": "",
+    "pypi_name": "oasis",
+    "source": "parselmouth"
+  },
+  "obcanonicalradicals": {
+    "conda_name": "obcr",
+    "import_name": "",
+    "pypi_name": "obcanonicalradicals",
+    "source": "parselmouth"
+  },
+  "oliver": {
+    "conda_name": "stjudecloud-oliver",
+    "import_name": "",
+    "pypi_name": "oliver",
+    "source": "parselmouth"
+  },
+  "ollama": {
+    "conda_name": "ollama-python",
+    "import_name": "ollama",
+    "pypi_name": "ollama",
+    "source": "cf_graph"
+  },
+  "ollama-python": {
+    "conda_name": "ollama",
+    "import_name": "",
+    "pypi_name": "ollama-python",
+    "source": "parselmouth"
+  },
+  "om-pycycle": {
+    "conda_name": "pycycle",
+    "import_name": "pycycle",
+    "pypi_name": "om-pycycle",
+    "source": "cf_graph"
+  },
+  "omnisci-pytools": {
+    "conda_name": "jupyterlab-omnisci",
+    "import_name": "",
+    "pypi_name": "omnisci-pytools",
+    "source": "parselmouth"
+  },
+  "onnxruntime-novec": {
+    "conda_name": "onnxruntime",
+    "import_name": "",
+    "pypi_name": "onnxruntime-novec",
+    "source": "parselmouth"
+  },
+  "openalpr": {
+    "conda_name": "py-openalpr",
+    "import_name": "openalpr",
+    "pypi_name": "openalpr",
+    "source": "cf_graph"
+  },
+  "opencv-python": {
+    "conda_name": "opencv",
+    "import_name": "cv2",
+    "pypi_name": "opencv-python",
+    "source": "cf_graph"
+  },
+  "openexr-python": {
+    "conda_name": "openexr",
+    "import_name": "",
+    "pypi_name": "openexr-python",
+    "source": "parselmouth"
+  },
+  "openfe-base": {
+    "conda_name": "openfe",
+    "import_name": "",
+    "pypi_name": "openfe-base",
+    "source": "parselmouth"
+  },
+  "openff-evaluator-base": {
+    "conda_name": "openff-evaluator",
+    "import_name": "",
+    "pypi_name": "openff-evaluator-base",
+    "source": "parselmouth"
+  },
+  "openff-forcefields": {
+    "conda_name": "openforcefields",
+    "import_name": "",
+    "pypi_name": "openff-forcefields",
+    "source": "parselmouth"
+  },
+  "openff-fragmenter-base": {
+    "conda_name": "openff-fragmenter",
+    "import_name": "",
+    "pypi_name": "openff-fragmenter-base",
+    "source": "parselmouth"
+  },
+  "openff-interchange-base": {
+    "conda_name": "openff-interchange",
+    "import_name": "",
+    "pypi_name": "openff-interchange-base",
+    "source": "parselmouth"
+  },
+  "openff-nagl-base": {
+    "conda_name": "openff-nagl",
+    "import_name": "",
+    "pypi_name": "openff-nagl-base",
+    "source": "parselmouth"
+  },
+  "openff-toolkit-base": {
+    "conda_name": "openff-toolkit",
+    "import_name": "",
+    "pypi_name": "openff-toolkit-base",
+    "source": "parselmouth"
+  },
+  "openmesh": {
+    "conda_name": "openmesh-python",
+    "import_name": "openmesh",
+    "pypi_name": "openmesh",
+    "source": "cf_graph"
+  },
+  "openmesh-python": {
+    "conda_name": "openmesh",
+    "import_name": "",
+    "pypi_name": "openmesh-python",
+    "source": "parselmouth"
+  },
+  "openmm-atmmetaforce-plugin": {
+    "conda_name": "atmmetaforce",
+    "import_name": "",
+    "pypi_name": "openmm-atmmetaforce-plugin",
+    "source": "parselmouth"
+  },
+  "openmm-ml": {
+    "conda_name": "openmmml",
+    "import_name": "",
+    "pypi_name": "openmm-ml",
+    "source": "parselmouth"
+  },
+  "openmm-nonbonded-slicing": {
+    "conda_name": "nonbondedslicing",
+    "import_name": "",
+    "pypi_name": "openmm-nonbonded-slicing",
+    "source": "parselmouth"
+  },
+  "openmm-plumed": {
+    "conda_name": "openmmplumed",
+    "import_name": "",
+    "pypi_name": "openmm-plumed",
+    "source": "parselmouth"
+  },
+  "openmm-torch": {
+    "conda_name": "openmmtorch",
+    "import_name": "",
+    "pypi_name": "openmm-torch",
+    "source": "parselmouth"
+  },
+  "openmm-xtb": {
+    "conda_name": "openmmxtb",
+    "import_name": "",
+    "pypi_name": "openmm-xtb",
+    "source": "parselmouth"
+  },
+  "openmmgridforce": {
+    "conda_name": "gridforceplugin",
+    "import_name": "",
+    "pypi_name": "openmmgridforce",
+    "source": "parselmouth"
+  },
+  "openmmtorchplugin": {
+    "conda_name": "torchintegratorplugin",
+    "import_name": "",
+    "pypi_name": "openmmtorchplugin",
+    "source": "parselmouth"
+  },
+  "openpisco-core": {
+    "conda_name": "openpisco",
+    "import_name": "",
+    "pypi_name": "openpisco-core",
+    "source": "parselmouth"
+  },
+  "opensesame": {
+    "conda_name": "python-opensesame",
+    "import_name": "",
+    "pypi_name": "opensesame",
+    "source": "parselmouth"
+  },
+  "openusd": {
+    "conda_name": "usd-core",
+    "import_name": "",
+    "pypi_name": "openusd",
+    "source": "parselmouth"
+  },
+  "oq-engine": {
+    "conda_name": "openquake-engine",
+    "import_name": "",
+    "pypi_name": "oq-engine",
+    "source": "parselmouth"
+  },
+  "oras-py": {
+    "conda_name": "oras",
+    "import_name": "",
+    "pypi_name": "oras-py",
+    "source": "parselmouth"
+  },
+  "orix-base": {
+    "conda_name": "orix",
+    "import_name": "",
+    "pypi_name": "orix-base",
+    "source": "parselmouth"
+  },
+  "ortools": {
+    "conda_name": "ortools-python",
+    "import_name": "ortools",
+    "pypi_name": "ortools",
+    "source": "grayskull"
+  },
+  "ortools-python": {
+    "conda_name": "ortools",
+    "import_name": "",
+    "pypi_name": "ortools-python",
+    "source": "parselmouth"
+  },
+  "osmnx-base": {
+    "conda_name": "osmnx",
+    "import_name": "",
+    "pypi_name": "osmnx-base",
+    "source": "parselmouth"
+  },
+  "otter-grader-base": {
+    "conda_name": "otter-grader",
+    "import_name": "",
+    "pypi_name": "otter-grader-base",
+    "source": "parselmouth"
+  },
+  "pandera-base": {
+    "conda_name": "pandera",
+    "import_name": "",
+    "pypi_name": "pandera-base",
+    "source": "parselmouth"
+  },
+  "pandera-core": {
+    "conda_name": "pandera",
+    "import_name": "",
+    "pypi_name": "pandera-core",
+    "source": "parselmouth"
+  },
+  "pandora-geno": {
+    "conda_name": "pandora",
+    "import_name": "",
+    "pypi_name": "pandora-geno",
+    "source": "parselmouth"
+  },
+  "paragraph": {
+    "conda_name": "python-paragraph",
+    "import_name": "paragraph",
+    "pypi_name": "paragraph",
+    "source": "cf_graph"
+  },
+  "pardiso4py": {
+    "conda_name": "pypardiso",
+    "import_name": "",
+    "pypi_name": "pardiso4py",
+    "source": "parselmouth"
+  },
+  "parquet": {
+    "conda_name": "parquet-python",
+    "import_name": "parquet",
+    "pypi_name": "parquet",
+    "source": "cf_graph"
+  },
+  "parquet-python": {
+    "conda_name": "parquet",
+    "import_name": "",
+    "pypi_name": "parquet-python",
+    "source": "parselmouth"
+  },
+  "partsgenieclient": {
+    "conda_name": "partsgenie-client",
+    "import_name": "",
+    "pypi_name": "partsgenieclient",
+    "source": "parselmouth"
+  },
+  "patch": {
+    "conda_name": "python-patch",
+    "import_name": "patch",
+    "pypi_name": "patch",
+    "source": "cf_graph"
+  },
+  "pdfkit": {
+    "conda_name": "python-pdfkit",
+    "import_name": "pdfkit",
+    "pypi_name": "pdfkit",
+    "source": "cf_graph"
+  },
+  "pennylane-core": {
+    "conda_name": "pennylane",
+    "import_name": "",
+    "pypi_name": "pennylane-core",
+    "source": "parselmouth"
+  },
+  "pennylane-lightning-core": {
+    "conda_name": "pennylane-lightning",
+    "import_name": "",
+    "pypi_name": "pennylane-lightning-core",
+    "source": "parselmouth"
+  },
+  "perspective": {
+    "conda_name": "perspective-python",
+    "import_name": "",
+    "pypi_name": "perspective",
+    "source": "parselmouth"
+  },
+  "pgadmin4-python": {
+    "conda_name": "pgadmin4",
+    "import_name": "",
+    "pypi_name": "pgadmin4-python",
+    "source": "parselmouth"
+  },
+  "pgure-svt": {
+    "conda_name": "pguresvt",
+    "import_name": "",
+    "pypi_name": "pgure-svt",
+    "source": "parselmouth"
+  },
+  "pgvector-python": {
+    "conda_name": "pgvector",
+    "import_name": "",
+    "pypi_name": "pgvector-python",
+    "source": "parselmouth"
+  },
+  "pin-pink": {
+    "conda_name": "pink",
+    "import_name": "pink",
+    "pypi_name": "pin-pink",
+    "source": "cf_graph"
+  },
+  "pink": {
+    "conda_name": "pin-pink",
+    "import_name": "",
+    "pypi_name": "pink",
+    "source": "parselmouth"
+  },
+  "pisces": {
+    "conda_name": "pisces-db",
+    "import_name": "pisces",
+    "pypi_name": "pisces",
+    "source": "cf_graph"
+  },
+  "pisces-db": {
+    "conda_name": "pisces",
+    "import_name": "",
+    "pypi_name": "pisces-db",
+    "source": "parselmouth"
+  },
+  "plaid": {
+    "conda_name": "pyplaid",
+    "import_name": "",
+    "pypi_name": "plaid",
+    "source": "parselmouth"
+  },
+  "planarity": {
+    "conda_name": "python-planarity",
+    "import_name": "planarity",
+    "pypi_name": "planarity",
+    "source": "cf_graph"
+  },
+  "plant-seg": {
+    "conda_name": "plantseg",
+    "import_name": "",
+    "pypi_name": "plant-seg",
+    "source": "parselmouth"
+  },
+  "playwright-python": {
+    "conda_name": "playwright",
+    "import_name": "",
+    "pypi_name": "playwright-python",
+    "source": "parselmouth"
+  },
+  "pocketsphinx-python": {
+    "conda_name": "pocketsphinx",
+    "import_name": "",
+    "pypi_name": "pocketsphinx-python",
+    "source": "parselmouth"
+  },
+  "podman": {
+    "conda_name": "podman-py",
+    "import_name": "podman",
+    "pypi_name": "podman",
+    "source": "cf_graph"
+  },
+  "podman-py": {
+    "conda_name": "podman",
+    "import_name": "",
+    "pypi_name": "podman-py",
+    "source": "parselmouth"
+  },
+  "polaris": {
+    "conda_name": "polaris-lib",
+    "import_name": "",
+    "pypi_name": "polaris",
+    "source": "parselmouth"
+  },
+  "polars-default": {
+    "conda_name": "polars",
+    "import_name": "",
+    "pypi_name": "polars-default",
+    "source": "parselmouth"
+  },
+  "poli": {
+    "conda_name": "poli-core",
+    "import_name": "",
+    "pypi_name": "poli",
+    "source": "parselmouth"
+  },
+  "polyhedral-gravity-model": {
+    "conda_name": "polyhedral-gravity",
+    "import_name": "",
+    "pypi_name": "polyhedral-gravity-model",
+    "source": "parselmouth"
+  },
+  "pooch-extra": {
+    "conda_name": "pooch",
+    "import_name": "",
+    "pypi_name": "pooch-extra",
+    "source": "parselmouth"
+  },
+  "prince": {
+    "conda_name": "prince-factor-analysis",
+    "import_name": "prince",
+    "pypi_name": "prince",
+    "source": "cf_graph"
+  },
+  "prince-factor-analysis": {
+    "conda_name": "prince",
+    "import_name": "",
+    "pypi_name": "prince-factor-analysis",
+    "source": "parselmouth"
+  },
+  "priori": {
+    "conda_name": "priori-regulon-enrichment",
+    "import_name": "",
+    "pypi_name": "priori",
+    "source": "parselmouth"
+  },
+  "privy": {
+    "conda_name": "argon2-cffi",
+    "import_name": "",
+    "pypi_name": "privy",
+    "source": "parselmouth"
+  },
+  "professor": {
+    "conda_name": "professor2",
+    "import_name": "",
+    "pypi_name": "professor",
+    "source": "parselmouth"
+  },
+  "pseudorandom": {
+    "conda_name": "python-pseudorandom",
+    "import_name": "",
+    "pypi_name": "pseudorandom",
+    "source": "parselmouth"
+  },
+  "psiresp-base": {
+    "conda_name": "psiresp",
+    "import_name": "",
+    "pypi_name": "psiresp-base",
+    "source": "parselmouth"
+  },
+  "ptychodus-core": {
+    "conda_name": "ptychodus",
+    "import_name": "",
+    "pypi_name": "ptychodus-core",
+    "source": "parselmouth"
+  },
+  "pulse": {
+    "conda_name": "fenics-pulse",
+    "import_name": "",
+    "pypi_name": "pulse",
+    "source": "parselmouth"
+  },
+  "puma": {
+    "conda_name": "pumapy",
+    "import_name": "",
+    "pypi_name": "puma",
+    "source": "parselmouth"
+  },
+  "pvcaptest": {
+    "conda_name": "captest",
+    "import_name": "",
+    "pypi_name": "pvcaptest",
+    "source": "parselmouth"
+  },
+  "pvlib-python": {
+    "conda_name": "pvlib",
+    "import_name": "",
+    "pypi_name": "pvlib-python",
+    "source": "parselmouth"
+  },
+  "py-bash-completion": {
+    "conda_name": "bash-completion",
+    "import_name": "",
+    "pypi_name": "py-bash-completion",
+    "source": "parselmouth"
+  },
+  "py-bgzip": {
+    "conda_name": "bgzip",
+    "import_name": "",
+    "pypi_name": "py-bgzip",
+    "source": "parselmouth"
+  },
+  "py-fann2": {
+    "conda_name": "fann2",
+    "import_name": "",
+    "pypi_name": "py-fann2",
+    "source": "parselmouth"
+  },
+  "py-lief": {
+    "conda_name": "lief",
+    "import_name": "",
+    "pypi_name": "py-lief",
+    "source": "parselmouth"
+  },
+  "py-maidr": {
+    "conda_name": "maidr",
+    "import_name": "",
+    "pypi_name": "py-maidr",
+    "source": "parselmouth"
+  },
+  "py-openalpr": {
+    "conda_name": "openalpr",
+    "import_name": "",
+    "pypi_name": "py-openalpr",
+    "source": "parselmouth"
+  },
+  "py-plumed": {
+    "conda_name": "plumed",
+    "import_name": "",
+    "pypi_name": "py-plumed",
+    "source": "parselmouth"
+  },
+  "py-sirius-ms": {
+    "conda_name": "pysirius",
+    "import_name": "",
+    "pypi_name": "py-sirius-ms",
+    "source": "parselmouth"
+  },
+  "py-triangle": {
+    "conda_name": "triangle",
+    "import_name": "",
+    "pypi_name": "py-triangle",
+    "source": "parselmouth"
+  },
+  "py-videodev2": {
+    "conda_name": "videodev2",
+    "import_name": "",
+    "pypi_name": "py-videodev2",
+    "source": "parselmouth"
+  },
+  "py-xgboost": {
+    "conda_name": "xgboost",
+    "import_name": "",
+    "pypi_name": "py-xgboost",
+    "source": "parselmouth"
+  },
+  "pyam": {
+    "conda_name": "pyam-iamc",
+    "import_name": "",
+    "pypi_name": "pyam",
+    "source": "parselmouth"
+  },
+  "pyamrex": {
+    "conda_name": "amrex",
+    "import_name": "",
+    "pypi_name": "pyamrex",
+    "source": "parselmouth"
+  },
+  "pyarrow-core": {
+    "conda_name": "pyarrow",
+    "import_name": "",
+    "pypi_name": "pyarrow-core",
+    "source": "parselmouth"
+  },
+  "pyb2d": {
+    "conda_name": "b2d",
+    "import_name": "",
+    "pypi_name": "pyb2d",
+    "source": "parselmouth"
+  },
+  "pybamm-base": {
+    "conda_name": "pybamm",
+    "import_name": "",
+    "pypi_name": "pybamm-base",
+    "source": "parselmouth"
+  },
+  "pybobyqa": {
+    "conda_name": "py-bobyqa",
+    "import_name": "",
+    "pypi_name": "pybobyqa",
+    "source": "parselmouth"
+  },
+  "pybox2d": {
+    "conda_name": "box2d",
+    "import_name": "",
+    "pypi_name": "pybox2d",
+    "source": "parselmouth"
+  },
+  "pyca": {
+    "conda_name": "pyca-epics",
+    "import_name": "",
+    "pypi_name": "pyca",
+    "source": "parselmouth"
+  },
+  "pycamb": {
+    "conda_name": "camb",
+    "import_name": "",
+    "pypi_name": "pycamb",
+    "source": "parselmouth"
+  },
+  "pycgns-core": {
+    "conda_name": "pycgns",
+    "import_name": "",
+    "pypi_name": "pycgns-core",
+    "source": "parselmouth"
+  },
+  "pycrlibm": {
+    "conda_name": "crlibm",
+    "import_name": "",
+    "pypi_name": "pycrlibm",
+    "source": "parselmouth"
+  },
+  "pyct-core": {
+    "conda_name": "pyct",
+    "import_name": "",
+    "pypi_name": "pyct-core",
+    "source": "parselmouth"
+  },
+  "pycycle": {
+    "conda_name": "om-pycycle",
+    "import_name": "",
+    "pypi_name": "pycycle",
+    "source": "parselmouth"
+  },
+  "pyebsdindex-base": {
+    "conda_name": "pyebsdindex",
+    "import_name": "",
+    "pypi_name": "pyebsdindex-base",
+    "source": "parselmouth"
+  },
+  "pyfai-base": {
+    "conda_name": "pyfai",
+    "import_name": "",
+    "pypi_name": "pyfai-base",
+    "source": "parselmouth"
+  },
+  "pyfim": {
+    "conda_name": "fim",
+    "import_name": "",
+    "pypi_name": "pyfim",
+    "source": "parselmouth"
+  },
+  "pyfit-sne": {
+    "conda_name": "fitsne",
+    "import_name": "",
+    "pypi_name": "pyfit-sne",
+    "source": "parselmouth"
+  },
+  "pyflann": {
+    "conda_name": "flann",
+    "import_name": "",
+    "pypi_name": "pyflann",
+    "source": "parselmouth"
+  },
+  "pygaze": {
+    "conda_name": "python-pygaze",
+    "import_name": "",
+    "pypi_name": "pygaze",
+    "source": "parselmouth"
+  },
+  "pyglfw": {
+    "conda_name": "glfw",
+    "import_name": "",
+    "pypi_name": "pyglfw",
+    "source": "parselmouth"
+  },
+  "pyglpk": {
+    "conda_name": "glpk",
+    "import_name": "",
+    "pypi_name": "pyglpk",
+    "source": "parselmouth"
+  },
+  "pygnome": {
+    "conda_name": "gnome",
+    "import_name": "",
+    "pypi_name": "pygnome",
+    "source": "parselmouth"
+  },
+  "pygorder": {
+    "conda_name": "gorder",
+    "import_name": "",
+    "pypi_name": "pygorder",
+    "source": "parselmouth"
+  },
+  "pygsi": {
+    "conda_name": "gsi",
+    "import_name": "",
+    "pypi_name": "pygsi",
+    "source": "parselmouth"
+  },
+  "pyhunspell": {
+    "conda_name": "hunspell",
+    "import_name": "",
+    "pypi_name": "pyhunspell",
+    "source": "parselmouth"
+  },
+  "pyhyperscattering-base": {
+    "conda_name": "pyhyperscattering",
+    "import_name": "",
+    "pypi_name": "pyhyperscattering-base",
+    "source": "parselmouth"
+  },
+  "pyjulia": {
+    "conda_name": "julia",
+    "import_name": "",
+    "pypi_name": "pyjulia",
+    "source": "parselmouth"
+  },
+  "pyjuliacall": {
+    "conda_name": "juliacall",
+    "import_name": "",
+    "pypi_name": "pyjuliacall",
+    "source": "parselmouth"
+  },
+  "pyjuliapkg": {
+    "conda_name": "juliapkg",
+    "import_name": "",
+    "pypi_name": "pyjuliapkg",
+    "source": "parselmouth"
+  },
+  "pyjuliaup": {
+    "conda_name": "juliaup",
+    "import_name": "",
+    "pypi_name": "pyjuliaup",
+    "source": "parselmouth"
+  },
+  "pykrb5": {
+    "conda_name": "krb5",
+    "import_name": "",
+    "pypi_name": "pykrb5",
+    "source": "parselmouth"
+  },
+  "pylibfdt": {
+    "conda_name": "libfdt",
+    "import_name": "",
+    "pypi_name": "pylibfdt",
+    "source": "parselmouth"
+  },
+  "pymace": {
+    "conda_name": "mace-torch",
+    "import_name": "",
+    "pypi_name": "pymace",
+    "source": "parselmouth"
+  },
+  "pymatsolver-base": {
+    "conda_name": "pymatsolver",
+    "import_name": "",
+    "pypi_name": "pymatsolver-base",
+    "source": "parselmouth"
+  },
+  "pymbar-core": {
+    "conda_name": "pymbar",
+    "import_name": "",
+    "pypi_name": "pymbar-core",
+    "source": "parselmouth"
+  },
+  "pymc-base": {
+    "conda_name": "pymc",
+    "import_name": "",
+    "pypi_name": "pymc-base",
+    "source": "parselmouth"
+  },
+  "pymca": {
+    "conda_name": "pymca5",
+    "import_name": "",
+    "pypi_name": "pymca",
+    "source": "parselmouth"
+  },
+  "pymca5": {
+    "conda_name": "pymca",
+    "import_name": "PyMca5",
+    "pypi_name": "pymca5",
+    "source": "cf_graph"
+  },
+  "pymol-open-source": {
+    "conda_name": "pymol",
+    "import_name": "",
+    "pypi_name": "pymol-open-source",
+    "source": "parselmouth"
+  },
+  "pynco": {
+    "conda_name": "nco",
+    "import_name": "",
+    "pypi_name": "pynco",
+    "source": "parselmouth"
+  },
+  "pyposeidon-base": {
+    "conda_name": "pyposeidon",
+    "import_name": "",
+    "pypi_name": "pyposeidon-base",
+    "source": "parselmouth"
+  },
+  "pypy3-9": {
+    "conda_name": "cffi",
+    "import_name": "",
+    "pypi_name": "pypy3.9",
+    "source": "parselmouth"
+  },
+  "pyqt": {
+    "conda_name": "pyqt5",
+    "import_name": "",
+    "pypi_name": "pyqt",
+    "source": "parselmouth"
+  },
+  "pyqt-impl": {
+    "conda_name": "pyqt5",
+    "import_name": "",
+    "pypi_name": "pyqt-impl",
+    "source": "parselmouth"
+  },
+  "pyqt-stubs": {
+    "conda_name": "pyqt5-stubs",
+    "import_name": "",
+    "pypi_name": "pyqt-stubs",
+    "source": "parselmouth"
+  },
+  "pyqt4": {
+    "conda_name": "pyqt",
+    "import_name": "PyQt4",
+    "pypi_name": "pyqt4",
+    "source": "cf_graph"
+  },
+  "pyqt5": {
+    "conda_name": "pyqt",
+    "import_name": "PyQt5",
+    "pypi_name": "pyqt5",
+    "source": "cf_graph"
+  },
+  "pyqtwebkit": {
+    "conda_name": "pyqt5",
+    "import_name": "",
+    "pypi_name": "pyqtwebkit",
+    "source": "parselmouth"
+  },
+  "pyrad-arm": {
+    "conda_name": "pyrad-mch",
+    "import_name": "",
+    "pypi_name": "pyrad_arm",
+    "source": "parselmouth"
+  },
+  "pyramids": {
+    "conda_name": "pyramids-gis",
+    "import_name": "",
+    "pypi_name": "pyramids",
+    "source": "parselmouth"
+  },
+  "pyribs": {
+    "conda_name": "ribs",
+    "import_name": "",
+    "pypi_name": "pyribs",
+    "source": "parselmouth"
+  },
+  "pyribs-base": {
+    "conda_name": "ribs",
+    "import_name": "",
+    "pypi_name": "pyribs-base",
+    "source": "parselmouth"
+  },
+  "pysbol2": {
+    "conda_name": "sbol2",
+    "import_name": "",
+    "pypi_name": "pysbol2",
+    "source": "parselmouth"
+  },
+  "pysbol3": {
+    "conda_name": "sbol3",
+    "import_name": "",
+    "pypi_name": "pysbol3",
+    "source": "parselmouth"
+  },
+  "pyscamp": {
+    "conda_name": "pyscamp-gpu",
+    "import_name": "pyscamp",
+    "pypi_name": "pyscamp",
+    "source": "cf_graph"
+  },
+  "pyscamp-cpu": {
+    "conda_name": "pyscamp",
+    "import_name": "",
+    "pypi_name": "pyscamp-cpu",
+    "source": "parselmouth"
+  },
+  "pyscamp-gpu": {
+    "conda_name": "pyscamp",
+    "import_name": "",
+    "pypi_name": "pyscamp-gpu",
+    "source": "parselmouth"
+  },
+  "pyside2mn": {
+    "conda_name": "pyside2molecularnetwork",
+    "import_name": "",
+    "pypi_name": "pyside2mn",
+    "source": "parselmouth"
+  },
+  "pyside2qtads": {
+    "conda_name": "pyside6-qtads",
+    "import_name": "",
+    "pypi_name": "pyside2qtads",
+    "source": "parselmouth"
+  },
+  "pyside6mn": {
+    "conda_name": "pyside6molecularnetwork",
+    "import_name": "",
+    "pypi_name": "pyside6mn",
+    "source": "parselmouth"
+  },
+  "pyside6qtads": {
+    "conda_name": "pyside6-qtads",
+    "import_name": "",
+    "pypi_name": "pyside6qtads",
+    "source": "parselmouth"
+  },
+  "pysoundcard": {
+    "conda_name": "soundcard",
+    "import_name": "",
+    "pypi_name": "pysoundcard",
+    "source": "parselmouth"
+  },
+  "pysoundfile": {
+    "conda_name": "soundfile",
+    "import_name": "",
+    "pypi_name": "pysoundfile",
+    "source": "parselmouth"
+  },
+  "pytables": {
+    "conda_name": "tables",
+    "import_name": "",
+    "pypi_name": "pytables",
+    "source": "parselmouth"
+  },
+  "pytensor-base": {
+    "conda_name": "pytensor",
+    "import_name": "",
+    "pypi_name": "pytensor-base",
+    "source": "parselmouth"
+  },
+  "pytest-parallel-mpi": {
+    "conda_name": "pytest-parallel",
+    "import_name": "",
+    "pypi_name": "pytest_parallel_mpi",
+    "source": "parselmouth"
+  },
+  "python-ace": {
+    "conda_name": "pyace",
+    "import_name": "",
+    "pypi_name": "python-ace",
+    "source": "parselmouth"
+  },
+  "python-annoy": {
+    "conda_name": "annoy",
+    "import_name": "",
+    "pypi_name": "python-annoy",
+    "source": "parselmouth"
+  },
+  "python-ar": {
+    "conda_name": "ar",
+    "import_name": "",
+    "pypi_name": "python-ar",
+    "source": "parselmouth"
+  },
+  "python-arrakis-schema": {
+    "conda_name": "arrakis-schema",
+    "import_name": "",
+    "pypi_name": "python-arrakis-schema",
+    "source": "parselmouth"
+  },
+  "python-art": {
+    "conda_name": "art",
+    "import_name": "",
+    "pypi_name": "python-art",
+    "source": "parselmouth"
+  },
+  "python-asana": {
+    "conda_name": "asana",
+    "import_name": "",
+    "pypi_name": "python-asana",
+    "source": "parselmouth"
+  },
+  "python-attr": {
+    "conda_name": "attr",
+    "import_name": "",
+    "pypi_name": "python-attr",
+    "source": "parselmouth"
+  },
+  "python-avro": {
+    "conda_name": "avro-python3",
+    "import_name": "",
+    "pypi_name": "python-avro",
+    "source": "parselmouth"
+  },
+  "python-backtrace": {
+    "conda_name": "backtrace",
+    "import_name": "",
+    "pypi_name": "python-backtrace",
+    "source": "parselmouth"
+  },
+  "python-blockbuster": {
+    "conda_name": "blockbuster",
+    "import_name": "",
+    "pypi_name": "python-blockbuster",
+    "source": "parselmouth"
+  },
+  "python-blosc": {
+    "conda_name": "blosc",
+    "import_name": "",
+    "pypi_name": "python-blosc",
+    "source": "parselmouth"
+  },
+  "python-blosc2": {
+    "conda_name": "blosc2",
+    "import_name": "",
+    "pypi_name": "python-blosc2",
+    "source": "parselmouth"
+  },
+  "python-build": {
+    "conda_name": "build",
+    "import_name": "",
+    "pypi_name": "python-build",
+    "source": "parselmouth"
+  },
+  "python-cdo": {
+    "conda_name": "cdo",
+    "import_name": "",
+    "pypi_name": "python-cdo",
+    "source": "parselmouth"
+  },
+  "python-chromedriver-binary": {
+    "conda_name": "chromedriver-binary",
+    "import_name": "",
+    "pypi_name": "python-chromedriver-binary",
+    "source": "parselmouth"
+  },
+  "python-cityhash": {
+    "conda_name": "cityhash",
+    "import_name": "",
+    "pypi_name": "python-cityhash",
+    "source": "parselmouth"
+  },
+  "python-clingox": {
+    "conda_name": "clingox",
+    "import_name": "",
+    "pypi_name": "python-clingox",
+    "source": "parselmouth"
+  },
+  "python-confluent-kafka": {
+    "conda_name": "confluent-kafka",
+    "import_name": "",
+    "pypi_name": "python-confluent-kafka",
+    "source": "parselmouth"
+  },
+  "python-coreapi": {
+    "conda_name": "coreapi",
+    "import_name": "",
+    "pypi_name": "python-coreapi",
+    "source": "parselmouth"
+  },
+  "python-coreschema": {
+    "conda_name": "coreschema",
+    "import_name": "",
+    "pypi_name": "python-coreschema",
+    "source": "parselmouth"
+  },
+  "python-couchdb": {
+    "conda_name": "couchdb",
+    "import_name": "",
+    "pypi_name": "python-couchdb",
+    "source": "parselmouth"
+  },
+  "python-cppcolormap": {
+    "conda_name": "cppcolormap",
+    "import_name": "",
+    "pypi_name": "python-cppcolormap",
+    "source": "parselmouth"
+  },
+  "python-cudnn-frontend": {
+    "conda_name": "nvidia-cudnn-frontend",
+    "import_name": "",
+    "pypi_name": "python-cudnn-frontend",
+    "source": "parselmouth"
+  },
+  "python-cufflinks": {
+    "conda_name": "cufflinks",
+    "import_name": "",
+    "pypi_name": "python-cufflinks",
+    "source": "parselmouth"
+  },
+  "python-damask": {
+    "conda_name": "damask",
+    "import_name": "",
+    "pypi_name": "python-damask",
+    "source": "parselmouth"
+  },
+  "python-dashing": {
+    "conda_name": "dashing",
+    "import_name": "",
+    "pypi_name": "python-dashing",
+    "source": "parselmouth"
+  },
+  "python-datamatrix": {
+    "conda_name": "datamatrix",
+    "import_name": "datamatrix",
+    "pypi_name": "python-datamatrix",
+    "source": "grayskull"
+  },
+  "python-devtools": {
+    "conda_name": "devtools",
+    "import_name": "",
+    "pypi_name": "python-devtools",
+    "source": "parselmouth"
+  },
+  "python-dokuwiki": {
+    "conda_name": "dokuwiki",
+    "import_name": "",
+    "pypi_name": "python-dokuwiki",
+    "source": "parselmouth"
+  },
+  "python-dremio-client": {
+    "conda_name": "dremio-client",
+    "import_name": "",
+    "pypi_name": "python-dremio-client",
+    "source": "parselmouth"
+  },
+  "python-duckdb": {
+    "conda_name": "duckdb",
+    "import_name": "",
+    "pypi_name": "python-duckdb",
+    "source": "parselmouth"
+  },
+  "python-eccodes": {
+    "conda_name": "eccodes",
+    "import_name": "",
+    "pypi_name": "python-eccodes",
+    "source": "parselmouth"
+  },
+  "python-elf": {
+    "conda_name": "elf",
+    "import_name": "",
+    "pypi_name": "python-elf",
+    "source": "parselmouth"
+  },
+  "python-embree": {
+    "conda_name": "embree",
+    "import_name": "",
+    "pypi_name": "python-embree",
+    "source": "parselmouth"
+  },
+  "python-fastjsonschema": {
+    "conda_name": "fastjsonschema",
+    "import_name": "",
+    "pypi_name": "python-fastjsonschema",
+    "source": "parselmouth"
+  },
+  "python-fileinspector": {
+    "conda_name": "fileinspector",
+    "import_name": "fileinspector",
+    "pypi_name": "python-fileinspector",
+    "source": "cf_graph"
+  },
+  "python-fitparse": {
+    "conda_name": "fitparse",
+    "import_name": "",
+    "pypi_name": "python-fitparse",
+    "source": "parselmouth"
+  },
+  "python-flair": {
+    "conda_name": "flair",
+    "import_name": "",
+    "pypi_name": "python-flair",
+    "source": "parselmouth"
+  },
+  "python-flatbuffers": {
+    "conda_name": "flatbuffers",
+    "import_name": "",
+    "pypi_name": "python-flatbuffers",
+    "source": "parselmouth"
+  },
+  "python-fpe": {
+    "conda_name": "ff3",
+    "import_name": "",
+    "pypi_name": "python-fpe",
+    "source": "parselmouth"
+  },
+  "python-framel": {
+    "conda_name": "framel",
+    "import_name": "",
+    "pypi_name": "python-framel",
+    "source": "parselmouth"
+  },
+  "python-frictionqpotfem": {
+    "conda_name": "frictionqpotfem",
+    "import_name": "",
+    "pypi_name": "python-frictionqpotfem",
+    "source": "parselmouth"
+  },
+  "python-frictionqpotspringblock": {
+    "conda_name": "frictionqpotspringblock",
+    "import_name": "",
+    "pypi_name": "python-frictionqpotspringblock",
+    "source": "parselmouth"
+  },
+  "python-geotiff": {
+    "conda_name": "geotiff",
+    "import_name": "",
+    "pypi_name": "python-geotiff",
+    "source": "parselmouth"
+  },
+  "python-gfal2": {
+    "conda_name": "gfal2-python",
+    "import_name": "",
+    "pypi_name": "python-gfal2",
+    "source": "parselmouth"
+  },
+  "python-ghostscript": {
+    "conda_name": "ghostscript",
+    "import_name": "",
+    "pypi_name": "python-ghostscript",
+    "source": "parselmouth"
+  },
+  "python-gmatelastic": {
+    "conda_name": "gmatelastic",
+    "import_name": "",
+    "pypi_name": "python-gmatelastic",
+    "source": "parselmouth"
+  },
+  "python-gmatelastoplastic": {
+    "conda_name": "gmatelastoplastic",
+    "import_name": "",
+    "pypi_name": "python-gmatelastoplastic",
+    "source": "parselmouth"
+  },
+  "python-gmatelastoplasticfinitestrainsimo": {
+    "conda_name": "gmatelastoplasticfinitestrainsimo",
+    "import_name": "",
+    "pypi_name": "python-gmatelastoplasticfinitestrainsimo",
+    "source": "parselmouth"
+  },
+  "python-gmatelastoplasticqpot": {
+    "conda_name": "gmatelastoplasticqpot",
+    "import_name": "",
+    "pypi_name": "python-gmatelastoplasticqpot",
+    "source": "parselmouth"
+  },
+  "python-gmatelastoplasticqpot3d": {
+    "conda_name": "gmatelastoplasticqpot3d",
+    "import_name": "",
+    "pypi_name": "python-gmatelastoplasticqpot3d",
+    "source": "parselmouth"
+  },
+  "python-gmatnonlinearelastic": {
+    "conda_name": "gmatnonlinearelastic",
+    "import_name": "",
+    "pypi_name": "python-gmatnonlinearelastic",
+    "source": "parselmouth"
+  },
+  "python-gmattensor": {
+    "conda_name": "gmattensor",
+    "import_name": "",
+    "pypi_name": "python-gmattensor",
+    "source": "parselmouth"
+  },
+  "python-gooseepm": {
+    "conda_name": "gooseepm",
+    "import_name": "",
+    "pypi_name": "python-gooseepm",
+    "source": "parselmouth"
+  },
+  "python-gooseeye": {
+    "conda_name": "gooseeye",
+    "import_name": "",
+    "pypi_name": "python-gooseeye",
+    "source": "parselmouth"
+  },
+  "python-goosefem": {
+    "conda_name": "goosefem",
+    "import_name": "",
+    "pypi_name": "python-goosefem",
+    "source": "parselmouth"
+  },
+  "python-graphviz": {
+    "conda_name": "graphviz",
+    "import_name": "",
+    "pypi_name": "python-graphviz",
+    "source": "parselmouth"
+  },
+  "python-gssapi": {
+    "conda_name": "gssapi",
+    "import_name": "",
+    "pypi_name": "python-gssapi",
+    "source": "parselmouth"
+  },
+  "python-hdfs": {
+    "conda_name": "hdfs",
+    "import_name": "",
+    "pypi_name": "python-hdfs",
+    "source": "parselmouth"
+  },
+  "python-help2man": {
+    "conda_name": "help2man",
+    "import_name": "",
+    "pypi_name": "python-help2man",
+    "source": "parselmouth"
+  },
+  "python-htcondor": {
+    "conda_name": "htcondor",
+    "import_name": "",
+    "pypi_name": "python-htcondor",
+    "source": "parselmouth"
+  },
+  "python-hyperscan": {
+    "conda_name": "hyperscan",
+    "import_name": "",
+    "pypi_name": "python-hyperscan",
+    "source": "parselmouth"
+  },
+  "python-icc": {
+    "conda_name": "icc",
+    "import_name": "",
+    "pypi_name": "python-icc",
+    "source": "parselmouth"
+  },
+  "python-igraph": {
+    "conda_name": "igraph",
+    "import_name": "",
+    "pypi_name": "python-igraph",
+    "source": "parselmouth"
+  },
+  "python-infomap": {
+    "conda_name": "infomap",
+    "import_name": "",
+    "pypi_name": "python-infomap",
+    "source": "parselmouth"
+  },
+  "python-installer": {
+    "conda_name": "installer",
+    "import_name": "",
+    "pypi_name": "python-installer",
+    "source": "parselmouth"
+  },
+  "python-isal": {
+    "conda_name": "isal",
+    "import_name": "",
+    "pypi_name": "python-isal",
+    "source": "parselmouth"
+  },
+  "python-javapackages-conda-aarch64": {
+    "conda_name": "javapackages",
+    "import_name": "",
+    "pypi_name": "python-javapackages-conda-aarch64",
+    "source": "parselmouth"
+  },
+  "python-javapackages-conda-ppc64le": {
+    "conda_name": "javapackages",
+    "import_name": "",
+    "pypi_name": "python-javapackages-conda-ppc64le",
+    "source": "parselmouth"
+  },
+  "python-javapackages-conda-x86-64": {
+    "conda_name": "javapackages",
+    "import_name": "",
+    "pypi_name": "python-javapackages-conda-x86_64",
+    "source": "parselmouth"
+  },
+  "python-javapackages-cos7-aarch64": {
+    "conda_name": "javapackages",
+    "import_name": "",
+    "pypi_name": "python-javapackages-cos7-aarch64",
+    "source": "parselmouth"
+  },
+  "python-javapackages-cos7-ppc64le": {
+    "conda_name": "javapackages",
+    "import_name": "",
+    "pypi_name": "python-javapackages-cos7-ppc64le",
+    "source": "parselmouth"
+  },
+  "python-javapackages-cos7-x86-64": {
+    "conda_name": "javapackages",
+    "import_name": "",
+    "pypi_name": "python-javapackages-cos7-x86_64",
+    "source": "parselmouth"
+  },
+  "python-jsii": {
+    "conda_name": "jsii",
+    "import_name": "",
+    "pypi_name": "python-jsii",
+    "source": "parselmouth"
+  },
+  "python-kaleido": {
+    "conda_name": "kaleido",
+    "import_name": "",
+    "pypi_name": "python-kaleido",
+    "source": "parselmouth"
+  },
+  "python-kerberos": {
+    "conda_name": "kerberos",
+    "import_name": "",
+    "pypi_name": "python-kerberos",
+    "source": "parselmouth"
+  },
+  "python-kubernetes": {
+    "conda_name": "kubernetes",
+    "import_name": "",
+    "pypi_name": "python-kubernetes",
+    "source": "parselmouth"
+  },
+  "python-leveldb": {
+    "conda_name": "leveldb",
+    "import_name": "",
+    "pypi_name": "python-leveldb",
+    "source": "parselmouth"
+  },
+  "python-libaio": {
+    "conda_name": "libaio",
+    "import_name": "",
+    "pypi_name": "python-libaio",
+    "source": "parselmouth"
+  },
+  "python-libarchive-c": {
+    "conda_name": "libarchive-c",
+    "import_name": "",
+    "pypi_name": "python-libarchive-c",
+    "source": "parselmouth"
+  },
+  "python-librt": {
+    "conda_name": "librt",
+    "import_name": "",
+    "pypi_name": "python-librt",
+    "source": "parselmouth"
+  },
+  "python-lmdb": {
+    "conda_name": "lmdb",
+    "import_name": "",
+    "pypi_name": "python-lmdb",
+    "source": "parselmouth"
+  },
+  "python-lrcalc": {
+    "conda_name": "lrcalc",
+    "import_name": "",
+    "pypi_name": "python-lrcalc",
+    "source": "parselmouth"
+  },
+  "python-lsp-server-base": {
+    "conda_name": "python-lsp-server",
+    "import_name": "",
+    "pypi_name": "python-lsp-server-base",
+    "source": "parselmouth"
+  },
+  "python-marisa-trie": {
+    "conda_name": "marisa-trie",
+    "import_name": "",
+    "pypi_name": "python-marisa-trie",
+    "source": "parselmouth"
+  },
+  "python-metatensor-core": {
+    "conda_name": "metatensor-core",
+    "import_name": "",
+    "pypi_name": "python-metatensor-core",
+    "source": "parselmouth"
+  },
+  "python-metatensor-learn": {
+    "conda_name": "metatensor-learn",
+    "import_name": "",
+    "pypi_name": "python-metatensor-learn",
+    "source": "parselmouth"
+  },
+  "python-metatensor-operations": {
+    "conda_name": "metatensor-operations",
+    "import_name": "",
+    "pypi_name": "python-metatensor-operations",
+    "source": "parselmouth"
+  },
+  "python-metatensor-torch": {
+    "conda_name": "metatensor-torch",
+    "import_name": "",
+    "pypi_name": "python-metatensor-torch",
+    "source": "parselmouth"
+  },
+  "python-metatomic-torch": {
+    "conda_name": "metatomic-torch",
+    "import_name": "",
+    "pypi_name": "python-metatomic-torch",
+    "source": "parselmouth"
+  },
+  "python-miranda": {
+    "conda_name": "miranda",
+    "import_name": "",
+    "pypi_name": "python-miranda",
+    "source": "parselmouth"
+  },
+  "python-mss": {
+    "conda_name": "mss",
+    "import_name": "",
+    "pypi_name": "python-mss",
+    "source": "parselmouth"
+  },
+  "python-neo": {
+    "conda_name": "neo",
+    "import_name": "",
+    "pypi_name": "python-neo",
+    "source": "parselmouth"
+  },
+  "python-node-semver": {
+    "conda_name": "node-semver",
+    "import_name": "",
+    "pypi_name": "python-node-semver",
+    "source": "parselmouth"
+  },
+  "python-opencv": {
+    "conda_name": "opencv",
+    "import_name": "cv2",
+    "pypi_name": "python-opencv",
+    "source": "grayskull"
+  },
+  "python-packit": {
+    "conda_name": "packit",
+    "import_name": "",
+    "pypi_name": "python-packit",
+    "source": "parselmouth"
+  },
+  "python-paragraph": {
+    "conda_name": "paragraph",
+    "import_name": "",
+    "pypi_name": "python-paragraph",
+    "source": "parselmouth"
+  },
+  "python-pdal": {
+    "conda_name": "pdal",
+    "import_name": "",
+    "pypi_name": "python-pdal",
+    "source": "parselmouth"
+  },
+  "python-pdfkit": {
+    "conda_name": "pdfkit",
+    "import_name": "",
+    "pypi_name": "python-pdfkit",
+    "source": "parselmouth"
+  },
+  "python-pegasus-wms": {
+    "conda_name": "pegasus-wms",
+    "import_name": "",
+    "pypi_name": "python-pegasus-wms",
+    "source": "parselmouth"
+  },
+  "python-planarity": {
+    "conda_name": "planarity",
+    "import_name": "",
+    "pypi_name": "python-planarity",
+    "source": "parselmouth"
+  },
+  "python-primesieve": {
+    "conda_name": "primesieve",
+    "import_name": "",
+    "pypi_name": "python-primesieve",
+    "source": "parselmouth"
+  },
+  "python-prrng": {
+    "conda_name": "prrng",
+    "import_name": "",
+    "pypi_name": "python-prrng",
+    "source": "parselmouth"
+  },
+  "python-pseudorandom": {
+    "conda_name": "pseudorandom",
+    "import_name": "pseudorandom",
+    "pypi_name": "python-pseudorandom",
+    "source": "cf_graph"
+  },
+  "python-pygaze": {
+    "conda_name": "pygaze",
+    "import_name": "pygaze",
+    "pypi_name": "python-pygaze",
+    "source": "cf_graph"
+  },
+  "python-qdatamatrix": {
+    "conda_name": "qdatamatrix",
+    "import_name": "qdatamatrix",
+    "pypi_name": "python-qdatamatrix",
+    "source": "cf_graph"
+  },
+  "python-qnotifications": {
+    "conda_name": "qnotifications",
+    "import_name": "QNotifications",
+    "pypi_name": "python-qnotifications",
+    "source": "cf_graph"
+  },
+  "python-qpot": {
+    "conda_name": "qpot",
+    "import_name": "",
+    "pypi_name": "python-qpot",
+    "source": "parselmouth"
+  },
+  "python-quickjs": {
+    "conda_name": "quickjs",
+    "import_name": "",
+    "pypi_name": "python-quickjs",
+    "source": "parselmouth"
+  },
+  "python-relion": {
+    "conda_name": "relion",
+    "import_name": "",
+    "pypi_name": "python-relion",
+    "source": "parselmouth"
+  },
+  "python-seispy": {
+    "conda_name": "seispy",
+    "import_name": "seispy",
+    "pypi_name": "python-seispy",
+    "source": "cf_graph"
+  },
+  "python-selinux": {
+    "conda_name": "selinux",
+    "import_name": "",
+    "pypi_name": "python-selinux",
+    "source": "parselmouth"
+  },
+  "python-snap": {
+    "conda_name": "snap",
+    "import_name": "",
+    "pypi_name": "python-snap",
+    "source": "parselmouth"
+  },
+  "python-sounddevice": {
+    "conda_name": "sounddevice",
+    "import_name": "",
+    "pypi_name": "python-sounddevice",
+    "source": "parselmouth"
+  },
+  "python-spake2": {
+    "conda_name": "spake2",
+    "import_name": "",
+    "pypi_name": "python-spake2",
+    "source": "parselmouth"
+  },
+  "python-spams": {
+    "conda_name": "spams",
+    "import_name": "",
+    "pypi_name": "python-spams",
+    "source": "parselmouth"
+  },
+  "python-stratify": {
+    "conda_name": "stratify",
+    "import_name": "",
+    "pypi_name": "python-stratify",
+    "source": "parselmouth"
+  },
+  "python-substrait": {
+    "conda_name": "substrait",
+    "import_name": "",
+    "pypi_name": "python-substrait",
+    "source": "parselmouth"
+  },
+  "python-suitesparse-graphblas": {
+    "conda_name": "suitesparse-graphblas",
+    "import_name": "",
+    "pypi_name": "python-suitesparse-graphblas",
+    "source": "parselmouth"
+  },
+  "python-symengine": {
+    "conda_name": "symengine",
+    "import_name": "",
+    "pypi_name": "python-symengine",
+    "source": "parselmouth"
+  },
+  "python-systemd": {
+    "conda_name": "systemd-python",
+    "import_name": "",
+    "pypi_name": "python-systemd",
+    "source": "parselmouth"
+  },
+  "python-taplo": {
+    "conda_name": "taplo",
+    "import_name": "",
+    "pypi_name": "python-taplo",
+    "source": "parselmouth"
+  },
+  "python-termstyle": {
+    "conda_name": "termstyle",
+    "import_name": "",
+    "pypi_name": "python-termstyle",
+    "source": "parselmouth"
+  },
+  "python-tlsh": {
+    "conda_name": "tlsh",
+    "import_name": "",
+    "pypi_name": "python-tlsh",
+    "source": "parselmouth"
+  },
+  "python-tzdata": {
+    "conda_name": "tzdata",
+    "import_name": "",
+    "pypi_name": "python-tzdata",
+    "source": "parselmouth"
+  },
+  "python-unicorn": {
+    "conda_name": "unicorn",
+    "import_name": "",
+    "pypi_name": "python-unicorn",
+    "source": "parselmouth"
+  },
+  "python-uv": {
+    "conda_name": "uv",
+    "import_name": "",
+    "pypi_name": "python-uv",
+    "source": "parselmouth"
+  },
+  "python-vesin": {
+    "conda_name": "vesin",
+    "import_name": "",
+    "pypi_name": "python-vesin",
+    "source": "parselmouth"
+  },
+  "python-vipaccess": {
+    "conda_name": "vipaccess",
+    "import_name": "vipaccess",
+    "pypi_name": "python-vipaccess",
+    "source": "cf_graph"
+  },
+  "python-wasmer": {
+    "conda_name": "wasmer",
+    "import_name": "",
+    "pypi_name": "python-wasmer",
+    "source": "parselmouth"
+  },
+  "python-wasmer-compiler-cranelift": {
+    "conda_name": "wasmer-compiler-cranelift",
+    "import_name": "",
+    "pypi_name": "python-wasmer-compiler-cranelift",
+    "source": "parselmouth"
+  },
+  "python-wasmer-compiler-llvm": {
+    "conda_name": "wasmer-compiler-llvm",
+    "import_name": "",
+    "pypi_name": "python-wasmer-compiler-llvm",
+    "source": "parselmouth"
+  },
+  "python-wasmer-compiler-singlepass": {
+    "conda_name": "wasmer-compiler-cranelift",
+    "import_name": "",
+    "pypi_name": "python-wasmer-compiler-singlepass",
+    "source": "parselmouth"
+  },
+  "python-wget": {
+    "conda_name": "wget",
+    "import_name": "",
+    "pypi_name": "python-wget",
+    "source": "parselmouth"
+  },
+  "python-xxhash": {
+    "conda_name": "xxhash",
+    "import_name": "",
+    "pypi_name": "python-xxhash",
+    "source": "parselmouth"
+  },
+  "python-zlib-ng": {
+    "conda_name": "zlib-ng",
+    "import_name": "",
+    "pypi_name": "python-zlib-ng",
+    "source": "parselmouth"
+  },
+  "python-zstd": {
+    "conda_name": "zstd",
+    "import_name": "",
+    "pypi_name": "python-zstd",
+    "source": "parselmouth"
+  },
+  "pytorch": {
+    "conda_name": "torch",
+    "import_name": "",
+    "pypi_name": "pytorch",
+    "source": "parselmouth"
+  },
+  "pytorch-3dunet": {
+    "conda_name": "pytorch3dunet",
+    "import_name": "",
+    "pypi_name": "pytorch-3dunet",
+    "source": "parselmouth"
+  },
+  "pytorch-cluster": {
+    "conda_name": "torch-cluster",
+    "import_name": "",
+    "pypi_name": "pytorch_cluster",
+    "source": "parselmouth"
+  },
+  "pytorch-cpu": {
+    "conda_name": "torch",
+    "import_name": "",
+    "pypi_name": "pytorch-cpu",
+    "source": "parselmouth"
+  },
+  "pytorch-dp": {
+    "conda_name": "opacus",
+    "import_name": "",
+    "pypi_name": "pytorch-dp",
+    "source": "parselmouth"
+  },
+  "pytorch-geometric": {
+    "conda_name": "torch-geometric",
+    "import_name": "",
+    "pypi_name": "pytorch_geometric",
+    "source": "parselmouth"
+  },
+  "pytorch-scatter": {
+    "conda_name": "torch-scatter",
+    "import_name": "",
+    "pypi_name": "pytorch_scatter",
+    "source": "parselmouth"
+  },
+  "pytorch-sparse": {
+    "conda_name": "torch-sparse",
+    "import_name": "",
+    "pypi_name": "pytorch_sparse",
+    "source": "parselmouth"
+  },
+  "pytorch-spline-conv": {
+    "conda_name": "torch-spline-conv",
+    "import_name": "",
+    "pypi_name": "pytorch_spline_conv",
+    "source": "parselmouth"
+  },
+  "pytorchrl": {
+    "conda_name": "torchrl",
+    "import_name": "",
+    "pypi_name": "pytorchrl",
+    "source": "parselmouth"
+  },
+  "pytrack": {
+    "conda_name": "pytrack-lib",
+    "import_name": "",
+    "pypi_name": "pytrack",
+    "source": "parselmouth"
+  },
+  "pywebp": {
+    "conda_name": "webp",
+    "import_name": "",
+    "pypi_name": "pywebp",
+    "source": "parselmouth"
+  },
+  "qcfractal-core": {
+    "conda_name": "qcfractal",
+    "import_name": "",
+    "pypi_name": "qcfractal-core",
+    "source": "parselmouth"
+  },
+  "qdatamatrix": {
+    "conda_name": "python-qdatamatrix",
+    "import_name": "",
+    "pypi_name": "qdatamatrix",
+    "source": "parselmouth"
+  },
+  "qdldl-python": {
+    "conda_name": "qdldl",
+    "import_name": "",
+    "pypi_name": "qdldl-python",
+    "source": "parselmouth"
+  },
+  "qgis": {
+    "conda_name": "future",
+    "import_name": "",
+    "pypi_name": "qgis",
+    "source": "parselmouth"
+  },
+  "qnotifications": {
+    "conda_name": "python-qnotifications",
+    "import_name": "",
+    "pypi_name": "qnotifications",
+    "source": "parselmouth"
+  },
+  "qp": {
+    "conda_name": "qp-prob",
+    "import_name": "",
+    "pypi_name": "qp",
+    "source": "parselmouth"
+  },
+  "qrcode-artistic-base": {
+    "conda_name": "qrcode-artistic",
+    "import_name": "",
+    "pypi_name": "qrcode-artistic-base",
+    "source": "parselmouth"
+  },
+  "qscintilla2": {
+    "conda_name": "qscintilla",
+    "import_name": "",
+    "pypi_name": "qscintilla2",
+    "source": "parselmouth"
+  },
+  "qtconsole-base": {
+    "conda_name": "qtconsole",
+    "import_name": "",
+    "pypi_name": "qtconsole-base",
+    "source": "parselmouth"
+  },
+  "quantlib-python": {
+    "conda_name": "quantlib",
+    "import_name": "",
+    "pypi_name": "quantlib-python",
+    "source": "parselmouth"
+  },
+  "quaternion": {
+    "conda_name": "numpy-quaternion",
+    "import_name": "",
+    "pypi_name": "quaternion",
+    "source": "parselmouth"
+  },
+  "quest": {
+    "conda_name": "erdc-quest",
+    "import_name": "",
+    "pypi_name": "quest",
+    "source": "parselmouth"
+  },
+  "quetz": {
+    "conda_name": "quetz-server",
+    "import_name": "",
+    "pypi_name": "quetz",
+    "source": "parselmouth"
+  },
+  "quickjs": {
+    "conda_name": "python-quickjs",
+    "import_name": "quickjs",
+    "pypi_name": "quickjs",
+    "source": "cf_graph"
+  },
+  "quilt": {
+    "conda_name": "quilt3",
+    "import_name": "",
+    "pypi_name": "quilt",
+    "source": "parselmouth"
+  },
+  "quippy": {
+    "conda_name": "quippy-ase",
+    "import_name": "",
+    "pypi_name": "quippy",
+    "source": "parselmouth"
+  },
+  "raider-base": {
+    "conda_name": "raider",
+    "import_name": "",
+    "pypi_name": "raider-base",
+    "source": "parselmouth"
+  },
+  "raven-wps": {
+    "conda_name": "birdhouse-raven",
+    "import_name": "",
+    "pypi_name": "raven-wps",
+    "source": "parselmouth"
+  },
+  "ray": {
+    "conda_name": "ray-core",
+    "import_name": "ray",
+    "pypi_name": "ray",
+    "source": "cf_graph"
+  },
+  "ray-core": {
+    "conda_name": "ray",
+    "import_name": "",
+    "pypi_name": "ray-core",
+    "source": "parselmouth"
+  },
+  "rb-pygments-rb": {
+    "conda_name": "pygments",
+    "import_name": "",
+    "pypi_name": "rb-pygments.rb",
+    "source": "parselmouth"
+  },
+  "rbc": {
+    "conda_name": "rbc-project",
+    "import_name": "",
+    "pypi_name": "rbc",
+    "source": "parselmouth"
+  },
+  "rbc-project": {
+    "conda_name": "rbc",
+    "import_name": "rbc",
+    "pypi_name": "rbc-project",
+    "source": "cf_graph"
+  },
+  "redis": {
+    "conda_name": "redis-py",
+    "import_name": "redis",
+    "pypi_name": "redis",
+    "source": "cf_graph"
+  },
+  "redis-py": {
+    "conda_name": "redis",
+    "import_name": "",
+    "pypi_name": "redis-py",
+    "source": "parselmouth"
+  },
+  "redisgraph-py": {
+    "conda_name": "redisgraph",
+    "import_name": "",
+    "pypi_name": "redisgraph-py",
+    "source": "parselmouth"
+  },
+  "releases": {
+    "conda_name": "sphinx-releases",
+    "import_name": "releases",
+    "pypi_name": "releases",
+    "source": "cf_graph"
+  },
+  "relion": {
+    "conda_name": "python-relion",
+    "import_name": "relion",
+    "pypi_name": "relion",
+    "source": "cf_graph"
+  },
+  "renishaw-wire": {
+    "conda_name": "renishawwire",
+    "import_name": "",
+    "pypi_name": "renishaw_wire",
+    "source": "parselmouth"
+  },
+  "rethinkdb": {
+    "conda_name": "rethinkdb-python",
+    "import_name": "rethinkdb",
+    "pypi_name": "rethinkdb",
+    "source": "cf_graph"
+  },
+  "rethinkdb-python": {
+    "conda_name": "rethinkdb",
+    "import_name": "",
+    "pypi_name": "rethinkdb-python",
+    "source": "parselmouth"
+  },
+  "rever": {
+    "conda_name": "re-ver",
+    "import_name": "",
+    "pypi_name": "rever",
+    "source": "parselmouth"
+  },
+  "ribs": {
+    "conda_name": "pyribs-base",
+    "import_name": "ribs",
+    "pypi_name": "ribs",
+    "source": "cf_graph"
+  },
+  "ringdecomposerlib-python": {
+    "conda_name": "py-rdl",
+    "import_name": "",
+    "pypi_name": "ringdecomposerlib-python",
+    "source": "parselmouth"
+  },
+  "river-py": {
+    "conda_name": "river",
+    "import_name": "",
+    "pypi_name": "river-py",
+    "source": "parselmouth"
+  },
+  "robotraconteur-companion-python": {
+    "conda_name": "robotraconteurcompanion",
+    "import_name": "",
+    "pypi_name": "robotraconteur_companion_python",
+    "source": "parselmouth"
+  },
+  "rocketpyalpha": {
+    "conda_name": "rocketpy",
+    "import_name": "rocketpy",
+    "pypi_name": "rocketpyalpha",
+    "source": "grayskull"
+  },
+  "rosettasciio-base": {
+    "conda_name": "rosettasciio",
+    "import_name": "",
+    "pypi_name": "rosettasciio-base",
+    "source": "parselmouth"
+  },
+  "rpm-tools": {
+    "conda_name": "rpm",
+    "import_name": "",
+    "pypi_name": "rpm-tools",
+    "source": "parselmouth"
+  },
+  "ruamel-yaml": {
+    "conda_name": "ruamel-yaml-conda",
+    "import_name": "",
+    "pypi_name": "ruamel_yaml",
+    "source": "parselmouth"
+  },
+  "s2geometry-python": {
+    "conda_name": "s2geometry",
+    "import_name": "",
+    "pypi_name": "s2geometry-python",
+    "source": "parselmouth"
+  },
+  "sagelib": {
+    "conda_name": "sage-conf",
+    "import_name": "",
+    "pypi_name": "sagelib",
+    "source": "parselmouth"
+  },
+  "sagemaker-inference-toolkit": {
+    "conda_name": "sagemaker-inference",
+    "import_name": "",
+    "pypi_name": "sagemaker-inference-toolkit",
+    "source": "parselmouth"
+  },
+  "sagemaker-mxnet-container": {
+    "conda_name": "sagemaker-mxnet-training",
+    "import_name": "",
+    "pypi_name": "sagemaker_mxnet_container",
+    "source": "parselmouth"
+  },
+  "sagemaker-mxnet-serving-container": {
+    "conda_name": "sagemaker-mxnet-inference",
+    "import_name": "",
+    "pypi_name": "sagemaker-mxnet-serving-container",
+    "source": "parselmouth"
+  },
+  "sagemaker-mxnet-training": {
+    "conda_name": "sagemaker_mxnet_container",
+    "import_name": "sagemaker_mxnet_container",
+    "pypi_name": "sagemaker-mxnet-training",
+    "source": "cf_graph"
+  },
+  "sagemaker-python-sdk": {
+    "conda_name": "sagemaker",
+    "import_name": "",
+    "pypi_name": "sagemaker-python-sdk",
+    "source": "parselmouth"
+  },
+  "sagemaker-pytorch-container": {
+    "conda_name": "sagemaker-pytorch-training",
+    "import_name": "",
+    "pypi_name": "sagemaker-pytorch-container",
+    "source": "parselmouth"
+  },
+  "sagemaker-pytorch-serving-container": {
+    "conda_name": "sagemaker-pytorch-inference",
+    "import_name": "",
+    "pypi_name": "sagemaker-pytorch-serving-container",
+    "source": "parselmouth"
+  },
+  "sagemaker-tensorflow-container": {
+    "conda_name": "sagemaker-tensorflow-training",
+    "import_name": "",
+    "pypi_name": "sagemaker-tensorflow-container",
+    "source": "parselmouth"
+  },
+  "sardana-core": {
+    "conda_name": "sardana",
+    "import_name": "",
+    "pypi_name": "sardana-core",
+    "source": "parselmouth"
+  },
+  "scikit-geometry": {
+    "conda_name": "skgeom",
+    "import_name": "",
+    "pypi_name": "scikit-geometry",
+    "source": "parselmouth"
+  },
+  "scine-database-python": {
+    "conda_name": "scine-database",
+    "import_name": "",
+    "pypi_name": "scine-database-python",
+    "source": "parselmouth"
+  },
+  "scine-readuct-python": {
+    "conda_name": "scine-readuct",
+    "import_name": "",
+    "pypi_name": "scine-readuct-python",
+    "source": "parselmouth"
+  },
+  "scine-sparrow-python": {
+    "conda_name": "scine-sparrow",
+    "import_name": "",
+    "pypi_name": "scine-sparrow-python",
+    "source": "parselmouth"
+  },
+  "scine-utilities-python": {
+    "conda_name": "scine-utilities",
+    "import_name": "",
+    "pypi_name": "scine-utilities-python",
+    "source": "parselmouth"
+  },
+  "scine-xtb-python": {
+    "conda_name": "scine-xtb-wrapper",
+    "import_name": "",
+    "pypi_name": "scine-xtb-python",
+    "source": "parselmouth"
+  },
+  "scrapbook-build": {
+    "conda_name": "scrapbook",
+    "import_name": "",
+    "pypi_name": "scrapbook-build",
+    "source": "parselmouth"
+  },
+  "scripting": {
+    "conda_name": "py-scripting",
+    "import_name": "",
+    "pypi_name": "scripting",
+    "source": "parselmouth"
+  },
+  "seaborn-base": {
+    "conda_name": "seaborn",
+    "import_name": "",
+    "pypi_name": "seaborn-base",
+    "source": "parselmouth"
+  },
+  "seekr2-openmm-plugin": {
+    "conda_name": "seekr2plugin",
+    "import_name": "",
+    "pypi_name": "seekr2_openmm_plugin",
+    "source": "parselmouth"
+  },
+  "segment-anything": {
+    "conda_name": "segment-anything-py",
+    "import_name": "",
+    "pypi_name": "segment-anything",
+    "source": "parselmouth"
+  },
+  "segment-anything-py": {
+    "conda_name": "segment-anything",
+    "import_name": "segment_anything",
+    "pypi_name": "segment-anything-py",
+    "source": "cf_graph"
+  },
+  "seispy": {
+    "conda_name": "python-seispy",
+    "import_name": "",
+    "pypi_name": "seispy",
+    "source": "parselmouth"
+  },
+  "selinux": {
+    "conda_name": "python-selinux",
+    "import_name": "selinux",
+    "pypi_name": "selinux",
+    "source": "cf_graph"
+  },
+  "sentencepiece-python": {
+    "conda_name": "sentencepiece",
+    "import_name": "",
+    "pypi_name": "sentencepiece-python",
+    "source": "parselmouth"
+  },
+  "shedsidewinder": {
+    "conda_name": "shed-sidewinder",
+    "import_name": "",
+    "pypi_name": "shedsidewinder",
+    "source": "parselmouth"
+  },
+  "silx-base": {
+    "conda_name": "silx",
+    "import_name": "",
+    "pypi_name": "silx-base",
+    "source": "parselmouth"
+  },
+  "skprogs-python": {
+    "conda_name": "sktools",
+    "import_name": "",
+    "pypi_name": "skprogs-python",
+    "source": "parselmouth"
+  },
+  "skypilot-aws": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-aws",
+    "source": "parselmouth"
+  },
+  "skypilot-cloudflare": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-cloudflare",
+    "source": "parselmouth"
+  },
+  "skypilot-docker": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-docker",
+    "source": "parselmouth"
+  },
+  "skypilot-gcp": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-gcp",
+    "source": "parselmouth"
+  },
+  "skypilot-kubernetes": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-kubernetes",
+    "source": "parselmouth"
+  },
+  "skypilot-lambda": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-lambda",
+    "source": "parselmouth"
+  },
+  "skypilot-oci": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-oci",
+    "source": "parselmouth"
+  },
+  "skypilot-remote": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-remote",
+    "source": "parselmouth"
+  },
+  "skypilot-scp": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-scp",
+    "source": "parselmouth"
+  },
+  "skypilot-vsphere": {
+    "conda_name": "skypilot",
+    "import_name": "",
+    "pypi_name": "skypilot-vsphere",
+    "source": "parselmouth"
+  },
+  "smee-base": {
+    "conda_name": "smee",
+    "import_name": "",
+    "pypi_name": "smee-base",
+    "source": "parselmouth"
+  },
+  "smokescreen": {
+    "conda_name": "lsstdesc-smokescreen",
+    "import_name": "smokescreen",
+    "pypi_name": "smokescreen",
+    "source": "cf_graph"
+  },
+  "solaris": {
+    "conda_name": "shapely",
+    "import_name": "",
+    "pypi_name": "solaris",
+    "source": "parselmouth"
+  },
+  "soundcard": {
+    "conda_name": "pysoundcard",
+    "import_name": "soundcard",
+    "pypi_name": "soundcard",
+    "source": "cf_graph"
+  },
+  "sounddevice": {
+    "conda_name": "python-sounddevice",
+    "import_name": "sounddevice",
+    "pypi_name": "sounddevice",
+    "source": "cf_graph"
+  },
+  "soundfile": {
+    "conda_name": "pysoundfile",
+    "import_name": "soundfile",
+    "pypi_name": "soundfile",
+    "source": "cf_graph"
+  },
+  "sourmash-minimal": {
+    "conda_name": "sourmash",
+    "import_name": "",
+    "pypi_name": "sourmash-minimal",
+    "source": "parselmouth"
+  },
+  "soxr": {
+    "conda_name": "soxr-python",
+    "import_name": "soxr",
+    "pypi_name": "soxr",
+    "source": "cf_graph"
+  },
+  "soxr-python": {
+    "conda_name": "soxr",
+    "import_name": "",
+    "pypi_name": "soxr-python",
+    "source": "parselmouth"
+  },
+  "spacy-model-ca-core-news-lg": {
+    "conda_name": "ca-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-ca_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-ca-core-news-md": {
+    "conda_name": "ca-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-ca_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-ca-core-news-sm": {
+    "conda_name": "ca-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-ca_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-ca-core-news-trf": {
+    "conda_name": "ca-core-news-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-ca_core_news_trf",
+    "source": "parselmouth"
+  },
+  "spacy-model-da-core-news-lg": {
+    "conda_name": "da-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-da_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-da-core-news-md": {
+    "conda_name": "da-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-da_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-da-core-news-sm": {
+    "conda_name": "da-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-da_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-da-core-news-trf": {
+    "conda_name": "da-core-news-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-da_core_news_trf",
+    "source": "parselmouth"
+  },
+  "spacy-model-de-core-news-lg": {
+    "conda_name": "de-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-de_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-de-core-news-md": {
+    "conda_name": "de-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-de_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-de-core-news-sm": {
+    "conda_name": "de-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-de_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-de-dep-news-trf": {
+    "conda_name": "de-dep-news-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-de_dep_news_trf",
+    "source": "parselmouth"
+  },
+  "spacy-model-el-core-news-lg": {
+    "conda_name": "el-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-el_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-el-core-news-md": {
+    "conda_name": "el-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-el_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-el-core-news-sm": {
+    "conda_name": "el-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-el_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-en-core-web-lg": {
+    "conda_name": "en-core-web-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-en_core_web_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-en-core-web-md": {
+    "conda_name": "en-core-web-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-en_core_web_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-en-core-web-sm": {
+    "conda_name": "en-core-web-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-en_core_web_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-en-core-web-trf": {
+    "conda_name": "en-core-web-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-en_core_web_trf",
+    "source": "parselmouth"
+  },
+  "spacy-model-en-vectors-web-lg": {
+    "conda_name": "en-vectors-web-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-en_vectors_web_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-es-core-news-lg": {
+    "conda_name": "es-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-es_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-es-core-news-md": {
+    "conda_name": "es-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-es_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-es-core-news-sm": {
+    "conda_name": "es-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-es_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-es-dep-news-trf": {
+    "conda_name": "es-dep-news-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-es_dep_news_trf",
+    "source": "parselmouth"
+  },
+  "spacy-model-fi-core-news-lg": {
+    "conda_name": "fi-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-fi_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-fi-core-news-md": {
+    "conda_name": "fi-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-fi_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-fi-core-news-sm": {
+    "conda_name": "fi-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-fi_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-fr-core-news-lg": {
+    "conda_name": "fr-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-fr_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-fr-core-news-md": {
+    "conda_name": "fr-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-fr_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-fr-core-news-sm": {
+    "conda_name": "fr-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-fr_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-fr-dep-news-trf": {
+    "conda_name": "fr-dep-news-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-fr_dep_news_trf",
+    "source": "parselmouth"
+  },
+  "spacy-model-hr-core-news-lg": {
+    "conda_name": "hr-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-hr_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-hr-core-news-md": {
+    "conda_name": "hr-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-hr_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-hr-core-news-sm": {
+    "conda_name": "hr-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-hr_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-it-core-news-lg": {
+    "conda_name": "it-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-it_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-it-core-news-md": {
+    "conda_name": "it-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-it_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-it-core-news-sm": {
+    "conda_name": "it-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-it_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-ja-core-news-lg": {
+    "conda_name": "ja-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-ja_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-ja-core-news-md": {
+    "conda_name": "ja-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-ja_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-ja-core-news-sm": {
+    "conda_name": "ja-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-ja_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-ja-core-news-trf": {
+    "conda_name": "ja-core-news-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-ja_core_news_trf",
+    "source": "parselmouth"
+  },
+  "spacy-model-ko-core-news-lg": {
+    "conda_name": "ko-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-ko_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-ko-core-news-md": {
+    "conda_name": "ko-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-ko_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-ko-core-news-sm": {
+    "conda_name": "ko-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-ko_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-lt-core-news-lg": {
+    "conda_name": "lt-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-lt_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-lt-core-news-md": {
+    "conda_name": "lt-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-lt_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-lt-core-news-sm": {
+    "conda_name": "lt-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-lt_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-mk-core-news-lg": {
+    "conda_name": "mk-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-mk_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-mk-core-news-md": {
+    "conda_name": "mk-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-mk_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-mk-core-news-sm": {
+    "conda_name": "mk-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-mk_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-nb-core-news-lg": {
+    "conda_name": "nb-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-nb_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-nb-core-news-md": {
+    "conda_name": "nb-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-nb_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-nb-core-news-sm": {
+    "conda_name": "nb-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-nb_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-nl-core-news-lg": {
+    "conda_name": "nl-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-nl_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-nl-core-news-md": {
+    "conda_name": "nl-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-nl_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-nl-core-news-sm": {
+    "conda_name": "nl-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-nl_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-pl-core-news-lg": {
+    "conda_name": "pl-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-pl_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-pl-core-news-md": {
+    "conda_name": "pl-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-pl_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-pl-core-news-sm": {
+    "conda_name": "pl-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-pl_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-pt-core-news-lg": {
+    "conda_name": "pt-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-pt_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-pt-core-news-md": {
+    "conda_name": "pt-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-pt_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-pt-core-news-sm": {
+    "conda_name": "pt-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-pt_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-ro-core-news-lg": {
+    "conda_name": "ro-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-ro_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-ro-core-news-md": {
+    "conda_name": "ro-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-ro_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-ro-core-news-sm": {
+    "conda_name": "ro-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-ro_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-ru-core-news-lg": {
+    "conda_name": "ru-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-ru_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-ru-core-news-md": {
+    "conda_name": "ru-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-ru_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-ru-core-news-sm": {
+    "conda_name": "ru-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-ru_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-sl-core-news-lg": {
+    "conda_name": "sl-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-sl_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-sl-core-news-md": {
+    "conda_name": "sl-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-sl_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-sl-core-news-sm": {
+    "conda_name": "sl-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-sl_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-sl-core-news-trf": {
+    "conda_name": "sl-core-news-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-sl_core_news_trf",
+    "source": "parselmouth"
+  },
+  "spacy-model-sv-core-news-lg": {
+    "conda_name": "sv-core-news-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-sv_core_news_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-sv-core-news-md": {
+    "conda_name": "sv-core-news-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-sv_core_news_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-sv-core-news-sm": {
+    "conda_name": "sv-core-news-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-sv_core_news_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-xx-ent-wiki-sm": {
+    "conda_name": "xx-ent-wiki-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-xx_ent_wiki_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-xx-sent-ud-sm": {
+    "conda_name": "xx-sent-ud-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-xx_sent_ud_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-zh-core-web-lg": {
+    "conda_name": "zh-core-web-lg",
+    "import_name": "",
+    "pypi_name": "spacy-model-zh_core_web_lg",
+    "source": "parselmouth"
+  },
+  "spacy-model-zh-core-web-md": {
+    "conda_name": "zh-core-web-md",
+    "import_name": "",
+    "pypi_name": "spacy-model-zh_core_web_md",
+    "source": "parselmouth"
+  },
+  "spacy-model-zh-core-web-sm": {
+    "conda_name": "zh-core-web-sm",
+    "import_name": "",
+    "pypi_name": "spacy-model-zh_core_web_sm",
+    "source": "parselmouth"
+  },
+  "spacy-model-zh-core-web-trf": {
+    "conda_name": "zh-core-web-trf",
+    "import_name": "",
+    "pypi_name": "spacy-model-zh_core_web_trf",
+    "source": "parselmouth"
+  },
+  "spec-kit": {
+    "conda_name": "specify-cli",
+    "import_name": "",
+    "pypi_name": "spec-kit",
+    "source": "parselmouth"
+  },
+  "spherematch": {
+    "conda_name": "smatch",
+    "import_name": "",
+    "pypi_name": "spherematch",
+    "source": "parselmouth"
+  },
+  "sphinx-releases": {
+    "conda_name": "releases",
+    "import_name": "",
+    "pypi_name": "sphinx-releases",
+    "source": "parselmouth"
+  },
+  "spiceql": {
+    "conda_name": "pyspiceql",
+    "import_name": "",
+    "pypi_name": "spiceql",
+    "source": "parselmouth"
+  },
+  "spyder-base": {
+    "conda_name": "spyder",
+    "import_name": "",
+    "pypi_name": "spyder-base",
+    "source": "parselmouth"
+  },
+  "spyre": {
+    "conda_name": "dataspyre",
+    "import_name": "",
+    "pypi_name": "spyre",
+    "source": "parselmouth"
+  },
+  "sqlalchemy-utils-base": {
+    "conda_name": "sqlalchemy-utils",
+    "import_name": "",
+    "pypi_name": "sqlalchemy-utils-base",
+    "source": "parselmouth"
+  },
+  "sqlite-zstd-python": {
+    "conda_name": "sqlite-zstd",
+    "import_name": "",
+    "pypi_name": "sqlite-zstd-python",
+    "source": "parselmouth"
+  },
+  "ssl-match-hostname": {
+    "conda_name": "backports-ssl-match-hostname",
+    "import_name": "",
+    "pypi_name": "ssl_match_hostname",
+    "source": "parselmouth"
+  },
+  "stackvana-lsst-distrib": {
+    "conda_name": "fgcm",
+    "import_name": "",
+    "pypi_name": "stackvana-lsst_distrib",
+    "source": "parselmouth"
+  },
+  "starlette-base": {
+    "conda_name": "starlette",
+    "import_name": "",
+    "pypi_name": "starlette-base",
+    "source": "parselmouth"
+  },
+  "starlette-full": {
+    "conda_name": "starlette",
+    "import_name": "",
+    "pypi_name": "starlette-full",
+    "source": "parselmouth"
+  },
+  "stjudecloud-oliver": {
+    "conda_name": "oliver",
+    "import_name": "oliver",
+    "pypi_name": "stjudecloud-oliver",
+    "source": "grayskull"
+  },
+  "stratify": {
+    "conda_name": "python-stratify",
+    "import_name": "stratify",
+    "pypi_name": "stratify",
+    "source": "cf_graph"
+  },
+  "substrait": {
+    "conda_name": "python-substrait",
+    "import_name": "substrait",
+    "pypi_name": "substrait",
+    "source": "cf_graph"
+  },
+  "suitesparse-graphblas": {
+    "conda_name": "python-suitesparse-graphblas",
+    "import_name": "suitesparse_graphblas",
+    "pypi_name": "suitesparse-graphblas",
+    "source": "cf_graph"
+  },
+  "superset": {
+    "conda_name": "apache-superset",
+    "import_name": "",
+    "pypi_name": "superset",
+    "source": "parselmouth"
+  },
+  "symengine": {
+    "conda_name": "python-symengine",
+    "import_name": "symengine",
+    "pypi_name": "symengine",
+    "source": "cf_graph"
+  },
+  "symopt": {
+    "conda_name": "sympot",
+    "import_name": "",
+    "pypi_name": "symopt",
+    "source": "parselmouth"
+  },
+  "systemd-python": {
+    "conda_name": "python-systemd",
+    "import_name": "systemd",
+    "pypi_name": "systemd-python",
+    "source": "cf_graph"
+  },
+  "tables": {
+    "conda_name": "pytables",
+    "import_name": "pytables",
+    "pypi_name": "tables",
+    "source": "cf_graph"
+  },
+  "tableschema-py": {
+    "conda_name": "tableschema",
+    "import_name": "",
+    "pypi_name": "tableschema-py",
+    "source": "parselmouth"
+  },
+  "tabulator-py": {
+    "conda_name": "tabulator",
+    "import_name": "",
+    "pypi_name": "tabulator-py",
+    "source": "parselmouth"
+  },
+  "tango": {
+    "conda_name": "ai2-tango",
+    "import_name": "",
+    "pypi_name": "tango",
+    "source": "parselmouth"
+  },
+  "tantivy-py": {
+    "conda_name": "tantivy",
+    "import_name": "",
+    "pypi_name": "tantivy-py",
+    "source": "parselmouth"
+  },
+  "taurus-core": {
+    "conda_name": "taurus",
+    "import_name": "",
+    "pypi_name": "taurus-core",
+    "source": "parselmouth"
+  },
+  "tblite": {
+    "conda_name": "tblite-python",
+    "import_name": "tblite",
+    "pypi_name": "tblite",
+    "source": "grayskull"
+  },
+  "tblite-python": {
+    "conda_name": "tblite",
+    "import_name": "",
+    "pypi_name": "tblite-python",
+    "source": "parselmouth"
+  },
+  "tensorflow-base": {
+    "conda_name": "tensorflow",
+    "import_name": "",
+    "pypi_name": "tensorflow-base",
+    "source": "parselmouth"
+  },
+  "termstyle": {
+    "conda_name": "python-termstyle",
+    "import_name": "termstyle",
+    "pypi_name": "termstyle",
+    "source": "cf_graph"
+  },
+  "tf-object-detection": {
+    "conda_name": "object-detection",
+    "import_name": "",
+    "pypi_name": "tf_object_detection",
+    "source": "parselmouth"
+  },
+  "tibi-python": {
+    "conda_name": "tibi",
+    "import_name": "",
+    "pypi_name": "tibi-python",
+    "source": "parselmouth"
+  },
+  "ties20": {
+    "conda_name": "ties",
+    "import_name": "",
+    "pypi_name": "ties20",
+    "source": "parselmouth"
+  },
+  "tikzmagic": {
+    "conda_name": "ipython-tikzmagic",
+    "import_name": "",
+    "pypi_name": "tikzmagic",
+    "source": "parselmouth"
+  },
+  "tiled-base": {
+    "conda_name": "tiled",
+    "import_name": "",
+    "pypi_name": "tiled-base",
+    "source": "parselmouth"
+  },
+  "tiledb": {
+    "conda_name": "tiledb-py",
+    "import_name": "tiledb",
+    "pypi_name": "tiledb",
+    "source": "cf_graph"
+  },
+  "tiledb-py": {
+    "conda_name": "tiledb",
+    "import_name": "",
+    "pypi_name": "tiledb-py",
+    "source": "parselmouth"
+  },
+  "tiledbsoma-py": {
+    "conda_name": "tiledbsoma",
+    "import_name": "",
+    "pypi_name": "tiledbsoma-py",
+    "source": "parselmouth"
+  },
+  "tiny-cuda-nn": {
+    "conda_name": "tinycudann",
+    "import_name": "",
+    "pypi_name": "tiny-cuda-nn",
+    "source": "parselmouth"
+  },
+  "torch": {
+    "conda_name": "pytorch",
+    "import_name": "torch",
+    "pypi_name": "torch",
+    "source": "cf_graph"
+  },
+  "torch-cluster": {
+    "conda_name": "pytorch_cluster",
+    "import_name": "torch_cluster",
+    "pypi_name": "torch-cluster",
+    "source": "cf_graph"
+  },
+  "torch-sparse": {
+    "conda_name": "pytorch_sparse",
+    "import_name": "torch_sparse",
+    "pypi_name": "torch-sparse",
+    "source": "cf_graph"
+  },
+  "torch-spline-conv": {
+    "conda_name": "pytorch_spline_conv",
+    "import_name": "torch_spline_conv",
+    "pypi_name": "torch-spline-conv",
+    "source": "cf_graph"
+  },
+  "tracy-client-python": {
+    "conda_name": "tracy-client",
+    "import_name": "",
+    "pypi_name": "tracy-client-python",
+    "source": "parselmouth"
+  },
+  "tracy-profiler-client-python": {
+    "conda_name": "tracy-client",
+    "import_name": "",
+    "pypi_name": "tracy-profiler-client-python",
+    "source": "parselmouth"
+  },
+  "transformer-engine-torch": {
+    "conda_name": "transformer-engine",
+    "import_name": "",
+    "pypi_name": "transformer-engine-torch",
+    "source": "parselmouth"
+  },
+  "trends-earth-algorithms": {
+    "conda_name": "te-algorithms",
+    "import_name": "",
+    "pypi_name": "trends_earth_algorithms",
+    "source": "parselmouth"
+  },
+  "trends-earth-schemas": {
+    "conda_name": "te-schemas",
+    "import_name": "",
+    "pypi_name": "trends_earth_schemas",
+    "source": "parselmouth"
+  },
+  "trino": {
+    "conda_name": "trino-python-client",
+    "import_name": "trino",
+    "pypi_name": "trino",
+    "source": "cf_graph"
+  },
+  "trino-python-client": {
+    "conda_name": "trino",
+    "import_name": "",
+    "pypi_name": "trino-python-client",
+    "source": "parselmouth"
+  },
+  "trintrin-python": {
+    "conda_name": "trintrin",
+    "import_name": "",
+    "pypi_name": "trintrin-python",
+    "source": "parselmouth"
+  },
+  "tt-metalium": {
+    "conda_name": "ttnn",
+    "import_name": "",
+    "pypi_name": "tt-metalium",
+    "source": "parselmouth"
+  },
+  "tvm-py": {
+    "conda_name": "tvm",
+    "import_name": "",
+    "pypi_name": "tvm-py",
+    "source": "parselmouth"
+  },
+  "typst": {
+    "conda_name": "typst-py",
+    "import_name": "typst",
+    "pypi_name": "typst",
+    "source": "cf_graph"
+  },
+  "typst-py": {
+    "conda_name": "typst",
+    "import_name": "",
+    "pypi_name": "typst-py",
+    "source": "parselmouth"
+  },
+  "tzdata": {
+    "conda_name": "python-tzdata",
+    "import_name": "tzdata",
+    "pypi_name": "tzdata",
+    "source": "cf_graph"
+  },
+  "u8darts-all": {
+    "conda_name": "tbats",
+    "import_name": "",
+    "pypi_name": "u8darts-all",
+    "source": "parselmouth"
+  },
+  "unidock": {
+    "conda_name": "unidock-tools",
+    "import_name": "",
+    "pypi_name": "unidock",
+    "source": "parselmouth"
+  },
+  "uproot-base": {
+    "conda_name": "uproot",
+    "import_name": "",
+    "pypi_name": "uproot-base",
+    "source": "parselmouth"
+  },
+  "uritemplate-py": {
+    "conda_name": "uritemplate",
+    "import_name": "",
+    "pypi_name": "uritemplate.py",
+    "source": "parselmouth"
+  },
+  "usedave": {
+    "conda_name": "dave",
+    "import_name": "numpy",
+    "pypi_name": "usedave",
+    "source": "grayskull"
+  },
+  "userspacefs": {
+    "conda_name": "fusepyng",
+    "import_name": "",
+    "pypi_name": "userspacefs",
+    "source": "parselmouth"
+  },
+  "valkey-py": {
+    "conda_name": "valkey",
+    "import_name": "",
+    "pypi_name": "valkey-py",
+    "source": "parselmouth"
+  },
+  "varys": {
+    "conda_name": "varys-client",
+    "import_name": "",
+    "pypi_name": "varys",
+    "source": "parselmouth"
+  },
+  "verilator-python": {
+    "conda_name": "verilator",
+    "import_name": "",
+    "pypi_name": "verilator-python",
+    "source": "parselmouth"
+  },
+  "vesin": {
+    "conda_name": "python-vesin",
+    "import_name": "vesin",
+    "pypi_name": "vesin",
+    "source": "cf_graph"
+  },
+  "vipaccess": {
+    "conda_name": "python-vipaccess",
+    "import_name": "",
+    "pypi_name": "vipaccess",
+    "source": "parselmouth"
+  },
+  "virtualengineering": {
+    "conda_name": "virtual-engineering-toolbox",
+    "import_name": "",
+    "pypi_name": "virtualengineering",
+    "source": "parselmouth"
+  },
+  "virtue": {
+    "conda_name": "virtue-skill",
+    "import_name": "",
+    "pypi_name": "virtue",
+    "source": "parselmouth"
+  },
+  "virtue-skill": {
+    "conda_name": "virtue",
+    "import_name": "virtue",
+    "pypi_name": "virtue-skill",
+    "source": "cf_graph"
+  },
+  "vscode-python": {
+    "conda_name": "microvenv",
+    "import_name": "",
+    "pypi_name": "vscode-python",
+    "source": "parselmouth"
+  },
+  "vsts": {
+    "conda_name": "vsts-python-api",
+    "import_name": "vsts",
+    "pypi_name": "vsts",
+    "source": "cf_graph"
+  },
+  "vsts-python-api": {
+    "conda_name": "vsts",
+    "import_name": "",
+    "pypi_name": "vsts-python-api",
+    "source": "parselmouth"
+  },
+  "vtk-base": {
+    "conda_name": "vtk",
+    "import_name": "",
+    "pypi_name": "vtk-base",
+    "source": "parselmouth"
+  },
+  "wagtail-pdf": {
+    "conda_name": "wagtail-pdf-view",
+    "import_name": "",
+    "pypi_name": "wagtail-pdf",
+    "source": "parselmouth"
+  },
+  "warpx": {
+    "conda_name": "pywarpx",
+    "import_name": "",
+    "pypi_name": "warpx",
+    "source": "parselmouth"
+  },
+  "webp": {
+    "conda_name": "pywebp",
+    "import_name": "webp",
+    "pypi_name": "webp",
+    "source": "cf_graph"
+  },
+  "wget": {
+    "conda_name": "python-wget",
+    "import_name": "wget",
+    "pypi_name": "wget",
+    "source": "cf_graph"
+  },
+  "wgpu": {
+    "conda_name": "wgpu-py",
+    "import_name": "wgpu",
+    "pypi_name": "wgpu",
+    "source": "cf_graph"
+  },
+  "wgpu-py": {
+    "conda_name": "wgpu",
+    "import_name": "",
+    "pypi_name": "wgpu-py",
+    "source": "parselmouth"
+  },
+  "wibl-python": {
+    "conda_name": "wibl-manager",
+    "import_name": "",
+    "pypi_name": "wibl-python",
+    "source": "parselmouth"
+  },
+  "xatlas-python": {
+    "conda_name": "xatlas",
+    "import_name": "",
+    "pypi_name": "xatlas-python",
+    "source": "parselmouth"
+  },
+  "xbitinfo-python": {
+    "conda_name": "xbitinfo",
+    "import_name": "",
+    "pypi_name": "xbitinfo-python",
+    "source": "parselmouth"
+  },
+  "xcube-places-plugin": {
+    "conda_name": "xcube-geodb-places",
+    "import_name": "",
+    "pypi_name": "xcube_places_plugin",
+    "source": "parselmouth"
+  },
+  "xeus-python-shell-raw": {
+    "conda_name": "xeus-python-shell",
+    "import_name": "",
+    "pypi_name": "xeus-python-shell-raw",
+    "source": "parselmouth"
+  },
+  "xeus-python-static": {
+    "conda_name": "xeus-python",
+    "import_name": "",
+    "pypi_name": "xeus-python-static",
+    "source": "parselmouth"
+  },
+  "xeus-robot-static": {
+    "conda_name": "xeus-robot",
+    "import_name": "",
+    "pypi_name": "xeus-robot-static",
+    "source": "parselmouth"
+  },
+  "xo": {
+    "conda_name": "exofrills",
+    "import_name": "",
+    "pypi_name": "xo",
+    "source": "parselmouth"
+  },
+  "xraylarch-base": {
+    "conda_name": "xraylarch",
+    "import_name": "",
+    "pypi_name": "xraylarch-base",
+    "source": "parselmouth"
+  },
+  "xsocs-base": {
+    "conda_name": "xsocs",
+    "import_name": "",
+    "pypi_name": "xsocs-base",
+    "source": "parselmouth"
+  },
+  "xstate-python": {
+    "conda_name": "xstate",
+    "import_name": "",
+    "pypi_name": "xstate-python",
+    "source": "parselmouth"
+  },
+  "xtb-python": {
+    "conda_name": "xtb",
+    "import_name": "",
+    "pypi_name": "xtb-python",
+    "source": "parselmouth"
+  },
+  "xxhash": {
+    "conda_name": "python-xxhash",
+    "import_name": "xxhash",
+    "pypi_name": "xxhash",
+    "source": "cf_graph"
+  },
+  "yapss-dev": {
+    "conda_name": "yapss",
+    "import_name": "",
+    "pypi_name": "yapss-dev",
+    "source": "parselmouth"
+  },
+  "yarp-python": {
+    "conda_name": "yarp",
+    "import_name": "",
+    "pypi_name": "yarp-python",
+    "source": "parselmouth"
+  },
+  "yggdrasil": {
+    "conda_name": "yggdrasil-framework",
+    "import_name": "",
+    "pypi_name": "yggdrasil",
+    "source": "parselmouth"
+  },
+  "yggdrasil-framework": {
+    "conda_name": "yggdrasil",
+    "import_name": "yggdrasil",
+    "pypi_name": "yggdrasil-framework",
+    "source": "cf_graph"
+  },
+  "yoda-tools": {
+    "conda_name": "yodatools",
+    "import_name": "yodatools",
+    "pypi_name": "yoda-tools",
+    "source": "cf_graph"
+  },
+  "yodatools": {
+    "conda_name": "yoda-tools",
+    "import_name": "",
+    "pypi_name": "yodatools",
+    "source": "parselmouth"
+  },
+  "zaber-motion": {
+    "conda_name": "zaber-bson",
+    "import_name": "",
+    "pypi_name": "zaber-motion",
+    "source": "parselmouth"
+  },
+  "zerorpc-python": {
+    "conda_name": "zerorpc",
+    "import_name": "",
+    "pypi_name": "zerorpc-python",
+    "source": "parselmouth"
+  },
+  "zlib-ng": {
+    "conda_name": "python-zlib-ng",
+    "import_name": "zlib_ng",
+    "pypi_name": "zlib-ng",
+    "source": "cf_graph"
+  },
+  "zstd": {
+    "conda_name": "python-zstd",
+    "import_name": "zstd",
+    "pypi_name": "zstd",
+    "source": "cf_graph"
+  }
+}

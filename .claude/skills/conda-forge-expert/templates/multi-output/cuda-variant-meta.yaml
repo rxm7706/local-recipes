@@ -1,0 +1,54 @@
+# Template: Multi-output package with CUDA variant support
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+{% set build_number = 0 %}
+{% set cuda_build_offset = 200 %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/REPLACE_ORG/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: {{ build_number + cuda_build_offset }}  # [cuda_compiler_version != "None"]
+  number: {{ build_number }}                       # [cuda_compiler_version == "None"]
+  skip: true  # [win and cuda_compiler_version != "None"]
+  missing_dso_whitelist:
+    - "*/libcuda.so*"      # [linux]
+    - "*/libnvidia-ml.so*" # [linux]
+    - "*/nvcuda.dll"       # [win]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+    - {{ compiler('cuda') }}  # [cuda_compiler_version != "None"]
+    - cmake
+    - ninja
+  host:
+    - cuda-version {{ cuda_compiler_version }}  # [cuda_compiler_version != "None"]
+  run:
+    - __cuda >={{ cuda_compiler_version_min }}  # [cuda_compiler_version != "None"]
+
+test:
+  imports:
+    - {{ name }}
+  commands:
+    - pip check
+    - {{ name }} --version
+  requires:
+    - pip
+
+about:
+  home: REPLACE_HOMEPAGE
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

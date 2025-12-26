@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Example: Python package with C extension
+schema_version: 1
+
+context:
+  name: example-compiled
+  version: "1.0.0"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/example/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip:
+    - py < 39
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    # Cross-compilation support
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+        - numpy
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython >=3.0
+    - numpy
+  run:
+    - python
+    - ${{ pin_compatible("numpy") }}
+
+tests:
+  - python:
+      imports:
+        - example_compiled
+        - example_compiled._core
+      pip_check: true
+  - script:
+      - python -c "from example_compiled import __version__; print(__version__)"
+
+about:
+  homepage: https://github.com/example/example-compiled
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Example Python package with C extension
+  description: |
+    This example demonstrates building a Python package
+    that includes compiled C extensions using Cython.
+
+extra:
+  recipe-maintainers:
+    - example-maintainer

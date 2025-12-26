@@ -1,0 +1,28 @@
+# Custom PyPI to conda-forge Package Name Mappings
+# ================================================
+#
+# These mappings override all automatic sources (highest priority).
+# Use this file to:
+#   - Fix incorrect mappings from upstream sources
+#   - Add new mappings before they appear in upstream sources
+#   - Document edge cases specific to your workflow
+#
+# Format:
+#   pypi-package-name:
+#     conda_name: conda-package-name
+#     import_name: python_import_name  # optional
+#     reason: "Why this override exists"  # optional
+#
+# Example:
+#   my-special-package:
+#     conda_name: my_special_package
+#     import_name: my_special_package
+#     reason: "Custom conda-forge build with patches"
+#
+# Common patterns:
+#   - PyPI uses hyphens, conda-forge uses underscores
+#   - Some packages have completely different names (docker → docker-py)
+#   - Import names may differ from package names (scikit-learn → sklearn)
+
+# Known edge cases not in upstream sources:
+# (Add your custom mappings below)

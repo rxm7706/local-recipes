@@ -1,0 +1,486 @@
+# PyPI to conda-forge Package Name Mappings
+#
+# This file maps PyPI package names to their conda-forge equivalents.
+# Used by recipe generators and dependency checkers.
+#
+# Format:
+#   pypi_name: conda_name
+#
+# Categories:
+#   - Direct mappings (different names)
+#   - Case normalization (PyPI is case-insensitive)
+#   - Split packages (one PyPI -> multiple conda)
+#
+# Note: Most packages have identical names. Only exceptions are listed here.
+
+# =============================================================================
+# SCIENTIFIC COMPUTING
+# =============================================================================
+
+# NumPy ecosystem
+Pillow: pillow
+PIL: pillow
+scikit-learn: scikit-learn
+scikit-image: scikit-image
+opencv-python: py-opencv
+opencv-python-headless: py-opencv
+opencv-contrib-python: py-opencv
+
+# Data science
+pandas: pandas
+pyarrow: pyarrow
+tables: pytables
+PyTables: pytables
+
+# Visualization
+matplotlib: matplotlib
+Matplotlib: matplotlib
+plotly: plotly
+bokeh: bokeh
+seaborn: seaborn
+
+# =============================================================================
+# MACHINE LEARNING / AI
+# =============================================================================
+
+torch: pytorch
+torchvision: torchvision
+torchaudio: torchaudio
+tensorflow: tensorflow
+tensorflow-gpu: tensorflow
+keras: keras
+Keras: keras
+jax: jax
+jaxlib: jaxlib
+flax: flax
+optax: optax
+
+# Transformers ecosystem
+transformers: transformers
+tokenizers: tokenizers
+datasets: datasets
+accelerate: accelerate
+diffusers: diffusers
+safetensors: safetensors
+sentencepiece: sentencepiece
+
+# =============================================================================
+# WEB FRAMEWORKS
+# =============================================================================
+
+Flask: flask
+Django: django
+FastAPI: fastapi
+Starlette: starlette
+aiohttp: aiohttp
+httpx: httpx
+requests: requests
+urllib3: urllib3
+
+# ASGI/WSGI
+uvicorn: uvicorn
+gunicorn: gunicorn
+Werkzeug: werkzeug
+itsdangerous: itsdangerous
+
+# =============================================================================
+# DATABASE
+# =============================================================================
+
+SQLAlchemy: sqlalchemy
+psycopg2: psycopg2
+psycopg2-binary: psycopg2
+PyMySQL: pymysql
+pymongo: pymongo
+redis: redis-py
+motor: motor
+
+# =============================================================================
+# CRYPTOGRAPHY & SECURITY
+# =============================================================================
+
+cryptography: cryptography
+PyNaCl: pynacl
+bcrypt: bcrypt
+passlib: passlib
+PyJWT: pyjwt
+python-jose: python-jose
+authlib: authlib
+
+# =============================================================================
+# SERIALIZATION & DATA FORMATS
+# =============================================================================
+
+PyYAML: pyyaml
+ruamel.yaml: ruamel.yaml
+toml: toml
+tomli: tomli
+tomli-w: tomli-w
+orjson: orjson
+ujson: ujson
+msgpack: msgpack-python
+msgpack-python: msgpack-python
+protobuf: protobuf
+google-protobuf: protobuf
+
+# =============================================================================
+# CLI & TERMINAL
+# =============================================================================
+
+Click: click
+click: click
+Typer: typer
+typer: typer
+Rich: rich
+rich: rich
+colorama: colorama
+tqdm: tqdm
+blessed: blessed
+prompt-toolkit: prompt_toolkit
+prompt_toolkit: prompt_toolkit
+
+# =============================================================================
+# ASYNC & CONCURRENCY
+# =============================================================================
+
+asyncio: python  # Part of stdlib
+aiofiles: aiofiles
+anyio: anyio
+trio: trio
+greenlet: greenlet
+gevent: gevent
+eventlet: eventlet
+celery: celery
+
+# =============================================================================
+# TESTING
+# =============================================================================
+
+pytest: pytest
+pytest-cov: pytest-cov
+pytest-asyncio: pytest-asyncio
+pytest-xdist: pytest-xdist
+pytest-mock: pytest-mock
+coverage: coverage
+hypothesis: hypothesis
+mock: mock
+unittest2: unittest2
+nose: nose
+tox: tox
+nox: nox
+
+# =============================================================================
+# LINTING & FORMATTING
+# =============================================================================
+
+black: black
+isort: isort
+flake8: flake8
+pylint: pylint
+mypy: mypy
+ruff: ruff
+autopep8: autopep8
+yapf: yapf
+bandit: bandit
+
+# =============================================================================
+# BUILD & PACKAGING
+# =============================================================================
+
+setuptools: setuptools
+wheel: wheel
+pip: pip
+build: python-build
+twine: twine
+flit: flit
+hatch: hatch
+hatchling: hatchling
+poetry: poetry
+poetry-core: poetry-core
+pdm: pdm
+maturin: maturin
+pybind11: pybind11
+cython: cython
+Cython: cython
+cffi: cffi
+swig: swig
+
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
+
+Sphinx: sphinx
+sphinx: sphinx
+sphinx-rtd-theme: sphinx_rtd_theme
+sphinx_rtd_theme: sphinx_rtd_theme
+mkdocs: mkdocs
+mkdocs-material: mkdocs-material
+pdoc: pdoc
+pdoc3: pdoc3
+pydoc-markdown: pydoc-markdown
+
+# =============================================================================
+# JUPYTER & NOTEBOOKS
+# =============================================================================
+
+jupyter: jupyter
+jupyterlab: jupyterlab
+notebook: notebook
+ipython: ipython
+IPython: ipython
+ipykernel: ipykernel
+ipywidgets: ipywidgets
+nbconvert: nbconvert
+nbformat: nbformat
+voila: voila
+
+# =============================================================================
+# CLOUD & DEVOPS
+# =============================================================================
+
+boto3: boto3
+botocore: botocore
+google-cloud-storage: google-cloud-storage
+google-api-python-client: google-api-python-client
+azure-storage-blob: azure-storage-blob
+azure-identity: azure-identity
+kubernetes: kubernetes
+docker: docker-py
+docker-py: docker-py
+python-docker: docker-py
+fabric: fabric
+paramiko: paramiko
+ansible: ansible
+ansible-core: ansible-core
+
+# =============================================================================
+# NETWORKING
+# =============================================================================
+
+websockets: websockets
+websocket-client: websocket-client
+grpcio: grpcio
+grpcio-tools: grpcio-tools
+zeromq: pyzmq
+pyzmq: pyzmq
+pika: pika
+kombu: kombu
+
+# =============================================================================
+# DATE & TIME
+# =============================================================================
+
+python-dateutil: python-dateutil
+dateutil: python-dateutil
+pytz: pytz
+pendulum: pendulum
+arrow: arrow
+croniter: croniter
+
+# =============================================================================
+# SYSTEM & OS
+# =============================================================================
+
+psutil: psutil
+py-cpuinfo: py-cpuinfo
+distro: distro
+watchdog: watchdog
+pathlib2: pathlib2
+pathspec: pathspec
+appdirs: appdirs
+platformdirs: platformdirs
+filelock: filelock
+portalocker: portalocker
+
+# =============================================================================
+# PARSING & TEXT PROCESSING
+# =============================================================================
+
+lxml: lxml
+beautifulsoup4: beautifulsoup4
+bs4: beautifulsoup4
+BeautifulSoup4: beautifulsoup4
+html5lib: html5lib
+cssselect: cssselect
+pyparsing: pyparsing
+ply: ply
+parso: parso
+regex: regex
+chardet: chardet
+charset-normalizer: charset-normalizer
+
+# =============================================================================
+# IMAGE PROCESSING
+# =============================================================================
+
+imageio: imageio
+imageio-ffmpeg: imageio-ffmpeg
+Wand: wand
+wand: wand
+rawpy: rawpy
+pyexiv2: py3exiv2
+
+# =============================================================================
+# AUDIO & VIDEO
+# =============================================================================
+
+pydub: pydub
+librosa: librosa
+soundfile: pysoundfile
+PySoundFile: pysoundfile
+pyaudio: pyaudio
+PyAudio: pyaudio
+moviepy: moviepy
+ffmpeg-python: ffmpeg-python
+
+# =============================================================================
+# GRAPHICS & 3D
+# =============================================================================
+
+pygame: pygame
+pyglet: pyglet
+PyOpenGL: pyopengl
+pyopengl: pyopengl
+moderngl: moderngl
+vispy: vispy
+vtk: vtk
+pyvista: pyvista
+trimesh: trimesh
+open3d: open3d
+
+# =============================================================================
+# GUI FRAMEWORKS
+# =============================================================================
+
+PyQt5: pyqt
+PyQt6: pyqt6
+PySide2: pyside2
+PySide6: pyside6
+wxPython: wxpython
+tkinter: tk  # Part of Python, but tk package provides it
+kivy: kivy
+toga: toga
+PyGObject: pygobject
+gobject-introspection: gobject-introspection
+
+# =============================================================================
+# SCIENTIFIC DOMAINS
+# =============================================================================
+
+# Astronomy
+astropy: astropy
+astroquery: astroquery
+sunpy: sunpy
+
+# Biology/Chemistry
+biopython: biopython
+BioPython: biopython
+rdkit: rdkit
+RDKit: rdkit
+openbabel: openbabel
+mdtraj: mdtraj
+mdanalysis: mdanalysis
+
+# Geospatial
+shapely: shapely
+Shapely: shapely
+fiona: fiona
+Fiona: fiona
+pyproj: pyproj
+geopandas: geopandas
+rasterio: rasterio
+GDAL: gdal
+gdal: gdal
+cartopy: cartopy
+folium: folium
+
+# Physics
+sympy: sympy
+SymPy: sympy
+pint: pint
+uncertainties: uncertainties
+
+# =============================================================================
+# FINANCE
+# =============================================================================
+
+yfinance: yfinance
+pandas-datareader: pandas-datareader
+quantlib: quantlib-python
+QuantLib: quantlib-python
+zipline: zipline-reloaded
+pyfolio: pyfolio-reloaded
+
+# =============================================================================
+# UTILITIES
+# =============================================================================
+
+attrs: attrs
+pydantic: pydantic
+dataclasses: python  # Part of stdlib 3.7+
+typing-extensions: typing_extensions
+typing_extensions: typing_extensions
+more-itertools: more-itertools
+boltons: boltons
+toolz: toolz
+cytoolz: cytoolz
+funcy: funcy
+wrapt: wrapt
+decorator: decorator
+cachetools: cachetools
+diskcache: diskcache
+joblib: joblib
+dill: dill
+cloudpickle: cloudpickle
+
+# =============================================================================
+# LOGGING & MONITORING
+# =============================================================================
+
+loguru: loguru
+structlog: structlog
+python-json-logger: python-json-logger
+sentry-sdk: sentry-sdk
+opentelemetry-api: opentelemetry-api
+opentelemetry-sdk: opentelemetry-sdk
+prometheus-client: prometheus_client
+prometheus_client: prometheus_client
+statsd: statsd
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
+python-dotenv: python-dotenv
+python-decouple: python-decouple
+dynaconf: dynaconf
+hydra-core: hydra-core
+omegaconf: omegaconf
+configparser: python  # Part of stdlib
+configobj: configobj
+
+# =============================================================================
+# SPECIAL CASES - Different Package Structure
+# =============================================================================
+
+# Packages that are split differently
+google-auth: google-auth
+google-auth-oauthlib: google-auth-oauthlib
+google-cloud-core: google-cloud-core
+
+# Namespace packages
+zope.interface: zope.interface
+zope.event: zope.event
+
+# Packages with extras that map to separate conda packages
+# (handled by dependency checker, not mappings)
+
+# =============================================================================
+# KNOWN UNAVAILABLE ON CONDA-FORGE
+# (Listed for reference - should trigger warnings)
+# =============================================================================
+
+# These packages require special handling or are not available:
+# - Some proprietary packages
+# - Some packages with complex native dependencies
+# - Some very new packages not yet submitted

@@ -1,0 +1,44 @@
+# Template: R package from CRAN
+{% set name = "REPLACE_NAME" %}
+{% set version = "REPLACE_VERSION" %}
+{% set posix_name = name|replace("-", "_") %}
+
+package:
+  name: r-{{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://cran.r-project.org/src/contrib/{{ posix_name }}_{{ version }}.tar.gz
+  sha256: REPLACE_SHA256
+
+build:
+  number: 0
+  noarch: generic
+  rpaths:
+    - lib/R/lib/
+    - lib/
+
+requirements:
+  build:
+    - cross-r-base {{ r_base }}  # [build_platform != target_platform]
+  host:
+    - r-base
+    # Add R package dependencies here
+  run:
+    - r-base
+    # Add R runtime dependencies here
+
+test:
+  commands:
+    - $R -e "library('{{ posix_name }}')"
+    - $R -e "packageVersion('{{ posix_name }}')"
+
+about:
+  home: https://cran.r-project.org/package={{ posix_name }}
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER

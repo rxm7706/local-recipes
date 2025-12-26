@@ -1,0 +1,58 @@
+{% set name = "textual" %}
+{% set version = "6.11.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/textual-{{ version }}.tar.gz
+  sha256: 08237ebda0cfbbfd1a4e2fd3039882b35894a73994f6f0fcc12c5b0d78acf3cc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.2.0
+    - pip
+  run:
+    - python >={{ python_min }},<4.0.0
+    - pygments >=2.19.2,<3.0.0
+    - typing_extensions >=4.4.0,<5.0.0
+    - platformdirs >=3.6.0,<5
+    - markdown-it-py >=2.1.0
+    - linkify-it-py >=1,<3
+    - mdit-py-plugins
+    - rich >=14.2.0
+    - typing-extensions >=4.4.0,<5.0.0
+  run_constrained:
+    - tree_sitter >=0.25.0
+    - tree_sitter_languages =1.10.2
+
+test:
+  imports:
+    - textual
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Textualize/textual
+  license: MIT
+  license_file: LICENSE
+  summary: Modern Text User Interface framework
+  dev_url: https://github.com/Textualize/textual
+  doc_url: https://textual.textualize.io
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - carlodri
+    - xhochy
