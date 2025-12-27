@@ -1,0 +1,65 @@
+{% set name = "django-rath" %}
+{% set version = "0.1.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  # This will be the PyPI URL after publication
+  # For now, using git URL for development
+  url: https://github.com/yourusername/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: TO_BE_DETERMINED
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >={{ python_min }}
+    - django >=3.2
+    - pandas >=1.0.0
+    - pygwalker >=0.4.0
+
+test:
+  imports:
+    - django_rath
+    - django_rath.views
+    - django_rath.mixins
+    - django_rath.templatetags.rath_tags
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/yourusername/django-rath
+  summary: Django integration for Kanaries Rath automated data exploration
+  description: |
+    django-rath provides seamless integration of Kanaries Rath (automated data
+    exploration and visualization platform) into Django applications.
+
+    Features:
+    - RathView class-based views for easy integration
+    - RathMixin for adding Rath to existing views
+    - Template tags for embedding visualizations
+    - Support for Django querysets, DataFrames, and CSV files
+    - Saved visualizations with Django models
+    - Optional Rath cloud integration
+    - Auto insights and causal inference capabilities
+  license: BSD-3-Clause
+  license_file: LICENSE
+  doc_url: https://django-rath.readthedocs.io
+  dev_url: https://github.com/yourusername/django-rath
+
+extra:
+  recipe-maintainers:
+    - rxm7706

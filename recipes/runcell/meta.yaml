@@ -1,0 +1,65 @@
+{% set name = "runcell" %}
+{% set version = "0.1.15" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  # Using wheel from PyPI since no sdist is available
+  url: https://files.pythonhosted.org/packages/4b/96/791ebda0795587fcfc24ce4751bb3c428c71e2efbb1769078ca9a667bb38/runcell-{{ version }}-py3-none-any.whl
+  sha256: 003d589eca7f5659369d89492964b5762e2c8618d907b727b2e2bf97dba2a2c2
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install {{ SRC_DIR }}/runcell-{{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - aiohttp
+    - dill
+    - ipython
+    - jupyter_server
+    - jupyter-server-documents >=0.1.0a9
+    - matplotlib-base
+    - numpy
+    - openai
+    - pandas
+    - python-dotenv
+    - pysocks
+    - websockets
+
+test:
+  imports:
+    - runcell
+  # pip check disabled: package name mismatches (pysocks vs python-socks)
+  requires:
+    - pip
+
+about:
+  home: https://docs.runcell.dev
+  summary: AI Code Agent in Jupyter that understands your code/data/cells
+  description: |
+    Runcell is a Jupyter-native AI agent that reads your notebook context,
+    writes Python code, executes cells, debugs errors, and accelerates
+    end-to-end data analysis inside JupyterLab, classic Notebook, and VS Code.
+
+    Features:
+    - AI-powered code generation in Jupyter
+    - Context-aware cell execution
+    - Automatic error debugging
+    - Seamless integration with JupyterLab, classic Notebook, and VS Code
+  license: BSD-3-Clause
+  # License file path in wheel varies, including from package metadata
+  doc_url: https://docs.runcell.dev/docs
+  dev_url: https://github.com/Kanaries/Runcell
+
+extra:
+  recipe-maintainers:
+    - rxm7706
