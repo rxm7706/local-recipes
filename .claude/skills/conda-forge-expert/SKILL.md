@@ -8,7 +8,7 @@ description: |
   USE THIS SKILL WHEN: creating conda recipes, packaging Python/Rust/Go/C++ software,
   fixing conda-forge build failures, updating feedstocks, migrating to recipe.yaml format,
   setting up private channels, or troubleshooting conda-forge CI.
-version: 4.0.0
+version: 4.2.0
 allowed-tools: Read, Glob, Grep, Bash, Write, Edit, WebFetch, WebSearch
 ---
 
@@ -192,6 +192,59 @@ extra:
 
 ## Critical Requirements
 
+### ⚠️ stdlib REQUIRED for ALL Compiled Packages
+
+**CRITICAL**: conda-forge will REJECT submissions without `stdlib` when using compilers!
+
+```yaml
+# recipe.yaml - ALWAYS pair compiler() with stdlib()
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}        # REQUIRED! Submission will be rejected without this
+    - ${{ compiler("cxx") }}    # if C++ needed
+    - ${{ compiler("rust") }}   # if Rust needed
+
+# meta.yaml - ALWAYS pair compiler() with stdlib()
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}         # REQUIRED! Submission will be rejected without this
+    - {{ compiler('cxx') }}     # if C++ needed
+    - {{ compiler('rust') }}    # if Rust needed
+```
+
+**Common mistake**: Forgetting `stdlib` in recipe.yaml when converting from meta.yaml
+
+### 🚨 CRITICAL: Local Testing Exception
+
+**KNOWN ISSUE**: When testing locally with `rattler-build` or `conda-build`, the `stdlib` dependency may fail to resolve with "undefined" errors.
+
+**TEMPORARY WORKAROUND FOR LOCAL TESTING ONLY**:
+1. **Before testing locally**: Comment out the `stdlib` line:
+   ```yaml
+   requirements:
+     build:
+       - ${{ compiler("c") }}
+       # - ${{ stdlib("c") }}    # TEMPORARILY COMMENTED FOR LOCAL TESTING
+   ```
+
+2. **After testing**: **IMMEDIATELY** uncomment the `stdlib` line before committing or submitting:
+   ```yaml
+   requirements:
+     build:
+       - ${{ compiler("c") }}
+       - ${{ stdlib("c") }}        # RESTORED - REQUIRED FOR SUBMISSION!
+   ```
+
+**⚠️ WARNING**:
+- This is ONLY for local testing
+- **NEVER commit or submit** recipes without `stdlib`
+- conda-forge CI will REJECT recipes missing `stdlib`
+- Failure to restore `stdlib` will cause submission failures
+
+**Why this happens**: Local rattler-build/conda-build may not have the same stdlib resolution as conda-forge CI infrastructure.
+
 ### CFEP-25 Compliance (noarch: python)
 
 All `noarch: python` packages MUST use `python_min`:
@@ -210,18 +263,6 @@ requirements:
     - python {{ python_min }}
   run:
     - python >={{ python_min }}
-```
-
-### stdlib Required for Compiled Packages
-
-All packages with compilers MUST include stdlib:
-
-```yaml
-requirements:
-  build:
-    - ${{ compiler("c") }}
-    - ${{ stdlib("c") }}        # REQUIRED - don't forget!
-    - ${{ compiler("cxx") }}    # if needed
 ```
 
 ### License Requirements
@@ -290,6 +331,8 @@ pixi global install conda-smithy
 
 ## Local Building
 
+**⚠️ CRITICAL**: Before testing locally, see [Local Testing Exception](#-critical-local-testing-exception) - you may need to temporarily comment out `stdlib` dependencies!
+
 ### Using build-locally.py (Recommended)
 
 ```bash
@@ -315,6 +358,8 @@ rattler-build build -r recipe.yaml --variant-config .ci_support/win64.yaml
 rattler-build build -r recipe.yaml --target-platform linux-64
 ```
 
+**Remember**: If you get "undefined" errors for stdlib, temporarily comment it out for testing only!
+
 ### Using conda-build
 
 ```bash
@@ -328,15 +373,57 @@ conda-build recipes/my-package -c conda-forge
 conda-build --test path/to/package.conda
 ```
 
+**Remember**: If you get "undefined" errors for stdlib, temporarily comment it out for testing only!
+
 ## Common Patterns
 
 ### Python Package (noarch)
 
 See template: [templates/python-noarch-recipe.yaml](templates/python-noarch-recipe.yaml)
 
-### Python with C Extensions
+### Python with C Extensions (CRITICAL: Must include stdlib!)
 
-See template: [templates/python-compiled-recipe.yaml](templates/python-compiled-recipe.yaml)
+```yaml
+# recipe.yaml
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}              # REQUIRED! conda-forge will reject without this
+    - ${{ compiler("cxx") }}          # if C++ is needed
+    - ${{ compiler("rust") }}         # if Rust is needed
+    - cargo-bundle-licenses           # REQUIRED for Rust packages
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python
+
+# meta.yaml
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}               # REQUIRED! conda-forge will reject without this
+    - {{ compiler('cxx') }}           # if C++ is needed
+    - {{ compiler('rust') }}          # if Rust is needed
+    - cargo-bundle-licenses           # REQUIRED for Rust packages
+    - python                          # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python
+```
+
+See also: [templates/python-compiled-recipe.yaml](templates/python-compiled-recipe.yaml)
 
 ### Rust CLI Tool
 
@@ -514,6 +601,8 @@ See guides:
 
 ## Version History
 
+- **v4.2.0** (2025-12-26): Added CRITICAL local testing exception for stdlib - must comment out for local builds, restore before submission
+- **v4.1.0** (2025-12-26): Enhanced stdlib requirement visibility with warnings and inline examples
 - **v4.0.0** (2025-12): Modular architecture, enterprise support, portability
 - **v3.0.0** (2025-01): PyPI mappings, rattler-build focus
 - **v2.0.0** (2024): Added modern recipe.yaml support

@@ -74,6 +74,11 @@ elif [ "$target_platform" = "linux-ppc64le" ] ; then
     export PYO3_PYTHON_VERSION=${PY_VER}
 fi
 
+# Bundle licenses
+pushd "${SRC_DIR}"/rust
+  cargo-bundle-licenses --format yaml --output "${RECIPE_DIR}"/THIRDPARTY.yml
+popd
+
 maturin build -vv -j "${CPU_COUNT}" --release --strip --manylinux off --interpreter="${PYTHON}" "${_xtra_maturin_args[@]}"
 
 "${PYTHON}" -m pip install $SRC_DIR/rust/target/wheels/dlt_pendulum*.whl --no-deps -vv
