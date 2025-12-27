@@ -1,0 +1,58 @@
+{% set name = "jupyter-server-documents" %}
+{% set version = "0.1.0a9" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/dd/03/4d449e2d8c4f04a857d053375cc55c2e9fd13463fea3da8770e4ad052997/jupyter_server_documents-{{ version }}.tar.gz
+  sha256: 44dd509ccb41263ff5f676816aaaab05ba5c37ac67de994cf82c974e8351076d
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
+    - hatch-nodejs-version >=0.3.2
+    - hatch-jupyter-builder >=0.5
+    - nodejs
+  run:
+    - python >={{ python_min }}
+    - jupyter-collaboration-ui >=2.0.2,<3
+    - jupyter_server_fileid >=0.9.0,<0.10.0
+    - jupyter_server >=2.4.0,<3
+    - jupyter_ydoc >=3.0.0,<4.0.0
+    - pycrdt >=0.12.0,<0.13.0
+
+test:
+  imports:
+    - jupyter_server_documents
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jupyter-ai-contrib/jupyter_server_documents
+  summary: Enhanced JupyterLab notebooks with server-side document state and real-time collaboration
+  description: |
+    An extension that enhances JupyterLab notebooks by moving the state of documents
+    to the server. It provides real-time collaborative editing capabilities, optimized
+    memory management for large outputs, improved kernel reliability, and lazy loading
+    of outputs for improved responsiveness.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  doc_url: https://github.com/jupyter-ai-contrib/jupyter_server_documents
+  dev_url: https://github.com/jupyter-ai-contrib/jupyter-server-documents
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: runcell
+  version: "0.1.15"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # Using wheel from PyPI since no sdist is available
+  url: https://files.pythonhosted.org/packages/4b/96/791ebda0795587fcfc24ce4751bb3c428c71e2efbb1769078ca9a667bb38/${{ name }}-${{ version }}-py3-none-any.whl
+  sha256: 003d589eca7f5659369d89492964b5762e2c8618d907b727b2e2bf97dba2a2c2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install ${{ SRC_DIR }}/${{ name }}-${{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - aiohttp
+    - dill
+    - ipython
+    - jupyter_server
+    - jupyter-server-documents >=0.1.0a9
+    - matplotlib-base
+    - numpy
+    - openai
+    - pandas
+    - python-dotenv
+    - pysocks
+    - websockets
+
+tests:
+  - python:
+      imports:
+        - runcell
+      pip_check: false  # Disabled: package name mismatches (pysocks vs python-socks)
+
+about:
+  homepage: https://docs.runcell.dev
+  repository: https://github.com/Kanaries/Runcell
+  documentation: https://docs.runcell.dev/docs
+  summary: AI Code Agent in Jupyter that understands your code/data/cells
+  description: |
+    Runcell is a Jupyter-native AI agent that reads your notebook context,
+    writes Python code, executes cells, debugs errors, and accelerates
+    end-to-end data analysis inside JupyterLab, classic Notebook, and VS Code.
+
+    Features:
+    - AI-powered code generation in Jupyter
+    - Context-aware cell execution
+    - Automatic error debugging
+    - Seamless integration with JupyterLab, classic Notebook, and VS Code
+  license: BSD-3-Clause
+  # License file path in wheel varies, fetching from GitHub instead
+
+extra:
+  recipe-maintainers:
+    - rxm7706

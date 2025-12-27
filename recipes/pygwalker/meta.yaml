@@ -1,5 +1,6 @@
 {% set name = "pygwalker" %}
 {% set version = "0.4.9.15" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -37,8 +38,7 @@ requirements:
     - requests
     - arrow
     - sqlalchemy
-    # Requires wasmtime (python-wasmtime) for gw-dsl-parser
-    #- gw-dsl-parser ==0.1.49.1
+    - gw-dsl-parser ==0.1.49.1
     - appdirs
     #- segment-analytics-python ==2.2.3 is called analytics-python
     - analytics-python ==2.2.3
@@ -57,8 +57,7 @@ test:
   imports:
     - pygwalker
   commands:
-    #- pip check
-    # pygwalker 0.4.9.15 requires gw-dsl-parser, which is not installed. gw-dsl-parser requires wasmtime (python-wasmtime) which is not available on conda-forge
+    - pip check
     - pygwalker --help
   requires:
     - pip

@@ -4,6 +4,7 @@ schema_version: 1
 context:
   name: wasmtime
   version: "40.0.0"
+  python_min: "3.10"
 
 package:
   name: ${{ name }}-py
@@ -19,7 +20,7 @@ build:
 requirements:
   build:
     - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
+    #- ${{ stdlib('c') }}
     - ${{ compiler('cxx') }}
     - ${{ compiler('rust') }}
     - cargo-bundle-licenses
@@ -40,6 +41,7 @@ tests:
       imports:
         - wasmtime
       pip_check: true
+      python_version: ${{ python_min }}.*
 
 about:
   homepage: https://github.com/bytecodealliance/wasmtime-py

@@ -4,7 +4,7 @@ schema_version: 1
 context:
   name: gw-dsl-parser
   version: "0.1.49.1"
-  python_min: "3.6"
+  python_min: "3.10"
 
 package:
   name: ${{ name }}
@@ -21,16 +21,28 @@ build:
 
 requirements:
   host:
-    - python >=${{ python_min }}
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4
     - wasmtime-py >=12.0.0
 
 tests:
-  - script:
-      - python -c "import gw_dsl_parser"
+  #- python:
+      #imports:
+      #  - gw_dsl_parser
+      #pip_check: false
+      #python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        #- pip
+    script:
+      #- python -c "import gw_dsl_parser"
+      #- pip check
+      - python -c "import gw_dsl_parser; assert gw_dsl_parser.__version__ == '${{ version }}'"
+      #- python -c "from importlib.metadata import version; v = version('gw_dsl_parser'); print(v); assert v == '${{ version }}'"
 
 about:
   homepage: https://github.com/Kanaries/gw-dsl-parser-py
