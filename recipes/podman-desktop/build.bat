@@ -64,8 +64,8 @@ call pnpm build
 if errorlevel 1 exit /b 1
 
 :: Package with electron-builder, explicitly disabling publishing and native rebuild
-:: --no-rebuild: Skip native module rebuild (fails with Electron 39.2.6)
-call pnpm exec electron-builder --win --x64 --publish never --config.electronRebuild=false
+:: --config.npmRebuild=false: Skip native module rebuild (fails with Electron 39.2.6)
+call pnpm exec electron-builder --win --x64 --publish never --config.npmRebuild=false
 if errorlevel 1 exit /b 1
 
 echo === Generating third-party license notices ===
