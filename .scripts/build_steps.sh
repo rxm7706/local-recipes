@@ -106,7 +106,11 @@ conda index "${FEEDSTOCK_ROOT}/build_artifacts"
 ( endgroup "Configuring conda" ) 2> /dev/null
 
 echo "Building all recipes"
-python "${CI_SUPPORT}/build_all.py"
+echo "Checking build_all.py file:"
+ls -la "${CI_SUPPORT}/build_all.py"
+echo "First 50 lines of build_all.py:"
+head -50 "${CI_SUPPORT}/build_all.py"
+python -u "${CI_SUPPORT}/build_all.py"
 
 ( startgroup "Inspecting artifacts" ) 2> /dev/null
 # inspect_artifacts was only added in conda-forge-ci-setup 4.6.0; --all-packages in 4.9.3
