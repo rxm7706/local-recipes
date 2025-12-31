@@ -83,29 +83,40 @@ if not exist "LICENSE" (
 )
 
 echo === Installing Podman Desktop to LIBRARY_PREFIX ===
+:: First, list what electron-builder created to debug the directory structure
+echo Checking dist directory contents:
+dir /B dist
+
 :: Install Electron app bundle
 if not exist "%LIBRARY_PREFIX%\lib" mkdir "%LIBRARY_PREFIX%\lib"
 if not exist "%LIBRARY_PREFIX%\lib\podman-desktop" mkdir "%LIBRARY_PREFIX%\lib\podman-desktop"
 
 :: Copy all files from win-unpacked to installation directory
+echo Copying from dist\win-unpacked to %LIBRARY_PREFIX%\lib\podman-desktop
 xcopy /E /I /Y "dist\win-unpacked\*" "%LIBRARY_PREFIX%\lib\podman-desktop\"
-if errorlevel 1 exit /b 1
+if errorlevel 1 (
+    echo ERROR: Failed to copy dist\win-unpacked
+    echo Available directories in dist:
+    dir dist
+    exit /b 1
+)
 
 echo === Creating launcher script ===
 :: Create wrapper batch file in Scripts/
 if not exist "%SCRIPTS%" mkdir "%SCRIPTS%"
 
-:: Create launcher batch file
+:: Create launcher batch file (use quotes around exe path due to spaces)
 (
 echo @echo off
 echo :: Podman Desktop launcher script
 echo :: Execute the Electron app from lib directory
-echo start "" "%LIBRARY_PREFIX%\lib\podman-desktop\Podman Desktop.exe" %%*
+echo start "" "%%LIBRARY_PREFIX%%\lib\podman-desktop\Podman Desktop.exe" %%*
 ) > "%SCRIPTS%\podman-desktop.bat"
 
 echo === Build completed successfully! ===
 echo Installed files:
 dir "%SCRIPTS%\podman-desktop.bat"
-dir "%LIBRARY_PREFIX%\lib\podman-desktop" | findstr /C:"Podman Desktop.exe"
+echo Contents of lib\podman-desktop:
+dir "%LIBRARY_PREFIX%\lib\podman-desktop" | findstr /C:"exe"
 
 exit /b 0
