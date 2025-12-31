@@ -62,16 +62,22 @@ shopt -s extglob dotglob
 # Skip removal for TEST_RECIPE if set (for local testing)
 if [ -n "${TEST_RECIPE:-}" ]; then
     # Remove ALL recipes except TEST_RECIPE (for testing a single recipe)
-    for dir in ~/staged-recipes-copy/recipes/*/; do
-        dirname=$(basename "$dir")
-        if [ "$dirname" != "${TEST_RECIPE}" ]; then
-            rm -rf "$dir"
-            echo "Removing recipe: $dirname"
+    echo "TEST_RECIPE is set to: ${TEST_RECIPE}"
+    echo "Removing all recipes except: ${TEST_RECIPE}"
+    cd /home/conda/staged-recipes-copy/recipes || exit 1
+    for recipe_dir in */; do
+        recipe_name=$(basename "$recipe_dir")
+        if [ "$recipe_name" != "${TEST_RECIPE}" ]; then
+            echo "Removing recipe: $recipe_name"
+            rm -rf "$recipe_dir"
+        else
+            echo "Keeping recipe: $recipe_name"
         fi
     done
+    cd "${FEEDSTOCK_ROOT}/recipes" || exit 1
 else
     # Normal mode: remove all from main except example/example-v1
-    git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
+    git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf /home/conda/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
 fi
 shopt -u extglob dotglob
 popd > /dev/null
