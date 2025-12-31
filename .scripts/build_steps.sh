@@ -74,6 +74,9 @@ if [ -n "${TEST_RECIPE:-}" ]; then
             echo "Keeping recipe: $recipe_name"
         fi
     done
+    echo "After removal, recipes directory contains:"
+    ls -la /home/conda/staged-recipes-copy/recipes | head -20
+    echo "Total recipe count: $(ls -1 /home/conda/staged-recipes-copy/recipes | wc -l)"
     cd "${FEEDSTOCK_ROOT}/recipes" || exit 1
 else
     # Normal mode: remove all from main except example/example-v1
