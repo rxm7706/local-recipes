@@ -59,7 +59,12 @@ if [ "${CI:-}" != "" ]; then
     git fetch --force --update-head-ok origin main:main
 fi
 shopt -s extglob dotglob
-git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
+# Skip removal for TEST_RECIPE if set (for local testing)
+if [ -n "${TEST_RECIPE:-}" ]; then
+    git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "[ {} != '${TEST_RECIPE}' ] && rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
+else
+    git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
+fi
 shopt -u extglob dotglob
 popd > /dev/null
 
