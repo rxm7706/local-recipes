@@ -229,14 +229,14 @@ jobs:
               micromamba install -y -n base rattler-build conda-index
 
               # Build the recipe
-              rattler-build build \
+              micromamba run -n base rattler-build build \
                 --recipe recipes/${RECIPE}/recipe.yaml \
                 --target-platform linux-64 \
                 --variant-config .ci_support/linux64.yaml \
                 --output-dir /home/conda/build_artifacts
 
               # Index the output
-              conda index /home/conda/build_artifacts
+              micromamba run -n base conda index /home/conda/build_artifacts
             "
 
       - name: Build with Docker (conda-build)
@@ -494,11 +494,11 @@ jobs:
           mkdir -p build_artifacts
 
           if [ "$RECIPE_TYPE" = "recipe.yaml" ]; then
-            BUILD_CMD="rattler-build build --recipe recipes/${RECIPE}/recipe.yaml --target-platform linux-64 --output-dir /home/conda/build_artifacts"
+            BUILD_CMD="micromamba run -n base rattler-build build --recipe recipes/${RECIPE}/recipe.yaml --target-platform linux-64 --output-dir /home/conda/build_artifacts"
             INSTALL_CMD="micromamba install -y -n base rattler-build conda-index"
           else
-            BUILD_CMD="conda-build recipes/${RECIPE} -c conda-forge --output-folder /home/conda/build_artifacts"
-            INSTALL_CMD="micromamba install -y -n base conda-build conda-index && conda config --set channel_priority strict && conda config --add channels conda-forge"
+            BUILD_CMD="micromamba run -n base conda-build recipes/${RECIPE} -c conda-forge --output-folder /home/conda/build_artifacts"
+            INSTALL_CMD="micromamba install -y -n base conda-build conda-index && micromamba run -n base conda config --set channel_priority strict && micromamba run -n base conda config --add channels conda-forge"
           fi
 
           docker run --rm \
