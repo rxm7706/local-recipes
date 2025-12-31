@@ -226,7 +226,7 @@ jobs:
               cd /home/conda/staged-recipes
 
               # Fix permissions for build_artifacts
-              sudo chown -R \$(id -u):\$(id -g) /home/conda/build_artifacts || true
+              sudo chmod -R 777 /home/conda/build_artifacts
 
               # Install rattler-build
               micromamba install -y -n base rattler-build conda-index

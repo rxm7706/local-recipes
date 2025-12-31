@@ -164,10 +164,11 @@ jobs:
           RECIPE="${{ matrix.recipe }}"
           echo "Building $RECIPE with rattler-build for win-64"
 
-          # Initialize conda channel structure
+          # Create output directories with empty channel structure
           mkdir -p "${CONDA_BLD_PATH}/win-64"
           mkdir -p "${CONDA_BLD_PATH}/noarch"
-          conda-index "${CONDA_BLD_PATH}"
+          echo '{"packages":{},"packages.conda":{},"removed":[],"repodata_version":1}' > "${CONDA_BLD_PATH}/win-64/repodata.json"
+          echo '{"packages":{},"packages.conda":{},"removed":[],"repodata_version":1}' > "${CONDA_BLD_PATH}/noarch/repodata.json"
 
           rattler-build build \
             --recipe "recipes/${RECIPE}/recipe.yaml" \
