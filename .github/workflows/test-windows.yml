@@ -164,6 +164,11 @@ jobs:
           RECIPE="${{ matrix.recipe }}"
           echo "Building $RECIPE with rattler-build for win-64"
 
+          # Initialize conda channel structure
+          mkdir -p "${CONDA_BLD_PATH}/win-64"
+          mkdir -p "${CONDA_BLD_PATH}/noarch"
+          conda index "${CONDA_BLD_PATH}"
+
           rattler-build build \
             --recipe "recipes/${RECIPE}/recipe.yaml" \
             --target-platform win-64 \
