@@ -42,6 +42,8 @@ def get_config_name(arch):
 
 def build_all(recipes_dir, arch):
     folders = list(filter(lambda d: os.path.isdir(os.path.join(recipes_dir, d)), os.listdir(recipes_dir)))
+    print(f"DEBUG: recipes_dir={recipes_dir}")
+    print(f"DEBUG: Found folders: {folders}")
     if not folders:
         print("Found no recipes to build")
         return
@@ -56,8 +58,10 @@ def build_all(recipes_dir, arch):
     found_cuda = False
     found_centos7 = False
     for folder in folders:
+        print(f"DEBUG: Checking folder: {folder}")
         meta_yaml = os.path.join(recipes_dir, folder, "meta.yaml")
         if os.path.exists(meta_yaml):
+            print(f"DEBUG: Found meta.yaml in {folder}")
             has_meta_yaml = True
             with(open(meta_yaml, "r", encoding="utf-8")) as f:
                 text = ''.join(f.readlines())
@@ -68,6 +72,7 @@ def build_all(recipes_dir, arch):
 
         recipe_yaml = os.path.join(recipes_dir, folder, "recipe.yaml")
         if os.path.exists(recipe_yaml):
+            print(f"DEBUG: Found recipe.yaml in {folder}")
             has_recipe_yaml = True
             with open(recipe_yaml, "r", encoding="utf-8") as f:
                 text = "".join(f.readlines())
