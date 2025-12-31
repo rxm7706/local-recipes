@@ -190,8 +190,9 @@ jobs:
 
       - name: Index build artifacts
         shell: bash -el {0}
+        continue-on-error: true
         run: |
-          conda-index "${CONDA_BLD_PATH}"
+          conda-index "${CONDA_BLD_PATH}" || echo "Warning: conda-index failed, but build artifacts are available"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
