@@ -61,10 +61,16 @@ fi
 shopt -s extglob dotglob
 # Skip removal for TEST_RECIPE if set (for local testing)
 if [ -n "${TEST_RECIPE:-}" ]; then
-    # Remove all recipes from main except TEST_RECIPE
-    git ls-tree --name-only main  | xargs -I {} sh -c '([ "{}" != "'"${TEST_RECIPE}"'" ] && rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}) || true'
+    # Remove ALL recipes except TEST_RECIPE (for testing a single recipe)
+    for dir in ~/staged-recipes-copy/recipes/*/; do
+        dirname=$(basename "$dir")
+        if [ "$dirname" != "${TEST_RECIPE}" ]; then
+            rm -rf "$dir"
+            echo "Removing recipe: $dirname"
+        fi
+    done
 else
-    # Normal mode: remove all except example/example-v1
+    # Normal mode: remove all from main except example/example-v1
     git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
 fi
 shopt -u extglob dotglob
