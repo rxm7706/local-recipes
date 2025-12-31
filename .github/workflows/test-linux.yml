@@ -217,6 +217,7 @@ jobs:
           export CI=github_actions
           export AZURE=True
           export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
+          export TEST_RECIPE="$RECIPE"
 
           # Change to repository root and run the official build script
           cd "${{ github.workspace }}"
@@ -336,6 +337,7 @@ jobs:
           export CI=github_actions
           export AZURE=True
           export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
+          export TEST_RECIPE="$RECIPE"
 
           # Change to repository root and run the official build script
           cd "${{ github.workspace }}"
@@ -466,6 +468,7 @@ jobs:
           export CUDA_VERSION=${CUDA_VERSION}
           export DOCKER_IMAGE="quay.io/condaforge/linux-anvil-cuda:${CUDA_VERSION}"
           export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
+          export TEST_RECIPE="$RECIPE"
 
           # Change to repository root and run the official build script
           cd "${{ github.workspace }}"
