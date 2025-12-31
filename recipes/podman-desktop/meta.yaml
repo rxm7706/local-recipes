@@ -1,0 +1,86 @@
+{% set name = "podman-desktop" %}
+{% set version = "1.24.2" %}
+{% set nodejs_min = "24" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/podman-desktop/podman-desktop/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: b14e5a46e348996387e6cced27789f10c95a0791c9a1cadb2c60382e9e1ed2fd
+
+build:
+  number: 0
+  # Support Linux, Windows, and macOS on x64 and arm64
+  skip: true  # [not (linux or win or osx)]
+  skip: true  # [not (x86_64 or arm64)]
+  script:
+    - bash {{ RECIPE_DIR }}/../build.sh  # [unix]
+    - call {{ RECIPE_DIR }}\..\build.bat   # [win]
+
+requirements:
+  build:
+    # Compilers for native node modules
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+    # Node.js build environment
+    - nodejs {{ nodejs_min }}.*
+    # Python for node-gyp (required for native module compilation)
+    - python 3.12.*
+    # Unix build tools
+    - make              # [unix]
+    - pkg-config        # [linux]
+    # Linux-specific GUI libraries
+    - libgl-devel       # [linux]
+    - libxkbfile        # [linux]
+    - libsecret         # [linux]
+    # Windows-specific tools
+    - m2-base           # [win]
+
+  host:
+    - nodejs {{ nodejs_min }}.*
+
+  run:
+    - nodejs {{ nodejs_min }}.*
+    # Kubernetes tools for container orchestration
+    - kubernetes-kind      # kind: Kubernetes in Docker
+    - kubernetes-client    # kubectl and Kubernetes client tools
+
+test:
+  commands:
+    # Podman Desktop is a GUI Electron app - don't run it in headless tests
+    # Just verify the launcher exists and is executable
+    - test -x $PREFIX/bin/podman-desktop  # [unix]
+    # Verify installed files (platform-specific)
+    - test -f $PREFIX/lib/podman-desktop/podman-desktop  # [linux]
+    - test -d "$PREFIX/lib/Podman Desktop.app"  # [osx]
+    - test -f "$PREFIX/lib/Podman Desktop.app/Contents/MacOS/Podman Desktop"  # [osx]
+    - test -f $PREFIX/share/applications/podman-desktop.desktop  # [linux]
+    - if not exist "%LIBRARY_PREFIX%\lib\podman-desktop\Podman Desktop.exe" exit 1  # [win]
+
+about:
+  home: https://podman-desktop.io
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - ThirdPartyNotices.txt
+  summary: Containers and Kubernetes for application developers
+  description: |
+    Podman Desktop is a graphical tool for developing containerized applications.
+    It provides a user-friendly interface to manage containers, pods, images,
+    and Kubernetes clusters using Podman and compatible container engines.
+
+    Features:
+    - Manage containers, pods, and images with a GUI
+    - Kubernetes integration for local development
+    - Extension system for adding capabilities
+    - Multi-platform support (Linux, Windows, macOS)
+    - Built with Electron for cross-platform desktop experience
+  dev_url: https://github.com/podman-desktop/podman-desktop
+  doc_url: https://podman-desktop.io/docs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
