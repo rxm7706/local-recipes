@@ -215,7 +215,7 @@ jobs:
           # Set environment variables expected by run_docker_build.sh
           export CONFIG=linux64
           export CI=github_actions
-          export AZURE=False
+          export AZURE=True
           export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
 
           # Change to repository root and run the official build script
@@ -334,7 +334,7 @@ jobs:
           # Set environment variables expected by run_docker_build.sh
           export CONFIG=linux_aarch64
           export CI=github_actions
-          export AZURE=False
+          export AZURE=True
           export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
 
           # Change to repository root and run the official build script
@@ -461,7 +461,7 @@ jobs:
           # Set environment variables expected by run_docker_build.sh
           export CONFIG=linux64_cuda${CUDA_VERSION}
           export CI=github_actions
-          export AZURE=False
+          export AZURE=True
           export CF_CUDA_ENABLED=True
           export CUDA_VERSION=${CUDA_VERSION}
           export DOCKER_IMAGE="quay.io/condaforge/linux-anvil-cuda:${CUDA_VERSION}"
