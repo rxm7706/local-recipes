@@ -56,7 +56,7 @@ ls -la ~/staged-recipes-copy/recipes
 echo "Finding recipes merged in main and removing them from the build."
 pushd "${FEEDSTOCK_ROOT}/recipes" > /dev/null
 if [ "${CI:-}" != "" ]; then
-    git fetch --force origin main:main
+    git fetch --force --update-head-ok origin main:main
 fi
 shopt -s extglob dotglob
 git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
