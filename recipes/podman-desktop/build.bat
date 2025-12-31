@@ -1,0 +1,90 @@
+@echo off
+setlocal enabledelayedexpansion
+
+echo === Build environment ===
+echo LIBRARY_PREFIX: %LIBRARY_PREFIX%
+echo SCRIPTS: %SCRIPTS%
+echo PWD: %CD%
+
+:: Display Node version
+node --version
+if errorlevel 1 exit /b 1
+
+echo === Setting up pnpm via corepack ===
+:: Enable corepack (bundled with Node.js 24+)
+call corepack enable
+if errorlevel 1 exit /b 1
+
+:: Prepare specific pnpm version used by Podman Desktop
+call corepack prepare pnpm@10.20.0 --activate
+if errorlevel 1 exit /b 1
+
+:: Verify pnpm is available
+call pnpm --version
+if errorlevel 1 exit /b 1
+
+echo === Configuring build environment ===
+:: Set memory limit for Vite renderer build (requires 6GB)
+set NODE_OPTIONS=--max-old-space-size=6144
+
+:: Disable code signing (conda builds don't need app store signing)
+set CSC_IDENTITY_AUTO_DISCOVERY=false
+set WIN_CSC_LINK=
+
+:: Disable auto-update (not applicable for conda packages)
+set PUBLISH_FOR_UPDATES=false
+
+echo === Installing dependencies ===
+:: Install all workspace dependencies
+:: --frozen-lockfile: Use exact versions from pnpm-lock.yaml
+:: --strict-peer-dependencies=false: conda's nodejs may not match exact semver ranges
+call pnpm install --frozen-lockfile --strict-peer-dependencies=false
+if errorlevel 1 exit /b 1
+
+echo === Building and packaging with electron-builder ===
+:: compile:current runs: MODE=production pnpm build && electron-builder
+:: This builds all TypeScript/Svelte code and packages with electron-builder
+call pnpm compile:current
+if errorlevel 1 exit /b 1
+
+echo === Generating third-party license notices ===
+:: Create combined license file for all npm dependencies
+call pnpm licenses generate-disclaimer --prod > ThirdPartyNotices.txt
+if errorlevel 1 (
+    echo WARNING: License generation had issues, creating placeholder
+    echo Third-party licenses information > ThirdPartyNotices.txt
+)
+
+:: Verify license files exist
+if not exist "LICENSE" (
+    echo ERROR: LICENSE file not found
+    exit /b 1
+)
+
+echo === Installing Podman Desktop to LIBRARY_PREFIX ===
+:: Install Electron app bundle
+if not exist "%LIBRARY_PREFIX%\lib" mkdir "%LIBRARY_PREFIX%\lib"
+if not exist "%LIBRARY_PREFIX%\lib\podman-desktop" mkdir "%LIBRARY_PREFIX%\lib\podman-desktop"
+
+:: Copy all files from win-unpacked to installation directory
+xcopy /E /I /Y "dist\win-unpacked\*" "%LIBRARY_PREFIX%\lib\podman-desktop\"
+if errorlevel 1 exit /b 1
+
+echo === Creating launcher script ===
+:: Create wrapper batch file in Scripts/
+if not exist "%SCRIPTS%" mkdir "%SCRIPTS%"
+
+:: Create launcher batch file
+(
+echo @echo off
+echo :: Podman Desktop launcher script
+echo :: Execute the Electron app from lib directory
+echo start "" "%LIBRARY_PREFIX%\lib\podman-desktop\Podman Desktop.exe" %%*
+) > "%SCRIPTS%\podman-desktop.bat"
+
+echo === Build completed successfully! ===
+echo Installed files:
+dir "%SCRIPTS%\podman-desktop.bat"
+dir "%LIBRARY_PREFIX%\lib\podman-desktop" | findstr /C:"Podman Desktop.exe"
+
+exit /b 0
