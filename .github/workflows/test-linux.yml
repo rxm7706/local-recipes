@@ -205,42 +205,21 @@ jobs:
             echo "type=meta.yaml" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build with Docker (rattler-build)
+      - name: Build with Docker (using official scripts)
         if: steps.recipe-type.outputs.type == 'recipe.yaml'
         run: |
           RECIPE="${{ matrix.recipe }}"
-          DOCKER_IMAGE="${{ steps.docker-image.outputs.image }}"
 
-          echo "Building $RECIPE with rattler-build in Docker"
+          echo "Building $RECIPE using official conda-forge build scripts"
 
-          mkdir -p build_artifacts
+          # Set environment variables expected by run_docker_build.sh
+          export CONFIG=linux64
+          export CI=github_actions
+          export AZURE=False
+          export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
 
-          docker run --rm \
-            -v "${{ github.workspace }}:/home/conda/staged-recipes:rw" \
-            -v "${{ github.workspace }}/build_artifacts:/home/conda/build_artifacts:rw" \
-            -e CI=true \
-            -e CONFIG=linux64 \
-            "$DOCKER_IMAGE" \
-            bash -c "
-              set -ex
-              cd /home/conda/staged-recipes
-
-              # Fix permissions for build_artifacts
-              sudo chmod -R 777 /home/conda/build_artifacts
-
-              # Install rattler-build
-              micromamba install -y -n base rattler-build conda-index
-
-              # Build the recipe
-              micromamba run -n base rattler-build build \
-                --recipe recipes/${RECIPE}/recipe.yaml \
-                --target-platform linux-64 \
-                --variant-config .ci_support/linux64.yaml \
-                --output-dir /home/conda/build_artifacts
-
-              # Index the output
-              micromamba run -n base conda-index /home/conda/build_artifacts
-            "
+          # Run the official build script
+          bash .scripts/run_docker_build.sh
 
       - name: Build with Docker (conda-build)
         if: steps.recipe-type.outputs.type == 'meta.yaml'
@@ -344,36 +323,21 @@ jobs:
             echo "type=meta.yaml" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build with Docker (rattler-build)
+      - name: Build with Docker (using official scripts - aarch64)
         if: steps.recipe-type.outputs.type == 'recipe.yaml'
         run: |
           RECIPE="${{ matrix.recipe }}"
-          DOCKER_IMAGE="${{ steps.docker-image.outputs.image }}"
 
-          echo "Building $RECIPE with rattler-build for linux-aarch64"
+          echo "Building $RECIPE for linux-aarch64 using official conda-forge build scripts"
 
-          mkdir -p build_artifacts
+          # Set environment variables expected by run_docker_build.sh
+          export CONFIG=linux_aarch64
+          export CI=github_actions
+          export AZURE=False
+          export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
 
-          docker run --rm --platform linux/arm64 \
-            -v "${{ github.workspace }}:/home/conda/staged-recipes:rw" \
-            -v "${{ github.workspace }}/build_artifacts:/home/conda/build_artifacts:rw" \
-            -e CI=true \
-            -e CONFIG=linux_aarch64 \
-            "$DOCKER_IMAGE" \
-            bash -c "
-              set -ex
-              cd /home/conda/staged-recipes
-
-              micromamba install -y -n base rattler-build conda-index
-
-              rattler-build build \
-                --recipe recipes/${RECIPE}/recipe.yaml \
-                --target-platform linux-aarch64 \
-                -c conda-forge \
-                --output-dir /home/conda/build_artifacts
-
-              conda-index /home/conda/build_artifacts
-            "
+          # Run the official build script
+          bash .scripts/run_docker_build.sh
 
       - name: Build with Docker (conda-build)
         if: steps.recipe-type.outputs.type == 'meta.yaml'
@@ -484,40 +448,25 @@ jobs:
             echo "type=meta.yaml" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build CUDA recipe with Docker
+      - name: Build CUDA recipe with Docker (using official scripts)
         if: steps.check-cuda.outputs.needs_cuda == 'true'
         run: |
           RECIPE="${{ matrix.recipe }}"
           CUDA_VERSION="${{ env.CUDA_VERSION }}"
-          DOCKER_IMAGE="quay.io/condaforge/linux-anvil-cuda:${CUDA_VERSION}"
-          RECIPE_TYPE="${{ steps.recipe-type.outputs.type }}"
 
-          echo "Building $RECIPE with CUDA $CUDA_VERSION"
+          echo "Building $RECIPE with CUDA $CUDA_VERSION using official conda-forge build scripts"
 
-          mkdir -p build_artifacts
+          # Set environment variables expected by run_docker_build.sh
+          export CONFIG=linux64_cuda${CUDA_VERSION}
+          export CI=github_actions
+          export AZURE=False
+          export CF_CUDA_ENABLED=True
+          export CUDA_VERSION=${CUDA_VERSION}
+          export DOCKER_IMAGE="quay.io/condaforge/linux-anvil-cuda:${CUDA_VERSION}"
+          export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
 
-          if [ "$RECIPE_TYPE" = "recipe.yaml" ]; then
-            BUILD_CMD="micromamba run -n base rattler-build build --recipe recipes/${RECIPE}/recipe.yaml --target-platform linux-64 --output-dir /home/conda/build_artifacts"
-            INSTALL_CMD="micromamba install -y -n base rattler-build conda-index"
-          else
-            BUILD_CMD="micromamba run -n base conda-build recipes/${RECIPE} -c conda-forge --output-folder /home/conda/build_artifacts"
-            INSTALL_CMD="micromamba install -y -n base conda-build conda-index && micromamba run -n base conda config --set channel_priority strict && micromamba run -n base conda config --add channels conda-forge"
-          fi
-
-          docker run --rm \
-            -v "${{ github.workspace }}:/home/conda/staged-recipes:rw" \
-            -v "${{ github.workspace }}/build_artifacts:/home/conda/build_artifacts:rw" \
-            -e CI=true \
-            -e CF_CUDA_ENABLED=True \
-            -e CUDA_VERSION=${CUDA_VERSION} \
-            "$DOCKER_IMAGE" \
-            bash -c "
-              set -ex
-              cd /home/conda/staged-recipes
-              ${INSTALL_CMD}
-              ${BUILD_CMD}
-              conda-index /home/conda/build_artifacts
-            "
+          # Run the official build script
+          bash .scripts/run_docker_build.sh
 
       - name: Upload CUDA artifacts
         uses: actions/upload-artifact@v4
