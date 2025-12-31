@@ -167,7 +167,6 @@ jobs:
           rattler-build build \
             --recipe "recipes/${RECIPE}/recipe.yaml" \
             --target-platform win-64 \
-            -c conda-forge \
             --variant-config .ci_support/win64.yaml \
             --output-dir "${CONDA_BLD_PATH}"
 

@@ -232,7 +232,6 @@ jobs:
               rattler-build build \
                 --recipe recipes/${RECIPE}/recipe.yaml \
                 --target-platform linux-64 \
-                -c conda-forge \
                 --variant-config .ci_support/linux64.yaml \
                 --output-dir /home/conda/build_artifacts
 
@@ -495,7 +494,7 @@ jobs:
           mkdir -p build_artifacts
 
           if [ "$RECIPE_TYPE" = "recipe.yaml" ]; then
-            BUILD_CMD="rattler-build build --recipe recipes/${RECIPE}/recipe.yaml --target-platform linux-64 -c conda-forge --output-dir /home/conda/build_artifacts"
+            BUILD_CMD="rattler-build build --recipe recipes/${RECIPE}/recipe.yaml --target-platform linux-64 --output-dir /home/conda/build_artifacts"
             INSTALL_CMD="micromamba install -y -n base rattler-build conda-index"
           else
             BUILD_CMD="conda-build recipes/${RECIPE} -c conda-forge --output-folder /home/conda/build_artifacts"
