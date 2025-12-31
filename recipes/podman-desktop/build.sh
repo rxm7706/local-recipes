@@ -51,10 +51,10 @@ pnpm build
 # Detect platform and use appropriate electron-builder target
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo "Building for Linux..."
-    pnpm electron-builder build --config .electron-builder.config.cjs --linux --dir --publish never
+    pnpm electron-builder build --config .electron-builder.config.cjs --linux --dir --publish never --config.electronRebuild=false
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Building for macOS..."
-    pnpm electron-builder build --config .electron-builder.config.cjs --mac --dir --publish never
+    pnpm electron-builder build --config .electron-builder.config.cjs --mac --dir --publish never --config.electronRebuild=false
 else
     echo "ERROR: Unsupported platform: $OSTYPE"
     exit 1

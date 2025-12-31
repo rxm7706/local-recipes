@@ -46,6 +46,11 @@ set GYP_MSVS_VERSION=2022
 :: Use distutils for Python (node-gyp compatibility)
 set SETUPTOOLS_USE_DISTUTILS=stdlib
 
+:: Skip native module rebuild (electron-rebuild fails on Electron 39.2.6)
+:: The native modules should work as-is since they're from npm
+set ELECTRON_SKIP_BINARY_DOWNLOAD=1
+set ELECTRON_REBUILD_DISABLED=1
+
 echo === Installing dependencies ===
 :: Install all workspace dependencies
 :: --frozen-lockfile: Use exact versions from pnpm-lock.yaml
@@ -58,8 +63,9 @@ echo === Building and packaging with electron-builder ===
 call pnpm build
 if errorlevel 1 exit /b 1
 
-:: Package with electron-builder, explicitly disabling publishing
-call pnpm exec electron-builder --win --x64 --publish never
+:: Package with electron-builder, explicitly disabling publishing and native rebuild
+:: --no-rebuild: Skip native module rebuild (fails with Electron 39.2.6)
+call pnpm exec electron-builder --win --x64 --publish never --config.electronRebuild=false
 if errorlevel 1 exit /b 1
 
 echo === Generating third-party license notices ===
