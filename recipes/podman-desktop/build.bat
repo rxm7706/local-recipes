@@ -34,6 +34,12 @@ set WIN_CSC_LINK=
 :: Disable auto-update (not applicable for conda packages)
 set PUBLISH_FOR_UPDATES=false
 
+:: Disable electron-builder publishing
+set ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES=true
+set CI=false
+set GH_TOKEN=
+set EP_PRE_RELEASE=false
+
 echo === Installing dependencies ===
 :: Install all workspace dependencies
 :: --frozen-lockfile: Use exact versions from pnpm-lock.yaml
@@ -42,9 +48,12 @@ call pnpm install --frozen-lockfile --strict-peer-dependencies=false
 if errorlevel 1 exit /b 1
 
 echo === Building and packaging with electron-builder ===
-:: compile:current runs: MODE=production pnpm build && electron-builder
-:: This builds all TypeScript/Svelte code and packages with electron-builder
-call pnpm compile:current
+:: Build TypeScript/Svelte code first
+call pnpm build
+if errorlevel 1 exit /b 1
+
+:: Package with electron-builder, explicitly disabling publishing
+call pnpm exec electron-builder --win --x64 --publish never
 if errorlevel 1 exit /b 1
 
 echo === Generating third-party license notices ===
