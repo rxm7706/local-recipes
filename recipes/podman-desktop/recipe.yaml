@@ -93,7 +93,7 @@ tests:
         - if: osx
           then: lib/Podman Desktop.app/Contents/MacOS/Podman Desktop
         - if: win
-          then: lib/podman-desktop/Podman Desktop.exe
+          then: "Library/lib/podman-desktop/Podman Desktop.exe"
 
 about:
   homepage: https://podman-desktop.io
