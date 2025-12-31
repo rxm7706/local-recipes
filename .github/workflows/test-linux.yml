@@ -225,6 +225,9 @@ jobs:
               set -ex
               cd /home/conda/staged-recipes
 
+              # Fix permissions for build_artifacts
+              sudo chown -R \$(id -u):\$(id -g) /home/conda/build_artifacts || true
+
               # Install rattler-build
               micromamba install -y -n base rattler-build conda-index
 
@@ -236,7 +239,7 @@ jobs:
                 --output-dir /home/conda/build_artifacts
 
               # Index the output
-              micromamba run -n base conda index /home/conda/build_artifacts
+              micromamba run -n base conda-index /home/conda/build_artifacts
             "
 
       - name: Build with Docker (conda-build)
@@ -274,7 +277,7 @@ jobs:
                 --output-folder /home/conda/build_artifacts
 
               # Index the output
-              conda index /home/conda/build_artifacts
+              conda-index /home/conda/build_artifacts
             "
 
       - name: Upload artifacts
@@ -369,7 +372,7 @@ jobs:
                 -c conda-forge \
                 --output-dir /home/conda/build_artifacts
 
-              conda index /home/conda/build_artifacts
+              conda-index /home/conda/build_artifacts
             "
 
       - name: Build with Docker (conda-build)
@@ -401,7 +404,7 @@ jobs:
                 -c conda-forge \
                 --output-folder /home/conda/build_artifacts
 
-              conda index /home/conda/build_artifacts
+              conda-index /home/conda/build_artifacts
             "
 
       - name: Upload artifacts
@@ -513,7 +516,7 @@ jobs:
               cd /home/conda/staged-recipes
               ${INSTALL_CMD}
               ${BUILD_CMD}
-              conda index /home/conda/build_artifacts
+              conda-index /home/conda/build_artifacts
             "
 
       - name: Upload CUDA artifacts

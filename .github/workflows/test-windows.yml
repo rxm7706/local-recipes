@@ -167,7 +167,7 @@ jobs:
           # Initialize conda channel structure
           mkdir -p "${CONDA_BLD_PATH}/win-64"
           mkdir -p "${CONDA_BLD_PATH}/noarch"
-          conda index "${CONDA_BLD_PATH}"
+          conda-index "${CONDA_BLD_PATH}"
 
           rattler-build build \
             --recipe "recipes/${RECIPE}/recipe.yaml" \
@@ -190,7 +190,7 @@ jobs:
       - name: Index build artifacts
         shell: bash -el {0}
         run: |
-          conda index "${CONDA_BLD_PATH}"
+          conda-index "${CONDA_BLD_PATH}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
