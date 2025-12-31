@@ -1,0 +1,62 @@
+{% set name = "claude-code-transcripts" %}
+{% set version = "0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/claude_code_transcripts-{{ version }}.tar.gz
+    sha256: 396677d7900fa222706e94136043161a915383f6e00f3bc259c6751751cdc7f8
+    patches:
+      - lazy-questionary-import.patch
+  - url: https://raw.githubusercontent.com/simonw/claude-code-transcripts/0.4/LICENSE
+    sha256: c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4
+    fn: LICENSE
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - uv-build >=0.9.7,<0.10.0
+  run:
+    - python >={{ python_min }}
+    - click
+    - click-default-group
+    - httpx
+    - jinja2
+    - markdown
+    - questionary
+
+test:
+  imports:
+    - claude_code_transcripts
+  commands:
+    - claude-code-transcripts --version
+    - claude-code-transcripts --help
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/simonw/claude-code-transcripts
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Convert Claude Code session files to clean, mobile-friendly HTML pages
+  description: |
+    A command-line tool that converts Claude Code session files (JSON or JSONL)
+    to clean, mobile-friendly HTML pages with pagination. Features include four
+    command modes (local, web, json, and all), GitHub Gist publishing integration,
+    session filtering, and auto-naming options.
+  doc_url: https://github.com/simonw/claude-code-transcripts
+  dev_url: https://github.com/simonw/claude-code-transcripts
+
+extra:
+  recipe-maintainers:
+    - rxm7706
