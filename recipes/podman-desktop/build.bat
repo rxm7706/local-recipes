@@ -40,6 +40,12 @@ set CI=false
 set GH_TOKEN=
 set EP_PRE_RELEASE=false
 
+:: Configure node-gyp to use conda's compilers and VS Build Tools
+set npm_config_msvs_version=2022
+set GYP_MSVS_VERSION=2022
+:: Use distutils for Python (node-gyp compatibility)
+set SETUPTOOLS_USE_DISTUTILS=stdlib
+
 echo === Installing dependencies ===
 :: Install all workspace dependencies
 :: --frozen-lockfile: Use exact versions from pnpm-lock.yaml
