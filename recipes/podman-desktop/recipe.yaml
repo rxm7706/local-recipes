@@ -61,9 +61,11 @@ requirements:
 
   run:
     - nodejs ${{ nodejs_min }}.*
-    # Kubernetes tools for container orchestration
-    - kubernetes-kind      # kind: Kubernetes in Docker
-    - kubernetes-client    # kubectl and Kubernetes client tools
+    # Kubernetes tools for container orchestration (Linux/macOS only)
+    - if: unix
+      then:
+        - kubernetes-kind      # kind: Kubernetes in Docker
+        - kubernetes-client    # kubectl and Kubernetes client tools
 
 tests:
   - script:
