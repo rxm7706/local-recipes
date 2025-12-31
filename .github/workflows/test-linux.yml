@@ -218,7 +218,8 @@ jobs:
           export AZURE=False
           export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
 
-          # Run the official build script
+          # Change to repository root and run the official build script
+          cd "${{ github.workspace }}"
           bash .scripts/run_docker_build.sh
 
       - name: Build with Docker (conda-build)
@@ -336,7 +337,8 @@ jobs:
           export AZURE=False
           export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
 
-          # Run the official build script
+          # Change to repository root and run the official build script
+          cd "${{ github.workspace }}"
           bash .scripts/run_docker_build.sh
 
       - name: Build with Docker (conda-build)
@@ -465,7 +467,8 @@ jobs:
           export DOCKER_IMAGE="quay.io/condaforge/linux-anvil-cuda:${CUDA_VERSION}"
           export DEFAULT_LINUX_VERSION="${{ inputs.linux_version || 'alma9' }}"
 
-          # Run the official build script
+          # Change to repository root and run the official build script
+          cd "${{ github.workspace }}"
           bash .scripts/run_docker_build.sh
 
       - name: Upload CUDA artifacts
