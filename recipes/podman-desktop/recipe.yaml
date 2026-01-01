@@ -25,10 +25,10 @@ build:
       then: bash $RECIPE_DIR/build.sh
     - if: win
       then: call %RECIPE_DIR%\build.bat
-  # Skip binary relinking on macOS - Electron binaries don't have header padding
-  binary_relocation:
-    - if: osx
-      then: false
+  # Disable binary relocation - Electron apps are self-contained and pre-built binaries
+  # don't have header padding for install_name_tool on macOS
+  dynamic_linking:
+    binary_relocation: false
 
 requirements:
   build:
