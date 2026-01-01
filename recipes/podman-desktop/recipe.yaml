@@ -25,6 +25,10 @@ build:
       then: bash $RECIPE_DIR/build.sh
     - if: win
       then: call %RECIPE_DIR%\build.bat
+  # Skip binary relinking on macOS - Electron binaries don't have header padding
+  binary_relocation:
+    - if: osx
+      then: false
 
 requirements:
   build:
