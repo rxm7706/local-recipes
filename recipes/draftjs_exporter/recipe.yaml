@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: draftjs_exporter
+  version: "5.2.0"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/draftjs_exporter-${{ version }}.tar.gz
+  sha256: 4d665f8c75fd173d2c99326405300e8defcf4961b9b2f16ff117486489c6760b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - uv-build >=0.9.21,<0.10.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - draftjs_exporter
+        - draftjs_exporter.engines
+        - draftjs_exporter.utils
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Library to convert rich text from Draft.js raw ContentState to HTML
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/springload/draftjs_exporter
+  homepage: https://github.com/springload/draftjs_exporter
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706
+    - sannykr

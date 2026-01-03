@@ -1,5 +1,6 @@
 {% set name = "draftjs_exporter" %}
-{% set version = "2.1.7" %}
+{% set version = "5.2.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/draftjs_exporter-{{ version }}.tar.gz
-  sha256: 5839cbc29d7bce2fb99837a404ca40c3a07313f2a20e2700de7ad6aa9a9a18fb
+  sha256: 4d665f8c75fd173d2c99326405300e8defcf4961b9b2f16ff117486489c6760b
 
 build:
   noarch: python
@@ -16,25 +17,38 @@ build:
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
+    - uv-build >=0.9.21,<0.10.0
     - pip
   run:
-    - python
+    - python >={{ python_min }}
+    # - lxml <7,>=4.2.0
+    # - html5lib <2,>=0.999
+    # - beautifulsoup4 <5,>=4.4.1
 
 test:
   imports:
     - draftjs_exporter
+    - draftjs_exporter.engines
+    - draftjs_exporter.utils
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/springload/draftjs_exporter
-  summary: Library to convert rich text from Draft.js raw ContentState to HTML
   license: MIT
+  license_family: MIT
   license_file: LICENSE
+  summary: Library to convert rich text from Draft.js raw ContentState to HTML
+  description: Library to convert Draft.js ContentState to HTML
+  doc_url: https://github.com/springload/draftjs_exporter
+  dev_url: https://github.com/springload/draftjs_exporter
 
 extra:
   recipe-maintainers:
+    - cshaley
     - rxm7706
+    - sannykr
