@@ -1,5 +1,5 @@
 {% set name = "pygwalker" %}
-{% set version = "0.4.9.15" %}
+{% set version = "0.5.0.0" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -8,21 +8,21 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pygwalker-{{ version }}.tar.gz
-  sha256: 747b726e8acd35f20aef8ee74652a948575fb70b5fa8f816a692c9870d0ab0cb
+  sha256: cb2f11088c7308da03dc21a176a03dd8eb77dc611835deffd24168960e48f6de
 
 build:
+  entry_points:
+    - pygwalker = bin.pygwalker_command:main
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 1
-  entry_points:
-    - pygwalker = bin.pygwalker_command:main
 
 requirements:
   host:
     - python {{ python_min }}
-    - pip
     - hatchling
     - hatch-jupyter-builder
+    - pip
   run:
     - python >={{ python_min }},<4.0
     - jinja2
@@ -32,7 +32,7 @@ requirements:
     - ipywidgets
     - pydantic
     - psutil
-    - python-duckdb >=0.10.1,<2.0.0
+    - python-duckdb >=0.10.4,<2.0.0
     - pyarrow
     - sqlglot >=23.15.8
     - requests
@@ -53,11 +53,16 @@ requirements:
     - python-quickjs
     - traitlets
     - anywidget
+
 test:
   imports:
     - pygwalker
   commands:
-    - pip check
+    #- pip check # disabled
+    # gw-dsl-parser 0.1.49.1 has requirement wasmtime>=12.0.0, but you have wasmtime 0.0.0.
+    # however both wastime-py and gw-dsl-parser are correctly installed.
+    # wasmtime-py:                      40.0.0-py310hdfeec95_1        conda-forge
+    # gw-dsl-parser:                    0.1.49.1-pyhcf101f3_0         conda-forge
     - pygwalker --help
   requires:
     - pip

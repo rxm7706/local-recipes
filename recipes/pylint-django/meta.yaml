@@ -1,13 +1,14 @@
 {% set name = "pylint-django" %}
-{% set version = "2.6.1" %}
+{% set version = "2.7.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pylint-django-{{ version }}.tar.gz
-  sha256: 19e8c85a8573a04e3de7be2ba91e9a7c818ebf05e1b617be2bbae67a906b725f
+  url: https://github.com/pylint-dev/pylint-django/archive/v{{ version }}.tar.gz
+  sha256: c5834c555d18000a3542ac63aadbd0c2da46ceaf2a72069d674ffee19937ec7a
 
 build:
   noarch: python
@@ -16,30 +17,38 @@ build:
 
 requirements:
   host:
-    - python >=3.9,<4.0
-    - poetry-core >=1
+    - python {{ python_min }}
+    - poetry-core
     - pip
   run:
-    - python >=3.9,<4.0
+    - python >={{ python_min }},<4.0
     - pylint-plugin-utils >=0.8
-    - pylint >=3.0,<4
+    - pylint >=3.0,<5
   run_constrained:
-    - Django >=2.2
+    - django >=2.2
 
 test:
   imports:
     - pylint_django
+    - pylint_django.augmentations
+    - pylint_django.checkers
+    - pylint_django.transforms
   commands:
     - pip check
+    - pylint --version
   requires:
+    - python {{ python_min }}
     - pip
+    - django >=2.2
 
 about:
-  home: https://github.com/pylint-dev/pylint-django
+  home: https://github.com/PyCQA/pylint-django
   summary: A Pylint plugin to help Pylint understand the Django web framework
-  license: GPL-2.0
-  license_file: pylint_django/LICENSE
+  license: GPL-2.0-only
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:
+    - anthchirp
     - rxm7706
+    - jakirkham
