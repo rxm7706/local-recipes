@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: git-credential-manager
+  version: "2.6.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/git-ecosystem/git-credential-manager/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: aba0b06b59daa1cd8a16bd9e1ca31a6d9da73e524fe8c045f3acbd0000be1b5e
+
+build:
+  number: 0
+  script:
+    - if: linux and x86_64
+      then:
+        - dotnet publish src/shared/Git-Credential-Manager/Git-Credential-Manager.csproj -c Release -f net8.0 --self-contained -r linux-x64 -o $PREFIX/lib/$PKG_NAME
+        - mkdir -p $PREFIX/bin
+        - ln -s $PREFIX/lib/$PKG_NAME/git-credential-manager $PREFIX/bin/git-credential-manager
+    - if: linux and aarch64
+      then:
+        - dotnet publish src/shared/Git-Credential-Manager/Git-Credential-Manager.csproj -c Release -f net8.0 --self-contained -r linux-arm64 -o $PREFIX/lib/$PKG_NAME
+        - mkdir -p $PREFIX/bin
+        - ln -s $PREFIX/lib/$PKG_NAME/git-credential-manager $PREFIX/bin/git-credential-manager
+    - if: osx and x86_64
+      then:
+        - dotnet publish src/shared/Git-Credential-Manager/Git-Credential-Manager.csproj -c Release -f net8.0 --self-contained -r osx-x64 -o $PREFIX/lib/$PKG_NAME
+        - mkdir -p $PREFIX/bin
+        - ln -s $PREFIX/lib/$PKG_NAME/git-credential-manager $PREFIX/bin/git-credential-manager
+    - if: osx and arm64
+      then:
+        - dotnet publish src/shared/Git-Credential-Manager/Git-Credential-Manager.csproj -c Release -f net8.0 --self-contained -r osx-arm64 -o $PREFIX/lib/$PKG_NAME
+        - mkdir -p $PREFIX/bin
+        - ln -s $PREFIX/lib/$PKG_NAME/git-credential-manager $PREFIX/bin/git-credential-manager
+    - if: win and x86_64
+      then:
+        - dotnet publish src/shared/Git-Credential-Manager/Git-Credential-Manager.csproj -c Release -f net8.0 --self-contained -r win-x64 -o %LIBRARY_PREFIX%\lib\%PKG_NAME%
+        - copy %LIBRARY_PREFIX%\lib\%PKG_NAME%\git-credential-manager.exe %LIBRARY_BIN%\git-credential-manager.exe
+
+requirements:
+  host:
+    - dotnet-sdk 8.*
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - git-credential-manager --version
+      - if: win
+        then:
+          - git-credential-manager.exe --version
+
+about:
+  homepage: https://github.com/git-ecosystem/git-credential-manager
+  license: MIT
+  license_file: LICENSE
+  summary: Secure, cross-platform Git credential storage with authentication to GitHub, Azure Repos, and other Git hosting services
+  description: |
+    Git Credential Manager (GCM) is a secure Git credential helper built on .NET
+    that runs on Windows, macOS, and Linux. It provides authentication support
+    for GitHub, Azure DevOps, Bitbucket, and GitLab, including multi-factor
+    authentication.
+  repository: https://github.com/git-ecosystem/git-credential-manager
+  documentation: https://github.com/git-ecosystem/git-credential-manager/blob/main/README.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
