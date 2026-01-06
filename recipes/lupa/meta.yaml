@@ -1,6 +1,5 @@
 {% set name = "lupa" %}
-{% set version = "2.5" %}
-{% set python_min = "3.10" %}
+{% set version = "2.6" %}
 
 package:
   name: {{ name|lower }}
@@ -8,10 +7,10 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lupa-{{ version }}.tar.gz
-  sha256: 69c6a89f2b7b08a3040d7ed2a1eeccba37a31ddc92fa199339c53a2ae3c48c34
+  sha256: 9a770a6e89576be3447668d7ced312cd6fd41d3c13c2462c9dc2c2ab570e45d9
 
 build:
-  script: {{ PYTHON }} -m pip install . -vv --no-build-isolation
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
@@ -24,9 +23,10 @@ requirements:
     - gcc  # [linux]
   host:
     - python
-    - cython
-    - pip
+    - cython      # >=3.1.6
     - setuptools
+    - wheel
+    - pip
     - lua
     - luajit
   run:
@@ -44,7 +44,11 @@ about:
   home: https://github.com/scoder/lupa
   summary: Python wrapper around Lua and LuaJIT
   license: MIT
-  license_file: LICENSE.txt
+  license_file:
+    - LICENSE.txt
+    - third-party/lua51/COPYRIGHT
+    - third-party/luajit20/COPYRIGHT
+    - third-party/luajit21/COPYRIGHT
 
 extra:
   recipe-maintainers:
