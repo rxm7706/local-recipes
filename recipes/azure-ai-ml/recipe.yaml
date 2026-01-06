@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: azure-ai-ml
-  version: "1.27.1"
-  python_min: '3.9'
+  version: "1.31.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_ai_ml-${{ version }}.tar.gz
-  sha256: 2925aa68796f11c2742c7603cf7115325dbbcf75c3a46af01a8f321627c22ba2
+  sha256: ba3f00df768292e197c47a03eb8eeb36d70bc865fca3fcf67738e0f124cc0d1c
 
 build:
   number: 0
@@ -27,7 +27,6 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - pyyaml >=5.1.0,<7.0.0
-    - msrest >=0.6.18,<1.0.0
     - azure-core >=1.23.0
     - azure-mgmt-core >=1.3.0
     - marshmallow >=3.5,<4.0.0
@@ -44,7 +43,6 @@ requirements:
     - azure-common >=1.1
     - typing_extensions <5.0.0
     - azure-monitor-opentelemetry
-    - six >=1.11.0
 
 tests:
   - python:
@@ -61,8 +59,10 @@ about:
        Microsoft Azure Azure Core OpenTelemetry plugin Library for Python.
   repository: https://github.com/Azure/azure-sdk-for-python
   documentation: https://github.com/Azure/azure-sdk-for-python/blob/main/README.md
-  license: Apache-2.0
-  license_file: NOTICE.txt
+  license: MIT
+  license_file:
+    - NOTICE.txt
+    - LICENSE
 
 extra:
   recipe-maintainers:
