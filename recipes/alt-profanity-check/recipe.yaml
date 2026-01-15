@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: alt-profanity-check
+  version: "1.8.0"
+  python_min: '3.11'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/alt_profanity_check-${{ version }}.tar.gz
+  sha256: bdfcd0f9ca205065b2dcf05b5cfb5f4fe2528ebe4b0b4d3c6649334ab8159c82
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - profanity_check=profanity_check.command_line:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - scikit-learn ==1.8.0
+    - joblib ==1.5.3
+
+tests:
+  - python:
+      imports:
+        - profanity_check
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - profanity_check --help
+
+about:
+  summary: A fast, robust library to check for offensive language in strings. Dropdown replacement of "profanity-check".
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/dimitrismistriotis/alt-profanity-check
+
+extra:
+  recipe-maintainers:
+    - rxm7706

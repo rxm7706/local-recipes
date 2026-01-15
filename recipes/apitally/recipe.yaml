@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: apitally
-  version: "0.18.0"
-  python_min: '3.9'
+  version: 0.23.0
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apitally-${{ version }}.tar.gz
-  sha256: f6d74cead1a59cc7adb709622091a5bdcd3805aea7765bf518a38b43f039679c
+  sha256: 1082c7bcca134511ab88a188b9da0220d61f8623fd0d81e25da4f213491023f4
 
 build:
   number: 0
@@ -28,6 +28,10 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - backoff >=2.0.0
+    - opentelemetry-sdk >=1.39.1,<2.0.0
+    - psutil >=5.9.6
+    - if: match(python, "<3.11")
+      then: typing_extensions >=4.0.0
 
 tests:
   - python:
