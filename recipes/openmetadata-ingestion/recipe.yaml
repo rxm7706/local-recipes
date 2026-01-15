@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: openmetadata-ingestion
-  version: "1.11.2.0"
+  version: "1.11.5.0"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openmetadata_ingestion-${{ version }}.tar.gz
-  sha256: 34f6a301d843988b7dd709025fc367a82032472def42f5d7f1b18d5964be5650
+  sha256: 58d3d0bd0a6894ed0277a4cff121eb9f87adaf3629859c839fbb7f71b9e868a0
 
 build:
   number: 0
@@ -29,47 +29,49 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - httpx >=0.28.0,<0.29.0
-    - antlr4-python3-runtime ==4.9.2  # Needs Equal
-    - collate-data-diff >=0.11.6
-    - jinja2 >=2.11.3
-    - python-dotenv >=0.19.0
-    - pyyaml >=6.0,<7.0
-    - cached-property ==1.5.2  # Needs Equal
-    - azure-identity >=1.12,<2.0
-    - cryptography >=42.0.0
-    - python-dateutil >=2.8.1
-    - shapely
+    - mysql-connector-python >=9.1
+    - packaging
     # typing_inspect is the conda-forge package name for typing-inspect pypi package
     - typing_inspect
-    - google-crc32c
+    - cryptography >=42.0.0
+    - requests >=2.23
+    - chardet ==4.0.0  # Needs Equal
+    - shapely
+    - antlr4-python3-runtime ==4.9.2  # Needs Equal
+    - python-dotenv >=0.19.0
+    - cached-property ==1.5.2  # Needs Equal
+    - snowflake-connector-python >=3.13.1,<4.0.0
     - sqlalchemy >=1.4.0,<2
-    - jsonpatch <2.0,>=1.24
-    - requests-aws4auth >=1.1,<2.0
+    - pydantic-settings >=2.0,<3.0,>=2.7.0
     # mypy_extensions is the conda-forge package name for mypy-extensions pypi package
     - mypy_extensions >=0.4.3
-    - pydantic >=2.0,<3.0,>=2.7.0,<2.12
-    - importlib-metadata >=4.13.0
-    - mysql-connector-python >=9.1
-    - pydantic-settings >=2.0,<3.0,>=2.7.0
-    - packaging
-    - azure-keyvault-secrets
-    - snowflake-connector-python >=3.13.1,<4.0.0
+    - httpx >=0.28.0,<0.29.0
+    - email-validator >=2.0
     - setuptools >=78.1.1,<78.2.0
-    - google-cloud-secret-manager ==2.24.0  # Needs Equal
-    - pymysql >=1.0,<2.0
-    - chardet ==4.0.0  # Needs Equal
     - boto3 >=1.20,<2.0
-    - jaraco.functools <4.2.0
+    - google-cloud-secret-manager ==2.24.0  # Needs Equal
     # memory_profiler is the conda-forge package name for memory-profiler pypi package
     - memory_profiler
-    - tabulate ==0.9.0  # Needs Equal
-    - requests >=2.23
-    - collate-sqllineage >=1.6.0,<1.7.0
-    # Manual Add of collate-sqlfluff
+    - jsonpatch <2.0,>=1.24
+    - jinja2 >=2.11.3
+    - azure-identity >=1.12,<2.0
+    - importlib-metadata >=4.13.0
+    - google-crc32c
+    - pydantic >=2.0,<3.0,>=2.7.0,<2.12
+    - requests-aws4auth >=1.1,<2.0
+    - jaraco.functools <4.2.0
+    - collate-sqllineage >=2.0,<3.0
+    - # Manual Add of collate-sqlfluff
     - collate-sqlfluff  # Needed for collate-sqllineage
-    - email-validator >=2.0
+    - pyyaml >=6.0,<7.0
     - python-kubernetes >=21.0.0
+    - python-dateutil >=2.8.1
+    - collate-data-diff >=0.11.6
+    - tabulate ==0.9.0  # Needs Equal
+    - pymysql >=1.0,<2.0
+    - azure-keyvault-secrets
+    # Manual Add of cachetools
+    - cachetools
 
 tests:
   - python:
