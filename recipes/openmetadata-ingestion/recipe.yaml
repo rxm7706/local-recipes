@@ -61,7 +61,7 @@ requirements:
     - requests-aws4auth >=1.1,<2.0
     - jaraco.functools <4.2.0
     - collate-sqllineage >=2.0,<3.0
-    - # Manual Add of collate-sqlfluff
+    # Manual Add of collate-sqlfluff
     - collate-sqlfluff  # Needed for collate-sqllineage
     - pyyaml >=6.0,<7.0
     - python-kubernetes >=21.0.0
