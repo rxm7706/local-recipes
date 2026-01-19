@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: feast
-  version: "0.54.0"
+  version: "0.59.0"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/feast-${{ version }}.tar.gz
-  sha256: 9e7f9be608902febbf813f8cf5730d3227d4d18262039d3601427319d1da3800
+  sha256: f4a09733ca8a2967495d95230d0e433ff8c9b1181ef0bf9a92729f69f74ac606
 
 build:
   number: 0
@@ -42,8 +42,8 @@ requirements:
     - mmh3
     - numpy >=2.0.0,<3
     - pandas >=1.4.3,<3
-    - pyarrow <=17.0.0
-    - pydantic ==2.10.6
+    - pyarrow >=21.0.0
+    - pydantic >=2.10.6
     - pygments >=2.12.0,<3
     - pyyaml >=5.4.0,<7
     - requests
