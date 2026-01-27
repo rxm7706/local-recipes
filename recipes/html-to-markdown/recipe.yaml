@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: html-to-markdown
-  version: 2.22.2
-  python_min: '3.11'
+  version: "2.23.4"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/html_to_markdown-${{ version }}.tar.gz
-  sha256: 3079eb6316d4c9f8cd1d1a40cea219c54bbf050bc6c7787d45890743bf916b77
+  sha256: 3452274e9a8409fcdde73b22fcc6147e4e84c9d95164497209173f430a670e75
 
 build:
   number: 0
@@ -38,7 +38,12 @@ requirements:
       then:
         - python
         - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1.9,<2
+
+    - ${{ compiler("c") }}
     - ${{ compiler("rust") }}
+    #- ${{ stdlib('c') }}
     - cargo-bundle-licenses
   host:
     - python
@@ -67,7 +72,7 @@ about:
   license_file:
     - LICENSE
     - THIRDPARTY.yml
-  homepage: https://github.com/Goldziher/html-to-markdown
+  homepage: https://github.com/kreuzberg-dev/html-to-markdown
 
 extra:
   recipe-maintainers:

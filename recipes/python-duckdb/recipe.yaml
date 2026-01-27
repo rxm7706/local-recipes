@@ -1,0 +1,83 @@
+schema_version: 1
+
+context:
+  name: duckdb
+  version: 1.4.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/duckdb-${{ version }}.tar.gz
+  sha256: 8bba52fd2acb67668a4615ee17ee51814124223de836d9e2fdcbc4c9021b3d3c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9.0
+    - scikit-build-core >=0.11.4
+    - pybind11 >=2.6.0
+    - setuptools-scm >=8.0
+    - pip
+  run:
+    - python >=3.9.0
+
+tests:
+  - python:
+      imports:
+        - duckdb
+      pip_check: true
+
+about:
+  summary: DuckDB in-process database
+  license: Apache-2.0 AND BSD-3-Clause AND MIT AND BSD-4-Clause AND BSD-2-Clause AND EPL-2.0 AND CC0-1.0
+  license_file:
+    - LICENSE
+    - external/duckdb/LICENSE
+    - external/duckdb/extension/tpch/dbgen/LICENSE
+    - external/duckdb/extension/jemalloc/jemalloc/LICENSE
+    - external/duckdb/extension/icu/third_party/icu/LICENSE
+    - external/duckdb/third_party/fmt/LICENSE
+    - external/duckdb/third_party/fast_float/LICENSE
+    - external/duckdb/third_party/tdigest/LICENSE
+    - external/duckdb/third_party/miniz/LICENSE
+    - external/duckdb/third_party/fsst/LICENSE
+    - external/duckdb/third_party/re2/LICENSE
+    - external/duckdb/third_party/utf8proc/LICENSE
+    - external/duckdb/third_party/yyjson/LICENSE
+    - external/duckdb/third_party/thrift/thrift/LICENSE
+    - external/duckdb/third_party/httplib/LICENSE
+    - external/duckdb/third_party/parquet/LICENSE
+    - external/duckdb/third_party/fastpforlib/LICENSE
+    - external/duckdb/third_party/mbedtls/LICENSE
+    - external/duckdb/third_party/skiplist/LICENSE
+    - external/duckdb/third_party/ska_sort/LICENSE
+    - external/duckdb/third_party/libpg_query/LICENSE
+    - external/duckdb/third_party/snappy/LICENSE
+    - external/duckdb/third_party/lz4/LICENSE
+    - external/duckdb/third_party/brotli/LICENSE
+    - external/duckdb/third_party/concurrentqueue/LICENSE
+    - external/duckdb/third_party/zstd/LICENSE
+    - external/duckdb/third_party/pdqsort/LICENSE
+    - external/duckdb/third_party/jaro_winkler/LICENSE
+    - external/duckdb/third_party/vergesort/LICENSE
+    - external/duckdb/third_party/hyperloglog/LICENSE
+    - external/duckdb/third_party/snowball/LICENSE
+    - external/duckdb/third_party/pcg/LICENSE
+    - external/duckdb/data/geoparquet/LICENSE
+    - external/duckdb/src/include/duckdb/storage/compression/alp/algorithm/LICENSE
+    - external/duckdb/src/include/duckdb/storage/compression/alprd/algorithm/LICENSE
+    - external/duckdb/tools/shell/linenoise/LICENSE
+    - external/duckdb/tools/juliapkg/LICENSE
+    - external/duckdb/tools/swift/duckdb-swift/LICENSE
+    - duckdb/experimental/spark/LICENSE
+  repository: https://github.com/duckdb/duckdb-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706

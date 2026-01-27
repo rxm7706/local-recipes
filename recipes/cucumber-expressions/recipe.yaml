@@ -2,17 +2,18 @@
 schema_version: 1
 
 context:
-  name: wagtail-resume
-  version: "2.12.0"
+  name: cucumber-expressions
+  version: "18.1.0"
   python_min: '3.10'
+
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_resume-${{ version }}.tar.gz
-  sha256: a406085793d51cabec5b68ccffe893ac13961d64e497b95bc4f4b33cbbaa9144
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cucumber_expressions-${{ version }}.tar.gz
+  sha256: b6f31c15def3821ed8313d7c59c3ccd6e5b607ee65b86ad33140a43e8858d1f2
 
 build:
   number: 0
@@ -22,27 +23,21 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core
+    - uv-build >=0.9.0,<0.10.0
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - django >=4.0.0,<7.0.0
-    - wagtail >=4.0.0,<8.0.0
-    - wagtail-markdown >=0.10.0,<0.14.0
-    - wagtail-metadata >=4.0.0,<6.0.0
-    - weasyprint >=63.0.0,<68.0.0
-    - pymdown-extensions >=10.0.0,<12.0.0
 
 tests:
   - python:
       imports:
-        - wagtail_resume
+        - cucumber_expressions
       pip_check: true
       python_version: ${{ python_min }}.*
 
 about:
-  summary: A Wagtail project made to simplify creation of resumes for developers.
-  homepage: https://github.com/adinhodovic/wagtail-resume
+  summary: Cucumber Expressions - a simpler alternative to Regular Expressions
+  homepage: https://github.com/cucumber/cucumber-expressions
   license: MIT
   license_file: LICENSE
 
