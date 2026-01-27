@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: django-components
-  version: "0.141.0"
-  python_min: '3.9'
+  version: "0.146.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_components-${{ version }}.tar.gz
-  sha256: 59dc1f4ddc936ae0a4d0d1cf531d23ec94e744be3a5c93a6298e6c75eba10b04
+  sha256: 8906d5adeb7ea87371a852989228ed309f10261afa2d4e6ce750c9d00af73d3e
 
 build:
   number: 0
@@ -27,7 +27,7 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - django >=4.2
-    - djc-core-html-parser >=1.0.2
+    - djc-core >=1.2.2
     - typing_extensions >=4.12.2
 
 tests:
@@ -46,7 +46,6 @@ about:
   documentation: https://django-components.github.io/django-components/latest/reference/api/
   license: MIT
   license_file: LICENSE
-
 
 extra:
   recipe-maintainers:
