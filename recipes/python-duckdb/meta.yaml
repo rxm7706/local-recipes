@@ -28,12 +28,11 @@ outputs:
         - {{ compiler('c') }}
         - {{ compiler('cxx') }}
       host:
-        - pybind11 >=2.6
-        - scikit-build-core >=0.11.4
         - python
+        - scikit-build-core >=0.11.4
+        - pybind11 >=2.6
         - pip
-        - setuptools
-        - setuptools_scm >=8
+        - setuptools-scm >=8.0
       run:
         - python
 

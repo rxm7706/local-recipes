@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: django-tasks
-  version: "0.7.0"
-  python_min: '3.9'
+  version: "0.11.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_tasks-${{ version }}.tar.gz
-  sha256: 499f80d1a051566443cfa88a300d8b03435af7fc5708cad4d8da6d285614f739
+  sha256: 923bf4ac444daee5d879393daf09c7cdf4575c8b0e12726c9d9fceafdea5187f
 
 build:
   number: 0
@@ -35,6 +35,8 @@ tests:
       imports:
         - django_tasks
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
 
 about:
   summary: An implementation and backport of background workers and tasks in Django
@@ -49,3 +51,4 @@ about:
 extra:
   recipe-maintainers:
     - darynwhite
+    - rxm7706

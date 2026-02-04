@@ -1,0 +1,44 @@
+schema_version: 1
+
+context:
+  name: okta-jwt-verifier
+  version: 0.3.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/okta_jwt_verifier-${{ version }}.tar.gz
+  sha256: 1bf7c0d8100af5933b746ed4c5a7cd3d07463c9fa72b4cb7c55e215acb05abc1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - pyjwt >=2.8.0,<3.0.0
+    - acachecontrol >=0.3.6,<0.4.0
+    - retry2 >=0.9.5,<0.10.0
+
+tests:
+  - python:
+      imports:
+        - okta_jwt_verifier
+      pip_check: true
+
+about:
+  summary: A Python library for OKTA JWT tokens validation
+  license: Apache-2.0
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
