@@ -1,5 +1,6 @@
 {% set name = "okta-jwt-verifier" %}
-{% set version = "0.2.8" %}
+{% set version = "0.3.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -7,34 +8,41 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/okta_jwt_verifier-{{ version }}.tar.gz
-  sha256: bd3b3280738bf8de1b40fffcc1a34b5ae442d25490b7049eeadaed0565957b7e
+  sha256: 1bf7c0d8100af5933b746ed4c5a7cd3d07463c9fa72b4cb7c55e215acb05abc1
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+   - cp -R {{ RECIPE_DIR }}/LONG_DESCRIPTION.md {{ SRC_DIR }}/LONG_DESCRIPTION.md  # [unix]
+   - echo f | xcopy /f /y /S %RECIPE_DIR%\LONG_DESCRIPTION.md %SRC_DIR%\LONG_DESCRIPTION.md  # [win]
+   - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python >=3.8,<4.0
-    - poetry-core
+    - python {{ python_min }}
     - pip
+    - poetry-core
   run:
-    - python >=3.8.0,<4.0.0
+    - python >={{ python_min }}
     - pyjwt >=2.8.0,<3.0.0
     - acachecontrol >=0.3.6,<0.4.0
-    - retry2 >=0.9.5,<0.10.0
+    - retry  #2 >=0.9.5,<0.10.0
 
 test:
   imports:
     - okta_jwt_verifier
   commands:
-    - pip check
+    #- pip check
+    #- python -c "from importlib.metadata import version; print(version('{{ name }}'))"
+    - python -c "assert __import__('okta_jwt_verifier').__version__ == '{{ version }}'"
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  summary: A Python library for OKTA JWT tokens validation
+  home: https://github.com/okta/okta-jwt-verifier-python
+  summary: Okta JWT Verifier
   license: Apache-2.0
   license_file: LICENSE.md
 

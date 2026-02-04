@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: modelsearch
-  version: "1.1"
+  version: "1.1.1"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/modelsearch-${{ version }}.tar.gz
-  sha256: bdccbe9c80b7ac37aecc998ca13f7b05915acca1a2405d73755245df03a37a36
+  sha256: 25f329c4d93572729c931f65c46cedb5cfc32d368690ebdabc223aa6205251d6
 
 build:
   number: 0
@@ -26,8 +26,8 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - django >5.0,<6
-    - django-tasks >=0.7,<0.9
+    - django >=4.2
+    - django-tasks >=0.7,<0.10
 
 tests:
   - python:
@@ -41,7 +41,8 @@ about:
   summary: A library for indexing Django models with Elasicsearch, OpenSearch or database and searching them with the Django ORM.
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/kaedroho/django-modelsearch
+  homepage: https://github.com/wagtail/django-modelsearch
+  repository: https://github.com/wagtail/django-modelsearch
 
 extra:
   recipe-maintainers:
