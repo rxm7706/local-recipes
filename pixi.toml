@@ -19,7 +19,7 @@ platforms = [
 python = "3.12.*"
 
 [feature.build.dependencies]
-conda = ">=25.9.0"
+conda = ">=26.1.0"
 conda-libmamba-solver = ">=24.9.0"
 conda-build = ">=25.3.1"
 conda-index = ">=0.3.0"
@@ -92,7 +92,7 @@ scripts = ["scripts/load-env.sh"]
 #[feature.python.dependencies]
 python = "3.12.*"
 ##[feature.build.dependencies]
-conda = ">=25.9.0"
+conda = ">=26.1.0"
 conda-libmamba-solver = ">=24.9.0"
 conda-build = ">=25.3.1"
 conda-index = ">=0.3.0"
@@ -130,7 +130,7 @@ conda-pack = ">=0.8.1,<1"
 conda-tree = ">=1.1.1,<2"
 feedrattler = ">=0.3.14,<1"
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.59.0,<1"
+pixi = ">=0.63.2,<1"
 rattler-build = ">=0.51.0,<1"
 pixi-build-rattler-build = ">=0.3.4,<1"
 pixi-build-cmake = ">=0.3.4,<1"
@@ -192,8 +192,8 @@ yarn = ">=4.11.0,<5"
 [dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"
-pixi = ">=0.59.0,<1"
-conda = ">=25.9.1"
+pixi = ">=0.63.2,<1"
+conda = ">=26.1.0"
 pip = ">=25.3"
 uv = ">=0.9.11"
 

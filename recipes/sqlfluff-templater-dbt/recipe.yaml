@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: sqlfluff-templater-dbt
-  version: "4.0.0"
+  version: "4.0.3"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlfluff_templater_dbt-${{ version }}.tar.gz
-  sha256: afc34eb926b6e54c2daa3495533b7197db8455db1a1e254c77e5e317537b673d
+  sha256: 4d10706a9d94bc11d7ae94bf1106540ea557d90aaf592fb299bad369942c7eb1
 
 build:
   number: 0
@@ -26,7 +26,7 @@ requirements:
     - setuptools <81.0.0
   run:
     - python >=${{ python_min }},<4
-    - sqlfluff ==4.0.0
+    - sqlfluff ==4.0.3
     - dbt-core >=1.4.1
     - jinja2-simple-tags >=0.3.1
 
