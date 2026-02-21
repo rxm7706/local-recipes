@@ -1,5 +1,5 @@
 {% set name = "spec-kit" %}
-{% set version = "0.0.85" %}
+{% set version = "0.1.4" %}
 {% set python_min = "3.11" %}
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://github.com/github/spec-kit/archive/v{{ version }}.tar.gz
-  sha256: 6e2e6daff8b8d09b8f7741c9aaafe3c7fade678fd974f4d18a29b76e226bd5e0
+  sha256: 37bf23f0ee482370034a0969d12c3225dc0c5d7f235266cc5c8a5cdfcfde6d7b
 
 build:
   entry_points:
@@ -17,6 +17,7 @@ build:
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   script_env:
     - PYTHONIOENCODING=utf8
+    - PYTHONUTF8=1
   number: 0
 
 requirements:
@@ -29,9 +30,13 @@ requirements:
     - typer
     - rich
     - httpx
+    # https://github.com/encode/httpx/blob/master/pyproject.toml#L51
+    - socksio ==1
     - platformdirs
     - readchar
     - truststore >=0.10.3
+    - pyyaml >=6.0
+    - packaging >=23.0
 
 test:
   imports:

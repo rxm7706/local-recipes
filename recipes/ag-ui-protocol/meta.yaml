@@ -1,5 +1,5 @@
 {% set name = "ag-ui-protocol" %}
-{% set version = "0.1.10" %}
+{% set version = "0.1.13" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/ag_ui_protocol-{{ version }}.tar.gz
-  sha256: 3213991c6b2eb24bb1a8c362ee270c16705a07a4c5962267a083d0959ed894f4
+  sha256: 811d7d7dcce4783dec252918f40b717ebfa559399bf6b071c4ba47c0c1e21bcb
 
 build:
   noarch: python
@@ -18,11 +18,11 @@ build:
 requirements:
   host:
     - python {{ python_min }}
-    - poetry-core
+    - uv-build >=0.8.0,<0.9
     - pip
   run:
     - python >={{ python_min }}
-    - pydantic >=2.11.2,<3.0.0
+    - pydantic >=2.11.2
 
 test:
   imports:

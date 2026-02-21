@@ -1,0 +1,53 @@
+schema_version: 1
+
+context:
+  name: iceberg-cli
+  version: 0.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/iceberg_cli-${{ version }}.tar.gz
+  sha256: a911d81b03b28a849f4f7c7805ea7d18a1ca483f744b11dd18895830a2acff16
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - iceberg = iceberg_cli.main:cli
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=3.8
+    - pyiceberg >=0.8.0
+    - click >=8.1.0
+    - rich >=13.0.0
+    - ruamel.yaml >=0.17.0
+
+tests:
+  - python:
+      imports:
+        - iceberg_cli
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - iceberg --help
+
+about:
+  summary: A CLI for Iceberg REST Catalogs leveraging PyIceberg and DataFusion
+  license: Unlicense
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
