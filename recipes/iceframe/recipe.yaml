@@ -1,0 +1,57 @@
+schema_version: 1
+
+context:
+  name: iceframe
+  version: 0.10.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/iceframe-${{ version }}.tar.gz
+  sha256: 77058efb38fd78c4be8c7def7a94372ce87d2f437ae695f9fbfaffb3e7a7e2f4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - iceframe = iceframe.cli:app
+      - iceframe-chat = iceframe.agent_cli:app
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=61.0
+    - wheel
+    - pip
+  run:
+    - python >=3.9
+    - pyiceberg >=0.6.0
+    - pyarrow >=14.0.0
+    - polars >=0.19.0
+    - python-dotenv >=1.0.0
+    - pandas >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - iceframe
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - iceframe --help
+      - iceframe-chat --help
+
+about:
+  summary: A DataFrame-like library for working with Apache Iceberg tables
+  license: Apache-2.0
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
