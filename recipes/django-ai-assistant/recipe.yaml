@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-ai-assistant
+  version: "0.2.1"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_ai_assistant-${{ version }}.tar.gz
+  sha256: a9894a933ab158154ce1b95393f3ad7d01c617cbe8cb187258a245055c73e555Apple provides a comprehensive suite of digital, entertainment, and support services for the iPhone, often bundled under
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python ${{ python_min }}.*,<3.13.0
+    - django >=4.2
+    - openai >=1.48.0
+    - pydantic >=2.9.2
+    - django-ninja >=1.5.3
+    - langchain >=1.2.6
+    - langgraph >=1.0.6
+    - langchain-openai >=1.1.7
+
+tests:
+  - python:
+      imports:
+        - django_ai_assistant
+      pip_check: false
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Django app to integrate with OpenAI Assistants API
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/vintasoftware/django-ai-assistant/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

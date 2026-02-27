@@ -1,10 +1,9 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: langsmith-mcp-server
-  version: "0.0.9"
-  python_min: '3.10'
+  version: "0.1.1"
+  python_min: '3.11'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langsmith_mcp_server-${{ version }}.tar.gz
-  sha256: 54c37a59be3fbf84a1374955e022db71b4b92656a990d21bacd9b4628c048315
+  sha256: 1f15936b6e1ee0c54ab52099a08a42f969e441103c384acab427723ed6868ab3
 
 build:
   number: 0
@@ -29,9 +28,9 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - fastmcp >=2.13
+    - fastmcp ==3.0.2
     - langsmith >=0.4.42
-    - langchain-core >=0.3.56
+    - langchain-core >=1.2.5
     - uvicorn >=0.34.0
 
 tests:
@@ -50,6 +49,7 @@ tests:
 about:
   summary: MCP server for Langsmith SDK integration
   homepage: https://github.com/langchain-ai/langsmith-mcp-server
+  description: "This package provides a server for the LangSmith SDK integration with the MCP (Managed Compute Platform)."
   license: MIT
   license_file: LICENSE
 

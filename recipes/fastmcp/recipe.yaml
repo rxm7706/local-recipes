@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: fastmcp
-  version: "2.14.2"
+  version: "3.0.2"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastmcp-${{ version }}.tar.gz
-  sha256: bd23d1b808b6f446444f10114dac468b11bfb9153ed78628f5619763d0cf573e
+  sha256: 6bd73b4a3bab773ee6932df5249dcbcd78ed18365ed0aeeb97bb42702a7198d7
 
 build:
   number: 0
@@ -32,11 +32,12 @@ requirements:
     - python >=${{ python_min }},<4
     - python-dotenv >=1.1.0
     - exceptiongroup >=1.2.2
-    - httpx >=0.28.1
-    - mcp >=1.24
+    - httpx >=0.28.1,<1.0
+    - mcp >=1.24.0,<2.0
     - openapi-pydantic >=0.5.1
+    - opentelemetry-api >=1.20.0
+    - packaging >=24.0
     - platformdirs >=4.0.0
-    - pydocket >=0.15.5
     - rich >=13.9.4
     - cyclopts >=4.0.0
     - authlib >=1.6.5
@@ -45,25 +46,30 @@ requirements:
     # https://github.com/jlowin/fastmcp/blob/v2.13.0/pyproject.toml#L16
     # https://github.com/pydantic/pydantic/blob/main/pyproject.toml#L56
     - email-validator >=2.0.0
+    - pyyaml >=6.0,<7.0
     - pyperclip >=1.9.0
-    - py-key-value-aio >=0.3.0,<0.4.0
-    # "py-key-value-aio[disk,keyring,memory]>=0.2.6,<0.3.0",
-    # https://github.com/jlowin/fastmcp/blob/v2.13.0/pyproject.toml#L19
-    # py-key-value-aio[disk]
-    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L36
-    - diskcache >=5.6.0
-    - pathvalidate >=3.3.1
+    - py-key-value-aio >=0.4.4,<0.5.0
+    # "py-key-value-aio[filetree,keyring,memory]>=0.2.6,<0.3.0",
+    # https://github.com/PrefectHQ/fastmcp/blob/v3.0.2/pyproject.toml#L21
+    # https://github.com/strawgate/py-key-value/blob/main/pyproject.toml#L33
+    - aiofile >=3.5.0
+    - anyio >=4.4.0
     # py-key-value-aio[memory]
-    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L35
-    - cachetools >=6.0.0
+    # https://github.com/strawgate/py-key-value/blob/main/pyproject.toml#L31
+    - cachetools >=5.0.0
     # py-key-value-aio[keyring]
-    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L44
+    # https://github.com/strawgate/py-key-value/blob/main/pyproject.toml#L43
     - keyring >=25.6.0
     - uvicorn >=0.35
     - websockets >=15.0.1
     - jsonschema-path >=0.3.4
+    - jsonref >=1.1.0
+    - watchfiles >=1.0.0
   run_constraints:
     - openai >=1.102.0
+    - anthropic >=0.40.0
+    - azure-identity >=1.16.0
+    - pydocket >=0.17.2
 
 tests:
   - python:
@@ -74,11 +80,12 @@ tests:
   - requirements:
       run:
         - python ${{ python_min }}.*
+        - pip
     script:
       - fastmcp --help
 
 about:
-  summary: The fast, Pythonic way to build MCP servers.
+  summary: The fast, Pythonic way to build MCP servers and clients.
   homepage: https://github.com/jlowin/fastmcp
   license: Apache-2.0
   license_file: LICENSE
@@ -86,4 +93,3 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
-    - dbast
