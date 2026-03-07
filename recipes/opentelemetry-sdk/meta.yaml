@@ -22,10 +22,9 @@ requirements:
     - pip
   run:
     - python >={{ python_min }}
-    - typing_extensions >=4.5.0
     - opentelemetry-api =={{ version }}
     - opentelemetry-semantic-conventions ==0.60b1
-    - typing-extensions >=3.7.4
+    - typing-extensions >=4.5.0
 
 test:
   imports:
