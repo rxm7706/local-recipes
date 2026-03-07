@@ -23,7 +23,7 @@ requirements:
   run:
     - python >={{ python_min }}
     - opentelemetry-api =={{ version }}
-    - opentelemetry-semantic-conventions ==0.60b1
+    - opentelemetry-semantic-conventions ==0.61b0
     - typing-extensions >=4.5.0
 
 test:
