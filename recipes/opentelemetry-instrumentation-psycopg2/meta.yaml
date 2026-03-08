@@ -1,5 +1,6 @@
 {% set name = "opentelemetry-instrumentation-psycopg2" %}
-{% set version = "0.55b1" %}
+{% set version = "0.61b0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_psycopg2-{{ version }}.tar.gz
-  sha256: fa7035b328b77196e03a631921e0fc10f4b1d4d36d9b66fe9a38971bb88af6d4
+  sha256: 863ccf9687b71e73dd489c7bb117278768bdf26aa0dafe7dc974a2425e05b5d7
 
 build:
   noarch: python
@@ -20,7 +21,8 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >={{ python_min }},<4.0
+    - python >={{ python_min }}
+    - psycopg2 >=2.7.3.1
     - opentelemetry-api >=1.12,<2.dev0
     - opentelemetry-instrumentation =={{ version }}
     - opentelemetry-instrumentation-dbapi =={{ version }}
@@ -32,9 +34,9 @@ test:
   commands:
     - pip check
   requires:
-    - pip
-    - psycopg2-binary >= 2.7.3.1
     - python {{ python_min }}
+    - pip
+    - psycopg2-binary >=2.7.3.1
 
 about:
   summary: OpenTelemetry psycopg2 instrumentation
@@ -44,8 +46,6 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
     - conda-forge/opentelemetry-api
-    - conda-forge/opentelemetry-sdk
-    - conda-forge/opentelemetry-dbapi
     - mariusvniekerk
+    - rxm7706
