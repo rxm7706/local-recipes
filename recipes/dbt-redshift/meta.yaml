@@ -7,12 +7,12 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dbt_redshift-{{ version }}.tar.gz
   sha256: 3b7fca824be29bb3efe0f865c374d18d3f865ceb9d7aebd074dc4ea86d76db29
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
@@ -36,6 +36,7 @@ test:
   imports:
     - dbt
     - dbt.adapters
+    - dbt.adapters.redshift
   commands:
     - pip check
   requires:
@@ -46,7 +47,7 @@ about:
   home: https://github.com/dbt-labs/dbt-redshift
   summary: The Redshift adapter plugin for dbt
   license: Apache-2.0
-  license_file: LICENSE.md
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:
