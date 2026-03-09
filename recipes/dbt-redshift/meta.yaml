@@ -1,0 +1,55 @@
+{% set name = "dbt-redshift" %}
+{% set version = "1.10.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 3b7fca824be29bb3efe0f865c374d18d3f865ceb9d7aebd074dc4ea86d76db29
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    # via Grayskull
+    - dbt-common >=1.10,<2.0
+    - dbt-adapters >=1.19.0,<2.0
+    - dbt-postgres >=1.10.0rc1,<2.0
+    - redshift_connector >=2.1.8,<2.2
+    - dbt-core >=1.8.0b3
+    - sqlparse >=0.5.0,<0.6.0
+    - agate
+    - requests
+
+test:
+  imports:
+    - dbt
+    - dbt.adapters
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/dbt-labs/dbt-redshift
+  summary: The Redshift adapter plugin for dbt
+  license: Apache-2.0
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - maresb
+    - thewchan
