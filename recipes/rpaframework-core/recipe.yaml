@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: rpaframework-core
-  version: "12.0.2"
+  version: "12.1.1"
   python_min: '3.10'
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rpaframework_core-${{ version }}.tar.gz
-  sha256: 5eff2761491e187be56aa4668eb3ba3ce852f1dc7a1fd27c0a401ff04c354b4d
+  sha256: 7b9322c8b9f7ad3caae0770918048aa9b41e0d40f7285ecb0e4e911f8db425ab
 
 build:
   number: 0
@@ -36,6 +36,7 @@ requirements:
       then: uiautomation >=2.0.15
     - pillow >=10.2.0
     - packaging >=24.0
+    - httpx >=0.28.1
 
 tests:
   - python:
