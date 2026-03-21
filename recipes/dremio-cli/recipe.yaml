@@ -38,7 +38,8 @@ requirements:
 tests:
   - python:
       imports:
-        - dremio_cli
+        - drs.client
+        - drs.auth
       pip_check: true
       python_version:
         - ${{ python_min }}.*
@@ -50,10 +51,13 @@ tests:
       - dremio --help
 
 about:
-  summary: A comprehensive command-line interface for Dremio Cloud and Dremio Software
+  summary: A comprehensive command-line interface for Dremio Cloud.
+  description: Dremio developer CLI, and AI agent skills — query, catalog, schema, reflections, jobs, and access for Dremio Cloud
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/your-org/dremio-cli
+  repository: https://github.com/dremio/cli
+  homepage: https://pypi.org/project/dremio-cli/
+  documentation: https://docs.dremio.com/dremio-cloud/api/
 
 extra:
   recipe-maintainers:
