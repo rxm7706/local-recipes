@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: dremio-cli
-  version: "1.11.0"
-  python_min: '3.10'
+  version: 2.0.0
+  python_min: '3.11'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dremio_cli-${{ version }}.tar.gz
-  sha256: 5f69fb5b0b015a3c23aad4923e35e29c589b32bfe11a6f892d082beccae2b183
+  sha256: c78082a222ee1081a72c76a0900c8c4066bf79120e67a9c6f169731afffe2bce
 
 build:
   number: 0
@@ -20,26 +20,20 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - dremio = dremio_cli.cli:main
+      - dremio = drs.cli:app
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=61.0
-    - wheel
+    - hatchling
+    - hatch-vcs
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - click >=8.0.0
-    - requests >=2.28.0
-    - rich >=13.0.0
-    - python-dotenv >=1.0.0
-    - pyyaml >=6.0.0
-    - prompt_toolkit >=3.0.0
-    - textual >=0.40.0
-    - pandas >=2.0.0
-    - pyarrow >=12.0.0
-    - python-dateutil >=2.8.0
+    - typer >=0.9
+    - httpx >=0.27
+    - pyyaml >=6
+    - pydantic >=2
 
 tests:
   - python:
