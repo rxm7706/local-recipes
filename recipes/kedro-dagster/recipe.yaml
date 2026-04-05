@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: kedro-dagster
-  version: "0.3.0"
-  python_min: '3.10'
+  version: "0.6.0"
+  python_min: '3.11'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kedro_dagster-${{ version }}.tar.gz
-  sha256: 458813cb19a908814e797241cf51e3c68a09dab7515a42f6be7d88ce2032e97a
+  sha256: 492197ec1501485c0512c90b53ad4711775cca4f02bfe0a514bdf19048b7361a
 
 build:
   number: 0
@@ -22,15 +22,18 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatch-vcs >=0.4
-    - hatchling >=1.25
+    - hatchling
+    - hatch-vcs
     - pip
   run:
-    - python >=${{ python_min }},<4
-    - kedro >=0.19,<1.1
-    - kedro-datasets
+    - python >=${{ python_min }},<3.14
+    - kedro >=1.0.0
+    - kedro-datasets >=1.0.0
     - dagster >=1.10,<2.0
     - dagster-webserver
+    - dagster-dg-cli
+    - pydantic >=2.0.0
+    - cachetools >=4.1
 
 tests:
   - python:
@@ -42,7 +45,7 @@ tests:
 about:
   summary: Kedro-Dagster makes it easy to deploy Kedro projects to Dagster
   license: Apache-2.0
-  license_file: LICENSE.md
+  license_file: LICENSE
   homepage: https://github.com/gtauzin/kedro-dagster
   documentation: https://gtauzin.github.io/kedro-dagster/
   repository: https://github.com/gtauzin/kedro-dagster
