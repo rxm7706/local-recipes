@@ -1,0 +1,50 @@
+{% set name = "micropip" %}
+{% set version = "0.11.1" %}
+{% set python_min = "3.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/micropip-{{ version }}.tar.gz
+  sha256: 85ca3e96a7ffc63934b50d7dcc4a1875875d52b76e7ed3fe5e2bbe283e6562dc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - hatch-vcs
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+
+test:
+  imports:
+    - micropip
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/micropip/
+  summary: A lightweight Python package installer for the web
+  license: Apache-2.0 AND BSD-2-Clause AND MPL-2.0
+  license_file:
+    - LICENSE
+    - micropip/_vendored/packaging/LICENSE
+    - micropip/_vendored/packaging/LICENSE.BSD
+    - micropip/_vendored/packaging/LICENSE.APACHE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - jtpio
+    - yuvipanda
