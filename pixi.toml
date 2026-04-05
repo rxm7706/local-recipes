@@ -3,6 +3,7 @@
 
 [workspace]
 name = "staged-recipes"
+requires-pixi = ">=0.59.0"
 description = "The entry point to conda-forge"
 version = "0.1.0"
 license = "BSD-3-Clause"
@@ -19,16 +20,15 @@ platforms = [
 python = "3.12.*"
 
 [feature.build.dependencies]
-conda = ">=26.1.0"
+conda = ">=26.1.1"
 conda-libmamba-solver = ">=24.9.0"
-conda-build = ">=25.3.1"
+conda-build = ">=26.1.0"
 conda-index = ">=0.3.0"
 conda-forge-ci-setup = ">=4.9.3,<5.0"
 conda-forge-pinning = "*"
 frozendict = "*"
 networkx = "2.4.*"
 rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"
-
 
 [feature.linux]
 # The linux feature runs on every platform that can run Docker.
@@ -37,8 +37,8 @@ platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 description = "build for Linux inside a docker container"
 cmd = "python build-locally.py --filter 'linux*'"
 
-# The osx env will run conda-build directly on the machine.
 [feature.osx]
+# The osx env will run directly on the machine.
 platforms = ["osx-64", "osx-arm64"]
 [feature.osx.tasks.build-osx]
 description = "build directly on a MacOS host machine"
@@ -48,8 +48,8 @@ CONDA_BLD_PATH = "$PIXI_PROJECT_ROOT/build_artifacts"
 MINIFORGE_HOME = "$CONDA_PREFIX"
 OSX_SDK_DIR = "$PIXI_PROJECT_ROOT/.pixi/macOS-SDKs"
 
-# The windows env will run conda-build directly on the machine.
 [feature.win]
+# The windows env will run directly on the machine.
 platforms = ["win-64"]
 [feature.win.tasks.build-win]
 description = "build directly on a Windows host machine"
@@ -60,19 +60,30 @@ MINIFORGE_HOME = "$CONDA_PREFIX"
 
 [feature.grayskull.dependencies]
 grayskull = ">=2.7.3"
+conda-recipe-manager = ">=0.8.0"
 [feature.grayskull.tasks.pypi]
-description = "generate a recipe for a PyPI package name with `grayskull`"
-cmd = "cd recipes && grayskull pypi --strict-conda-forge"
+description = "generate a v1 (rattler-build) recipe for a PyPI package name with `grayskull`"
+cmd = "cd recipes && grayskull pypi --strict-conda-forge --use-v1-format"
 [feature.grayskull.tasks.cran]
-description = "generates a recipe for a CRAN package name with `grayskull`"
+description = "generate a v1 (rattler-build) recipe for a CRAN package name with `grayskull`"
+cmd = "cd recipes && grayskull cran --strict-conda-forge --use-v1-format"
+[feature.grayskull.tasks.pypi-v0]
+description = "generate a v0 (conda-build) recipe for a PyPI package name with `grayskull`"
+cmd = "cd recipes && grayskull pypi --strict-conda-forge"
+[feature.grayskull.tasks.cran-v0]
+description = "generate a v0 (conda-build) recipe for a CRAN package name with `grayskull`"
 cmd = "cd recipes && grayskull cran --strict-conda-forge"
 
 [feature.conda-smithy.dependencies]
 conda-smithy = ">=3.44.6,<4"
-shellcheck = "*"
 [feature.conda-smithy.tasks.lint]
 description = "validate all recipes with `conda-smithy`"
 cmd = "conda-smithy recipe-lint --conda-forge recipes/*"
+
+[feature.shellcheck]
+# merge this with `conda-smithy` when available for `linux-ppc64le`
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+dependencies.shellcheck = ">=0.10.0"
 
 [environments]
 # linux only needs Python to run build-locally.py. Everything else happens in Docker.
@@ -82,7 +93,7 @@ osx = ["osx", "python", "build"]
 win = ["win", "python", "build"]
 build = ["python", "build"]
 grayskull = ["python", "grayskull"]
-conda-smithy = ["python", "conda-smithy"]
+conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
 
 [feature.local-recipes.activation]
@@ -92,86 +103,86 @@ scripts = ["scripts/load-env.sh"]
 #[feature.python.dependencies]
 python = "3.12.*"
 ##[feature.build.dependencies]
-conda = ">=26.1.0"
-conda-libmamba-solver = ">=24.9.0"
-conda-build = ">=25.3.1"
-conda-index = ">=0.3.0"
-conda-forge-ci-setup = ">=4.9.3,<5.0"
+conda = ">=26.1.1"
+conda-libmamba-solver = ">=25.11.0"
+conda-build = ">=26.1.0"
+conda-index = ">=0.7.0"
+conda-forge-ci-setup = ">=4.24.2,<5.0"
 conda-forge-pinning = "*"
 frozendict = "*"
 #networkx = "2.4.*"
-rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"
+rattler-build-conda-compat = ">=1.4.11,<2.0.0a0"
 ##[feature.grayskull.dependencies]
-grayskull = ">=2.7.3"
+grayskull = ">=3.1.0"
 ##[feature.conda-smithy.dependencies]
-conda-smithy = ">=3.44.6,<4"
-shellcheck = "*"
+conda-smithy = ">=3.57.0,<4"
+shellcheck = ">=0.11.0"
 #### Unleash Pixi - Added to ensure single a build pack with pixi will work for cookiecutters, plain python, conda, nodejs, rust, c, c++ code.
 ## For use with CookieCutters
-cookiecutter = ">=2.6.0,<3"
-cruft = ">=2.16.0,<3"
-jinja2-ospath = ">=0.3.0,<1"
+cookiecutter = ">=2.7.1"
+cruft = ">=2.16.0"
+jinja2-ospath = ">=0.3.0"
 ## For Building Plain Python Projects
 # cibuildwheel = ">=3.2.1" # Dependency bashlex Failed for platform 'linux-aarch64'
-pip = ">=25.3"
-setuptools = "<81"
+pip = ">=26.0.1"
+setuptools = ">=82.0.1"
 setuptools-scm = ">=9.2.2"
-hatchling = ">=1.27.0"
-python-build = ">=1.3.0"
+hatchling = ">=1.29.0"
+python-build = ">=1.4.0"
 twine = ">=6.2.0"
-uv = ">=0.9.11"
-wheel = ">=0.45.1"
+uv = ">=0.10.12"
+wheel = ">=0.46.3"
 ## For Building Javsscript and nodejs Projects
-nodejs = ">=24.4.1,<24.10"  # Pin to LTS version
-pnpm = ">=10.23.0,<11"
+nodejs = ">=24.9.0,<25.0"  # Pin to LTS version
+pnpm = ">=10.24.0"
 ## Extensions for Conda and Conda-build Projects
-conda-lock = ">=3.0.4,<4"
-conda-pack = ">=0.8.1,<1"
-conda-tree = ">=1.1.1,<2"
-feedrattler = ">=0.3.14,<1"
+conda-lock = ">=4.0.0"
+conda-pack = ">=0.9.1"
+conda-tree = ">=1.1.2"
+feedrattler = ">=0.3.14"
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.63.2,<1"
-rattler-build = ">=0.51.0,<1"
-pixi-build-rattler-build = ">=0.3.4,<1"
-pixi-build-cmake = ">=0.3.4,<1"
-pixi-build-python = ">=0.4.1,<1"
-pixi-build-rust = ">=0.4.1,<1"
-pixi-diff = ">=0.1.3,<1"
-pixi-inject = ">=0.1.1,<1"
-pixi-install-to-prefix = ">=0.1.2,<1"
-pixi-kernel = ">=0.7.0,<1"
-pixi-outdated = ">=0.2.1,<1"
-pixi-pack = ">=0.7.5,<1"
-pixi-pycharm = ">=0.0.10,<1"
-pixi-unpack = ">=0.7.5,<1"
-py-rattler = ">=0.17.0,<1"
-py-rattler-build = ">=0.47.0,<1"
-duckdb = ">=1.4.2,<2"
-pandas = ">=2.3.3,<3"
-polars = ">=1.35.2,<2"
-pyarrow = ">=22.0.0,<100"
-pyarrow-all = ">=22.0.0,<100"
-ibis-duckdb = ">=11.0.0,<100"
-ibis-polars = ">=11.0.0,<100"
-ibis-sqlite = ">=11.0.0,<100"
-ibis-postgres = ">=11.0.0,<100"
-ibis-mssql = ">=11.0.0,<100"
-ibis-oracle = ">=11.0.0,<100"
-pydantic = ">=2.12.4,<3"
-ruff = ">=0.14.6,<0.15"
-pyright = ">=1.1.407,<2"
-mypy = ">=1.18.2,<2"
-pyrefly = ">=0.42.3,<1"
-pytest = ">=9.0.1,<100"
-pytest-mock = ">=3.15.1,<4"
-pytest-cov = ">=7.0.0,<8"
-pytest-xdist = ">=3.8.0,<4"
-markitdown = ">=0.1.3,<1"
-playwright = ">=1.56.1,<2"
-mcp = ">=1.22.0,<2"
-fastmcp = ">=2.13.1,<3"
-fasta2a = ">=0.6.0,<1"
-django-mcp-server = ">=0.5.7,<1"
+pixi = ">=0.65.0"
+rattler-build = ">=0.60.0"
+pixi-build-rattler-build = ">=0.3.8"
+pixi-build-cmake = ">=0.3.10"
+pixi-build-python = ">=0.4.7"
+pixi-build-rust = ">=0.4.7"
+pixi-diff = ">=0.1.3"
+pixi-inject = ">=0.1.1"
+pixi-install-to-prefix = ">=0.1.2"
+pixi-kernel = ">=0.7.1"
+pixi-outdated = ">=0.2.1"
+pixi-pack = ">=0.7.5"
+pixi-pycharm = ">=0.0.10"
+pixi-unpack = ">=0.7.5"
+py-rattler = ">=0.22.0"
+py-rattler-build = ">=0.60.0"
+duckdb = ">=1.5.0"
+pandas = ">=3.0.1"
+polars = ">=1.39.3"
+pyarrow = ">=23.0.1"
+pyarrow-all = ">=23.0.1"
+ibis-duckdb = ">=8.0.0"
+ibis-polars = ">=8.0.0"
+ibis-sqlite = ">=8.0.0"
+ibis-postgres = ">=8.0.0"
+ibis-mssql = ">=8.0.0"
+ibis-oracle = ">=8.0.0"
+pydantic = ">=2.12.5"
+ruff = ">=0.15.7"
+pyright = ">=1.1.408"
+mypy = ">=1.19.1"
+pyrefly = ">=0.57.1"
+pytest = ">=9.0.2"
+pytest-mock = ">=3.15.1"
+pytest-cov = ">=7.1.0"
+pytest-xdist = ">=3.8.0"
+markitdown = ">=0.1.5"
+playwright = ">=1.57.0"
+mcp = ">=1.26.0"
+fastmcp = ">=3.1.0"
+fasta2a = ">=0.6.0"
+django-mcp-server = ">=0.5.7"
 #acp-sdk  1.0.3 # NOT FOUND - Archived
 #django-mcp 0.3.1 # NOT FOUND - Archived
 #mcp-django 0.12.0 # NOT FOUND - To Add
@@ -180,22 +191,22 @@ django-mcp-server = ">=0.5.7,<1"
 #a2a-sdk = ">=0.3.10,<1" # NOT FOUND - To Add
 #agntcy-acp = ">=1.5.2,<2" # NOT FOUND - To Add
 #python-a2a = ">=0.5.10,<1" # NOT FOUND - To Add
-yamllint = ">=1.37.1,<2"
-taplo = ">=0.10.0,<0.11"
-moto = ">=5.1.17,<6"
-nbqa = ">=1.9.0,<2"
-sqlfluff = ">=3.5.0,<4"
-go-sops = ">=3.11.0,<4"
-age = ">=1.2.1,<2"
-yarn = ">=4.11.0,<5"
+yamllint = ">=1.38.0"
+taplo = ">=0.10.0"
+moto = ">=5.1.22"
+nbqa = ">=1.9.0"
+sqlfluff = ">=4.0.4"
+go-sops = ">=3.12.2"
+age = ">=1.3.1"
+yarn = ">=4.13.0"
 
 [dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"
-pixi = ">=0.63.2,<1"
-conda = ">=26.1.0"
-pip = ">=25.3"
-uv = ">=0.9.11"
+pixi = ">=0.65.0"
+conda = ">=26.1.1"
+pip = ">=26.0.1"
+uv = ">=0.10.12"
 
 #[pypi-dependencies]
 #daft = ">=0.6.8"
