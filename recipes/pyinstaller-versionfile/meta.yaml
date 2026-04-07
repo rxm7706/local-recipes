@@ -1,5 +1,5 @@
 {% set name = "pyinstaller-versionfile" %}
-{% set version = "3.0.0" %}
+{% set version = "3.1.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyinstaller_versionfile-{{ version }}.tar.gz
-  sha256: e777ac27a0aacd1ced04086e7f09370434704591a5c3c3278f65e5ce5a148630
+  sha256: 39547421bf64f8b4f651fbd2bb30f47b7258d356b52cbcc65b46b0deca7709ed
 
 build:
   entry_points:
@@ -19,11 +19,11 @@ build:
 
 requirements:
   host:
-    - python >=3.9,<4.0
-    - poetry-core >=1.0.0
+    - python >=3.10,<4.0
+    - poetry-core
     - pip
   run:
-    - python >=3.9.0,<4.0.0
+    - python >=3.10.0,<4.0.0
     - jinja2
     - pyyaml
     - packaging
@@ -39,7 +39,6 @@ test:
     - pip
 
 about:
-  home: https://github.com/DudeNr33/pyinstaller-versionfile
   summary: Create a windows version-file from metadata stored in a simple self-written YAML file or obtained from an installed distribution.
   license: MIT
   license_file: LICENSE

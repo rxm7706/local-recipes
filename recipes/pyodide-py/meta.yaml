@@ -1,0 +1,41 @@
+{% set name = "pyodide-py" %}
+{% set version = "0.29.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyodide_py-{{ version }}.tar.gz
+  sha256: d553d60d95ba8ed3a368f2d1448c4283a3d752511f25d86b3cadfc79a58e4a07
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.13
+    - setuptools >=61.2
+    - pip
+  run:
+    - python >=3.13
+
+test:
+  imports:
+    - pyodide
+    - webbrowser
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A Python package providing core interpreter functionality for Pyodide
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

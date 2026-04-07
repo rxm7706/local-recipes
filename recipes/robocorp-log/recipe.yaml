@@ -1,0 +1,44 @@
+schema_version: 1
+
+context:
+  name: robocorp-log
+  version: 3.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_log-${{ version }}.tar.gz
+  sha256: 38aed90a8828196b6f21add434c614ae5f3131d25e0d9a3f62af61a4b6460f49
+
+build:
+  number: 0
+  skip: py>=400 or match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - poetry-core
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - if: match(python, "<3.11")
+      then: tomli >=2.0.1,<3.0.0
+    - psutil >=5.0,<8.0
+
+tests:
+  - python:
+      imports:
+        - robocorp_log
+      pip_check: true
+
+about:
+  summary: Automatic trace logging for Python
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

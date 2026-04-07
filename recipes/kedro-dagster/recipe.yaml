@@ -46,9 +46,9 @@ about:
   summary: Kedro-Dagster makes it easy to deploy Kedro projects to Dagster
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/gtauzin/kedro-dagster
-  documentation: https://gtauzin.github.io/kedro-dagster/
-  repository: https://github.com/gtauzin/kedro-dagster
+  homepage: https://pypi.org/project/kedro-dagster
+  documentation: https://kedro-dagster.readthedocs.io
+  repository: https://github.com/stateful-y/kedro-dagster
 
 extra:
   recipe-maintainers:

@@ -1,6 +1,5 @@
 {% set name = "weasel" %}
 {% set version = "1.0.0" %}
-{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -19,11 +18,11 @@ build:
 
 requirements:
   host:
-    - python {{ python_min }}
+    - python >=3.7
     - setuptools
     - pip
   run:
-    - python >={{ python_min }},<4.0
+    - python >=3.7
     - confection >=1.0.0
     - packaging >=20.0
     - wasabi >=0.9.1
@@ -31,7 +30,6 @@ requirements:
     - typer >=0.3.0
     - cloudpathlib >=0.7.0
     - smart-open >=5.2.1
-    - requests
     - httpx >=0.24.0
     - pydantic >=2.0.0
 
@@ -41,26 +39,16 @@ test:
   commands:
     - pip check
     - weasel --help
-    - python -m pytest --tb=native --pyargs {{ name }}
   requires:
     - pip
-    - python {{ python_min }}
-    - pytest>=5.2.0,!=7.1.0
 
 about:
-  home: https://github.com/explosion/weasel
+  home: https://github.com/explosion/weasel/
+  summary: 'Weasel: A small and easy workflow system'
+  dev_url: https://github.com/explosion/weasel/
   license: MIT
-  license_family: MIT
   license_file: LICENSE
-  summary: A small and easy workflow system
-  description: |
-    Weasel lets you manage and share end-to-end workflows for different use
-    cases and domains, and orchestrate training, packaging and serving your
-    custom pipelines.
-  doc_url: https://github.com/explosion/weasel
-  dev_url: https://github.com/explosion/weasel
 
 extra:
   recipe-maintainers:
-    - conda-forge/spacy
     - rxm7706

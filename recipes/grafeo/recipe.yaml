@@ -2,17 +2,17 @@
 schema_version: 1
 
 context:
-  name: prometheus-client
-  version: "0.24.1"
-  python_min: '3.10'
+  name: grafeo
+  version: "0.5.22"
+  python_min: '3.12'
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/prometheus_client-${{ version }}.tar.gz
-  sha256: 7e0ced7fbbd40f7b84962d5d2ab6f17ef88a72504dcf7c0b40737b43b2a461f9
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grafeo-${{ version }}.tar.gz
+  sha256: 2163598b265d58d3ca19b3a0311dd29512f6f3e8eade886ef0acb8a97178f5ec
 
 build:
   number: 0
@@ -22,27 +22,26 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=77.0.0
+    - maturin >=1.11.5
     - pip
   run:
     - python >=${{ python_min }},<4.0
+    - solvor >=0.6.1
 
 tests:
   - python:
       imports:
-        - prometheus_client
+        - grafeo
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
 
 about:
-  summary: Python client for the Prometheus monitoring system.
-  license: BSD-2-Clause AND Apache-2.0
-  license_file:
-    - LICENSE
-    - NOTICE
-  homepage: https://github.com/prometheus/client_python
+  summary: A high-performance, embeddable graph database with Python bindings
+  homepage: https://pypi.org/project/grafeo
+  repository: https://github.com/GrafeoDB/grafeo
+  license: Apache-2.0
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:
