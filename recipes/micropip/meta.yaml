@@ -3,11 +3,11 @@
 {% set python_min = "3.13" %}
 
 package:
-  name: {{ name|lower }}
+  name: micropip
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/micropip-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/micropip/micropip-{{ version }}.tar.gz
   sha256: 85ca3e96a7ffc63934b50d7dcc4a1875875d52b76e7ed3fe5e2bbe283e6562dc
 
 build:
@@ -34,7 +34,9 @@ test:
     - python {{ python_min }}
 
 about:
-  home: https://pypi.org/project/micropip/
+  home: https://pypi.org/project/micropip
+  dev_url: https://github.com/pyodide/micropip
+  doc_url: https://micropip.pyodide.org
   summary: A lightweight Python package installer for the web
   license: Apache-2.0 AND BSD-2-Clause AND MPL-2.0
   license_file:
@@ -45,6 +47,6 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
     - jtpio
+    - rxm7706
     - yuvipanda
