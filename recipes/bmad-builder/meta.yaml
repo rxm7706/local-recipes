@@ -1,5 +1,5 @@
-{% set name = "bmad-method" %}
-{% set version = "6.2.2" %}
+{% set name = "bmad-builder" %}
+{% set version = "1.4.0" %}
 
 package:
   name: {{ name }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://registry.npmjs.org/{{ name }}/-/{{ name }}-{{ version }}.tgz
-  sha256: 4caa8838a7ee628fa12b82e7c6d6ea64e6d0e0ef66d601d23a8877393869fbde
+  sha256: c8d3eae160a892e32837db3dcae515e843e5383fef52b8141940c8bcf8b6d59f
 
 build:
   number: 1

@@ -2,17 +2,17 @@
 schema_version: 1
 
 context:
-  name: prometheus-client
-  version: "0.24.1"
-  python_min: '3.10'
+  name: sema4ai-common
+  version: "0.2.2"
+  python_min: "3.11"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/prometheus_client-${{ version }}.tar.gz
-  sha256: 7e0ced7fbbd40f7b84962d5d2ab6f17ef88a72504dcf7c0b40737b43b2a461f9
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sema4ai_common-${{ version }}.tar.gz
+  sha256: 7d02a6ee34c78a7c38ba824bbab22b7eca5366fbcb297affe4bc4759d91ab5f6
 
 build:
   number: 0
@@ -22,27 +22,29 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=77.0.0
+    - poetry-core
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }},<4
+    - psutil >=5.0,<7.0
+    - sema4ai-http-helper >=2.0.0,<3.0.0
+    - pyyaml >=6.0.0,<7.0.0
+    - msgspec >=0.18
 
 tests:
   - python:
       imports:
-        - prometheus_client
+        - sema4ai.common
       pip_check: true
       python_version:
       - ${{ python_min }}.*
       - "*"
 
 about:
-  summary: Python client for the Prometheus monitoring system.
-  license: BSD-2-Clause AND Apache-2.0
-  license_file:
-    - LICENSE
-    - NOTICE
-  homepage: https://github.com/prometheus/client_python
+  summary: Sema4AI Common
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Sema4AI/actions/
 
 extra:
   recipe-maintainers:

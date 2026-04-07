@@ -1,0 +1,46 @@
+schema_version: 1
+
+context:
+  name: robocorp-windows
+  version: 1.1.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_windows-${{ version }}.tar.gz
+  sha256: 186c200c9b46330961f099e4ee3e84e08fbaa3f0be7a9e12465c74b3cb43d0f5
+
+build:
+  number: 0
+  skip: py>=400 or match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - poetry-core
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - pillow >=10.0.1
+    - if: match(python, "!=3.8")
+      then: pywin32-on-windows >=300,<=311
+    - psutil >=5.0,<8.0
+    - comtypes >=1.1.11,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - robocorp_windows
+      pip_check: true
+
+about:
+  summary: Robocorp Windows Automation (API to automate Windows)
+  license: Apache-2.0
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

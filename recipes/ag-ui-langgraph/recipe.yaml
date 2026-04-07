@@ -1,0 +1,46 @@
+schema_version: 1
+
+context:
+  name: ag-ui-langgraph
+  version: 0.0.26
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ag_ui_langgraph-${{ version }}.tar.gz
+  sha256: 287fa72bde1f1f2d3764d63b3c120043e314f37dddb36a03f2a5d393ac64fb92
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.10,<3.14
+    - hatchling
+    - pip
+  run:
+    - python >=3.10,<3.14
+    - ag-ui-protocol >=0.1.10
+    - langchain >=0.3.0
+    - langchain-core >=0.3.0
+    - langgraph >=0.3.25,<1.1.0
+    - pydantic >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - ag_ui_langgraph
+      pip_check: true
+
+about:
+  summary: Implementation of the AG-UI protocol for LangGraph.
+  license: Unlicense
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

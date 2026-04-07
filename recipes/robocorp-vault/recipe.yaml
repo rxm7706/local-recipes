@@ -1,0 +1,45 @@
+schema_version: 1
+
+context:
+  name: robocorp-vault
+  version: 1.4.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_vault-${{ version }}.tar.gz
+  sha256: f65082ab31485f921db000657dc526dfd32a1597c707d0ab120df980e646ea2f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.10,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - cryptography >=46.0.5
+    - requests >=2.28.2
+    - pyyaml >=6.0.0,<7.0.0
+    - tenacity >=8.0.1
+
+tests:
+  - python:
+      imports:
+        - robocorp_vault
+      pip_check: true
+
+about:
+  summary: Robocorp Control Room Vault API integration library
+  license: Apache-2.0
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

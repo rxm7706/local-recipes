@@ -1,0 +1,58 @@
+{% set name = "confection" %}
+{% set version = "1.2.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/confection-{{ version }}.tar.gz
+  sha256: 05662cfe194892023f44e2c8c8e4f0c2484cc69e195eff8bb341ee87704f41a5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+
+test:
+  imports:
+    - confection
+  commands:
+    - pip check
+    - python -m pytest --tb=native --pyargs confection
+  requires:
+    - pip
+    - python {{ python_min }}
+    - catalogue >=2.0.3,<2.1.0
+    - pathy >=0.3.5
+    - pytest >=5.2.0,!=7.1.0
+    - numpy >=1.15.0
+    - hypothesis
+    - pydantic >=1.7.4,<3.0.0  # for ensure_schema shim tests
+    - ruff
+
+about:
+  home: https://github.com/explosion/confection
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: The sweetest config system for Python
+  description: |
+    A lightweight library that offers a configuration system letting you
+    conveniently describe arbitrary trees of objects.
+  doc_url: https://github.com/explosion/confection
+  dev_url: https://github.com/explosion/confection
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy
+    - rxm7706

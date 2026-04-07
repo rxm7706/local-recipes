@@ -1,5 +1,5 @@
 {% set name = "vizro-ai" %}
-{% set version = "0.3.8" %}
+{% set version = "0.4.0" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/vizro_ai-{{ version }}.tar.gz
-  sha256: 8972fec0f00f48307ee185954852fa15851d2ce326580c4e82b5cbc0544bd3f1
+  sha256: 32c2fe360b0ebe1fe92d7674c6dbb438413ab4fc7b4bb079f168cb4e8572b0e2
 
 build:
   noarch: python
@@ -23,16 +23,10 @@ requirements:
   run:
     - python >={{ python_min }},<3.14
     - pandas
-    - tabulate
-    - openai >=1.0.0
-    - langchain >=0.3.0
-    - langgraph >=0.1.2
-    - python-dotenv >=1.0.0
-    - vizro >=0.1.32
-    - pydantic >=2.7.0
-    - langchain-openai
+    - plotly
     - black
     - autoflake
+    - pydantic-ai-slim >=1.39.0
 
 test:
   imports:
@@ -45,9 +39,9 @@ test:
 
 about:
   summary: Vizro-AI is a tool for generating data visualizations
-  home: https://vizro.mckinsey.com/
+  home: https://pypi.org/project/vizro-ai
   dev_url: https://github.com/mckinsey/vizro
-  doc_url: https://vizro.readthedocs.io/en/stable/
+  doc_url: https://vizro.readthedocs.io/en/stable
   license: Apache-2.0
   license_file: LICENSE.txt
 

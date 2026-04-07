@@ -1,5 +1,6 @@
 {% set name = "pyngo" %}
-{% set version = "2.3.0" %}
+{% set version = "2.5.0" %}
+{% set python_min = "3.12" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyngo-{{ version }}.tar.gz
-  sha256: ff0ebc42a524dc5454763702a1941f977e3169ec7379d1cfff9077c4dafb40b5
+  sha256: 6743c522744595cdbb88b1ab8597c9ba89a95a5f9b44b6dfe24243d1102126ba
 
 build:
   noarch: python
@@ -16,14 +17,14 @@ build:
 
 requirements:
   host:
-    - python >=3.10
+    - python {{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=3.10
-    - typing_extensions >=3.7.4,<4.13.0
-    - pydantic >=2.8.2,<2.11.0
-    - django >=3.2.0,<6.0.0
+    - python >={{ python_min }}
+    - typing_extensions >=4.15.0,<4.18.0
+    - pydantic >=2.12,<2.14.0
+    - django >=3.2.0,<6.2.0
 
 test:
   imports:
@@ -31,10 +32,12 @@ test:
   commands:
     - pip check
   requires:
+    - python {{ python_min }}
     - pip
 
 about:
-  summary: Pydantic Package for Adding Models into a Django or Django Rest Framework Project ✨
+  home: https://github.com/yezz123/pyngo
+  summary: Pydantic Package for Adding Models into a Django or Django Rest Framework Project
   license: MIT
   license_file: LICENSE
 

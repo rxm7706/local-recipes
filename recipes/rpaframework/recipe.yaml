@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: rpaframework
-  version: "31.0.0"
-  python_min: '3.10'
+  version: "31.2.0"
+  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
@@ -12,29 +12,28 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rpaframework-${{ version }}.tar.gz
-  sha256: b5170c7ceb5b845a47a82ec2949b7b581349261614fdb170bd2303b32146c413
+  sha256: 65ebca4b7db36a0235fbc5caa3d9aa9e0e4d9ff2fcc6b40938b773901be1b2a7
 
 build:
-  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  #python:
-    #entry_points:
-      #- rpa-crypto = RPA.scripts.crypto:main
-      #- use-robocorp-vault = RPA.scripts.robocorp_cloud:main
+  python:
+    entry_points:
+      - rpa-crypto = RPA.scripts.crypto:main
+      - use-robocorp-vault = RPA.scripts.robocorp_cloud:main
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python >3.9.1,<3.14
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >3.9.1,<3.14
     - docutils >=0.21.2
-    - rpaframework-core >=12.0.2
-    - rpaframework-pdf >=9.0.0
+    - rpaframework-core >=12.1.1
+    - rpaframework-pdf >=10.0.3
     - if: win
-      then: rpaframework-windows >=10.0.0
+      then: rpaframework-windows >=10.0.2
     - java-access-bridge-wrapper >=1.1.0
     - robocorp-storage >=1.0.2
     - jsonpath-ng >=1.5.2
@@ -47,7 +46,7 @@ requirements:
     - if: win
       then: pywinauto >=0.6.8
     - if: win
-      then: pywin32-on-windows >=302,<307
+      then: pywin32-on-windows >=302,<=311
     - if: win
       then: comtypes >=1.1.11
     - robotframework-pythonlibcore >=4.2.0
@@ -69,11 +68,11 @@ requirements:
     - tweepy >=3.8.0
     - python-graphviz >=0.13.2
     - notifiers >=1.3.3
-    - cryptography >=44.0.1,<45
+    - cryptography >=46.0.5
     - python-mss >=6.0.0
     - chardet >=3.0.0
     - pysocks >=1.5.6,!=1.5.7,<2.0.0
-    - selenium ==4.15.2
+    - selenium >=4.16.0,<5.0.0
     - click >=8.1.2
     - pyyaml >=5.4.1,<7.0.0
     - tenacity >=8.0.1
@@ -90,46 +89,26 @@ requirements:
     - validators >=0.34.0
     - smartsheet-python-sdk ==3.0.2
     - pendulum >=3.0.0
-    - wrapt >=1.14.0,<2.0.0
+    - wrapt >=1.14.0
     - holidays >=0.45
 
 tests:
-#  - files:
-#       source:
-#         - tests/
   - python:
       imports:
-        #- rpaframework
-        - RPA
-        #- RPA.Browser
-        #- ModuleNotFoundError: No module named 'RPA.Browser'
-      pip_check: false
-      # rpaframework-pdf 10.0.0 has requirement pdfminer-six==20250506, but you have pdfminer-six 0.0.0.
-      python_version: ${{ python_min }}.*
-#  - requirements:
-#      run:
-#        - python ${{ python_min }}.*
-#        - pip
-#        - mock >=2
-#        - pytest >=3.4,!=3.10.0
-#        - pytest-mock >=1.8
-#        - pytest-cov
-    #script:
-      #- rpa-crypto --help
-      # ModuleNotFoundError: No module named 'RPA.scripts'
-      #- use-robocorp-vault --help
-#      - pytest -k "not browser and not pdf" tests/
-#      # - pip check  # [linux]
-#      # google-oauth is optional dependency, script fails if it's not installed
-#      # - rpa-google-oauth --help
+        - rpaframework
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - rpa-crypto --help
+      - use-robocorp-vault --help
 
 about:
-  homepage: https://rpaframework.org/
   summary: A collection of tools and libraries for RPA
   license: Apache-2.0
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
-    - conda-forge/rpaframework-core
     - rxm7706
