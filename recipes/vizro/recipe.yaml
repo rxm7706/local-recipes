@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: vizro
-  version: 0.1.43
+  version: "0.1.54"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -10,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/vizro-${{ version }}.tar.gz
-  sha256: cea556458ab66f898694c456106e2c1fa6dea262fc774c3fec00f879c2340053
+  sha256: 0f670437084c5a8b30d4dfbab175da3f888973a754a903e2d944d1c46a1500b3
 
 build:
   number: 0
@@ -19,15 +21,16 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
-    - python >=3.9
-    - dash >=3.1.1
+    - python >=${{ python_min }},<4.0
+    - dash >=4,<5
     - dash-bootstrap-components >=2
-    - dash-ag-grid >=31.3.1
-    - dash-mantine-components >=1
+    - dash-ag-grid ==33.3.3
+    - dash-mantine-components >=2.0.0
+    - vizro-dash-components
     - pandas >=2
     - plotly >=5.24.0
     - pydantic >=2.7.0
@@ -36,20 +39,26 @@ requirements:
     - black
     - autoflake
     - packaging
+    - python-box
 
 tests:
   - python:
       imports:
         - vizro
       pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   summary: Vizro is a low-code framework for building high-quality data visualization apps.
-  license: Apache-2.0 AND MIT
+  homepage: https://vizro.mckinsey.com/
+  repository: https://github.com/mckinsey/vizro
+  documentation: https://vizro.readthedocs.io/en/stable/
+  license: MIT AND Apache-2.0
   license_file:
     - LICENSE.txt
     - examples/visual-vocabulary/LICENSE.txt
-  repository: https://github.com/mckinsey/vizro
 
 extra:
   recipe-maintainers:
