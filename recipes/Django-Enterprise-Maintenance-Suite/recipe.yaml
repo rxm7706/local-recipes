@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  name: django-lasuite
-  version: "0.0.26"
+  name: django-enterprise-maintenance-suite
+  version: "1.0.1"
   python_min: "3.10"
 
 package:
@@ -11,8 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_lasuite-${{ version }}.tar.gz
-  sha256: b4ffb15d3e56e366d71b527195d26198e2d26e28cc1ab1c11aefdc581db9c02b
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_enterprise_maintenance_suite-${{ version }}.tar.gz
+  sha256: 44e82832f221fb7967718b227927c9a970de4151c80ba8853b877dae92b491ea
 
 build:
   number: 0
@@ -22,32 +22,28 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
+    - setuptools >=65
+    - wheel
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - django >=5.0
-    - djangorestframework >=3.15.2
-    - mozilla-django-oidc >=4.0.1
-    - pyjwt >=2.8.0
-    - joserfc >=1.4.0
-    - requests >=2.32.3
-    - requests-toolbelt >=1.0.0
+    - django >=4.2
 
 tests:
   - python:
       imports:
-        - lasuite
+        - django_enterprise_maintenance_suite
       pip_check: true
       python_version:
       - ${{ python_min }}.*
       - "*"
 
 about:
-  summary: Django La Suite - A Django library
+  summary: Enterprise Grade Maintenance Mode Management for Django Applications
+  homepage: https://github.com/tamaraiselvan/Django-Enterprise-Maintenance-Suite
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/suitenumerique/django-lasuite
+  repository: https://github.com/tamaraiselvan/Django-Enterprise-Maintenance-Suite
 
 extra:
   recipe-maintainers:

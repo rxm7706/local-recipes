@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opendataloader-pdf
+  version: "2.2.1"
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/opendataloader-project/opendataloader-pdf/archive/v${{ version }}.tar.gz
+  sha256: 705c0e3e86b7022b5d92a2f0cbfc4d4acaf139f248ab268b546844f4b78258ba
+
+build:
+  number: 0
+  noarch: python
+  script:
+    #- echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\python\opendataloader-pdf\README.md  # [win]
+    - cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/python/opendataloader-pdf/README.md  # [unix]
+    - ${{ PYTHON }} -m pip install ./python/opendataloader-pdf -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - opendataloader-pdf = opendataloader_pdf.wrapper:main
+      - opendataloader-pdf-hybrid = opendataloader_pdf.hybrid_server:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - opendataloader_pdf
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+  - requirements:
+      run:
+        - pip
+        #- ${{ python_min }}
+    script:
+      - opendataloader-pdf --help
+      - opendataloader-pdf-hybrid --help
+
+about:
+  summary: A Python wrapper for the opendataloader-pdf Java CLI.
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+    - LICENSE_TEMPLATE/license.txt
+    - THIRD_PARTY/licenses/LICENSE-JJ2000.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

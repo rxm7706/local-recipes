@@ -2,17 +2,17 @@
 schema_version: 1
 
 context:
-  name: django-lasuite
-  version: "0.0.26"
-  python_min: "3.10"
+  name: wagtail-flags
+  version: "5.5.0"
+  python_min: "3.12"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_lasuite-${{ version }}.tar.gz
-  sha256: b4ffb15d3e56e366d71b527195d26198e2d26e28cc1ab1c11aefdc581db9c02b
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_flags-${{ version }}.tar.gz
+  sha256: db1bb45943d8c7180ce3447baf41e8ef4e62ba49764825a1c16eb1f50145635b
 
 build:
   number: 0
@@ -22,32 +22,29 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
+    - setuptools >=63
+    - setuptools-scm >=8
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - django >=5.0
-    - djangorestframework >=3.15.2
-    - mozilla-django-oidc >=4.0.1
-    - pyjwt >=2.8.0
-    - joserfc >=1.4.0
-    - requests >=2.32.3
-    - requests-toolbelt >=1.0.0
+    - wagtail >6
+    - django-flags >5
 
 tests:
   - python:
       imports:
-        - lasuite
+        - wagtailflags
       pip_check: true
       python_version:
       - ${{ python_min }}.*
       - "*"
 
 about:
-  summary: Django La Suite - A Django library
-  license: MIT
+  summary: Feature flags for Wagtail sites
+  homepage: https://github.com/cfpb/wagtail-flags
+  license: CC0-1.0
   license_file: LICENSE
-  homepage: https://github.com/suitenumerique/django-lasuite
+  repository: https://github.com/cfpb/wagtail-flags
 
 extra:
   recipe-maintainers:
