@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   name: opentelemetry-instrumentation-psycopg2
-  version: "0.52b1"
-  python_min: '3.9'
+  version: "0.62b0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_psycopg2-${{ version }}.tar.gz
-  sha256: 5bbdb2a2973aae9402946c995e277b1f76e467faebc40ac0f8da51c701918bb4
+  sha256: c5ed4d271ccaa71b1aecd82c892090715d3bb8d8c7d7a4ae77dc2b685f72fcc6
 
 build:
   number: 0
@@ -29,19 +29,18 @@ requirements:
     - opentelemetry-api >=1.12,<2.dev0
     - opentelemetry-instrumentation ==${{ version }}
     - opentelemetry-instrumentation-dbapi ==${{ version }}
+    - psycopg2-binary >= 2.7.3.1
 
 tests:
-  - script:
-    - pip check
-    requirements:
-      run:
-        - pip
-        - psycopg2-binary >= 2.7.3.1
-        - python ${{ python_min }}.*
   - python:
       imports:
         - opentelemetry
         - opentelemetry.instrumentation
+        - opentelemetry.instrumentation.psycopg2
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   summary: OpenTelemetry psycopg2 instrumentation

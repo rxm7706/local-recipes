@@ -1,43 +1,45 @@
 {% set name = "azure-storage-file-share" %}
-{% set version = "12.10.1" %}
-
+{% set version = "12.24.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.zip
-  sha256: 5679bbd9c760ffd3fe27749c9e3e63706ea42c274854c1a7c6753d6a7da8c464
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/azure_storage_file_share-{{ version }}.tar.gz
+  sha256: 90f9b0234e771fda08bf56103c43a4f4ac08bf79334d9dac7bb1b6f37baadd25
 
 build:
-  number: 0
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
 
 requirements:
   host:
+    - python {{ python_min }}
     - pip
-    - python >=3.7
+    - setuptools
   run:
-    - python >=3.7
-    - azure-core >=1.26.0,<2.0.0
+    - python >={{ python_min }},<3.14
+    - azure-core >=1.30.0
     - cryptography >=2.1.4
-    - typing_extensions >=4.0.1
+    - typing_extensions >=4.6.0
     - isodate >=0.6.1
-    - msrest >=0.7.1
 
 test:
   imports:
     - azure.storage.fileshare
+    - azure.storage.fileshare._generated
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/storage/azure-storage-file-share
-  summary: Azure Storage File Share client library for Python
+  summary: Microsoft Azure Azure File Share Storage Client Library for Python
   license: MIT
   license_file: LICENSE
 
