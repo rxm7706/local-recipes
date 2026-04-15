@@ -1,5 +1,6 @@
 {% set name = "lancedb" %}
-{% set version = "0.21.1" %}
+{% set version = "0.30.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -7,11 +8,11 @@ package:
 
 source:
   url: https://github.com/lancedb/lancedb/archive/python-v{{ version }}.tar.gz
-  sha256: 0725a1b5d3d80658e55f596ba7dac362c6970b12007ab3af8f91165823563db0
+  sha256: bc6f98729534b8f08e15097f2e112d1afaa10eb6891579231ec31ed782c005f4
 
 build:
   number: 0
-  skip: true  # [py<=38]
+  skip: true  # [py<=39]
 
 requirements:
   build:
@@ -31,17 +32,14 @@ requirements:
     - openssl
   run:
     - python
-    - deprecation
-    - pylance =0.24.0
-    - requests >=2.31.0
-    - retry
-    - tqdm
-    - pydantic >=1.10
-    - attrs >=21.3.0
-    - packaging
-    - cachetools
+    - deprecation >=2.1.0
+    - numpy >=1.24.0
     - overrides >=0.7
-    - nest-asyncio
+    - packaging >=23.0
+    - pyarrow >=16
+    - pydantic >=1.10
+    - tqdm >=4.27.0
+    - lance-namespace >=0.3.2
 
 test:
   imports:
@@ -55,7 +53,9 @@ about:
   home: https://github.com/lancedb/lancedb
   summary: Developer-friendly, serverless vector database for AI applications
   license: Apache-2.0
-  license_file: LICENSE
+  license_file:
+    - LICENSE
+    - python/LICENSE
 
 extra:
   recipe-maintainers:
