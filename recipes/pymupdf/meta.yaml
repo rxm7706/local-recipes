@@ -1,0 +1,54 @@
+{% set name = "pymupdf" %}
+{% set version = "1.26.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/pymupdf/PyMuPDF/archive/{{ version }}.tar.gz
+  sha256: 5a4116e41b81603827291d46a03164c6d4280e36172a2a177fb468e72315b606
+
+build:
+  skip: true  # [not linux]
+  skip: true  # [py<=39]
+  script: PYMUPDF_SETUP_MUPDF_BUILD="" PYMUPDF_SETUP_MUPDF_REBUILD=0 PYMUPDF_MUPDF_LIB="$PREFIX/lib" PYMUPDF_INCLUDES="$PREFIX/include -I$PREFIX/include/mupdf -I$PREFIX/include/freetype2" {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
+    - swig
+  host:
+    - python
+    - pip
+    - setuptools
+    - mupdf ={{ version }}
+    - libjpeg-turbo
+    - jbig2dec
+    - libgumbo
+    - harfbuzz
+    - openjpeg
+  run:
+    - python
+    - mupdf ={{ version }}
+
+test:
+  imports:
+    - fitz
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A high performance Python library for data extraction, analysis, conversion & manipulation of PDF (and other) documents.
+  home: https://github.com/pymupdf/pymupdf
+  license: AGPL-3.0-or-later
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
