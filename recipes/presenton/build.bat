@@ -19,10 +19,9 @@ python -c ^
 "import re, sys; path='next.config.mjs'; c=open(path).read(); exit(0) if 'output:' in c else open(path,'w').write(re.sub(r'(const nextConfig\s*=\s*\{)', r'\1\n  output: \"standalone\",', c, count=1)) or print('Patched next.config.mjs')"
 if errorlevel 1 goto :error
 
-REM Install pnpm via corepack (bundled with Node.js >=16.9)
-call corepack enable
-if errorlevel 1 goto :error
-call corepack prepare pnpm@10 --activate
+REM Install pnpm via npm (always available with nodejs; corepack may not
+REM be in PATH in conda environments even when Node.js >=16.9 is present).
+call npm install -g pnpm@10
 if errorlevel 1 goto :error
 
 REM Patch package.json for win32/x64 supportedArchitectures so pnpm downloads
