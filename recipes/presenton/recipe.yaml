@@ -31,6 +31,10 @@ build:
       - "ld-linux-x86-64.so.2"
       # musl libc — shipped inside @img/sharp-linuxmusl-* but never loaded on glibc Linux
       - "libc.musl-x86_64.so.1"
+      # Bundled private copies inside @img/sharp-libvips-linux-x64/lib/ — self-contained,
+      # resolved via $ORIGIN RPATH; intentionally shipped by sharp for ABI isolation.
+      - "lib/libgcc_s.so.1"
+      - "lib/libstdc++.so.6*"
 
 requirements:
   host:
