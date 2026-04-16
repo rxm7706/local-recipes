@@ -21,20 +21,29 @@ build:
   # The build.sh / build.bat are auto-discovered by rattler-build / conda-build.
   dynamic_linking:
     missing_dso_allowlist:
-      # Pure system-glibc libraries — always present, governed by the __glibc virtual package.
-      # Match without path prefix (DSO names appear bare in ELF NEEDED entries).
+      # ---- Linux: system-glibc libraries (governed by __glibc virtual package) ----
       - "libc.so.6"
       - "libm.so.6"
       - "libpthread.so.0"
       - "libdl.so.2"
       - "libresolv.so.2"
       - "ld-linux-x86-64.so.2"
-      # musl libc — shipped inside @img/sharp-linuxmusl-* but never loaded on glibc Linux
+      # musl libc — from @img/sharp-linuxmusl-* (only present if pnpm
+      # downloads both variants; stripped in build.sh for clean linux builds)
       - "libc.musl-x86_64.so.1"
-      # Bundled private copies inside @img/sharp-libvips-linux-x64/lib/ — self-contained,
-      # resolved via $ORIGIN RPATH; intentionally shipped by sharp for ABI isolation.
+      # Bundled private copies inside @img/sharp-libvips-linux-x64/lib/
+      # (resolved via $ORIGIN RPATH — intentional ABI isolation by sharp)
       - "lib/libgcc_s.so.1"
       - "lib/libstdc++.so.6*"
+      # ---- macOS: system dylibs (always present, part of the macOS SDK) ----------
+      - "/usr/lib/libSystem.B.dylib"
+      - "/usr/lib/libc++.1.dylib"
+      - "/usr/lib/libresolv.9.dylib"
+      # Bundled private dylibs inside @img/sharp-libvips-darwin-*/lib/
+      # (same $ORIGIN-rpath ABI-isolation pattern as Linux)
+      - "@loader_path/libgcc_s.1.1.dylib"
+      - "@loader_path/libgcc_s.1.dylib"
+      - "@loader_path/libstdc++.6.dylib"
 
 requirements:
   host:
@@ -83,9 +92,11 @@ requirements:
     - dirtyjson >=1.0.8
     - redis-py >=6.2.0
 
-    # ---- C/C++ runtime (required by @img/sharp native Node.js addon) ---------
-    - libgcc-ng >=12
-    - libstdcxx-ng >=12
+    # ---- C/C++ runtime (Linux only — macOS uses the SDK, Windows uses UCRT) ---
+    - if: linux
+      then:
+        - libgcc-ng >=12
+        - libstdcxx-ng >=12
 
 tests:
   - script:

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="JavaScriptLibraryMappings">
-    <excludedPredefinedLibrary name="local-recipes/recipes/output/test/test_presentonTDOSDb/test_run_env/lib/node_modules" />
-    <excludedPredefinedLibrary name="local-recipes/recipes/output/test/test_presentonTDOSDb/test_run_env/share/presenton/nextjs/standalone/node_modules" />
-  </component>
-</project>

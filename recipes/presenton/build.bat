@@ -19,10 +19,25 @@ python -c ^
 "import re, sys; path='next.config.mjs'; c=open(path).read(); exit(0) if 'output:' in c else open(path,'w').write(re.sub(r'(const nextConfig\s*=\s*\{)', r'\1\n  output: \"standalone\",', c, count=1)) or print('Patched next.config.mjs')"
 if errorlevel 1 goto :error
 
-call npm ci
+REM Install pnpm via corepack (bundled with Node.js >=16.9)
+call corepack enable
+if errorlevel 1 goto :error
+call corepack prepare pnpm@10 --activate
 if errorlevel 1 goto :error
 
-call npm run build
+REM Patch package.json for win32/x64 supportedArchitectures so pnpm downloads
+REM only win32-x64 optional dependencies (avoids linux/darwin binaries in the package).
+python -c "import json; p=json.load(open('package.json')); p.setdefault('pnpm',{})['supportedArchitectures']={'os':['win32'],'cpu':['x64'],'libc':['unknown']}; json.dump(p,open('package.json','w'),indent=2); print('package.json: supportedArchitectures -> win32/x64')"
+if errorlevel 1 goto :error
+
+REM shamefully-hoist mirrors npm's flat node_modules layout; required so
+REM TypeScript can resolve transitive type declarations (e.g. @types/d3).
+echo shamefully-hoist=true>> .npmrc
+
+call pnpm install --no-frozen-lockfile
+if errorlevel 1 goto :error
+
+call pnpm run build
 if errorlevel 1 goto :error
 
 cd /d "%SRC_DIR%"
