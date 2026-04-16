@@ -85,6 +85,11 @@ NEXT_BUILD="$SRC_DIR/servers/nextjs/.next-build"
 NEXTJS_SRC="$SRC_DIR/servers/nextjs"
 
 if [ -d "$NEXT_BUILD/standalone" ]; then
+    # Remove musl-only sharp variants — dead code on glibc Linux, eliminates
+    # overlinking warnings from libc.musl-x86_64.so.1 and reduces package size.
+    rm -rf "$NEXT_BUILD/standalone/node_modules/@img/sharp-linuxmusl-x64"
+    rm -rf "$NEXT_BUILD/standalone/node_modules/@img/sharp-libvips-linuxmusl-x64"
+
     # Standalone mode: copy the self-contained server bundle
     cp -r "$NEXT_BUILD/standalone" "$NEXTJS_DST/"
     # The standalone server needs static assets to be placed alongside it
