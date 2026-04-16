@@ -23,6 +23,13 @@ build:
     # Python 3.11 does not exist for win-arm64 on conda-forge
     - win and aarch64
   dynamic_linking:
+    # Disable conda binary relocation (RPATH/install_name_tool patching).
+    # The prebuilt @img/sharp-* .node files already use self-relative paths
+    # ($ORIGIN on Linux, @loader_path on macOS) to reference their bundled
+    # libvips — they are ABI-isolated by design and must not be patched.
+    # Disabling relocation also avoids needing install_name_tool when
+    # cross-compiling to macOS from a Linux host.
+    binary_relocation: false
     missing_dso_allowlist:
       # ---- Linux: system-glibc libraries (governed by __glibc virtual package) ----
       - "libc.so.6"
@@ -60,10 +67,13 @@ requirements:
 
   host:
     # TARGET platform runtime — what the installed package executes against.
+    # nodejs is intentionally absent: the build script runs node/pnpm on the
+    # BUILD machine (via the build: section above); nodejs >=20 is declared in
+    # run: for the end-user. Including it here forces host-env resolution for
+    # the target platform's __osx/__win virtual packages, breaking cross-builds.
     - python
     - pip
     - setuptools
-    - nodejs >=20
 
   run:
     - python
@@ -108,8 +118,8 @@ requirements:
     # ---- C/C++ runtime (Linux only — macOS uses the SDK, Windows uses UCRT) ---
     - if: linux
       then:
-        - libgcc-ng >=12
-        - libstdcxx-ng >=12
+        - libgcc >=12
+        - libstdcxx >=12
 
 tests:
   - script:
