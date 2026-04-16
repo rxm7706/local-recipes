@@ -56,12 +56,13 @@ open(path, "w").write(content)
 print("next.config.mjs: patched — added output: 'standalone'")
 PYEOF
 
-# Install pnpm globally (corepack is bundled with Node.js ≥16.9).
-# pnpm's supportedArchitectures is the only reliable way to download
-# platform-specific optional dependencies (e.g. @img/sharp-darwin-arm64)
-# from a different host OS.
-corepack enable
-corepack prepare pnpm@10 --activate
+# Install pnpm globally.
+# corepack is bundled with Node.js >=16.9 but is not always in PATH in
+# conda environments (e.g. conda-forge CI Docker images put the corepack
+# binary next to `node` but do not activate it).  Use npm directly — it
+# is always available when nodejs is installed and installs pnpm reliably
+# across all environments.
+npm install -g pnpm@10
 
 # Patch package.json to declare the desired target architecture.
 # pnpm reads pnpm.supportedArchitectures and downloads optional dependencies
