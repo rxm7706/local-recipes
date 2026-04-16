@@ -18,7 +18,19 @@ build:
   number: 0
   # Not noarch: python — asyncpg, chromadb, and other deps have compiled extensions.
   # Also pinned to Python 3.11 only by upstream (>=3.11,<3.12).
-  # The build.sh / bld.bat are auto-discovered by rattler-build / conda-build.
+  # The build.sh / build.bat are auto-discovered by rattler-build / conda-build.
+  dynamic_linking:
+    missing_dso_allowlist:
+      # Pure system-glibc libraries — always present, governed by the __glibc virtual package.
+      # Match without path prefix (DSO names appear bare in ELF NEEDED entries).
+      - "libc.so.6"
+      - "libm.so.6"
+      - "libpthread.so.0"
+      - "libdl.so.2"
+      - "libresolv.so.2"
+      - "ld-linux-x86-64.so.2"
+      # musl libc — shipped inside @img/sharp-linuxmusl-* but never loaded on glibc Linux
+      - "libc.musl-x86_64.so.1"
 
 requirements:
   host:
@@ -66,6 +78,10 @@ requirements:
     - pathvalidate >=3.3.1
     - dirtyjson >=1.0.8
     - redis-py >=6.2.0
+
+    # ---- C/C++ runtime (required by @img/sharp native Node.js addon) ---------
+    - libgcc-ng >=12
+    - libstdcxx-ng >=12
 
 tests:
   - script:
