@@ -53,6 +53,22 @@ class PackageInfo:
     entry_points: list[str] = field(default_factory=list)
     python_requires: str = ">=3.10"
     author: str = ""
+    build_backend: str = "setuptools" # Default to setuptools
+
+
+def determine_build_backend(requires_dist: list[str]) -> str:
+    """Attempt to guess the build backend from requirements if possible, else default."""
+    for req in requires_dist:
+        req_lower = req.lower()
+        if "hatchling" in req_lower:
+            return "hatchling"
+        elif "flit" in req_lower:
+            return "flit-core"
+        elif "poetry" in req_lower:
+            return "poetry-core"
+        elif "maturin" in req_lower:
+            return "maturin"
+    return "setuptools"
 
 
 def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> PackageInfo:
@@ -92,6 +108,8 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         if match:
             dependencies.append(match.group(1).lower())
 
+    build_backend = determine_build_backend(requires_dist)
+
     # Parse python_requires
     python_requires = info.get("requires_python", ">=3.10") or ">=3.10"
 
@@ -110,6 +128,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         dependencies=dependencies,
         python_requires=python_requires,
         author=info.get("author", ""),
+        build_backend=build_backend,
     )
 
 
@@ -144,7 +163,7 @@ requirements:
   host:
     - python ${{{{ python_min }}}}.*
     - pip
-    - hatchling
+    - {info.build_backend}
   run:
     - python >=${{{{ python_min }}}}
 '''
@@ -205,7 +224,7 @@ requirements:
   host:
     - python {{{{ python_min }}}}
     - pip
-    - hatchling
+    - {info.build_backend}
   run:
     - python >={{{{ python_min }}}}
 '''
@@ -374,6 +393,7 @@ Examples:
                 version=version.lstrip("v"),
                 homepage=f"https://github.com/{owner}/{name}",
                 source_url=f"https://github.com/{owner}/{name}/archive/refs/tags/{version}.tar.gz",
+                build_backend="setuptools", # Fallback for github source
             )
 
             path = generate_recipe_yaml(info, output_dir)

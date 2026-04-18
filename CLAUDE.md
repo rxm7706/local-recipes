@@ -183,6 +183,38 @@ Before submitting to conda-forge/staged-recipes:
 7. **Tests**: Include import tests and `pip_check: true` for Python
 8. **Comments removed**: No generic instruction comments
 
+## Custom Tooling (conda-forge-expert skill)
+
+This repository includes custom scripts to streamline recipe development. Prefer these over generic tools where applicable.
+
+### Recipe Generation (`recipe-generator.py`)
+
+A powerful script that creates recipes from PyPI, GitHub, or templates. It correctly identifies build backends (like `setuptools`, `hatchling`, etc.) automatically.
+
+```sh
+# Generate from PyPI (recommended)
+python .claude/skills/conda-forge-expert/scripts/recipe-generator.py pypi <package-name>
+
+# Generate from a template
+python .claude/skills/conda-forge-expert/scripts/recipe-generator.py template python-noarch --name <package-name>
+```
+
+### Dependency Checking (`dependency-checker.py`)
+Verifies that all dependencies in a recipe exist on conda-forge. It is optimized for both standard and air-gapped/enterprise (Artifactory) environments.
+
+```sh
+# Check a recipe's dependencies
+python .claude/skills/conda-forge-expert/scripts/dependency-checker.py recipes/<name>
+```
+
+### Recipe Validation (`validate_recipe.py`)
+Performs advanced validation beyond `conda-smithy`, checking for common conda-forge pitfalls and best practices.
+
+```sh
+# Validate a recipe
+python .claude/skills/conda-forge-expert/scripts/validate_recipe.py recipes/<name>
+```
+
 ## Platform Selectors
 
 ### Modern Format (if/then/else)
@@ -207,20 +239,39 @@ Common selectors: `linux`, `osx`, `win`, `unix` (linux+osx), `x86_64`, `aarch64`
 
 ## Compilers
 
+### ⚠️ CRITICAL: `stdlib` is REQUIRED for Compiled Packages
+
+**ALL** recipes that use a compiler (`c`, `cxx`, `rust`, etc.) **MUST** also include a matching `stdlib` dependency. Failure to do so will result in automatic rejection by conda-forge CI.
+
+**Correct Usage (`recipe.yaml`):**
 ```yaml
-# meta.yaml
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}      # REQUIRED!
+    - ${{ compiler("cxx") }}  # If using C++
+    - ${{ stdlib("cxx") }}    # REQUIRED!
+```
+
+**Correct Usage (`meta.yaml`):**
+```yaml
 requirements:
   build:
     - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-    - {{ compiler('rust') }}
-
-# recipe.yaml
-requirements:
-  build:
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
+    - {{ stdlib('c') }}      # REQUIRED!
+    - {{ compiler('cxx') }}  # If using C++
+    - {{ stdlib('cxx') }}    # REQUIRED!
 ```
+
+### 🚨 KNOWN ISSUE: Local Testing Exception for `stdlib`
+
+When building locally with `rattler-build` or `conda-build`, you may encounter "undefined" errors related to `stdlib`. This is a known issue with local build environments.
+
+**WORKAROUND (for local testing ONLY):**
+1.  **Temporarily comment out** the `stdlib` line(s) before running a local build.
+2.  **IMMEDIATELY UNCOMMENT** the `stdlib` line(s) after testing and before committing or submitting the recipe.
+
+**NEVER** commit a recipe with `stdlib` commented out.
 
 ## Style Guidelines
 
@@ -308,6 +359,7 @@ outputs:
     requirements:
       build:
         - {{ compiler('c') }}
+        - {{ stdlib('c') }}
       run_exports:
         - {{ pin_subpackage('libmypackage', max_pin='x.x') }}
 
@@ -327,6 +379,7 @@ outputs:
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ stdlib('c') }}
     - python                                     # [build_platform != target_platform]
     - cross-python_{{ target_platform }}         # [build_platform != target_platform]
   host:
@@ -369,6 +422,7 @@ build:
 requirements:
   build:
     - {{ compiler('cuda') }}
+    - {{ stdlib('c') }} # Often needed alongside cuda
   run:
     - __cuda >={{ cuda_compiler_version_min }}
 ```
