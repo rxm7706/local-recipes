@@ -104,14 +104,15 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
         sources = []
 
     for i, src in enumerate(sources):
-        if "url" in src:
-            url = src.get("url", "")
-            if "pypi.io" in url:
-                errors.append(f"Source {i}: Use pypi.org instead of deprecated pypi.io")
-            if "sha256" not in src and "sha1" not in src and "md5" not in src:
-                errors.append(f"Source {i}: Missing checksum (sha256 recommended)")
-        elif "git" in src or "git_url" in src:
-            warnings.append(f"Source {i}: Using git source - prefer URL with checksum for reproducibility")
+        if isinstance(src, dict):
+            if "url" in src:
+                url = src.get("url", "")
+                if "pypi.io" in url:
+                    errors.append(f"Source {i}: Use pypi.org instead of deprecated pypi.io")
+                if "sha256" not in src and "sha1" not in src and "md5" not in src:
+                    errors.append(f"Source {i}: Missing checksum (sha256 recommended)")
+            elif "git" in src or "git_url" in src:
+                warnings.append(f"Source {i}: Using git source - prefer URL with checksum for reproducibility")
 
     # Check requirements section
     reqs = content.get("requirements", {})
@@ -235,7 +236,7 @@ def validate_meta_yaml(path: Path) -> ValidationResult:
         warnings.append("Prefer URL source with SHA256 over git_url for reproducibility")
 
     # Check for noarch:python and python_min
-    if "noarch: python" in content:
+    if re.search(r"noarch:\s*python", content):
         info.append("noarch: python detected")
         if "python_min" not in content:
             warnings.append("CFEP-25: noarch:python should use python_min variable")
