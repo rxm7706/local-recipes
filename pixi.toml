@@ -133,6 +133,10 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/vulnerability_scanner.py
 description = "Update the local PyPI-to-Conda name mapping cache from Grayskull"
 cmd = "python .claude/skills/conda-forge-expert/scripts/mapping_manager.py"
 
+[feature.local-recipes.tasks.lint-optimize]
+description = "Lint a recipe for optimizations and best practices"
+cmd = "python .claude/skills/conda-forge-expert/scripts/recipe_optimizer.py"
+
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"
