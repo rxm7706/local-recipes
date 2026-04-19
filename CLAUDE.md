@@ -187,31 +187,29 @@ Before submitting to conda-forge/staged-recipes:
 
 This repository includes custom scripts to streamline recipe development. Prefer these over generic tools where applicable.
 
-### Recipe Generation (`recipe-generator.py`)
+These tools are natively exposed to Claude Code via FastMCP (located in `.claude/tools/conda_forge_server.py`). This means Claude can automatically generate recipes, validate them, and check dependencies directly.
 
-A powerful script that creates recipes from PyPI, GitHub, or templates. It correctly identifies build backends (like `setuptools`, `hatchling`, etc.) automatically.
-
+### Recipe Generation
+Automatically creates recipes from PyPI, GitHub, or templates.
+**Native MCP Tool**: `generate_recipe_from_pypi(package_name="numpy")`
 ```sh
-# Generate from PyPI (recommended)
+# CLI Usage
 python .claude/skills/conda-forge-expert/scripts/recipe-generator.py pypi <package-name>
-
-# Generate from a template
-python .claude/skills/conda-forge-expert/scripts/recipe-generator.py template python-noarch --name <package-name>
 ```
 
-### Dependency Checking (`dependency-checker.py`)
-Verifies that all dependencies in a recipe exist on conda-forge. It is optimized for both standard and air-gapped/enterprise (Artifactory) environments.
-
+### Dependency Checking
+Verifies that all dependencies in a recipe exist on conda-forge.
+**Native MCP Tool**: `check_dependencies(recipe_path="recipes/my-package")`
 ```sh
-# Check a recipe's dependencies
+# CLI Usage
 python .claude/skills/conda-forge-expert/scripts/dependency-checker.py recipes/<name>
 ```
 
-### Recipe Validation (`validate_recipe.py`)
-Performs advanced validation beyond `conda-smithy`, checking for common conda-forge pitfalls and best practices.
-
+### Recipe Validation
+Performs advanced validation beyond `conda-smithy`, checking for common conda-forge pitfalls.
+**Native MCP Tool**: `validate_recipe(recipe_path="recipes/my-package")`
 ```sh
-# Validate a recipe
+# CLI Usage
 python .claude/skills/conda-forge-expert/scripts/validate_recipe.py recipes/<name>
 ```
 
@@ -262,16 +260,6 @@ requirements:
     - {{ compiler('cxx') }}  # If using C++
     - {{ stdlib('cxx') }}    # REQUIRED!
 ```
-
-### 🚨 KNOWN ISSUE: Local Testing Exception for `stdlib`
-
-When building locally with `rattler-build` or `conda-build`, you may encounter "undefined" errors related to `stdlib`. This is a known issue with local build environments.
-
-**WORKAROUND (for local testing ONLY):**
-1.  **Temporarily comment out** the `stdlib` line(s) before running a local build.
-2.  **IMMEDIATELY UNCOMMENT** the `stdlib` line(s) after testing and before committing or submitting the recipe.
-
-**NEVER** commit a recipe with `stdlib` commented out.
 
 ## Style Guidelines
 

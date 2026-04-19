@@ -8,7 +8,7 @@ description: |
   USE THIS SKILL WHEN: creating conda recipes, packaging Python/Rust/Go/C++ software,
   fixing conda-forge build failures, updating feedstocks, migrating to recipe.yaml format,
   setting up private channels, or troubleshooting conda-forge CI.
-version: 4.2.0
+version: 4.2.1
 allowed-tools: Read, Glob, Grep, Bash, Write, Edit, WebFetch, WebSearch
 ---
 
@@ -216,35 +216,6 @@ requirements:
 
 **Common mistake**: Forgetting `stdlib` in recipe.yaml when converting from meta.yaml
 
-### 🚨 CRITICAL: Local Testing Exception
-
-**KNOWN ISSUE**: When testing locally with `rattler-build` or `conda-build`, the `stdlib` dependency may fail to resolve with "undefined" errors.
-
-**TEMPORARY WORKAROUND FOR LOCAL TESTING ONLY**:
-1. **Before testing locally**: Comment out the `stdlib` line:
-   ```yaml
-   requirements:
-     build:
-       - ${{ compiler("c") }}
-       # - ${{ stdlib("c") }}    # TEMPORARILY COMMENTED FOR LOCAL TESTING
-   ```
-
-2. **After testing**: **IMMEDIATELY** uncomment the `stdlib` line before committing or submitting:
-   ```yaml
-   requirements:
-     build:
-       - ${{ compiler("c") }}
-       - ${{ stdlib("c") }}        # RESTORED - REQUIRED FOR SUBMISSION!
-   ```
-
-**⚠️ WARNING**:
-- This is ONLY for local testing
-- **NEVER commit or submit** recipes without `stdlib`
-- conda-forge CI will REJECT recipes missing `stdlib`
-- Failure to restore `stdlib` will cause submission failures
-
-**Why this happens**: Local rattler-build/conda-build may not have the same stdlib resolution as conda-forge CI infrastructure.
-
 ### CFEP-25 Compliance (noarch: python)
 
 All `noarch: python` packages MUST use `python_min`:
@@ -331,8 +302,6 @@ pixi global install conda-smithy
 
 ## Local Building
 
-**⚠️ CRITICAL**: Before testing locally, see [Local Testing Exception](#-critical-local-testing-exception) - you may need to temporarily comment out `stdlib` dependencies!
-
 ### Using build-locally.py (Recommended)
 
 ```bash
@@ -358,8 +327,6 @@ rattler-build build -r recipe.yaml --variant-config .ci_support/win64.yaml
 rattler-build build -r recipe.yaml --target-platform linux-64
 ```
 
-**Remember**: If you get "undefined" errors for stdlib, temporarily comment it out for testing only!
-
 ### Using conda-build
 
 ```bash
@@ -372,8 +339,6 @@ conda-build recipes/my-package -c conda-forge
 # Test existing artifact
 conda-build --test path/to/package.conda
 ```
-
-**Remember**: If you get "undefined" errors for stdlib, temporarily comment it out for testing only!
 
 ## Common Patterns
 
@@ -601,6 +566,7 @@ See guides:
 
 ## Version History
 
+- **v4.2.1** (2025-12-26): Removed the massive red warning about local `stdlib` hacks. Implemented automatic local `c_stdlib_version` variant overriding in `build_all.py` so you no longer need to comment out `stdlib` for local testing.
 - **v4.2.0** (2025-12-26): Added CRITICAL local testing exception for stdlib - must comment out for local builds, restore before submission
 - **v4.1.0** (2025-12-26): Enhanced stdlib requirement visibility with warnings and inline examples
 - **v4.0.0** (2025-12): Modular architecture, enterprise support, portability

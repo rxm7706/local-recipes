@@ -203,6 +203,10 @@ def get_config(arch, channel_urls):
         get_config_name(arch)))
     if os.path.exists(exclusive_config_file):
         exclusive_config_files.append(exclusive_config_file)
+        
+    local_testing_overrides = os.path.join(script_dir, 'local_testing_overrides.yaml')
+    if os.path.exists(local_testing_overrides):
+        exclusive_config_files.append(local_testing_overrides)
 
     config = conda_build.api.Config(
         arch=arch, exclusive_config_files=exclusive_config_files,
