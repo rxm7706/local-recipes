@@ -121,6 +121,14 @@ cmd = "bash scripts/submit_pr.sh"
 description = "Run a health check on the local development environment"
 cmd = "python .claude/skills/conda-forge-expert/scripts/health_check.py"
 
+[feature.local-recipes.tasks.update-cve-db]
+description = "Download and update the local CVE vulnerability database"
+cmd = "python .claude/skills/conda-forge-expert/scripts/cve_manager.py"
+
+[feature.local-recipes.tasks.scan-vulnerabilities]
+description = "Scan a recipe's dependencies for vulnerabilities using the local CVE database"
+cmd = "python .claude/skills/conda-forge-expert/scripts/vulnerability_scanner.py"
+
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"

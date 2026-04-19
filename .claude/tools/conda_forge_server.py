@@ -20,6 +20,8 @@ VALIDATE_SCRIPT = SCRIPTS_DIR / "validate_recipe.py"
 CHECKER_SCRIPT = SCRIPTS_DIR / "dependency-checker.py"
 GENERATOR_SCRIPT = SCRIPTS_DIR / "recipe-generator.py"
 HEALTH_CHECK_SCRIPT = SCRIPTS_DIR / "health_check.py"
+CVE_MANAGER_SCRIPT = SCRIPTS_DIR / "cve_manager.py"
+VULN_SCANNER_SCRIPT = SCRIPTS_DIR / "vulnerability_scanner.py"
 
 
 def _run_script(script_path: Path, args: List[str]) -> Dict[str, Any]:
@@ -98,16 +100,11 @@ def generate_recipe_from_pypi(package_name: str, version: str = None) -> str:
     Returns:
         A JSON string indicating success or failure, and the path to the generated recipe.
     """
-    # Use grayskull since it handles the complex metadata generation.
-    # Note: We rely on the existing pixi environment to have grayskull.
-    # Since we can't easily parse bash output natively via Python without brittle string matching,
-    # we'll just shell out to the pixi command as expected by the workspace.
     try:
         args = ["run", "-e", "grayskull", "pypi", package_name]
         if version:
             args.extend(["==", version])
         
-        # Determine the root directory of the repo (one level up from .claude)
         repo_root = Path(__file__).parent.parent.parent
         
         result = subprocess.run(
@@ -118,7 +115,7 @@ def generate_recipe_from_pypi(package_name: str, version: str = None) -> str:
             check=False
         )
         
-        recipe_dir = repo_root / package_name
+        recipe_dir = repo_root / "recipes" / package_name
         if recipe_dir.exists():
             return json.dumps({
                 "success": True,
@@ -139,16 +136,28 @@ def generate_recipe_from_pypi(package_name: str, version: str = None) -> str:
 
 @mcp.tool()
 def run_system_health_check() -> str:
-    """Runs a comprehensive health check on the local development environment.
-    
-    Verifies Git configuration, GitHub CLI authentication, Docker daemon status,
-    MCP tool integrity, and external API connectivity.
-    
-    Returns:
-        A JSON string containing a list of check results.
-    """
+    """Runs a comprehensive health check on the local development environment."""
     args = ["--json"]
     result = _run_script(HEALTH_CHECK_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def update_cve_database(force: bool = False) -> str:
+    """Downloads and updates the local CVE database from osv.dev."""
+    args = []
+    if force:
+        args.append("--force")
+    # This is a long-running process, so we just return the stdout/stderr
+    result = _run_script(CVE_MANAGER_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def scan_for_vulnerabilities(recipe_path: str) -> str:
+    """Scans a recipe's dependencies against the local CVE database."""
+    args = ["--json", recipe_path]
+    result = _run_script(VULN_SCANNER_SCRIPT, args)
     return json.dumps(result, indent=2)
 
 
