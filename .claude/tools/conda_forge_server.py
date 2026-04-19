@@ -22,6 +22,7 @@ GENERATOR_SCRIPT = SCRIPTS_DIR / "recipe-generator.py"
 HEALTH_CHECK_SCRIPT = SCRIPTS_DIR / "health_check.py"
 CVE_MANAGER_SCRIPT = SCRIPTS_DIR / "cve_manager.py"
 VULN_SCANNER_SCRIPT = SCRIPTS_DIR / "vulnerability_scanner.py"
+RECIPE_EDITOR_SCRIPT = SCRIPTS_DIR / "recipe_editor.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
@@ -142,20 +143,12 @@ def scan_for_vulnerabilities(recipe_path: str) -> str:
 
 @mcp.tool()
 def trigger_build(config: str) -> str:
-    """Triggers a local build process asynchronously.
-    
-    Args:
-        config: The build configuration to use (e.g., 'linux-64', 'osx-arm64').
-    
-    Returns:
-        A JSON string confirming that the build has started.
-    """
+    """Triggers a local build process asynchronously."""
     if SUMMARY_FILE.exists():
         SUMMARY_FILE.unlink()
         
     build_script = Path(__file__).parent.parent.parent / "build-locally.py"
     
-    # Run the build in the background
     subprocess.Popen(["python", str(build_script), config])
     
     return json.dumps({"status": "Build triggered", "config": config})
@@ -163,11 +156,7 @@ def trigger_build(config: str) -> str:
 
 @mcp.tool()
 def get_build_summary() -> str:
-    """Retrieves the result of the last build.
-    
-    Returns:
-        A JSON string with the build summary, or a status indicating the build is in progress.
-    """
+    """Retrieves the result of the last build."""
     if not SUMMARY_FILE.exists():
         return json.dumps({"status": "In progress", "message": "Build summary not yet available."})
     
@@ -175,6 +164,25 @@ def get_build_summary() -> str:
         summary = json.load(f)
     
     return json.dumps(summary, indent=2)
+
+
+@mcp.tool()
+def edit_recipe(recipe_path: str, actions: List[Dict[str, Any]]) -> str:
+    """Programmatically edits a recipe file using a list of structured actions.
+    
+    Args:
+        recipe_path: Path to the recipe file (e.g., 'recipes/numpy/recipe.yaml').
+        actions: A list of action dictionaries.
+                 Example: [{"action": "update", "path": "context.version", "value": "2.0.0"},
+                           {"action": "calculate_hash", "path": "source.0"}]
+    
+    Returns:
+        A JSON string indicating the result of the operation.
+    """
+    actions_json = json.dumps(actions)
+    args = [recipe_path, actions_json]
+    result = _run_script(RECIPE_EDITOR_SCRIPT, args)
+    return json.dumps(result, indent=2)
 
 
 if __name__ == "__main__":
