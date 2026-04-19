@@ -25,12 +25,13 @@ VULN_SCANNER_SCRIPT = SCRIPTS_DIR / "vulnerability_scanner.py"
 RECIPE_EDITOR_SCRIPT = SCRIPTS_DIR / "recipe_editor.py"
 MAPPING_MANAGER_SCRIPT = SCRIPTS_DIR / "mapping_manager.py"
 NAME_RESOLVER_SCRIPT = SCRIPTS_DIR / "name_resolver.py"
+FAILURE_ANALYZER_SCRIPT = SCRIPTS_DIR / "failure_analyzer.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
 
 
-def _run_script(script_path: Path, args: List[str]) -> Dict[str, Any]:
+def _run_script(script_path: Path, args: List[str], input_text: str = None) -> Dict[str, Any]:
     """Run a Python script that outputs JSON and parse the result."""
     if not script_path.exists():
         return {"error": f"Script not found at {script_path}"}
@@ -41,7 +42,8 @@ def _run_script(script_path: Path, args: List[str]) -> Dict[str, Any]:
             cmd, 
             capture_output=True, 
             text=True, 
-            check=False
+            check=False,
+            input=input_text
         )
         
         try:
@@ -189,6 +191,14 @@ def get_conda_name(pypi_name: str) -> str:
     """Resolves a PyPI package name to its conda-forge equivalent using a tiered, cache-first strategy."""
     args = [pypi_name]
     result = _run_script(NAME_RESOLVER_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def analyze_build_failure(error_log: str) -> str:
+    """Analyzes a build failure log and suggests a structured fix."""
+    args = ["-"] # Read from stdin
+    result = _run_script(FAILURE_ANALYZER_SCRIPT, args, input_text=error_log)
     return json.dumps(result, indent=2)
 
 
