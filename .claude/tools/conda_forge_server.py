@@ -19,6 +19,7 @@ SCRIPTS_DIR = Path(__file__).parent.parent / "skills" / "conda-forge-expert" / "
 VALIDATE_SCRIPT = SCRIPTS_DIR / "validate_recipe.py"
 CHECKER_SCRIPT = SCRIPTS_DIR / "dependency-checker.py"
 GENERATOR_SCRIPT = SCRIPTS_DIR / "recipe-generator.py"
+HEALTH_CHECK_SCRIPT = SCRIPTS_DIR / "health_check.py"
 
 
 def _run_script(script_path: Path, args: List[str]) -> Dict[str, Any]:
@@ -134,6 +135,21 @@ def generate_recipe_from_pypi(package_name: str, version: str = None) -> str:
             
     except Exception as e:
         return json.dumps({"success": False, "error": str(e)}, indent=2)
+
+
+@mcp.tool()
+def run_system_health_check() -> str:
+    """Runs a comprehensive health check on the local development environment.
+    
+    Verifies Git configuration, GitHub CLI authentication, Docker daemon status,
+    MCP tool integrity, and external API connectivity.
+    
+    Returns:
+        A JSON string containing a list of check results.
+    """
+    args = ["--json"]
+    result = _run_script(HEALTH_CHECK_SCRIPT, args)
+    return json.dumps(result, indent=2)
 
 
 if __name__ == "__main__":
