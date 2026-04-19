@@ -26,6 +26,7 @@ RECIPE_EDITOR_SCRIPT = SCRIPTS_DIR / "recipe_editor.py"
 MAPPING_MANAGER_SCRIPT = SCRIPTS_DIR / "mapping_manager.py"
 NAME_RESOLVER_SCRIPT = SCRIPTS_DIR / "name_resolver.py"
 FAILURE_ANALYZER_SCRIPT = SCRIPTS_DIR / "failure_analyzer.py"
+RECIPE_OPTIMIZER_SCRIPT = SCRIPTS_DIR / "recipe_optimizer.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
@@ -199,6 +200,14 @@ def analyze_build_failure(error_log: str) -> str:
     """Analyzes a build failure log and suggests a structured fix."""
     args = ["-"] # Read from stdin
     result = _run_script(FAILURE_ANALYZER_SCRIPT, args, input_text=error_log)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def optimize_recipe(recipe_path: str) -> str:
+    """Lints a recipe for optimizations and conda-forge best practices."""
+    args = [recipe_path]
+    result = _run_script(RECIPE_OPTIMIZER_SCRIPT, args)
     return json.dumps(result, indent=2)
 
 
