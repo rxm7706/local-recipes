@@ -23,6 +23,8 @@ HEALTH_CHECK_SCRIPT = SCRIPTS_DIR / "health_check.py"
 CVE_MANAGER_SCRIPT = SCRIPTS_DIR / "cve_manager.py"
 VULN_SCANNER_SCRIPT = SCRIPTS_DIR / "vulnerability_scanner.py"
 RECIPE_EDITOR_SCRIPT = SCRIPTS_DIR / "recipe_editor.py"
+MAPPING_MANAGER_SCRIPT = SCRIPTS_DIR / "mapping_manager.py"
+NAME_RESOLVER_SCRIPT = SCRIPTS_DIR / "name_resolver.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
@@ -42,12 +44,9 @@ def _run_script(script_path: Path, args: List[str]) -> Dict[str, Any]:
             check=False
         )
         
-        # Some scripts might print non-JSON stuff before/after, or stderr
-        # We try to parse the stdout as JSON
         try:
             return json.loads(result.stdout)
         except json.JSONDecodeError:
-            # If JSON parsing fails, return raw output
             return {
                 "error": "Failed to parse JSON output",
                 "stdout": result.stdout,
@@ -168,20 +167,28 @@ def get_build_summary() -> str:
 
 @mcp.tool()
 def edit_recipe(recipe_path: str, actions: List[Dict[str, Any]]) -> str:
-    """Programmatically edits a recipe file using a list of structured actions.
-    
-    Args:
-        recipe_path: Path to the recipe file (e.g., 'recipes/numpy/recipe.yaml').
-        actions: A list of action dictionaries.
-                 Example: [{"action": "update", "path": "context.version", "value": "2.0.0"},
-                           {"action": "calculate_hash", "path": "source.0"}]
-    
-    Returns:
-        A JSON string indicating the result of the operation.
-    """
+    """Programmatically edits a recipe file using a list of structured actions."""
     actions_json = json.dumps(actions)
     args = [recipe_path, actions_json]
     result = _run_script(RECIPE_EDITOR_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def update_mapping_cache(force: bool = False) -> str:
+    """Updates the local PyPI-to-Conda name mapping cache from Grayskull."""
+    args = []
+    if force:
+        args.append("--force")
+    result = _run_script(MAPPING_MANAGER_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def get_conda_name(pypi_name: str) -> str:
+    """Resolves a PyPI package name to its conda-forge equivalent using a tiered, cache-first strategy."""
+    args = [pypi_name]
+    result = _run_script(NAME_RESOLVER_SCRIPT, args)
     return json.dumps(result, indent=2)
 
 
