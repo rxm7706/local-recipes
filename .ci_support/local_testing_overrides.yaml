@@ -1,0 +1,6 @@
+# This file provides default stdlib versions for local builds to prevent
+# "undefined" errors when recipes use stdlib('c').
+# It is injected by build_all.py and should NOT be used in real CI.
+c_stdlib_version:
+  - "2.28"  # [linux]
+  - "10.13" # [osx]
