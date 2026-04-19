@@ -92,6 +92,10 @@ platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 dependencies.shellcheck = ">=0.10.0"
 
 [environments]
+# default-env: local-recipes
+# ^ The "default-env:" directive above tells scripts/load-env.sh which environment
+# to activate by default when entering this repository. Change the value to any
+# environment name defined below. If omitted, the first environment key is used.
 # linux only needs Python to run build-locally.py. Everything else happens in Docker.
 linux = ["linux", "python"]
 # osx and win do run natively on the machine, so we need the build deps too
