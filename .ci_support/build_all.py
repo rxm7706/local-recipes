@@ -1,3 +1,4 @@
+import json
 from shutil import rmtree
 import tempfile
 import conda.base.context
@@ -15,6 +16,7 @@ from collections import OrderedDict
 import sys
 import subprocess
 import yaml
+from pathlib import Path
 
 try:
     from ruamel_yaml import BaseLoader, load
@@ -23,7 +25,17 @@ except ImportError:
 
 
 EXAMPLE_RECIPE_FOLDERS = ["example", "example-new-recipe"]
+SUMMARY_FILE = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) / "build_summary.json"
 
+def write_build_summary(status: str, artifacts: list = None, error_log: str = None):
+    """Writes a structured JSON summary of the build outcome."""
+    summary = {
+        "status": status,
+        "artifacts": artifacts or [],
+        "error_log": error_log or ""
+    }
+    with open(SUMMARY_FILE, "w") as f:
+        json.dump(summary, f, indent=2)
 
 def get_host_platform():
     from sys import platform
@@ -46,6 +58,7 @@ def build_all(recipes_dir, arch):
     print(f"DEBUG: Found folders: {folders}")
     if not folders:
         print("Found no recipes to build")
+        write_build_summary("success", artifacts=[], error_log="No recipes found to build.")
         return
 
     platform = get_host_platform()
@@ -86,8 +99,6 @@ def build_all(recipes_dir, arch):
             with open(cbc, "r") as f:
                 lines = f.readlines()
             pat = re.compile(r"^([^\#]*?)\s+\#\s\[.*(not\s(linux|unix)|(?<!not\s)(osx|win)).*\]\s*$")
-            # remove lines with selectors that don't apply to linux, i.e. if they contain
-            # "not linux", "not unix", "osx" or "win"; this also removes trailing newlines
             lines = [pat.sub("", x) for x in lines]
             text = "\n".join(lines)
             if platform == 'linux' and ('c_stdlib_version' in text):
@@ -118,8 +129,6 @@ def build_all(recipes_dir, arch):
             with open(cbc, "r") as f:
                 lines = f.readlines()
             pat = re.compile(r"^([^\#]*?)\s+\#\s\[.*(not\s(osx|unix)|(?<!not\s)(linux|win)).*\]\s*$")
-            # remove lines with selectors that don't apply to osx, i.e. if they contain
-            # "not osx", "not unix", "linux" or "win"; this also removes trailing newlines
             lines = [pat.sub("", x) for x in lines]
             text = "\n".join(lines)
             if platform == 'osx' and (
@@ -195,10 +204,6 @@ def get_config(arch, channel_urls):
     exclusive_config_files = [os.path.join(conda.base.context.context.root_prefix,
                                            'conda_build_config.yaml')]
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    # since variant builds override recipe/conda_build_config.yaml, see
-    # https://github.com/conda/conda-build/blob/3.21.8/conda_build/variants.py#L175-L181
-    # we need to make sure not to use variant_configs here, otherwise
-    # staged-recipes PRs cannot override anything using the recipe-cbc.
     exclusive_config_file = os.path.join(script_dir, '{}.yaml'.format(
         get_config_name(arch)))
     if os.path.exists(exclusive_config_file):
@@ -216,7 +221,6 @@ def get_config(arch, channel_urls):
 
 
 def build_folders(recipes_dir, folders, arch, channel_urls):
-
     index_path = os.path.join(sys.exec_prefix, 'conda-bld')
     os.makedirs(index_path, exist_ok=True)
     conda_index.api.update_index(index_path)
@@ -247,8 +251,16 @@ def build_folders(recipes_dir, folders, arch, channel_urls):
     for node in order:
         d[G.nodes[node]['meta'].meta_path] = 1
 
+    built_artifacts = []
     for recipe in d.keys():
-        conda_build.api.build([recipe], config=get_config(arch, channel_urls))
+        try:
+            output = conda_build.api.build([recipe], config=get_config(arch, channel_urls))
+            built_artifacts.extend(output)
+        except Exception as e:
+            write_build_summary("failure", error_log=str(e))
+            raise
+
+    write_build_summary("success", artifacts=built_artifacts)
 
 
 def build_folders_rattler_build(
@@ -256,22 +268,18 @@ def build_folders_rattler_build(
 ):
     config = get_config(arch, channel_urls)
 
-    # Remove the example recipes to ensure that they are not also build.
     for example_recipe in EXAMPLE_RECIPE_FOLDERS:
         rmtree(os.path.join(recipes_dir, example_recipe), ignore_errors=True)
 
-    # Determine the locations for the variant config files.
     specs = OrderedDict()
     for f in config.exclusive_config_files:
         specs[f] = conda_build.variants.parse_config_file(
             os.path.abspath(os.path.expanduser(os.path.expandvars(f))), config
         )
 
-    # Combine all the variant config files together
     combined_spec = conda_build.variants.combine_specs(specs, log_output=config.verbose)
     variant_config = yaml.dump(combined_spec)
 
-    # Define the arguments for rattler-build
     args = [
         "rattler-build",
         "build",
@@ -281,26 +289,30 @@ def build_folders_rattler_build(
         f"{platform}-{arch}",
     ]
     for channel_url in channel_urls:
-        # Local is automatically added by rattler-build so we just remove it.
         if channel_url != "local":
             args.extend(["-c", channel_url])
 
-    # Construct a temporary file where we write the combined variant config. We can then pass that
-    # to rattler-build.
     with tempfile.NamedTemporaryFile(delete=False) as fp:
         fp.write(variant_config.encode("utf-8"))   
         atexit.register(os.unlink, fp.name)
 
-    # Execute rattler-build.
-    subprocess.run(args + ["--variant-config", fp.name], check=True)
+    try:
+        result = subprocess.run(args + ["--variant-config", fp.name], check=True, capture_output=True, text=True)
 
+        # Find artifacts
+        output_dir = Path(config.output_folder)
+        artifacts = [str(p) for p in output_dir.glob(f"**/*.conda")] + [str(p) for p in output_dir.glob(f"**/*.tar.bz2")]
+        write_build_summary("success", artifacts=artifacts)
+
+    except subprocess.CalledProcessError as e:
+        write_build_summary("failure", error_log=e.stderr)
+        raise
 
 def check_recipes_in_correct_dir(root_dir, correct_dir):
     from pathlib import Path
     for path in Path(root_dir).rglob('meta.yaml'):
         path = path.absolute().relative_to(root_dir)
         if path.parts[0] == 'build_artifacts':
-            # ignore pkg_cache in build_artifacts
             continue
         if path.parts[0] != correct_dir and path.parts[0] != "broken-recipes":
             raise RuntimeError(f"recipe {path.parts} in wrong directory")
@@ -309,10 +321,6 @@ def check_recipes_in_correct_dir(root_dir, correct_dir):
 
 
 def read_mambabuild(recipes_dir):
-    """
-    Only use mambabuild if all the recipes require so via
-    'conda_build_tool: mambabuild' in 'recipes/<recipe>/conda-forge.yml'
-    """
     folders = os.listdir(recipes_dir)
     conda_build_tools = []
     for folder in folders:
@@ -336,14 +344,24 @@ def use_mambabuild():
 
 
 if __name__ == "__main__":
+    if SUMMARY_FILE.exists():
+        SUMMARY_FILE.unlink()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--arch', default='64',
                         help='target architecture (64 or 32)')
     args = parser.parse_args()
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    check_recipes_in_correct_dir(root_dir, "recipes")
-    use_mamba = read_mambabuild(os.path.join(root_dir, "recipes"))
-    if use_mamba:
-      use_mambabuild()
-      subprocess.run("conda clean --all --yes", shell=True, check=True)
-    build_all(os.path.join(root_dir, "recipes"), args.arch)
+
+    try:
+        check_recipes_in_correct_dir(root_dir, "recipes")
+        use_mamba = read_mambabuild(os.path.join(root_dir, "recipes"))
+        if use_mamba:
+          use_mambabuild()
+          subprocess.run("conda clean --all --yes", shell=True, check=True)
+        build_all(os.path.join(root_dir, "recipes"), args.arch)
+    except Exception as e:
+        print(f"Build script failed: {e}")
+        if not SUMMARY_FILE.exists():
+            write_build_summary("failure", error_log=str(e))
+        sys.exit(1)

@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 #
 # Automates the submission of a recipe PR to conda-forge/staged-recipes
+# using a persistent local fork.
 #
 
 set -e
 
-if [ -z "$1" ]; then
+if [ -z "$1" ];
+then
     echo "Usage: pixi run submit-pr <recipe-name>"
     echo "Example: pixi run submit-pr my-package"
     exit 1
 fi
 
 RECIPE_NAME=$1
-REPO_ROOT=$(pwd)
-RECIPE_DIR="$REPO_ROOT/recipes/$RECIPE_NAME"
+LOCAL_RECIPES_ROOT=$(pwd)
+RECIPE_DIR="$LOCAL_RECIPES_ROOT/recipes/$RECIPE_NAME"
+STAGED_RECIPES_FORK_PATH="$LOCAL_RECIPES_ROOT/../staged-recipes"
 
 if [ ! -d "$RECIPE_DIR" ]; then
     echo "Error: Recipe directory $RECIPE_DIR does not exist."
@@ -32,37 +35,37 @@ if [ -z "$GITHUB_USER" ]; then
     exit 1
 fi
 
-TEMP_DIR=$(mktemp -d)
-echo "=> Created temporary workspace at $TEMP_DIR"
+# Check for the fork, or clone it if it doesn't exist
+if [ ! -d "$STAGED_RECIPES_FORK_PATH" ]; then
+    echo "=> Local fork not found. Cloning https://github.com/$GITHUB_USER/staged-recipes.git..."
+    gh repo clone "$GITHUB_USER/staged-recipes" "$STAGED_RECIPES_FORK_PATH"
+fi
 
-# Cleanup on exit
-trap 'rm -rf "$TEMP_DIR"' EXIT
+cd "$STAGED_RECIPES_FORK_PATH"
+echo "=> Entered directory $(pwd)"
 
-echo "=> Forking and cloning conda-forge/staged-recipes..."
-cd "$TEMP_DIR"
-
-# Fork the repository and clone it. If already forked, it just clones.
-gh repo fork conda-forge/staged-recipes --clone --default-branch-only
-cd staged-recipes
-
-# Make sure we're up to date with upstream
-echo "=> Syncing fork with upstream..."
+# Configure upstream remote and sync
+echo "=> Syncing fork with upstream conda-forge/staged-recipes..."
 git remote add upstream https://github.com/conda-forge/staged-recipes.git 2>/dev/null || true
 git fetch upstream
-git checkout -B main upstream/main
+git checkout main
+git reset --hard upstream/main
+git push origin main --force
 
+# Create a new branch for the recipe
 BRANCH_NAME="add-recipe-${RECIPE_NAME}"
 echo "=> Creating branch $BRANCH_NAME..."
-git checkout -b "$BRANCH_NAME"
+git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+git reset --hard origin/main # Start fresh
 
-echo "=> Copying recipe..."
+echo "=> Copying recipe from $RECIPE_DIR..."
 cp -r "$RECIPE_DIR" recipes/
 
 echo "=> Committing..."
 git add "recipes/$RECIPE_NAME"
-git commit -m "Add $RECIPE_NAME recipe"
+git commit -m "Add recipe for $RECIPE_NAME"
 
-echo "=> Pushing to origin (your fork)..."
+echo "=> Pushing to your fork..."
 git push -u origin "$BRANCH_NAME" --force
 
 echo "=> Creating Pull Request..."
@@ -77,7 +80,7 @@ PR_BODY="This PR adds a new recipe for \`$RECIPE_NAME\`.
 
 gh pr create \
     --repo conda-forge/staged-recipes \
-    --title "Add $RECIPE_NAME" \
+    --title "Add recipe for $RECIPE_NAME" \
     --body "$PR_BODY" \
     --head "$GITHUB_USER:$BRANCH_NAME" \
     --base main

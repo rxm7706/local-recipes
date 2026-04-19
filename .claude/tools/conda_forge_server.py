@@ -23,6 +23,9 @@ HEALTH_CHECK_SCRIPT = SCRIPTS_DIR / "health_check.py"
 CVE_MANAGER_SCRIPT = SCRIPTS_DIR / "cve_manager.py"
 VULN_SCANNER_SCRIPT = SCRIPTS_DIR / "vulnerability_scanner.py"
 
+# Path to the build summary file
+SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
+
 
 def _run_script(script_path: Path, args: List[str]) -> Dict[str, Any]:
     """Run a Python script that outputs JSON and parse the result."""
@@ -57,14 +60,7 @@ def _run_script(script_path: Path, args: List[str]) -> Dict[str, Any]:
 
 @mcp.tool()
 def validate_recipe(recipe_path: str) -> str:
-    """Validate a conda-forge recipe (recipe.yaml or meta.yaml) against best practices.
-    
-    Args:
-        recipe_path: Absolute or relative path to the recipe file or directory.
-        
-    Returns:
-        A JSON string containing validation results (passed, errors, warnings, info).
-    """
+    """Validate a conda-forge recipe (recipe.yaml or meta.yaml) against best practices."""
     args = ["--json", recipe_path]
     result = _run_script(VALIDATE_SCRIPT, args)
     return json.dumps(result, indent=2)
@@ -72,15 +68,7 @@ def validate_recipe(recipe_path: str) -> str:
 
 @mcp.tool()
 def check_dependencies(recipe_path: str, suggest: bool = True) -> str:
-    """Check if the dependencies in a conda recipe exist on conda-forge.
-    
-    Args:
-        recipe_path: Absolute or relative path to the recipe file or directory.
-        suggest: Whether to provide suggestions for missing dependencies (e.g. PyPI to Conda mappings).
-        
-    Returns:
-        A JSON string listing found and missing dependencies.
-    """
+    """Check if the dependencies in a conda recipe exist on conda-forge."""
     args = ["--json", recipe_path]
     if suggest:
         args.insert(0, "--suggest")
@@ -91,15 +79,7 @@ def check_dependencies(recipe_path: str, suggest: bool = True) -> str:
 
 @mcp.tool()
 def generate_recipe_from_pypi(package_name: str, version: str = None) -> str:
-    """Generate a conda-forge recipe from a PyPI package using rattler-build or grayskull.
-    
-    Args:
-        package_name: The name of the PyPI package.
-        version: Optional version to generate (defaults to latest).
-        
-    Returns:
-        A JSON string indicating success or failure, and the path to the generated recipe.
-    """
+    """Generate a conda-forge recipe from a PyPI package using rattler-build or grayskull."""
     try:
         args = ["run", "-e", "grayskull", "pypi", package_name]
         if version:
@@ -148,7 +128,6 @@ def update_cve_database(force: bool = False) -> str:
     args = []
     if force:
         args.append("--force")
-    # This is a long-running process, so we just return the stdout/stderr
     result = _run_script(CVE_MANAGER_SCRIPT, args)
     return json.dumps(result, indent=2)
 
@@ -159,6 +138,43 @@ def scan_for_vulnerabilities(recipe_path: str) -> str:
     args = ["--json", recipe_path]
     result = _run_script(VULN_SCANNER_SCRIPT, args)
     return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def trigger_build(config: str) -> str:
+    """Triggers a local build process asynchronously.
+    
+    Args:
+        config: The build configuration to use (e.g., 'linux-64', 'osx-arm64').
+    
+    Returns:
+        A JSON string confirming that the build has started.
+    """
+    if SUMMARY_FILE.exists():
+        SUMMARY_FILE.unlink()
+        
+    build_script = Path(__file__).parent.parent.parent / "build-locally.py"
+    
+    # Run the build in the background
+    subprocess.Popen(["python", str(build_script), config])
+    
+    return json.dumps({"status": "Build triggered", "config": config})
+
+
+@mcp.tool()
+def get_build_summary() -> str:
+    """Retrieves the result of the last build.
+    
+    Returns:
+        A JSON string with the build summary, or a status indicating the build is in progress.
+    """
+    if not SUMMARY_FILE.exists():
+        return json.dumps({"status": "In progress", "message": "Build summary not yet available."})
+    
+    with open(SUMMARY_FILE) as f:
+        summary = json.load(f)
+    
+    return json.dumps(summary, indent=2)
 
 
 if __name__ == "__main__":
