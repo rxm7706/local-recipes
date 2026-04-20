@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 5.0.0
+version: 5.1.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -29,7 +29,7 @@ My core operational loop is designed to be a fully autonomous, closed-loop syste
 8.  **Analyze & Debug**:
     *   **If build fails**: Call `analyze_build_failure` on the error log to get a structured diagnosis. Use the diagnosis to construct a fix using `edit_recipe`, then return to Step 6.
     *   **If build succeeds**: Proceed to the next step.
-9.  **Submit PR**: Use the `submit_pr` pixi task to automatically open a pull request to `conda-forge/staged-recipes`.
+9.  **Submit PR**: Call `submit_pr(recipe_name, dry_run=True)` first to verify all prerequisites (gh auth, fork presence). If OK, call `submit_pr(recipe_name)` to push and open the PR. The result contains `pr_url` on success.
 
 ## Core Tools Reference
 
@@ -59,11 +59,13 @@ My capabilities are powered by a suite of native MCP tools.
 ### Security & Maintenance
 | Tool | Description |
 |---|---|
-| `update_recipe` | **"Autotick" Bot.** Checks for new upstream versions and updates the recipe automatically. |
-| `scan_for_vulnerabilities` | Scans dependencies against a local CVE database. |
+| `update_recipe` | **"Autotick" Bot (PyPI).** Checks for new upstream versions on PyPI and updates the recipe. |
+| `check_github_version` | **"Autotick" Bot (GitHub).** Checks latest GitHub release for packages not on PyPI. |
+| `scan_for_vulnerabilities` | Scans dependencies against OSV.dev (API) or local CVE database (offline). |
 | `update_cve_database` | Updates the local CVE database from `osv.dev`. |
 | `update_mapping_cache` | Updates the PyPI-to-Conda name mapping cache from Grayskull. |
 | `run_system_health_check` | Performs a full diagnostic on the development environment. |
+| `submit_pr` | **Completes the loop.** Pushes recipe to your staged-recipes fork and opens a PR to conda-forge. Use `dry_run=True` first. |
 
 ## Manual CLI Commands
 
@@ -80,6 +82,8 @@ While I can perform most actions autonomously, the following CLI commands are av
 
 ## Version History
 
+- **v5.2.0**: Added `check_github_version` MCP tool for GitHub-only packages (complements `update_recipe`). FastMCP 3.x Context injection on `trigger_build` and `update_cve_database` for progress logging. Fixed `recipe_optimizer.py` selector analysis to handle recipe.yaml v1 list-based `skip` conditions; added CFEP-25 `python_min` check (SEL-002). Fixed Pyright `reportPossiblyUnboundVariable` diagnostics.
+- **v5.1.0**: Added `submit_pr` MCP tool, completing the full autonomous loop from generation to PR submission. Includes `dry_run` mode for safe prerequisite checks before writing to GitHub.
 - **v5.0.0**: Major architectural overhaul. Implemented a full suite of autonomous tools, including a closed-loop build/debug system, a local "autotick" bot, vulnerability scanning, a programmatic recipe editor, and an intelligent failure analyzer. The skill is now a true autonomous agent.
 - **v4.2.1**: Removed the `stdlib` local testing hack by implementing an automatic variant override.
 - **v4.0.0**: Initial modular architecture.

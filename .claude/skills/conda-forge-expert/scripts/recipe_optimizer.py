@@ -13,12 +13,13 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, NamedTuple
+from typing import Dict, List, NamedTuple
 
 try:
     from ruamel.yaml import YAML
     RUAMEL_AVAILABLE = True
 except ImportError:
+    YAML = None  # type: ignore[assignment,misc]
     RUAMEL_AVAILABLE = False
 
 class OptimizationSuggestion(NamedTuple):
@@ -92,29 +93,55 @@ def analyze_build_script(recipe_dir: Path) -> List[OptimizationSuggestion]:
     return suggestions
 
 def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
-    """Analyzes selectors for redundancy."""
+    """Analyzes skip conditions and platform selectors for redundancy."""
     suggestions = []
-    
-    # Check for redundant selectors if the recipe is skipped on all but one platform
-    build_section = data.get("build", {})
-    skip_line = build_section.get("skip", "")
-    
-    # Example: skip: true  # [not linux]
-    match = re.search(r"skip:\s*true\s*#\s*\[\s*not\s*(\w+)\s*\]", str(build_section))
-    if match:
-        sole_platform = match.group(1)
-        
-        # Now search for selectors that are redundant
-        # This requires walking the whole data structure, which is complex.
-        # For now, we'll just add a note that this is a potential area.
-        # A full implementation would use ruamel.yaml's AST capabilities.
+
+    build_section = data.get("build", {}) or {}
+    skip_value = build_section.get("skip", None)
+    if skip_value is None:
+        return suggestions
+
+    sole_platform: str | None = None
+
+    # recipe.yaml v1: skip is a list of condition strings like ['not linux', 'not win']
+    if isinstance(skip_value, list):
+        not_conditions = [
+            str(s).strip() for s in skip_value
+            if re.match(r"^not\s+\w+$", str(s).strip())
+        ]
+        # Single "not X" → recipe only targets platform X
+        if len(not_conditions) == 1:
+            sole_platform = not_conditions[0].split()[-1]
+
+    if sole_platform:
         suggestions.append(OptimizationSuggestion(
             code="SEL-001",
-            message=f"Recipe appears to be only for '{sole_platform}'. Selectors for this platform may be redundant.",
-            suggestion=f"Review any '# [{sole_platform}]' selectors to see if they can be removed.",
+            message=f"Recipe is restricted to '{sole_platform}'. if/then conditions scoped to this platform may be redundant.",
+            suggestion=f"Review if/then conditionals already limited to '{sole_platform}' — they may be removable.",
             confidence=0.7
         ))
-        
+
+    # CFEP-25: noarch: python packages must pin python_min
+    noarch = build_section.get("noarch", None)
+    if noarch == "python":
+        context = data.get("context", {}) or {}
+        run_reqs = data.get("requirements", {}).get("run", [])
+        has_python_pin = any(
+            isinstance(r, str) and "python_min" in r
+            for r in run_reqs
+        )
+        has_python_min_ctx = "python_min" in context
+        if not has_python_pin and not has_python_min_ctx:
+            suggestions.append(OptimizationSuggestion(
+                code="SEL-002",
+                message="noarch: python recipe does not use 'python_min' context variable (CFEP-25).",
+                suggestion=(
+                    "Add 'python_min: \"3.9\"' to context, then use "
+                    "'python >=${{ python_min }}' in run requirements."
+                ),
+                confidence=0.9
+            ))
+
     return suggestions
 
 def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
@@ -123,6 +150,7 @@ def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
     """
     if not RUAMEL_AVAILABLE:
         return [OptimizationSuggestion("OPT-000", "ruamel.yaml not found.", "Install ruamel.yaml.", 1.0)]
+    assert YAML is not None
 
     yaml = YAML()
     try:
