@@ -1,5 +1,5 @@
 #                             VVVVVV  minimum `pixi` version
-"$schema" = "https://pixi.sh/v0.59.0/schema/manifest/schema.json"
+"$schema" = "https://pixi.sh/v0.67.0/schema/manifest/schema.json"
 
 [workspace]
 name = "staged-recipes"

@@ -752,8 +752,57 @@ extra:
     - maintainer2
 ```
 
+## 2025–2026 Platform Updates
+
+Key conda-forge infrastructure changes that affect recipe authoring:
+
+### Compiler Defaults
+
+| Platform | Compiler | Changed |
+|----------|----------|---------|
+| Linux | GCC 14 / GFortran 14 | July 2025 |
+| macOS | Clang 19 / libc++ 19 | July 2025 |
+| Windows | Visual Studio 2022 (MSVC 19.4x) | June 2025 |
+
+No recipe changes are needed unless you hardcode a compiler version. The `${{ compiler("c") }}` Jinja function always resolves to the current default.
+
+### macOS Minimum Deployment Target
+
+conda-forge raised the macOS minimum to **11.0** in February 2026.
+
+- Do **not** set `MACOSX_DEPLOYMENT_TARGET=10.x` in build scripts.
+- The SDK directory moved to `$PIXI_PROJECT_ROOT/.pixi/macOS-SDKs` (set via `OSX_SDK_DIR` env var in the pixi osx task).
+- If your package must express a macOS minimum, use `run_constrained`:
+  ```yaml
+  requirements:
+    run_constrained:
+      - __osx >=11.0
+  ```
+
+### CUDA Matrix
+
+- CUDA 11.8 was **removed** from the default matrix in June 2025. To opt back in, copy `cuda118.yaml` to `.ci_support/migrations/`.
+- Current default CUDA version: **12.9**.
+
+### Python Build Matrix (as of Apr 2026)
+
+| Status | Versions |
+|--------|----------|
+| Active | 3.10, 3.11, 3.12, 3.13, 3.14 |
+| Dropped | 3.9 (Aug 2025), 3.8 (Feb 2024), PyPy (Aug 2024) |
+| `python_min` | `"3.10"` — global CFEP-25 floor |
+
+### rattler-build Environment Isolation
+
+rattler-build v0.62+ (Apr 2026) defaults to `--env-isolation strict`. Build scripts that inherit system environment variables will fail. Solutions:
+1. Declare required env vars in `build.env` in the recipe.
+2. Pass `--env-isolation conda-build` for backward compatibility (transitional).
+
 ## References
 
 - [rattler-build Documentation](https://rattler-build.prefix.dev/latest/)
 - [Recipe Format Schema](https://github.com/prefix-dev/recipe-format)
 - [conda-forge v1 Announcement](https://conda-forge.org/blog/2025/02/27/conda-forge-v1-recipe-support/)
+- [CFEP-25: python_min](https://github.com/conda-forge/cfep/blob/main/cfep-25.md)
+- [stdlib Migration](https://conda-forge.org/news/2024/03/24/stdlib-migration/)
+- [conda-forge Pinning](https://github.com/conda-forge/conda-forge-pinning-feedstock)
