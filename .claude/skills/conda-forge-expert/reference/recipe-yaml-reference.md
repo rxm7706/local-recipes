@@ -696,7 +696,6 @@ context:
   name: example-package
   version: "2.1.0"
   python_min: "3.10"
-  python_max: "3.13"
 
 package:
   name: ${{ name | lower }}
@@ -720,10 +719,11 @@ requirements:
     - pip
     - hatchling
   run:
-    - python >=${{ python_min }},<${{ python_max }}
+    - python >=${{ python_min }}
     - click >=8.0
     - rich >=12.0
   run_constrained:
+    # If an upper bound is needed, place it here — not in run (see DEP-002).
     - optional-dep >=1.0
 
 tests:

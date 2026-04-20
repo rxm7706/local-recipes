@@ -245,7 +245,7 @@ def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
                 code="SEL-002",
                 message="noarch: python recipe does not use 'python_min' context variable (CFEP-25).",
                 suggestion=(
-                    "Add 'python_min: \"3.9\"' to context, then use "
+                    "Add 'python_min: \"3.10\"' to context (current conda-forge floor), then use "
                     "'python >=${{ python_min }}' in run requirements."
                 ),
                 confidence=0.9
