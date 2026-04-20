@@ -31,6 +31,7 @@ RECIPE_OPTIMIZER_SCRIPT = SCRIPTS_DIR / "recipe_optimizer.py"
 RECIPE_UPDATER_SCRIPT = SCRIPTS_DIR / "recipe_updater.py"
 SUBMIT_PR_SCRIPT = SCRIPTS_DIR / "submit_pr.py"
 GITHUB_VERSION_CHECKER_SCRIPT = SCRIPTS_DIR / "github_version_checker.py"
+GITHUB_UPDATER_SCRIPT = SCRIPTS_DIR / "github_updater.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
@@ -79,19 +80,44 @@ def validate_recipe(recipe_path: str) -> str:
 
 
 @mcp.tool()
-def check_dependencies(recipe_path: str, suggest: bool = True) -> str:
-    """Check if the dependencies in a conda recipe exist on conda-forge."""
-    args = ["--json", recipe_path]
+def check_dependencies(
+    recipe_path: str,
+    suggest: bool = True,
+    channel: str | None = None,
+    subdirs: List[str] | None = None,
+) -> str:
+    """Check if the dependencies in a conda recipe exist on conda-forge (or a custom channel).
+
+    Uses batch repodata.json fetching — one HTTP request per (channel, subdir) pair —
+    instead of per-package API calls, making it fast and suitable for air-gapped environments.
+
+    For JFrog/Artifactory channels set JFROG_API_KEY (or JFROG_TOKEN / JFROG_USER +
+    JFROG_PASSWORD) and pass the channel URL. For fully offline use, pre-populate
+    CONDA_DEP_CACHE_DIR with repodata files and the tool will work without network access.
+
+    Args:
+        recipe_path: Path to a recipe file or directory.
+        suggest: If True, include conda-forge name suggestions for missing packages.
+        channel: Channel URL to check against (default: https://conda.anaconda.org/conda-forge).
+                 Supports file:// paths for local mirrors and JFrog Artifactory URLs.
+        subdirs: List of subdirs to fetch, e.g. ['linux-64', 'noarch'] (default: noarch + linux-64).
+    """
+    args = ["--json"]
     if suggest:
-        args.insert(0, "--suggest")
-        
+        args.append("--suggest")
+    if channel:
+        args.extend(["--channel", channel])
+    if subdirs:
+        for s in subdirs:
+            args.extend(["--subdir", s])
+    args.append(recipe_path)
     result = _run_script(CHECKER_SCRIPT, args)
     return json.dumps(result, indent=2)
 
 
 @mcp.tool()
 def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> str:
-    """Generate a conda-forge recipe from a PyPI package using rattler-build or grayskull."""
+    """Generate a conda-forge recipe from a PyPI package using grayskull."""
     try:
         args = ["run", "-e", "grayskull", "pypi", package_name]
         if version:
@@ -152,7 +178,12 @@ async def update_cve_database(force: bool = False, ctx: Context | None = None) -
 
 @mcp.tool()
 def scan_for_vulnerabilities(recipe_path: str) -> str:
-    """Scans a recipe's dependencies against the local CVE database."""
+    """Scans a recipe's dependencies for known vulnerabilities.
+
+    Primary mode: queries OSV.dev querybatch API (https://api.osv.dev/v1/querybatch).
+    Offline fallback: uses local CVE database if OSV.dev is unreachable.
+    Run update_cve_database() periodically to keep the local database fresh.
+    """
     args = ["--json", recipe_path]
     result = _run_script(VULN_SCANNER_SCRIPT, args)
     return json.dumps(result, indent=2)
@@ -232,7 +263,7 @@ def get_conda_name(pypi_name: str) -> str:
 def analyze_build_failure(error_log: str, first_only: bool = False) -> str:
     """Analyze a build failure log and return structured fix suggestions.
 
-    Scans the log against 30 known error patterns across 9 categories:
+    Scans the log against 33 known error patterns across 10 categories:
     COMPILER, BUILD_TOOLS, LINKER, PYTHON, RATTLER_SCHEMA, RUST, NODE, SOURCE, SYSTEM, TEST_FAILURE.
 
     Returns all matches ordered by first appearance in the log. The top-level
@@ -253,7 +284,18 @@ def analyze_build_failure(error_log: str, first_only: bool = False) -> str:
 
 @mcp.tool()
 def optimize_recipe(recipe_path: str) -> str:
-    """Lints a recipe for optimizations and conda-forge best practices."""
+    """Lints a recipe for optimizations and conda-forge best practices.
+
+    Check codes:
+      DEP-001  Dev dependency (pytest, ruff, etc.) found in run requirements.
+      DEP-002  noarch:python recipe with Python upper-bound in run instead of run_constrained.
+      PIN-001  Exact-version (==) pin in run requirements — blocks security updates.
+      ABT-001  Missing license_file in about section.
+      SCRIPT-001  'sudo' used in build.sh — builds must not require root.
+      SCRIPT-002  'pip install --upgrade' in build.sh — breaks reproducibility.
+      SEL-001  Recipe restricted to one platform; redundant if/then conditions may be removable.
+      SEL-002  noarch:python recipe missing python_min context variable (CFEP-25).
+    """
     args = [recipe_path]
     result = _run_script(RECIPE_OPTIMIZER_SCRIPT, args)
     return json.dumps(result, indent=2)
@@ -303,6 +345,42 @@ def submit_pr(
     if pr_body:
         args.extend(["--body", pr_body])
     result = _run_script(SUBMIT_PR_SCRIPT, args, timeout=300)  # 5 min for clone + push
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def update_recipe_from_github(
+    recipe_path: str,
+    github_repo: str | None = None,
+    dry_run: bool = False,
+    allow_prerelease: bool = False,
+) -> str:
+    """Autotick bot for GitHub-only packages: fetch the latest release and update the recipe.
+
+    Mirrors update_recipe (PyPI autotick) but uses the GitHub Releases API as the
+    version source. Use this for packages that publish releases on GitHub before
+    or instead of PyPI (e.g. apple-fm-sdk).
+
+    The recipe's GitHub repo is auto-detected from source.url, context variables,
+    or about.home. Pass github_repo to override when auto-detection fails.
+
+    Always call with dry_run=True first to verify the detected repo and version
+    before allowing file writes.
+
+    Args:
+        recipe_path: Path to a recipe file or directory.
+        github_repo: 'owner/repo' or full GitHub URL (overrides auto-detect).
+        dry_run: If True, report what would change without writing the file.
+        allow_prerelease: If True, include pre-release versions.
+    """
+    args = [recipe_path]
+    if github_repo:
+        args.extend(["--repo", github_repo])
+    if dry_run:
+        args.append("--dry-run")
+    if allow_prerelease:
+        args.append("--pre")
+    result = _run_script(GITHUB_UPDATER_SCRIPT, args)
     return json.dumps(result, indent=2)
 
 

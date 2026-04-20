@@ -17,6 +17,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import NamedTuple
@@ -25,6 +27,7 @@ try:
     import yaml
     YAML_AVAILABLE = True
 except ImportError:
+    yaml = None  # type: ignore[assignment]
     YAML_AVAILABLE = False
 
 
@@ -34,6 +37,7 @@ class ValidationResult(NamedTuple):
     errors: list[str]
     warnings: list[str]
     info: list[str]
+    rattler_lint_ran: bool = False
 
 
 def normalize_path(path: Path) -> Path:
@@ -50,6 +54,86 @@ def normalize_path(path: Path) -> Path:
     raise FileNotFoundError(f"No recipe file found in {path}")
 
 
+def run_rattler_lint(recipe_path: Path) -> tuple[list[str], list[str], bool]:
+    """
+    Run 'rattler-build lint <dir>' if rattler-build is on PATH.
+
+    Returns (errors, warnings, ran).
+    'ran' is False when rattler-build is absent or doesn't support the lint
+    subcommand (versions prior to ~0.30).
+
+    Output format handling:
+      - JSON array/object (--json flag or newer versions)
+      - Plain text lines prefixed with [error]/[warning]/error:/warning:
+    """
+    rattler = shutil.which("rattler-build")
+    if not rattler:
+        return [], [], False
+
+    recipe_dir = recipe_path.parent if recipe_path.is_file() else recipe_path
+
+    try:
+        proc = subprocess.run(
+            [rattler, "lint", str(recipe_dir)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return [], [], False
+
+    combined = proc.stdout + proc.stderr
+
+    # Detect "unrecognized subcommand" — older rattler-build without lint
+    combined_lower = combined.lower()
+    if any(
+        phrase in combined_lower
+        for phrase in ("unrecognized subcommand", "unknown subcommand",
+                       "no such subcommand", "error: 'lint'")
+    ):
+        return [], [], False
+
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    # Try JSON output first (some rattler-build versions emit JSON)
+    try:
+        data = json.loads(proc.stdout)
+        if isinstance(data, list):
+            for item in data:
+                level = str(item.get("level", "")).lower()
+                msg = item.get("message") or item.get("msg") or str(item)
+                (errors if "error" in level else warnings).append(f"rattler-build: {msg}")
+        elif isinstance(data, dict):
+            for e in data.get("errors", []):
+                errors.append(f"rattler-build: {e}")
+            for w in data.get("warnings", []):
+                warnings.append(f"rattler-build: {w}")
+        return errors, warnings, True
+    except (json.JSONDecodeError, ValueError, AttributeError):
+        pass
+
+    # Plain-text fallback — parse [error]/[warning]/error:/warning: prefixes
+    _ERROR_RE = re.compile(r"^\[?error\]?:?\s*", re.IGNORECASE)
+    _WARN_RE = re.compile(r"^\[?warning\]?:?\s*", re.IGNORECASE)
+    _SKIP_RE = re.compile(r"^(linting|checking|info:|note:|$)", re.IGNORECASE)
+
+    for line in combined.splitlines():
+        line = line.strip()
+        if not line or _SKIP_RE.match(line):
+            continue
+        ll = line.lower()
+        if ll.startswith("[error]") or ll.startswith("error:"):
+            errors.append("rattler-build: " + _ERROR_RE.sub("", line))
+        elif ll.startswith("[warning]") or ll.startswith("warning:"):
+            warnings.append("rattler-build: " + _WARN_RE.sub("", line))
+        elif proc.returncode != 0:
+            # Non-zero exit with unstructured output — surface as error
+            errors.append(f"rattler-build: {line}")
+
+    return errors, warnings, True
+
+
 def validate_recipe_yaml(path: Path) -> ValidationResult:
     """Validate recipe.yaml against v1 format rules and best practices."""
     errors: list[str] = []
@@ -58,6 +142,7 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
 
     if not YAML_AVAILABLE:
         return ValidationResult(False, ["PyYAML not installed - cannot validate"], [], [])
+    assert yaml is not None
 
     try:
         content = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -169,9 +254,6 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
     if not tests:
         warnings.append("No tests section defined - add tests for quality assurance")
     else:
-        has_python_test = any(
-            isinstance(t, dict) and "python" in t for t in tests
-        )
         has_pip_check = any(
             isinstance(t, dict) and t.get("python", {}).get("pip_check") for t in tests
         )
@@ -202,11 +284,22 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
     if not maintainers:
         errors.append("Missing recipe-maintainers in extra section")
 
+    # ── rattler-build lint pass ───────────────────────────────────────────────
+    rb_errors, rb_warnings, rb_ran = run_rattler_lint(path)
+    errors.extend(rb_errors)
+    warnings.extend(rb_warnings)
+    if rb_ran:
+        rb_status = "passed" if not rb_errors else f"{len(rb_errors)} error(s)"
+        info.append(f"rattler-build lint: {rb_status}")
+    else:
+        info.append("rattler-build lint: not available (install rattler-build ≥0.30 for schema validation)")
+
     return ValidationResult(
         passed=len(errors) == 0,
         errors=errors,
         warnings=warnings,
-        info=info
+        info=info,
+        rattler_lint_ran=rb_ran,
     )
 
 
@@ -291,7 +384,8 @@ def print_result(result: ValidationResult, use_json: bool = False) -> None:
             "passed": result.passed,
             "errors": result.errors,
             "warnings": result.warnings,
-            "info": result.info
+            "info": result.info,
+            "rattler_lint_ran": result.rattler_lint_ran,
         }, indent=2))
         return
 
