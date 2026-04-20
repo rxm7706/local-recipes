@@ -11,7 +11,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/apple_fm_sdk-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apple_fm_sdk-${{ version }}.tar.gz
   sha256: 057b8323bd7d6f3fcb255c41e59afa9ac67d8742a77eedca9ab03252a1e4bb0c
 
 build:
@@ -21,7 +21,7 @@ build:
   # Only osx-arm64: Apple Intelligence / Foundation Models requires Apple Silicon.
   skip:
     - not osx
-    - not aarch64
+    - not arm64
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
 
 requirements:

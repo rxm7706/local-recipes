@@ -36,24 +36,35 @@ DEV_DEPENDENCIES = {
     "flake8", "pre-commit", "tox", "nox", "twine", "wheel", "build"
 }
 
+# Virtual packages and special names that should never trigger PIN-001.
+_VIRTUAL_PACKAGES = {"__osx", "__glibc", "__linux", "__unix", "__cuda", "__archspec"}
+
+
+def _flatten_reqs(items: list | None) -> List[str]:
+    """Recursively flatten requirement lists that may contain if/then/else dicts."""
+    result: List[str] = []
+    for item in (items or []):
+        if isinstance(item, str):
+            result.append(item)
+        elif isinstance(item, dict):
+            for key in ("then", "else"):
+                val = item.get(key)
+                if isinstance(val, str):
+                    result.append(val)
+                elif isinstance(val, list):
+                    result.extend(_flatten_reqs(val))
+    return result
+
+
 def analyze_dependencies(data: Dict) -> List[OptimizationSuggestion]:
     """Analyzes dependency sections for common issues."""
     suggestions = []
-    
+
     run_reqs = data.get("requirements", {}).get("run", [])
     if not run_reqs:
         return suggestions
 
-    # Flatten the list to handle if/then selectors
-    flat_run_reqs = []
-    for item in run_reqs:
-        if isinstance(item, str):
-            flat_run_reqs.append(item)
-        elif isinstance(item, dict):
-            if "then" in item and isinstance(item["then"], str): flat_run_reqs.append(item["then"])
-            if "else" in item and isinstance(item["else"], str): flat_run_reqs.append(item["else"])
-
-    for req in flat_run_reqs:
+    for req in _flatten_reqs(run_reqs):
         pkg_name = req.split()[0]
         if pkg_name in DEV_DEPENDENCIES:
             suggestions.append(OptimizationSuggestion(
@@ -62,7 +73,105 @@ def analyze_dependencies(data: Dict) -> List[OptimizationSuggestion]:
                 suggestion=f"Consider moving '{pkg_name}' to the 'test' requirements section.",
                 confidence=0.95
             ))
-            
+
+    return suggestions
+
+
+def analyze_noarch_python_constraints(data: Dict) -> List[OptimizationSuggestion]:
+    """Check noarch:python recipes for Python constraint best practices (DEP-002)."""
+    suggestions = []
+    build = data.get("build", {}) or {}
+    if build.get("noarch") != "python":
+        return suggestions
+
+    reqs = data.get("requirements", {}) or {}
+    flat_run = _flatten_reqs(reqs.get("run", []))
+    flat_constrained = _flatten_reqs(reqs.get("run_constrained", []))
+
+    # Detect Python entry in run that carries an upper bound.
+    python_run_with_upper: str | None = None
+    for req in flat_run:
+        parts = req.strip().split()
+        if not parts or parts[0].lower() != "python":
+            continue
+        if len(parts) > 1 and "<" in " ".join(parts[1:]):
+            python_run_with_upper = req
+            break
+
+    # Check whether Python already appears in run_constrained.
+    python_in_constrained = any(
+        c.strip().split()[0].lower() == "python"
+        for c in flat_constrained
+        if c.strip()
+    )
+
+    if python_run_with_upper and not python_in_constrained:
+        suggestions.append(OptimizationSuggestion(
+            code="DEP-002",
+            message=f"noarch:python recipe pins Python upper bound in run: '{python_run_with_upper}'.",
+            suggestion=(
+                "Move the upper bound to run_constrained (e.g. 'python <X') and keep only "
+                "the lower bound in run. Hard upper bounds in run block installation with "
+                "newer Python; run_constrained is a softer constraint that warns without blocking."
+            ),
+            confidence=0.85,
+        ))
+
+    return suggestions
+
+
+def analyze_pinning(data: Dict) -> List[OptimizationSuggestion]:
+    """Detect over-pinned (exact ==) run dependencies (PIN-001)."""
+    suggestions = []
+
+    run_reqs = data.get("requirements", {}).get("run", [])
+
+    for req in _flatten_reqs(run_reqs):
+        req = req.strip()
+        # Skip template expressions — version is resolved at build time.
+        if not req or "${{" in req or "{{" in req:
+            continue
+        parts = req.split()
+        if len(parts) < 2:
+            continue
+        pkg = parts[0]
+        if pkg.lower() == "python" or pkg.lower() in _VIRTUAL_PACKAGES:
+            continue
+        constraint = " ".join(parts[1:])
+        # Flag == (exact match) pins; allow >= or ~= or *.
+        if re.search(r"(?<![<>!])={2}", constraint):
+            version_m = re.search(r"==\s*([^\s,]+)", constraint)
+            version = version_m.group(1) if version_m else "X.Y.Z"
+            suggestions.append(OptimizationSuggestion(
+                code="PIN-001",
+                message=f"Run dependency '{pkg}' is pinned to an exact version: '{req}'.",
+                suggestion=(
+                    f"Prefer '>={version}' or '>={version},<next_major'. "
+                    "Exact pins block security updates and make co-installation harder."
+                ),
+                confidence=0.9,
+            ))
+
+    return suggestions
+
+
+def analyze_about_section(data: Dict) -> List[OptimizationSuggestion]:
+    """Check about section for conda-forge required fields (ABT-001)."""
+    suggestions = []
+    about = data.get("about", {}) or {}
+
+    if "license_file" not in about:
+        suggestions.append(OptimizationSuggestion(
+            code="ABT-001",
+            message="Missing 'license_file' in about section.",
+            suggestion=(
+                "Add 'license_file: LICENSE' (adjust filename to match the repo: "
+                "LICENSE.md, LICENSE.txt, etc.). "
+                "conda-forge requires all packages to bundle the license file."
+            ),
+            confidence=0.95,
+        ))
+
     return suggestions
 
 def analyze_build_script(recipe_dir: Path) -> List[OptimizationSuggestion]:
@@ -161,6 +270,9 @@ def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
 
     all_suggestions = []
     all_suggestions.extend(analyze_dependencies(data))
+    all_suggestions.extend(analyze_noarch_python_constraints(data))
+    all_suggestions.extend(analyze_pinning(data))
+    all_suggestions.extend(analyze_about_section(data))
     all_suggestions.extend(analyze_build_script(recipe_path.parent))
     all_suggestions.extend(analyze_selectors(data))
     

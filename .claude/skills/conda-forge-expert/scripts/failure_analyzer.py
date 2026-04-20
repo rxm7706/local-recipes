@@ -39,7 +39,7 @@ class ErrorPattern:
 
 
 # ---------------------------------------------------------------------------
-# Error library — 30 patterns across 9 categories
+# Error library — 33 patterns across 10 categories
 # ---------------------------------------------------------------------------
 # Suggestion actions understood by recipe_editor.py:
 #   add_to_list   — append value to a YAML list at path
