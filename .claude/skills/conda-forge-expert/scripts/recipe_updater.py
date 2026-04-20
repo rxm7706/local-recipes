@@ -25,6 +25,12 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
+try:
+    from packaging.version import Version as PkgVersion
+    PACKAGING_AVAILABLE = True
+except ImportError:
+    PACKAGING_AVAILABLE = False
+
 # Path to the recipe editor script
 RECIPE_EDITOR_SCRIPT = Path(__file__).parent / "recipe_editor.py"
 
@@ -77,8 +83,14 @@ def update_recipe(recipe_path: Path, dry_run: bool = False) -> Dict[str, Any]:
         if not latest_version:
             return {"success": False, "message": f"Could not fetch latest version for '{package_name}' from PyPI."}
 
-        # A simple version comparison. For production, a library like 'packaging' would be better.
-        if latest_version == current_version:
+        if PACKAGING_AVAILABLE:
+            try:
+                if PkgVersion(latest_version) <= PkgVersion(current_version):
+                    return {"success": True, "updated": False, "message": "Recipe is already up-to-date."}
+            except Exception:
+                if latest_version == current_version:
+                    return {"success": True, "updated": False, "message": "Recipe is already up-to-date."}
+        elif latest_version == current_version:
             return {"success": True, "updated": False, "message": "Recipe is already up-to-date."}
 
         print(f"New version found: {latest_version}. Preparing update...")

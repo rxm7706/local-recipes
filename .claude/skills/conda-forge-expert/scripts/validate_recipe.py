@@ -108,7 +108,7 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
             if "url" in src:
                 url = src.get("url", "")
                 if "pypi.io" in url:
-                    errors.append(f"Source {i}: Use pypi.org instead of deprecated pypi.io")
+                    warnings.append(f"Source {i}: Prefer pypi.org over pypi.io (pypi.io redirects but pypi.org is canonical)")
                 if "sha256" not in src and "sha1" not in src and "md5" not in src:
                     errors.append(f"Source {i}: Missing checksum (sha256 recommended)")
             elif "git" in src or "git_url" in src:

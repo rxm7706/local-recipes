@@ -7,10 +7,11 @@ without needing to parse bash output.
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
 
 mcp = FastMCP("conda-forge-expert")
 
@@ -28,26 +29,32 @@ NAME_RESOLVER_SCRIPT = SCRIPTS_DIR / "name_resolver.py"
 FAILURE_ANALYZER_SCRIPT = SCRIPTS_DIR / "failure_analyzer.py"
 RECIPE_OPTIMIZER_SCRIPT = SCRIPTS_DIR / "recipe_optimizer.py"
 RECIPE_UPDATER_SCRIPT = SCRIPTS_DIR / "recipe_updater.py"
+SUBMIT_PR_SCRIPT = SCRIPTS_DIR / "submit_pr.py"
+GITHUB_VERSION_CHECKER_SCRIPT = SCRIPTS_DIR / "github_version_checker.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
+BUILD_PID_FILE = Path(__file__).parent.parent.parent / "build.pid"
+_active_build: Optional[subprocess.Popen] = None
 
 
-def _run_script(script_path: Path, args: List[str], input_text: str = None) -> Dict[str, Any]:
+def _run_script(script_path: Path, args: List[str], input_text: str | None = None, timeout: int = 120) -> Dict[str, Any]:
     """Run a Python script that outputs JSON and parse the result."""
     if not script_path.exists():
         return {"error": f"Script not found at {script_path}"}
-        
-    cmd = ["python", str(script_path)] + args
+
+    # Use the same Python interpreter that is running the MCP server
+    python = os.environ.get("CONDA_PYTHON_EXE") or os.environ.get("CONDA_EXE", "").replace("conda", "python") or "python"
+    cmd = [python, str(script_path)] + args
     try:
         result = subprocess.run(
-            cmd, 
-            capture_output=True, 
-            text=True, 
+            cmd,
+            capture_output=True,
+            text=True,
             check=False,
-            input=input_text
+            input=input_text,
+            timeout=timeout,
         )
-        
         try:
             return json.loads(result.stdout)
         except json.JSONDecodeError:
@@ -55,9 +62,10 @@ def _run_script(script_path: Path, args: List[str], input_text: str = None) -> D
                 "error": "Failed to parse JSON output",
                 "stdout": result.stdout,
                 "stderr": result.stderr,
-                "exit_code": result.returncode
+                "exit_code": result.returncode,
             }
-            
+    except subprocess.TimeoutExpired:
+        return {"error": f"Script timed out after {timeout}s", "script": str(script_path)}
     except Exception as e:
         return {"error": str(e)}
 
@@ -82,7 +90,7 @@ def check_dependencies(recipe_path: str, suggest: bool = True) -> str:
 
 
 @mcp.tool()
-def generate_recipe_from_pypi(package_name: str, version: str = None) -> str:
+def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> str:
     """Generate a conda-forge recipe from a PyPI package using rattler-build or grayskull."""
     try:
         args = ["run", "-e", "grayskull", "pypi", package_name]
@@ -127,12 +135,18 @@ def run_system_health_check() -> str:
 
 
 @mcp.tool()
-def update_cve_database(force: bool = False) -> str:
+async def update_cve_database(force: bool = False, ctx: Context | None = None) -> str:
     """Downloads and updates the local CVE database from osv.dev."""
+    if ctx:
+        await ctx.info("Starting CVE database update (may take up to 10 minutes)…")
     args = []
     if force:
         args.append("--force")
-    result = _run_script(CVE_MANAGER_SCRIPT, args)
+    result = _run_script(CVE_MANAGER_SCRIPT, args, timeout=600)
+    if ctx:
+        success = result.get("success", not result.get("error"))
+        msg = result.get("message", "done") if success else result.get("error", "failed")
+        await ctx.info(f"CVE database update {'succeeded' if success else 'failed'}: {msg}")
     return json.dumps(result, indent=2)
 
 
@@ -145,27 +159,45 @@ def scan_for_vulnerabilities(recipe_path: str) -> str:
 
 
 @mcp.tool()
-def trigger_build(config: str) -> str:
-    """Triggers a local build process asynchronously."""
-    if SUMMARY_FILE.exists():
-        SUMMARY_FILE.unlink()
-        
+async def trigger_build(config: str, ctx: Context | None = None) -> str:
+    """Triggers a local build process asynchronously. Returns error if a build is already running."""
+    global _active_build
+
+    # Guard against concurrent builds
+    if _active_build is not None and _active_build.poll() is None:
+        return json.dumps({"error": "A build is already running.", "pid": _active_build.pid})
+
+    for f in (SUMMARY_FILE, BUILD_PID_FILE):
+        if f.exists():
+            f.unlink()
+
     build_script = Path(__file__).parent.parent.parent / "build-locally.py"
-    
-    subprocess.Popen(["python", str(build_script), config])
-    
-    return json.dumps({"status": "Build triggered", "config": config})
+    python = os.environ.get("CONDA_PYTHON_EXE") or "python"
+    _active_build = subprocess.Popen([python, str(build_script), config])
+    BUILD_PID_FILE.write_text(str(_active_build.pid))
+
+    started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    if ctx:
+        await ctx.info(f"Build started for config '{config}' (PID {_active_build.pid}). Poll get_build_summary() to check progress.")
+    return json.dumps({"status": "Build triggered", "config": config, "pid": _active_build.pid,
+                       "started_at": started_at})
 
 
 @mcp.tool()
 def get_build_summary() -> str:
-    """Retrieves the result of the last build."""
+    """Retrieves the result of the last build, or reports if still running."""
+    global _active_build
+
     if not SUMMARY_FILE.exists():
-        return json.dumps({"status": "In progress", "message": "Build summary not yet available."})
-    
+        still_running = _active_build is not None and _active_build.poll() is None
+        pid = _active_build.pid if _active_build else None
+        return json.dumps({"status": "in_progress" if still_running else "unknown",
+                           "message": "Build still running." if still_running else "No build summary found — build may have crashed.",
+                           "pid": pid})
+
     with open(SUMMARY_FILE) as f:
         summary = json.load(f)
-    
+
     return json.dumps(summary, indent=2)
 
 
@@ -197,9 +229,24 @@ def get_conda_name(pypi_name: str) -> str:
 
 
 @mcp.tool()
-def analyze_build_failure(error_log: str) -> str:
-    """Analyzes a build failure log and suggests a structured fix."""
-    args = ["-"] # Read from stdin
+def analyze_build_failure(error_log: str, first_only: bool = False) -> str:
+    """Analyze a build failure log and return structured fix suggestions.
+
+    Scans the log against 30 known error patterns across 9 categories:
+    COMPILER, BUILD_TOOLS, LINKER, PYTHON, RATTLER_SCHEMA, RUST, NODE, SOURCE, SYSTEM, TEST_FAILURE.
+
+    Returns all matches ordered by first appearance in the log. The top-level
+    'error_class', 'diagnosis', 'matched_text', and 'suggestion' fields always
+    reflect the primary (earliest) match for backward compatibility. The
+    'all_matches' list contains every match for multi-root-cause analysis.
+
+    Args:
+        error_log: The raw text of the build failure log.
+        first_only: If True, return only the primary match (smaller response).
+    """
+    args = ["-"]  # read log from stdin
+    if first_only:
+        args.append("--first-only")
     result = _run_script(FAILURE_ANALYZER_SCRIPT, args, input_text=error_log)
     return json.dumps(result, indent=2)
 
@@ -219,6 +266,69 @@ def update_recipe(recipe_path: str, dry_run: bool = False) -> str:
     if dry_run:
         args.append("--dry-run")
     result = _run_script(RECIPE_UPDATER_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def submit_pr(
+    recipe_name: str,
+    dry_run: bool = False,
+    pr_title: str | None = None,
+    pr_body: str | None = None,
+) -> str:
+    """Submit a finished recipe as a PR to conda-forge/staged-recipes via your GitHub fork.
+
+    Workflow:
+      1. Validates the recipe exists locally at recipes/<recipe_name>/.
+      2. Checks 'gh auth status' — requires prior 'gh auth login'.
+      3. Clones your fork of staged-recipes if not already present locally.
+      4. Syncs the fork's main branch with upstream conda-forge/staged-recipes.
+      5. Creates branch 'add-recipe-<recipe_name>', copies the recipe, commits, pushes.
+      6. Opens a PR against conda-forge/staged-recipes main.
+
+    Always call with dry_run=True first to verify prerequisites without making any
+    network writes. The result includes 'pr_url' on success.
+
+    Args:
+        recipe_name: The recipe directory name under recipes/ (e.g. 'numpy').
+        dry_run: If True, validate prerequisites only — do not push or create PR.
+        pr_title: Optional custom PR title. Defaults to 'Add recipe for <name>'.
+        pr_body: Optional custom PR body. Defaults to the standard checklist template.
+    """
+    args = [recipe_name]
+    if dry_run:
+        args.append("--dry-run")
+    if pr_title:
+        args.extend(["--title", pr_title])
+    if pr_body:
+        args.extend(["--body", pr_body])
+    result = _run_script(SUBMIT_PR_SCRIPT, args, timeout=300)  # 5 min for clone + push
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def check_github_version(recipe_path: str | None = None, github_repo: str | None = None) -> str:
+    """Check the latest GitHub release for a recipe or a specific GitHub repo.
+
+    Complements update_recipe (PyPI-only) for packages whose canonical source is GitHub.
+    Auto-detects the GitHub URL from the recipe when recipe_path is given.
+
+    Args:
+        recipe_path: Path to a recipe file or directory. The GitHub URL is extracted
+                     from context variables, source.url, or about.home.
+        github_repo: GitHub repo in 'owner/repo' format or a full github.com URL.
+                     Use this when the recipe doesn't contain a detectable GitHub URL.
+
+    Returns JSON with latest_version, current_version (if recipe provided), and
+    update_available flag. Exit code 2 from the script means an update is available.
+    """
+    args = []
+    if recipe_path:
+        args.append(recipe_path)
+    if github_repo:
+        args.extend(["--repo", github_repo])
+    args.append("--json")
+    result = _run_script(GITHUB_VERSION_CHECKER_SCRIPT, args)
     return json.dumps(result, indent=2)
 
 

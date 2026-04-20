@@ -114,8 +114,14 @@ def execute_actions(recipe_path: Path, actions: List[Dict[str, Any]]) -> Dict[st
                 source_block = get_nested_item(data, path)
                 if not isinstance(source_block, dict) or "url" not in source_block:
                     raise ValueError(f"Invalid source block at path: {path}")
-                
-                sha256 = calculate_sha256_from_url(source_block["url"])
+
+                url = str(source_block["url"])
+                # Resolve rattler-build context variables (e.g. ${{ version }}) before downloading
+                context = data.get("context", {})
+                for var_name, var_value in context.items():
+                    url = url.replace(f"${{{{ {var_name} }}}}", str(var_value))
+
+                sha256 = calculate_sha256_from_url(url)
                 source_block["sha256"] = sha256
             
             else:

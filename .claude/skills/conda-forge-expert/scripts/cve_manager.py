@@ -13,6 +13,7 @@ import json
 import zipfile
 import io
 import sys
+import time
 from pathlib import Path
 
 try:
@@ -35,9 +36,9 @@ def fetch_and_unzip(url: str) -> list[tuple[str, dict]]:
 
     print(f"  Downloading from {url}...")
     try:
-        response = requests.get(url, stream=True, timeout=300) # 5-minute timeout for large files
+        response = requests.get(url, timeout=300)  # 5-minute timeout for large file
         response.raise_for_status()
-        
+
         with zipfile.ZipFile(io.BytesIO(response.content)) as z:
             file_list = z.namelist()
             print(f"  Unzipping {len(file_list)} files in memory...")
@@ -101,9 +102,13 @@ def update_database(force: bool = False):
     for ecosystem, url in ECOSYSTEMS_TO_FETCH.items():
         db_path = DATABASE_DIR / f"{ecosystem.lower()}_cve_db.json"
         
+        CVE_TTL_DAYS = 7
         if db_path.exists() and not force:
-            print(f"Database for {ecosystem} already exists. Use --force to update.")
-            continue
+            age_days = (time.time() - db_path.stat().st_mtime) / 86400
+            if age_days < CVE_TTL_DAYS:
+                print(f"Database for {ecosystem} is {age_days:.1f} days old (TTL={CVE_TTL_DAYS}d). Use --force to refresh.")
+                continue
+            print(f"Database for {ecosystem} is {age_days:.1f} days old — refreshing.")
             
         print(f"Updating database for {ecosystem}...")
         

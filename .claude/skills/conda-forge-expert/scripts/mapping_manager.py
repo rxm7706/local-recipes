@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
 try:
@@ -29,7 +30,7 @@ DATA_DIR = Path(__file__).parent.parent.parent / "data"
 MAPPING_CACHE_FILE = DATA_DIR / "pypi_conda_map.json"
 
 # The canonical source of truth from the Grayskull project
-GRAYSKULL_MAPPING_URL = "https://raw.githubusercontent.com/conda-incubator/grayskull/main/src/grayskull/pypi/pypi_name_mapping.yaml"
+GRAYSKULL_MAPPING_URL = "https://raw.githubusercontent.com/conda/grayskull/main/src/grayskull/pypi/pypi_name_mapping.yaml"
 
 def fetch_grayskull_mapping() -> dict:
     """Downloads and parses the YAML mapping file from Grayskull's GitHub."""
@@ -80,10 +81,17 @@ def update_mapping_cache(force: bool = False):
     """
     print("Updating PyPI-to-Conda name mapping cache...")
     
+    MAPPING_TTL_DAYS = 7
     local_cache = load_local_cache()
     if local_cache and not force:
-        print("Cache already exists. Use --force to refresh from upstream.")
-        return
+        if MAPPING_CACHE_FILE.exists():
+            age_days = (time.time() - MAPPING_CACHE_FILE.stat().st_mtime) / 86400
+            if age_days < MAPPING_TTL_DAYS:
+                print(f"Cache is {age_days:.1f} days old (TTL={MAPPING_TTL_DAYS}d). Use --force to refresh.")
+                return
+        else:
+            print("Cache already exists. Use --force to refresh from upstream.")
+            return
 
     grayskull_mapping = fetch_grayskull_mapping()
     if not grayskull_mapping:

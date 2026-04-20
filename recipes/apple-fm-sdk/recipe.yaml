@@ -34,7 +34,8 @@ requirements:
     - ctypesgen >=1.1.1
   run:
     - python >=${{ python_min }}
-    # Foundation Models framework ships with macOS 26.0+
+  run_constrained:
+    # Foundation Models framework ships with macOS 26.0+; enforces OS minimum at solve time
     - __osx >=26
 
 tests:
