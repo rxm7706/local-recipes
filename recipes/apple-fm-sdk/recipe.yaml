@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: apple-fm-sdk
+  version: "0.1.1"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/apple_fm_sdk-${{ version }}.tar.gz
+  sha256: 057b8323bd7d6f3fcb255c41e59afa9ac67d8742a77eedca9ab03252a1e4bb0c
+
+build:
+  number: 0
+  # macOS 26.0+ and Xcode 26.0+ (Swift 6.2) are required at build time.
+  # Swift is sourced from the system Xcode installation, not conda-forge.
+  # Only osx-arm64: Apple Intelligence / Foundation Models requires Apple Silicon.
+  skip:
+    - not osx
+    - not aarch64
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=75.3.2
+    - wheel
+    # ctypesgen generates the Python ctypes bindings from the C header during build
+    - ctypesgen >=1.1.1
+  run:
+    - python >=${{ python_min }}
+    # Foundation Models framework ships with macOS 26.0+
+    - __osx >=26
+
+tests:
+  - python:
+      imports:
+        - apple_fm_sdk
+      pip_check: false
+
+about:
+  summary: Python bindings for Apple's Foundation Models Swift framework
+  description: |
+    Python bindings for access to the on-device model at the core of Apple
+    Intelligence through the Foundation Models framework. The package wraps
+    Apple's Foundation Models Swift framework via a custom build backend that
+    invokes `swift build` (requires Xcode 26.0+) and `ctypesgen` to generate
+    Python ctypes bindings at build time. At runtime, the package links against
+    `libFoundationModels.dylib`, a system library shipping with macOS 26.0+.
+    Requires Apple Silicon hardware for Apple Intelligence features.
+  license: Apache-2.0
+  license_file: LICENSE.md
+  homepage: https://github.com/apple/python-apple-fm-sdk
+  repository: https://github.com/apple/python-apple-fm-sdk
+
+extra:
+  recipe-maintainers:
+    - rxm7706
