@@ -3,7 +3,7 @@
 
 skill:
   name: conda-forge-expert
-  version: 4.0.0
+  version: 5.5.0
   description: |
     Comprehensive guide for conda-forge recipe development. Handles meta.yaml
     and recipe.yaml formats, linting, CI troubleshooting, and feedstock maintenance.
@@ -90,7 +90,7 @@ linting:
 # Template Defaults
 templates:
   # Default maintainer for generated recipes
-  default_maintainer: ""        # Set your GitHub username
+  default_maintainer: "rxm7706"
 
   # Default license for new recipes
   default_license: MIT
@@ -99,7 +99,7 @@ templates:
   include_schema_header: true
 
   # Python minimum version (CFEP-25)
-  python_min: "3.10"
+  python_min: "3.10"            # conda-forge global floor (dropped 3.9 Aug 2025)
 
 # Enterprise Configuration (when features.enable_enterprise is true)
 enterprise:

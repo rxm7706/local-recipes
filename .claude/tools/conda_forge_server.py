@@ -5,6 +5,7 @@ Allows Claude Code to programmatically validate recipes and check dependencies
 without needing to parse bash output.
 """
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -406,6 +407,82 @@ def check_github_version(recipe_path: str | None = None, github_repo: str | None
     args.append("--json")
     result = _run_script(GITHUB_VERSION_CHECKER_SCRIPT, args)
     return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def migrate_to_v1(recipe_path: str) -> str:
+    """Convert a meta.yaml (v0) recipe to the modern recipe.yaml (v1) format using feedrattler.
+
+    feedrattler produces a recipe.yaml alongside the existing meta.yaml. The original
+    meta.yaml is NOT deleted — review the generated recipe.yaml with validate_recipe and
+    optimize_recipe, then remove meta.yaml manually once satisfied.
+
+    Requires feedrattler on PATH (installed in the local-recipes pixi environment).
+
+    Args:
+        recipe_path: Path to a meta.yaml file or its parent directory.
+    """
+    rp = Path(recipe_path)
+    meta_yaml = rp if rp.name == "meta.yaml" else rp / "meta.yaml"
+    recipe_dir = meta_yaml.parent
+    recipe_yaml = recipe_dir / "recipe.yaml"
+
+    if not meta_yaml.exists():
+        return json.dumps({
+            "success": False,
+            "error": f"No meta.yaml found at {meta_yaml}. This tool only converts meta.yaml (v0) recipes.",
+        })
+
+    if recipe_yaml.exists():
+        return json.dumps({
+            "success": False,
+            "error": (
+                f"recipe.yaml already exists at {recipe_yaml}. "
+                "Remove it first if you want to regenerate from meta.yaml."
+            ),
+        })
+
+    feedrattler_bin = shutil.which("feedrattler")
+    if not feedrattler_bin:
+        return json.dumps({
+            "success": False,
+            "error": "feedrattler not found on PATH. Ensure the local-recipes pixi environment is active.",
+        })
+
+    try:
+        result = subprocess.run(
+            [feedrattler_bin, str(recipe_dir)],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        return json.dumps({"success": False, "error": "feedrattler timed out after 60s."})
+    except Exception as e:
+        return json.dumps({"success": False, "error": str(e)})
+
+    if recipe_yaml.exists():
+        return json.dumps({
+            "success": True,
+            "message": (
+                f"Converted {meta_yaml} → {recipe_yaml}. "
+                "Run validate_recipe and optimize_recipe to verify quality. "
+                "Remove meta.yaml only after review."
+            ),
+            "recipe_yaml": str(recipe_yaml),
+            "meta_yaml_preserved": str(meta_yaml),
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }, indent=2)
+
+    return json.dumps({
+        "success": False,
+        "error": "feedrattler ran but recipe.yaml was not created. Check stdout/stderr.",
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "exit_code": result.returncode,
+    }, indent=2)
 
 
 if __name__ == "__main__":

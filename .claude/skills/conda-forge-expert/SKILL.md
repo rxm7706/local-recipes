@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 5.4.0
+version: 5.5.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -64,7 +64,8 @@ My capabilities are powered by a suite of native MCP tools.
 | `check_github_version` | Read-only GitHub version check — returns latest tag without modifying the recipe. |
 | `scan_for_vulnerabilities` | Scans dependencies against OSV.dev API (primary) with local CVE database as offline fallback. |
 | `update_cve_database` | Updates the local CVE database from `osv.dev`. |
-| `update_mapping_cache` | Updates the PyPI-to-Conda name mapping cache from Grayskull. |
+| `update_mapping_cache` | Updates the PyPI-to-Conda name mapping cache from Grayskull. Run when `get_conda_name` misses a package. |
+| `migrate_to_v1` | **meta.yaml → recipe.yaml.** Converts a v0 recipe to v1 format using `feedrattler`. Original meta.yaml is preserved for review. |
 | `run_system_health_check` | Performs a full diagnostic on the development environment. |
 | `submit_pr` | **Completes the loop.** Pushes recipe to your staged-recipes fork and opens a PR to conda-forge. Use `dry_run=True` first. |
 
@@ -83,6 +84,7 @@ While I can perform most actions autonomously, the following CLI commands are av
 
 ## Version History
 
+- **v5.5.0**: Standards alignment audit (conda-forge 2025/2026 changes). Fixed `generate_recipe_from_pypi` broken version argument (now passes `pkg==ver` instead of 3 tokens). Replaced fragile `CONDA_EXE`-based Python detection in MCP server with `sys.executable`. Fixed SEL-002 optimizer suggestion hardcoded `python_min: "3.9"` → `"3.10"` (Python 3.9 dropped Aug 2025). Fixed `recipe-yaml-reference.md` complete example DEP-002 anti-pattern (Python upper bound moved from `run` to `run_constrained`). Enhanced SEL-002 check to verify full CFEP-25 triad (context + host + run + tests). Added `migrate_to_v1` MCP tool via `feedrattler`. Updated `noarch-recipe.yaml` template with `python_version: ${{ python_min }}.*` in tests. Updated pinning reference (NumPy 2.x default, Python 3.10–3.14 matrix). Updated `skill-config.yaml` to v5.5.0, `default_maintainer: rxm7706`. Added comprehensive `python_min` policy section to CLAUDE.md.
 - **v5.4.0**: Documentation audit pass. Corrected `failure_analyzer.py` pattern count (30→33 patterns, 9→10 categories). Updated `check_dependencies` MCP tool to expose `--channel` and `--subdirs` parameters; added batch repodata.json / JFrog Artifactory / air-gapped environment docs. Updated `scan_for_vulnerabilities` description (OSV.dev API primary, local DB fallback). Updated `generate_recipe_from_pypi` docstring (grayskull only). Updated `optimize_recipe` docstring with full check-code table (DEP-001→SEL-002).
 - **v5.3.0**: Added `github_updater.py` + `update_recipe_from_github` MCP tool — GitHub Releases autotick write path (mirrors `recipe_updater.py`). Auto-detects GitHub repo from recipe; updates `context.version`, resets `build.number`, recalculates SHA256. Pre-releases skipped by default. `check_github_version` clarified as read-only.
 - **v5.2.0**: Added `check_github_version` MCP tool for GitHub-only packages (complements `update_recipe`). FastMCP 3.x Context injection on `trigger_build` and `update_cve_database` for progress logging. Fixed `recipe_optimizer.py` selector analysis to handle recipe.yaml v1 list-based `skip` conditions; added CFEP-25 `python_min` check (SEL-002). Fixed Pyright `reportPossiblyUnboundVariable` diagnostics.

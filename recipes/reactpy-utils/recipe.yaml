@@ -19,11 +19,11 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python >=3.10
     - hatchling
     - pip
   run:
-    - python >=3.9
+    - python >=3.10
     - reactpy >=1.0.0
     - reactpy-router >=1.0.3
     - typing_extensions

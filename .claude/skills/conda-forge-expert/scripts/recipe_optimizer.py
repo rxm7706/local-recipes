@@ -202,45 +202,54 @@ def analyze_build_script(recipe_dir: Path) -> List[OptimizationSuggestion]:
     return suggestions
 
 def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
-    """Analyzes skip conditions and platform selectors for redundancy."""
+    """Analyzes platform selectors (SEL-001) and CFEP-25 python_min compliance (SEL-002)."""
     suggestions = []
 
     build_section = data.get("build", {}) or {}
+
+    # --- SEL-001: Redundant platform skip conditions ---
     skip_value = build_section.get("skip", None)
-    if skip_value is None:
-        return suggestions
+    if skip_value is not None:
+        sole_platform: str | None = None
+        if isinstance(skip_value, list):
+            not_conditions = [
+                str(s).strip() for s in skip_value
+                if re.match(r"^not\s+\w+$", str(s).strip())
+            ]
+            # Single "not X" → recipe only targets platform X
+            if len(not_conditions) == 1:
+                sole_platform = not_conditions[0].split()[-1]
+        if sole_platform:
+            suggestions.append(OptimizationSuggestion(
+                code="SEL-001",
+                message=f"Recipe is restricted to '{sole_platform}'. if/then conditions scoped to this platform may be redundant.",
+                suggestion=f"Review if/then conditionals already limited to '{sole_platform}' — they may be removable.",
+                confidence=0.7,
+            ))
 
-    sole_platform: str | None = None
-
-    # recipe.yaml v1: skip is a list of condition strings like ['not linux', 'not win']
-    if isinstance(skip_value, list):
-        not_conditions = [
-            str(s).strip() for s in skip_value
-            if re.match(r"^not\s+\w+$", str(s).strip())
-        ]
-        # Single "not X" → recipe only targets platform X
-        if len(not_conditions) == 1:
-            sole_platform = not_conditions[0].split()[-1]
-
-    if sole_platform:
-        suggestions.append(OptimizationSuggestion(
-            code="SEL-001",
-            message=f"Recipe is restricted to '{sole_platform}'. if/then conditions scoped to this platform may be redundant.",
-            suggestion=f"Review if/then conditionals already limited to '{sole_platform}' — they may be removable.",
-            confidence=0.7
-        ))
-
-    # CFEP-25: noarch: python packages must pin python_min
-    noarch = build_section.get("noarch", None)
-    if noarch == "python":
+    # --- SEL-002: CFEP-25 python_min for noarch:python ---
+    # Checks all three required locations: context, host, run, and tests python block.
+    # Note: SEL-001 early-return was removed so this check runs even when skip is absent.
+    if build_section.get("noarch") == "python":
         context = data.get("context", {}) or {}
-        run_reqs = data.get("requirements", {}).get("run", [])
-        has_python_pin = any(
-            isinstance(r, str) and "python_min" in r
-            for r in run_reqs
-        )
+        reqs = data.get("requirements", {}) or {}
+        flat_run = _flatten_reqs(reqs.get("run", []))
+        flat_host = _flatten_reqs(reqs.get("host", []))
+
         has_python_min_ctx = "python_min" in context
-        if not has_python_pin and not has_python_min_ctx:
+        has_python_min_run = any("python_min" in r for r in flat_run if isinstance(r, str))
+        has_python_min_host = any("python_min" in r for r in flat_host if isinstance(r, str))
+
+        # v1 recipes: tests[n].python.python_version anchors CI to python_min
+        tests = data.get("tests", []) or []
+        has_python_version_test = any(
+            isinstance(t, dict)
+            and isinstance(t.get("python"), dict)
+            and "python_version" in t["python"]
+            for t in tests
+        )
+
+        if not has_python_min_ctx and not has_python_min_run:
             suggestions.append(OptimizationSuggestion(
                 code="SEL-002",
                 message="noarch: python recipe does not use 'python_min' context variable (CFEP-25).",
@@ -248,8 +257,31 @@ def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
                     "Add 'python_min: \"3.10\"' to context (current conda-forge floor), then use "
                     "'python >=${{ python_min }}' in run requirements."
                 ),
-                confidence=0.9
+                confidence=0.9,
             ))
+        else:
+            # python_min is in use — check for incomplete CFEP-25 triad coverage
+            missing: List[str] = []
+            if not has_python_min_host:
+                missing.append("host (python ${{ python_min }}.*)")
+            if not has_python_version_test:
+                missing.append("tests python block (python_version: ${{ python_min }}.*)")
+            if missing:
+                suggestions.append(OptimizationSuggestion(
+                    code="SEL-002",
+                    message=(
+                        "Incomplete CFEP-25 python_min coverage: "
+                        f"missing from {', '.join(missing)}."
+                    ),
+                    suggestion=(
+                        "Full CFEP-25 triad: "
+                        "(1) context: python_min: '3.10', "
+                        "(2) host: python ${{ python_min }}.*, "
+                        "(3) run: python >=${{ python_min }}, "
+                        "(4) tests python block: python_version: ${{ python_min }}.*"
+                    ),
+                    confidence=0.75,
+                ))
 
     return suggestions
 

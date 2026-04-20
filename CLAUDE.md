@@ -57,6 +57,8 @@ These tools enable proactive maintenance and security management.
 | `check_github_version` | Read-only GitHub version check — returns the latest tag without modifying the recipe. | `check_github_version(recipe_path="recipes/apple-fm-sdk")` |
 | `scan_for_vulnerabilities` | Scans a recipe's dependencies against OSV.dev (API primary, local database offline fallback). | `scan_for_vulnerabilities(recipe_path="recipes/numpy")` |
 | `update_cve_database` | Updates the local CVE database from `osv.dev`. | `update_cve_database(force=True)` |
+| `update_mapping_cache` | Updates the local PyPI-to-Conda name mapping cache from Grayskull. Run when `get_conda_name` misses a package. | `update_mapping_cache(force=True)` |
+| `migrate_to_v1` | **meta.yaml → recipe.yaml.** Converts a v0 recipe to v1 format using `feedrattler`. meta.yaml is preserved; review and remove it manually after validation. | `migrate_to_v1(recipe_path="recipes/numpy")` |
 | `submit_pr` | Pushes recipe to your staged-recipes fork and opens a PR to conda-forge. Always `dry_run=True` first. | `submit_pr(recipe_name="numpy", dry_run=True)` |
 | `get_conda_name` | Resolves a PyPI package name to its conda-forge equivalent. | `get_conda_name(pypi_name="python-dateutil")` |
 | `run_system_health_check` | Performs a full diagnostic on the development environment. | `run_system_health_check()` |
@@ -67,8 +69,12 @@ While Claude can run most of the workflow autonomously via MCP tools, you can al
 
 ### Core Build Commands
 ```bash
-# Build for a specific platform
+# Build for a specific platform (runs inside Docker on Linux)
 python build-locally.py linux-64
+
+# Build with platform filter (runs all matching configs, e.g. all linux variants)
+python build-locally.py --filter 'linux*'
+python build-locally.py --filter 'osx*'
 
 # Lint a recipe
 pixi run -e conda-smithy lint recipes/<name>
@@ -91,6 +97,9 @@ pixi run -e local-recipes update-mapping-cache
 
 # Manually run the PyPI "autotick" bot on a recipe
 pixi run -e local-recipes autotick recipes/<name>/recipe.yaml
+
+# Convert a meta.yaml recipe to recipe.yaml using feedrattler
+feedrattler recipes/<name>
 ```
 
 ## Recipe Formats
@@ -117,6 +126,50 @@ package:
   name: {{ name|lower }}
   version: {{ version }}
 ```
+
+## Python Version Policy (`python_min`)
+
+### Current conda-forge floor: `3.10`
+Python 3.9 was dropped from the conda-forge build matrix in **August 2025**. The current matrix is `3.10, 3.11, 3.12, 3.13, 3.14`.
+
+### Rules for setting `python_min`
+
+1. **New `noarch: python` recipes (recipe.yaml v1)** — always use the CFEP-25 triad:
+   ```yaml
+   context:
+     python_min: "3.10"        # global floor; increase if upstream requires it
+   requirements:
+     host:
+       - python ${{ python_min }}.*
+     run:
+       - python >=${{ python_min }}
+   tests:
+     - python:
+         imports: [mypackage]
+         pip_check: true
+         python_version: ${{ python_min }}.*
+   ```
+
+2. **New `noarch: python` recipes (meta.yaml v0)** — use:
+   ```yaml
+   {% set python_min = "3.10" %}
+   requirements:
+     host:
+       - python {{ python_min }}
+     run:
+       - python >={{ python_min }}
+   test:
+     requires:
+       - python {{ python_min }}
+   ```
+
+3. **When to use a value higher than `3.10`** — only when the upstream `python_requires` metadata explicitly requires a higher version. Always verify before setting `python_min` above the global floor.
+
+4. **Never downgrade below `3.10`** — packages targeting Python 3.9 or 3.8 cannot be accepted into conda-forge as new recipes and will fail CI. Exception: existing feedstocks with a freeze on specific Python ranges (these require special handling and are not submittable to staged-recipes).
+
+5. **Compiled packages** — use `python >=3.10` (no python_min variable; the build matrix handles versioning via the global pin).
+
+6. **When reviewing existing recipes with `python_min: '3.9'`** — run `optimize_recipe` (SEL-002 will flag it) and update to `'3.10'` unless the upstream package's own `python_requires` is `>=3.9,<3.10` (i.e., genuinely 3.9-only).
 
 ## ⚠️ Critical Build Requirement: `stdlib`
 

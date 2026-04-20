@@ -22,13 +22,13 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python >=3.10
     - hatchling
     - hatch-vcs
     - hatch-fancy-pypi-readme
     - pip
   run:
-    - python >=3.9
+    - python >=3.10
 
 tests:
   - python:

@@ -16,12 +16,12 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python >=3.10
     - setuptools >=67.5.1
     - wheel
     - pip
   run:
-    - python >=3.9
+    - python >=3.10
     - django >=2.2,<6
     - django-bootstrap-form >=3.4
     - django-registration >=3

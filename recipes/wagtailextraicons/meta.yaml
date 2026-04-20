@@ -16,12 +16,12 @@ build:
 
 requirements:
   host:
-    - python >=3.9,<4.0
+    - python >=3.10,<4.0
     - bs4
     - pip
     - setuptools
   run:
-    - python >=3.9,<4.0
+    - python >=3.10,<4.0
     - wagtail >=3.0
 
 test:
