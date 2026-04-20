@@ -5,8 +5,8 @@ Allows Claude Code to programmatically validate recipes and check dependencies
 without needing to parse bash output.
 """
 import json
-import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -37,6 +37,8 @@ GITHUB_UPDATER_SCRIPT = SCRIPTS_DIR / "github_updater.py"
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
 BUILD_PID_FILE = Path(__file__).parent.parent.parent / "build.pid"
 _active_build: Optional[subprocess.Popen] = None
+# Use the interpreter running this server — guaranteed to be the correct conda env.
+_PYTHON = sys.executable
 
 
 def _run_script(script_path: Path, args: List[str], input_text: str | None = None, timeout: int = 120) -> Dict[str, Any]:
@@ -44,9 +46,7 @@ def _run_script(script_path: Path, args: List[str], input_text: str | None = Non
     if not script_path.exists():
         return {"error": f"Script not found at {script_path}"}
 
-    # Use the same Python interpreter that is running the MCP server
-    python = os.environ.get("CONDA_PYTHON_EXE") or os.environ.get("CONDA_EXE", "").replace("conda", "python") or "python"
-    cmd = [python, str(script_path)] + args
+    cmd = [_PYTHON, str(script_path)] + args
     try:
         result = subprocess.run(
             cmd,
@@ -119,9 +119,8 @@ def check_dependencies(
 def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> str:
     """Generate a conda-forge recipe from a PyPI package using grayskull."""
     try:
-        args = ["run", "-e", "grayskull", "pypi", package_name]
-        if version:
-            args.extend(["==", version])
+        pkg_spec = f"{package_name}=={version}" if version else package_name
+        args = ["run", "-e", "grayskull", "pypi", pkg_spec]
         
         repo_root = Path(__file__).parent.parent.parent
         
@@ -203,8 +202,7 @@ async def trigger_build(config: str, ctx: Context | None = None) -> str:
             f.unlink()
 
     build_script = Path(__file__).parent.parent.parent / "build-locally.py"
-    python = os.environ.get("CONDA_PYTHON_EXE") or "python"
-    _active_build = subprocess.Popen([python, str(build_script), config])
+    _active_build = subprocess.Popen([_PYTHON, str(build_script), config])
     BUILD_PID_FILE.write_text(str(_active_build.pid))
 
     started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
