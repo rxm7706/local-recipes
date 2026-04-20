@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl *)",
+      "Bash(conda-smithy recipe-lint *)",
+      "Bash(rattler-build build *)",
+      "Bash(rattler-build test *)",
+      "Bash(rattler-build --version)",
+      "Bash(pixi run *)",
+      "Bash(pixi shell-hook *)",
+      "Bash(pixi list *)",
+      "Bash(git commit *)",
+      "Bash(git push)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(git pull *)",
+      "Bash(git rm *)",
+      "Bash(git reset *)",
+      "Bash(git clean *)",
+      "Bash(gh *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:anaconda.org)",
+      "WebSearch",
+      "Skill(conda-forge-expert)"
+    ],
+    "deny": [
+      "Bash(git push --force)",
+      "Bash(git push --force *)",
+      "Bash(git push -f)",
+      "Bash(git push -f *)"
+    ]
+  },
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true
+  }
+}
