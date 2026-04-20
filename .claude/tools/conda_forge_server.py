@@ -27,6 +27,7 @@ MAPPING_MANAGER_SCRIPT = SCRIPTS_DIR / "mapping_manager.py"
 NAME_RESOLVER_SCRIPT = SCRIPTS_DIR / "name_resolver.py"
 FAILURE_ANALYZER_SCRIPT = SCRIPTS_DIR / "failure_analyzer.py"
 RECIPE_OPTIMIZER_SCRIPT = SCRIPTS_DIR / "recipe_optimizer.py"
+RECIPE_UPDATER_SCRIPT = SCRIPTS_DIR / "recipe_updater.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
@@ -208,6 +209,16 @@ def optimize_recipe(recipe_path: str) -> str:
     """Lints a recipe for optimizations and conda-forge best practices."""
     args = [recipe_path]
     result = _run_script(RECIPE_OPTIMIZER_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def update_recipe(recipe_path: str, dry_run: bool = False) -> str:
+    """Checks for a new version of a package on PyPI and updates the recipe if found."""
+    args = [recipe_path]
+    if dry_run:
+        args.append("--dry-run")
+    result = _run_script(RECIPE_UPDATER_SCRIPT, args)
     return json.dumps(result, indent=2)
 
 

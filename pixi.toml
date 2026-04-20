@@ -137,6 +137,10 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/mapping_manager.py"
 description = "Lint a recipe for optimizations and best practices"
 cmd = "python .claude/skills/conda-forge-expert/scripts/recipe_optimizer.py"
 
+[feature.local-recipes.tasks.autotick]
+description = "Check for new upstream versions of a package and update the recipe"
+cmd = "python .claude/skills/conda-forge-expert/scripts/recipe_updater.py"
+
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"
