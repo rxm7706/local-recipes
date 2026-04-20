@@ -54,7 +54,7 @@ My capabilities are powered by a suite of native MCP tools.
 |---|---|
 | `trigger_build` | Starts a build asynchronously. |
 | `get_build_summary` | Retrieves the result of a build (success/failure, artifacts, logs). |
-| `analyze_build_failure` | Diagnoses the root cause of a build failure from an error log. |
+| `analyze_build_failure` | Diagnoses the root cause of a build failure from an error log. 41 patterns across 13 categories including ENV_ISOLATION (rattler-build v0.62+ strict mode), MSVC, and MACOS_SDK. |
 
 ### Security & Maintenance
 | Tool | Description |

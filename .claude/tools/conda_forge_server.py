@@ -262,8 +262,9 @@ def get_conda_name(pypi_name: str) -> str:
 def analyze_build_failure(error_log: str, first_only: bool = False) -> str:
     """Analyze a build failure log and return structured fix suggestions.
 
-    Scans the log against 33 known error patterns across 10 categories:
-    COMPILER, BUILD_TOOLS, LINKER, PYTHON, RATTLER_SCHEMA, RUST, NODE, SOURCE, SYSTEM, TEST_FAILURE.
+    Scans the log against 41 known error patterns across 13 categories:
+    COMPILER, BUILD_TOOLS, LINKER, PYTHON, RATTLER_SCHEMA, RUST, NODE, SOURCE, SYSTEM,
+    TEST_FAILURE, ENV_ISOLATION, MSVC, MACOS_SDK.
 
     Returns all matches ordered by first appearance in the log. The top-level
     'error_class', 'diagnosis', 'matched_text', and 'suggestion' fields always

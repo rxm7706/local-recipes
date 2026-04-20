@@ -649,6 +649,155 @@ ERROR_LIBRARY: list[ErrorPattern] = [
             "comment": "Ensure pytest and all test dependencies are listed in the test requirements block.",
         },
     ),
+
+    # -----------------------------------------------------------------------
+    # CATEGORY: ENV_ISOLATION  (rattler-build >= 0.62 strict mode)
+    # -----------------------------------------------------------------------
+    ErrorPattern(
+        name="RATTLER_ENV_VAR_NOT_AVAILABLE",
+        category="ENV_ISOLATION",
+        regex=re.compile(
+            r"(?:environment variable|env var)\s+['\"]?(\w+)['\"]?\s+"
+            r"(?:is not available|not set|not found)\s+in\s+(?:isolated|strict)\s+(?:build\s+)?environment"
+            r"|The variable `(\w+)` is not available in the build environment",
+            re.IGNORECASE,
+        ),
+        diagnosis=(
+            "rattler-build v0.62+ uses strict environment isolation by default. "
+            "A build script or recipe referenced an environment variable that is not "
+            "passed through from the host system."
+        ),
+        suggestion={
+            "action": "informational",
+            "comment": (
+                "Either (a) declare the variable in the recipe's build.env section, "
+                "or (b) add it to the variant configuration. "
+                "If the variable is a system secret (API key, token), inject it via "
+                "the pixi task env instead of relying on shell inheritance. "
+                "Temporary workaround: pass --env-isolation conda-build to rattler-build "
+                "to restore the old permissive mode while fixing the recipe."
+            ),
+        },
+    ),
+    ErrorPattern(
+        name="RATTLER_STRICT_ISOLATION_GENERIC",
+        category="ENV_ISOLATION",
+        regex=re.compile(
+            r"error\[E\d+\]:.*env(?:ironment)?\s+isolation"
+            r"|strict.*isolation.*failed"
+            r"|Cannot inherit environment.*strict",
+            re.IGNORECASE,
+        ),
+        diagnosis=(
+            "rattler-build strict environment isolation rejected an inherited host env var. "
+            "This occurs in rattler-build >= 0.62 where the default changed from "
+            "'conda-build' to 'strict' isolation mode."
+        ),
+        suggestion={
+            "action": "informational",
+            "comment": (
+                "Run with --env-isolation conda-build as a temporary workaround. "
+                "Long-term: audit the recipe's build scripts for implicit env var dependencies "
+                "and declare them explicitly in the recipe."
+            ),
+        },
+    ),
+
+    # -----------------------------------------------------------------------
+    # CATEGORY: MSVC  (Windows / Visual Studio 2022)
+    # -----------------------------------------------------------------------
+    ErrorPattern(
+        name="MSVC_LINK_ERROR",
+        category="MSVC",
+        regex=re.compile(
+            r"LINK\s*:\s*(?:fatal\s+)?error\s+LNK\d+",
+            re.IGNORECASE,
+        ),
+        diagnosis=(
+            "The MSVC linker (link.exe) reported a fatal error. Common causes: "
+            "missing .lib file, unresolved external symbol, or wrong runtime library (/MT vs /MD)."
+        ),
+        suggestion={
+            "action": "informational",
+            "comment": (
+                "Check that all required .lib files are in the host requirements. "
+                "For LNK2019 (unresolved external): find the conda-forge package providing "
+                "the symbol and add it to host. "
+                "For LNK2038 (runtime mismatch): ensure all dependencies use /MD (DLL runtime); "
+                "conda-forge builds always use /MD."
+            ),
+        },
+    ),
+    ErrorPattern(
+        name="MSVC_COMPILE_ERROR",
+        category="MSVC",
+        regex=re.compile(
+            r"(?:cl\.exe|CL\.EXE)\s*:?\s*(?:error|fatal error)\s+C\d+",
+            re.IGNORECASE,
+        ),
+        diagnosis="The MSVC compiler (cl.exe) reported a compile error.",
+        suggestion={
+            "action": "informational",
+            "comment": (
+                "Common MSVC compile errors: "
+                "C2065 (undeclared identifier) — missing header or wrong include path; "
+                "C2664 (cannot convert argument) — type mismatch, often needs explicit cast; "
+                "C1083 (cannot open include file) — add the library providing the header to host. "
+                "conda-forge uses VS2022 (/std:c++17 default since Jul 2025)."
+            ),
+        },
+    ),
+
+    # -----------------------------------------------------------------------
+    # CATEGORY: MACOS_SDK  (macOS deployment target / SDK issues)
+    # -----------------------------------------------------------------------
+    ErrorPattern(
+        name="MACOS_DEPLOYMENT_TARGET_TOO_LOW",
+        category="MACOS_SDK",
+        regex=re.compile(
+            r"(?:warning|error).*deployment target.*(?:10\.\d+).*(?:minimum|requires|must be).*(?:11\.0|12\.0)"
+            r"|MACOSX_DEPLOYMENT_TARGET.*(?:10\.\d+).*(?:too old|not supported|minimum is 11)",
+            re.IGNORECASE,
+        ),
+        diagnosis=(
+            "The macOS deployment target in the recipe is below the conda-forge minimum. "
+            "conda-forge raised the macOS minimum to 11.0 in February 2026. "
+            "Recipes specifying 10.x targets will fail or produce warnings on the new SDK."
+        ),
+        suggestion={
+            "action": "informational",
+            "comment": (
+                "Remove any explicit MACOSX_DEPLOYMENT_TARGET=10.x from build.sh. "
+                "conda-forge sets the deployment target automatically via the SDK. "
+                "If you need a specific minimum for the package itself, use "
+                "__osx >=11.0 in run_constrained instead of setting the env var."
+            ),
+        },
+    ),
+    ErrorPattern(
+        name="MACOS_SDK_NOT_FOUND",
+        category="MACOS_SDK",
+        regex=re.compile(
+            r"SDK path '([^']+)' does not exist"
+            r"|Could not find macOS SDK at (/[^\s]+)"
+            r"|OSX_SDK_DIR.*not set|MacOSX\d+\.\d+\.sdk.*not found",
+            re.IGNORECASE,
+        ),
+        diagnosis=(
+            "The macOS SDK directory could not be found. "
+            "As of conda-smithy 3.54.0+ (Dec 2025), the SDK moved to $PIXI_PROJECT_ROOT/.pixi/macOS-SDKs. "
+            "The OSX_SDK_DIR environment variable must point to this location."
+        ),
+        suggestion={
+            "action": "informational",
+            "comment": (
+                "Set OSX_SDK_DIR in the pixi osx environment task env or export it in your shell: "
+                "export OSX_SDK_DIR=$PIXI_PROJECT_ROOT/.pixi/macOS-SDKs. "
+                "The pixi.toml osx feature already sets this; ensure you are using "
+                "'pixi run -e osx build-osx' rather than running build-locally.py directly."
+            ),
+        },
+    ),
 ]
 
 
