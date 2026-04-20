@@ -16,13 +16,13 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python >=3.10
     - flit-core >=3.2
     - flit_scm
     - wheel
     - pip
   run:
-    - python >=3.9
+    - python >=3.10
     - django >=4.2
 
 test:

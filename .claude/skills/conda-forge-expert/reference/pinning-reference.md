@@ -41,8 +41,8 @@ Higher levels override lower levels.
 ```yaml
 requirements:
   run:
-    - numpy >=1.20,<2.0
-    - python >=3.10,<3.13
+    - numpy >=2.0
+    - python >=3.10
     - click >=8.0,<9
 ```
 
@@ -52,17 +52,20 @@ requirements:
 
 ```yaml
 # conda_build_config.yaml (root of repo)
+# Current conda-forge build matrix (as of Apr 2026):
 python:
   - "3.10"
   - "3.11"
   - "3.12"
+  - "3.13"
+  - "3.14"   # added Oct 2025; Python 3.9 dropped Aug 2025
 
+# NumPy 2.x is the global default since Jun 2025; 1.26 no longer in the matrix
 numpy:
-  - "1.26"
-  - "2.0"
+  - "2"
 
 python_min:
-  - "3.10"
+  - "3.10"   # conda-forge floor; use this for noarch:python (CFEP-25)
 ```
 
 ### Recipe-Specific Override
