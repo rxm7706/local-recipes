@@ -1,45 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: ag-ui-langgraph
-  version: 0.0.31
+  version: "0.0.31"
+  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ag_ui_langgraph-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: a7c58763fa267f96e12fae5e22a9f933b0f2caafcfa6e3d98bb6406247217058
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - "dev = ag_ui_langgraph.dojo:main"
 
 requirements:
   host:
-    - python >=3.10,<3.14
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
-    - python >=3.10,<3.14
+    - python >=${{ python_min }},<4.0
     - ag-ui-protocol >=0.1.10
     - langchain >=1.2.0
     - langchain-core >=0.3.0
     - langgraph >=0.3.25,<2
     - pydantic >=2.0.0
+  run_constraints:
+    - fastapi >=0.115.12
 
 tests:
-  - python:
-      imports:
-        - ag_ui_langgraph
-      pip_check: true
+  - script:
+      - python -c "import ag_ui_langgraph"
+      - pip check
+    requirements:
+      run:
+        - pip
+        - fastapi >=0.115.12
 
 about:
-  summary: Implementation of the AG-UI protocol for LangGraph.
-  license: Unlicense
-  license_file: PLEASE_ADD_LICENSE_FILE
+  summary: "Implementation of the AG-UI protocol for LangGraph."
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/ag-ui-langgraph/
+  repository: https://github.com/ag-ui-protocol/ag-ui/tree/main/integrations/langgraph/python
 
 extra:
   recipe-maintainers:
