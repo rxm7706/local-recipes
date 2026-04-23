@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JavaScriptLibraryMappings">
+    <excludedPredefinedLibrary name="local-recipes/output/bld/rattler-build_presenton_1776948713/build_env/lib/node_modules" />
+    <excludedPredefinedLibrary name="local-recipes/output/bld/rattler-build_presenton_1776948713/host_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehol/lib/node_modules" />
+    <excludedPredefinedLibrary name="local-recipes/output/bld/rattler-build_presenton_1776948713/work/.local/share/pnpm/store/v10/projects/4e3970bf0ff577cd2dfc39d401c2ef53/node_modules" />
+    <excludedPredefinedLibrary name="local-recipes/output/bld/rattler-build_presenton_1776948713/work/servers/nextjs/node_modules" />
+  </component>
+</project>
