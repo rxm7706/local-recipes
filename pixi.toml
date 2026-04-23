@@ -19,10 +19,10 @@ platforms = [
 [feature.python.dependencies]
 python = "3.12.*"
 pixi = ">=0.67.0"
-gh = ">=2.90.0"
+gh = ">=2.91.0"
 nodejs = ">=20.0.0,<25.0"  # Pin to LTS version
-bmad-method = ">=6.2.2"
-spec-kit = ">=0.7.3"
+bmad-method = ">=6.3.0"
+spec-kit = ">=0.7.4"
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
 [feature.build.dependencies]
@@ -159,7 +159,7 @@ grayskull = ">=3.1.0"
 ##[feature.conda-smithy.dependencies]
 conda-smithy = ">=3.57.0,<4"
 shellcheck = ">=0.11.0"
-ruamel-yaml = ">=0.17.21"
+"ruamel.yaml" = ">=0.18.17"
 #### Unleash Pixi - Added to ensure single a build pack with pixi will work for cookiecutters, plain python, conda, nodejs, rust, c, c++ code.
 ## For use with CookieCutters
 cookiecutter = ">=2.7.1"
@@ -174,9 +174,9 @@ hatchling = ">=1.29.0"
 python-build = ">=1.4.3"
 twine = ">=6.2.0"
 uv = ">=0.11.7"
-wheel = ">=0.46.3"
+wheel = ">=0.47.0"
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=10.33.0"
+pnpm = ">=10.33.1"
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.0"
 conda-pack = ">=0.9.1"
@@ -184,7 +184,7 @@ conda-tree = ">=1.1.2"
 feedrattler = ">=0.3.14"
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.67.0"
-rattler-build = ">=0.62.2"
+rattler-build = ">=0.63.0"
 pixi-build-rattler-build = ">=0.3.10"
 pixi-build-cmake = ">=0.3.11"
 pixi-build-python = ">=0.4.8"
@@ -201,7 +201,7 @@ py-rattler = ">=0.22.0"
 py-rattler-build = ">=0.62.2"
 duckdb = ">=1.5.2"
 pandas = ">=3.0.2"
-polars = ">=1.39.3"
+polars = ">=1.40.0"
 pyarrow = ">=23.0.1"
 pyarrow-all = ">=23.0.1"
 ibis-duckdb = ">=12.0.0"
@@ -210,11 +210,11 @@ ibis-sqlite = ">=12.0.0"
 ibis-postgres = ">=12.0.0"
 ibis-mssql = ">=12.0.0"
 ibis-oracle = ">=12.0.0"
-pydantic = ">=2.13.2"
+pydantic = ">=2.13.3"
 ruff = ">=0.15.11"
 pyright = ">=1.1.408"
-mypy = ">=1.20.1"
-pyrefly = ">=0.61.1"
+mypy = ">=1.20.2"
+pyrefly = ">=0.62.0"
 pytest = ">=9.0.3"
 pytest-mock = ">=3.15.1"
 pytest-cov = ">=7.1.0"
@@ -241,7 +241,7 @@ sqlfluff = ">=4.1.0"
 go-sops = ">=3.12.2"
 age = ">=1.3.1"
 yarn = ">=4.14.1"
-requests = ">=2.32.0"
+requests = ">=2.33.1"
 
 [dependencies]
 #[feature.python.dependencies]

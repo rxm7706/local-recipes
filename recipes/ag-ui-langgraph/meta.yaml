@@ -1,5 +1,5 @@
 {% set name = "ag-ui-langgraph" %}
-{% set version = "0.0.21" %}
+{% set version = "0.0.34" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/ag_ui_langgraph-{{ version }}.tar.gz
-  sha256: 0c6096604c18c836bb736bc028222887d5f39413f9024b266fc199ffbf0dacb3
+  sha256: 755323d5256407ce62d6b9af447a9f1250554e7056c5e2115027a4174a736c41
 
 build:
   entry_points:
@@ -20,17 +20,17 @@ build:
 requirements:
   host:
     - python {{ python_min }}
-    - poetry-core
+    - hatchling
     - pip
   run:
     - python >={{ python_min }}
-    - ag-ui-protocol >=0.1.10,<0.2.0
-    - langchain >=0.3.0
+    - ag-ui-protocol >=0.1.10
+    - langchain >=1.2.0
     - langchain-core >=0.3.0
-    - langgraph >=0.3.25,<1.1.0
+    - langgraph >=0.3.25,<2
     - pydantic >=2.0.0
   run_constrained:
-    - fastapi >=0.115.12,<0.116.0
+    - fastapi >=0.115.12
 
 test:
   imports:
@@ -40,7 +40,7 @@ test:
     #- dev --help # NOTE ModuleNotFoundError: No module named 'ag_ui_langgraph.dojo'
   requires:
     - pip
-    - fastapi >=0.115.12,<0.116.0
+    - fastapi >=0.115.12
     - python {{ python_min }}
 
 about:
