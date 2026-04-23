@@ -14,18 +14,12 @@ source:
   sha256: 0e8c8261a8226dfe2eab310c9c5537e5ce401c04a80c99492c17d91e807ac4d1
 
 build:
-  number: 0
+  number: 1
   noarch: generic
 
 requirements:
   run:
     - python >=3.10
-    - if: unix
-      then:
-        - __unix
-    - if: win
-      then:
-        - __win
 
 tests:
   - script:
