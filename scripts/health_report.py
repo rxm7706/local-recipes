@@ -8,7 +8,7 @@ Usage:
 
 Options:
     --recipes-dir PATH   Path to recipes directory (default: recipes/)
-    --output PATH        Output CSV path (default: health_report.csv)
+    --output-dir PATH    Directory for timestamped reports (default: health_reports/)
     --workers N          Parallel workers for local checks (default: 8)
     --limit N            Process only first N recipes (useful for testing)
     --check-versions     Query PyPI for version updates (network)
@@ -23,6 +23,7 @@ import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -227,7 +228,7 @@ def _counter(rows: list[dict], field: str) -> dict:
     return dict(sorted(counts.items(), key=lambda x: -x[1]))
 
 
-def print_summary(rows: list[dict], elapsed: float, args: argparse.Namespace) -> None:
+def print_summary(rows: list[dict], elapsed: float, args: argparse.Namespace, output_path: Path) -> None:
     total = len(rows)
     fmt_counts: dict = {}
     for r in rows:
@@ -278,7 +279,7 @@ def print_summary(rows: list[dict], elapsed: float, args: argparse.Namespace) ->
     if errors:
         print(f"\nCheck errors: {len(errors)} recipes (see CSV 'error' column)")
 
-    print(f"\nReport written to: {args.output}")
+    print(f"\nReport written to: {output_path}")
     print("=" * 60)
 
 
@@ -289,7 +290,10 @@ def print_summary(rows: list[dict], elapsed: float, args: argparse.Namespace) ->
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--recipes-dir", default="recipes", help="Path to recipes directory")
-    parser.add_argument("--output", default="health_report.csv", help="Output CSV path")
+    parser.add_argument(
+        "--output-dir", default="health_reports",
+        help="Directory where timestamped reports are saved (default: health_reports/)",
+    )
     parser.add_argument("--workers", type=int, default=8, help="Parallel workers")
     parser.add_argument("--limit", type=int, default=0, help="Process only first N recipes (0 = all)")
     parser.add_argument("--check-versions", action="store_true", help="Query PyPI for version updates")
@@ -305,6 +309,14 @@ def main() -> None:
     if not recipes_dir.exists():
         print(f"error: recipes directory not found: {recipes_dir}", file=sys.stderr)
         sys.exit(1)
+
+    output_dir = Path(args.output_dir)
+    if not output_dir.is_absolute():
+        output_dir = REPO_ROOT / output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_path = output_dir / f"health_report_{timestamp}.csv"
 
     recipe_dirs = sorted(d for d in recipes_dir.iterdir() if d.is_dir() and is_recipe_dir(d))
     if args.limit:
@@ -359,10 +371,6 @@ def main() -> None:
     results.sort(key=lambda r: r["name"].lower())
 
     # Write CSV
-    output_path = Path(args.output)
-    if not output_path.is_absolute():
-        output_path = REPO_ROOT / output_path
-
     fieldnames = [
         "name", "format",
         "version_current", "python_min", "outdated_python_min",
@@ -377,7 +385,7 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(results)
 
-    print_summary(results, time.time() - t0, args)
+    print_summary(results, time.time() - t0, args, output_path)
 
 
 if __name__ == "__main__":

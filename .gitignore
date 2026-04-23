@@ -3,6 +3,7 @@ pypi_source_distribution/
 pypi_built_distribution/
 output/
 work/
+health_reports/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
