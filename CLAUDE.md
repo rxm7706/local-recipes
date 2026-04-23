@@ -197,3 +197,12 @@ requirements:
 - [staged-recipes Repository](https://github.com/conda-forge/staged-recipes)
 - [rattler-build Documentation](https://rattler.build/latest/)
 - [pixi Documentation](https://pixi.sh/latest/)
+
+## BMAD Method Documentation
+
+The BMAD Method is an AI-driven software development framework used in this project.
+
+- **Local copy** (offline): `.claude/docs/bmad-method-llms-full.txt`
+- **Live source**: https://docs.bmad-method.org/llms-full.txt
+
+Fetch the live source for the latest version, or reference the local copy with `@.claude/docs/bmad-method-llms-full.txt` when working offline.
