@@ -1,0 +1,59 @@
+schema_version: 1
+
+context:
+  name: bmad-method
+  version: "6.3.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-code-org/BMAD-METHOD/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: daea1421634f43c319c7e78b7d4932579371db674d3c6f9da2865733826c1536
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  host:
+    - nodejs 20.*
+  run:
+    - nodejs >=20
+    - if: unix
+      then:
+        - __unix
+    - if: win
+      then:
+        - __win
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - bmad --help
+          - bmad-method --help
+      - if: win
+        then:
+          - bmad.bat --help
+          - bmad-method.bat --help
+
+about:
+  homepage: https://github.com/bmad-code-org/BMAD-METHOD
+  license: MIT
+  license_file: LICENSE
+  summary: AI-powered agile development framework with specialized AI agent personas for the full software development lifecycle
+  description: |
+    BMAD-METHOD (Breakthrough Method for Agile AI-driven Development) is an
+    AI-driven agile development framework providing 12+ specialized AI agent
+    personas (architect, developer, product manager, QA, etc.) and structured
+    workflows across the full software development lifecycle. It supports
+    scale-adaptive intelligence for projects from bug fixes to enterprise systems.
+  documentation: https://bmad.io
+  repository: https://github.com/bmad-code-org/BMAD-METHOD
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - killua156
