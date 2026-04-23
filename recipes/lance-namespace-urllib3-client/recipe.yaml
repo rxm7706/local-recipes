@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+  python_min: "3.10"
+
+package:
+  name: lance-namespace-urllib3-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lance-namespace-urllib3-client/lance_namespace_urllib3_client-${{ version }}.tar.gz
+  sha256: e1384d4d0c6b1de4b344bb709ea53bd9cef6f471b864b1ee8968aa89698a30c5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - urllib3 >=1.25.3,<3.0.0
+    - python-dateutil >=2.8.2
+    - pydantic >=2
+    - typing_extensions >=4.7.1
+
+tests:
+  - python:
+      imports:
+        - lance_namespace_urllib3_client
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: Lance Namespace Specification
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/lance-namespace-urllib3-client
+  repository: https://github.com/lance-format/lance-namespace
+
+extra:
+  recipe-maintainers:
+    - rxm7706

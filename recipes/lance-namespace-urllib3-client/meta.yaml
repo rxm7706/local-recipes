@@ -1,14 +1,13 @@
-{% set name = "lance-namespace-urllib3-client" %}
-{% set version = "0.6.1" %}
+{% set version = "0.7.0" %}
 {% set python_min = "3.10" %}
 
 package:
-  name: {{ name|lower }}
+  name: lance-namespace-urllib3-client
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lance_namespace_urllib3_client-{{ version }}.tar.gz
-  sha256: 31fbd058ce1ea0bf49045cdeaa756360ece0bc61e9e10276f41af6d217debe87
+  url: https://pypi.org/packages/source/l/lance-namespace-urllib3-client/lance_namespace_urllib3_client-{{ version }}.tar.gz
+  sha256: e1384d4d0c6b1de4b344bb709ea53bd9cef6f471b864b1ee8968aa89698a30c5
 
 build:
   noarch: python
@@ -37,10 +36,10 @@ test:
     - pip
 
 about:
+  home: https://pypi.org/project/lance-namespace-urllib3-client/
   summary: Lance Namespace Specification
   license: Apache-2.0
   license_file: LICENSE
-  home: https://pypi.org/project/lance-namespace-urllib3-client/
 
 extra:
   recipe-maintainers:
