@@ -3,7 +3,7 @@
 
 [workspace]
 name = "staged-recipes"
-requires-pixi = ">=0.66.0"
+requires-pixi = ">=0.67.2"
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
@@ -18,11 +18,11 @@ platforms = [
 
 [feature.python.dependencies]
 python = "3.12.*"
-pixi = ">=0.67.0"
+pixi = ">=0.67.2"
 gh = ">=2.91.0"
 nodejs = ">=20.0.0,<25.0"  # Pin to LTS version
 bmad-method = ">=6.3.0"
-spec-kit = ">=0.7.4"
+spec-kit = ">=0.8.0"
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
 [feature.build.dependencies]
@@ -157,7 +157,7 @@ rattler-build-conda-compat = ">=1.4.11,<2.0.0a0"
 ##[feature.grayskull.dependencies]
 grayskull = ">=3.1.0"
 ##[feature.conda-smithy.dependencies]
-conda-smithy = ">=3.57.0,<4"
+conda-smithy = ">=3.44.6,<4"
 shellcheck = ">=0.11.0"
 "ruamel.yaml" = ">=0.18.17"
 #### Unleash Pixi - Added to ensure single a build pack with pixi will work for cookiecutters, plain python, conda, nodejs, rust, c, c++ code.
@@ -171,19 +171,19 @@ pip = ">=26.0.1"
 setuptools = ">=81.0.0"
 setuptools-scm = ">=9.2.2"
 hatchling = ">=1.29.0"
-python-build = ">=1.4.3"
+python-build = ">=1.4.4"
 twine = ">=6.2.0"
 uv = ">=0.11.7"
 wheel = ">=0.47.0"
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=10.33.1"
+pnpm = ">=10.33.2"
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.0"
 conda-pack = ">=0.9.1"
 conda-tree = ">=1.1.2"
 feedrattler = ">=0.3.14"
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.67.0"
+pixi = ">=0.67.2"
 rattler-build = ">=0.63.0"
 pixi-build-rattler-build = ">=0.3.10"
 pixi-build-cmake = ">=0.3.11"
@@ -212,7 +212,7 @@ ibis-mssql = ">=12.0.0"
 ibis-oracle = ">=12.0.0"
 pydantic = ">=2.13.3"
 ruff = ">=0.15.11"
-pyright = ">=1.1.408"
+pyright = ">=1.1.409"
 mypy = ">=1.20.2"
 pyrefly = ">=0.62.0"
 pytest = ">=9.0.3"
@@ -246,7 +246,7 @@ requests = ">=2.33.1"
 [dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"
-pixi = ">=0.67.0"
+pixi = ">=0.67.2"
 conda = ">=26.3.2"
 pip = ">=26.0.1"
 uv = ">=0.11.7"
