@@ -17,7 +17,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
 import sys
@@ -29,13 +28,8 @@ try:
     import requests
     REQUESTS_AVAILABLE = True
 except ImportError:
+    requests = None  # type: ignore[assignment]
     REQUESTS_AVAILABLE = False
-
-try:
-    import yaml
-    YAML_AVAILABLE = True
-except ImportError:
-    YAML_AVAILABLE = False
 
 
 @dataclass
@@ -76,6 +70,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     """Fetch package info from PyPI."""
     if not REQUESTS_AVAILABLE:
         raise ImportError("requests library required: pip install requests")
+    assert requests is not None  # for the type checker — REQUESTS_AVAILABLE implies bound
 
     url = f"https://pypi.org/pypi/{package_name}/json"
     if version:
@@ -87,6 +82,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
 
     info = data["info"]
     version = version or info["version"]
+    assert version is not None  # narrow Optional[str] for the PackageInfo init below
 
     # Find source distribution
     source_url = ""
@@ -359,6 +355,80 @@ def _strip_url_fragment(url: str) -> str:
     return url.split("#", 1)[0].rstrip("/")
 
 
+# Common SPDX identifiers that match what npm packages typically declare.
+# This is not exhaustive — it covers the long tail of recipes well enough
+# that we can tell strict-SPDX from non-strict.
+_SPDX_KNOWN = frozenset({
+    "0BSD", "AFL-2.0", "AGPL-3.0-only", "AGPL-3.0-or-later",
+    "Apache-1.1", "Apache-2.0", "Artistic-1.0", "Artistic-2.0",
+    "BSD-1-Clause", "BSD-2-Clause", "BSD-3-Clause", "BSD-3-Clause-Clear",
+    "BSD-4-Clause", "BSL-1.0", "CC-BY-3.0", "CC-BY-4.0", "CC-BY-SA-3.0",
+    "CC-BY-SA-4.0", "CC0-1.0", "CDDL-1.0", "CDDL-1.1",
+    "CECILL-2.1", "CECILL-B", "CECILL-C", "CPL-1.0",
+    "ECL-2.0", "EPL-1.0", "EPL-2.0", "EUPL-1.1", "EUPL-1.2",
+    "GFDL-1.3-only", "GFDL-1.3-or-later",
+    "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later",
+    "ISC", "LGPL-2.0-only", "LGPL-2.0-or-later", "LGPL-2.1-only",
+    "LGPL-2.1-or-later", "LGPL-3.0-only", "LGPL-3.0-or-later",
+    "LPPL-1.3c", "MIT", "MIT-0", "MPL-1.0", "MPL-1.1", "MPL-2.0",
+    "MS-PL", "MS-RL", "NCSA", "OFL-1.1", "OSL-2.1", "OSL-3.0",
+    "PostgreSQL", "Python-2.0", "Ruby", "SISSL", "Sleepycat",
+    "TCL", "Unlicense", "UPL-1.0", "Vim", "W3C", "WTFPL",
+    "X11", "Zlib", "ZPL-2.0", "ZPL-2.1",
+})
+
+# npm packages routinely use these non-strict labels. Map to the most
+# likely SPDX identifier.
+_SPDX_FIXUPS = {
+    "apache 2.0": "Apache-2.0",
+    "apache-2": "Apache-2.0",
+    "apache2": "Apache-2.0",
+    "bsd": "BSD-3-Clause",
+    "bsd2": "BSD-2-Clause",
+    "bsd3": "BSD-3-Clause",
+    "gpl": "GPL-3.0-or-later",
+    "gpl2": "GPL-2.0-or-later",
+    "gpl3": "GPL-3.0-or-later",
+    "gplv2": "GPL-2.0-or-later",
+    "gplv3": "GPL-3.0-or-later",
+    "lgpl": "LGPL-3.0-or-later",
+    "mit license": "MIT",
+}
+
+
+def _check_spdx_license(license_str: str) -> tuple[str, str | None]:
+    """Validate an npm-reported license against common SPDX identifiers.
+
+    Returns (final_license, warning_message_or_None). If the license is
+    already SPDX-canonical or a well-known compound expression (e.g.
+    "(MIT OR Apache-2.0)"), we return it unchanged. If it's a known
+    non-strict label (e.g. "Apache 2.0"), we suggest the SPDX form via the
+    warning but keep the original — the user can decide whether to accept
+    the suggestion.
+    """
+    if not license_str:
+        return license_str, None
+    stripped = license_str.strip()
+    # SPDX expressions look like "(MIT OR Apache-2.0)" — accept compound
+    # forms wholesale; conda-forge's linter validates the components.
+    if "(" in stripped and ")" in stripped:
+        return stripped, None
+    if stripped in _SPDX_KNOWN:
+        return stripped, None
+    suggestion = _SPDX_FIXUPS.get(stripped.lower())
+    if suggestion:
+        return stripped, (
+            f"npm-reported license {stripped!r} is not a strict SPDX "
+            f"identifier — conda-forge expects {suggestion!r}. "
+            f"The recipe will keep {stripped!r}; consider replacing it "
+            f"manually."
+        )
+    return stripped, (
+        f"npm-reported license {stripped!r} is not in the common SPDX list. "
+        f"Verify against https://spdx.org/licenses/ before submitting."
+    )
+
+
 _MARKDOWN_NOISE_RE = re.compile(
     r"^\s*(?:"
     r"!\[[^\]]*\]\([^)]*\)"               # bare images:        ![alt](url)
@@ -485,6 +555,7 @@ def _fetch_tarball_bytes(url: str) -> bytes:
     """Download a tarball into memory, or return b'' on failure."""
     if not REQUESTS_AVAILABLE:
         return b""
+    assert requests is not None
     try:
         resp = requests.get(url, timeout=180)
         resp.raise_for_status()
@@ -565,6 +636,7 @@ def fetch_npm_info(
     """
     if not REQUESTS_AVAILABLE:
         raise ImportError("requests library required: pip install requests")
+    assert requests is not None
 
     raw_name, conda_name, is_scoped = _parse_npm_name(package_name)
 
@@ -575,6 +647,7 @@ def fetch_npm_info(
 
     if version is None:
         version = data["dist-tags"]["latest"]
+    assert version is not None  # narrow Optional[str] for downstream calls
     if version not in data["versions"]:
         raise ValueError(f"npm: version {version!r} of {raw_name!r} not found")
 
@@ -620,8 +693,20 @@ def fetch_npm_info(
     node_major = _parse_node_major((v.get("engines") or {}).get("node", ""))
 
     readme_excerpt = _extract_readme_paragraph(data.get("readme") or "")
+    # If the readme is just badges/banners (cleanup yielded nothing), fall
+    # back to the short `description` field so generated recipes still get
+    # an `about.description` block instead of leaving it empty.
+    if not readme_excerpt:
+        npm_description = v.get("description") or ""
+        if len(npm_description.strip()) >= 20:
+            readme_excerpt = npm_description.strip()
 
     has_runtime_deps = bool(v.get("dependencies") or {})
+
+    raw_license = v.get("license", "") or ""
+    license_value, license_warning = _check_spdx_license(raw_license)
+    if license_warning:
+        print(f"Warning: {license_warning}", file=sys.stderr)
 
     return NpmPackageInfo(
         raw_name=raw_name,
@@ -629,7 +714,7 @@ def fetch_npm_info(
         version=version,
         description=v.get("description", ""),
         readme_excerpt=readme_excerpt,
-        license=v.get("license", ""),
+        license=license_value,
         homepage=homepage,
         repository_url=repository_url,
         bugs_url=bugs_url,
@@ -1224,6 +1309,7 @@ Examples:
             if not REQUESTS_AVAILABLE:
                 print("Error: requests library required")
                 sys.exit(1)
+            assert requests is not None
 
             owner, name = args.repo.split("/")
             version = args.version
