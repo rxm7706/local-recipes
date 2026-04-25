@@ -4,10 +4,23 @@ pypi_built_distribution/
 output/
 work/
 
+# macOS folder metadata
+.DS_Store
+
+# macOS specific files
+MacOSX*.sdk.tar.xz
+SDKs/
+
+# User builds
+build_artifacts
+miniforge3/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.egg-info
 
 # C extensions
 *.so
@@ -658,6 +671,9 @@ conda-bld/
 *.conda
 *.tar.bz2
 
+# Jupyter checkpoints
+**/.ipynb_checkpoints/*
+
 # Pixi
 .pixi/
 pixi.lock
@@ -678,3 +694,6 @@ Thumbs.db
 .claude/skills/conda-forge-expert/pypi_conda_mappings/unified.json
 .claude/skills/conda-forge-expert/pypi_conda_mappings/by_pypi_name.json
 .claude/skills/conda-forge-expert/pypi_conda_mappings/by_conda_name.json
+
+# Generated CVE database (refreshed via `pixi run update-cve-db`)
+.claude/skills/data/
