@@ -1,0 +1,43 @@
+{% set name = "example-v0-noarch" %}
+{% set version = "0.5.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - example_v0_noarch
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://example.com/example-v0-noarch
+  license: MIT
+  license_file: LICENSE
+  summary: Minimal v0 (meta.yaml) noarch python fixture.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

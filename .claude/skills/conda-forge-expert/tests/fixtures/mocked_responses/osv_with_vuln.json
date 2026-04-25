@@ -1,0 +1,20 @@
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-FAKE-0001",
+          "aliases": ["CVE-2099-99999"],
+          "summary": "Synthetic vulnerability for fixture testing.",
+          "details": "This is not a real CVE; used by the test suite only.",
+          "severity": [{"type": "CVSS_V3", "score": "7.5"}],
+          "affected": [{
+            "ranges": [{"events": [{"introduced": "1.0.0"}, {"fixed": "1.2.0"}]}]
+          }],
+          "published": "2099-01-01T00:00:00Z",
+          "modified": "2099-01-02T00:00:00Z"
+        }
+      ]
+    }
+  ]
+}

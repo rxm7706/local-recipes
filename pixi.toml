@@ -141,6 +141,18 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/recipe_optimizer.py"
 description = "Check for new upstream versions of a package and update the recipe"
 cmd = "python .claude/skills/conda-forge-expert/scripts/recipe_updater.py"
 
+[feature.local-recipes.tasks.test]
+description = "Run the conda-forge-expert test suite (offline, fast subset)"
+cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not slow'"
+
+[feature.local-recipes.tasks.test-all]
+description = "Run the full conda-forge-expert test suite incl. live network/slow tests"
+cmd = "pytest .claude/skills/conda-forge-expert/tests"
+
+[feature.local-recipes.tasks.test-coverage]
+description = "Run the conda-forge-expert test suite with coverage report"
+cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not slow' --cov=.claude/skills/conda-forge-expert/scripts --cov-report=term-missing"
+
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0"
+
+recipe:
+  name: example-multi-output
+  version: ${{ version }}
+
+source:
+  url: https://example.com/example-multi-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: example-multi-output-core
+      version: ${{ version }}
+    build:
+      script: echo core
+    requirements:
+      run:
+        - python >=3.10
+    tests:
+      - python:
+          imports:
+            - example_multi_output_core
+
+  - package:
+      name: example-multi-output-tools
+      version: ${{ version }}
+    build:
+      script: echo tools
+    requirements:
+      run:
+        - ${{ pin_subpackage("example-multi-output-core", exact=true) }}
+    tests:
+      - script:
+          - example-multi-output-tools --help
+
+about:
+  homepage: https://example.com/example-multi-output
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Multi-output v1 fixture exercising the top-level `recipe:` key.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
