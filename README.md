@@ -249,6 +249,7 @@ pixi run -e local-recipes <task> -- [args]
 | `generate-cran` | `recipe-generator.py cran` — scaffold an R recipe from CRAN |
 | `generate-cpan` | `recipe-generator.py cpan` — scaffold a Perl recipe from CPAN |
 | `generate-luarocks` | `recipe-generator.py luarocks` — scaffold a Lua recipe from LuaRocks |
+| `generate-npm` | `recipe-generator.py npm` — scaffold a v1 recipe + build.sh + bld.bat for an npm package |
 | `resolve-name` | `name_resolver.py` — PyPI name → conda-forge name |
 | `version-check` | `github_version_checker.py` — read-only latest-release lookup |
 | `autotick` | `recipe_updater.py` — PyPI autotick |

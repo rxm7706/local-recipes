@@ -20,6 +20,7 @@ SCRIPTS = [
     "license-checker.py",
     "mapping_manager.py",
     "name_resolver.py",
+    "npm_updater.py",
     "recipe_editor.py",
     "recipe-generator.py",
     "recipe_optimizer.py",
