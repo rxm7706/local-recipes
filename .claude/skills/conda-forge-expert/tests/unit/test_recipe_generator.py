@@ -204,6 +204,122 @@ class TestRecipeGenerator:
         assert "jq" in build_sh
         assert "del(.scripts.prepare)" in build_sh
 
+    def test_npm_native_build_emits_compilers_and_drops_noarch(
+        self, load_module, tmp_path,
+    ):
+        """`has_native_build=True` (gypfile / node-gyp install) → recipe gets
+        C/C++ compilers + stdlib + python + make in build deps, and drops
+        `noarch: generic` (native packages need per-platform builds)."""
+        mod = load_module("recipe-generator.py")
+        info = mod.NpmPackageInfo(
+            raw_name="better-sqlite3", conda_name="better-sqlite3",
+            version="11.0.0",
+            tarball_url="https://registry.npmjs.org/better-sqlite3/-/better-sqlite3-11.0.0.tgz",
+            tarball_filename="better-sqlite3-11.0.0.tgz",
+            source_url="https://registry.npmjs.org/better-sqlite3/-/better-sqlite3-11.0.0.tgz",
+            sha256="0" * 64,
+            license="MIT",
+            bin_entries={},
+            has_native_build=True,
+        )
+        recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path)
+        content = recipe_path.read_text()
+        # Native compiler deps emitted
+        assert "${{ compiler('c') }}" in content
+        assert "${{ compiler('cxx') }}" in content
+        assert "${{ stdlib('c') }}" in content
+        assert "    - python" in content
+        assert "    - make" in content
+        # noarch:generic must NOT appear — native packages need per-platform builds
+        assert "noarch: generic" not in content
+        # nodejs still in run requirements
+        data = yaml.safe_load(content)
+        assert data["requirements"]["run"] == ["nodejs"]
+
+    def test_npm_pure_js_keeps_noarch_generic(
+        self, load_module, tmp_path,
+    ):
+        """Pure-JS packages (no native compilation) keep noarch:generic and
+        do NOT emit compiler deps."""
+        mod = load_module("recipe-generator.py")
+        info = mod.NpmPackageInfo(
+            raw_name="husky", conda_name="husky", version="9.1.7",
+            tarball_url="https://registry.npmjs.org/husky/-/husky-9.1.7.tgz",
+            tarball_filename="husky-9.1.7.tgz",
+            source_url="https://registry.npmjs.org/husky/-/husky-9.1.7.tgz",
+            sha256="0" * 64,
+            license="MIT",
+            bin_entries={"husky": "bin.js"},
+            has_native_build=False,
+        )
+        recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path)
+        content = recipe_path.read_text()
+        assert "noarch: generic" in content
+        assert "compiler('c')" not in content
+        assert "stdlib('c')" not in content
+
+    def test_npm_feedstock_mode_emits_full_conda_forge_yml(
+        self, load_module, tmp_path,
+    ):
+        """`--feedstock-mode` should emit the bigger conda-forge.yml with
+        bot/github/conda_forge_output_validation/conda_build sections —
+        for direct feedstock updates rather than staged-recipes submission."""
+        mod = load_module("recipe-generator.py")
+        info = mod.NpmPackageInfo(
+            raw_name="thing", conda_name="thing", version="1.0.0",
+            tarball_url="https://example.com/thing-1.0.0.tgz",
+            tarball_filename="thing-1.0.0.tgz",
+            source_url="https://example.com/thing-1.0.0.tgz",
+            sha256="0" * 64,
+            license="MIT",
+            bin_entries={"thing": "cli.js"},
+        )
+        recipe_path = mod.generate_npm_recipe_yaml(
+            info, tmp_path, feedstock_mode=True,
+        )
+        cfy = (recipe_path.parent / "conda-forge.yml").read_text()
+        # Feedstock-only fields present
+        for field_name in (
+            "bot:", "automerge:", "inspection:", "check_solvable:",
+            "github:", "branch_name:", "tooling_branch_name:",
+            "conda_forge_output_validation: true",
+            "conda_build:", "error_overlinking: true",
+            "conda_install_tool: pixi",
+        ):
+            assert field_name in cfy, f"missing {field_name} in feedstock conda-forge.yml"
+        # Staged-recipes-friendly fields still present
+        assert "conda_build_tool: rattler-build" in cfy
+        assert "shellcheck:" in cfy
+        # Both linux_64 AND win_64 in feedstock mode
+        assert "- linux_64" in cfy
+        assert "- win_64" in cfy
+
+    def test_npm_default_mode_omits_feedstock_only_fields(
+        self, load_module, tmp_path,
+    ):
+        """Default (non-feedstock) mode keeps the conda-forge.yml minimal —
+        bot/github/output_validation are feedstock-only and shouldn't appear."""
+        mod = load_module("recipe-generator.py")
+        info = mod.NpmPackageInfo(
+            raw_name="thing", conda_name="thing", version="1.0.0",
+            tarball_url="https://example.com/thing-1.0.0.tgz",
+            tarball_filename="thing-1.0.0.tgz",
+            source_url="https://example.com/thing-1.0.0.tgz",
+            sha256="0" * 64,
+            license="MIT",
+            bin_entries={"thing": "cli.js"},
+        )
+        recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path)
+        cfy = (recipe_path.parent / "conda-forge.yml").read_text()
+        # Feedstock-only fields must NOT appear
+        for forbidden in ("bot:", "automerge:", "github:", "branch_name:",
+                          "conda_forge_output_validation",
+                          "conda_install_tool:"):
+            assert forbidden not in cfy, (
+                f"feedstock-only field {forbidden!r} leaked into "
+                f"staged-recipes-friendly conda-forge.yml"
+            )
+
     def test_npm_with_build_bat_opt_in(self, load_module, tmp_path):
         """`--with-build-bat` opt-in should produce a build.bat file."""
         mod = load_module("recipe-generator.py")

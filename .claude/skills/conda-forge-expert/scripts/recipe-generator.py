@@ -322,6 +322,7 @@ class NpmPackageInfo:
     is_scoped: bool = False
     is_github_source: bool = False  # True only when --source github was used
     has_runtime_deps: bool = True   # True when npm metadata declares dependencies
+    has_native_build: bool = False  # True when package.json declares gypfile or node-gyp install
 
     @property
     def name(self) -> str:
@@ -703,6 +704,26 @@ def fetch_npm_info(
 
     has_runtime_deps = bool(v.get("dependencies") or {})
 
+    # Native-compilation detection. npm marks packages with binding.gyp via
+    # ``gypfile: true``; some packages instead invoke node-gyp via the
+    # ``install``/``preinstall`` script. Either signal means the recipe needs
+    # a C/C++ toolchain at build time.
+    install_script = (v.get("scripts") or {}).get("install", "") or ""
+    preinstall_script = (v.get("scripts") or {}).get("preinstall", "") or ""
+    has_native_build = bool(
+        v.get("gypfile") is True
+        or "node-gyp" in install_script
+        or "node-gyp" in preinstall_script
+        or "prebuild-install" in install_script  # common pattern (sharp, sqlite3)
+    )
+    if has_native_build:
+        print(
+            f"Note: {raw_name} declares native compilation (gypfile or "
+            f"node-gyp install) — emitting compiler/stdlib build deps and "
+            f"dropping noarch:generic.",
+            file=sys.stderr,
+        )
+
     raw_license = v.get("license", "") or ""
     license_value, license_warning = _check_spdx_license(raw_license)
     if license_warning:
@@ -729,6 +750,7 @@ def fetch_npm_info(
         is_scoped=is_scoped,
         is_github_source=prefer_github,
         has_runtime_deps=has_runtime_deps,
+        has_native_build=has_native_build,
     )
 
 
@@ -858,6 +880,7 @@ def generate_npm_recipe_yaml(
     with_build_bat: bool = False,
     no_bin_links: bool = False,
     third_party_licenses: bool = True,
+    feedstock_mode: bool = False,
 ) -> Path:
     """Generate a v1 npm recipe matching the canonical conda-forge pattern.
 
@@ -911,9 +934,12 @@ def generate_npm_recipe_yaml(
         "",
     ]
 
-    # Build section — either inline script or a reference to build.sh
+    # Native packages need platform-specific builds — drop noarch:generic.
+    # We still emit `build.script:` (inline) or rely on build.sh.
+    noarch_line = None if info.has_native_build else "  noarch: generic"
+
     if inline_build:
-        recipe_lines += [
+        build_block = [
             "build:",
             *_inline_build_script(
                 info,
@@ -921,18 +947,34 @@ def generate_npm_recipe_yaml(
                 third_party_licenses=third_party_licenses,
             ),
             "  number: 0",
-            "  noarch: generic",
-            "",
         ]
+        if noarch_line:
+            build_block.append(noarch_line)
+        build_block.append("")
+        recipe_lines += build_block
     else:
-        recipe_lines += [
+        build_block = [
             "build:",
             "  number: 0",
-            "  noarch: generic",
-            "",
         ]
+        if noarch_line:
+            build_block.append(noarch_line)
+        build_block.append("")
+        recipe_lines += build_block
 
-    build_reqs = ["    - nodejs"]
+    build_reqs = []
+    # Native compilation: emit C/C++ compilers, stdlib, python (node-gyp uses
+    # python), and make. These are required when gypfile or node-gyp install
+    # scripts are present in the package.
+    if info.has_native_build:
+        build_reqs += [
+            "    - ${{ compiler('c') }}",
+            "    - ${{ compiler('cxx') }}",
+            "    - ${{ stdlib('c') }}",
+            "    - python",
+            "    - make",
+        ]
+    build_reqs.append("    - nodejs")
     if third_party_licenses:
         build_reqs += ["    - pnpm", "    - pnpm-licenses"]
     recipe_lines += [
@@ -1021,16 +1063,48 @@ def generate_npm_recipe_yaml(
         (pkg_dir / "build.bat").write_text("\r\n".join(bat_lines), encoding="utf-8")
 
     # ── conda-forge.yml ───────────────────────────────────────────────────
-    cfy_lines = [
-        "# Per-recipe conda-forge.yml — merged into the rendered feedstock",
-        "# at PR-merge time. See https://conda-forge.org/docs/maintainer/conda_forge_yml",
-        "conda_build_tool: rattler-build",
-        "noarch_platforms:",
-        "  - linux_64",
-        "shellcheck:",
-        "  enabled: true",
-        "",
-    ]
+    if feedstock_mode:
+        # Full feedstock-style conda-forge.yml — for updating an existing
+        # <pkg>-feedstock repo. Adds bot/github/output_validation/conda_build
+        # fields that only take effect post-merge. Mirrors the shape used by
+        # conda-forge/bmad-method-feedstock (/recipe/recipe.yaml's sibling).
+        cfy_lines = [
+            "# Feedstock-level conda-forge.yml. See:",
+            "# https://conda-forge.org/docs/maintainer/conda_forge_yml",
+            "conda_build_tool: rattler-build",
+            "conda_install_tool: pixi",
+            "noarch_platforms:",
+            "  - linux_64",
+            "  - win_64",
+            "github:",
+            "  branch_name: main",
+            "  tooling_branch_name: main",
+            "conda_build:",
+            "  error_overlinking: true",
+            "conda_forge_output_validation: true",
+            "shellcheck:",
+            "  enabled: true",
+            "bot:",
+            "  automerge: true",
+            "  inspection: hint-all",
+            "  check_solvable: true",
+            "  run_deps_from_wheel: true",
+            "",
+        ]
+    else:
+        # Staged-recipes-friendly subset — bot/github/etc. take effect only
+        # after staged-recipes merges into a feedstock anyway, so we keep
+        # the file minimal during PR review.
+        cfy_lines = [
+            "# Per-recipe conda-forge.yml — merged into the rendered feedstock",
+            "# at PR-merge time. See https://conda-forge.org/docs/maintainer/conda_forge_yml",
+            "conda_build_tool: rattler-build",
+            "noarch_platforms:",
+            "  - linux_64",
+            "shellcheck:",
+            "  enabled: true",
+            "",
+        ]
     (pkg_dir / "conda-forge.yml").write_text("\n".join(cfy_lines), encoding="utf-8")
 
     return recipe_path
@@ -1269,6 +1343,13 @@ Examples:
              "recipe_optimizer.py against the new recipe and surface their "
              "findings (does not block generation).",
     )
+    npm_parser.add_argument(
+        "--feedstock-mode", action="store_true", dest="feedstock_mode",
+        help="Emit the full feedstock-style conda-forge.yml with bot, "
+             "github, conda_forge_output_validation, and conda_build fields. "
+             "Use when updating an existing <pkg>-feedstock repo (default "
+             "is the smaller staged-recipes-friendly subset).",
+    )
 
     args = parser.parse_args()
 
@@ -1417,6 +1498,7 @@ Examples:
                 with_build_bat=args.with_build_bat,
                 no_bin_links=args.no_bin_links,
                 third_party_licenses=third_party_licenses,
+                feedstock_mode=args.feedstock_mode,
             )
             print(f"Generated: {path}")
             if not npm_info.sha256:

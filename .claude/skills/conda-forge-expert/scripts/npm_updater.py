@@ -331,6 +331,71 @@ def update_recipe(
     }
 
 
+# ── Bulk operation ────────────────────────────────────────────────────────────
+
+def update_all_recipes(
+    root: Path, *, dry_run: bool = True, allow_prerelease: bool = False,
+) -> dict[str, Any]:
+    """Walk ``root`` for npm-source recipes and check each for updates.
+
+    A recipe is considered npm-source when its ``source.url`` matches the
+    npm registry pattern (handled by ``_extract_npm_name``). Non-npm
+    recipes (PyPI / GitHub / CRAN / …) are skipped silently.
+
+    Returns a summary dict with per-recipe results aggregated by status:
+    ``up_to_date``, ``needs_update``, ``not_npm``, and ``errors``.
+    """
+    if not root.exists() or not root.is_dir():
+        return {
+            "success": False,
+            "error": f"Not a directory: {root}",
+        }
+
+    candidates = sorted(root.glob("*/recipe.yaml"))
+    summary: dict[str, list] = {
+        "up_to_date": [],
+        "needs_update": [],
+        "not_npm": [],
+        "errors": [],
+    }
+
+    for recipe_file in candidates:
+        recipe_name = recipe_file.parent.name
+        result = update_recipe(
+            recipe_file, dry_run=dry_run, allow_prerelease=allow_prerelease,
+        )
+        if not result.get("success"):
+            err = result.get("error", "")
+            # Distinguish "not an npm recipe" (expected) from real errors.
+            if "no npm registry url" in err.lower():
+                summary["not_npm"].append({"recipe": recipe_name})
+            else:
+                summary["errors"].append({"recipe": recipe_name, "error": err})
+        elif result.get("updated"):
+            summary["needs_update"].append({
+                "recipe": recipe_name,
+                "current_version": result.get("current_version"),
+                "latest_version": result.get("latest_version"),
+            })
+        else:
+            summary["up_to_date"].append({
+                "recipe": recipe_name,
+                "current_version": result.get("current_version"),
+            })
+
+    return {
+        "success": True,
+        "scanned": len(candidates),
+        "summary": {
+            "up_to_date": len(summary["up_to_date"]),
+            "needs_update": len(summary["needs_update"]),
+            "not_npm": len(summary["not_npm"]),
+            "errors": len(summary["errors"]),
+        },
+        "details": summary,
+    }
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -357,7 +422,29 @@ def main() -> None:
         "--pre", action="store_true",
         help="Include pre-release versions (alpha/beta/rc/next/dev).",
     )
+    parser.add_argument(
+        "--all", action="store_true",
+        help="Treat recipe_path as a recipes/ root directory and check "
+             "every npm-source recipe in it (non-npm recipes are skipped).",
+    )
     args = parser.parse_args()
+
+    if args.all:
+        # Bulk mode: recipe_path is a directory containing many recipe subdirs.
+        if args.package:
+            print(
+                "Error: --package and --all are mutually exclusive (per-recipe "
+                "package override doesn't make sense in bulk mode).",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        result = update_all_recipes(
+            args.recipe_path,
+            dry_run=args.dry_run or True,  # bulk mode is always dry-run for safety
+            allow_prerelease=args.pre,
+        )
+        print(json.dumps(result, indent=2))
+        sys.exit(0 if result.get("success") else 1)
 
     try:
         recipe_path = _normalize_recipe_path(args.recipe_path)
