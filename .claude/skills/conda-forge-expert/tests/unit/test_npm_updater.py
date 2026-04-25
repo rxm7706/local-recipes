@@ -281,6 +281,68 @@ class TestNpmUpdater:
         assert result["success"] is True
         assert result["updated"] is False
 
+    def test_update_all_recipes_categorises_results(
+        self, load_module, tmp_path, stub_responses,
+    ):
+        """Bulk mode walks recipes/, classifies each into up_to_date /
+        needs_update / not_npm / errors."""
+        mod = load_module("npm_updater.py")
+        # Build a tmp recipes/ tree with three recipes:
+        # - husky (npm-source, up to date)
+        # - codex (npm-source, needs update)
+        # - openspec (github source — should be classified as not_npm)
+        for name, body in (
+            ("husky", HUSKY_RECIPE),
+            ("codex", SCOPED_RECIPE.replace('"1.0.0"', '"1.0.0"')),
+            ("openspec", GITHUB_SOURCE_RECIPE),
+        ):
+            (tmp_path / name).mkdir()
+            (tmp_path / name / "recipe.yaml").write_text(body)
+
+        # Stub the registry: husky stays at 9.0.0, codex bumps to 1.2.3
+        stub_responses.register(
+            "GET", "https://registry.npmjs.org/husky",
+            status=200,
+            body={
+                "dist-tags": {"latest": "9.0.0"},
+                "versions": {"9.0.0": {"dist": {"tarball": "x"}}},
+            },
+        )
+        stub_responses.register(
+            "GET", "https://registry.npmjs.org/@openai/codex",
+            status=200,
+            body={
+                "dist-tags": {"latest": "1.2.3"},
+                "versions": {"1.2.3": {"dist": {"tarball": "y"}}},
+            },
+        )
+
+        result = mod.update_all_recipes(tmp_path)
+        assert result["success"] is True
+        assert result["scanned"] == 3
+        assert result["summary"]["up_to_date"] == 1
+        assert result["summary"]["needs_update"] == 1
+        assert result["summary"]["not_npm"] == 1
+        assert result["summary"]["errors"] == 0
+        # Spot-check details
+        details = result["details"]
+        assert details["up_to_date"][0]["recipe"] == "husky"
+        assert details["needs_update"][0]["recipe"] == "codex"
+        assert details["needs_update"][0]["latest_version"] == "1.2.3"
+        assert details["not_npm"][0]["recipe"] == "openspec"
+
+    def test_update_all_recipes_rejects_non_directory(self, load_module, tmp_path):
+        mod = load_module("npm_updater.py")
+        # Pass a non-existent directory
+        result = mod.update_all_recipes(tmp_path / "nonexistent")
+        assert result["success"] is False
+        assert "Not a directory" in result["error"]
+
+    def test_help_includes_all_flag(self, script_runner):
+        rc, out, _ = script_runner("npm_updater.py", "--help")
+        assert rc == 0
+        assert "--all" in out
+
     @pytest.mark.network
     def test_live_husky(self, script_runner, tmp_path):
         """Live: actually hit the npm registry for husky in dry-run mode."""
