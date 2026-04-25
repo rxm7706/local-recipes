@@ -90,25 +90,27 @@ def script_runner():
 def load_module():
     """Import a script as a Python module via importlib.
 
-    Only works for scripts with valid Python identifiers (underscore-named).
-    Hyphenated scripts must be invoked via script_runner.
+    Hyphenated filenames (e.g. ``recipe-generator.py``) are loaded under a
+    sanitised module name with hyphens converted to underscores. This works
+    because the module name is just an internal identifier for importlib —
+    we never try ``import recipe-generator`` at the Python level.
     """
 
     def _load(script: str) -> ModuleType:
         script_path = SCRIPTS_DIR / script
         if not script_path.exists():
             raise FileNotFoundError(f"Script not found: {script_path}")
-        module_name = script_path.stem
-        if not module_name.replace("_", "").isalnum():
-            raise ValueError(
-                f"Cannot import {script} as a module — use script_runner instead."
-            )
+        module_name = script_path.stem.replace("-", "_")
         spec = importlib.util.spec_from_file_location(module_name, script_path)
         assert spec and spec.loader
         module = importlib.util.module_from_spec(spec)
         # Make sibling modules importable too
         if str(SCRIPTS_DIR) not in sys.path:
             sys.path.insert(0, str(SCRIPTS_DIR))
+        # Register before executing — `@dataclass` uses
+        # ``sys.modules.get(cls.__module__)`` for forward-reference resolution,
+        # which crashes for not-yet-registered modules.
+        sys.modules[module_name] = module
         spec.loader.exec_module(module)
         return module
 

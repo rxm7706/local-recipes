@@ -180,6 +180,10 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py"
 description = "Update a recipe to the latest GitHub release (use --dry-run first)"
 cmd = "python .claude/skills/conda-forge-expert/scripts/github_updater.py"
 
+[feature.local-recipes.tasks.autotick-npm]
+description = "Update a recipe to the latest npm registry version (use --dry-run first)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/npm_updater.py"
+
 [feature.local-recipes.tasks.version-check]
 description = "Check the latest GitHub release version for a recipe (read-only)"
 cmd = "python .claude/skills/conda-forge-expert/scripts/github_version_checker.py"
@@ -213,6 +217,10 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py cpan
 [feature.local-recipes.tasks.generate-luarocks]
 description = "Scaffold a v1 recipe for a Lua package from LuaRocks"
 cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py luarocks"
+
+[feature.local-recipes.tasks.generate-npm]
+description = "Scaffold a v1 recipe for an npm package (registry.npmjs.org)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py npm"
 
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]

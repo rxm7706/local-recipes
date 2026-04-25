@@ -399,6 +399,10 @@ extra:
 | Tool | Description | Example |
 |---|---|---|
 | `generate_recipe_from_pypi` | Creates a new recipe from a PyPI package | `generate_recipe_from_pypi(package_name="numpy")` |
+| `generate_recipe_from_npm` | **Canonical npm pattern** (npm pack + npm install --global + pnpm-licenses). Handles scoped packages (`@openai/codex` → conda name `codex`). Flags: `--source-mode {npm,github,auto}`, `--prepare-fix`, `--test-mode`, `--inline-build`, `--with-build-bat`, `--no-bin-links`, `--no-third-party-licenses`, `--validate`. Pixi: `pixi run -e local-recipes generate-npm -- husky` | `recipe-generator.py npm husky` |
+| `generate_recipe_from_cran` | R package from CRAN via rattler-build | `recipe-generator.py cran ggplot2` |
+| `generate_recipe_from_cpan` | Perl package from CPAN via rattler-build | `recipe-generator.py cpan Moose` |
+| `generate_recipe_from_luarocks` | Lua package via rattler-build | `recipe-generator.py luarocks lua-cjson` |
 | `edit_recipe` | **Primary editing tool.** Structured actions: update, add, remove. Never edit YAML directly. | `edit_recipe('recipes/numpy/recipe.yaml', [{"action": "update", "path": "context.version", "value": "2.0.0"}])` |
 | `get_conda_name` | Resolves a PyPI package name to its conda-forge equivalent (cache-first) | `get_conda_name(pypi_name="python-dateutil")` |
 
@@ -423,6 +427,7 @@ extra:
 | `update_cve_database` | Updates local CVE database from osv.dev | `update_cve_database(force=True)` |
 | `update_recipe` | **Autotick Bot (PyPI).** Checks for new upstream versions and updates recipe | `update_recipe(recipe_path="recipes/numpy/recipe.yaml")` |
 | `update_recipe_from_github` | **Autotick Bot (GitHub).** Fetches latest release + updates version + SHA256. Always `dry_run=True` first | `update_recipe_from_github(recipe_path="recipes/apple-fm-sdk", dry_run=True)` |
+| `update_recipe_from_npm` | **Autotick Bot (npm).** Auto-detects the npm name from `source.url`; handles scoped packages; skips pre-releases by default. Pixi: `pixi run -e local-recipes autotick-npm -- recipes/husky --dry-run` | `npm_updater.py recipes/husky --dry-run` |
 | `check_github_version` | Read-only GitHub version check — returns latest tag without modifying | `check_github_version(recipe_path="recipes/apple-fm-sdk")` |
 | `update_mapping_cache` | Updates PyPI-to-Conda name mapping cache from Grayskull. Run when `get_conda_name` misses | `update_mapping_cache(force=True)` |
 | `migrate_to_v1` | **meta.yaml → recipe.yaml.** Converts v0 to v1 via feedrattler. Preserves original. | `migrate_to_v1(recipe_path="recipes/numpy")` |

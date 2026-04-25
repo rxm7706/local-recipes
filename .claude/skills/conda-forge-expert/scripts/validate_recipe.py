@@ -235,11 +235,21 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
     if not tests:
         warnings.append("No tests section defined - add tests for quality assurance")
     else:
-        has_pip_check = any(
-            isinstance(t, dict) and t.get("python", {}).get("pip_check") for t in tests
+        # Only suggest `pip_check: true` when the recipe is actually a Python
+        # package — checked by either `noarch: python` or `pip` in build/host
+        # requirements. Skipping this for nodejs/lua/perl/generic recipes
+        # avoids a spurious warning.
+        is_python_package = (
+            build.get("noarch") == "python"
+            or any("pip" == str(r).split()[0] for r in flat_host if r)
+            or any("pip" == str(r).split()[0] for r in flat_build if r)
         )
-        if not has_pip_check:
-            warnings.append("Consider adding pip_check: true to python tests")
+        if is_python_package:
+            has_pip_check = any(
+                isinstance(t, dict) and t.get("python", {}).get("pip_check") for t in tests
+            )
+            if not has_pip_check:
+                warnings.append("Consider adding pip_check: true to python tests")
         info.append(f"{len(tests)} test(s) defined")
 
     # Check about section
