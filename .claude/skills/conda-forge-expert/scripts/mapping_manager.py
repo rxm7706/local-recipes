@@ -2,8 +2,15 @@
 """
 PyPI-to-Conda Name Mapping Manager.
 
-This script fetches the canonical package name mapping from the Grayskull
-repository and maintains a local cache for fast lookups.
+Fetches the canonical PyPI→conda name mapping from
+``conda_forge_metadata.autotick_bot.get_pypi_name_mapping()`` and maintains a
+local JSON cache for fast lookups by ``name_resolver.py``.
+
+Historically this script pulled a YAML file from the conda/grayskull repo
+(``src/grayskull/pypi/pypi_name_mapping.yaml``). That file was removed when
+the mapping data moved to ``regro/cf-graph-countyfair`` / ``parselmouth`` and
+is now exposed through the ``conda-forge-metadata`` Python package — which is
+already pinned in this project's pixi env.
 """
 from __future__ import annotations
 
@@ -14,53 +21,39 @@ import time
 from pathlib import Path
 
 try:
-    import requests
-    REQUESTS_AVAILABLE = True
+    from conda_forge_metadata.autotick_bot.pypi_to_conda import get_pypi_name_mapping
+    METADATA_AVAILABLE = True
 except ImportError:
-    REQUESTS_AVAILABLE = False
-
-try:
-    import yaml
-    YAML_AVAILABLE = True
-except ImportError:
-    YAML_AVAILABLE = False
+    get_pypi_name_mapping = None  # type: ignore[assignment]
+    METADATA_AVAILABLE = False
 
 # The location of our local data cache
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 MAPPING_CACHE_FILE = DATA_DIR / "pypi_conda_map.json"
 
-# The canonical source of truth from the Grayskull project
-GRAYSKULL_MAPPING_URL = "https://raw.githubusercontent.com/conda/grayskull/main/src/grayskull/pypi/pypi_name_mapping.yaml"
+def fetch_conda_forge_metadata_mapping() -> dict:
+    """Fetch the PyPI→conda name mapping via ``conda-forge-metadata``.
 
-def fetch_grayskull_mapping() -> dict:
-    """Downloads and parses the YAML mapping file from Grayskull's GitHub."""
-    if not REQUESTS_AVAILABLE:
-        raise ImportError("'requests' is required to fetch the mapping.")
-    if not YAML_AVAILABLE:
-        raise ImportError("'PyYAML' or 'ruamel.yaml' is required to parse the mapping.")
+    Returns a flat ``{pypi_name: conda_name}`` dict (lowercased keys), the
+    same shape ``name_resolver.py`` expects.
+    """
+    if not METADATA_AVAILABLE or get_pypi_name_mapping is None:
+        raise ImportError("'conda-forge-metadata' is required to fetch the mapping.")
 
-    print(f"Fetching latest mapping from {GRAYSKULL_MAPPING_URL}...")
+    print("Fetching latest mapping from conda-forge-metadata.autotick_bot...")
     try:
-        response = requests.get(GRAYSKULL_MAPPING_URL, timeout=30)
-        response.raise_for_status()
-        # The Grayskull file has a structure like:
-        # pypi_name:
-        #   conda_name: the_conda_name
-        raw_mapping = yaml.safe_load(response.text)
-        
-        # We want to flatten this to a simple {pypi_name: conda_name} dict
-        processed_mapping = {}
-        for pypi_name, details in raw_mapping.items():
-            if "conda_name" in details:
-                processed_mapping[pypi_name.lower()] = details["conda_name"]
-        return processed_mapping
+        entries = get_pypi_name_mapping()
+    except Exception as e:
+        print(f"Error: Failed to fetch mapping: {e}", file=sys.stderr)
+        return {}
 
-    except requests.RequestException as e:
-        print(f"Error: Failed to download mapping file: {e}", file=sys.stderr)
-        return {}
-    except yaml.YAMLError as e:
-        print(f"Error: Failed to parse YAML from mapping file: {e}", file=sys.stderr)
-        return {}
+    processed_mapping: dict = {}
+    for entry in entries:
+        pypi_name = entry.get("pypi_name")
+        conda_name = entry.get("conda_name")
+        if pypi_name and conda_name:
+            processed_mapping[pypi_name.lower()] = conda_name
+    return processed_mapping
 
 def load_local_cache() -> dict:
     """Loads the existing local mapping cache, if it exists."""
@@ -93,14 +86,14 @@ def update_mapping_cache(force: bool = False):
             print("Cache already exists. Use --force to refresh from upstream.")
             return
 
-    grayskull_mapping = fetch_grayskull_mapping()
-    if not grayskull_mapping:
+    upstream_mapping = fetch_conda_forge_metadata_mapping()
+    if not upstream_mapping:
         print("Could not fetch upstream mapping. Aborting update.", file=sys.stderr)
         return
 
-    # Merge the new mapping into the local cache. Grayskull is the authority.
+    # Merge the new mapping into the local cache. The upstream is the authority.
     # We can also add custom/manual mappings here in the future if needed.
-    local_cache.update(grayskull_mapping)
+    local_cache.update(upstream_mapping)
     
     save_to_local_cache(local_cache)
     print(f"Successfully updated cache with {len(local_cache)} mappings.")
@@ -111,13 +104,13 @@ def main():
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Force a refresh of the cache from the upstream Grayskull repository."
+        help="Force a refresh of the cache from conda-forge-metadata."
     )
     args = parser.parse_args()
 
-    if not (REQUESTS_AVAILABLE and YAML_AVAILABLE):
-        print("Error: This script requires 'requests' and 'PyYAML'.", file=sys.stderr)
-        print("Please install them into your environment.", file=sys.stderr)
+    if not METADATA_AVAILABLE:
+        print("Error: This script requires the 'conda-forge-metadata' package.", file=sys.stderr)
+        print("Install it via the local-recipes pixi env (already pinned in pixi.toml).", file=sys.stderr)
         sys.exit(1)
 
     update_mapping_cache(force=args.force)

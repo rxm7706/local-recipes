@@ -54,66 +54,38 @@ def normalize_path(path: Path) -> Path:
     raise FileNotFoundError(f"No recipe file found in {path}")
 
 
-def run_rattler_lint(recipe_path: Path) -> tuple[list[str], list[str], bool]:
+def run_external_lint(recipe_path: Path) -> tuple[list[str], list[str], bool]:
     """
-    Run 'rattler-build lint <dir>' if rattler-build is on PATH.
+    Run an external schema linter on the recipe.
+
+    Uses ``conda-smithy recipe-lint --conda-forge <dir>`` — the same linter
+    conda-forge runs in CI. ``conda-smithy`` calls into
+    ``rattler-build-conda-compat`` for v1 ``recipe.yaml`` recipes and uses
+    its native v0 linter for ``meta.yaml``.
 
     Returns (errors, warnings, ran).
-    'ran' is False when rattler-build is absent or doesn't support the lint
-    subcommand (versions prior to ~0.30).
-
-    Output format handling:
-      - JSON array/object (--json flag or newer versions)
-      - Plain text lines prefixed with [error]/[warning]/error:/warning:
+    ``ran`` is False when conda-smithy is not on PATH.
     """
-    rattler = shutil.which("rattler-build")
-    if not rattler:
+    smithy = shutil.which("conda-smithy")
+    if not smithy:
         return [], [], False
 
     recipe_dir = recipe_path.parent if recipe_path.is_file() else recipe_path
 
     try:
         proc = subprocess.run(
-            [rattler, "lint", str(recipe_dir)],
+            [smithy, "recipe-lint", "--conda-forge", str(recipe_dir)],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,
         )
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         return [], [], False
 
     combined = proc.stdout + proc.stderr
-
-    # Detect "unrecognized subcommand" — older rattler-build without lint
-    combined_lower = combined.lower()
-    if any(
-        phrase in combined_lower
-        for phrase in ("unrecognized subcommand", "unknown subcommand",
-                       "no such subcommand", "error: 'lint'")
-    ):
-        return [], [], False
-
     errors: list[str] = []
     warnings: list[str] = []
 
-    # Try JSON output first (some rattler-build versions emit JSON)
-    try:
-        data = json.loads(proc.stdout)
-        if isinstance(data, list):
-            for item in data:
-                level = str(item.get("level", "")).lower()
-                msg = item.get("message") or item.get("msg") or str(item)
-                (errors if "error" in level else warnings).append(f"rattler-build: {msg}")
-        elif isinstance(data, dict):
-            for e in data.get("errors", []):
-                errors.append(f"rattler-build: {e}")
-            for w in data.get("warnings", []):
-                warnings.append(f"rattler-build: {w}")
-        return errors, warnings, True
-    except (json.JSONDecodeError, ValueError, AttributeError):
-        pass
-
-    # Plain-text fallback — parse [error]/[warning]/error:/warning: prefixes
     _ERROR_RE = re.compile(r"^\[?error\]?:?\s*", re.IGNORECASE)
     _WARN_RE = re.compile(r"^\[?warning\]?:?\s*", re.IGNORECASE)
     _SKIP_RE = re.compile(r"^(linting|checking|info:|note:|$)", re.IGNORECASE)
@@ -124,12 +96,11 @@ def run_rattler_lint(recipe_path: Path) -> tuple[list[str], list[str], bool]:
             continue
         ll = line.lower()
         if ll.startswith("[error]") or ll.startswith("error:"):
-            errors.append("rattler-build: " + _ERROR_RE.sub("", line))
+            errors.append("conda-smithy: " + _ERROR_RE.sub("", line))
         elif ll.startswith("[warning]") or ll.startswith("warning:"):
-            warnings.append("rattler-build: " + _WARN_RE.sub("", line))
+            warnings.append("conda-smithy: " + _WARN_RE.sub("", line))
         elif proc.returncode != 0:
-            # Non-zero exit with unstructured output — surface as error
-            errors.append(f"rattler-build: {line}")
+            errors.append(f"conda-smithy: {line}")
 
     return errors, warnings, True
 
@@ -169,15 +140,25 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
         if "version" not in context:
             warnings.append("Consider adding 'version' to context section")
 
-    # Check package section
+    # Check package / recipe section.
+    # Single-output recipes use top-level `package:`; multi-output recipes
+    # (with `outputs:`) use top-level `recipe:` and per-output `package:`.
+    # The rattler-build schema accepts either form at the top level.
     package = content.get("package", {})
-    if not package:
-        errors.append("Missing package section")
+    recipe = content.get("recipe", {})
+    outputs = content.get("outputs", [])
+
+    if not package and not recipe:
+        errors.append("Missing package or recipe section")
+    elif recipe and not outputs:
+        errors.append("Top-level 'recipe:' requires an 'outputs:' list (multi-output recipes only)")
     else:
-        if "name" not in package:
-            errors.append("Missing package.name")
-        if "version" not in package:
-            errors.append("Missing package.version")
+        section = package or recipe
+        section_name = "package" if package else "recipe"
+        if "name" not in section:
+            errors.append(f"Missing {section_name}.name")
+        if "version" not in section:
+            errors.append(f"Missing {section_name}.version")
 
     # Check source section
     source = content.get("source", {})
@@ -284,15 +265,15 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
     if not maintainers:
         errors.append("Missing recipe-maintainers in extra section")
 
-    # ── rattler-build lint pass ───────────────────────────────────────────────
-    rb_errors, rb_warnings, rb_ran = run_rattler_lint(path)
+    # ── external lint pass (conda-smithy recipe-lint) ────────────────────────
+    rb_errors, rb_warnings, rb_ran = run_external_lint(path)
     errors.extend(rb_errors)
     warnings.extend(rb_warnings)
     if rb_ran:
         rb_status = "passed" if not rb_errors else f"{len(rb_errors)} error(s)"
-        info.append(f"rattler-build lint: {rb_status}")
+        info.append(f"conda-smithy lint: {rb_status}")
     else:
-        info.append("rattler-build lint: not available (install rattler-build ≥0.30 for schema validation)")
+        info.append("conda-smithy lint: not available (install conda-smithy for schema validation)")
 
     return ValidationResult(
         passed=len(errors) == 0,
