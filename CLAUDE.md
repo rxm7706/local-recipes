@@ -314,3 +314,10 @@ The BMAD Method is an AI-driven software development framework used in this proj
 - **Live source**: https://docs.bmad-method.org/llms-full.txt
 
 Fetch the live source for the latest version, or reference the local copy with `@.claude/docs/bmad-method-llms-full.txt` when working offline.
+
+## Project Documentation Reference
+
+For extended architectural context, please reference the centralized `docs/` folder:
+- **`docs/mcp-server-architecture.md`** — FastMCP server integration and PyPI name mapping subsystem.
+- **`docs/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
+- **`docs/developer-guide.md`** — Local testing and general recipe development guidelines.
