@@ -294,6 +294,48 @@ def copy_template(template_name: str, output_dir: Path, **replacements) -> Path:
     return output_path
 
 
+def _run_rattler_generate(ecosystem: str, args: list[str], output_dir: Path) -> Path:
+    """Invoke ``rattler-build generate-recipe <ecosystem> ...`` in output_dir.
+
+    Returns the path to the generated recipe.yaml. Raises on failure.
+
+    rattler-build's generate-recipe writes to ``<conda-name>/recipe.yaml``
+    relative to the current working directory; we cd into output_dir so the
+    user-visible artifact lands where they asked.
+    """
+    import shutil
+    import subprocess
+
+    rattler = shutil.which("rattler-build")
+    if not rattler:
+        raise RuntimeError(
+            "rattler-build is not on PATH. Run via the local-recipes pixi env."
+        )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    proc = subprocess.run(
+        [rattler, "generate-recipe", ecosystem, *args],
+        cwd=str(output_dir),
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"rattler-build generate-recipe {ecosystem} failed:\n{proc.stderr}"
+        )
+
+    # rattler-build prints the path it wrote to in stderr / stdout
+    candidates = sorted(output_dir.glob("*/recipe.yaml"))
+    if not candidates:
+        raise RuntimeError(
+            f"rattler-build did not produce a recipe.yaml in {output_dir}.\n"
+            f"stdout: {proc.stdout}\nstderr: {proc.stderr}"
+        )
+    # Newest match — handles re-runs in same dir
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate conda-forge recipes",
@@ -304,6 +346,9 @@ Examples:
   %(prog)s pypi numpy==1.26.0
   %(prog)s template python-noarch --name mypackage --version 1.0.0
   %(prog)s github owner/repo --version v1.0.0
+  %(prog)s cran ggplot2
+  %(prog)s cpan Moose
+  %(prog)s luarocks lua-cjson
         """
     )
 
@@ -333,6 +378,56 @@ Examples:
     gh_parser.add_argument("--version", "-v", help="Version/tag")
     gh_parser.add_argument("--output", "-o", type=Path, default=None,
                              help="Output directory")
+
+    # CRAN source (rattler-build native)
+    cran_parser = subparsers.add_parser(
+        "cran", help="Generate an R recipe from CRAN (via rattler-build)"
+    )
+    cran_parser.add_argument("package", help="CRAN package name (e.g., ggplot2)")
+    cran_parser.add_argument(
+        "--universe", "-u", default=None,
+        help="R Universe to fetch from (default: cran)",
+    )
+    cran_parser.add_argument(
+        "--tree", "-t", action="store_true",
+        help="Generate recipes for the whole dependency tree",
+    )
+    cran_parser.add_argument(
+        "--output", "-o", type=Path, default=None,
+        help="Output directory (default: recipes/)",
+    )
+
+    # CPAN source (rattler-build native)
+    cpan_parser = subparsers.add_parser(
+        "cpan", help="Generate a Perl recipe from CPAN (via rattler-build)"
+    )
+    cpan_parser.add_argument("package", help="CPAN package name (e.g., Moose)")
+    cpan_parser.add_argument(
+        "--version", default=None,
+        help="Specific version (default: latest)",
+    )
+    cpan_parser.add_argument(
+        "--tree", "-t", action="store_true",
+        help="Generate recipes for the whole dependency tree",
+    )
+    cpan_parser.add_argument(
+        "--output", "-o", type=Path, default=None,
+        help="Output directory (default: recipes/)",
+    )
+
+    # LuaRocks source (rattler-build native)
+    lua_parser = subparsers.add_parser(
+        "luarocks",
+        help="Generate a Lua recipe from LuaRocks (via rattler-build)",
+    )
+    lua_parser.add_argument(
+        "rock",
+        help="LuaRocks rock — module / module/version / author/module/version / rockspec URL",
+    )
+    lua_parser.add_argument(
+        "--output", "-o", type=Path, default=None,
+        help="Output directory (default: recipes/)",
+    )
 
     args = parser.parse_args()
 
@@ -399,6 +494,35 @@ Examples:
             path = generate_recipe_yaml(info, output_dir)
             print(f"Generated: {path}")
             print("Note: SHA256 and license need to be filled in manually")
+
+        elif args.source == "cran":
+            extra = ["-w"]
+            if args.universe:
+                extra += ["--universe", args.universe]
+            if args.tree:
+                extra += ["--tree"]
+            extra += [args.package]
+            output_dir = args.output or Path("recipes")
+            path = _run_rattler_generate("cran", extra, output_dir)
+            print(f"Generated: {path}")
+
+        elif args.source == "cpan":
+            extra = ["-w"]
+            if args.version:
+                extra += ["--version", args.version]
+            if args.tree:
+                extra += ["--tree"]
+            extra += [args.package]
+            output_dir = args.output or Path("recipes")
+            path = _run_rattler_generate("cpan", extra, output_dir)
+            print(f"Generated: {path}")
+
+        elif args.source == "luarocks":
+            # luarocks subcommand uses --write-to instead of -w
+            output_dir = args.output or Path("recipes")
+            extra = ["--write-to", ".", args.rock]
+            path = _run_rattler_generate("luarocks", extra, output_dir)
+            print(f"Generated: {path}")
 
     except Exception as e:
         print(f"Error: {e}")

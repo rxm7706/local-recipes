@@ -246,6 +246,9 @@ pixi run -e local-recipes <task> -- [args]
 | `analyze-failure` | `failure_analyzer.py` — match a build error log to known patterns |
 | `migrate` | `feedstock-migrator.py` — meta.yaml → recipe.yaml v1 |
 | `generate-recipe` | `recipe-generator.py` — scaffold from PyPI / template / GitHub |
+| `generate-cran` | `recipe-generator.py cran` — scaffold an R recipe from CRAN |
+| `generate-cpan` | `recipe-generator.py cpan` — scaffold a Perl recipe from CPAN |
+| `generate-luarocks` | `recipe-generator.py luarocks` — scaffold a Lua recipe from LuaRocks |
 | `resolve-name` | `name_resolver.py` — PyPI name → conda-forge name |
 | `version-check` | `github_version_checker.py` — read-only latest-release lookup |
 | `autotick` | `recipe_updater.py` — PyPI autotick |

@@ -200,6 +200,20 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/license-checker.py"
 description = "Run test-recipes.py — random / targeted recipe smoke validation"
 cmd = "python test-recipes.py"
 
+# ── Ecosystem-aware scaffolders (rattler-build native back-end) ──────────────
+
+[feature.local-recipes.tasks.generate-cran]
+description = "Scaffold a v1 recipe for an R package from CRAN"
+cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py cran"
+
+[feature.local-recipes.tasks.generate-cpan]
+description = "Scaffold a v1 recipe for a Perl package from CPAN"
+cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py cpan"
+
+[feature.local-recipes.tasks.generate-luarocks]
+description = "Scaffold a v1 recipe for a Lua package from LuaRocks"
+cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py luarocks"
+
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"
