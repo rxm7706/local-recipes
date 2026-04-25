@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: example-compiled
+  version: "1.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://example.com/example-compiled-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  script: make && make install
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  host:
+    - zlib
+
+tests:
+  - script:
+      - example-compiled --version
+
+about:
+  homepage: https://example.com/example-compiled
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Compiled v1 fixture (covers stdlib enforcement).
+
+extra:
+  recipe-maintainers:
+    - rxm7706

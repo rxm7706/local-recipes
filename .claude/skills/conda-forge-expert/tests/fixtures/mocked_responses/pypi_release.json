@@ -1,0 +1,20 @@
+{
+  "info": {
+    "name": "example-noarch",
+    "version": "9.9.9",
+    "license": "MIT",
+    "summary": "Synthetic PyPI release used for autotick regression tests.",
+    "home_page": "https://example.com/example-noarch",
+    "requires_python": ">=3.10",
+    "requires_dist": [],
+    "project_urls": {"Source": "https://github.com/example/example-noarch"}
+  },
+  "urls": [
+    {
+      "filename": "example_noarch-9.9.9.tar.gz",
+      "packagetype": "sdist",
+      "url": "https://files.pythonhosted.org/packages/aa/bb/cc/example_noarch-9.9.9.tar.gz",
+      "digests": {"sha256": "abcdef0000000000000000000000000000000000000000000000000000000000"}
+    }
+  ]
+}

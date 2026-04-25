@@ -1,0 +1,20 @@
+# Deliberately broken: missing package section, no checksum, no maintainers,
+# uses a compiler without stdlib (STD-001 violation).
+schema_version: 1
+
+source:
+  url: https://example.com/broken.tar.gz
+
+build:
+  number: 0
+  script: make
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+  host:
+    - zlib
+
+about:
+  license: PROPRIETARY-LICENSE-NOT-SPDX
+  summary: Intentionally invalid recipe used to verify validator/optimizer rejection paths.

@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: synthetic-vulnerable
+  version: "1.0.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://example.com/foo-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  noarch: python
+
+# Exact version pins (==) to known-vulnerable upstream versions are the
+# vulnerability_scanner's fast path. Real conda-forge recipes usually do
+# not pin like this; this fixture exists solely to exercise the scanner.
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python >=3.10
+    - urllib3 ==1.26.4
+    - requests ==2.20.0
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Fixture with exact pins to known-vulnerable versions for scanner regression testing.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
