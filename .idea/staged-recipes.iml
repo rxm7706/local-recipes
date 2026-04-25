@@ -5,6 +5,7 @@
       <excludeFolder url="file://$MODULE_DIR$/.pixi" />
       <excludeFolder url="file://$MODULE_DIR$/.private" />
       <excludeFolder url="file://$MODULE_DIR$/recipes/output" />
+      <excludeFolder url="file://$MODULE_DIR$/.pixi/envs/local-recipes" />
     </content>
     <orderEntry type="jdk" jdkName="local-recipes" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
