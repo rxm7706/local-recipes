@@ -2,6 +2,89 @@
 
 Complete guide for testing conda-forge recipes locally and in CI.
 
+## TDD Prove-It Pattern for Recipe Development
+
+*From `test-driven-development`. Applies the RED-GREEN-REFACTOR cycle to conda recipe development.*
+
+### Core Principle
+
+Tests in a recipe are **proof**, not afterthoughts. Write the test section first — before you know if the build works — then iterate until the tests pass. "The build succeeded" is not the same as "the package is correct."
+
+### RED-GREEN-REFACTOR for Recipes
+
+**RED** — Write tests that will fail (because the package doesn't build yet):
+```yaml
+tests:
+  - python:
+      imports:
+        - mypackage
+        - mypackage.core       # fails until build completes
+      pip_check: true          # fails until all deps are declared
+  - script:
+      - mycommand --version    # fails until entry_points are correct
+```
+
+**GREEN** — Iterate `trigger_build()` → `get_build_summary()` until all tests pass.
+
+**REFACTOR** — Once green, tighten: remove duplicate imports, ensure `python_version: ${{ python_min }}.*` in tests for noarch packages.
+
+### Prove-It Pattern: Fixing Failing Tests
+
+When a test fails, apply this sequence — never skip a step:
+
+```
+1. Write a test that reproduces the failure (if not already in the recipe)
+2. Confirm the test fails with the current recipe
+3. Fix the root cause in the recipe (deps, entry_points, build script)
+4. Confirm the test now passes
+5. Do not remove the test — it is now a regression guard
+```
+
+**Anti-pattern**: Adding `pip_check: false` to silence a pip check failure without fixing the missing dependency. The failure is telling you something is wrong with `run:` requirements.
+
+### Minimum Viable Test Section
+
+Every recipe submitted to staged-recipes must have at minimum:
+
+```yaml
+# Python packages
+tests:
+  - python:
+      imports:
+        - mypackage
+      pip_check: true
+
+# Libraries / CLI tools
+tests:
+  - script:
+      - mycommand --version
+  - package_contents:
+      lib:
+        - libmylib${{ shlib_ext }}
+```
+
+Recipes with no `tests:` section are flagged by `optimize_recipe()` with TEST-001. CI will accept them but reviewers will ask for tests.
+
+### CFEP-25 Test Requirement for noarch: python
+
+For `noarch: python` packages, the tests section **must** include `python_version` to verify the package works at the declared minimum:
+
+```yaml
+context:
+  python_min: "3.10"
+
+tests:
+  - python:
+      imports:
+        - mypackage
+      pip_check: true
+      python_version: ${{ python_min }}.*   # REQUIRED for noarch:python
+```
+
+Missing `python_version` in tests means the CFEP-25 triad is incomplete — `optimize_recipe()` SEL-002 will flag it.
+
+---
+
 ## Testing Hierarchy
 
 ```

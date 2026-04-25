@@ -3,10 +3,21 @@
 
 skill:
   name: conda-forge-expert
-  version: 5.5.0
+  version: 5.8.0
   description: |
-    Comprehensive guide for conda-forge recipe development. Handles meta.yaml
-    and recipe.yaml formats, linting, CI troubleshooting, and feedstock maintenance.
+    Autonomous conda-forge packaging agent. Manages the entire recipe lifecycle
+    from generation, security scanning, and building to debugging, maintenance,
+    and PR submission. Integrates 21 agent-skills for engineering best practices.
+
+# Behavioral Principles (CLAUDE.md + using-agent-skills)
+# These govern all agent behavior — apply unconditionally.
+behavioral_principles:
+  think_before_generating: true      # surface assumptions, emit plan before executing
+  simplicity_first: true             # minimum recipe that solves the problem
+  surgical_changes: true             # touch only what the task requires
+  goal_driven_execution: true        # define success criteria, loop until verified
+  stop_the_line_on_failure: true     # preserve error log, fix root cause, not workaround
+  verify_dont_assume: true           # check current docs, don't rely on memory
 
 # Environment Configuration
 environment:
@@ -66,20 +77,38 @@ integrations:
     gitlab_com: true
     enterprise_github: false    # Enable for enterprise
 
+# Agent Skills Integration (addyosmani/agent-skills — all 21 installed at .claude/skills/)
+agent_skills:
+  lifecycle_mapping:
+    define:          [idea-refine, spec-driven-development]
+    plan:            [planning-and-task-breakdown, incremental-implementation]
+    generate_edit:   [source-driven-development, context-engineering, code-simplification]
+    validate_optimize: [test-driven-development, code-review-and-quality, performance-optimization]
+    security_scan:   [security-and-hardening]
+    build_debug:     [ci-cd-and-automation, debugging-and-error-recovery]
+    submit_pr:       [git-workflow-and-versioning, shipping-and-launch, documentation-and-adrs]
+    migration:       [deprecation-and-migration]
+    cross_cutting:   [context-engineering, using-agent-skills]
+    ui:              [frontend-ui-engineering, browser-testing-with-devtools]
+    api_design:      [api-and-interface-design]
+
 # Linting Configuration
 linting:
   # Mandatory checks (cannot be skipped)
+  # Codes map to recipe_optimizer.py check functions
   mandatory:
-    - license_file_present
+    - license_file_present       # ABT-001 (about section)
     - license_spdx_valid
-    - maintainers_present
-    - source_sha256_present
+    - maintainers_present        # MAINT-001
+    - source_sha256_present      # SEC-001
+    - stdlib_with_compiler       # STD-001 — CI-blocking; missing stdlib() causes auto-rejection
+    - no_format_mixing           # STD-002 — CI-blocking; meta.yaml + recipe.yaml cannot coexist
 
   # Recommended checks (warnings only)
   recommended:
-    - cfep25_python_min
+    - cfep25_python_min          # SEL-002 — python_min must be >=3.10 (floor raised Aug 2025)
     - no_git_url_for_releases
-    - tests_present
+    - tests_present              # TEST-001
     - pip_check_in_tests
 
   # Skip these checks (use sparingly)

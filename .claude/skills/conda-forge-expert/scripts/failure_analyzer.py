@@ -5,6 +5,12 @@ Intelligent Build Failure Analyzer for conda-forge recipes.
 Analyzes a build error log against a library of known patterns and returns
 structured, actionable diagnoses. Returns ALL matches found, not just the first,
 so multi-root-cause failures can be fully diagnosed.
+
+Debugging philosophy (debugging-and-error-recovery):
+  Stop-the-Line Rule — preserve the error log, localize systematically, fix root
+  cause (not symptom), guard against recurrence with a note in the PR description.
+
+Pattern library: 41 patterns across 13 categories.
 """
 from __future__ import annotations
 
@@ -39,7 +45,7 @@ class ErrorPattern:
 
 
 # ---------------------------------------------------------------------------
-# Error library — 33 patterns across 10 categories
+# Error library — 41 patterns across 13 categories
 # ---------------------------------------------------------------------------
 # Suggestion actions understood by recipe_editor.py:
 #   add_to_list   — append value to a YAML list at path
@@ -195,6 +201,40 @@ ERROR_LIBRARY: list[ErrorPattern] = [
             "path": "requirements.host",
             "value": "PLACEHOLDER",
             "comment": "Add the missing CMake package to host requirements.",
+        },
+    ),
+    ErrorPattern(
+        name="MESON_NOT_FOUND",
+        category="BUILD_TOOLS",
+        regex=re.compile(
+            r"meson(?:\.exe)?\s*:\s*(?:command not found|not found in PATH)"
+            r"|The meson build system.*could not be found"
+            r"|ERROR: Could not detect Ninja v1",
+            re.IGNORECASE,
+        ),
+        diagnosis="Meson build system was not found in the build environment.",
+        suggestion={
+            "action": "add_to_list",
+            "path": "requirements.build",
+            "value": "meson",
+            "comment": "Add meson and ninja to build requirements. Meson requires Ninja as its backend.",
+        },
+    ),
+    ErrorPattern(
+        name="AUTOTOOLS_NOT_FOUND",
+        category="BUILD_TOOLS",
+        regex=re.compile(
+            r"(?:autoreconf|autogen\.sh|aclocal|automake|autoconf)"
+            r"\s*:\s*(?:command not found|not found)"
+            r"|error: possibly undefined macro: AC_\w+",
+            re.IGNORECASE,
+        ),
+        diagnosis="Autotools (autoreconf/automake/autoconf) was not found. The package requires GNU Autotools to generate the build system.",
+        suggestion={
+            "action": "add_to_list",
+            "path": "requirements.build",
+            "value": "autoconf",
+            "comment": "Add autoconf, automake, and libtool to build requirements. For packages needing aclocal macros, also add the relevant *-dev package to host.",
         },
     ),
 
@@ -702,6 +742,31 @@ ERROR_LIBRARY: list[ErrorPattern] = [
             ),
         },
     ),
+    ErrorPattern(
+        name="NETWORK_ACCESS_BLOCKED",
+        category="ENV_ISOLATION",
+        regex=re.compile(
+            r"(?:git clone|curl|wget|pip download|pip install).*(?:failed|blocked|not allowed)"
+            r".*(?:build|isolation|sandbox|network)"
+            r"|network.*access.*(?:blocked|denied|not.*permitted).*(?:build|install)"
+            r"|Cannot fetch.*during build phase",
+            re.IGNORECASE,
+        ),
+        diagnosis=(
+            "A build script attempted network access (git clone, curl, pip install) during "
+            "the build phase. rattler-build strict isolation mode blocks outbound network calls. "
+            "All sources must be declared in the recipe's source: section."
+        ),
+        suggestion={
+            "action": "informational",
+            "comment": (
+                "Move all fetched resources into the recipe source: section with sha256 checksums. "
+                "For vendored dependencies (Rust cargo, Go modules, Node npm), use a vendor bundle "
+                "or a pre-download step in the source section. "
+                "Never run 'pip install', 'cargo fetch', 'npm install', or 'git clone' in build.sh."
+            ),
+        },
+    ),
 
     # -----------------------------------------------------------------------
     # CATEGORY: MSVC  (Windows / Visual Studio 2022)
@@ -926,8 +991,13 @@ def main() -> None:
         print(json.dumps({
             "success": False,
             "error": "No known error pattern matched. Manual inspection required.",
-            "hint": f"ERROR_LIBRARY contains {len(ERROR_LIBRARY)} patterns across categories: "
-                    + ", ".join(sorted({p.category for p in ERROR_LIBRARY})),
+            "hint": (
+                f"ERROR_LIBRARY contains {len(ERROR_LIBRARY)} patterns across "
+                f"{len({p.category for p in ERROR_LIBRARY})} categories: "
+                + ", ".join(sorted({p.category for p in ERROR_LIBRARY}))
+                + ". Apply debugging-and-error-recovery: Reproduce → Localize → Reduce "
+                "→ Fix Root Cause → Guard → Verify."
+            ),
         }))
         sys.exit(1)
 

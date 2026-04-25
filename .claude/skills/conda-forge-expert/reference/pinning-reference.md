@@ -58,7 +58,7 @@ python:
   - "3.11"
   - "3.12"
   - "3.13"
-  - "3.14"   # added Oct 2025; Python 3.9 dropped Aug 2025
+  # "3.14" added for win-arm64; Python 3.9 dropped Aug 2025
 
 # NumPy 2.x is the global default since Jun 2025; 1.26 no longer in the matrix
 numpy:
@@ -67,6 +67,27 @@ numpy:
 python_min:
   - "3.10"   # conda-forge floor; use this for noarch:python (CFEP-25)
 ```
+
+### Current Global Pins (Apr 2026)
+
+Key pins from conda-forge-pinning feedstock — these are managed globally and propagate via migrators:
+
+| Package | Current Pin | Notes |
+|---------|-------------|-------|
+| **Python** | 3.10, 3.11, 3.12, 3.13 | 3.14 for win-arm64; 3.9 dropped Aug 2025 |
+| **NumPy** | 2 | 1.26 removed from matrix Jun 2025 |
+| **GCC (Linux)** | 14 | Updated; do not pin compiler version manually |
+| **Clang (macOS)** | 19 | Updated; use `${{ compiler("c") }}` macro |
+| **MSVC (Windows)** | 2022 | VS2022; `compiler_stack` deprecated |
+| **CUDA** | 12.9 | Latest stable |
+| **OpenSSL** | 3.5 | |
+| **Boost** | 1.88 | |
+| **HDF5** | 1.14.6 | |
+| **Arrow** | 20.0–23.0 | Multiple variants supported |
+| **PyTorch** | 2.9 | |
+| **Qt5** | 5.15 | Qt6: 6.10 |
+
+> **Important**: Never pin compiler versions manually in recipes. Use `${{ compiler("c") }}` and let the global pin resolve the version. The `compiler_stack` config option is deprecated.
 
 ### Recipe-Specific Override
 
@@ -509,11 +530,11 @@ Platform-specific configs in `.ci_support/`:
 c_compiler:
   - gcc
 c_compiler_version:
-  - "12"
+  - "14"          # GCC 14 as of Apr 2026
 cxx_compiler:
   - gxx
 cxx_compiler_version:
-  - "12"
+  - "14"
 python:
   - "3.12"
 target_platform:

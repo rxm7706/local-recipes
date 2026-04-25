@@ -73,10 +73,21 @@ def calculate_sha256_from_url(url: str) -> str:
     except requests.RequestException as e:
         raise RuntimeError(f"Failed to download source for hash calculation: {e}") from e
 
+def _validate_recipe_path(recipe_path: Path) -> None:
+    """Raise ValueError if the path is not a YAML file (prevents obvious misuse at CLI boundary)."""
+    if recipe_path.suffix not in (".yaml", ".yml"):
+        raise ValueError(f"Recipe path must be a .yaml/.yml file, got: {recipe_path}")
+
+
 def execute_actions(recipe_path: Path, actions: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Execute a list of modification actions on a recipe file."""
     if not RUAMEL_AVAILABLE:
         return {"success": False, "error": "ruamel.yaml is not installed."}
+
+    try:
+        _validate_recipe_path(recipe_path)
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
 
     yaml = YAML()
     yaml.preserve_quotes = True

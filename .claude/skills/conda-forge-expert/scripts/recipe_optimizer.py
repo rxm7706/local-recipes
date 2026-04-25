@@ -2,9 +2,24 @@
 """
 Recipe Optimization Linter for conda-forge recipes.
 
-This script goes beyond basic validation and checks for common anti-patterns,
-suggesting improvements related to dependency placement, redundant selectors,
-and other conda-forge best practices.
+Goes beyond basic validation and checks for common anti-patterns, suggesting
+improvements for dependency placement, redundant selectors, security, and
+conda-forge best practices.
+
+Check codes (11 total):
+  DEP-001  Dev dependency in run requirements
+  DEP-002  noarch:python Python upper bound in run (should be run_constrained)
+  PIN-001  Exact version pin in run requirements
+  ABT-001  Missing license_file in about section
+  SCRIPT-001  sudo used in build.sh
+  SCRIPT-002  pip install --upgrade in build.sh
+  SEL-001  Redundant platform skip conditions
+  SEL-002  Incomplete CFEP-25 python_min triad for noarch:python
+  STD-001  compiler() used without stdlib() — CRITICAL, causes CI rejection
+  STD-002  Both meta.yaml and recipe.yaml present — format mixing is rejected
+  SEC-001  Source URL without sha256 checksum
+  TEST-001  Missing tests section
+  MAINT-001  Missing recipe-maintainers in extra section
 """
 from __future__ import annotations
 
@@ -285,10 +300,163 @@ def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
 
     return suggestions
 
+def analyze_stdlib_compliance(data: Dict) -> List[OptimizationSuggestion]:
+    """Check that recipes using compiler() also declare stdlib() (STD-001).
+
+    This is a CRITICAL check — omitting stdlib() causes automatic rejection by
+    conda-forge CI for all compiled packages (CLAUDE.md Critical Constraints).
+    """
+    suggestions = []
+    build_reqs = _flatten_reqs(data.get("requirements", {}).get("build", []))
+
+    # go-nocgo (pure Go, no CGO) does not link against C stdlib — exclude it.
+    # go-cgo DOES link against C stdlib, so it must be paired with stdlib("c").
+    # Legacy compiler("go") is treated the same as go-nocgo (no stdlib needed).
+    _NO_STDLIB_COMPILERS = {
+        'compiler("go-nocgo")', "compiler('go-nocgo')",
+        'compiler("go")', "compiler('go')",
+    }
+
+    def _is_c_abi_compiler(r: str) -> bool:
+        if "compiler(" not in r and "${{ compiler" not in r and "{{ compiler" not in r:
+            return False
+        return not any(pat in r for pat in _NO_STDLIB_COMPILERS)
+
+    has_compiler = any(_is_c_abi_compiler(r) for r in build_reqs)
+    has_stdlib = any(
+        "stdlib(" in r or "${{ stdlib" in r or "{{ stdlib" in r
+        for r in build_reqs
+    )
+
+    if has_compiler and not has_stdlib:
+        suggestions.append(OptimizationSuggestion(
+            code="STD-001",
+            message="Recipe uses compiler() but is missing stdlib() in build requirements.",
+            suggestion=(
+                "Add '${{ stdlib(\"c\") }}' immediately after '${{ compiler(\"c\") }}' "
+                "in requirements.build. conda-forge CI enforces this for all compiled "
+                "packages — omitting stdlib() causes automatic rejection."
+            ),
+            confidence=1.0,
+        ))
+    return suggestions
+
+
+def analyze_format_mixing(recipe_path: Path) -> List[OptimizationSuggestion]:
+    """Check that both meta.yaml and recipe.yaml do not coexist (STD-002).
+
+    Mixed formats in the same directory are rejected by the tooling and can
+    cause silent double-builds. Remove meta.yaml only after a successful build
+    with the new recipe.yaml (deprecation-and-migration: Strangler pattern).
+    """
+    suggestions = []
+    recipe_dir = recipe_path.parent
+    has_meta = (recipe_dir / "meta.yaml").exists()
+    has_recipe = (recipe_dir / "recipe.yaml").exists()
+
+    if has_meta and has_recipe:
+        suggestions.append(OptimizationSuggestion(
+            code="STD-002",
+            message="Both meta.yaml and recipe.yaml exist in the same directory.",
+            suggestion=(
+                "Remove meta.yaml after verifying that recipe.yaml builds successfully. "
+                "Mixed formats in a single build run are rejected by the tooling."
+            ),
+            confidence=1.0,
+        ))
+    return suggestions
+
+
+def analyze_source_security(data: Dict) -> List[OptimizationSuggestion]:
+    """Check that source entries with URLs have sha256 checksums (SEC-001).
+
+    Missing checksums allow supply-chain substitution attacks and fail
+    conda-forge CI validation (security-and-hardening: Always Do).
+    """
+    suggestions = []
+    sources = data.get("source")
+    if sources is None:
+        return suggestions
+
+    sources_list: list = [sources] if isinstance(sources, dict) else (
+        sources if isinstance(sources, list) else []
+    )
+
+    for i, src in enumerate(sources_list):
+        if not isinstance(src, dict):
+            continue
+        if not src.get("url"):
+            continue  # git or local path sources don't require sha256
+        sha256 = str(src.get("sha256", "")).strip()
+        if not sha256:
+            label = f"source[{i}]" if len(sources_list) > 1 else "source"
+            suggestions.append(OptimizationSuggestion(
+                code="SEC-001",
+                message=f"'{label}' has a URL but no sha256 checksum.",
+                suggestion=(
+                    "Add 'sha256: <hash>' to the source block. "
+                    "Use edit_recipe with action=calculate_hash to compute it automatically, "
+                    "or run: curl -sL <url> | sha256sum"
+                ),
+                confidence=0.95,
+            ))
+    return suggestions
+
+
+def analyze_tests_section(data: Dict) -> List[OptimizationSuggestion]:
+    """Check that a tests section exists (TEST-001).
+
+    Recipes with no tests slip through validation but fail conda-forge review.
+    A minimal test (import + pip_check) takes five lines and prevents regression
+    (test-driven-development: tests are proof, not afterthoughts).
+    """
+    suggestions = []
+    has_tests_v1 = bool(data.get("tests"))
+    has_test_v0 = bool(data.get("test"))
+
+    if not has_tests_v1 and not has_test_v0:
+        suggestions.append(OptimizationSuggestion(
+            code="TEST-001",
+            message="Recipe has no tests section.",
+            suggestion=(
+                "Add at minimum an import test and pip_check. Example (recipe.yaml v1):\n"
+                "tests:\n"
+                "  - python:\n"
+                "      imports: [mypackage]\n"
+                "      pip_check: true\n"
+                "      python_version: ${{ python_min }}.*"
+            ),
+            confidence=0.85,
+        ))
+    return suggestions
+
+
+def analyze_maintainers(data: Dict) -> List[OptimizationSuggestion]:
+    """Check that recipe-maintainers is populated (MAINT-001).
+
+    conda-forge requires at least one maintainer per recipe. Recipes without
+    maintainers are rejected at staged-recipes review.
+    """
+    suggestions = []
+    extra = data.get("extra") or {}
+    maintainers = extra.get("recipe-maintainers") or extra.get("recipe_maintainers")
+
+    if not maintainers:
+        suggestions.append(OptimizationSuggestion(
+            code="MAINT-001",
+            message="Recipe has no maintainers listed in extra.recipe-maintainers.",
+            suggestion=(
+                "Add your GitHub username to extra.recipe-maintainers. "
+                "conda-forge requires at least one maintainer per recipe.\n"
+                "Example:\nextra:\n  recipe-maintainers:\n    - rxm7706"
+            ),
+            confidence=0.9,
+        ))
+    return suggestions
+
+
 def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
-    """
-    Runs all optimization checks on a given recipe file.
-    """
+    """Runs all optimization checks on a given recipe file."""
     if not RUAMEL_AVAILABLE:
         return [OptimizationSuggestion("OPT-000", "ruamel.yaml not found.", "Install ruamel.yaml.", 1.0)]
     assert YAML is not None
@@ -301,13 +469,22 @@ def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
         return [] # If we can't parse it, we can't optimize it.
 
     all_suggestions = []
+    # Critical constraints first (confidence 1.0 — will block CI)
+    all_suggestions.extend(analyze_stdlib_compliance(data))
+    all_suggestions.extend(analyze_format_mixing(recipe_path))
+    # Security checks
+    all_suggestions.extend(analyze_source_security(data))
+    # Completeness checks
+    all_suggestions.extend(analyze_maintainers(data))
+    all_suggestions.extend(analyze_tests_section(data))
+    all_suggestions.extend(analyze_about_section(data))
+    # Quality and style checks
     all_suggestions.extend(analyze_dependencies(data))
     all_suggestions.extend(analyze_noarch_python_constraints(data))
     all_suggestions.extend(analyze_pinning(data))
-    all_suggestions.extend(analyze_about_section(data))
     all_suggestions.extend(analyze_build_script(recipe_path.parent))
     all_suggestions.extend(analyze_selectors(data))
-    
+
     return all_suggestions
 
 def main():

@@ -2,6 +2,59 @@
 
 Complete guide for converting conda recipes from legacy meta.yaml format to modern recipe.yaml (v1) format.
 
+## Migration Decision Framework
+
+*From `deprecation-and-migration`. Use this before touching a recipe — it prevents unnecessary churn.*
+
+### Should You Migrate This Recipe?
+
+Work through this decision tree before converting any recipe:
+
+```
+Is there an active PR or build in progress for this recipe?
+  YES → Wait until it merges/closes. Never migrate mid-flight.
+  NO  → Continue.
+
+Is this recipe in staged-recipes (new submission)?
+  YES → Use recipe.yaml v1 from the start. Do not create meta.yaml.
+  NO  → Is it an existing feedstock? Continue.
+
+Does the existing feedstock have open PRs?
+  YES → Coordinate with maintainers or wait.
+  NO  → Continue.
+
+Does the package build cleanly in its current format?
+  NO  → Fix the current format first. Migrating broken recipes is churn.
+  YES → Migration is appropriate.
+```
+
+### The Churn Rule
+
+**Do not migrate a recipe that already builds correctly unless:**
+- The feedstock has explicitly requested v1 migration
+- You are fixing a python_min/stdlib/other policy violation that cannot be expressed in meta.yaml
+- The PR is specifically for migration (`migrate-to-v1` branch)
+
+Migrating a working recipe "while you're in there" creates unnecessary diff noise and risks introducing regressions. The migration itself is a separate, atomic PR.
+
+### Strangler Pattern for Safe Migration
+
+Never do a "big bang" rewrite. Migrate incrementally:
+
+1. **Keep meta.yaml intact** — `migrate_to_v1()` creates `recipe.yaml` alongside it; do not delete meta.yaml yet
+2. **Build and validate the new format** — `validate_recipe()` + `trigger_build()` → confirm green
+3. **Compare outputs** — rendered recipe and package contents should be identical
+4. **Remove meta.yaml** — only after the new format is verified and the PR is ready to merge
+5. **One recipe per PR** — never bundle multiple migrations in one PR
+
+### Format Mixing Prohibition
+
+`meta.yaml` and `recipe.yaml` **cannot coexist in the same build run** — the toolchain will reject it. The `optimize_recipe()` STD-002 check flags this with confidence=1.0. If both files exist, either:
+- Delete `meta.yaml` (after verifying `recipe.yaml` builds), or
+- Delete `recipe.yaml` (if migration is incomplete and meta.yaml is the source of truth)
+
+---
+
 ## Overview
 
 | Feature | meta.yaml | recipe.yaml |
