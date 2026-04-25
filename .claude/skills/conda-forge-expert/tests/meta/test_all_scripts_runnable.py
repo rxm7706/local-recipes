@@ -18,6 +18,7 @@ SCRIPTS = [
     "github_version_checker.py",
     "health_check.py",
     "license-checker.py",
+    "local_builder.py",
     "mapping_manager.py",
     "name_resolver.py",
     "npm_updater.py",

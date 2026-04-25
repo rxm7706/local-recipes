@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Cross-shim: dispatches `install_name_tool` to the target-triple-prefixed
+# variant shipped by conda-forge's `cctools_osx-*` packages
+# (e.g. `arm64-apple-darwin20.0.0-install_name_tool`).
+#
+# Why this exists:
+#   When rattler-build runs the post-build relink step on a Linux host
+#   targeting osx-*, it shells out to `install_name_tool` by its plain
+#   name. The cross-toolchain only ships the prefixed binary, so the
+#   lookup fails:
+#     "failed to find `install_name_tool` (cannot find binary path)"
+#
+#   Worse: rattler-build's relink subprocess inherits no build-context
+#   env vars (no BUILD_PREFIX, no PREFIX), and PATH does not include
+#   the build_env. So we have to find the cross-toolchain ourselves.
+#
+# Lookup strategy (first hit wins):
+#   1. PATH                                     — fast path; works when
+#                                                 the build_env's bin is
+#                                                 still on PATH or when
+#                                                 cctools_osx-* is
+#                                                 installed at the host
+#                                                 level.
+#   2. $LOCAL_BUILDER_OUTPUT_DIR/bld/*/build_env/bin
+#                                               — set by local_builder.py
+#                                                 to point at rattler-
+#                                                 build's --output-dir,
+#                                                 where the build_env
+#                                                 lives during a build.
+#   3. $BUILD_PREFIX/bin, $PREFIX/bin,
+#      $CONDA_PREFIX/bin                        — common conda env vars
+#                                                 (rattler-build does NOT
+#                                                 set these for the
+#                                                 relink subprocess as
+#                                                 of v0.62, but we check
+#                                                 anyway in case future
+#                                                 versions do).
+
+set -u
+shopt -s nullglob
+
+try_dir() {
+    local dir="$1"; shift
+    [ -n "$dir" ] && [ -d "$dir" ] || return 1
+    for cand in "$dir"/*-install_name_tool; do
+        if [ -x "$cand" ] && [ -f "$cand" ]; then
+            exec "$cand" "$@"
+        fi
+    done
+    return 1
+}
+
+# 1. Search PATH
+old_ifs=$IFS
+IFS=":"
+for dir in $PATH; do
+    IFS=$old_ifs
+    try_dir "$dir" "$@"
+    IFS=":"
+done
+IFS=$old_ifs
+
+# 2. local_builder.py's hint: glob the output dir's build_env
+if [ -n "${LOCAL_BUILDER_OUTPUT_DIR:-}" ] && [ -d "${LOCAL_BUILDER_OUTPUT_DIR}/bld" ]; then
+    for build_env_bin in "${LOCAL_BUILDER_OUTPUT_DIR}"/bld/*/build_env/bin; do
+        try_dir "$build_env_bin" "$@"
+    done
+fi
+
+# 3. Conda/rattler env-var hints
+for prefix in "${BUILD_PREFIX:-}" "${PREFIX:-}" "${CONDA_PREFIX:-}"; do
+    [ -n "$prefix" ] || continue
+    try_dir "$prefix/bin" "$@"
+done
+
+echo "cross-shim: no '*-install_name_tool' found" >&2
+echo "cross-shim: PATH=$PATH" >&2
+echo "cross-shim: LOCAL_BUILDER_OUTPUT_DIR=${LOCAL_BUILDER_OUTPUT_DIR:-<unset>}" >&2
+exit 127

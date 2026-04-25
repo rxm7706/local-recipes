@@ -184,6 +184,26 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/github_updater.py"
 description = "Update a recipe to the latest npm registry version (use --dry-run first)"
 cmd = "python .claude/skills/conda-forge-expert/scripts/npm_updater.py"
 
+# ── Docker-less local builds (linux-64 / linux-aarch64 / osx-* / win-64) ─────
+# Wraps `rattler-build build` with per-platform flags. Native linux-64 runs
+# full build+test; cross-builds use --no-test (and --allow-symlinks-on-windows
+# for win-64).
+[feature.local-recipes.tasks.build-local]
+description = "Build a recipe natively on this host (linux-64) — full build + test"
+cmd = "python .claude/skills/conda-forge-expert/scripts/local_builder.py"
+
+[feature.local-recipes.tasks.build-local-all]
+description = "Build a recipe for every supported target platform (cross-builds skip tests)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/local_builder.py --all-platforms"
+
+[feature.local-recipes.tasks.build-local-check]
+description = "Diagnose what's available for local cross-platform builds"
+cmd = "python .claude/skills/conda-forge-expert/scripts/local_builder.py --check"
+
+[feature.local-recipes.tasks.build-local-setup-sdk]
+description = "Download MacOSX SDK to ./SDKs/ for osx-* cross-builds (Apple licence applies)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/local_builder.py --setup-osx-sdk"
+
 [feature.local-recipes.tasks.version-check]
 description = "Check the latest GitHub release version for a recipe (read-only)"
 cmd = "python .claude/skills/conda-forge-expert/scripts/github_version_checker.py"
