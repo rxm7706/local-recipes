@@ -12,6 +12,11 @@ import json
 import sys
 from pathlib import Path
 
+try:
+    from conda_forge_metadata.autotick_bot.pypi_to_conda import map_pypi_to_conda
+except ImportError:
+    map_pypi_to_conda = None  # type: ignore[assignment]
+
 # Path to the local mapping cache
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 MAPPING_CACHE_FILE = DATA_DIR / "pypi_conda_map.json"
@@ -67,6 +72,23 @@ def search_repodata_fallback(pypi_name: str) -> str | None:
             
     return None
 
+def search_metadata_api(pypi_name: str) -> str | None:
+    """Tier 2: ``conda_forge_metadata.autotick_bot.map_pypi_to_conda``.
+
+    Handles both renamed and identity-mapped packages. The bulk
+    ``get_pypi_name_mapping()`` table omits identity mappings (where conda and
+    PyPI names match), so a local cache miss alone does not mean the package
+    is unmapped.
+    """
+    if map_pypi_to_conda is None:
+        return None
+    try:
+        result = map_pypi_to_conda(normalize_name(pypi_name))
+    except Exception:
+        return None
+    return result or None
+
+
 def resolve_name(pypi_name: str) -> dict:
     """
     Resolves a PyPI package name to a conda-forge name using a tiered strategy.
@@ -81,7 +103,17 @@ def resolve_name(pypi_name: str) -> dict:
             "success": True,
         }
 
-    # Tier 2: Repodata Fallback
+    # Tier 2: conda-forge-metadata API (identity-aware)
+    conda_name = search_metadata_api(pypi_name)
+    if conda_name:
+        return {
+            "pypi_name": pypi_name,
+            "conda_name": conda_name,
+            "source": "metadata-api",
+            "success": True,
+        }
+
+    # Tier 3: Repodata Fallback
     conda_name = search_repodata_fallback(pypi_name)
     if conda_name:
         # Let's cache this result for next time
@@ -114,12 +146,14 @@ def main():
     
     args = parser.parse_args()
 
-    # First, ensure the cache exists. If not, prompt the user to create it.
-    if not MAPPING_CACHE_FILE.exists():
+    # The cache is optional now — when missing, fall through to the metadata
+    # API and repodata tiers. Only abort if no resolver tier is available.
+    if not MAPPING_CACHE_FILE.exists() and map_pypi_to_conda is None:
         print(json.dumps({
             "success": False,
-            "error": "Mapping cache not found.",
-            "fix": "Please run 'pixi run update-mapping-cache' to build the local cache."
+            "error": "Mapping cache not found and conda-forge-metadata is unavailable.",
+            "fix": "Run 'pixi run update-mapping-cache' to build the local cache, "
+                   "or install 'conda-forge-metadata' in this env.",
         }))
         sys.exit(1)
 
