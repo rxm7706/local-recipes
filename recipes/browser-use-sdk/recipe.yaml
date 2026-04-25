@@ -1,0 +1,47 @@
+schema_version: 1
+
+context:
+  name: "browser-use-sdk"
+  version: "3.4.3"
+  python_min: "3.10"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/browser_use_sdk-${{ version }}.tar.gz
+  sha256: bae269c2a28f72e5ced1b97f1ebc7e94bfc018ceb2ce63b5a99838440ca4e2d1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.24
+    - pydantic >=2.0
+
+tests:
+  - python:
+      imports:
+        - browser_use_sdk
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Python SDK for the Browser Use cloud API
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/browser-use-sdk/
+  repository: https://github.com/browser-use/sdk
+
+extra:
+  recipe-maintainers:
+    - rxm7706
