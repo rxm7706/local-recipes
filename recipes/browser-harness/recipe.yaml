@@ -1,0 +1,41 @@
+schema_version: 1
+
+context:
+  version: 0.0.1
+
+package:
+  name: browser-harness
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/browser-harness/browser_harness-${{ version }}.tar.gz
+  sha256: 36e88539f40146b41ba9e279db9a47aacca15a861355163de1b8c1b1ff11afb2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=69
+    - pip
+  run:
+    - python >=3.9
+
+tests:
+  - python:
+      imports:
+        - browser_harness
+      pip_check: true
+
+about:
+  summary: Name reserved for future use.
+  license: Unlicense
+  license_file: PLEASE_ADD_LICENSE_FILE
+  homepage: https://pypi.org/project/browser-harness/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,100 @@
+schema_version: 1
+
+context:
+  python_min: "3.11"
+  version: 0.12.6
+
+package:
+  name: browser-use
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/browser-use/browser_use-${{ version }}.tar.gz
+  sha256: 2c920f8120741334ed630e9ddc360bb5e20c40449ea2adfa81dc8e7d9f5b4d94
+
+build:
+  number: 0
+  noarch: python
+  #skip: py>=400 or match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - browser-use = browser_use.skill_cli.main:main
+      - browseruse = browser_use.skill_cli.main:main
+      - bu = browser_use.skill_cli.main:main
+      - browser = browser_use.skill_cli.main:main
+      - browser-use-tui = browser_use.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - aiohttp ==3.13.3
+    - anyio ==4.12.1
+    - bubus ==1.5.6  # NOTE TBD 2
+    - click ==8.3.1
+    - inquirerpy ==0.3.4
+    - rich ==14.3.1
+    - google-api-core ==2.29.0
+    - httpx ==0.28.1
+    - posthog ==7.7.0
+    - psutil ==7.2.2
+    - pydantic ==2.12.5
+    - if: osx
+      then: pyobjc-core ==12.1  # NOTE TBD
+    - python-dotenv ==1.2.1
+    - requests ==2.32.5
+    - if: not osx
+      then: screeninfo ==0.8.1
+    - typing_extensions ==4.15.0
+    - uuid7 ==0.1.0  # NOTE TBD 1
+    - google-genai ==1.65.0
+    - openai ==2.16.0
+    - anthropic ==0.76.0
+    - groq ==1.0.0
+    - ollama >=0.6.1
+    - google-api-python-client >=2.188.0
+    - google-auth >=2.48.0
+    - google-auth-oauthlib >=1.2.4
+    - mcp ==1.26.0
+    - pypdf ==6.9.1
+    - reportlab ==4.4.9
+    - cdp-use ==1.4.5  # NOTE TBD
+    - pyotp ==2.9.0
+    - pillow ==12.1.1
+    - cloudpickle ==3.1.2
+    - markdownify ==1.2.2
+    - python-docx ==1.2.0
+    - browser-use-sdk >=2.0.15  # NOTE TBD
+    - textual >=7.4.0
+
+tests:
+  - python:
+      imports:
+        - browser_use
+      pip_check: false
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - browser-use --help
+      - browseruse --help
+      - bu --help
+      - browser --help
+      - browser-use-tui --help
+
+about:
+  summary: Make websites accessible for AI agents
+  license: MIT
+  license_file: LICENSE
+  homepage: https://browser-use.com
+  documentation: https://docs.browser-use.com
+
+extra:
+  recipe-maintainers:
+    - rxm7706

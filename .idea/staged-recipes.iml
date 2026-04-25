@@ -3,6 +3,8 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.pixi" />
+      <excludeFolder url="file://$MODULE_DIR$/.private" />
+      <excludeFolder url="file://$MODULE_DIR$/recipes/output" />
     </content>
     <orderEntry type="jdk" jdkName="public" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
