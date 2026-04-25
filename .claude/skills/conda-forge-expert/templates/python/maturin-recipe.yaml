@@ -20,8 +20,10 @@ build:
     # Bundle third-party licenses from Cargo dependencies
     - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  skip:
-    - py < 39
+  # Conda-forge floor is Python 3.10 (Aug 2025). Add a skip only if the
+  # upstream package or maturin requires a higher Python floor.
+  # skip:
+  #   - py < 311
 
 requirements:
   build:

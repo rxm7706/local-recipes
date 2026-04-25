@@ -32,7 +32,10 @@ cache:
       - cmake --install build --prefix ${{ PREFIX }}
 
 outputs:
-  # C/C++ library output
+  # C/C++ library output — files come from the cache step above; no per-output
+  # script needed. (rattler-build v0.63+: per-output scripts, when used, must
+  # be declared explicitly via `script: <name>` — auto-discovery of build.sh
+  # was removed.)
   - package:
       name: lib${{ name }}
     build:
@@ -53,6 +56,8 @@ outputs:
   - package:
       name: ${{ name }}
     build:
+      # Inline script — discovery of build.sh/build.bat is no longer automatic
+      # for outputs as of rattler-build v0.63. Declare scripts explicitly.
       script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
     requirements:
       build:

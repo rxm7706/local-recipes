@@ -6,7 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/.private" />
       <excludeFolder url="file://$MODULE_DIR$/recipes/output" />
     </content>
-    <orderEntry type="jdk" jdkName="public" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="local-recipes" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

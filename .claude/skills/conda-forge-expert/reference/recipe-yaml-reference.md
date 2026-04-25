@@ -191,11 +191,13 @@ build:
 
 ### Skip Conditions
 
+The conda-forge build matrix already starts at Python 3.10 (3.9 dropped Aug 2025), so `py < 310` is a no-op. Only set a `py < ...` skip if upstream requires a higher floor.
+
 ```yaml
 build:
   skip:
     - win                          # Skip on Windows
-    - py < 39                      # Skip Python < 3.9
+    - py < 311                     # Upstream requires Python >= 3.11
     - linux and aarch64            # Skip Linux ARM64
 ```
 
@@ -771,13 +773,24 @@ No recipe changes are needed unless you hardcode a compiler version. The `${{ co
 conda-forge raised the macOS minimum to **11.0** in February 2026.
 
 - Do **not** set `MACOSX_DEPLOYMENT_TARGET=10.x` in build scripts.
-- The SDK directory moved to `$PIXI_PROJECT_ROOT/.pixi/macOS-SDKs` (set via `OSX_SDK_DIR` env var in the pixi osx task).
+- The SDK directory moved to **`/opt/conda-sdks`** in conda-smithy 3.54.0 (Dec 2025) — replacing the previous system SDK location. Local builders must export `OSX_SDK_DIR=/opt/conda-sdks` (or the project-local equivalent). See the conda-forge macOS SDK news entry, Dec 18, 2025.
 - If your package must express a macOS minimum, use `run_constrained`:
   ```yaml
   requirements:
     run_constrained:
       - __osx >=11.0
   ```
+
+### macOS Accelerate BLAS/LAPACK (July 2025)
+
+A shim library now provides Accelerate Framework support on macOS 13.3+ as an alternative BLAS/LAPACK provider:
+
+```bash
+# Switch a single environment to Accelerate
+conda install libblas=*=*_newaccelerate
+```
+
+Recipes that depend on `libblas`, `libcblas`, or `liblapack` automatically work with the new provider; no recipe changes are needed. Source: conda-forge news, Jul 31, 2025.
 
 ### CUDA Matrix
 
@@ -792,11 +805,55 @@ conda-forge raised the macOS minimum to **11.0** in February 2026.
 | Dropped | 3.9 (Aug 2025), 3.8 (Feb 2024), PyPy (Aug 2024) |
 | `python_min` | `"3.10"` — global CFEP-25 floor |
 
-### rattler-build Environment Isolation
+### rattler-build Environment Isolation (v0.62.0 — Apr 2026)
 
-rattler-build v0.62+ (Apr 2026) defaults to `--env-isolation strict`. Build scripts that inherit system environment variables will fail. Solutions:
-1. Declare required env vars in `build.env` in the recipe.
-2. Pass `--env-isolation conda-build` for backward compatibility (transitional).
+`rattler-build` now cleans environment variables before executing the build script and exposes a three-mode `--env-isolation` flag:
+
+| Mode | Behavior |
+|------|----------|
+| `strict` | **Default.** Remaps `$HOME` to the build working directory; only allow-listed env vars pass through. |
+| `conda-build` | Matches conda-build's looser semantics; use during migration. |
+| `none` | Inherits the full host environment (debug only — never ship). |
+
+To make a recipe portable across both modes, declare every variable the build script needs in `build.env`:
+
+```yaml
+build:
+  script:
+    env:
+      MY_BUILD_FLAG: "1"          # exposed inside the script
+      PIP_NO_INDEX: "1"
+```
+
+### rattler-build Multi-Output Script Discovery (v0.63.0 — Apr 22, 2026)
+
+**Breaking change.** Multi-output recipes no longer auto-discover `build.sh`/`build.bat` files for individual outputs — each output must declare its build script explicitly:
+
+```yaml
+outputs:
+  - package:
+      name: libfoo
+    build:
+      script: build_lib   # → run scripts/build_lib.sh / scripts/build_lib.bat
+  - package:
+      name: foo
+    build:
+      script: build_py
+```
+
+Top-level (single-output) recipes still discover `build.sh`/`build.bat` automatically. Source: [rattler-build v0.63.0 release notes](https://github.com/prefix-dev/rattler-build/releases).
+
+### rattler-build Debug Subcommand (v0.61.0 — Mar 2026)
+
+The `--debug` flag was **removed** from build/test/render subcommands. Use the dedicated `rattler-build debug` subcommand instead:
+
+```bash
+# Old (no longer works on v0.61+):
+# rattler-build build -r recipe.yaml --debug
+
+# New:
+rattler-build debug -r recipe.yaml
+```
 
 ## References
 

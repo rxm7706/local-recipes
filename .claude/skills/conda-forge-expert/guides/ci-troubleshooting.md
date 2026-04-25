@@ -39,7 +39,7 @@ Comprehensive guide for diagnosing and fixing conda-forge CI build failures.
 **Stop after 5 fix-rebuild cycles** without a green build. At that point:
 1. Call `analyze_build_failure` with the full error log
 2. Check if a similar package on conda-forge solves the same problem (`gh search repos`)
-3. Ask in `#help-c-cpp` or `#help-python` on the conda-forge Gitter before continuing
+3. Ask in `#help-c-cpp` or `#help-python` on the conda-forge Zulip (`conda-forge.zulipchat.com`) before continuing
 
 ### Pre-Submit Quality Gate
 
@@ -72,14 +72,16 @@ gh run watch
 
 ### CI Platform Assignment
 
-**Important**: conda-forge uses **Azure Pipelines** for all package builds. GitHub Actions handles only rerendering and automerge — do not expect build artifacts from GitHub Actions jobs.
+conda-forge defaults to **Azure Pipelines** for builds. As of **March 8, 2026** GitHub Actions is also available as an opt-in build provider for `linux_64` (requires conda-smithy ≥ 3.57.1 and a `provider:` entry in `conda-forge.yml`). Windows and macOS builds remain on Azure. GitHub Actions still handles rerendering and automerge for every feedstock.
 
-| Platform | CI Provider | Build limit |
-|----------|-------------|------------|
-| Linux x86_64, aarch64, ppc64le | Azure Pipelines | 6 hours |
-| macOS x86_64, arm64 | Azure Pipelines | 6 hours |
-| Windows x86_64 | Azure Pipelines | 6 hours |
-| Rerendering / automerge | GitHub Actions | N/A |
+| Platform | Default CI Provider | Build limit | Notes |
+|----------|---------------------|------------|-------|
+| Linux x86_64 | Azure Pipelines (or GitHub Actions, opt-in) | 6 hours | GA opt-in via `provider: { linux_64: github_actions }` |
+| Linux aarch64, ppc64le | Azure Pipelines (emulated) or Cirun (native) | 6 hours | |
+| macOS x86_64, arm64 | Azure Pipelines | 6 hours | |
+| Windows x86_64 | Azure Pipelines | 6 hours | |
+| Windows ARM64 | Azure Pipelines | 6 hours | Python 3.14 cross-builds |
+| Rerendering / automerge | GitHub Actions | N/A | Always |
 
 ### Common Status Indicators
 
@@ -639,5 +641,7 @@ https://github.com/conda-forge/conda-forge.github.io/issues
 
 ### Community
 
-- [Gitter](https://gitter.im/conda-forge/conda-forge.github.io)
-- [Discourse](https://conda.discourse.group/)
+- [Zulip](https://conda-forge.zulipchat.com/) — primary real-time channel (replaces Gitter)
+- [Discourse](https://conda.discourse.group/) — read-only archive since Oct 2025; do not post new threads
+- [conda-forge Blog](https://conda-forge.org/news/) — announcements and migration notices
+- [Status Dashboard](https://conda-forge.org/status/) — active migrations, infrastructure incidents
