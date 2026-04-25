@@ -21,8 +21,8 @@ python = "3.12.*"
 pixi = ">=0.67.2"
 gh = ">=2.91.0"
 nodejs = ">=20.0.0,<25.0"  # Pin to LTS version
-bmad-method = ">=6.3.0"
-spec-kit = ">=0.8.0"
+bmad-method = ">=6.4.0"
+spec-kit = ">=0.8.1"
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
 [feature.build.dependencies]
