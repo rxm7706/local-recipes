@@ -114,8 +114,8 @@ description = "Sync with upstream conda-forge/staged-recipes and rebase local co
 cmd = "bash scripts/sync-upstream.sh"
 
 [feature.local-recipes.tasks.submit-pr]
-description = "Submit a recipe PR to conda-forge/staged-recipes"
-cmd = "bash scripts/submit_pr.sh"
+description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/submit_pr.py"
 
 [feature.local-recipes.tasks.health-check]
 description = "Run a health check on the local development environment"
@@ -152,6 +152,53 @@ cmd = "pytest .claude/skills/conda-forge-expert/tests"
 [feature.local-recipes.tasks.test-coverage]
 description = "Run the conda-forge-expert test suite with coverage report"
 cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not slow' --cov=.claude/skills/conda-forge-expert/scripts --cov-report=term-missing"
+
+# ── conda-forge-expert script wrappers ───────────────────────────────────────
+# Every conda-forge-expert/scripts/*.py that has a stable user-facing CLI gets
+# a pixi-task alias here. Pass extra args through with `--`:
+#     pixi run -e local-recipes validate -- recipes/numpy
+# Scripts deliberately without a task: recipe_editor.py (JSON args don't fit
+# task metaphor), test-skill.py (internal smoke).
+
+[feature.local-recipes.tasks.validate]
+description = "Validate a recipe against conda-forge schema and best practices"
+cmd = "python .claude/skills/conda-forge-expert/scripts/validate_recipe.py"
+
+[feature.local-recipes.tasks.check-deps]
+description = "Check that all recipe dependencies resolve on conda-forge"
+cmd = "python .claude/skills/conda-forge-expert/scripts/dependency-checker.py"
+
+[feature.local-recipes.tasks.resolve-name]
+description = "Resolve a PyPI package name to its conda-forge equivalent"
+cmd = "python .claude/skills/conda-forge-expert/scripts/name_resolver.py"
+
+[feature.local-recipes.tasks.generate-recipe]
+description = "Generate a new recipe from PyPI / template / GitHub"
+cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py"
+
+[feature.local-recipes.tasks.autotick-github]
+description = "Update a recipe to the latest GitHub release (use --dry-run first)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/github_updater.py"
+
+[feature.local-recipes.tasks.version-check]
+description = "Check the latest GitHub release version for a recipe (read-only)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/github_version_checker.py"
+
+[feature.local-recipes.tasks.migrate]
+description = "Migrate a meta.yaml recipe to v1 recipe.yaml (use --dry-run first)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/feedstock-migrator.py"
+
+[feature.local-recipes.tasks.analyze-failure]
+description = "Analyze a build error log against known failure patterns"
+cmd = "python .claude/skills/conda-forge-expert/scripts/failure_analyzer.py"
+
+[feature.local-recipes.tasks.license-check]
+description = "Validate SPDX license identifier and license_file presence"
+cmd = "python .claude/skills/conda-forge-expert/scripts/license-checker.py"
+
+[feature.local-recipes.tasks.test-recipes]
+description = "Run test-recipes.py — random / targeted recipe smoke validation"
+cmd = "python test-recipes.py"
 
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]

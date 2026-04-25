@@ -25,7 +25,7 @@ Note: Do not mix `meta.yaml` and `recipe.yaml` recipes in the same build run. Th
   - Cross-platform dispatcher: `build-locally.py`
 - Global pinning/variants: `conda_build_config.yaml` and `.ci_support/<platform>.yaml`
 - Bootstrap env spec: `environment.yaml`
-- Optional/Present but not primary: `pixi.toml`/`pixi.lock` (no explicit integration in scripts) — see TODO.
+- Primary task runner: `pixi.toml` / `pixi.lock` — see [Pixi tasks](#pixi-tasks) below for the full list.
 
 ## Requirements
 - A supported OS (Windows, Linux, or macOS). Windows is the fastest path here.
@@ -217,6 +217,54 @@ On-demand CI workflows for all platforms (manual trigger only to preserve quota)
 
 For detailed documentation, see [Conda-Forge Expert Skills Guide](recipes/sample/docs/conda-forge-expert-skills.md).
 
+## Pixi tasks
+
+The full task surface is defined in `pixi.toml` and runs in the `local-recipes`
+environment. Pass extra args after `--`:
+
+```bash
+pixi run -e local-recipes <task> -- [args]
+```
+
+### Build tasks (per-platform `build-locally.py` wrappers)
+
+| Task | What it does |
+|------|--------------|
+| `build-linux` | Build all `linux-*` configs (Docker on the host) |
+| `build-osx` | Build all `osx-*` configs (native; macOS only) |
+| `build-win` | Build all `win-*` configs (native; Windows only) |
+
+### Recipe tooling (conda-forge-expert wrappers)
+
+| Task | Underlying script |
+|------|-------------------|
+| `validate` | `validate_recipe.py` — schema + license + checksum + conda-smithy lint |
+| `lint-optimize` | `recipe_optimizer.py` — best-practice linter (DEP/SEC/MAINT/STD codes) |
+| `check-deps` | `dependency-checker.py` — verify deps resolve on conda-forge |
+| `scan-vulnerabilities` | `vulnerability_scanner.py` — OSV.dev / local-DB CVE scan |
+| `license-check` | `license-checker.py` — SPDX + license_file validation |
+| `analyze-failure` | `failure_analyzer.py` — match a build error log to known patterns |
+| `migrate` | `feedstock-migrator.py` — meta.yaml → recipe.yaml v1 |
+| `generate-recipe` | `recipe-generator.py` — scaffold from PyPI / template / GitHub |
+| `resolve-name` | `name_resolver.py` — PyPI name → conda-forge name |
+| `version-check` | `github_version_checker.py` — read-only latest-release lookup |
+| `autotick` | `recipe_updater.py` — PyPI autotick |
+| `autotick-github` | `github_updater.py` — GitHub-release autotick |
+
+### Maintenance & infrastructure
+
+| Task | What it does |
+|------|--------------|
+| `health-check` | Full diagnostic on the dev env (Docker, gh, OSV API, scripts) |
+| `update-cve-db` | Refresh local OSV CVE database |
+| `update-mapping-cache` | Refresh PyPI ↔ conda name mapping cache |
+| `sync-upstream` | Rebase fork onto `conda-forge/staged-recipes` |
+| `submit-pr` | Open a PR against `conda-forge/staged-recipes` (use `--dry-run` first) |
+| `test-recipes` | Run `test-recipes.py` (random / targeted recipe smoke validation) |
+| `test` | Run the conda-forge-expert test suite (fast subset, offline) |
+| `test-all` | Run the full test suite incl. live-network tests |
+| `test-coverage` | Test suite with coverage report |
+
 ## Known limitations and tips
 - Do not mix `meta.yaml` and `recipe.yaml` recipes in a single run.
 - Use `noarch: python` only for pure-Python packages that do not need compiled artifacts and don’t have OS-conditional install logic.
@@ -229,7 +277,6 @@ For detailed documentation, see [Conda-Forge Expert Skills Guide](recipes/sample
 This repository is licensed under the terms found in `LICENSE` (and/or `LICENSE.txt`). Refer to those files for details.
 
 ## TODOs
-- Document how (or if) `pixi.toml`/`pixi.lock` are intended to be used in this workspace. Currently, the provided scripts do not reference Pixi.
 - Add short contributor guidelines for adding new recipes and expected review checklist.
 - If CI is enabled for this repo, add a section describing how CI picks up and builds recipes (e.g., Azure Pipelines config in `azure-pipelines.yml`).
-- Add examples for Linux/macOS runners if/when `.scripts/run_docker_build.sh` and `.scripts/run_osx_build.sh` are present in this repo.
+- Add examples for Linux/macOS runners using `.scripts/run_docker_build.sh` and `.scripts/run_osx_build.sh`.
