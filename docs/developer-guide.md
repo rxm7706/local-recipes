@@ -1,4 +1,4 @@
-# Conda-Forge Expert Skills Documentation
+# Local-Recipes Developer Guide
 
 [![Test All Platforms](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml)
 [![Test Linux](https://github.com/rxm7706/local-recipes/actions/workflows/test-linux.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-linux.yml)
@@ -183,9 +183,6 @@ All workflows run **on-demand only** to preserve GitHub Actions quota. No automa
 #### Via GitHub CLI
 
 ```bash
-# Install GitHub CLI if needed
-# https://cli.github.com/
-
 # Test all platforms with specific recipes
 gh workflow run test-all.yml -f recipes="pandas,numpy" -f platforms="all"
 
@@ -201,56 +198,6 @@ gh workflow run test-windows.yml -f recipes="requests" -f python_version="3.11"
 # Test all recipes (first 20) on Linux
 gh workflow run test-linux.yml -f recipes="all" -f architecture="linux-64"
 ```
-
-### Workflow Inputs Reference
-
-#### test-all.yml
-
-| Input | Options | Default | Description |
-|-------|---------|---------|-------------|
-| `recipes` | comma-separated or "all" | (auto-detect) | Recipes to build |
-| `platforms` | all, linux, windows, macos, combinations | all | Platforms to build |
-| `linux_version` | alma9, alma8, cos7 | alma9 | Linux base image |
-| `macos_deployment_target` | default, 10.13-14.0 | default | macOS minimum version |
-| `cuda_version` | (empty), 12.6, 12.0, 11.8 | (empty) | CUDA version |
-| `python_version` | 3.10, 3.11, 3.12, 3.13 | 3.12 | Python version |
-
-#### test-linux.yml
-
-| Input | Options | Default | Description |
-|-------|---------|---------|-------------|
-| `recipes` | comma-separated or "all" | (auto-detect) | Recipes to build |
-| `linux_version` | alma9, alma8, cos7 | alma9 | Linux base image |
-| `architecture` | linux-64, linux-aarch64, both | linux-64 | Target architecture |
-| `cuda_version` | (empty), 12.6, 12.0, 11.8 | (empty) | CUDA version |
-| `python_version` | 3.10-3.13 | 3.12 | Python version |
-
-#### test-windows.yml
-
-| Input | Options | Default | Description |
-|-------|---------|---------|-------------|
-| `recipes` | comma-separated or "all" | (auto-detect) | Recipes to build |
-| `python_version` | 3.10-3.13 | 3.12 | Python version |
-| `vc_version` | 14 | 14 | Visual C++ version |
-
-#### test-macos.yml
-
-| Input | Options | Default | Description |
-|-------|---------|---------|-------------|
-| `recipes` | comma-separated or "all" | (auto-detect) | Recipes to build |
-| `osx_64_deployment_target` | 10.13-14.0 | 10.13 | x86_64 minimum macOS |
-| `osx_arm64_deployment_target` | 11.0-14.0 | 11.0 | ARM64 minimum macOS |
-| `osx_64_sdk_version` | (empty) or version | (empty) | Custom SDK for x86_64 |
-| `osx_arm64_sdk_version` | (empty) or version | (empty) | Custom SDK for ARM64 |
-| `platforms` | both, osx-64, osx-arm64 | both | Target platform(s) |
-
-### Build Artifacts
-
-Successful builds upload packages as workflow artifacts:
-
-- Retention: 7 days
-- Location: Workflow run → Artifacts section
-- Naming: `<platform>-<recipe-name>` (e.g., `linux-64-pandas`)
 
 ---
 
@@ -368,18 +315,6 @@ extra:
 | Speed | Slower | Faster |
 | Format | Legacy | Modern (recommended) |
 
-### Converting meta.yaml to recipe.yaml
-
-Use the `conda-recipe-manager` tool:
-
-```bash
-# Install
-pip install conda-recipe-manager
-
-# Convert
-conda-recipe-manager convert recipes/example/meta.yaml
-```
-
 ---
 
 ## Platform Support
@@ -395,39 +330,13 @@ conda-recipe-manager convert recipes/example/meta.yaml
 | osx-64 | Native | N/A | x86_64 (Intel) |
 | osx-arm64 | Native | N/A | ARM64 (Apple Silicon) |
 
-### Linux Base Images
-
-| Image | glibc | Use Case |
-|-------|-------|----------|
-| `alma9` | 2.34 | Default, modern packages |
-| `alma8` | 2.28 | Broader compatibility |
-| `cos7` | 2.17 | Maximum compatibility, CUDA |
-
-### macOS Deployment Targets
-
-| Target | Minimum macOS | Notes |
-|--------|---------------|-------|
-| 10.13 | High Sierra | Default for x86_64 |
-| 11.0 | Big Sur | Default for ARM64, minimum for Apple Silicon |
-| 12.0 | Monterey | |
-| 13.0 | Ventura | |
-| 14.0 | Sonoma | |
-
-### CUDA Support
-
-CUDA builds are triggered when:
-1. Recipe contains "cuda" in `meta.yaml` or `recipe.yaml`
-2. `cuda_version` input is explicitly set
-
-Available CUDA versions: 12.6, 12.0, 11.8
-
 ---
 
 ## Configuration Reference
 
 ### conda_build_config.yaml
 
-Global pinning configuration derived from [conda-forge-pinning](https://github.com/conda-forge/conda-forge-pinning-feedstock).
+Global pinning configuration derived from conda-forge-pinning.
 
 Key settings:
 
@@ -475,8 +384,6 @@ Platform-specific variant configurations:
 | `linux` | Linux builds via Docker | Python only |
 | `win` | Windows builds | Full build stack |
 | `osx` | macOS builds | Full build stack |
-| `grayskull` | Generate recipes from PyPI | grayskull |
-| `conda-smithy` | Lint recipes | conda-smithy |
 | `local-recipes` | Full development | All tools |
 
 ---
@@ -504,31 +411,6 @@ This occurs when the project is on a Windows filesystem. Solutions:
 2. **Use Docker** for `meta.yaml` recipes (more reliable)
 3. **Clone to WSL filesystem**: `git clone ... ~/local-recipes`
 
-#### "No recipes to build"
-
-For manual workflow triggers, you must specify recipes:
-
-```bash
-gh workflow run test-linux.yml -f recipes="pandas"
-```
-
-#### Docker permission denied
-
-```bash
-# Add user to docker group
-sudo usermod -aG docker $USER
-
-# Log out and back in, then test
-docker run hello-world
-```
-
-#### macOS SDK download fails
-
-The workflow falls back to the system SDK. For specific SDK versions:
-
-1. Download from [MacOSX-SDKs](https://github.com/phracker/MacOSX-SDKs)
-2. Extract to `~/.sdk/` or specify via `CONDA_BUILD_SYSROOT`
-
 ### Build Failures
 
 #### Dependency resolution fails
@@ -549,14 +431,6 @@ conda-build recipe/ --no-test
 
 # Run tests separately
 conda-build recipe/ --test
-```
-
-#### Cross-compilation issues (macOS ARM64 on Intel)
-
-```yaml
-# In conda_build_config.yaml
-build_platform:
-  osx_arm64: osx_64  # Build ARM64 packages on Intel Mac
 ```
 
 #### Go CGO builds failing on Windows with "/Werror" error
@@ -595,57 +469,6 @@ requirements:
         - m2-base                          # MSYS2 base utilities
 ```
 
-**Why this works**: MinGW-w64 provides a GCC-compatible compiler toolchain on Windows that understands the flags Go CGO expects, unlike MSVC which uses different flag syntax.
-
-**Example Recipes**: See `recipes/writefreely`, `recipes/git-hound`, or `recipes/mailpit` for complete working examples.
-
-### Testing macOS Builds Without macOS Hardware
-
-If you're building from Windows/WSL or Linux and don't have access to macOS hardware, you can use GitHub Actions to test macOS builds remotely.
-
-#### Method 1: Via GitHub Web UI
-
-1. **Push your changes** to your repository
-2. **Navigate to Actions tab**: `https://github.com/<user>/<repo>/actions`
-3. **Select "Test macOS Builds"** workflow from the left sidebar
-4. **Click "Run workflow"** button (top right)
-5. **Configure options**:
-   - **Recipes to build**: Enter recipe name (e.g., `writefreely`)
-   - **Platforms to build**: Select `both` (builds osx-64 + osx-arm64)
-   - **macOS x86_64 deployment target**: Keep default `10.13` or choose newer
-   - **macOS ARM64 deployment target**: Keep default `11.0` or choose newer
-6. **Click "Run workflow"** to start the build
-
-#### Method 2: Via GitHub CLI
-
-```bash
-# After pushing your changes
-gh workflow run test-macos.yml \
-  -f recipes="writefreely" \
-  -f platforms=both \
-  -f osx_64_deployment_target=10.13 \
-  -f osx_arm64_deployment_target=11.0
-
-# Watch the workflow run
-gh run watch
-```
-
-#### Expected Results
-
-When the workflow completes successfully, you'll get:
-- ✅ **osx-64 package**: Built on macos-13 (Intel Mac runner)
-- ✅ **osx-arm64 package**: Built on macos-14 (Apple Silicon runner)
-- Both packages uploaded as downloadable artifacts (retained for 7 days)
-
-#### macOS Build Configuration Notes
-
-The macOS config files (`.ci_support/osx64.yaml` and `.ci_support/osxarm64.yaml`) automatically use:
-- **Compiler**: `clang` for C/C++ (macOS's native compiler)
-- **CGO support**: Works with standard clang compiler (no special MinGW-w64 needed like Windows)
-- **Platform selectors**: Use `# [unix]` which applies to both Linux and macOS
-
-**Example**: Go packages with CGO work on macOS using `# [unix]` selector for standard `compiler('c')`, while Windows requires the MinGW-w64 variant.
-
 ---
 
 ## Best Practices
@@ -678,181 +501,3 @@ The macOS config files (`.ci_support/osx64.yaml` and `.ci_support/osxarm64.yaml`
 2. **Clear messages** - Describe what changed and why
 3. **Skip CI** - Use `[skip ci]` for docs-only changes
 4. **Branch per recipe** - Isolate work for PRs
-
----
-
-## Additional Resources
-
-- [conda-forge Documentation](https://conda-forge.org/docs/)
-- [rattler-build Documentation](https://prefix-dev.github.io/rattler-build/)
-- [conda-build Documentation](https://docs.conda.io/projects/conda-build/)
-- [CFEP-25: Minimum Python Version](https://github.com/conda-forge/cfep/blob/main/cfep-25.md)
-- [conda-forge-pinning](https://github.com/conda-forge/conda-forge-pinning-feedstock)
-
----
-
-## Changelog
-
-### 2025-12-24
-
-#### Initial Release
-- Initial documentation
-- Added local testing script (`test-recipes.py`)
-- Created GitHub Actions workflows for all platforms
-- Added WSL support for Linux builds on Windows
-- Configured on-demand-only CI to preserve quotas
-
-#### Go CGO Support & macOS CI Testing
-- **Added**: Comprehensive Go CGO Windows build troubleshooting
-  - Documented MinGW-w64 compiler requirement for Windows CGO builds
-  - Explained MSVC `/Werror` error and solution
-  - Added platform-specific compiler selector patterns
-- **Added**: macOS CI testing instructions for non-Mac users
-  - GitHub Actions workflow dispatch via web UI
-  - GitHub CLI commands for triggering macOS builds
-  - Expected results and artifact retention information
-
-# Conda-Forge Expert Skill
-
-A comprehensive Claude Code skill for generating, auditing, and maintaining conda-forge recipes.
-
-## Overview
-
-The Conda-Forge Expert skill transforms Claude into a Senior Conda-Forge Maintainer with knowledge derived from analyzing 1,247+ real-world recipes and 10,000+ merged staged-recipes PRs.
-
-## Key Features
-
-- **Recipe Generation**: Bootstrap new recipes using best practices
-- **Format Support**: Handles both legacy (meta.yaml) and modern (recipe.yaml) formats
-- **Linting**: Integration with conda-smithy recipe-lint
-- **CI Troubleshooting**: Debug Azure Pipelines and GitHub Actions failures
-- **PyPI-Conda Name Mapping**: Automated translation of package names
-- **Modern Tooling**: Native support for rattler-build and pixi
-
-## File Structure
-
-```
-.claude/skills/conda-forge-expert/
-├── Skill.md                    # Main skill definition (~2800 lines)
-└── pypi_conda_mappings/        # Package name mapping system
-    ├── custom.yaml             # User-defined overrides (TRACKED)
-    ├── different_names.json    # Packages where names differ (TRACKED)
-    ├── stats.json              # Sync metadata (TRACKED)
-    ├── unified.json            # All mappings (CACHE - gitignored)
-    ├── by_pypi_name.json       # PyPI lookup index (CACHE - gitignored)
-    └── by_conda_name.json      # Conda lookup index (CACHE - gitignored)
-```
-
-## PyPI-Conda Mapping System
-
-### Design Philosophy
-
-To reduce repository size, only essential files are tracked in git:
-- **custom.yaml** (~4KB): User-defined overrides
-- **different_names.json** (~148KB): Only packages where names actually differ
-- **stats.json** (~4KB): Sync metadata and cache TTL
-
-Large index files (~8MB total) are generated locally and gitignored.
-
-### Caching Behavior
-
-- **TTL**: 7 days (configurable)
-- **Auto-fetch**: If cache is expired/missing, fetches from parselmouth
-- **Warning**: User sees a message when network fetch occurs
-- **Sources**: parselmouth (primary), cf-graph (secondary), grayskull (tertiary)
-
-### CLI Commands
-
-```bash
-# Check cache status
-python scripts/sync_pypi_mappings.py --check-cache
-
-# Normal sync (respects TTL)
-python scripts/sync_pypi_mappings.py
-
-# Force refresh
-python scripts/sync_pypi_mappings.py --force-refresh
-
-# Custom TTL (e.g., 3 days)
-python scripts/sync_pypi_mappings.py --ttl-days 3
-```
-
-### Programmatic Usage
-
-```python
-import sys
-sys.path.insert(0, 'scripts')
-from sync_pypi_mappings import get_conda_name
-
-# Automatic lookup with caching
-conda_name = get_conda_name("tree-sitter")  # Returns "tree_sitter"
-conda_name = get_conda_name("docker")       # Returns "docker-py"
-conda_name = get_conda_name("requests")     # Returns "requests" (same)
-```
-
-## GitHub Actions Integration
-
-### Automated Sync Workflow
-
-The `sync-pypi-mappings.yml` workflow:
-- Runs weekly (Sunday midnight UTC)
-- Triggers on custom.yaml changes
-- Can be manually dispatched
-- Creates PRs for mapping updates
-
-```bash
-# Manual trigger
-gh workflow run sync-pypi-mappings.yml
-```
-
-### CI Dependencies
-
-Uses pixi for dependency management:
-- No pip installs in CI
-- Uses `prefix-dev/setup-pixi` action
-- Global install of python and pyyaml
-
-## Usage Patterns
-
-### When Generating Recipes
-
-1. **Check package name mapping** before using dependencies
-2. **Run lint** before building: `conda-smithy recipe-lint recipes/<pkg>`
-3. **Test locally**: `python build-locally.py`
-4. **Verify CFEP-25 compliance** for noarch:python packages
-
-### Common Name Mappings
-
-| PyPI Name | conda-forge Name | Notes |
-|-----------|------------------|-------|
-| `tree-sitter` | `tree_sitter` | Underscore vs hyphen |
-| `docker` | `docker-py` | Completely different |
-| `torch` | `pytorch` | Different name |
-| `opencv-python` | `opencv` | Simplified |
-| `tables` | `pytables` | Different name |
-
-### Adding Custom Mappings
-
-Edit `pypi_conda_mappings/custom.yaml`:
-
-```yaml
-my-package:
-  conda_name: my_package
-  import_name: my_package
-  reason: "Custom build with patches"
-```
-
-## Best Practices
-
-1. **Always lint before building**: Catches simple errors early
-2. **Use modern recipe.yaml format** for new packages
-3. **Check name mappings** for all PyPI dependencies
-4. **Keep custom.yaml minimal**: Only add when upstream sources are wrong
-5. **Run build-locally.py** before submitting to staged-recipes
-
-## References
-
-- [Skill.md](/path/to/.claude/skills/conda-forge-expert/Skill.md) - Full skill definition
-- [conda-forge docs](https://conda-forge.org/docs/) - Official documentation
-- [rattler-build](https://rattler.build/) - Modern build tool
-- [pixi](https://pixi.sh/) - Package manager

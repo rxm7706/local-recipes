@@ -112,6 +112,11 @@ After generation, open `_bmad-output/project-context.md` and add the following c
 - get_conda_name() resolves PyPI names to conda-forge equivalents
 - When a package version is unavailable: loosen pin to available version + TODO comment
 
+## Enterprise Constraints (Air-Gapped & JFrog Artifactory)
+- All workflows and FastMCP tools must support operation in an air-gapped environment.
+- External tools and packages should be bootstrapped from an internal JFrog Artifactory.
+- Default channels must be configured to point to internal mirrors (e.g., via `.pixi/config.toml`).
+
 ## PR Submission
 - Always submit_pr(recipe_name, dry_run=True) BEFORE the real submit
 - Target: conda-forge/staged-recipes fork
@@ -119,23 +124,12 @@ After generation, open `_bmad-output/project-context.md` and add the following c
 
 ---
 
-## Phase 3 — Populate `docs/`
+## Phase 3 — Populate `docs/` (✅ Completed)
 
-Your `docs/` directory is empty. BMAD expects documentation to live here. Create a minimal foundation:
+The `docs/` directory has been populated with the necessary foundation:
 
-**3.1 — Create `docs/architecture.md`**
-
-Document the high-level system architecture:
-- What this project is (conda-forge recipe factory)
-- How the MCP server (`conda_forge_server.py`) integrates with Claude
-- Recipe lifecycle diagram (text-based is fine)
-- Key design decisions (recipe.yaml v1 only, pixi over conda-build, etc.)
-
-**3.2 — Create `docs/workflow.md`**
-
-Copy/distill the workflow from `CLAUDE.md` into a standalone doc that BMAD agents can reference for the recipe lifecycle.
-
-These don't need to be written from scratch — ask Claude to generate them from your existing `CLAUDE.md` content.
+- `docs/mcp-server-architecture.md` — Documents the high-level system architecture, how the FastMCP server integrates with Claude, and the recipe lifecycle.
+- `docs/developer-guide.md` — Distilled developer guidelines and local testing instructions.
 
 ---
 
@@ -233,8 +227,8 @@ BMAD will:
 | `_bmad/` | Created by installer (Phase 1) |
 | `_bmad-output/` | Created by installer (Phase 1) |
 | `_bmad-output/project-context.md` | Generated then extended manually (Phase 2) |
-| `docs/architecture.md` | Create manually or ask Claude to draft (Phase 3) |
-| `docs/workflow.md` | Create from CLAUDE.md content (Phase 3) |
+| `docs/mcp-server-architecture.md` | Provides the BMAD agent with architectural context (Completed) |
+| `docs/developer-guide.md` | Provides local build and test instructions (Completed) |
 | `_bmad/custom/bmad-agent-pm.toml` | Create manually (Phase 4) |
 | `_bmad/custom/bmad-agent-pm.user.toml` | Create + add to `.gitignore` (Phase 4) |
 | `.gitignore` | Extend with BMAD patterns (Phase 5) |

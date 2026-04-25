@@ -144,9 +144,11 @@ local-recipes/
 ├─ build-locally.py               # Cross-platform dispatcher
 ├─ recipes/
 │  ├─ <recipe>/recipe.yaml       # Rattler Build format (modern)
-│  ├─ <recipe>/meta.yaml         # conda-build format (legacy)
-│  └─ sample/docs/               # Documentation
-│     └─ conda-forge-expert-skills.md  # Comprehensive guide
+│  └─ <recipe>/meta.yaml         # conda-build format (legacy)
+├─ docs/                          # Project Documentation
+│  ├─ developer-guide.md          # Comprehensive build guide
+│  ├─ enterprise-deployment.md    # Air-gapped / JFrog deployment guide
+│  └─ mcp-server-architecture.md  # FastMCP / BMAD architecture
 ├─ setup.cfg                      # flake8 / Python style config
 ├─ conda-forge.yml                # conda-forge configuration
 ├─ pixi.toml                      # Pixi environment configuration
@@ -215,7 +217,7 @@ On-demand CI workflows for all platforms (manual trigger only to preserve quota)
 | Test Windows | `gh workflow run test-windows.yml -f recipes="NAME"` | Native builds |
 | Test macOS | `gh workflow run test-macos.yml -f recipes="NAME"` | x86_64 + ARM64 |
 
-For detailed documentation, see [Conda-Forge Expert Skills Guide](recipes/sample/docs/conda-forge-expert-skills.md).
+For detailed documentation on local testing, see the [Developer Guide](docs/developer-guide.md). For AI tooling details, see [MCP Server Architecture](docs/mcp-server-architecture.md).
 
 ## Pixi tasks
 
