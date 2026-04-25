@@ -1,5 +1,5 @@
 #                             VVVVVV  minimum `pixi` version
-"$schema" = "https://pixi.sh/v0.67.0/schema/manifest/schema.json"
+"$schema" = "https://pixi.sh/v0.67.2/schema/manifest/schema.json"
 
 [workspace]
 name = "staged-recipes"
@@ -20,15 +20,15 @@ platforms = [
 python = "3.12.*"
 pixi = ">=0.67.2"
 gh = ">=2.91.0"
-nodejs = ">=20.0.0,<25.0"  # Pin to LTS version
+nodejs = ">=24.0.0,<25.0"  # Pin to LTS version
 bmad-method = ">=6.4.0"
 spec-kit = ">=0.8.1"
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
 [feature.build.dependencies]
-conda = ">=26.3.2"
+conda = ">=25.9.0"
 conda-libmamba-solver = ">=24.9.0"
-conda-build = ">=26.1.0"
+conda-build = ">=25.3.1"
 conda-index = ">=0.3.0"
 conda-forge-ci-setup = ">=4.9.3,<5.0"
 conda-forge-pinning = "*"
@@ -145,20 +145,22 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/recipe_updater.py"
 #[feature.python.dependencies]
 python = "3.12.*"
 ##[feature.build.dependencies]
-conda = ">=26.3.2"
-conda-libmamba-solver = ">=25.11.0"
-conda-build = ">=26.1.0"
-conda-index = ">=0.7.0"
-conda-forge-ci-setup = ">=4.24.2,<5.0"
+conda = ">=25.9.0"
+conda-libmamba-solver = ">=24.9.0"
+conda-build = ">=25.3.1"
+conda-index = ">=0.3.0"
+conda-forge-ci-setup = ">=4.9.3,<5.0"
 conda-forge-pinning = "*"
 frozendict = "*"
 #networkx = "2.4.*"
-rattler-build-conda-compat = ">=1.4.11,<2.0.0a0"
+rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"
 ##[feature.grayskull.dependencies]
-grayskull = ">=3.1.0"
+grayskull = ">=2.7.3"
+conda-recipe-manager = ">=0.8.0"
 ##[feature.conda-smithy.dependencies]
 conda-smithy = ">=3.44.6,<4"
-shellcheck = ">=0.11.0"
+##[feature.shellcheck]
+shellcheck = ">=0.10.0"
 "ruamel.yaml" = ">=0.18.17"
 #### Unleash Pixi - Added to ensure single a build pack with pixi will work for cookiecutters, plain python, conda, nodejs, rust, c, c++ code.
 ## For use with CookieCutters
