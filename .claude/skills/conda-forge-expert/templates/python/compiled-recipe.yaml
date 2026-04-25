@@ -17,9 +17,10 @@ source:
 build:
   number: 0
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  # Skip unsupported platforms
-  skip:
-    - py < 39
+  # Conda-forge floor is Python 3.10 (Aug 2025). Only set a skip if upstream
+  # actually requires a higher floor (e.g. py < 311 for tomllib).
+  # skip:
+  #   - py < 311
 
 requirements:
   build:

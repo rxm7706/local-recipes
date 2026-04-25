@@ -497,16 +497,37 @@ skip:
 
 ```yaml
 # conda_build_config.yaml
-# Different CUDA versions per platform
+# CUDA — current default is 12.9; CUDA 11.8 was removed from the default
+# matrix in June 2025. Opt back into 11.8 by copying cuda118.yaml into
+# .ci_support/migrations/.
 cuda_compiler_version:
-  - "11.8"          # [linux]
-  - "12.0"          # [linux]
-  - "11.8"          # [win]
+  - "12.9"          # [linux or win]
 
-# macOS SDK
+# macOS SDK — minimum is 11.0 since Feb 2026.
 MACOSX_SDK_VERSION:
-  - "11.0"          # [osx and arm64]
-  - "10.15"         # [osx and x86_64]
+  - "11.0"          # [osx]
+```
+
+### NVIDIA Tegra (ARM aarch64 SOC)
+
+CUDA 12.9 packages can be built for NVIDIA Tegra devices on linux-aarch64. CUDA 13.0+ uses SBSA-compliant binaries — Tegra-specific builds are not required there. Source: conda-forge news, Jan 7, 2026.
+
+### MPI Variants
+
+External MPI packages were reorganized on **Jan 29, 2026** under the new label `conda-forge/label/mpi-external`. The old packages on `main` were marked broken to resolve solver issues.
+
+```yaml
+# conda_build_config.yaml — standard MPI matrix
+mpi:
+  - nompi
+  - mpich
+  - openmpi
+```
+
+Users who need an external (system) MPI implementation must enable the new label explicitly:
+
+```bash
+conda install -c conda-forge -c conda-forge/label/mpi-external mpich
 ```
 
 ## CI Support Files

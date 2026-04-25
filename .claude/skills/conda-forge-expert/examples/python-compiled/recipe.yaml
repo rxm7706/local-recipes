@@ -17,8 +17,8 @@ source:
 build:
   number: 0
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  skip:
-    - py < 39
+  # No skip needed: conda-forge build matrix starts at Python 3.10 (Aug 2025).
+  # Add a skip only if upstream requires a higher floor (e.g. py < 311).
 
 requirements:
   build:

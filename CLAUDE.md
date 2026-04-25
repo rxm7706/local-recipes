@@ -241,12 +241,70 @@ requirements:
     - {{ stdlib('c') }}      # REQUIRED!
 ```
 
-## References
+## Conda-Forge Ecosystem Reference
 
-- [conda-forge Documentation](https://conda-forge.org/docs/)
-- [staged-recipes Repository](https://github.com/conda-forge/staged-recipes)
-- [rattler-build Documentation](https://rattler.build/latest/)
-- [pixi Documentation](https://pixi.sh/latest/)
+The submission-to-feedstock workflow spans two GitHub orgs: **conda-forge** (the "Forge" — review, build infrastructure, automation) and **prefix-dev** (the modern Rust-based "Tooling" — pixi, rattler-build). This reference maps the repos and docs you'll touch when working on a recipe in this project.
+
+### Local Tooling (this project's stack)
+
+| Repo / Tool | Purpose | Docs |
+|-------------|---------|------|
+| [`prefix-dev/pixi`](https://github.com/prefix-dev/pixi) | Manages this project's `pixi.toml` env; installs `rattler-build` and other build tools without a separate conda/mamba install | https://pixi.sh/latest/ |
+| [`prefix-dev/rattler-build`](https://github.com/prefix-dev/rattler-build) | Build engine for v1 `recipe.yaml` recipes — replaces `conda-build` and is significantly faster | https://rattler-build.prefix.dev/latest/ |
+| [`conda/rattler`](https://github.com/conda/rattler) | Underlying Rust library that provides core conda logic for both pixi and rattler-build | https://docs.rs/rattler |
+| [`conda-forge/rattler-build-conda-compat`](https://github.com/conda-forge/rattler-build-conda-compat) | Shim that lets rattler-build interoperate with `conda-smithy` linting and feedstock workflows | (README in repo) |
+| [`conda-forge/miniforge`](https://github.com/conda-forge/miniforge) | Community installer used to bootstrap build environments inside CI | https://conda-forge.org/miniforge/ |
+| [`conda/grayskull`](https://github.com/conda/grayskull) | Recipe generator from PyPI/CRAN metadata — used by `generate_recipe_from_pypi` and the autotick bot | (README in repo) |
+
+### Conda-Forge Submission Pipeline
+
+| Repo | Role |
+|------|------|
+| [`conda-forge/staged-recipes`](https://github.com/conda-forge/staged-recipes) | Entry point for new recipes. Holds them until they're merged and converted into a feedstock. Ships `pixi.toml` + `build-locally.py` so contributors can build with the same toolchain CI uses. [Docs](https://conda-forge.org/docs/maintainer/adding_pkgs/) |
+| [`conda-forge/conda-smithy`](https://github.com/conda-forge/conda-smithy) | Lints recipes (`conda-smithy recipe-lint`), rerenders feedstock CI configs, registers feedstocks with CI providers. Supports both `meta.yaml` and v1 `recipe.yaml`. [Docs](https://conda-forge.org/docs/maintainer/infrastructure/#conda-smithy) |
+| [`conda-forge/conda-forge-pinning-feedstock`](https://github.com/conda-forge/conda-forge-pinning-feedstock) | Source of truth for global pins (Python 3.10–3.14, NumPy 2, GCC 14, Clang 19, CUDA 12.9, OpenSSL 3.5, Boost 1.88, …). Both conda-build and rattler-build resolve these. [Docs](https://conda-forge.org/docs/maintainer/pinning_deps/) |
+| [`conda-forge/conda-forge.github.io`](https://github.com/conda-forge/conda-forge.github.io) | Source for the conda-forge documentation site itself |
+
+### Automation, Bots & Backend
+
+| Repo | Role |
+|------|------|
+| [`conda-forge/admin-requests`](https://github.com/conda-forge/admin-requests) | Cron jobs and admin scripts that turn merged staged-recipes PRs into standalone feedstock repos and handle ad-hoc admin tasks (mark-broken, transfer ownership, etc.) |
+| [`regro/cf-scripts`](https://github.com/regro/cf-scripts) | Codebase for the **autotick bot** (`regro-cf-autotick-bot`) — monitors upstream releases, opens version-bump PRs against feedstocks |
+| [`regro/cf-graph-countyfair`](https://github.com/regro/cf-graph-countyfair) | Dependency graph the autotick bot uses to plan migrations across the ecosystem |
+| [`conda-forge/conda-forge-metadata`](https://github.com/conda-forge/conda-forge-metadata) | Python package providing API access to conda-forge metadata (PyPI↔conda mappings, feedstock metadata) — used by bots and the local `mapping_manager.py` |
+| [`conda-forge/webservices`](https://github.com/conda-forge/webservices) | Backend that handles `@conda-forge-admin` PR commands (rerender, restart ci, lint, add user, …) and Heroku-hosted automation |
+| [`conda-forge/feedstock-tokens`](https://github.com/conda-forge/feedstock-tokens) | Manages per-feedstock CI upload tokens |
+
+### Post-Submission
+
+| Pattern | What It Is |
+|---------|-----------|
+| `<package>-feedstock` | The standalone repo created automatically when a staged-recipes PR is merged. All future updates, builds, and releases happen here — `staged-recipes` is no longer involved for that package. New v1 feedstocks are configured to use rattler-build as the default build tool in CI. |
+
+### Documentation & Knowledge Bases
+
+| Source | Use For |
+|--------|---------|
+| [conda-forge Maintainer Docs](https://conda-forge.org/docs/maintainer/) | Authoritative reference for recipe authoring, pinning, infrastructure, and CI |
+| [conda-forge News](https://conda-forge.org/news/) | Migration announcements, infrastructure changes, policy updates |
+| [conda-forge Status Dashboard](https://conda-forge.org/status/) | Currently active migrations |
+| [conda-forge Knowledge Base](https://conda-forge.org/docs/maintainer/knowledge_base/) | Common patterns: NumPy, BLAS/LAPACK, multi-output, CUDA, MPI |
+| [v1 Recipe Support Announcement](https://conda-forge.org/blog/2025/02/27/conda-forge-v1-recipe-support/) | Why and how conda-forge adopted rattler-build / `recipe.yaml` |
+| [Rattler-Build on Conda-Forge](https://prefix.dev/blog/rattler_build_in_conda_forge) | Practical walkthrough for migrating recipes to v1 |
+| [CFEPs](https://github.com/conda-forge/cfep) | Conda-Forge Enhancement Proposals — accepted policy decisions (e.g., CFEP-25 `python_min`, CFEP-26 naming) |
+| [Recipe Format Schema](https://github.com/prefix-dev/recipe-format) | JSON schema for `recipe.yaml` — referenced via `# yaml-language-server: $schema=...` at the top of v1 recipes |
+| [Publishing to conda-forge (Rattler-Build docs)](https://rattler-build.prefix.dev/latest/publishing/) | End-to-end publishing walkthrough using the Rust toolchain |
+| [pixi-build-rattler-build](https://github.com/prefix-dev/pixi-build-backends/tree/main/crates/pixi-build-rattler-build) | Configure pixi to call rattler-build as a build backend in `pixi.toml` |
+
+### Community Channels
+
+| Channel | Status |
+|---------|--------|
+| [Zulip](https://conda-forge.zulipchat.com/) | **Primary** real-time channel for help, troubleshooting, announcements |
+| [conda-forge News](https://conda-forge.org/news/) | Posted announcements (also surfaced in Zulip) |
+| [Discourse](https://conda.discourse.group/) | **Read-only** since Oct 15, 2025 — search archive only |
+| Gitter | Decommissioned; replaced by Zulip |
 
 ## BMAD Method Documentation
 

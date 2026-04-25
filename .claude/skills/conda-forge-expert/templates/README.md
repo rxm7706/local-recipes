@@ -90,13 +90,15 @@ requirements:
 build:
   skip:
     - win
-    - py < 39
+    - py < 311      # only if upstream actually requires Python >= 3.11
 
 # meta.yaml
 build:
   skip: true  # [win]
-  skip: true  # [py<39]
+  skip: true  # [py<311]
 ```
+
+> Note: the conda-forge build matrix already starts at Python 3.10 (3.9 dropped Aug 2025), so `py < 310` is a no-op. Use `py < 311`/`py < 312` only when upstream genuinely requires that floor.
 
 ## Testing Templates
 

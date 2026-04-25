@@ -140,6 +140,30 @@ bot:
 | `update-grayskull` | Uses grayskull to update recipe |
 | `update-all` | Attempts comprehensive updates |
 
+### Selecting a CI Provider per Platform (conda-smithy 3.57.1+, Mar 2026)
+
+```yaml
+# conda-forge.yml
+provider:
+  linux_64: github_actions    # opt into GitHub Actions for native Linux builds
+  # linux_aarch64: cirun       # native ARM via Cirun on supported feedstocks
+  # osx_64: azure              # default; explicit for clarity
+  # win_64: azure              # default
+```
+
+Rerender after editing (`conda-smithy rerender` or `@conda-forge-admin, please rerender`) so the generated CI files match.
+
+### Excluding Erroneous Upstream Versions
+
+```yaml
+# conda-forge.yml — keep the bot from picking up bad upstream tags
+bot:
+  version_updates:
+    exclude:
+      - "1.0.0rc1"
+      - "1.0.0+post"
+```
+
 ## Useful PR Checklist Comments
 
 When submitting to staged-recipes, include this checklist:

@@ -88,9 +88,15 @@ rattler-build build -r recipe.yaml --variant-config .ci_support/win64.yaml
 rattler-build build -r recipe.yaml --target-platform linux-64
 rattler-build build -r recipe.yaml --target-platform osx-arm64
 
-# Debug
+# Debug — note: --debug flag was removed in v0.61 (Mar 2026); use the dedicated subcommand
 rattler-build build -r recipe.yaml --render-only   # Render only
 rattler-build build -r recipe.yaml --keep-build    # Keep build dir
+rattler-build debug -r recipe.yaml                 # Drop into a debug shell
+
+# Environment isolation modes (v0.62+, Apr 2026)
+rattler-build build -r recipe.yaml --env-isolation strict       # default; remaps $HOME
+rattler-build build -r recipe.yaml --env-isolation conda-build  # legacy compat
+rattler-build build -r recipe.yaml --env-isolation none         # debug only — never ship
 
 # Test
 rattler-build test --package-file output/*.conda

@@ -79,10 +79,12 @@ requirements:
 build:
   skip:
     - win                          # Skip on Windows
-    - py < 39                      # Skip Python < 3.9
+    - py < 311                     # Require Python >= 3.11 (floor is already 3.10)
     - linux and aarch64            # Skip Linux ARM64
     - osx and x86_64               # Skip macOS Intel
 ```
+
+> The conda-forge build matrix already starts at Python 3.10 (3.9 dropped Aug 2025), so `py < 310` is a no-op. Only set a `py < ...` skip when upstream actually requires a higher Python floor.
 
 ## meta.yaml Selectors (Legacy Format)
 
@@ -309,17 +311,19 @@ build:
 
 ### Python version constraints
 
+The conda-forge build matrix is `3.10, 3.11, 3.12, 3.13, 3.14` (3.9 dropped Aug 2025). `py < 310` is a no-op — only set a `py < ...` skip when upstream genuinely requires a higher floor.
+
 ```yaml
 # recipe.yaml
 build:
   skip:
-    - py < 39                    # Requires Python 3.9+
-    - py >= 313                  # Not yet compatible with 3.13
+    - py < 311                   # Upstream requires Python >= 3.11 (e.g. uses tomllib)
+    - py >= 314                  # Not yet compatible with 3.14
 
 # meta.yaml
 build:
-  skip: true  # [py<39]
-  skip: true  # [py>=313]
+  skip: true  # [py<311]
+  skip: true  # [py>=314]
 ```
 
 ## Context Variables (recipe.yaml only)

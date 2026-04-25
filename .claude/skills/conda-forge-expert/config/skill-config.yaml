@@ -3,7 +3,7 @@
 
 skill:
   name: conda-forge-expert
-  version: 5.8.0
+  version: 5.9.0
   description: |
     Autonomous conda-forge packaging agent. Manages the entire recipe lifecycle
     from generation, security scanning, and building to debugging, maintenance,

@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 5.8.0
+version: 5.9.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -454,22 +454,31 @@ Use `using-agent-skills` as the meta-skill to select the right combination for a
 
 ## CI Infrastructure Reference
 
-*Sourced from conda-forge.org/docs/maintainer/infrastructure/ (Apr 2026)*
+*Sourced from conda-forge.org/docs/maintainer/infrastructure/ and conda-forge news (Apr 2026).*
 
 ### Platform Assignments
 
-| Platform | CI Provider | Notes |
-|----------|-------------|-------|
-| Linux x86_64 | **Azure Pipelines** | Primary; all packages build here first |
-| Linux aarch64 (ARM) | Azure Pipelines | |
-| Linux ppc64le (Power8+) | Azure Pipelines | |
-| macOS x86_64 | Azure Pipelines | |
-| Windows x86_64 | Azure Pipelines | |
-| Rerendering / automerge | **GitHub Actions** | **Not for builds** — CI config updates only |
+| Platform | Default CI Provider | Notes |
+|----------|---------------------|-------|
+| Linux x86_64 | **Azure Pipelines** | Default; opt-in to GitHub Actions via conda-smithy 3.57.1+ (March 2026) |
+| Linux aarch64 (ARM) | Azure Pipelines (emulated) | Cirun for native runners on selected feedstocks |
+| Linux ppc64le (Power8+) | Azure Pipelines (emulated) | |
+| macOS x86_64 / arm64 | Azure Pipelines | GitHub Actions not yet available |
+| Windows x86_64 | Azure Pipelines | GitHub Actions not yet available |
+| Windows ARM64 | Azure Pipelines | Python 3.14 cross-builds added 2025 |
+| Rerendering / automerge | **GitHub Actions** | Always — CI config updates and bot services |
 
-**Critical**: GitHub Actions in conda-forge handles CI file rerendering and automerge services — it does **not** build packages. Never expect build artifacts from GitHub Actions jobs.
+**GitHub Actions for Linux builds (opt-in, Mar 8, 2026)**: rerender after upgrading to conda-smithy ≥ 3.57.1 and set the provider in `conda-forge.yml`:
 
-**Build time limit**: 6 hours on Azure Pipelines. Builds exceeding this are killed with no artifacts.
+```yaml
+# conda-forge.yml — opt the Linux native build into GitHub Actions
+provider:
+  linux_64: github_actions
+```
+
+Use this only when Azure capacity is constrained or your build needs the larger GA concurrency limits. Windows and macOS builds remain on Azure.
+
+**Build time limit**: 6 hours on Azure Pipelines (and matching limits on GitHub Actions). Builds exceeding this are killed with no artifacts.
 
 ### OS Versions (Linux)
 
@@ -529,6 +538,58 @@ conda-forge packages are **immutable** — versions are never edited or deleted 
 - Use `conda-forge-admin` to **mark the package as broken** (not deleted)
 - Issue a new release with an incremented build number
 
+### Community Channels
+
+| Channel | Status | Use For |
+|---------|--------|---------|
+| **Zulip** (`conda-forge.zulipchat.com`) | **Primary** | Real-time questions, troubleshooting, announcements |
+| GitHub Discussions / Issues | Active | Recipe bugs, feedstock-specific issues |
+| Discourse (`conda.discourse.group`) | **Read-only** since Oct 15, 2025 | Search archive only — do not post |
+| Gitter | Decommissioned | Replaced by Zulip |
+
+When asking for help, link the failing PR/feedstock and the rendered build log — never paste large logs into chat.
+
+---
+
+## Ecosystem Updates (Apr 2026)
+
+Recent conda-forge changes that affect recipe authoring. Cite the relevant entry in PR descriptions when applying these patterns.
+
+### Build Tooling
+- **rattler-build v0.63.0 (Apr 22, 2026)** — Multi-output recipes no longer auto-discover per-output `build.sh`/`build.bat`. Each output that needs a script must declare `script: <name>` explicitly. Top-level (single-output) recipes are unchanged.
+- **rattler-build v0.62.0 (Apr 13, 2026)** — Three-mode `--env-isolation` flag: `strict` (default; remaps `$HOME`), `conda-build`, `none`. Build scripts that rely on inherited env vars must declare them in `build.script.env`.
+- **rattler-build v0.61.0 (Mar 19, 2026)** — `--debug` flag removed; use the dedicated `rattler-build debug` subcommand.
+
+### Platform & Toolchain
+- **macOS minimum is 11.0** (Feb 2026). `MACOSX_DEPLOYMENT_TARGET=10.x` builds will be rejected.
+- **macOS SDK directory**: `/opt/conda-sdks` since conda-smithy 3.54.0 (Dec 2025). Local builders must export `OSX_SDK_DIR=/opt/conda-sdks`.
+- **macOS Accelerate Framework** (Jul 2025) — new BLAS/LAPACK provider on macOS 13.3+ via shim library; switch with `conda install libblas=*=*_newaccelerate`.
+- **CUDA matrix** — current default is **12.9**; CUDA 11.8 was removed Jun 2025 (opt back in by copying `cuda118.yaml` to `.ci_support/migrations/`). NVIDIA Tegra (linux-aarch64 SOC) builds are supported on CUDA 12.9; CUDA 13.0+ uses SBSA so Tegra-specific builds are unnecessary.
+- **MPI external label** (Jan 29, 2026) — external MPI builds were moved to `conda-forge/label/mpi-external`. Old external MPI packages on `main` were marked broken.
+
+### Policy
+- **CFEP-25** — `python_min` floor for `noarch: python` recipes; conda-forge floor is `"3.10"` since Aug 2025 (Python 3.9 dropped).
+- **CFEP-26** — Guidelines for (re)naming packages (newly accepted). Consult before renaming a package or filing a name dispute.
+- **License identifiers must be SPDX** — case-sensitive (e.g., `Apache-2.0`, not `APACHE 2.0`); compound licenses use SPDX expressions (`Apache-2.0 WITH LLVM-exception`).
+- **Bundled-language licensing** (Rust, Go) — use `cargo-bundle-licenses` / `go-licenses` and ship a `THIRDPARTY.yml` alongside `LICENSE` (already encoded in the maturin and Go templates).
+
+---
+
+## Skill Automation
+
+A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.
+
+| | |
+|---|---|
+| Routine ID | `trig_015z9XF8ExDJuN9qsZYGYKcu` |
+| Cron | `0 14 1 */3 *` — Jan/Apr/Jul/Oct 1, 14:00 UTC (= 9am Chicago in CDT) |
+| Repo | `rxm7706/local-recipes` |
+| Prompt | [`automation/quarterly-audit.prompt.md`](automation/quarterly-audit.prompt.md) |
+| Local runner | [`automation/run-audit-local.sh`](automation/run-audit-local.sh) |
+| Manage | https://claude.ai/code/routines/trig_015z9XF8ExDJuN9qsZYGYKcu |
+
+To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation/run-audit-local.sh`. See [`automation/README.md`](automation/README.md) for cron / systemd scheduling and instructions to recreate the remote routine if it's ever deleted.
+
 ---
 
 ## Manual CLI Commands
@@ -550,6 +611,7 @@ conda-forge packages are **immutable** — versions are never edited or deleted 
 
 ## Version History
 
+- **v5.9.0**: Second live documentation pass against conda-forge.org and github.com/conda-forge (Apr 25, 2026). Also added `automation/` directory: `quarterly-audit.prompt.md` (canonical prompt, kept in sync with the cloud routine `trig_015z9XF8ExDJuN9qsZYGYKcu`), `run-audit-local.sh` (local-CLI runner that strips frontmatter and invokes `claude -p`), and `README.md` documenting cloud vs local invocation, cron/systemd scheduling, and recreation instructions. Linked from a new `## Skill Automation` section in SKILL.md. Project `CLAUDE.md` references section expanded into a structured `## Conda-Forge Ecosystem Reference` mapping 25+ repos and docs across conda-forge and prefix-dev (Local Tooling, Submission Pipeline, Automation/Bots/Backend, Post-Submission, Documentation, Community Channels). Added new `## Ecosystem Updates (Apr 2026)` section to SKILL.md covering build-tooling, platform/toolchain, and policy changes since v5.8.0. Updated CI Infrastructure: GitHub Actions is now an opt-in build provider for `linux_64` (conda-smithy 3.57.1+, Mar 8, 2026) — no longer "rerendering only"; added a `provider:` configuration example. Added Community Channels table: Zulip is primary; Discourse is read-only since Oct 15, 2025; Gitter is decommissioned. `reference/recipe-yaml-reference.md` updated with rattler-build v0.61/v0.62/v0.63 sections (debug subcommand, three-mode env-isolation, multi-output script-discovery removal); macOS SDK directory corrected to `/opt/conda-sdks` (was `$PIXI_PROJECT_ROOT/.pixi/macOS-SDKs`); new macOS Accelerate BLAS/LAPACK section. `reference/pinning-reference.md` adds NVIDIA Tegra notes (CUDA 12.9 SOC builds) and the new `conda-forge/label/mpi-external` MPI variant label. `reference/selectors-reference.md` and `reference/recipe-yaml-reference.md` updated to clarify `py < 310` is a no-op (build matrix already starts at 3.10) — examples now use `py < 311`. Templates `python/compiled-recipe.yaml`, `python/maturin-{recipe,meta}.yaml`, and `examples/python-compiled/recipe.yaml` no longer carry the obsolete `py < 39` skip. `templates/multi-output/lib-python-recipe.yaml` annotated with v0.63 explicit-script note. Updated `config/skill-config.yaml` to v5.9.0.
 - **v5.8.0**: Live documentation pass against conda-forge.org + github.com/conda-forge (Apr 2026). Fixed Go compiler names: `compiler("go")` → `compiler("go-nocgo")` in pure-Go templates; `go-cgo` documented as requiring `stdlib("c")`. Updated STD-001 optimizer check to exclude `go-nocgo` + legacy `go` but correctly flag `go-cgo`. Updated SKILL.md Critical Constraints: listed `go-nocgo`/`go-cgo` distinction, deprecated `compiler_stack`. Added `## CI Infrastructure Reference` section: Azure Pipelines is primary (not GitHub Actions — GA is rerendering/automerge only), 6-hour build limit, OS version options (cos7/alma8/alma9/ubi8/alma10/rocky10), current compiler pins (GCC 14, Clang 19), bot version_updates.exclude configuration, immutability policy. Updated `reference/pinning-reference.md` with current global pins table (GCC 14, Clang 19, NumPy 2, CUDA 12.9, OpenSSL 3.5, Boost 1.88, PyTorch 2.9, Arrow 20–23) and fixed GCC version in ci_support example (12 → 14). Updated `config/skill-config.yaml` version to 5.8.0.
 - **v5.7.0**: Major content upgrade synthesizing CLAUDE.md + all 21 agent-skills. Added: Operating Principles (Karpathy + using-agent-skills non-negotiables); Critical Constraints section (stdlib, format mixing, python_min floor); Recipe Security Boundaries (Always/Ask First/Never Do); Build Failure Protocol with six-step triage + category table + max-loop rule; Pre-PR Quality Gate Checklist; Migration Protocol (meta.yaml → recipe.yaml Strangler pattern); Python Version Policy (full rules + both format examples); Recipe Formats Quick Reference (complete template examples); enhanced all 9 workflow steps with explicit success criteria; added `check_dependencies` as step 6 (shift-left dep validation); aligned tool table with CLAUDE.md example-usage format.
 - **v5.6.0**: Integrated all 21 skills from addyosmani/agent-skills. Added inline cross-references to each workflow step and `## Complementary Skills` lifecycle phase mapping table.

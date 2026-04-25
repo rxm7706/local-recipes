@@ -40,10 +40,10 @@ The bot and CI form an automated pipeline. Understand what each component checks
 | Stage | Tool | Triggers | What it checks |
 |-------|------|---------|----------------|
 | Lint | conda-smithy | PR open/push | Recipe policy, required fields |
-| Solve | conda-build/rattler | Every build | Dependency availability across platforms |
-| Build | Azure/GitHub Actions | Every push | Compilation, packaging |
-| Test | conda test | Post-build | Import, CLI, file presence |
-| Automerge | cf-autotick-bot | After CI green | Version updates only |
+| Solve | conda-build/rattler-build | Every build | Dependency availability across platforms |
+| Build | Azure Pipelines (default) or GitHub Actions (opt-in linux_64, Mar 2026) | Every push | Compilation, packaging |
+| Test | conda test / rattler-build test | Post-build | Import, CLI, file presence |
+| Automerge | cf-autotick-bot via GitHub Actions | After CI green | Version updates only |
 
 **Shift-left principle**: run `pixi run lint` and `python build-locally.py` before pushing — catching failures locally is faster than waiting for CI.
 
@@ -445,6 +445,6 @@ mamba repoquery depends my-package -c conda-forge
 ## Resources
 
 - [Maintainer Documentation](https://conda-forge.org/docs/maintainer/)
-- [Status Dashboard](https://conda-forge.org/status/)
-- [conda-forge Blog](https://conda-forge.org/blog/)
-- [Gitter Chat](https://gitter.im/conda-forge/conda-forge.github.io)
+- [Status Dashboard](https://conda-forge.org/status/) — active migrations
+- [conda-forge News & Blog](https://conda-forge.org/news/) — infrastructure announcements
+- [Zulip Chat](https://conda-forge.zulipchat.com/) — primary real-time channel (Gitter is decommissioned)
