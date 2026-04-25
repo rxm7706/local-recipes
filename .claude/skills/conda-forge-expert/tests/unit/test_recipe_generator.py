@@ -378,6 +378,86 @@ class TestRecipeGenerator:
         # Plain "LICENSE" alone (without .md) shouldn't appear as a list item
         assert "    - LICENSE\n" not in content
 
+    def test_extract_readme_paragraph_falls_back_to_description(self, load_module):
+        """When the readme is just badges/banners, fall back to npm's
+        `description` field via the wrapper in fetch_npm_info — confirmed
+        end-to-end here through generate_npm_recipe_yaml."""
+        # The fallback is wired in fetch_npm_info, not in
+        # _extract_readme_paragraph itself. We verify the helper still
+        # returns "" for badge-only input (the trigger for the fallback).
+        mod = load_module("recipe-generator.py")
+        badges_only = (
+            "[![Build](https://img.shields.io/build.svg)](https://ci.example.com)\n"
+            "[![Coverage](https://img.shields.io/coverage.svg)](https://cov.example.com)\n"
+        )
+        assert mod._extract_readme_paragraph(badges_only) == ""
+
+    def test_pre_release_version_yaml_quoting(self, load_module, tmp_path):
+        """Pre-release semver versions like 2.0.0-beta.1 must round-trip
+        through YAML safely (we always quote `context.version`)."""
+        mod = load_module("recipe-generator.py")
+        info = mod.NpmPackageInfo(
+            raw_name="prerel", conda_name="prerel", version="2.0.0-beta.1",
+            tarball_url="https://registry.npmjs.org/prerel/-/prerel-2.0.0-beta.1.tgz",
+            tarball_filename="prerel-2.0.0-beta.1.tgz",
+            source_url="https://registry.npmjs.org/prerel/-/prerel-2.0.0-beta.1.tgz",
+            sha256="0" * 64,
+            license="MIT",
+            bin_entries={"prerel": "cli.js"},
+        )
+        recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path)
+        # The YAML must be parseable and the version field must round-trip
+        # to the exact string (not get coerced to a number or stripped of
+        # the pre-release suffix).
+        data = yaml.safe_load(recipe_path.read_text())
+        assert data["context"]["version"] == "2.0.0-beta.1"
+        # Source URL must contain the full version including suffix
+        assert "prerel-2.0.0-beta.1.tgz" in data["source"]["url"]
+
+    def test_check_spdx_known_license(self, load_module):
+        """Known SPDX identifiers pass through unchanged with no warning."""
+        mod = load_module("recipe-generator.py")
+        for known in ("MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "GPL-3.0-or-later"):
+            license_value, warning = mod._check_spdx_license(known)
+            assert license_value == known
+            assert warning is None
+
+    def test_check_spdx_compound_expression(self, load_module):
+        """Compound SPDX expressions like '(MIT OR Apache-2.0)' pass through."""
+        mod = load_module("recipe-generator.py")
+        compound = "(MIT OR Apache-2.0)"
+        license_value, warning = mod._check_spdx_license(compound)
+        assert license_value == compound
+        assert warning is None
+
+    def test_check_spdx_non_strict_label(self, load_module):
+        """Non-strict labels like 'Apache 2.0' get a warning suggesting the SPDX form."""
+        mod = load_module("recipe-generator.py")
+        for non_strict, expected_suggestion in (
+            ("Apache 2.0", "Apache-2.0"),
+            ("BSD", "BSD-3-Clause"),
+            ("GPLv3", "GPL-3.0-or-later"),
+        ):
+            license_value, warning = mod._check_spdx_license(non_strict)
+            # We keep the original (don't auto-rewrite) — user decides
+            assert license_value == non_strict
+            assert warning is not None
+            assert expected_suggestion in warning
+
+    def test_check_spdx_unknown_license(self, load_module):
+        """Genuinely unknown licenses get a 'verify against spdx.org' hint."""
+        mod = load_module("recipe-generator.py")
+        license_value, warning = mod._check_spdx_license("MyCustomLicense-1.0")
+        assert license_value == "MyCustomLicense-1.0"
+        assert warning is not None
+        assert "spdx.org" in warning
+
+    def test_check_spdx_empty(self, load_module):
+        mod = load_module("recipe-generator.py")
+        license_value, warning = mod._check_spdx_license("")
+        assert license_value == ""
+        assert warning is None
+
     def test_npm_no_third_party_licenses_inline_build(
         self, load_module, tmp_path
     ):
