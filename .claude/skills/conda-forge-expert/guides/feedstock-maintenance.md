@@ -2,6 +2,59 @@
 
 Complete guide for maintaining conda-forge feedstocks after initial package submission.
 
+## Maintenance Git Workflow
+
+*From `git-workflow-and-versioning` + `ci-cd-and-automation`. Apply these disciplines to all maintenance PRs.*
+
+### Branch Discipline
+
+Every maintenance change gets its own branch — never commit directly to `main`:
+
+| Change Type | Branch Name Pattern | PR Size Rule |
+|-------------|-------------------|--------------|
+| Version bump | `update-v1.2.3` | One package per PR |
+| Dependency pin | `pin-numpy-2.0` | One dependency group per PR |
+| Recipe migration | `migrate-to-v1` | One feedstock per PR — never bundle |
+| Bug fix | `fix-build-linux` | Smallest possible change |
+| Rerender | `rerender-ci-update` | CI files only — no recipe changes |
+
+### Commit Message Convention
+
+```
+<type>: <one-line summary>
+
+# Types:
+# update  — new upstream version
+# fix     — build/test fix
+# pin     — dependency version change
+# maint   — infrastructure / rerender
+# migrate — format migration (meta.yaml → recipe.yaml)
+```
+
+Example: `update: bump numpy to 2.1.0, reset build number`
+
+### Understanding the conda-forge CI/CD System
+
+The bot and CI form an automated pipeline. Understand what each component checks:
+
+| Stage | Tool | Triggers | What it checks |
+|-------|------|---------|----------------|
+| Lint | conda-smithy | PR open/push | Recipe policy, required fields |
+| Solve | conda-build/rattler | Every build | Dependency availability across platforms |
+| Build | Azure/GitHub Actions | Every push | Compilation, packaging |
+| Test | conda test | Post-build | Import, CLI, file presence |
+| Automerge | cf-autotick-bot | After CI green | Version updates only |
+
+**Shift-left principle**: run `pixi run lint` and `python build-locally.py` before pushing — catching failures locally is faster than waiting for CI.
+
+### When to Rerender vs. Edit
+
+- **Rerender** (`conda-smithy rerender`): when CI YAML files are out of date, after adding a new platform, or when the bot requests it. Never edit `.azure-pipelines/` or `.github/workflows/` by hand.
+- **Edit recipe**: when changing package content, version, or requirements.
+- **Never mix**: a rerender PR and a recipe change PR should be separate.
+
+---
+
 ## Maintainer Responsibilities
 
 As a feedstock maintainer, you are responsible for:

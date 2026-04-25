@@ -2,6 +2,59 @@
 
 Comprehensive guide for diagnosing and fixing conda-forge CI build failures.
 
+## Systematic Debug Protocol
+
+*From `debugging-and-error-recovery` + `shipping-and-launch`. Apply this before diving into specific error sections below.*
+
+### Six-Step Triage
+
+**Stop-the-Line Rule**: If the build behaves unexpectedly, stop. Do not add workarounds. Understand the root cause first.
+
+| Step | Action | For conda-forge builds |
+|------|--------|----------------------|
+| **1. Reproduce** | Confirm the failure is deterministic | `python build-locally.py linux-64` — does it fail locally? |
+| **2. Localize** | Narrow to the failing component | Is it a lint/solve/compile/test/packaging error? Read the log section headers. |
+| **3. Reduce** | Find the minimal failing case | Comment out test sections; remove optional deps; try `--render-only` first. |
+| **4. Fix Root Cause** | Address the actual problem | Don't mask errors (`2>/dev/null`, `|| true`). Fix the real failure. |
+| **5. Guard** | Prevent regression | Add the fix to the recipe, not as a build-phase workaround. |
+| **6. Verify** | Confirm fix, not just absence of error | `get_build_summary()` → all platforms green; `analyze_build_failure` reports no issues. |
+
+### Failure Category Quick-Lookup
+
+| Category | Typical Pattern | Likely Fix |
+|----------|----------------|-----------|
+| `MISSING_DEPENDENCY` | `PackagesNotFoundError` | `check_dependencies()` → add missing dep or loosen pin |
+| `HASH_MISMATCH` | `SHA256 mismatch` | Recalculate with `curl -sL \| sha256sum` |
+| `COMPILER_ERROR` | `error: unknown type` | Missing header, wrong C standard, or stdlib not declared |
+| `STDLIB_MISSING` | `missing stdlib` | Add `${{ stdlib("c") }}` alongside every `compiler()` |
+| `LINKER_ERROR` | `undefined reference` | Add library to `host:` requirements |
+| `TEST_FAILURE` | `ModuleNotFoundError` | Missing `run:` dep; check `pip_check` output |
+| `NETWORK_BLOCKED` | `curl/git during build` | Network is isolated in CI; fetch at source, not build time |
+| `BUILD_TOOLS` | `meson: command not found` | Add `meson`, `ninja`, or `autotools` to `build:` requirements |
+| `ENV_ISOLATION` | `command not found` | Tool missing from `build:` requirements (not on PATH in sysroot) |
+| `RESOURCE` | `MemoryError`, `Errno 28` | Reduce `-j` parallelism; clean intermediate files |
+
+### Max Iteration Rule
+
+**Stop after 5 fix-rebuild cycles** without a green build. At that point:
+1. Call `analyze_build_failure` with the full error log
+2. Check if a similar package on conda-forge solves the same problem (`gh search repos`)
+3. Ask in `#help-c-cpp` or `#help-python` on the conda-forge Gitter before continuing
+
+### Pre-Submit Quality Gate
+
+Before opening any PR to staged-recipes, verify all of these:
+
+| Gate | Check | Tool |
+|------|-------|------|
+| Correctness | License file present, SHA256 correct, version matches | `validate_recipe()` |
+| Security | No CVEs in deps, no git URLs for releases | `scan_for_vulnerabilities()` |
+| Build | All target platforms pass locally | `get_build_summary()` all green |
+| Standards | `stdlib()` present with compilers, no format mixing, `python_min ≥ 3.10` | `optimize_recipe()` — no STD-001/STD-002/SEL-002 |
+| Submission | `gh auth` ok, fork exists, branch clean | `submit_pr(dry_run=True)` |
+
+---
+
 ## Quick Diagnosis
 
 ### Check Build Status
@@ -16,6 +69,17 @@ gh run view <run-id> --log
 # Watch running build
 gh run watch
 ```
+
+### CI Platform Assignment
+
+**Important**: conda-forge uses **Azure Pipelines** for all package builds. GitHub Actions handles only rerendering and automerge — do not expect build artifacts from GitHub Actions jobs.
+
+| Platform | CI Provider | Build limit |
+|----------|-------------|------------|
+| Linux x86_64, aarch64, ppc64le | Azure Pipelines | 6 hours |
+| macOS x86_64, arm64 | Azure Pipelines | 6 hours |
+| Windows x86_64 | Azure Pipelines | 6 hours |
+| Rerendering / automerge | GitHub Actions | N/A |
 
 ### Common Status Indicators
 
@@ -238,12 +302,20 @@ version `GLIBC_2.28' not found
 
 **Solution:**
 ```yaml
-# Use newer base image
-# conda_build_config.yaml
+# conda-forge.yml — request a newer Linux base image
+os_version:
+  linux_64: alma8    # glibc 2.28
+  # alma9            # glibc 2.34 (current recommended)
+  # cos7             # glibc 2.17 (default, most compatible)
+
+# conda_build_config.yaml — match c_stdlib_version to your os_version
 c_stdlib_version:
-  - "2.17"      # Default (cos7)
-  - "2.28"      # For newer glibc (alma8)
+  - "2.17"      # cos7 (default)
+  - "2.28"      # alma8
+  - "2.34"      # alma9
 ```
+
+**Available OS versions** (Apr 2026): `cos7` (default), `alma8`, `alma9`, `ubi8`, `alma10`, `rocky10`
 
 #### Missing Libraries
 

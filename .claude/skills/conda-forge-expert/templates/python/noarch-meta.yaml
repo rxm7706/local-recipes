@@ -1,6 +1,7 @@
 # Template: Python noarch package (pure Python, no compiled extensions)
 {% set name = "REPLACE_NAME" %}
 {% set version = "REPLACE_VERSION" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -39,6 +40,7 @@ test:
     - {{ name }} --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: REPLACE_HOMEPAGE

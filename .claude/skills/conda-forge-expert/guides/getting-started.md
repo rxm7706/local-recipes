@@ -23,6 +23,26 @@ mamba install -c conda-forge rattler-build conda-smithy grayskull
 1. **GitHub account** - Required for submitting recipes
 2. **conda-forge membership** - Automatic after first merged PR
 
+## Before You Start: Clarify the Package
+
+*From `idea-refine` + `spec-driven-development`. Answer these before generating a recipe.*
+
+**Three questions to answer first:**
+
+1. **Does it already exist on conda-forge?**
+   ```bash
+   mamba search -c conda-forge my-package
+   # or
+   curl -s "https://anaconda.org/conda-forge/my-package" | grep -i "not found"
+   ```
+   If yes, the answer is an update, not a new recipe.
+
+2. **Does it belong on conda-forge?** Check: is it a widely-used package? Does it have a stable release (not a pre-release)? Does it have a clear license? If uncertain, check the [conda-forge staged-recipes guidelines](https://github.com/conda-forge/staged-recipes#before-you-start).
+
+3. **What are the dependencies?** Before generating, look at the upstream `pyproject.toml` or `setup.cfg` to understand `install_requires`. Run `check_dependencies()` early — missing conda-forge dependencies require separate recipes and can block your PR for weeks.
+
+Once all three are answered, proceed.
+
 ## Quick Start Workflow
 
 ```
