@@ -77,3 +77,38 @@ class TestSkillMdConsistency:
         assert not unknown, (
             f"pixi.toml tasks reference scripts that don't exist: {unknown}"
         )
+
+    def test_every_user_script_has_a_pixi_task(self):
+        """Every user-facing conda-forge-expert script must have a pixi-task
+        wrapper. New scripts get added to the wrapper list (or the explicit
+        no-task allow-list below if the CLI shape doesn't fit a task)."""
+        if not PIXI_TOML.exists():
+            pytest.skip("pixi.toml not found at expected location")
+
+        # Scripts that intentionally have no pixi task. Add a NEW entry here
+        # only with a written justification.
+        no_task_allowlist = {
+            # JSON-blob CLI argument doesn't fit the pixi-task metaphor:
+            "recipe_editor.py",
+            # Internal smoke check, not a user-facing CLI:
+            "test-skill.py",
+        }
+
+        content = PIXI_TOML.read_text()
+        scripts_dir = SKILL_DIR / "scripts"
+        all_scripts = {p.name for p in scripts_dir.glob("*.py")}
+
+        import re
+        wrapped = set(re.findall(
+            r"conda-forge-expert/scripts/([A-Za-z_][A-Za-z0-9_-]*\.py)",
+            content,
+        ))
+
+        unwrapped = all_scripts - wrapped - no_task_allowlist
+        assert not unwrapped, (
+            "These conda-forge-expert scripts have no pixi-task wrapper "
+            "and aren't in the no_task_allowlist. Either add a `[feature."
+            "local-recipes.tasks.<name>]` entry to pixi.toml, or list them "
+            "with a justification in the allow-list inside this test:\n"
+            f"  {sorted(unwrapped)}"
+        )
