@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-builder
-  version: "1.4.0"
+  version: "1.6.0"
 
 package:
   name: ${{ name }}
@@ -11,10 +11,10 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-builder/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 0e8c8261a8226dfe2eab310c9c5537e5ce401c04a80c99492c17d91e807ac4d1
+  sha256: 2db72839546baa049b82e6ba9f2cf557467fd5684e8e1e9c071c5a03db01e4cc
 
 build:
-  number: 1
+  number: 0
   noarch: generic
 
 requirements:
