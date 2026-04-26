@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-creative-intelligence-suite
-  version: "0.1.9"
+  version: "0.2.0"
 
 package:
   name: ${{ name }}
@@ -11,10 +11,10 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 18143202960aaf72b4b0d7c7d29a164ffbefb2a6a49d97c8c2ecf5aee3ec0434
+  sha256: 9a22fabb318f8f7d875341087954dd545bf755bdf073626f5a45a3670078702f
 
 build:
-  number: 1
+  number: 0
   noarch: generic
 
 requirements:
