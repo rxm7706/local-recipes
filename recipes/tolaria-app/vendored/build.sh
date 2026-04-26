@@ -13,16 +13,32 @@ rustc --version
 # Vite + React 19 frontend build needs more heap than the Node default.
 export NODE_OPTIONS="--max-old-space-size=6144"
 
-# No code signing in conda builds. Tauri only signs when an identity is
-# configured in tauri.conf.json (none is), so nothing extra to disable here.
+# Confirm the vendored sources from source[1] and source[2] are present.
+[[ -d cargo-vendor ]]
+[[ -d pnpm-store ]]
 
-echo "=== Installing JS workspace dependencies ==="
-pnpm install --frozen-lockfile --strict-peer-dependencies=false
+echo "=== Wiring cargo to the vendored crate sources ==="
+mkdir -p .cargo
+cat > .cargo/config.toml << 'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "cargo-vendor"
+EOF
+
+echo "=== Installing JS workspace dependencies (offline) ==="
+# --store-dir + --offline forces pnpm to resolve every package from the
+# pre-fetched store unpacked from source[2]; any missing tarball errors out
+# instead of silently hitting the npm registry.
+pnpm install \
+  --offline \
+  --frozen-lockfile \
+  --strict-peer-dependencies=false \
+  --store-dir "$(pwd)/pnpm-store"
 
 echo "=== Generating Rust third-party license inventory ==="
-pushd src-tauri
-cargo-bundle-licenses --format yaml --output ../THIRDPARTY-RUST.yml
-popd
+( cd src-tauri && cargo-bundle-licenses --format yaml --output ../THIRDPARTY-RUST.yml )
 
 echo "=== Generating npm third-party license disclaimer ==="
 pnpm licenses list --prod --long > THIRDPARTY-NPM.txt
@@ -31,12 +47,11 @@ pnpm licenses list --prod --long > THIRDPARTY-NPM.txt
 [[ -f THIRDPARTY-RUST.yml ]]
 [[ -f THIRDPARTY-NPM.txt ]]
 
-echo "=== Building Tauri app bundle (.app only, no .dmg, no updater) ==="
-# `pnpm tauri build` runs the configured beforeBuildCommand
-# (pnpm build && pnpm bundle-mcp), then compiles the Rust crate and
-# packages the .app. `--bundles app` skips .dmg and updater artifacts
-# we do not need for a conda install.
-pnpm tauri build --bundles app
+echo "=== Building Tauri app bundle (offline; .app only) ==="
+# CARGO_NET_OFFLINE=true makes cargo refuse network fetches; combined with
+# the .cargo/config.toml above, every crate must come from cargo-vendor/.
+# `--bundles app` skips .dmg and updater artifacts we don't need.
+CARGO_NET_OFFLINE=true pnpm tauri build --bundles app
 
 APP_SRC="src-tauri/target/release/bundle/macos/Tolaria.app"
 [[ -d "${APP_SRC}" ]]
