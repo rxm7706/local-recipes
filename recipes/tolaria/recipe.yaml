@@ -14,12 +14,19 @@ source:
 
 build:
   number: 0
-  skip: not (osx and arm64)
-  script: bash ${{ RECIPE_DIR }}/build.sh
-  # Tauri produces a self-contained .app bundle; the bundled binary lacks
-  # install_name_tool header padding, so disable conda-forge relocation.
+  skip: not ((osx and arm64) or (linux and x86_64) or (win and x86_64))
   dynamic_linking:
-    binary_relocation: false
+    # Allowlist the raw binaries so conda-forge patches their RPATH to
+    # find webkit2gtk4.1 / libsoup / etc. from the conda env on Linux.
+    # The macOS Tolaria.app bundle is intentionally excluded — Tauri's
+    # bundle layout uses @loader_path-relative install_names for ABI
+    # isolation; conda must not touch those binaries.
+    binary_relocation:
+      - bin/tolaria
+      - Library/bin/tolaria.exe
+    rpath_allowlist:
+      - "@loader_path/**"
+      - "$ORIGIN/**"
 
 requirements:
   build:
@@ -30,18 +37,56 @@ requirements:
     - nodejs 24.*
     - pnpm
     - cargo-bundle-licenses
+    - if: linux
+      then:
+        - pkg-config
+  host:
+    - if: linux
+      then:
+        - webkit2gtk4.1
+        - librsvg
+        - openssl
+  run:
+    - menuinst >=2.1
+    - if: linux
+      then:
+        - webkit2gtk4.1
+  ignore_run_exports:
+    # webkit2gtk4.1 + transitive deps drag in fontconfig/expat/zlib pins that
+    # we don't link against directly. Drop them to keep solves clean. Mirrors
+    # the pattern used in conda-forge/nebi-feedstock.
+    from_package:
+      - if: linux
+        then:
+          - openssl
 
 tests:
   - script:
-      - test -x $PREFIX/bin/tolaria
-      - test -d "$PREFIX/lib/Tolaria.app"
-      - test -x "$PREFIX/lib/Tolaria.app/Contents/MacOS/Tolaria"
+      - if: osx
+        then:
+          - test -x $PREFIX/bin/tolaria
+          - test -d "$PREFIX/lib/Tolaria.app"
+          - test -x "$PREFIX/lib/Tolaria.app/Contents/MacOS/Tolaria"
+          - codesign -v "$PREFIX/lib/Tolaria.app"
+          - test -f "$PREFIX/Menu/tolaria-menu.json"
+      - if: linux
+        then:
+          - test -x $PREFIX/bin/tolaria
+          - test -d "$PREFIX/lib/club.refactoring.tolaria/mcp-server"
+          - test -f "$PREFIX/Menu/tolaria-menu.json"
+      - if: win
+        then:
+          - if not exist "%LIBRARY_BIN%\tolaria.exe" exit 1
+          - if not exist "%LIBRARY_BIN%\resources\mcp-server" exit 1
+          - if not exist "%PREFIX%\Menu\tolaria-menu.json" exit 1
   - package_contents:
       bin:
         - tolaria
       files:
-        - lib/Tolaria.app/Contents/MacOS/Tolaria
-        - lib/Tolaria.app/Contents/Info.plist
+        - Menu/tolaria-menu.json
+        - if: osx
+          then:
+            - lib/Tolaria.app/Contents/Info.plist
 
 about:
   homepage: https://tolaria.md
