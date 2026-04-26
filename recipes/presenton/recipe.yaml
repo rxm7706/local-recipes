@@ -10,12 +10,13 @@ package:
   version: ${{ version }}
 
 source:
-  # Tag: electron-v0.7.2-beta (all releases follow the electron-v*-beta pattern)
+  # Tag: electron-v0.7.3-beta (Electron release line; the bare v*-beta tags
+  # are the separate Docker release line and have a different cadence).
   url: https://github.com/presenton/presenton/archive/refs/tags/electron-v${{ version }}-beta.tar.gz
   sha256: 5c89a104be746027da5cd745e7511dd45527a20373189fff566d0a3ed5329584
 
 build:
-  number: 1
+  number: 0
   # Not noarch: python — asyncpg, chromadb, and other deps have compiled extensions.
   # Also pinned to Python 3.11 only by upstream (>=3.11,<3.12).
   # The build.sh / build.bat are auto-discovered by rattler-build / conda-build.
