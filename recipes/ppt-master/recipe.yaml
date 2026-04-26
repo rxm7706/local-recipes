@@ -13,7 +13,7 @@ source:
   sha256: d333766a22d7b7615656362717f00df03591961cf367e0086750d7df010c4e58
 
 build:
-  number: 1
+  number: 0
   noarch: generic
 
 requirements:
@@ -27,12 +27,7 @@ requirements:
     - reportlab >=4.0.0
     - svglib >=1.5.0
     - pymupdf >=1.23.0
-    - if: unix
-      then:
-        - __unix
-    - if: win
-      then:
-        - __win
+    - google-genai >=1.0.0
 
 tests:
   - script:
