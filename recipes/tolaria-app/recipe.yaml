@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.4.25"
+
+package:
+  name: tolaria-app
+  version: ${{ version }}
+
+source:
+  url: https://github.com/refactoringhq/tolaria/archive/refs/tags/stable-v${{ version }}.tar.gz
+  sha256: 7e4ec239ca7847740d43d687175f4905d7c7a2a0e300c2c83515fb358d90dcd7
+
+build:
+  number: 0
+  skip: not (osx and arm64)
+  script: bash ${{ RECIPE_DIR }}/build.sh
+  # Tauri produces a self-contained .app bundle; the bundled binary lacks
+  # install_name_tool header padding, so disable conda-forge relocation.
+  dynamic_linking:
+    binary_relocation: false
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
+    - nodejs 24.*
+    - pnpm
+    - cargo-bundle-licenses
+
+tests:
+  - script:
+      - test -x $PREFIX/bin/tolaria
+      - test -d "$PREFIX/lib/Tolaria.app"
+      - test -x "$PREFIX/lib/Tolaria.app/Contents/MacOS/Tolaria"
+  - package_contents:
+      bin:
+        - tolaria
+      files:
+        - lib/Tolaria.app/Contents/MacOS/Tolaria
+        - lib/Tolaria.app/Contents/Info.plist
+
+about:
+  homepage: https://tolaria.md
+  repository: https://github.com/refactoringhq/tolaria
+  license: AGPL-3.0-or-later
+  license_file:
+    - LICENSE
+    - THIRDPARTY-RUST.yml
+    - THIRDPARTY-NPM.txt
+  summary: Desktop app to manage markdown knowledge bases
+  description: |
+    Tolaria is a Tauri-based desktop application for managing markdown
+    knowledge bases. It combines a React + BlockNote frontend with a
+    Rust backend and a bundled MCP server, and is designed for personal
+    knowledge and life management workflows.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
