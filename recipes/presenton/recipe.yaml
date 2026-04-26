@@ -16,7 +16,7 @@ source:
   sha256: 5c89a104be746027da5cd745e7511dd45527a20373189fff566d0a3ed5329584
 
 build:
-  number: 0
+  number: 2
   # Not noarch: python — asyncpg, chromadb, and other deps have compiled extensions.
   # Also pinned to Python 3.11 only by upstream (>=3.11,<3.12).
   # The build.sh / build.bat are auto-discovered by rattler-build / conda-build.
