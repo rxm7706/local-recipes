@@ -41,24 +41,43 @@ requirements:
       then:
         - pkg-config
   host:
+    # Linux Tauri build needs pkg-config-discoverable .pc files for the entire
+    # gtk3/webkit2gtk stack — Rust crates gdk-sys, gtk-sys, cairo-sys, glib-sys,
+    # etc. all use pkg-config to find headers + link flags. Mirrors the
+    # conda-forge/nebi-feedstock host list (proven working for webkit2gtk4.1).
     - if: linux
       then:
+        - gtk3
         - webkit2gtk4.1
-        - librsvg
+        - glib
+        - libsoup
+        - gdk-pixbuf
+        - cairo          # binary links libcairo directly via gdk/gtk transitively
         - openssl
+        - zlib
+        - expat
+        - fontconfig
+        # librsvg intentionally omitted: Tauri's gtk stack does not link the
+        # binary against librsvg.so directly (it's used by gdk-pixbuf at
+        # runtime only when SVG icons are loaded; webkit2gtk4.1 brings it as
+        # a transitive runtime dep). Listing it here triggers an
+        # "Overdepending against librsvg" warning from rattler-build.
   run:
     - menuinst >=2.1
     - if: linux
       then:
         - webkit2gtk4.1
   ignore_run_exports:
-    # webkit2gtk4.1 + transitive deps drag in fontconfig/expat/zlib pins that
-    # we don't link against directly. Drop them to keep solves clean. Mirrors
-    # the pattern used in conda-forge/nebi-feedstock.
+    # webkit2gtk4.1 + transitive deps drag in pins for libs we don't link
+    # against directly. Drop them to keep solves clean. Mirrors the pattern
+    # used in conda-forge/nebi-feedstock.
     from_package:
       - if: linux
         then:
           - openssl
+          - zlib
+          - expat
+          - fontconfig
 
 tests:
   - script:

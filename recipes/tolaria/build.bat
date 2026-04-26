@@ -27,14 +27,17 @@ if not exist THIRDPARTY-RUST.yml exit /b 1
 if not exist THIRDPARTY-NPM.txt exit /b 1
 
 echo === Windows x64 build (raw binary) ===
-:: --bundles none: produce only target\release\tolaria.exe, skip MSI/NSIS
+:: --no-bundle: produce only target\release\tolaria.exe, skip MSI/NSIS
 :: bundlers (which would be repackaged out of conda's prefix layout anyway).
-call pnpm tauri build --bundles none --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
+call pnpm tauri build --no-bundle --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
 if errorlevel 1 exit /b 1
 
-set BIN_SRC=src-tauri\target\release\tolaria.exe
+:: Conda-forge's rust compiler activation passes --target=<triple>, so cargo
+:: outputs to target\<triple>\release\ instead of target\release\.
+set BIN_SRC=src-tauri\target\x86_64-pc-windows-msvc\release\tolaria.exe
+if not exist "%BIN_SRC%" set BIN_SRC=src-tauri\target\release\tolaria.exe
 if not exist "%BIN_SRC%" (
-  echo ERROR: %BIN_SRC% not produced by tauri build
+  echo ERROR: tolaria.exe not produced by tauri build
   exit /b 1
 )
 
@@ -43,11 +46,15 @@ copy /Y "%BIN_SRC%" "%LIBRARY_BIN%\tolaria.exe"
 if errorlevel 1 exit /b 1
 
 :: Tauri's webview2-com-sys vendors WebView2Loader.dll alongside the binary
-:: at build time. Copy if present so the .exe can locate it at runtime.
-if exist "src-tauri\target\release\WebView2Loader.dll" (
-  copy /Y "src-tauri\target\release\WebView2Loader.dll" "%LIBRARY_BIN%\WebView2Loader.dll"
-  if errorlevel 1 exit /b 1
+:: at build time. Copy if present (resolves to the same dir as the .exe).
+for %%D in ("src-tauri\target\x86_64-pc-windows-msvc\release" "src-tauri\target\release") do (
+  if exist "%%~D\WebView2Loader.dll" (
+    copy /Y "%%~D\WebView2Loader.dll" "%LIBRARY_BIN%\WebView2Loader.dll"
+    if errorlevel 1 exit /b 1
+    goto :webview_copied
+  )
 )
+:webview_copied
 
 :: Stage MCP server resources at Tauri's expected runtime location.
 :: tauri::path::resource_dir() on Windows checks <exe_dir>\resources\ first.

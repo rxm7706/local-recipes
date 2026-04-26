@@ -29,6 +29,12 @@ pnpm licenses list --prod --long > THIRDPARTY-NPM.txt
 # have access to).
 TAURI_OVERRIDE='{"bundle":{"createUpdaterArtifacts":false}}'
 
+# Conda-forge's rust compiler activation passes --target=<triple>, so cargo
+# outputs to target/<triple>/release/ instead of target/release/. Detect the
+# triple from rustc and prefer that path; fall back to the un-triplet path
+# for build environments without an explicit --target.
+RUST_TARGET="$(rustc -vV | awk '/^host:/ {print $2}')"
+
 case "${target_platform}" in
   osx-arm64)
     echo "=== macOS arm64 build (.app bundle) ==="
@@ -36,7 +42,8 @@ case "${target_platform}" in
     # macOS resource resolution (looks at <exe>/../Resources via Info.plist).
     pnpm tauri build --bundles app --config "${TAURI_OVERRIDE}"
 
-    APP_SRC="src-tauri/target/release/bundle/macos/Tolaria.app"
+    APP_SRC="src-tauri/target/${RUST_TARGET}/release/bundle/macos/Tolaria.app"
+    [[ -d "${APP_SRC}" ]] || APP_SRC="src-tauri/target/release/bundle/macos/Tolaria.app"
     [[ -d "${APP_SRC}" ]]
 
     mkdir -p "${PREFIX}/lib"
@@ -64,12 +71,13 @@ EOF
 
   linux-64)
     echo "=== Linux x86_64 build (raw binary) ==="
-    # --bundles none: produce only target/release/tolaria, skip the
+    # --no-bundle: produce only target/release/tolaria, skip the
     # .deb/.AppImage/.rpm bundlers (which would just be repackaged out
     # of conda's prefix layout anyway). Mirrors conda-forge/nebi-feedstock.
-    pnpm tauri build --bundles none --config "${TAURI_OVERRIDE}"
+    pnpm tauri build --no-bundle --config "${TAURI_OVERRIDE}"
 
-    BIN_SRC="src-tauri/target/release/tolaria"
+    BIN_SRC="src-tauri/target/${RUST_TARGET}/release/tolaria"
+    [[ -x "${BIN_SRC}" ]] || BIN_SRC="src-tauri/target/release/tolaria"
     [[ -x "${BIN_SRC}" ]]
 
     mkdir -p "${PREFIX}/bin"
