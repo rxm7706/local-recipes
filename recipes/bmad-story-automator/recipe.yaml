@@ -24,20 +24,33 @@ requirements:
   run:
     - nodejs >=18
     - python >=3.10
-    # bin/bmad-story-automator explicitly errors on Windows; the __unix virtual
-    # package keeps Windows users from installing, while conda-forge.yml
-    # restricts CI to non-Windows runners.
-    - __unix
+    # https://github.com/bmad-code-org/bmad-automator/blob/9e7dff8fa388679de4668fadc0318f32245eb0f1/bin/bmad-story-automator#L38
+    # console.error("Error: Unsupported OS: Windows (supported: macOS, Linux)");
+    # __unix prevents installation on Windows (the bin script spawns bash to
+    # run install.sh, which has no Windows code path). The selector is gated
+    # on `unix` because conda-forge's v1 linter forbids unconditional run
+    # selectors on noarch packages unless conda-forge.yml's noarch_platforms
+    # has >1 entries (which ours does: linux_64, osx_64, osx_arm64).
+    - if: unix
+      then:
+        - __unix
 
 tests:
-  - script:
-      - bmad-story-automator --version
-      - bmad-story-automator --help
-      - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/package.json"
-      - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/bin/bmad-story-automator"
-      - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/install.sh"
-      - test -d "${PREFIX}/lib/node_modules/bmad-story-automator/payload"
-      - test -d "${PREFIX}/lib/node_modules/bmad-story-automator/source"
+  # Skip tests on win: the noarch artifact built on the win-64 staged-recipes
+  # runner won't have __unix in run deps (selector evaluates false), so the
+  # test env would solve, but the test script uses unix-only commands. The
+  # post-merge feedstock won't run the win runner at all (gated by
+  # noarch_platforms in conda-forge.yml).
+  - if: unix
+    then:
+      script:
+        - bmad-story-automator --version
+        - bmad-story-automator --help
+        - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/package.json"
+        - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/bin/bmad-story-automator"
+        - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/install.sh"
+        - test -d "${PREFIX}/lib/node_modules/bmad-story-automator/payload"
+        - test -d "${PREFIX}/lib/node_modules/bmad-story-automator/source"
 
 about:
   homepage: https://github.com/bmad-code-org/bmad-automator
