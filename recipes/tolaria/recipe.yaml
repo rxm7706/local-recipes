@@ -5,7 +5,7 @@ context:
   version: "2026.4.25"
 
 package:
-  name: tolaria-app
+  name: tolaria
   version: ${{ version }}
 
 source:
