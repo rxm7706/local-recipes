@@ -2,9 +2,16 @@
 setlocal enabledelayedexpansion
 
 echo === Build environment ===
-node --version || exit /b 1
-pnpm --version || exit /b 1
-cargo --version || exit /b 1
+node --version
+if errorlevel 1 exit /b 1
+:: pnpm ships as pnpm.cmd; bare-invoke would transfer control and terminate
+:: this script. Always use `call pnpm ...`. Same for any other .cmd shim.
+call pnpm --version
+if errorlevel 1 exit /b 1
+rustc --version
+if errorlevel 1 exit /b 1
+cargo --version
+if errorlevel 1 exit /b 1
 
 set NODE_OPTIONS=--max-old-space-size=6144
 
