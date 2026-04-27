@@ -33,6 +33,7 @@ Comprehensive guide for diagnosing and fixing conda-forge CI build failures.
 | `BUILD_TOOLS` | `meson: command not found` | Add `meson`, `ninja`, or `autotools` to `build:` requirements |
 | `ENV_ISOLATION` | `command not found` | Tool missing from `build:` requirements (not on PATH in sysroot) |
 | `RESOURCE` | `MemoryError`, `Errno 28` | Reduce `-j` parallelism; clean intermediate files |
+| `BAT_SILENT_EXIT` | win-64 only: `× No license files were copied` (or other "this never ran") despite seemingly clean log; script halts after `pnpm`/`npm`/`yarn` line | `.cmd` shim invoked from `.bat` without `call` — see Windows § "Silent build.bat Termination" |
 
 ### Max Iteration Rule
 
@@ -254,6 +255,47 @@ build:
 # Convert to Unix line endings
 dos2unix build.sh
 ```
+
+#### Silent `build.bat` Termination After Calling a `.cmd` Shim (pnpm/npm/yarn)
+
+**Symptom:** `build.bat` prints output up to a `pnpm`/`npm`/`yarn` invocation, then **silently terminates with no error**. Rattler-build proceeds to packaging and may fail later with a misleading error like `× No license files were copied` (because subsequent build steps that generate THIRDPARTY-* files never ran).
+
+**Example log:**
+```
+=== Build environment ===
+v24.14.1          ← node --version (node.exe)
+10.33.2           ← pnpm --version (pnpm.cmd)
+[script ends with exit 0; rattler-build moves to "Packaging new files"]
+Error: × No license files were copied
+```
+
+**Root cause:** When a `.bat` invokes a `.cmd` shim (like `pnpm.cmd`, `npm.cmd`, `yarn.cmd`) **without `call`**, cmd.exe **transfers control** to the shim instead of recursing. When the shim returns, the parent `.bat` terminates rather than continuing to the next line. This is a long-standing cmd.exe footgun, not a rattler-build bug.
+
+**Wrong:**
+```bat
+node --version || exit /b 1
+pnpm --version || exit /b 1   :: pnpm is pnpm.cmd → terminates the script here
+cargo --version || exit /b 1  :: never runs
+```
+
+**Right:**
+```bat
+node --version
+if errorlevel 1 exit /b 1
+call pnpm --version
+if errorlevel 1 exit /b 1
+cargo --version
+if errorlevel 1 exit /b 1
+```
+
+**Rule:** In `build.bat`, prefix **every** invocation of a CLI that ships as a `.cmd`/`.bat` wrapper with `call`. Common offenders on conda-forge win-64:
+- `pnpm` (pnpm.cmd)
+- `npm` (npm.cmd)
+- `yarn` (yarn.cmd)
+- `npx` (npx.cmd)
+- Any third-party CLI installed via npm
+
+`call` is harmless on real `.exe` binaries (`node.exe`, `cargo.exe`, `rustc.exe`, etc.), so when in doubt, add it.
 
 ### macOS
 

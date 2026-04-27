@@ -109,6 +109,23 @@ Go compiler macros (use the correct name — `compiler("go")` is deprecated):
 ### Python Version Floor: `3.10`
 Python 3.9 was dropped from the conda-forge build matrix in August 2025. The floor is `3.10`. **Never set `python_min` below `3.10`** for new recipes. See [Python Version Policy](#python-version-policy) for full rules.
 
+### `build.bat` Must `call` Every `.cmd` Shim (pnpm/npm/yarn)
+On Windows, `pnpm`, `npm`, `yarn`, `npx`, and similar tools ship as `.cmd` wrappers. Invoking a `.cmd` from a `.bat` **without `call`** causes cmd.exe to **transfer control** to the shim — when it returns, the parent script terminates with exit 0 instead of continuing. The build appears to succeed but later steps never run, and rattler-build emits misleading errors like `× No license files were copied`.
+
+```bat
+:: WRONG — script silently terminates after pnpm returns
+pnpm --version || exit /b 1
+cargo --version || exit /b 1   :: never runs
+
+:: RIGHT — `call` recurses and returns control to the parent
+call pnpm --version
+if errorlevel 1 exit /b 1
+cargo --version
+if errorlevel 1 exit /b 1
+```
+
+`call` is harmless on real `.exe` (`node.exe`, `cargo.exe`, `rustc.exe`); when in doubt, add it. See `guides/ci-troubleshooting.md` § "Silent build.bat Termination".
+
 ---
 
 ## Primary Workflow: The Autonomous Loop
