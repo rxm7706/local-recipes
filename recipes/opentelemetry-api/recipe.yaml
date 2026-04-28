@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.41.1"
+  python_min: "3.10"
+
+package:
+  name: opentelemetry-api
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-api/opentelemetry_api-${{ version }}.tar.gz
+  sha256: 0ad1814d73b875f84494387dae86ce0b12c68556331ce6ce8fe789197c949621
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typing-extensions >=4.5.0
+    #  This should be able to be removed after 3.12 is released if there is a reliable API in importlib.metadata
+    - importlib-metadata >=6.0,<8.8.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.context
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: OpenTelemetry Python API
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk
+    - marcelotrevisani
