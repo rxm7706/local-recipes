@@ -32,8 +32,8 @@ test:
   commands:
     - pip check
   requires:
-    - python {{ python_min }}
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-sdk

@@ -1,14 +1,13 @@
-{% set name = "opentelemetry-api" %}
-{% set version = "1.40.0" %}
+{% set version = "1.41.1" %}
 {% set python_min = "3.10" %}
 
 package:
-  name: {{ name|lower }}
+  name: opentelemetry-api
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_api-{{ version }}.tar.gz
-  sha256: 159be641c0b04d11e9ecd576906462773eb97ae1b657730f0ecf64d32071569f
+  url: https://pypi.org/packages/source/o/opentelemetry-api/opentelemetry_api-{{ version }}.tar.gz
+  sha256: 0ad1814d73b875f84494387dae86ce0b12c68556331ce6ce8fe789197c949621
 
 build:
   noarch: python
@@ -36,7 +35,7 @@ test:
     - python {{ python_min }}
 
 about:
-  home: https://github.com/open-telemetry/opentelemetry-python/tree/master/opentelemetry-api
+  home: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api
   summary: OpenTelemetry Python API
   license: Apache-2.0
   license_file: LICENSE
