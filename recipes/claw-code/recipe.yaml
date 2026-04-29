@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: claw-code
+  version: "0.1.0"
+  # Upstream has no tagged release; pin to a specific commit on main.
+  # Re-sha256 + bump this when ultraworkers/claw-code cuts a real tag.
+  commit: cb56dc12ab8f75cbd11306fedc365f44878f9890
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ultraworkers/claw-code/archive/${{ commit }}.tar.gz
+  sha256: 9829ac93b9fb2ac3bf79fdea48515a2e66c15283f49077245cf7f35d5a9d2a76
+
+build:
+  number: 0
+  script:
+    - if: osx and x86_64
+      then:
+        - unset CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER
+    - if: unix
+      then:
+        - export OPENSSL_DIR="$PREFIX"
+        - cd rust
+        - cargo install --locked --root $PREFIX --path crates/rusty-claude-cli --no-track
+      else:
+        - cd rust
+        - cargo install --locked --root %PREFIX% --path crates/rusty-claude-cli --no-track
+  files:
+    - bin/claw
+    - bin/claw.exe
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
+  host:
+    - if: unix
+      then:
+        - pkg-config
+        - openssl
+
+tests:
+  - script:
+      - claw --help
+
+about:
+  homepage: https://github.com/ultraworkers/claw-code
+  repository: https://github.com/ultraworkers/claw-code
+  summary: Public Rust implementation of the claw CLI agent harness.
+  description: |
+    Claw Code is the public Rust implementation of the `claw` CLI agent
+    harness. It provides a terminal-first agent harness that talks to the
+    Anthropic API. The canonical implementation lives in the rust/ workspace
+    of the upstream repository.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
