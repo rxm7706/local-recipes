@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: litellm-proxy-extras
+  version: "0.4.69"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/litellm_proxy_extras-${{ version }}.tar.gz
+  sha256: 8c24a01a4dffb137e95c709a47ab68053591ccdf7d78a038c57348f5b2ab990d
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build >=0.10.9
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - litellm_proxy_extras
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_test_max }}.*
+
+about:
+  homepage: https://litellm.ai
+  repository: https://github.com/BerriAI/litellm
+  documentation: https://docs.litellm.ai
+  summary: Additional files (SQL migrations) for the LiteLLM proxy
+  description: |
+    litellm-proxy-extras ships supplementary files used by the LiteLLM
+    proxy server — primarily Prisma database migration SQL — split out
+    of the main `litellm` distribution to keep the core package small.
+    It is a runtime companion to `litellm[proxy]` and has no Python
+    dependencies of its own.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

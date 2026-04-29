@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: resend
+  version: "2.23.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: df613827dcc40eb1c9de2e5ff600cd4081b89b206537dec8067af1a5016d23c7
+
+build:
+  number: 0
+  noarch: python
+  # Upstream resend sdist 2.23.0 ships a setup.py that reads
+  # `requirements.txt` at build time, but the file is not included in
+  # the sdist (MANIFEST.in omission). Recreate it before pip-install so
+  # metadata generation succeeds; the contents are also mirrored in the
+  # `run:` section below.
+  script:
+    - echo "requests>=2.31.0" > requirements.txt
+    - echo "typing_extensions>=4.4.0" >> requirements.txt
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=68
+    - wheel
+    # setup.py executes `from resend.version import get_version`, which
+    # transitively walks the whole package and imports the runtime deps.
+    # Mirror the run-deps here so --no-build-isolation can complete.
+    - typing_extensions >=4.4.0
+    - requests >=2.31.0
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.31.0
+    - typing_extensions >=4.4.0
+
+tests:
+  - python:
+      imports:
+        - resend
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://resend.com
+  repository: https://github.com/resend/resend-python
+  documentation: https://resend.com/docs
+  license: MIT
+  license_file: LICENSE.md
+  summary: Python SDK for the Resend transactional email API
+  description: |
+    The official Python client for the Resend transactional email
+    service. Used by litellm's `[extra-proxy]` extras to send
+    operational notifications from a deployed proxy server.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

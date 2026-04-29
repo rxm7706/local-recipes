@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠ LOCAL-ONLY RECIPE — DO NOT SUBMIT TO conda-forge ⚠
+#
+# `litellm-enterprise` ships under the BerriAI Enterprise License
+# (`LicenseRef-Proprietary`). conda-forge only redistributes
+# open-source software, so this recipe MUST NOT be submitted to
+# `conda-forge/staged-recipes` and MUST NOT be uploaded to the
+# `conda-forge` channel. It exists here purely to enable local /
+# private-channel installs alongside our local litellm + litellm-proxy
+# builds. Use only inside an Artifactory-backed (or other private)
+# channel where licence terms have been reviewed and accepted.
+
+context:
+  name: litellm-enterprise
+  version: "0.1.39"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/litellm_enterprise-${{ version }}.tar.gz
+  sha256: 434e2c15280218bb9224adbbac878bcffe0b8a75b0b46deeb0b90bc4f2e2152b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build >=0.10.9
+  run:
+    - python >=${{ python_min }}
+    # pyproject.toml declares no runtime deps, but every module under
+    # `litellm_enterprise/` imports from `litellm` (e.g.
+    # `from litellm._logging import verbose_proxy_logger`). The package
+    # is exclusively a litellm proxy add-on and is unusable without it.
+    - litellm
+
+tests:
+  - python:
+      imports:
+        - litellm_enterprise
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://litellm.ai
+  repository: https://github.com/BerriAI/litellm
+  documentation: https://docs.litellm.ai
+  summary: BerriAI Enterprise add-on for the LiteLLM proxy (proprietary)
+  description: |
+    litellm-enterprise contains the proprietary BerriAI Enterprise
+    feature set for the LiteLLM proxy server: enterprise authentication
+    integrations, secret-detection callbacks, PagerDuty/llm-guard
+    callbacks, and related enterprise-only proxy hooks. It is loaded as
+    an add-on by `litellm` proxy when the corresponding enterprise
+    features are enabled in the proxy config.
+
+    LICENSE: LicenseRef-Proprietary (BerriAI Enterprise License).
+    See LICENSE.md for full terms. This recipe is for local /
+    private-channel use only and must not be redistributed via
+    conda-forge.
+  license: LicenseRef-Proprietary
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

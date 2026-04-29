@@ -32,6 +32,40 @@ except ImportError:
     REQUESTS_AVAILABLE = False
 
 
+def _pypi_to_conda_name(pypi_name: str) -> str:
+    """Translate a PyPI dep name to its conda-forge equivalent.
+
+    Routes through ``name_resolver.resolve_name`` so the local mapping
+    cache (`data/pypi_conda_map.json`) and the conda-forge-metadata API
+    catch the well-known divergences — e.g. PyPI ``redis`` is conda-forge
+    ``redis-py``; PyPI ``soundfile`` is conda-forge ``pysoundfile``. The
+    common identity case (where conda and PyPI names match) and any
+    resolver failure both fall through to the input name unchanged, so
+    this is safe to apply unconditionally to every emitted dep.
+    """
+    # Lazy import so a missing resolver / cache never breaks the
+    # generator. The script directory is on sys.path because the tests
+    # add it via the `load_module` fixture, and CLI invocation runs the
+    # script directly with its own dir as cwd.
+    try:
+        from pathlib import Path as _Path
+        _scripts_dir = str(_Path(__file__).resolve().parent)
+        if _scripts_dir not in sys.path:
+            sys.path.insert(0, _scripts_dir)
+        from name_resolver import resolve_name
+    except Exception:
+        return pypi_name
+
+    try:
+        result = resolve_name(pypi_name)
+    except Exception:
+        return pypi_name
+
+    if result.get("success") and result.get("conda_name"):
+        return result["conda_name"]
+    return pypi_name
+
+
 @dataclass
 class PackageInfo:
     """Package metadata."""
@@ -122,7 +156,11 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
                     sha256 = release["digests"]["sha256"]
                     break
 
-    # Parse dependencies
+    # Parse dependencies. Each PyPI dep name is routed through
+    # `_pypi_to_conda_name` so well-known PyPI↔conda-forge name
+    # divergences (e.g. PyPI `redis` → conda-forge `redis-py`,
+    # PyPI `soundfile` → conda-forge `pysoundfile`) are translated
+    # automatically. Identity-mapped names pass through unchanged.
     dependencies = []
     requires_dist = info.get("requires_dist") or []
     for req in requires_dist:
@@ -132,7 +170,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         # Extract package name
         match = re.match(r"^([a-zA-Z0-9_-]+)", req)
         if match:
-            dependencies.append(match.group(1).lower())
+            dependencies.append(_pypi_to_conda_name(match.group(1).lower()))
 
     build_backend = determine_build_backend(requires_dist)
 
