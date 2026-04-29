@@ -253,6 +253,8 @@ conda-render recipes/my-package
 ## Common Patterns
 
 ### Get PyPI source URL
+
+**Sdist (preferred):**
 ```
 https://pypi.org/packages/source/{first_letter}/{name}/{name}-{version}.tar.gz
 ```
@@ -261,6 +263,18 @@ Example:
 ```
 https://pypi.org/packages/source/r/requests/requests-2.31.0.tar.gz
 ```
+
+**Wheel (only when no sdist exists):**
+```
+https://pypi.org/packages/{py_tag}/{first_letter}/{name}/{name}-{version}-{py_tag}-none-any.whl
+```
+
+Example:
+```
+https://pypi.org/packages/py3/r/runcell/runcell-0.1.15-py3-none-any.whl
+```
+
+**Never** use the hashed `https://files.pythonhosted.org/packages/<aa>/<bb>/<longhash>/...` URL — it bypasses standard JFrog Artifactory PyPI proxies in air-gapped corporate setups. See `docs/enterprise-deployment.md` §3.
 
 ### Check package exists on conda-forge
 ```bash
