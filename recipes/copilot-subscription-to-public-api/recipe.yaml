@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# Upstream pyproject.toml uses `name = "c2p"`, but the PyPI name `c2p` is
+# already owned by an unrelated 2017 package. The conda-forge package is
+# named after the repo to avoid the namespace collision; the importable
+# Python package and the console script are still `c2p`.
+#
+# Upstream has no tagged releases — sourcing from a pinned master commit.
+# Re-pin commit + re-sha256 when bumping.
+
+context:
+  name: copilot-subscription-to-public-api
+  version: "0.1.0"
+  python_min: "3.10"
+  commit: 8f5bbf6708641ce597a88bb42a70d1d6171753e7
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/otler17/copilot-Subscription-to-Public-Api/archive/${{ commit }}.tar.gz
+  sha256: e13e133b248d6c93829a77853dbe1829ed71c77703325e54e51e418aa76c9dae
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=68
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - fastapi >=0.110
+    - uvicorn-standard >=0.27
+    - httpx >=0.27
+    - typer >=0.12
+    - rich >=13.7
+
+tests:
+  - python:
+      imports:
+        - c2p
+        - c2p.cli
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - c2p --help
+
+about:
+  homepage: https://github.com/otler17/copilot-Subscription-to-Public-Api
+  repository: https://github.com/otler17/copilot-Subscription-to-Public-Api
+  summary: Expose a GitHub Copilot subscription as a public OpenAI-compatible API
+  description: |
+    c2p (copilot-Subscription-to-Public-Api) wraps a locally running
+    copilot-api with a public-facing FastAPI gateway that exposes
+    OpenAI-compatible endpoints, plus an authenticated key store, per-key
+    quotas, and request logging. The bundled `c2p` CLI manages API keys
+    and starts the gateway service.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

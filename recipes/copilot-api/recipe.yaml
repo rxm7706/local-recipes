@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: copilot-api
+  version: "0.7.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/${{ name }}/-/${{ name }}-${{ version }}.tgz
+  sha256: 1fccfd2bfe8bfbbe00c1aa535ffba2b7131fc7bc91eb830e3d4c78bfe4f06220
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+        - npm pack --ignore-scripts
+        - npm install -ddd --global ${PKG_NAME}-${PKG_VERSION}.tgz
+        - pnpm install --prod --ignore-scripts
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+    - if: win
+      then:
+        - npm config set prefix "%PREFIX%"
+        - npm pack --ignore-scripts
+        - npm install --userconfig nonexistentrc -g %PKG_NAME%-%PKG_VERSION%.tgz
+        - pnpm install --prod --ignore-scripts
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+
+requirements:
+  build:
+    - nodejs >=20
+    - pnpm
+    - pnpm-licenses
+  run:
+    - nodejs >=20
+
+tests:
+  - script:
+      - copilot-api --help
+
+about:
+  homepage: https://github.com/ericc-ch/copilot-api
+  repository: https://github.com/ericc-ch/copilot-api
+  summary: Turn GitHub Copilot into an OpenAI/Anthropic API compatible server
+  description: |
+    copilot-api is a reverse-engineered proxy that exposes GitHub Copilot's
+    chat backend through OpenAI- and Anthropic-compatible HTTP APIs, so any
+    client that speaks those protocols (Claude Code, OpenAI SDKs, etc.) can
+    use a Copilot subscription as the underlying model provider. The CLI
+    runs a local server (default port 4141) and handles authentication with
+    GitHub on first launch.
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

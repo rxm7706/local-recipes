@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# NOTE: upstream has no releases tagged and no pyproject.toml. Sourcing from
+# a pinned commit on main; bumping requires re-pinning commit + re-sha256.
+# Version `0.2.0` is taken from the `VERSION` literal in app.py.
+# Single-script project (app.py + requirements.txt), no Python packaging
+# metadata — this recipe drops the script into $PREFIX/share with a
+# launcher in $PREFIX/bin, sidestepping pip entirely.
+
+context:
+  name: copilot-api-proxy
+  version: "0.2.0"
+  python_min: "3.11"
+  commit: d0159ebdda04ffc22a9d1b8375bc1a4d4830206c
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/IT-BAER/copilot-api-proxy/archive/${{ commit }}.tar.gz
+  sha256: b3262d307f2ef9a278d76986f8070daa03d77169fd6569bdb34c72a51a601bdb
+
+build:
+  number: 0
+  # Per-platform (not noarch) so we can skip Windows. Upstream targets
+  # Linux service deployment via install.sh + systemd; the bash launcher
+  # in build.sh has no Windows equivalent here, and noarch packages
+  # cannot use selector-skips.
+  skip: win
+  script: bash "${RECIPE_DIR}/build.sh"
+
+requirements:
+  host:
+    - python
+  run:
+    # Python version is unconstrained per conda-forge linter: per-platform
+    # builds get the version from the build matrix, not from the recipe.
+    # Upstream install.sh checks for python >=3.11 at runtime.
+    - python
+    - fastapi >=0.104.0
+    - uvicorn-standard >=0.24.0
+    - requests >=2.31.0
+    - pydantic >=2.5.0
+    - python-multipart >=0.0.6
+    - httpx >=0.25.0
+    - h2
+
+tests:
+  - script:
+      # app.py prints to stderr and exits cleanly when given --help via
+      # uvicorn's argparse; if not, the import smoke-test below still
+      # validates that all runtime deps resolve.
+      - python -c "import sys; sys.path.insert(0, '${PREFIX}/share/copilot-api-proxy'); import app; print(app.VERSION)"
+  - package_contents:
+      bin:
+        - copilot-api-proxy
+      files:
+        - share/copilot-api-proxy/app.py
+
+about:
+  homepage: https://github.com/IT-BAER/copilot-api-proxy
+  repository: https://github.com/IT-BAER/copilot-api-proxy
+  summary: OpenAI- and Anthropic-compatible reverse proxy for the GitHub Copilot API
+  description: |
+    copilot-api-proxy is a FastAPI reverse-proxy that exposes the GitHub
+    Copilot chat backend through OpenAI- and Anthropic-compatible HTTP
+    endpoints. It supports all Copilot models with rate limiting and
+    usage tracking, and ships a small web dashboard. The CLI launches a
+    uvicorn server (default port 4141 when run from the bundled systemd
+    unit) that authenticates against a Copilot subscription and serves
+    OpenAI-style requests, allowing OpenAI/Anthropic SDK clients to use
+    Copilot as the model provider.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

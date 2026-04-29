@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# NOTE: upstream pyproject.toml has `[tool.pdm] distribution = false` and no
+# [build-system] table — the project is not packaged for pip. This recipe
+# bypasses pip entirely and drops main.py + run.py into $PREFIX/share with
+# a launcher in $PREFIX/bin. Metadata (version, license, description) is
+# hardcoded here because upstream pyproject.toml is stale (still says 0.1.0
+# while v0.1.11 is the latest tag) and uses an invalid SPDX string ("Apache").
+
+context:
+  name: copilot-openai-api
+  version: "0.1.11"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/yuchanns/copilot-openai-api/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ea0cf5465d2bf0453f62942d65952b66895aff75ae84e0fd1d41517c46814a27
+
+build:
+  number: 0
+  # Per-platform (not noarch) so we can skip Windows. Upstream only ships
+  # a Linux Dockerfile; the bash launcher in build.sh has no Windows
+  # equivalent here, and noarch packages cannot use selector-skips.
+  skip: win
+  script: bash "${RECIPE_DIR}/build.sh"
+
+requirements:
+  host:
+    - python
+  run:
+    # Python version is unconstrained per conda-forge linter: per-platform
+    # builds get the version from the build matrix, not from the recipe.
+    # Upstream's `==3.10.*` is intentionally relaxed here.
+    - python
+    - fastapi >=0.115.12
+    - httpx >=0.28.1
+    - aiofiles >=24.1.0
+    - uvicorn >=0.34.0
+    - watchfiles >=1.0.4
+
+tests:
+  - script:
+      - copilot-openai-api --help
+  - package_contents:
+      bin:
+        - copilot-openai-api
+      files:
+        - share/copilot-openai-api/main.py
+        - share/copilot-openai-api/run.py
+
+about:
+  homepage: https://github.com/yuchanns/copilot-openai-api
+  repository: https://github.com/yuchanns/copilot-openai-api
+  summary: FastAPI proxy that exposes GitHub Copilot chat as an OpenAI-compatible API
+  description: |
+    copilot-openai-api is a FastAPI-based proxy that adapts GitHub Copilot's
+    chat-completion and embeddings endpoints into an OpenAI-compatible HTTP
+    API. The CLI launches a uvicorn server (default port 9191) that
+    authenticates against a Copilot subscription and serves OpenAI-style
+    requests, allowing OpenAI SDK clients to use Copilot as the model
+    provider.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
