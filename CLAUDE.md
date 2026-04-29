@@ -321,3 +321,4 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/mcp-server-architecture.md`** — FastMCP server integration and PyPI name mapping subsystem.
 - **`docs/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/developer-guide.md`** — Local testing and general recipe development guidelines.
+- **`docs/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.

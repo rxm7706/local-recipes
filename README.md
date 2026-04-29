@@ -217,7 +217,7 @@ On-demand CI workflows for all platforms (manual trigger only to preserve quota)
 | Test Windows | `gh workflow run test-windows.yml -f recipes="NAME"` | Native builds |
 | Test macOS | `gh workflow run test-macos.yml -f recipes="NAME"` | x86_64 + ARM64 |
 
-For detailed documentation on local testing, see the [Developer Guide](docs/developer-guide.md). For AI tooling details, see [MCP Server Architecture](docs/mcp-server-architecture.md).
+For detailed documentation on local testing, see the [Developer Guide](docs/developer-guide.md). For AI tooling details, see [MCP Server Architecture](docs/mcp-server-architecture.md). For driving a GitHub Copilot subscription as a local OpenAI/Anthropic-compatible model backend through any of the proxies in `recipes/copilot-*/` or `recipes/litellm-proxy/`, see [Copilot-to-API](docs/copilot-to-api.md).
 
 ## Pixi tasks
 
