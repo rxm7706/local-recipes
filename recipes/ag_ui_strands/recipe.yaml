@@ -11,7 +11,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/14/28/e24ffb0931cd650d6b7e2dfca3b0c81b75c7b11bd5fa1fb0bf91a723ef64/ag_ui_strands-0.1.7.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 1b95307dbb0fd909c5b1a388af7f0ea735f68810de21232594e3a43c338eae0e
 
 build:

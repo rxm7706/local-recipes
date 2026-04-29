@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/dlt-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dlt-{{ version }}.tar.gz
   sha256: 651a053818ad0c9978d8579a4e639c7d8705a68e9e89890e787010a682f14f46
 
 build:

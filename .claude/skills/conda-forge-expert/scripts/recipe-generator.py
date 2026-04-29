@@ -84,14 +84,43 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     version = version or info["version"]
     assert version is not None  # narrow Optional[str] for the PackageInfo init below
 
-    # Find source distribution
+    # Find source distribution. Prefer sdist; fall back to wheel for
+    # wheel-only packages.
+    #
+    # IMPORTANT: do NOT use release["url"] directly — PyPI's JSON API
+    # returns the hashed files.pythonhosted.org URL (e.g.
+    # /packages/86/8c/3d6c.../foo-1.0.tar.gz) which bypasses the standard
+    # JFrog Artifactory PyPI Remote Repository proxy in air-gapped
+    # corporate setups. Instead, construct the canonical pypi.org URL,
+    # which Artifactory proxies transparently. See
+    # docs/enterprise-deployment.md §3 for the full rationale.
+    pkg_name = info["name"]
+    first_letter = pkg_name[0].lower()
     source_url = ""
     sha256 = ""
     for release in data["releases"].get(version, []):
         if release["packagetype"] == "sdist":
-            source_url = release["url"]
+            filename = release["filename"]
+            source_url = f"https://pypi.org/packages/source/{first_letter}/{pkg_name}/{filename}"
             sha256 = release["digests"]["sha256"]
             break
+    if not source_url:
+        # Wheel-only fallback: synthesise a pypi.org wheel URL from the
+        # first wheel in the release. The Python-tag segment (`py3`,
+        # `py2.py3`, `cp310`, …) is extracted from the wheel filename per
+        # PEP 425; it is upstream-specific, so a comment in the recipe
+        # should flag that the URL needs revisiting on version bump.
+        for release in data["releases"].get(version, []):
+            if release["packagetype"] == "bdist_wheel":
+                filename = release["filename"]
+                # Wheel filename: <name>-<ver>(-<build>)?-<py>-<abi>-<plat>.whl
+                stem = filename.removesuffix(".whl")
+                parts = stem.split("-")
+                if len(parts) >= 5:
+                    py_tag = parts[-3]
+                    source_url = f"https://pypi.org/packages/{py_tag}/{first_letter}/{pkg_name}/{filename}"
+                    sha256 = release["digests"]["sha256"]
+                    break
 
     # Parse dependencies
     dependencies = []

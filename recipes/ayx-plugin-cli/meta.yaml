@@ -3,8 +3,10 @@ package:
   version: 1.1.0
 
 source:
+  # Wheel-only on PyPI (no sdist published). The <py-tag> path segment
+  # (`py3` here) is upstream-specific — re-check on version bump.
   sha256: f0783811f3ae2982c4129fe3502c148aa69e23230e812c9bc0e2bc05322dc30d
-  url: https://files.pythonhosted.org/packages/86/8c/3d6c606c4193f5d6971e8ff799e279409536f81f438fea68fe2248a74b00/ayx_plugin_cli-1.1.0-py3-none-any.whl
+  url: https://pypi.org/packages/py3/a/ayx-plugin-cli/ayx_plugin_cli-1.1.0-py3-none-any.whl
 
 build:
   noarch: python

@@ -11,7 +11,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/52/a6/03df3ce106e387b82257ba9151e4a0819884c484c3949a5d030ae6e16e56/ag_ui_crewai-0.2.0.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ag_ui_crewai-${{ version }}.tar.gz
   sha256: 090ce4d2b88689947510aa631c6d0177543ac0a79a94300ad7c0983d363f408b
 
 build:

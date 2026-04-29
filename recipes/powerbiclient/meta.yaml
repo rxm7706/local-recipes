@@ -3,8 +3,10 @@ package:
   version: 3.1.1
 
 source:
+  # Wheel-only on PyPI (no sdist published). The <py-tag> path segment
+  # (`py2.py3` here) is upstream-specific — re-check on version bump.
   sha256: d54242c146ed2d9204ee3ab942f724bd7a5fc55dbd2f4870a5574afe8ad8d0e1
-  url: https://files.pythonhosted.org/packages/95/06/6ca62f807ed6a441d31ab179e708deefa544d128d067aa45e34b39df0728/powerbiclient-3.1.1-py2.py3-none-any.whl
+  url: https://pypi.org/packages/py2.py3/p/powerbiclient/powerbiclient-3.1.1-py2.py3-none-any.whl
 
 #  sha256: 556c0217a855f4291063f5af834939f1b8b7f1a9b7e79b0d8633ce998cd0c4ee
 #  url: https://files.pythonhosted.org/packages/cf/8a/4fc8059846ee61ce53077ab1f252ddfc4ce09860c218a38f8ffa293ae598/powerbiclient-3.0.0-py2.py3-none-any.whl
