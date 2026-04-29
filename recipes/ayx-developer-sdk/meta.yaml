@@ -3,8 +3,10 @@ package:
   version: 2.1.2.1
 
 source:
+  # Wheel-only on PyPI (no sdist published). The <py-tag> path segment
+  # (`py3` here) is upstream-specific — re-check on version bump.
   sha256: 1f62794d9abe48f461d83ec2826cd86b4ee24d3d6e6741ea23a83c482311d2d3
-  url: https://files.pythonhosted.org/packages/1c/c4/1da7022ecdadd256023fd6de4440626e2ab3a3613a74181dc4edc227762b/ayx_python_sdk-2.1.2-py3-none-any.whl
+  url: https://pypi.org/packages/py3/a/ayx-python-sdk/ayx_python_sdk-2.1.2-py3-none-any.whl
 
 # 2.2.0
 # fcb65f3b6437c161d1967311d14b606c3f30aac95ef89ec939957cb073f5b194

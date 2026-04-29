@@ -7,8 +7,9 @@ package:
   version: {{ version }}
 
 source:
-  # Using wheel from PyPI since no sdist is available
-  url: https://files.pythonhosted.org/packages/4b/96/791ebda0795587fcfc24ce4751bb3c428c71e2efbb1769078ca9a667bb38/runcell-{{ version }}-py3-none-any.whl
+  # Using wheel from PyPI since no sdist is available. The <py-tag> path
+  # segment (`py3` here) is upstream-specific — re-check on version bump.
+  url: https://pypi.org/packages/py3/{{ name[0] }}/{{ name }}/runcell-{{ version }}-py3-none-any.whl
   sha256: 003d589eca7f5659369d89492964b5762e2c8618d907b727b2e2bf97dba2a2c2
 
 build:

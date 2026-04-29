@@ -19,12 +19,16 @@ source:
 #  git_depth: 1
 
 # Pypi Wheel Test
-  url: https://files.pythonhosted.org/packages/48/6c/290d5496125ebcec6408100a89d0de3b625e031525d71a2904a8a9865a38/kedro_datasets-1.4.0-py3-none-any.whl
+  # Wheel URL via pypi.org: /packages/<py-tag>/<letter>/<name>/<file>.whl.
+  # The <py-tag> path segment (`py3` here) is upstream-specific — re-check
+  # on version bump. Switch to the sdist line below if pivoting away from
+  # wheel testing.
+  url: https://pypi.org/packages/py3/{{ name[0] }}/{{ name }}/kedro_datasets-{{ version }}-py3-none-any.whl
   sha256: 06793b4984b17b6d0b00a306c60580fd76b999e50fcbca296bf17c7ba8426827
 # curl -sL https://files.pythonhosted.org/packages/e4/7c/d766334797cdbdf1cab941701c85c259bc6d27d20d6221481507c4b36963/kedro_datasets-1.3.0-py3-none-any.whl | sha256sum
 
 # Pypi Build Target
-  #url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro-datasets-{{ version }}.tar.gz
+  #url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/kedro-datasets-{{ version }}.tar.gz
   #sha256: dc99e8409667e3a8e73410c9c85f47075330197c9aa27eec7c9365a6a515bf37
 
 build:

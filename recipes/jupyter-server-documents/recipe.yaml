@@ -11,7 +11,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/dd/03/4d449e2d8c4f04a857d053375cc55c2e9fd13463fea3da8770e4ad052997/jupyter_server_documents-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_server_documents-${{ version }}.tar.gz
   sha256: 44dd509ccb41263ff5f676816aaaab05ba5c37ac67de994cf82c974e8351076d
 
 build:
