@@ -322,3 +322,4 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/developer-guide.md`** — Local testing and general recipe development guidelines.
 - **`docs/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.
+- **`docs/specs/copilot-bridge-vscode-extension.md`** — BMAD-consumable tech-spec for a sideload-only VS Code extension that wraps the bridge pattern. Run via `bmad-quick-dev`.
