@@ -109,6 +109,28 @@ Go compiler macros (use the correct name — `compiler("go")` is deprecated):
 ### Python Version Floor: `3.10`
 Python 3.9 was dropped from the conda-forge build matrix in August 2025. The floor is `3.10`. **Never set `python_min` below `3.10`** for new recipes. See [Python Version Policy](#python-version-policy) for full rules.
 
+### PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern
+Recipe `source.url:` for PyPI artifacts **must** route through `https://pypi.org/packages/...`, never `https://files.pythonhosted.org/packages/<hash>/...`. The hashed `files.pythonhosted.org` URL is what PyPI's JSON API returns and what `grayskull` historically emitted, but it bypasses standard JFrog Artifactory PyPI Remote Repository proxies in air-gapped corporate environments.
+
+**Sdist (preferred):**
+```yaml
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+```
+For sdist filenames that use underscores instead of hyphens (e.g. `litellm_proxy_extras-0.4.69.tar.gz` for project `litellm-proxy-extras`), hard-code the underscore form:
+```yaml
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/litellm_proxy_extras-${{ version }}.tar.gz
+```
+
+**Wheel (only when no sdist exists upstream):**
+```yaml
+source:
+  url: https://pypi.org/packages/${{ py_tag }}/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}-${{ py_tag }}-none-any.whl
+```
+where `${{ py_tag }}` is the wheel's Python tag (`py3`, `py2.py3`, `cp310`, …). The `<py-tag>` segment is upstream-specific and may change on a version bump — flag this with a recipe comment.
+
+The `recipe-generator.py` script emits these patterns automatically from the upstream filename; manual edits and recipe reviews must enforce the same form. See `docs/enterprise-deployment.md` §3 for the full proxy rationale.
+
 ### `build.bat` Must `call` Every `.cmd` Shim (pnpm/npm/yarn)
 On Windows, `pnpm`, `npm`, `yarn`, `npx`, and similar tools ship as `.cmd` wrappers. Invoking a `.cmd` from a `.bat` **without `call`** causes cmd.exe to **transfer control** to the shim — when it returns, the parent script terminates with exit 0 instead of continuing. The build appears to succeed but later steps never run, and rattler-build emits misleading errors like `× No license files were copied`.
 
