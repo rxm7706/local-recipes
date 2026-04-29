@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2026.4.25"
+  version: "2026.4.28"
 
 package:
   name: tolaria
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/refactoringhq/tolaria/archive/refs/tags/stable-v${{ version }}.tar.gz
-  sha256: 7e4ec239ca7847740d43d687175f4905d7c7a2a0e300c2c83515fb358d90dcd7
+  sha256: f043d1e6456173798dcff8e0039fa4ba4670f724ef4ac5b9dd31ff52f188e80b
 
 build:
   number: 0

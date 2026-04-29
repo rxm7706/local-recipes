@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: wuphf
-  version: "0.79.2"
+  version: "0.88.4"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/nex-crm/wuphf/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: e12b01e0858e6ab8ddb5774e32ad1d60e7bf1753319fdbce74ca25b3321898dc
+  sha256: 727db8776ad34bb7ba28723a3ea6a7a2bf7c4b1e4eca4fd8ac64ea9b0853af45
 
 build:
   number: 0

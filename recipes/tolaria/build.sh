@@ -29,11 +29,14 @@ pnpm licenses list --prod --long > THIRDPARTY-NPM.txt
 # have access to).
 TAURI_OVERRIDE='{"bundle":{"createUpdaterArtifacts":false}}'
 
-# Conda-forge's rust compiler activation passes --target=<triple>, so cargo
-# outputs to target/<triple>/release/ instead of target/release/. Detect the
-# triple from rustc and prefer that path; fall back to the un-triplet path
-# for build environments without an explicit --target.
-RUST_TARGET="$(rustc -vV | awk '/^host:/ {print $2}')"
+# Conda-forge's rust compiler activation sets CARGO_BUILD_TARGET to the
+# cross-compile triple (e.g. aarch64-apple-darwin), and cargo then outputs
+# to target/<triple>/release/ instead of target/release/. Native builds
+# leave CARGO_BUILD_TARGET unset, so fall back to rustc's host triple —
+# which on a native build equals the cargo target. NEVER use rustc -vV
+# 'host:' as the cross-compile target: that's the platform rustc itself
+# runs on, not the platform it emits code for.
+RUST_TARGET="${CARGO_BUILD_TARGET:-$(rustc -vV | awk '/^host:/ {print $2}')}"
 
 case "${target_platform}" in
   osx-arm64)
