@@ -1,0 +1,138 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.83.14"
+  python_min: '3.10'
+  python_max: '3.14'
+  python_test_max: '3.13'
+
+package:
+  name: litellm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/litellm/litellm-${{ version }}.tar.gz
+  sha256: 24aef9b47cdc424c833e32f3727f411741c690832cd1fe4405e0077144fe09c9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - litellm = litellm:run_server
+      - litellm-proxy = litellm.proxy.client.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - uv-build >=0.10.7 # Loosen pin ==0.10.7
+    - pip
+  run:
+    - python >=${{ python_min }},<${{ python_max }}
+    - fastuuid ==0.14.0
+    - httpx ==0.28.1
+    - openai ==2.24.0
+    - python-dotenv ==1.2.2
+    - tiktoken ==0.12.0
+    - importlib-metadata ==8.5.0
+    - tokenizers ==0.22.2
+    - click ==8.1.8
+    - jinja2 ==3.1.6
+    - aiohttp ==3.13.4
+    - pydantic ==2.12.5
+    - jsonschema ==4.23.0
+  run_constraints:
+    # Versions loosened from upstream's PyPI exact-pin extras
+    # (litellm[proxy], litellm[caching], litellm[extra-proxy]) to `>=`
+    # bounds so the conda-forge ecosystem can advance dependencies without
+    # re-cutting litellm. The lower bound documents the minimum litellm
+    # itself was tested against; conda-forge typically ships newer.
+    - uvicorn >=0.33.0
+    - uvloop >=0.21.0
+    - gunicorn >=23.0.0
+    - fastapi >=0.124.4
+    - backoff >=2.2.1
+    - pyyaml >=6.0.3
+    - rq >=2.4.0 # loosen pin rq >=2.7.0
+    - orjson >=3.11.6
+    - apscheduler >=3.11.2
+    - pyjwt >=2.12.0
+    - python-multipart >=0.0.26
+    - cryptography >=46.0.7
+    - azure-identity >=1.25.2
+    - azure-keyvault-secrets >=4.10.0
+    - azure-storage-blob >=12.28.0
+    - google-cloud-kms >=2.24.2
+    - google-cloud-iam >=2.19.1
+    - google-cloud-aiplatform >=1.133.0
+    - pynacl >=1.6.2
+    - websockets >=15.0.1
+    - boto3 >=1.42.59
+    - mcp >=1.26.0
+    - a2a-sdk >=0.3.24
+    - rich >=13.9.4
+    - diskcache >=5.6.3
+    - polars >=1.38.1
+    - mlflow >=3.11.1
+    - fastapi-sso >=0.19.0
+    - redisvl >=0.4.1
+    - pyroscope-io >=0.8.16
+    - grpcio >=1.78.0
+    - restrictedpython >=8.1
+    # Not (yet) available on conda-forge — kept here as commented
+    # constrains so the version intent is preserved for when each is
+    # packaged. Uncomment as the conda-forge ecosystem catches up.
+    #
+    #   prisma                — litellm[extra-proxy] DB schema management
+    #   resend                — litellm[extra-proxy] transactional email
+    #   semantic-router       — litellm[extra-proxy] semantic-cache layer
+    #   aurelio-sdk           — transitive dep of semantic-router
+    #   litellm-proxy-extras  — sibling package, recipe pending submission
+    #   litellm-enterprise    — proprietary licence (LicenseRef-Proprietary);
+    #                           conda-forge does not redistribute proprietary code
+    #
+    # - prisma >=0.11.0
+    # - resend >=2.23.0
+    # - semantic-router >=0.1.12
+    # - aurelio-sdk >=0.0.19
+    # - litellm-proxy-extras >=0.4.69
+    # - litellm-enterprise >=0.1.39
+    #
+    # `soundfile` is the PyPI name; conda-forge publishes the same
+    # library as `pysoundfile`. The constrain is omitted because pinning
+    # `soundfile` on conda-forge has no effect (no candidates to filter)
+    # and pinning `pysoundfile` would diverge from the upstream PyPI
+    # extras-metadata declaration.
+    # - soundfile >=0.12.1
+
+tests:
+  - python:
+      imports:
+        - litellm
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_test_max }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - litellm --help
+      #- litellm-proxy --help
+
+about:
+  summary: Library to easily interface with LLM API providers
+  license: MIT
+  license_file: LICENSE
+  homepage: https://litellm.ai
+  documentation: https://docs.litellm.ai
+  repository: https://github.com/BerriAI/litellm
+
+extra:
+  recipe-maintainers:
+    - m-rossi
+    - jan-janssen
+    - rxm7706

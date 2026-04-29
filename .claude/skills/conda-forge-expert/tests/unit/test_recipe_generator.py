@@ -1,6 +1,8 @@
 """Unit tests for recipe-generator.py (hyphenated → script_runner only)."""
 from __future__ import annotations
 
+import json
+
 import pytest
 
 import yaml
@@ -686,6 +688,51 @@ class TestRecipeGenerator:
         )
         assert rc == 0, f"out={out}\nerr={err}"
         assert (tmp_path / "recipe.yaml").exists()
+
+    def test_pypi_to_conda_name_translates_known_divergences(
+        self, load_module, monkeypatch, tmp_path
+    ):
+        """`_pypi_to_conda_name` should route through `name_resolver` so
+        the well-known PyPI↔conda-forge name divergences are translated
+        when emitting `run:` deps. Regression test for the rq recipe
+        bug where PyPI `redis` was emitted unchanged instead of being
+        rewritten to conda-forge `redis-py`."""
+        # Stub the local mapping cache with the canonical divergences.
+        cache_file = tmp_path / "pypi_conda_map.json"
+        cache_file.write_text(json.dumps({
+            "redis": "redis-py",
+            "soundfile": "pysoundfile",
+        }))
+
+        # Load name_resolver first and pin its cache to the stub. The
+        # generator imports name_resolver lazily inside the helper, so
+        # it'll see this monkeypatched MAPPING_CACHE_FILE.
+        nr = load_module("name_resolver.py")
+        monkeypatch.setattr(nr, "MAPPING_CACHE_FILE", cache_file)
+
+        gen = load_module("recipe-generator.py")
+        assert gen._pypi_to_conda_name("redis") == "redis-py"
+        assert gen._pypi_to_conda_name("soundfile") == "pysoundfile"
+
+    def test_pypi_to_conda_name_identity_passthrough(
+        self, load_module, monkeypatch, tmp_path
+    ):
+        """Names not in the mapping cache (and not rewritten by the
+        metadata API) must pass through unchanged — the common case."""
+        cache_file = tmp_path / "pypi_conda_map.json"
+        cache_file.write_text("{}")
+
+        nr = load_module("name_resolver.py")
+        monkeypatch.setattr(nr, "MAPPING_CACHE_FILE", cache_file)
+        # Force the metadata-api tier to behave as identity so the test
+        # doesn't depend on the live network or installed mapping data.
+        monkeypatch.setattr(nr, "search_metadata_api", lambda name: name)
+
+        gen = load_module("recipe-generator.py")
+        # `requests`, `httpx`, `pydantic` all share their conda-forge
+        # names with PyPI; the helper should return the input unchanged.
+        for name in ("requests", "httpx", "pydantic"):
+            assert gen._pypi_to_conda_name(name) == name
 
     @pytest.mark.network
     def test_github_live(self, script_runner, tmp_path):

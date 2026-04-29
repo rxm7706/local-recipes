@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: semantic-router
+  version: "0.1.12"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/semantic_router-${{ version }}.tar.gz
+  sha256: b63fbb8b9127dcb1763efea17dfa74ab409e626e87c8695b589131af12ef3a65
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }},<3.14
+    - aiohttp >=3.10.11,<4
+    - aurelio-sdk >=0.0.19
+    - colorama >=0.4.6,<0.5
+    - colorlog >=6.8.0,<7
+    - litellm >=1.61.3
+    - numpy >=1.25.2
+    - openai >=1.10.0,<3.0.0
+    - pydantic >=2.10.2,<3
+    - pyyaml >=6.0.1,<7
+    - regex >=2023.12.25
+    - tiktoken >=0.6.0,<1.0.0
+    - tornado >=6.4.2,<7
+    - urllib3 >=1.26,<3
+
+tests:
+  - python:
+      imports:
+        - semantic_router
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://www.aurelio.ai
+  repository: https://github.com/aurelio-labs/semantic-router
+  license: MIT
+  license_file: LICENSE
+  summary: Superfast routing layer for LLMs and AI agents
+  description: |
+    Semantic Router is a low-latency decision-making layer that routes
+    requests to LLMs, agents, or tools based on semantic similarity to a
+    pre-defined set of routes. It can be used as a semantic-cache layer
+    in front of LLM endpoints, which is how litellm's `[extra-proxy]`
+    extras integrate with it.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

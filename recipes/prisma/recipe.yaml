@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: prisma
+  version: "0.11.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3f2f2fd2361e1ec5ff655f2a04c7860c2f2a5bc4c91f78ca9c5c6349735bf693
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=68
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.19.0
+    - jinja2 >=2.11.2
+    - pydantic >=1.8.0,<3
+    - click >=7.1.2
+    - python-dotenv >=0.12.0
+    - typing_extensions >=4.0.1
+    - tomlkit
+    - nodeenv
+
+tests:
+  - python:
+      imports:
+        - prisma
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://prisma-client-py.readthedocs.io
+  repository: https://github.com/RobertCraigie/prisma-client-py
+  documentation: https://prisma-client-py.readthedocs.io
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Prisma Client Python — auto-generated, type-safe database client
+  description: |
+    Prisma Client Python is an auto-generated, type-safe database client
+    that reads a Prisma schema and generates Python ORM bindings. It is a
+    runtime dependency of litellm's `[extra-proxy]` extras for managing
+    the proxy server's database schema and migrations.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

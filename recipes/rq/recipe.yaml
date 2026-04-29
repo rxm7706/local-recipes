@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rq
+  version: "2.7.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c2156fc7249b5d43dda918c4355cfbf8d0d299a5cdd3963918e9c8daf4b1e0c0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - click >=5
+    - croniter
+    # PyPI's `redis` client lives on conda-forge as `redis-py`; the
+    # legacy `redis` package on conda-forge is frozen at 3.5.3 (noarch)
+    # and effectively unmaintained. PyPI spec `redis!=6,>=3.5` becomes
+    # `redis-py >=3.5,<6` here.
+    - redis-py >=3.5,<6
+
+tests:
+  - python:
+      imports:
+        - rq
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - rq --help
+
+about:
+  homepage: https://python-rq.org/
+  repository: https://github.com/rq/rq
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Simple, lightweight library for creating background jobs and processing them
+  description: |
+    RQ (Redis Queue) is a simple Python library for queueing jobs and 
+    processing them in the background with workers. 
+    It is backed by Redis/Valkey and is designed to have a low barrier to entry. 
+    It integrates easily with your web or application stack.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
