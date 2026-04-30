@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cursor-sdk
+  version: "1.0.11"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/@cursor/sdk/-/sdk-${{ version }}.tgz
+  sha256: 36d353a05461b5436b6440840c15aa4eb194f846e5af5785e124cf048e3b70ec
+
+build:
+  number: 0
+  skip: target_platform != "linux-64"
+  script:
+    - export npm_config_prefix="${PREFIX}"
+    - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+    - npm pack --ignore-scripts
+    - npm install -ddd --global cursor-sdk-${PKG_VERSION}.tgz
+    - node ${RECIPE_DIR}/patches/neutralize-statsig.js
+        ${PREFIX}/lib/node_modules/@cursor/sdk/dist/cjs/index.js
+        ${PREFIX}/lib/node_modules/@cursor/sdk/dist/esm/index.js
+    - node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));delete p.devDependencies;delete p.optionalDependencies;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+    - pnpm install --prod --ignore-scripts
+    - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+    - nodejs >=18
+    - python
+    - make
+    - pnpm
+    - pnpm-licenses
+  run:
+    - nodejs >=18
+
+tests:
+  - script:
+      - NODE_PATH="${PREFIX}/lib/node_modules" node -e "require('@cursor/sdk')"
+      - grep -q "network-disabled-by-conda-recipe" "${PREFIX}/lib/node_modules/@cursor/sdk/dist/cjs/index.js"
+      - grep -q "network-disabled-by-conda-recipe" "${PREFIX}/lib/node_modules/@cursor/sdk/dist/esm/index.js"
+
+about:
+  homepage: https://cursor.com
+  repository: https://github.com/cursor/cursor
+  documentation: https://cursor.com/docs/api/sdk/typescript
+  summary: TypeScript SDK for Cursor agents (local recipe; NOT for redistribution)
+  description: |
+    Cursor SDK enables programmatic orchestration of Cursor coding agents
+    using the same runtime and models that power the Cursor desktop, CLI,
+    and web applications.
+
+    LOCAL-ONLY RECIPE. The Cursor SDK is published under a proprietary
+    license ("Cursor SDK License" — © Anysphere Inc., all rights reserved,
+    use governed by Cursor's Terms of Service). It is NOT redistributable
+    and this recipe MUST NOT be submitted to conda-forge/staged-recipes
+    or hosted on any shared channel.
+
+    This recipe additionally neutralizes the bundled @statsig/js-client
+    telemetry layer at build time so that requiring the SDK produces no
+    outbound connections to Statsig hosts. The runtime API surface is
+    unchanged; feature gates fall through to default values.
+  license: LicenseRef-Cursor-SDK-Proprietary
+  license_file:
+    - LICENSE.md
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
