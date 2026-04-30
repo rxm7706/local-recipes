@@ -5,6 +5,7 @@
 | Item | Status |
 |---|---|
 | BMAD documentation | ✅ `.claude/docs/bmad-method-llms-full.txt` |
+| `bmad-method` CLI (v6.6.0) | ✅ Pixi-managed in `local-recipes` env (bundles Node.js 20 + vendored deps) |
 | `CLAUDE.md` with project context | ✅ Detailed and current |
 | `.claude/` skills/tools/settings | ✅ conda-forge MCP server + skill library |
 | `docs/` directory | ✅ Exists but empty |
@@ -16,12 +17,12 @@
 
 ## Phase 0 — Prerequisites
 
-**0.1 — Verify Node.js is available** (needed for `npx bmad-method install`)
+**0.1 — Verify the pixi env provides `bmad-method`** (the `local-recipes` env ships `bmad-method` 6.6.0 with Node.js 20 + vendored `node_modules` as a conda dependency — no separate Node install or live npm registry required)
 ```bash
-node --version   # need v18+
-npx --version
+pixi list -e local-recipes | grep -E '^(bmad-method|nodejs)\s'
+pixi run -e local-recipes bmad-method --version   # should print 6.6.0+
 ```
-If missing: `pixi global install nodejs` or install via your system package manager.
+If missing: `pixi install -e local-recipes`.
 
 **0.2 — Verify Git state is clean**
 ```bash
@@ -36,10 +37,10 @@ BMAD installation touches `.gitignore` and creates new directories — start cle
 
 **1.1 — Run the installer**
 
-From the project root:
+From the project root, using the pixi-managed CLI (functionally identical to `npx bmad-method install`, but offline-capable and version-pinned via the lockfile):
 ```bash
 cd /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes
-npx bmad-method install
+pixi run -e local-recipes bmad-method install
 ```
 
 At the interactive prompts, choose:

@@ -1,0 +1,10 @@
+# Team override for the BMAD Senior Software Engineer (Amelia) — local-recipes / conda-forge packaging factory.
+# Personal overrides go in bmad-agent-dev.user.toml (gitignored).
+
+[agent]
+
+principles = [
+  "'Tests pass' for a recipe = validate_recipe + optimize_recipe + scan_for_vulnerabilities + linux-64 build green. Not pytest, not vitest.",
+  "Implementation = MCP tool calls (edit_recipe, trigger_build, etc.) wherever possible. Hand-edit YAML only when the structured action set doesn't cover the change.",
+  "A task is 'done' when submit_pr(dry_run=True) passes. The real submit is a deliberate next step — not the same as done.",
+]

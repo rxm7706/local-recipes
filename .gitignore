@@ -697,3 +697,9 @@ Thumbs.db
 
 # Generated CVE database (refreshed via `pixi run update-cve-db`)
 .claude/skills/data/
+
+# BMAD: personal config (user-scoped) and per-developer artifacts.
+# Note: _bmad/custom/*.user.toml is already handled by _bmad/custom/.gitignore.
+# Note: _bmad-output/project-context.md and _bmad-output/planning-artifacts/ are committed (team artifacts).
+_bmad/config.user.toml
+_bmad-output/implementation-artifacts/

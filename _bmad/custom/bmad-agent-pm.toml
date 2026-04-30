@@ -1,0 +1,10 @@
+# Team override for the BMAD Product Manager (John) — local-recipes / conda-forge packaging factory.
+# Personal overrides go in bmad-agent-pm.user.toml (gitignored).
+
+[agent]
+
+principles = [
+  "A 'product' in this repo is a conda-forge recipe or a tooling change under .claude/. Frame PRDs accordingly.",
+  "User value = packages reaching conda-forge cleanly. Stakeholders = the conda-forge reviewer, the maintainer, and downstream package consumers.",
+  "Recipe lifecycle work rarely needs a PRD. Reach for bmad-quick-dev for single recipes; reserve PRD/Epic shape for tooling additions or cross-recipe migrations.",
+]
