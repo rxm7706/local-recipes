@@ -315,6 +315,31 @@ The submission-to-feedstock workflow spans two GitHub orgs: **conda-forge** (the
 | [conda-forge Governance](https://conda-forge.org/docs/orga/) | Org structure, decision-making, code of conduct, CFEP process |
 | [conda-forge/by-the-numbers](https://github.com/conda-forge/by-the-numbers) | Source for the conda-forge ecosystem-level statistics dashboard (package counts, build times, contributor data) |
 
+### Community Roles & Personas
+
+The conda-forge + prefix-dev ecosystem is governed by specialized sub-teams and engaged via well-defined personas. When an action needs a human, the table below shows whose lane it falls in.
+
+| Persona / Team | Responsibility Level | Goals | Primary Platform/Tool |
+|---|---|---|---|
+| [Admin (Core Team)](https://conda-forge.org/community/governance/) | Organization | Governance, security, long-term project health | GitHub Org & Zulip |
+| [Security & Systems Sub-team](https://conda-forge.org/community/subteams/) | Infrastructure | Manage bot credentials, API keys, secure system access | GitHub Secrets & API keys |
+| [Bot Sub-team](https://conda-forge.org/community/subteams/) | Automation | Maintain the autotick bot; drive mass migrations | `regro/cf-scripts` |
+| [Staged-Recipes Team](https://conda-forge.org/community/subteams/) | Gatekeeping | Review and approve new package submissions | `conda-forge/staged-recipes` |
+| [Prefix.dev Team (Pixi)](https://github.com/prefix-dev/pixi) | Main Development | Build high-performance pixi/rattler tooling | `prefix-dev/pixi`, `prefix-dev/rattler-build` |
+| [Documentation Sub-team](https://conda-forge.org/community/subteams/) | Knowledge | Keep docs accurate; expand onboarding | `conda-forge/conda-forge.github.io` |
+| [Financial Sub-team](https://conda-forge.org/community/subteams/) | Budget | Track funds; coordinate with NumFOCUS | Core budget items |
+| [Feedstock Maintainer](https://conda-forge.org/docs/maintainer/) | Package | Keep specific package builds functional and current | Individual `<pkg>-feedstock` repo |
+| [Package Requester](https://conda-forge.org/docs/maintainer/adding_pkgs/) | Contribution | Submit new recipes via staged-recipes | YAML recipes |
+| [Consumer (User)](https://pixi.sh/) | Usage | Solve environments; run project code | pixi, conda, mamba CLI |
+
+#### Role Descriptions
+
+- **Security & Systems** — Keymaster for the org; performs ongoing maintenance and provisions new core members with access to internal systems.
+- **Bot Sub-team** — Manages the automated workforce. When a major library (NumPy 2, GCC 14, …) updates, this team triggers the migration that opens version-bump PRs across every dependent feedstock.
+- **Prefix.dev (Pixi development)** — Conda-forge provides packages; this team builds the engine. Focus is "faster, faster, faster" and cross-platform stability for complex stacks (e.g., ROS).
+- **Staged-Recipes Reviewers** — The front desk. Every Package Requester passes through review to ensure metadata and build scripts are safe and high-quality before a feedstock is created.
+- **Feedstock Maintainer** — Day-to-day owner of one or more `<pkg>-feedstock` repos. Reviews autotick PRs, fixes CI failures, manages co-maintainers via `@conda-forge-admin add user @x`, and rerenders when CI configs need refresh.
+
 ### Community Channels
 
 | Channel | Status |
