@@ -134,7 +134,7 @@ class TestRecipeGenerator:
         assert "noarch_platforms" in cfy_text
         assert "shellcheck" in cfy_text
 
-    def test_npm_scoped_package_handling(self, load_module, tmp_path):
+    def test_npm_scoped_package_handling(self, load_module):
         """Scoped npm names (`@scope/name`) → conda name `name`, tarball
         filename `<scope>-<name>-<v>.tgz`."""
         mod = load_module("recipe-generator.py")
@@ -406,7 +406,7 @@ class TestRecipeGenerator:
         assert mod._extract_readme_paragraph("") == ""
         assert mod._extract_readme_paragraph("# Heading only") == ""
 
-    def test_detect_license_filename_npm_tarball(self, load_module, tmp_path):
+    def test_detect_license_filename_npm_tarball(self, load_module):
         """Build an in-memory tarball with package/LICENSE.md and verify
         detection picks LICENSE.md over the default LICENSE."""
         import io
@@ -622,8 +622,11 @@ class TestRecipeGenerator:
 
     @pytest.mark.network
     def test_npm_live_against_husky(self, script_runner, tmp_path):
-        """Live: scaffold husky (from PR 28481) via npm registry — should
-        match canonical pattern."""
+        """Live: scaffold husky (from PR 28481) via npm registry. Husky has
+        zero runtime dependencies, so the generator's auto-detection emits
+        the husky-style *minimal* recipe: no pnpm/pnpm-licenses in build
+        deps, license_file as a single string. Full-pattern coverage (with
+        pnpm-licenses) is in `test_npm_recipe_canonical_shape_offline`."""
         rc, out, err = script_runner(
             "recipe-generator.py", "npm", "husky",
             "--output", str(tmp_path),
@@ -637,10 +640,13 @@ class TestRecipeGenerator:
         assert data["build"]["noarch"] == "generic"
         # Source URL is npm registry (not GitHub)
         assert "registry.npmjs.org" in data["source"]["url"]
-        # Build deps include pnpm + pnpm-licenses
+        # Husky-style minimal: nodejs only, no pnpm/pnpm-licenses
         build_reqs = data["requirements"]["build"]
-        assert "pnpm" in build_reqs
-        assert "pnpm-licenses" in build_reqs
+        assert "nodejs" in build_reqs
+        assert "pnpm" not in build_reqs
+        assert "pnpm-licenses" not in build_reqs
+        # Husky-style: license_file is a single string, not a list
+        assert isinstance(data["about"]["license_file"], str)
 
     @pytest.mark.network
     def test_npm_live_scoped_codex(self, script_runner, tmp_path):
