@@ -700,6 +700,9 @@ Thumbs.db
 
 # BMAD: personal config (user-scoped) and per-developer artifacts.
 # Note: _bmad/custom/*.user.toml is already handled by _bmad/custom/.gitignore.
-# Note: _bmad-output/project-context.md and _bmad-output/planning-artifacts/ are committed (team artifacts).
+# Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.
+# Note: project-scoped implementation-artifacts are gitignored (per-developer scratch).
 _bmad/config.user.toml
-_bmad-output/implementation-artifacts/
+_bmad/custom/.active-project
+_bmad-output/projects/*/implementation-artifacts/
+_bmad-output/projects/*/.bmad-config.user.toml

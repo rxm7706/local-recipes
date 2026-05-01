@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""
+Switch the active BMad project for this repository.
+
+The "active project" determines which `_bmad-output/projects/<slug>/` overlay
+the BMAD config resolver loads (layers 5–6). This script writes the slug to
+`_bmad/custom/.active-project` (gitignored marker file). Other resolution
+mechanisms (--project flag on resolve_config.py, BMAD_ACTIVE_PROJECT env var)
+take precedence over the marker file.
+
+Usage:
+    bmad-switch <slug>          # set active project
+    bmad-switch --list          # list known projects under _bmad-output/projects/
+    bmad-switch --current       # print the currently active project
+    bmad-switch --clear         # remove the marker (no active project)
+
+The slug must be lowercase alphanumeric + hyphens/underscores. The corresponding
+project directory `_bmad-output/projects/<slug>/` must exist.
+"""
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+
+def repo_root() -> Path:
+    """Walk up from this script's location until we find _bmad/ + _bmad-output/."""
+    here = Path(__file__).resolve()
+    for candidate in (here, *here.parents):
+        if (candidate / "_bmad").is_dir() and (candidate / "_bmad-output").is_dir():
+            return candidate
+    sys.stderr.write(
+        f"error: could not locate repo root (no ancestor with _bmad/ and _bmad-output/) from {here}\n"
+    )
+    sys.exit(1)
+
+
+def marker_path(root: Path) -> Path:
+    return root / "_bmad" / "custom" / ".active-project"
+
+
+def list_projects(root: Path) -> list[str]:
+    projects_dir = root / "_bmad-output" / "projects"
+    if not projects_dir.is_dir():
+        return []
+    return sorted(p.name for p in projects_dir.iterdir() if p.is_dir())
+
+
+def cmd_list(root: Path) -> int:
+    projects = list_projects(root)
+    if not projects:
+        sys.stderr.write(f"no projects found under {root / '_bmad-output' / 'projects'}/\n")
+        return 1
+    current = read_marker(root)
+    for slug in projects:
+        marker = "*" if slug == current else " "
+        print(f"  {marker} {slug}")
+    if current:
+        print(f"\nactive: {current}")
+    else:
+        print("\nactive: (none)")
+    return 0
+
+
+def read_marker(root: Path) -> str | None:
+    path = marker_path(root)
+    if not path.exists():
+        return None
+    try:
+        value = path.read_text(encoding="utf-8").strip()
+        return value or None
+    except OSError as error:
+        sys.stderr.write(f"warning: failed to read {path}: {error}\n")
+        return None
+
+
+def cmd_current(root: Path) -> int:
+    current = read_marker(root)
+    if current:
+        print(current)
+        return 0
+    sys.stderr.write("no active project (marker file empty or missing)\n")
+    return 1
+
+
+def cmd_clear(root: Path) -> int:
+    path = marker_path(root)
+    if path.exists():
+        path.unlink()
+        print(f"cleared active project (removed {path})")
+    else:
+        print("no active project to clear")
+    return 0
+
+
+def cmd_switch(root: Path, slug: str) -> int:
+    if not _SLUG_PATTERN.match(slug):
+        sys.stderr.write(
+            f"error: invalid slug {slug!r} "
+            f"(expected lowercase alphanumeric + hyphens/underscores)\n"
+        )
+        return 2
+    project_dir = root / "_bmad-output" / "projects" / slug
+    if not project_dir.is_dir():
+        sys.stderr.write(
+            f"error: project directory does not exist: {project_dir}\n"
+            f"create it (and its .bmad-config.toml) before switching, "
+            f"or run with --list to see known projects.\n"
+        )
+        return 3
+    path = marker_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(slug + "\n", encoding="utf-8")
+    print(f"active project: {slug}")
+    print(f"marker: {path}")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Switch active BMad project (writes _bmad/custom/.active-project marker).",
+    )
+    parser.add_argument("slug", nargs="?", help="Project slug to activate")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--list", action="store_true", help="List known projects")
+    group.add_argument("--current", action="store_true", help="Print active project")
+    group.add_argument("--clear", action="store_true", help="Remove active marker")
+    args = parser.parse_args()
+
+    root = repo_root()
+
+    if args.list:
+        return cmd_list(root)
+    if args.current:
+        return cmd_current(root)
+    if args.clear:
+        return cmd_clear(root)
+    if not args.slug:
+        parser.print_help(sys.stderr)
+        return 1
+    return cmd_switch(root, args.slug)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

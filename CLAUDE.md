@@ -365,6 +365,33 @@ The BMAD Method is an AI-driven software development framework used in this proj
 
 Fetch the live source for the latest version, or reference the local copy with `@.claude/docs/bmad-method-llms-full.txt` when working offline.
 
+### Multi-Project Pattern (this repo hosts multiple BMAD projects)
+
+This repository uses a single BMAD installation to drive multiple projects. Each project has its own subdirectory under `_bmad-output/projects/<slug>/` containing planning artifacts, implementation artifacts, project context, and project-scoped config overrides. See **`_bmad-output/PROJECTS.md`** for the index and detailed documentation.
+
+**At session start with the user**, ask which project they're working on (or check `scripts/bmad-switch --current`) before invoking BMAD skills that write artifacts. Reading another project's artifacts is fine without switching — read directly from the file path.
+
+**Active-project resolution priority** (used by `_bmad/scripts/resolve_config.py`):
+1. `--project <slug>` per-call CLI flag (highest priority).
+2. `BMAD_ACTIVE_PROJECT` environment variable.
+3. `_bmad/custom/.active-project` marker file (managed by `scripts/bmad-switch`, gitignored).
+4. None — only global config layers resolve; skills fall back to repo-root `_bmad-output/`.
+
+**Six-layer config merge** (highest priority last):
+
+| Layer | Path                                                         | Scope                                |
+|-------|--------------------------------------------------------------|--------------------------------------|
+| 1     | `_bmad/config.toml`                                          | Installer team (regenerated)         |
+| 2     | `_bmad/config.user.toml`                                     | Installer user (regenerated)         |
+| 3     | `_bmad/custom/config.toml`                                   | Global custom team, all projects     |
+| 4     | `_bmad/custom/config.user.toml`                              | Global custom user, all projects     |
+| 5     | `_bmad-output/projects/<slug>/.bmad-config.toml`             | Project team, active project only    |
+| 6     | `_bmad-output/projects/<slug>/.bmad-config.user.toml`        | Project user, active project only    |
+
+Layers 5 and 6 only load when an active project resolves. To set the active project: `scripts/bmad-switch <slug>`. To list projects: `scripts/bmad-switch --list`.
+
+**Adding a new project:** see `_bmad-output/PROJECTS.md` § "Adding a new project."
+
 ## Project Documentation Reference
 
 For extended architectural context, please reference the centralized `docs/` folder:
