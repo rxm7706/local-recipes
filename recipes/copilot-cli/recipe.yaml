@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+#
+# ==============================================================================
+#  DO NOT SUBMIT THIS RECIPE TO conda-forge/staged-recipes
+# ==============================================================================
+#  GitHub Copilot CLI's proprietary license (LICENSE.md, Section 2) forbids
+#  redistribution "on a standalone basis or as a primary product" — which is
+#  exactly what a conda package is. A prior submission was rejected for this
+#  reason: https://github.com/conda-forge/staged-recipes/pull/32522
+#
+#  This recipe is here for LOCAL builds and personal-channel hosting only,
+#  pending one of:
+#    - github/copilot-cli#83   (open-source the CLI)
+#    - github/copilot-cli#1962 (license clarification)
+#    - github/copilot-cli#2294 (clarify packaging in distro repos)
+#
+#  See ./DO_NOT_SUBMIT.md for the full rationale.
+# ==============================================================================
+
+schema_version: 1
+
+context:
+  version: "1.0.40"
+
+package:
+  name: copilot-cli
+  version: ${{ version }}
+
+source:
+  - if: target_platform == "linux-64"
+    then:
+      url: https://github.com/github/copilot-cli/releases/download/v${{ version }}/copilot-linux-x64.tar.gz
+      sha256: 113945f763c0f7abc95f7a0405e429c5857aa0a8422b41300048b2df9906ccf6
+
+  - if: target_platform == "linux-aarch64"
+    then:
+      url: https://github.com/github/copilot-cli/releases/download/v${{ version }}/copilot-linux-arm64.tar.gz
+      sha256: 3f13be3a2a20b46d12f0e0a1215021d565c2e14252327ebb71aca20ed30ac00b
+
+  - if: target_platform == "osx-arm64"
+    then:
+      url: https://github.com/github/copilot-cli/releases/download/v${{ version }}/copilot-darwin-arm64.tar.gz
+      sha256: 866c967d1f0404bbca678c1ef439043a06e5912f08650be82ea4c19595886ae3
+
+  - if: target_platform == "osx-64"
+    then:
+      url: https://github.com/github/copilot-cli/releases/download/v${{ version }}/copilot-darwin-x64.tar.gz
+      sha256: 91b3ff64c5d4706da4a5d9aca019544fefc8d29685495ca69648a2e6b6a22e45
+
+  - if: target_platform == "win-64"
+    then:
+      url: https://github.com/github/copilot-cli/releases/download/v${{ version }}/copilot-win32-x64.zip
+      sha256: 6a6969d58bda5d576821407ed592158c072560cc8d3e53d1e206650edf85768f
+
+  - url: https://raw.githubusercontent.com/github/copilot-cli/refs/tags/v${{ version }}/LICENSE.md
+    sha256: 1fbd0dcc55c66738b1b591632132c927de20c8443dff1d55b4851e378883e402
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: unix
+      then:
+        - ${{ stdlib('c') }}
+
+tests:
+  - if: unix
+    then:
+      - requirements:
+          run:
+            - cf-nvidia-tools 1.*
+            - ripgrep
+        script:
+          content: |
+            set -euxo pipefail
+            copilot --version | rg '${{ version }}'
+            export c_stdlib_version='${{ c_stdlib_version }}'
+            check-glibc "${PREFIX}"/bin/*
+    else:
+      - requirements:
+          run:
+            - ripgrep
+        script:
+          content: |
+            copilot --version | rg "${{ version }}"
+            if errorlevel 1 exit /b 1
+
+about:
+  homepage: https://github.com/github/copilot-cli
+  summary: GitHub Copilot CLI brings the power of Copilot coding agent directly to your terminal.
+  license: LicenseRef-GitHub-Copilot-CLI
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
