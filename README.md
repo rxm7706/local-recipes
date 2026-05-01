@@ -122,37 +122,69 @@ Commonly used variables (some set by our scripts):
 ```
 local-recipes/
 ├─ LICENSE, LICENSE.txt
-├─ README.md                      # This file
-├─ CLAUDE.md                      # Claude Code project context
-├─ environment.yaml               # Bootstrap environment for build tooling
-├─ conda_build_config.yaml        # Global pinning and variants
-├─ test-recipes.py                # Direct recipe testing script
+├─ README.md                       # This file
+├─ CHANGELOG.md                    # Repo-level change log (Keep a Changelog format)
+├─ CLAUDE.md                       # Claude Code project context
+├─ environment.yaml                # Bootstrap environment for build tooling
+├─ conda_build_config.yaml         # Global pinning and variants
+├─ test-recipes.py                 # Direct recipe testing script
 ├─ .ci_support/
-│  ├─ build_all.py               # Build orchestration (mode detection, graph, variants)
-│  ├─ linux64.yaml               # Linux x86_64 variant config
-│  ├─ linux_aarch64.yaml         # Linux ARM64 variant config
-│  ├─ win64.yaml                 # Windows x64 variant config
-│  ├─ osx64.yaml                 # macOS x86_64 variant config
-│  └─ osxarm64.yaml              # macOS ARM64 variant config
+│  ├─ build_all.py                # Build orchestration (mode detection, graph, variants)
+│  ├─ linux64.yaml                # Linux x86_64 variant config
+│  ├─ linux_aarch64.yaml          # Linux ARM64 variant config
+│  ├─ win64.yaml                  # Windows x64 variant config
+│  ├─ osx64.yaml                  # macOS x86_64 variant config
+│  └─ osxarm64.yaml               # macOS ARM64 variant config
 ├─ .github/workflows/
-│  ├─ test-all.yml               # Orchestrates all platform builds
-│  ├─ test-linux.yml             # Linux builds (Docker)
-│  ├─ test-windows.yml           # Windows builds (native)
-│  └─ test-macos.yml             # macOS builds (x86_64 + ARM64)
+│  ├─ test-all.yml                # Orchestrates all platform builds
+│  ├─ test-linux.yml              # Linux builds (Docker)
+│  ├─ test-windows.yml            # Windows builds (native)
+│  └─ test-macos.yml              # macOS builds (x86_64 + ARM64)
 ├─ .scripts/
-│  └─ run_win_build.bat          # Windows provisioning/build runner
-├─ build-locally.py               # Cross-platform dispatcher
+│  └─ run_win_build.bat           # Windows provisioning/build runner
+├─ scripts/
+│  ├─ bmad-switch                 # Active-project switcher for the BMAD multi-project layout
+│  └─ ...                         # Other repo-level helper scripts (sync-upstream, submit_pr, ...)
+├─ build-locally.py                # Cross-platform dispatcher
 ├─ recipes/
-│  ├─ <recipe>/recipe.yaml       # Rattler Build format (modern)
-│  └─ <recipe>/meta.yaml         # conda-build format (legacy)
-├─ docs/                          # Project Documentation
-│  ├─ developer-guide.md          # Comprehensive build guide
-│  ├─ enterprise-deployment.md    # Air-gapped / JFrog deployment guide
-│  └─ mcp-server-architecture.md  # FastMCP / BMAD architecture
-├─ setup.cfg                      # flake8 / Python style config
-├─ conda-forge.yml                # conda-forge configuration
-├─ pixi.toml                      # Pixi environment configuration
+│  ├─ <recipe>/recipe.yaml        # Rattler Build format (modern)
+│  └─ <recipe>/meta.yaml          # conda-build format (legacy)
+├─ docs/                           # Project Documentation
+│  ├─ developer-guide.md           # Comprehensive build guide
+│  ├─ enterprise-deployment.md     # Air-gapped / JFrog deployment guide
+│  ├─ mcp-server-architecture.md   # FastMCP / BMAD architecture
+│  ├─ bmad-setup-plan.md           # BMAD installation + multi-project layout plan
+│  └─ specs/                       # Project tech-specs (e.g. copilot-bridge VSIX)
+├─ _bmad/                          # BMAD configuration (installer-managed + custom overrides)
+├─ _bmad-output/                   # BMAD artifacts, organized by project (see PROJECTS.md)
+│  ├─ PROJECTS.md                  # Multi-project index + add-a-project guide
+│  └─ projects/<slug>/             # Per-project planning + implementation artifacts
+├─ setup.cfg                       # flake8 / Python style config
+├─ conda-forge.yml                 # conda-forge configuration
+├─ pixi.toml                       # Pixi environment configuration
 ```
+
+## BMAD multi-project layout (this repo hosts more than just conda recipes)
+
+This repository's primary purpose is conda-forge recipe authoring, but it also hosts other projects driven by [BMAD Method](https://docs.bmad-method.org/) under a single shared installation. Each BMAD project has its own subtree at `_bmad-output/projects/<slug>/`. The full layout, config-resolution order, and "adding a new project" guide live in:
+
+- **`_bmad-output/PROJECTS.md`** — project index and operational reference.
+- **`docs/bmad-setup-plan.md`** — installation history + multi-project setup plan (Phase 8).
+- **`CLAUDE.md` § "Multi-Project Pattern"** — quick-reference for AI agents and human contributors.
+
+Quick commands:
+
+```bash
+scripts/bmad-switch --list             # list known projects
+scripts/bmad-switch --current          # print active project
+scripts/bmad-switch <slug>             # set active project
+```
+
+**Active-project resolution priority** (`_bmad/scripts/resolve_config.py`):
+1. `--project <slug>` per-call CLI flag
+2. `BMAD_ACTIVE_PROJECT` environment variable
+3. `_bmad/custom/.active-project` marker file (managed by `scripts/bmad-switch`)
+4. None — only global config layers resolve
 
 ## Style and linting
 - Python: `setup.cfg` configures flake8 with `max-line-length = 88`. Mirror nearby code style when editing helper scripts.

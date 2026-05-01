@@ -1,0 +1,16 @@
+# Project-scoped BMAD config for `local-recipes` (the conda-forge recipes monorepo).
+# Loaded as resolver layer 5 (team, committed) when this project is active.
+# Active project resolution order:
+#   1. resolve_config.py --project <slug>      (per-call override)
+#   2. BMAD_ACTIVE_PROJECT env var
+#   3. _bmad/custom/.active-project marker file
+#   4. (none — only global layers resolved)
+
+# Override the global output_folder so this project's artifacts land under its own subdir.
+output_folder = "_bmad-output/projects/local-recipes"
+
+# Project metadata (informational; not consumed by skills today, but useful for tooling).
+[project]
+slug = "local-recipes"
+description = "Primary project — conda-forge recipe authoring monorepo (this repo's main purpose)."
+status = "active"

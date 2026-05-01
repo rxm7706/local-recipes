@@ -1,0 +1,16 @@
+# Project-scoped BMAD config for `presenton-pixi-image`.
+# Loaded as resolver layer 5 (team, committed) when this project is active.
+# Active project resolution order:
+#   1. resolve_config.py --project <slug>      (per-call override)
+#   2. BMAD_ACTIVE_PROJECT env var
+#   3. _bmad/custom/.active-project marker file
+#   4. (none — only global layers resolved)
+
+# Override the global output_folder so this project's artifacts land under its own subdir.
+output_folder = "_bmad-output/projects/presenton-pixi-image"
+
+# Project metadata.
+[project]
+slug = "presenton-pixi-image"
+description = "Air-gapped, conda-forge-native repackaging of the Presenton AI deck-generation app for OpenShift Container Platform deployment in regulated-enterprise environments."
+status = "active"

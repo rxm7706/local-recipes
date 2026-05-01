@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 """
-Resolve BMad's central config using four-layer TOML merge.
+Resolve BMad's central config using up-to-six-layer TOML merge with optional
+per-project overlay.
 
-Reads from four layers (highest priority last):
-  1. {project-root}/_bmad/config.toml              (installer-owned team)
-  2. {project-root}/_bmad/config.user.toml         (installer-owned user)
-  3. {project-root}/_bmad/custom/config.toml       (human-authored team, committed)
-  4. {project-root}/_bmad/custom/config.user.toml  (human-authored user, gitignored)
+Reads from the following layers (highest priority last):
+  1. {project-root}/_bmad/config.toml                                  (installer team)
+  2. {project-root}/_bmad/config.user.toml                             (installer user)
+  3. {project-root}/_bmad/custom/config.toml                           (custom team — global, all projects)
+  4. {project-root}/_bmad/custom/config.user.toml                      (custom user — global, all projects)
+  5. {project-root}/_bmad-output/projects/<slug>/.bmad-config.toml     (project team — committed) [if active project resolves]
+  6. {project-root}/_bmad-output/projects/<slug>/.bmad-config.user.toml (project user — gitignored)  [if active project resolves]
+
+Active-project resolution (only matters for layers 5–6):
+  a. --project <slug>                              (per-call CLI override; highest priority)
+  b. BMAD_ACTIVE_PROJECT environment variable
+  c. {project-root}/_bmad/custom/.active-project   (single-line slug marker file, gitignored)
+  d. None — layers 5 and 6 are skipped; only the four global layers resolve.
 
 Outputs merged JSON to stdout. Errors go to stderr.
 
@@ -16,6 +25,8 @@ no virtualenv — plain `python3` is sufficient.
   python3 resolve_config.py --project-root /abs/path/to/project
   python3 resolve_config.py --project-root ... --key core
   python3 resolve_config.py --project-root ... --key agents
+  python3 resolve_config.py --project-root ... --project presenton-pixi-image
+  python3 resolve_config.py --project-root ... --project local-recipes --key output_folder
 
 Merge rules (same as resolve_customization.py):
   - Scalars: override wins
@@ -26,6 +37,8 @@ Merge rules (same as resolve_customization.py):
 
 import argparse
 import json
+import os
+import re
 import sys
 from pathlib import Path
 
@@ -40,6 +53,7 @@ except ImportError:
 
 _MISSING = object()
 _KEYED_MERGE_FIELDS = ("code", "id")
+_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 
 def load_toml(file_path: Path, required: bool = False) -> dict:
@@ -134,9 +148,44 @@ def extract_key(data, dotted_key: str):
     return current
 
 
+def resolve_active_project(project_root: Path, cli_project: str | None) -> str | None:
+    """
+    Resolve the active project slug using the documented precedence:
+      1. --project flag (cli_project)
+      2. BMAD_ACTIVE_PROJECT env var
+      3. _bmad/custom/.active-project marker file
+      4. None
+    Validates slug format (lowercase alphanumeric + hyphens/underscores).
+    Returns the slug, or None if no active project is set.
+    """
+    candidates = [
+        ("--project flag", cli_project),
+        ("BMAD_ACTIVE_PROJECT env", os.environ.get("BMAD_ACTIVE_PROJECT")),
+    ]
+    marker_path = project_root / "_bmad" / "custom" / ".active-project"
+    if marker_path.exists():
+        try:
+            marker_value = marker_path.read_text(encoding="utf-8").strip()
+            candidates.append((f"{marker_path}", marker_value or None))
+        except OSError as error:
+            sys.stderr.write(f"warning: failed to read {marker_path}: {error}\n")
+
+    for source, value in candidates:
+        if not value:
+            continue
+        if not _SLUG_PATTERN.match(value):
+            sys.stderr.write(
+                f"error: invalid project slug from {source}: {value!r} "
+                f"(expected lowercase alphanumeric + hyphens/underscores)\n"
+            )
+            sys.exit(2)
+        return value
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Resolve BMad central config using four-layer TOML merge.",
+        description="Resolve BMad central config using up-to-six-layer TOML merge with optional per-project overlay.",
     )
     parser.add_argument(
         "--project-root", "-p", required=True,
@@ -145,6 +194,14 @@ def main():
     parser.add_argument(
         "--key", "-k", action="append", default=[],
         help="Dotted field path to resolve (repeatable). Omit for full dump.",
+    )
+    parser.add_argument(
+        "--project",
+        help="Active project slug — overrides BMAD_ACTIVE_PROJECT env and .active-project marker for this call.",
+    )
+    parser.add_argument(
+        "--show-active-project", action="store_true",
+        help="Print the resolved active project slug to stderr (debug).",
     )
     args = parser.parse_args()
 
@@ -159,6 +216,20 @@ def main():
     merged = deep_merge(base_team, base_user)
     merged = deep_merge(merged, custom_team)
     merged = deep_merge(merged, custom_user)
+
+    active_project = resolve_active_project(project_root, args.project)
+    if args.show_active_project:
+        sys.stderr.write(f"active_project: {active_project or '(none)'}\n")
+
+    if active_project:
+        project_dir = project_root / "_bmad-output" / "projects" / active_project
+        project_team = load_toml(project_dir / ".bmad-config.toml")
+        project_user = load_toml(project_dir / ".bmad-config.user.toml")
+        merged = deep_merge(merged, project_team)
+        merged = deep_merge(merged, project_user)
+        # Surface active project for downstream consumers.
+        if isinstance(merged, dict):
+            merged.setdefault("active_project", active_project)
 
     if args.key:
         output = {}
