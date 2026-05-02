@@ -7,13 +7,13 @@ existing_patterns_found: 1392
 status: 'complete'
 rule_count: 44
 optimized_for_llm: true
-sync_source: 'CLAUDE.md'
-maintenance_model: 'hand-edited; sync with CLAUDE.md per-change'
+sync_sources: ['CLAUDE.md', '.claude/skills/conda-forge-expert/SKILL.md', '.claude/skills/conda-forge-expert/reference/', '.claude/skills/conda-forge-expert/quickref/']
+maintenance_model: 'hand-edited; per-section sync tags identify the upstream source — update here in the same PR as the upstream change'
 ---
 
 # Project Context for AI Agents
 
-_Foundational rules every BMAD agent reads on spawn. Mirrors `CLAUDE.md`; hand-maintained — verify alignment when `CLAUDE.md` changes._
+_Foundational rules every BMAD agent reads on spawn. Mirrors `CLAUDE.md` (repo-wide guidance) and the `conda-forge-expert` skill (conda-forge specifics); hand-maintained — verify alignment when sources change._
 
 ---
 
@@ -34,7 +34,7 @@ Versions live in `pixi.toml` — read it, do not duplicate version numbers in pr
 
 ## Recipe Format Rules
 
-(Sync: CLAUDE.md → "Recipe Formats")
+(Sync: `.claude/skills/conda-forge-expert/reference/recipe-yaml-reference.md` + `meta-yaml-reference.md`)
 
 - **Always use v1 `recipe.yaml`** with `schema_version: 1` and the rattler-build schema header (`# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json`).
 - v0 `meta.yaml` is migration source only. **When you touch a v0 recipe, migrate it in the same PR**: `migrate_to_v1` → `validate_recipe` → delete `meta.yaml` → commit.
@@ -43,13 +43,13 @@ Versions live in `pixi.toml` — read it, do not duplicate version numbers in pr
 
 ## Compiler & stdlib Rule (auto-rejection trigger)
 
-(Sync: CLAUDE.md → "⚠️ Critical Build Requirement: `stdlib`")
+(Sync: `.claude/skills/conda-forge-expert/SKILL.md` § Critical Constraints + `reference/recipe-yaml-reference.md` § Requirements)
 
 Any recipe using `${{ compiler("c") }}`, `${{ compiler("cxx") }}`, or `${{ compiler("rust") }}` MUST include `${{ stdlib("c") }}` in `requirements.build`. `optimize_recipe` flags this as **STDLIB-001**. Missing stdlib = automatic conda-forge CI rejection.
 
 ## Python Version Policy
 
-(Sync: CLAUDE.md → "Python Version Policy (`python_min`)")
+(Sync: `.claude/skills/conda-forge-expert/reference/python-min-policy.md`)
 
 - Floor tracks `conda-forge-pinning-feedstock`. Current floor: `"3.10"` (3.9 dropped August 2025).
 - `noarch: python` recipes use the CFEP-25 triad: `host: python ${{ python_min }}.*` / `run: python >=${{ python_min }}` / test `python_version: ${{ python_min }}.*`.
@@ -58,7 +58,7 @@ Any recipe using `${{ compiler("c") }}`, `${{ compiler("cxx") }}`, or `${{ compi
 
 ## Dependency Resolution
 
-(Sync: CLAUDE.md → "AI-Assisted Workflow", `check_dependencies` / `get_conda_name`)
+(Sync: `.claude/skills/conda-forge-expert/reference/mcp-tools.md` § Core Capabilities, `check_dependencies` / `get_conda_name`)
 
 - Resolve PyPI → conda names via `get_conda_name` MCP tool or `name_resolver.py`. Don't guess.
 - Verify all deps with `check_dependencies` before submission.
@@ -66,7 +66,7 @@ Any recipe using `${{ compiler("c") }}`, `${{ compiler("cxx") }}`, or `${{ compi
 
 ## Autonomous MCP Lifecycle (the spine)
 
-(Sync: CLAUDE.md → "Autonomous Recipe Lifecycle Loop")
+(Sync: `.claude/skills/conda-forge-expert/SKILL.md` § Primary Workflow: The Autonomous Loop)
 
 ```
 generate_recipe_from_pypi
@@ -85,14 +85,14 @@ Use `edit_recipe` with structured actions for routine version/SHA/maintainer cha
 
 ## SHA256 Verification
 
-(Sync: CLAUDE.md → "Recipe Formats", and the `edit_recipe` action set)
+(Sync: `.claude/skills/conda-forge-expert/reference/recipe-yaml-reference.md` + `mcp-tools.md` `edit_recipe` action set)
 
 - SHA256 source of truth: PyPI JSON API (`https://pypi.org/pypi/<pkg>/<ver>/json` → `urls[].digests.sha256`) or `sha256sum` of the downloaded source tarball.
 - Write SHA256 with `edit_recipe`; never hand-edit.
 
 ## Build & Test Rules
 
-(Sync: CLAUDE.md → "Manual CLI Commands" / `build-locally.py`)
+(Sync: `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md` § Project Pixi Tasks + Building § build-locally.py)
 
 - Native linux-64 = full build + test via `rattler-build`.
 - Cross-platform builds (osx-*, win-64, linux-aarch64) skip tests with `--no-test`; win-64 also passes `--allow-symlinks-on-windows`.
@@ -124,7 +124,7 @@ Three project-specific gotchas the linter doesn't catch:
 
 ## Submission Workflow
 
-(Sync: CLAUDE.md → "AI-Assisted Workflow" → `submit_pr`)
+(Sync: `.claude/skills/conda-forge-expert/reference/mcp-tools.md` → `submit_pr`)
 
 - Target: `conda-forge/staged-recipes` fork → upstream PR.
 - **Submission-ready gate** (all four required): `validate_recipe` clean + `optimize_recipe` clean + `scan_for_vulnerabilities` clean + linux-64 build green.
@@ -143,6 +143,6 @@ Three project-specific gotchas the linter doesn't catch:
 ## Usage
 
 - **BMAD agents**: read on spawn; cite specific sections rather than restating rules.
-- **Humans**: keep this file in sync with `CLAUDE.md`. The `(Sync: ...)` tag on each section identifies its source. When `CLAUDE.md` changes, update the matching section here in the same PR — don't merge one without the other.
+- **Humans**: keep this file in sync with the source files identified in each section's `(Sync: ...)` tag. After the 2026-Q2 multi-skill restructure, sources live in `CLAUDE.md` (repo-wide guidance) and `.claude/skills/conda-forge-expert/{SKILL.md,reference/*,quickref/*}` (conda-forge specifics). When a source changes, update the matching section here in the same PR.
 
-<!-- Sync source: CLAUDE.md. Hand-maintained — verify alignment when CLAUDE.md changes. -->
+<!-- Sync sources: CLAUDE.md (repo-wide) + .claude/skills/conda-forge-expert/ (conda-forge specifics). Hand-maintained — verify alignment when sources change. -->

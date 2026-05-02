@@ -304,7 +304,8 @@ def analyze_stdlib_compliance(data: Dict) -> List[OptimizationSuggestion]:
     """Check that recipes using compiler() also declare stdlib() (STD-001).
 
     This is a CRITICAL check — omitting stdlib() causes automatic rejection by
-    conda-forge CI for all compiled packages (CLAUDE.md Critical Constraints).
+    conda-forge CI for all compiled packages (see SKILL.md Critical Constraints
+    and reference/recipe-yaml-reference.md § Requirements).
     """
     suggestions = []
     build_reqs = _flatten_reqs(data.get("requirements", {}).get("build", []))
