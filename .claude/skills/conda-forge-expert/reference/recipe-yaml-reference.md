@@ -312,6 +312,8 @@ requirements:
     - scipy >=1.0
 ```
 
+> **Required:** Every recipe that uses a compiler (`c`, `cxx`, `rust`, `fortran`, `cuda`, `go-cgo`) **must** include a matching `stdlib` entry in `requirements.build`. Omitting it causes automatic rejection by conda-forge CI. **Exception:** `go-nocgo` (pure Go, no CGO) and the legacy `compiler("go")` do not require `stdlib`. The same rule applies to `meta.yaml` recipes — use `{{ compiler('c') }}` + `{{ stdlib('c') }}`.
+
 ### Conditional Dependencies
 
 ```yaml

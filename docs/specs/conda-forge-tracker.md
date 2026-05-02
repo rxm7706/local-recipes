@@ -65,8 +65,9 @@ conda-forge packages across many feedstocks. Without a tracker:
 - **`prefix-dev/parselmouth`** exposes a stable JSON URL pattern
   (`https://conda-mapping.prefix.dev/pypi-to-conda-v1/{channel}/{pkg}.json`)
   for "is package X on conda-forge?" checks.
-- **CLAUDE.md `## Conda-Forge Ecosystem Reference`** is the authoritative
-  map of every repo and doc the tracker may need to surface to the user.
+- **`.claude/skills/conda-forge-expert/reference/conda-forge-ecosystem.md`** is
+  the authoritative map of every repo and doc the tracker may need to
+  surface to the user.
 
 ---
 
@@ -175,7 +176,7 @@ issue.
   plus template-specific fields (`feedstock`, `upstream`, version
   pair, etc.).
 - Body has a `## Action` checklist and a `## References` footer
-  linking the relevant CLAUDE.md ecosystem row + Zulip + Knowledge
+  linking the relevant `conda-forge-ecosystem.md` row + Zulip + Knowledge
   Base where applicable.
 - `package-request.md` channel = `staged-recipes`.
 - `outdated-package.md` channel = `feedstock-issue`.
@@ -338,8 +339,8 @@ the design.
   frontmatter), Channels, Workflows (table of common situations →
   command), Bridge to `local-recipes`, Migration to GitHub Issues.
 - Migration playbook embedded in `export-to-github.py` docstring.
-- README cross-links the CLAUDE.md ecosystem reference and the
-  conda-forge-expert SKILL.md.
+- README cross-links `conda-forge-expert/reference/conda-forge-ecosystem.md`
+  and the conda-forge-expert SKILL.md.
 
 ---
 
@@ -688,9 +689,9 @@ explicit answers before implementation.
 
 ## References
 
-- **`CLAUDE.md` § Conda-Forge Ecosystem Reference** — authoritative map
-  of repos, docs, CFEPs, tooling, and community personas the tracker
-  surfaces in templates.
+- **`.claude/skills/conda-forge-expert/reference/conda-forge-ecosystem.md`** —
+  authoritative map of repos, docs, CFEPs, tooling, and community personas
+  the tracker surfaces in templates.
 - **`local-recipes/.claude/skills/conda-forge-expert/SKILL.md`** —
   source of `update_recipe`, `update_recipe_from_github`,
   `check_github_version`, `scan_for_vulnerabilities`, and

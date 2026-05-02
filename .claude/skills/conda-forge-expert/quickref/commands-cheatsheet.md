@@ -292,3 +292,29 @@ curl -s "https://conda.anaconda.org/conda-forge/noarch/repodata.json" | jq '.pac
 - {{ pin_subpackage('libfoo', max_pin='x.x.x') }}
 - {{ pin_subpackage('libfoo', exact=True) }}
 ```
+
+## Project Pixi Tasks
+
+Tasks defined in this repo's `pixi.toml` for the local-recipes monorepo. Each is also available as an MCP tool where noted.
+
+```bash
+# Lint a recipe (uses the conda-smithy environment)
+pixi run -e conda-smithy lint recipes/<name>
+
+# Run a full diagnostic on the environment (also: run_system_health_check MCP tool)
+pixi run -e local-recipes health-check
+
+# Sync your fork with upstream conda-forge/staged-recipes
+pixi run -e local-recipes sync-upstream
+
+# Submit a finished recipe to conda-forge (also: submit_pr MCP tool)
+pixi run -e local-recipes submit-pr <recipe-name>
+
+# Update the local CVE and PyPI-to-conda name mapping databases
+# (also: update_cve_database, update_mapping_cache MCP tools)
+pixi run -e local-recipes update-cve-db
+pixi run -e local-recipes update-mapping-cache
+
+# Run the PyPI "autotick" bot on a recipe (also: update_recipe MCP tool)
+pixi run -e local-recipes autotick recipes/<name>/recipe.yaml
+```
