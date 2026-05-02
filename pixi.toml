@@ -17,10 +17,10 @@ platforms = [
 ]
 
 [feature.python.dependencies]
-python = "3.12.*"
+python = ">=3.12.13,3.12.*"
 pixi = ">=0.67.2"
 gh = ">=2.92.0"
-nodejs = ">=24.0.0,<25.0"  # Pin to LTS version
+nodejs = ">=24.14.1,24.*"  # Pin to LTS version
 bmad-method = ">=6.6.0"
 spec-kit = ">=0.8.4"
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
