@@ -284,6 +284,7 @@ platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 [feature.vuln-db.dependencies]
 python = "3.12.*"
 conda-forge-metadata = "*"  # so --deep also works in this env
+truststore = ">=0.10.1"
 
 [feature.vuln-db.pypi-dependencies]
 appthreat-vulnerability-db = { version = "*", extras = ["all"] }
@@ -291,10 +292,11 @@ appthreat-vulnerability-db = { version = "*", extras = ["all"] }
 [feature.vuln-db.activation.env]
 VDB_HOME = "$PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb"
 VDB_CACHE = "$PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb-cache"
+TRUSTSTORE = "1"
 
 [feature.vuln-db.tasks.vdb-refresh]
 description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 min first time, ~600MB at .claude/data/conda-forge-expert/vdb/)"
-cmd = "vdb --cache"
+cmd = 'python -c "import truststore; truststore.inject_into_ssl(); from vdb.cli import main; main()" --cache'
 
 [feature.vuln-db.tasks.detail-cf-atlas]
 description = "Detail card with --vdb support enabled (multi-source vulnerability lookup)"
