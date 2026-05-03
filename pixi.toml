@@ -105,6 +105,7 @@ build = ["python", "build"]
 grayskull = ["python", "grayskull"]
 conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
+vuln-db = ["python", "vuln-db"]
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
@@ -241,6 +242,58 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py luar
 [feature.local-recipes.tasks.generate-npm]
 description = "Scaffold a v1 recipe for an npm package (registry.npmjs.org)"
 cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py npm"
+
+[feature.local-recipes.tasks.build-cf-atlas]
+description = "Build the conda-forge atlas — cross-channel package map (conda-forge ↔ PyPI ↔ npm/CRAN/CPAN/LuaRocks, SQLite)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py build"
+
+[feature.local-recipes.tasks.query-cf-atlas]
+description = "Look up a package in the conda-forge atlas by name"
+cmd = "python .claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py query"
+
+[feature.local-recipes.tasks.stats-cf-atlas]
+description = "Show summary statistics from the conda-forge atlas"
+cmd = "python .claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py stats"
+
+[feature.local-recipes.tasks.detail-cf-atlas]
+description = "Show detailed package card from atlas + anaconda.org (use --deep for per-build artifact metadata, --files to list paths)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/detail_cf_atlas.py"
+
+# ── vuln-db feature: AppThreat multi-source vulnerability database ─────────
+# Adds NVD + GHSA + OSV + npm + custom advisory sources (vs. our OSV-only
+# pypi_cve_db.json). Deliberately a separate env to keep local-recipes lean.
+# First `vdb-refresh` is slow (~5-10 min, ~500MB-1GB at ~/.local/share/vdb).
+# Subsequent refreshes are incremental.
+
+[feature.vuln-db]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.vuln-db.dependencies]
+python = "3.12.*"
+conda-forge-metadata = "*"  # so --deep also works in this env
+
+[feature.vuln-db.pypi-dependencies]
+appthreat-vulnerability-db = { version = "*", extras = ["all"] }
+
+[feature.vuln-db.activation.env]
+VDB_HOME = "$PIXI_PROJECT_ROOT/.claude/skills/data/vdb"
+VDB_CACHE = "$PIXI_PROJECT_ROOT/.claude/skills/data/vdb-cache"
+
+[feature.vuln-db.tasks.vdb-refresh]
+description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 min first time, ~600MB at .claude/skills/data/vdb/)"
+cmd = "vdb --cache"
+
+[feature.vuln-db.tasks.detail-cf-atlas]
+description = "Detail card with --vdb support enabled (multi-source vulnerability lookup)"
+cmd = "python .claude/skills/conda-forge-expert/scripts/detail_cf_atlas.py"
+
+[feature.vuln-db.tasks.scan-project]
+description = "Scan a project's manifests (pixi.lock, pixi.toml, Cargo.lock/toml, requirements.txt, pyproject.toml, environment.yml, Containerfile/Dockerfile) for CVEs. Use --github URL or local path. Add --os for OS-package lookups, --brief for summary, --sbom {cyclonedx,spdx} for SBOM output."
+cmd = "python .claude/skills/conda-forge-expert/scripts/scan_project.py"
+
+[feature.vuln-db.tasks.inventory-channel]
+description = "Inventory a channel/mirror (conda repodata.json | PyPI Simple v1 | npm registry | crates.io). Auto-detects format. --with-vulns ON by default for conda, OFF for others. JFrog auth via env vars. --diff for upstream comparison, --health for mirror signals, --sbom for SBOM."
+cmd = "python .claude/skills/conda-forge-expert/scripts/inventory_channel.py"
 
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
