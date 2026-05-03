@@ -38,10 +38,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sqlite3
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -79,6 +81,105 @@ CONDA_FORGE_SUBDIRS = [
     "win-64",
 ]
 CONDA_FORGE_CHANNEL = "conda-forge"
+
+# Public fallback hosts. Order is fixed: prefix.dev's repo subdomain
+# (CDN-backed mirror) before anaconda.org (often blocked in air-gapped
+# enterprise networks). Note: bare prefix.dev/conda-forge does NOT serve
+# current_repodata.json — only the full repodata.json. We use the
+# repo.prefix.dev/conda-forge mirror which serves both.
+_PUBLIC_CONDA_FORGE_FALLBACKS = (
+    "https://repo.prefix.dev/conda-forge",
+    "https://conda.anaconda.org/conda-forge",
+)
+
+
+def _read_pixi_config() -> dict:
+    """Read pixi config — first existing file in priority order wins.
+
+    Pixi resolves config in this order: project-local → user → system. We
+    follow the same chain so this script honors whatever the developer set.
+    Silent-on-error: a malformed config doesn't break the build, we just
+    fall back to the next candidate (or to env-var/default routing).
+    """
+    try:
+        import tomllib
+    except ImportError:
+        return {}
+    candidates = [
+        Path(".pixi") / "config.toml",
+        Path.home() / ".pixi" / "config.toml",
+        Path("/etc/pixi/config.toml"),
+    ]
+    for p in candidates:
+        try:
+            if p.is_file():
+                with open(p, "rb") as f:
+                    return tomllib.load(f)
+        except Exception:
+            continue
+    return {}
+
+
+def _resolve_conda_forge_urls() -> list[str]:
+    """Build the ordered URL chain for the conda-forge channel.
+
+    Air-gapped-friendly priority:
+      1. CONDA_FORGE_BASE_URL env var (explicit override)
+      2. Pixi config: mirrors["https://conda.anaconda.org/conda-forge"][*]
+         — picks up the JFrog redirect documented in
+         docs/pixi-config-jfrog.example.toml
+      3. Pixi config: default-channels (any entry containing "conda-forge")
+         — covers JFrog Conda Virtual Repository setups
+      4. https://prefix.dev/conda-forge          (public CDN mirror)
+      5. https://conda.anaconda.org/conda-forge  (last resort; blocked in
+         many air-gapped networks)
+
+    Returns at least one URL (the public default) even if no JFrog redirect
+    is found, so external clones keep working without configuration.
+    """
+    seen: set[str] = set()
+    chain: list[str] = []
+
+    def _add(candidate: str | None) -> None:
+        if not candidate:
+            return
+        normalized = candidate.rstrip("/")
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            chain.append(normalized)
+
+    # 1. Explicit env-var override
+    _add(os.environ.get("CONDA_FORGE_BASE_URL"))
+
+    # 2. Pixi config mirrors — find a redirect whose source is the
+    #    conda-forge channel on anaconda.org.
+    cfg = _read_pixi_config()
+    mirrors = cfg.get("mirrors") or {}
+    if isinstance(mirrors, dict):
+        for src, targets in mirrors.items():
+            if not isinstance(src, str) or not isinstance(targets, list):
+                continue
+            if src.rstrip("/").endswith("conda.anaconda.org/conda-forge"):
+                for t in targets:
+                    if isinstance(t, str):
+                        _add(t)
+
+    # 3. Pixi config default-channels — anything containing "conda-forge".
+    #    A JFrog "Conda Virtual Repository" pointed at conda-forge looks
+    #    like https://artifactory.example.com/artifactory/api/conda/conda-forge-external-virtual
+    chans = cfg.get("default-channels") or []
+    if isinstance(chans, list):
+        for c in chans:
+            if isinstance(c, str) and "conda-forge" in c:
+                _add(c)
+
+    # 4 + 5. Public fallbacks — always tried last so external clones work
+    #         without any configuration.
+    for url in _PUBLIC_CONDA_FORGE_FALLBACKS:
+        _add(url)
+
+    return chain
+
 
 SCHEMA_VERSION = 1
 
@@ -195,25 +296,46 @@ def init_schema(conn: sqlite3.Connection) -> None:
 
 # --- Pipeline phases (skeleton; populated incrementally) ---
 
-def _fetch_current_repodata(subdir: str, retries: int = 3) -> dict:
+def _fetch_current_repodata(subdir: str, retries: int = 2) -> dict:
     """Fetch current_repodata.json (latest active version per package) for one subdir.
 
-    Single-file JSON fetch with retry — avoids the sharded msgpack protocol
-    that's prone to transient 502s. ~15MB per subdir vs ~170MB for full repodata.
+    Tries each base URL in `_resolve_conda_forge_urls()` in order:
+    JFrog (env var or pixi config) → prefix.dev → conda.anaconda.org. Within
+    each base URL, retries `retries` times with exponential backoff for
+    transient errors (5xx, timeouts, network resets). 4xx errors (404/403)
+    skip immediately to the next URL — they signal the URL is wrong, not
+    that the request is transiently flaky.
+
+    Single-file JSON fetch — avoids the sharded msgpack protocol that's
+    prone to transient 502s. ~15MB per subdir vs ~170MB for full repodata.
     """
-    url = f"https://conda.anaconda.org/{CONDA_FORGE_CHANNEL}/{subdir}/current_repodata.json"
+    base_urls = _resolve_conda_forge_urls()
     last_err: Exception | None = None
-    for attempt in range(retries):
-        try:
-            req = _make_req(url)
-            with urllib.request.urlopen(req, timeout=180) as resp:
-                return json.load(resp)
-        except Exception as e:
-            last_err = e
-            print(f"    {subdir} attempt {attempt + 1} failed: {e}; retrying...")
-            time.sleep(2 ** attempt)
+    for base_url in base_urls:
+        url = f"{base_url}/{subdir}/current_repodata.json"
+        for attempt in range(retries):
+            try:
+                req = _make_req(url)
+                with urllib.request.urlopen(req, timeout=180) as resp:
+                    return json.load(resp)
+            except urllib.error.HTTPError as e:
+                last_err = e
+                # 4xx (except 408 timeout / 429 rate-limit) means this URL
+                # is wrong — fall through to next base URL immediately.
+                if 400 <= e.code < 500 and e.code not in (408, 429):
+                    print(f"    {subdir} via {base_url}: HTTP {e.code}; trying next source")
+                    break
+                print(f"    {subdir} via {base_url} attempt {attempt + 1} failed: {e}; retrying...")
+                time.sleep(2 ** attempt)
+            except Exception as e:
+                last_err = e
+                print(f"    {subdir} via {base_url} attempt {attempt + 1} failed: {e}; retrying...")
+                time.sleep(2 ** attempt)
     assert last_err is not None
-    raise last_err
+    raise RuntimeError(
+        f"Failed to fetch {subdir}/current_repodata.json from any of "
+        f"{len(base_urls)} source(s); last error: {last_err}"
+    )
 
 
 def _aggregate_repodata_records(repodata_by_subdir: dict[str, dict]) -> dict[str, dict[str, Any]]:
