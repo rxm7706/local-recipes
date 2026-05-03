@@ -6,6 +6,31 @@ Subsystems with their own internal versioning (individual conda recipes, the Fas
 
 ## [Unreleased]
 
+### Added — conda-forge-expert v6.0.0 (skill: conda-forge-expert)
+
+- **(skill: conda-forge-expert)** Three-tier directory layout. `.claude/skills/conda-forge-expert/scripts/` remains the canonical source. New `.claude/scripts/conda-forge-expert/` is the public CLI entrypoint layer (22 thin subprocess wrappers — what `pixi run` calls). `.claude/data/conda-forge-expert/` (mutable runtime state) moved from the old `.claude/skills/data/`. README at the new entrypoint path documents the wrapper pattern.
+- **(skill: conda-forge-expert)** New `_http.py` enterprise HTTP helper (truststore SSL injection + JFrog/GitHub/.netrc auth chain). Consumed by `conda_forge_atlas.py`, `detail_cf_atlas.py`, `github_version_checker.py`, `inventory_channel.py`. Same checkout works externally and internally — enterprise routing is **runtime-driven** via env vars; no enterprise URLs in committed `pixi.toml`.
+- **(skill: conda-forge-expert)** `mapping_manager.py` curl SSL fallback. When `conda-forge-metadata` raises a TLS trust failure, re-fetches the PyPI→conda mapping via system `curl` from `regro/cf-graph-countyfair`. Fixes networks where Python's TLS trust is broken but OS trust isn't.
+- **(skill: conda-forge-expert)** SKILL.md and `config/skill-config.yaml` bumped 5.10.0 → 6.0.0.
+
+### Changed — pixi.toml (skill: conda-forge-expert)
+
+- **(skill: conda-forge-expert)** All 22 task `cmd` lines re-targeted from `.claude/skills/conda-forge-expert/scripts/` → `.claude/scripts/conda-forge-expert/` (entrypoint layer). Pytest paths intentionally still reference the skill-internal `tests/` dir.
+- **(skill: conda-forge-expert)** `[feature.vuln-db.activation.env]` exports `VDB_HOME` / `VDB_CACHE` under the new `.claude/data/conda-forge-expert/` path.
+
+### Fixed — pre-commit regressions
+
+- **(skill: conda-forge-expert)** `conda_forge_atlas.py` `CONDA_FORGE_SUBDIRS` / `CONDA_FORGE_CHANNEL` constants were inadvertently deleted during an LLM-edit and replaced with a literal `# ...existing code...` placeholder; restored before any user impact.
+- **(skill: conda-forge-expert)** `pixi.toml` had a hardcoded JFrog `index-url` and Debian-specific SSL cert paths that broke external `pixi install`; reverted in favor of runtime detection via `_http.py`.
+- **(skill: conda-forge-expert)** `tests/meta/test_skill_md_consistency.py` and `tests/meta/test_all_scripts_runnable.py` updated to recognize both canonical and entrypoint paths and to skip underscore-prefixed internal helpers; four scripts from v5.11/v5.12 (`conda_forge_atlas`, `detail_cf_atlas`, `scan_project`, `inventory_channel`) added to the runnable-list registry.
+- **(repo hygiene)** `.gitignore` now covers `.claude/data/` (skill runtime state) and `.claude/scheduled_tasks.lock` (Claude Code session-lock artifact).
+
+### Documentation — conda-forge-expert v6.0.0
+
+- **(skill: conda-forge-expert)** `CLAUDE.md` — added "conda-forge-expert v6.0.0 layout (3-tier)" subsection mapping each tier to its purpose; documented the runtime-driven enterprise routing model.
+- **(skill: conda-forge-expert)** `README.md` — Pixi tasks section gained the missing v5.11/v5.12 task families (atlas suite, vuln-db env tasks, build-local* family, autotick-npm) and an enterprise-routing note.
+- **(skill: conda-forge-expert)** `_bmad-output/projects/local-recipes/project-context.md` — repository conventions section reflects the canonical-vs-entrypoint split and the new data path.
+
 ### Added — BMAD multi-project layout
 
 - **(BMAD)** Per-project subdirectory structure under `_bmad-output/projects/<slug>/` so this single BMAD installation can drive multiple independent projects without artifact mixing.
