@@ -42,7 +42,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+
+def _get_data_dir() -> Path:
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
+    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+
+
+DATA_DIR = _get_data_dir()
 ATLAS_DB = DATA_DIR / "cf_atlas.db"
 RULE = "─" * 74
 DOUBLE_RULE = "═" * 74
@@ -639,7 +645,7 @@ def render(project_dir: Path,
     p("  Hints:")
     p("  • For OS-level CVE scans: run `vdb --cache-os` then re-scan with `--os`")
     p("  • For full container scans: install trivy (conda-forge has it)")
-    p("  • For air-gapped: vdb works offline once cached at .claude/skills/data/vdb/")
+    p("  • For air-gapped: vdb works offline once cached at .claude/data/conda-forge-expert/vdb/")
     p(DOUBLE_RULE)
 
     return "\n".join(out)

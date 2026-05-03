@@ -16,9 +16,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
+
+try:
+    import yaml
+except ImportError:
+    yaml = None  # type: ignore[assignment]
 
 try:
     from conda_forge_metadata.autotick_bot.pypi_to_conda import get_pypi_name_mapping
@@ -27,9 +34,102 @@ except ImportError:
     get_pypi_name_mapping = None  # type: ignore[assignment]
     METADATA_AVAILABLE = False
 
+
+def _get_data_dir() -> Path:
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
+    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+
+
 # The location of our local data cache
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = _get_data_dir()
 MAPPING_CACHE_FILE = DATA_DIR / "pypi_conda_map.json"
+NAME_MAPPING_YAML_URL = (
+    "https://raw.githubusercontent.com/regro/cf-graph-countyfair/master/"
+    "mappings/pypi/name_mapping.yaml"
+)
+NAME_MAPPING_JSON_URL = (
+    "https://raw.githubusercontent.com/regro/cf-graph-countyfair/master/"
+    "mappings/pypi/name_mapping.json"
+)
+
+
+def _process_mapping_entries(entries: list[dict]) -> dict:
+    """Normalize mapping entries into ``{pypi_name: conda_name}``."""
+    processed_mapping: dict = {}
+    for entry in entries:
+        pypi_name = entry.get("pypi_name")
+        conda_name = entry.get("conda_name")
+        if pypi_name and conda_name:
+            processed_mapping[pypi_name.lower()] = conda_name
+    return processed_mapping
+
+
+def _looks_like_ssl_trust_failure(error: Exception) -> bool:
+    """Best-effort detection for Python-side TLS trust chain failures."""
+    text = f"{type(error).__name__}: {error}".lower()
+    markers = (
+        "ssl",
+        "tls",
+        "certificate verify failed",
+        "cert verification failed",
+        "unable to get local issuer certificate",
+        "self signed certificate",
+        "ca bundle",
+    )
+    return any(marker in text for marker in markers)
+
+
+def fetch_mapping_via_curl() -> dict:
+    """Fetch mapping via system curl for environments with broken Python TLS trust."""
+    curl = shutil.which("curl")
+    if not curl:
+        print("Error: curl is not available for SSL fallback fetch.", file=sys.stderr)
+        return {}
+
+    print("Retrying mapping fetch via system curl trust store...")
+    urls = [NAME_MAPPING_YAML_URL, NAME_MAPPING_JSON_URL]
+    for url in urls:
+        try:
+            result = subprocess.run(
+                [curl, "--fail", "--silent", "--show-error", "--location", url],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.strip() if e.stderr else str(e)
+            print(f"Warning: curl fetch failed for {url}: {stderr}", file=sys.stderr)
+            continue
+
+        try:
+            if url.endswith(".yaml"):
+                if yaml is None:
+                    print("Warning: PyYAML is unavailable; cannot parse YAML fallback.", file=sys.stderr)
+                    continue
+                entries = yaml.safe_load(result.stdout)
+            else:
+                entries = json.loads(result.stdout)
+        except Exception as e:
+            print(f"Warning: Failed to parse fallback payload from {url}: {e}", file=sys.stderr)
+            continue
+
+        if not isinstance(entries, list):
+            print(
+                f"Warning: Fallback payload from {url} has unexpected shape (expected list).",
+                file=sys.stderr,
+            )
+            continue
+
+        mapping = _process_mapping_entries(entries)
+        if mapping:
+            print(f"Fetched mapping fallback payload from: {url}")
+            return mapping
+
+        print(f"Warning: No mapping entries found in fallback payload from {url}.", file=sys.stderr)
+
+    print("Error: curl fallback could not fetch a usable mapping payload.", file=sys.stderr)
+    return {}
+
 
 def fetch_conda_forge_metadata_mapping() -> dict:
     """Fetch the PyPI→conda name mapping via ``conda-forge-metadata``.
@@ -44,16 +144,19 @@ def fetch_conda_forge_metadata_mapping() -> dict:
     try:
         entries = get_pypi_name_mapping()
     except Exception as e:
+        if _looks_like_ssl_trust_failure(e):
+            print(
+                f"Warning: Python TLS trust failed while fetching mapping ({e}).",
+                file=sys.stderr,
+            )
+            fallback = fetch_mapping_via_curl()
+            if fallback:
+                print("Fetched mapping via curl fallback.")
+            return fallback
         print(f"Error: Failed to fetch mapping: {e}", file=sys.stderr)
         return {}
 
-    processed_mapping: dict = {}
-    for entry in entries:
-        pypi_name = entry.get("pypi_name")
-        conda_name = entry.get("conda_name")
-        if pypi_name and conda_name:
-            processed_mapping[pypi_name.lower()] = conda_name
-    return processed_mapping
+    return _process_mapping_entries(entries)
 
 def load_local_cache() -> dict:
     """Loads the existing local mapping cache, if it exists."""
@@ -70,7 +173,7 @@ def save_to_local_cache(mapping: dict):
 
 def update_mapping_cache(force: bool = False):
     """
-    Updates the local cache by fetching the latest from Grayskull and merging it.
+    Updates the local cache by fetching latest mapping data and merging it.
     """
     print("Updating PyPI-to-Conda name mapping cache...")
     

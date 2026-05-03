@@ -35,7 +35,13 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+
+def _get_data_dir() -> Path:
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
+    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+
+
+DATA_DIR = _get_data_dir()
 DB_PATH = DATA_DIR / "cf_atlas.db"
 ANACONDA_BASE = os.environ.get("ANACONDA_API_BASE", "https://api.anaconda.org")
 CONDA_FORGE_BASE = os.environ.get("CONDA_FORGE_BASE_URL", "https://conda.anaconda.org/conda-forge")
@@ -44,6 +50,15 @@ NETWORK_TIMEOUT = 10  # seconds
 # ANSI sectioning helpers
 RULE = "─" * 74
 DOUBLE_RULE = "═" * 74
+
+# Enterprise HTTP helpers (truststore + .netrc auth)
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _http import inject_ssl_truststore, make_request as _http_make_request  # type: ignore[import-not-found]
+    inject_ssl_truststore()
+    _HTTP_AVAILABLE = True
+except ImportError:
+    _HTTP_AVAILABLE = False
 
 
 def _humanize_timestamp(ts: int | None) -> str:
@@ -103,7 +118,10 @@ def fetch_anaconda_files(name: str, subdir_filter: str | None = None) -> tuple[l
     """Source #2: anaconda.org per-package files API. Returns (latest_per_subdir, error_msg)."""
     url = f"{ANACONDA_BASE}/package/conda-forge/{name}/files"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "detail-cf-atlas/1.0"})
+        if _HTTP_AVAILABLE:
+            req = _http_make_request(url, user_agent="detail-cf-atlas/1.0")
+        else:
+            req = urllib.request.Request(url, headers={"User-Agent": "detail-cf-atlas/1.0"})
         with urllib.request.urlopen(req, timeout=NETWORK_TIMEOUT) as resp:
             files = json.load(resp)
     except urllib.error.HTTPError as e:

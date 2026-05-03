@@ -22,8 +22,14 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
-# The base directory for storing CVE data, relative to the .claude directory
-DATABASE_DIR = Path(__file__).parent.parent.parent / "data" / "cve"
+
+def _get_data_dir() -> Path:
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
+    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+
+
+# The base directory for storing CVE data
+DATABASE_DIR = _get_data_dir() / "cve"
 ECOSYSTEMS_TO_FETCH = {
     "PyPI": "https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip",
     # "npm": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip", # Example for future expansion

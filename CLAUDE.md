@@ -85,6 +85,13 @@ Skill-internal documentation (loaded on-demand when the skill activates):
 - **`.claude/skills/conda-forge-expert/guides/`** — getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, testing-recipes.
 - **`.claude/skills/conda-forge-expert/quickref/`** — `commands-cheatsheet.md` (incl. project pixi tasks), `bot-commands.md`.
 
+### conda-forge-expert v6.0.0 layout (3-tier)
+- **`.claude/skills/conda-forge-expert/scripts/`** — canonical implementation (source of truth). Edit code here.
+- **`.claude/scripts/conda-forge-expert/`** — public CLI entrypoint layer (22 thin subprocess wrappers). What `pixi run` calls. README.md at this path documents the wrapper pattern.
+- **`.claude/data/conda-forge-expert/`** — mutable runtime state (cf_atlas.db, vdb/, cve/, mappings, caches). Gitignored.
+
+Enterprise routing (JFrog Artifactory, internal mirrors) is **runtime-driven** via `_http.py` (truststore + JFrog/GitHub/.netrc auth chain) — env vars only, never committed config. See `.claude/skills/conda-forge-expert/CHANGELOG.md` v6.0.0 for the full release note.
+
 Repo-wide pointers:
 - **`_bmad-output/PROJECTS.md`** — BMAD multi-project index.
 - **Auto-memory** — `~/.claude/projects/-home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/memory/MEMORY.md` indexes accumulated feedback (skill disambiguation, recipe pin-loosening, .bat shim rules, BMAD multi-project pattern) and project context.

@@ -20,9 +20,9 @@ queryable single source of truth that captures:
   - PyPI universe (names + freshness serial)
 
 Output:
-  - .claude/skills/data/cf_atlas.db          -- SQLite, primary
-  - .claude/skills/data/cf_atlas_meta.json   -- build provenance sidecar
-  - .claude/skills/data/cf_atlas_export.json -- optional full table dump
+  - .claude/data/conda-forge-expert/cf_atlas.db          -- SQLite, primary
+  - .claude/data/conda-forge-expert/cf_atlas_meta.json   -- build provenance sidecar
+  - .claude/data/conda-forge-expert/cf_atlas_export.json -- optional full table dump
 
 CLI:
   python conda_forge_atlas.py build [--dry-run] [--export-json]
@@ -46,6 +46,27 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+# Enterprise HTTP helpers (truststore + .netrc auth)
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _http import inject_ssl_truststore, make_request as _http_make_request  # type: ignore[import-not-found]
+    inject_ssl_truststore()
+    _HTTP_AVAILABLE = True
+except ImportError:
+    _http_make_request = None  # type: ignore[assignment]
+    _HTTP_AVAILABLE = False
+
+
+def _make_req(url: str, extra_headers: dict | None = None) -> urllib.request.Request:
+    """Build an enterprise-safe Request; falls back to bare urllib if _http unavailable."""
+    if _HTTP_AVAILABLE and _http_make_request is not None:
+        return _http_make_request(url, extra_headers=extra_headers, user_agent="unified-map-builder/1.0")
+    headers: dict = {"User-Agent": "unified-map-builder/1.0"}
+    if extra_headers:
+        headers.update(extra_headers)
+    return urllib.request.Request(url, headers=headers)
+
+
 # Conda-forge subdirs we enumerate. Order doesn't matter; they're aggregated
 # per package_name into the conda_subdirs JSON list column.
 CONDA_FORGE_SUBDIRS = [
@@ -61,7 +82,13 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 
 SCHEMA_VERSION = 1
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+
+def _get_data_dir() -> Path:
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
+    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+
+
+DATA_DIR = _get_data_dir()
 DB_PATH = DATA_DIR / "cf_atlas.db"
 META_PATH = DATA_DIR / "cf_atlas_meta.json"
 EXPORT_PATH = DATA_DIR / "cf_atlas_export.json"
@@ -178,7 +205,7 @@ def _fetch_current_repodata(subdir: str, retries: int = 3) -> dict:
     last_err: Exception | None = None
     for attempt in range(retries):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "unified-map-builder/1.0"})
+            req = _make_req(url)
             with urllib.request.urlopen(req, timeout=180) as resp:
                 return json.load(resp)
         except Exception as e:
@@ -330,7 +357,7 @@ def _download_feedstock_outputs_archive() -> dict[str, list[str]]:
 
     url = "https://github.com/conda-forge/feedstock-outputs/archive/refs/heads/main.zip"
     print(f"  Downloading {url}...")
-    req = urllib.request.Request(url, headers={"User-Agent": "unified-map-builder/1.0"})
+    req = _make_req(url)
     with urllib.request.urlopen(req, timeout=300) as resp:
         zip_bytes = resp.read()
     print(f"  Got {len(zip_bytes):,} bytes; parsing sharded outputs/*/*.json...")
@@ -523,12 +550,9 @@ def phase_d_pypi_enumeration(conn: sqlite3.Connection) -> dict:
     """
     t0 = time.monotonic()
     print("  Fetching PyPI Simple v1 JSON (~40MB)...")
-    req = urllib.request.Request(
+    req = _make_req(
         "https://pypi.org/simple/",
-        headers={
-            "Accept": "application/vnd.pypi.simple.v1+json",
-            "User-Agent": "unified-map-builder/1.0",
-        },
+        extra_headers={"Accept": "application/vnd.pypi.simple.v1+json"},
     )
     with urllib.request.urlopen(req, timeout=300) as resp:
         simple = json.load(resp)
@@ -698,7 +722,7 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
     else:
         cf_graph_url = "https://github.com/regro/cf-graph-countyfair/archive/refs/heads/master.tar.gz"
         print(f"  Downloading {cf_graph_url} (large)...")
-        req = urllib.request.Request(cf_graph_url, headers={"User-Agent": "unified-map-builder/1.0"})
+        req = _make_req(cf_graph_url)
         with urllib.request.urlopen(req, timeout=600) as resp:
             tar_bytes = resp.read()
         cache_path.write_bytes(tar_bytes)
