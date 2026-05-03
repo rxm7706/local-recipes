@@ -12,6 +12,14 @@ import json
 import sys
 from pathlib import Path
 
+# Inject OS trust store before importing conda_forge_metadata so corporate CA
+# roots are honored on its underlying urllib calls. Idempotent.
+try:
+    import truststore  # type: ignore[import-not-found]
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 try:
     from conda_forge_metadata.autotick_bot.pypi_to_conda import map_pypi_to_conda
 except ImportError:

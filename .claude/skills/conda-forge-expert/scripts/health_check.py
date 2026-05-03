@@ -15,6 +15,14 @@ import sys
 from pathlib import Path
 from typing import Dict, Any, List
 
+# Inject OS trust store before `requests` is imported so corporate CA roots
+# are honored on the API-reachability probes. Idempotent.
+try:
+    import truststore  # type: ignore[import-not-found]
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 try:
     import requests
     REQUESTS_AVAILABLE = True

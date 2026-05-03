@@ -24,6 +24,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+# Inject OS trust store before requests import so corporate CA roots are
+# honored on PyPI calls in air-gapped JFrog environments. Idempotent.
+try:
+    import truststore  # type: ignore[import-not-found]
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 try:
     import requests
     REQUESTS_AVAILABLE = True
@@ -101,18 +109,52 @@ def determine_build_backend(requires_dist: list[str]) -> str:
 
 
 def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> PackageInfo:
-    """Fetch package info from PyPI."""
+    """Fetch package info from PyPI.
+
+    Uses `_http.resolve_pypi_json_urls` when available so air-gapped users
+    behind JFrog can route via `PYPI_JSON_BASE_URL` env or pixi
+    `pypi-config.index-url`. Falls back to bare `requests` against pypi.org
+    for external clones.
+    """
     if not REQUESTS_AVAILABLE:
         raise ImportError("requests library required: pip install requests")
     assert requests is not None  # for the type checker — REQUESTS_AVAILABLE implies bound
 
-    url = f"https://pypi.org/pypi/{package_name}/json"
-    if version:
-        url = f"https://pypi.org/pypi/{package_name}/{version}/json"
+    # Try the resolver chain (JFrog → public). If _http isn't importable,
+    # fall back to the original direct-pypi.org path.
+    try:
+        import sys as _sys
+        from pathlib import Path as _P
+        _sys.path.insert(0, str(_P(__file__).parent))
+        from _http import resolve_pypi_json_urls, inject_ssl_truststore  # type: ignore[import-not-found]
+        inject_ssl_truststore()
+        urls = resolve_pypi_json_urls(package_name, version)
+    except ImportError:
+        urls = [
+            f"https://pypi.org/pypi/{package_name}/json"
+            if not version
+            else f"https://pypi.org/pypi/{package_name}/{version}/json"
+        ]
 
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    data = response.json()
+    last_err: Exception | None = None
+    data = None
+    for url in urls:
+        try:
+            response = requests.get(url, timeout=30)
+            if response.status_code == 404:
+                last_err = requests.HTTPError(f"404 at {url}")
+                continue  # try next source
+            response.raise_for_status()
+            data = response.json()
+            break
+        except requests.RequestException as exc:
+            last_err = exc
+            continue
+    if data is None:
+        raise RuntimeError(
+            f"Failed to fetch PyPI metadata for {package_name!r} from any of "
+            f"{len(urls)} source(s); last error: {last_err}"
+        )
 
     info = data["info"]
     version = version or info["version"]

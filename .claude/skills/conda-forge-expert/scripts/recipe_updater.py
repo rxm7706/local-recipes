@@ -19,6 +19,13 @@ try:
 except ImportError:
     RUAMEL_AVAILABLE = False
 
+# Inject OS trust store before requests import. Idempotent.
+try:
+    import truststore  # type: ignore[import-not-found]
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 try:
     import requests
     REQUESTS_AVAILABLE = True
@@ -35,18 +42,36 @@ except ImportError:
 RECIPE_EDITOR_SCRIPT = Path(__file__).parent / "recipe_editor.py"
 
 def get_latest_pypi_version(package_name: str) -> str | None:
-    """Queries the PyPI API to get the latest version of a package."""
+    """Queries the PyPI API to get the latest version of a package.
+
+    Uses `_http.resolve_pypi_json_urls` to support air-gapped JFrog routing
+    via `PYPI_JSON_BASE_URL` env or pixi `pypi-config.index-url`. Falls
+    through the chain on each fetch failure; returns None if all sources
+    are exhausted.
+    """
     if not REQUESTS_AVAILABLE:
         raise ImportError("'requests' is required to check for new versions.")
-    
-    url = f"https://pypi.org/pypi/{package_name}/json"
+
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        return data.get("info", {}).get("version")
-    except requests.RequestException:
-        return None
+        import sys as _sys
+        from pathlib import Path as _P
+        _sys.path.insert(0, str(_P(__file__).parent))
+        from _http import resolve_pypi_json_urls  # type: ignore[import-not-found]
+        urls = resolve_pypi_json_urls(package_name)
+    except ImportError:
+        urls = [f"https://pypi.org/pypi/{package_name}/json"]
+
+    for url in urls:
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 404:
+                continue  # try next source
+            response.raise_for_status()
+            data = response.json()
+            return data.get("info", {}).get("version")
+        except requests.RequestException:
+            continue
+    return None
 
 def get_current_recipe_info(recipe_path: Path) -> Dict[str, Any]:
     """Parses a recipe to get its current name and version."""

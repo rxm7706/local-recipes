@@ -62,6 +62,13 @@ except ImportError:
     zstandard = None  # type: ignore[assignment]
     ZSTD_AVAILABLE = False
 
+# Inject OS trust store before requests import. Idempotent.
+try:
+    import truststore  # type: ignore[import-not-found]
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 try:
     import requests
     REQUESTS_AVAILABLE = True
@@ -143,7 +150,16 @@ def get_skill_config() -> dict:
 
 
 def get_configured_channels(override: Optional[str] = None) -> List[str]:
-    """Return list of channel base URLs, highest priority first."""
+    """Return list of channel base URLs, highest priority first.
+
+    Priority chain:
+      1. Explicit `override` argument
+      2. CONDA_CHANNEL_URL env var
+      3. Enterprise skill-config (enable_enterprise / enable_airgapped flags)
+      4. `_http.resolve_conda_forge_urls()` — picks up CONDA_FORGE_BASE_URL
+         env, pixi mirrors, and pixi default-channels; falls back to
+         repo.prefix.dev and conda.anaconda.org.
+    """
     if override:
         return [override]
     env = os.environ.get("CONDA_CHANNEL_URL")
@@ -166,7 +182,15 @@ def get_configured_channels(override: Optional[str] = None) -> List[str]:
         if env_channels:
             return env_channels
 
-    return ["https://conda.anaconda.org/conda-forge"]
+    # Fall through to the shared _http resolver (env + pixi config + public).
+    try:
+        import sys as _sys
+        from pathlib import Path as _P
+        _sys.path.insert(0, str(_P(__file__).parent))
+        from _http import resolve_conda_forge_urls  # type: ignore[import-not-found]
+        return resolve_conda_forge_urls()
+    except ImportError:
+        return ["https://conda.anaconda.org/conda-forge"]
 
 # ── Auth + SSL ─────────────────────────────────────────────────────────────────
 

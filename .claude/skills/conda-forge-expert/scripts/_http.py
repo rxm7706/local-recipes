@@ -176,6 +176,273 @@ def open_url(request: urllib.request.Request, timeout: int = 30) -> Any:
     return urllib.request.urlopen(request, timeout=timeout)
 
 
+# ── URL resolvers — JFrog/mirror discovery from env + pixi config ──────────
+#
+# Design: produce an ordered list of candidate base URLs for each upstream
+# (conda-forge channel, PyPI Simple, PyPI JSON, GitHub archive, GitHub raw).
+# Air-gapped enterprise users (JFrog) get their mirror first; external
+# clones fall through to the public default.
+
+import json as _json
+import re as _re
+import time as _time
+import urllib.error
+from typing import Iterable
+
+# Public fallback base URLs. The order is fixed: prefix.dev (CDN-backed
+# mirror) before anaconda.org (often blocked in air-gapped enterprise
+# networks). Note: bare prefix.dev/conda-forge does NOT serve
+# current_repodata.json — only repo.prefix.dev/conda-forge does.
+_DEFAULT_CONDA_FORGE_FALLBACKS: tuple[str, ...] = (
+    "https://repo.prefix.dev/conda-forge",
+    "https://conda.anaconda.org/conda-forge",
+)
+
+_DEFAULT_PYPI_SIMPLE_FALLBACKS: tuple[str, ...] = (
+    "https://pypi.org/simple",
+)
+
+_DEFAULT_PYPI_JSON_FALLBACKS: tuple[str, ...] = (
+    "https://pypi.org",  # /pypi/<pkg>/json appended by caller
+)
+
+_DEFAULT_GITHUB_FALLBACKS: tuple[str, ...] = (
+    "https://github.com",
+)
+
+_DEFAULT_GITHUB_RAW_FALLBACKS: tuple[str, ...] = (
+    "https://raw.githubusercontent.com",
+)
+
+
+def read_pixi_config() -> dict:
+    """Read pixi config — first existing file in pixi's own priority order wins.
+
+    Pixi resolves config in this order: project-local → user → system. We
+    follow the same chain so this helper honors whatever the developer set.
+    Silent-on-error: a malformed config doesn't break callers; we return {}
+    and let the public-default fallback paths handle routing.
+    """
+    try:
+        import tomllib
+    except ImportError:
+        return {}
+    candidates = [
+        Path(".pixi") / "config.toml",
+        Path.home() / ".pixi" / "config.toml",
+        Path("/etc/pixi/config.toml"),
+    ]
+    for p in candidates:
+        try:
+            if p.is_file():
+                with open(p, "rb") as f:
+                    return tomllib.load(f)
+        except Exception as e:
+            _log(f"_http: skipping malformed pixi config at {p}: {e}")
+            continue
+    return {}
+
+
+def _dedup_strip(urls: Iterable[str | None]) -> list[str]:
+    """De-dup + strip trailing slashes; preserves first-seen order."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for u in urls:
+        if not u:
+            continue
+        u = u.rstrip("/")
+        if u and u not in seen:
+            seen.add(u)
+            out.append(u)
+    return out
+
+
+def resolve_conda_forge_urls(config: dict | None = None) -> list[str]:
+    """Ordered chain for the conda-forge channel.
+
+    Priority:
+      1. CONDA_FORGE_BASE_URL env var
+      2. Pixi `mirrors["https://conda.anaconda.org/conda-forge"][*]`
+      3. Pixi `default-channels` entries containing "conda-forge"
+      4. https://repo.prefix.dev/conda-forge      (public CDN mirror)
+      5. https://conda.anaconda.org/conda-forge   (last resort)
+
+    `config` lets callers inject a pre-loaded pixi config (test/mock-friendly);
+    if None, calls `read_pixi_config()`.
+    """
+    cfg = read_pixi_config() if config is None else config
+    candidates: list[str | None] = [os.environ.get("CONDA_FORGE_BASE_URL")]
+
+    mirrors = cfg.get("mirrors") if isinstance(cfg, dict) else None
+    if isinstance(mirrors, dict):
+        for src, targets in mirrors.items():
+            if not isinstance(src, str) or not isinstance(targets, list):
+                continue
+            if src.rstrip("/").endswith("conda.anaconda.org/conda-forge"):
+                for t in targets:
+                    if isinstance(t, str):
+                        candidates.append(t)
+
+    chans = cfg.get("default-channels") if isinstance(cfg, dict) else None
+    if isinstance(chans, list):
+        for c in chans:
+            if isinstance(c, str) and "conda-forge" in c:
+                candidates.append(c)
+
+    candidates.extend(_DEFAULT_CONDA_FORGE_FALLBACKS)
+    return _dedup_strip(candidates)
+
+
+def resolve_pypi_simple_urls(config: dict | None = None) -> list[str]:
+    """Ordered chain for PyPI Simple v1 index.
+
+    Priority:
+      1. PYPI_BASE_URL env var (treated as a Simple-index base, e.g.
+         `https://artifactory.example.com/artifactory/api/pypi/pypi/simple`)
+      2. Pixi `pypi-config.index-url`
+      3. https://pypi.org/simple
+    """
+    cfg = read_pixi_config() if config is None else config
+    candidates: list[str | None] = [os.environ.get("PYPI_BASE_URL")]
+
+    pcfg = cfg.get("pypi-config") if isinstance(cfg, dict) else None
+    if isinstance(pcfg, dict):
+        idx = pcfg.get("index-url")
+        if isinstance(idx, str):
+            candidates.append(idx)
+        extras = pcfg.get("extra-index-urls")
+        if isinstance(extras, list):
+            for e in extras:
+                if isinstance(e, str):
+                    candidates.append(e)
+
+    candidates.extend(_DEFAULT_PYPI_SIMPLE_FALLBACKS)
+    return _dedup_strip(candidates)
+
+
+def resolve_pypi_json_urls(
+    package_name: str,
+    version: str | None = None,
+    config: dict | None = None,
+) -> list[str]:
+    """Ordered chain of fully-qualified URLs for PyPI JSON metadata.
+
+    Priority for the *base*:
+      1. PYPI_JSON_BASE_URL env var (used as `<base>/<pkg>/json`)
+      2. Pixi `pypi-config.index-url` with `/simple` stripped — works for
+         JFrog setups whose PyPI Remote Repo also serves the JSON metadata
+         API at the same parent path.
+      3. https://pypi.org
+
+    The path appended is `pypi/<pkg>/json` or `pypi/<pkg>/<version>/json`.
+    Returns full URLs ready to fetch.
+    """
+    cfg = read_pixi_config() if config is None else config
+    bases: list[str | None] = [os.environ.get("PYPI_JSON_BASE_URL")]
+
+    pcfg = cfg.get("pypi-config") if isinstance(cfg, dict) else None
+    if isinstance(pcfg, dict):
+        idx = pcfg.get("index-url")
+        if isinstance(idx, str):
+            # Strip trailing /simple or /simple/ to derive the API root.
+            bases.append(_re.sub(r"/simple/?$", "", idx))
+
+    bases.extend(_DEFAULT_PYPI_JSON_FALLBACKS)
+    base_list = _dedup_strip(bases)
+
+    suffix = f"pypi/{package_name}/{version}/json" if version else f"pypi/{package_name}/json"
+    return [f"{b}/{suffix}" for b in base_list]
+
+
+def resolve_github_urls(repo: str, path: str = "") -> list[str]:
+    """Ordered chain for github.com archive/tarball/zip URLs.
+
+    repo: 'conda-forge/feedstock-outputs'
+    path: '/archive/refs/heads/main.zip' or similar.
+
+    Priority:
+      1. GITHUB_BASE_URL env var (e.g., a JFrog Generic Remote pointed at
+         github.com)
+      2. https://github.com
+    """
+    bases: list[str | None] = [os.environ.get("GITHUB_BASE_URL")]
+    bases.extend(_DEFAULT_GITHUB_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{repo}{path}" for b in base_list]
+
+
+def resolve_github_raw_urls(repo: str, ref: str, path: str) -> list[str]:
+    """Ordered chain for raw.githubusercontent.com files.
+
+    repo: 'regro/cf-graph-countyfair'
+    ref: 'master', 'main', or commit SHA
+    path: 'mappings/pypi/name_mapping.yaml'
+
+    Priority:
+      1. GITHUB_RAW_BASE_URL env var (JFrog Generic Remote → raw.githubusercontent.com)
+      2. https://raw.githubusercontent.com
+    """
+    bases: list[str | None] = [os.environ.get("GITHUB_RAW_BASE_URL")]
+    bases.extend(_DEFAULT_GITHUB_RAW_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{repo}/{ref}/{path}" for b in base_list]
+
+
+# ── Generic fetch with fallback chain + retry ──────────────────────────────
+
+def fetch_with_fallback(
+    urls: list[str] | str,
+    *,
+    extra_headers: dict[str, str] | None = None,
+    user_agent: str = "conda-forge-expert/1.0",
+    timeout: int = 60,
+    retries: int = 2,
+    return_json: bool = False,
+) -> Any:
+    """Fetch a URL with fallback chain + retry.
+
+    Iterates through `urls` (a list, or a single string):
+      - 4xx (except 408/429): falls through to next URL immediately. The URL
+        is wrong, not transiently flaky.
+      - 5xx, network errors, timeouts: retries `retries` times with
+        exponential backoff, then falls through.
+
+    Returns raw bytes (or parsed JSON if return_json=True). Raises
+    RuntimeError if all URLs are exhausted with the last error attached.
+
+    Per-URL chain composition is the caller's job — pair this with
+    `resolve_*_urls()` helpers.
+    """
+    if isinstance(urls, str):
+        urls = [urls]
+    if not urls:
+        raise ValueError("fetch_with_fallback requires at least one URL")
+
+    last_err: Exception | None = None
+    for url in urls:
+        for attempt in range(retries):
+            try:
+                req = make_request(url, extra_headers=extra_headers, user_agent=user_agent)
+                with open_url(req, timeout=timeout) as resp:
+                    data = resp.read()
+                    return _json.loads(data) if return_json else data
+            except urllib.error.HTTPError as e:
+                last_err = e
+                if 400 <= e.code < 500 and e.code not in (408, 429):
+                    _log(f"_http: {url} → HTTP {e.code}; trying next source")
+                    break
+                _log(f"_http: {url} attempt {attempt + 1} → {e}; retrying")
+                _time.sleep(2 ** attempt)
+            except Exception as e:
+                last_err = e
+                _log(f"_http: {url} attempt {attempt + 1} → {e}; retrying")
+                _time.sleep(2 ** attempt)
+
+    raise RuntimeError(
+        f"All {len(urls)} source(s) failed; last error: {last_err}"
+    )
+
+
 # ── Logging (stderr, non-intrusive) ─────────────────────────────────────────
 
 def _log(msg: str) -> None:
