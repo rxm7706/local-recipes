@@ -48,14 +48,25 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-# Enterprise HTTP helpers (truststore + .netrc auth)
+# Enterprise HTTP helpers (truststore + .netrc auth + URL resolvers)
 sys.path.insert(0, str(Path(__file__).parent))
 try:
-    from _http import inject_ssl_truststore, make_request as _http_make_request  # type: ignore[import-not-found]
+    from _http import (  # type: ignore[import-not-found]
+        inject_ssl_truststore,
+        make_request as _http_make_request,
+        resolve_conda_forge_urls as _resolve_conda_forge_urls,
+        resolve_pypi_simple_urls as _resolve_pypi_simple_urls,
+        resolve_github_urls as _resolve_github_urls,
+        fetch_with_fallback as _fetch_with_fallback,
+    )
     inject_ssl_truststore()
     _HTTP_AVAILABLE = True
 except ImportError:
     _http_make_request = None  # type: ignore[assignment]
+    _resolve_conda_forge_urls = None  # type: ignore[assignment]
+    _resolve_pypi_simple_urls = None  # type: ignore[assignment]
+    _resolve_github_urls = None  # type: ignore[assignment]
+    _fetch_with_fallback = None  # type: ignore[assignment]
     _HTTP_AVAILABLE = False
 
 
@@ -82,104 +93,11 @@ CONDA_FORGE_SUBDIRS = [
 ]
 CONDA_FORGE_CHANNEL = "conda-forge"
 
-# Public fallback hosts. Order is fixed: prefix.dev's repo subdomain
-# (CDN-backed mirror) before anaconda.org (often blocked in air-gapped
-# enterprise networks). Note: bare prefix.dev/conda-forge does NOT serve
-# current_repodata.json — only the full repodata.json. We use the
-# repo.prefix.dev/conda-forge mirror which serves both.
-_PUBLIC_CONDA_FORGE_FALLBACKS = (
-    "https://repo.prefix.dev/conda-forge",
-    "https://conda.anaconda.org/conda-forge",
-)
-
-
-def _read_pixi_config() -> dict:
-    """Read pixi config — first existing file in priority order wins.
-
-    Pixi resolves config in this order: project-local → user → system. We
-    follow the same chain so this script honors whatever the developer set.
-    Silent-on-error: a malformed config doesn't break the build, we just
-    fall back to the next candidate (or to env-var/default routing).
-    """
-    try:
-        import tomllib
-    except ImportError:
-        return {}
-    candidates = [
-        Path(".pixi") / "config.toml",
-        Path.home() / ".pixi" / "config.toml",
-        Path("/etc/pixi/config.toml"),
-    ]
-    for p in candidates:
-        try:
-            if p.is_file():
-                with open(p, "rb") as f:
-                    return tomllib.load(f)
-        except Exception:
-            continue
-    return {}
-
-
-def _resolve_conda_forge_urls() -> list[str]:
-    """Build the ordered URL chain for the conda-forge channel.
-
-    Air-gapped-friendly priority:
-      1. CONDA_FORGE_BASE_URL env var (explicit override)
-      2. Pixi config: mirrors["https://conda.anaconda.org/conda-forge"][*]
-         — picks up the JFrog redirect documented in
-         docs/pixi-config-jfrog.example.toml
-      3. Pixi config: default-channels (any entry containing "conda-forge")
-         — covers JFrog Conda Virtual Repository setups
-      4. https://prefix.dev/conda-forge          (public CDN mirror)
-      5. https://conda.anaconda.org/conda-forge  (last resort; blocked in
-         many air-gapped networks)
-
-    Returns at least one URL (the public default) even if no JFrog redirect
-    is found, so external clones keep working without configuration.
-    """
-    seen: set[str] = set()
-    chain: list[str] = []
-
-    def _add(candidate: str | None) -> None:
-        if not candidate:
-            return
-        normalized = candidate.rstrip("/")
-        if normalized and normalized not in seen:
-            seen.add(normalized)
-            chain.append(normalized)
-
-    # 1. Explicit env-var override
-    _add(os.environ.get("CONDA_FORGE_BASE_URL"))
-
-    # 2. Pixi config mirrors — find a redirect whose source is the
-    #    conda-forge channel on anaconda.org.
-    cfg = _read_pixi_config()
-    mirrors = cfg.get("mirrors") or {}
-    if isinstance(mirrors, dict):
-        for src, targets in mirrors.items():
-            if not isinstance(src, str) or not isinstance(targets, list):
-                continue
-            if src.rstrip("/").endswith("conda.anaconda.org/conda-forge"):
-                for t in targets:
-                    if isinstance(t, str):
-                        _add(t)
-
-    # 3. Pixi config default-channels — anything containing "conda-forge".
-    #    A JFrog "Conda Virtual Repository" pointed at conda-forge looks
-    #    like https://artifactory.example.com/artifactory/api/conda/conda-forge-external-virtual
-    chans = cfg.get("default-channels") or []
-    if isinstance(chans, list):
-        for c in chans:
-            if isinstance(c, str) and "conda-forge" in c:
-                _add(c)
-
-    # 4 + 5. Public fallbacks — always tried last so external clones work
-    #         without any configuration.
-    for url in _PUBLIC_CONDA_FORGE_FALLBACKS:
-        _add(url)
-
-    return chain
-
+# URL resolvers (`_resolve_conda_forge_urls`, `_resolve_pypi_simple_urls`,
+# `_resolve_github_urls`) and `_fetch_with_fallback` are imported from
+# `_http.py` above — see docstrings there for the priority chain logic.
+# Air-gapped JFrog routing is configured via env vars or pixi config; no
+# enterprise URLs live in this script.
 
 SCHEMA_VERSION = 1
 
@@ -309,7 +227,14 @@ def _fetch_current_repodata(subdir: str, retries: int = 2) -> dict:
     Single-file JSON fetch — avoids the sharded msgpack protocol that's
     prone to transient 502s. ~15MB per subdir vs ~170MB for full repodata.
     """
-    base_urls = _resolve_conda_forge_urls()
+    if _HTTP_AVAILABLE and _resolve_conda_forge_urls is not None:
+        base_urls = _resolve_conda_forge_urls()
+    else:
+        # Bare-urllib fallback when _http isn't importable. Public defaults only.
+        base_urls = [
+            "https://repo.prefix.dev/conda-forge",
+            "https://conda.anaconda.org/conda-forge",
+        ]
     last_err: Exception | None = None
     for base_url in base_urls:
         url = f"{base_url}/{subdir}/current_repodata.json"
@@ -477,11 +402,21 @@ def _download_feedstock_outputs_archive() -> dict[str, list[str]]:
     import io
     import zipfile
 
-    url = "https://github.com/conda-forge/feedstock-outputs/archive/refs/heads/main.zip"
-    print(f"  Downloading {url}...")
-    req = _make_req(url)
-    with urllib.request.urlopen(req, timeout=300) as resp:
-        zip_bytes = resp.read()
+    # Phase B.5 GitHub fetch — uses _http resolver chain when available so
+    # JFrog Generic Remote / GITHUB_BASE_URL can redirect github.com.
+    if _HTTP_AVAILABLE and _resolve_github_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_github_urls(
+            "conda-forge/feedstock-outputs",
+            "/archive/refs/heads/main.zip",
+        )
+        print(f"  Downloading feedstock-outputs zip ({len(urls)} source(s) tried)...")
+        zip_bytes = _fetch_with_fallback(urls, timeout=300, user_agent="unified-map-builder/1.0")
+    else:
+        url = "https://github.com/conda-forge/feedstock-outputs/archive/refs/heads/main.zip"
+        print(f"  Downloading {url}...")
+        req = _make_req(url)
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            zip_bytes = resp.read()
     print(f"  Got {len(zip_bytes):,} bytes; parsing sharded outputs/*/*.json...")
 
     # Per config.json, feedstock-outputs uses shard_level=3 with shard_fill='z'.
@@ -672,12 +607,23 @@ def phase_d_pypi_enumeration(conn: sqlite3.Connection) -> dict:
     """
     t0 = time.monotonic()
     print("  Fetching PyPI Simple v1 JSON (~40MB)...")
-    req = _make_req(
-        "https://pypi.org/simple/",
-        extra_headers={"Accept": "application/vnd.pypi.simple.v1+json"},
-    )
-    with urllib.request.urlopen(req, timeout=300) as resp:
-        simple = json.load(resp)
+    if _HTTP_AVAILABLE and _resolve_pypi_simple_urls is not None and _fetch_with_fallback is not None:
+        # Each PyPI Simple base URL needs a trailing slash for the index endpoint.
+        urls = [f"{base}/" for base in _resolve_pypi_simple_urls()]
+        simple = _fetch_with_fallback(
+            urls,
+            extra_headers={"Accept": "application/vnd.pypi.simple.v1+json"},
+            user_agent="unified-map-builder/1.0",
+            timeout=300,
+            return_json=True,
+        )
+    else:
+        req = _make_req(
+            "https://pypi.org/simple/",
+            extra_headers={"Accept": "application/vnd.pypi.simple.v1+json"},
+        )
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            simple = json.load(resp)
     projects = simple.get("projects", [])
     print(f"  Got {len(projects):,} PyPI projects")
 
@@ -842,11 +788,21 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
         print(f"  Using cached cf-graph archive ({cache_path.stat().st_size:,} bytes, {cache_age:.2f}d old)")
         tar_bytes = cache_path.read_bytes()
     else:
-        cf_graph_url = "https://github.com/regro/cf-graph-countyfair/archive/refs/heads/master.tar.gz"
-        print(f"  Downloading {cf_graph_url} (large)...")
-        req = _make_req(cf_graph_url)
-        with urllib.request.urlopen(req, timeout=600) as resp:
-            tar_bytes = resp.read()
+        # Multi-URL fallback chain via _http resolver when available; honors
+        # GITHUB_BASE_URL for JFrog Generic Remote setups.
+        if _HTTP_AVAILABLE and _resolve_github_urls is not None and _fetch_with_fallback is not None:
+            urls = _resolve_github_urls(
+                "regro/cf-graph-countyfair",
+                "/archive/refs/heads/master.tar.gz",
+            )
+            print(f"  Downloading cf-graph archive ({len(urls)} source(s) tried, ~150 MB)...")
+            tar_bytes = _fetch_with_fallback(urls, timeout=600, user_agent="unified-map-builder/1.0")
+        else:
+            cf_graph_url = "https://github.com/regro/cf-graph-countyfair/archive/refs/heads/master.tar.gz"
+            print(f"  Downloading {cf_graph_url} (large)...")
+            req = _make_req(cf_graph_url)
+            with urllib.request.urlopen(req, timeout=600) as resp:
+                tar_bytes = resp.read()
         cache_path.write_bytes(tar_bytes)
         print(f"  Cached to {cache_path}")
     print(f"  Got {len(tar_bytes):,} bytes; extracting node_attrs/...")

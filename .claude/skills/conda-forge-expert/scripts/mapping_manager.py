@@ -22,6 +22,14 @@ import sys
 import time
 from pathlib import Path
 
+# Inject OS trust store before any HTTP-using imports so corporate CA roots
+# work for `conda_forge_metadata` and any sub-process curl fallback. Idempotent.
+try:
+    import truststore  # type: ignore[import-not-found]
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 try:
     import yaml
 except ImportError:
