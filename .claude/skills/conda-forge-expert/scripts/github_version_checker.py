@@ -34,7 +34,16 @@ except ImportError:
     yaml = None  # type: ignore[assignment]
     YAML_AVAILABLE = False
 
-GITHUB_API = "https://api.github.com"
+# Enterprise HTTP helpers (truststore + .netrc auth)
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _http import inject_ssl_truststore, make_request as _http_make_request  # type: ignore[import-not-found]
+    inject_ssl_truststore()
+    _HTTP_AVAILABLE = True
+except ImportError:
+    _HTTP_AVAILABLE = False
+
+GITHUB_API = os.environ.get("GITHUB_API_BASE", "https://api.github.com")
 REQUEST_TIMEOUT = 15  # seconds
 
 
@@ -42,12 +51,22 @@ REQUEST_TIMEOUT = 15  # seconds
 
 def _api_get(path: str) -> Any:
     """GET a GitHub API endpoint; returns parsed JSON."""
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-
-    req = Request(f"{GITHUB_API}{path}", headers=headers)
+    url = f"{GITHUB_API}{path}"
+    if _HTTP_AVAILABLE:
+        req = _http_make_request(
+            url,
+            extra_headers={
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        )
+    else:
+        # Fallback: env-var only token auth
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        req = Request(url, headers=headers)
     try:
         with urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
             return json.loads(resp.read().decode())

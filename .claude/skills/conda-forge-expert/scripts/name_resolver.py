@@ -17,12 +17,18 @@ try:
 except ImportError:
     map_pypi_to_conda = None  # type: ignore[assignment]
 
+
+def _get_data_dir() -> Path:
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
+    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+
+
 # Path to the local mapping cache
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = _get_data_dir()
 MAPPING_CACHE_FILE = DATA_DIR / "pypi_conda_map.json"
 
 # Path to the local repodata cache (used as a fallback)
-REPODATA_DIR = Path(__file__).parent.parent.parent / "data" / "repodata"
+REPODATA_DIR = DATA_DIR / "repodata"
 
 def normalize_name(name: str) -> str:
     """Normalize a package name for consistent lookups."""

@@ -10,13 +10,16 @@ import pytest
 
 # Hyphenated and underscored — no exclusions
 SCRIPTS = [
+    "conda_forge_atlas.py",
     "cve_manager.py",
     "dependency-checker.py",
+    "detail_cf_atlas.py",
     "failure_analyzer.py",
     "feedstock-migrator.py",
     "github_updater.py",
     "github_version_checker.py",
     "health_check.py",
+    "inventory_channel.py",
     "license-checker.py",
     "local_builder.py",
     "mapping_manager.py",
@@ -26,6 +29,7 @@ SCRIPTS = [
     "recipe-generator.py",
     "recipe_optimizer.py",
     "recipe_updater.py",
+    "scan_project.py",
     "submit_pr.py",
     "validate_recipe.py",
     "vulnerability_scanner.py",
@@ -55,6 +59,7 @@ def test_all_scripts_listed(scripts_dir):
     actual = {
         p.name for p in scripts_dir.glob("*.py")
         if p.name != "test-skill.py"
+        and not p.name.startswith("_")  # internal helpers (_http, _sbom)
     }
     declared = set(SCRIPTS)
     missing_in_test = actual - declared

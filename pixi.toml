@@ -116,31 +116,31 @@ cmd = "bash scripts/sync-upstream.sh"
 
 [feature.local-recipes.tasks.submit-pr]
 description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/submit_pr.py"
+cmd = "python .claude/scripts/conda-forge-expert/submit_pr.py"
 
 [feature.local-recipes.tasks.health-check]
 description = "Run a health check on the local development environment"
-cmd = "python .claude/skills/conda-forge-expert/scripts/health_check.py"
+cmd = "python .claude/scripts/conda-forge-expert/health_check.py"
 
 [feature.local-recipes.tasks.update-cve-db]
 description = "Download and update the local CVE vulnerability database"
-cmd = "python .claude/skills/conda-forge-expert/scripts/cve_manager.py"
+cmd = "python .claude/scripts/conda-forge-expert/cve_manager.py"
 
 [feature.local-recipes.tasks.scan-vulnerabilities]
 description = "Scan a recipe's dependencies for vulnerabilities using the local CVE database"
-cmd = "python .claude/skills/conda-forge-expert/scripts/vulnerability_scanner.py"
+cmd = "python .claude/scripts/conda-forge-expert/vulnerability_scanner.py"
 
 [feature.local-recipes.tasks.update-mapping-cache]
 description = "Update the local PyPI-to-Conda name mapping cache from Grayskull"
-cmd = "python .claude/skills/conda-forge-expert/scripts/mapping_manager.py"
+cmd = "python .claude/scripts/conda-forge-expert/mapping_manager.py"
 
 [feature.local-recipes.tasks.lint-optimize]
 description = "Lint a recipe for optimizations and best practices"
-cmd = "python .claude/skills/conda-forge-expert/scripts/recipe_optimizer.py"
+cmd = "python .claude/scripts/conda-forge-expert/recipe_optimizer.py"
 
 [feature.local-recipes.tasks.autotick]
 description = "Check for new upstream versions of a package and update the recipe"
-cmd = "python .claude/skills/conda-forge-expert/scripts/recipe_updater.py"
+cmd = "python .claude/scripts/conda-forge-expert/recipe_updater.py"
 
 [feature.local-recipes.tasks.test]
 description = "Run the conda-forge-expert test suite (offline, fast subset)"
@@ -163,27 +163,27 @@ cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not sl
 
 [feature.local-recipes.tasks.validate]
 description = "Validate a recipe against conda-forge schema and best practices"
-cmd = "python .claude/skills/conda-forge-expert/scripts/validate_recipe.py"
+cmd = "python .claude/scripts/conda-forge-expert/validate_recipe.py"
 
 [feature.local-recipes.tasks.check-deps]
 description = "Check that all recipe dependencies resolve on conda-forge"
-cmd = "python .claude/skills/conda-forge-expert/scripts/dependency-checker.py"
+cmd = "python .claude/scripts/conda-forge-expert/dependency-checker.py"
 
 [feature.local-recipes.tasks.resolve-name]
 description = "Resolve a PyPI package name to its conda-forge equivalent"
-cmd = "python .claude/skills/conda-forge-expert/scripts/name_resolver.py"
+cmd = "python .claude/scripts/conda-forge-expert/name_resolver.py"
 
 [feature.local-recipes.tasks.generate-recipe]
 description = "Generate a new recipe from PyPI / template / GitHub"
-cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py"
+cmd = "python .claude/scripts/conda-forge-expert/recipe-generator.py"
 
 [feature.local-recipes.tasks.autotick-github]
 description = "Update a recipe to the latest GitHub release (use --dry-run first)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/github_updater.py"
+cmd = "python .claude/scripts/conda-forge-expert/github_updater.py"
 
 [feature.local-recipes.tasks.autotick-npm]
 description = "Update a recipe to the latest npm registry version (use --dry-run first)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/npm_updater.py"
+cmd = "python .claude/scripts/conda-forge-expert/npm_updater.py"
 
 # ── Docker-less local builds (linux-64 / linux-aarch64 / osx-* / win-64) ─────
 # Wraps `rattler-build build` with per-platform flags. Native linux-64 runs
@@ -191,35 +191,35 @@ cmd = "python .claude/skills/conda-forge-expert/scripts/npm_updater.py"
 # for win-64).
 [feature.local-recipes.tasks.build-local]
 description = "Build a recipe natively on this host (linux-64) — full build + test"
-cmd = "python .claude/skills/conda-forge-expert/scripts/local_builder.py"
+cmd = "python .claude/scripts/conda-forge-expert/local_builder.py"
 
 [feature.local-recipes.tasks.build-local-all]
 description = "Build a recipe for every supported target platform (cross-builds skip tests)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/local_builder.py --all-platforms"
+cmd = "python .claude/scripts/conda-forge-expert/local_builder.py --all-platforms"
 
 [feature.local-recipes.tasks.build-local-check]
 description = "Diagnose what's available for local cross-platform builds"
-cmd = "python .claude/skills/conda-forge-expert/scripts/local_builder.py --check"
+cmd = "python .claude/scripts/conda-forge-expert/local_builder.py --check"
 
 [feature.local-recipes.tasks.build-local-setup-sdk]
 description = "Download MacOSX SDK to ./SDKs/ for osx-* cross-builds (Apple licence applies)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/local_builder.py --setup-osx-sdk"
+cmd = "python .claude/scripts/conda-forge-expert/local_builder.py --setup-osx-sdk"
 
 [feature.local-recipes.tasks.version-check]
 description = "Check the latest GitHub release version for a recipe (read-only)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/github_version_checker.py"
+cmd = "python .claude/scripts/conda-forge-expert/github_version_checker.py"
 
 [feature.local-recipes.tasks.migrate]
 description = "Migrate a meta.yaml recipe to v1 recipe.yaml (use --dry-run first)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/feedstock-migrator.py"
+cmd = "python .claude/scripts/conda-forge-expert/feedstock-migrator.py"
 
 [feature.local-recipes.tasks.analyze-failure]
 description = "Analyze a build error log against known failure patterns"
-cmd = "python .claude/skills/conda-forge-expert/scripts/failure_analyzer.py"
+cmd = "python .claude/scripts/conda-forge-expert/failure_analyzer.py"
 
 [feature.local-recipes.tasks.license-check]
 description = "Validate SPDX license identifier and license_file presence"
-cmd = "python .claude/skills/conda-forge-expert/scripts/license-checker.py"
+cmd = "python .claude/scripts/conda-forge-expert/license-checker.py"
 
 [feature.local-recipes.tasks.test-recipes]
 description = "Run test-recipes.py — random / targeted recipe smoke validation"
@@ -229,35 +229,35 @@ cmd = "python test-recipes.py"
 
 [feature.local-recipes.tasks.generate-cran]
 description = "Scaffold a v1 recipe for an R package from CRAN"
-cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py cran"
+cmd = "python .claude/scripts/conda-forge-expert/recipe-generator.py cran"
 
 [feature.local-recipes.tasks.generate-cpan]
 description = "Scaffold a v1 recipe for a Perl package from CPAN"
-cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py cpan"
+cmd = "python .claude/scripts/conda-forge-expert/recipe-generator.py cpan"
 
 [feature.local-recipes.tasks.generate-luarocks]
 description = "Scaffold a v1 recipe for a Lua package from LuaRocks"
-cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py luarocks"
+cmd = "python .claude/scripts/conda-forge-expert/recipe-generator.py luarocks"
 
 [feature.local-recipes.tasks.generate-npm]
 description = "Scaffold a v1 recipe for an npm package (registry.npmjs.org)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/recipe-generator.py npm"
+cmd = "python .claude/scripts/conda-forge-expert/recipe-generator.py npm"
 
 [feature.local-recipes.tasks.build-cf-atlas]
 description = "Build the conda-forge atlas — cross-channel package map (conda-forge ↔ PyPI ↔ npm/CRAN/CPAN/LuaRocks, SQLite)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py build"
+cmd = "python .claude/scripts/conda-forge-expert/conda_forge_atlas.py build"
 
 [feature.local-recipes.tasks.query-cf-atlas]
 description = "Look up a package in the conda-forge atlas by name"
-cmd = "python .claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py query"
+cmd = "python .claude/scripts/conda-forge-expert/conda_forge_atlas.py query"
 
 [feature.local-recipes.tasks.stats-cf-atlas]
 description = "Show summary statistics from the conda-forge atlas"
-cmd = "python .claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py stats"
+cmd = "python .claude/scripts/conda-forge-expert/conda_forge_atlas.py stats"
 
 [feature.local-recipes.tasks.detail-cf-atlas]
 description = "Show detailed package card from atlas + anaconda.org (use --deep for per-build artifact metadata, --files to list paths)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/detail_cf_atlas.py"
+cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py"
 
 # ── vuln-db feature: AppThreat multi-source vulnerability database ─────────
 # Adds NVD + GHSA + OSV + npm + custom advisory sources (vs. our OSV-only
@@ -276,24 +276,24 @@ conda-forge-metadata = "*"  # so --deep also works in this env
 appthreat-vulnerability-db = { version = "*", extras = ["all"] }
 
 [feature.vuln-db.activation.env]
-VDB_HOME = "$PIXI_PROJECT_ROOT/.claude/skills/data/vdb"
-VDB_CACHE = "$PIXI_PROJECT_ROOT/.claude/skills/data/vdb-cache"
+VDB_HOME = "$PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb"
+VDB_CACHE = "$PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb-cache"
 
 [feature.vuln-db.tasks.vdb-refresh]
-description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 min first time, ~600MB at .claude/skills/data/vdb/)"
+description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 min first time, ~600MB at .claude/data/conda-forge-expert/vdb/)"
 cmd = "vdb --cache"
 
 [feature.vuln-db.tasks.detail-cf-atlas]
 description = "Detail card with --vdb support enabled (multi-source vulnerability lookup)"
-cmd = "python .claude/skills/conda-forge-expert/scripts/detail_cf_atlas.py"
+cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py"
 
 [feature.vuln-db.tasks.scan-project]
 description = "Scan a project's manifests (pixi.lock, pixi.toml, Cargo.lock/toml, requirements.txt, pyproject.toml, environment.yml, Containerfile/Dockerfile) for CVEs. Use --github URL or local path. Add --os for OS-package lookups, --brief for summary, --sbom {cyclonedx,spdx} for SBOM output."
-cmd = "python .claude/skills/conda-forge-expert/scripts/scan_project.py"
+cmd = "python .claude/scripts/conda-forge-expert/scan_project.py"
 
 [feature.vuln-db.tasks.inventory-channel]
 description = "Inventory a channel/mirror (conda repodata.json | PyPI Simple v1 | npm registry | crates.io). Auto-detects format. --with-vulns ON by default for conda, OFF for others. JFrog auth via env vars. --diff for upstream comparison, --health for mirror signals, --sbom for SBOM."
-cmd = "python .claude/skills/conda-forge-expert/scripts/inventory_channel.py"
+cmd = "python .claude/scripts/conda-forge-expert/inventory_channel.py"
 
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]

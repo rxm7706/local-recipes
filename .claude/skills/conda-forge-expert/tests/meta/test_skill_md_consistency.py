@@ -67,10 +67,11 @@ class TestSkillMdConsistency:
         existing = {p.name for p in scripts_dir.glob("*.py")}
 
         import re
-        # Match `python .claude/skills/conda-forge-expert/scripts/<name>.py`
-        # and just `<name>.py` references inside [feature.local-recipes.tasks]
+        # Match either layout:
+        #   .claude/skills/conda-forge-expert/scripts/<name>.py   (canonical)
+        #   .claude/scripts/conda-forge-expert/<name>.py          (entrypoint wrapper, v6.0.0+)
         referenced = set(re.findall(
-            r"conda-forge-expert/scripts/([A-Za-z_][A-Za-z0-9_-]*\.py)",
+            r"(?:skills/conda-forge-expert/scripts|scripts/conda-forge-expert)/([A-Za-z_][A-Za-z0-9_-]*\.py)",
             content,
         ))
         unknown = referenced - existing
@@ -96,11 +97,16 @@ class TestSkillMdConsistency:
 
         content = PIXI_TOML.read_text()
         scripts_dir = SKILL_DIR / "scripts"
-        all_scripts = {p.name for p in scripts_dir.glob("*.py")}
+        # Underscore-prefixed scripts (e.g. _http.py, _sbom.py) are internal
+        # helpers — never user-facing, never get pixi tasks.
+        all_scripts = {
+            p.name for p in scripts_dir.glob("*.py")
+            if not p.name.startswith("_")
+        }
 
         import re
         wrapped = set(re.findall(
-            r"conda-forge-expert/scripts/([A-Za-z_][A-Za-z0-9_-]*\.py)",
+            r"(?:skills/conda-forge-expert/scripts|scripts/conda-forge-expert)/([A-Za-z_][A-Za-z0-9_-]*\.py)",
             content,
         ))
 

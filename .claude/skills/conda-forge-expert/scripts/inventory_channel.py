@@ -14,7 +14,7 @@ sectioned report. Default --with-vulns is ON for conda channels (~60s for
 20k pkgs), OFF for PyPI/npm/cargo (much larger universes).
 
 JFrog auth: honors JFROG_API_KEY, JFROG_USERNAME+JFROG_PASSWORD env vars.
-Cache: 24h TTL at .claude/skills/data/inventory_cache/.
+Cache: 24h TTL at .claude/data/conda-forge-expert/inventory_cache/.
 
 CLI:
   inventory-channel <URL_OR_FILE>
@@ -52,7 +52,22 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+# Enterprise HTTP helpers (truststore + .netrc auth)
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _http import inject_ssl_truststore, make_request as _http_make_request  # type: ignore[import-not-found]
+    inject_ssl_truststore()
+    _HTTP_AVAILABLE = True
+except ImportError:
+    _HTTP_AVAILABLE = False
+
+
+def _get_data_dir() -> Path:
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
+    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+
+
+DATA_DIR = _get_data_dir()
 ATLAS_DB = DATA_DIR / "cf_atlas.db"
 CACHE_DIR = DATA_DIR / "inventory_cache"
 RULE = "─" * 74
@@ -81,10 +96,14 @@ class Package:
         return f"pkg:{self.ecosystem}/{self.name}"
 
 
-# ── Fetcher with cache + JFrog auth ─────────────────────────────────────────
+# ── Fetcher with cache + JFrog auth + .netrc + truststore ───────────────────
 
 def _make_request(url: str) -> urllib.request.Request:
-    headers = {"User-Agent": "inventory-channel/1.0"}
+    """Build a Request with JFrog/netrc/Bearer auth. Uses _http if available."""
+    if _HTTP_AVAILABLE:
+        return _http_make_request(url, user_agent="inventory-channel/1.0")
+    # Fallback: env-var only auth (no .netrc)
+    headers: dict[str, str] = {"User-Agent": "inventory-channel/1.0"}
     if os.environ.get("JFROG_API_KEY"):
         headers["X-JFrog-Art-Api"] = os.environ["JFROG_API_KEY"]
     elif os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"):

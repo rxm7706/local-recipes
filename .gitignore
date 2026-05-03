@@ -695,8 +695,12 @@ Thumbs.db
 .claude/skills/conda-forge-expert/pypi_conda_mappings/by_pypi_name.json
 .claude/skills/conda-forge-expert/pypi_conda_mappings/by_conda_name.json
 
-# Generated CVE database (refreshed via `pixi run update-cve-db`)
+# Generated CVE database and skill-scoped data (refreshed via `pixi run update-cve-db`)
 .claude/skills/data/
+.claude/data/
+
+# Claude Code harness runtime artifacts (session lock from ScheduleWakeup, etc.)
+.claude/scheduled_tasks.lock
 
 # BMAD: personal config (user-scoped) and per-developer artifacts.
 # Note: _bmad/custom/*.user.toml is already handled by _bmad/custom/.gitignore.

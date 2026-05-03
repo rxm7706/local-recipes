@@ -134,7 +134,8 @@ Three project-specific gotchas the linter doesn't catch:
 ## Repository Conventions
 
 - Recipes: `recipes/<package-name>/recipe.yaml` (canonical). `meta.yaml` is transient migration state only.
-- CI helpers: `.claude/skills/conda-forge-expert/scripts/` — wrap them as pixi tasks before adding new CLIs elsewhere.
+- CI helpers: canonical implementation lives in `.claude/skills/conda-forge-expert/scripts/`; the public CLI surface is the thin wrapper layer at `.claude/scripts/conda-forge-expert/`. Wrap them as pixi tasks (pointing at the wrapper layer) before adding new CLIs elsewhere.
+- Skill data (mutable runtime state, gitignored): `.claude/data/conda-forge-expert/` — cf_atlas.db, vdb/, cve/, pypi_conda_map.json, inventory_cache/.
 - Pass extra args to pixi tasks after `--`: `pixi run -e local-recipes validate -- recipes/numpy`.
 - Project docs: `docs/`. BMAD planning artifacts: `_bmad-output/planning-artifacts/`.
 
