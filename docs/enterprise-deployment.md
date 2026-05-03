@@ -268,3 +268,90 @@ curl -sSL "<your URL>" | sha256sum
 ```
 
 against the `sha256:` field in the recipe. The `conda-forge-expert` skill's recipe-generator emits these patterns automatically; manual edits should follow the same shape.
+
+---
+
+## 4. The `vuln-db` pixi env behind a corporate firewall
+
+The `vuln-db` feature pulls `appthreat-vulnerability-db` from PyPI. On corporate networks where direct access to `files.pythonhosted.org` is blocked, `pixi install -e vuln-db` fails — even though `pypi.org` itself is reachable through JFrog. This is the **same root cause** as the recipe-source issue in §3, hitting at a different layer (the pixi/uv resolver instead of `rattler-build`'s source fetch).
+
+### Why `_http.py` does not help
+
+The skill's runtime HTTP helper (`.claude/skills/conda-forge-expert/scripts/_http.py`) injects truststore + JFrog/GitHub/.netrc auth into every request **made by the conda-forge-expert scripts**. But `pixi install` runs **before** any script is launched — it goes through pixi → uv → `pypi.org/simple` → `files.pythonhosted.org`. None of that flow touches `_http.py`. Routing the resolver requires a separate fix at the pixi/uv layer.
+
+### Why `files.pythonhosted.org` shows up here
+
+Same mechanism as recipe sources (§3): PyPI's Simple index returns wheel/sdist URLs at `files.pythonhosted.org/packages/<a>/<b>/<hash>/...`, and a standard JFrog "PyPI Remote Repository" proxies `pypi.org` but not `files.pythonhosted.org`. The fix is to make uv resolve **against JFrog's PyPI Simple endpoint instead of `pypi.org/simple`** — JFrog's index then rewrites those URLs to flow through itself, and `files.pythonhosted.org` is never contacted.
+
+### Fix: pixi config (recommended, no committed edit)
+
+Pixi 0.67+ supports a `[pypi-config]` table in its config files. Settings here apply to the resolver before any pixi env is created — no changes to the committed `pixi.toml` needed.
+
+A ready-to-edit template lives at **`docs/pixi-config-jfrog.example.toml`**. Copy it into your project-local pixi config:
+
+```bash
+cp docs/pixi-config-jfrog.example.toml .pixi/config.toml
+$EDITOR .pixi/config.toml      # set your JFrog URL + auth
+pixi install -e vuln-db        # should now succeed
+```
+
+`.pixi/` is gitignored, so the populated config never lands in version control. Alternative locations:
+
+- `~/.pixi/config.toml` — per-user, applies to every pixi project on this machine.
+- `/etc/pixi/config.toml` — system-wide (needs root).
+
+Pixi reads the **first** config it finds in `project → user → system` order; settings do **not** merge across layers, so a project file shadows the user file completely for the keys it sets.
+
+### Verified pixi 0.67.2 config schema
+
+Probed against the running pixi binary; values that are accepted:
+
+| Key | Type | Notes |
+|---|---|---|
+| `pypi-config.index-url` | URL string | Primary PyPI index. Set to `https://<jfrog-host>/artifactory/api/pypi/<repo>/simple`. |
+| `pypi-config.extra-index-urls` | list of URL | Fallback indexes; uv tries each in order. |
+| `pypi-config.keyring-provider` | enum | Only `"disabled"` or `"subprocess"` accepted in 0.67.2. |
+| `pypi-config.allow-insecure-host` | list of host | Skip TLS verification for specific hosts (foot-gun — prefer `tls-root-certs`). |
+| `tls-root-certs` | enum | `"webpki"` (Mozilla bundle), `"native"` (OS trust store), `"all"` (both). Most enterprise users want `"native"` or `"all"` to pick up corporate CA roots. |
+| `tls-no-verify` | bool | Global TLS bypass — never set this in prod. |
+| `run-post-link-scripts` | enum | Only `"insecure"` is accepted in pixi 0.67.2 (or omit the line). Set to `"insecure"` when packages fail because post-link / activation scripts didn't run — common with Intel MKL, CUDA, and internal tooling wheels. Pixi disables them by default for safety; opting in is reasonable on a curated internal JFrog feed. |
+| `proxy-config.{http,https,non-proxy-hosts}` | strings / list | Only if you're behind an HTTP CONNECT forward proxy. |
+| `default-channels` | list of URL/spec | Channels pixi resolves against by default. Set to your JFrog Conda Virtual Repository (e.g., `https://<jfrog-host>/artifactory/api/conda/conda-forge-external-virtual`) so the resolver hits the internal mirror first. |
+| `repodata-config.disable-sharded` | bool | Set to `true` so pixi requests classic `repodata.json` instead of sharded repodata. Most JFrog Conda Remote Repository deployments don't proxy the sharded protocol correctly (404s during solve). |
+| `repodata-config.disable-{zstd,bzip2,jlap}` | bool | Companion toggles for compressed/incremental repodata formats; flip to `true` if your JFrog returns 404s on `.json.zst`, `.json.bz2`, or JLAP requests. |
+| `mirrors` | table | Conda channel mirrors: `{ "https://conda.anaconda.org/conda-forge" = ["https://<jfrog>/artifactory/api/conda/conda-forge-external-virtual"] }`. Catches anything that bypasses `default-channels` (e.g., recipe-pinned channel URLs). Separate from PyPI. |
+| `authentication-override-file` | path | JSON file mapping hosts to tokens. |
+
+### Env-var alternative (one-shot)
+
+If you can't (or don't want to) drop a config file:
+
+```bash
+export UV_INDEX_URL="https://artifactory.example.com/artifactory/api/pypi/pypi/simple"
+export UV_NATIVE_TLS=true            # use OS trust store (corporate CA)
+export UV_KEYRING_PROVIDER=subprocess # or embed creds in the URL — see below
+pixi install -e vuln-db
+```
+
+Auth: pick **one**.
+
+- **Keyring (recommended).** `pip install keyring`, then `keyring set artifactory.example.com <username>` and paste your API key as the password. Set `UV_KEYRING_PROVIDER=subprocess`.
+- **`~/.netrc`.** Add: `machine artifactory.example.com login alice password <api-key>`. uv reads it automatically.
+- **URL-embedded.** `export UV_INDEX_URL="https://USER:TOKEN@artifactory.example.com/.../simple"`. Quick, but the token leaks into shell history and process listings.
+
+### Diagnostic: trace a failing install
+
+```bash
+pixi install -e vuln-db -vvv 2>&1 | grep -E "files.pythonhosted|artifactory|TLS|cert|401|403|404"
+```
+
+Common signatures:
+
+- **`files.pythonhosted.org` connection timeout/refused** → uv is still hitting public PyPI; your `pypi-config.index-url` (or `UV_INDEX_URL`) didn't take effect. Verify with `pixi config list pypi-config`.
+- **TLS / `unable to get local issuer certificate`** → corporate CA root not trusted. Set `tls-root-certs = "native"` in pixi config (or `UV_NATIVE_TLS=true`), or point to your bundle: `REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt`.
+- **HTTP 401/403** → JFrog needs auth. Use one of the auth methods above.
+- **HTTP 404 on `appthreat-vulnerability-db`** → JFrog's PyPI Remote Repository is configured with a curated allow-list that doesn't include the package. Ask your JFrog admin to verify the upstream URL is `https://pypi.org/simple/` and remove the allow-list (or add the package).
+
+### Org-level alternative (if you have JFrog admin)
+
+Add a **second** Remote Repository targeting `https://files.pythonhosted.org/`. With both `pypi.org` and `files.pythonhosted.org` proxied, every Python tool — pip, uv, poetry, pixi, conda-build sources — works without per-developer config. This is the same fix referenced in §3 for recipe source URLs.

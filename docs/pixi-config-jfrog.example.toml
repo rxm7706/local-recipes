@@ -1,0 +1,191 @@
+# Pixi enterprise config template — JFrog Artifactory + corporate firewall.
+#
+# This file is a TEMPLATE. Copy it to ONE of these locations and edit the
+# placeholders to match your org's Artifactory setup:
+#
+#   - ~/.pixi/config.toml                   (per-user, applies to all pixi projects)
+#   - .pixi/config.toml                     (per-project, gitignored — recommended for this repo)
+#   - /etc/pixi/config.toml                 (system-wide; needs root)
+#
+# Example copy command (project-local, gitignored):
+#   cp docs/pixi-config-jfrog.example.toml .pixi/config.toml
+#   $EDITOR .pixi/config.toml
+#
+# Why this is needed:
+#   - Conda layer:  conda.anaconda.org and conda-forge upstream may be
+#                   blocked or rate-limited; route through JFrog instead.
+#   - PyPI layer:   pypi.org/simple returns wheel/sdist URLs at
+#                   files.pythonhosted.org/packages/..., which a standard
+#                   JFrog "PyPI Remote Repository" does NOT proxy. Pointing
+#                   pixi/uv at JFrog's own PyPI Simple endpoint makes JFrog
+#                   rewrite those URLs to flow through itself.
+#
+# This file MUST stay out of the committed `pixi.toml` — hardcoding enterprise
+# URLs there would break external clones. The pixi config layer is the right
+# home: it's per-developer / per-machine and never committed.
+#
+# Verified for pixi 0.67.2. Schema may shift in newer versions; check
+# `pixi config set --help` and `pixi config list` if a key gets rejected.
+#
+# TOML rule: top-level keys MUST come before any [table] header. The blocks
+# below are ordered to satisfy this — top-level keys (default-channels,
+# tls-root-certs) first, then the tables ([pypi-config], [repodata-config],
+# [mirrors], [proxy-config]).
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TOP-LEVEL KEYS  (must come before any [table] block per TOML spec)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── (1) Default conda channels — JFrog Conda Virtual Repository ────────────
+# Point pixi at JFrog's "Conda Virtual Repository" instead of conda-forge
+# directly. The virtual repo aggregates the internal mirror + remote proxy,
+# so packages resolve from cache when possible and fall through to the
+# upstream proxy when not.
+#
+# Replace `<jfrog-host>` and the repo name with what your JFrog admin gave
+# you (e.g., `conda-forge-external-virtual`, `conda-forge-prod-virtual`).
+default-channels = [
+  "https://artifactory.example.com/artifactory/api/conda/conda-forge-external-virtual",
+]
+
+# ── TLS: trust corporate CA roots ──────────────────────────────────────────
+# Choose the root-cert source uv/pixi uses for TLS verification:
+#   - "webpki" : bundled Mozilla roots (the default; will reject corporate CA)
+#   - "native" : OS trust store (picks up corporate CA installed via your
+#                org's MDM / `update-ca-certificates`)
+#   - "all"    : both webpki + native (most permissive)
+#
+# Most enterprise users want "native" or "all".
+tls-root-certs = "all"
+
+# ── Post-link scripts — opt in for packages that need them ─────────────────
+# Pixi disables post-link scripts by default (security: an arbitrary package
+# can run code on `pixi install`). Many enterprise conda packages (Intel MKL,
+# CUDA toolkits, internal-tooling wheels, anything that registers itself with
+# the OS) require post-link scripts to function.
+#
+# In pixi 0.67.2 this is a binary toggle: only `"insecure"` is accepted; any
+# other value (or omitting the line) leaves post-link scripts disabled.
+#
+# Set this when packages fail to install / function correctly with errors
+# referencing post-link or activation scripts. Safe in a trusted internal
+# JFrog setup where the package supply chain is curated.
+run-post-link-scripts = "insecure"
+
+# ── Authentication override (advanced) ─────────────────────────────────────
+# Pixi can read tokens from a separate auth file rather than env vars or
+# config. Useful when CI checks out the repo but secrets live elsewhere.
+# Format: JSON file mapping hosts to auth tokens.
+# authentication-override-file = "/etc/pixi/auth.json"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TABLES
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── (2) Repodata format — match what JFrog's Conda Remote Repository serves ─
+# Disable sharded repodata so pixi requests the classic monolithic
+# `repodata.json` (or `repodata.json.zst`) that JFrog proxies cleanly.
+# Sharded repodata uses a different per-package shard fetch protocol that
+# most JFrog setups (as of mid-2026) do not proxy correctly, leading to
+# 404s during solve.
+#
+# Drop `disable-sharded` if your JFrog admin has explicitly enabled sharded
+# repodata support in the Conda Remote Repository.
+[repodata-config]
+disable-sharded = true
+
+# Optional siblings — uncomment if your JFrog setup also can't handle these
+# repodata format optimizations:
+# disable-zstd  = true   # if .json.zst fetches return 404
+# disable-bzip2 = true   # if .json.bz2 fetches return 404
+# disable-jlap  = true   # if incremental JLAP patches fail to apply
+
+# ── (3) Channel mirrors — redirect conda.anaconda.org through Artifactory ──
+# Transparently rewrite any reference to conda.anaconda.org to flow through
+# JFrog. Catches anything that bypasses `default-channels` above (e.g., a
+# recipe with explicit `channels:` listing conda-forge by URL, or a
+# transitive dep referencing another anaconda.org channel).
+#
+# Format: { "<original-channel-url>" = ["<mirror-url>", ...] }
+# The list lets you fan out to multiple mirrors; pixi tries them in order.
+[mirrors]
+"https://conda.anaconda.org/conda-forge" = [
+  "https://artifactory.example.com/artifactory/api/conda/conda-forge-external-virtual",
+]
+# "https://conda.anaconda.org/bioconda" = [
+#   "https://artifactory.example.com/artifactory/api/conda/bioconda-external-virtual",
+# ]
+# "https://conda.anaconda.org/pytorch" = [
+#   "https://artifactory.example.com/artifactory/api/conda/pytorch-external-virtual",
+# ]
+
+# ── (4) PyPI: route through JFrog instead of pypi.org ──────────────────────
+[pypi-config]
+
+# Replace the host + repo path with your JFrog "PyPI Remote Repository" URL.
+# Find it in JFrog → Set Me Up → pip → "Resolve" tab. Looks like:
+#   https://artifactory.example.com/artifactory/api/pypi/<repo-key>/simple
+index-url = "https://artifactory.example.com/artifactory/api/pypi/pypi/simple"
+
+# Optional fallbacks. uv tries each in order. Useful if you have a curated
+# internal repo plus a wider proxied mirror.
+# extra-index-urls = [
+#   "https://artifactory.example.com/artifactory/api/pypi/pypi-curated/simple",
+# ]
+
+# Auth options (pick ONE; leave commented if your JFrog index is anon-readable):
+#
+# (a) keyring-provider — works with `keyring` Python package + system keyring.
+#     Most secure. Set `keyring-provider = "subprocess"` then run
+#     `keyring set <jfrog-host> <username>` and paste your API key as the
+#     password. uv will fetch it on demand.
+#
+# keyring-provider = "subprocess"
+#
+# (b) URL-embedded credentials. Quick, but the token ends up in shell
+#     history / process listings. Prefer keyring or .netrc for daily use.
+#
+# index-url = "https://USER:TOKEN@artifactory.example.com/artifactory/api/pypi/pypi/simple"
+#
+# (c) ~/.netrc (handled outside pixi, but documented here for completeness):
+#     machine artifactory.example.com login alice password <api-key>
+
+# Hosts where uv may need to skip TLS verification (e.g., self-signed certs
+# during initial bootstrap). PREFER fixing the trust chain via tls-root-certs
+# above — bypassing TLS is a foot-gun for MITM and credential capture.
+# allow-insecure-host = ["artifactory.example.com"]
+
+# ── (5) HTTP proxy — only if your network forces an HTTP CONNECT proxy ─────
+# Most JFrog setups don't need this — your laptop reaches Artifactory directly.
+# Configure ONLY if you're behind a forward proxy.
+# [proxy-config]
+# http = "http://proxy.corp.example.com:8080"
+# https = "http://proxy.corp.example.com:8080"
+# non-proxy-hosts = ["artifactory.example.com", "*.internal"]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Notes
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# - Pixi reads the FIRST config file found in this priority chain:
+#     1. project-local  ./.pixi/config.toml
+#     2. user           ~/.pixi/config.toml
+#     3. system         /etc/pixi/config.toml
+#   Settings DO NOT merge across layers; a project-local file shadows the
+#   user file completely for the keys it sets. Plan accordingly.
+#
+# - To verify pixi picked up your config:
+#     pixi config list default-channels
+#     pixi config list pypi-config
+#     pixi config list mirrors
+#     pixi config list repodata-config
+#
+# - To trace a failing install through the resolver:
+#     pixi install -e vuln-db -vvv 2>&1 | grep -E "files.pythonhosted|artifactory|TLS|cert|404"
+#
+# - Pixi/uv env-var equivalents (if you prefer one-shot overrides over a
+#   committed config file):
+#     export UV_INDEX_URL="https://artifactory.example.com/.../simple"
+#     export UV_NATIVE_TLS=true
+#     export UV_KEYRING_PROVIDER=subprocess
+#   These take effect for the current shell only; pixi config persists.
