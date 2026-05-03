@@ -270,6 +270,11 @@ pixi run -e local-recipes <task> -- [args]
 
 ### Recipe tooling (conda-forge-expert wrappers)
 
+The `pixi run` task names below are stable; they invoke thin entrypoint
+wrappers at `.claude/scripts/conda-forge-expert/` that delegate to the canonical
+implementation in `.claude/skills/conda-forge-expert/scripts/`. Run any task
+with `--help` to see its options.
+
 | Task | Underlying script |
 |------|-------------------|
 | `validate` | `validate_recipe.py` — schema + license + checksum + conda-smithy lint |
@@ -288,6 +293,33 @@ pixi run -e local-recipes <task> -- [args]
 | `version-check` | `github_version_checker.py` — read-only latest-release lookup |
 | `autotick` | `recipe_updater.py` — PyPI autotick |
 | `autotick-github` | `github_updater.py` — GitHub-release autotick |
+| `autotick-npm` | `npm_updater.py` — npm-registry autotick |
+
+### Cross-channel package intelligence (Atlas + vulnerability DB)
+
+The atlas (`cf_atlas.db`) is a queryable cross-channel package map combining
+conda-forge with PyPI / npm / CRAN / CPAN / LuaRocks linkage. The vulnerability
+database adds multi-source CVE lookups (NVD + GHSA + OSV + npm + Snyk + Aqua +
+custom). Atlas tasks run in `local-recipes`; vuln-DB tasks run in `vuln-db`.
+
+| Task | What it does |
+|------|--------------|
+| `build-cf-atlas` | Build the atlas (8-phase pipeline, ~165 MB SQLite) |
+| `query-cf-atlas <name>` | Look up a package in the atlas |
+| `stats-cf-atlas` | Summary stats (pkg counts, build provenance) |
+| `detail-cf-atlas <name>` | Detail card with cross-channel + anaconda.org build matrix; add `--vdb` (in `vuln-db` env) for multi-source CVE lookup |
+| `vdb-refresh` | Build/refresh the AppThreat multi-source vulnerability DB (~5–10 min) |
+| `scan-project <path>` | Scan a directory or `--github URL` for CVEs across pixi.lock, pixi.toml, Cargo.lock/toml, requirements.txt, pyproject.toml, environment.yml, Containerfile (vuln-db env) |
+| `inventory-channel <url>` | Inventory a channel/mirror (conda repodata, PyPI Simple, npm, crates.io). JFrog auth via env vars (vuln-db env) |
+
+### Local builds (Docker-less rattler-build)
+
+| Task | What it does |
+|------|--------------|
+| `build-local` | Build a recipe natively (linux-64) with full tests |
+| `build-local-all` | Cross-build for every supported platform (skips tests on cross-targets) |
+| `build-local-check` | Diagnose what's available locally (rattler-build, SDKs, platforms) |
+| `build-local-setup-sdk` | Download MacOSX SDK to `./SDKs/` for `osx-*` cross-builds |
 
 ### Maintenance & infrastructure
 
@@ -302,6 +334,15 @@ pixi run -e local-recipes <task> -- [args]
 | `test` | Run the conda-forge-expert test suite (fast subset, offline) |
 | `test-all` | Run the full test suite incl. live-network tests |
 | `test-coverage` | Test suite with coverage report |
+
+> **Enterprise routing.** Behind a JFrog Artifactory or other private mirror,
+> set `JFROG_API_KEY` (or `JFROG_USERNAME`+`JFROG_PASSWORD`) and any
+> mirror-specific env vars (`CONDA_FORGE_BASE_URL`, `ANACONDA_API_BASE`,
+> `GITHUB_API_BASE`). The shared `_http.py` helper picks them up at runtime
+> alongside system trust roots and `~/.netrc`. **No enterprise URLs live in
+> the committed `pixi.toml`** — the same checkout works externally and
+> internally. See `docs/enterprise-deployment.md` for the full air-gapped
+> setup.
 
 ## Known limitations and tips
 - Do not mix `meta.yaml` and `recipe.yaml` recipes in a single run.
