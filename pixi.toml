@@ -110,9 +110,22 @@ vuln-db = ["python", "vuln-db"]
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
 
-[feature.local-recipes.tasks.sync-upstream]
+[feature.local-recipes.tasks.sync-upstream-conda-forge]
 description = "Sync with upstream conda-forge/staged-recipes and rebase local commits"
-cmd = "bash scripts/sync-upstream.sh"
+cmd = "bash scripts/sync-upstream-conda-forge.sh"
+
+[feature.local-recipes.tasks.sync-upstream-public-fork]
+description = "Pull the latest from the public GitHub fork and merge/rebase the local commits"
+cmd = "bash scripts/sync-public-fork.sh"
+
+[feature.local-recipes.tasks.verify-env]
+description = "Verify that the shell is running inside the local-recipes pixi environment"
+cmd = "bash scripts/ensure-local-recipes-env.sh"
+
+[feature.local-recipes.tasks.bmad-preflight]
+description = "Verify local-recipes env, BMAD installation, and active project before BMAD workflows"
+cmd = "bash scripts/ensure-bmad-preflight.sh"
+
 
 [feature.local-recipes.tasks.submit-pr]
 description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first)"

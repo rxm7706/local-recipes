@@ -641,7 +641,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 | Command | Description |
 |---|---|
 | `pixi run -e local-recipes health-check` | Full diagnostic on the environment |
-| `pixi run -e local-recipes sync-upstream` | Sync fork with `conda-forge/staged-recipes` |
+| `pixi run -e local-recipes sync-upstream-conda-forge` | Sync fork with `conda-forge/staged-recipes` |
 | `pixi run -e local-recipes submit-pr <name>` | Submit a finished recipe to conda-forge |
 | `pixi run -e local-recipes autotick <path>` | Manually run the autotick bot on a recipe |
 | `pixi run -e local-recipes update-cve-db` | Refresh the local CVE database |

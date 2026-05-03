@@ -144,7 +144,7 @@ local-recipes/
 │  └─ run_win_build.bat           # Windows provisioning/build runner
 ├─ scripts/
 │  ├─ bmad-switch                 # Active-project switcher for the BMAD multi-project layout
-│  └─ ...                         # Other repo-level helper scripts (sync-upstream, submit_pr, ...)
+│  └─ ...                         # Other repo-level helper scripts (sync-upstream-conda-forge, submit_pr, ...)
 ├─ build-locally.py                # Cross-platform dispatcher
 ├─ recipes/
 │  ├─ <recipe>/recipe.yaml        # Rattler Build format (modern)
@@ -328,7 +328,7 @@ custom). Atlas tasks run in `local-recipes`; vuln-DB tasks run in `vuln-db`.
 | `health-check` | Full diagnostic on the dev env (Docker, gh, OSV API, scripts) |
 | `update-cve-db` | Refresh local OSV CVE database |
 | `update-mapping-cache` | Refresh PyPI ↔ conda name mapping cache |
-| `sync-upstream` | Rebase fork onto `conda-forge/staged-recipes` |
+| `sync-upstream-conda-forge` | Rebase fork onto `conda-forge/staged-recipes` |
 | `submit-pr` | Open a PR against `conda-forge/staged-recipes` (use `--dry-run` first) |
 | `test-recipes` | Run `test-recipes.py` (random / targeted recipe smoke validation) |
 | `test` | Run the conda-forge-expert test suite (fast subset, offline) |
