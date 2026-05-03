@@ -307,7 +307,8 @@ custom). Atlas tasks run in `local-recipes`; vuln-DB tasks run in `vuln-db`.
 | `build-cf-atlas` | Build the atlas (8-phase pipeline, ~165 MB SQLite) |
 | `query-cf-atlas <name>` | Look up a package in the atlas |
 | `stats-cf-atlas` | Summary stats (pkg counts, build provenance) |
-| `detail-cf-atlas <name>` | Detail card with cross-channel + anaconda.org build matrix; add `--vdb` (in `vuln-db` env) for multi-source CVE lookup |
+| `detail-cf-atlas <name>` | Detail card with cross-channel + build matrix (anaconda.org files API; falls back to `current_repodata.json` from prefix.dev / pixi mirror / `CONDA_FORGE_BASE_URL` for air-gapped networks). Add `--vdb` (in `vuln-db` env) for multi-source CVE lookup, `--version VER` to scope the affecting-set to an arbitrary release |
+| `detail-cf-atlas-vdb <name>` | Convenience wrapper that presets `--vdb --vdb-all` so you only pass `<name>` and optionally `--version VER` (vuln-db env) |
 | `vdb-refresh` | Build/refresh the AppThreat multi-source vulnerability DB (~5–10 min) |
 | `scan-project <path>` | Scan a directory or `--github URL` for CVEs across pixi.lock, pixi.toml, Cargo.lock/toml, requirements.txt, pyproject.toml, environment.yml, Containerfile (vuln-db env) |
 | `inventory-channel <url>` | Inventory a channel/mirror (conda repodata, PyPI Simple, npm, crates.io). JFrog auth via env vars (vuln-db env) |

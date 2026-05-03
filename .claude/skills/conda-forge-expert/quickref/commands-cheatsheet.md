@@ -408,10 +408,30 @@ pixi run -e local-recipes query-cf-atlas <name>
 # Atlas summary stats
 pixi run -e local-recipes stats-cf-atlas
 
-# Detail card with cross-channel + anaconda.org build matrix.
-# Add --vdb in the vuln-db env for multi-source CVE lookup.
+# Detail card with cross-channel + build matrix.
+# Build matrix tries api.anaconda.org first; on failure (corporate egress
+# blocks) it falls back to current_repodata.json from a conda channel
+# mirror via _http.resolve_conda_forge_urls() — see "Air-gap fallback"
+# below. Add --vdb in the vuln-db env for multi-source CVE lookup.
 pixi run -e local-recipes detail-cf-atlas <name>
 pixi run -e vuln-db detail-cf-atlas <name> --vdb
+
+# Scope the vuln scan to a specific version (defaults to latest_conda_version
+# from the atlas). Useful when you want CVEs affecting a release you're pinned to.
+pixi run -e vuln-db detail-cf-atlas <name> --version 5.2.12 --vdb --vdb-all
+
+# Same as above, but using the convenience wrapper task that presets --vdb --vdb-all.
+pixi run -e vuln-db detail-cf-atlas-vdb <name> --version 5.2.12
+
+# Air-gap fallback: when api.anaconda.org is blocked but a conda channel
+# mirror is reachable, the build matrix is fetched from current_repodata.json.
+# The resolver chain is: CONDA_FORGE_BASE_URL env → pixi `mirrors` →
+# pixi `default-channels` → repo.prefix.dev/conda-forge →
+# conda.anaconda.org/conda-forge. JFrog auth headers (X-JFrog-Art-Api or
+# Basic) are injected automatically when the relevant env vars are set.
+CONDA_FORGE_BASE_URL=https://artifactory.corp/artifactory/conda-forge \
+JFROG_API_KEY=$MY_KEY \
+  pixi run -e local-recipes detail-cf-atlas <name>
 ```
 
 ### Vulnerability scanning (vuln-db env)
