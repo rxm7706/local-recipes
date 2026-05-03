@@ -2,16 +2,22 @@
 """
 detail-cf-atlas — Render a comprehensive package detail card.
 
-Pulls together three sources, gracefully degrading when any source fails:
+Pulls together four sources, gracefully degrading when any source fails:
 
-  1. Local cf_atlas.db (offline-safe, primary)         -- always tried
-  2. anaconda.org files API (per-build artifact info)  -- network optional
-  3. conda_forge_metadata.ArtifactData (full per-build) -- needs --deep flag
+  1. Local cf_atlas.db (offline-safe, primary)               -- always tried
+  2a. anaconda.org files API (per-build artifact info)       -- network, primary
+  2b. conda-forge channel current_repodata.json (fallback)   -- network, kicks in
+                                                                when 2a fails
+  3. conda_forge_metadata.ArtifactData (full per-build)      -- needs --deep flag
+
+The 2a→2b fallback exists for air-gapped enterprise networks where
+api.anaconda.org is blocked but a conda channel mirror (JFrog Artifactory,
+prefix.dev) is reachable. The fallback uses the same URL chain as
+`_http.resolve_conda_forge_urls()`: CONDA_FORGE_BASE_URL → pixi mirrors →
+pixi default-channels → repo.prefix.dev → conda.anaconda.org.
 
 Outputs a sectioned terminal card with Source Summary at the bottom listing
 which sources contributed data and which failed.
-
-Honors CONDA_FORGE_BASE_URL env var for air-gapped/JFrog mirror redirection.
 
 CLI:
   detail-cf-atlas <package_name> [--deep] [--files] [--subdir SUBDIR] [--json]
@@ -44,8 +50,16 @@ def _get_data_dir() -> Path:
 DATA_DIR = _get_data_dir()
 DB_PATH = DATA_DIR / "cf_atlas.db"
 ANACONDA_BASE = os.environ.get("ANACONDA_API_BASE", "https://api.anaconda.org")
-CONDA_FORGE_BASE = os.environ.get("CONDA_FORGE_BASE_URL", "https://conda.anaconda.org/conda-forge")
 NETWORK_TIMEOUT = 10  # seconds
+
+# Probed when atlas has no `conda_subdirs` for a package. Order matches the
+# conda-forge canonical set; win-32 is intentionally omitted (deprecated).
+_STANDARD_CONDA_FORGE_SUBDIRS: tuple[str, ...] = (
+    "linux-64", "linux-aarch64", "linux-ppc64le",
+    "noarch",
+    "osx-64", "osx-arm64",
+    "win-64",
+)
 
 # ANSI sectioning helpers
 RULE = "─" * 74
@@ -56,9 +70,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 try:
     from _http import inject_ssl_truststore, make_request as _http_make_request  # type: ignore[import-not-found]
     inject_ssl_truststore()
-    _HTTP_AVAILABLE = True
 except ImportError:
-    _HTTP_AVAILABLE = False
+    _http_make_request = None  # type: ignore[assignment]
 
 
 def _humanize_timestamp(ts: int | None) -> str:
@@ -118,7 +131,7 @@ def fetch_anaconda_files(name: str, subdir_filter: str | None = None) -> tuple[l
     """Source #2: anaconda.org per-package files API. Returns (latest_per_subdir, error_msg)."""
     url = f"{ANACONDA_BASE}/package/conda-forge/{name}/files"
     try:
-        if _HTTP_AVAILABLE:
+        if _http_make_request is not None:
             req = _http_make_request(url, user_agent="detail-cf-atlas/1.0")
         else:
             req = urllib.request.Request(url, headers={"User-Agent": "detail-cf-atlas/1.0"})
@@ -146,6 +159,104 @@ def fetch_anaconda_files(name: str, subdir_filter: str | None = None) -> tuple[l
         if sd not in by_subdir or ts > by_subdir[sd].get("upload_time", ""):
             by_subdir[sd] = f
     return (sorted(by_subdir.values(), key=lambda f: f["attrs"]["subdir"]), None)
+
+
+def fetch_repodata_build_matrix(
+    name: str,
+    subdir_filter: str | None,
+    atlas_subdirs: list[str],
+) -> tuple[list[dict[str, Any]], str | None, str | None]:
+    """Source #2 fallback: per-subdir current_repodata.json from a conda channel.
+
+    Used when api.anaconda.org is unreachable (common in air-gapped enterprise
+    networks). Resolves base URLs through `_http.resolve_conda_forge_urls()`,
+    which honors CONDA_FORGE_BASE_URL → pixi mirrors → pixi default-channels →
+    repo.prefix.dev/conda-forge → conda.anaconda.org/conda-forge in priority
+    order. JFrog auth (X-JFrog-Art-Api / Basic) is injected by `_http_make_request`
+    when the relevant env vars are set.
+
+    For each subdir, fetches `<base>/<sd>/current_repodata.json` and selects
+    the latest matching package (highest `timestamp`, falling back to first-seen
+    when timestamps are absent). Reshapes to the same dict shape
+    `fetch_anaconda_files` returns so the renderer is source-agnostic.
+
+    `current_repodata.json` contains only the latest builds per package — same
+    granularity as the files API for "latest per subdir". Drops `upload_time`
+    (repodata's `timestamp` is build time, not upload time, and is in millis);
+    the renderer prints that field as empty cleanly.
+
+    Returns (records, base_url_used, error_msg). `base_url_used` is which
+    candidate the first successful fetch came from; surfaced in source_status
+    so the user sees whether it was prefix.dev, JFrog, or anaconda.org.
+    """
+    if _http_make_request is None:
+        return ([], None, "_http helper not importable; cannot resolve fallback URLs")
+    try:
+        from _http import resolve_conda_forge_urls  # type: ignore[import-not-found]
+    except ImportError:
+        return ([], None, "_http.resolve_conda_forge_urls unavailable")
+
+    candidates = resolve_conda_forge_urls()
+    if not candidates:
+        return ([], None, "no conda-forge base URLs resolved (env, pixi config, or fallbacks)")
+
+    subdirs = list(atlas_subdirs) if atlas_subdirs else list(_STANDARD_CONDA_FORGE_SUBDIRS)
+    if subdir_filter:
+        subdirs = [s for s in subdirs if s == subdir_filter]
+    if not subdirs:
+        return ([], None, f"no subdirs to query (filter={subdir_filter!r})")
+
+    base_used: str | None = None
+    by_subdir: dict[str, dict[str, Any]] = {}
+    last_err: str | None = None
+    for sd in subdirs:
+        for base in candidates:
+            url = f"{base.rstrip('/')}/{sd}/current_repodata.json"
+            try:
+                req = _http_make_request(url, user_agent="detail-cf-atlas/1.0")
+                with urllib.request.urlopen(req, timeout=NETWORK_TIMEOUT) as resp:
+                    data = json.load(resp)
+            except (urllib.error.HTTPError, urllib.error.URLError,
+                    TimeoutError, OSError, json.JSONDecodeError) as e:
+                last_err = f"{type(e).__name__}: {e}"
+                continue
+            base_used = base_used or base
+            best: dict[str, Any] | None = None
+            best_ts = -1
+            for section in ("packages", "packages.conda"):
+                pkgs = data.get(section) or {}
+                if not isinstance(pkgs, dict):
+                    continue
+                for fname, meta in pkgs.items():
+                    if not isinstance(meta, dict) or meta.get("name") != name:
+                        continue
+                    ts = int(meta.get("timestamp") or 0)
+                    if ts > best_ts:
+                        best_ts = ts
+                        best = {
+                            "basename": f"{sd}/{fname}",
+                            "version": meta.get("version"),
+                            "size": meta.get("size"),
+                            "md5": meta.get("md5"),
+                            "upload_time": "",
+                            "attrs": {
+                                "subdir": sd,
+                                "version": meta.get("version"),
+                                "build": meta.get("build"),
+                                "depends": meta.get("depends") or [],
+                            },
+                        }
+            if best is not None:
+                by_subdir[sd] = best
+            break  # got valid JSON for this subdir; don't probe further bases
+
+    if not by_subdir:
+        msg = (f"`{name}` not found in repodata across {len(subdirs)} subdir(s) "
+               f"× {len(candidates)} candidate base(s)")
+        if last_err:
+            msg += f"; last network error: {last_err}"
+        return ([], base_used, msg)
+    return (sorted(by_subdir.values(), key=lambda f: f["attrs"]["subdir"]), base_used, None)
 
 
 def fetch_artifact_data(subdir: str, basename: str) -> tuple[dict[str, Any] | None, str | None]:
@@ -335,11 +446,16 @@ def _extract_vuln_fields(record: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def fetch_vdb_data(record: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
+def fetch_vdb_data(record: dict[str, Any],
+                   version_override: str | None = None) -> tuple[dict[str, Any] | None, str | None]:
     """Source #4 (--vdb): query AppThreat multi-source vulnerability DB.
 
     Derives 1-3 purls from the atlas record (pypi, conda, github, npm) and
     aggregates vuln matches across all configured sources.
+
+    When ``version_override`` is set, version-pinned purls are built against
+    that version instead of ``record["latest_conda_version"]`` — used by
+    ``--version`` to query CVEs affecting an arbitrary release.
 
     Returns (data_dict, error_msg). data_dict is None when no purls are
     derivable or when the library is unavailable.
@@ -356,7 +472,7 @@ def fetch_vdb_data(record: dict[str, Any]) -> tuple[dict[str, Any] | None, str |
     conda_name = record.get("conda_name")
     npm_name = record.get("npm_name")
     repo_url = record.get("conda_repo_url") or record.get("conda_dev_url") or ""
-    version = record.get("latest_conda_version")
+    version = version_override or record.get("latest_conda_version")
     if pypi_name:
         purls.append(f"pkg:pypi/{pypi_name}")
         if version:
@@ -426,7 +542,8 @@ def render(record: dict[str, Any] | None,
            source_status: dict[str, str],
            include_files: bool,
            vdb_all: bool,
-           vdb_deep: bool) -> str:
+           vdb_deep: bool,
+           queried_version: str | None = None) -> str:
     """Render the terminal card."""
     if record is None:
         return ""  # caller already printed an error
@@ -479,7 +596,8 @@ def render(record: dict[str, Any] | None,
     p("")
     p(RULE)
     if anaconda_files:
-        p(f"  Build matrix ({len(anaconda_files)} subdirs, latest per subdir from anaconda.org)")
+        bm_label = source_status.get("_build_matrix_label", "anaconda.org")
+        p(f"  Build matrix ({len(anaconda_files)} subdirs, latest per subdir from {bm_label})")
         p(RULE)
         for f in anaconda_files:
             attrs = f.get("attrs", {}) or {}
@@ -593,7 +711,8 @@ def render(record: dict[str, Any] | None,
         p(RULE)
         p("  VDB Security (multi-source: NVD + GHSA + OSV + Snyk + npm + ...)")
         p(RULE)
-        latest_v = record.get("latest_conda_version") or "?"
+        latest_v = queried_version or record.get("latest_conda_version") or "?"
+        version_label = "queried_version" if queried_version else "latest_conda_version"
         affecting = vdb_data.get("affecting_latest_version", [])
         sev = vdb_data.get("by_severity", {})
         kev = vdb_data.get("kev_count", 0)
@@ -611,7 +730,7 @@ def render(record: dict[str, Any] | None,
             risk = "LOW (no vulns indexed)"
         p(f"  RISK: {risk} — {crit_aff} Critical-affecting-current, {high_aff} High-affecting-current, "
           f"{kev} KEV-listed")
-        p(f"        latest_conda_version {latest_v} → {len(affecting)} of {total} vulns affect it")
+        p(f"        {version_label} {latest_v} → {len(affecting)} of {total} vulns affect it")
         p("")
         # Section 2: Severity counts
         p("  Severity     Total   Affecting current")
@@ -672,7 +791,7 @@ def render(record: dict[str, Any] | None,
     p(DOUBLE_RULE)
     sym = {"ok": "✓", "fail": "✗", "skip": "—"}
     # internal-only keys (single-word) used as flags by the renderer; hide them
-    INTERNAL_KEYS = {"anaconda", "artifact", "vdb"}
+    INTERNAL_KEYS = {"anaconda", "artifact", "vdb", "_build_matrix_label"}
     for src, status in source_status.items():
         if src.endswith("_msg") or src in INTERNAL_KEYS:
             continue
@@ -704,6 +823,9 @@ def main() -> int:
                         help="With --vdb, also show purl coverage and source attribution")
     parser.add_argument("--vdb-all", dest="vdb_all", action="store_true",
                         help="With --vdb, list ALL affecting vulns (not just top 5)")
+    parser.add_argument("--version", dest="queried_version", metavar="VERSION",
+                        help="With --vdb, override the version used in version-pinned purls "
+                             "(default: latest_conda_version from atlas)")
     parser.add_argument("--json", dest="as_json", action="store_true",
                         help="Output raw JSON instead of formatted card")
     args = parser.parse_args()
@@ -724,15 +846,43 @@ def main() -> int:
         f"— {len(maintainers)} maintainer(s)" if maintainers else "— none in atlas"
     )
 
-    # Source #2: anaconda.org files
+    # Source #2: build matrix (anaconda.org files API → repodata.json fallback)
+    # Try the cheap per-package files API first. If it fails (air-gapped network
+    # where api.anaconda.org is blocked), fall back to per-subdir
+    # current_repodata.json from a conda channel mirror (prefix.dev / JFrog /
+    # whatever the resolver chain points at).
     anaconda_files: list[dict[str, Any]] = []
+    build_matrix_label = "anaconda.org"
     if record.get("conda_name"):
         t0 = time.monotonic()
         anaconda_files, anaconda_err = fetch_anaconda_files(record["conda_name"], args.subdir)
         if anaconda_err:
             source_status["anaconda.org files API"] = "fail"
             source_status["anaconda.org files API_msg"] = f"— {anaconda_err}"
-            source_status["anaconda"] = "fail"
+            # Fall back to current_repodata.json via the _http URL chain.
+            atlas_subdirs_raw = record.get("conda_subdirs") or "[]"
+            try:
+                atlas_subdirs = json.loads(atlas_subdirs_raw)
+                if not isinstance(atlas_subdirs, list):
+                    atlas_subdirs = []
+            except (json.JSONDecodeError, TypeError):
+                atlas_subdirs = []
+            t1 = time.monotonic()
+            anaconda_files, base_used, repodata_err = fetch_repodata_build_matrix(
+                record["conda_name"], args.subdir, atlas_subdirs,
+            )
+            if repodata_err:
+                source_status["conda-forge channel (repodata)"] = "fail"
+                source_status["conda-forge channel (repodata)_msg"] = f"— {repodata_err}"
+                source_status["anaconda"] = "fail"
+            else:
+                source_status["conda-forge channel (repodata)"] = "ok"
+                source_status["conda-forge channel (repodata)_msg"] = (
+                    f"— {len(anaconda_files)} subdir(s) in {time.monotonic() - t1:.1f}s "
+                    f"via {base_used or '?'}"
+                )
+                source_status["anaconda"] = "ok"
+                build_matrix_label = base_used or "conda channel mirror"
         else:
             source_status["anaconda.org files API"] = "ok"
             source_status["anaconda.org files API_msg"] = (
@@ -742,6 +892,7 @@ def main() -> int:
     else:
         source_status["anaconda.org files API"] = "skip"
         source_status["anaconda.org files API_msg"] = "— skipped (no conda_name; PyPI-only row)"
+    source_status["_build_matrix_label"] = build_matrix_label
 
     # Source #3: deep artifact metadata
     artifact_data: dict[str, Any] | None = None
@@ -778,7 +929,7 @@ def main() -> int:
     vdb_data: dict[str, Any] | None = None
     if args.vdb:
         t0 = time.monotonic()
-        vdb_data, vdb_err = fetch_vdb_data(record)
+        vdb_data, vdb_err = fetch_vdb_data(record, args.queried_version)
         if vdb_err:
             source_status["vdb (appthreat-vulnerability-db)"] = "fail"
             source_status["vdb (appthreat-vulnerability-db)_msg"] = f"— {vdb_err}"
@@ -822,7 +973,8 @@ def main() -> int:
         }, indent=2, sort_keys=True, default=str))
     else:
         print(render(record, maintainers, anaconda_files, artifact_data, vdb_data,
-                     source_status, args.files, args.vdb_all, args.vdb_deep))
+                     source_status, args.files, args.vdb_all, args.vdb_deep,
+                     args.queried_version))
     return 0
 
 

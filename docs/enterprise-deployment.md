@@ -355,3 +355,78 @@ Common signatures:
 ### Org-level alternative (if you have JFrog admin)
 
 Add a **second** Remote Repository targeting `https://files.pythonhosted.org/`. With both `pypi.org` and `files.pythonhosted.org` proxied, every Python tool — pip, uv, poetry, pixi, conda-build sources — works without per-developer config. This is the same fix referenced in §3 for recipe source URLs.
+
+## 5. `detail-cf-atlas` build-matrix fallback (v6.1.0+)
+
+The `detail-cf-atlas` script now has a two-stage chain for the build-matrix section. This matters for air-gapped users because **the two stages hit completely different APIs and your IT may have proxied one but not the other**.
+
+### Stage 1: anaconda.org files API (preferred)
+
+`detail_cf_atlas.py:fetch_anaconda_files` hits `https://api.anaconda.org/package/conda-forge/<name>/files`. Override the base via:
+
+```bash
+export ANACONDA_API_BASE=https://artifactory.corp/artifactory/anaconda-org-remote
+```
+
+This works only if your JFrog admin has set up a Generic Remote Repository proxying `api.anaconda.org`. Many shops haven't, because anaconda.org's metadata API is rarely on the standard "things to mirror" checklist.
+
+### Stage 2: conda channel `current_repodata.json` (fallback)
+
+When Stage 1 returns any error, `fetch_repodata_build_matrix` walks `_http.resolve_conda_forge_urls()`:
+
+| Priority | Source | Notes |
+|---------:|--------|-------|
+| 1 | `CONDA_FORGE_BASE_URL` env var | Set this to your JFrog conda-forge mirror |
+| 2 | Pixi `mirrors["https://conda.anaconda.org/conda-forge"][*]` | From `.pixi/config.toml` / `~/.pixi/config.toml` / `/etc/pixi/config.toml` |
+| 3 | Pixi `default-channels` containing `"conda-forge"` | Same priority order as pixi itself |
+| 4 | `https://repo.prefix.dev/conda-forge` | Public CDN mirror |
+| 5 | `https://conda.anaconda.org/conda-forge` | Last-resort default |
+
+For each subdir (atlas-derived, or the standard 7), fetches `<base>/<sd>/current_repodata.json` and selects the latest matching package by `timestamp`. JFrog auth (`X-JFrog-Art-Api` for tokens, Basic for username+password) is injected automatically by `_http.make_request`:
+
+```bash
+export CONDA_FORGE_BASE_URL=https://artifactory.corp/artifactory/conda-forge-remote
+export JFROG_API_KEY=$MY_TOKEN
+# OR:
+export JFROG_USERNAME=alice
+export JFROG_PASSWORD=$MY_PASSWORD
+```
+
+The build-matrix header label is dynamic so you can see which source actually produced the data:
+
+```
+Build matrix (6 subdirs, latest per subdir from https://repo.prefix.dev/conda-forge)
+```
+
+vs. the happy path:
+
+```
+Build matrix (7 subdirs, latest per subdir from anaconda.org)
+```
+
+### What you lose on the fallback
+
+- **`upload_time`** — `current_repodata.json` carries `timestamp` (build time, in millis), not upload time. The renderer prints the date column as empty when this happens. The data is still there; it's just a slightly different timestamp.
+- **Stale-only builds** — `current_repodata.json` is a subset of `repodata.json`: only the latest version per Python tag per subdir. If a package had a build that's been superseded for the same Python version, it won't appear. In practice this is what you want anyway.
+- **Deprecated subdirs** — `win-32` (deprecated 2018) is excluded from the standard subdir set. If the atlas record happens to track a historical win-32 build, it won't show on the fallback path. You'll see `linux-64`, `linux-aarch64`, `linux-ppc64le`, `noarch`, `osx-64`, `osx-arm64`, `win-64`.
+
+### Verifying the fallback
+
+```bash
+# Force the files API to fail and confirm the channel mirror picks up the slack:
+ANACONDA_API_BASE=https://nope.invalid pixi run -e local-recipes detail-cf-atlas django
+
+# Check the source-summary footer — you should see anaconda failing AND
+# conda-forge channel (repodata) succeeding, with the resolved base URL.
+```
+
+### Verifying with a JFrog mirror
+
+```bash
+# Point at your JFrog channel mirror and confirm the build-matrix header
+# shows the JFrog URL (not anaconda.org or prefix.dev).
+ANACONDA_API_BASE=https://nope.invalid \
+CONDA_FORGE_BASE_URL=https://artifactory.corp/artifactory/conda-forge-remote \
+JFROG_API_KEY=$MY_TOKEN \
+  pixi run -e local-recipes detail-cf-atlas django
+```

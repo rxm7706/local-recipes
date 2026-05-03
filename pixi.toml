@@ -270,7 +270,7 @@ description = "Show summary statistics from the conda-forge atlas"
 cmd = "python .claude/scripts/conda-forge-expert/conda_forge_atlas.py stats"
 
 [feature.local-recipes.tasks.detail-cf-atlas]
-description = "Show detailed package card from atlas + anaconda.org (use --deep for per-build artifact metadata, --files to list paths)"
+description = "Show detailed package card from atlas + anaconda.org (use --deep for per-build artifact metadata, --files to list paths, --version VER to override the version used for vuln scans)"
 cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py"
 
 # ── vuln-db feature: AppThreat multi-source vulnerability database ─────────
@@ -300,8 +300,12 @@ description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 
 cmd = 'python -c "import truststore; truststore.inject_into_ssl(); from vdb.cli import main; main()" --cache'
 
 [feature.vuln-db.tasks.detail-cf-atlas]
-description = "Detail card with --vdb support enabled (multi-source vulnerability lookup)"
+description = "Detail card with --vdb support enabled (multi-source vulnerability lookup); add --version VER to scope the affecting-set to an arbitrary release"
 cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py"
+
+[feature.vuln-db.tasks.detail-cf-atlas-vdb]
+description = "Detail card with --vdb --vdb-all preset; pass <name> [--version VER] to list every CVE affecting a specific release"
+cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py --vdb --vdb-all"
 
 [feature.vuln-db.tasks.scan-project]
 description = "Scan a project's manifests (pixi.lock, pixi.toml, Cargo.lock/toml, requirements.txt, pyproject.toml, environment.yml, Containerfile/Dockerfile) for CVEs. Use --github URL or local path. Add --os for OS-package lookups, --brief for summary, --sbom {cyclonedx,spdx} for SBOM output."
