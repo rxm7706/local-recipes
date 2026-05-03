@@ -43,7 +43,7 @@ def check_git_upstream_remote() -> Dict[str, Any]:
             return {
                 "status": "FAIL",
                 "message": "Git remote 'upstream' is not configured for conda-forge/staged-recipes.",
-                "fix": "Run 'pixi run sync-upstream' to configure it automatically.",
+                "fix": "Run 'pixi run sync-upstream-conda-forge' to configure it automatically.",
             }
     except FileNotFoundError:
         return {"status": "FAIL", "message": "Git command not found."}

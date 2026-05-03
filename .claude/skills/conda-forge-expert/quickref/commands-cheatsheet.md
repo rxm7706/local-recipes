@@ -297,24 +297,205 @@ curl -s "https://conda.anaconda.org/conda-forge/noarch/repodata.json" | jq '.pac
 
 Tasks defined in this repo's `pixi.toml` for the local-recipes monorepo. Each is also available as an MCP tool where noted.
 
+> **Tip:** Pixi task names invoke the entrypoint wrapper layer at
+> `.claude/scripts/conda-forge-expert/`, which delegates to the canonical
+> implementation in `.claude/skills/conda-forge-expert/scripts/`. Run any task
+> with `--help` to see its options. Pass extra args after `--`:
+> `pixi run -e local-recipes validate -- recipes/<name>`.
+
+### Environment & preflight
+
 ```bash
-# Lint a recipe (uses the conda-smithy environment)
+# Confirm the shell is inside the local-recipes pixi environment
+pixi run -e local-recipes verify-env
+
+# Combined env + BMAD-installation + active-project check before BMAD work
+pixi run -e local-recipes bmad-preflight
+
+# Full diagnostic on the dev environment (also: run_system_health_check MCP tool)
+pixi run -e local-recipes health-check
+```
+
+### Recipe authoring
+
+```bash
+# Validate / lint a recipe
+pixi run -e local-recipes validate recipes/<name>/recipe.yaml
+pixi run -e local-recipes lint-optimize recipes/<name>/recipe.yaml
 pixi run -e conda-smithy lint recipes/<name>
 
-# Run a full diagnostic on the environment (also: run_system_health_check MCP tool)
-pixi run -e local-recipes health-check
+# Resolve a PyPI package name to its conda-forge equivalent
+pixi run -e local-recipes resolve-name <pypi-name>
 
-# Sync your fork with upstream conda-forge/staged-recipes
-pixi run -e local-recipes sync-upstream
+# Check that all recipe deps resolve on conda-forge
+pixi run -e local-recipes check-deps recipes/<name>/recipe.yaml
 
-# Submit a finished recipe to conda-forge (also: submit_pr MCP tool)
-pixi run -e local-recipes submit-pr <recipe-name>
+# Validate SPDX license + license_file presence
+pixi run -e local-recipes license-check recipes/<name>/recipe.yaml
 
-# Update the local CVE and PyPI-to-conda name mapping databases
-# (also: update_cve_database, update_mapping_cache MCP tools)
+# Scaffold a new recipe from PyPI / template / GitHub
+pixi run -e local-recipes generate-recipe <pypi-name>
+
+# Per-source recipe scaffolders
+pixi run -e local-recipes generate-cran <r-package>          # CRAN
+pixi run -e local-recipes generate-cpan <perl-module>        # CPAN
+pixi run -e local-recipes generate-luarocks <lua-rock>       # LuaRocks
+pixi run -e local-recipes generate-npm <npm-package>         # npm registry
+
+# Grayskull-based scaffolding (alternative entrypoint, separate env)
+pixi run -e grayskull pypi <pypi-name>                       # v1 recipe.yaml
+pixi run -e grayskull cran <r-package>                       # v1 recipe.yaml
+pixi run -e grayskull pypi-v0 <pypi-name>                    # legacy meta.yaml
+pixi run -e grayskull cran-v0 <r-package>                    # legacy meta.yaml
+
+# Migrate meta.yaml → recipe.yaml v1 (use --dry-run first)
+pixi run -e local-recipes migrate recipes/<name>/meta.yaml
+
+# Read-only latest-release lookup
+pixi run -e local-recipes version-check --repo <owner>/<repo>
+```
+
+### Autotick (recipe updates)
+
+```bash
+# PyPI / GitHub / npm autotick — all support --dry-run
+pixi run -e local-recipes autotick recipes/<name>/recipe.yaml
+pixi run -e local-recipes autotick-github recipes/<name>/recipe.yaml
+pixi run -e local-recipes autotick-npm recipes/<name>/recipe.yaml
+```
+
+### Local builds (Docker-less rattler-build)
+
+```bash
+# Diagnose available platforms / SDKs first
+pixi run -e local-recipes build-local-check
+
+# Native build (linux-64) with full tests
+pixi run -e local-recipes build-local recipes/<name>
+
+# All supported platforms (skips tests on cross-targets)
+pixi run -e local-recipes build-local-all recipes/<name>
+
+# Download MacOSX SDK to ./SDKs/ for osx-* cross-builds
+pixi run -e local-recipes build-local-setup-sdk
+```
+
+### Per-platform build runners (Docker / native)
+
+These wrap `build-locally.py` and live in dedicated feature envs (`linux`,
+`osx`, `win`). Use them when you want the full per-platform variant matrix
+rather than a single rattler-build invocation.
+
+```bash
+pixi run -e linux build-linux            # all linux-* configs (Docker on host)
+pixi run -e osx build-osx                # all osx-* configs (native; macOS only)
+pixi run -e win build-win                # all win-* configs (native; Windows only)
+
+# Activation-script siblings — populate per-platform shell env (sourced auto by pixi)
+pixi run -e osx build-osx.env
+pixi run -e win build-win.env
+```
+
+### Cross-channel package intelligence (Atlas)
+
+```bash
+# Build / refresh the conda-forge atlas (~165 MB SQLite, ~10 min first time)
+pixi run -e local-recipes build-cf-atlas
+
+# Query the atlas for a single package
+pixi run -e local-recipes query-cf-atlas <name>
+
+# Atlas summary stats
+pixi run -e local-recipes stats-cf-atlas
+
+# Detail card with cross-channel + anaconda.org build matrix.
+# Add --vdb in the vuln-db env for multi-source CVE lookup.
+pixi run -e local-recipes detail-cf-atlas <name>
+pixi run -e vuln-db detail-cf-atlas <name> --vdb
+```
+
+### Vulnerability scanning (vuln-db env)
+
+```bash
+# Build / refresh the AppThreat multi-source vulnerability DB (~5–10 min)
+pixi run -e vuln-db vdb-refresh
+
+# Refresh the lighter OSV CVE DB used by scan-vulnerabilities
 pixi run -e local-recipes update-cve-db
+
+# Scan a recipe's pinned deps using the local OSV DB
+pixi run -e local-recipes scan-vulnerabilities recipes/<name>/recipe.yaml
+
+# Scan a project tree (or --github URL) across pixi.lock, pixi.toml, Cargo.lock,
+# requirements.txt, pyproject.toml, environment.yml, Containerfile.
+# Add --os for OS-level CVEs, --brief for summary, --sbom {cyclonedx,spdx}.
+pixi run -e vuln-db scan-project <path-or-dir>
+pixi run -e vuln-db scan-project --github <owner>/<repo>
+
+# Inventory a channel/mirror (conda repodata.json, PyPI Simple, npm, crates.io).
+# JFrog auth via env vars; --diff for upstream comparison; --health for mirror signals.
+pixi run -e vuln-db inventory-channel <url-or-file>
+```
+
+### Maintenance & sync
+
+```bash
+# Refresh the PyPI ↔ conda name mapping cache (also: update_mapping_cache MCP tool)
 pixi run -e local-recipes update-mapping-cache
 
-# Run the PyPI "autotick" bot on a recipe (also: update_recipe MCP tool)
-pixi run -e local-recipes autotick recipes/<name>/recipe.yaml
+# Sync with upstream conda-forge/staged-recipes (rebases local commits)
+pixi run -e local-recipes sync-upstream-conda-forge
+
+# Pull the latest from the public GitHub fork (rebase/merge local commits)
+pixi run -e local-recipes sync-upstream-public-fork
+
+# Submit a finished recipe to conda-forge (also: submit_pr MCP tool; use --dry-run first)
+pixi run -e local-recipes submit-pr <recipe-name>
+
+# Match a build error log against known failure patterns
+pixi run -e local-recipes analyze-failure <path-to-error-log>
 ```
+
+### Tests
+
+```bash
+# Offline / fast subset
+pixi run -e local-recipes test
+
+# Full suite incl. live-network tests
+pixi run -e local-recipes test-all
+
+# Coverage report
+pixi run -e local-recipes test-coverage
+
+# Run test-recipes.py (random / targeted recipe smoke validation)
+pixi run -e local-recipes test-recipes
+```
+
+### Enterprise routing (JFrog Artifactory, internal mirrors)
+
+Routing is **runtime-driven** via `_http.py`; nothing enterprise-specific lives in the committed `pixi.toml`. Set whichever env vars apply before `pixi run`:
+
+```bash
+# JFrog auth — first match wins (API key beats user/pass)
+export JFROG_API_KEY=...                 # → X-JFrog-Art-Api header
+# or:
+export JFROG_USERNAME=... JFROG_PASSWORD=...   # → Basic auth
+
+# GitHub API auth (only attached to *.github.com hosts; never leaks elsewhere)
+export GITHUB_TOKEN=...                  # or GH_TOKEN
+
+# Mirror redirection
+export CONDA_FORGE_BASE_URL=https://artifactory.example.com/artifactory/conda-forge
+export ANACONDA_API_BASE=https://artifactory.example.com/artifactory/anaconda
+export GITHUB_API_BASE=https://github.example.com/api/v3
+
+# System trust roots (override only if your CA bundle isn't at the default)
+export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
+# Or use ~/.netrc for any host (Basic auth, picked up automatically)
+# machine artifactory.example.com login alice password ...
+```
+
+See `docs/enterprise-deployment.md` for the full air-gapped setup.
