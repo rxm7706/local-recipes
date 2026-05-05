@@ -429,6 +429,10 @@ langchain-mcp-adapters = ">=0.2.2"
 lumen-ai-anthropic = ">=1.0.0"
 mcp = ">=1.27.0"
 pydantic-ai = ">=1.61.0"
+ollama = ">=0.20.7"
+llama-cpp-python = ">=0.3.16"
+"llama.cpp" = ">=6191"
+#"whisper.cpp" = ">=1.8.3"
 #litellm = ">=1.83.14"
 #acp-sdk  1.0.3 # NOT FOUND - Archived
 #django-mcp 0.3.1 # NOT FOUND - Archived
