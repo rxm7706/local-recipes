@@ -11,9 +11,9 @@ license-file = "LICENSE.txt"
 authors = ["@conda-forge/core"]
 channels = ["conda-forge"]
 platforms = [
-    "linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"
+    "linux-64", "osx-arm64", "win-64"
     # TODO: add here and below in `feature.win` when possible
-    # "win-arm64"
+    # "win-arm64", "linux-aarch64", "osx-64",
 ]
 
 [feature.python.dependencies]
@@ -22,8 +22,8 @@ pixi = ">=0.67.2"
 gh = ">=2.92.0"
 nodejs = ">=24.14.1,24.*"  # Pin to LTS version
 bmad-method = ">=6.6.0"
-spec-kit = ">=0.8.4"
-truststore = ">=0.10.1"  # OS trust store for corporate CA / JFrog TLS
+spec-kit = ">=0.8.5"
+truststore = ">=0.10.4"  # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
 [feature.build.dependencies]
@@ -280,15 +280,15 @@ cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py"
 # Subsequent refreshes are incremental.
 
 [feature.vuln-db]
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
 
 [feature.vuln-db.dependencies]
 python = "3.12.*"
-conda-forge-metadata = "*"  # so --deep also works in this env
+conda-forge-metadata = ">=0.13.0"  # so --deep also works in this env
 # truststore lives in [feature.python.dependencies] — included via the python feature
 
 [feature.vuln-db.pypi-dependencies]
-appthreat-vulnerability-db = { version = "*", extras = ["all"] }
+appthreat-vulnerability-db = { version = ">=6.0.13", extras = ["all"] }
 
 [feature.vuln-db.activation.env]
 VDB_HOME = "$PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb"
@@ -343,7 +343,7 @@ cruft = ">=2.16.0"
 jinja2-ospath = ">=0.3.0"
 ## For Building Plain Python Projects
 # cibuildwheel = ">=3.2.1" # Dependency bashlex Failed for platform 'linux-aarch64'
-pip = ">=26.0.1"
+pip = ">=26.1.1"
 setuptools = ">=81.0.0"
 setuptools-scm = ">=9.2.2"
 hatchling = ">=1.29.0"
@@ -360,7 +360,7 @@ conda-tree = ">=1.1.2"
 feedrattler = ">=0.3.14"
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.67.2"
-rattler-build = ">=0.63.1"
+rattler-build = ">=0.64.1"
 pixi-build-rattler-build = ">=0.3.10"
 pixi-build-cmake = ">=0.3.11"
 pixi-build-python = ">=0.4.8"
@@ -374,8 +374,9 @@ pixi-pack = ">=0.7.6"
 pixi-pycharm = ">=0.0.11"
 pixi-unpack = ">=0.7.6"
 py-rattler = ">=0.22.0"
-py-rattler-build = ">=0.63.1"
+py-rattler-build = ">=0.64.1"
 ## Document processing & conversion (markitdown + adjacent ecosystem)
+# mark  # Interact with LLMs using markdown and images
 defusedxml = ">=0.7.1"
 lxml = ">=6.1.0"
 markitdown = ">=0.1.5"
@@ -386,6 +387,7 @@ pdf2image = ">=1.17.0"
 pdfplumber = ">=0.11.9"
 pillow = ">=12.2.0"
 poppler = ">=26.2.0"
+pymupdf = ">=1.27.2.2"
 pypdf = ">=6.10.2"
 python-docx = ">=1.2.0"
 python-pptx = ">=1.0.2"
@@ -413,18 +415,28 @@ pytest-mock = ">=3.15.1"
 pytest-cov = ">=7.1.0"
 pytest-xdist = ">=3.8.0"
 playwright = ">=1.59.1"
-mcp = ">=1.27.0"
-fastmcp = ">=3.2.4"
-fasta2a = ">=0.6.0"
+## MCP, A2A & conversion (MCP + adjacent ecosystem)
+#aichat = ">=0.30.0"
+a2a-sdk = ">=1.0.2"  # Official Python SDK for the Agent2Agent (A2A) Protocol
+anthropic = ">=0.76.0"
+claude-agent-acp = ">=0.23.1"  # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 django-mcp-server = ">=0.5.7"
+fasta2a = ">=0.6.0"
+fastmcp = ">=3.2.4"
+github-copilot-sdk =">=0.1.22"
+langchain-anthropic = ">=1.3.1"
+langchain-mcp-adapters = ">=0.2.2"
+lumen-ai-anthropic = ">=1.0.0"
+mcp = ">=1.27.0"
+pydantic-ai = ">=1.61.0"
+#litellm = ">=1.83.14"
 #acp-sdk  1.0.3 # NOT FOUND - Archived
 #django-mcp 0.3.1 # NOT FOUND - Archived
-#mcp-django 0.12.0 # NOT FOUND - To Add
+#mcp-django 0.12.0 # NOT FOUND - Dev Only
 #acp-mcp 0.4.2 # NOT FOUND - Archived
-#acp-mcp-server 0.0.5 # NOT FOUND - To Add
-#a2a-sdk = ">=0.3.10,<1" # NOT FOUND - To Add
-#agntcy-acp = ">=1.5.2,<2" # NOT FOUND - To Add
-#python-a2a = ">=0.5.10,<1" # NOT FOUND - To Add
+#acp-mcp-server 0.0.5 # NOT FOUND - - Archived
+#agntcy-acp = ">=1.5.2,<2" # NOT FOUND - - Archived
+#python-a2a = ">=0.5.10,<1" # NOT FOUND - No updates
 yamllint = ">=1.38.0"
 taplo = ">=0.10.0"
 moto = ">=5.2.0"
@@ -440,7 +452,7 @@ requests = ">=2.33.1"
 python = "3.12.*"
 pixi = ">=0.67.2"
 conda = ">=26.3.2"
-pip = ">=26.0.1"
+pip = ">=26.1.1"
 uv = ">=0.11.8"
 
 #[pypi-dependencies]
