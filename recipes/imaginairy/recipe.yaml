@@ -1,0 +1,85 @@
+schema_version: 1
+
+context:
+  version: "15.0.0"
+
+package:
+  name: imaginairy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/imaginairy/imaginAIry-${{ version }}.tar.gz
+  sha256: 99d328ffef4c990fdb93ea54f873b0a5fb7bdb58592164f06a2ae23f7bfbacc7
+
+build:
+  number: 0
+  skip: match(python, "<3.10")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - click >=8.0.0
+    - click-help-colors >=0.9.1
+    - click-shell >=2.0
+    - protobuf !=3.19.5,!=3.20.2
+    - fastapi >=0.70.0
+    - ftfy >=6.0.1
+    - pytorch >=2.1.0
+    - numpy >=1.22.0
+    - tqdm >=4.64.0
+    - diffusers >=0.30.3
+    - pillow >=9.1.0
+    - psutil >5.7.3
+    - omegaconf >=2.1.1
+    - open-clip-torch >=2.0.0
+    - opencv >=4.4.0.46
+    - pydantic >=2.3.0
+    - pyparsing >=3.0.0
+    - requests >=2.28.1
+    - jaxtyping >=0.2.23
+    - einops >=0.3.0
+    - safetensors >=0.4.0
+    - scipy >=1.8
+    - termcolor
+    - timm !=0.9.0,!=0.9.1,>=0.4.12
+    - torchdiffeq >=0.2.0
+    - torchvision >=0.13.1
+    - transformers >=4.19.2
+    - kornia >=0.6
+    - uvicorn >=0.16.0
+    - spandrel >=0.1.8  # TBD for Conda-Forge
+    - optimum-quanto >=0.2.4  # TBD for Conda-Forge
+    - sentencepiece >=0.2.0
+    - accelerate >=0.24.0
+    - if: not darwin and linux
+      then: triton >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - imaginairy
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: AI imagined images. Pythonic generation of images.
+  license: MIT
+  license_file:
+    - LICENSE
+    - imaginairy/http_app/stablestudio/dist/LICENSE
+    - imaginairy/vendored/noodle_soup_prompts/LICENSE
+  homepage: https://pypi.org/project/imaginAIry/
+  repository: https://github.com/brycedrennan/imaginAIry
+  documentation: https://github.com/brycedrennan/imaginAIry/blob/master/README.md
+
+extra:
+  recipe-maintainers:
+    - brycedrennan
+    - jan-janssen
+    - rxm7706
