@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-magic
+  version: "0.4.27"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c1ba14b08e4a5f5c31a302b7721239695b2f0f058d125bd5ce1ee36b9d9d3c3b
+  patches:
+    - 0001-load-magic-file.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - libmagic
+    - python >=${{ python_min }}
+    # Windows support: requires libmagic.dll (provided by the local `file`
+    # recipe via the julian-r/file-windows MSVC port). python-magic 0.4.27's
+    # magic/loader.py searches for `libmagic` via ctypes.util.find_library,
+    # which finds %CONDA_PREFIX%\Library\bin\libmagic.dll when the env is
+    # activated — no patch required on the python-magic side.
+
+tests:
+  - python:
+      imports:
+        - magic
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - python -c "import magic; magic.Magic()"
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/ahupp/python-magic
+  repository: https://github.com/ahupp/python-magic
+  license: MIT
+  license_file: LICENSE
+  summary: File type identification using libmagic
+  description: |
+    python-magic is a Python interface to the libmagic file type identification
+    library. libmagic identifies file types by checking their headers against
+    a predefined list of known file types. This functionality is exposed via
+    the file command on most UNIX-like systems.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
