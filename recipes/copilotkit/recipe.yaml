@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.88"
+  python_min: "3.10"
+
+package:
+  name: copilotkit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/copilotkit/copilotkit-${{ version }}.tar.gz
+  sha256: 4e5e8cfb8833940b61684f73baacab2e0c11d72258fa5c6d01f5e8b87b3ebab5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - langgraph >=0.3.25,<2
+    - langchain >=0.3.0
+    - ag-ui-langgraph >=0.0.35
+    - ag-ui-protocol >=0.1.15
+    - fastapi >=0.115.0,<1.0.0
+    - partialjson >=0.0.8,<0.0.9
+    - toml >=0.10.2,<0.11.0
+    - pydantic-core >=2.35.0
+#  run_constraints:
+#    - if: match(python, ">=3.10") and match(python, "<3.14")
+#      then: crewai >=0.118.0
+
+tests:
+  - python:
+      imports:
+        - copilotkit
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  homepage: https://github.com/CopilotKit/CopilotKit
+  summary: "CopilotKit is an open-source framework for building AI copilots that assist users in various tasks by leveraging large language models and other AI technologies."
+  license: MIT
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

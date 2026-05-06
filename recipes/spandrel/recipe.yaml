@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.2"
+  python_min: "3.10"
+
+package:
+  name: spandrel
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/spandrel/spandrel-${{ version }}.tar.gz
+  sha256: fefa4ea966c6a5b7721dcf24f3e2062a5a96a395c8bedcb570fb55971fdcbccb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=46.4.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pytorch
+    - torchvision
+    - safetensors
+    - numpy
+    - einops
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - spandrel
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: Give your project support for a variety of PyTorch model architectures, including auto-detecting model architecture from just .pth files. spandrel gives you arch support.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/spandrel/
+  repository: https://github.com/chaiNNer-org/spandrel
+
+
+extra:
+  recipe-maintainers:
+    - rxm7706

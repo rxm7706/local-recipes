@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.8.0"
+  python_min: "3.10"
+
+package:
+  name: pyinfra
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyinfra/pyinfra-${{ version }}.tar.gz
+  sha256: a00562c9cb87d8a911c9d08035885f341bb423a93488ebd2e1fce594b104c0e2
+
+build:
+  number: 0
+  skip: py>=400 or match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pyinfra = pyinfra_cli.main:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - uv-dynamic-versioning
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - gevent >=1.5
+    - paramiko >=2.11,<5
+    - click >2
+    - jinja2 >3,<4
+    - python-dateutil >2,<3
+    - typeguard >=4,<5
+    - distro >=1.6,<2
+    - packaging >=16.1
+    - pydantic >=2.11,<3
+    - typing_extensions
+    - types-paramiko >=2.7,<5
+
+tests:
+  - python:
+      imports:
+        - pyinfra
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - pyinfra --help
+
+about:
+  summary: pyinfra automates/provisions/manages/deploys infrastructure.
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://pypi.org/project/pyinfra/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
