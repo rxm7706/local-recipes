@@ -17,6 +17,7 @@ source "${FEEDSTOCK_ROOT}/.scripts/logging_utils.sh"
 
 export PYTHONUNBUFFERED=1
 export CI_SUPPORT="/home/conda/staged-recipes-copy/.ci_support"
+export RATTLER_CACHE_DIR="${FEEDSTOCK_ROOT}/build_artifacts/pkg_cache"
 
 cat >~/.condarc <<CONDARC
 always_yes: true
@@ -56,32 +57,10 @@ ls -la ~/staged-recipes-copy/recipes
 echo "Finding recipes merged in main and removing them from the build."
 pushd "${FEEDSTOCK_ROOT}/recipes" > /dev/null
 if [ "${CI:-}" != "" ]; then
-    git fetch --force --update-head-ok origin main:main
+    git fetch --force origin main:main
 fi
 shopt -s extglob dotglob
-# Skip removal for TEST_RECIPE if set (for local testing)
-if [ -n "${TEST_RECIPE:-}" ]; then
-    # Remove ALL recipes except TEST_RECIPE (for testing a single recipe)
-    echo "TEST_RECIPE is set to: ${TEST_RECIPE}"
-    echo "Removing all recipes except: ${TEST_RECIPE}"
-    cd /home/conda/staged-recipes-copy/recipes || exit 1
-    for recipe_dir in */; do
-        recipe_name=$(basename "$recipe_dir")
-        if [ "$recipe_name" != "${TEST_RECIPE}" ]; then
-            echo "Removing recipe: $recipe_name"
-            rm -rf "$recipe_dir"
-        else
-            echo "Keeping recipe: $recipe_name"
-        fi
-    done
-    echo "After removal, recipes directory contains:"
-    ls -la /home/conda/staged-recipes-copy/recipes | head -20
-    echo "Total recipe count: $(ls -1 /home/conda/staged-recipes-copy/recipes | wc -l)"
-    cd "${FEEDSTOCK_ROOT}/recipes" || exit 1
-else
-    # Normal mode: remove all from main except example/example-v1
-    git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf /home/conda/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
-fi
+git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
 shopt -u extglob dotglob
 popd > /dev/null
 
@@ -106,11 +85,7 @@ conda index "${FEEDSTOCK_ROOT}/build_artifacts"
 ( endgroup "Configuring conda" ) 2> /dev/null
 
 echo "Building all recipes"
-echo "Checking build_all.py file:"
-ls -la "${CI_SUPPORT}/build_all.py"
-echo "First 50 lines of build_all.py:"
-head -50 "${CI_SUPPORT}/build_all.py"
-python -u "${CI_SUPPORT}/build_all.py"
+python "${CI_SUPPORT}/build_all.py"
 
 ( startgroup "Inspecting artifacts" ) 2> /dev/null
 # inspect_artifacts was only added in conda-forge-ci-setup 4.6.0; --all-packages in 4.9.3
