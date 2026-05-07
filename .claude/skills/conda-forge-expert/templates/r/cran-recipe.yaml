@@ -6,6 +6,10 @@ context:
   name: REPLACE_NAME
   version: "REPLACE_VERSION"
   posix_name: ${{ name | replace("-", "_") }}
+  # conda-forge global pin; current matrix is r_base 4.4 + 4.5 (verified May 2026).
+  # Override here if upstream needs a specific version. The cross-r-base build
+  # requirement below uses this value.
+  r_base: "4.4"
 
 package:
   name: r-${{ name | lower }}

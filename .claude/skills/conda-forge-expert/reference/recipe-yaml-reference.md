@@ -191,13 +191,15 @@ build:
 
 ### Skip Conditions
 
-The conda-forge build matrix already starts at Python 3.10 (3.9 dropped Aug 2025), so `py < 310` is a no-op. Only set a `py < ...` skip if upstream requires a higher floor.
+The conda-forge build matrix is `3.10, 3.11, 3.12, 3.13, 3.14` (3.9 dropped Aug 2025), so any `py < 310` skip would be a no-op. Use `match(python, "<X.Y")` for higher floors.
+
+> ⚠ **`py < N` is meta.yaml (v0) syntax — silently ignored by rattler-build in v1 recipe.yaml.** rattler-build does not auto-inject a `py` integer variable from the `python` variant string in staged-recipes/local builds, so `py < 311` evaluates against an undefined symbol and never fires. Verified empirically in cocoindex PR #33231 (May 2026). Always use `match(python, ...)` in v1.
 
 ```yaml
 build:
   skip:
     - win                          # Skip on Windows
-    - py < 311                     # Upstream requires Python >= 3.11
+    - match(python, "<3.11")       # Upstream requires Python >= 3.11 (e.g. uses tomllib)
     - linux and aarch64            # Skip Linux ARM64
 ```
 
