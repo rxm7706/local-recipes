@@ -286,15 +286,27 @@ def analyze_build_failure(error_log: str, first_only: bool = False) -> str:
 def optimize_recipe(recipe_path: str) -> str:
     """Lints a recipe for optimizations and conda-forge best practices.
 
+    Accepts a path to a recipe file (recipe.yaml/meta.yaml) or its containing
+    directory; the optimizer auto-finds the recipe inside.
+
     Check codes:
       DEP-001  Dev dependency (pytest, ruff, etc.) found in run requirements.
       DEP-002  noarch:python recipe with Python upper-bound in run instead of run_constrained.
       PIN-001  Exact-version (==) pin in run requirements — blocks security updates.
       ABT-001  Missing license_file in about section.
+      ABT-002  v0/meta.yaml about-field names (dev_url/doc_url/home/license_family) used in v1
+               recipe — rattler-build silently ignores them; suggests v1 names.
       SCRIPT-001  'sudo' used in build.sh — builds must not require root.
       SCRIPT-002  'pip install --upgrade' in build.sh — breaks reproducibility.
       SEL-001  Recipe restricted to one platform; redundant if/then conditions may be removable.
       SEL-002  noarch:python recipe missing python_min context variable (CFEP-25).
+      SEL-003  v0-style 'py < N' selector in v1 build.skip — silently ignored by rattler-build;
+               suggests match(python, ...) form.
+      STD-001  compiler() used without stdlib() — CRITICAL, causes CI rejection.
+      STD-002  Both meta.yaml and recipe.yaml present — format mixing is rejected.
+      SEC-001  Source URL without sha256 checksum.
+      TEST-001  Missing tests section.
+      MAINT-001  Missing recipe-maintainers in extra section.
     """
     args = [recipe_path]
     result = _run_script(RECIPE_OPTIMIZER_SCRIPT, args)

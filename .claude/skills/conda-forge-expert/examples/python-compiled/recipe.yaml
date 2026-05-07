@@ -18,7 +18,10 @@ build:
   number: 0
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   # No skip needed: conda-forge build matrix starts at Python 3.10 (Aug 2025).
-  # Add a skip only if upstream requires a higher floor (e.g. py < 311).
+  # Add a skip only if upstream requires a higher floor:
+  #   skip:
+  #     - match(python, "<3.11")
+  # `py < N` is silently ignored by rattler-build v1 — always use match(python, ...).
 
 requirements:
   build:

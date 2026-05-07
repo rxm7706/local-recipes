@@ -79,12 +79,12 @@ requirements:
 build:
   skip:
     - win                          # Skip on Windows
-    - py < 311                     # Require Python >= 3.11 (floor is already 3.10)
+    - match(python, "<3.11")       # Require Python >= 3.11 (floor is already 3.10)
     - linux and aarch64            # Skip Linux ARM64
     - osx and x86_64               # Skip macOS Intel
 ```
 
-> The conda-forge build matrix already starts at Python 3.10 (3.9 dropped Aug 2025), so `py < 310` is a no-op. Only set a `py < ...` skip when upstream actually requires a higher Python floor.
+> ⚠ **`py < N` is a meta.yaml v0 selector and is silently ignored in v1 recipe.yaml.** rattler-build does not auto-inject the integer `py` variable from the `python` variant string in conda-forge staged-recipes / local builds; the condition evaluates against an undefined symbol and never fires. Use `match(python, "<3.X")` instead. Verified empirically in cocoindex PR #33231 (May 2026). The conda-forge build matrix already starts at Python 3.10 (3.9 dropped Aug 2025), so any `<3.10` skip would be a no-op anyway.
 
 ## meta.yaml Selectors (Legacy Format)
 
@@ -311,16 +311,18 @@ build:
 
 ### Python version constraints
 
-The conda-forge build matrix is `3.10, 3.11, 3.12, 3.13, 3.14` (3.9 dropped Aug 2025). `py < 310` is a no-op — only set a `py < ...` skip when upstream genuinely requires a higher floor.
+The conda-forge build matrix is `3.10, 3.11, 3.12, 3.13, 3.14` (3.9 dropped Aug 2025). Any `<3.10` skip is a no-op — only set a skip when upstream requires a higher floor.
+
+**Critical:** v1 recipe.yaml uses `match(python, ...)`. The v0 `py < N` form is silently ignored by rattler-build (verified in cocoindex PR #33231).
 
 ```yaml
-# recipe.yaml
+# recipe.yaml — v1 form
 build:
   skip:
-    - py < 311                   # Upstream requires Python >= 3.11 (e.g. uses tomllib)
-    - py >= 314                  # Not yet compatible with 3.14
+    - match(python, "<3.11")     # Upstream requires Python >= 3.11 (e.g. uses tomllib)
+    - match(python, ">=3.14")    # Not yet compatible with 3.14
 
-# meta.yaml
+# meta.yaml — v0 form (legacy, conda-build only)
 build:
   skip: true  # [py<311]
   skip: true  # [py>=314]

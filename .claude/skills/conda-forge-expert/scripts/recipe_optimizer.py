@@ -6,15 +6,17 @@ Goes beyond basic validation and checks for common anti-patterns, suggesting
 improvements for dependency placement, redundant selectors, security, and
 conda-forge best practices.
 
-Check codes (11 total):
+Check codes (14 total):
   DEP-001  Dev dependency in run requirements
   DEP-002  noarch:python Python upper bound in run (should be run_constrained)
   PIN-001  Exact version pin in run requirements
   ABT-001  Missing license_file in about section
+  ABT-002  v0/meta.yaml about-field names used in v1 recipe.yaml (silently ignored)
   SCRIPT-001  sudo used in build.sh
   SCRIPT-002  pip install --upgrade in build.sh
   SEL-001  Redundant platform skip conditions
   SEL-002  Incomplete CFEP-25 python_min triad for noarch:python
+  SEL-003  Bare `py < N` selector in v1 recipe.yaml build.skip (use match(python, ...))
   STD-001  compiler() used without stdlib() — CRITICAL, causes CI rejection
   STD-002  Both meta.yaml and recipe.yaml present — format mixing is rejected
   SEC-001  Source URL without sha256 checksum
@@ -170,8 +172,23 @@ def analyze_pinning(data: Dict) -> List[OptimizationSuggestion]:
     return suggestions
 
 
+_V0_TO_V1_ABOUT_FIELDS = {
+    "home": "homepage",
+    "dev_url": "repository",
+    "doc_url": "documentation",
+    "doc_source_url": "documentation",
+    "license_family": None,  # removed in v1; not replaced
+}
+
+
 def analyze_about_section(data: Dict) -> List[OptimizationSuggestion]:
-    """Check about section for conda-forge required fields (ABT-001)."""
+    """Check about section for conda-forge required fields and v0/v1 field-name mismatches.
+
+    ABT-001  Missing license_file
+    ABT-002  v0 (meta.yaml) about-field names used in v1 recipe.yaml — rattler-build
+             silently accepts unknown keys, so these become a data-loss bug rather than
+             a validation error. Verified against prefix-dev/recipe-format $defs.About.
+    """
     suggestions = []
     about = data.get("about", {}) or {}
 
@@ -186,6 +203,30 @@ def analyze_about_section(data: Dict) -> List[OptimizationSuggestion]:
             ),
             confidence=0.95,
         ))
+
+    # ABT-002 only applies to v1 recipes — v0 meta.yaml legitimately uses these names.
+    if data.get("schema_version") == 1:
+        for v0_name, v1_name in _V0_TO_V1_ABOUT_FIELDS.items():
+            if v0_name in about:
+                if v1_name is None:
+                    msg = (
+                        f"'about.{v0_name}' is a v0 (meta.yaml) field with no v1 equivalent — "
+                        "rattler-build silently ignores it."
+                    )
+                    sug = f"Remove 'about.{v0_name}'."
+                else:
+                    msg = (
+                        f"'about.{v0_name}' is the v0 (meta.yaml) field name; "
+                        f"v1 recipe.yaml expects '{v1_name}'. rattler-build silently ignores "
+                        "unknown keys, so the value is lost in the built package."
+                    )
+                    sug = f"Rename 'about.{v0_name}' → 'about.{v1_name}'."
+                suggestions.append(OptimizationSuggestion(
+                    code="ABT-002",
+                    message=msg,
+                    suggestion=sug,
+                    confidence=1.0,
+                ))
 
     return suggestions
 
@@ -216,8 +257,13 @@ def analyze_build_script(recipe_dir: Path) -> List[OptimizationSuggestion]:
 
     return suggestions
 
+_PY_SELECTOR_RE = re.compile(r"^\s*py\s*[<>=!]+\s*\d+\s*$")
+
+
 def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
-    """Analyzes platform selectors (SEL-001) and CFEP-25 python_min compliance (SEL-002)."""
+    """Analyzes platform selectors (SEL-001), CFEP-25 python_min compliance (SEL-002),
+    and v0-style `py < N` selectors in v1 recipes (SEL-003).
+    """
     suggestions = []
 
     build_section = data.get("build", {}) or {}
@@ -241,6 +287,27 @@ def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
                 suggestion=f"Review if/then conditionals already limited to '{sole_platform}' — they may be removable.",
                 confidence=0.7,
             ))
+
+    # --- SEL-003: v0-style `py < N` selector in v1 recipe (silently ignored) ---
+    # Empirical: rattler-build v0.64 does not inject a `py` integer variable from the
+    # `python` variant string in staged-recipes-style builds, so `py < 311` evaluates
+    # against an undefined symbol and never fires. cocoindex PR #33231 case study.
+    # Use `match(python, "<3.11")` instead.
+    if data.get("schema_version") == 1 and isinstance(skip_value, list):
+        for entry in skip_value:
+            if isinstance(entry, str) and _PY_SELECTOR_RE.match(entry):
+                suggestions.append(OptimizationSuggestion(
+                    code="SEL-003",
+                    message=(
+                        f"v1 recipe.yaml uses bare '{entry.strip()}' selector — this is "
+                        "conda-build (meta.yaml v0) form and is silently ignored by rattler-build."
+                    ),
+                    suggestion=(
+                        f"Replace '{entry.strip()}' with the rattler-build form, e.g. "
+                        "'match(python, \"<3.11\")'. See reference/selectors-reference.md."
+                    ),
+                    confidence=1.0,
+                ))
 
     # --- SEL-002: CFEP-25 python_min for noarch:python ---
     # Checks all three required locations: context, host, run, and tests python block.
@@ -490,15 +557,28 @@ def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
 
 def main():
     parser = argparse.ArgumentParser(description="Lint a conda recipe for optimizations and best practices.")
-    parser.add_argument("recipe_path", type=Path, help="Path to the recipe file (meta.yaml or recipe.yaml).")
-    
+    parser.add_argument("recipe_path", type=Path, help="Path to a recipe file (recipe.yaml/meta.yaml) or its directory.")
+
     args = parser.parse_args()
 
-    if not args.recipe_path.exists():
-        print(json.dumps({"success": False, "error": f"File not found: {args.recipe_path}"}))
+    recipe_path: Path = args.recipe_path
+    if not recipe_path.exists():
+        print(json.dumps({"success": False, "error": f"Path not found: {recipe_path}"}))
         sys.exit(1)
 
-    suggestions = optimize_recipe(args.recipe_path)
+    # Accept a directory and resolve to recipe.yaml or meta.yaml inside it.
+    # Without this, callers passing a directory got a silent 0-suggestions
+    # response — the file_format detection in optimize_recipe() needs a real file.
+    if recipe_path.is_dir():
+        for candidate in ("recipe.yaml", "meta.yaml"):
+            if (recipe_path / candidate).exists():
+                recipe_path = recipe_path / candidate
+                break
+        else:
+            print(json.dumps({"success": False, "error": f"No recipe.yaml or meta.yaml in {recipe_path}"}))
+            sys.exit(1)
+
+    suggestions = optimize_recipe(recipe_path)
     
     output = {
         "success": True,

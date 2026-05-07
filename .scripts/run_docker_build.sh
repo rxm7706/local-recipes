@@ -63,7 +63,6 @@ docker run ${DOCKER_RUN_ARGS} \
            -e CI \
            -e CPU_COUNT \
            -e DEFAULT_LINUX_VERSION \
-           -e TEST_RECIPE \
            "${DOCKER_IMAGE}" \
            bash \
            "/home/conda/staged-recipes/${PROVIDER_DIR}/build_steps.sh"

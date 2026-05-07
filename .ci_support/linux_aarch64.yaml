@@ -3,7 +3,7 @@ c_stdlib_version:
 c_stdlib:
 - sysroot
 cdt_name:
-- conda
+- cos7
 c_compiler:
 - gcc
 cxx_compiler:
@@ -26,11 +26,3 @@ cuda_compiler_version:
 - None
 cuda_compiler_version_min:
 - None
-pin_run_as_build:
-  python:
-    min_pin: x.x
-    max_pin: x.x
-python:
-- 3.12.* *_cpython
-python_min:
-- '3.9'
