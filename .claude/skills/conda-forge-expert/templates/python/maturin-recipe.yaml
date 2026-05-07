@@ -22,8 +22,9 @@ build:
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   # Conda-forge floor is Python 3.10 (Aug 2025). Add a skip only if the
   # upstream package or maturin requires a higher Python floor.
+  # `py < N` is silently ignored by rattler-build v1 — use match(python, ...).
   # skip:
-  #   - py < 311
+  #   - match(python, "<3.11")
 
 requirements:
   build:

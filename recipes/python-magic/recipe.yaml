@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: python-magic
   version: "0.4.27"
-  python_min: "3.10"
 
 package:
   name: ${{ name }}

@@ -497,16 +497,33 @@ skip:
 
 ```yaml
 # conda_build_config.yaml
-# CUDA — current default is 12.9; CUDA 11.8 was removed from the default
-# matrix in June 2025. Opt back into 11.8 by copying cuda118.yaml into
-# .ci_support/migrations/.
+# CUDA — active variants are 12.9 and 13.0 as of May 2026.
+# CUDA 11.8 was removed Jun 2025; the legacy opt-back via .ci_support/migrations/cuda118.yaml
+# no longer works (the migrations entry was removed from staged-recipes upstream).
 cuda_compiler_version:
   - "12.9"          # [linux or win]
+  - "13.0"          # [linux or win]
 
 # macOS SDK — minimum is 11.0 since Feb 2026.
 MACOSX_SDK_VERSION:
   - "11.0"          # [osx]
 ```
+
+### Active Variant Matrix (May 2026)
+
+The conda-forge staged-recipes repo ships these `.ci_support/*.yaml` variant configs:
+
+| Variant config | Platform | Purpose |
+|---|---|---|
+| `linux64.yaml` | linux-64 | Default Linux x86_64 build (no CUDA) |
+| `linux64_cuda129.yaml` | linux-64 | Linux x86_64 with CUDA 12.9 |
+| `linux64_cuda130.yaml` | linux-64 | Linux x86_64 with CUDA 13.0 |
+| `linux_aarch64.yaml` | linux-aarch64 | Linux ARM64 (no CUDA, NVIDIA Tegra excepted) |
+| `osx_64.yaml` | osx-64 | macOS Intel |
+| `osx_arm64.yaml` | osx-arm64 | macOS Apple Silicon (added May 2026) |
+| `win64.yaml` | win-64 | Windows x86_64 |
+
+`linux64.yaml` and `linux_aarch64.yaml` no longer pin `python: 3.12.* *_cpython` or set `python_min: '3.10'` (May 2026 upstream change). Recipes are now responsible for declaring their own `python_min` and Python matrix expectations — see SKILL.md § Python Version Policy rule #6.
 
 ### NVIDIA Tegra (ARM aarch64 SOC)
 

@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cocoindex
+  version: "1.0.3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: 1b242c348b501ec8b9836a626a1779a7f6185f479818dac73f7d9dd769d9b192
+  # cocoindex sdist omits LICENSE; Added to Recipe Folder or
+  # cocoindex sdist omits LICENSE; fetch from upstream GitHub tag
+  - url: https://raw.githubusercontent.com/cocoindex-io/cocoindex/v${{ version }}/LICENSE
+    sha256: c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4
+    file_name: LICENSE
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: |
+        export CFLAGS="${CFLAGS:-} -D_BSD_SOURCE -D_DEFAULT_SOURCE"
+        cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      else: |
+        cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip:
+    - match(python, "<3.11")
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1.10,<2.0
+  host:
+    - python
+    - pip
+    - maturin >=1.10,<2.0
+  run:
+    - python
+    - typing_extensions >=4.12
+    - click >=8.1.8
+    - rich >=14.0.0
+    - python-dotenv >=1.1.0
+    - watchfiles >=1.1.0
+    - numpy >=1.23.2
+    - psutil >=7.2.1
+    - msgspec >=0.19.0
+
+tests:
+  - python:
+      imports:
+        - cocoindex
+      pip_check: true
+  - script:
+      - cocoindex --help
+
+about:
+  homepage: https://cocoindex.io/
+  repository: https://github.com/cocoindex-io/cocoindex
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Incremental indexing engine for AI agents — keeps derived indexes fresh from source updates with minimal recomputation.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 6.1.0
+version: 6.2.2
 allowed-tools: [conda_forge_server]
 ---
 
@@ -352,6 +352,18 @@ test:
 3. **Compiled packages** — use `python >=3.10` directly; the build matrix handles versioning via the global pin; no `python_min` variable needed
 4. **Existing recipes with `python_min: "3.9"`** — `optimize_recipe` (SEL-002) will flag it; update to `"3.10"` unless the package genuinely cannot run on 3.10
 5. **Never downgrade below `3.10`** — will fail conda-forge CI
+6. **Recipes do NOT need `python_min` in context unless overriding the default** — the May 2026 upstream sync removed `python_min: '3.10'` and `python: 3.12.* *_cpython` from `.ci_support/linux64.yaml` and `linux_aarch64.yaml`, but those defaults still come from **`conda-forge-pinning`** (the canonical source upstream CI has always used). Recipes at the default `3.10` floor can — and should — write `${{ python_min }}` references throughout the CFEP-25 triad **without** declaring `python_min` in `context:`. Only override in `context:` when upstream `python_requires` demands a higher floor.
+
+   **Local rattler-build implication.** When invoking rattler-build directly (outside conda-forge CI), pass conda-forge-pinning as an additional variant config so `${{ python_min }}` resolves to its default:
+
+   ```bash
+   pixi run -e local-recipes rattler-build build \
+     --recipe recipes/<name>/recipe.yaml \
+     --variant-config .ci_support/linux64.yaml \
+     --variant-config .pixi/envs/local-recipes/conda_build_config.yaml
+   ```
+
+   The `local-recipes` pixi env already installs `conda-forge-pinning`; its `conda_build_config.yaml` lands at `.pixi/envs/local-recipes/conda_build_config.yaml`. Without the second `--variant-config`, recipes referencing `${{ python_min }}` will fail to render with `Template rendering failed: undefined value`.
 
 ---
 
@@ -595,11 +607,13 @@ When asking for help, link the failing PR/feedstock and the rendered build log �
 
 ---
 
-## Ecosystem Updates (Apr 2026)
+## Ecosystem Updates (May 2026)
 
 Recent conda-forge changes that affect recipe authoring. Cite the relevant entry in PR descriptions when applying these patterns.
 
 ### Build Tooling
+- **rattler-build v0.64.1 (May 4, 2026)** — Sharded repodata 501-error handling. Bug fix only.
+- **rattler-build v0.64.0 (Apr 28, 2026)** — Experimental V3 packages behind `--v3` flag: optional dependency `extras:` groups, `when:` conditional dependencies (e.g. `scipy [when="python>=3.10"]`), and variant-selection `flags:`. **Opt-in only**; recipes without `--v3` are unaffected.
 - **rattler-build v0.63.0 (Apr 22, 2026)** — Multi-output recipes no longer auto-discover per-output `build.sh`/`build.bat`. Each output that needs a script must declare `script: <name>` explicitly. Top-level (single-output) recipes are unchanged.
 - **rattler-build v0.62.0 (Apr 13, 2026)** — Three-mode `--env-isolation` flag: `strict` (default; remaps `$HOME`), `conda-build`, `none`. Build scripts that rely on inherited env vars must declare them in `build.script.env`.
 - **rattler-build v0.61.0 (Mar 19, 2026)** — `--debug` flag removed; use the dedicated `rattler-build debug` subcommand.
@@ -608,7 +622,8 @@ Recent conda-forge changes that affect recipe authoring. Cite the relevant entry
 - **macOS minimum is 11.0** (Feb 2026). `MACOSX_DEPLOYMENT_TARGET=10.x` builds will be rejected.
 - **macOS SDK directory**: `/opt/conda-sdks` since conda-smithy 3.54.0 (Dec 2025). Local builders must export `OSX_SDK_DIR=/opt/conda-sdks`.
 - **macOS Accelerate Framework** (Jul 2025) — new BLAS/LAPACK provider on macOS 13.3+ via shim library; switch with `conda install libblas=*=*_newaccelerate`.
-- **CUDA matrix** — current default is **12.9**; CUDA 11.8 was removed Jun 2025 (opt back in by copying `cuda118.yaml` to `.ci_support/migrations/`). NVIDIA Tegra (linux-aarch64 SOC) builds are supported on CUDA 12.9; CUDA 13.0+ uses SBSA so Tegra-specific builds are unnecessary.
+- **CUDA matrix** — active variants are **12.9** and **13.0** as of May 2026. CUDA 11.8 was removed Jun 2025; the previous opt-back instruction (copy `cuda118.yaml` to `.ci_support/migrations/`) **no longer works** — that file was removed from staged-recipes upstream. New explicit per-CUDA variant configs landed: `.ci_support/linux64_cuda129.yaml` + `linux64_cuda130.yaml`. NVIDIA Tegra (linux-aarch64 SOC) builds are supported on CUDA 12.9; CUDA 13.0+ uses SBSA so Tegra-specific builds are unnecessary.
+- **`osx-arm64` is now a first-class variant** (May 2026) — new `.ci_support/osx_arm64.yaml` exists alongside `osx_64.yaml`. Use `target_platform: osx-arm64` in recipes that need explicit ARM Mac handling. macOS deployment target remains 11.0.
 - **MPI external label** (Jan 29, 2026) — external MPI builds were moved to `conda-forge/label/mpi-external`. Old external MPI packages on `main` were marked broken.
 
 ### Policy
@@ -616,6 +631,105 @@ Recent conda-forge changes that affect recipe authoring. Cite the relevant entry
 - **CFEP-26** — Guidelines for (re)naming packages (newly accepted). Consult before renaming a package or filing a name dispute.
 - **License identifiers must be SPDX** — case-sensitive (e.g., `Apache-2.0`, not `APACHE 2.0`); compound licenses use SPDX expressions (`Apache-2.0 WITH LLVM-exception`).
 - **Bundled-language licensing** (Rust, Go) — use `cargo-bundle-licenses` / `go-licenses` and ship a `THIRDPARTY.yml` alongside `LICENSE` (already encoded in the maturin and Go templates).
+
+---
+
+## Recipe Authoring Gotchas
+
+Patterns that look right but fail silently or produce broken recipes. Each entry includes the symptom, why it happens, and the correct form. Case studies cited where relevant.
+
+### G1. `script:` list entries run in separate shells — env vars do NOT carry across entries
+
+**Symptom**: an `export FOO=bar` in one script entry has no effect in the next entry. `pip install` later in the script doesn't see `CFLAGS` you set earlier.
+
+**Why**: rattler-build evaluates each top-level item under `build.script:` (when given as a YAML list) as an independent shell invocation. Shell state — env vars, `cd`, function definitions — does not survive between entries.
+
+**Fix**: choose one of three patterns:
+
+```yaml
+# (a) Single multi-line entry — exports persist into the same shell
+build:
+  script:
+    - if: unix
+      then: |
+        export CFLAGS="${CFLAGS:-} -D_BSD_SOURCE -D_DEFAULT_SOURCE"
+        cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+```
+
+```yaml
+# (b) script.env: static map — works when the value is fixed (no shell expansion)
+build:
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+```
+
+```yaml
+# (c) Dedicated build.sh / build.bat — for complex logic
+build:
+  script:
+    file: build.sh        # relative to recipe directory
+```
+
+**`script.env:` does NOT shell-expand `${VAR}`** — values are treated as literal strings. To append to an existing env var, use pattern (a) or (c).
+
+**Case study**: cocoindex PR #33231 (May 2026). The recipe needed `CFLAGS=-D_BSD_SOURCE -D_DEFAULT_SOURCE` to compile tree-sitter under GCC 14 + glibc 2.17 sysroot (`le16toh`/`be16toh` implicit declaration). First attempt put `export` in a separate script entry; it did not reach `pip install`. Fixed by collapsing into one multi-line `then: |` block.
+
+### G2. v0/meta.yaml field names in v1 recipe.yaml are silently ignored
+
+**Symptom**: rattler-build builds the package without warning, but `about.dev_url`, `about.doc_url`, `about.home`, or `about.license_family` is missing from the resulting metadata. Users see incomplete project links on conda-forge.org.
+
+**Why**: rattler-build's recipe-format schema only recognizes the v1 names (`repository`, `documentation`, `homepage`). Unknown keys under `about:` are accepted but discarded — no schema-validation error.
+
+**Fix**: use the v1 names in any file with `schema_version: 1`. Reference: `reference/recipe-yaml-reference.md` and the [v0 ↔ v1 about-field mapping memory](../../memory/reference_v0_v1_about_fields.md). The optimizer's **ABT-002** check flags this in v1 recipes.
+
+| v0 (meta.yaml) | v1 (recipe.yaml) |
+|---|---|
+| `home` | `homepage` |
+| `dev_url` | `repository` |
+| `doc_url` | `documentation` |
+| `license_family` | *(removed; no replacement)* |
+
+### G3. `py < N` skip selectors do nothing in v1 recipe.yaml
+
+**Symptom**: `build.skip: - py < 311` is in the recipe, but conda-forge CI builds Python 3.10 anyway and pip rejects with `requires a different Python: 3.10.X not in '>=3.11'`.
+
+**Why**: `py < N` is conda-build/meta.yaml v0 selector syntax. rattler-build does not auto-inject the integer `py` variable from the `python` variant string in staged-recipes-style builds, so the condition evaluates against an undefined symbol and never fires.
+
+**Fix**: use `match(python, "<3.11")`. The optimizer's **SEL-003** check flags v0-style `py < N` in v1 recipes.
+
+```yaml
+build:
+  skip:
+    - match(python, "<3.11")     # CORRECT in v1
+    # - py < 311                 # WRONG — silently ignored
+```
+
+**Case study**: cocoindex PR #33231 (May 2026). All three platform builds (linux/osx/win) failed because `py < 311` did not skip the Python 3.10 matrix entry.
+
+### G4. Sdist may omit LICENSE — `pip install` succeeds, build fails with "No license files were copied"
+
+**Symptom**: `validate_recipe` and the Rust/wheel build both succeed, but rattler-build then fails at `Copying license files` with `No license files were copied`. The PyPI sdist has no `LICENSE` file at the root.
+
+**Why**: PEP 517 sdists are not required to include a LICENSE. Some build backends (notably maturin, hatchling with non-default config) emit metadata-rich sdists that ship `THIRD_PARTY_NOTICES.html` or similar, but not the project's own LICENSE. conda-forge requires the LICENSE to be packaged.
+
+**Fix**: add a secondary `source:` block fetching the LICENSE from the upstream GitHub tag. See [`guides/sdist-missing-license.md`](guides/sdist-missing-license.md) for the full pattern.
+
+```yaml
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: <sdist hash>
+  - url: https://raw.githubusercontent.com/<org>/<repo>/v${{ version }}/LICENSE
+    sha256: <license hash>
+    file_name: LICENSE
+```
+
+**Case study**: cocoindex PR #33231 (May 2026). cocoindex's PyPI sdist shipped only `THIRD_PARTY_NOTICES.html`. Fix added a secondary `source:` from `raw.githubusercontent.com`.
 
 ---
 
