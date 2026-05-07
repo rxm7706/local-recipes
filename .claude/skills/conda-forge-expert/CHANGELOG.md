@@ -1,5 +1,23 @@
 # Version History
 
+- **v6.2.1**: Skill alignment with conda-forge/staged-recipes upstream sync (May 7, 2026). Pure documentation patch; no code changes. Driven by an audit of ~22 staged files pulled from upstream that revealed two stale doc claims and three new ecosystem facts.
+
+    **(1) Variant configs no longer auto-provide `python_min`.** `.ci_support/linux64.yaml` and `.ci_support/linux_aarch64.yaml` previously declared a global `python: 3.12.* *_cpython` and `python_min: '3.10'` for staged-recipes builds. Both keys were removed in the May 2026 upstream sync. **Why**: the previous skill text implied recipes could rely on a sensible global default; that's no longer true. **How to apply**: SKILL.md § Python Version Policy adds rule #6 — `noarch: python` recipes must now declare `python_min` explicitly in `context:`. SEL-002's existing warning is now load-bearing rather than advisory.
+
+    **(2) CUDA 11.8 opt-back instruction is stale.** `reference/pinning-reference.md:500–502` previously instructed users to "opt back into 11.8 by copying `cuda118.yaml` into `.ci_support/migrations/`". That migrations entry was removed from staged-recipes upstream — the workaround no longer works. **How to apply**: stale text replaced with the current matrix (CUDA 12.9 + 13.0); legacy 11.8 opt-back path is documented as removed.
+
+    **(3) New CUDA 12.9 + 13.0 explicit variants.** `.ci_support/linux64_cuda129.yaml` and `linux64_cuda130.yaml` are the new active variant configs. SKILL.md § Ecosystem Updates and `reference/pinning-reference.md` Active Variant Matrix table both updated to list them.
+
+    **(4) `osx-arm64` is now a first-class variant.** `.ci_support/osx_arm64.yaml` ships alongside `osx_64.yaml`. Documented in SKILL.md and pinning-reference.md.
+
+    **(5) New `## Active Variant Matrix (May 2026)` table** in `reference/pinning-reference.md` lists all 7 variant configs the staged-recipes repo currently ships, with a note about which platforms no longer set Python defaults.
+
+    **Audit scope.** ~22 files modified/added across `.azure-pipelines/`, `.ci_support/`, `.scripts/`, `.github/workflows/`. Most are align-with-upstream cosmetic changes (Docker image cos7→alma9, swap script idempotence, issue-template Gitter→Zulip references, OSX_SDK_DIR validation in `run_osx_build.sh`). Two upstream changes affect skill assumptions and required this patch (#1 and #2). One additive — the new `.github/workflows/staged-recipes-linter.yml` workflow checks PR-meta hygiene (maintainer approval, feedstock collision, name lookup) and is **complementary** to the skill's `optimize_recipe` (which checks recipe content); no overlap or conflict.
+
+    **Investigation note.** During audit, the audit agent reused the name "SEL-003" for a hypothetical "missing python_min" check. SEL-003 is taken (shipped in v6.2.0 for the `py < N` selector check). No new optimizer check was added in this release — SEL-002's existing `noarch:python` gate already covers the case the upstream sync makes load-bearing.
+
+    **Docs.** SKILL.md frontmatter + `config/skill-config.yaml` bumped 6.2.0 → 6.2.1. No new files. No backward-incompatible changes.
+
 - **v6.2.0**: Recipe-authoring bug fixes and gotchas documentation, driven by the cocoindex case study (May 7, 2026). All discoveries below traced back to a single PR — `conda-forge/staged-recipes#33231` — where a Rust + PyO3 + maturin recipe failed on all three platforms despite passing `validate_recipe`. Three independent latent issues land together as bug-fix + new optimizer checks + new doc material.
 
     **(1) ABT-002 — v0/meta.yaml about-field names in v1 recipe.yaml.** New optimizer check in `scripts/recipe_optimizer.py`. **Why**: rattler-build's recipe-format schema accepts unknown `about.*` keys silently, so `dev_url`, `doc_url`, `home`, `license_family` in a `schema_version: 1` recipe are dropped at build time without warning — users see incomplete project metadata on conda-forge.org. Verified against `prefix-dev/recipe-format` `$defs.About` schema (May 2026): only `homepage`, `repository`, `documentation`, `summary`, `description`, `license`, `license_file`, `license_family`, `prelink_message` are recognized. **How it works**: `analyze_about_section` now also scans for the v0 names and emits a per-field suggestion (`dev_url` → `repository`, `doc_url` → `documentation`, `home` → `homepage`, `license_family` → remove). Confidence 1.0 — false positive impossible since the field name is a hard mapping. Gated on `schema_version == 1` so v0 meta.yaml recipes (where these names are correct) aren't flagged.

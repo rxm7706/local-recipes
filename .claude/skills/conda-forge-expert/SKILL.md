@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 6.2.0
+version: 6.2.1
 allowed-tools: [conda_forge_server]
 ---
 
@@ -352,6 +352,7 @@ test:
 3. **Compiled packages** — use `python >=3.10` directly; the build matrix handles versioning via the global pin; no `python_min` variable needed
 4. **Existing recipes with `python_min: "3.9"`** — `optimize_recipe` (SEL-002) will flag it; update to `"3.10"` unless the package genuinely cannot run on 3.10
 5. **Never downgrade below `3.10`** — will fail conda-forge CI
+6. **Variant configs no longer auto-provide `python_min`** (May 2026) — `.ci_support/linux64.yaml` and `linux_aarch64.yaml` previously declared a global `python_min: '3.10'` and pinned `python: 3.12.* *_cpython` for staged-recipes builds. Both keys were removed in the May 2026 upstream sync. **All `noarch: python` recipes must now declare `python_min` explicitly in their `context:` block** — the implicit default is gone. SEL-002 will flag noarch:python recipes missing `python_min`; treat the warning as required, not advisory.
 
 ---
 
@@ -610,7 +611,8 @@ Recent conda-forge changes that affect recipe authoring. Cite the relevant entry
 - **macOS minimum is 11.0** (Feb 2026). `MACOSX_DEPLOYMENT_TARGET=10.x` builds will be rejected.
 - **macOS SDK directory**: `/opt/conda-sdks` since conda-smithy 3.54.0 (Dec 2025). Local builders must export `OSX_SDK_DIR=/opt/conda-sdks`.
 - **macOS Accelerate Framework** (Jul 2025) — new BLAS/LAPACK provider on macOS 13.3+ via shim library; switch with `conda install libblas=*=*_newaccelerate`.
-- **CUDA matrix** — current default is **12.9**; CUDA 11.8 was removed Jun 2025 (opt back in by copying `cuda118.yaml` to `.ci_support/migrations/`). NVIDIA Tegra (linux-aarch64 SOC) builds are supported on CUDA 12.9; CUDA 13.0+ uses SBSA so Tegra-specific builds are unnecessary.
+- **CUDA matrix** — active variants are **12.9** and **13.0** as of May 2026. CUDA 11.8 was removed Jun 2025; the previous opt-back instruction (copy `cuda118.yaml` to `.ci_support/migrations/`) **no longer works** — that file was removed from staged-recipes upstream. New explicit per-CUDA variant configs landed: `.ci_support/linux64_cuda129.yaml` + `linux64_cuda130.yaml`. NVIDIA Tegra (linux-aarch64 SOC) builds are supported on CUDA 12.9; CUDA 13.0+ uses SBSA so Tegra-specific builds are unnecessary.
+- **`osx-arm64` is now a first-class variant** (May 2026) — new `.ci_support/osx_arm64.yaml` exists alongside `osx_64.yaml`. Use `target_platform: osx-arm64` in recipes that need explicit ARM Mac handling. macOS deployment target remains 11.0.
 - **MPI external label** (Jan 29, 2026) — external MPI builds were moved to `conda-forge/label/mpi-external`. Old external MPI packages on `main` were marked broken.
 
 ### Policy
