@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 6.2.1
+version: 6.2.2
 allowed-tools: [conda_forge_server]
 ---
 
@@ -352,7 +352,18 @@ test:
 3. **Compiled packages** — use `python >=3.10` directly; the build matrix handles versioning via the global pin; no `python_min` variable needed
 4. **Existing recipes with `python_min: "3.9"`** — `optimize_recipe` (SEL-002) will flag it; update to `"3.10"` unless the package genuinely cannot run on 3.10
 5. **Never downgrade below `3.10`** — will fail conda-forge CI
-6. **Variant configs no longer auto-provide `python_min`** (May 2026) — `.ci_support/linux64.yaml` and `linux_aarch64.yaml` previously declared a global `python_min: '3.10'` and pinned `python: 3.12.* *_cpython` for staged-recipes builds. Both keys were removed in the May 2026 upstream sync. **All `noarch: python` recipes must now declare `python_min` explicitly in their `context:` block** — the implicit default is gone. SEL-002 will flag noarch:python recipes missing `python_min`; treat the warning as required, not advisory.
+6. **Recipes do NOT need `python_min` in context unless overriding the default** — the May 2026 upstream sync removed `python_min: '3.10'` and `python: 3.12.* *_cpython` from `.ci_support/linux64.yaml` and `linux_aarch64.yaml`, but those defaults still come from **`conda-forge-pinning`** (the canonical source upstream CI has always used). Recipes at the default `3.10` floor can — and should — write `${{ python_min }}` references throughout the CFEP-25 triad **without** declaring `python_min` in `context:`. Only override in `context:` when upstream `python_requires` demands a higher floor.
+
+   **Local rattler-build implication.** When invoking rattler-build directly (outside conda-forge CI), pass conda-forge-pinning as an additional variant config so `${{ python_min }}` resolves to its default:
+
+   ```bash
+   pixi run -e local-recipes rattler-build build \
+     --recipe recipes/<name>/recipe.yaml \
+     --variant-config .ci_support/linux64.yaml \
+     --variant-config .pixi/envs/local-recipes/conda_build_config.yaml
+   ```
+
+   The `local-recipes` pixi env already installs `conda-forge-pinning`; its `conda_build_config.yaml` lands at `.pixi/envs/local-recipes/conda_build_config.yaml`. Without the second `--variant-config`, recipes referencing `${{ python_min }}` will fail to render with `Template rendering failed: undefined value`.
 
 ---
 

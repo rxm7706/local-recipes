@@ -1,5 +1,19 @@
 # Version History
 
+- **v6.2.2**: Correction of v6.2.1's rule #6 (May 7, 2026). v6.2.1 added a Python Version Policy rule claiming that `noarch: python` recipes "must now declare `python_min` explicitly in `context:`" because variant configs stopped providing the default. **That diagnosis was wrong** — the canonical source of `python_min: '3.10'` has always been the `conda-forge-pinning` package, not `.ci_support/*.yaml`. The May 2026 upstream sync removed redundant declarations from the platform variant configs but did NOT change the underlying default. Recipes that reference `${{ python_min }}` without declaring it in context still resolve correctly when conda-forge-pinning is on the variant-config path — exactly as upstream CI has always handled it.
+
+    **What changed.** SKILL.md § Python Version Policy rule #6 rewritten:
+    - Old (wrong): "All noarch:python recipes must now declare python_min explicitly in their context: block."
+    - New (correct): "Recipes do NOT need python_min in context unless overriding the default. Only set context.python_min when upstream python_requires demands a floor higher than 3.10."
+
+    **Local rattler-build instruction added.** When invoking rattler-build directly, pass conda-forge-pinning's `conda_build_config.yaml` as a second `--variant-config`. The `local-recipes` pixi env already installs conda-forge-pinning; the file lands at `.pixi/envs/local-recipes/conda_build_config.yaml`. Verified by rendering `recipes/python-magic/recipe.yaml` (uses `${{ python_min }}` four times, no `context.python_min` declaration) — fails with the platform variant alone, succeeds with the pinning overlay.
+
+    **How it was caught.** Audit-driven: the user pointed out that recipes don't need `python_min` for conda-forge submission, so the local build flow shouldn't either. Investigation found that `conda-forge-pinning` (already installed in the pixi env, version 2026.05.04.16.48.45) ships exactly the missing keys and rattler-build accepts multiple `--variant-config` flags.
+
+    **Impact on prior diagnosis.** The earlier "SEL-002 false-negative" hypothesis (that the optimizer should warn when `${{ python_min }}` is referenced but not in context) is also dropped — that pattern is now confirmed correct, not a bug. SEL-002's existing logic stands.
+
+    **Docs.** SKILL.md frontmatter + `config/skill-config.yaml` bumped 6.2.1 → 6.2.2. No other files changed.
+
 - **v6.2.1**: Skill alignment with conda-forge/staged-recipes upstream sync (May 7, 2026). Pure documentation patch; no code changes. Driven by an audit of ~22 staged files pulled from upstream that revealed two stale doc claims and three new ecosystem facts.
 
     **(1) Variant configs no longer auto-provide `python_min`.** `.ci_support/linux64.yaml` and `.ci_support/linux_aarch64.yaml` previously declared a global `python: 3.12.* *_cpython` and `python_min: '3.10'` for staged-recipes builds. Both keys were removed in the May 2026 upstream sync. **Why**: the previous skill text implied recipes could rely on a sensible global default; that's no longer true. **How to apply**: SKILL.md § Python Version Policy adds rule #6 — `noarch: python` recipes must now declare `python_min` explicitly in `context:`. SEL-002's existing warning is now load-bearing rather than advisory.
