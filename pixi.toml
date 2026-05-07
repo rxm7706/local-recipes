@@ -132,6 +132,14 @@ cmd = "bash scripts/ensure-bmad-preflight.sh"
 description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first)"
 cmd = "python .claude/scripts/conda-forge-expert/submit_pr.py"
 
+[feature.local-recipes.tasks.recipe-build]
+description = "Native rattler-build for the host platform (recommended default; fast, no Docker). Auto-detects platform via uname; layers conda-forge-pinning over .ci_support/<platform>.yaml so ${{ python_min }} resolves like upstream CI. Usage: pixi run -e local-recipes recipe-build <path-to-recipe>"
+cmd = "bash .claude/scripts/conda-forge-expert/native-build.sh"
+
+[feature.local-recipes.tasks.recipe-build-docker]
+description = "Docker build for full conda-forge CI fidelity (alma9 sysroot, isolated env). Opt-in only — use when the native build passes but you want CI-parity verification before submission. Usage: pixi run -e local-recipes recipe-build-docker <config> (e.g. linux64)"
+cmd = "python build-locally.py"
+
 [feature.local-recipes.tasks.health-check]
 description = "Run a health check on the local development environment"
 cmd = "python .claude/scripts/conda-forge-expert/health_check.py"
