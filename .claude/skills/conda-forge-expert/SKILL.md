@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 6.2.2
+version: 6.4.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -159,6 +159,15 @@ When asked to create or update a recipe, execute these steps in order. Each step
     - Before calling: surface assumptions (pure Python? noarch? license compatible?)
     - > *Skills: [`spec-driven-development`] — define requirements and "Not Doing" list; [`source-driven-development`] — verify PyPI metadata against official docs; [`idea-refine`] — for vague requests, clarify scope first.*
 
+1b. **Feedstock-aware enrichment** (when an existing `<name>-feedstock` exists) — `get_feedstock_context(pkg_name="<name>")` then `enrich_from_feedstock(recipe_path="recipes/<name>/recipe.yaml")`
+    - Success: recipe.yaml gains feedstock-curated maintainers + about.* fields; agent surfaces issue context to user as planning input.
+    - **When to run:** any package generation where `lookup_feedstock(pkg_name)` returns `exists=True`. For a brand-new package (no feedstock yet), `enrich_from_feedstock` still adds `rxm7706` to maintainers (idempotent) — running it is harmless either way.
+    - **What carries over** (3a maintainers + 3b metadata): existing maintainers (union with rxm7706), `recipe-maintainers-emeritus`, `feedstock-name`, hand-curated `about.homepage`/`repository`/`documentation`/`description`/`license_file`. v0 meta.yaml field names (`home`/`dev_url`/`doc_url`) are auto-translated to v1 (`homepage`/`repository`/`documentation`).
+    - **What never carries over:** `requirements.host/run/build` (grayskull always wins — upstream-driven, freshness matters), source URLs/sha256, build script, tests.
+    - **Hard abort:** if `about.license` differs between generated and feedstock (e.g. relicense, or grayskull misread), `enrich_from_feedstock` aborts with `abort_reason` set rather than silently picking a side. Surface to user; don't fix without consultation.
+    - **Issue context** (3c): `get_feedstock_context` returns open + last 10 closed issues. Skim for known build failures (look for `bug` labels, recent recurring titles), linked PRs that already attempted fixes, and any maintainer notes. Mention relevant findings in your plan; never auto-apply suggestions from issues.
+    - > *Skills: [`source-driven-development`] — feedstock recipe is canonical for what already worked; [`context-engineering`] — open-issue surface gives the agent prior-art for free.*
+
 2.  **Validate** — `validate_recipe(recipe_path="recipes/<name>")`
     - Success: no schema errors, license found, checksums match
     - This also runs `rattler-build lint` when available — treat all warnings as failures
@@ -183,10 +192,21 @@ When asked to create or update a recipe, execute these steps in order. Each step
     - Run this before triggering a build to catch missing packages early (shift-left)
     - > *Skills: [`ci-cd-and-automation`] — shift-left: catch failures before the expensive build step.*
 
-7.  **Trigger Build** — `trigger_build(config="linux-64")`
-    - Success: build starts (async); `get_build_summary` shows `status: running`
+7a. **Native build** (mandatory) — `trigger_build(mode="native", recipe="recipes/<name>")` <br>or `pixi run -e local-recipes recipe-build recipes/<name>`
+    - Runs `rattler-build build` directly on the host. Auto-detects the platform from `uname -ms`. Layers `conda-forge-pinning`'s `conda_build_config.yaml` over `.ci_support/<platform>.yaml` so `${{ python_min }}` resolves without context declaration (matches upstream CI behavior — see § Recipe Authoring Gotchas G2/G3).
+    - Success: build starts (async); `get_build_summary()` shows `status: running` then `status: success`. Artifact lands under `build_artifacts/<config>/`.
     - All gates (steps 2–6) must pass before reaching this step — no exceptions
+    - **`noarch: python` recipes:** one host build covers all platforms; do not iterate platforms here.
+    - **Compiled recipes:** the host build verifies recipe correctness on one platform. Non-host platforms are **deferred to step 7b**, which is opt-in.
     - > *Skills: [`ci-cd-and-automation`] — no gate can be skipped; [`planning-and-task-breakdown`] — checkpoint here.*
+
+7b. **Docker build** (opt-in, user-authorized) — `trigger_build(mode="docker", config="linux64")` <br>or `pixi run -e local-recipes recipe-build-docker linux64`
+    - Runs `python build-locally.py <config>` for full conda-forge CI parity (alma9 sysroot, isolated env, full bot toolchain). Requires Docker daemon access.
+    - **Always opt-in.** Never invoke automatically — only when the user explicitly asks for "Docker build", "CI-parity check", "full platform coverage", or after a non-host platform failure on the staged-recipes PR.
+    - Use 7b after 7a passes when:
+      - The recipe is compiled and you want non-host platform verification (osx-64, win-64, linux-aarch64) before submission.
+      - 7a passes locally but conda-forge CI fails — Docker reproduces the CI sysroot so you can debug locally.
+    - **Build Failure Protocol distinction**: a host build that *passes* + Docker build that *fails* points strongly at sysroot/CDT mismatch (the host's glibc differs from cos7/alma9). The host build that *fails* points at the recipe itself; fix the recipe first before invoking 7b.
 
 8.  **Monitor Build** — poll `get_build_summary()` until `status` is `success` or `failed`
     - Success: `status: success`

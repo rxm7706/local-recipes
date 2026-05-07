@@ -5,6 +5,7 @@ Allows Claude Code to programmatically validate recipes and check dependencies
 without needing to parse bash output.
 """
 import json
+import platform
 import shutil
 import subprocess
 import sys
@@ -29,6 +30,9 @@ MAPPING_MANAGER_SCRIPT = SCRIPTS_DIR / "mapping_manager.py"
 NAME_RESOLVER_SCRIPT = SCRIPTS_DIR / "name_resolver.py"
 FAILURE_ANALYZER_SCRIPT = SCRIPTS_DIR / "failure_analyzer.py"
 RECIPE_OPTIMIZER_SCRIPT = SCRIPTS_DIR / "recipe_optimizer.py"
+FEEDSTOCK_LOOKUP_SCRIPT = SCRIPTS_DIR / "feedstock_lookup.py"
+FEEDSTOCK_ENRICH_SCRIPT = SCRIPTS_DIR / "feedstock_enrich.py"
+FEEDSTOCK_CONTEXT_SCRIPT = SCRIPTS_DIR / "feedstock_context.py"
 RECIPE_UPDATER_SCRIPT = SCRIPTS_DIR / "recipe_updater.py"
 SUBMIT_PR_SCRIPT = SCRIPTS_DIR / "submit_pr.py"
 GITHUB_VERSION_CHECKER_SCRIPT = SCRIPTS_DIR / "github_version_checker.py"
@@ -189,28 +193,145 @@ def scan_for_vulnerabilities(recipe_path: str) -> str:
     return json.dumps(result, indent=2)
 
 
+def _detect_host_config() -> str:
+    """Detect the host platform and return the matching .ci_support/<name>.yaml stem.
+
+    Linux x86_64 → 'linux64', Linux aarch64 → 'linux_aarch64',
+    macOS Intel → 'osx64', macOS Apple Silicon → 'osxarm64',
+    Windows → 'win64'.
+    """
+    sysname = platform.system().lower()
+    machine = platform.machine().lower()
+    if sysname == "linux":
+        return "linux64" if machine in ("x86_64", "amd64") else "linux_aarch64"
+    if sysname == "darwin":
+        return "osxarm64" if machine in ("arm64", "aarch64") else "osx64"
+    if sysname == "windows":
+        return "win64"
+    raise RuntimeError(f"Unsupported host platform: {sysname}/{machine}")
+
+
 @mcp.tool()
-async def trigger_build(config: str, ctx: Context | None = None) -> str:
-    """Triggers a local build process asynchronously. Returns error if a build is already running."""
+async def trigger_build(
+    config: str | None = None,
+    mode: str = "native",
+    recipe: str | None = None,
+    ctx: Context | None = None,
+) -> str:
+    """Triggers a local build process asynchronously.
+
+    Two modes:
+
+    - **'native'** (default, recommended): runs `rattler-build build` on the host,
+      passing both the platform variant config from .ci_support/ and the
+      conda-forge-pinning overlay from the local-recipes pixi env. Faster than
+      Docker, no Docker daemon required, and recipes that reference
+      `${{ python_min }}` resolve correctly via the pinning overlay.
+      Auto-detects the host platform from `uname -ms` if `config` is omitted.
+
+    - **'docker'**: runs `python build-locally.py <config>`. Full conda-forge CI
+      fidelity (alma9 sysroot, isolated build env). Requires Docker daemon
+      access. Should only be invoked when the user explicitly asks for it —
+      never as the default verification step (see SKILL.md Step 7a vs 7b).
+
+    Returns an error if another build is already in flight.
+
+    Args:
+        config: Platform config stem matching `.ci_support/<config>.yaml`
+                (e.g., 'linux64', 'osxarm64', 'win64'). For mode='native',
+                omit to auto-detect from the current host. For mode='docker',
+                required (no auto-detect — Docker can run any config).
+        mode: 'native' (default) or 'docker'.
+        recipe: Path to a recipe.yaml or its directory. Required for mode='native';
+                ignored for mode='docker' (build-locally.py builds all recipes/).
+        ctx: MCP context for progress messages.
+    """
     global _active_build
 
     # Guard against concurrent builds
     if _active_build is not None and _active_build.poll() is None:
         return json.dumps({"error": "A build is already running.", "pid": _active_build.pid})
 
+    if mode not in ("native", "docker"):
+        return json.dumps({"error": f"Invalid mode '{mode}'. Use 'native' or 'docker'."})
+
     for f in (SUMMARY_FILE, BUILD_PID_FILE):
         if f.exists():
             f.unlink()
 
-    build_script = Path(__file__).parent.parent.parent / "build-locally.py"
-    _active_build = subprocess.Popen([_PYTHON, str(build_script), config])
+    repo_root = Path(__file__).parent.parent.parent
+    recipe_path: Optional[Path] = None
+
+    if mode == "native":
+        if config is None:
+            try:
+                config = _detect_host_config()
+            except RuntimeError as e:
+                return json.dumps({"error": str(e)})
+        if recipe is None:
+            return json.dumps({"error": "mode='native' requires a recipe path. "
+                                        "Pass `recipe=` pointing to recipe.yaml or its directory."})
+
+        recipe_path = Path(recipe)
+        if not recipe_path.is_absolute():
+            recipe_path = repo_root / recipe
+        if recipe_path.is_dir():
+            for cand in ("recipe.yaml", "meta.yaml"):
+                if (recipe_path / cand).exists():
+                    recipe_path = recipe_path / cand
+                    break
+            else:
+                return json.dumps({"error": f"No recipe.yaml or meta.yaml in {recipe_path}"})
+        if not recipe_path.exists():
+            return json.dumps({"error": f"Recipe not found: {recipe_path}"})
+
+        variant = repo_root / ".ci_support" / f"{config}.yaml"
+        if not variant.exists():
+            return json.dumps({"error": f"Variant config not found: {variant}"})
+
+        # conda-forge-pinning ships its conda_build_config.yaml inside the
+        # local-recipes pixi env; pass it as an additional --variant-config so
+        # ${{ python_min }} and the python matrix resolve like upstream CI.
+        # See SKILL.md § Recipe Authoring Gotchas + v6.2.2 CHANGELOG entry.
+        pinning_overlay = repo_root / ".pixi" / "envs" / "local-recipes" / "conda_build_config.yaml"
+
+        cmd: List[str] = [
+            "pixi", "run", "-e", "local-recipes",
+            "rattler-build", "build",
+            "--recipe", str(recipe_path),
+            "--variant-config", str(variant),
+        ]
+        if pinning_overlay.exists():
+            cmd.extend(["--variant-config", str(pinning_overlay)])
+        cmd.extend(["--output-dir", str(repo_root / "build_artifacts" / config)])
+
+        _active_build = subprocess.Popen(cmd, cwd=str(repo_root))
+        invocation_label = f"native rattler-build (config={config}, recipe={recipe_path.parent.name})"
+
+    else:  # docker
+        if config is None:
+            return json.dumps({"error": "mode='docker' requires an explicit config "
+                                        "(e.g., 'linux64'). No auto-detection in Docker mode."})
+        build_script = repo_root / "build-locally.py"
+        if not build_script.exists():
+            return json.dumps({"error": f"build-locally.py not found at {build_script}"})
+        _active_build = subprocess.Popen([_PYTHON, str(build_script), config], cwd=str(repo_root))
+        invocation_label = f"Docker build via build-locally.py (config={config})"
+
     BUILD_PID_FILE.write_text(str(_active_build.pid))
 
     started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     if ctx:
-        await ctx.info(f"Build started for config '{config}' (PID {_active_build.pid}). Poll get_build_summary() to check progress.")
-    return json.dumps({"status": "Build triggered", "config": config, "pid": _active_build.pid,
-                       "started_at": started_at})
+        await ctx.info(f"Build started: {invocation_label} (PID {_active_build.pid}). "
+                       f"Poll get_build_summary() to check progress.")
+    return json.dumps({
+        "status": "Build triggered",
+        "mode": mode,
+        "config": config,
+        "recipe": str(recipe_path) if recipe_path is not None else None,
+        "pid": _active_build.pid,
+        "started_at": started_at,
+    })
 
 
 @mcp.tool()
@@ -229,6 +350,102 @@ def get_build_summary() -> str:
         summary = json.load(f)
 
     return json.dumps(summary, indent=2)
+
+
+@mcp.tool()
+def lookup_feedstock(pkg_name: str, no_cache: bool = False) -> str:
+    """Look up an existing conda-forge/<pkg_name>-feedstock and return its parsed recipe.
+
+    Returns a structured result indicating whether the feedstock exists, its
+    recipe format (recipe.yaml / meta.yaml), the raw recipe text, and a parsed
+    YAML dict (Jinja2 placeholders for v0 are stripped to bare tokens before
+    parsing — values are not rendered, but the structure is). Used by
+    `enrich_from_feedstock` and `get_feedstock_context`; can also be called
+    directly when an agent wants to inspect feedstock metadata without
+    applying any merges.
+
+    Results cached locally for 1 hour. Returns exists=False (and no error)
+    when the feedstock simply doesn't exist — that's the common case for new
+    packages. v6.4.
+
+    Args:
+        pkg_name: Package name (e.g. 'numpy'). The feedstock repo name is
+                  derived as conda-forge/<pkg_name>-feedstock.
+        no_cache: Bypass the local 1h cache and force a fresh GitHub API lookup.
+    """
+    args = [pkg_name, "--no-raw"]
+    if no_cache:
+        args.append("--no-cache")
+    result = _run_script(FEEDSTOCK_LOOKUP_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def enrich_from_feedstock(recipe_path: str, dry_run: bool = False) -> str:
+    """Enrich a freshly-generated recipe with metadata from an existing conda-forge feedstock.
+
+    Field-by-field merge policy (v6.4 implementation of items 3a + 3b):
+      - extra.recipe-maintainers: union with feedstock's list, always include rxm7706
+      - extra.recipe-maintainers-emeritus, extra.feedstock-name: carry over
+      - about.homepage / repository / documentation: feedstock wins if grayskull empty
+      - about.description: feedstock wins if longer (hand-curated paragraphs)
+      - about.summary: grayskull always wins (freshest from PyPI)
+      - about.license: must match — diverging licenses abort with explicit error
+      - about.license_file: feedstock wins (paths often involve secondary sources)
+
+    Never carries over: requirements.host/run/build (always from grayskull),
+    source URLs/sha256, build script, tests.
+
+    When the existing feedstock is meta.yaml v0 format, v0 about-field names
+    (`home`, `dev_url`, `doc_url`) are translated to their v1 equivalents
+    (`homepage`, `repository`, `documentation`) before merging.
+
+    Always adds rxm7706 to maintainers — even when no feedstock exists. Idempotent.
+
+    Args:
+        recipe_path: Path to recipe.yaml to enrich. Must already be generated
+                     (e.g. by generate_recipe_from_pypi).
+        dry_run: If True, return what would change without writing.
+    """
+    args = [recipe_path]
+    if dry_run:
+        args.append("--dry-run")
+    result = _run_script(FEEDSTOCK_ENRICH_SCRIPT, args)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def get_feedstock_context(pkg_name: str, max_open: int = 50, max_closed: int = 10, no_cache: bool = False) -> str:
+    """Surface open and recent-closed issues from an existing conda-forge feedstock as planning context.
+
+    v6.4 implementation of item 3c. Non-blocking — returns issues for the agent
+    to surface to the user. Never auto-applied.
+
+    Returns a JSON dict with:
+      - feedstock_exists: bool
+      - open_issues: list of {number, title, labels, author, url, created_at, comments}
+      - recent_closed_issues: same shape, recently closed
+      - open_count, recent_closed_count: counts
+
+    Useful before generating or updating a recipe to:
+      - Spot known build failures the maintainer team has already documented
+      - Find linked PRs that already attempted a fix
+      - Avoid re-discovering known issues
+
+    Returns feedstock_exists=False with empty issue lists when the feedstock
+    doesn't exist (common for new packages). 30-min cache.
+
+    Args:
+        pkg_name: Package name (e.g. 'numpy').
+        max_open: Cap on open issues fetched (default 50).
+        max_closed: Cap on recent closed issues (default 10).
+        no_cache: Bypass the local 30-min cache.
+    """
+    args = [pkg_name, "--max-open", str(max_open), "--max-closed", str(max_closed)]
+    if no_cache:
+        args.append("--no-cache")
+    result = _run_script(FEEDSTOCK_CONTEXT_SCRIPT, args)
+    return json.dumps(result, indent=2)
 
 
 @mcp.tool()
