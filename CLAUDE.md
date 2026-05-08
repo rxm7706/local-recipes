@@ -69,6 +69,46 @@ Layers 5 and 6 only load when an active project resolves. To set the active proj
 
 For full skill list and disambiguation defaults (which review skill, simplify-vs-code-simplification, schedule-vs-loop, etc.) see auto-memory entry `feedback_skill_disambiguation.md`.
 
+## BMAD ↔ conda-forge-expert integration
+
+These two rules govern any BMAD-driven effort that touches conda-forge work in this repo. They apply to every BMAD skill (`bmad-quick-dev`, `bmad-agent-dev`, persona agents, planning agents, code-review agents — everything). They are **always-on**; no opt-in.
+
+### Rule 1 — BMAD must invoke `conda-forge-expert` for any conda-forge work
+
+When a BMAD agent's current story, task, or sub-task involves any of:
+
+- creating, editing, validating, optimizing, building, or submitting a conda recipe (`recipe.yaml`, `meta.yaml`, multi-output, patches under `recipes/<name>/patches/`)
+- responding to a conda-forge build failure or staged-recipes review comment
+- packaging a PyPI / npm / CRAN / CPAN / LuaRocks / GitHub source as a conda artifact
+- working with `pin_subpackage`, `compiler()`, `stdlib()`, `noarch: python`, conda-forge selectors, or rattler-build features
+- interacting with `pixi run -e local-recipes …` recipe-build / autotick / submit-pr tasks
+- reading or modifying anything under `.claude/skills/conda-forge-expert/`, `.claude/scripts/conda-forge-expert/`, `.claude/data/conda-forge-expert/`
+
+…the agent **must** invoke the `conda-forge-expert` skill (via the `Skill` tool with `skill: conda-forge-expert`) before producing recipe code or running recipe-related tooling. The skill's 9-step autonomous loop, Operating Principles, Critical Constraints, and Build Failure Protocol are authoritative — the BMAD story file does not override them.
+
+If a BMAD story's instructions conflict with `conda-forge-expert`'s guidance (e.g., the story says "loosen this pin to `>=1.0`" but conda-forge-expert's pin-loosening convention applies a different rule), the skill wins and the agent updates the story comment to record the deviation.
+
+### Rule 2 — Every conda-forge BMAD effort ends with a retro that improves the skill
+
+When a BMAD effort that did conda-forge work reaches its closeout (final story complete; PR merged or final review-comment resolved; or the user marks the effort done), the agent **must** run a retrospective focused on the `conda-forge-expert` skill itself. The retro:
+
+1. Invokes the `bmad-retrospective` skill (or follows its protocol manually if BMAD is not loaded).
+2. Reviews session logs, build failures encountered, recipe diffs, and reviewer comments to identify:
+   - **Corrections** — guidance in the skill that turned out to be wrong, stale, or misleading.
+   - **Refinements** — guidance that worked but was harder to apply than it should have been (missing examples, ambiguous wording, missing edge cases).
+   - **Additions** — patterns, constraints, gotchas, or build-failure recipes encountered for the first time during this effort that future efforts should benefit from.
+3. Lands the findings as edits to:
+   - `.claude/skills/conda-forge-expert/SKILL.md` (Operating Principles, Critical Constraints, Recipe Authoring Gotchas, Build Failure Protocol)
+   - `.claude/skills/conda-forge-expert/reference/*.md` (per-topic deep references)
+   - `.claude/skills/conda-forge-expert/guides/*.md` (workflow / troubleshooting guides)
+   - `.claude/skills/conda-forge-expert/CHANGELOG.md` (a new version entry summarizing the retro's deltas, dated, with a one-line summary per finding)
+4. Bumps the skill version per semver (PATCH for fixes/clarifications, MINOR for new gotchas / new sections, MAJOR only if breaking workflow changes).
+5. Saves a corresponding auto-memory feedback entry only if the finding crosses skill boundaries (e.g., affects how BMAD interacts with `conda-forge-expert`); skill-internal findings stay in the skill files, not in auto-memory.
+
+The retro is not optional and not deferrable. An effort is not "done" until the retro lands.
+
+If the effort produced no novel findings (rare — almost every effort surfaces at least one refinement), the retro still runs and produces a CHANGELOG entry stating "no skill changes; verified existing guidance held for: <summary of effort>".
+
 ## Project Documentation Reference
 
 For extended architectural context, please reference the centralized `docs/` folder:
@@ -78,6 +118,7 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.
 - **`docs/specs/copilot-bridge-vscode-extension.md`** — BMAD-consumable tech-spec for a sideload-only VS Code extension that wraps the bridge pattern. Run via `bmad-quick-dev`.
 - **`docs/specs/conda-forge-tracker.md`** — BMAD-consumable tech-spec for a local sibling-directory tracker that mirrors feedstocks I'm involved with and captures follow-ups (outdated upstreams, package requests, stuck PRs, rerender requests, mark-broken/yank) as offline markdown issues with GitHub-Issues-compatible frontmatter. 13 stories, channel-aware migration path. Run via `bmad-quick-dev`.
+- **`docs/specs/db-gpt-conda-forge.md`** — BMAD-consumable tech-spec for packaging DB-GPT (`eosphoros-ai/DB-GPT` v0.8.0) on conda-forge as a 7-output multi-output recipe with 7 prerequisite recipes (3 trivial pure-Python, 3 lyric-* itkwasm-pattern noarch with vendored WASM, 1 cocoindex-class `lyric-py` Rust+PyO3). Q1 resolved (`B-full`). 13 stories in 4 waves; S12 documents a `B-six-plus-app-patched` fallback if any lyric-* worker is rejected during review. Run via `bmad-quick-dev`.
 
 Skill-internal documentation (loaded on-demand when the skill activates):
 - **`.claude/skills/conda-forge-expert/SKILL.md`** — Recipe authoring agent operating principles, 9-step lifecycle loop, build-failure protocol.
