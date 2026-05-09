@@ -1,0 +1,8 @@
+{
+  "bomFormat":"CycloneDX","specVersion":"1.5","version":1,
+  "components":[{"name":"app","version":"1.0","bom-ref":"app@1.0"},
+                {"name":"lib1","version":"2.0","bom-ref":"lib1@2.0"},
+                {"name":"lib2","version":"3.0","bom-ref":"lib2@3.0"}],
+  "dependencies":[{"ref":"app@1.0","dependsOn":["lib1@2.0","lib2@3.0"]},
+                  {"ref":"lib1@2.0","dependsOn":["lib2@3.0"]}]
+}

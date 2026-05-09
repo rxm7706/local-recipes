@@ -1,0 +1,11 @@
+replicaCount: 3
+image:
+  repository: nginx
+  tag: "1.25-alpine"
+  registry: docker.io
+metrics:
+  image: prom/prometheus:v2.45.0
+sidecar:
+  image:
+    repository: envoyproxy/envoy
+    tag: v1.28.0

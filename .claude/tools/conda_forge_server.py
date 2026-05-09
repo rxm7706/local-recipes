@@ -715,5 +715,329 @@ def migrate_to_v1(recipe_path: str) -> str:
     }, indent=2)
 
 
+# ── cf_atlas tool surface (v6.9 / v6.10 phases) ──────────────────────────────
+# Each MCP tool below thin-wraps the corresponding canonical CLI in
+# .claude/skills/conda-forge-expert/scripts/. The CLIs all accept --json.
+
+ATLAS_STALENESS_SCRIPT     = SCRIPTS_DIR / "staleness_report.py"
+ATLAS_FEEDSTOCK_HEALTH     = SCRIPTS_DIR / "feedstock_health.py"
+ATLAS_WHODEPENDS_SCRIPT    = SCRIPTS_DIR / "whodepends.py"
+ATLAS_BEHIND_UPSTREAM      = SCRIPTS_DIR / "behind_upstream.py"
+ATLAS_CVE_WATCHER          = SCRIPTS_DIR / "cve_watcher.py"
+ATLAS_VERSION_DOWNLOADS    = SCRIPTS_DIR / "version_downloads.py"
+ATLAS_RELEASE_CADENCE      = SCRIPTS_DIR / "release_cadence.py"
+ATLAS_FIND_ALTERNATIVE     = SCRIPTS_DIR / "find_alternative.py"
+ATLAS_ADOPTION_STAGE       = SCRIPTS_DIR / "adoption_stage.py"
+ATLAS_DETAIL_CF_ATLAS      = SCRIPTS_DIR / "detail_cf_atlas.py"
+ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
+
+
+@mcp.tool()
+def staleness_report(
+    maintainer: str | None = None,
+    days: int = 0,
+    limit: int = 25,
+    by_risk: bool = False,
+    has_vulns: bool = False,
+    bot_stuck: bool = False,
+    include_archived: bool = False,
+) -> str:
+    """List conda-forge feedstocks ordered by oldest latest_conda_upload.
+
+    Optionally rank by Phase G CVE counts (`by_risk`), filter to feedstocks
+    with non-zero Critical/High affecting current (`has_vulns`), or filter
+    to feedstocks where the conda-forge bot has failed at least one
+    version-update PR (`bot_stuck`). Pass `--maintainer` to scope to one
+    handle's feedstocks.
+    """
+    args = ["--json", "--limit", str(limit), "--days", str(days)]
+    if maintainer:
+        args.extend(["--maintainer", maintainer])
+    if by_risk:
+        args.append("--by-risk")
+    if has_vulns:
+        args.append("--has-vulns")
+    if bot_stuck:
+        args.append("--bot-stuck")
+    if include_archived:
+        args.append("--all-status")
+    return json.dumps(_run_script(ATLAS_STALENESS_SCRIPT, args), indent=2)
+
+
+@mcp.tool()
+def feedstock_health(
+    maintainer: str | None = None,
+    filter_kind: str = "stuck",
+    limit: int = 25,
+) -> str:
+    """Surface feedstocks with conda-forge bot / build / PR / GitHub issues.
+
+    `filter_kind` ∈ {'stuck' (Phase M errors > 0), 'bad' (cf-graph 'bad'
+    flag), 'open-pr' (Phase M open bot PR), 'ci-red' (Phase N default
+    branch failing), 'open-issues' (Phase N issues > 0), 'open-prs-human'
+    (Phase N PRs > 0), 'all' (union)}.
+    """
+    args = ["--json", "--limit", str(limit), "--filter", filter_kind]
+    if maintainer:
+        args.extend(["--maintainer", maintainer])
+    return json.dumps(_run_script(ATLAS_FEEDSTOCK_HEALTH, args), indent=2)
+
+
+@mcp.tool()
+def whodepends(
+    name: str,
+    reverse: bool = False,
+    req_type: str | None = None,
+    limit: int = 50,
+) -> str:
+    """cf_atlas Phase J dependency graph query.
+
+    Forward (default): packages that <name> depends on. With reverse=True:
+    packages that depend on <name> (blast-radius / bus-factor analysis).
+    """
+    args = ["--json", "--limit", str(limit), name]
+    if reverse:
+        args.append("--reverse")
+    if req_type:
+        args.extend(["--type", req_type])
+    return json.dumps(_run_script(ATLAS_WHODEPENDS_SCRIPT, args), indent=2)
+
+
+@mcp.tool()
+def behind_upstream(
+    maintainer: str | None = None,
+    limit: int = 50,
+) -> str:
+    """List conda-forge feedstocks behind their upstream-of-record version
+    (PyPI / GitHub / GitLab / Codeberg / npm / CRAN / CPAN / LuaRocks /
+    crates.io / RubyGems / NuGet / Maven). Picks the right upstream
+    automatically based on conda_source_registry per row."""
+    args = ["--json", "--limit", str(limit)]
+    if maintainer:
+        args.extend(["--maintainer", maintainer])
+    return json.dumps(_run_script(ATLAS_BEHIND_UPSTREAM, args), indent=2)
+
+
+@mcp.tool()
+def cve_watcher(
+    maintainer: str | None = None,
+    since_days: int = 7,
+    severity: str = "C",
+    only_increases: bool = False,
+    limit: int = 25,
+) -> str:
+    """Diff cf_atlas vuln_history snapshots — surface CVE count changes
+    between today and N days ago. severity ∈ {'C' (Critical), 'H' (High),
+    'K' (KEV-listed), 'T' (Total)}. only_increases=True to filter to
+    packages where the count went up."""
+    args = [
+        "--json", "--since-days", str(since_days), "--severity", severity,
+        "--limit", str(limit),
+    ]
+    if maintainer:
+        args.extend(["--maintainer", maintainer])
+    if only_increases:
+        args.append("--only-increases")
+    return json.dumps(_run_script(ATLAS_CVE_WATCHER, args), indent=2)
+
+
+@mcp.tool()
+def version_downloads(
+    name: str,
+    limit: int = 30,
+    by_downloads: bool = False,
+) -> str:
+    """Per-version download breakdown for one package (cf_atlas Phase I).
+    Default sort: newest version first. by_downloads=True sorts by total
+    downloads instead — surfaces which versions the user base actually
+    runs."""
+    args = ["--json", "--limit", str(limit), name]
+    if by_downloads:
+        args.append("--by-downloads")
+    return json.dumps(_run_script(ATLAS_VERSION_DOWNLOADS, args), indent=2)
+
+
+@mcp.tool()
+def release_cadence(
+    package: str | None = None,
+    maintainer: str | None = None,
+    limit: int = 30,
+) -> str:
+    """Release cadence trend classifier (Phase I). For each package or
+    maintainer's set, classifies as accelerating / stable / decelerating /
+    silent / one-version based on rolling 30/90/365-day release counts."""
+    args = ["--json", "--limit", str(limit)]
+    if package:
+        args.extend(["--package", package])
+    if maintainer:
+        args.extend(["--maintainer", maintainer])
+    return json.dumps(_run_script(ATLAS_RELEASE_CADENCE, args), indent=2)
+
+
+@mcp.tool()
+def find_alternative(name: str, limit: int = 10) -> str:
+    """Suggest healthier conda-forge packages for an archived/abandoned
+    one. Combines keyword/summary/dependent/maintainer Jaccard overlap
+    with recency × downloads × non-archived filter."""
+    args = ["--json", "--limit", str(limit), name]
+    return json.dumps(_run_script(ATLAS_FIND_ALTERNATIVE, args), indent=2)
+
+
+@mcp.tool()
+def adoption_stage(
+    package: str | None = None,
+    maintainer: str | None = None,
+    limit: int = 30,
+) -> str:
+    """Lifecycle stage classifier — bleeding-edge / stable / mature /
+    declining / silent. Combines age + release cadence + total downloads.
+    Use for triaging "is this still alive?" questions across a maintainer's
+    portfolio or evaluating one specific package's maturity."""
+    args = ["--json", "--limit", str(limit)]
+    if package:
+        args.extend(["--package", package])
+    if maintainer:
+        args.extend(["--maintainer", maintainer])
+    return json.dumps(_run_script(ATLAS_ADOPTION_STAGE, args), indent=2)
+
+
+@mcp.tool()
+def package_health(name: str) -> str:
+    """Full health card for one package — combines Phase B/E/F/G/H/J/K/M/N
+    signals into a single rendered detail card. Includes downloads, vulns,
+    upstream-version comparison, dependency reach, bot-PR status, GitHub
+    CI/issues/PRs status, archived-feedstock detection, and channel
+    storefront links. JSON output emits the raw record."""
+    args = ["--json", name]
+    return json.dumps(_run_script(ATLAS_DETAIL_CF_ATLAS, args), indent=2)
+
+
+@mcp.tool()
+def query_atlas(
+    where: str | None = None,
+    select: str = "conda_name, latest_conda_version, total_downloads, "
+                  "vuln_critical_affecting_current, latest_status",
+    order_by: str = "total_downloads DESC",
+    limit: int = 25,
+) -> str:
+    """Generic cf_atlas SQLite query against the `packages` table.
+
+    Defensive: only SELECT statements allowed; LIMIT is enforced. Use this
+    when none of the higher-level tools (staleness_report, feedstock_health,
+    behind_upstream, cve_watcher, etc.) match the question. The schema is
+    documented in `cf_atlas.db` PRAGMA table_info(packages); side tables
+    `dependencies`, `upstream_versions`, `vuln_history`, `vuln_history`,
+    `package_version_downloads`, `package_version_vulns`,
+    `upstream_versions_history` are also queryable via JOIN.
+    """
+    if any(kw in (where or "").upper() for kw in
+           ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "ATTACH",
+            "DETACH", "PRAGMA", "VACUUM")):
+        return json.dumps({"error": "only SELECT-style WHERE clauses allowed"})
+    if any(kw in select.upper() for kw in
+           ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER")):
+        return json.dumps({"error": "only column lists allowed in select"})
+    import sqlite3 as _sql
+    db_path = (
+        Path(__file__).parent.parent
+        / "data" / "conda-forge-expert" / "cf_atlas.db"
+    )
+    if not db_path.exists():
+        return json.dumps({"error": f"cf_atlas.db missing at {db_path}"})
+    sql = f"SELECT {select} FROM packages"
+    if where:
+        sql += f" WHERE {where}"
+    sql += f" ORDER BY {order_by} LIMIT {min(int(limit), 1000)}"
+    try:
+        conn = _sql.connect(db_path)
+        conn.row_factory = _sql.Row
+        rows = [dict(r) for r in conn.execute(sql)]
+        return json.dumps({"sql": sql, "rows": rows}, indent=2, default=str)
+    except _sql.Error as e:
+        return json.dumps({"error": f"SQL error: {e}", "sql": sql})
+
+
+@mcp.tool()
+def my_feedstocks(maintainer: str) -> str:
+    """List all feedstocks where MAINTAINER is in the recipe-maintainers
+    list. Returns name, version, downloads, status, archived flag — a
+    portfolio-level overview. Use staleness_report / feedstock_health for
+    deeper dives into specific signals."""
+    return query_atlas(
+        select=(
+            "conda_name, feedstock_name, latest_conda_version, "
+            "latest_conda_upload, total_downloads, latest_status, "
+            "feedstock_archived, recipe_format, "
+            "vuln_critical_affecting_current"
+        ),
+        where=(
+            f"conda_name IS NOT NULL AND conda_name IN ("
+            f"SELECT pm.conda_name FROM package_maintainers pm "
+            f"JOIN maintainers m ON m.id = pm.maintainer_id "
+            f"WHERE LOWER(m.handle) = LOWER('{maintainer}'))"
+        ),
+        order_by="total_downloads DESC",
+        limit=1000,
+    )
+
+
+@mcp.tool()
+def scan_project(
+    project_path: str | None = None,
+    image: str | None = None,
+    sbom_in: str | None = None,
+    conda_env: str | None = None,
+    venv: str | None = None,
+    helm_chart: str | None = None,
+    kustomize: str | None = None,
+    argo_app: str | None = None,
+    flux_cr: str | None = None,
+    license_check: bool = False,
+    target_license: str | None = None,
+    enrich_vulns_from_atlas: bool = False,
+    brief: bool = True,
+) -> str:
+    """Vulnerability + license + atlas scan of a project, container image,
+    SBOM, live env, or Kubernetes manifest. Exactly one input mode at a
+    time: project_path / image / sbom_in / conda_env / venv / helm_chart /
+    kustomize / argo_app / flux_cr.
+
+    Output mode is JSON. license_check + target_license: produce a
+    license-compatibility table instead of vuln scan. enrich_vulns_from_
+    atlas: include cf_atlas Phase G counts as CycloneDX properties when
+    emitting an SBOM (offline-safe; no vuln-db env required).
+    """
+    args: list[str] = ["--json"]
+    if brief:
+        args.append("--brief")
+    if image:
+        for img in image.split(","):
+            args.extend(["--image", img.strip()])
+    elif sbom_in:
+        args.extend(["--sbom-in", sbom_in])
+    elif conda_env:
+        args.extend(["--conda-env", conda_env])
+    elif venv:
+        args.extend(["--venv", venv])
+    elif helm_chart:
+        args.extend(["--helm-chart", helm_chart])
+    elif kustomize:
+        args.extend(["--kustomize", kustomize])
+    elif argo_app:
+        args.extend(["--argo-app", argo_app])
+    elif flux_cr:
+        args.extend(["--flux-cr", flux_cr])
+    elif project_path:
+        args.append(project_path)
+    if license_check:
+        args.append("--license-check")
+        if target_license:
+            args.extend(["--target-license", target_license])
+    if enrich_vulns_from_atlas:
+        args.append("--enrich-vulns-from-atlas")
+    return json.dumps(_run_script(ATLAS_SCAN_PROJECT, args, timeout=600),
+                      indent=2)
+
+
 if __name__ == "__main__":
     mcp.run()

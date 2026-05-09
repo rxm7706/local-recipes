@@ -1,0 +1,130 @@
+# conda-forge-expert skill manifest
+#
+# Declares everything the skill needs from its host repo: external tools,
+# pixi tasks, MCP server placement, and the runtime data directory. Used
+# by `install.py` (in this same dir) when bootstrapping the skill into a
+# new repo.
+#
+# Move the directory `.claude/skills/conda-forge-expert/` into another
+# repo's `.claude/skills/`, then run `python install.py` from inside it.
+# That writes the wrapper layer, optionally copies the MCP server, and
+# offers to inject pixi tasks into the host repo's `pixi.toml`.
+
+skill:
+  name: conda-forge-expert
+  version: 7.0.0
+  type: standalone-portable
+
+# Where this skill expects to live within a host repo.
+canonical_paths:
+  skill_root: .claude/skills/conda-forge-expert
+  scripts_canonical: .claude/skills/conda-forge-expert/scripts
+  scripts_wrappers: .claude/scripts/conda-forge-expert
+  data_dir: .claude/data/conda-forge-expert
+  mcp_server: .claude/tools/conda_forge_server.py
+
+# External tooling. Hard requirements block the skill; soft are graceful-skip.
+external_tools:
+  required:
+    - name: python
+      min_version: "3.11"
+      reason: "tomllib (3.11+), Path.is_dir(missing_ok=True)-style flexibility"
+    - name: pixi
+      reason: "primary task runner; the skill assumes pixi.toml drives env management"
+  recommended:
+    - name: gh
+      reason: "Phase E.5 archived feedstocks (GraphQL); Phase N live GitHub data; submit_pr workflow"
+    - name: git
+      reason: "submit_pr / sync-upstream / GitHub clone via scan-project --github"
+  optional:
+    - name: rattler-build
+      reason: "native recipe builds (recipe-build pixi task)"
+    - name: conda-build
+      reason: "legacy build path"
+    - name: syft
+      reason: "scan-project --image / --oci-archive — preferred SBOM extractor"
+    - name: trivy
+      reason: "scan-project --image / --oci-archive — fallback SBOM extractor + native vuln scan"
+    - name: kubectl
+      reason: "scan-project --kubectl-all/--kubectl-context — live cluster scan"
+    - name: helm
+      reason: "scan-project --helm-chart — render templates before scan"
+    - name: kustomize
+      reason: "scan-project --kustomize — build overlays (kubectl kustomize is a fallback)"
+
+# Python dependencies the skill imports. Documented for portability — the
+# host repo's pixi env should resolve all of these.
+python_dependencies:
+  required:
+    - python >=3.11
+    - pyyaml         # YAML parsing throughout (pixi.lock, k8s manifests, etc.)
+    - packaging      # PEP 440 version comparison (behind-upstream)
+    - tomli; python_version < '3.11'
+    - conda-forge-metadata  # Phase C parselmouth integration
+  recommended:
+    - rattler-build  # local builds
+    - truststore     # enterprise TLS chain (corporate proxies)
+    - fastmcp        # MCP server (only if exposing tools to Claude Code)
+  optional:
+    - appthreat-vulnerability-db  # Phase G + scan-project vuln data (heavy: 2.5 GB on-disk index)
+
+# Pixi tasks the skill expects to find in the host repo's pixi.toml.
+# install.py can inject these (idempotently) into [feature.<env>.tasks.*].
+pixi_tasks:
+  feature: local-recipes
+  tasks:
+    # Recipe authoring
+    - validate
+    - lint-optimize
+    - check-deps
+    - generate-recipe
+    - migrate
+    - submit-pr
+    # Atlas
+    - build-cf-atlas
+    - query-cf-atlas
+    - stats-cf-atlas
+    - detail-cf-atlas
+    - staleness-report
+    - feedstock-health
+    - whodepends
+    - behind-upstream
+    - cve-watcher
+    - version-downloads
+    - release-cadence
+    - find-alternative
+    - adoption-stage
+  vuln_db_feature: vuln-db
+  vuln_db_tasks:
+    - vdb-refresh
+    - scan-project
+    - inventory-channel
+    - detail-cf-atlas
+    - detail-cf-atlas-vdb
+
+# Data files written at runtime. NEVER commit these.
+runtime_data:
+  - cf_atlas.db                    # ~200 MB after full build
+  - cf_atlas_meta.json             # tiny build provenance
+  - cf-graph-countyfair.tar.gz     # ~150 MB cached cf-graph (Phase E)
+  - vdb/                           # 2.5 GB AppThreat vulnerability DB
+  - vdb-cache/                     # vdb working dir
+  - cve/                           # legacy OSV.dev CVE DB
+  - feedstock_cache/               # short-lived gh API caches
+  - pypi_conda_map.json            # PyPI ↔ conda name mapping (parselmouth)
+
+# Integration points with the host repo.
+host_integration:
+  required:
+    - pixi.toml at repo root with `[feature.local-recipes]` defined
+    - .gitignore must exclude .claude/data/
+  optional:
+    - CLAUDE.md mentioning the skill (for Claude Code agent discoverability)
+    - .claude/tools/conda_forge_server.py (for MCP exposure)
+
+# Migration / install behavior on bootstrap.
+install_behavior:
+  - "Create .claude/scripts/conda-forge-expert/ wrapper layer (~22 thin subprocess wrappers)"
+  - "Optionally copy .claude/tools/conda_forge_server.py if MCP exposure requested"
+  - "Optionally append pixi tasks block to host pixi.toml (idempotent — skip if already present)"
+  - "Print install summary including which optional tools are missing"

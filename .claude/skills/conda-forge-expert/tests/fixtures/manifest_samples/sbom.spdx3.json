@@ -1,0 +1,9 @@
+{
+  "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+  "@graph": [
+    {"type": "software_Package", "name": "numpy", "software_packageVersion": "1.26.0",
+     "externalIdentifier": [{"identifier": "pkg:pypi/numpy@1.26.0"}]},
+    {"type": "software_Package", "name": "requests", "software_packageVersion": "2.31.0",
+     "externalIdentifier": [{"identifier": "pkg:pypi/requests@2.31.0"}]}
+  ]
+}

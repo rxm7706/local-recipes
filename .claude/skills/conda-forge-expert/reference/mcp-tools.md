@@ -1,6 +1,11 @@
 # MCP Tools Reference
 
-The conda-forge-expert skill exposes 18 tools via a FastMCP server at `.claude/tools/conda_forge_server.py`. Full schemas (parameters, defaults, return types) are surfaced at tool-call time; this file is a navigable index by purpose.
+The conda-forge-expert skill exposes 30+ tools via a FastMCP server at `.claude/tools/conda_forge_server.py`. Full schemas (parameters, defaults, return types) are surfaced at tool-call time; this file is a navigable index by purpose.
+
+The tools fall into three layers:
+1. **Recipe authoring** (the original v6.x tooling) — generate / validate / edit / build / migrate / submit.
+2. **Atlas intelligence** (added in v7.0.0) — query / report / classify / scan offline against `cf_atlas.db`.
+3. **Project / SBOM scanning** (also v7.0.0) — unified `scan_project` covering manifests / images / SBOMs / live envs / Kubernetes / GitOps.
 
 ## Core Capabilities
 
@@ -34,6 +39,40 @@ The conda-forge-expert skill exposes 18 tools via a FastMCP server at `.claude/t
 | `submit_pr` | Push the recipe to your staged-recipes fork and open a PR to conda-forge. Always `dry_run=True` first. |
 | `get_conda_name` | Resolve a PyPI package name to its conda-forge equivalent. |
 | `run_system_health_check` | Full diagnostic on the development environment. |
+
+## Atlas Intelligence (v7.0.0)
+
+These tools wrap the cf_atlas data layer (~16 schema versions, 15 pipeline phases). All read from `cf_atlas.db` offline — no network access required for queries (Phase G's *fresh* vuln data needs the vuln-db env, but cached counts work everywhere).
+
+| Tool | Purpose |
+|---|---|
+| `query_atlas` | Direct SELECT against `packages` (read-only, write-keywords blocked, LIMIT capped). Use for ad-hoc questions when the higher-level tools don't fit. |
+| `package_health` | Full health card for one package — combines Phase B/E/F/G/H/J/K/M/N signals. |
+| `my_feedstocks` | List all feedstocks where a maintainer is in the recipe-maintainers list, with download / version / archived / risk per row. |
+| `staleness_report` | Stalest feedstocks — sortable by `--by-risk` (Phase G CVE counts) or filterable by `--has-vulns` / `--bot-stuck`. |
+| `feedstock_health` | Filter to `stuck` (Phase M errors), `bad` (cf-graph flag), `open-pr` (bot PR), `ci-red` (Phase N CI failure), `open-issues`, `open-prs-human`, or `all`. |
+| `whodepends` | Phase J dependency graph — forward (what does X depend on) or `--reverse` (who depends on X). Filter by `--type build/host/run/test`. |
+| `behind_upstream` | Per-row upstream-of-record comparison: PyPI / GitHub / GitLab / Codeberg / npm / CRAN / CPAN / LuaRocks / crates.io / RubyGems / NuGet / Maven. Picks the right registry based on `conda_source_registry`. |
+| `cve_watcher` | Diff `vuln_history` snapshots — what CVE counts changed in the last N days. Severity filter (Critical / High / KEV / Total) + `--only-increases` filter. |
+| `version_downloads` | Per-version download breakdown for one package (Phase I). Sort by upload date or by adoption (`--by-downloads`). |
+| `release_cadence` | Trend classifier — accelerating / stable / decelerating / silent — based on rolling 30/90/365-day release counts. |
+| `find_alternative` | Suggest healthier replacements for an archived/abandoned package. Ranks by keyword/summary/dependent/maintainer overlap × recency × downloads. |
+| `adoption_stage` | Lifecycle stage classifier — bleeding-edge / stable / mature / declining / silent — based on age + cadence + downloads. |
+| `scan_project` | Unified scanner: project paths / container images / SBOMs (CycloneDX 1.x + 1.6 + XML; SPDX 2.x JSON + 2.x tag-value + 3.0 JSON-LD; syft / trivy native JSON) / live conda envs / live Python venvs / Kubernetes manifests / Helm charts (rendered) / Kustomize overlays (built) / Argo CD Applications / Flux HelmReleases & Kustomizations / OCI archives. License compatibility check. SBOM emit with optional Phase G vuln annotations. |
+
+### Atlas tool selection cheatsheet
+
+| Question | Tool |
+|---|---|
+| "What should I work on this week?" (maintainer triage) | `staleness_report --by-risk --maintainer X` |
+| "Which feedstocks have stuck bots?" | `feedstock_health stuck --maintainer X` |
+| "Which feedstocks are behind upstream?" | `behind_upstream --maintainer X` |
+| "What CVEs landed this week?" | `cve_watcher --maintainer X` |
+| "Who depends on my package?" | `whodepends <pkg> --reverse` |
+| "Is this package still maintained?" | `adoption_stage --package <pkg>` |
+| "What can replace this archived dep?" | `find_alternative <archived-name>` |
+| "Show me the per-version downloads" | `version_downloads <pkg>` |
+| "Scan my pixi.lock / SBOM / Helm chart / live K8s cluster for CVEs" | `scan_project` (unified entry point) |
 
 ## Special notes (not surfaced in tool docstrings)
 

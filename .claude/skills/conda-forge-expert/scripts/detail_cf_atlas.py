@@ -592,6 +592,22 @@ def render(record: dict[str, Any] | None,
     p(f"  GitHub:         {record.get('feedstock_url') or '—'}")
     p(f"  Maintainers:    {', '.join(maintainers) if maintainers else '— (none in atlas)'}")
 
+    # ── Downloads (atlas v2+) ──────────────────────────────────────────────
+    fetched_at = record.get("downloads_fetched_at")
+    if fetched_at is not None or record.get("total_downloads") is not None:
+        p("")
+        p(RULE)
+        p("  Downloads (anaconda.org, cached in atlas)")
+        p(RULE)
+        total = record.get("total_downloads")
+        latest = record.get("latest_version_downloads")
+        latest_ver = record.get("latest_conda_version") or "?"
+        latest_label = f"Latest (v{latest_ver}):"
+        p(f"  Lifetime:        {total:,}" if total is not None else "  Lifetime:        —")
+        p(f"  {latest_label:<16} {latest:,}" if latest is not None
+          else f"  {latest_label:<16} —")
+        p(f"  Fetched:         {_humanize_timestamp(fetched_at)}")
+
     # ── Build matrix ───────────────────────────────────────────────────────
     p("")
     p(RULE)
@@ -638,6 +654,93 @@ def render(record: dict[str, Any] | None,
     p(f"  Repository:      {record.get('conda_repo_url') or '—'}")
     p(f"  Dev URL:         {record.get('conda_dev_url') or '—'}")
     p(f"  Documentation:   {record.get('conda_doc_url') or '—'}")
+
+    # ── Maintenance signals (Phase J/M/N joined) ──────────────────────────
+    if record is not None and (
+        record.get("bot_status_fetched_at")
+        or record.get("gh_status_fetched_at")
+    ):
+        p("")
+        p(RULE)
+        p("  Maintenance signals")
+        p(RULE)
+        bot_errs = record.get("bot_version_errors_count")
+        bot_open = record.get("bot_open_pr_count")
+        bot_state = record.get("bot_last_pr_state")
+        bot_ver = record.get("bot_last_pr_version")
+        if record.get("bot_status_fetched_at"):
+            p(f"  Bot version-update PRs:")
+            p(f"    last attempted version: {bot_ver or '—'}, "
+              f"last PR state: {bot_state or '—'}")
+            p(f"    open count: {bot_open if bot_open is not None else '—'}, "
+              f"failed-attempt count: {bot_errs if bot_errs is not None else '—'}")
+            if record.get("feedstock_bad") == 1:
+                p(f"    ⚠ cf-graph flagged this feedstock as 'bad'")
+        gh_ci = record.get("gh_default_branch_status")
+        gh_iss = record.get("gh_open_issues_count")
+        gh_pr = record.get("gh_open_prs_count")
+        if record.get("gh_status_fetched_at"):
+            p(f"  GitHub default branch CI: {gh_ci or '—'}")
+            p(f"  GitHub open issues:       "
+              f"{gh_iss if gh_iss is not None else '—'}")
+            p(f"  GitHub open PRs (any):    "
+              f"{gh_pr if gh_pr is not None else '—'}")
+
+    # ── Upstream versions across registries (Phase H/K/L) ─────────────────
+    if record is not None and record.get("conda_name"):
+        upstream_rows = []
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            for r in conn.execute(
+                "SELECT source, version, last_error FROM upstream_versions "
+                "WHERE conda_name = ? ORDER BY source",
+                (record["conda_name"],),
+            ):
+                upstream_rows.append(dict(r))
+        except sqlite3.Error:
+            upstream_rows = []
+        if upstream_rows:
+            p("")
+            p(RULE)
+            p("  Upstream versions (Phase H/K/L unified side table)")
+            p(RULE)
+            conda_v = record.get("latest_conda_version") or "?"
+            p(f"  conda-forge: v{conda_v}")
+            for ur in upstream_rows:
+                ver = ur.get("version")
+                err = ur.get("last_error")
+                tag = "✓" if ver and ver != conda_v else (" " if ver else "✗")
+                source = ur.get("source") or "?"
+                if ver:
+                    behind = " (matches)" if ver == conda_v else " (BEHIND)"
+                    p(f"  {tag} {source:<10}: v{ver}{behind}")
+                else:
+                    p(f"  {tag} {source:<10}: — ({err or 'no data'})")
+
+    # ── Dependency reach (Phase J) ────────────────────────────────────────
+    if record is not None and record.get("conda_name"):
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            n_deps_to = list(conn.execute(
+                "SELECT COUNT(DISTINCT target_conda_name) FROM dependencies "
+                "WHERE source_conda_name = ?", (record["conda_name"],)
+            ))[0][0]
+            n_deps_from = list(conn.execute(
+                "SELECT COUNT(DISTINCT source_conda_name) FROM dependencies "
+                "WHERE target_conda_name = ?", (record["conda_name"],)
+            ))[0][0]
+        except sqlite3.Error:
+            n_deps_to = n_deps_from = 0
+        if n_deps_to or n_deps_from:
+            p("")
+            p(RULE)
+            p("  Dependency graph (Phase J)")
+            p(RULE)
+            p(f"  Direct deps (this → ?):     {n_deps_to:>5}  "
+              f"(use `whodepends {record['conda_name']}`)")
+            p(f"  Direct dependents (? → this): {n_deps_from:>5}  "
+              f"(use `whodepends {record['conda_name']} --reverse`)")
 
     # ── Channel storefronts ────────────────────────────────────────────────
     p("")
@@ -704,6 +807,44 @@ def render(record: dict[str, Any] | None,
             p("  Per-build artifact deep-inspect (--deep)")
             p(RULE)
             p(f"  ⚠  {source_status.get('artifact_msg', 'unavailable')}")
+
+    # ── Cached VDB risk (atlas v6+) ────────────────────────────────────────
+    # Renders only when live vdb data is NOT shown (no --vdb, or --no-vdb,
+    # or vdb library unavailable) AND the atlas has a cached scan. Lets
+    # local-recipes-env callers see the risk signal without spinning up
+    # the heavy vuln-db env. Phase G populates these columns.
+    cached_scan_ts = record.get("vdb_scanned_at") if record else None
+    show_cached_vdb = (
+        not ("vdb" in source_status and vdb_data)
+        and cached_scan_ts is not None
+        and record is not None
+    )
+    if show_cached_vdb and record is not None:
+        p("")
+        p(RULE)
+        p("  VDB Risk (cached, from cf_atlas Phase G)")
+        p(RULE)
+        c_total = record.get("vuln_total")
+        c_crit = record.get("vuln_critical_affecting_current") or 0
+        c_high = record.get("vuln_high_affecting_current") or 0
+        c_kev  = record.get("vuln_kev_affecting_current") or 0
+        c_err  = record.get("vdb_last_error")
+        if c_crit or c_kev:
+            risk = "CRITICAL" if c_crit else "HIGH"
+        elif c_high:
+            risk = "HIGH"
+        elif (c_total or 0) > 0:
+            risk = "MEDIUM"
+        else:
+            risk = "LOW (no vulns indexed)"
+        latest_v = record.get("latest_conda_version") or "?"
+        p(f"  RISK: {risk}")
+        p(f"  Affecting v{latest_v}: {c_crit} Critical, {c_high} High, {c_kev} KEV")
+        p(f"  Total vulns indexed across all versions: {c_total if c_total is not None else '—'}")
+        p(f"  Scanned: {_humanize_timestamp(cached_scan_ts)}")
+        if c_err:
+            p(f"  Last scan error: {c_err}")
+        p("  (For full CVE list, run: pixi run -e vuln-db detail-cf-atlas-vdb <name>)")
 
     # ── --vdb section ──────────────────────────────────────────────────────
     if "vdb" in source_status and vdb_data:
@@ -817,8 +958,10 @@ def main() -> int:
     parser.add_argument("--files", action="store_true",
                         help="With --deep, list file paths from paths.json (verbose)")
     parser.add_argument("--subdir", help="Filter to a single subdir (e.g., linux-64)")
-    parser.add_argument("--vdb", action="store_true",
-                        help="Query AppThreat multi-source vulnerability DB (requires `vuln-db` env)")
+    parser.add_argument("--vdb", action=argparse.BooleanOptionalAction, default=False,
+                        help="Query AppThreat multi-source vulnerability DB (requires `vuln-db` env). "
+                             "Pass --no-vdb to skip the vuln pass when invoked from a task that "
+                             "enables it by default (e.g., the vuln-db env's detail-cf-atlas).")
     parser.add_argument("--vdb-deep", dest="vdb_deep", action="store_true",
                         help="With --vdb, also show purl coverage and source attribution")
     parser.add_argument("--vdb-all", dest="vdb_all", action="store_true",

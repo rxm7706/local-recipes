@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 3
+  template:
+    spec:
+      initContainers:
+        - name: init
+          image: alpine:3.19
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+        - name: sidecar
+          image: nvcr.io/nvidia/pytorch:24.01-py3
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup
+              image: postgres:16.1@sha256:abc123def456789012345

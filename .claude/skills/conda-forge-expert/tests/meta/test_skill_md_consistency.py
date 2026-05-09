@@ -49,6 +49,7 @@ class TestSkillMdConsistency:
             "build-locally.py",   # conda-forge/staged-recipes top-level
             "setup.py",
             "script.py",          # rare, generic
+            "conda_forge_server.py",  # MCP server, lives at .claude/tools/
         }
 
         referenced = set(re.findall(r"\b([A-Za-z_][A-Za-z0-9_-]*\.py)\b", content))
@@ -93,6 +94,12 @@ class TestSkillMdConsistency:
             "recipe_editor.py",
             # Internal smoke check, not a user-facing CLI:
             "test-skill.py",
+            # MCP-helper scripts: invoked by .claude/tools/conda_forge_server.py
+            # (enrich_from_feedstock / get_feedstock_context / lookup_feedstock)
+            # via subprocess; users hit them through the MCP tool, not directly.
+            "feedstock_context.py",
+            "feedstock_enrich.py",
+            "feedstock_lookup.py",
         }
 
         content = PIXI_TOML.read_text()

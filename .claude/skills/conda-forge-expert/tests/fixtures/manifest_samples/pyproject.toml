@@ -1,0 +1,17 @@
+[project]
+name = "test-app"
+version = "0.1.0"
+dependencies = ["requests>=2.30", "click"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[dependency-groups]
+test = ["coverage", "ruff"]
+docs = ["mkdocs", {include-group = "test"}]
+
+[tool.pdm.dev-dependencies]
+lint = ["mypy>=1.0", "black"]
+
+[tool.hatch.envs.default]
+dependencies = ["bandit"]
