@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 6.4.0
+version: 7.0.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -218,6 +218,71 @@ When asked to create or update a recipe, execute these steps in order. Each step
     - Run `dry_run=True` first — it checks `gh auth`, fork presence, and branch state
     - See [Pre-PR Quality Gate Checklist](#pre-pr-quality-gate-checklist) before calling
     - > *Skills: [`shipping-and-launch`] — complete pre-submit checklist; [`git-workflow-and-versioning`] — atomic commit (`feat: add <name> recipe`); [`documentation-and-adrs`] — PR description must explain WHY.*
+
+---
+
+## Atlas Intelligence Layer (v7.0.0)
+
+The skill carries a SQLite-backed cross-channel package map at
+`.claude/data/conda-forge-expert/cf_atlas.db`, populated by 15 pipeline
+phases (B → N) and exposed through 17 CLIs + 12 MCP tools. The atlas is
+**offline-safe** for all read paths once built; only Phase G's *fresh*
+vuln data needs the heavy `vuln-db` env (cached counts work everywhere).
+
+### Build the atlas
+
+```bash
+pixi run -e local-recipes build-cf-atlas             # default phases
+PHASE_E_ENABLED=1 pixi run -e local-recipes build-cf-atlas  # incl. cf-graph enrichment
+PHASE_N_ENABLED=1 PHASE_N_MAINTAINER=rxm7706 ...     # add live GitHub data
+```
+
+### Daily-use CLIs (all offline; all support `--json`)
+
+| CLI | What it answers |
+|---|---|
+| `detail-cf-atlas <pkg>` | Full health card — version, downloads, vulns, upstream comparison, deps, bot/CI/issue status |
+| `staleness-report [--maintainer X] [--by-risk] [--has-vulns] [--bot-stuck]` | Triage queue: stalest / riskiest / stuck-bot feedstocks |
+| `feedstock-health [--filter stuck\|bad\|open-pr\|ci-red\|open-issues\|open-prs-human\|all]` | Maintenance dashboard |
+| `whodepends <pkg> [--reverse] [--type build\|host\|run\|test]` | Dependency graph queries (Phase J) |
+| `behind-upstream [--maintainer X]` | Multi-source upstream-of-record comparison |
+| `cve-watcher [--since-days N] [--severity C\|H\|K\|T]` | CVE-count delta vs prior snapshot |
+| `version-downloads <pkg> [--by-downloads]` | Per-version adoption (Phase I) |
+| `release-cadence [--package <pkg>] [--maintainer X]` | Trend classifier (accelerating/stable/decelerating/silent) |
+| `find-alternative <archived-pkg>` | Suggest healthier replacements |
+| `adoption-stage [--package <pkg>] [--maintainer X]` | Lifecycle classifier (bleeding-edge/stable/mature/declining/silent) |
+| `scan-project [PATH \| --image <ref> \| --sbom-in <file> \| --conda-env <path> \| --venv <path> \| --helm-chart <path> \| --kustomize <dir> \| --argo-app <file> \| --flux-cr <file>] [--license-check] [--sbom cyclonedx]` | Unified scanner — manifests, container images, SBOMs (8+ formats), live envs, GitOps |
+
+### MCP exposure
+
+All twelve atlas read-tools are wrapped as MCP tools in
+`.claude/tools/conda_forge_server.py` — see
+`reference/mcp-tools.md` for the full index and selection cheatsheet.
+
+### When to invoke the atlas
+
+The atlas exists to answer "what should I work on?" / "is this safe?" /
+"what depends on this?" — questions the per-recipe authoring workflow
+can't easily answer. Recommended triggers:
+
+- **Quarterly maintainer review**: `staleness-report --maintainer X --by-risk`
+- **Before merging a bot PR**: `whodepends <pkg> --reverse` to see blast radius
+- **CVE response**: `cve-watcher --maintainer X --severity C --only-increases`
+- **Deciding to archive**: combine `adoption-stage` + `find-alternative` to confirm
+  there's a viable migration path
+- **Pre-deployment scan**: `scan-project --image <prod-image>` or
+  `scan-project --sbom-in <cyclonedx.json>` for env audits
+
+### Persona-mapped catalog
+
+Full reference: `reference/actionable-intelligence-catalog.md` — every
+shipped signal mapped to (persona, goal, action, outcome).
+
+### Format coverage for `scan-project`
+
+Full reference: `reference/dependency-input-formats.md` — comprehensive
+support matrix for ~30 input formats (manifests, lock files, SBOMs,
+container images, live envs, GitOps).
 
 ---
 

@@ -86,7 +86,7 @@ def script_runner():
     return _run
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def load_module():
     """Import a script as a Python module via importlib.
 
@@ -94,6 +94,9 @@ def load_module():
     sanitised module name with hyphens converted to underscores. This works
     because the module name is just an internal identifier for importlib —
     we never try ``import recipe-generator`` at the Python level.
+
+    Session-scoped so module-scoped consumer fixtures (e.g. tests that load
+    scan_project once per test module) can request it.
     """
 
     def _load(script: str) -> ModuleType:

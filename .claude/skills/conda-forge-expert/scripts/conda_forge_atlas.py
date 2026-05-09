@@ -70,6 +70,17 @@ except ImportError:
     _HTTP_AVAILABLE = False
 
 
+def _iso_to_unix_safe(iso: str | None) -> int | None:
+    """Parse RFC 3339 / ISO 8601 to UNIX seconds; returns None on bad input."""
+    if not iso:
+        return None
+    import datetime as _dt
+    try:
+        return int(_dt.datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp())
+    except ValueError:
+        return None
+
+
 def _make_req(url: str, extra_headers: dict | None = None) -> urllib.request.Request:
     """Build an enterprise-safe Request; falls back to bare urllib if _http unavailable."""
     if _HTTP_AVAILABLE and _http_make_request is not None:
@@ -99,7 +110,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 17
 
 
 def _get_data_dir() -> Path:
@@ -118,6 +129,7 @@ CREATE TABLE IF NOT EXISTS packages (
     pypi_name              TEXT,
     feedstock_name         TEXT,
     feedstock_archived     INTEGER,
+    archived_at            INTEGER,
     relationship           TEXT NOT NULL,
     match_source           TEXT NOT NULL,
     match_confidence       TEXT NOT NULL,
@@ -140,7 +152,38 @@ CREATE TABLE IF NOT EXISTS packages (
     cran_name              TEXT,
     cpan_name              TEXT,
     luarocks_name          TEXT,
+    maven_coord            TEXT,
     pypi_last_serial       INTEGER,
+    total_downloads          INTEGER,
+    latest_version_downloads INTEGER,
+    downloads_fetched_at     INTEGER,
+    downloads_fetch_attempts INTEGER,
+    downloads_last_error     TEXT,
+    vuln_total                       INTEGER,
+    vuln_critical_affecting_current  INTEGER,
+    vuln_high_affecting_current      INTEGER,
+    vuln_kev_affecting_current       INTEGER,
+    vdb_scanned_at                   INTEGER,
+    vdb_last_error                   TEXT,
+    pypi_current_version             TEXT,
+    pypi_current_version_yanked      INTEGER,
+    pypi_version_fetched_at          INTEGER,
+    pypi_version_last_error          TEXT,
+    github_current_version           TEXT,
+    github_version_fetched_at        INTEGER,
+    github_version_last_error        TEXT,
+    bot_open_pr_count                INTEGER,
+    bot_last_pr_state                TEXT,
+    bot_last_pr_version              TEXT,
+    bot_version_errors_count         INTEGER,
+    feedstock_bad                    INTEGER,
+    bot_status_fetched_at            INTEGER,
+    gh_default_branch_status         TEXT,
+    gh_open_issues_count             INTEGER,
+    gh_open_prs_count                INTEGER,
+    gh_pushed_at                     INTEGER,
+    gh_status_fetched_at             INTEGER,
+    gh_status_last_error             TEXT,
     notes                  TEXT
 );
 
@@ -160,6 +203,101 @@ CREATE TABLE IF NOT EXISTS meta (
     value TEXT
 );
 
+-- Phase J: dependency graph extracted from cf-graph node_attrs.
+-- One row per (source, target, requirement_type) triple.
+CREATE TABLE IF NOT EXISTS dependencies (
+    source_conda_name TEXT NOT NULL,
+    target_conda_name TEXT NOT NULL,
+    requirement_type  TEXT NOT NULL,  -- 'build' | 'host' | 'run' | 'test'
+    pin_spec          TEXT,
+    PRIMARY KEY (source_conda_name, target_conda_name, requirement_type)
+);
+CREATE INDEX IF NOT EXISTS idx_deps_source ON dependencies(source_conda_name);
+CREATE INDEX IF NOT EXISTS idx_deps_target ON dependencies(target_conda_name);
+
+-- Phase G snapshot history: one row per (snapshot_at, conda_name) capturing
+-- the four affecting-current counts. Lets cve-watcher diff between any
+-- two snapshots and surface "new this week."
+CREATE TABLE IF NOT EXISTS vuln_history (
+    snapshot_at INTEGER NOT NULL,
+    conda_name  TEXT NOT NULL,
+    vuln_total                       INTEGER,
+    vuln_critical_affecting_current  INTEGER,
+    vuln_high_affecting_current      INTEGER,
+    vuln_kev_affecting_current       INTEGER,
+    PRIMARY KEY (snapshot_at, conda_name)
+);
+CREATE INDEX IF NOT EXISTS idx_vuln_history_name ON vuln_history(conda_name);
+CREATE INDEX IF NOT EXISTS idx_vuln_history_snap ON vuln_history(snapshot_at);
+
+-- Phase I: per-version download history. One row per (conda_name, version);
+-- written by Phase F as a side effect when fetching the anaconda.org payload
+-- (already contains per-file ndownloads + upload_time). Enables release-
+-- cadence and adoption-curve analysis without extra HTTP calls.
+CREATE TABLE IF NOT EXISTS package_version_downloads (
+    conda_name TEXT NOT NULL,
+    version    TEXT NOT NULL,
+    upload_unix INTEGER,        -- min upload_time across files of this version
+    file_count INTEGER,
+    total_downloads INTEGER,
+    fetched_at INTEGER,
+    PRIMARY KEY (conda_name, version)
+);
+CREATE INDEX IF NOT EXISTS idx_pvd_conda_name ON package_version_downloads(conda_name);
+CREATE INDEX IF NOT EXISTS idx_pvd_upload ON package_version_downloads(upload_unix);
+
+-- Phase K/L+: unified upstream version cache. One row per
+-- (conda_name, source). The source column distinguishes registries —
+-- 'pypi', 'github', 'gitlab', 'codeberg', 'npm', 'cran', 'cpan',
+-- 'luarocks', 'maven', 'crates', 'rubygems', 'nuget', etc. Adding new
+-- registries means adding a new resolver, not new columns. The dedicated
+-- pypi_current_version / github_current_version columns are kept for
+-- backward-compat with v6.7+ tooling but are also mirrored here so
+-- queries that need cross-source comparison can use one place.
+CREATE TABLE IF NOT EXISTS upstream_versions (
+    conda_name TEXT NOT NULL,
+    source     TEXT NOT NULL,
+    version    TEXT,
+    url        TEXT,
+    fetched_at INTEGER,
+    last_error TEXT,
+    PRIMARY KEY (conda_name, source)
+);
+CREATE INDEX IF NOT EXISTS idx_upstream_name ON upstream_versions(conda_name);
+CREATE INDEX IF NOT EXISTS idx_upstream_source ON upstream_versions(source);
+
+-- Upstream-version drift history. Captures one row per (snapshot_at,
+-- conda_name, source) tuple at the end of each Phase H/K/L run. Lets
+-- consumers track upstream-velocity trends and compute per-package
+-- "behind for N days" durations.
+CREATE TABLE IF NOT EXISTS upstream_versions_history (
+    snapshot_at INTEGER NOT NULL,
+    conda_name  TEXT NOT NULL,
+    source      TEXT NOT NULL,
+    version     TEXT,
+    PRIMARY KEY (snapshot_at, conda_name, source)
+);
+CREATE INDEX IF NOT EXISTS idx_uvh_name   ON upstream_versions_history(conda_name);
+CREATE INDEX IF NOT EXISTS idx_uvh_source ON upstream_versions_history(source);
+CREATE INDEX IF NOT EXISTS idx_uvh_snap   ON upstream_versions_history(snapshot_at);
+
+-- Per-version vuln scoring. Phase G writes only the latest_conda_version's
+-- counts to `packages`; Phase G' (per-version) iterates package_version_
+-- downloads and scores each version separately. Lets users find "the
+-- most recent version with 0 critical CVEs" for env-lockdown.
+CREATE TABLE IF NOT EXISTS package_version_vulns (
+    conda_name TEXT NOT NULL,
+    version    TEXT NOT NULL,
+    vuln_total                       INTEGER,
+    vuln_critical_affecting_version  INTEGER,
+    vuln_high_affecting_version      INTEGER,
+    vuln_kev_affecting_version       INTEGER,
+    scanned_at                       INTEGER,
+    PRIMARY KEY (conda_name, version)
+);
+CREATE INDEX IF NOT EXISTS idx_pvv_conda_name ON package_version_vulns(conda_name);
+CREATE INDEX IF NOT EXISTS idx_pvv_critical ON package_version_vulns(vuln_critical_affecting_version);
+
 CREATE INDEX IF NOT EXISTS idx_relationship ON packages(relationship);
 CREATE INDEX IF NOT EXISTS idx_match_source ON packages(match_source);
 CREATE INDEX IF NOT EXISTS idx_pypi_name    ON packages(pypi_name);
@@ -169,6 +307,11 @@ CREATE INDEX IF NOT EXISTS idx_license      ON packages(conda_license);
 CREATE INDEX IF NOT EXISTS idx_status       ON packages(latest_status);
 CREATE INDEX IF NOT EXISTS idx_archived     ON packages(feedstock_archived);
 CREATE INDEX IF NOT EXISTS idx_handle       ON maintainers(handle);
+-- Conda packages get a unique row keyed on conda_name. PyPI-only rows have
+-- conda_name NULL; SQLite treats NULLs as distinct under UNIQUE, so they
+-- coexist freely. Phase B uses ON CONFLICT(conda_name) DO UPDATE for
+-- rebuild idempotency.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_conda_name ON packages(conda_name);
 
 CREATE VIEW IF NOT EXISTS v_packages_enriched AS
 SELECT
@@ -204,8 +347,106 @@ def open_db(path: Path = DB_PATH) -> sqlite3.Connection:
     return conn
 
 
+def _dedupe_packages_by_conda_name(conn: sqlite3.Connection) -> int:
+    """v2→v3 migration: collapse duplicate rows that share a conda_name.
+
+    Pre-v3 rebuilds appended a new row to `packages` instead of upserting,
+    so each rebuild after the first one created a duplicate per conda
+    package. Duplicates are ~bit-identical apart from `pypi_last_serial`
+    (Phase D only updates the originally-inserted row). Resolution:
+      - keep the row with non-NULL pypi_last_serial when it differs;
+      - tiebreak by lowest rowid (= oldest, with the most history);
+      - delete the rest.
+
+    Returns the number of rows deleted.
+    """
+    cur = conn.execute(
+        "SELECT COUNT(*) FROM (SELECT 1 FROM packages "
+        "WHERE conda_name IS NOT NULL "
+        "GROUP BY conda_name HAVING COUNT(*) > 1)"
+    )
+    n_dup_names = cur.fetchone()[0]
+    if not n_dup_names:
+        return 0
+    cur = conn.execute(
+        """
+        DELETE FROM packages WHERE rowid IN (
+            SELECT rowid FROM (
+                SELECT rowid,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY conda_name
+                           ORDER BY (pypi_last_serial IS NULL), rowid
+                       ) AS rn
+                FROM packages
+                WHERE conda_name IS NOT NULL
+            ) WHERE rn > 1
+        )
+        """
+    )
+    deleted = cur.rowcount
+    conn.commit()
+    return deleted
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
-    """Create tables, indexes, and views if not present."""
+    """Create tables, indexes, and views if not present.
+
+    Migrations are idempotent and run on every open. v1→v2 adds the download
+    columns; v2→v3 dedupes pre-existing duplicate rows then enforces a UNIQUE
+    INDEX on `conda_name` so future Phase B rebuilds upsert cleanly.
+    """
+    # v1 → v2 → v4: column additions via ALTER TABLE. v3 was the dedup +
+    # UNIQUE INDEX migration handled below; v4 adds Phase F failure-tracking
+    # columns. Run ADD COLUMN before executescript so the columns exist
+    # before any later DDL references them.
+    existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(packages)")}
+    for col, ddl in (
+        ("total_downloads",          "ALTER TABLE packages ADD COLUMN total_downloads INTEGER"),
+        ("latest_version_downloads", "ALTER TABLE packages ADD COLUMN latest_version_downloads INTEGER"),
+        ("downloads_fetched_at",     "ALTER TABLE packages ADD COLUMN downloads_fetched_at INTEGER"),
+        ("downloads_fetch_attempts", "ALTER TABLE packages ADD COLUMN downloads_fetch_attempts INTEGER"),
+        ("downloads_last_error",     "ALTER TABLE packages ADD COLUMN downloads_last_error TEXT"),
+        ("archived_at",              "ALTER TABLE packages ADD COLUMN archived_at INTEGER"),
+        ("vuln_total",                       "ALTER TABLE packages ADD COLUMN vuln_total INTEGER"),
+        ("vuln_critical_affecting_current",  "ALTER TABLE packages ADD COLUMN vuln_critical_affecting_current INTEGER"),
+        ("vuln_high_affecting_current",      "ALTER TABLE packages ADD COLUMN vuln_high_affecting_current INTEGER"),
+        ("vuln_kev_affecting_current",       "ALTER TABLE packages ADD COLUMN vuln_kev_affecting_current INTEGER"),
+        ("vdb_scanned_at",                   "ALTER TABLE packages ADD COLUMN vdb_scanned_at INTEGER"),
+        ("vdb_last_error",                   "ALTER TABLE packages ADD COLUMN vdb_last_error TEXT"),
+        ("pypi_current_version",             "ALTER TABLE packages ADD COLUMN pypi_current_version TEXT"),
+        ("pypi_version_fetched_at",          "ALTER TABLE packages ADD COLUMN pypi_version_fetched_at INTEGER"),
+        ("pypi_version_last_error",          "ALTER TABLE packages ADD COLUMN pypi_version_last_error TEXT"),
+        ("pypi_current_version_yanked",      "ALTER TABLE packages ADD COLUMN pypi_current_version_yanked INTEGER"),
+        ("github_current_version",           "ALTER TABLE packages ADD COLUMN github_current_version TEXT"),
+        ("github_version_fetched_at",        "ALTER TABLE packages ADD COLUMN github_version_fetched_at INTEGER"),
+        ("github_version_last_error",        "ALTER TABLE packages ADD COLUMN github_version_last_error TEXT"),
+        ("bot_open_pr_count",                "ALTER TABLE packages ADD COLUMN bot_open_pr_count INTEGER"),
+        ("bot_last_pr_state",                "ALTER TABLE packages ADD COLUMN bot_last_pr_state TEXT"),
+        ("bot_last_pr_version",              "ALTER TABLE packages ADD COLUMN bot_last_pr_version TEXT"),
+        ("bot_version_errors_count",         "ALTER TABLE packages ADD COLUMN bot_version_errors_count INTEGER"),
+        ("feedstock_bad",                    "ALTER TABLE packages ADD COLUMN feedstock_bad INTEGER"),
+        ("bot_status_fetched_at",            "ALTER TABLE packages ADD COLUMN bot_status_fetched_at INTEGER"),
+        ("gh_default_branch_status",         "ALTER TABLE packages ADD COLUMN gh_default_branch_status TEXT"),
+        ("gh_open_issues_count",             "ALTER TABLE packages ADD COLUMN gh_open_issues_count INTEGER"),
+        ("gh_open_prs_count",                "ALTER TABLE packages ADD COLUMN gh_open_prs_count INTEGER"),
+        ("gh_pushed_at",                     "ALTER TABLE packages ADD COLUMN gh_pushed_at INTEGER"),
+        ("gh_status_fetched_at",             "ALTER TABLE packages ADD COLUMN gh_status_fetched_at INTEGER"),
+        ("gh_status_last_error",             "ALTER TABLE packages ADD COLUMN gh_status_last_error TEXT"),
+        ("maven_coord",                      "ALTER TABLE packages ADD COLUMN maven_coord TEXT"),
+    ):
+        if col not in existing_cols:
+            conn.execute(ddl)
+
+    # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
+    # the CREATE UNIQUE INDEX would fail on the duplicates.
+    have_uq = bool(list(conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='index' AND name='uq_conda_name'"
+    )))
+    if not have_uq:
+        n_deleted = _dedupe_packages_by_conda_name(conn)
+        if n_deleted:
+            print(f"  Migration v2→v3: deleted {n_deleted:,} duplicate rows")
+
     conn.executescript(SCHEMA_DDL)
     conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
                  ("schema_version", str(SCHEMA_VERSION)))
@@ -280,7 +521,7 @@ def _aggregate_repodata_records(repodata_by_subdir: dict[str, dict]) -> dict[str
     aggregated: dict[str, dict[str, Any]] = {}
     for subdir, repodata in repodata_by_subdir.items():
         for source_dict in (repodata.get("packages.conda", {}), repodata.get("packages", {})):
-            for filename, rec in source_dict.items():
+            for rec in source_dict.values():
                 name = rec.get("name")
                 if not name:
                     continue
@@ -354,9 +595,25 @@ def phase_b_conda_enumeration(conn: sqlite3.Connection) -> dict:
     aggregated = _aggregate_repodata_records(repodata_by_subdir)
     print(f"  Aggregated to {len(aggregated):,} unique packages")
 
-    print(f"  Inserting into SQLite (single transaction)...")
+    print(f"  Upserting into SQLite (single transaction)...")
+    # Upsert on conda_name. On conflict refresh the conda_* fields and reset
+    # relationship/match_* to the conda_only baseline; later phases (C, C.5
+    # via E, D) will refine the relationship and source classification. PyPI
+    # serial, feedstock_*, downloads, and other non-Phase-B columns are left
+    # untouched so a rebuild doesn't trash work from later phases.
+    #
+    # Side-effect: populate a temp table with the current-repodata name-set
+    # so Phase B.6 can demote 'active' rows that no longer appear in
+    # current_repodata to 'inactive'. Without this, packages dropped from
+    # repodata between builds keep stale 'active' status forever.
     conn.execute("BEGIN TRANSACTION")
     try:
+        conn.execute("DROP TABLE IF EXISTS current_repodata_names")
+        conn.execute("CREATE TEMP TABLE current_repodata_names(name TEXT PRIMARY KEY)")
+        conn.executemany(
+            "INSERT INTO current_repodata_names(name) VALUES (?)",
+            [(rec["conda_name"],) for rec in aggregated.values()],
+        )
         for rec in aggregated.values():
             conn.execute(
                 """
@@ -366,6 +623,16 @@ def phase_b_conda_enumeration(conn: sqlite3.Connection) -> dict:
                     conda_license, conda_license_family,
                     relationship, match_source, match_confidence
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, 'conda_only', 'none', 'n/a')
+                ON CONFLICT(conda_name) DO UPDATE SET
+                    conda_subdirs        = excluded.conda_subdirs,
+                    conda_noarch         = excluded.conda_noarch,
+                    latest_conda_version = excluded.latest_conda_version,
+                    latest_conda_upload  = excluded.latest_conda_upload,
+                    conda_license        = excluded.conda_license,
+                    conda_license_family = excluded.conda_license_family,
+                    relationship         = 'conda_only',
+                    match_source         = 'none',
+                    match_confidence     = 'n/a'
                 """,
                 (
                     rec["conda_name"],
@@ -515,13 +782,40 @@ def phase_b6_yanked_detection(conn: sqlite3.Connection) -> dict:
     t0 = time.monotonic()
     conn.execute("BEGIN TRANSACTION")
     try:
-        # Active: has a current version from Phase B
-        active = conn.execute(
-            "UPDATE packages SET latest_status = 'active' "
-            "WHERE latest_conda_version IS NOT NULL AND latest_status IS NULL"
-        ).rowcount
-        # Inactive: registered but no current version (already set in Phase B.5)
-        inactive = conn.execute(
+        # Definition: a row is 'active' iff its conda_name appears in
+        # current_repodata. This handles all three transitions in one pass:
+        #   - first-time activation (Phase B insert, no prior status)
+        #   - re-activation (Phase B.5 row that reappeared in repodata)
+        #   - demotion (was 'active', no longer in repodata)
+        # Phase B populates the temp table; if it didn't run we fall back to
+        # the lite "has-version → active" rule for partial-pipeline runs.
+        have_temp = conn.execute(
+            "SELECT 1 FROM sqlite_temp_master "
+            "WHERE type='table' AND name='current_repodata_names'"
+        ).fetchone()
+        promoted = 0
+        demoted = 0
+        if have_temp:
+            promoted = conn.execute(
+                "UPDATE packages SET latest_status = 'active' "
+                "WHERE conda_name IN (SELECT name FROM current_repodata_names) "
+                "  AND COALESCE(latest_status, '') != 'active'"
+            ).rowcount
+            demoted = conn.execute(
+                "UPDATE packages SET latest_status = 'inactive' "
+                "WHERE conda_name IS NOT NULL "
+                "  AND latest_status = 'active' "
+                "  AND conda_name NOT IN (SELECT name FROM current_repodata_names)"
+            ).rowcount
+        else:
+            promoted = conn.execute(
+                "UPDATE packages SET latest_status = 'active' "
+                "WHERE latest_conda_version IS NOT NULL AND latest_status IS NULL"
+            ).rowcount
+        active_total = conn.execute(
+            "SELECT COUNT(*) FROM packages WHERE latest_status = 'active'"
+        ).fetchone()[0]
+        inactive_total = conn.execute(
             "SELECT COUNT(*) FROM packages WHERE latest_status = 'inactive'"
         ).fetchone()[0]
         conn.execute("COMMIT")
@@ -530,10 +824,16 @@ def phase_b6_yanked_detection(conn: sqlite3.Connection) -> dict:
         raise
 
     elapsed = time.monotonic() - t0
-    print(f"  Phase B.6 done in {elapsed:.1f}s — active: {active:,}, inactive: {inactive:,}")
+    print(
+        f"  Phase B.6 done in {elapsed:.1f}s — promoted: {promoted:,}, "
+        f"demoted: {demoted:,}, totals active/inactive: "
+        f"{active_total:,}/{inactive_total:,}"
+    )
     return {
-        "active_count": active,
-        "inactive_count": inactive,
+        "promoted_count": promoted,
+        "demoted_count": demoted,
+        "active_count": active_total,
+        "inactive_count": inactive_total,
         "duration_seconds": round(elapsed, 2),
         "note": "lite mode; per-version yanked diff deferred to true v2",
     }
@@ -592,6 +892,7 @@ def phase_c5_source_url_match(conn: sqlite3.Connection) -> dict:
     """Phase C.5 — deferred. Recipe source.url match requires cf-graph data
     fetched in Phase E. Implemented inline within Phase E to avoid double-fetch.
     """
+    _ = conn  # signature required by phases-list dispatcher; logic folded into E
     print("  Phase C.5 folded into Phase E (needs cf-graph data); skipping standalone")
     return {"folded_into": "E"}
 
@@ -705,10 +1006,18 @@ _SRC_REGEX_PATTERNS = [
     ("cpan", r"(?:cpan\.org|metacpan\.org)/"),
     ("luarocks", r"luarocks\.org/"),
     ("github", r"github\.com/.+/(?:archive|releases)"),
+    ("maven", r"(?:repo\.maven\.apache\.org|repo1\.maven\.org|search\.maven\.org|"
+              r"central\.sonatype\.com)/"),
 ]
 # Specific extractors for cross-channel name within source.url
 _NPM_NAME_RE = r"registry\.npmjs\.org/(@[^/]+/[^/]+|[^/]+)/-/"
 _PYPI_NAME_RE = r"(?:pypi\.io|pypi\.org)/packages/source/[^/]/([^/]+)/"
+# Maven jar URL: https://repo.maven.apache.org/maven2/<group/path>/<artifact>/<version>/<artifact>-<version>.jar
+# Coords are derived as <group-with-slashes-as-dots>:<artifact>
+_MAVEN_SOURCE_RE = re.compile(
+    r"(?:repo\.maven\.apache\.org/maven2|repo1\.maven\.org/maven2)/"
+    r"([^?#]+?)/([^/]+)/[^/]+/[^/]+\.(?:jar|pom|aar)"
+)
 
 
 def _classify_source_url(source_url: Any) -> tuple[str | None, str | None]:
@@ -856,15 +1165,45 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
                 license_family = about.get("license_family")
                 keywords = about.get("keywords") or []
                 maintainers = extra.get("recipe-maintainers") or []
-                # recipe_format detection: rendered_recipe schema_version
-                rendered = payload.get("rendered_recipes") or []
-                recipe_format = "unknown"
-                if rendered and isinstance(rendered, list):
-                    first_rendered = rendered[0] if rendered else {}
-                    if isinstance(first_rendered, dict) and "schema_version" in first_rendered:
-                        recipe_format = "recipe.yaml"
-                    else:
+                # recipe_format detection from cf-graph node_attrs.
+                # cf-graph stores meta_yaml.schema_version: 0 = v0 (meta.yaml,
+                # Jinja-templated), 1 = v1 (recipe.yaml, native YAML context).
+                # Earlier classifier looked for `rendered_recipes` which
+                # cf-graph does not emit — left every row at "unknown".
+                #
+                # The full ladder:
+                #   1. meta_yaml.schema_version explicit (1 → recipe.yaml,
+                #      0 → meta.yaml).
+                #   2. raw_meta_yaml head bytes ({% set → v0, context: → v1).
+                #   3. meta_yaml structural shape (top-level `package` +
+                #      `source`/`build` is v0; top-level `context` is v1).
+                #      Catches CDT packages (~116 globally) which are auto-
+                #      generated v0 without any Jinja templating.
+                recipe_format = None
+                sv = meta_yaml.get("schema_version") if isinstance(meta_yaml, dict) else None
+                if sv == 1:
+                    recipe_format = "recipe.yaml"
+                elif sv == 0:
+                    recipe_format = "meta.yaml"
+                else:
+                    raw = payload.get("raw_meta_yaml") or ""
+                    head = raw[:500]
+                    if "{% set" in head or head.lstrip().startswith("{%"):
                         recipe_format = "meta.yaml"
+                    elif "context:" in head:
+                        recipe_format = "recipe.yaml"
+                    elif isinstance(meta_yaml, dict):
+                        # Structural-shape fallback. v1 recipes ALWAYS have a
+                        # top-level `context` key in meta_yaml (the parsed
+                        # YAML reflects this). v0 has package + source/build.
+                        if "context" in meta_yaml:
+                            recipe_format = "recipe.yaml"
+                        elif "package" in meta_yaml and (
+                            "source" in meta_yaml or "build" in meta_yaml
+                        ):
+                            recipe_format = "meta.yaml"
+                if recipe_format is None:
+                    recipe_format = "unknown"
                 # Source registry classification
                 registry, extracted = _classify_source_url(source_url)
 
@@ -920,6 +1259,19 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
                             "UPDATE packages SET npm_name = COALESCE(npm_name, ?) WHERE conda_name = ?",
                             (extracted, conda_name),
                         )
+                    if registry == "maven":
+                        # Pull groupId:artifactId from the source URL when
+                        # the recipe sources a jar/pom/aar from Maven Central.
+                        m_match = _MAVEN_SOURCE_RE.search(source_url) if isinstance(source_url, str) else None
+                        if m_match:
+                            group_path = m_match.group(1).strip("/")
+                            artifact = m_match.group(2)
+                            group_id = group_path.replace("/", ".")
+                            coord = f"{group_id}:{artifact}"
+                            conn.execute(
+                                "UPDATE packages SET maven_coord = COALESCE(maven_coord, ?) WHERE conda_name = ?",
+                                (coord, conda_name),
+                            )
                     # Maintainers: insert into junction table
                     for m in maintainers:
                         if not isinstance(m, str):
@@ -953,15 +1305,21 @@ def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
     """Phase E.5: GraphQL query for archived feedstocks in conda-forge org.
 
     Uses gh CLI's GraphQL access (no API token management needed). Sets
-    feedstock_archived=1 on rows whose feedstock_name appears in the archived
-    list, 0 on the rest.
+    feedstock_archived=1 and archived_at (UNIX seconds) on rows whose
+    feedstock_name appears in the archived list, 0/NULL on the rest.
+
+    Note: GitHub's GraphQL Repository type does not expose an "archived
+    reason" field — that's a manual operator decision not stored on the
+    repo. If that signal becomes useful, the `notes` column on `packages`
+    is the right place for hand-curated annotations.
     """
+    import datetime as dt
     import subprocess
     t0 = time.monotonic()
     print("  Phase E.5: querying conda-forge org for archived feedstock repos...")
 
     # Paginated GraphQL — conda-forge has thousands of feedstocks; we filter to archived only
-    archived: set[str] = set()
+    archived: dict[str, str | None] = {}
     cursor = None
     page = 0
     while True:
@@ -970,7 +1328,7 @@ def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
         query = (
             "{ organization(login: \"conda-forge\") { "
             f"  repositories(first: 100, isArchived: true{cursor_arg}) {{ "
-            "    nodes { name } "
+            "    nodes { name archivedAt } "
             "    pageInfo { hasNextPage endCursor } "
             "  } "
             "} }"
@@ -986,28 +1344,49 @@ def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
             break
         repos = data["data"]["organization"]["repositories"]
         for node in repos["nodes"]:
-            archived.add(node["name"])
+            archived[node["name"]] = node.get("archivedAt")
         if not repos["pageInfo"]["hasNextPage"]:
             break
         cursor = repos["pageInfo"]["endCursor"]
     print(f"  Found {len(archived):,} archived repos in conda-forge org (across {page} pages)")
 
+    def _iso_to_unix(s: str | None) -> int | None:
+        if not s:
+            return None
+        try:
+            # GitHub returns RFC 3339 / ISO 8601 with trailing 'Z'.
+            return int(dt.datetime.fromisoformat(s.replace("Z", "+00:00")).timestamp())
+        except ValueError:
+            return None
+
     # Filter to *-feedstock repos and apply
-    archived_feedstocks = {name for name in archived if name.endswith("-feedstock")}
+    archived_feedstocks = {
+        name: ts for name, ts in archived.items() if name.endswith("-feedstock")
+    }
     print(f"  {len(archived_feedstocks):,} are *-feedstock repos")
 
     conn.execute("BEGIN TRANSACTION")
     try:
-        # Default everyone to 0 (not archived)
-        conn.execute("UPDATE packages SET feedstock_archived = 0 WHERE feedstock_name IS NOT NULL")
+        # Default everyone to not-archived; clears stale archived_at on rows
+        # that were unarchived since last run.
+        conn.execute(
+            "UPDATE packages SET feedstock_archived = 0, archived_at = NULL "
+            "WHERE feedstock_name IS NOT NULL"
+        )
         # Strip "-feedstock" suffix from GitHub repo names — feedstock-outputs
         # stores them WITHOUT the suffix (e.g., "numpy" not "numpy-feedstock"),
         # but GraphQL returns the full repo name.
         marked = 0
-        for fs_repo_name in archived_feedstocks:
+        with_timestamp = 0
+        for fs_repo_name, archived_iso in archived_feedstocks.items():
             fs_short = fs_repo_name[:-len("-feedstock")]  # strip suffix
+            ts_unix = _iso_to_unix(archived_iso)
+            if ts_unix is not None:
+                with_timestamp += 1
             cursor = conn.execute(
-                "UPDATE packages SET feedstock_archived = 1 WHERE feedstock_name = ?", (fs_short,)
+                "UPDATE packages SET feedstock_archived = 1, archived_at = ? "
+                "WHERE feedstock_name = ?",
+                (ts_unix, fs_short),
             )
             marked += cursor.rowcount
         conn.execute("COMMIT")
@@ -1016,11 +1395,2125 @@ def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
         raise
 
     elapsed = time.monotonic() - t0
-    print(f"  Phase E.5 done in {elapsed:.1f}s — marked {marked:,} rows as archived")
+    print(
+        f"  Phase E.5 done in {elapsed:.1f}s — marked {marked:,} rows as archived "
+        f"({with_timestamp:,} with archivedAt timestamp)"
+    )
     return {
         "archived_repos_total": len(archived),
         "archived_feedstocks": len(archived_feedstocks),
         "marked_rows": marked,
+        "rows_with_archived_at": with_timestamp,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def _phase_f_fetch_one(
+    name: str, latest: str | None
+) -> tuple[str, str | None, dict | None, str, str | None]:
+    """Worker for Phase F. Returns (name, latest, payload, status, err_msg).
+
+    status ∈ {'ok', '404', 'fail'}. err_msg is None on success, otherwise a
+    short string suitable for `downloads_last_error`. On 429 retries up to 3x
+    with exponential backoff; on other 4xx/5xx returns 'fail' with the HTTP
+    status; on network errors returns 'fail' with the exception class name.
+    """
+    url = f"https://api.anaconda.org/package/conda-forge/{name}"
+    last_err: str | None = None
+    for attempt in range(3):
+        try:
+            req = _make_req(url)
+            # 120s timeout: awscli's response is ~120MB / ~55s. With 8 workers,
+            # one slow row doesn't gate the others.
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                return (name, latest, json.load(resp), "ok", None)
+        except urllib.error.HTTPError as e:
+            last_err = f"HTTP {e.code}"
+            if e.code == 404:
+                return (name, latest, None, "404", last_err)
+            if e.code == 429:
+                time.sleep(2 ** attempt + 1)
+                continue
+            return (name, latest, None, "fail", last_err)
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {str(e)[:120]}"
+            if attempt < 2:
+                time.sleep(1 + attempt)
+                continue
+            return (name, latest, None, "fail", last_err)
+    return (name, latest, None, "fail", last_err or "exhausted retries")
+
+
+def phase_f_downloads(conn: sqlite3.Connection) -> dict:
+    """Phase F: per-package download counts via anaconda.org API.
+
+    For each active conda-forge row, hits
+    `https://api.anaconda.org/package/conda-forge/<name>` once and stores:
+      - total_downloads:           sum of ndownloads across every file/version
+      - latest_version_downloads:  sum of ndownloads for files matching
+                                   latest_conda_version
+      - downloads_fetched_at:      UNIX seconds; used as a TTL skip guard
+
+    Rows fetched within PHASE_F_TTL_DAYS (default 7) are skipped, so steady-
+    state runs are cheap once a cold backfill has populated the table.
+
+    Default-on. First cold run is ~32k requests; with the default 8-worker pool
+    that's ~30 min over residential bandwidth. TTL gating keeps warm runs cheap
+    (only rows older than `PHASE_F_TTL_DAYS` re-fetch).
+
+    Tunables (env vars):
+      - PHASE_F_DISABLED     : "1" to skip entirely (opt-out)
+      - PHASE_F_TTL_DAYS     : skip rows refreshed within N days (default 7)
+      - PHASE_F_CONCURRENCY  : worker pool size (default 8). Set to 1 for serial
+      - PHASE_F_LIMIT        : cap rows processed (debug; 0 = no cap)
+
+    Failure handling: 429 retries 3x per task with backoff. 404 is recorded as
+    "fetched with zero" so we don't re-poll. Other errors leave the row
+    untouched and are retried next run. Writes happen on the main thread to
+    keep SQLite single-writer; batched commits every 500 rows.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    t0 = time.monotonic()
+    print("  Phase F: per-package download counts via anaconda.org")
+
+    if os.environ.get("PHASE_F_DISABLED"):
+        return {
+            "skipped": True,
+            "reason": "PHASE_F_DISABLED=1 set; skipping anaconda.org fetch.",
+            "duration_seconds": 0.0,
+        }
+
+    ttl_days = int(os.environ.get("PHASE_F_TTL_DAYS", "7"))
+    concurrency = max(1, int(os.environ.get("PHASE_F_CONCURRENCY", "8")))
+    limit = int(os.environ.get("PHASE_F_LIMIT", "0"))
+    cutoff = int(time.time()) - ttl_days * 86400
+
+    sql = (
+        "SELECT DISTINCT conda_name, latest_conda_version FROM packages "
+        "WHERE conda_name IS NOT NULL "
+        "  AND COALESCE(feedstock_archived, 0) = 0 "
+        "  AND latest_status = 'active' "
+        "  AND COALESCE(downloads_fetched_at, 0) < ?"
+    )
+    params: tuple = (cutoff,)
+    if limit > 0:
+        sql += " LIMIT ?"
+        params = (cutoff, limit)
+    rows = list(conn.execute(sql, params))
+    print(f"  {len(rows):,} rows to refresh (TTL {ttl_days}d, concurrency {concurrency})")
+
+    fetched = 0
+    failed = 0
+    not_found = 0
+    progress_every = max(500, len(rows) // 40) if rows else 1
+    commit_every = 500
+    completed = 0
+
+    with ThreadPoolExecutor(max_workers=concurrency) as ex:
+        futures = [
+            ex.submit(_phase_f_fetch_one, r["conda_name"], r["latest_conda_version"])
+            for r in rows
+        ]
+        for fut in as_completed(futures):
+            name, latest, payload, status, err_msg = fut.result()
+            now = int(time.time())
+            if status == "ok":
+                files = (payload or {}).get("files") or []
+                total = sum(int(f.get("ndownloads") or 0) for f in files)
+                latest_dl = sum(
+                    int(f.get("ndownloads") or 0)
+                    for f in files
+                    if f.get("version") == latest
+                )
+                # Phase I side-effect: aggregate per-version totals from the
+                # same payload. anaconda.org files have version + ndownloads +
+                # upload_time per row; group by version, sum downloads, take
+                # the earliest upload_time as the version-release timestamp.
+                by_version: dict[str, dict[str, Any]] = {}
+                for f in files:
+                    fver = f.get("version")
+                    if not fver:
+                        continue
+                    bucket = by_version.setdefault(
+                        fver, {"downloads": 0, "files": 0, "upload": None}
+                    )
+                    bucket["downloads"] += int(f.get("ndownloads") or 0)
+                    bucket["files"] += 1
+                    upload_str = f.get("upload_time")
+                    if upload_str:
+                        # ISO 8601: '2026-04-25T03:25:34.833000+00:00'.
+                        try:
+                            ts = int(_iso_to_unix_safe(upload_str) or 0)
+                        except (TypeError, ValueError):
+                            ts = 0
+                        if ts and (bucket["upload"] is None or ts < bucket["upload"]):
+                            bucket["upload"] = ts
+                # Success clears any prior error; attempts increments.
+                conn.execute(
+                    "UPDATE packages SET total_downloads = ?, "
+                    "latest_version_downloads = ?, downloads_fetched_at = ?, "
+                    "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
+                    "downloads_last_error = NULL "
+                    "WHERE conda_name = ?",
+                    (total, latest_dl, now, name),
+                )
+                # Phase I writes — one INSERT OR REPLACE per version of this
+                # package. Cheap because by_version is small (one entry per
+                # release) and we're already inside a transaction.
+                for fver, info in by_version.items():
+                    conn.execute(
+                        "INSERT OR REPLACE INTO package_version_downloads "
+                        "(conda_name, version, upload_unix, file_count, "
+                        "total_downloads, fetched_at) "
+                        "VALUES (?, ?, ?, ?, ?, ?)",
+                        (name, fver, info["upload"], info["files"],
+                         info["downloads"], now),
+                    )
+                fetched += 1
+            elif status == "404":
+                conn.execute(
+                    "UPDATE packages SET total_downloads = 0, "
+                    "latest_version_downloads = 0, downloads_fetched_at = ?, "
+                    "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
+                    "downloads_last_error = ? "
+                    "WHERE conda_name = ?",
+                    (now, err_msg, name),
+                )
+                not_found += 1
+            else:
+                # Persistent failure: record the error and bump attempts so
+                # operators can spot rows that consistently fail without
+                # touching downloads_fetched_at (which would gate them out
+                # of the next run).
+                conn.execute(
+                    "UPDATE packages SET "
+                    "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
+                    "downloads_last_error = ? "
+                    "WHERE conda_name = ?",
+                    (err_msg, name),
+                )
+                failed += 1
+
+            completed += 1
+            if completed % commit_every == 0:
+                conn.commit()
+
+            if completed % progress_every == 0:
+                elapsed = time.monotonic() - t0
+                rate = completed / elapsed if elapsed else 0
+                eta_min = (len(rows) - completed) / rate / 60 if rate else 0
+                print(
+                    f"    [{completed:,}/{len(rows):,}] fetched={fetched:,} "
+                    f"failed={failed:,} 404={not_found:,}  "
+                    f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+                )
+
+    conn.commit()
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase F done in {elapsed:.1f}s — fetched {fetched:,}, "
+        f"failed {failed:,}, 404 {not_found:,}"
+    )
+    return {
+        "rows_eligible": len(rows),
+        "fetched": fetched,
+        "failed": failed,
+        "not_found_404": not_found,
+        "ttl_days": ttl_days,
+        "concurrency": concurrency,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
+    """Phase G: cache vdb risk summary into the packages table.
+
+    For each active conda-forge row, derives purls and queries the AppThreat
+    multi-source vdb to populate four count columns + a scan timestamp:
+      - vuln_total                       — total CVEs across all purls
+      - vuln_critical_affecting_current  — Critical hits on latest_conda_version
+      - vuln_high_affecting_current      — High hits on latest_conda_version
+      - vuln_kev_affecting_current       — KEV-flagged hits on latest_conda_version
+      - vdb_scanned_at                   — UNIX seconds of this run
+      - vdb_last_error                   — error string on failure, NULL on success
+
+    Mirrors the *counts* — not the full vuln rows. The full data still requires
+    `--vdb` against the live vdb library (which only the `vuln-db` pixi env
+    has). The cache lets `local-recipes` env callers and offline tooling
+    (staleness-report, dashboards, batch queries) rank by risk without
+    spinning up the heavy env.
+
+    Auto-skip when the vdb library isn't importable — graceful degradation in
+    `local-recipes` env. Opt-out via PHASE_G_DISABLED=1 even in vuln-db env.
+
+    Tunables (env vars):
+      - PHASE_G_DISABLED  : "1" to skip entirely (e.g., CI smoke builds)
+      - PHASE_G_TTL_DAYS  : skip rows scanned within N days (default 7)
+      - PHASE_G_LIMIT     : cap rows processed (debug; 0 = no cap)
+
+    Concurrency: default serial. vdb's on-disk index reader is not documented
+    as thread-safe; running serial keeps the result deterministic. Future
+    PHASE_G_CONCURRENCY tunable may be added once thread-safety is confirmed.
+    """
+    t0 = time.monotonic()
+    print("  Phase G: vdb risk-summary cache")
+
+    if os.environ.get("PHASE_G_DISABLED"):
+        return {
+            "skipped": True,
+            "reason": "PHASE_G_DISABLED=1 set; skipping vdb scan.",
+            "duration_seconds": 0.0,
+        }
+
+    # Auto-skip when vdb library isn't installed (i.e., not in vuln-db env).
+    # `find_spec` raises ModuleNotFoundError when the top-level package is
+    # missing, so wrap defensively rather than relying on a None return.
+    import importlib.util
+    try:
+        spec = importlib.util.find_spec("vdb.lib.search")
+    except (ModuleNotFoundError, ValueError):
+        spec = None
+    if spec is None:
+        return {
+            "skipped": True,
+            "reason": "vdb library not installed (run from `vuln-db` env).",
+            "duration_seconds": 0.0,
+        }
+
+    # Reuse the canonical purl-derivation + scoring logic from
+    # detail_cf_atlas. Both live in this same scripts/ directory.
+    sys.path.insert(0, str(Path(__file__).parent))
+    from detail_cf_atlas import fetch_vdb_data  # type: ignore[import-not-found]
+
+    ttl_days = int(os.environ.get("PHASE_G_TTL_DAYS", "7"))
+    limit = int(os.environ.get("PHASE_G_LIMIT", "0"))
+    cutoff = int(time.time()) - ttl_days * 86400
+
+    sql = (
+        "SELECT conda_name, pypi_name, npm_name, latest_conda_version, "
+        "       conda_repo_url, conda_dev_url "
+        "FROM packages "
+        "WHERE conda_name IS NOT NULL "
+        "  AND COALESCE(feedstock_archived, 0) = 0 "
+        "  AND latest_status = 'active' "
+        "  AND COALESCE(vdb_scanned_at, 0) < ?"
+    )
+    params: tuple = (cutoff,)
+    if limit > 0:
+        sql += " LIMIT ?"
+        params = (cutoff, limit)
+    rows = list(conn.execute(sql, params))
+    print(f"  {len(rows):,} rows to scan (TTL {ttl_days}d)")
+
+    scanned = 0
+    failed = 0
+    no_purls = 0
+    progress_every = max(200, len(rows) // 40) if rows else 1
+    commit_every = 200
+
+    for i, row in enumerate(rows):
+        record = {
+            "conda_name":           row["conda_name"],
+            "pypi_name":            row["pypi_name"],
+            "npm_name":             row["npm_name"],
+            "latest_conda_version": row["latest_conda_version"],
+            "conda_repo_url":       row["conda_repo_url"],
+            "conda_dev_url":        row["conda_dev_url"],
+        }
+        data, err = fetch_vdb_data(record)
+        now = int(time.time())
+        if data is None:
+            if err and "no purls derivable" in err:
+                no_purls += 1
+                conn.execute(
+                    "UPDATE packages SET vuln_total = 0, "
+                    "vuln_critical_affecting_current = 0, "
+                    "vuln_high_affecting_current = 0, "
+                    "vuln_kev_affecting_current = 0, "
+                    "vdb_scanned_at = ?, vdb_last_error = NULL "
+                    "WHERE conda_name = ?",
+                    (now, row["conda_name"]),
+                )
+            else:
+                failed += 1
+                conn.execute(
+                    "UPDATE packages SET vdb_last_error = ? "
+                    "WHERE conda_name = ?",
+                    (err[:200] if err else "unknown error", row["conda_name"]),
+                )
+            continue
+
+        affecting = data.get("affecting_latest_version", []) or []
+        crit = sum(1 for v in affecting if v.get("severity") == "Critical")
+        high = sum(1 for v in affecting if v.get("severity") == "High")
+        kev = sum(1 for v in affecting if v.get("kev"))
+        total = len(data.get("all_vulns") or [])
+        conn.execute(
+            "UPDATE packages SET "
+            "vuln_total = ?, "
+            "vuln_critical_affecting_current = ?, "
+            "vuln_high_affecting_current = ?, "
+            "vuln_kev_affecting_current = ?, "
+            "vdb_scanned_at = ?, vdb_last_error = NULL "
+            "WHERE conda_name = ?",
+            (total, crit, high, kev, now, row["conda_name"]),
+        )
+        scanned += 1
+
+        if (scanned + failed + no_purls) % commit_every == 0:
+            conn.commit()
+        if (i + 1) % progress_every == 0:
+            elapsed = time.monotonic() - t0
+            rate = (i + 1) / elapsed if elapsed else 0
+            eta_min = (len(rows) - i - 1) / rate / 60 if rate else 0
+            print(
+                f"    [{i+1:,}/{len(rows):,}] scanned={scanned:,} "
+                f"no_purls={no_purls:,} failed={failed:,}  "
+                f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+            )
+
+    conn.commit()
+    # Snapshot history: insert one row per package whose vdb_scanned_at is
+    # current (i.e., scanned in this run OR within the TTL window from prior
+    # runs). Rows where Phase G hasn't run yet are excluded — they'd skew
+    # the trend with NULL vs 0.
+    snapshot_at = int(time.time())
+    snap = conn.execute(
+        "INSERT INTO vuln_history (snapshot_at, conda_name, vuln_total, "
+        "vuln_critical_affecting_current, vuln_high_affecting_current, "
+        "vuln_kev_affecting_current) "
+        "SELECT ?, conda_name, vuln_total, "
+        "vuln_critical_affecting_current, vuln_high_affecting_current, "
+        "vuln_kev_affecting_current "
+        "FROM packages "
+        "WHERE conda_name IS NOT NULL AND vdb_scanned_at IS NOT NULL",
+        (snapshot_at,),
+    )
+    snapshot_rows = snap.rowcount
+    conn.commit()
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase G done in {elapsed:.1f}s — scanned: {scanned:,}, "
+        f"no_purls: {no_purls:,}, failed: {failed:,}, "
+        f"snapshot rows: {snapshot_rows:,}"
+    )
+    return {
+        "rows_eligible": len(rows),
+        "scanned": scanned,
+        "no_purls": no_purls,
+        "failed": failed,
+        "snapshot_rows": snapshot_rows,
+        "snapshot_at": snapshot_at,
+        "ttl_days": ttl_days,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def _snapshot_upstream_versions(conn: sqlite3.Connection,
+                                  source_filter: str | None = None) -> int:
+    """Append a snapshot of `upstream_versions` into the history table.
+
+    Called at the end of Phase H / K / L. `source_filter` restricts the
+    snapshot to one source (e.g., 'pypi' for Phase H, 'github'/'gitlab'/
+    'codeberg' for Phase K). When None, snapshots all sources — used by
+    Phase L which writes multiple sources in one run.
+    """
+    snapshot_at = int(time.time())
+    if source_filter:
+        sql = (
+            "INSERT OR IGNORE INTO upstream_versions_history "
+            "(snapshot_at, conda_name, source, version) "
+            "SELECT ?, conda_name, source, version FROM upstream_versions "
+            "WHERE source = ? AND version IS NOT NULL"
+        )
+        params = (snapshot_at, source_filter)
+    else:
+        sql = (
+            "INSERT OR IGNORE INTO upstream_versions_history "
+            "(snapshot_at, conda_name, source, version) "
+            "SELECT ?, conda_name, source, version FROM upstream_versions "
+            "WHERE version IS NOT NULL"
+        )
+        params = (snapshot_at,)
+    cursor = conn.execute(sql, params)
+    conn.commit()
+    return cursor.rowcount
+
+
+def _phase_h_fetch_one(pypi_name: str
+                       ) -> tuple[str, str | None, bool | None, str | None]:
+    """Worker for Phase H. Returns (pypi_name, current_version, yanked, err).
+
+    Hits https://pypi.org/pypi/<name>/json. Reads `info.version` and the
+    matching release entry's `yanked` flag (PEP 592). Yanked-but-still-
+    visible versions appear in `info.version` but should NOT be used as
+    upstream-of-record; the boolean is surfaced so behind-upstream and
+    consumers can warn / pick the next-newest non-yanked version.
+    """
+    url = f"https://pypi.org/pypi/{pypi_name}/json"
+    last_err: str | None = None
+    for attempt in range(3):
+        try:
+            req = _make_req(url)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                payload = json.load(resp)
+            info = payload.get("info") or {}
+            version = info.get("version")
+            # `info.yanked` (top-level) is sometimes set; the canonical signal
+            # is `releases[<version>][i].yanked` for any sdist/wheel entry
+            # of the version. We treat the version as yanked iff EVERY file
+            # of that version is yanked (PEP 592 semantics).
+            yanked: bool | None = None
+            if version:
+                rel = (payload.get("releases") or {}).get(version) or []
+                if isinstance(rel, list) and rel:
+                    yanked = all(
+                        bool(f.get("yanked")) for f in rel
+                        if isinstance(f, dict)
+                    )
+                elif isinstance(info.get("yanked"), bool):
+                    yanked = info["yanked"]
+            return (pypi_name, version, yanked, None)
+        except urllib.error.HTTPError as e:
+            last_err = f"HTTP {e.code}"
+            if e.code == 404:
+                return (pypi_name, None, None, "HTTP 404")
+            if e.code == 429:
+                time.sleep(2 ** attempt + 1)
+                continue
+            return (pypi_name, None, None, last_err)
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {str(e)[:120]}"
+            if attempt < 2:
+                time.sleep(1 + attempt)
+                continue
+            return (pypi_name, None, None, last_err)
+    return (pypi_name, None, None, last_err or "exhausted retries")
+
+
+def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
+    """Phase H: fetch each pypi-linked package's current PyPI version.
+
+    Hits https://pypi.org/pypi/<name>/json per row, stores `info.version` in
+    `pypi_current_version` and the timestamp in `pypi_version_fetched_at`.
+    Combined with `latest_conda_version`, this enables behind-upstream
+    detection: a feedstock whose conda version lags its PyPI counterpart.
+
+    Default-on, opt-out via PHASE_H_DISABLED=1. TTL-gated like Phase F so
+    warm runs are cheap.
+
+    Tunables (env vars):
+      - PHASE_H_DISABLED     : "1" to skip
+      - PHASE_H_TTL_DAYS     : skip rows refreshed within N days (default 7)
+      - PHASE_H_CONCURRENCY  : worker pool size (default 8)
+      - PHASE_H_LIMIT        : cap rows processed (debug; 0 = no cap)
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    t0 = time.monotonic()
+    print("  Phase H: PyPI current-version cache")
+
+    if os.environ.get("PHASE_H_DISABLED"):
+        return {
+            "skipped": True,
+            "reason": "PHASE_H_DISABLED=1 set; skipping PyPI fetch.",
+            "duration_seconds": 0.0,
+        }
+
+    ttl_days = int(os.environ.get("PHASE_H_TTL_DAYS", "7"))
+    concurrency = max(1, int(os.environ.get("PHASE_H_CONCURRENCY", "8")))
+    limit = int(os.environ.get("PHASE_H_LIMIT", "0"))
+    cutoff = int(time.time()) - ttl_days * 86400
+
+    sql = (
+        "SELECT DISTINCT pypi_name FROM packages "
+        "WHERE pypi_name IS NOT NULL "
+        "  AND COALESCE(pypi_version_fetched_at, 0) < ?"
+    )
+    params: tuple = (cutoff,)
+    if limit > 0:
+        sql += " LIMIT ?"
+        params = (cutoff, limit)
+    rows = list(conn.execute(sql, params))
+    print(f"  {len(rows):,} pypi names to refresh (TTL {ttl_days}d, concurrency {concurrency})")
+
+    fetched = 0
+    failed = 0
+    not_found = 0
+    progress_every = max(500, len(rows) // 40) if rows else 1
+    commit_every = 500
+    completed = 0
+
+    with ThreadPoolExecutor(max_workers=concurrency) as ex:
+        futures = [ex.submit(_phase_h_fetch_one, r["pypi_name"]) for r in rows]
+        for fut in as_completed(futures):
+            pypi_name, version, yanked, err = fut.result()
+            now = int(time.time())
+            if version is not None:
+                yanked_int = 1 if yanked is True else (0 if yanked is False else None)
+                conn.execute(
+                    "UPDATE packages SET pypi_current_version = ?, "
+                    "pypi_current_version_yanked = ?, "
+                    "pypi_version_fetched_at = ?, pypi_version_last_error = NULL "
+                    "WHERE pypi_name = ?",
+                    (version, yanked_int, now, pypi_name),
+                )
+                # Mirror to unified upstream_versions side table — one row per
+                # (conda_name, 'pypi'). For multi-conda names sharing one pypi
+                # name (rare), both rows get the same upstream version.
+                conn.execute(
+                    "INSERT OR REPLACE INTO upstream_versions "
+                    "(conda_name, source, version, url, fetched_at, last_error) "
+                    "SELECT conda_name, 'pypi', ?, ?, ?, NULL FROM packages "
+                    "WHERE pypi_name = ? AND conda_name IS NOT NULL",
+                    (version, f"https://pypi.org/project/{pypi_name}/", now, pypi_name),
+                )
+                fetched += 1
+            elif err == "HTTP 404":
+                conn.execute(
+                    "UPDATE packages SET pypi_version_fetched_at = ?, "
+                    "pypi_version_last_error = ? WHERE pypi_name = ?",
+                    (now, err, pypi_name),
+                )
+                not_found += 1
+            else:
+                conn.execute(
+                    "UPDATE packages SET pypi_version_last_error = ? WHERE pypi_name = ?",
+                    (err, pypi_name),
+                )
+                failed += 1
+
+            completed += 1
+            if completed % commit_every == 0:
+                conn.commit()
+            if completed % progress_every == 0:
+                elapsed = time.monotonic() - t0
+                rate = completed / elapsed if elapsed else 0
+                eta_min = (len(rows) - completed) / rate / 60 if rate else 0
+                print(
+                    f"    [{completed:,}/{len(rows):,}] fetched={fetched:,} "
+                    f"failed={failed:,} 404={not_found:,}  "
+                    f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+                )
+
+    conn.commit()
+    snap_rows = _snapshot_upstream_versions(conn, source_filter="pypi")
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase H done in {elapsed:.1f}s — fetched {fetched:,}, "
+        f"failed {failed:,}, 404 {not_found:,}, "
+        f"history snapshot rows: {snap_rows:,}"
+    )
+    return {
+        "rows_eligible": len(rows),
+        "fetched": fetched,
+        "failed": failed,
+        "not_found_404": not_found,
+        "history_snapshot_rows": snap_rows,
+        "ttl_days": ttl_days,
+        "concurrency": concurrency,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+_GITHUB_REPO_RE = re.compile(r"github\.com/([^/]+)/([^/?#.]+)")
+_GITLAB_REPO_RE = re.compile(r"gitlab\.com/([^?#]+?)(?:/-/|/?(?:$|[?#]))")
+_CODEBERG_REPO_RE = re.compile(r"codeberg\.org/([^/]+)/([^/?#.]+)")
+
+
+def _extract_vcs_repo(*urls: str | None) -> tuple[str, str, str] | None:
+    """Detect a VCS-host repo from any of the URLs.
+
+    Returns (host, owner_or_path, repo) where host ∈ {'github','gitlab','codeberg'}.
+    For GitLab, `owner_or_path` is the full project path (may contain slashes
+    for sub-groups, e.g., 'group/sub/project'); `repo` is the trailing leaf
+    used for display. For GitHub/Codeberg, `owner_or_path` is the username.
+    """
+    for u in urls:
+        if not u:
+            continue
+        m = _GITHUB_REPO_RE.search(u)
+        if m:
+            return ("github", m.group(1), m.group(2).rstrip("/"))
+        m = _CODEBERG_REPO_RE.search(u)
+        if m:
+            return ("codeberg", m.group(1), m.group(2).rstrip("/"))
+        m = _GITLAB_REPO_RE.search(u)
+        if m:
+            path = m.group(1).rstrip("/")
+            # Strip trailing .git if present (gitlab clone URLs sometimes)
+            if path.endswith(".git"):
+                path = path[:-4]
+            leaf = path.rsplit("/", 1)[-1]
+            return ("gitlab", path, leaf)
+    return None
+
+
+def _normalize_release_tag(tag: str | None) -> str | None:
+    """Normalize a release tag to a version string. Case-insensitive prefix
+    stripping handles `v3.0.44`, `Release_1_6_15`, `rel-2.0`, `RELEASE-1`,
+    etc. Returns None if input is empty.
+    """
+    if not tag:
+        return None
+    s = tag.strip()
+    for prefix in ("release-", "release_", "rel-", "rel_", "v"):
+        if s.lower().startswith(prefix):
+            s = s[len(prefix):]
+            break
+    return s or None
+
+
+def _gh_token() -> str | None:
+    """Resolve a GitHub token: GITHUB_TOKEN env var first, then `gh auth token`."""
+    import subprocess
+    tok = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if tok:
+        return tok
+    try:
+        out = subprocess.run(
+            ["gh", "auth", "token"], capture_output=True, text=True, timeout=5,
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            return out.stdout.strip()
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
+def _phase_k_fetch_one(host: str, owner_or_path: str, repo: str,
+                       gh_token: str | None, gl_token: str | None
+                       ) -> tuple[str, str, str, str | None, str | None]:
+    """Worker for Phase K. Returns (host, owner_or_path, repo, version, err).
+
+    Dispatches by host:
+      - 'github'   → GET /repos/<o>/<r>/releases/latest, fallback to /tags
+      - 'codeberg' → same Gitea-compatible API as GitHub
+      - 'gitlab'   → GET /api/v4/projects/<urlencoded>/releases?per_page=1
+                     fallback to /repository/tags?per_page=1
+    """
+    if host in ("github", "codeberg"):
+        api_root = (
+            "https://api.github.com"
+            if host == "github"
+            else "https://codeberg.org/api/v1"
+        )
+        accept = ("application/vnd.github+json"
+                  if host == "github"
+                  else "application/json")
+        headers = {"Accept": accept}
+        if host == "github":
+            headers["X-GitHub-Api-Version"] = "2022-11-28"
+            if gh_token:
+                headers["Authorization"] = f"Bearer {gh_token}"
+        base = f"{api_root}/repos/{owner_or_path}/{repo}"
+        return _fetch_release_or_tag(host, owner_or_path, repo, base, headers)
+
+    if host == "gitlab":
+        # GitLab requires URL-encoded project path
+        from urllib.parse import quote
+        encoded = quote(owner_or_path, safe="")
+        base = f"https://gitlab.com/api/v4/projects/{encoded}"
+        headers = {"Accept": "application/json"}
+        if gl_token:
+            headers["PRIVATE-TOKEN"] = gl_token
+        return _fetch_release_or_tag(host, owner_or_path, repo, base, headers,
+                                     release_url=f"{base}/releases?per_page=1",
+                                     tag_url=f"{base}/repository/tags?per_page=1",
+                                     gitlab=True)
+    return (host, owner_or_path, repo, None, f"unknown host: {host}")
+
+
+def _fetch_release_or_tag(host: str, owner_or_path: str, repo: str,
+                           base: str, headers: dict,
+                           release_url: str | None = None,
+                           tag_url: str | None = None,
+                           gitlab: bool = False
+                           ) -> tuple[str, str, str, str | None, str | None]:
+    """Helper: try the release endpoint, fall back to tags."""
+    rel_url = release_url or f"{base}/releases/latest"
+    tg_url  = tag_url     or f"{base}/tags?per_page=10"
+    last_err: str | None = None
+
+    for attempt in range(3):
+        try:
+            req = _make_req(rel_url, extra_headers=headers)
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                payload = json.load(resp)
+            if gitlab:
+                if isinstance(payload, list) and payload:
+                    tag = payload[0].get("tag_name") or payload[0].get("name")
+                else:
+                    tag = None
+            else:
+                tag = payload.get("tag_name") if isinstance(payload, dict) else None
+            if tag:
+                return (host, owner_or_path, repo, _normalize_release_tag(tag), None)
+            break  # empty payload — try tags
+        except urllib.error.HTTPError as e:
+            last_err = f"HTTP {e.code}"
+            if e.code == 404:
+                break
+            if e.code in (403, 429):
+                time.sleep(2 ** attempt + 2)
+                continue
+            return (host, owner_or_path, repo, None, last_err)
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {str(e)[:120]}"
+            if attempt < 2:
+                time.sleep(1 + attempt)
+                continue
+            return (host, owner_or_path, repo, None, last_err)
+
+    # Fallback: tags endpoint
+    try:
+        req = _make_req(tg_url, extra_headers=headers)
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            tags = json.load(resp)
+        if isinstance(tags, list) and tags:
+            for t in tags:
+                if not isinstance(t, dict):
+                    continue
+                name = t.get("name") or t.get("tag_name")
+                if name:
+                    return (host, owner_or_path, repo, _normalize_release_tag(name), None)
+        return (host, owner_or_path, repo, None, "no tags")
+    except urllib.error.HTTPError as e:
+        return (host, owner_or_path, repo, None, f"HTTP {e.code}")
+    except Exception as e:
+        return (host, owner_or_path, repo, None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
+    """Phase K: fetch latest release/tag from VCS hosts (GitHub, GitLab,
+    Codeberg) for each row whose recipe sources from one of those hosts —
+    or whose project metadata (homepage/dev_url/repo_url) points to one.
+
+    Closes the gap the user flagged (2026-05-09): for ~3.5k feedstocks the
+    upstream-of-record is a VCS repo, not PyPI. Three real cases:
+      (a) VCS-only projects (no PyPI presence)
+      (b) author publishes to VCS first, PyPI lags
+      (c) recipe's source.url is the VCS archive for tarball integrity
+    behind-upstream queries the unified `upstream_versions` side table to
+    pick the right signal per row based on `conda_source_registry`.
+
+    Auth: GITHUB_TOKEN / GH_TOKEN / `gh auth token` for github.com.
+          GITLAB_TOKEN / GL_TOKEN env for gitlab.com (optional — public
+          API works unauthenticated at lower rate).
+    Auto-skip when no GitHub auth: unauth API is 60 req/hr (too few).
+
+    Writes to BOTH the unified `upstream_versions` side table (source =
+    'github'|'gitlab'|'codeberg') and the legacy `github_current_version`
+    column on packages (for github only; backward-compat with v6.7+).
+
+    Tunables:
+      - PHASE_K_DISABLED     : "1" to skip
+      - PHASE_K_TTL_DAYS     : default 7
+      - PHASE_K_CONCURRENCY  : default 8
+      - PHASE_K_LIMIT        : cap rows (debug)
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    t0 = time.monotonic()
+    print("  Phase K: VCS upstream-version cache (GitHub + GitLab + Codeberg)")
+
+    if os.environ.get("PHASE_K_DISABLED"):
+        return {
+            "skipped": True,
+            "reason": "PHASE_K_DISABLED=1 set; skipping VCS fetch.",
+            "duration_seconds": 0.0,
+        }
+
+    gh_token = _gh_token()
+    gl_token = os.environ.get("GITLAB_TOKEN") or os.environ.get("GL_TOKEN")
+    if not gh_token:
+        return {
+            "skipped": True,
+            "reason": ("no GitHub auth — set GITHUB_TOKEN env or run "
+                       "`gh auth login`. Unauthenticated GitHub API is "
+                       "60 req/hr which is too low for a Phase K backfill."),
+            "duration_seconds": 0.0,
+        }
+
+    ttl_days = int(os.environ.get("PHASE_K_TTL_DAYS", "7"))
+    concurrency = max(1, int(os.environ.get("PHASE_K_CONCURRENCY", "8")))
+    limit = int(os.environ.get("PHASE_K_LIMIT", "0"))
+    cutoff = int(time.time()) - ttl_days * 86400
+
+    # Eligibility: any active row whose URLs reference a known VCS host AND
+    # whose upstream_versions row(s) for vcs sources are stale or absent.
+    sql = (
+        "SELECT p.conda_name, p.conda_repo_url, p.conda_dev_url, p.conda_homepage "
+        "FROM packages p "
+        "LEFT JOIN upstream_versions u "
+        "  ON u.conda_name = p.conda_name "
+        " AND u.source IN ('github','gitlab','codeberg') "
+        "WHERE p.conda_name IS NOT NULL "
+        "  AND p.latest_status = 'active' "
+        "  AND COALESCE(p.feedstock_archived, 0) = 0 "
+        "  AND COALESCE(u.fetched_at, 0) < ? "
+        "  AND ("
+        "       p.conda_repo_url  LIKE '%github.com/%' "
+        "    OR p.conda_dev_url   LIKE '%github.com/%' "
+        "    OR p.conda_homepage  LIKE '%github.com/%' "
+        "    OR p.conda_repo_url  LIKE '%gitlab.com/%' "
+        "    OR p.conda_dev_url   LIKE '%gitlab.com/%' "
+        "    OR p.conda_homepage  LIKE '%gitlab.com/%' "
+        "    OR p.conda_repo_url  LIKE '%codeberg.org/%' "
+        "    OR p.conda_dev_url   LIKE '%codeberg.org/%' "
+        "    OR p.conda_homepage  LIKE '%codeberg.org/%' "
+        "    OR p.conda_source_registry = 'github' "
+        "  ) "
+        "GROUP BY p.conda_name"
+    )
+    params: tuple = (cutoff,)
+    if limit > 0:
+        sql += " LIMIT ?"
+        params = (cutoff, limit)
+    rows = list(conn.execute(sql, params))
+    print(f"  {len(rows):,} rows to scan (TTL {ttl_days}d, concurrency {concurrency})")
+
+    by_host = {"github": 0, "gitlab": 0, "codeberg": 0}
+    fetched = 0
+    failed = 0
+    not_found = 0
+    no_repo = 0
+    progress_every = max(200, len(rows) // 40) if rows else 1
+    commit_every = 200
+    completed = 0
+
+    # Pre-resolve VCS triple per row
+    work: list[tuple[str, str, str, str]] = []  # (conda_name, host, owner_path, repo)
+    for row in rows:
+        triple = _extract_vcs_repo(
+            row["conda_repo_url"], row["conda_dev_url"], row["conda_homepage"]
+        )
+        if not triple:
+            no_repo += 1
+            continue
+        host, owner_or_path, repo = triple
+        by_host[host] = by_host.get(host, 0) + 1
+        work.append((row["conda_name"], host, owner_or_path, repo))
+
+    if not work:
+        elapsed = time.monotonic() - t0
+        print(f"  Phase K done in {elapsed:.1f}s — no derivable repos; "
+              f"no_repo: {no_repo:,}")
+        return {
+            "rows_eligible": len(rows),
+            "fetched": 0, "failed": 0, "not_found": 0, "no_repo": no_repo,
+            "by_host": by_host, "duration_seconds": round(elapsed, 1),
+        }
+
+    print(f"  {len(work):,} rows have derivable VCS repos: {by_host}")
+
+    with ThreadPoolExecutor(max_workers=concurrency) as ex:
+        futures = {
+            ex.submit(_phase_k_fetch_one, host, owner_path, repo, gh_token, gl_token):
+                (conda_name, host, owner_path, repo)
+            for (conda_name, host, owner_path, repo) in work
+        }
+        for fut in as_completed(futures):
+            conda_name = futures[fut][0]
+            host, owner_or_path, repo, version, err = fut.result()
+            now = int(time.time())
+            url = f"https://{host}.com/{owner_or_path}/{repo}" if host == "github" else (
+                  f"https://gitlab.com/{owner_or_path}" if host == "gitlab" else
+                  f"https://codeberg.org/{owner_or_path}/{repo}")
+            if version is not None:
+                # Write to unified upstream_versions
+                conn.execute(
+                    "INSERT OR REPLACE INTO upstream_versions "
+                    "(conda_name, source, version, url, fetched_at, last_error) "
+                    "VALUES (?, ?, ?, ?, ?, NULL)",
+                    (conda_name, host, version, url, now),
+                )
+                # Backward-compat: also fill github_current_version when source='github'
+                if host == "github":
+                    conn.execute(
+                        "UPDATE packages SET github_current_version = ?, "
+                        "github_version_fetched_at = ?, github_version_last_error = NULL "
+                        "WHERE conda_name = ?",
+                        (version, now, conda_name),
+                    )
+                fetched += 1
+            elif err and ("404" in err or "no tags" in err):
+                conn.execute(
+                    "INSERT OR REPLACE INTO upstream_versions "
+                    "(conda_name, source, version, url, fetched_at, last_error) "
+                    "VALUES (?, ?, NULL, ?, ?, ?)",
+                    (conda_name, host, url, now, err),
+                )
+                if host == "github":
+                    conn.execute(
+                        "UPDATE packages SET github_version_fetched_at = ?, "
+                        "github_version_last_error = ? WHERE conda_name = ?",
+                        (now, err, conda_name),
+                    )
+                not_found += 1
+            else:
+                conn.execute(
+                    "INSERT OR REPLACE INTO upstream_versions "
+                    "(conda_name, source, version, url, fetched_at, last_error) "
+                    "VALUES (?, ?, NULL, ?, ?, ?)",
+                    (conda_name, host, url, now, err or "unknown error"),
+                )
+                if host == "github":
+                    conn.execute(
+                        "UPDATE packages SET github_version_last_error = ? "
+                        "WHERE conda_name = ?",
+                        (err or "unknown error", conda_name),
+                    )
+                failed += 1
+
+            completed += 1
+            if completed % commit_every == 0:
+                conn.commit()
+            if completed % progress_every == 0:
+                elapsed = time.monotonic() - t0
+                rate = completed / elapsed if elapsed else 0
+                eta_min = (len(work) - completed) / rate / 60 if rate else 0
+                print(
+                    f"    [{completed:,}/{len(work):,}] fetched={fetched:,} "
+                    f"failed={failed:,} 404={not_found:,}  "
+                    f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+                )
+
+    conn.commit()
+    # Snapshot covers all VCS sources Phase K touched.
+    snap_total = 0
+    for src in ("github", "gitlab", "codeberg"):
+        snap_total += _snapshot_upstream_versions(conn, source_filter=src)
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase K done in {elapsed:.1f}s — fetched {fetched:,}, "
+        f"failed {failed:,}, 404/no-tags {not_found:,}, no_repo {no_repo:,} "
+        f"(by host: {by_host}), history snapshot rows: {snap_total:,}"
+    )
+    return {
+        "rows_eligible": len(rows),
+        "fetched": fetched,
+        "failed": failed,
+        "not_found": not_found,
+        "no_repo": no_repo,
+        "by_host": by_host,
+        "history_snapshot_rows": snap_total,
+        "ttl_days": ttl_days,
+        "concurrency": concurrency,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+# Backward-compat alias for the previous Phase K name
+phase_k_github_versions = phase_k_vcs_versions
+
+
+# ── Phase L resolvers — one per registry ─────────────────────────────────────
+# Each returns (version_or_None, err_or_None). Caller writes to
+# upstream_versions side table with the right `source` label.
+
+def _resolve_npm(name: str) -> tuple[str | None, str | None]:
+    url = f"https://registry.npmjs.org/{name}"
+    try:
+        with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
+            data = json.load(resp)
+        ver = (data.get("dist-tags") or {}).get("latest")
+        return (ver, None)
+    except urllib.error.HTTPError as e:
+        return (None, f"HTTP {e.code}")
+    except Exception as e:
+        return (None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def _resolve_cran(name: str) -> tuple[str | None, str | None]:
+    # crandb.r-pkg.org ships a JSON facade over CRAN that's much friendlier
+    # than scraping cran.r-project.org HTML.
+    url = f"https://crandb.r-pkg.org/{name}"
+    try:
+        with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
+            data = json.load(resp)
+        return (data.get("Version"), None)
+    except urllib.error.HTTPError as e:
+        return (None, f"HTTP {e.code}")
+    except Exception as e:
+        return (None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def _resolve_cpan(dist: str) -> tuple[str | None, str | None]:
+    url = f"https://fastapi.metacpan.org/v1/release/{dist}"
+    try:
+        with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
+            data = json.load(resp)
+        return (data.get("version"), None)
+    except urllib.error.HTTPError as e:
+        return (None, f"HTTP {e.code}")
+    except Exception as e:
+        return (None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def _resolve_luarocks(name: str) -> tuple[str | None, str | None]:
+    # No JSON API; scrape the project page for the leading `<name>-<version>`
+    # rockspec link. Brittle — but luarocks coverage on conda-forge is small
+    # (~25 rows) so the fragility is bounded.
+    url = f"https://luarocks.org/m/{name}"
+    try:
+        with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+        # Look for the latest-release version pattern. luarocks pages have
+        # `<a href="/modules/<name>/<name>-<version>-<rev>"...`
+        m = re.search(rf"/modules/[^/\"]+/{re.escape(name)}-([^/\"\-]+)-(\d+)\b",
+                      html)
+        if m:
+            return (m.group(1), None)
+        # Fallback: any rockspec link
+        m = re.search(rf"{re.escape(name)}-(\d+(?:\.\d+)*(?:[\w.-]*)?)-\d+\.rockspec",
+                      html)
+        if m:
+            return (m.group(1), None)
+        return (None, "no version pattern matched")
+    except urllib.error.HTTPError as e:
+        return (None, f"HTTP {e.code}")
+    except Exception as e:
+        return (None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def _resolve_crates(name: str) -> tuple[str | None, str | None]:
+    url = f"https://crates.io/api/v1/crates/{name}"
+    try:
+        req = _make_req(url, extra_headers={"User-Agent": "cf-atlas/6.10 phase-l"})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.load(resp)
+        crate = data.get("crate") or {}
+        # Prefer max_stable_version; fall back to max_version if no stable yet
+        ver = crate.get("max_stable_version") or crate.get("max_version")
+        return (ver, None)
+    except urllib.error.HTTPError as e:
+        return (None, f"HTTP {e.code}")
+    except Exception as e:
+        return (None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def _resolve_rubygems(name: str) -> tuple[str | None, str | None]:
+    url = f"https://rubygems.org/api/v1/gems/{name}.json"
+    try:
+        with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
+            data = json.load(resp)
+        return (data.get("version"), None)
+    except urllib.error.HTTPError as e:
+        return (None, f"HTTP {e.code}")
+    except Exception as e:
+        return (None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def _resolve_maven(coord: str) -> tuple[str | None, str | None]:
+    """Maven Central. `coord` is `groupId:artifactId` or just `artifactId`.
+
+    Uses search.maven.org/solrsearch/select. When only artifactId is known,
+    we search by `a:` and accept the first hit (works for unique artifact
+    names; ambiguous names get whatever Solr returns first).
+    """
+    from urllib.parse import quote
+    if ":" in coord:
+        g, a = coord.split(":", 1)
+        q = f'g:"{g}" AND a:"{a}"'
+    else:
+        q = f'a:"{coord}"'
+    url = (
+        f"https://search.maven.org/solrsearch/select?"
+        f"q={quote(q)}&rows=1&wt=json"
+    )
+    try:
+        with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
+            data = json.load(resp)
+        docs = (data.get("response") or {}).get("docs") or []
+        if not docs:
+            return (None, "no Maven artifact matched")
+        ver = docs[0].get("latestVersion") or docs[0].get("v")
+        return (ver, None)
+    except urllib.error.HTTPError as e:
+        return (None, f"HTTP {e.code}")
+    except Exception as e:
+        return (None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def _resolve_nuget(name: str) -> tuple[str | None, str | None]:
+    # NuGet's flat-container endpoint requires lowercase package id.
+    url = f"https://api.nuget.org/v3-flatcontainer/{name.lower()}/index.json"
+    try:
+        with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
+            data = json.load(resp)
+        versions = data.get("versions") or []
+        if not versions:
+            return (None, "no versions")
+        # Filter out prereleases (containing '-') if any stable exist
+        stable = [v for v in versions if "-" not in v]
+        return ((stable[-1] if stable else versions[-1]), None)
+    except urllib.error.HTTPError as e:
+        return (None, f"HTTP {e.code}")
+    except Exception as e:
+        return (None, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+_CRATES_URL_RE = re.compile(r"crates\.io/crates/([A-Za-z0-9_-]+)")
+_RUBYGEMS_URL_RE = re.compile(r"rubygems\.org/gems/([A-Za-z0-9_.-]+)")
+_NUGET_URL_RE = re.compile(r"nuget\.org/packages/([A-Za-z0-9_.-]+)")
+_MAVEN_URL_RE = re.compile(
+    r"(?:search\.maven\.org/artifact|mvnrepository\.com/artifact|"
+    r"central\.sonatype\.com/artifact)/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+)"
+)
+
+
+def _detect_registry_from_urls(*urls: str | None) -> list[tuple[str, str]]:
+    """Scan project URLs for crates / rubygems / nuget references.
+
+    Returns list of (source, name) pairs found across the URLs.
+    """
+    found: list[tuple[str, str]] = []
+    for u in urls:
+        if not u:
+            continue
+        for src, regex in (
+            ("crates", _CRATES_URL_RE),
+            ("rubygems", _RUBYGEMS_URL_RE),
+            ("nuget", _NUGET_URL_RE),
+        ):
+            m = regex.search(u)
+            if m:
+                pair = (src, m.group(1))
+                if pair not in found:
+                    found.append(pair)
+        # Maven coords are 2-part — group:artifact
+        m = _MAVEN_URL_RE.search(u)
+        if m:
+            coord = f"{m.group(1)}:{m.group(2)}"
+            pair = ("maven", coord)
+            if pair not in found:
+                found.append(pair)
+    return found
+
+
+_PHASE_L_RESOLVERS = {
+    "npm":       (_resolve_npm,       "https://www.npmjs.com/package/"),
+    "cran":      (_resolve_cran,      "https://cran.r-project.org/package="),
+    "cpan":      (_resolve_cpan,      "https://metacpan.org/release/"),
+    "luarocks":  (_resolve_luarocks,  "https://luarocks.org/m/"),
+    "crates":    (_resolve_crates,    "https://crates.io/crates/"),
+    "rubygems":  (_resolve_rubygems,  "https://rubygems.org/gems/"),
+    "nuget":     (_resolve_nuget,     "https://www.nuget.org/packages/"),
+    "maven":     (_resolve_maven,     "https://search.maven.org/artifact/"),
+}
+
+
+def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
+    """Phase L: resolve the latest upstream version from npm / CRAN / CPAN /
+    LuaRocks / crates.io / RubyGems / NuGet for each row that has either a
+    matching name column populated (Phase E) or a URL pattern in
+    conda_repo_url / conda_dev_url / conda_homepage.
+
+    Writes one row per (conda_name, source) into `upstream_versions`. The
+    behind-upstream CLI already prefers VCS / pypi; with Phase L data the
+    resolver fans out to whichever upstream the recipe actually tracks.
+
+    Default-on; opt-out via PHASE_L_DISABLED=1. TTL-gated like Phase H/K.
+
+    Maven Central is intentionally not handled here — Maven coords are
+    `<group>:<artifact>` pairs, not single names, and cf_atlas doesn't have
+    a column for that yet. Tracked as a future addition.
+
+    Tunables:
+      - PHASE_L_DISABLED     : "1" to skip
+      - PHASE_L_TTL_DAYS     : default 7
+      - PHASE_L_CONCURRENCY  : default 8
+      - PHASE_L_LIMIT        : cap rows (debug)
+      - PHASE_L_SOURCES      : comma-separated subset (e.g. "npm,cran") to
+                               restrict which resolvers run
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    t0 = time.monotonic()
+    print("  Phase L: extra-registry upstream-version cache "
+          "(npm/CRAN/CPAN/LuaRocks/crates/RubyGems/NuGet)")
+
+    if os.environ.get("PHASE_L_DISABLED"):
+        return {
+            "skipped": True,
+            "reason": "PHASE_L_DISABLED=1 set; skipping Phase L.",
+            "duration_seconds": 0.0,
+        }
+
+    ttl_days = int(os.environ.get("PHASE_L_TTL_DAYS", "7"))
+    concurrency = max(1, int(os.environ.get("PHASE_L_CONCURRENCY", "8")))
+    limit = int(os.environ.get("PHASE_L_LIMIT", "0"))
+    sources_filter = os.environ.get("PHASE_L_SOURCES")
+    if sources_filter:
+        active_sources = {s.strip() for s in sources_filter.split(",") if s.strip()}
+    else:
+        active_sources = set(_PHASE_L_RESOLVERS.keys())
+
+    cutoff = int(time.time()) - ttl_days * 86400
+
+    # Build the work list: per (conda_name, source, name_to_query) tuple.
+    rows = list(conn.execute(
+        "SELECT conda_name, npm_name, cran_name, cpan_name, luarocks_name, "
+        "       maven_coord, conda_repo_url, conda_dev_url, conda_homepage "
+        "FROM packages "
+        "WHERE conda_name IS NOT NULL "
+        "  AND latest_status = 'active' "
+        "  AND COALESCE(feedstock_archived, 0) = 0"
+    ))
+
+    work: list[tuple[str, str, str, str]] = []  # (conda_name, source, query_name, public_url)
+    for row in rows:
+        name_col_map = [
+            ("npm",      row["npm_name"]),
+            ("cran",     row["cran_name"]),
+            ("cpan",     row["cpan_name"]),
+            ("luarocks", row["luarocks_name"]),
+            ("maven",    row["maven_coord"]),
+        ]
+        for source, n in name_col_map:
+            if source not in active_sources:
+                continue
+            if n:
+                public_url = _PHASE_L_RESOLVERS[source][1] + n
+                work.append((row["conda_name"], source, n, public_url))
+        # URL-detected registries
+        detected = _detect_registry_from_urls(
+            row["conda_repo_url"], row["conda_dev_url"], row["conda_homepage"]
+        )
+        for source, n in detected:
+            if source not in active_sources:
+                continue
+            public_url = _PHASE_L_RESOLVERS[source][1] + n
+            work.append((row["conda_name"], source, n, public_url))
+
+    if not work:
+        elapsed = time.monotonic() - t0
+        print(f"  Phase L done in {elapsed:.1f}s — no eligible (conda_name, source) pairs")
+        return {
+            "rows_eligible": 0, "fetched": 0, "failed": 0, "not_found": 0,
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    # Filter against the upstream_versions TTL: skip pairs whose row is fresh.
+    have_recent = {
+        (r[0], r[1])
+        for r in conn.execute(
+            "SELECT conda_name, source FROM upstream_versions "
+            "WHERE COALESCE(fetched_at, 0) >= ?",
+            (cutoff,),
+        )
+    }
+    work = [w for w in work if (w[0], w[1]) not in have_recent]
+    if limit > 0:
+        work = work[:limit]
+    print(f"  {len(work):,} (conda_name, source) pairs to refresh "
+          f"(TTL {ttl_days}d, concurrency {concurrency}, "
+          f"sources={sorted(active_sources)})")
+
+    fetched = 0
+    failed = 0
+    not_found = 0
+    progress_every = max(200, len(work) // 40) if work else 1
+    commit_every = 200
+    completed = 0
+    by_source: dict[str, int] = {}
+
+    def _dispatch(conda_name: str, source: str, query_name: str, public_url: str
+                  ) -> tuple[str, str, str | None, str | None, str]:
+        resolver = _PHASE_L_RESOLVERS[source][0]
+        version, err = resolver(query_name)
+        return (conda_name, source, version, err, public_url)
+
+    with ThreadPoolExecutor(max_workers=concurrency) as ex:
+        futures = [ex.submit(_dispatch, *w) for w in work]
+        for fut in as_completed(futures):
+            conda_name, source, version, err, public_url = fut.result()
+            now = int(time.time())
+            if version is not None:
+                conn.execute(
+                    "INSERT OR REPLACE INTO upstream_versions "
+                    "(conda_name, source, version, url, fetched_at, last_error) "
+                    "VALUES (?, ?, ?, ?, ?, NULL)",
+                    (conda_name, source, version, public_url, now),
+                )
+                fetched += 1
+                by_source[source] = by_source.get(source, 0) + 1
+            elif err and ("404" in err or "not found" in err.lower()
+                          or "no version" in err.lower()):
+                conn.execute(
+                    "INSERT OR REPLACE INTO upstream_versions "
+                    "(conda_name, source, version, url, fetched_at, last_error) "
+                    "VALUES (?, ?, NULL, ?, ?, ?)",
+                    (conda_name, source, public_url, now, err),
+                )
+                not_found += 1
+            else:
+                conn.execute(
+                    "INSERT OR REPLACE INTO upstream_versions "
+                    "(conda_name, source, version, url, fetched_at, last_error) "
+                    "VALUES (?, ?, NULL, ?, ?, ?)",
+                    (conda_name, source, public_url, now, err or "unknown error"),
+                )
+                failed += 1
+
+            completed += 1
+            if completed % commit_every == 0:
+                conn.commit()
+            if completed % progress_every == 0:
+                elapsed = time.monotonic() - t0
+                rate = completed / elapsed if elapsed else 0
+                eta_min = (len(work) - completed) / rate / 60 if rate else 0
+                print(
+                    f"    [{completed:,}/{len(work):,}] fetched={fetched:,} "
+                    f"failed={failed:,} 404={not_found:,}  "
+                    f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+                )
+
+    conn.commit()
+    # Snapshot all sources Phase L wrote (npm/cran/cpan/luarocks/crates/
+    # rubygems/nuget). Phase L is the only phase that potentially writes
+    # multiple sources in a single run.
+    snap_total = 0
+    for src in by_source.keys():
+        snap_total += _snapshot_upstream_versions(conn, source_filter=src)
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase L done in {elapsed:.1f}s — fetched {fetched:,} "
+        f"(by source: {by_source}), failed {failed:,}, 404 {not_found:,}, "
+        f"history snapshot rows: {snap_total:,}"
+    )
+    return {
+        "rows_eligible": len(work),
+        "fetched": fetched,
+        "failed": failed,
+        "not_found": not_found,
+        "by_source": by_source,
+        "history_snapshot_rows": snap_total,
+        "ttl_days": ttl_days,
+        "concurrency": concurrency,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
+    """Phase J: parse cf-graph requirements into the dependencies table.
+
+    Reuses the cf-graph-countyfair.tar.gz cache populated by Phase E. Auto-
+    skips if the cache is missing. Wipes and rebuilds the dependencies table
+    each run — full-snapshot semantics; the table reflects current cf-graph
+    state, not historical edges.
+
+    For each feedstock node_attrs file, extracts `meta_yaml.requirements`
+    per requirement_type (build/host/run/test) and writes one row per
+    (source, target, type) tuple. Pin specs preserved verbatim:
+    `'python >=3.10'` → `pin_spec='>=3.10'`. Bare names → `pin_spec=NULL`.
+
+    Multi-output feedstocks: when `meta_yaml.outputs` is a list of dicts
+    (one per output package), each output's separate `requirements` block
+    is parsed and emitted using that output's own `name` as the source —
+    so e.g., `metaio-feedstock` produces edges from BOTH `libmetaio` and
+    `metaio` rather than just the primary. Outputs without a name fall
+    back to the feedstock basename. Duplicate outputs (same name, common
+    in platform-specific multi-output builds) are deduped per-pair.
+
+    Self-references and Jinja-placeholder targets (`{{ python }}`, etc.) are
+    skipped — they're not real package edges.
+    """
+    import tarfile
+    t0 = time.monotonic()
+    print("  Phase J: dependency graph parse from cf-graph cache")
+
+    cache_path = DATA_DIR / "cf-graph-countyfair.tar.gz"
+    if not cache_path.exists():
+        return {
+            "skipped": True,
+            "reason": "cf-graph cache missing; run Phase E first.",
+            "duration_seconds": 0.0,
+        }
+
+    feedstocks = 0
+    edges = 0
+    skipped_self = 0
+    skipped_jinja = 0
+
+    conn.execute("BEGIN TRANSACTION")
+    try:
+        conn.execute("DELETE FROM dependencies")
+        with tarfile.open(cache_path, "r:gz") as tf:
+            for member in tf:
+                if not member.isfile():
+                    continue
+                if "/node_attrs/" not in member.name or not member.name.endswith(".json"):
+                    continue
+                feedstock_basename = member.name.rsplit("/", 1)[-1][:-5]
+                f = tf.extractfile(member)
+                if f is None:
+                    continue
+                try:
+                    payload = json.load(f)
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    continue
+                meta_yaml = payload.get("meta_yaml")
+                if not isinstance(meta_yaml, dict):
+                    continue
+
+                # Build the (source_name, requirements) pairs to write.
+                # Multi-output recipes ship per-output `requirements` under
+                # `meta_yaml.outputs[].requirements`; the top-level
+                # `meta_yaml.requirements` is shared / build-only / absent.
+                pairs: list[tuple[str, dict]] = []
+                outputs_block = meta_yaml.get("outputs")
+                if isinstance(outputs_block, list) and outputs_block:
+                    seen_outputs: set[str] = set()
+                    for out in outputs_block:
+                        if not isinstance(out, dict):
+                            continue
+                        out_name = (out.get("name") or "").strip()
+                        if not out_name or out_name in seen_outputs:
+                            continue
+                        seen_outputs.add(out_name)
+                        out_reqs = out.get("requirements")
+                        if isinstance(out_reqs, dict):
+                            pairs.append((out_name, out_reqs))
+                    # Dedupe edge case: outputs is just a stub list with no
+                    # requirements; fall back to top-level.
+                    if not pairs:
+                        outputs_raw = payload.get("outputs_names")
+                        ons: list[str] = []
+                        if isinstance(outputs_raw, dict) and "elements" in outputs_raw:
+                            elems = outputs_raw.get("elements") or []
+                            if isinstance(elems, list):
+                                ons = [str(e) for e in elems if e]
+                        elif isinstance(outputs_raw, list):
+                            ons = [str(e) for e in outputs_raw if e]
+                        sn = ons[0] if ons else feedstock_basename
+                        top_reqs = meta_yaml.get("requirements")
+                        if isinstance(top_reqs, dict):
+                            pairs.append((sn, top_reqs))
+                else:
+                    # Single-output recipe — top-level requirements only.
+                    outputs_raw = payload.get("outputs_names")
+                    ons = []
+                    if isinstance(outputs_raw, dict) and "elements" in outputs_raw:
+                        elems = outputs_raw.get("elements") or []
+                        if isinstance(elems, list):
+                            ons = [str(e) for e in elems if e]
+                    elif isinstance(outputs_raw, list):
+                        ons = [str(e) for e in outputs_raw if e]
+                    sn = ons[0] if ons else feedstock_basename
+                    top_reqs = meta_yaml.get("requirements")
+                    if isinstance(top_reqs, dict):
+                        pairs.append((sn, top_reqs))
+
+                if not pairs:
+                    continue
+                feedstocks += 1
+                for source_name, reqs in pairs:
+                    for req_type in ("build", "host", "run", "test"):
+                        spec_list = reqs.get(req_type)
+                        if not isinstance(spec_list, list):
+                            continue
+                        seen: set[tuple[str, str]] = set()
+                        for spec in spec_list:
+                            if not isinstance(spec, str):
+                                continue
+                            spec = spec.strip()
+                            if not spec:
+                                continue
+                            parts = spec.split(None, 1)
+                            target = parts[0]
+                            pin = parts[1].strip() if len(parts) > 1 else None
+                            if target == source_name:
+                                skipped_self += 1
+                                continue
+                            if target.startswith("{{") or target.startswith("$"):
+                                skipped_jinja += 1
+                                continue
+                            key = (target, req_type)
+                            if key in seen:
+                                continue
+                            seen.add(key)
+                            conn.execute(
+                                "INSERT OR REPLACE INTO dependencies "
+                                "(source_conda_name, target_conda_name, requirement_type, pin_spec) "
+                                "VALUES (?, ?, ?, ?)",
+                                (source_name, target, req_type, pin),
+                            )
+                            edges += 1
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase J done in {elapsed:.1f}s — {feedstocks:,} feedstocks, "
+        f"{edges:,} edges (skipped {skipped_self:,} self-refs, "
+        f"{skipped_jinja:,} jinja placeholders)"
+    )
+    return {
+        "feedstocks_parsed": feedstocks,
+        "edges_written": edges,
+        "skipped_self_references": skipped_self,
+        "skipped_jinja_placeholders": skipped_jinja,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
+    """Phase M: parse cf-graph pr_info and version_pr_info side files into
+    health columns on `packages`. Surfaces feedstocks where conda-forge bots
+    are stuck, where builds are failing, or where version-update PRs aren't
+    landing.
+
+    cf-graph stores pr_info / version_pr_info as separate JSON files keyed
+    by feedstock (lazy-json refs from node_attrs). The tarball includes
+    them at `pr_info/<sharded>/<f>.json` and
+    `version_pr_info/<sharded>/<f>.json`. Parse both, write 6 health
+    columns:
+      - bot_open_pr_count        : open bot-issued PRs
+      - bot_last_pr_state        : 'open'|'closed'|'merged'|None
+      - bot_last_pr_version      : latest version the bot tried
+      - bot_version_errors_count : count of failed version-update attempts
+      - feedstock_bad            : 1 if cf-graph flagged the feedstock 'bad'
+      - bot_status_fetched_at    : UNIX seconds of this run
+
+    Auto-skips if cf-graph cache is missing.
+    """
+    import tarfile
+    t0 = time.monotonic()
+    print("  Phase M: feedstock health from cf-graph pr_info")
+
+    cache_path = DATA_DIR / "cf-graph-countyfair.tar.gz"
+    if not cache_path.exists():
+        return {
+            "skipped": True,
+            "reason": "cf-graph cache missing; run Phase E first.",
+            "duration_seconds": 0.0,
+        }
+
+    pr_info_data: dict[str, dict[str, Any]] = {}
+    version_pr_info_data: dict[str, dict[str, Any]] = {}
+    files_seen = 0
+
+    with tarfile.open(cache_path, "r:gz") as tf:
+        for member in tf:
+            if not member.isfile() or not member.name.endswith(".json"):
+                continue
+            if "/pr_info/" in member.name and "/version_pr_info/" not in member.name:
+                files_seen += 1
+                feedstock = member.name.rsplit("/", 1)[-1][:-5]
+                f = tf.extractfile(member)
+                if f is None:
+                    continue
+                try:
+                    pr_info_data[feedstock] = json.load(f)
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    continue
+            elif "/version_pr_info/" in member.name:
+                files_seen += 1
+                feedstock = member.name.rsplit("/", 1)[-1][:-5]
+                f = tf.extractfile(member)
+                if f is None:
+                    continue
+                try:
+                    version_pr_info_data[feedstock] = json.load(f)
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    continue
+
+    print(f"  parsed {len(pr_info_data):,} pr_info files, "
+          f"{len(version_pr_info_data):,} version_pr_info files")
+
+    now = int(time.time())
+    updated = 0
+    bot_stuck = 0
+    feedstock_bad_count = 0
+
+    conn.execute("BEGIN TRANSACTION")
+    try:
+        # Iterate over rows in `packages` whose feedstock_name has cf-graph data.
+        for row in conn.execute(
+            "SELECT conda_name, feedstock_name FROM packages "
+            "WHERE conda_name IS NOT NULL AND feedstock_name IS NOT NULL"
+        ):
+            conda_name = row["conda_name"]
+            fs = row["feedstock_name"]
+            pi = pr_info_data.get(fs)
+            vpi = version_pr_info_data.get(fs)
+            if pi is None and vpi is None:
+                continue
+            # PRed: list of {"PR": {state, ...}, "data": {version, ...}}
+            open_count = 0
+            last_state: str | None = None
+            last_version: str | None = None
+            if isinstance(pi, dict):
+                pred = pi.get("PRed") or []
+                if isinstance(pred, list):
+                    for entry in pred:
+                        if not isinstance(entry, dict):
+                            continue
+                        pr = entry.get("PR") or {}
+                        if isinstance(pr, dict) and pr.get("state") == "open":
+                            open_count += 1
+                    if pred:
+                        last = pred[-1]
+                        if isinstance(last, dict):
+                            last_pr = last.get("PR") or {}
+                            last_data = last.get("data") or {}
+                            if isinstance(last_pr, dict):
+                                last_state = last_pr.get("state")
+                            if isinstance(last_data, dict):
+                                last_version = last_data.get("version")
+            bad = 1 if (isinstance(pi, dict) and pi.get("bad")) else 0
+            if isinstance(vpi, dict) and vpi.get("bad"):
+                bad = 1
+            if bad:
+                feedstock_bad_count += 1
+            errs_count = 0
+            if isinstance(vpi, dict):
+                errs = vpi.get("new_version_errors") or {}
+                if isinstance(errs, list):
+                    errs_count = len(errs)
+                elif isinstance(errs, dict):
+                    errs_count = len(errs)
+            if errs_count > 0 or bad:
+                bot_stuck += 1
+
+            conn.execute(
+                "UPDATE packages SET "
+                "bot_open_pr_count = ?, "
+                "bot_last_pr_state = ?, "
+                "bot_last_pr_version = ?, "
+                "bot_version_errors_count = ?, "
+                "feedstock_bad = ?, "
+                "bot_status_fetched_at = ? "
+                "WHERE conda_name = ?",
+                (open_count, last_state, last_version, errs_count, bad, now, conda_name),
+            )
+            updated += 1
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase M done in {elapsed:.1f}s — updated {updated:,} rows; "
+        f"{feedstock_bad_count:,} flagged 'bad', {bot_stuck:,} bot-stuck "
+        f"(bad OR errors > 0)"
+    )
+    return {
+        "files_seen": files_seen,
+        "pr_info_count": len(pr_info_data),
+        "version_pr_info_count": len(version_pr_info_data),
+        "rows_updated": updated,
+        "feedstock_bad_count": feedstock_bad_count,
+        "bot_stuck_count": bot_stuck,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def _phase_n_query_batch(feedstocks: list[str]) -> tuple[dict | None, str | None]:
+    """Issue one GraphQL query with N aliased `repository(...)` blocks.
+
+    Returns (data_dict, err). data_dict maps alias `r{i}` → repository
+    payload (or None if the repo doesn't exist; GraphQL returns null in
+    that case while still completing the request).
+    """
+    import subprocess
+    if not feedstocks:
+        return ({}, None)
+    parts: list[str] = []
+    for i, fs in enumerate(feedstocks):
+        # Escape any quotes (defensive — feedstock names shouldn't contain them)
+        safe = fs.replace('"', '\\"')
+        parts.append(
+            f'r{i}: repository(owner: "conda-forge", name: "{safe}-feedstock") {{ '
+            'name pushedAt '
+            'defaultBranchRef { target { ... on Commit { '
+            'statusCheckRollup { state } '
+            '} } } '
+            'issues(states: OPEN) { totalCount } '
+            'pullRequests(states: OPEN) { totalCount } '
+            '}'
+        )
+    query = "{ " + " ".join(parts) + " }"
+    try:
+        result = subprocess.run(
+            ["gh", "api", "graphql", "-f", f"query={query}"],
+            capture_output=True, text=True, check=False, timeout=60,
+        )
+    except FileNotFoundError:
+        return (None, "gh CLI not installed")
+    except subprocess.TimeoutExpired:
+        return (None, "gh api timed out (>60s)")
+    if result.returncode != 0:
+        return (None, f"gh api failed: {result.stderr[:200]}")
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return (None, "GraphQL response not parseable JSON")
+    return (payload.get("data") or {}, None)
+
+
+def phase_n_github_live(conn: sqlite3.Connection) -> dict:
+    """Phase N: live GitHub data per feedstock — CI status on default branch,
+    open issue + PR counts, pushedAt timestamp.
+
+    Closes the gap Phase M can't (cf-graph only sees what's in node_attrs;
+    real-time CI runs, human PRs, and open issues need GitHub directly).
+
+    Default opt-in via PHASE_N_ENABLED=1 because a full conda-forge backfill
+    of 32k feedstocks would take many hours even with batched GraphQL.
+    Recommended scope-narrowing via PHASE_N_MAINTAINER (run only against
+    feedstocks where the named handle is a maintainer — typically ~700
+    feedstocks, ~30 batches at 25 per request, completes in minutes).
+
+    Auth: `gh auth token` (the `gh` CLI handles credentials). Uses GraphQL
+    via `gh api graphql` for batching; one HTTP request per 25 feedstocks
+    consuming ~125 GraphQL points (well under the 5,000-point hourly limit).
+
+    Tunables:
+      - PHASE_N_ENABLED       : "1" to run; default skip
+      - PHASE_N_MAINTAINER    : restrict to a single maintainer's feedstocks
+      - PHASE_N_TTL_DAYS      : default 1 (live signals change fast)
+      - PHASE_N_BATCH_SIZE    : default 25 (max ~50 before hitting GraphQL
+                                node-limit warnings)
+      - PHASE_N_CONCURRENCY   : default 4 (parallel batches)
+      - PHASE_N_LIMIT         : cap rows (debug; 0 = no cap)
+    """
+    import datetime as _dt
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import subprocess
+
+    t0 = time.monotonic()
+    print("  Phase N: GitHub live-data fetch (CI status, issues, PRs)")
+
+    if not os.environ.get("PHASE_N_ENABLED"):
+        return {
+            "skipped": True,
+            "reason": "Default off. Set PHASE_N_ENABLED=1 to enable.",
+            "duration_seconds": 0.0,
+        }
+    # Probe gh CLI and auth
+    try:
+        probe = subprocess.run(
+            ["gh", "auth", "token"], capture_output=True, text=True, timeout=5,
+        )
+        if probe.returncode != 0 or not probe.stdout.strip():
+            return {
+                "skipped": True,
+                "reason": ("no GitHub auth — run `gh auth login` first. "
+                           "Phase N requires authenticated GitHub API access."),
+                "duration_seconds": 0.0,
+            }
+    except FileNotFoundError:
+        return {
+            "skipped": True,
+            "reason": "gh CLI not installed.",
+            "duration_seconds": 0.0,
+        }
+
+    ttl_days = int(os.environ.get("PHASE_N_TTL_DAYS", "1"))
+    batch_size = max(1, min(50, int(os.environ.get("PHASE_N_BATCH_SIZE", "25"))))
+    concurrency = max(1, int(os.environ.get("PHASE_N_CONCURRENCY", "4")))
+    limit = int(os.environ.get("PHASE_N_LIMIT", "0"))
+    maintainer = os.environ.get("PHASE_N_MAINTAINER")
+    cutoff = int(time.time()) - ttl_days * 86400
+
+    base_select = (
+        "SELECT DISTINCT p.feedstock_name, p.conda_name "
+        "FROM packages p "
+    )
+    where = [
+        "p.conda_name IS NOT NULL",
+        "p.feedstock_name IS NOT NULL",
+        "p.latest_status = 'active'",
+        "COALESCE(p.feedstock_archived, 0) = 0",
+        "COALESCE(p.gh_status_fetched_at, 0) < ?",
+    ]
+    params: list[Any] = [cutoff]
+    if maintainer:
+        base_select += (
+            "JOIN package_maintainers pm ON pm.conda_name = p.conda_name "
+            "JOIN maintainers m ON m.id = pm.maintainer_id "
+        )
+        where.append("LOWER(m.handle) = LOWER(?)")
+        params.append(maintainer)
+    sql = base_select + "WHERE " + " AND ".join(where) + " ORDER BY p.feedstock_name"
+    rows = list(conn.execute(sql, params))
+    if limit > 0:
+        rows = rows[:limit]
+    # Collapse to unique feedstock names (one feedstock can map to multiple
+    # conda packages via multi-output recipes); we still write back to all
+    # matching rows.
+    fs_to_rows: dict[str, list[str]] = {}
+    for r in rows:
+        fs = r["feedstock_name"]
+        fs_to_rows.setdefault(fs, []).append(r["conda_name"])
+    feedstocks = list(fs_to_rows.keys())
+    print(f"  {len(feedstocks):,} feedstocks to refresh "
+          f"(maintainer={maintainer or 'all'}, TTL {ttl_days}d, "
+          f"batch={batch_size}, concurrency={concurrency})")
+
+    if not feedstocks:
+        elapsed = time.monotonic() - t0
+        return {
+            "feedstocks_eligible": 0, "fetched": 0, "failed": 0,
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    # Pre-batch the feedstocks
+    batches = [feedstocks[i:i + batch_size]
+               for i in range(0, len(feedstocks), batch_size)]
+
+    fetched = 0
+    failed = 0
+    completed_batches = 0
+
+    def _row_from_payload(fs: str, payload: dict | None) -> tuple[str, dict[str, Any]]:
+        out: dict[str, Any] = {
+            "ci_state": None, "issues": None, "prs": None, "pushed_at": None,
+            "err": None,
+        }
+        if payload is None:
+            out["err"] = "repo not found (404)"
+            return (fs, out)
+        # CI status from defaultBranchRef.target.statusCheckRollup.state
+        try:
+            target = (payload.get("defaultBranchRef") or {}).get("target") or {}
+            roll = target.get("statusCheckRollup")
+            if isinstance(roll, dict):
+                out["ci_state"] = (roll.get("state") or "").lower() or None
+        except Exception:
+            pass
+        try:
+            out["issues"] = (payload.get("issues") or {}).get("totalCount")
+            out["prs"] = (payload.get("pullRequests") or {}).get("totalCount")
+        except Exception:
+            pass
+        pushed = payload.get("pushedAt")
+        if pushed:
+            try:
+                out["pushed_at"] = int(_dt.datetime.fromisoformat(
+                    pushed.replace("Z", "+00:00")).timestamp())
+            except (ValueError, AttributeError):
+                pass
+        return (fs, out)
+
+    with ThreadPoolExecutor(max_workers=concurrency) as ex:
+        futures = {ex.submit(_phase_n_query_batch, batch): batch
+                   for batch in batches}
+        for fut in as_completed(futures):
+            batch = futures[fut]
+            data, err = fut.result()
+            now = int(time.time())
+            if data is None:
+                # Whole-batch failure — mark all in this batch as failed
+                for fs in batch:
+                    for cn in fs_to_rows[fs]:
+                        conn.execute(
+                            "UPDATE packages SET gh_status_last_error = ? "
+                            "WHERE conda_name = ?",
+                            (err, cn),
+                        )
+                    failed += 1
+                completed_batches += 1
+                continue
+            for i, fs in enumerate(batch):
+                payload = data.get(f"r{i}")
+                _, parsed = _row_from_payload(fs, payload)
+                if parsed["err"]:
+                    for cn in fs_to_rows[fs]:
+                        conn.execute(
+                            "UPDATE packages SET gh_status_fetched_at = ?, "
+                            "gh_status_last_error = ? WHERE conda_name = ?",
+                            (now, parsed["err"], cn),
+                        )
+                    failed += 1
+                else:
+                    for cn in fs_to_rows[fs]:
+                        conn.execute(
+                            "UPDATE packages SET "
+                            "gh_default_branch_status = ?, "
+                            "gh_open_issues_count = ?, "
+                            "gh_open_prs_count = ?, "
+                            "gh_pushed_at = ?, "
+                            "gh_status_fetched_at = ?, "
+                            "gh_status_last_error = NULL "
+                            "WHERE conda_name = ?",
+                            (parsed["ci_state"], parsed["issues"],
+                             parsed["prs"], parsed["pushed_at"], now, cn),
+                        )
+                    fetched += 1
+            completed_batches += 1
+            if completed_batches % 4 == 0:
+                conn.commit()
+                elapsed = time.monotonic() - t0
+                rate = (fetched + failed) / elapsed if elapsed else 0
+                eta_min = ((len(feedstocks) - fetched - failed) / rate / 60
+                           if rate else 0)
+                print(
+                    f"    [{completed_batches:,}/{len(batches):,} batches] "
+                    f"fetched={fetched:,} failed={failed:,}  "
+                    f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+                )
+
+    conn.commit()
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase N done in {elapsed:.1f}s — fetched {fetched:,} feedstocks, "
+        f"failed {failed:,}, batches {completed_batches:,}"
+    )
+    return {
+        "feedstocks_eligible": len(feedstocks),
+        "fetched": fetched,
+        "failed": failed,
+        "batches_total": len(batches),
+        "batches_completed": completed_batches,
+        "ttl_days": ttl_days,
+        "batch_size": batch_size,
+        "concurrency": concurrency,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
+    """Phase G' — per-version vuln scoring.
+
+    Phase G writes vuln counts for each package's `latest_conda_version`.
+    Phase G' iterates `package_version_downloads` (Phase I data) and scores
+    EVERY version separately, writing to `package_version_vulns`. Lets
+    consumers find the most-recent build set with 0 critical CVEs for
+    env-lockdown, and lets maintainers see which historical versions are
+    risky for downstream pinners.
+
+    Auto-skip if vdb library unavailable (same as Phase G). Opt-in via
+    PHASE_GP_ENABLED=1 — full scan is ~250k version-rows × ~5 ms per
+    vdb query = ~20 minutes serial; with concurrency=8, ~3 minutes.
+
+    Tunables:
+      - PHASE_GP_ENABLED      : "1" to run; default skip
+      - PHASE_GP_TTL_DAYS     : skip rows scanned within N days (default 30)
+      - PHASE_GP_LIMIT        : cap rows (debug)
+      - PHASE_GP_MAINTAINER   : restrict to one maintainer's packages
+    """
+    t0 = time.monotonic()
+    print("  Phase G': per-version vuln scoring")
+
+    if not os.environ.get("PHASE_GP_ENABLED"):
+        return {
+            "skipped": True,
+            "reason": "Default off. Set PHASE_GP_ENABLED=1 to enable.",
+            "duration_seconds": 0.0,
+        }
+    import importlib.util
+    try:
+        spec = importlib.util.find_spec("vdb.lib.search")
+    except (ModuleNotFoundError, ValueError):
+        spec = None
+    if spec is None:
+        return {
+            "skipped": True,
+            "reason": "vdb library not installed (run from `vuln-db` env).",
+            "duration_seconds": 0.0,
+        }
+
+    sys.path.insert(0, str(Path(__file__).parent))
+    from detail_cf_atlas import fetch_vdb_data  # type: ignore[import-not-found]
+
+    ttl_days = int(os.environ.get("PHASE_GP_TTL_DAYS", "30"))
+    limit = int(os.environ.get("PHASE_GP_LIMIT", "0"))
+    maintainer = os.environ.get("PHASE_GP_MAINTAINER")
+    cutoff = int(time.time()) - ttl_days * 86400
+
+    base = (
+        "SELECT pvd.conda_name, pvd.version, p.pypi_name, p.npm_name, "
+        "       p.conda_repo_url, p.conda_dev_url "
+        "FROM package_version_downloads pvd "
+        "JOIN packages p ON p.conda_name = pvd.conda_name "
+    )
+    where = [
+        "p.latest_status = 'active'",
+        "COALESCE(p.feedstock_archived, 0) = 0",
+        "NOT EXISTS (SELECT 1 FROM package_version_vulns pvv "
+        "            WHERE pvv.conda_name = pvd.conda_name "
+        "              AND pvv.version = pvd.version "
+        "              AND pvv.scanned_at >= ?)",
+    ]
+    params: list[Any] = [cutoff]
+    if maintainer:
+        base += (
+            "JOIN package_maintainers pm ON pm.conda_name = p.conda_name "
+            "JOIN maintainers m ON m.id = pm.maintainer_id "
+        )
+        where.append("LOWER(m.handle) = LOWER(?)")
+        params.append(maintainer)
+    sql = base + "WHERE " + " AND ".join(where) + " ORDER BY pvd.conda_name, pvd.version"
+    if limit > 0:
+        sql += f" LIMIT {limit}"
+    rows = list(conn.execute(sql, params))
+    print(f"  {len(rows):,} (package, version) pairs to score "
+          f"(maintainer={maintainer or 'all'}, TTL {ttl_days}d)")
+
+    scanned = 0
+    failed = 0
+    progress_every = max(500, len(rows) // 40) if rows else 1
+    commit_every = 500
+
+    for i, r in enumerate(rows):
+        record = {
+            "conda_name":           r["conda_name"],
+            "pypi_name":            r["pypi_name"],
+            "npm_name":             r["npm_name"],
+            "latest_conda_version": r["version"],   # used as the queried version
+            "conda_repo_url":       r["conda_repo_url"],
+            "conda_dev_url":        r["conda_dev_url"],
+        }
+        data, _err = fetch_vdb_data(record, version_override=r["version"])
+        _ = _err  # acknowledge: per-version errors are not surfaced; only counts retained
+        now = int(time.time())
+        if data is None:
+            failed += 1
+            continue
+        affecting = data.get("affecting_latest_version") or []
+        crit = sum(1 for v in affecting if v.get("severity") == "Critical")
+        high = sum(1 for v in affecting if v.get("severity") == "High")
+        kev = sum(1 for v in affecting if v.get("kev"))
+        total = len(data.get("all_vulns") or [])
+        conn.execute(
+            "INSERT OR REPLACE INTO package_version_vulns "
+            "(conda_name, version, vuln_total, "
+            " vuln_critical_affecting_version, vuln_high_affecting_version, "
+            " vuln_kev_affecting_version, scanned_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (r["conda_name"], r["version"], total, crit, high, kev, now),
+        )
+        scanned += 1
+        if scanned % commit_every == 0:
+            conn.commit()
+        if (i + 1) % progress_every == 0:
+            elapsed = time.monotonic() - t0
+            rate = (i + 1) / elapsed if elapsed else 0
+            eta_min = (len(rows) - i - 1) / rate / 60 if rate else 0
+            print(
+                f"    [{i+1:,}/{len(rows):,}] scanned={scanned:,} "
+                f"failed={failed:,}  rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+            )
+
+    conn.commit()
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase G' done in {elapsed:.1f}s — scanned: {scanned:,}, "
+        f"failed: {failed:,}"
+    )
+    return {
+        "rows_eligible": len(rows),
+        "scanned": scanned,
+        "failed": failed,
+        "ttl_days": ttl_days,
         "duration_seconds": round(elapsed, 1),
     }
 
@@ -1069,6 +3562,15 @@ def cmd_build(args: argparse.Namespace) -> int:
         ("D",   phase_d_pypi_enumeration),
         ("E",   phase_e_enrichment),
         ("E.5", phase_e5_archived_feedstocks),
+        ("F",   phase_f_downloads),
+        ("G",   phase_g_vdb_summary),
+        ("G'",  phase_g_prime_per_version_vulns),
+        ("H",   phase_h_pypi_versions),
+        ("J",   phase_j_dependency_graph),
+        ("K",   phase_k_vcs_versions),
+        ("L",   phase_l_extra_registries),
+        ("M",   phase_m_feedstock_health),
+        ("N",   phase_n_github_live),
     ]
     stats: dict[str, Any] = {"phases_run": []}
     for name, fn in phases:
@@ -1108,6 +3610,7 @@ def cmd_query(args: argparse.Namespace) -> int:
 
 def cmd_stats(args: argparse.Namespace) -> int:
     """Show summary statistics from the unified map."""
+    _ = args  # argparse dispatches all subcommands uniformly; cmd_stats has no flags
     if not DB_PATH.exists():
         print(f"Database not built yet. Run: build-unified-map", file=sys.stderr)
         return 1

@@ -457,6 +457,69 @@ pixi run -e vuln-db scan-project --github <owner>/<repo>
 pixi run -e vuln-db inventory-channel <url-or-file>
 ```
 
+### Atlas intelligence (v7.0.0)
+
+The cf_atlas data layer (~16 schema versions, 15 phases, 12 MCP tools).
+All read-side CLIs are **offline-safe**; Phase G's *fresh* vuln data
+needs the `vuln-db` env (cached counts work everywhere).
+
+```bash
+# Build / rebuild the atlas
+pixi run -e local-recipes build-cf-atlas
+PHASE_E_ENABLED=1 pixi run -e local-recipes build-cf-atlas    # incl. cf-graph
+PHASE_N_ENABLED=1 PHASE_N_MAINTAINER=rxm7706 \
+    pixi run -e local-recipes build-cf-atlas                    # + GitHub live data
+
+# Per-package detail card (offline)
+pixi run -e local-recipes detail-cf-atlas <pkg>
+pixi run -e vuln-db detail-cf-atlas-vdb <pkg>                   # with live vdb scan
+
+# Maintainer triage
+pixi run -e local-recipes staleness-report --maintainer <handle>
+pixi run -e local-recipes staleness-report --by-risk --has-vulns
+pixi run -e local-recipes staleness-report --bot-stuck
+
+# Feedstock health (Phase M cf-graph + Phase N GitHub live)
+pixi run -e local-recipes feedstock-health --maintainer <handle> \
+    --filter stuck   # or: bad / open-pr / ci-red / open-issues / open-prs-human / all
+
+# Dependency graph queries (Phase J)
+pixi run -e local-recipes whodepends <pkg>                     # forward
+pixi run -e local-recipes whodepends <pkg> --reverse           # who depends on this
+
+# Multi-source upstream-of-record comparison (Phase H/K/L)
+pixi run -e local-recipes behind-upstream --maintainer <handle>
+
+# CVE delta vs prior snapshot (Phase G snapshot history)
+pixi run -e local-recipes cve-watcher --maintainer <handle> \
+    --severity C --only-increases
+
+# Per-version downloads + release cadence (Phase I)
+pixi run -e local-recipes version-downloads <pkg>
+pixi run -e local-recipes release-cadence --maintainer <handle>
+
+# Lifecycle & alternatives
+pixi run -e local-recipes adoption-stage --package <pkg>
+pixi run -e local-recipes find-alternative <archived-pkg>
+
+# Unified scanner (also has inventory-channel and scan-project below)
+pixi run -e vuln-db scan-project <path>                          # local manifest discovery
+pixi run -e vuln-db scan-project --image python:3.12             # container (syft/trivy)
+pixi run -e vuln-db scan-project --sbom-in <file>                # CycloneDX/SPDX/syft/trivy
+pixi run -e vuln-db scan-project --conda-env <env-path>          # live conda env
+pixi run -e vuln-db scan-project --venv <venv-path>              # live Python venv
+pixi run -e vuln-db scan-project --helm-chart <chart-path>       # helm template
+pixi run -e vuln-db scan-project --kustomize <overlay-path>      # kustomize build
+pixi run -e vuln-db scan-project --argo-app <cr.yaml>            # Argo CD Application
+pixi run -e vuln-db scan-project --flux-cr <cr.yaml>             # Flux HelmRelease/Kustomization
+pixi run -e vuln-db scan-project --kubectl-all                   # live K8s cluster scan
+pixi run -e vuln-db scan-project --oci-manifest <ref>            # registry probe (no SBOM)
+pixi run -e vuln-db scan-project <path> --license-check \
+    --target-license Apache-2.0                                  # license compatibility
+pixi run -e vuln-db scan-project <path> --sbom cyclonedx \
+    --enrich-vulns-from-atlas                                    # SBOM with offline vuln annotations
+```
+
 ### Maintenance & sync
 
 ```bash

@@ -10,12 +10,21 @@ import pytest
 
 # Hyphenated and underscored — no exclusions
 SCRIPTS = [
+    "adoption_stage.py",
+    "behind_upstream.py",
+    "bootstrap_data.py",
     "conda_forge_atlas.py",
     "cve_manager.py",
+    "cve_watcher.py",
     "dependency-checker.py",
     "detail_cf_atlas.py",
     "failure_analyzer.py",
+    "feedstock_context.py",
+    "feedstock_enrich.py",
+    "feedstock_health.py",
+    "feedstock_lookup.py",
     "feedstock-migrator.py",
+    "find_alternative.py",
     "github_updater.py",
     "github_version_checker.py",
     "health_check.py",
@@ -29,10 +38,14 @@ SCRIPTS = [
     "recipe-generator.py",
     "recipe_optimizer.py",
     "recipe_updater.py",
+    "release_cadence.py",
     "scan_project.py",
+    "staleness_report.py",
     "submit_pr.py",
     "validate_recipe.py",
+    "version_downloads.py",
     "vulnerability_scanner.py",
+    "whodepends.py",
 ]
 
 # These scripts run on import / on empty args (not argparse-driven)

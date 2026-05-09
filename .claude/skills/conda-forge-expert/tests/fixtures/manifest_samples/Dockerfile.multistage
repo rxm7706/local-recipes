@@ -1,0 +1,9 @@
+FROM golang:1.21 AS builder
+WORKDIR /app
+RUN apt-get install -y libssl-dev pkg-config
+COPY . .
+RUN go build -o /usr/local/bin/myapp
+
+FROM gcr.io/distroless/base-debian12 AS runtime
+COPY --from=builder /usr/local/bin/myapp /usr/local/bin/myapp
+COPY --from=alpine:3.19 /usr/share/zoneinfo /usr/share/zoneinfo

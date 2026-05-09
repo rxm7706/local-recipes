@@ -281,6 +281,50 @@ cmd = "python .claude/scripts/conda-forge-expert/conda_forge_atlas.py stats"
 description = "Show detailed package card from atlas + anaconda.org (use --deep for per-build artifact metadata, --files to list paths, --version VER to override the version used for vuln scans)"
 cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py"
 
+[feature.local-recipes.tasks.test-skill]
+description = "Run the conda-forge-expert test suite (unit + integration + meta). Use --unit / --integration / --meta to scope; --keyword X to filter; --coverage for coverage report."
+cmd = "python .claude/skills/conda-forge-expert/tests/run_skill_suite.py"
+
+[feature.local-recipes.tasks.bootstrap-data]
+description = "Single-command full data refresh for conda-forge-expert: mapping cache + CVE DB + vdb + cf_atlas (B/B.5/B.6/C/D/E/E.5/F/G/H/J/K/L/M) + optional Phase N. Use --fresh for hard reset; --no-vdb / --no-cf-atlas to skip heavy steps; --gh + --maintainer for live GitHub data."
+cmd = "python .claude/scripts/conda-forge-expert/bootstrap_data.py"
+
+[feature.local-recipes.tasks.staleness-report]
+description = "List conda-forge feedstocks ordered by oldest latest_conda_upload (use --maintainer X to scope, --days N for an age floor, --by-risk to rank by C/H/KEV, --json for machine output)"
+cmd = "python .claude/scripts/conda-forge-expert/staleness_report.py"
+
+[feature.local-recipes.tasks.whodepends]
+description = "Dependency graph queries from cf_atlas Phase J. Default: forward (what does X depend on). --reverse: who depends on X. --type build|host|run|test, --limit N, --json"
+cmd = "python .claude/scripts/conda-forge-expert/whodepends.py"
+
+[feature.local-recipes.tasks.behind-upstream]
+description = "Find conda-forge feedstocks behind their PyPI counterpart (uses Phase H pypi_current_version). --maintainer X to scope. --json for machine output."
+cmd = "python .claude/scripts/conda-forge-expert/behind_upstream.py"
+
+[feature.local-recipes.tasks.cve-watcher]
+description = "Diff vuln_history snapshots — what CVE changes since N days ago. --maintainer X, --severity C|H|K|T, --only-increases, --since-days N, --json"
+cmd = "python .claude/scripts/conda-forge-expert/cve_watcher.py"
+
+[feature.local-recipes.tasks.find-alternative]
+description = "Suggest healthier conda-forge packages for an archived/abandoned one. Combines keyword/summary/dependent/maintainer overlap with recency × downloads."
+cmd = "python .claude/scripts/conda-forge-expert/find_alternative.py"
+
+[feature.local-recipes.tasks.adoption-stage]
+description = "Lifecycle classifier (bleeding-edge / stable / mature / declining / silent). Uses Phase F + Phase I data. --package NAME or --maintainer HANDLE."
+cmd = "python .claude/scripts/conda-forge-expert/adoption_stage.py"
+
+[feature.local-recipes.tasks.feedstock-health]
+description = "Surface feedstocks with stuck bot version-update PRs / open bot PRs / cf-graph 'bad' flag. --maintainer X, --filter stuck|bad|open-pr|all, --limit N, --json"
+cmd = "python .claude/scripts/conda-forge-expert/feedstock_health.py"
+
+[feature.local-recipes.tasks.version-downloads]
+description = "Per-version download breakdown for one package (Phase I). --by-downloads to rank by adoption, --limit N, --json"
+cmd = "python .claude/scripts/conda-forge-expert/version_downloads.py"
+
+[feature.local-recipes.tasks.release-cadence]
+description = "Release cadence trend (Phase I). --package NAME or --maintainer HANDLE. Classifies trend as accelerating/stable/decelerating/silent. --json"
+cmd = "python .claude/scripts/conda-forge-expert/release_cadence.py"
+
 # ── vuln-db feature: AppThreat multi-source vulnerability database ─────────
 # Adds NVD + GHSA + OSV + npm + custom advisory sources (vs. our OSV-only
 # pypi_cve_db.json). Deliberately a separate env to keep local-recipes lean.
@@ -308,11 +352,11 @@ description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 
 cmd = 'python -c "import truststore; truststore.inject_into_ssl(); from vdb.cli import main; main()" --cache'
 
 [feature.vuln-db.tasks.detail-cf-atlas]
-description = "Detail card with --vdb support enabled (multi-source vulnerability lookup); add --version VER to scope the affecting-set to an arbitrary release"
-cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py"
+description = "Detail card with --vdb on by default (multi-source vulnerability summary: NVD + GHSA + OSV + Snyk + npm + …); add --version VER to scope the affecting-set to an arbitrary release. Pass --no-vdb to skip the vuln pass for a faster card."
+cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py --vdb"
 
 [feature.vuln-db.tasks.detail-cf-atlas-vdb]
-description = "Detail card with --vdb --vdb-all preset; pass <name> [--version VER] to list every CVE affecting a specific release"
+description = "Detail card with --vdb --vdb-all preset; pass <name> [--version VER] to list every CVE affecting a specific release (verbose variant of detail-cf-atlas)"
 cmd = "python .claude/scripts/conda-forge-expert/detail_cf_atlas.py --vdb --vdb-all"
 
 [feature.vuln-db.tasks.scan-project]

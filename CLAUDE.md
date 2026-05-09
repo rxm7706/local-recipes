@@ -122,16 +122,19 @@ For extended architectural context, please reference the centralized `docs/` fol
 
 Skill-internal documentation (loaded on-demand when the skill activates):
 - **`.claude/skills/conda-forge-expert/SKILL.md`** — Recipe authoring agent operating principles, 9-step lifecycle loop, build-failure protocol.
-- **`.claude/skills/conda-forge-expert/reference/`** — `recipe-yaml-reference.md`, `meta-yaml-reference.md`, `python-min-policy.md`, `mcp-tools.md`, `conda-forge-ecosystem.md`, `pinning-reference.md`, `selectors-reference.md`, `jinja-functions.md`.
+- **`.claude/skills/conda-forge-expert/reference/`** — `recipe-yaml-reference.md`, `meta-yaml-reference.md`, `python-min-policy.md`, `mcp-tools.md`, `conda-forge-ecosystem.md`, `pinning-reference.md`, `selectors-reference.md`, `jinja-functions.md`, `actionable-intelligence-catalog.md` (persona-mapped catalog of every actionable signal cf_atlas exposes — shipped + open + gap), `dependency-input-formats.md` (manifest / lock-file / SBOM / container-input support matrix — the canonical "what does scan_project accept?" reference).
 - **`.claude/skills/conda-forge-expert/guides/`** — getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, testing-recipes.
 - **`.claude/skills/conda-forge-expert/quickref/`** — `commands-cheatsheet.md` (incl. project pixi tasks), `bot-commands.md`.
 
-### conda-forge-expert v6.0.0 layout (3-tier)
+### conda-forge-expert v7.0.0 layout (3-tier + MCP layer)
 - **`.claude/skills/conda-forge-expert/scripts/`** — canonical implementation (source of truth). Edit code here.
-- **`.claude/scripts/conda-forge-expert/`** — public CLI entrypoint layer (22 thin subprocess wrappers). What `pixi run` calls. README.md at this path documents the wrapper pattern.
+- **`.claude/scripts/conda-forge-expert/`** — public CLI entrypoint layer (~30 thin subprocess wrappers). What `pixi run` calls.
 - **`.claude/data/conda-forge-expert/`** — mutable runtime state (cf_atlas.db, vdb/, cve/, mappings, caches). Gitignored.
+- **`.claude/tools/conda_forge_server.py`** — FastMCP server exposing 30+ tools across recipe-authoring + atlas-intelligence + project-scanning surfaces. Started by Claude Code at session boot; tool schemas surface at call time.
 
-Enterprise routing (JFrog Artifactory, internal mirrors) is **runtime-driven** via `_http.py` (truststore + JFrog/GitHub/.netrc auth chain) — env vars only, never committed config. See `.claude/skills/conda-forge-expert/CHANGELOG.md` v6.0.0 for the full release note.
+**Atlas intelligence (v7.0+)** — `cf_atlas.db` ships 16 schema versions, 15 pipeline phases (B → N), and 17 CLIs. Daily-use entrypoints: `detail-cf-atlas`, `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`, `cve-watcher`, `version-downloads`, `release-cadence`, `find-alternative`, `adoption-stage`, `scan-project`. All read-side CLIs are offline-safe. See `.claude/skills/conda-forge-expert/SKILL.md` § "Atlas Intelligence Layer" for the persona-mapped guide.
+
+Enterprise routing (JFrog Artifactory, internal mirrors) is **runtime-driven** via `_http.py` (truststore + JFrog/GitHub/.netrc auth chain) — env vars only, never committed config. See `.claude/skills/conda-forge-expert/CHANGELOG.md` v6.0.0 / v7.0.0 entries for the full release notes.
 
 Repo-wide pointers:
 - **`_bmad-output/PROJECTS.md`** — BMAD multi-project index.

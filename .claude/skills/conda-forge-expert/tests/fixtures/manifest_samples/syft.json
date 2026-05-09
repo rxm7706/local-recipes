@@ -1,0 +1,12 @@
+{
+  "descriptor": {"name": "syft", "version": "1.0.0"},
+  "schema": {"version": "16.0.0"},
+  "artifacts": [
+    {"id": "1", "name": "openssl", "version": "3.0.13", "type": "deb",
+     "purl": "pkg:deb/debian/openssl@3.0.13?distro=debian-12"},
+    {"id": "2", "name": "requests", "version": "2.31.0", "type": "python",
+     "purl": "pkg:pypi/requests@2.31.0"},
+    {"id": "3", "name": "github.com/gin-gonic/gin", "version": "v1.9.1",
+     "type": "go-module", "purl": "pkg:golang/github.com/gin-gonic/gin@v1.9.1"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "ArtifactName": "test-image:latest",
+  "Results": [
+    {"Target": "test-image:latest (debian 12.4)", "Class": "os-pkgs", "Type": "debian",
+     "Packages": [{"Name": "openssl", "Version": "3.0.13"}]},
+    {"Target": "Python", "Class": "lang-pkgs", "Type": "pip",
+     "Packages": [{"Name": "requests", "Version": "2.31.0"},
+                  {"Name": "urllib3", "Version": "2.0.7"}]}
+  ]
+}
