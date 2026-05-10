@@ -391,61 +391,67 @@ def _dedupe_packages_by_conda_name(conn: sqlite3.Connection) -> int:
 def init_schema(conn: sqlite3.Connection) -> None:
     """Create tables, indexes, and views if not present.
 
-    Migrations are idempotent and run on every open. v1→v2 adds the download
-    columns; v2→v3 dedupes pre-existing duplicate rows then enforces a UNIQUE
-    INDEX on `conda_name` so future Phase B rebuilds upsert cleanly.
+    On a fresh DB the SCHEMA_DDL block alone produces the current schema;
+    the ALTER TABLE / dedup migrations below only fire when carrying an
+    older DB forward (they touch `packages` before SCHEMA_DDL runs, so
+    they must be guarded behind a packages-exists check).
     """
-    # v1 → v2 → v4: column additions via ALTER TABLE. v3 was the dedup +
-    # UNIQUE INDEX migration handled below; v4 adds Phase F failure-tracking
-    # columns. Run ADD COLUMN before executescript so the columns exist
-    # before any later DDL references them.
-    existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(packages)")}
-    for col, ddl in (
-        ("total_downloads",          "ALTER TABLE packages ADD COLUMN total_downloads INTEGER"),
-        ("latest_version_downloads", "ALTER TABLE packages ADD COLUMN latest_version_downloads INTEGER"),
-        ("downloads_fetched_at",     "ALTER TABLE packages ADD COLUMN downloads_fetched_at INTEGER"),
-        ("downloads_fetch_attempts", "ALTER TABLE packages ADD COLUMN downloads_fetch_attempts INTEGER"),
-        ("downloads_last_error",     "ALTER TABLE packages ADD COLUMN downloads_last_error TEXT"),
-        ("archived_at",              "ALTER TABLE packages ADD COLUMN archived_at INTEGER"),
-        ("vuln_total",                       "ALTER TABLE packages ADD COLUMN vuln_total INTEGER"),
-        ("vuln_critical_affecting_current",  "ALTER TABLE packages ADD COLUMN vuln_critical_affecting_current INTEGER"),
-        ("vuln_high_affecting_current",      "ALTER TABLE packages ADD COLUMN vuln_high_affecting_current INTEGER"),
-        ("vuln_kev_affecting_current",       "ALTER TABLE packages ADD COLUMN vuln_kev_affecting_current INTEGER"),
-        ("vdb_scanned_at",                   "ALTER TABLE packages ADD COLUMN vdb_scanned_at INTEGER"),
-        ("vdb_last_error",                   "ALTER TABLE packages ADD COLUMN vdb_last_error TEXT"),
-        ("pypi_current_version",             "ALTER TABLE packages ADD COLUMN pypi_current_version TEXT"),
-        ("pypi_version_fetched_at",          "ALTER TABLE packages ADD COLUMN pypi_version_fetched_at INTEGER"),
-        ("pypi_version_last_error",          "ALTER TABLE packages ADD COLUMN pypi_version_last_error TEXT"),
-        ("pypi_current_version_yanked",      "ALTER TABLE packages ADD COLUMN pypi_current_version_yanked INTEGER"),
-        ("github_current_version",           "ALTER TABLE packages ADD COLUMN github_current_version TEXT"),
-        ("github_version_fetched_at",        "ALTER TABLE packages ADD COLUMN github_version_fetched_at INTEGER"),
-        ("github_version_last_error",        "ALTER TABLE packages ADD COLUMN github_version_last_error TEXT"),
-        ("bot_open_pr_count",                "ALTER TABLE packages ADD COLUMN bot_open_pr_count INTEGER"),
-        ("bot_last_pr_state",                "ALTER TABLE packages ADD COLUMN bot_last_pr_state TEXT"),
-        ("bot_last_pr_version",              "ALTER TABLE packages ADD COLUMN bot_last_pr_version TEXT"),
-        ("bot_version_errors_count",         "ALTER TABLE packages ADD COLUMN bot_version_errors_count INTEGER"),
-        ("feedstock_bad",                    "ALTER TABLE packages ADD COLUMN feedstock_bad INTEGER"),
-        ("bot_status_fetched_at",            "ALTER TABLE packages ADD COLUMN bot_status_fetched_at INTEGER"),
-        ("gh_default_branch_status",         "ALTER TABLE packages ADD COLUMN gh_default_branch_status TEXT"),
-        ("gh_open_issues_count",             "ALTER TABLE packages ADD COLUMN gh_open_issues_count INTEGER"),
-        ("gh_open_prs_count",                "ALTER TABLE packages ADD COLUMN gh_open_prs_count INTEGER"),
-        ("gh_pushed_at",                     "ALTER TABLE packages ADD COLUMN gh_pushed_at INTEGER"),
-        ("gh_status_fetched_at",             "ALTER TABLE packages ADD COLUMN gh_status_fetched_at INTEGER"),
-        ("gh_status_last_error",             "ALTER TABLE packages ADD COLUMN gh_status_last_error TEXT"),
-        ("maven_coord",                      "ALTER TABLE packages ADD COLUMN maven_coord TEXT"),
-    ):
-        if col not in existing_cols:
-            conn.execute(ddl)
-
-    # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
-    # the CREATE UNIQUE INDEX would fail on the duplicates.
-    have_uq = bool(list(conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='index' AND name='uq_conda_name'"
+    have_packages = bool(list(conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='packages'"
     )))
-    if not have_uq:
-        n_deleted = _dedupe_packages_by_conda_name(conn)
-        if n_deleted:
-            print(f"  Migration v2→v3: deleted {n_deleted:,} duplicate rows")
+
+    if have_packages:
+        # v1 → v2 → v4: column additions via ALTER TABLE. v3 was the dedup +
+        # UNIQUE INDEX migration handled below; v4 adds Phase F failure-tracking
+        # columns. Run ADD COLUMN before executescript so the columns exist
+        # before any later DDL references them.
+        existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(packages)")}
+        for col, ddl in (
+            ("total_downloads",          "ALTER TABLE packages ADD COLUMN total_downloads INTEGER"),
+            ("latest_version_downloads", "ALTER TABLE packages ADD COLUMN latest_version_downloads INTEGER"),
+            ("downloads_fetched_at",     "ALTER TABLE packages ADD COLUMN downloads_fetched_at INTEGER"),
+            ("downloads_fetch_attempts", "ALTER TABLE packages ADD COLUMN downloads_fetch_attempts INTEGER"),
+            ("downloads_last_error",     "ALTER TABLE packages ADD COLUMN downloads_last_error TEXT"),
+            ("archived_at",              "ALTER TABLE packages ADD COLUMN archived_at INTEGER"),
+            ("vuln_total",                       "ALTER TABLE packages ADD COLUMN vuln_total INTEGER"),
+            ("vuln_critical_affecting_current",  "ALTER TABLE packages ADD COLUMN vuln_critical_affecting_current INTEGER"),
+            ("vuln_high_affecting_current",      "ALTER TABLE packages ADD COLUMN vuln_high_affecting_current INTEGER"),
+            ("vuln_kev_affecting_current",       "ALTER TABLE packages ADD COLUMN vuln_kev_affecting_current INTEGER"),
+            ("vdb_scanned_at",                   "ALTER TABLE packages ADD COLUMN vdb_scanned_at INTEGER"),
+            ("vdb_last_error",                   "ALTER TABLE packages ADD COLUMN vdb_last_error TEXT"),
+            ("pypi_current_version",             "ALTER TABLE packages ADD COLUMN pypi_current_version TEXT"),
+            ("pypi_version_fetched_at",          "ALTER TABLE packages ADD COLUMN pypi_version_fetched_at INTEGER"),
+            ("pypi_version_last_error",          "ALTER TABLE packages ADD COLUMN pypi_version_last_error TEXT"),
+            ("pypi_current_version_yanked",      "ALTER TABLE packages ADD COLUMN pypi_current_version_yanked INTEGER"),
+            ("github_current_version",           "ALTER TABLE packages ADD COLUMN github_current_version TEXT"),
+            ("github_version_fetched_at",        "ALTER TABLE packages ADD COLUMN github_version_fetched_at INTEGER"),
+            ("github_version_last_error",        "ALTER TABLE packages ADD COLUMN github_version_last_error TEXT"),
+            ("bot_open_pr_count",                "ALTER TABLE packages ADD COLUMN bot_open_pr_count INTEGER"),
+            ("bot_last_pr_state",                "ALTER TABLE packages ADD COLUMN bot_last_pr_state TEXT"),
+            ("bot_last_pr_version",              "ALTER TABLE packages ADD COLUMN bot_last_pr_version TEXT"),
+            ("bot_version_errors_count",         "ALTER TABLE packages ADD COLUMN bot_version_errors_count INTEGER"),
+            ("feedstock_bad",                    "ALTER TABLE packages ADD COLUMN feedstock_bad INTEGER"),
+            ("bot_status_fetched_at",            "ALTER TABLE packages ADD COLUMN bot_status_fetched_at INTEGER"),
+            ("gh_default_branch_status",         "ALTER TABLE packages ADD COLUMN gh_default_branch_status TEXT"),
+            ("gh_open_issues_count",             "ALTER TABLE packages ADD COLUMN gh_open_issues_count INTEGER"),
+            ("gh_open_prs_count",                "ALTER TABLE packages ADD COLUMN gh_open_prs_count INTEGER"),
+            ("gh_pushed_at",                     "ALTER TABLE packages ADD COLUMN gh_pushed_at INTEGER"),
+            ("gh_status_fetched_at",             "ALTER TABLE packages ADD COLUMN gh_status_fetched_at INTEGER"),
+            ("gh_status_last_error",             "ALTER TABLE packages ADD COLUMN gh_status_last_error TEXT"),
+            ("maven_coord",                      "ALTER TABLE packages ADD COLUMN maven_coord TEXT"),
+        ):
+            if col not in existing_cols:
+                conn.execute(ddl)
+
+        # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
+        # the CREATE UNIQUE INDEX would fail on the duplicates.
+        have_uq = bool(list(conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='index' AND name='uq_conda_name'"
+        )))
+        if not have_uq:
+            n_deleted = _dedupe_packages_by_conda_name(conn)
+            if n_deleted:
+                print(f"  Migration v2→v3: deleted {n_deleted:,} duplicate rows")
 
     conn.executescript(SCHEMA_DDL)
     conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
