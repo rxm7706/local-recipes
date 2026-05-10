@@ -21,6 +21,10 @@ Check codes (14 total):
   STD-002  Both meta.yaml and recipe.yaml present — format mixing is rejected
   SEC-001  Source URL without sha256 checksum
   TEST-001  Missing tests section
+  TEST-002  noarch:python tests target only python_min (or a single version) instead of
+            the [python_min, "*"] list — misses Python-version-specific breakage at the
+            top of the build matrix. Convention established by ocefpaf on
+            staged-recipes#32857 (https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932).
   MAINT-001  Missing recipe-maintainers in extra section
 """
 from __future__ import annotations
@@ -499,6 +503,82 @@ def analyze_tests_section(data: Dict) -> List[OptimizationSuggestion]:
     return suggestions
 
 
+def analyze_noarch_python_test_matrix(data: Dict) -> List[OptimizationSuggestion]:
+    """TEST-002: noarch:python tests should run against both python_min and "*".
+
+    A noarch:python package builds once but is dispatched across the entire
+    Python build matrix (3.10 -> 3.14 today). A test that pins ``python_version``
+    to ``${{ python_min }}.*`` only exercises the floor — Python-version-specific
+    breakage at the top of the matrix (removed stdlib modules in 3.13/3.14, dict
+    ordering, pkg_resources deprecation, etc.) sails through review and surfaces
+    as a downstream user bug.
+
+    The conda-forge convention (established by ocefpaf in staged-recipes#32857
+    review comment r3039190932) is to express ``python_version`` as a list:
+
+        python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+    The ``"*"`` entry resolves to the latest Python in the build env so the test
+    suite runs against both the floor and the ceiling on every (re)build.
+
+    Reference: https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932
+    """
+    suggestions: List[OptimizationSuggestion] = []
+
+    build = data.get("build") or {}
+    if build.get("noarch") != "python":
+        return suggestions
+
+    tests = data.get("tests") or []
+    if not isinstance(tests, list):
+        return suggestions
+
+    for idx, test_entry in enumerate(tests):
+        if not isinstance(test_entry, dict):
+            continue
+        python_block = test_entry.get("python")
+        if not isinstance(python_block, dict):
+            continue
+        if "python_version" not in python_block:
+            continue
+
+        py_ver = python_block["python_version"]
+        if isinstance(py_ver, list):
+            has_star = any(str(v).strip() == "*" for v in py_ver)
+            if has_star:
+                continue
+            issue = "list form is missing the \"*\" entry"
+        elif isinstance(py_ver, str):
+            issue = f"single value '{py_ver}' tests only one Python version"
+        else:
+            continue
+
+        suggestions.append(OptimizationSuggestion(
+            code="TEST-002",
+            message=(
+                f"tests[{idx}].python.python_version: {issue}. "
+                "noarch:python recipes should test against both python_min and \"*\" "
+                "to catch Python-version-specific breakage."
+            ),
+            suggestion=(
+                "Use the list form (conda-forge convention per ocefpaf, "
+                "staged-recipes#32857 r3039190932):\n"
+                "tests:\n"
+                "  - python:\n"
+                "      imports: [<pkg>]\n"
+                "      pip_check: true\n"
+                "      python_version:\n"
+                "      - ${{ python_min }}.*\n"
+                "      - \"*\""
+            ),
+            confidence=0.85,
+        ))
+
+    return suggestions
+
+
 def analyze_maintainers(data: Dict) -> List[OptimizationSuggestion]:
     """Check that recipe-maintainers is populated (MAINT-001).
 
@@ -545,6 +625,7 @@ def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
     # Completeness checks
     all_suggestions.extend(analyze_maintainers(data))
     all_suggestions.extend(analyze_tests_section(data))
+    all_suggestions.extend(analyze_noarch_python_test_matrix(data))
     all_suggestions.extend(analyze_about_section(data))
     # Quality and style checks
     all_suggestions.extend(analyze_dependencies(data))

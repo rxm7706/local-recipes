@@ -213,9 +213,19 @@ When asked to create or update a recipe, execute these steps in order. Each step
     - If `status: failed`: proceed to [Build Failure Protocol](#build-failure-protocol)
     - > *Skills: [`ci-cd-and-automation`] — a failed build blocks the pipeline; fix before proceeding.*
 
+8b. **Prepare Submission Branch** — `prepare_submission_branch(recipe_name="<name>", dry_run=True)` → verify → `prepare_submission_branch(recipe_name="<name>")`
+    - Success: `fork_branch_url` returned; branch `add-recipe-<name>` exists on `<your-user>/staged-recipes` with the recipe committed; **no PR yet**
+    - This is the **inspection checkpoint** between a green local build and the PR. Open `fork_branch_url` in a browser, run `gh pr diff` against an imagined PR, or pull the fork locally and review the diff before authorizing step 9.
+    - Idempotent — if the remote branch's tree already matches the local HEAD, the push is skipped (`pushed: false` in the result). Force-push uses `--force-with-lease` so a divergent remote errors instead of being clobbered. The result also reports `synced_commits` (how many commits the fork's main was behind upstream — useful drift signal).
+    - **Skip when**: you're submitting via `submit_pr` end-to-end and don't need an inspection point (e.g., a trivial recipe re-submission). `submit_pr` calls this internally; running it standalone first is the human-in-the-loop variant.
+    - **Optional add-on**: drop a `conda-forge.yml` next to `recipe.yaml` to override staged-recipes defaults for this recipe. The most common opt-ins: `azure: { store_build_artifacts: true }` (Azure saves built `.conda` files as downloadable pipeline artifacts; default is `false`), `os_version: { linux_64: alma9 }` (newer glibc), and `noarch_platforms` (extra CI matrix for noarch:python). Full reference: [`reference/conda-forge-yml-reference.md`](reference/conda-forge-yml-reference.md). Starter template: [`templates/conda-forge-yml/staged-recipes/conda-forge.yml`](templates/conda-forge-yml/staged-recipes/conda-forge.yml).
+    - > *Skills: [`shipping-and-launch`] — staged rollout; [`git-workflow-and-versioning`] — branch-then-PR pattern.*
+
 9.  **Submit PR** — `submit_pr(recipe_name="<name>", dry_run=True)` → verify → `submit_pr(recipe_name="<name>")`
     - Success: `pr_url` returned; PR opens on conda-forge/staged-recipes
     - Run `dry_run=True` first — it checks `gh auth`, fork presence, and branch state
+    - When step 8b already pushed the branch, `submit_pr`'s prep phase no-ops (idempotency check) and proceeds straight to opening the PR
+    - If PR creation fails after a successful push, the result includes `branch` + `fork_branch_url` + a `hint` to retry just the PR step — no need to re-push
     - See [Pre-PR Quality Gate Checklist](#pre-pr-quality-gate-checklist) before calling
     - > *Skills: [`shipping-and-launch`] — complete pre-submit checklist; [`git-workflow-and-versioning`] — atomic commit (`feat: add <name> recipe`); [`documentation-and-adrs`] — PR description must explain WHY.*
 
@@ -365,6 +375,8 @@ Run this checklist from `shipping-and-launch` before calling `submit_pr`:
 - [ ] `schema_version: 1` for new recipes (recipe.yaml v1 format)
 
 **Submission**
+- [ ] `prepare_submission_branch(dry_run=True)` passes; then real call lands branch on `<your-user>/staged-recipes` and `fork_branch_url` was inspected
+- [ ] (Optional) per-recipe `conda-forge.yml` ships `azure.store_build_artifacts: true` if you want the upstream PR's Azure run to retain downloadable `.conda` artifacts
 - [ ] `submit_pr(dry_run=True)` passes all prerequisite checks
 - [ ] PR description explains WHY (not just what) — cite non-obvious decisions
 
@@ -534,7 +546,7 @@ extra:
 ### Recipe Creation & Modification
 | Tool | Description | Example |
 |---|---|---|
-| `generate_recipe_from_pypi` | Creates a new recipe from a PyPI package | `generate_recipe_from_pypi(package_name="numpy")` |
+| `generate_recipe_from_pypi` | Creates a new recipe from a PyPI package via grayskull, with conda-forge post-processing (rewrites `tests[].python.python_version` to the `[python_min, "*"]` list form per [staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932)) | `generate_recipe_from_pypi(package_name="numpy")` |
 | `generate_recipe_from_npm` | **Canonical npm pattern** (npm pack + npm install --global + pnpm-licenses). Handles scoped packages (`@openai/codex` → conda name `codex`). Flags: `--source-mode {npm,github,auto}`, `--prepare-fix`, `--test-mode`, `--inline-build`, `--with-build-bat`, `--no-bin-links`, `--no-third-party-licenses`, `--validate`. Pixi: `pixi run -e local-recipes generate-npm -- husky` | `recipe-generator.py npm husky` |
 | `generate_recipe_from_cran` | R package from CRAN via rattler-build | `recipe-generator.py cran ggplot2` |
 | `generate_recipe_from_cpan` | Perl package from CPAN via rattler-build | `recipe-generator.py cpan Moose` |
@@ -547,7 +559,7 @@ extra:
 |---|---|---|
 | `validate_recipe` | Schema, license, checksums + `rattler-build lint` pass | `validate_recipe(recipe_path="recipes/numpy")` |
 | `check_dependencies` | Verifies all deps exist on conda-forge. Batch repodata.json — fast, air-gapped-friendly, JFrog Artifactory-compatible | `check_dependencies(recipe_path="recipes/numpy")` |
-| `optimize_recipe` | 13 check codes — **critical** (STD-001: compiler without stdlib; STD-002: format mixing), **security** (SEC-001: no sha256), **completeness** (MAINT-001: no maintainers; TEST-001: no tests; ABT-001: no license_file), **quality** (DEP-001/002, PIN-001, SCRIPT-001/002, SEL-001/002) | `optimize_recipe(recipe_path="recipes/numpy")` |
+| `optimize_recipe` | 16 check codes — **critical** (STD-001: compiler without stdlib; STD-002: format mixing), **security** (SEC-001: no sha256), **completeness** (MAINT-001: no maintainers; TEST-001: no tests; TEST-002: noarch:python tests pinned to a single Python version instead of `[python_min, "*"]` ([staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932)); ABT-001: no license_file; ABT-002: v0 about-fields in v1 recipe), **quality** (DEP-001/002, PIN-001, SCRIPT-001/002, SEL-001/002/003) | `optimize_recipe(recipe_path="recipes/numpy")` |
 
 ### Build & Debug
 | Tool | Description | Example |
@@ -567,7 +579,8 @@ extra:
 | `check_github_version` | Read-only GitHub version check — returns latest tag without modifying | `check_github_version(recipe_path="recipes/apple-fm-sdk")` |
 | `update_mapping_cache` | Updates PyPI-to-Conda name mapping cache from Grayskull. Run when `get_conda_name` misses | `update_mapping_cache(force=True)` |
 | `migrate_to_v1` | **meta.yaml → recipe.yaml.** Converts v0 to v1 via feedrattler. Preserves original. | `migrate_to_v1(recipe_path="recipes/numpy")` |
-| `submit_pr` | Pushes to staged-recipes fork + opens PR. Always `dry_run=True` first. | `submit_pr(recipe_name="numpy", dry_run=True)` |
+| `prepare_submission_branch` | **Step 8b.** Stage the recipe on a branch in your staged-recipes fork — no PR yet. Idempotent (`--force-with-lease`); reports `synced_commits` (fork drift). Use as inspection checkpoint before authorizing `submit_pr`. | `prepare_submission_branch(recipe_name="numpy", dry_run=True)` |
+| `submit_pr` | **Step 9.** Calls `prepare_submission_branch` then opens the PR against conda-forge/staged-recipes. Idempotent prep — when step 8b already pushed, the prep no-ops and only the PR is created. Always `dry_run=True` first. | `submit_pr(recipe_name="numpy", dry_run=True)` |
 | `run_system_health_check` | Full diagnostic on the development environment | `run_system_health_check()` |
 
 ---

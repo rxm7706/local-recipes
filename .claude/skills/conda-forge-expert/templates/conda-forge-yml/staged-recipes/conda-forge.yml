@@ -1,0 +1,28 @@
+# conda-forge.yml — staged-recipes per-recipe override.
+# Drop at recipes/<name>/conda-forge.yml. Uncomment only what you need.
+# Reference: reference/conda-forge-yml-reference.md
+
+# azure:
+#   store_build_artifacts: true   # save build_artifacts/ to Azure (default false)
+#   timeout_minutes: 480          # default ~360 (6h)
+#   free_disk_space: [true]       # cleanup before build; use only if disk runs out
+
+# os_version:                     # default cos7 (glibc 2.17)
+#   linux_64: alma9               # alma8 (2.28) | alma9 (2.34) | alma10 (2.38+) | ubi8
+#   linux_aarch64: alma9
+
+# provider:                       # default azure
+#   linux_64: github_actions      # opt-in for linux_64 only (conda-smithy 3.57.1+)
+
+# noarch_platforms:               # default [linux_64]
+#   - linux_64
+#   - osx_64
+#   - osx_arm64
+#   - win_64
+
+# build_platform:                 # cross-build emulated targets on x86_64 + qemu
+#   linux_aarch64: linux_64
+#   linux_ppc64le: linux_64
+
+# github_actions:
+#   timeout_minutes: 360          # default ~360 (6h)

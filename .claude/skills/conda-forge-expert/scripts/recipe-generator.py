@@ -1027,7 +1027,10 @@ def generate_npm_recipe_yaml(
     # ``schema_version: 1`` is technically optional for v1 recipes (rattler-build
     # defaults to it) — many merged conda-forge npm recipes omit it. We emit it
     # explicitly so our validate_recipe.py is happy without bending its rules.
+    # The yaml-language-server comment gives editors (VS Code, Helix, etc.) live
+    # schema validation against prefix-dev/recipe-format.
     recipe_lines = [
+        "# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json",
         "schema_version: 1",
         "",
         "context:",
@@ -1297,7 +1300,28 @@ def _run_rattler_generate(ecosystem: str, args: list[str], output_dir: Path) -> 
             f"stdout: {proc.stdout}\nstderr: {proc.stderr}"
         )
     # Newest match — handles re-runs in same dir
-    return max(candidates, key=lambda p: p.stat().st_mtime)
+    recipe_path = max(candidates, key=lambda p: p.stat().st_mtime)
+    _ensure_yaml_language_server_header(recipe_path)
+    return recipe_path
+
+
+_YAML_LS_HEADER = (
+    "# yaml-language-server: "
+    "$schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json"
+)
+
+
+def _ensure_yaml_language_server_header(recipe_path: Path) -> None:
+    """Prepend the yaml-language-server schema comment if missing.
+
+    rattler-build generate-recipe does not emit this comment; without it
+    editors lose live schema validation against prefix-dev/recipe-format.
+    Idempotent — bails out if the file already starts with the directive.
+    """
+    text = recipe_path.read_text(encoding="utf-8")
+    if text.lstrip().startswith("# yaml-language-server:"):
+        return
+    recipe_path.write_text(_YAML_LS_HEADER + "\n" + text, encoding="utf-8")
 
 
 def main():
