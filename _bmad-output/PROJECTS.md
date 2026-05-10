@@ -48,6 +48,7 @@ loaded when an active project resolves.
 |------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `local-recipes`        | active | Primary project — conda-forge recipe authoring monorepo (this repo's main purpose).                                                                                                |
 | `presenton-pixi-image` | active | Air-gapped, conda-forge-native repackaging of the Presenton AI deck-generation app for OpenShift Container Platform deployment in regulated-enterprise environments.                |
+| `deckcraft`            | active | Air-gapped, conda-forge-native AI pipeline for generating editable PowerPoint, Marp markdown, infographics, and images. Multi-surface (Claude Skill, MCP for Copilot/MS365, CLI). Complements `presenton-pixi-image` (built from primitives, not a repackage).                |
 
 ## Adding a new project
 

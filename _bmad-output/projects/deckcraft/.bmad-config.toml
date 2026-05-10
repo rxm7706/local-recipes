@@ -1,0 +1,11 @@
+# Project-scoped BMAD config for `deckcraft` (the AI presentation pipeline).
+# Loaded as resolver layer 5 (team, committed) when this project is active.
+
+# Override the global output_folder so this project's artifacts land under its own subdir.
+output_folder = "_bmad-output/projects/deckcraft"
+
+# Project metadata (informational; not consumed by skills today, but useful for tooling).
+[project]
+slug = "deckcraft"
+description = "Air-gapped, conda-forge-native AI pipeline for generating editable PowerPoint, Marp markdown, infographics, and images. Multi-AI surfaces (Claude Skill, MCP server for Copilot/MS365, standalone CLI). Complements `presenton-pixi-image` (which repackages an upstream app); deckcraft is built from primitives."
+status = "active"
