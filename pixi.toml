@@ -509,6 +509,36 @@ go-sops = ">=3.12.2"
 age = ">=1.3.1"
 yarn = ">=4.14.1"
 requests = ">=2.33.1"
+## Deckcraft additions (charts + ML for local image gen + LLM backends + Python bindings)
+matplotlib = ">=3.9"
+plotly = ">=5.24"
+transformers = ">=4.45"
+accelerate = ">=1.0"
+playwright-python = ">=1.59"  # Python bindings (the existing 'playwright' is the Node binary)
+ollama-python = ">=0.4"       # Python client (the existing 'ollama' is the Go server binary)
+hf-transfer = ">=0.1.9"       # 3x faster GGUF/safetensors downloads at first-run model fetch (cross-platform)
+sentencepiece = ">=0.2.1"     # tokenizer lib (transitive on linux+osx via mlx-lm; explicit for win-64 parity); needed by SD3+/T5/MarianMT
+sentence-transformers = ">=3.0"  # dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
+pytesseract = ">=0.3"         # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
+odfpy = ">=1.4"               # ODP/ODT style extraction (stretch goal in FR-46d); OpenDocument Apache-2.0 noarch lib
+#litellm = ">=1.83.14"         # Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
+
+## MLX (Apple's array framework) and mlx-lm (LLM runner).
+## mlx-lm is noarch python; the native mlx C++ lib builds for linux-64 + osx-arm64
+## (skip rule: "win or match(python,'<3.9') or (osx and x86_64)" — excludes Windows + Intel Mac).
+## Primary value is on osx-arm64 (Metal-accelerated, 2-3x over llama.cpp for some workloads).
+## On linux-64 mlx runs against libblas/lapack — usable for experimentation, no perf advantage over the existing pytorch path.
+## macOS minimum bumped to 14.5 (Sonoma) — required by mlx 0.31.2+; M-series users are always above this.
+[feature.local-recipes.system-requirements]
+macos = "14.5"
+
+[feature.local-recipes.target.linux-64.dependencies]
+mlx = ">=0.31.2"
+mlx-lm = "*"                  # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
+
+[feature.local-recipes.target.osx-arm64.dependencies]
+mlx = ">=0.31.2"
+mlx-lm = "*"                  # Apple-native LLM runner; deckcraft prefers this on M-series
 
 [dependencies]
 #[feature.python.dependencies]
