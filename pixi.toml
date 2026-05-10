@@ -129,8 +129,12 @@ cmd = "bash scripts/ensure-bmad-preflight.sh"
 
 
 [feature.local-recipes.tasks.submit-pr]
-description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first)"
+description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first). Runs prepare-pr internally then opens the PR."
 cmd = "python .claude/scripts/conda-forge-expert/submit_pr.py"
+
+[feature.local-recipes.tasks.prepare-pr]
+description = "Prepare submission: sync your fork, create the recipe branch, push to <user>/staged-recipes — but DO NOT open a PR. Use this to stage a branch on your fork for inspection (or to land per-recipe `azure.store_build_artifacts: true` PR builds) before authorizing submit-pr. Idempotent; force-push uses --force-with-lease. Usage: pixi run -e local-recipes prepare-pr <recipe> [--dry-run] [--branch <name>] [--no-force]"
+cmd = "python .claude/scripts/conda-forge-expert/prepare_pr.py"
 
 [feature.local-recipes.tasks.recipe-build]
 description = "Native rattler-build for the host platform (recommended default; fast, no Docker). Auto-detects platform via uname; layers conda-forge-pinning over .ci_support/<platform>.yaml so ${{ python_min }} resolves like upstream CI. Usage: pixi run -e local-recipes recipe-build <path-to-recipe>"

@@ -65,7 +65,9 @@ class TestSkillMdConsistency:
             pytest.skip("pixi.toml not found at expected location")
         content = PIXI_TOML.read_text()
         scripts_dir = SKILL_DIR / "scripts"
+        wrapper_dir = SKILL_DIR.parent.parent / "scripts" / "conda-forge-expert"
         existing = {p.name for p in scripts_dir.glob("*.py")}
+        existing |= {p.name for p in wrapper_dir.glob("*.py")}
 
         import re
         # Match either layout:
@@ -77,7 +79,8 @@ class TestSkillMdConsistency:
         ))
         unknown = referenced - existing
         assert not unknown, (
-            f"pixi.toml tasks reference scripts that don't exist: {unknown}"
+            f"pixi.toml tasks reference scripts that don't exist in either "
+            f"the canonical scripts/ dir or the wrapper dir: {unknown}"
         )
 
     def test_every_user_script_has_a_pixi_task(self):

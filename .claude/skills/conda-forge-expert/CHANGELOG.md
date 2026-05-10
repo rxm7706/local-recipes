@@ -2,6 +2,38 @@
 
 ## TL;DR — what's new in the latest release
 
+**v7.4.0** (May 9, 2026) — All generated `recipe.yaml` files carry the `# yaml-language-server: $schema=…` directive so editors (VS Code, Helix, Neovim) get live schema validation from prefix-dev/recipe-format.
+
+- `generate_npm_recipe_yaml` now prepends the directive above `schema_version: 1`.
+- `_run_rattler_generate` (PyPI/CRAN/etc. via `rattler-build generate-recipe`) post-processes the written file with `_ensure_yaml_language_server_header`. Idempotent — bails out if the header is already present.
+- Existing PyPI path (`generate_recipe_yaml`) and every `templates/**/*-recipe.yaml` template were already emitting the header; this release closes the npm + rattler-generate gaps.
+- Test `test_recipe_generator.py` flipped: was asserting the npm path must NOT emit the header (canonical PRs omit it); now asserts it must. Going-forward only — existing committed `recipe.yaml` files in `recipes/` are not retroactively backfilled.
+- Reason: editors silently lose schema validation when the directive is missing, which costs catch-rate on the easiest class of recipe bugs (typo'd field names, wrong nesting, deprecated keys). The directive is a comment, so emitting it is harmless for rattler-build; it's pure editor UX.
+
+**v7.3.0** (May 9, 2026) — Document `conda-forge.yml` and ship two starter templates, in the same shape as existing reference + template pairs.
+
+- New reference: [`reference/conda-forge-yml-reference.md`](reference/conda-forge-yml-reference.md). Practical, high-signal subset (not exhaustive — that's what the canonical docs are for): per-recipe staged-recipes override scope, feedstock-level scope, top use cases with rationale (`azure.store_build_artifacts`, `os_version`, `provider`, `bot.version_updates.exclude`, `noarch_platforms`, per-job timeouts), less-common but useful keys table, deprecated keys to remove.
+- New templates: [`templates/conda-forge-yml/staged-recipes/conda-forge.yml`](templates/conda-forge-yml/staged-recipes/conda-forge.yml) (staged-recipes per-recipe override) and [`templates/conda-forge-yml/feedstock/conda-forge.yml`](templates/conda-forge-yml/feedstock/conda-forge.yml) (feedstock-root). Both keep keys commented out so a verbatim drop-in is a no-op until you uncomment a specific override; single-line trailing annotations (`# default cos7 (glibc 2.17)`) match the inline-comment style of existing templates like `templates/python/noarch-recipe.yaml`. Leaf filename is `conda-forge.yml` so a copy-paste into the destination needs no rename; the parent directory (`staged-recipes/` vs `feedstock/`) names the scope.
+- SKILL.md step 8b's optional-add-on note points at the reference + template.
+- CLAUDE.md skill-doc index gains the new reference.
+
+**v7.2.0** (May 9, 2026) — Split submission into two user-authorized steps so the human can inspect the branch on the fork before the PR opens.
+
+- New step **8b** in the autonomous loop: `prepare_submission_branch(recipe_name)`. Syncs your fork, creates the recipe branch, copies the recipe in, commits, and pushes to `<your-user>/staged-recipes` — but **does not open a PR**. Returns `fork_branch_url` for browser inspection.
+- Idempotent push: skips the force-push when the remote branch's tree already matches the local HEAD (`pushed: false`); reports `synced_commits` so you see how many commits the fork's main was behind upstream.
+- Force pushes default to `--force-with-lease` (instead of plain `--force`) — a divergent remote branch errors instead of being silently overwritten. `force=False` (or `--no-force`) opts into a plain push.
+- `submit_pr` is now thin: calls `prepare_submission_branch` then `gh pr create`. When step 8b already ran, the prep phase short-circuits (idempotency) and `submit_pr` only opens the PR. If the PR step fails after a successful push, the result includes the branch info and a hint to retry just the PR step — no re-push.
+- New pixi task: `pixi run -e local-recipes prepare-pr <recipe>`. New wrapper at `.claude/scripts/conda-forge-expert/prepare_pr.py` (delegates to canonical `submit_pr.py --prepare-only`).
+- SKILL.md autonomous-loop expanded to 10 steps (8b inserted); Pre-PR checklist gains the prep-branch + optional `azure.store_build_artifacts` lines; tools table documents both surfaces.
+
+**v7.1.0** (May 9, 2026) — Adopt the `[python_min, "*"]` test-matrix convention for noarch:python recipes.
+
+- New optimizer check **TEST-002**: flags `tests[].python.python_version` when set to a single string (or a list missing `"*"`) on `noarch: python` recipes.
+- New post-processor on `generate_recipe_from_pypi`: rewrites grayskull's single-string `python_version: ${{ python_min }}.*` to the two-entry list form on every recipe generation. Idempotent.
+- `templates/python/noarch-recipe.yaml` updated to the list form so hand-written recipes follow the same convention.
+- Total optimizer check codes: **16** (was 15).
+- Convention source: ocefpaf review on [conda-forge/staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932). Rationale: a noarch:python package builds once but runs across the whole 3.10→3.14 matrix; testing only the floor lets Python-version-specific breakage (3.13/3.14 stdlib removals, deprecated APIs) slip past review.
+
 **v7.0.0** (May 9, 2026) — Atlas intelligence layer goes GA, fully exposed via MCP, **zero open feature gaps**.
 
 - 15 pipeline phases (B → N), **17 schema versions**, 17 CLIs, **34 MCP tools**.
@@ -15,6 +47,51 @@
 For the full v7.0.0 release note, see below. For older releases, scroll past the v7.0 entry. Each release has its own date-stamped block.
 
 ---
+
+- **v7.3.0**: Document `conda-forge.yml` and ship two starter templates (May 9, 2026). The submission-flow split landed in v7.2.0 surfaced a recurring need: every other recipe wants some staged-recipes-default override (newer glibc, additional CI matrix, kept artifacts) but the only existing source for those keys was the upstream conda-forge docs site — no skill-internal reference, no copy-pasteable starter. Two artifacts ship together:
+
+    1. **Reference** — `reference/conda-forge-yml-reference.md`. Covers: where the file lives in each context (per-recipe override in staged-recipes vs. permanent feedstock root); the high-frequency keys (`azure.store_build_artifacts` for downloadable Azure artifacts, `os_version` for newer Linux glibc/sysroot, `provider.linux_64: github_actions` for the conda-smithy 3.57.1 opt-in, `bot.version_updates.exclude` for stuck-tag PRs, `noarch_platforms` for extra noarch:python matrix, per-job `timeout_minutes`, `azure.free_disk_space`); less-common keys table (channel priority, output validation, recipe_dir, lint skip, idle timeout); deprecated keys to remove (`compiler_stack`, `build_with_mambabuild`, `clone_depth`, `pinning`); five common patterns (artifact retention, glibc bump, bot tag exclusion, macOS noarch testing); and the local-lint command. Cites the canonical conda-forge docs page as the exhaustive source — the skill reference is the practical-use subset, not a re-implementation of the schema.
+
+    2. **Templates** — `templates/conda-forge-yml/staged-recipes/conda-forge.yml` (per-recipe override) and `templates/conda-forge-yml/feedstock/conda-forge.yml` (feedstock root). Leaf filename matches the destination filename so a copy-paste into a recipe directory or feedstock root needs no rename; the scope subdirectory (`staged-recipes/` vs `feedstock/`) disambiguates the two starters. Both ship with every key commented out and a one-line description above each block, so dropping the file in is zero-behavior until the user uncomments a specific override. Header comment in each template explicitly tells the user not to commit an all-empty file ("an empty conda-forge.yml just adds noise to the PR diff").
+
+    **Why this lives in the skill, not just the conda-forge docs**: when an agent needs a staged-recipes override during a recipe build, it's already inside this skill's context. Asking it to webfetch the upstream docs and synthesize a one-line override is a longer, more error-prone path than reading the practical-subset reference and copying from the template. The trade-off is that the reference can drift from upstream — mitigated by citing the canonical doc and including a note that conda-smithy lint is the source of truth for valid keys.
+
+    **Wiring**: SKILL.md step 8b's optional-add-on note now links the reference + template (was a one-liner mentioning `azure.store_build_artifacts` inline). CLAUDE.md skill-doc index updated to list the new reference. No optimizer or generator changes — this is documentation + templates only.
+
+- **v7.2.0**: Split staged-recipes submission into two user-authorized steps (May 9, 2026). The submission flow used to be a monolithic `submit_pr` that ran fork-clone → sync → branch → copy → commit → push → `gh pr create` end-to-end, with no inspection point in between. With more recipes shipping, the gap between "build is green locally" and "PR is live on conda-forge/staged-recipes" needed a human-in-the-loop checkpoint — somewhere to open the branch on GitHub and *look* at the recipe in its destination context before reviewers pull it.
+
+    **Three changes ship together**:
+
+    1. **Refactor `submit_pr.py`** — extract three top-level functions:
+       - `prepare_branch(recipe_name, branch=None, force=True, dry_run=False)` — does steps 1–6 of the old flow (validate recipe, gh auth check, fork clone/sync, branch checkout, copy recipe in, commit, push). Returns `{branch, fork_branch_url, head_sha, synced_commits, pushed}`.
+       - `open_pr(recipe_name, branch=None, ...)` — does step 7 only (`gh pr create` from `<user>:<branch>` against `conda-forge/staged-recipes:main`).
+       - `submit_pr(...)` — composes the two. If `prepare_branch` succeeds and `open_pr` then fails, the result includes `branch` + `fork_branch_url` + a `hint` to retry just the PR step.
+
+    2. **Idempotency + safer force-push**:
+       - Before pushing, the script checks `git ls-remote origin <branch>`; if the remote tip's tree-hash already matches the local HEAD's tree-hash, the push is skipped (`pushed: false`). This makes the prep step safely re-runnable from the same recipe directory without burning a force-push when nothing changed.
+       - Force-pushes default to `--force-with-lease` (was plain `--force`). A remote branch that diverged unexpectedly between fetch and push will error instead of being silently overwritten. The `--no-force` flag falls back to a plain push (errors on any divergence at all).
+       - The fork sync step now returns `synced_commits` (the count from `git rev-list --count main..upstream/main` before the reset) so the caller sees how stale their fork was.
+
+    3. **Two MCP tools, two pixi tasks**:
+       - New MCP tool `prepare_submission_branch(recipe_name, dry_run, branch, force)` wraps `prepare_branch` (canonical script `submit_pr.py --prepare-only`).
+       - Existing `submit_pr` MCP tool gains `branch` + `force` parameters; docstring clarifies it now no-ops on prep when step 8b already ran.
+       - New pixi task `pixi run -e local-recipes prepare-pr <recipe>` (description distinguishes it from `submit-pr`); new wrapper `.claude/scripts/conda-forge-expert/prepare_pr.py` delegates to the canonical `submit_pr.py` with `--prepare-only`.
+
+    **Why the inspection checkpoint matters**: a green local build doesn't catch everything a reviewer will see. The PR diff against staged-recipes is what the human eye actually scans — relative paths in `license_file`, accidental files left in the recipe directory (build_artifacts, `.pyc`, editor swapfiles), the `extra.recipe-maintainers` ordering relative to existing maintainers in the file, and so on. With step 8b, those land on `<user>/staged-recipes` first; you eyeball them in the GitHub UI; *then* you open the PR. For trivial re-submissions, skip 8b and call `submit_pr` directly — it's still atomic.
+
+    **Optional artifact-retention hint**: SKILL.md step 8b documents that you can ship a per-recipe `conda-forge.yml` with `azure: { store_build_artifacts: true }` so the upstream PR's Azure run keeps the built `.conda` files as downloadable pipeline artifacts (default is `false`). Useful for reviewers who want to test the package in a real env before approving — paste the `.conda` URL from the Azure run page into a fresh conda env.
+
+    **Documentation**: SKILL.md autonomous-loop expanded from 9 to 10 steps (8b inserted between Monitor Build and Submit PR); both new and updated tools land in the Maintenance Reference table; Pre-PR checklist gains the prep-branch + optional store_build_artifacts lines.
+
+- **v7.1.0**: Adopt the `[${{ python_min }}.*, "*"]` test-matrix convention for noarch:python recipes (May 9, 2026). The convention surfaced during the deepxiv-sdk submission review and was canonicalized by ocefpaf in [staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932). Three changes ship together so the convention is enforced end-to-end:
+
+    1. **Generator post-processor** — `generate_recipe_from_pypi` now applies `_normalize_grayskull_test_matrix` after grayskull writes the recipe. Grayskull emits `python_version: ${{ python_min }}.*` (single string); the post-processor rewrites it to the list form. Regex-based, indentation-preserving, idempotent. Verified against grayskull's deepxiv-sdk output and on a re-run (zero matches on second pass).
+    2. **Optimizer check TEST-002** — `analyze_noarch_python_test_matrix` flags any noarch:python recipe whose `tests[].python.python_version` is a single string OR a list missing `"*"`. Skips non-noarch:python recipes and entries without a `python_version` key. Confidence 0.85. Brings the optimizer to **16 check codes** (was 15).
+    3. **Template** — `templates/python/noarch-recipe.yaml:41` updated to the list form so hand-written recipes follow the same shape.
+
+    **Why the list form is better**: a noarch:python package builds once but is dispatched across the entire Python build matrix (3.10 → 3.14 today). A test pinned to `${{ python_min }}.*` only exercises the floor; Python-version-specific breakage at the top of the matrix (`cgi`/`asyncore` removed in 3.13, `pkg_resources` deprecation, dict-ordering changes, etc.) sails past review and surfaces as a downstream user bug. The `"*"` entry resolves to the latest Python in the build environment so every (re)build verifies both the floor and the ceiling. On rerender, when conda-forge-pinning lands a new Python version, the list form re-runs the test against that new top — silent regressions become loud.
+
+    Documentation: SKILL.md `## Core Tools Reference` updated for both `generate_recipe_from_pypi` (post-processing note) and `optimize_recipe` (16 check codes; TEST-002 description with PR link). The deepxiv-sdk recipe shipped in `recipes/deepxiv-sdk/recipe.yaml` is the first recipe to use this form end-to-end.
 
 - **v7.0.0**: MCP exposure of the entire actionable-intelligence layer + final pre-MCP cluster + documentation consolidation (May 9, 2026). Major version bump because cf_atlas's surface is now reachable from any Claude Code session as MCP tools — every signal we've shipped (Phases B → N) becomes a single tool call instead of a one-off Python invocation.
 

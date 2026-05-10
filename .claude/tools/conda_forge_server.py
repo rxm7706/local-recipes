@@ -6,6 +6,7 @@ without needing to parse bash output.
 """
 import json
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -120,15 +121,74 @@ def check_dependencies(
     return json.dumps(result, indent=2)
 
 
+_GRAYSKULL_PYTHON_VERSION_RE = re.compile(
+    r'^(?P<indent>[ \t]+)python_version:[ \t]+(?P<value>\$\{\{[ \t]*python_min[ \t]*\}\}\.\*)[ \t]*$',
+    re.MULTILINE,
+)
+
+
+def _normalize_grayskull_test_matrix(recipe_path: Path) -> bool:
+    """Rewrite grayskull's single-value ``python_version`` to the conda-forge list form.
+
+    grayskull emits ``python_version: ${{ python_min }}.*`` (single string), but the
+    conda-forge convention for noarch:python is the two-entry list form so the test
+    suite runs against both the floor and the latest available Python on every build:
+
+        python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+    Reason: a noarch:python package builds once but is dispatched across the whole
+    Python matrix; testing only ``python_min`` misses Python-version-specific breakage
+    (stdlib removals in 3.13/3.14, deprecated APIs, etc.).
+
+    Convention established by ocefpaf in conda-forge/staged-recipes#32857
+    review comment r3039190932:
+    https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932
+
+    Returns True if the file was modified, False otherwise. Idempotent — the regex
+    only matches the single-string form, so running on an already-normalized recipe
+    is a no-op.
+    """
+    try:
+        text = recipe_path.read_text()
+    except OSError:
+        return False
+
+    def _expand(match: re.Match[str]) -> str:
+        indent = match.group("indent")
+        value = match.group("value")
+        return (
+            f'{indent}python_version:\n'
+            f'{indent}- {value}\n'
+            f'{indent}- "*"'
+        )
+
+    new_text, n = _GRAYSKULL_PYTHON_VERSION_RE.subn(_expand, text)
+    if n == 0:
+        return False
+    recipe_path.write_text(new_text)
+    return True
+
+
 @mcp.tool()
 def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> str:
-    """Generate a conda-forge recipe from a PyPI package using grayskull."""
+    """Generate a conda-forge recipe from a PyPI package using grayskull.
+
+    After grayskull writes the recipe, the output is post-processed to apply
+    conda-forge conventions that grayskull does not emit. Currently:
+
+    - ``tests[].python.python_version`` is rewritten from the single-value form
+      grayskull emits to the two-entry list form ``[${{ python_min }}.*, "*"]``
+      (ocefpaf convention from staged-recipes#32857 r3039190932). See
+      ``_normalize_grayskull_test_matrix`` for rationale.
+    """
     try:
         pkg_spec = f"{package_name}=={version}" if version else package_name
         args = ["run", "-e", "grayskull", "pypi", pkg_spec]
-        
+
         repo_root = Path(__file__).parent.parent.parent
-        
+
         result = subprocess.run(
             ["pixi"] + args,
             cwd=str(repo_root),
@@ -136,12 +196,19 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
             text=True,
             check=False
         )
-        
+
         recipe_dir = repo_root / "recipes" / package_name
         if recipe_dir.exists():
+            recipe_path = recipe_dir / "recipe.yaml"
+            normalized = False
+            if recipe_path.exists():
+                normalized = _normalize_grayskull_test_matrix(recipe_path)
             return json.dumps({
                 "success": True,
                 "message": f"Recipe generated at {recipe_dir}",
+                "post_processing": {
+                    "python_version_list_form": normalized,
+                },
                 "stdout": result.stdout
             }, indent=2)
         else:
@@ -151,7 +218,7 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
                 "stdout": result.stdout,
                 "stderr": result.stderr
             }, indent=2)
-            
+
     except Exception as e:
         return json.dumps({"success": False, "error": str(e)}, indent=2)
 
@@ -541,30 +608,86 @@ def update_recipe(recipe_path: str, dry_run: bool = False) -> str:
 
 
 @mcp.tool()
+def prepare_submission_branch(
+    recipe_name: str,
+    dry_run: bool = False,
+    branch: str | None = None,
+    force: bool = True,
+) -> str:
+    """Stage a recipe on a branch in your staged-recipes fork — without opening a PR.
+
+    This is the inspection checkpoint between a green build (step 8) and the actual
+    PR (step 9). After this returns, the branch ``add-recipe-<recipe_name>`` exists
+    on ``<your-user>/staged-recipes`` with the recipe committed, ready to inspect
+    via the browser before authorizing ``submit_pr``.
+
+    Workflow:
+      1. Validates the recipe exists locally at ``recipes/<recipe_name>/``.
+      2. Checks ``gh auth status`` — requires prior ``gh auth login``.
+      3. Clones your staged-recipes fork if not already present locally; syncs
+         its main branch with upstream conda-forge/staged-recipes (reports
+         ``synced_commits`` for visibility).
+      4. Creates / refreshes the feature branch off main.
+      5. Copies the local recipe into ``recipes/<name>/`` on the branch and commits.
+      6. Pushes to origin (the fork) only when the remote branch's tree differs
+         from the local HEAD's tree (idempotent).
+
+    Result includes ``fork_branch_url`` so you can paste it in a browser to inspect
+    the branch on GitHub before authorizing the PR step.
+
+    Args:
+        recipe_name: The recipe directory name under ``recipes/`` (e.g. 'numpy').
+        dry_run: If True, validate prerequisites and print the planned branch /
+                 commit message — no network writes.
+        branch: Override the default branch name (defaults to ``add-recipe-<name>``).
+        force: When True (default), use ``git push --force-with-lease`` so an
+               unexpectedly-divergent remote branch errors instead of being
+               clobbered. Set False to use a plain push (errors on any divergence).
+    """
+    args = [recipe_name, "--prepare-only"]
+    if dry_run:
+        args.append("--dry-run")
+    if branch:
+        args.extend(["--branch", branch])
+    if not force:
+        args.append("--no-force")
+    result = _run_script(SUBMIT_PR_SCRIPT, args, timeout=300)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
 def submit_pr(
     recipe_name: str,
     dry_run: bool = False,
     pr_title: str | None = None,
     pr_body: str | None = None,
+    branch: str | None = None,
+    force: bool = True,
 ) -> str:
-    """Submit a finished recipe as a PR to conda-forge/staged-recipes via your GitHub fork.
+    """Submit a finished recipe as a PR to conda-forge/staged-recipes via your fork.
 
-    Workflow:
-      1. Validates the recipe exists locally at recipes/<recipe_name>/.
-      2. Checks 'gh auth status' — requires prior 'gh auth login'.
-      3. Clones your fork of staged-recipes if not already present locally.
-      4. Syncs the fork's main branch with upstream conda-forge/staged-recipes.
-      5. Creates branch 'add-recipe-<recipe_name>', copies the recipe, commits, pushes.
-      6. Opens a PR against conda-forge/staged-recipes main.
+    Two-step internally: (1) ``prepare_submission_branch`` (idempotent — skips the
+    push when the remote branch's tree already matches the local HEAD), (2)
+    ``gh pr create`` against conda-forge/staged-recipes main.
+
+    For an inspection checkpoint between the local build and the PR, call
+    ``prepare_submission_branch`` separately first; ``submit_pr`` will then no-op
+    on the prep step and proceed to opening the PR.
 
     Always call with dry_run=True first to verify prerequisites without making any
     network writes. The result includes 'pr_url' on success.
 
+    If PR creation fails after the branch was successfully pushed, the result
+    includes the branch info and a hint to retry just the PR step — no need to
+    re-push.
+
     Args:
-        recipe_name: The recipe directory name under recipes/ (e.g. 'numpy').
+        recipe_name: The recipe directory name under ``recipes/`` (e.g. 'numpy').
         dry_run: If True, validate prerequisites only — do not push or create PR.
-        pr_title: Optional custom PR title. Defaults to 'Add recipe for <name>'.
+        pr_title: Optional custom PR title. Defaults to ``Add recipe for <name>``.
         pr_body: Optional custom PR body. Defaults to the standard checklist template.
+        branch: Override the default branch name (defaults to ``add-recipe-<name>``).
+        force: When True (default), use ``git push --force-with-lease``.
     """
     args = [recipe_name]
     if dry_run:
@@ -573,6 +696,10 @@ def submit_pr(
         args.extend(["--title", pr_title])
     if pr_body:
         args.extend(["--body", pr_body])
+    if branch:
+        args.extend(["--branch", branch])
+    if not force:
+        args.append("--no-force")
     result = _run_script(SUBMIT_PR_SCRIPT, args, timeout=300)  # 5 min for clone + push
     return json.dumps(result, indent=2)
 

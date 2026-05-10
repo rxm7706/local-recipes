@@ -80,8 +80,9 @@ class TestRecipeGenerator:
         pkg_dir = recipe_path.parent
 
         # ── Canonical recipe.yaml shape ─────────────────────────────────
-        # Must NOT have the editor schema header (canonical recipes don't include it)
-        assert "yaml-language-server" not in content
+        # Editor schema header lets VS Code/Helix validate live against
+        # prefix-dev/recipe-format. Required on every emitted recipe.yaml.
+        assert "# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json" in content
         # Reference PRs omit `schema_version`, but we emit it explicitly so our
         # validate_recipe.py is happy. Both forms are accepted by rattler-build.
         assert "schema_version: 1" in content
