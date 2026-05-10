@@ -17,25 +17,25 @@ platforms = [
 ]
 
 [feature.python.dependencies]
-python = ">=3.12.13,3.12.*"
-pixi = ">=0.67.2"
-gh = ">=2.92.0"
-nodejs = ">=24.14.1,24.*"  # Pin to LTS version
-bmad-method = ">=6.6.0"
-spec-kit = ">=0.8.7"
-truststore = ">=0.10.4"  # OS trust store for corporate CA / JFrog TLS
+python = ">=3.12.13,3.12.*"       # Python language interpreter
+pixi = ">=0.68.0"                 # Pixi package & environment manager
+gh = ">=2.92.0"                   # GitHub CLI for PR / issue / repo automation
+nodejs = ">=24.14.1,24.*"         # Pin to LTS version
+bmad-method = ">=6.6.0"           # BMAD agent-driven dev framework (planning + dev skills)
+spec-kit = ">=0.8.7"              # Spec-kit for spec-driven development
+truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
 [feature.build.dependencies]
-conda = ">=26.3.2"
-conda-libmamba-solver = ">=24.9.0"
-conda-build = ">=25.3.1"
-conda-index = ">=0.3.0"
-conda-forge-ci-setup = ">=4.9.3,<5.0"
-conda-forge-pinning = "*"
-frozendict = "*"
-networkx = "2.4.*"
-rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"
+conda = ">=26.3.2"                # conda package manager
+conda-libmamba-solver = ">=24.9.0"  # fast libmamba-backed solver for conda
+conda-build = ">=25.3.1"          # v0 recipe build engine (meta.yaml)
+conda-index = ">=0.3.0"           # repodata.json index generator
+conda-forge-ci-setup = ">=4.9.3,<5.0"  # conda-forge CI bootstrap scripts (CI fidelity)
+conda-forge-pinning = "*"         # global conda-forge version pinning manifest
+frozendict = "*"                  # immutable dict (transitive build dep)
+networkx = "2.4.*"                # graph library; pinned to 2.4 for conda-build compat
+rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build compat shims
 
 [feature.linux]
 # The linux feature runs on every platform that can run Docker.
@@ -66,8 +66,8 @@ CONDA_BLD_PATH = "$PIXI_PROJECT_ROOT/build_artifacts"
 MINIFORGE_HOME = "$CONDA_PREFIX"
 
 [feature.grayskull.dependencies]
-grayskull = ">=2.7.3"
-conda-recipe-manager = ">=0.8.0"
+grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
+conda-recipe-manager = ">=0.8.0"  # lint + migrate v0 ↔ v1 conda recipes
 [feature.grayskull.tasks.pypi]
 description = "generate a v1 (rattler-build) recipe for a PyPI package name with `grayskull`"
 cmd = "cd recipes && grayskull pypi --strict-conda-forge --use-v1-format"
@@ -82,7 +82,7 @@ description = "generate a v0 (conda-build) recipe for a CRAN package name with `
 cmd = "cd recipes && grayskull cran --strict-conda-forge"
 
 [feature.conda-smithy.dependencies]
-conda-smithy = ">=3.44.6,<4"
+conda-smithy = ">=3.44.6,<4"      # feedstock generator + recipe linter
 [feature.conda-smithy.tasks.lint]
 description = "validate all recipes with `conda-smithy`"
 cmd = "conda-smithy recipe-lint --conda-forge recipes/*"
@@ -339,12 +339,12 @@ cmd = "python .claude/scripts/conda-forge-expert/release_cadence.py"
 platforms = ["linux-64", "osx-arm64", "win-64"]
 
 [feature.vuln-db.dependencies]
-python = "3.12.*"
+python = "3.12.*"                 # Python language interpreter
 conda-forge-metadata = ">=0.13.0"  # so --deep also works in this env
 # truststore lives in [feature.python.dependencies] — included via the python feature
 
 [feature.vuln-db.pypi-dependencies]
-appthreat-vulnerability-db = { version = ">=6.0.13", extras = ["all"] }
+appthreat-vulnerability-db = { version = ">=6.0.13", extras = ["all"] }  # multi-source CVE DB (NVD + GHSA + OSV + npm + Snyk)
 
 [feature.vuln-db.activation.env]
 VDB_HOME = "$PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb"
@@ -373,155 +373,153 @@ cmd = "python .claude/scripts/conda-forge-expert/inventory_channel.py"
 
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
-python = "3.12.*"
+python = "3.12.*"                 # Python language interpreter
 ##[feature.build.dependencies]
-conda = ">=26.3.2"
-conda-libmamba-solver = ">=24.9.0"
-conda-build = ">=25.3.1"
-conda-index = ">=0.3.0"
-conda-forge-ci-setup = ">=4.9.3,<5.0"
-conda-forge-pinning = "*"
-frozendict = "*"
+conda = ">=26.3.2"                # conda package manager
+conda-libmamba-solver = ">=24.9.0"  # fast libmamba-backed solver for conda
+conda-build = ">=25.3.1"          # v0 recipe build engine (meta.yaml)
+conda-index = ">=0.3.0"           # repodata.json index generator
+conda-forge-ci-setup = ">=4.9.3,<5.0"  # conda-forge CI bootstrap scripts (CI fidelity)
+conda-forge-pinning = "*"         # global conda-forge version pinning manifest
+frozendict = "*"                  # immutable dict (transitive build dep)
 #networkx = "2.4.*"
-rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"
+rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build compat shims
 ##[feature.grayskull.dependencies]
-grayskull = ">=2.7.3"
-conda-recipe-manager = ">=0.8.0"
+grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
+conda-recipe-manager = ">=0.8.0"  # lint + migrate v0 ↔ v1 conda recipes
 ##[feature.conda-smithy.dependencies]
-conda-smithy = ">=3.44.6,<4"
+conda-smithy = ">=3.44.6,<4"      # feedstock generator + recipe linter
 ##[feature.shellcheck]
-shellcheck = ">=0.10.0"
-"ruamel.yaml" = ">=0.18.17"
+shellcheck = ">=0.10.0"           # static analyzer for shell scripts
+"ruamel.yaml" = ">=0.18.17"       # round-trip YAML parser (preserves comments + key order)
 #### Unleash Pixi - Added to ensure single a build pack with pixi will work for cookiecutters, plain python, conda, nodejs, rust, c, c++ code.
 ## For use with CookieCutters
-cookiecutter = ">=2.7.1"
-cruft = ">=2.16.0"
-jinja2-ospath = ">=0.3.0"
+cookiecutter = ">=2.7.1"          # template-based project scaffolder
+cruft = ">=2.16.0"                # keep cookiecutter-generated projects in sync with template
+jinja2-ospath = ">=0.3.0"         # Jinja2 extension for filesystem path operations
 ## For Building Plain Python Projects
 # cibuildwheel = ">=3.2.1" # Dependency bashlex Failed for platform 'linux-aarch64'
-pip = ">=26.1.1"
-setuptools = ">=81.0.0"
-setuptools-scm = ">=9.2.2"
-hatchling = ">=1.29.0"
-python-build = ">=1.5.0"
-twine = ">=6.2.0"
-uv = ">=0.11.11"
-wheel = ">=0.47.0"
+pip = ">=26.1.1"                  # Python package installer
+setuptools = ">=81.0.0"           # Python build backend (setup.py / pyproject.toml)
+setuptools-scm = ">=9.2.2"        # version metadata from VCS tags
+hatchling = ">=1.29.0"            # Hatch build backend (PEP 517)
+python-build = ">=1.5.0"          # PEP 517 build frontend (`python -m build`)
+twine = ">=6.2.0"                 # PyPI artifact uploader
+uv = ">=0.11.12"                  # fast Rust-based Python package installer / resolver
+wheel = ">=0.47.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=10.33.2"
+pnpm = ">=10.33.2"                # fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
-conda-lock = ">=4.0.0"
-conda-pack = ">=0.9.1"
-conda-tree = ">=1.1.2"
-feedrattler = ">=0.3.14"
+conda-lock = ">=4.0.0"            # generate cross-platform lockfiles for conda envs
+conda-pack = ">=0.9.1"            # bundle a conda env into a relocatable archive
+conda-tree = ">=1.1.2"            # visualize conda dependency tree
+feedrattler = ">=0.3.14"          # convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.67.2"
-rattler-build = ">=0.64.1"
-pixi-build-rattler-build = ">=0.3.10"
-pixi-build-cmake = ">=0.3.11"
-pixi-build-python = ">=0.4.8"
-pixi-build-rust = ">=0.4.8"
-pixi-diff = ">=0.1.4"
-pixi-inject = ">=0.1.1"
-pixi-install-to-prefix = ">=0.1.2"
-pixi-kernel = ">=0.7.1"
-pixi-outdated = ">=0.2.1"
-pixi-pack = ">=0.7.6"
-pixi-pycharm = ">=0.0.11"
-pixi-unpack = ">=0.7.6"
-py-rattler = ">=0.22.0"
-py-rattler-build = ">=0.64.1"
-## Document processing & conversion (markitdown + adjacent ecosystem)
-# mark  # Interact with LLMs using markdown and images
-defusedxml = ">=0.7.1"
-d2 = ">=0.7.1"
-mermaid-py= ">=0.8.4"
-lxml = ">=6.1.0"
-markitdown = ">=0.1.5"
-marp-cli = ">=4.2.3"
-openpyxl = ">=3.1.5"
-pandoc = ">=3.9.0.2"
-pdf2image = ">=1.17.0"
-pdfplumber = ">=0.11.9"
-pillow = ">=12.2.0"
-poppler = ">=26.2.0"
-pymupdf = ">=1.27.2.2"
-pypdf = ">=6.10.2"
-python-docx = ">=1.2.0"
-python-pptx = ">=1.0.2"
-qpdf = ">=12.3.2"
-tesseract = ">=5.5.2"
+pixi = ">=0.68.0"                 # Pixi package & environment manager
+rattler-build = ">=0.64.1"        # Rust-native v1 conda recipe build engine
+pixi-build-rattler-build = ">=0.3.10"  # pixi build backend that delegates to rattler-build
+pixi-build-cmake = ">=0.3.11"     # pixi build backend for CMake projects
+pixi-build-python = ">=0.4.8"     # pixi build backend for Python projects
+pixi-build-rust = ">=0.4.8"       # pixi build backend for Rust / Cargo projects
+pixi-diff = ">=0.1.5"             # diff two pixi.lock files
+pixi-inject = ">=0.1.1"           # inject extra deps into an existing pixi env
+pixi-install-to-prefix = ">=0.1.2"  # install a pixi env to an arbitrary prefix
+pixi-kernel = ">=0.7.1"           # Jupyter kernel that uses pixi-managed envs
+pixi-outdated = ">=0.2.1"         # list outdated deps in pixi.toml
+pixi-pack = ">=0.7.6"             # bundle a pixi env for offline / air-gapped install
+pixi-pycharm = ">=0.0.11"         # PyCharm / IDE integration helper for pixi
+pixi-unpack = ">=0.7.6"           # unpack a pixi-pack bundle on the target machine
+py-rattler = ">=0.22.0"           # Python bindings for the Rust rattler conda lib
+py-rattler-build = ">=0.64.1"     # Python bindings for rattler-build
+## Document processing & Deckcraft additions (markitdown + charts + ML for local image gen + LLM backends + Python bindings)
+# mark                            # Interact with LLMs using markdown and images
+accelerate = ">=1.13.0"              # Hugging Face accelerate (distributed/training helpers)
+d2 = ">=0.7.1"                    # Terrastruct D2 diagram-as-code compiler
+defusedxml = ">=0.7.1"            # XXE-resistant safe XML parser
+hf-transfer = ">=0.1.9"           # 3x faster GGUF/safetensors downloads at first-run model fetch (cross-platform)
+lxml = ">=6.1.0"                  # fast XML / HTML parser (libxml2 bindings)
+markitdown = ">=0.1.5"            # Microsoft's document → Markdown converter
+marp-cli = ">=4.2.3"              # Marp CLI for Markdown → slide-deck rendering
+matplotlib = ">=3.10.9"              # general-purpose 2D plotting library
+mermaid-py= ">=0.8.4"             # Python wrapper around the Mermaid diagram renderer
+odfpy = ">=1.4.1"                   # ODP/ODT style extraction (stretch goal in FR-46d); OpenDocument Apache-2.0 noarch lib
+ollama-python = ">=0.6.2"           # Python client (the existing 'ollama' is the Go server binary)
+openpyxl = ">=3.1.5"              # read / write Office Open XML .xlsx files
+pandoc = ">=3.9.0.2"              # universal document format converter
+pdf2image = ">=1.17.0"            # convert PDF pages to PIL images (Poppler-backed)
+pdfplumber = ">=0.11.9"           # extract text, tables, and metadata from PDFs
+pillow = ">=12.2.0"               # Python imaging library (PIL fork)
+playwright-python = ">=1.59.0"      # Python bindings (the existing 'playwright' is the Node binary)
+plotly = ">=6.6.0"                 # interactive web-based plotting library
+poppler = ">=26.2.0"              # PDF rendering library (pdf2image backend)
+pymupdf = ">=1.27.2.2"            # MuPDF Python bindings — fast PDF text/layout extraction
+pypdf = ">=6.10.2"                # pure-Python PDF reader / writer / splitter
+pytesseract = ">=0.3.13"             # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
+python-docx = ">=1.2.0"           # read / write Microsoft Word .docx files
+python-pptx = ">=1.0.2"           # read / write Microsoft PowerPoint .pptx files
+qpdf = ">=12.3.2"                 # PDF transformation, linearization, and compression CLI
+sentence-transformers = ">=5.4.1"   # dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
+sentencepiece = ">=0.2.1"         # tokenizer lib (transitive on linux+osx via mlx-lm; explicit for win-64 parity); needed by SD3+/T5/MarianMT
+tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pytesseract)
+transformers = ">=5.8.0"           # Hugging Face transformers (model hub + pipelines)
 ## Data processing & conversion (ibis + adjacent ecosystem)
-duckdb = ">=1.5.2"
-pandas = ">=3.0.2"
-polars = ">=1.40.0"
-pyarrow = ">=24.0.0"
-pyarrow-all = ">=24.0.0"
-ibis-duckdb = ">=12.0.0"
-ibis-polars = ">=12.0.0"
-ibis-sqlite = ">=12.0.0"
-ibis-postgres = ">=12.0.0"
-ibis-mssql = ">=12.0.0"
-ibis-oracle = ">=12.0.0"
-pydantic = ">=2.13.4"
-ruff = ">=0.15.12"
-pyright = ">=1.1.409"
-mypy = ">=1.20.2"
-pyrefly = ">=0.64.1"
-pytest = ">=9.0.3"
-pytest-mock = ">=3.15.1"
-pytest-cov = ">=7.1.0"
-pytest-xdist = ">=3.8.0"
-playwright = ">=1.59.1"
+duckdb = ">=1.5.2"                # embedded analytical SQL database
+pandas = ">=3.0.2"                # DataFrame library for tabular data
+polars = ">=1.40.0"               # Rust-backed columnar DataFrame library
+pyarrow = ">=24.0.0"              # Apache Arrow Python bindings
+pyarrow-all = ">=24.0.0"          # pyarrow with all optional extras (parquet, datasets, …)
+ibis-duckdb = ">=12.0.0"          # Ibis backend for DuckDB
+ibis-polars = ">=12.0.0"          # Ibis backend for Polars
+ibis-sqlite = ">=12.0.0"          # Ibis backend for SQLite
+ibis-postgres = ">=12.0.0"        # Ibis backend for PostgreSQL
+ibis-mssql = ">=12.0.0"           # Ibis backend for Microsoft SQL Server
+ibis-oracle = ">=12.0.0"          # Ibis backend for Oracle Database
+pydantic = ">=2.13.4"             # type-hint-driven data validation
+ruff = ">=0.15.12"                # fast Rust-based Python linter + formatter
+pyright = ">=1.1.409"             # Microsoft's static type checker for Python
+mypy = ">=1.20.2"                 # static type checker for Python
+pyrefly = ">=0.64.1"              # Meta's fast Rust-based Python type checker
+pytest = ">=9.0.3"                # Python test framework
+pytest-mock = ">=3.15.1"          # pytest fixture wrapper around `unittest.mock`
+pytest-cov = ">=7.1.0"            # coverage.py plugin for pytest
+pytest-xdist = ">=3.8.0"          # parallel / distributed test execution for pytest
+playwright = ">=1.59.1"           # Node binary for browser automation (CLI)
 ## MCP, A2A & conversion (MCP + adjacent ecosystem)
 #aichat = ">=0.30.0"
-a2a-sdk = ">=1.0.2"  # Official Python SDK for the Agent2Agent (A2A) Protocol
-anthropic = ">=0.76.0"
-claude-agent-acp = ">=0.23.1"  # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
-diffusers = ">=0.37.1"
-django-mcp-server = ">=0.5.7"
-fasta2a = ">=0.6.0"
-fastmcp = ">=3.2.4"
-github-copilot-sdk =">=0.1.22"
-langchain-anthropic = ">=1.3.1"
-langchain-mcp-adapters = ">=0.2.2"
-lumen-ai-anthropic = ">=1.0.0"
-mcp = ">=1.27.0"
-ollama = ">=0.20.7"
-pydantic-ai = ">=1.61.0"
-"llama.cpp" = ">=9010"
-#"whisper.cpp" = ">=1.8.3"
-#litellm = ">=1.83.14"
-#imaginairy = "*"
-#acp-sdk  1.0.3 # NOT FOUND - Archived
-#django-mcp 0.3.1 # NOT FOUND - Archived
-#mcp-django 0.12.0 # NOT FOUND - Dev Only
-#acp-mcp 0.4.2 # NOT FOUND - Archived
-#acp-mcp-server 0.0.5 # NOT FOUND - - Archived
-#agntcy-acp = ">=1.5.2,<2" # NOT FOUND - - Archived
-#python-a2a = ">=0.5.10,<1" # NOT FOUND - No updates
-yamllint = ">=1.38.0"
-taplo = ">=0.10.0"
-moto = ">=5.2.0"
-nbqa = ">=1.9.0"
-sqlfluff = ">=4.1.0"
-go-sops = ">=3.12.2"
-age = ">=1.3.1"
-yarn = ">=4.14.1"
-requests = ">=2.33.1"
-## Deckcraft additions (charts + ML for local image gen + LLM backends + Python bindings)
-matplotlib = ">=3.9"
-plotly = ">=5.24"
-transformers = ">=4.45"
-accelerate = ">=1.0"
-playwright-python = ">=1.59"  # Python bindings (the existing 'playwright' is the Node binary)
-ollama-python = ">=0.4"       # Python client (the existing 'ollama' is the Go server binary)
-hf-transfer = ">=0.1.9"       # 3x faster GGUF/safetensors downloads at first-run model fetch (cross-platform)
-sentencepiece = ">=0.2.1"     # tokenizer lib (transitive on linux+osx via mlx-lm; explicit for win-64 parity); needed by SD3+/T5/MarianMT
-sentence-transformers = ">=3.0"  # dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
-pytesseract = ">=0.3"         # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
-odfpy = ">=1.4"               # ODP/ODT style extraction (stretch goal in FR-46d); OpenDocument Apache-2.0 noarch lib
-#litellm = ">=1.83.14"         # Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
+a2a-sdk = ">=1.0.2"               # Official Python SDK for the Agent2Agent (A2A) Protocol
+anthropic = ">=0.76.0"            # Anthropic Claude API SDK
+claude-agent-acp = ">=0.23.1"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
+diffusers = ">=0.37.1"            # Hugging Face diffusion model library
+django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
+fasta2a = ">=0.6.0"               # FastAPI-style implementation of the A2A protocol
+fastmcp = ">=3.2.4"               # FastMCP framework for building MCP servers
+github-copilot-sdk =">=0.1.22"    # GitHub Copilot Python SDK
+langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
+langchain-mcp-adapters = ">=0.2.2"  # LangChain ↔ MCP tool/resource adapters
+lumen-ai-anthropic = ">=1.0.0"    # Lumen AI's Anthropic backend integration
+mcp = ">=1.27.0"                  # Official Model Context Protocol Python SDK
+ollama = ">=0.20.7"               # Ollama Go server (local LLM runtime)
+pydantic-ai = ">=1.61.0"          # Pydantic-AI agent framework
+"llama.cpp" = ">=9010"            # llama.cpp local LLM inference engine
+#"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
+#litellm = ">=1.83.14"             # NOT ADDED - Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
+#imaginairy = "*"                  # NOT ADDED - Outdated on Conda-forge
+#acp-sdk  1.0.3                    # NOT FOUND - Archived
+#django-mcp 0.3.1                  # NOT FOUND - Archived
+#mcp-django 0.12.0                 # NOT FOUND - Dev Only
+#acp-mcp 0.4.2                     # NOT FOUND - Archived
+#acp-mcp-server 0.0.5              # NOT FOUND - - Archived
+#agntcy-acp = ">=1.5.2,<2"         # NOT FOUND - - Archived
+#python-a2a = ">=0.5.10,<1"        # NOT FOUND - No updates
+yamllint = ">=1.38.0"             # YAML linter
+taplo = ">=0.10.0"                # TOML linter / formatter / language server
+moto = ">=5.2.0"                  # mock AWS SDK for Python tests
+nbqa = ">=1.9.0"                  # apply Python linters / formatters to Jupyter notebooks
+sqlfluff = ">=4.1.0"              # SQL linter and formatter
+go-sops = ">=3.13.0"              # Mozilla SOPS encrypted-secret editor
+age = ">=1.3.1"                   # modern simple file encryption tool
+yarn = ">=4.14.1"                 # Node package manager (Berry)
+requests = ">=2.33.1"             # Python HTTP client library
 
 ## MLX (Apple's array framework) and mlx-lm (LLM runner).
 ## mlx-lm is noarch python; the native mlx C++ lib builds for linux-64 + osx-arm64
@@ -533,20 +531,20 @@ odfpy = ">=1.4"               # ODP/ODT style extraction (stretch goal in FR-46d
 macos = "14.5"
 
 [feature.local-recipes.target.linux-64.dependencies]
-mlx = ">=0.31.2"
-mlx-lm = "*"                  # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
+mlx = ">=0.31.2"                  # Apple's array framework (Linux build via libblas/lapack)
+mlx-lm = ">=0.31.3"                      # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
 
 [feature.local-recipes.target.osx-arm64.dependencies]
-mlx = ">=0.31.2"
-mlx-lm = "*"                  # Apple-native LLM runner; deckcraft prefers this on M-series
+mlx = ">=0.31.2"                  # Apple's array framework (Metal-accelerated on M-series)
+mlx-lm = ">=0.31.3"                      # Apple-native LLM runner; deckcraft prefers this on M-series
 
 [dependencies]
 #[feature.python.dependencies]
-python = "3.12.*"
-pixi = ">=0.67.2"
-conda = ">=26.3.2"
-pip = ">=26.1.1"
-uv = ">=0.11.11"
+python = "3.12.*"                 # Python language interpreter
+pixi = ">=0.68.0"                 # Pixi package & environment manager
+conda = ">=26.3.2"                # conda package manager
+pip = ">=26.1.1"                  # Python package installer
+uv = ">=0.11.12"                  # fast Rust-based Python package installer / resolver
 
 #[pypi-dependencies]
 #daft = ">=0.6.8"
