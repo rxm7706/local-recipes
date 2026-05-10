@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 # from `sqlglotrs/Cargo.toml#package/version`
 # handle undefined PYTHON in `noarch: generic` outputs
 schema_version: 1

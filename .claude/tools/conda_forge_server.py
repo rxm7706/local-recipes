@@ -126,6 +126,29 @@ _GRAYSKULL_PYTHON_VERSION_RE = re.compile(
     re.MULTILINE,
 )
 
+_YAML_LANGUAGE_SERVER_HEADER = (
+    "# yaml-language-server: "
+    "$schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json"
+)
+
+
+def _ensure_yaml_language_server_header(recipe_path: Path) -> bool:
+    """Prepend the yaml-language-server schema directive if missing.
+
+    grayskull does not emit this comment; without it editors lose live schema
+    validation against prefix-dev/recipe-format and reviewers can miss it.
+    Idempotent — bails out if the file already starts with the directive.
+    Returns True if the file was modified, False otherwise.
+    """
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    if text.lstrip().startswith("# yaml-language-server:"):
+        return False
+    recipe_path.write_text(_YAML_LANGUAGE_SERVER_HEADER + "\n" + text, encoding="utf-8")
+    return True
+
 
 def _normalize_grayskull_test_matrix(recipe_path: Path) -> bool:
     """Rewrite grayskull's single-value ``python_version`` to the conda-forge list form.
@@ -182,6 +205,9 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
       grayskull emits to the two-entry list form ``[${{ python_min }}.*, "*"]``
       (ocefpaf convention from staged-recipes#32857 r3039190932). See
       ``_normalize_grayskull_test_matrix`` for rationale.
+    - The ``# yaml-language-server: $schema=...`` directive is prepended so
+      editors keep live schema validation. See
+      ``_ensure_yaml_language_server_header``.
     """
     try:
         pkg_spec = f"{package_name}=={version}" if version else package_name
@@ -201,13 +227,16 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
         if recipe_dir.exists():
             recipe_path = recipe_dir / "recipe.yaml"
             normalized = False
+            schema_header_added = False
             if recipe_path.exists():
                 normalized = _normalize_grayskull_test_matrix(recipe_path)
+                schema_header_added = _ensure_yaml_language_server_header(recipe_path)
             return json.dumps({
                 "success": True,
                 "message": f"Recipe generated at {recipe_dir}",
                 "post_processing": {
                     "python_version_list_form": normalized,
+                    "yaml_language_server_header": schema_header_added,
                 },
                 "stdout": result.stdout
             }, indent=2)
