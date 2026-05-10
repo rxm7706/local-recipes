@@ -2,6 +2,17 @@
 
 ## TL;DR — what's new in the latest release
 
+**v7.5.0** (May 9, 2026) — Close the schema-header gap v7.4 missed: the MCP grayskull path now emits the header, every existing v1 recipe is backfilled, and a meta-test enforces it forever.
+
+- v7.4 fixed `generate_npm_recipe_yaml` and `_run_rattler_generate` but not the MCP grayskull path — `generate_recipe_from_pypi` in `.claude/tools/conda_forge_server.py` post-processed the recipe with `_normalize_grayskull_test_matrix` only. Every recipe generated through the MCP server (the most-used generator path: `pixi run generate-recipe`, the `generate_recipe_from_pypi` MCP tool, and the autonomous-loop step 1) silently dropped the directive. Discovered when authoring `recipes/pptx2md/recipe.yaml`.
+- Fix: added `_ensure_yaml_language_server_header(recipe_path)` to `conda_forge_server.py`, called immediately after `_normalize_grayskull_test_matrix`. Idempotent — bails out if the header is already present. Result includes a new `post_processing.yaml_language_server_header` boolean.
+- New meta-test: `tests/meta/test_recipe_yaml_schema_header.py` parametrizes over every `recipes/*/recipe.yaml` and asserts line 1 is the directive. The skip rule is "no `schema_version:` line in the file" — covers both jinja-style v0 content and v1-shaped recipes that happen to omit the optional `schema_version: 1` declaration. 447 recipes covered; 9 skipped (3 v0/jinja + 6 v1-shaped-no-schema-version).
+- Backfilled: 95 v1 recipes that were missing the header now have it (previously v7.4 explicitly chose "going-forward only"; this release reverses that — committed recipes are part of the contract the test enforces).
+- Skipped by the test, in two distinct categories:
+  - **v0/jinja-style `recipe.yaml`** (3): `openmetadata-managed-apis`, `pyarrow`, `weasel` — file is named `recipe.yaml` but content is conda-build `meta.yaml` (jinja `{% set %}` form). Filename-mismatch bug; the directive is v1-only and these aren't v1.
+  - **v1-shaped without `schema_version:`** (6): `git-hound`, `teradata-mcp-server`, `wagtail-draftail-plugins`, `wagtail-pdf-view`, `xformers`, `zensical` — uses v1 syntax (`context:` block) but omits the optional `schema_version: 1` declaration. Adding both `schema_version: 1` and the directive would be the right fix; deferred to a follow-up so v7.5's blast radius stays "header backfill only".
+- Reason: a v7.4 fix that doesn't cover the most-used generator and doesn't enforce its invariant via test will silently regress. v7.5 closes both gaps so the directive is a contract of the repo, not a convention.
+
 **v7.4.0** (May 9, 2026) — All generated `recipe.yaml` files carry the `# yaml-language-server: $schema=…` directive so editors (VS Code, Helix, Neovim) get live schema validation from prefix-dev/recipe-format.
 
 - `generate_npm_recipe_yaml` now prepends the directive above `schema_version: 1`.
