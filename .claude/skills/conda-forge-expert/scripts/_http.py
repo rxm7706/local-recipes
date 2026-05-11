@@ -33,13 +33,12 @@ from __future__ import annotations
 
 import netrc as _netrc_mod
 import os
-import ssl
 import sys
 import urllib.request
 from base64 import b64encode
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import quote as _url_quote, urlparse
 
 # ── SSL / truststore injection ───────────────────────────────────────────────
 
@@ -214,6 +213,13 @@ _DEFAULT_GITHUB_RAW_FALLBACKS: tuple[str, ...] = (
     "https://raw.githubusercontent.com",
 )
 
+_DEFAULT_S3_PARQUET_BASE: str = "https://anaconda-package-data.s3.amazonaws.com"
+_S3_PARQUET_PREFIX: str = "conda/monthly"
+_S3_PARQUET_KEY_RE = _re.compile(
+    r"^" + _re.escape(_S3_PARQUET_PREFIX) + r"/(\d{4})/(\d{4}-\d{2})\.parquet$"
+)
+_S3_MONTH_RE = _re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
 
 def read_pixi_config() -> dict:
     """Read pixi config — first existing file in pixi's own priority order wins.
@@ -386,6 +392,104 @@ def resolve_github_raw_urls(repo: str, ref: str, path: str) -> list[str]:
     bases.extend(_DEFAULT_GITHUB_RAW_FALLBACKS)
     base_list = _dedup_strip(bases)
     return [f"{b}/{repo}/{ref}/{path}" for b in base_list]
+
+
+def resolve_s3_parquet_urls(month: str) -> list[str]:
+    """Ordered chain for `anaconda-package-data` S3 monthly parquet files.
+
+    month: 'YYYY-MM' (e.g. '2026-04'). The parquet layout is
+    `conda/monthly/<YYYY>/<YYYY-MM>.parquet`.
+
+    Priority:
+      1. S3_PARQUET_BASE_URL env var (e.g. a JFrog Generic Remote mirroring the bucket)
+      2. https://anaconda-package-data.s3.amazonaws.com  (public S3 HTTPS)
+
+    JFrog auth headers attach automatically via `make_request` when the
+    resolved host matches an env-var-configured mirror; no per-resolver
+    auth wiring is required.
+    """
+    if not _S3_MONTH_RE.match(month):
+        raise ValueError(f"resolve_s3_parquet_urls: invalid month {month!r} (expected 'YYYY-MM')")
+    year = month.split("-", 1)[0]
+    bases: list[str | None] = [os.environ.get("S3_PARQUET_BASE_URL")]
+    bases.append(_DEFAULT_S3_PARQUET_BASE)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{_S3_PARQUET_PREFIX}/{year}/{month}.parquet" for b in base_list]
+
+
+def _parse_s3_list_objects_v2(xml_bytes: bytes) -> tuple[list[str] | None, str | None]:
+    """Parse one ListObjectsV2 page.
+
+    Returns `(months, next_token)`:
+      - `(None, None)`     — malformed XML; caller should fall through to next base.
+      - `([], None)`       — legitimate empty / end-of-listing for this base.
+      - `([...], None)`    — single-page result.
+      - `([...], "tok")`   — more pages available; resume with `continuation-token=tok`.
+    """
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.fromstring(xml_bytes)
+    except ET.ParseError as exc:
+        _log(f"_http: S3 list-objects parse error ({exc})")
+        return (None, None)
+    months: set[str] = set()
+    next_token: str | None = None
+    is_truncated = False
+    for elem in root.iter():
+        tag = elem.tag.rsplit("}", 1)[-1]
+        if tag == "Key" and elem.text:
+            m = _S3_PARQUET_KEY_RE.match(elem.text.strip())
+            if m:
+                months.add(m.group(2))
+        elif tag == "IsTruncated" and elem.text and elem.text.strip().lower() == "true":
+            is_truncated = True
+        elif tag == "NextContinuationToken" and elem.text:
+            next_token = elem.text.strip()
+    return (sorted(months), next_token if is_truncated else None)
+
+
+def list_s3_parquet_months() -> list[str]:
+    """List available `YYYY-MM` parquet months from the S3 bucket.
+
+    Issues paginated ListObjectsV2 GETs against the first base in
+    `resolve_s3_parquet_urls`'s priority chain. Follows `NextContinuationToken`
+    until `IsTruncated=false`. Returns sorted unique months; raises
+    `RuntimeError` if every base fails. An empty-but-parseable response is
+    a legitimate `[]`, not a fallthrough trigger.
+    """
+    bases: list[str | None] = [os.environ.get("S3_PARQUET_BASE_URL")]
+    bases.append(_DEFAULT_S3_PARQUET_BASE)
+    base_list = _dedup_strip(bases)
+
+    last_err: Exception | None = None
+    for base in base_list:
+        try:
+            collected: set[str] = set()
+            token: str | None = None
+            for _page in range(50):  # hard cap: ~50k keys; bucket has ~110 today
+                url = f"{base}/?list-type=2&prefix={_S3_PARQUET_PREFIX}/"
+                if token:
+                    url += f"&continuation-token={_url_quote(token, safe='')}"
+                req = make_request(url)
+                with open_url(req, timeout=30) as resp:
+                    body = resp.read()
+                page_months, next_token = _parse_s3_list_objects_v2(body)
+                if page_months is None:
+                    raise RuntimeError(f"malformed list-objects body from {base}")
+                collected.update(page_months)
+                if not next_token:
+                    break
+                token = next_token
+            else:
+                _log(f"_http: {base} listing exceeded 50-page cap; results may be incomplete")
+            return sorted(collected)
+        except Exception as exc:  # noqa: BLE001
+            last_err = exc
+            _log(f"_http: list-objects {base} → {exc}; trying next source")
+            continue
+    raise RuntimeError(
+        f"All {len(base_list)} S3 list-objects source(s) failed; last error: {last_err}"
+    )
 
 
 # ── Generic fetch with fallback chain + retry ──────────────────────────────

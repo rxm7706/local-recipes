@@ -110,7 +110,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 
 
 def _get_data_dir() -> Path:
@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS packages (
     downloads_fetched_at     INTEGER,
     downloads_fetch_attempts INTEGER,
     downloads_last_error     TEXT,
+    downloads_source         TEXT,
     vuln_total                       INTEGER,
     vuln_critical_affecting_current  INTEGER,
     vuln_high_affecting_current      INTEGER,
@@ -241,6 +242,7 @@ CREATE TABLE IF NOT EXISTS package_version_downloads (
     file_count INTEGER,
     total_downloads INTEGER,
     fetched_at INTEGER,
+    source     TEXT,
     PRIMARY KEY (conda_name, version)
 );
 CREATE INDEX IF NOT EXISTS idx_pvd_conda_name ON package_version_downloads(conda_name);
@@ -439,9 +441,23 @@ def init_schema(conn: sqlite3.Connection) -> None:
             ("gh_status_fetched_at",             "ALTER TABLE packages ADD COLUMN gh_status_fetched_at INTEGER"),
             ("gh_status_last_error",             "ALTER TABLE packages ADD COLUMN gh_status_last_error TEXT"),
             ("maven_coord",                      "ALTER TABLE packages ADD COLUMN maven_coord TEXT"),
+            ("downloads_source",                 "ALTER TABLE packages ADD COLUMN downloads_source TEXT"),
         ):
             if col not in existing_cols:
                 conn.execute(ddl)
+
+        # v17 → v18: package_version_downloads gains a `source` discriminator
+        # so consumers can tell anaconda-api rows (upload_unix populated) from
+        # s3-parquet rows (upload_unix NULL) apart.
+        pvd_exists = bool(list(conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='package_version_downloads'"
+        )))
+        if pvd_exists:
+            pvd_cols = {row["name"] for row in conn.execute(
+                "PRAGMA table_info(package_version_downloads)"
+            )}
+            if "source" not in pvd_cols:
+                conn.execute("ALTER TABLE package_version_downloads ADD COLUMN source TEXT")
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -1450,46 +1466,8 @@ def _phase_f_fetch_one(
     return (name, latest, None, "fail", last_err or "exhausted retries")
 
 
-def phase_f_downloads(conn: sqlite3.Connection) -> dict:
-    """Phase F: per-package download counts via anaconda.org API.
-
-    For each active conda-forge row, hits
-    `https://api.anaconda.org/package/conda-forge/<name>` once and stores:
-      - total_downloads:           sum of ndownloads across every file/version
-      - latest_version_downloads:  sum of ndownloads for files matching
-                                   latest_conda_version
-      - downloads_fetched_at:      UNIX seconds; used as a TTL skip guard
-
-    Rows fetched within PHASE_F_TTL_DAYS (default 7) are skipped, so steady-
-    state runs are cheap once a cold backfill has populated the table.
-
-    Default-on. First cold run is ~32k requests; with the default 8-worker pool
-    that's ~30 min over residential bandwidth. TTL gating keeps warm runs cheap
-    (only rows older than `PHASE_F_TTL_DAYS` re-fetch).
-
-    Tunables (env vars):
-      - PHASE_F_DISABLED     : "1" to skip entirely (opt-out)
-      - PHASE_F_TTL_DAYS     : skip rows refreshed within N days (default 7)
-      - PHASE_F_CONCURRENCY  : worker pool size (default 8). Set to 1 for serial
-      - PHASE_F_LIMIT        : cap rows processed (debug; 0 = no cap)
-
-    Failure handling: 429 retries 3x per task with backoff. 404 is recorded as
-    "fetched with zero" so we don't re-poll. Other errors leave the row
-    untouched and are retried next run. Writes happen on the main thread to
-    keep SQLite single-writer; batched commits every 500 rows.
-    """
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-
-    t0 = time.monotonic()
-    print("  Phase F: per-package download counts via anaconda.org")
-
-    if os.environ.get("PHASE_F_DISABLED"):
-        return {
-            "skipped": True,
-            "reason": "PHASE_F_DISABLED=1 set; skipping anaconda.org fetch.",
-            "duration_seconds": 0.0,
-        }
-
+def _phase_f_eligible_rows(conn: sqlite3.Connection) -> tuple[list, int, int, int]:
+    """Resolve the TTL gate + LIMIT cap and return (rows, ttl_days, concurrency, limit)."""
     ttl_days = int(os.environ.get("PHASE_F_TTL_DAYS", "7"))
     concurrency = max(1, int(os.environ.get("PHASE_F_CONCURRENCY", "8")))
     limit = int(os.environ.get("PHASE_F_LIMIT", "0"))
@@ -1507,6 +1485,53 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
         sql += " LIMIT ?"
         params = (cutoff, limit)
     rows = list(conn.execute(sql, params))
+    return rows, ttl_days, concurrency, limit
+
+
+def _phase_f_probe_api() -> tuple[bool, str | None]:
+    """Reachability check for `api.anaconda.org` via one GET against `pip`.
+
+    Returns (ok, reason). On success, reason is None. On failure, reason
+    is a short tag suitable for logging.
+    """
+    url = "https://api.anaconda.org/package/conda-forge/pip"
+    try:
+        req = _make_req(url)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp.read(1)
+        return (True, None)
+    except urllib.error.HTTPError as e:
+        if e.code >= 500:
+            return (False, f"HTTP {e.code}")
+        return (True, None)
+    except Exception as e:  # noqa: BLE001
+        return (False, f"{type(e).__name__}: {str(e)[:120]}")
+
+
+def _phase_f_via_api(
+    conn: sqlite3.Connection,
+    *,
+    rows: list | None = None,
+    ttl_days: int | None = None,
+    concurrency: int | None = None,
+    abort_on_high_failure: bool = False,
+) -> dict:
+    """Original Phase F path: per-row HTTP fetches against `api.anaconda.org`.
+
+    When `abort_on_high_failure` is True, the dispatcher will cancel
+    pending futures once >25% of the first 1,000 completed rows have
+    failed; the names of the rows that never got written are returned in
+    `unwritten` so the caller can fall through to S3 for them.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    t0 = time.monotonic()
+    if rows is None:
+        rows, ttl_days, concurrency, _ = _phase_f_eligible_rows(conn)
+    if ttl_days is None:
+        ttl_days = int(os.environ.get("PHASE_F_TTL_DAYS", "7"))
+    if concurrency is None:
+        concurrency = max(1, int(os.environ.get("PHASE_F_CONCURRENCY", "8")))
     print(f"  {len(rows):,} rows to refresh (TTL {ttl_days}d, concurrency {concurrency})")
 
     fetched = 0
@@ -1515,13 +1540,26 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
     progress_every = max(500, len(rows) // 40) if rows else 1
     commit_every = 500
     completed = 0
+    aborted = False
+    unwritten: list[tuple[str, str | None]] = []
+    unwritten_seen: set[str] = set()
+
+    def _mark_unwritten(row_id: tuple[str, str | None] | None) -> None:
+        if row_id and row_id[0] and row_id[0] not in unwritten_seen:
+            unwritten.append(row_id)
+            unwritten_seen.add(row_id[0])
 
     with ThreadPoolExecutor(max_workers=concurrency) as ex:
-        futures = [
-            ex.submit(_phase_f_fetch_one, r["conda_name"], r["latest_conda_version"])
+        future_to_row = {
+            ex.submit(_phase_f_fetch_one, r["conda_name"], r["latest_conda_version"]): (
+                r["conda_name"], r["latest_conda_version"]
+            )
             for r in rows
-        ]
-        for fut in as_completed(futures):
+        }
+        for fut in as_completed(future_to_row):
+            if aborted:
+                _mark_unwritten(future_to_row.get(fut))
+                continue
             name, latest, payload, status, err_msg = fut.result()
             now = int(time.time())
             if status == "ok":
@@ -1532,10 +1570,6 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
                     for f in files
                     if f.get("version") == latest
                 )
-                # Phase I side-effect: aggregate per-version totals from the
-                # same payload. anaconda.org files have version + ndownloads +
-                # upload_time per row; group by version, sum downloads, take
-                # the earliest upload_time as the version-release timestamp.
                 by_version: dict[str, dict[str, Any]] = {}
                 for f in files:
                     fver = f.get("version")
@@ -1548,31 +1582,27 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
                     bucket["files"] += 1
                     upload_str = f.get("upload_time")
                     if upload_str:
-                        # ISO 8601: '2026-04-25T03:25:34.833000+00:00'.
                         try:
                             ts = int(_iso_to_unix_safe(upload_str) or 0)
                         except (TypeError, ValueError):
                             ts = 0
                         if ts and (bucket["upload"] is None or ts < bucket["upload"]):
                             bucket["upload"] = ts
-                # Success clears any prior error; attempts increments.
                 conn.execute(
                     "UPDATE packages SET total_downloads = ?, "
                     "latest_version_downloads = ?, downloads_fetched_at = ?, "
                     "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
-                    "downloads_last_error = NULL "
+                    "downloads_last_error = NULL, "
+                    "downloads_source = 'anaconda-api' "
                     "WHERE conda_name = ?",
                     (total, latest_dl, now, name),
                 )
-                # Phase I writes — one INSERT OR REPLACE per version of this
-                # package. Cheap because by_version is small (one entry per
-                # release) and we're already inside a transaction.
                 for fver, info in by_version.items():
                     conn.execute(
                         "INSERT OR REPLACE INTO package_version_downloads "
                         "(conda_name, version, upload_unix, file_count, "
-                        "total_downloads, fetched_at) "
-                        "VALUES (?, ?, ?, ?, ?, ?)",
+                        "total_downloads, fetched_at, source) "
+                        "VALUES (?, ?, ?, ?, ?, ?, 'anaconda-api')",
                         (name, fver, info["upload"], info["files"],
                          info["downloads"], now),
                     )
@@ -1582,16 +1612,13 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
                     "UPDATE packages SET total_downloads = 0, "
                     "latest_version_downloads = 0, downloads_fetched_at = ?, "
                     "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
-                    "downloads_last_error = ? "
+                    "downloads_last_error = ?, "
+                    "downloads_source = 'anaconda-api' "
                     "WHERE conda_name = ?",
                     (now, err_msg, name),
                 )
                 not_found += 1
             else:
-                # Persistent failure: record the error and bump attempts so
-                # operators can spot rows that consistently fail without
-                # touching downloads_fetched_at (which would gate them out
-                # of the next run).
                 conn.execute(
                     "UPDATE packages SET "
                     "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
@@ -1604,6 +1631,21 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
             completed += 1
             if completed % commit_every == 0:
                 conn.commit()
+
+            # Abort guard runs on EVERY iteration after the first 1,000 rows,
+            # not just inside the failure branch — a long success streak
+            # followed by a late failure burst must still trigger fallback.
+            if abort_on_high_failure and not aborted and completed >= 1000:
+                if failed / completed > 0.25:
+                    aborted = True
+                    for pending_fut, row_id in future_to_row.items():
+                        if not pending_fut.done():
+                            pending_fut.cancel()
+                            _mark_unwritten(row_id)
+                    print(
+                        f"  Phase F: aborting API pool — {failed}/{completed} "
+                        f"failed (>25%); falling back to S3 for unwritten rows"
+                    )
 
             if completed % progress_every == 0:
                 elapsed = time.monotonic() - t0
@@ -1618,7 +1660,7 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
     conn.commit()
     elapsed = time.monotonic() - t0
     print(
-        f"  Phase F done in {elapsed:.1f}s — fetched {fetched:,}, "
+        f"  Phase F (api) done in {elapsed:.1f}s — fetched {fetched:,}, "
         f"failed {failed:,}, 404 {not_found:,}"
     )
     return {
@@ -1629,7 +1671,251 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
         "ttl_days": ttl_days,
         "concurrency": concurrency,
         "duration_seconds": round(elapsed, 1),
+        "source": "anaconda-api",
+        "aborted": aborted,
+        "unwritten": unwritten,
     }
+
+
+def _phase_f_via_s3(
+    conn: sqlite3.Connection,
+    *,
+    rows: list | None = None,
+    only_names: set[str] | None = None,
+) -> dict:
+    """S3-parquet Phase F path: bulk-read monthly parquet, aggregate, batch-write.
+
+    Reads months from `_parquet_cache.list_s3_parquet_months()` (or the last
+    N months when `PHASE_F_S3_MONTHS` is set), filters to `data_source =
+    'conda-forge'`, and aggregates with pyarrow. Writes use the same
+    500-row batched-commit pattern as the API path. `only_names`, when
+    set, restricts the write back to those rows (used by the auto-mode
+    fallback to fill only the rows the API pool didn't manage to write).
+    """
+    sys.path.insert(0, str(Path(__file__).parent))
+    import _parquet_cache  # type: ignore[import-not-found]
+    import pyarrow.compute as pc
+
+    t0 = time.monotonic()
+    print("  Phase F: per-package download counts via S3 parquet")
+
+    if rows is None:
+        rows, ttl_days, _, _ = _phase_f_eligible_rows(conn)
+    else:
+        ttl_days = int(os.environ.get("PHASE_F_TTL_DAYS", "7"))
+
+    eligible_names = {r["conda_name"] for r in rows}
+    latest_version_by_name = {r["conda_name"]: r["latest_conda_version"] for r in rows}
+    if only_names is not None:
+        eligible_names &= only_names
+    print(f"  {len(eligible_names):,} rows eligible from S3")
+
+    if not eligible_names:
+        elapsed = time.monotonic() - t0
+        return {
+            "rows_eligible": 0, "fetched": 0, "failed": 0, "not_found_404": 0,
+            "ttl_days": ttl_days, "months_loaded": 0,
+            "duration_seconds": round(elapsed, 1), "source": "s3-parquet",
+        }
+
+    all_months = _parquet_cache.list_s3_parquet_months()
+    if not all_months:
+        raise RuntimeError("Phase F S3: bucket listing returned no months")
+    raw = os.environ.get("PHASE_F_S3_MONTHS", "0")
+    try:
+        trailing = max(0, int(raw))
+    except ValueError:
+        print(f"  ignoring invalid PHASE_F_S3_MONTHS={raw!r}; loading all months")
+        trailing = 0
+    months = all_months[-trailing:] if trailing > 0 else all_months
+    current_month = all_months[-1]
+    print(f"  loading {len(months)} months (current={current_month})")
+    for m in months:
+        _parquet_cache.ensure_month(m, current_month=current_month)
+
+    table = _parquet_cache.read_filtered(
+        months, pkg_names=eligible_names, data_source="conda-forge"
+    )
+    print(f"  parquet rows after filter: {table.num_rows:,}")
+
+    nz_table = table.filter(pc.field("counts") > 0)
+    by_pkg = nz_table.group_by("pkg_name").aggregate([("counts", "sum")])
+    totals: dict[str, int] = {
+        pkg: int(s or 0)
+        for pkg, s in zip(by_pkg["pkg_name"].to_pylist(), by_pkg["counts_sum"].to_pylist())
+        if pkg
+    }
+
+    # Aggregate 2: per (pkg_name, pkg_version) → downloads.
+    by_ver = table.group_by(["pkg_name", "pkg_version"]).aggregate([
+        ("counts", "sum"),
+    ])
+    per_version: dict[str, dict[str, int]] = {}
+    pkg_v = by_ver["pkg_name"].to_pylist()
+    ver_v = by_ver["pkg_version"].to_pylist()
+    sum_v = by_ver["counts_sum"].to_pylist()
+    for i, pkg in enumerate(pkg_v):
+        ver = ver_v[i]
+        if not pkg or not ver:
+            continue
+        per_version.setdefault(pkg, {})[ver] = int(sum_v[i] or 0)
+
+    fetched = 0
+    not_found = 0
+    completed = 0
+    commit_every = 500
+    now = int(time.time())
+
+    for name in eligible_names:
+        total = totals.get(name)
+        latest = latest_version_by_name.get(name)
+        if total is None:
+            # Package had no rows in the parquet sweep. Leave any prior
+            # downloads_last_error in place (don't mask a real error with NULL).
+            conn.execute(
+                "UPDATE packages SET total_downloads = 0, "
+                "latest_version_downloads = 0, downloads_fetched_at = ?, "
+                "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
+                "downloads_source = 's3-parquet' "
+                "WHERE conda_name = ?",
+                (now, name),
+            )
+            not_found += 1
+        else:
+            latest_dl = per_version.get(name, {}).get(latest, 0) if latest else 0
+            conn.execute(
+                "UPDATE packages SET total_downloads = ?, "
+                "latest_version_downloads = ?, downloads_fetched_at = ?, "
+                "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
+                "downloads_last_error = NULL, "
+                "downloads_source = 's3-parquet' "
+                "WHERE conda_name = ?",
+                (total, latest_dl, now, name),
+            )
+            # UPSERT preserves upload_unix/file_count from any prior API
+            # write — S3 has neither column. Without this, an auto-mode run
+            # that mixes API and S3 would clobber real file counts with NULL.
+            for ver, dl in per_version.get(name, {}).items():
+                conn.execute(
+                    "INSERT INTO package_version_downloads "
+                    "(conda_name, version, upload_unix, file_count, "
+                    "total_downloads, fetched_at, source) "
+                    "VALUES (?, ?, NULL, NULL, ?, ?, 's3-parquet') "
+                    "ON CONFLICT(conda_name, version) DO UPDATE SET "
+                    "  total_downloads = excluded.total_downloads, "
+                    "  fetched_at = excluded.fetched_at, "
+                    "  source = excluded.source",
+                    (name, ver, dl, now),
+                )
+            fetched += 1
+        completed += 1
+        if completed % commit_every == 0:
+            conn.commit()
+
+    conn.commit()
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase F (s3) done in {elapsed:.1f}s — fetched {fetched:,}, "
+        f"no_data {not_found:,}"
+    )
+    return {
+        "rows_eligible": len(eligible_names),
+        "fetched": fetched,
+        "failed": 0,
+        "not_found_404": not_found,
+        "ttl_days": ttl_days,
+        "months_loaded": len(months),
+        "duration_seconds": round(elapsed, 1),
+        "source": "s3-parquet",
+    }
+
+
+def _phase_f_via_auto(conn: sqlite3.Connection) -> dict:
+    """Probe `api.anaconda.org`; on success run the API path with mid-run
+    failure-rate guard, on failure fall through to S3 for the whole set.
+
+    If the API path aborts mid-run on >25% failures, the dispatcher
+    invokes the S3 path for the unwritten subset and marks any row that
+    received writes from both paths as `'merged'`.
+    """
+    t0 = time.monotonic()
+    ok, reason = _phase_f_probe_api()
+    if not ok:
+        print(f"  Phase F: api probe failed ({reason}); falling back to S3")
+        result = _phase_f_via_s3(conn)
+        result["probe"] = reason
+        result["duration_seconds"] = round(time.monotonic() - t0, 1)
+        return result
+
+    rows, ttl_days, concurrency, _ = _phase_f_eligible_rows(conn)
+    api_result = _phase_f_via_api(
+        conn, rows=rows, ttl_days=ttl_days, concurrency=concurrency,
+        abort_on_high_failure=True,
+    )
+    if not api_result.get("aborted"):
+        api_result["duration_seconds"] = round(time.monotonic() - t0, 1)
+        return api_result
+
+    unwritten = {name for name, _ in api_result.get("unwritten", []) if name}
+    s3_result = _phase_f_via_s3(conn, rows=rows, only_names=unwritten)
+    # Per-row tags stay accurate ('anaconda-api' or 's3-parquet'); only the
+    # run-summary `source` is 'merged'. Overwriting per-row tags would hide
+    # which dataset actually populated each row.
+    conn.commit()
+    return {
+        "rows_eligible": api_result["rows_eligible"],
+        "fetched": api_result["fetched"] + s3_result["fetched"],
+        "failed": api_result["failed"],
+        "not_found_404": api_result["not_found_404"] + s3_result["not_found_404"],
+        "ttl_days": ttl_days,
+        "concurrency": concurrency,
+        "duration_seconds": round(time.monotonic() - t0, 1),
+        "source": "merged",
+    }
+
+
+def phase_f_downloads(conn: sqlite3.Connection) -> dict:
+    """Phase F: per-package download counts.
+
+    Dispatches on `PHASE_F_SOURCE` (default `auto`):
+      - `anaconda-api`  → existing per-row HTTP path against api.anaconda.org
+      - `s3-parquet`    → bulk read of `anaconda-package-data` S3 monthly parquets
+      - `auto`          → probe API once; on success run API (with >25% failure
+                          guard that falls through to S3 for unwritten rows);
+                          on failure run S3 for the whole eligible set.
+
+    Tunables (env vars):
+      - PHASE_F_DISABLED     : "1" to skip entirely (opt-out)
+      - PHASE_F_SOURCE       : auto | anaconda-api | s3-parquet (default auto)
+      - PHASE_F_TTL_DAYS     : skip rows refreshed within N days (default 7)
+      - PHASE_F_CONCURRENCY  : API worker pool size (default 8)
+      - PHASE_F_LIMIT        : cap rows processed (debug; 0 = no cap)
+      - PHASE_F_S3_MONTHS    : trailing months to load from S3 (0 = all)
+      - S3_PARQUET_BASE_URL  : enterprise mirror for the parquet bucket
+
+    Every populated row carries a non-NULL `downloads_source` discriminator
+    (`'anaconda-api'` | `'s3-parquet'` | `'merged'`) so consumers can
+    surface which dataset produced the number.
+    """
+    print("  Phase F: per-package download counts")
+
+    if os.environ.get("PHASE_F_DISABLED"):
+        return {
+            "skipped": True,
+            "reason": "PHASE_F_DISABLED=1 set; skipping Phase F.",
+            "duration_seconds": 0.0,
+        }
+
+    source = os.environ.get("PHASE_F_SOURCE", "auto").lower()
+    if source == "anaconda-api":
+        return _phase_f_via_api(conn)
+    if source == "s3-parquet":
+        return _phase_f_via_s3(conn)
+    if source == "auto":
+        return _phase_f_via_auto(conn)
+    raise ValueError(
+        f"PHASE_F_SOURCE={source!r} is not one of auto, anaconda-api, s3-parquet"
+    )
 
 
 def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
