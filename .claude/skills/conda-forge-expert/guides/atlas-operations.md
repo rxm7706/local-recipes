@@ -142,6 +142,47 @@ For corporate enterprise routing (JFrog Artifactory etc.), set the env
 vars described in `quickref/commands-cheatsheet.md` § "Enterprise routing"
 before running `bootstrap-data`.
 
+### Phase F behind `*.anaconda.org` firewall (v7.6+)
+
+`api.anaconda.org` was historically Phase F's only hard dependency. As of
+v7.6.0, Phase F has an `s3-parquet` backend that reads
+`anaconda-package-data.s3.amazonaws.com` directly (same dataset as
+`condastats`, served from AWS, no `*.anaconda.org` access required).
+
+```bash
+# Default: auto-probe api.anaconda.org once, fall through to S3 on failure
+pixi run -e local-recipes build-cf-atlas
+
+# Force S3 (skip the probe — useful behind a strict firewall)
+PHASE_F_SOURCE=s3-parquet pixi run -e local-recipes build-cf-atlas
+
+# Reduced footprint: trailing 24 months instead of full 9+ years
+PHASE_F_S3_MONTHS=24 PHASE_F_SOURCE=s3-parquet pixi run -e local-recipes build-cf-atlas
+
+# JFrog mirror of the bucket (parquet files served from your Artifactory)
+export S3_PARQUET_BASE_URL=https://artifactory.example.com/artifactory/anaconda-package-data
+PHASE_F_SOURCE=s3-parquet pixi run -e local-recipes build-cf-atlas
+```
+
+Every populated `packages` row carries a `downloads_source` discriminator
+(`'anaconda-api'` | `'s3-parquet'` | `'merged'`). API and S3 totals do
+NOT agree numerically — treat them as correlated-but-distinct metrics,
+not interchangeable. The ordering (which packages are most-downloaded)
+agrees; absolute numbers diverge (e.g. `requests` lifetime is 1.50× higher
+on S3 than via API).
+
+**Cache:** `.claude/data/conda-forge-expert/cache/parquet/` (~13 MB per
+month, ~1.4 GB for all months). Current-month file is always re-fetched;
+older months are cached indefinitely. Set `S3_PARQUET_BASE_URL` to point
+at a JFrog mirror that serves the same `conda/monthly/<YYYY>/<YYYY-MM>.parquet`
+layout.
+
+**JFROG_API_KEY scope warning:** if you set `JFROG_API_KEY` without also
+setting `S3_PARQUET_BASE_URL`, the key currently leaks to public AWS S3
+(see SKILL.md § "`_http.py` Cross-Resolver Credential Leak"). Work
+around by exporting the key in a sub-shell, or by always pairing it
+with the corresponding `*_BASE_URL`.
+
 ---
 
 ## Storage budget

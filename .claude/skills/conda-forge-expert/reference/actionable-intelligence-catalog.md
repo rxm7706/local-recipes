@@ -179,10 +179,14 @@ SBOM generation, license compliance.
 | `upstream_versions` historical snapshots | Mirror Phase G's snapshot pattern for upstream versions | New side table | "version churn" trend analysis | 📋 open |
 | Per-version vuln scoring | Phase G iterates all `package_version_downloads` rows, not just current | Phase G extension | Lock to "safe set" of versions | 📋 open |
 | MCP exposure of all atlas signals | Wrap `query_atlas`, `package_health`, `my_feedstocks`, `staleness_report`, `feedstock_health`, `whodepends`, `behind_upstream`, `cve_watcher`, `version_downloads`, `release_cadence`, `find_alternative`, `adoption_stage`, `scan_project` | All phases | Single tool calls instead of one-off Python | ✅ shipped (v7.0.0) |
+| Phase F download-source attribution | `SELECT downloads_source FROM packages` — populated by every Phase F write | Phase F (v7.6+) | Consumers surface which dataset produced each number (`'anaconda-api'` / `'s3-parquet'` / `'merged'`) | ✅ shipped (v7.6.0) |
+| Air-gap Phase F via public S3 parquet | `PHASE_F_SOURCE=s3-parquet` reads `anaconda-package-data.s3.amazonaws.com`; `S3_PARQUET_BASE_URL` redirects to JFrog mirror | Phase F (v7.6+) | Atlas builds cleanly with `*.anaconda.org` blocked; downloads still populate | ✅ shipped (v7.6.0) |
+| Phase F+ richer metrics (rolling 30/90-day, trend slope, platform/python breakdowns) | Same parquet sweep, additional group-bys; new aggregate tables | Phase F+ (planned) | Per-platform/python download distribution; activity-trend signals | 📋 open (Wave 2 in `docs/specs/atlas-phase-f-s3-backend.md`) |
+| Platform-/python-/channel-aware ranking CLIs | `platform_breakdown`, `pyver_breakdown` (incl. `--policy-check` for python_min validation), `channel_split` | Phase F+ aggregate tables (planned) | Maintainer-triage tools that surface ARM/win/py-EOL share | 📋 open (Wave 3 in `docs/specs/atlas-phase-f-s3-backend.md`) |
 
 ---
 
-## Status Summary (at v7.0.0)
+## Status Summary (at v7.6.0)
 
 | Status | Count | Notes |
 |---|---|---|
