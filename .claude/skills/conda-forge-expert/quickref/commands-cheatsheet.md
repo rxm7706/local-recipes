@@ -470,6 +470,12 @@ PHASE_E_ENABLED=1 pixi run -e local-recipes build-cf-atlas    # incl. cf-graph
 PHASE_N_ENABLED=1 PHASE_N_MAINTAINER=rxm7706 \
     pixi run -e local-recipes build-cf-atlas                    # + GitHub live data
 
+# Phase F download source: auto | anaconda-api | s3-parquet (default auto;
+# auto probes api.anaconda.org once and falls through to S3 on failure)
+PHASE_F_SOURCE=s3-parquet pixi run -e local-recipes build-cf-atlas
+PHASE_F_S3_MONTHS=24 PHASE_F_SOURCE=s3-parquet \
+    pixi run -e local-recipes build-cf-atlas                    # trailing-24-months cap
+
 # Per-package detail card (offline)
 pixi run -e local-recipes detail-cf-atlas <pkg>
 pixi run -e vuln-db detail-cf-atlas-vdb <pkg>                   # with live vdb scan
@@ -572,6 +578,7 @@ export GITHUB_TOKEN=...                  # or GH_TOKEN
 export CONDA_FORGE_BASE_URL=https://artifactory.example.com/artifactory/conda-forge
 export ANACONDA_API_BASE=https://artifactory.example.com/artifactory/anaconda
 export GITHUB_API_BASE=https://github.example.com/api/v3
+export S3_PARQUET_BASE_URL=https://artifactory.example.com/artifactory/anaconda-package-data  # Phase F S3 parquet mirror
 
 # System trust roots (override only if your CA bundle isn't at the default)
 export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
