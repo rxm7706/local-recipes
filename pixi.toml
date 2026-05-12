@@ -377,6 +377,14 @@ cmd = "python .claude/scripts/conda-forge-expert/scan_project.py"
 description = "Inventory a channel/mirror (conda repodata.json | PyPI Simple v1 | npm registry | crates.io). Auto-detects format. --with-vulns ON by default for conda, OFF for others. JFrog auth via env vars. --diff for upstream comparison, --health for mirror signals, --sbom for SBOM."
 cmd = "python .claude/scripts/conda-forge-expert/inventory_channel.py"
 
+[feature.vuln-db.tasks.build-cf-atlas]
+description = "Build the conda-forge atlas FROM THE VULN-DB ENV — runs Phase G (vdb summary) which needs the AppThreat vdb library importable. Set PHASE_GP_ENABLED=1 to also run Phase G' (per-version vuln scoring). All other phases run too; TTL gates keep them cheap."
+cmd = "python .claude/scripts/conda-forge-expert/conda_forge_atlas.py build"
+
+[feature.vuln-db.tasks.atlas-phase]
+description = "Run a single cf_atlas phase from the vuln-db env (use for Phase G / G' which need the vdb library). Same CLI as the local-recipes version."
+cmd = "python .claude/scripts/conda-forge-expert/atlas_phase.py"
+
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"                 # Python language interpreter
