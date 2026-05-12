@@ -30,6 +30,15 @@ CLI:
                          on subsequent runs.
   --reset-cache       : with --fresh, also delete cache/parquet/.
   --yes / -y          : skip the 5-second confirmation countdown on --fresh.
+
+Per-step timeouts (seconds) can be overridden via env vars
+(set to a positive integer; unset/0 uses the default):
+  BOOTSTRAP_MAPPING_CACHE_TIMEOUT  default 300
+  BOOTSTRAP_CVE_DB_TIMEOUT         default 600
+  BOOTSTRAP_VDB_TIMEOUT            default 3600
+  BOOTSTRAP_CF_ATLAS_TIMEOUT       default 7200  (cold --fresh can take 50+ min)
+  BOOTSTRAP_PHASE_GP_TIMEOUT       default 3600
+  BOOTSTRAP_PHASE_N_TIMEOUT        default 3600
   --status            : print phase_state checkpoint table + per-phase
                          freshness summary, then exit (no execution).
   --resume            : default bootstrap is already resume-friendly because
@@ -62,6 +71,35 @@ DATA_DIR = (
     / "data" / "conda-forge-expert"
 )
 REPO_ROOT = Path(__file__).resolve().parents[5]
+
+
+# Per-step timeouts (seconds). Defaults sized for cold `--fresh` runs:
+# cf-atlas alone can take 50+ min when Phase F+K+L each spend 20-30 min on
+# network-bound fetches. Override any of these via env var if your environment
+# is faster / slower than typical. Use `0` (or unset) to use the default.
+_DEFAULT_TIMEOUTS: dict[str, int] = {
+    "mapping_cache":  300,     # parselmouth refresh — usually <10s
+    "cve_db":         600,     # OSV.dev download — usually ~10s
+    "vdb":           3600,     # AppThreat refresh — usually 5-10 min, slack for cold
+    "cf_atlas":      7200,     # cold --fresh worst-case: F~25 + K~30 + L~20 + others
+    "phase_gp":      3600,     # per-version vuln scoring — can be 5-30 min
+    "phase_n":       3600,     # live GitHub — channel-wide can be 30+ min
+}
+
+
+def _timeout_for(step: str) -> int:
+    """Return effective timeout for `step` honouring `BOOTSTRAP_<STEP>_TIMEOUT` env."""
+    import os
+    env_key = f"BOOTSTRAP_{step.upper()}_TIMEOUT"
+    raw = os.environ.get(env_key, "").strip()
+    if raw:
+        try:
+            override = int(raw)
+            if override > 0:
+                return override
+        except ValueError:
+            print(f"  warning: ignoring invalid {env_key}={raw!r}")
+    return _DEFAULT_TIMEOUTS[step]
 
 
 def _run(label: str, cmd: list[str], env_overrides: dict | None = None,
@@ -362,21 +400,21 @@ def main() -> int:
         ok = _run("Refresh PyPI↔conda mapping cache",
                   ["pixi", "run", "-e", "local-recipes",
                    "update-mapping-cache"],
-                  dry_run=args.dry_run, timeout=300)
+                  dry_run=args.dry_run, timeout=_timeout_for("mapping_cache"))
         results.append(("mapping-cache", ok))
 
     # Step 2 — legacy OSV CVE DB
     if not args.no_cve_db:
         ok = _run("Refresh OSV.dev CVE DB (legacy, used by scan_for_vulnerabilities)",
                   ["pixi", "run", "-e", "local-recipes", "update-cve-db"],
-                  dry_run=args.dry_run, timeout=600)
+                  dry_run=args.dry_run, timeout=_timeout_for("cve_db"))
         results.append(("cve-db", ok))
 
     # Step 3 — vdb (heavy)
     if not args.no_vdb:
         ok = _run("Refresh vdb (AppThreat multi-source vulnerability DB; ~2.5 GB)",
                   ["pixi", "run", "-e", "vuln-db", "vdb-refresh"],
-                  dry_run=args.dry_run, timeout=1800)
+                  dry_run=args.dry_run, timeout=_timeout_for("vdb"))
         results.append(("vdb-refresh", ok))
 
     # Step 4 — cf_atlas full build with all default + cf-graph + Phase L
@@ -393,7 +431,8 @@ def main() -> int:
             phase_h = args.phase_h_source
         env["PHASE_H_SOURCE"] = phase_h
         ok = _run(f"Build cf_atlas (B/B.5/B.6/C/C.5/D/E/E.5/F/G/H[{phase_h}]/J/K/L/M)",
-                  cmd, env_overrides=env, dry_run=args.dry_run, timeout=2400)
+                  cmd, env_overrides=env, dry_run=args.dry_run,
+                  timeout=_timeout_for("cf_atlas"))
         results.append(("cf-atlas-build", ok))
 
     # Step 5 — Phase G' per-version vuln scoring (opt-in)
@@ -401,7 +440,8 @@ def main() -> int:
         cmd = ["pixi", "run", "-e", "vuln-db", "build-cf-atlas"]
         env = {"PHASE_GP_ENABLED": "1"}
         ok = _run("Phase G' — per-version vuln scoring (vuln-db env)",
-                  cmd, env_overrides=env, dry_run=args.dry_run, timeout=1800)
+                  cmd, env_overrides=env, dry_run=args.dry_run,
+                  timeout=_timeout_for("phase_gp"))
         results.append(("phase-gp", ok))
 
     # Step 6 — Phase N (live GitHub data) — opt-in via --gh
@@ -411,7 +451,8 @@ def main() -> int:
         if args.maintainer:
             env["PHASE_N_MAINTAINER"] = args.maintainer
         ok = _run("Phase N — live GitHub data (CI / issues / PRs)",
-                  cmd, env_overrides=env, dry_run=args.dry_run, timeout=1800)
+                  cmd, env_overrides=env, dry_run=args.dry_run,
+                  timeout=_timeout_for("phase_n"))
         results.append(("phase-n", ok))
 
     print("\n" + "═" * 70)
