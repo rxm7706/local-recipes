@@ -110,7 +110,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 
 
 def _get_data_dir() -> Path:
@@ -170,6 +170,7 @@ CREATE TABLE IF NOT EXISTS packages (
     pypi_current_version_yanked      INTEGER,
     pypi_version_fetched_at          INTEGER,
     pypi_version_last_error          TEXT,
+    pypi_version_source              TEXT,
     github_current_version           TEXT,
     github_version_fetched_at        INTEGER,
     github_version_last_error        TEXT,
@@ -202,6 +203,22 @@ CREATE TABLE IF NOT EXISTS package_maintainers (
 CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT
+);
+
+-- Phase progress checkpoints. Long-running phases (currently Phase N) write
+-- one row per run with the last-processed feedstock; a subsequent run can
+-- read this row and resume from where the previous run died. The cursor is
+-- the feedstock_name space ordered alphabetically — Phase N's SQL already
+-- uses `ORDER BY p.feedstock_name` so the cursor is stable across runs.
+CREATE TABLE IF NOT EXISTS phase_state (
+    phase_name               TEXT PRIMARY KEY,
+    run_started_at           INTEGER,
+    last_completed_cursor    TEXT,     -- e.g. feedstock_name for Phase N
+    items_completed          INTEGER,
+    items_total              INTEGER,
+    run_completed_at         INTEGER,  -- non-NULL iff the run finished cleanly
+    status                   TEXT,     -- 'in_progress' | 'completed' | 'failed'
+    last_error               TEXT
 );
 
 -- Phase J: dependency graph extracted from cf-graph node_attrs.
@@ -442,6 +459,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
             ("gh_status_last_error",             "ALTER TABLE packages ADD COLUMN gh_status_last_error TEXT"),
             ("maven_coord",                      "ALTER TABLE packages ADD COLUMN maven_coord TEXT"),
             ("downloads_source",                 "ALTER TABLE packages ADD COLUMN downloads_source TEXT"),
+            ("pypi_version_source",              "ALTER TABLE packages ADD COLUMN pypi_version_source TEXT"),
         ):
             if col not in existing_cols:
                 conn.execute(ddl)
@@ -617,59 +635,82 @@ def phase_b_conda_enumeration(conn: sqlite3.Connection) -> dict:
     aggregated = _aggregate_repodata_records(repodata_by_subdir)
     print(f"  Aggregated to {len(aggregated):,} unique packages")
 
-    print(f"  Upserting into SQLite (single transaction)...")
+    print(f"  Upserting into SQLite (batched commits every 1k rows)...")
     # Upsert on conda_name. On conflict refresh the conda_* fields and reset
     # relationship/match_* to the conda_only baseline; later phases (C, C.5
     # via E, D) will refine the relationship and source classification. PyPI
     # serial, feedstock_*, downloads, and other non-Phase-B columns are left
     # untouched so a rebuild doesn't trash work from later phases.
     #
-    # Side-effect: populate a temp table with the current-repodata name-set
-    # so Phase B.6 can demote 'active' rows that no longer appear in
-    # current_repodata to 'inactive'. Without this, packages dropped from
-    # repodata between builds keep stale 'active' status forever.
-    conn.execute("BEGIN TRANSACTION")
-    try:
-        conn.execute("DROP TABLE IF EXISTS current_repodata_names")
-        conn.execute("CREATE TEMP TABLE current_repodata_names(name TEXT PRIMARY KEY)")
-        conn.executemany(
-            "INSERT INTO current_repodata_names(name) VALUES (?)",
-            [(rec["conda_name"],) for rec in aggregated.values()],
+    # Batched commit (v7.7+): every 1k rows. UPSERT on conda_name is
+    # idempotent, so an interrupt mid-run just leaves a partial set of rows
+    # that the next run will overwrite. The phase_state cursor records the
+    # alphabetically-largest conda_name written so an operator can see how
+    # far the prior run got. The current_repodata_names temp table is filled
+    # FIRST (single statement, fast) so Phase B.6's demotion logic stays
+    # correct even on a partial Phase B.
+    save_phase_checkpoint(
+        conn, "B", cursor=None, items_completed=0,
+        items_total=len(aggregated), status="in_progress",
+    )
+    conn.execute("DROP TABLE IF EXISTS current_repodata_names")
+    conn.execute("CREATE TEMP TABLE current_repodata_names(name TEXT PRIMARY KEY)")
+    conn.executemany(
+        "INSERT INTO current_repodata_names(name) VALUES (?)",
+        [(rec["conda_name"],) for rec in aggregated.values()],
+    )
+    conn.commit()
+
+    commit_every = 1000
+    sorted_recs = sorted(aggregated.values(), key=lambda r: r["conda_name"])
+    written = 0
+    last_name = ""
+    for rec in sorted_recs:
+        conn.execute(
+            """
+            INSERT INTO packages (
+                conda_name, conda_subdirs, conda_noarch,
+                latest_conda_version, latest_conda_upload,
+                conda_license, conda_license_family,
+                relationship, match_source, match_confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'conda_only', 'none', 'n/a')
+            ON CONFLICT(conda_name) DO UPDATE SET
+                conda_subdirs        = excluded.conda_subdirs,
+                conda_noarch         = excluded.conda_noarch,
+                latest_conda_version = excluded.latest_conda_version,
+                latest_conda_upload  = excluded.latest_conda_upload,
+                conda_license        = excluded.conda_license,
+                conda_license_family = excluded.conda_license_family,
+                relationship         = 'conda_only',
+                match_source         = 'none',
+                match_confidence     = 'n/a'
+            """,
+            (
+                rec["conda_name"],
+                json.dumps(rec["conda_subdirs"]),
+                rec["conda_noarch"],
+                rec["latest_conda_version"],
+                rec["latest_conda_upload"],
+                rec["conda_license"],
+                rec["conda_license_family"],
+            ),
         )
-        for rec in aggregated.values():
-            conn.execute(
-                """
-                INSERT INTO packages (
-                    conda_name, conda_subdirs, conda_noarch,
-                    latest_conda_version, latest_conda_upload,
-                    conda_license, conda_license_family,
-                    relationship, match_source, match_confidence
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'conda_only', 'none', 'n/a')
-                ON CONFLICT(conda_name) DO UPDATE SET
-                    conda_subdirs        = excluded.conda_subdirs,
-                    conda_noarch         = excluded.conda_noarch,
-                    latest_conda_version = excluded.latest_conda_version,
-                    latest_conda_upload  = excluded.latest_conda_upload,
-                    conda_license        = excluded.conda_license,
-                    conda_license_family = excluded.conda_license_family,
-                    relationship         = 'conda_only',
-                    match_source         = 'none',
-                    match_confidence     = 'n/a'
-                """,
-                (
-                    rec["conda_name"],
-                    json.dumps(rec["conda_subdirs"]),
-                    rec["conda_noarch"],
-                    rec["latest_conda_version"],
-                    rec["latest_conda_upload"],
-                    rec["conda_license"],
-                    rec["conda_license_family"],
-                ),
+        written += 1
+        last_name = rec["conda_name"]
+        if written % commit_every == 0:
+            conn.commit()
+            save_phase_checkpoint(
+                conn, "B", cursor=last_name,
+                items_completed=written, items_total=len(aggregated),
+                status="in_progress",
             )
-        conn.execute("COMMIT")
-    except Exception:
-        conn.execute("ROLLBACK")
-        raise
+
+    conn.commit()
+    save_phase_checkpoint(
+        conn, "B", cursor=last_name,
+        items_completed=written, items_total=len(aggregated),
+        status="completed",
+    )
 
     elapsed = time.monotonic() - t0
     print(f"  Phase B done in {elapsed:.1f}s")
@@ -958,53 +999,81 @@ def phase_d_pypi_enumeration(conn: sqlite3.Connection) -> dict:
                      conn.execute("SELECT pypi_name FROM packages WHERE pypi_name IS NOT NULL")
                      if row[0]}
 
-    conn.execute("BEGIN TRANSACTION")
-    try:
-        updated_serial = 0
-        upgraded_to_coincidence = 0
-        inserted_pypi_only = 0
-        for proj in projects:
-            pypi_name = proj.get("name", "").lower()
-            serial = proj.get("_last-serial")
-            if not pypi_name:
-                continue
-            if pypi_name in existing_pypi:
-                # Already matched via parselmouth — just record serial
-                conn.execute(
-                    "UPDATE packages SET pypi_last_serial = ? WHERE pypi_name = ?",
-                    (serial, pypi_name),
-                )
-                updated_serial += 1
-            elif pypi_name in existing_conda:
-                # Same-name conda package not yet matched — mark name_coincidence
-                conn.execute(
-                    """
-                    UPDATE packages
-                       SET pypi_name = ?, pypi_last_serial = ?,
-                           relationship = 'both_same_name',
-                           match_source = 'name_coincidence',
-                           match_confidence = 'likely'
-                     WHERE conda_name = ? AND pypi_name IS NULL
-                    """,
-                    (pypi_name, serial, existing_conda[pypi_name]),
-                )
-                upgraded_to_coincidence += 1
-            else:
-                # PyPI-only row
-                conn.execute(
-                    """
-                    INSERT INTO packages (
-                        pypi_name, pypi_last_serial,
-                        relationship, match_source, match_confidence
-                    ) VALUES (?, ?, 'pypi_only', 'none', 'n/a')
-                    """,
-                    (pypi_name, serial),
-                )
-                inserted_pypi_only += 1
-        conn.execute("COMMIT")
-    except Exception:
-        conn.execute("ROLLBACK")
-        raise
+    # Batched commit (v7.7+): every 5k rows. All three branches are
+    # idempotent (UPDATE-by-name is no-op when already correct; INSERT
+    # would duplicate but `existing_pypi` is recomputed implicitly because
+    # we maintain it in-memory below). Cursor advances over the sorted
+    # `projects` list so an operator can see progress in `phase_state`.
+    save_phase_checkpoint(
+        conn, "D", cursor=None, items_completed=0,
+        items_total=len(projects), status="in_progress",
+    )
+    commit_every = 5000
+    updated_serial = 0
+    upgraded_to_coincidence = 0
+    inserted_pypi_only = 0
+    written = 0
+    last_name = ""
+    for proj in projects:
+        pypi_name = proj.get("name", "").lower()
+        serial = proj.get("_last-serial")
+        if not pypi_name:
+            continue
+        if pypi_name in existing_pypi:
+            # Already matched via parselmouth — just record serial
+            conn.execute(
+                "UPDATE packages SET pypi_last_serial = ? WHERE pypi_name = ?",
+                (serial, pypi_name),
+            )
+            updated_serial += 1
+        elif pypi_name in existing_conda:
+            # Same-name conda package not yet matched — mark name_coincidence
+            conn.execute(
+                """
+                UPDATE packages
+                   SET pypi_name = ?, pypi_last_serial = ?,
+                       relationship = 'both_same_name',
+                       match_source = 'name_coincidence',
+                       match_confidence = 'likely'
+                 WHERE conda_name = ? AND pypi_name IS NULL
+                """,
+                (pypi_name, serial, existing_conda[pypi_name]),
+            )
+            upgraded_to_coincidence += 1
+            # Track that this name now exists as a PyPI row so a duplicate
+            # iteration (which shouldn't happen — the simple-index is unique —
+            # but defensive) doesn't fall through to the INSERT branch.
+            existing_pypi.add(pypi_name)
+        else:
+            # PyPI-only row
+            conn.execute(
+                """
+                INSERT INTO packages (
+                    pypi_name, pypi_last_serial,
+                    relationship, match_source, match_confidence
+                ) VALUES (?, ?, 'pypi_only', 'none', 'n/a')
+                """,
+                (pypi_name, serial),
+            )
+            inserted_pypi_only += 1
+            existing_pypi.add(pypi_name)
+
+        written += 1
+        last_name = pypi_name
+        if written % commit_every == 0:
+            conn.commit()
+            save_phase_checkpoint(
+                conn, "D", cursor=last_name,
+                items_completed=written, items_total=len(projects),
+                status="in_progress",
+            )
+
+    conn.commit()
+    save_phase_checkpoint(
+        conn, "D", cursor=last_name,
+        items_completed=written, items_total=len(projects),
+        status="completed",
+    )
 
     elapsed = time.monotonic() - t0
     print(f"  Phase D done in {elapsed:.1f}s")
@@ -1537,7 +1606,11 @@ def _phase_f_via_api(
     fetched = 0
     failed = 0
     not_found = 0
-    progress_every = max(500, len(rows) // 40) if rows else 1
+    # Cap at 2,500 so multi-100k-row runs still emit a line every ~30-60s
+    # instead of going silent for many minutes (the historical "Phase H is
+    # hung" misdiagnosis — workers were churning, the formula just buried
+    # the signal under a 20k-row gap).
+    progress_every = min(max(500, len(rows) // 40), 2500) if rows else 1
     commit_every = 500
     completed = 0
     aborted = False
@@ -2001,7 +2074,7 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
     scanned = 0
     failed = 0
     no_purls = 0
-    progress_every = max(200, len(rows) // 40) if rows else 1
+    progress_every = min(max(200, len(rows) // 40), 2500) if rows else 1
     commit_every = 200
 
     for i, row in enumerate(rows):
@@ -2102,6 +2175,59 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
     }
 
 
+def load_phase_checkpoint(conn: sqlite3.Connection, phase_name: str) -> dict | None:
+    """Return the most recent `phase_state` row for `phase_name`, or None.
+
+    Phases use this on entry to decide whether to skip already-processed
+    cursor values. Callers should treat a row with `status='completed'`
+    as "no resume needed" — that run finished cleanly.
+    """
+    row = conn.execute(
+        "SELECT phase_name, run_started_at, last_completed_cursor, "
+        "items_completed, items_total, run_completed_at, status, last_error "
+        "FROM phase_state WHERE phase_name = ?",
+        (phase_name,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def save_phase_checkpoint(
+    conn: sqlite3.Connection,
+    phase_name: str,
+    *,
+    cursor: str | None = None,
+    items_completed: int | None = None,
+    items_total: int | None = None,
+    status: str = "in_progress",
+    last_error: str | None = None,
+) -> None:
+    """UPSERT a `phase_state` row. `run_started_at` is preserved across
+    incremental updates; `run_completed_at` is set when status is 'completed'.
+    Auto-commits so the checkpoint survives an interrupt right after this call.
+    """
+    now = int(time.time())
+    existing = load_phase_checkpoint(conn, phase_name)
+    run_started_at = existing["run_started_at"] if existing and existing.get("status") == "in_progress" else now
+    run_completed_at = now if status == "completed" else None
+    conn.execute(
+        "INSERT INTO phase_state "
+        "(phase_name, run_started_at, last_completed_cursor, items_completed, "
+        " items_total, run_completed_at, status, last_error) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT(phase_name) DO UPDATE SET "
+        "  run_started_at = excluded.run_started_at, "
+        "  last_completed_cursor = excluded.last_completed_cursor, "
+        "  items_completed = excluded.items_completed, "
+        "  items_total = excluded.items_total, "
+        "  run_completed_at = excluded.run_completed_at, "
+        "  status = excluded.status, "
+        "  last_error = excluded.last_error",
+        (phase_name, run_started_at, cursor, items_completed, items_total,
+         run_completed_at, status, last_error),
+    )
+    conn.commit()
+
+
 def _snapshot_upstream_versions(conn: sqlite3.Connection,
                                   source_filter: str | None = None) -> int:
     """Append a snapshot of `upstream_versions` into the history table.
@@ -2184,35 +2310,8 @@ def _phase_h_fetch_one(pypi_name: str
     return (pypi_name, None, None, last_err or "exhausted retries")
 
 
-def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
-    """Phase H: fetch each pypi-linked package's current PyPI version.
-
-    Hits https://pypi.org/pypi/<name>/json per row, stores `info.version` in
-    `pypi_current_version` and the timestamp in `pypi_version_fetched_at`.
-    Combined with `latest_conda_version`, this enables behind-upstream
-    detection: a feedstock whose conda version lags its PyPI counterpart.
-
-    Default-on, opt-out via PHASE_H_DISABLED=1. TTL-gated like Phase F so
-    warm runs are cheap.
-
-    Tunables (env vars):
-      - PHASE_H_DISABLED     : "1" to skip
-      - PHASE_H_TTL_DAYS     : skip rows refreshed within N days (default 7)
-      - PHASE_H_CONCURRENCY  : worker pool size (default 8)
-      - PHASE_H_LIMIT        : cap rows processed (debug; 0 = no cap)
-    """
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-
-    t0 = time.monotonic()
-    print("  Phase H: PyPI current-version cache")
-
-    if os.environ.get("PHASE_H_DISABLED"):
-        return {
-            "skipped": True,
-            "reason": "PHASE_H_DISABLED=1 set; skipping PyPI fetch.",
-            "duration_seconds": 0.0,
-        }
-
+def _phase_h_eligible_pypi_names(conn: sqlite3.Connection) -> tuple[list, int, int, int]:
+    """Return (rows, ttl_days, concurrency, limit) shared by all Phase H paths."""
     ttl_days = int(os.environ.get("PHASE_H_TTL_DAYS", "7"))
     concurrency = max(1, int(os.environ.get("PHASE_H_CONCURRENCY", "8")))
     limit = int(os.environ.get("PHASE_H_LIMIT", "0"))
@@ -2228,14 +2327,36 @@ def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
         sql += " LIMIT ?"
         params = (cutoff, limit)
     rows = list(conn.execute(sql, params))
+    return rows, ttl_days, concurrency, limit
+
+
+def _phase_h_via_pypi_json(conn: sqlite3.Connection) -> dict:
+    """Original per-row fan-out against `pypi.org/pypi/<name>/json`.
+
+    Real-time, carries PEP 592 yanked status, but throughput is gated by
+    pypi.org throttling and ThreadPool concurrency. Marks every populated
+    row with `pypi_version_source='pypi-json'`.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    t0 = time.monotonic()
+    print("  Phase H: PyPI current-version via pypi.org JSON")
+
+    rows, ttl_days, concurrency, _ = _phase_h_eligible_pypi_names(conn)
     print(f"  {len(rows):,} pypi names to refresh (TTL {ttl_days}d, concurrency {concurrency})")
 
     fetched = 0
     failed = 0
     not_found = 0
-    progress_every = max(500, len(rows) // 40) if rows else 1
+    # Cap at 2,500 so multi-100k-row runs still emit a line every ~30-60s
+    # instead of going silent for many minutes (the historical "Phase H is
+    # hung" misdiagnosis — workers were churning, the formula just buried
+    # the signal under a 20k-row gap).
+    progress_every = min(max(500, len(rows) // 40), 2500) if rows else 1
     commit_every = 500
     completed = 0
+    last_heartbeat = time.monotonic()
+    HEARTBEAT_S = 60.0
 
     with ThreadPoolExecutor(max_workers=concurrency) as ex:
         futures = [ex.submit(_phase_h_fetch_one, r["pypi_name"]) for r in rows]
@@ -2247,7 +2368,8 @@ def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
                 conn.execute(
                     "UPDATE packages SET pypi_current_version = ?, "
                     "pypi_current_version_yanked = ?, "
-                    "pypi_version_fetched_at = ?, pypi_version_last_error = NULL "
+                    "pypi_version_fetched_at = ?, pypi_version_last_error = NULL, "
+                    "pypi_version_source = 'pypi-json' "
                     "WHERE pypi_name = ?",
                     (version, yanked_int, now, pypi_name),
                 )
@@ -2265,7 +2387,8 @@ def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
             elif err == "HTTP 404":
                 conn.execute(
                     "UPDATE packages SET pypi_version_fetched_at = ?, "
-                    "pypi_version_last_error = ? WHERE pypi_name = ?",
+                    "pypi_version_last_error = ?, pypi_version_source = 'pypi-json' "
+                    "WHERE pypi_name = ?",
                     (now, err, pypi_name),
                 )
                 not_found += 1
@@ -2279,8 +2402,14 @@ def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
             completed += 1
             if completed % commit_every == 0:
                 conn.commit()
-            if completed % progress_every == 0:
-                elapsed = time.monotonic() - t0
+            now_mono = time.monotonic()
+            # Print on progress_every count OR on heartbeat timer, whichever
+            # fires first. Heartbeat covers the case where progress_every is
+            # huge for a big-row run but the user expects a "still alive"
+            # signal at human cadence.
+            if (completed % progress_every == 0
+                    or now_mono - last_heartbeat >= HEARTBEAT_S):
+                elapsed = now_mono - t0
                 rate = completed / elapsed if elapsed else 0
                 eta_min = (len(rows) - completed) / rate / 60 if rate else 0
                 print(
@@ -2288,12 +2417,13 @@ def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
                     f"failed={failed:,} 404={not_found:,}  "
                     f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
                 )
+                last_heartbeat = now_mono
 
     conn.commit()
     snap_rows = _snapshot_upstream_versions(conn, source_filter="pypi")
     elapsed = time.monotonic() - t0
     print(
-        f"  Phase H done in {elapsed:.1f}s — fetched {fetched:,}, "
+        f"  Phase H (pypi-json) done in {elapsed:.1f}s — fetched {fetched:,}, "
         f"failed {failed:,}, 404 {not_found:,}, "
         f"history snapshot rows: {snap_rows:,}"
     )
@@ -2306,7 +2436,168 @@ def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
         "ttl_days": ttl_days,
         "concurrency": concurrency,
         "duration_seconds": round(elapsed, 1),
+        "source": "pypi-json",
     }
+
+
+def _phase_h_via_cf_graph(conn: sqlite3.Connection) -> dict:
+    """Bulk Phase H path backed by the locally-cached cf-graph tarball.
+
+    Reads `version_pr_info/<sharded>/<feedstock>.json` shards (already on
+    disk after Phase E) and projects `new_version` onto `packages.pypi_name`
+    via `feedstock_name`. Cold-start friendly: zero network, zero auth.
+
+    Yanked status is not carried by cf-graph; rows populated by this path
+    leave `pypi_current_version_yanked = NULL` so consumers know the source
+    can't speak to PEP 592. Re-run with `PHASE_H_SOURCE=pypi-json` to backfill
+    yanked precisely when needed.
+    """
+    sys.path.insert(0, str(Path(__file__).parent))
+    import _cf_graph_versions  # type: ignore[import-not-found]
+
+    t0 = time.monotonic()
+    print("  Phase H: PyPI current-version via cf-graph (offline)")
+
+    tarball = _cf_graph_versions.default_tarball_path()
+    if not _cf_graph_versions.tarball_available(tarball):
+        elapsed = time.monotonic() - t0
+        print(f"  cf-graph cache missing at {tarball}; run Phase E first")
+        return {
+            "skipped": True,
+            "reason": "cf-graph cache missing; run Phase E first.",
+            "rows_eligible": 0, "fetched": 0, "failed": 0, "not_found_404": 0,
+            "duration_seconds": round(elapsed, 1),
+            "source": "cf-graph",
+        }
+
+    rows, ttl_days, _, _ = _phase_h_eligible_pypi_names(conn)
+    eligible_pypi_names = {r["pypi_name"] for r in rows}
+    print(f"  {len(eligible_pypi_names):,} pypi names eligible (TTL {ttl_days}d)")
+
+    if not eligible_pypi_names:
+        elapsed = time.monotonic() - t0
+        return {
+            "rows_eligible": 0, "fetched": 0, "failed": 0, "not_found_404": 0,
+            "history_snapshot_rows": 0,
+            "ttl_days": ttl_days,
+            "duration_seconds": round(elapsed, 1),
+            "source": "cf-graph",
+        }
+
+    pypi_by_feedstock: dict[str, str] = {}
+    for row in conn.execute(
+        "SELECT feedstock_name, pypi_name FROM packages "
+        "WHERE feedstock_name IS NOT NULL AND pypi_name IS NOT NULL"
+    ):
+        fs = row["feedstock_name"]
+        pn = row["pypi_name"]
+        if fs and pn and pn in eligible_pypi_names:
+            pypi_by_feedstock.setdefault(fs, pn)
+
+    version_map = _cf_graph_versions.build_pypi_version_map(
+        pypi_by_feedstock, path=tarball
+    )
+    print(f"  cf-graph yielded {len(version_map):,} version mappings")
+
+    fetched = 0
+    not_found = 0
+    completed = 0
+    commit_every = 500
+    now = int(time.time())
+
+    for pypi_name in eligible_pypi_names:
+        version = version_map.get(pypi_name)
+        if version is None:
+            # cf-graph had no version_pr_info shard for the matching feedstock,
+            # or new_version was null/false (bot found no upstream). Mark the
+            # source but leave the row available for a future pypi-json pass.
+            conn.execute(
+                "UPDATE packages SET pypi_version_source = 'cf-graph' "
+                "WHERE pypi_name = ? AND pypi_version_fetched_at IS NULL",
+                (pypi_name,),
+            )
+            not_found += 1
+        else:
+            conn.execute(
+                "UPDATE packages SET pypi_current_version = ?, "
+                "pypi_current_version_yanked = NULL, "
+                "pypi_version_fetched_at = ?, pypi_version_last_error = NULL, "
+                "pypi_version_source = 'cf-graph' "
+                "WHERE pypi_name = ?",
+                (version, now, pypi_name),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO upstream_versions "
+                "(conda_name, source, version, url, fetched_at, last_error) "
+                "SELECT conda_name, 'pypi', ?, ?, ?, NULL FROM packages "
+                "WHERE pypi_name = ? AND conda_name IS NOT NULL",
+                (version, f"https://pypi.org/project/{pypi_name}/", now, pypi_name),
+            )
+            fetched += 1
+        completed += 1
+        if completed % commit_every == 0:
+            conn.commit()
+
+    conn.commit()
+    snap_rows = _snapshot_upstream_versions(conn, source_filter="pypi")
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase H (cf-graph) done in {elapsed:.1f}s — fetched {fetched:,}, "
+        f"no_data {not_found:,}, history snapshot rows: {snap_rows:,}"
+    )
+    return {
+        "rows_eligible": len(eligible_pypi_names),
+        "fetched": fetched,
+        "failed": 0,
+        "not_found_404": not_found,
+        "history_snapshot_rows": snap_rows,
+        "ttl_days": ttl_days,
+        "duration_seconds": round(elapsed, 1),
+        "source": "cf-graph",
+    }
+
+
+def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
+    """Phase H: cache each pypi-linked package's current upstream version.
+
+    Dispatches on `PHASE_H_SOURCE` (default `pypi-json`):
+      - `pypi-json` → original per-row HTTP path against pypi.org. Real-time,
+                      carries PEP 592 yanked status.
+      - `cf-graph`  → bulk offline read of the cf-graph tarball populated by
+                      Phase E. Zero network, no yanked status, ~hours lag.
+
+    Combined with `latest_conda_version`, this enables behind-upstream
+    detection: a feedstock whose conda version lags its PyPI counterpart.
+    TTL-gated like Phase F so warm runs are cheap.
+
+    Tunables (env vars):
+      - PHASE_H_DISABLED     : "1" to skip entirely
+      - PHASE_H_SOURCE       : pypi-json | cf-graph (default pypi-json)
+      - PHASE_H_TTL_DAYS     : skip rows refreshed within N days (default 7)
+      - PHASE_H_CONCURRENCY  : pypi-json worker pool size (default 8)
+      - PHASE_H_LIMIT        : cap rows processed (debug; 0 = no cap)
+
+    Every populated row carries a non-NULL `pypi_version_source` discriminator
+    (`'pypi-json'` | `'cf-graph'`) so consumers can surface which dataset
+    produced the version.
+    """
+    print("  Phase H: PyPI current-version cache")
+
+    if os.environ.get("PHASE_H_DISABLED"):
+        return {
+            "skipped": True,
+            "reason": "PHASE_H_DISABLED=1 set; skipping PyPI fetch.",
+            "duration_seconds": 0.0,
+        }
+
+    source = os.environ.get("PHASE_H_SOURCE", "pypi-json").lower()
+    if source == "pypi-json":
+        return _phase_h_via_pypi_json(conn)
+    if source == "cf-graph":
+        return _phase_h_via_cf_graph(conn)
+    raise ValueError(
+        f"PHASE_H_SOURCE={source!r} is not one of pypi-json, cf-graph"
+    )
 
 
 _GITHUB_REPO_RE = re.compile(r"github\.com/([^/]+)/([^/?#.]+)")
@@ -2571,7 +2862,7 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
     failed = 0
     not_found = 0
     no_repo = 0
-    progress_every = max(200, len(rows) // 40) if rows else 1
+    progress_every = min(max(200, len(rows) // 40), 2500) if rows else 1
     commit_every = 200
     completed = 0
 
@@ -3007,7 +3298,7 @@ def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
     fetched = 0
     failed = 0
     not_found = 0
-    progress_every = max(200, len(work) // 40) if work else 1
+    progress_every = min(max(200, len(work) // 40), 2500) if work else 1
     commit_every = 200
     completed = 0
     by_source: dict[str, int] = {}
@@ -3546,20 +3837,58 @@ def phase_n_github_live(conn: sqlite3.Connection) -> dict:
         fs = r["feedstock_name"]
         fs_to_rows.setdefault(fs, []).append(r["conda_name"])
     feedstocks = list(fs_to_rows.keys())
+
+    # Resume from prior checkpoint if the last run was interrupted
+    # (status='in_progress'). The TTL gate above already filters out
+    # successfully-written feedstocks, so the checkpoint is mostly a UX
+    # signal — it tells the user where the prior run died and confirms
+    # the resume will pick up there.
+    checkpoint = load_phase_checkpoint(conn, "N")
+    resume_from: str | None = None
+    if checkpoint and checkpoint.get("status") == "in_progress":
+        resume_from = checkpoint.get("last_completed_cursor")
+        if resume_from:
+            before = len(feedstocks)
+            feedstocks = [fs for fs in feedstocks if fs > resume_from]
+            skipped = before - len(feedstocks)
+            print(f"  Resuming Phase N from cursor > {resume_from!r} "
+                  f"(skipped {skipped:,} already-completed feedstocks; "
+                  f"prior run had {checkpoint.get('items_completed') or 0:,}"
+                  f"/{checkpoint.get('items_total') or 0:,} items)")
+
     print(f"  {len(feedstocks):,} feedstocks to refresh "
           f"(maintainer={maintainer or 'all'}, TTL {ttl_days}d, "
           f"batch={batch_size}, concurrency={concurrency})")
 
     if not feedstocks:
         elapsed = time.monotonic() - t0
+        save_phase_checkpoint(
+            conn, "N",
+            cursor=resume_from,
+            items_completed=(checkpoint or {}).get("items_completed") or 0,
+            items_total=(checkpoint or {}).get("items_total") or 0,
+            status="completed",
+        )
         return {
             "feedstocks_eligible": 0, "fetched": 0, "failed": 0,
             "duration_seconds": round(elapsed, 1),
         }
 
-    # Pre-batch the feedstocks
+    # Pre-batch the feedstocks. Batches preserve alphabetical order because
+    # `feedstocks` was filled from an ORDER BY query above, so the cursor
+    # advances monotonically.
     batches = [feedstocks[i:i + batch_size]
                for i in range(0, len(feedstocks), batch_size)]
+    total_items = len(feedstocks) + (
+        (checkpoint or {}).get("items_completed") or 0 if resume_from else 0
+    )
+    save_phase_checkpoint(
+        conn, "N",
+        cursor=resume_from,
+        items_completed=(checkpoint or {}).get("items_completed") or 0,
+        items_total=total_items,
+        status="in_progress",
+    )
 
     fetched = 0
     failed = 0
@@ -3641,8 +3970,23 @@ def phase_n_github_live(conn: sqlite3.Connection) -> dict:
                         )
                     fetched += 1
             completed_batches += 1
+            # Commit per batch (was every 4) so an interrupt loses at most
+            # one batch (~25 feedstocks) of work instead of up to 100.
+            conn.commit()
+            # Checkpoint: record the alphabetically-largest feedstock
+            # processed so far. `batches` were generated from the sorted
+            # `feedstocks` list, so max() of any in-flight batch is a
+            # safe lower bound (we resume from > cursor next time).
+            batch_max = max(batch) if batch else None
+            prior_done = (checkpoint or {}).get("items_completed") or 0
+            save_phase_checkpoint(
+                conn, "N",
+                cursor=batch_max,
+                items_completed=prior_done + fetched + failed,
+                items_total=total_items,
+                status="in_progress",
+            )
             if completed_batches % 4 == 0:
-                conn.commit()
                 elapsed = time.monotonic() - t0
                 rate = (fetched + failed) / elapsed if elapsed else 0
                 eta_min = ((len(feedstocks) - fetched - failed) / rate / 60
@@ -3654,6 +3998,16 @@ def phase_n_github_live(conn: sqlite3.Connection) -> dict:
                 )
 
     conn.commit()
+    # Mark the run as completed so a subsequent invocation does not try
+    # to resume — it should start a fresh run governed by the TTL gate.
+    save_phase_checkpoint(
+        conn, "N",
+        cursor=feedstocks[-1] if feedstocks else resume_from,
+        items_completed=((checkpoint or {}).get("items_completed") or 0)
+                         + fetched + failed,
+        items_total=total_items,
+        status="completed",
+    )
     elapsed = time.monotonic() - t0
     print(
         f"  Phase N done in {elapsed:.1f}s — fetched {fetched:,} feedstocks, "
@@ -3752,7 +4106,11 @@ def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
 
     scanned = 0
     failed = 0
-    progress_every = max(500, len(rows) // 40) if rows else 1
+    # Cap at 2,500 so multi-100k-row runs still emit a line every ~30-60s
+    # instead of going silent for many minutes (the historical "Phase H is
+    # hung" misdiagnosis — workers were churning, the formula just buried
+    # the signal under a 20k-row gap).
+    progress_every = min(max(500, len(rows) // 40), 2500) if rows else 1
     commit_every = 500
 
     for i, r in enumerate(rows):
@@ -3828,6 +4186,54 @@ def export_json(conn: sqlite3.Connection, path: Path = EXPORT_PATH) -> int:
     return len(rows)
 
 
+# Phase registry — single source of truth for `cmd_build`, the `atlas-phase`
+# CLI, and any other code that needs to introspect or invoke phases. Order
+# matches the canonical pipeline dependency order. `get_phase` does
+# case-insensitive lookup on `phase_id`.
+PHASES: list[tuple[str, Any]] = [
+    ("B",   phase_b_conda_enumeration),
+    ("B.5", phase_b5_feedstock_outputs),
+    ("B.6", phase_b6_yanked_detection),
+    ("C",   phase_c_parselmouth_join),
+    ("C.5", phase_c5_source_url_match),
+    ("D",   phase_d_pypi_enumeration),
+    ("E",   phase_e_enrichment),
+    ("E.5", phase_e5_archived_feedstocks),
+    ("F",   phase_f_downloads),
+    ("G",   phase_g_vdb_summary),
+    ("G'",  phase_g_prime_per_version_vulns),
+    ("H",   phase_h_pypi_versions),
+    ("J",   phase_j_dependency_graph),
+    ("K",   phase_k_vcs_versions),
+    ("L",   phase_l_extra_registries),
+    ("M",   phase_m_feedstock_health),
+    ("N",   phase_n_github_live),
+]
+
+
+def get_phase(phase_id: str):
+    """Return the `(name, fn)` entry for `phase_id`. Case-insensitive on the
+    letter portion. Raises `KeyError` with a helpful list of known phases."""
+    target = phase_id.strip().upper()
+    for name, fn in PHASES:
+        if name.upper() == target:
+            return name, fn
+    valid = ", ".join(name for name, _ in PHASES)
+    raise KeyError(f"unknown phase {phase_id!r}; valid: {valid}")
+
+
+def run_single_phase(phase_id: str, conn: sqlite3.Connection) -> dict:
+    """Run one phase against `conn`. Used by the `atlas-phase` CLI to refresh
+    a single phase without rebuilding the world. Callers are responsible
+    for prerequisite columns being populated (e.g. Phase H expects
+    `pypi_name`, populated by Phase C). Phases short-circuit cleanly when
+    prerequisites are missing.
+    """
+    name, fn = get_phase(phase_id)
+    print(f"--- Phase {name} (single-phase invocation) ---")
+    return fn(conn)
+
+
 # --- CLI ---
 
 def cmd_build(args: argparse.Namespace) -> int:
@@ -3844,28 +4250,8 @@ def cmd_build(args: argparse.Namespace) -> int:
         print("Skeleton written. Tables created. Phases not implemented yet.")
         return 0
 
-    # Phases will be implemented incrementally (B, B.5, B.6, C, C.5, D, E, E.5)
-    phases = [
-        ("B",   phase_b_conda_enumeration),
-        ("B.5", phase_b5_feedstock_outputs),
-        ("B.6", phase_b6_yanked_detection),
-        ("C",   phase_c_parselmouth_join),
-        ("C.5", phase_c5_source_url_match),
-        ("D",   phase_d_pypi_enumeration),
-        ("E",   phase_e_enrichment),
-        ("E.5", phase_e5_archived_feedstocks),
-        ("F",   phase_f_downloads),
-        ("G",   phase_g_vdb_summary),
-        ("G'",  phase_g_prime_per_version_vulns),
-        ("H",   phase_h_pypi_versions),
-        ("J",   phase_j_dependency_graph),
-        ("K",   phase_k_vcs_versions),
-        ("L",   phase_l_extra_registries),
-        ("M",   phase_m_feedstock_health),
-        ("N",   phase_n_github_live),
-    ]
     stats: dict[str, Any] = {"phases_run": []}
-    for name, fn in phases:
+    for name, fn in PHASES:
         print(f"--- Phase {name} ---")
         try:
             phase_stats = fn(conn)
