@@ -293,6 +293,10 @@ cmd = "python .claude/skills/conda-forge-expert/tests/run_skill_suite.py"
 description = "Single-command full data refresh for conda-forge-expert: mapping cache + CVE DB + vdb + cf_atlas (B/B.5/B.6/C/D/E/E.5/F/G/H/J/K/L/M) + optional Phase N. Use --fresh for hard reset; --no-vdb / --no-cf-atlas to skip heavy steps; --gh + --maintainer for live GitHub data."
 cmd = "python .claude/scripts/conda-forge-expert/bootstrap_data.py"
 
+[feature.local-recipes.tasks.atlas-phase]
+description = "Run a single cf_atlas phase against the existing DB (avoid the full ~30-45 min rebuild). Usage: atlas-phase <ID> (B/B.5/B.6/C/C.5/D/E/E.5/F/G/G'/H/J/K/L/M/N). Use --reset-ttl to force re-processing of every row for TTL-gated phases (F/G/H/K). --list to enumerate."
+cmd = "python .claude/scripts/conda-forge-expert/atlas_phase.py"
+
 [feature.local-recipes.tasks.staleness-report]
 description = "List conda-forge feedstocks ordered by oldest latest_conda_upload (use --maintainer X to scope, --days N for an age floor, --by-risk to rank by C/H/KEV, --json for machine output)"
 cmd = "python .claude/scripts/conda-forge-expert/staleness_report.py"

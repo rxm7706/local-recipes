@@ -11,6 +11,7 @@ import pytest
 # Hyphenated and underscored — no exclusions
 SCRIPTS = [
     "adoption_stage.py",
+    "atlas_phase.py",
     "behind_upstream.py",
     "bootstrap_data.py",
     "conda_forge_atlas.py",
