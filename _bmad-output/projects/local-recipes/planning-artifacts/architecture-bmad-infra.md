@@ -161,15 +161,21 @@ Defined in `_bmad/config.toml` under `[agents.bmad-agent-<role>]`. Each has `nam
 | `bmad-agent-tech-writer` | Technical Writer | Paige | 📚 |
 | `bmad-agent-ux-designer` | UX Designer | Sally | 🎨 |
 
-### Planning chain (8)
+### Planning chain (9)
 
 `bmad-product-brief`, `bmad-prfaq`, `bmad-create-prd`, `bmad-edit-prd`, `bmad-validate-prd`, `bmad-create-architecture`, `bmad-create-epics-and-stories`, `bmad-create-story`, `bmad-create-ux-design`
 
-Plus support: `bmad-generate-project-context`, `bmad-document-project` (used to produce this doc set), `bmad-domain-research`, `bmad-market-research`, `bmad-technical-research`.
+### Discovery / customization (3)
 
-### Implementation skills (3)
+`bmad-generate-project-context`, `bmad-document-project` (used to produce this doc set), `bmad-customize`.
 
-`bmad-quick-dev` (implement a story spec), `bmad-dev-story` (story-spec-driven implementation), `bmad-customize` (skill customization).
+### Research (3)
+
+`bmad-domain-research`, `bmad-market-research`, `bmad-technical-research`.
+
+### Implementation skills (2)
+
+`bmad-quick-dev` (implement a story spec), `bmad-dev-story` (story-spec-driven implementation).
 
 ### Review skills (5)
 
@@ -179,17 +185,25 @@ Plus support: `bmad-generate-project-context`, `bmad-document-project` (used to 
 
 `bmad-sprint-planning`, `bmad-sprint-status`, `bmad-correct-course`, `bmad-retrospective`.
 
-### Process / facilitation skills (8)
+### Process / facilitation skills (10)
 
-`bmad-advanced-elicitation`, `bmad-party-mode`, `bmad-brainstorming`, `bmad-distillator`, `bmad-shard-doc`, `bmad-index-docs`, `bmad-check-implementation-readiness`, `bmad-checkpoint-preview`, `bmad-help`, `bmad-qa-generate-e2e-tests`.
+`bmad-advanced-elicitation`, `bmad-brainstorming`, `bmad-check-implementation-readiness`, `bmad-checkpoint-preview`, `bmad-distillator`, `bmad-help`, `bmad-index-docs`, `bmad-party-mode`, `bmad-qa-generate-e2e-tests`, `bmad-shard-doc`.
 
-### Engineering practice skills (22 — not BMAD-installer)
+### Engineering practice skills (21 — not BMAD-installer)
 
 `api-and-interface-design`, `browser-testing-with-devtools`, `ci-cd-and-automation`, `code-review-and-quality`, `code-simplification`, `context-engineering`, `debugging-and-error-recovery`, `deprecation-and-migration`, `documentation-and-adrs`, `frontend-ui-engineering`, `git-workflow-and-versioning`, `idea-refine`, `incremental-implementation`, `performance-optimization`, `planning-and-task-breakdown`, `security-and-hardening`, `shipping-and-launch`, `source-driven-development`, `spec-driven-development`, `test-driven-development`, `using-agent-skills`.
 
 ### Repo-specific skills (1)
 
 `conda-forge-expert` — the Part 1 skill. Drives every conda-forge task. CLAUDE.md mandates BMAD agents invoke it for any conda-forge work.
+
+### Total skill count math
+
+- **42 BMAD-installer skills**: 6 personas + 9 planning + 3 discovery/customization + 3 research + 2 implementation + 5 review + 4 sprint+retro + 10 process/facilitation = **42**
+- **21 engineering-practice skills** (separate from BMAD installer; copy from upstream or author)
+- **1 repo-specific skill**: `conda-forge-expert`
+- **Subtotal real skills: 64**
+- The current repo state shows **65** entries in `ls .claude/skills/` because of a stray `.claude/skills/data/` directory (no SKILL.md inside; contains only an old `conda-forge-expert/` subdir). The rebuild target does NOT recreate this stray; clean-up is documented as deferred work.
 
 ---
 

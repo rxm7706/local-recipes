@@ -114,7 +114,7 @@ JTBD-5.1: Add a new MCP tool / pipeline phase / skill reference without breaking
 
 | ID | Goal | Measurable outcome |
 |---|---|---|
-| G1 | **Faithful rebuild of Parts 1-4** | All 35 MCP tools functional; all 17 atlas phases run; bmad-switch + 6-layer merge work; 65 skills load |
+| G1 | **Faithful rebuild of Parts 1-4** | All 35 MCP tools functional; all 17 atlas phases run; bmad-switch + 6-layer merge work; 64 real skills load (42 BMAD + 21 engineering + 1 CFE; the legacy stray `.claude/skills/data/` dir is not recreated) |
 | G2 | **First-pass recipe authoring success rate ≥90%** | First-pass conda-forge PR acceptance (no review-comment revisions on lint/policy issues) ≥9 of 10 recent recipes |
 | G3 | **Atlas refresh resilient to interrupts** | Mid-run kill of `bootstrap-data --fresh` resumes cleanly via `phase_state` cursor + TTL gates; ≤5% rework |
 | G4 | **Air-gap operation parity** | Full atlas build + recipe authoring + PR submission run with all `*_BASE_URL` set to JFrog endpoints + `JFROG_API_KEY` correctly scoped; zero cross-host leak |
@@ -151,7 +151,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F1.5 | 34 Tier 2 CLI wrappers + pixi tasks | P0 | All 34 wrappers in `.claude/scripts/conda-forge-expert/` delegate to Tier 1 via subprocess; each has a matching pixi task |
 | F1.6 | 17-lint-code recipe optimizer | P0 | `optimize_recipe` flags STD-001 through OPT-NNN with structured output |
 | F1.7 | 6 Recipe Authoring Gotchas (G1-G6) | P0 | SKILL.md § "Recipe Authoring Gotchas" enumerates G1-G6 with cause + fix |
-| F1.8 | 30 recipe templates across 11 ecosystems | P0 | `templates/` contains v1 + v0 variants for python, rust, go, c-cpp, r, java, ruby, dotnet, fortran + conda-forge.yml starters |
+| F1.8 | 41 recipe templates across 13 ecosystems | P0 | `templates/` contains v1 + v0 variants for python, rust, go, c-cpp, r, java, ruby, dotnet, fortran, multi-output, nodejs, perl + conda-forge-yml config-template; verified 41 files (39 `.yaml` + 2 `.yml`) / 13 dirs at 2026-05-12 |
 | F1.9 | 11 reference docs + 8 guides + 2 quickrefs | P0 | All documentation files exist with content; `INDEX.md` task→tool navigator points correctly |
 | F1.10 | `MANIFEST.yaml` + `install.py` portability | P1 | The skill can be moved to another repo and `install.py` bootstraps the wrappers + pixi tasks |
 | F1.11 | Build failure protocol | P0 | SKILL.md § "Build Failure Protocol" enumerates stop/preserve/analyze/root-cause/apply/retry with 3-cycle escalation |
@@ -198,7 +198,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F4.2 | 6-layer config merge | P0 | `resolve_config.py` merges layers 1-6 in priority order; verified by per-layer override tests |
 | F4.3 | Active-project resolution (4 priorities) | P0 | `--project <slug>` > `BMAD_ACTIVE_PROJECT` env > `_bmad/custom/.active-project` > none |
 | F4.4 | `scripts/bmad-switch` CLI | P0 | `--list`, `--current`, `--clear`, `<slug>` all work; slug validation rejects bad inputs |
-| F4.5 | 65 installed skills | P0 | 6 personas + 8 planning + 3 impl + 5 review + 4 sprint + 8 process + 22 engineering + 1 repo-specific + 8 auxiliary; all loadable via `Skill` tool |
+| F4.5 | 64 real skills (target) / 65 entries in current repo | P0 | **42 BMAD-installer** (6 personas + 9 planning + 3 discovery + 3 research + 2 implementation + 4 sprint/retro + 5 review + 10 process/facilitation) + **21 engineering-practice** (separate from installer) + **1 repo-specific** (`conda-forge-expert`) = **64 real skills**. Current repo state shows 65 because `.claude/skills/data/` is a stray directory (no SKILL.md inside, contains old `conda-forge-expert/` subdir); the rebuild does NOT recreate this stray. All loadable via `Skill` tool. |
 | F4.6 | `conda-forge-expert` repo-specific skill | P0 | Lives at `.claude/skills/conda-forge-expert/`; Parts 1-3 reference it |
 | F4.7 | Per-skill customization layer | P1 | `_bmad/custom/<skill>.toml` files merge with skill's `customize.toml` via `resolve_customization.py` |
 | F4.8 | Multi-project directory layout | P0 | `_bmad-output/projects/<slug>/` with `planning-artifacts/` + `implementation-artifacts/` per project |
@@ -563,7 +563,7 @@ Maps each of the 52 features in §5 to its **primary JTBD** (the user job it mos
 | F1.5 (34 Tier 2 wrappers + tasks) | JTBD-1.1 | JTBD-1.4 | Pixi-task surface for shell + BMAD use |
 | F1.6 (17-lint-code optimizer) | JTBD-1.1 | JTBD-4.1 | Catches lint issues pre-review |
 | F1.7 (G1-G6 gotchas) | JTBD-1.2 | JTBD-3.1 | Non-obvious failures enumerated so agents avoid them |
-| F1.8 (30 templates / 11 ecosystems) | JTBD-1.1 | — | Recipe scaffolding |
+| F1.8 (41 templates / 13 ecosystems) | JTBD-1.1 | — | Recipe scaffolding |
 | F1.9 (11 reference + 8 guides + 2 quickrefs) | JTBD-3.1 | JTBD-1.2, JTBD-5.1 | Documentation cascade |
 | F1.10 (MANIFEST.yaml + install.py) | JTBD-5.1 | — | Portability enables reuse in other repos |
 | F1.11 (Build failure protocol) | JTBD-1.2 | JTBD-3.1 | Diagnosis workflow under pressure |

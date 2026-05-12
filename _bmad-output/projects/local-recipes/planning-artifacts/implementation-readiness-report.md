@@ -134,7 +134,7 @@ PRD §10 R7: "New conda-forge lint code added post-rebuild" — mitigation says 
 | F1.5 (34 Tier 2 wrappers + pixi tasks) | P0 | E5 (8 stories cover all 34) | ✅ |
 | F1.6 (17-lint-code optimizer) | P0 | E4.S7 | ✅ |
 | F1.7 (G1-G6 gotchas) | P0 | E6.S1 — but G6 promotion is Q-PRD-03 dependent | ⚠️ blocked by Q-PRD-03 |
-| F1.8 (30 templates / 11 ecosystems) | P0 | E6.S19 | ✅ |
+| F1.8 (41 templates / 13 ecosystems) | P0 | E6.S19 | ✅ |
 | F1.9 (11 reference + 8 guides + 2 quickrefs) | P0 | E6.S5-S18 (14 doc stories) | ✅ |
 | F1.10 (MANIFEST.yaml + install.py) | P1 | E6.S4 | ✅ |
 | F1.11 (Build failure protocol) | P0 | E6.S1 (in SKILL.md) | ✅ |

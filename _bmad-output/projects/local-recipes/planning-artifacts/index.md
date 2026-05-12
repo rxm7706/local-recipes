@@ -46,7 +46,7 @@ The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: han
 |---|---|---|
 | 1 | [project-overview.md](./project-overview.md) | System framing, monorepo structure, four-part decomposition, cross-cutting concerns, getting-started orientation |
 | 2 | [source-tree-analysis.md](./source-tree-analysis.md) | Annotated directory tree at 5 levels, entry-points table, critical files |
-| 3 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier scripts/wrappers/data architecture, 10-step autonomous loop, 42 Tier 1 scripts, 30 templates / 11 ecosystems, build failure protocol, Recipe Authoring Gotchas G1-G6 |
+| 3 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier scripts/wrappers/data architecture, 10-step autonomous loop, 42 Tier 1 scripts, 41 templates / 13 ecosystems, build failure protocol, Recipe Authoring Gotchas G1-G6 |
 | 4 | [architecture-cf-atlas.md](./architecture-cf-atlas.md) | Part 2: 17 pipeline phases, schema v19 (11 tables), TTL gates, S3+cf-graph offline backends, performance characteristics, failure modes |
 | 5 | [architecture-mcp-server.md](./architecture-mcp-server.md) | Part 3: 35 MCP tools, thin-subprocess-wrapper pattern, auto-discovery + deferred `.mcp.json`, BMAD-agent invocation flow |
 | 6 | [architecture-bmad-infra.md](./architecture-bmad-infra.md) | Part 4: 6-layer config merge, active-project resolution, 65 installed skills, BMAD↔CFE integration rules |

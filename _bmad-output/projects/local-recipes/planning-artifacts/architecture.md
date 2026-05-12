@@ -40,7 +40,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
    │                     │   │     constraints, G1-G6 gotchas)                 │
    │                     │   │   - 42 Tier 1 canonical scripts                 │
    └─────────────────────┘   │   - 34 Tier 2 CLI wrappers                      │
-              │              │   - 30 templates / 11 ecosystems                │
+              │              │   - 41 templates / 13 ecosystems (12 language + conda-forge-yml)                │
               │ Rule 2:      │   - 41 tests (unit + integration + meta)        │
               │ retro on     │   - 11 reference + 8 guides + 2 quickrefs       │
               │ closeout     │   - MANIFEST.yaml + install.py (portable)       │
@@ -110,7 +110,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
 - **Documentation**: `SKILL.md` (914 lines, primary spine) + `INDEX.md` + `CHANGELOG.md` + 11 reference files + 8 guides + 2 quickrefs
 - **Scripts (Tier 1 canonical)**: 42 Python modules in `.claude/skills/conda-forge-expert/scripts/`
 - **CLI wrappers (Tier 2)**: 34 thin subprocess wrappers in `.claude/scripts/conda-forge-expert/`
-- **Templates**: 30 recipe templates across 11 ecosystems
+- **Templates**: 41 recipe templates across 13 ecosystems (12 language: python, rust, go, c-cpp, r, java, ruby, dotnet, fortran, multi-output, nodejs, perl + conda-forge-yml config-template starter)
 - **Tests**: 41 files in `tests/{unit,integration,meta}/` with real fixtures
 - **Portability**: `MANIFEST.yaml` + `install.py` for installing into other repos
 
@@ -497,7 +497,7 @@ Rebuild MUST follow this order:
    3b. name_resolver.py + mapping_manager.py (helpers)
    3c. Recipe lifecycle scripts (recipe-generator, validate, edit, etc.)
    3d. SKILL.md + reference/ + guides/ + quickref/ + INDEX.md
-   3e. Templates (30 files / 11 ecosystems)
+   3e. Templates (41 files / 13 ecosystems)
    3f. Tier 2 wrappers (34 files)
    3g. Pixi tasks (~30 entries)
    3h. Meta-test (test_all_scripts_runnable.py)
