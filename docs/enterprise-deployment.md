@@ -209,6 +209,31 @@ jobs:
           done
 ```
 
+### Cross-host credential leak (security warning)
+
+The skill's HTTP helper at `.claude/skills/conda-forge-expert/scripts/_http.py` injects the `X-JFrog-Art-Api` header on **every** outbound request when `JFROG_API_KEY` is set in the environment — regardless of the destination host. This means a long-lived shell that exported `JFROG_API_KEY` for JFrog work will silently attach the credential to subsequent calls hitting public hosts (`pypi.org`, `github.com`, `api.anaconda.org`, AWS S3, etc.), where it appears in remote access logs as a bearer-style identifier.
+
+**Mitigation patterns (pick one):**
+
+- **Subshell scoping (recommended for one-off external calls):**
+  ```bash
+  ( unset JFROG_API_KEY; pixi run -e local-recipes submit-pr <recipe> )
+  ```
+- **Per-shell discipline**: export `JFROG_API_KEY` only in shells that exclusively touch JFrog-mirrored URLs (typically a dedicated terminal pane for `bootstrap-data`, `update-cve-database`, etc., with the corresponding `*_BASE_URL` env vars also set).
+- **Direnv / shell hook**: scope the export to a `.envrc` file in directories that touch JFrog only.
+
+**Commands known to hit non-JFrog external hosts** (require unset before invocation when the env var is set):
+
+- `submit_pr`, `prepare_submission_branch` — push to `github.com`
+- `generate_recipe_from_pypi` — `pypi.org` API
+- `update_recipe_from_github` — `api.github.com`
+- `update_cve_database` — NVD / OSV mirrors
+- `update_mapping_cache` — PyPI Simple index
+- `atlas-phase F` or `bootstrap-data` in `auto` mode without `S3_PARQUET_BASE_URL` override — AWS S3
+- `atlas-phase H` in `cf-graph` mode — `github.com` tarball
+
+Mirrored as a Critical Constraint in `_bmad-output/projects/local-recipes/project-context.md` § Air-Gapped / Enterprise.
+
 ---
 
 ## 3. PyPI Source URLs in Recipes

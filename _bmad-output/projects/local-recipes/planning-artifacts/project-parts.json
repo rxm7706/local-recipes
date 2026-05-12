@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "doc_type": "project-parts",
+  "project_name": "local-recipes",
+  "date": "2026-05-12",
+  "source_pin": "conda-forge-expert v7.7",
+  "repository_type": "monorepo",
+  "parts": [
+    {
+      "part_id": "conda-forge-expert",
+      "display_name": "conda-forge-expert skill",
+      "project_type_id": "library",
+      "description": "Claude Code skill encoding the full conda-forge recipe lifecycle. 3-tier architecture: canonical scripts + CLI wrappers + data state. 10-step autonomous loop with one human-gated checkpoint at step 8b (prepare_submission_branch). Authoritative spine: SKILL.md.",
+      "root_paths": [
+        ".claude/skills/conda-forge-expert/",
+        ".claude/scripts/conda-forge-expert/"
+      ],
+      "key_tech": [
+        "Python 3.12",
+        "rattler-build",
+        "grayskull",
+        "conda-smithy",
+        "FastMCP (for tool exposure)"
+      ],
+      "pixi_envs": ["local-recipes", "grayskull", "conda-smithy", "vuln-db"],
+      "version_pin": "v7.7",
+      "subdirectories": {
+        "SKILL.md": "primary spine: critical constraints, 10-step autonomous loop, recipe authoring gotchas G1-G6",
+        "INDEX.md": "task→tool navigator",
+        "CHANGELOG.md": "release history with TL;DR section (canonical drift-detection source)",
+        "reference/": "11 deep-reference files (recipe-yaml-reference, meta-yaml-reference, mcp-tools, python-min-policy, conda-forge-yml-reference, pinning-reference, selectors-reference, jinja-functions, dependency-input-formats, actionable-intelligence-catalog, conda-forge-ecosystem)",
+        "guides/": "8 workflow guides (getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, testing-recipes, sdist-missing-license, atlas-operations)",
+        "quickref/": "2 quick-reference files (commands-cheatsheet, bot-commands)",
+        "scripts/": "~30 canonical Python implementations (single source of truth for behavior)",
+        "templates/": "recipe scaffolding templates (python, npm, rust, conda-forge-yml/{staged-recipes,feedstock})",
+        "tests/": "pytest suite (unit + integration + meta) — uses real fixtures, no network mocking"
+      }
+    },
+    {
+      "part_id": "cf-atlas",
+      "display_name": "cf_atlas data pipeline",
+      "project_type_id": "data",
+      "description": "Offline-tolerant package-intelligence pipeline that builds and maintains cf_atlas.db (SQLite, schema v19) inventorying ~800k conda-forge packages. 17 ordered phases (B→N, with B.5/B.6/C.5/E.5/G' sub-phases) with TTL gates and checkpoint-aware resumption. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph offline (Phase H) backends.",
+      "root_paths": [
+        ".claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py",
+        ".claude/skills/conda-forge-expert/scripts/_cf_graph_versions.py",
+        ".claude/data/conda-forge-expert/cf_atlas.db"
+      ],
+      "key_tech": [
+        "Python 3.12",
+        "SQLite (WAL mode)",
+        "pyarrow (parquet)",
+        "AppThreat vdb (Phase G/G')",
+        "py-rattler (deliberately avoided — uses current_repodata.json instead)"
+      ],
+      "pixi_envs": ["local-recipes", "vuln-db"],
+      "pipeline_phases": ["B", "B.5", "B.6", "C", "C.5", "D", "E", "E.5", "F", "G", "G'", "H", "J", "K", "L", "M", "N"],
+      "phase_count": 17,
+      "schema_versions": 19,
+      "cli_count": 17,
+      "ttl_gated_phases": ["F", "G", "H", "K"],
+      "checkpoint_table": "phase_state",
+      "data_artifacts": {
+        "cf_atlas.db": "primary artifact (+ -shm, -wal)",
+        "cf_atlas_meta.json": "run metadata",
+        "cf-graph-countyfair.tar.gz": "cf-graph offline snapshot (used by Phase E/H/M)",
+        "pypi_conda_map.json": "PyPI→conda name mapping cache",
+        "vdb/, vdb-cache/": "AppThreat vulnerability database",
+        "cve/": "CVE feed cache",
+        "cache/parquet/": "Phase F S3 monthly parquet cache (created on demand, ~13MB/month)",
+        "inventory_cache/": "scan_project inventory cache (created on demand)"
+      }
+    },
+    {
+      "part_id": "mcp-server",
+      "display_name": "FastMCP server",
+      "project_type_id": "backend",
+      "description": "FastMCP server exposing 30+ MCP tools across recipe-authoring, atlas-intelligence, and project-scanning surfaces. Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
+      "root_paths": [
+        ".claude/tools/conda_forge_server.py",
+        ".claude/tools/gemini_server.py",
+        ".claude/tools/mcp_call.py"
+      ],
+      "key_tech": [
+        "Python 3.12",
+        "FastMCP",
+        "MCP (Model Context Protocol)"
+      ],
+      "pixi_envs": ["local-recipes"],
+      "tool_surfaces": {
+        "recipe-authoring": "~15 tools: generate_recipe_from_pypi, validate_recipe, edit_recipe, optimize_recipe, scan_for_vulnerabilities, trigger_build, get_build_summary, analyze_build_failure, prepare_submission_branch, submit_pr, migrate_to_v1, update_recipe_from_github, update_recipe, update_cve_database, update_mapping_cache",
+        "atlas-intelligence": "~12 tools: query_atlas, package_health, staleness_report, cve_watcher, behind_upstream, feedstock_health, whodepends, release_cadence, version_downloads, find_alternative, adoption_stage, my_feedstocks, lookup_feedstock, get_feedstock_context, enrich_from_feedstock, check_dependencies, check_github_version, get_conda_name, get_build_summary, analyze_build_failure",
+        "project-scanning": "~5 tools: scan_project (~28 input formats), run_system_health_check, trigger_build, prepare_submission_branch, submit_pr"
+      }
+    },
+    {
+      "part_id": "bmad-infra",
+      "display_name": "BMAD infrastructure",
+      "project_type_id": "infra",
+      "description": "BMAD-METHOD v6.6.0 installer + multi-project planning layout. Six-layer config merge, 65 installed skills, active-project resolution via bmad-switch. Hosts multiple BMAD projects (local-recipes + sibling projects) in a single repo.",
+      "root_paths": [
+        "_bmad/",
+        "_bmad-output/",
+        "scripts/bmad-switch"
+      ],
+      "key_tech": [
+        "BMAD-METHOD v6.6.0",
+        "Python 3.12",
+        "TOML (config layers)",
+        "Markdown (skill files)"
+      ],
+      "pixi_envs": [],
+      "config_layers": [
+        {"layer": 1, "path": "_bmad/config.toml", "scope": "installer team (regenerated)"},
+        {"layer": 2, "path": "_bmad/config.user.toml", "scope": "installer user (regenerated)"},
+        {"layer": 3, "path": "_bmad/custom/config.toml", "scope": "global custom team, all projects"},
+        {"layer": 4, "path": "_bmad/custom/config.user.toml", "scope": "global custom user, all projects"},
+        {"layer": 5, "path": "_bmad-output/projects/<slug>/.bmad-config.toml", "scope": "project team, active project only"},
+        {"layer": 6, "path": "_bmad-output/projects/<slug>/.bmad-config.user.toml", "scope": "project user, active project only"}
+      ],
+      "active_project_resolution_priority": [
+        "--project <slug> CLI flag",
+        "BMAD_ACTIVE_PROJECT env var",
+        "_bmad/custom/.active-project marker file",
+        "fallback: global config only"
+      ],
+      "installed_skills": 65,
+      "current_active_project": "local-recipes"
+    }
+  ],
+  "integration_points": [
+    {
+      "from": "conda-forge-expert",
+      "to": "cf-atlas",
+      "type": "shared data directory",
+      "details": "Both parts read/write .claude/data/conda-forge-expert/ — cf_atlas.db is Part 2's primary artifact; Part 1's edit_recipe / scan_for_vulnerabilities / generate_recipe_from_pypi consume it via query helpers."
+    },
+    {
+      "from": "mcp-server",
+      "to": "conda-forge-expert",
+      "type": "thin-wrapper RPC",
+      "details": "Each MCP tool in conda_forge_server.py imports from .claude/skills/conda-forge-expert/scripts/<module>.py and forwards args. The MCP server is the wire format; the canonical implementation is Part 1's scripts."
+    },
+    {
+      "from": "mcp-server",
+      "to": "cf-atlas",
+      "type": "SQLite read",
+      "details": "Atlas-intelligence tools (query_atlas, package_health, staleness_report, etc.) read cf_atlas.db directly via the canonical scripts in Part 1."
+    },
+    {
+      "from": "bmad-infra",
+      "to": "conda-forge-expert",
+      "type": "skill invocation rule",
+      "details": "Every BMAD agent (planning, dev, review, retro) touching conda-forge work MUST invoke the conda-forge-expert skill via Skill tool. Codified in CLAUDE.md § 'BMAD ↔ conda-forge-expert integration'. The skill's 9-step loop + critical constraints override BMAD story instructions when they conflict."
+    },
+    {
+      "from": "bmad-infra",
+      "to": "conda-forge-expert",
+      "type": "retrospective closeout rule",
+      "details": "Every BMAD effort that did conda-forge work runs bmad-retrospective at closeout. Retro findings update SKILL.md, reference/*.md, guides/*.md, and CHANGELOG.md. Skill version bumps per semver (PATCH for fixes, MINOR for new gotchas, MAJOR for breaking workflow changes). Codified in CLAUDE.md § 'BMAD ↔ conda-forge-expert integration'."
+    },
+    {
+      "from": "all-parts",
+      "to": "enterprise-deployment-layer",
+      "type": "cross-cutting auth chain",
+      "details": "Every outbound HTTP request from Parts 1, 2, 3 routes through .claude/skills/conda-forge-expert/scripts/_http.py — truststore (native CA) + JFrog X-JFrog-Art-Api header (when JFROG_API_KEY set) + GitHub token + .netrc fallback. CRITICAL: JFROG_API_KEY leaks to every host when set; mitigation patterns in docs/enterprise-deployment.md § 2 Cross-host credential leak."
+    },
+    {
+      "from": "all-parts",
+      "to": "vuln-db env",
+      "type": "vulnerability source",
+      "details": "vuln-db pixi env provides AppThreat vulnerability database (NVD + GHSA + OSV + npm + Snyk). Part 1's scan_for_vulnerabilities and Part 2's Phase G/G' read from .claude/data/conda-forge-expert/vdb/. Separate env keeps the default local-recipes env lean (AppThreat pulls ~500MB).",
+      "env_var": "VDB_HOME = $PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb"
+    }
+  ],
+  "rebuild_dependencies": {
+    "build_order": [
+      "bmad-infra",
+      "conda-forge-expert",
+      "cf-atlas",
+      "mcp-server"
+    ],
+    "reasoning": "BMAD infra must exist for any planning to happen. The skill (Part 1) is foundational — Parts 2 and 3 are essentially extensions of it (Part 2 = the data pipeline encoded in the skill's scripts/; Part 3 = the MCP wire format over the skill's scripts/). Build order matches dependency order."
+  }
+}
