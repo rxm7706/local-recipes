@@ -211,6 +211,7 @@ When asked to create or update a recipe, execute these steps in order. Each step
 8.  **Monitor Build** — poll `get_build_summary()` until `status` is `success` or `failed`
     - Success: `status: success`
     - If `status: failed`: proceed to [Build Failure Protocol](#build-failure-protocol)
+    - **False-negative caveat**: `get_build_summary` occasionally returns `status: "unknown"` with the message `"No build summary found — build may have crashed"` even when the build actually succeeded — its summary-file detection is brittle. **Before trusting "crashed," check `build_artifacts/<config>/<subdir>/` for `<name>-<version>-*.conda` files; if they exist with mtime newer than the build start, the build succeeded.** For deeper diagnosis, the per-build log lives at `build_artifacts/<config>/bld/rattler-build_<name>_<id>/work/conda_build.log`.
     - > *Skills: [`ci-cd-and-automation`] — a failed build blocks the pipeline; fix before proceeding.*
 
 8b. **Prepare Submission Branch** — `prepare_submission_branch(recipe_name="<name>", dry_run=True)` → verify → `prepare_submission_branch(recipe_name="<name>")`
@@ -828,6 +829,38 @@ source:
 ```
 
 **Case study**: cocoindex PR #33231 (May 2026). cocoindex's PyPI sdist shipped only `THIRD_PARTY_NOTICES.html`. Fix added a secondary `source:` from `raw.githubusercontent.com`.
+
+### G5. tree-sitter PyPI sdists inconsistently strip `src/tree_sitter/*.h` headers — default to GitHub source
+
+**Symptom**: native build of a `tree-sitter-<lang>` recipe sourced from the PyPI sdist fails at the very first compile step with:
+
+```
+src/parser.c:1:10: fatal error: tree_sitter/parser.h: No such file or directory
+    1 | #include "tree_sitter/parser.h"
+      |          ^~~~~~~~~~~~~~~~~~~~~~
+```
+
+The recipe is otherwise correct — `compiler('c')` + `stdlib('c')` are present, `pip install .` reaches the `build_ext` stage, and `grayskull` happily produced the recipe from the sdist.
+
+**Why**: many `tree-sitter-grammars/*` and `tree-sitter/*` Python bindings **ship `src/tree_sitter/parser.h`, `array.h`, and `alloc.h` in the GitHub tag tarball but omit them from the PyPI sdist** that their upstream wheel-build pipeline uploads. The wheels published to PyPI work because the headers are in the build container's filesystem; the sdist on its own cannot compile.
+
+The omission is **per-release inconsistent** — not a clean version-based cutoff. In staged-recipes PR #33308 (May 2026) the bug hit 8 of 11 PyPI-sourced recipes (v0.23.1, v0.23.2, v0.23.4, v0.23.5, v0.24.2, v0.26.0, v1.1.0, v1.2.0) while three PyPI sources at v0.25.0 and v0.7.2 happened to ship the headers. Don't trust the version; trust the listing.
+
+**Fix**: default `tree-sitter-<lang>` recipes to GitHub-tag source rather than PyPI sdist. This matches the conda-forge `tree-sitter-python-feedstock` pattern and avoids the entire class of bug:
+
+```yaml
+# tree-sitter PyPI sdists inconsistently strip src/tree_sitter/*.h headers
+# needed for the C build; default to the GitHub tag (see SKILL.md G5).
+source:
+  url: https://github.com/<org>/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: <sha256 of the GitHub tarball>
+```
+
+Common upstream orgs: `tree-sitter` (most grammars), `tree-sitter-grammars` (community-maintained: kotlin, luau, ...), `alex-pinkus` (swift), other forks. Confirm by checking the package's `Project URLs` / `Homepage` on PyPI.
+
+**How to verify before trusting `generate_recipe_from_pypi`**: list the sdist contents (`tar tzf <sdist>.tar.gz | grep 'tree_sitter/parser.h'`). If the listing is empty, switch to GitHub source.
+
+**Case study**: staged-recipes PR #33308 (May 2026) — 12-recipe bundle for `repowise` prerequisites. First-pass build had 7 PyPI-sourced recipes fail with this exact error (cpp 0.23.4, java 0.23.5, typescript 0.23.2, ruby 0.23.1, rust 0.24.2, scala 0.26.0, plus luau and kotlin proactively switched ahead of time). All resolved by switching to GitHub source. Three other PyPI sources passed (go 0.25.0, javascript 0.25.0, swift 0.7.2). The same-bundle tree-sitter-php had a *different* issue — its GitHub source pyproject.toml had `license = "LICENSE"`, which modern setuptools rejects as an invalid SPDX identifier; fixed via a downstream `0001-fix-invalid-pep621-license-field.patch` in the recipe's `patches/` directory that rewrites the line to `license = "MIT"`.
 
 ---
 

@@ -2600,9 +2600,9 @@ def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
     )
 
 
-_GITHUB_REPO_RE = re.compile(r"github\.com/([^/]+)/([^/?#.]+)")
-_GITLAB_REPO_RE = re.compile(r"gitlab\.com/([^?#]+?)(?:/-/|/?(?:$|[?#]))")
-_CODEBERG_REPO_RE = re.compile(r"codeberg\.org/([^/]+)/([^/?#.]+)")
+_GITHUB_REPO_RE = re.compile(r"github\.com/([^/\s,]+)/([^/?#.\s,()<>\"']+)")
+_GITLAB_REPO_RE = re.compile(r"gitlab\.com/([^?#\s,]+?)(?:/-/|/?(?:$|[?#\s,]))")
+_CODEBERG_REPO_RE = re.compile(r"codeberg\.org/([^/\s,]+)/([^/?#.\s,()<>\"']+)")
 
 
 def _extract_vcs_repo(*urls: str | None) -> tuple[str, str, str] | None:
