@@ -75,7 +75,7 @@
       "part_id": "mcp-server",
       "display_name": "FastMCP server",
       "project_type_id": "backend",
-      "description": "FastMCP server exposing 30+ MCP tools across recipe-authoring, atlas-intelligence, and project-scanning surfaces. Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
+      "description": "FastMCP server exposing 35 MCP tools across recipe-authoring, atlas-intelligence, and project-scanning surfaces. Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
       "root_paths": [
         ".claude/tools/conda_forge_server.py",
         ".claude/tools/gemini_server.py",
@@ -125,6 +125,13 @@
         "fallback: global config only"
       ],
       "installed_skills": 65,
+      "installed_skills_note": "Current repo state is 65 entries in .claude/skills/ but one (.claude/skills/data/) is a stray directory with no SKILL.md inside (contains only an old conda-forge-expert/ subdir). Real skill count is 64: 42 BMAD-installer + 21 engineering-practice + 1 repo-specific (conda-forge-expert). Rebuild target = 64 real skills; the stray is not recreated.",
+      "installed_skills_target_real": 64,
+      "installed_skills_breakdown": {
+        "bmad_installer": 42,
+        "engineering_practice": 21,
+        "repo_specific": 1
+      },
       "current_active_project": "local-recipes"
     }
   ],

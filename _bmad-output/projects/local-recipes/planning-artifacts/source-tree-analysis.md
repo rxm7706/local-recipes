@@ -145,7 +145,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │   │   ├── name_resolver.py                  # PyPI→conda name resolution engine
 │   │   │   │
 │   │   │   ├── # ── cf_atlas pipeline (Part 2 core) ──
-│   │   │   ├── conda_forge_atlas.py              # ★ orchestrator: 15 phases B→N, PHASES registry, run_single_phase
+│   │   │   ├── conda_forge_atlas.py              # ★ orchestrator: 17 phases B→N, PHASES registry, run_single_phase
 │   │   │   ├── _cf_graph_versions.py             # Phase H cf-graph offline backend (v7.7.0)
 │   │   │   ├── _parquet_cache.py                 # Phase F S3 parquet cache layer (v7.6.0)
 │   │   │   ├── atlas_phase.py                    # single-phase CLI entrypoint
@@ -174,7 +174,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │   │   ├── mapping_manager.py                # update_mapping_cache (PyPI→conda map refresh)
 │   │   │   └── test-skill.py                     # skill-internal smoke test runner
 │   │   │
-│   │   ├── templates/                       # 30 recipe templates across 11 ecosystems
+│   │   ├── templates/                       # 41 recipe templates across 13 ecosystems (12 language + conda-forge-yml)
 │   │   │   ├── README.md
 │   │   │   ├── python/{noarch,compiled,maturin}-{recipe.yaml,meta.yaml}    # v1 + v0 variants
 │   │   │   ├── rust/{library-recipe.yaml, cli-recipe.yaml, cli-meta.yaml}
@@ -446,7 +446,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | `.claude/skills/conda-forge-expert/SKILL.md` | Part 1 | Skill's primary spine — read by Claude Code on every conda-forge task |
 | `.claude/skills/conda-forge-expert/CHANGELOG.md` | Part 1 | Canonical drift-detection source — every MINOR bump triggers a project-context re-sync |
 | `.claude/skills/conda-forge-expert/scripts/_http.py` | all (Parts 1+2+3) | Every outbound HTTP request routes through here. Contains the JFROG_API_KEY cross-host leak (mitigated via env-var hygiene; see deployment-guide.md) |
-| `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` | Part 2 | 15-phase pipeline orchestrator + schema migrations |
+| `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` | Part 2 | 17-phase pipeline orchestrator + schema migrations |
 | `.claude/tools/conda_forge_server.py` | Part 3 | 35 MCP tools — auto-started at Claude Code session boot |
 | `_bmad-output/projects/local-recipes/project-context.md` | Part 4 | Foundational rules every BMAD agent reads on spawn (v7.7-pinned) |
 | `_bmad/custom/.active-project` | Part 4 | Determines which project's `.bmad-config.toml` overlays apply |
@@ -462,7 +462,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | CFE canonical scripts | 42 (Tier 1) |
 | CFE CLI wrappers | 34 (Tier 2; some scripts are internal-only and don't have wrappers) |
 | MCP tools (verified by grep `@mcp.tool`) | 35 |
-| Recipe templates | 30 across 11 ecosystems + 2 conda-forge.yml starters |
+| Recipe templates | 41 across 13 ecosystems (12 language: c-cpp, dotnet, fortran, go, java, multi-output, nodejs, perl, python, r, ruby, rust + conda-forge-yml config-template starter); verified 2026-05-12: 39 `.yaml` + 2 `.yml` in conda-forge-yml subdirs |
 | Skill tests | 41 (unit + integration + meta) |
 | Installed skills total | 65 (BMAD installer + repo-specific + engineering-practice) |
 | Skill reference docs | 11 |

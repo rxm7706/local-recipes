@@ -156,7 +156,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 
 | Module | Role |
 |---|---|
-| `conda_forge_atlas.py` | **Orchestrator**: 15-phase pipeline B→N, PHASES registry, `run_single_phase()` |
+| `conda_forge_atlas.py` | **Orchestrator**: 17-phase pipeline B→N, PHASES registry, `run_single_phase()` |
 | `_cf_graph_versions.py` | Phase H cf-graph offline backend (v7.7.0) |
 | `_parquet_cache.py` | Phase F S3 parquet cache layer (v7.6.0) |
 | `atlas_phase.py` | Single-phase CLI entrypoint (`pixi run atlas-phase <ID>`) |
@@ -211,7 +211,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 
 ---
 
-## Templates Layer (30 templates / 11 ecosystems + conda-forge.yml starters)
+## Templates Layer (41 templates / 13 ecosystems incl. conda-forge.yml starters)
 
 `.claude/skills/conda-forge-expert/templates/`:
 
@@ -470,7 +470,7 @@ To rebuild this part faithfully on a clean repo:
 4. **Tier 2 wrappers** (34 modules): thin subprocess wrappers; auto-generatable from a manifest if all Tier 1 modules expose a `main()`.
 5. **Pixi tasks**: ~30 entries under `[feature.local-recipes.tasks.*]` matching the Tier 2 wrapper names.
 6. **Meta-test**: `tests/meta/test_all_scripts_runnable.py` with SCRIPTS list + no_task_allowlist enforcing the three-place rule.
-7. **Templates**: 30 starter recipes across 11 ecosystems + 2 conda-forge.yml starters.
+7. **Templates**: 41 starter recipes across 13 ecosystems (12 language + 1 conda-forge.yml config-template subdir with 2 starter files).
 8. **Documentation**: SKILL.md + INDEX.md + CHANGELOG.md + reference/* (11 files) + guides/* (8 files) + quickref/* (2 files).
 9. **MANIFEST.yaml + install.py** for portability (skill should be installable into other repos).
 10. **Mapping subsystem**: seed `pypi_conda_mappings/different_names.json` from public data; `custom.yaml` starts empty.

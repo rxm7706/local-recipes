@@ -80,7 +80,7 @@ local-recipes/                                  # pixi monorepo root
 │   ├── skills/                                 # 65 skills total (incl. BMAD installer skills)
 │   ├── scripts/conda-forge-expert/             # CLI wrapper layer (~30 thin subprocess wrappers)
 │   ├── tools/                                  # Part 3: FastMCP server lives here
-│   │   ├── conda_forge_server.py               # 30+ MCP tools across 3 surfaces
+│   │   ├── conda_forge_server.py               # 35 MCP tools across 3 surfaces
 │   │   ├── gemini_server.py                    # auxiliary MCP server
 │   │   └── mcp_call.py                         # MCP helper utilities
 │   └── data/conda-forge-expert/                # mutable runtime state (gitignored)
