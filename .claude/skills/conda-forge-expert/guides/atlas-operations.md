@@ -101,25 +101,124 @@ If the atlas gets corrupted (rare — most failures are gracefully
 recoverable via TTL re-fetch):
 
 ```bash
-# Nuke everything and rebuild
+# Nuke everything and rebuild (preserves cache/parquet by default since v7.7)
 pixi run -e local-recipes bootstrap-data --fresh
 
 # Keep vdb but rebuild atlas
 rm .claude/data/conda-forge-expert/cf_atlas.db
 pixi run -e local-recipes build-cf-atlas
 PHASE_E_ENABLED=1 pixi run -e local-recipes build-cf-atlas
+```
 
-# Force-refresh one specific package (e.g., to test Phase H)
+### Recovery playbook — when phase X fails, do Y
+
+Every TTL-gated phase (F, G, G', H, K, L) has the same recovery shape:
+re-running picks up where it stopped because the per-row `*_fetched_at`
+timestamp gates the SELECT. The table below summarizes what to do when
+a phase fails, hangs, or finishes with errors logged in `packages.*_last_error`.
+
+| Phase | Symptom | Recovery |
+|---|---|---|
+| **B** (conda enumeration) | Crash / partial DB | `rm cf_atlas.db && build-cf-atlas` (B is single-transaction; rerun rebuilds in ~2 min) |
+| **B.5** (feedstock outputs) | Crash | Rerun `build-cf-atlas` — the tarball download is cached and the parse is idempotent |
+| **C / C.5** (parselmouth / source-URL match) | Wrong PyPI mapping | Force refresh via `update-mapping-cache` then rerun `atlas-phase C` |
+| **D** (PyPI enumeration) | Crash mid-run | Rerun `build-cf-atlas`; D's UPSERTs converge |
+| **E** (cf-graph) | Corrupted tarball | `rm cf-graph-countyfair.tar.gz` then `PHASE_E_ENABLED=1 atlas-phase E` |
+| **E.5** (archived feedstocks) | GraphQL 502 | `atlas-phase E.5` retries cleanly |
+| **F** (downloads) | api.anaconda.org blocked / slow | `PHASE_F_SOURCE=s3-parquet atlas-phase F` (v7.6+ S3 backend) |
+| **F** (downloads) | Some rows have `downloads_last_error` | `atlas-phase F --reset-ttl` to retry all rows in one pass, or NULL just the failures (recipe below) |
+| **G** (vdb summary) | vdb env not active | Run from `vuln-db` env: `pixi run -e vuln-db build-cf-atlas` |
+| **G'** (per-version vulns) | Crash / partial | Rerun in `vuln-db` env with `PHASE_GP_ENABLED=1` — TTL 30d, per-row resume |
+| **H** (PyPI versions) | Hangs on pypi.org | `PHASE_H_SOURCE=cf-graph atlas-phase H` (v7.7+ offline path) |
+| **H** (PyPI versions) | Need yanked status after cf-graph run | Reset cf-graph rows, then `PHASE_H_SOURCE=pypi-json atlas-phase H` (recipe below) |
+| **J** (dependency graph) | cf-graph not present | Run Phase E first |
+| **K** (VCS upstream) | GitHub rate limit (403) | Wait an hour or set `GITHUB_TOKEN`; rerun `atlas-phase K` |
+| **L** (extra registries) | One registry source 5xx'ing | `atlas-phase L` — TTL-gated per source, only failed rows re-fetch |
+| **M** (feedstock health) | cf-graph not present | Run Phase E first |
+| **N** (live GitHub) | Killed mid-run | Rerun `build-cf-atlas` with `PHASE_N_ENABLED=1`; v7.7+ resumes from the last completed feedstock via `phase_state.last_completed_cursor` |
+| **N** (live GitHub) | `gh auth` missing | `gh auth login` then rerun |
+| **DB corrupted** | `database disk image is malformed` | `bootstrap-data --fresh --yes` (preserves S3 parquet cache by default) |
+
+### TTL reset recipes
+
+Force a specific row to re-fetch on the next phase run (skip the TTL gate
+for one package):
+
+```bash
+# Example: force Phase H to re-fetch numpy on the next run
 pixi run -e local-recipes python -c "
 import sqlite3
 conn = sqlite3.connect('.claude/data/conda-forge-expert/cf_atlas.db')
-conn.execute('UPDATE packages SET pypi_version_fetched_at=NULL WHERE conda_name=?', ('mypkg',))
+conn.execute('UPDATE packages SET pypi_version_fetched_at=NULL WHERE conda_name=?', ('numpy',))
 conn.commit()
 "
-PHASE_H_LIMIT=5 pixi run -e local-recipes python -c "
-import sys; sys.path.insert(0, '.claude/skills/conda-forge-expert/scripts')
-from conda_forge_atlas import open_db, init_schema, phase_h_pypi_versions
-conn = open_db(); init_schema(conn); phase_h_pypi_versions(conn)
+pixi run -e local-recipes atlas-phase H
+```
+
+Force a specific phase to re-process *every* eligible row (drop the
+entire TTL gate for that phase):
+
+```bash
+# Single command — atlas-phase has built-in --reset-ttl
+pixi run -e local-recipes atlas-phase H --reset-ttl
+```
+
+Backfill PEP 592 yanked status after a cf-graph cold start:
+
+```bash
+# Reset just the cf-graph-tagged rows so pypi-json can repopulate yanked
+pixi run -e local-recipes python -c "
+import sqlite3
+conn = sqlite3.connect('.claude/data/conda-forge-expert/cf_atlas.db')
+conn.execute(\"UPDATE packages SET pypi_version_fetched_at=NULL \"
+             \"WHERE pypi_version_source = 'cf-graph'\")
+conn.commit()
+print(f'reset rows: {conn.total_changes}')
+"
+PHASE_H_SOURCE=pypi-json pixi run -e local-recipes atlas-phase H
+```
+
+Retry just the rows that errored in the last run:
+
+```bash
+# Phase F example — same pattern works for any phase with a *_last_error column
+pixi run -e local-recipes python -c "
+import sqlite3
+conn = sqlite3.connect('.claude/data/conda-forge-expert/cf_atlas.db')
+conn.execute('UPDATE packages SET downloads_fetched_at=NULL '
+             'WHERE downloads_last_error IS NOT NULL')
+conn.commit()
+print(f'reset rows: {conn.total_changes}')
+"
+pixi run -e local-recipes atlas-phase F
+```
+
+### Phase N resume
+
+Phase N (the only phase with a true checkpoint as of v7.7) writes its
+progress to the `phase_state` table after every batch. To check resume
+state without running anything:
+
+```bash
+pixi run -e local-recipes python -c "
+import sqlite3
+conn = sqlite3.connect('.claude/data/conda-forge-expert/cf_atlas.db')
+conn.row_factory = sqlite3.Row
+for r in conn.execute('SELECT * FROM phase_state'):
+    print(dict(r))
+"
+```
+
+To force a fresh Phase N run (ignore checkpoint), mark the prior
+checkpoint completed:
+
+```bash
+pixi run -e local-recipes python -c "
+import sqlite3, time
+conn = sqlite3.connect('.claude/data/conda-forge-expert/cf_atlas.db')
+conn.execute(\"UPDATE phase_state SET status='completed', \"
+             \"run_completed_at=? WHERE phase_name='N'\", (int(time.time()),))
+conn.commit()
 "
 ```
 
@@ -182,6 +281,59 @@ setting `S3_PARQUET_BASE_URL`, the key currently leaks to public AWS S3
 (see SKILL.md § "`_http.py` Cross-Resolver Credential Leak"). Work
 around by exporting the key in a sub-shell, or by always pairing it
 with the corresponding `*_BASE_URL`.
+
+### Phase H cold-start via cf-graph (v7.7+)
+
+Phase H normally fetches `pypi.org/pypi/<name>/json` per package — ~25k
+requests, ~30 minutes wall clock on a cold DB, and the most common
+source of "the pipeline is hanging" reports. As of v7.7.0, Phase H has
+a `cf-graph` backend that reuses the tarball Phase E already cached
+locally; the read is offline and finishes in ~30 seconds.
+
+```bash
+# Default cold-start: bootstrap-data --fresh auto-picks cf-graph for Phase H
+pixi run -e local-recipes bootstrap-data --fresh
+
+# Force cf-graph on a warm run (e.g. behind a pypi.org firewall)
+PHASE_H_SOURCE=cf-graph pixi run -e local-recipes build-cf-atlas
+
+# Force pypi-json (real-time, carries PEP 592 yanked)
+PHASE_H_SOURCE=pypi-json pixi run -e local-recipes build-cf-atlas
+
+# bootstrap-data: explicit override (default 'auto' = cf-graph on --fresh)
+pixi run -e local-recipes bootstrap-data --phase-h-source pypi-json
+```
+
+Every populated `packages` row carries a `pypi_version_source`
+discriminator (`'pypi-json'` | `'cf-graph'`). Consumers needing strict
+yanked status should filter to `pypi_version_source = 'pypi-json'` or
+re-run Phase H with `PHASE_H_SOURCE=pypi-json` to backfill — the TTL
+gate ensures only un-pypi-json'd rows are re-fetched.
+
+**Trade-offs:**
+
+| Source | Latency | Yanked? | Network | Lag |
+|---|---|---|---|---|
+| `pypi-json` | ~30 min cold, ~5 min warm | ✅ PEP 592 | pypi.org | real-time |
+| `cf-graph` | ~30 sec | ❌ NULL | none (offline) | hours-to-days (bot polling) |
+
+### Per-row resume for Phase H
+
+Phase H is TTL-gated like Phase F. To force a re-fetch of specific rows
+without lowering the global TTL, NULL their `pypi_version_fetched_at`:
+
+```bash
+pixi run -e local-recipes python -c "
+import sqlite3
+conn = sqlite3.connect('.claude/data/conda-forge-expert/cf_atlas.db')
+conn.execute(\"UPDATE packages SET pypi_version_fetched_at=NULL \"
+             \"WHERE pypi_version_source = 'cf-graph'\")
+conn.commit()
+print(f'reset rows: {conn.total_changes}')
+"
+# Now backfill yanked precisely:
+PHASE_H_SOURCE=pypi-json pixi run -e local-recipes build-cf-atlas
+```
 
 ---
 

@@ -231,7 +231,7 @@ When asked to create or update a recipe, execute these steps in order. Each step
 
 ---
 
-## Atlas Intelligence Layer (v7.6.0)
+## Atlas Intelligence Layer (v7.7.0)
 
 The skill carries a SQLite-backed cross-channel package map at
 `.claude/data/conda-forge-expert/cf_atlas.db`, populated by 15 pipeline
