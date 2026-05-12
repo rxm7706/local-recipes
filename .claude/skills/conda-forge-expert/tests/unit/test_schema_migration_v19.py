@@ -1,4 +1,4 @@
-"""Schema migration v17 → v18: idempotency + column presence."""
+"""Schema migration v17 → v19 (cumulative): idempotency + column presence."""
 from __future__ import annotations
 
 import importlib.util
@@ -47,14 +47,18 @@ def _schema_version(conn: sqlite3.Connection) -> int:
     ).fetchone()[0])
 
 
-class TestMigrationV18:
-    def test_fresh_db_reaches_v18(self, fresh_db, atlas_mod):
+class TestMigrationV19:
+    def test_fresh_db_reaches_v19(self, fresh_db, atlas_mod):
         atlas_mod.init_schema(fresh_db)
-        assert _schema_version(fresh_db) == 18
+        assert _schema_version(fresh_db) == 19
 
     def test_packages_has_downloads_source_column(self, fresh_db, atlas_mod):
         atlas_mod.init_schema(fresh_db)
         assert "downloads_source" in _columns(fresh_db, "packages")
+
+    def test_packages_has_pypi_version_source_column(self, fresh_db, atlas_mod):
+        atlas_mod.init_schema(fresh_db)
+        assert "pypi_version_source" in _columns(fresh_db, "packages")
 
     def test_pvd_has_source_column(self, fresh_db, atlas_mod):
         atlas_mod.init_schema(fresh_db)
@@ -68,17 +72,18 @@ class TestMigrationV18:
         atlas_mod.init_schema(fresh_db)
         assert _columns(fresh_db, "packages") == pkgs_before
         assert _columns(fresh_db, "package_version_downloads") == pvd_before
-        assert _schema_version(fresh_db) == 18
+        assert _schema_version(fresh_db) == 19
 
     def test_v17_simulated_upgrades_cleanly(self, fresh_db, atlas_mod):
         atlas_mod.init_schema(fresh_db)
-        # Simulate a pre-v18 DB by stripping the v18-added columns and
-        # rolling schema_version back. The next init_schema must restore both.
+        # Simulate a pre-v18 DB by stripping the v18+v19-added columns and
+        # rolling schema_version back. The next init_schema must restore all.
         fresh_db.execute(
             "CREATE TABLE packages_v17 AS SELECT * FROM packages"
         )
         fresh_db.execute("DROP TABLE packages")
-        cols = [c for c in _columns(fresh_db, "packages_v17") if c != "downloads_source"]
+        drop = {"downloads_source", "pypi_version_source"}
+        cols = [c for c in _columns(fresh_db, "packages_v17") if c not in drop]
         select_list = ", ".join(cols)
         fresh_db.execute(
             f"CREATE TABLE packages AS SELECT {select_list} FROM packages_v17"
@@ -92,10 +97,12 @@ class TestMigrationV18:
         )
         fresh_db.commit()
         assert "downloads_source" not in _columns(fresh_db, "packages")
+        assert "pypi_version_source" not in _columns(fresh_db, "packages")
 
         atlas_mod.init_schema(fresh_db)
-        assert _schema_version(fresh_db) == 18
+        assert _schema_version(fresh_db) == 19
         assert "downloads_source" in _columns(fresh_db, "packages")
+        assert "pypi_version_source" in _columns(fresh_db, "packages")
         # pvd already has `source_old` in addition to a recreated `source`;
         # migration just adds the missing `source` column idempotently
         assert "source" in _columns(fresh_db, "package_version_downloads")
