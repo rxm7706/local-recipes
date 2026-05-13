@@ -59,10 +59,10 @@ Where the BMAD skill would HALT for user input, this Path 3 hybrid produces dire
 
 | Artifact | Path | Frontmatter | Size |
 |---|---|---|---|
-| PRD | `planning-artifacts/PRD.md` | ✅ aligned (v1.0.0, draft, v7.7 pin) | 472 lines |
-| Architecture | `planning-artifacts/architecture.md` | ✅ aligned (v1.0.0, draft, v7.7 pin) | 564 lines |
-| Epics & Stories | `planning-artifacts/epics.md` | ✅ aligned (v1.0.0, draft, v7.7 pin; 13 epics, ~176 stories) | 557 lines |
-| Project context | `_bmad-output/projects/local-recipes/project-context.md` | ✅ aligned (v7.7 pinned, 63 rules) | 176 lines |
+| PRD | `planning-artifacts/PRD.md` | ✅ aligned (v1.0.0, draft, v7.8.1 pin) | 472 lines |
+| Architecture | `planning-artifacts/architecture.md` | ✅ aligned (v1.0.0, draft, v7.8.1 pin) | 564 lines |
+| Epics & Stories | `planning-artifacts/epics.md` | ✅ aligned (v1.0.0, draft, v7.8.1 pin; 13 epics, ~176 stories) | 557 lines |
+| Project context | `_bmad-output/projects/local-recipes/project-context.md` | ✅ aligned (v7.8 pinned, 63 rules) | 176 lines |
 
 **Cross-references**:
 - PRD references architecture (§11 Dependencies, §1 Vision, glossary)

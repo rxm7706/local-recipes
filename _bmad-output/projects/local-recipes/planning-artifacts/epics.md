@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 total_epics: 13
 total_stories: 193
 waves: 5

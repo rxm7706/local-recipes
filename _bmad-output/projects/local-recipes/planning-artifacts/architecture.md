@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 consolidates:
   - architecture-conda-forge-expert.md
   - architecture-cf-atlas.md
@@ -195,12 +195,13 @@ Every outbound HTTP request from any Part routes through `.claude/skills/conda-f
 3. **`GITHUB_TOKEN`** → `Authorization: token <...>` — scoped to github.com hosts
 4. **.netrc** fallback for other authenticated hosts
 
-**Per-host overrides** (used in air-gap / JFrog):
-- `CONDA_FORGE_BASE_URL` — channel mirror
-- `S3_PARQUET_BASE_URL` — Phase F backend mirror
-- `PYPI_BASE_URL` — pypi.org mirror
-- `ANACONDA_API_BASE` — api.anaconda.org mirror
-- `GITHUB_API_BASE_URL` — api.github.com mirror (rare)
+**Per-host overrides** (used in air-gap / JFrog) — every external host is redirectable as of v7.8.1:
+- Conda + Python ecosystem: `CONDA_FORGE_BASE_URL`, `PYPI_BASE_URL`, `PYPI_JSON_BASE_URL`, `S3_PARQUET_BASE_URL`, `ANACONDA_API_BASE_URL` (legacy alias `ANACONDA_API_BASE`).
+- Git forges: `GITHUB_BASE_URL`, `GITHUB_RAW_BASE_URL`, `GITHUB_API_BASE_URL` (covers REST + GraphQL — GHES set to `https://<ghes>/api`), `GITLAB_API_BASE_URL`, `CODEBERG_API_BASE_URL`.
+- Phase L registries: `NPM_BASE_URL` (also honors npm CLI's `npm_config_registry`), `CRAN_BASE_URL`, `CPAN_BASE_URL`, `LUAROCKS_BASE_URL`, `CRATES_BASE_URL`, `RUBYGEMS_BASE_URL`, `MAVEN_BASE_URL`, `NUGET_BASE_URL`.
+- Vulnerability scanning: `OSV_API_BASE_URL`, `OSV_VULNS_BUCKET_URL`.
+
+Full table with use sites + JFrog mirror patterns in [deployment-guide.md § 2b](./deployment-guide.md).
 
 **The JFROG_API_KEY cross-host leak** is the system's most consequential security constraint. Mitigation patterns documented in 3 places (CLAUDE.md, project-context.md, deployment-guide.md). Architectural fix deferred to v2 ([Q-PRD-02 in PRD](./PRD.md)).
 

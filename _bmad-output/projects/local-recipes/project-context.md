@@ -8,7 +8,7 @@ status: 'complete'
 rule_count: 63
 optimized_for_llm: true
 sync_sources: ['CLAUDE.md', '.claude/skills/conda-forge-expert/SKILL.md', '.claude/skills/conda-forge-expert/reference/', '.claude/skills/conda-forge-expert/guides/', '.claude/skills/conda-forge-expert/quickref/', '.claude/skills/conda-forge-expert/CHANGELOG.md', 'docs/enterprise-deployment.md']
-last_synced_skill_version: 'conda-forge-expert v7.7'
+last_synced_skill_version: 'conda-forge-expert v7.8.1'
 maintenance_model: 'hand-edited rulebook; per-section (Sync: ...) tags name the upstream source. Re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns) on each CHANGELOG MINOR bump'
 ---
 
@@ -125,12 +125,19 @@ The skill encodes canonical patterns for npm-ecosystem recipes, GitHub-only sour
 
 ## Air-Gapped / Enterprise
 
-(Sync: `docs/enterprise-deployment.md` § JFrog Artifactory Integration; `CLAUDE.md` § "Project Documentation Reference")
+(Sync: `docs/enterprise-deployment.md` § JFrog Artifactory Integration; `CLAUDE.md` § "Project Documentation Reference"; `_bmad-output/projects/local-recipes/planning-artifacts/deployment-guide.md` § 2b)
 
-- All workflows MUST function offline given a `github.com` proxy/mirror. The atlas pipeline (`bootstrap-data`, `atlas-phase`) is fully offline-tolerant: Phase F uses an S3 parquet backend (`PHASE_F_SOURCE=auto|anaconda-api|s3-parquet`); Phase H uses a cf-graph offline backend (`PHASE_H_SOURCE=pypi-json|cf-graph`). Note: cf-graph still fetches its tarball from `github.com`.
+- All workflows MUST function offline given upstream proxies/mirrors. The atlas pipeline (`bootstrap-data`, `atlas-phase`) is fully offline-tolerant: Phase F has an S3 parquet backend (`PHASE_F_SOURCE=auto|anaconda-api|s3-parquet`); Phase H has a cf-graph offline backend (`PHASE_H_SOURCE=pypi-json|cf-graph`).
+- **Per-host redirects** (v7.8.1: full parity). Every external host the atlas + skill talks to is redirectable via a `<HOST>_BASE_URL` env var. Public default applies when unset; trailing slashes are auto-stripped.
+  - Python + conda: `CONDA_FORGE_BASE_URL`, `PYPI_BASE_URL`, `PYPI_JSON_BASE_URL`, `S3_PARQUET_BASE_URL`, `ANACONDA_API_BASE_URL` (legacy alias `ANACONDA_API_BASE`).
+  - Git forges: `GITHUB_BASE_URL`, `GITHUB_RAW_BASE_URL`, `GITHUB_API_BASE_URL` (covers REST + GraphQL; GHES set to `https://<ghes>/api`), `GITLAB_API_BASE_URL`, `CODEBERG_API_BASE_URL`.
+  - Phase L registries: `NPM_BASE_URL` (also honors npm CLI's `npm_config_registry`), `CRAN_BASE_URL`, `CPAN_BASE_URL`, `LUAROCKS_BASE_URL`, `CRATES_BASE_URL`, `RUBYGEMS_BASE_URL`, `MAVEN_BASE_URL`, `NUGET_BASE_URL`.
+  - Vulnerability scanning: `OSV_API_BASE_URL`, `OSV_VULNS_BUCKET_URL`.
+- **Phase tunables** (operational, post-v7.8.x defaults): `PHASE_F_CONCURRENCY=3` (was 8), `PHASE_H_CONCURRENCY=3` (was 8) — both rate-limit safety; Phase L per-registry caps via `PHASE_L_CONCURRENCY_<SOURCE>` (defaults: crates=rubygems=1, cran=cpan=luarocks=maven=2, npm=nuget=4); `ATLAS_CFGRAPH_TTL_DAYS` (default 1.0; weekly-cron users should set to 7); `PHASE_K_GRAPHQL_DISABLED` + `PHASE_K_GRAPHQL_BATCH_SIZE` (recovery / tuning).
 - Channel resolution via `.pixi/config.toml`; auth via env vars per `docs/enterprise-deployment.md`.
-- **Cross-host credential leak.** `_http.py`'s `make_request` injects the `X-JFrog-Art-Api` header on EVERY outbound request when `JFROG_API_KEY` is set, regardless of destination host. **Always unset `JFROG_API_KEY` before commands that hit non-JFrog hosts.** Commands known to hit external hosts: `submit_pr`, `prepare_submission_branch`, `update_cve_database`, `update_mapping_cache`, `generate_recipe_from_pypi`, `update_recipe_from_github`, any `atlas-phase` invocation in `auto` mode. Mitigation pattern: scope to a subshell — `( unset JFROG_API_KEY; <command> )` — or only export `JFROG_API_KEY` in shells exclusively touching JFrog-mirrored URLs. (Mirrored in `docs/enterprise-deployment.md` § Cross-host credential leak.)
-- Local CVE database (`update_cve_database`) and PyPI mapping cache (`update_mapping_cache`) MUST be refreshable from internal sources.
+- **Cross-host credential leak** (UNRESOLVED). `_http.py`'s `make_request` injects the `X-JFrog-Art-Api` header on EVERY outbound request when `JFROG_API_KEY` is set, regardless of destination host. v7.8.x extracted `auth_headers_for(url)` but kept the same semantics — the leak is preserved across both urllib + `requests` paths. **Always unset `JFROG_API_KEY` before commands that hit non-JFrog hosts.** Commands known to hit external hosts: `submit_pr`, `prepare_submission_branch`, `update_cve_database`, `update_mapping_cache`, `generate_recipe_from_pypi`, `update_recipe_from_github`, any `atlas-phase` invocation in `auto` mode. Mitigation pattern: scope to a subshell — `( unset JFROG_API_KEY; <command> )` — or only export `JFROG_API_KEY` in shells exclusively touching JFrog-mirrored URLs. (Mirrored in `docs/enterprise-deployment.md` § Cross-host credential leak.)
+- Local CVE database (`update_cve_database`) and PyPI mapping cache (`update_mapping_cache`) MUST be refreshable from internal sources. v7.8.1 added `OSV_VULNS_BUCKET_URL` so the ~4 GB OSV `all.zip` can be served from an internal mirror; download streams + resumes (Range request) so a dropped connection at 95% no longer restarts from byte 0.
+- **Engineering rule book**: `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md` (added v7.8.0) documents the 9 patterns governing phase authoring (per-host rate limits, GraphQL batching, Retry-After + jitter, per-registry concurrency, atomic writes, incremental commits + idempotent SQL, streaming tarfiles, page-level checkpoints, `<HOST>_BASE_URL` routing). Consult before any phase work.
 
 ## Submission Workflow
 

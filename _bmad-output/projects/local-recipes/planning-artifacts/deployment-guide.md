@@ -2,7 +2,7 @@
 doc_type: deployment-guide
 project_name: local-recipes
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 ---
 
 # Deployment Guide
@@ -61,24 +61,63 @@ A sample template lives at `docs/pixi-config-jfrog.example.toml`. Copy to `.pixi
 
 ### 2. Environment variables (per-shell)
 
+#### 2a. Authentication
+
 | Variable | Used by | Purpose |
 |---|---|---|
 | `JFROG_API_KEY` | `_http.py` | Bearer auth header for JFrog. **★ Leaks cross-host — see below.** |
-| `GITHUB_TOKEN` | `_http.py`, gh CLI | GitHub authentication (Phase K + N + submit_pr) |
-| `CONDA_FORGE_BASE_URL` | `_http.py` (Phase B current_repodata.json fallback) | Override conda-forge channel base |
-| `PYPI_BASE_URL` | `_http.py` (Phase D, mapping refresh, recipe-generator) | Override pypi.org base |
-| `ANACONDA_API_BASE` | `_http.py` (Phase F API path) | Override api.anaconda.org base |
-| `S3_PARQUET_BASE_URL` | `_http.py` (Phase F S3 path) | Override AWS S3 parquet base |
-| `GITHUB_API_BASE_URL` | `_http.py` (Phase K + N + gh integrations) | Override api.github.com base |
-| `PHASE_F_SOURCE` | atlas Phase F | `auto` (default) / `anaconda-api` / `s3-parquet` |
-| `PHASE_H_SOURCE` | atlas Phase H | `pypi-json` (default) / `cf-graph` |
-| `PHASE_F_S3_MONTHS` | atlas Phase F S3 path | Trailing-N-months cap (default: unlimited) |
-| `PHASE_GP_ENABLED` | atlas Phase G' | `1` to enable per-version vulnerability scoring |
-| `VDB_HOME` | atlas Phases G + G' | AppThreat vdb location (auto-set by `vuln-db` env activation) |
-| `BOOTSTRAP_<STEP>_TIMEOUT` | `bootstrap-data` | Per-step timeout in seconds (defaults sized for cold `--fresh`) |
-| `GEMINI_API_KEY` | `gemini_server.py` (auxiliary MCP) | If Gemini bridge is used |
+| `JFROG_USERNAME` + `JFROG_PASSWORD` | `_http.py` | Basic-auth alternative to `JFROG_API_KEY`. |
+| `GITHUB_TOKEN` | `_http.py`, gh CLI | GitHub authentication (Phase K + N + submit_pr). |
+
+#### 2b. Upstream-host redirects (enterprise routing)
+
+Every external host the atlas talks to is redirectable via a `<HOST>_BASE_URL` env var. Public defaults apply when unset; trailing slashes are stripped automatically. v7.8.0 + v7.8.1 added 15 new resolvers, completing air-gap parity across all upstreams the skill consults.
+
+| Variable | Default host | Used by |
+|---|---|---|
+| `CONDA_FORGE_BASE_URL` | `https://conda.anaconda.org/conda-forge` | Phase B current_repodata.json |
+| `PYPI_BASE_URL` | `https://pypi.org/simple` | Phase D, mapping refresh, recipe-generator |
+| `PYPI_JSON_BASE_URL` | `https://pypi.org` | recipe-generator PyPI JSON metadata |
+| `S3_PARQUET_BASE_URL` | `https://anaconda-package-data.s3.amazonaws.com` | Phase F S3 path |
+| `ANACONDA_API_BASE_URL` (legacy alias `ANACONDA_API_BASE`) | `https://api.anaconda.org` | Phase F API path; `detail_cf_atlas` |
+| `GITHUB_BASE_URL` | `https://github.com` | Archive / tarball URLs (cf-graph download, etc.) |
+| `GITHUB_RAW_BASE_URL` | `https://raw.githubusercontent.com` | Raw-content URLs |
+| `GITHUB_API_BASE_URL` | `https://api.github.com` | Phase K REST + GraphQL. **One var covers GHES** — set to `https://<ghes>/api`. |
+| `GITLAB_API_BASE_URL` | `https://gitlab.com/api/v4` | Phase K REST (self-hosted GitLab CE/EE). |
+| `CODEBERG_API_BASE_URL` | `https://codeberg.org/api/v1` | Phase K REST (Forgejo, self-hosted Gitea). |
+| `NPM_BASE_URL` (also honors npm CLI's `npm_config_registry`) | `https://registry.npmjs.org` | Phase L npm; `npm_updater`; `recipe-generator npm`. |
+| `CRAN_BASE_URL` | `https://crandb.r-pkg.org` | Phase L CRAN. |
+| `CPAN_BASE_URL` | `https://fastapi.metacpan.org` | Phase L CPAN. |
+| `LUAROCKS_BASE_URL` | `https://luarocks.org` | Phase L LuaRocks. |
+| `CRATES_BASE_URL` | `https://crates.io` | Phase L crates.io. |
+| `RUBYGEMS_BASE_URL` | `https://rubygems.org` | Phase L RubyGems. |
+| `MAVEN_BASE_URL` | `https://search.maven.org` | Phase L Maven Central. |
+| `NUGET_BASE_URL` | `https://api.nuget.org` | Phase L NuGet. |
+| `OSV_API_BASE_URL` | `https://api.osv.dev` | `vulnerability_scanner` (OSV querybatch API). |
+| `OSV_VULNS_BUCKET_URL` | `https://osv-vulnerabilities.storage.googleapis.com` | `cve_manager` (OSV `<eco>/all.zip` bulk feed). |
+
+#### 2c. Phase tunables (operational)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PHASE_F_SOURCE` | `auto` | `auto` / `anaconda-api` / `s3-parquet`. Large orgs should use `s3-parquet` to skip api.anaconda.org entirely. |
+| `PHASE_F_CONCURRENCY` | **3** (was 8 pre-v7.8.0) | api.anaconda.org per-IP secondary rate limit reliably tripped at 8 workers. |
+| `PHASE_H_SOURCE` | `pypi-json` | `pypi-json` / `cf-graph`. `cf-graph` is the safer choice for cold-start backfills. |
+| `PHASE_H_CONCURRENCY` | **3** (was 8 pre-v7.8.1) | pypi.org has a documented ~30 req/s per-IP ceiling. |
+| `PHASE_F_S3_MONTHS` | unlimited | Trailing-N-months cap for the S3 parquet path. |
+| `PHASE_GP_ENABLED` | unset | `1` to enable per-version vulnerability scoring. |
+| `PHASE_K_GRAPHQL_DISABLED` | unset | `1` to fall back to REST fanout for GitHub (debug/recovery only). |
+| `PHASE_K_GRAPHQL_BATCH_SIZE` | `100` | Repos per GraphQL POST. Stay under ~150 to respect GitHub's node-complexity ceiling. |
+| `PHASE_L_CONCURRENCY` | per-host defaults | Legacy uniform cap. Overridden per-source via `PHASE_L_CONCURRENCY_<SOURCE>`. |
+| `PHASE_L_CONCURRENCY_<SOURCE>` | npm=4, nuget=4, cran=cpan=luarocks=maven=2, crates=1, rubygems=1 | Per-registry concurrency override. Defaults reflect documented per-host rate limits. |
+| `ATLAS_CFGRAPH_TTL_DAYS` | `1.0` | Days the cached cf-graph tarball stays fresh. Weekly-cron users should set to `7` to skip the ~150 MB re-download. Shared across Phases E + J + M. |
+| `VDB_HOME` | (auto-set by `vuln-db` env) | AppThreat vdb location. |
+| `BOOTSTRAP_<STEP>_TIMEOUT` | sized for cold `--fresh` | Per-step timeout in seconds. |
+| `GEMINI_API_KEY` | unset | If the Gemini bridge is used. |
 
 **Setting `*_BASE_URL` env vars**: typical pattern is a per-user `~/.bashrc` / `~/.zshrc` block, OR a per-directory `.envrc` file with `direnv`, OR exported in the pixi env's activation script via `[feature.<env>.activation.env]`.
+
+> **Engineering rule book**: phase-engineering patterns (per-host rate limits, GraphQL batching, Retry-After + jitter, per-registry concurrency, atomic writes, incremental commits + idempotent SQL, streaming tarfiles, page-level checkpoints, `<HOST>_BASE_URL` routing convention) are documented in `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md`. Consult before authoring or refactoring a phase.
 
 ### 3. Internal mirror infrastructure (JFrog admin domain)
 
@@ -89,6 +128,12 @@ For full air-gap, you need:
 - **`files.pythonhosted.org` mirror** (uncommon but required for many sdist URLs): JFrog "PyPI Remote Repository" pointing at `https://files.pythonhosted.org/` — see `docs/enterprise-deployment.md` § 3 for why
 - **anaconda.org API mirror** (optional, for Phase F API path): JFrog "Generic Remote Repository" pointing at `https://api.anaconda.org/`
 - **S3 parquet mirror** (recommended, for Phase F S3 path): JFrog generic repository or internal S3-compatible store seeded from `s3://anaconda-package-data/`
+- **GitHub API mirror** (optional, for self-hosted GHES): point `GITHUB_API_BASE_URL` at `https://<ghes>/api`. Covers both REST (Phase K REST tail) and GraphQL (Phase K batched + Phase N + Phase E5).
+- **GitLab API mirror** (optional, for self-hosted GitLab): point `GITLAB_API_BASE_URL` at `https://<your-gitlab>/api/v4`. Layout is identical across CE/EE.
+- **Codeberg/Gitea API mirror** (optional, for self-hosted Gitea or Forgejo): point `CODEBERG_API_BASE_URL` at `https://<your-gitea>/api/v1`.
+- **Phase L registry mirrors** (optional, one per registry your recipes touch): JFrog Remote Repository for each of npm / CRAN / CPAN / LuaRocks / crates / RubyGems / Maven Central / NuGet. Each has its own `<HOST>_BASE_URL` env var. Most enterprise atlases need at most 2-3 of these.
+- **OSV API mirror** (optional, for vulnerability scanning): point `OSV_API_BASE_URL` at an internal mirror of `https://api.osv.dev`.
+- **OSV bulk-feed mirror** (recommended, for CVE database refresh): point `OSV_VULNS_BUCKET_URL` at a mirror of `https://osv-vulnerabilities.storage.googleapis.com`. The PyPI `all.zip` is ~4 GB; `cve_manager` now streams + resumes (v7.8.1), so a dropped connection at 95% no longer restarts from 0.
 - **CVE feed mirror** (NVD, GHSA, OSV): internal copy refreshed by your security team
 - **AppThreat vdb mirror**: internal copy of the vdb tarball
 

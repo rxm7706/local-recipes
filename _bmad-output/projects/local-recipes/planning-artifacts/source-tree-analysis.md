@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 ---
 
 # Source Tree Analysis
@@ -448,7 +448,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | `.claude/skills/conda-forge-expert/scripts/_http.py` | all (Parts 1+2+3) | Every outbound HTTP request routes through here. Contains the JFROG_API_KEY cross-host leak (mitigated via env-var hygiene; see deployment-guide.md) |
 | `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` | Part 2 | 17-phase pipeline orchestrator + schema migrations |
 | `.claude/tools/conda_forge_server.py` | Part 3 | 35 MCP tools — auto-started at Claude Code session boot |
-| `_bmad-output/projects/local-recipes/project-context.md` | Part 4 | Foundational rules every BMAD agent reads on spawn (v7.7-pinned) |
+| `_bmad-output/projects/local-recipes/project-context.md` | Part 4 | Foundational rules every BMAD agent reads on spawn (v7.8.1-pinned) |
 | `_bmad/custom/.active-project` | Part 4 | Determines which project's `.bmad-config.toml` overlays apply |
 
 ---

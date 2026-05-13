@@ -4,7 +4,7 @@ part_id: cf-atlas
 display_name: cf_atlas data pipeline
 project_type_id: data
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 ---
 
 # Architecture: cf_atlas (Part 2)
@@ -110,21 +110,30 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 | **C** | `phase_c_parselmouth_join` (905) | Join PyPI names via parselmouth mapping | — | — | parselmouth cdn |
 | **C.5** | `phase_c5_source_url_match` (954) | Match recipes to PyPI projects via source URL parsing | — | — | (DB-internal) |
 | **D** | `phase_d_pypi_enumeration` (963) | Enumerate PyPI projects + upgrade-to-coincidence (pypi/conda matches) | — | ✓ | pypi.org index (or `PYPI_BASE_URL`) |
-| **E** | `phase_e_enrichment` (1148) | Download cf-graph tarball + extract feedstock-level metadata | — | — | github.com (cf-graph-countyfair tarball) |
-| **E.5** | `phase_e5_archived_feedstocks` (1395) | Identify archived feedstocks via cf-graph metadata | — | — | (uses Phase E's tarball) |
-| **F** | `phase_f_downloads` (1950) | Per-conda-package total downloads (3 backends: API / S3 parquet / auto) | ✓ | — | api.anaconda.org OR AWS S3 |
+| **E** | `phase_e_enrichment` (1148) | Download cf-graph tarball + extract feedstock-level metadata. Cache TTL via `ATLAS_CFGRAPH_TTL_DAYS` (default 1.0). Atomic-write cache; streams tar from disk (saves ~150 MB peak RAM). Incremental commits every 200 enriched rows. | ✓ (cache TTL) | — | github.com (`GITHUB_BASE_URL`) |
+| **E.5** | `phase_e5_archived_feedstocks` (1395) | Identify archived feedstocks via GitHub GraphQL pagination. Page-level `save_phase_checkpoint(cursor=…)` so progress is observable mid-run. Incremental commits every 500 applied rows. | — | ✓ (page-level) | api.github.com (`GITHUB_API_BASE_URL`) |
+| **F** | `phase_f_downloads` (1950) | Per-conda-package total downloads (3 backends: API / S3 parquet / auto). Default `PHASE_F_CONCURRENCY=3` (was 8 pre-v7.8.0). Retry-After honored on 429/503 (60s cap) + ±25% jitter. | ✓ | — | api.anaconda.org (`ANACONDA_API_BASE_URL`) OR AWS S3 (`S3_PARQUET_BASE_URL`) |
 | **G** | `phase_g_vdb_summary` (1994) | AppThreat vdb scan summary per package — **requires `vuln-db` pixi env** | ✓ | — | (local vdb/ DB) |
 | **G'** | `phase_g_prime_per_version_vulns` (4029) | Per-version CVE scoring — writes `package_version_vulns` — **requires `vuln-db`** | (row-absence) | — | (local vdb/ DB) |
-| **H** | `phase_h_pypi_versions` (2560) | PyPI current-version skew detection (2 backends: pypi-json / cf-graph offline) | ✓ | — | pypi.org JSON OR github.com (cf-graph) |
-| **J** | `phase_j_dependency_graph` (3383) | Build the dependency graph in the `dependencies` table | — | — | (DB-internal + cf-graph) |
-| **K** | `phase_k_vcs_versions` (2771) | GitHub/GitLab/Codeberg `releases/latest` lookup — writes `upstream_versions` | ✓ | — | api.github.com, gitlab.com, codeberg.org |
-| **L** | `phase_l_extra_registries` (3191) | Extra registry lookups (CRAN, Maven, npm, RubyGems, etc.) — writes `upstream_versions` | (per-source) | — | various registries |
-| **M** | `phase_m_feedstock_health` (3548) | Compute feedstock health metrics from cf-graph + cached state | — | — | (uses Phase E's tarball) |
-| **N** | `phase_n_github_live` (3744) | Live GitHub queries (default-branch CI status, open issues/PRs, pushed_at) — batched per-feedstock | (per-feedstock) | ✓ | api.github.com (GraphQL) |
+| **H** | `phase_h_pypi_versions` (2560) | PyPI current-version skew detection (2 backends: pypi-json / cf-graph offline). Default `PHASE_H_CONCURRENCY=3` (was 8 pre-v7.8.1). Retry-After + ±25% jitter on the pypi-json path. | ✓ | — | pypi.org JSON (`PYPI_JSON_BASE_URL`) OR github.com (cf-graph) |
+| **J** | `phase_j_dependency_graph` (3383) | Build the dependency graph in the `dependencies` table. **Monolithic transaction by design** — `DELETE FROM dependencies` at txn start gives consumers atomic full-snapshot semantics. | — | — | (DB-internal + cf-graph) |
+| **K** | `phase_k_vcs_versions` (2771) | GitHub via **batched GraphQL** (~100 repos/POST; was REST fanout pre-v7.8.0). GitLab + Codeberg still REST. Writes `upstream_versions`. `PHASE_K_GRAPHQL_DISABLED=1` reverts to REST. `PHASE_K_GRAPHQL_BATCH_SIZE` tunes batch size. | ✓ | — | api.github.com (`GITHUB_API_BASE_URL`, covers GraphQL too), gitlab.com (`GITLAB_API_BASE_URL`), codeberg.org (`CODEBERG_API_BASE_URL`) |
+| **L** | `phase_l_extra_registries` (3191) | Extra registry lookups (npm / CRAN / CPAN / LuaRocks / crates / RubyGems / Maven / NuGet). **Per-registry concurrency caps**: npm=nuget=4, cran=cpan=luarocks=maven=2, crates=rubygems=1. Sequential across registries. Override via `PHASE_L_CONCURRENCY_<SOURCE>`. Writes `upstream_versions`. | (per-source) | — | per-registry `<HOST>_BASE_URL` envs (NPM/CRAN/CPAN/LUAROCKS/CRATES/RUBYGEMS/MAVEN/NUGET) |
+| **M** | `phase_m_feedstock_health` (3548) | Compute feedstock health metrics from cf-graph + cached state. Incremental commits every 500 rows. | — | — | (uses Phase E's tarball) |
+| **N** | `phase_n_github_live` (3744) | Live GitHub queries (default-branch CI status, open issues/PRs, pushed_at) — batched per-feedstock via `gh api graphql`. Rate-limit detection on stderr; 30s/60s backoff + ±25% jitter on hits (more patient than F/H since secondary windows are minutes). | (per-feedstock) | ✓ | api.github.com (`GITHUB_API_BASE_URL`) |
 
 **Why `B` not `A`**: phase A is reserved for future use; the pipeline started at B and the letters have stuck.
 
 **Why two phases F/H have backends**: external-host dependencies needed fallback paths. Phase F's `api.anaconda.org` was the last hard non-JFrog-proxyable external host before v7.6.0 added the S3 parquet backend; Phase H's per-package pypi.org fan-out was the slowest leg of `--fresh` until v7.7.0 added the cf-graph offline backend.
+
+**`_http.py` public surface** (expanded in v7.8.0 + v7.8.1):
+
+- **URL resolvers** (14 total) — every external host is redirectable via a `<HOST>_BASE_URL` env var. Public default applies when unset; trailing slashes stripped. Functions: `resolve_conda_forge_urls`, `resolve_pypi_simple_urls`, `resolve_pypi_json_urls`, `resolve_github_urls`, `resolve_github_raw_urls`, `resolve_github_api_urls`, `resolve_gitlab_api_urls`, `resolve_codeberg_api_urls`, `resolve_npm_urls`, `resolve_cran_urls`, `resolve_cpan_urls`, `resolve_luarocks_urls`, `resolve_crates_urls`, `resolve_rubygems_urls`, `resolve_maven_urls`, `resolve_nuget_urls`, `resolve_s3_parquet_urls`.
+- **Auth chain** — `auth_headers_for(url)` extracted from `make_request` so `requests`-based callers (recipe-generator, npm_updater) share the same JFROG / .netrc / GitHub-token chain that urllib callers got for free. `make_request` delegates to it; caller-supplied headers still win via `setdefault`.
+- **Atomic file writes** — `atomic_writer(path, mode)` context manager + `atomic_write_bytes(path, data)` + `atomic_write_text(path, text)`. Writes to `.tmp` sibling, fsyncs, `os.replace` into place. Used by `cve_manager`, `mapping_manager`, `inventory_channel`, and the cf-graph cache write in Phase E.
+- **Streaming Range-resumable download** — `fetch_to_file_resumable(target, urls, *, chunk_size, ...)`. Handles 206 (append), 200-to-Range (restart), 416 (stale `.part` discard). Atomic-renames on success. Used by `cve_manager` to stream the ~4 GB OSV `all.zip` in 4 MB chunks; dropped connection at 95% resumes from current byte position. RAM drops from ~4 GB to ~4 MB during indexing.
+
+**Engineering rule book**: `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md` (added in v7.8.0) documents the 9 patterns that govern phase authoring and refactoring: per-host secondary rate limits vs primary quotas, GraphQL batching vs REST fanout, `Retry-After` parsing + hard cap + jitter, per-registry concurrency caps, atomic file writes, incremental commits + idempotent SQL, streaming tarfiles from disk, page-level checkpoints, and the `<HOST>_BASE_URL` enterprise routing convention. Consult before adding a phase or touching HTTP fanout / batch writes / cache IO in an existing one.
 
 ---
 

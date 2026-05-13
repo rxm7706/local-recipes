@@ -3,7 +3,7 @@
   "doc_type": "project-parts",
   "project_name": "local-recipes",
   "date": "2026-05-12",
-  "source_pin": "conda-forge-expert v7.7",
+  "source_pin": "conda-forge-expert v7.8.1",
   "repository_type": "monorepo",
   "parts": [
     {
@@ -23,7 +23,7 @@
         "FastMCP (for tool exposure)"
       ],
       "pixi_envs": ["local-recipes", "grayskull", "conda-smithy", "vuln-db"],
-      "version_pin": "v7.7",
+      "version_pin": "v7.8.1",
       "subdirectories": {
         "SKILL.md": "primary spine: critical constraints, 10-step autonomous loop, recipe authoring gotchas G1-G6",
         "INDEX.md": "task→tool navigator",
