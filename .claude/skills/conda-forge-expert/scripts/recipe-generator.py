@@ -121,12 +121,19 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     assert requests is not None  # for the type checker — REQUESTS_AVAILABLE implies bound
 
     # Try the resolver chain (JFrog → public). If _http isn't importable,
-    # fall back to the original direct-pypi.org path.
+    # fall back to the original direct-pypi.org path. auth_headers_for picks
+    # up JFROG_API_KEY / .netrc / GitHub-token headers so private artifactory
+    # remotes that require authentication work too.
+    _auth_for = None
     try:
         import sys as _sys
         from pathlib import Path as _P
         _sys.path.insert(0, str(_P(__file__).parent))
-        from _http import resolve_pypi_json_urls, inject_ssl_truststore  # type: ignore[import-not-found]
+        from _http import (  # type: ignore[import-not-found]
+            resolve_pypi_json_urls,
+            inject_ssl_truststore,
+            auth_headers_for as _auth_for,
+        )
         inject_ssl_truststore()
         urls = resolve_pypi_json_urls(package_name, version)
     except ImportError:
@@ -139,8 +146,9 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     last_err: Exception | None = None
     data = None
     for url in urls:
+        headers = _auth_for(url) if _auth_for is not None else {}
         try:
-            response = requests.get(url, timeout=30)
+            response = requests.get(url, timeout=30, headers=headers or None)
             if response.status_code == 404:
                 last_err = requests.HTTPError(f"404 at {url}")
                 continue  # try next source
@@ -732,7 +740,12 @@ def fetch_npm_info(
     *,
     source: str = "npm",
 ) -> NpmPackageInfo:
-    """Fetch package metadata from registry.npmjs.org.
+    """Fetch package metadata from the npm registry.
+
+    Uses `_http.resolve_npm_urls` when available so air-gapped users behind
+    JFrog can route via `NPM_BASE_URL` env or the npm CLI standard
+    `npm_config_registry` env. Falls back to bare `requests` against
+    `registry.npmjs.org` for external clones.
 
     ``source`` selects which tarball is referenced in the generated recipe:
       - ``"npm"`` (default, canonical): the npm registry tarball. Matches the
@@ -750,10 +763,43 @@ def fetch_npm_info(
 
     raw_name, conda_name, is_scoped = _parse_npm_name(package_name)
 
-    url = f"https://registry.npmjs.org/{raw_name}"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    data = response.json()
+    # Try the resolver chain (JFrog → public). If _http isn't importable,
+    # fall back to the original direct-registry.npmjs.org path.
+    _auth_for = None
+    try:
+        import sys as _sys
+        from pathlib import Path as _P
+        _sys.path.insert(0, str(_P(__file__).parent))
+        from _http import (  # type: ignore[import-not-found]
+            resolve_npm_urls,
+            inject_ssl_truststore,
+            auth_headers_for as _auth_for,
+        )
+        inject_ssl_truststore()
+        urls = resolve_npm_urls(raw_name)
+    except ImportError:
+        urls = [f"https://registry.npmjs.org/{raw_name}"]
+
+    last_err: Exception | None = None
+    data = None
+    for url in urls:
+        headers = _auth_for(url) if _auth_for is not None else {}
+        try:
+            response = requests.get(url, timeout=30, headers=headers or None)
+            if response.status_code == 404:
+                last_err = requests.HTTPError(f"404 at {url}")
+                continue  # try next source
+            response.raise_for_status()
+            data = response.json()
+            break
+        except requests.RequestException as exc:
+            last_err = exc
+            continue
+    if data is None:
+        raise RuntimeError(
+            f"Failed to fetch npm metadata for {raw_name!r} from any of "
+            f"{len(urls)} source(s); last error: {last_err}"
+        )
 
     if version is None:
         version = data["dist-tags"]["latest"]

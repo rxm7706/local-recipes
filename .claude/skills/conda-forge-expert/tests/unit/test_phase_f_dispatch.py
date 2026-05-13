@@ -200,3 +200,60 @@ class TestAutoModeProbeFails:
             "SELECT DISTINCT downloads_source FROM packages WHERE downloads_source IS NOT NULL"
         ))
         assert sources == {"s3-parquet"}
+
+
+# ── _anaconda_api_base — env-var override chain ────────────────────────────
+
+class TestAnacondaApiBase:
+    def test_default_is_public_host(self, atlas_mod, monkeypatch):
+        monkeypatch.delenv("ANACONDA_API_BASE_URL", raising=False)
+        monkeypatch.delenv("ANACONDA_API_BASE", raising=False)
+        assert atlas_mod._anaconda_api_base() == "https://api.anaconda.org"
+
+    def test_url_env_var_takes_precedence(self, atlas_mod, monkeypatch):
+        monkeypatch.setenv("ANACONDA_API_BASE_URL", "https://jfrog/api/anaconda")
+        monkeypatch.setenv("ANACONDA_API_BASE", "https://legacy-host")
+        assert atlas_mod._anaconda_api_base() == "https://jfrog/api/anaconda"
+
+    def test_legacy_env_var_used_when_new_unset(self, atlas_mod, monkeypatch):
+        monkeypatch.delenv("ANACONDA_API_BASE_URL", raising=False)
+        monkeypatch.setenv("ANACONDA_API_BASE", "https://legacy-host")
+        assert atlas_mod._anaconda_api_base() == "https://legacy-host"
+
+    def test_trailing_slash_stripped(self, atlas_mod, monkeypatch):
+        monkeypatch.setenv("ANACONDA_API_BASE_URL", "https://jfrog/api/anaconda/")
+        assert atlas_mod._anaconda_api_base() == "https://jfrog/api/anaconda"
+
+
+# ── _parse_retry_after — RFC 9110 Retry-After parsing ──────────────────────
+
+class TestParseRetryAfter:
+    def test_empty_returns_fallback(self, atlas_mod):
+        assert atlas_mod._parse_retry_after(None, fallback=2.5) == 2.5
+        assert atlas_mod._parse_retry_after("", fallback=2.5) == 2.5
+
+    def test_integer_seconds(self, atlas_mod):
+        assert atlas_mod._parse_retry_after("30", fallback=999.0) == 30.0
+
+    def test_integer_seconds_whitespace_tolerant(self, atlas_mod):
+        assert atlas_mod._parse_retry_after("  15  ", fallback=999.0) == 15.0
+
+    def test_negative_seconds_clamped_to_zero(self, atlas_mod):
+        # A server that says "-5" is buggy; clamp to 0 rather than retry in the past.
+        assert atlas_mod._parse_retry_after("-5", fallback=999.0) == 0.0
+
+    def test_unparseable_falls_back(self, atlas_mod):
+        assert atlas_mod._parse_retry_after("not-a-number", fallback=4.0) == 4.0
+
+    def test_capped_at_60_seconds(self, atlas_mod):
+        # A 3600s Retry-After would stall a worker for an hour. We bail and
+        # let TTL re-pick the row next run.
+        assert atlas_mod._parse_retry_after("3600", fallback=999.0) == 60.0
+
+    def test_http_date_form_far_future_caps(self, atlas_mod):
+        # HTTP-date form: a far-future date computes to a delta > 60, so it caps.
+        out = atlas_mod._parse_retry_after("Wed, 12 Nov 2099 14:00:00 GMT", fallback=999.0)
+        assert out == 60.0
+
+    def test_fallback_negative_also_clamped(self, atlas_mod):
+        assert atlas_mod._parse_retry_after(None, fallback=-1.0) == 0.0

@@ -30,6 +30,15 @@ try:
 except ImportError:
     pass
 
+# Atomic write helper from _http so an interrupt mid-dump doesn't corrupt
+# the mapping cache (next run would see unparseable JSON and have to refetch
+# the full mapping from the network).
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _http import atomic_writer as _atomic_writer  # type: ignore[import-not-found]
+except ImportError:
+    _atomic_writer = None  # type: ignore[assignment]
+
 try:
     import yaml
 except ImportError:
@@ -176,8 +185,14 @@ def load_local_cache() -> dict:
 def save_to_local_cache(mapping: dict):
     """Saves the combined mapping to the local cache file."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(MAPPING_CACHE_FILE, "w") as f:
-        json.dump(mapping, f, indent=2, sort_keys=True)
+    # Atomic write so an interrupt doesn't leave a partial JSON file that
+    # would force a full network re-fetch on next run.
+    if _atomic_writer is not None:
+        with _atomic_writer(MAPPING_CACHE_FILE, "w") as f:
+            json.dump(mapping, f, indent=2, sort_keys=True)
+    else:
+        with open(MAPPING_CACHE_FILE, "w") as f:
+            json.dump(mapping, f, indent=2, sort_keys=True)
 
 def update_mapping_cache(force: bool = False):
     """

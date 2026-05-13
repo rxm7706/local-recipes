@@ -31,3 +31,35 @@ class TestCveManager:
         )
         # The real script returns 0 on success
         assert "complete" in out.lower() or "complete" in err.lower(), (out + err)
+
+
+class TestOsvVulnsBucketUrl:
+    """OSV_VULNS_BUCKET_URL env override + per-ecosystem URL composition."""
+
+    def test_default_is_public_bucket(self, load_module, monkeypatch):
+        monkeypatch.delenv("OSV_VULNS_BUCKET_URL", raising=False)
+        mod = load_module("cve_manager.py")
+        assert mod._osv_vulns_bucket_base() == "https://osv-vulnerabilities.storage.googleapis.com"
+        assert mod._osv_ecosystem_zip_url("PyPI") == (
+            "https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip"
+        )
+
+    def test_env_var_redirect(self, load_module, monkeypatch):
+        monkeypatch.setenv("OSV_VULNS_BUCKET_URL", "https://jfrog/api/generic/osv-mirror")
+        mod = load_module("cve_manager.py")
+        assert mod._osv_vulns_bucket_base() == "https://jfrog/api/generic/osv-mirror"
+        assert mod._osv_ecosystem_zip_url("PyPI") == (
+            "https://jfrog/api/generic/osv-mirror/PyPI/all.zip"
+        )
+
+    def test_trailing_slash_stripped(self, load_module, monkeypatch):
+        monkeypatch.setenv("OSV_VULNS_BUCKET_URL", "https://jfrog/osv-mirror/")
+        mod = load_module("cve_manager.py")
+        assert mod._osv_vulns_bucket_base() == "https://jfrog/osv-mirror"
+
+    def test_empty_env_falls_back_to_public(self, load_module, monkeypatch):
+        # Empty string should fall through to the default, not produce a
+        # broken URL like "/PyPI/all.zip".
+        monkeypatch.setenv("OSV_VULNS_BUCKET_URL", "")
+        mod = load_module("cve_manager.py")
+        assert mod._osv_vulns_bucket_base() == "https://osv-vulnerabilities.storage.googleapis.com"
