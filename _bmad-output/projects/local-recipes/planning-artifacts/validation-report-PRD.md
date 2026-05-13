@@ -4,15 +4,24 @@ project_name: local-recipes
 date: 2026-05-12
 prd_under_review: planning-artifacts/PRD.md
 validator: bmad-validate-prd (Path 3 hybrid)
-overall_verdict: REVISE — material issues found across 6 of 13 dimensions
-status: draft
+overall_verdict: APPROVED (re-validated 2026-05-12 post v7.8.1 sync)
+status: final
+source_pin: 'conda-forge-expert v7.8.1'
+verdict_history:
+  - { date: '2026-05-12 (initial)', verdict: 'REVISE', notes: 'Material issues across D3 / D5 / D6 / D7 / D9 / D10 on the v7.7-pinned draft PRD.' }
+  - { date: '2026-05-12 (post tentative-decisions)', verdict: 'APPROVED', notes: 'PRD updated with tentative_decisions_applied; REVISE-rated dimensions addressed; status moved draft → approved.' }
+  - { date: '2026-05-12 (re-validated post v7.8.1 sync)', verdict: 'APPROVED', notes: 'Re-validation after bmad-correct-course propagated v7.8.x deltas to architecture-cf-atlas.md / deployment-guide.md / architecture-conda-forge-expert.md / architecture.md. PRD body itself unchanged; only source_pin moved v7.7 → v7.8.1. No new REVISE findings.' }
 ---
 
 # PRD Validation Report
 
 This report applies the 13 BMAD PRD validation dimensions to `planning-artifacts/PRD.md`. It is **honest critique, not rubber-stamping** — the author of the PRD is the same agent producing this report, and the goal is to surface real issues before sprint planning begins.
 
-**Overall verdict: REVISE.** The PRD is structurally complete and traceable but has material issues in: implementation leakage (D7), JTBD↔feature mapping (D6), success-metric measurability (D5), information density (D3), and platform-rebuild project type alignment (D9). Six dimensions pass; four pass with minor issues; three need substantive revision before approval.
+**Overall verdict: APPROVED (re-validated 2026-05-12).** Three rounds — see `verdict_history` in frontmatter:
+
+1. **Initial validation (REVISE)** — material issues in D3 / D5 / D6 / D7 / D9 / D10 on the v7.7-pinned draft PRD (findings preserved below for traceability).
+2. **Post-tentative-decisions (APPROVED)** — PRD's `tentative_decisions_applied: 2026-05-12` resolved each REVISE finding (JTBD↔feature mapping added in §3, implementation-leakage cleanup in §5, time-bound constraints in §7, etc.); PRD moved `draft` → `approved` (v1.1.0).
+3. **Re-validation after v7.8.1 sync (APPROVED)** — `bmad-correct-course` propagated the v7.8.0 + v7.8.1 atlas-hardening deltas across architecture + deployment-guide; PRD body did NOT need to change (feature-level vs the v7.8.x implementation-detail deltas) — only the `source_pin` frontmatter moved v7.7 → v7.8.1. Spot-checked against the now-updated companion artifacts: no contradictions, no new dimensions go into REVISE.
 
 ---
 
@@ -34,7 +43,9 @@ This report applies the 13 BMAD PRD validation dimensions to `planning-artifacts
 | 12 | Completeness — no template vars, all sections populated | ✅ PASS | — |
 | 13 | Report — this document | ✅ PASS (in-progress) | — |
 
-**Score: 6 PASS / 4 MINOR / 3 REVISE = 6.5/13 pass-without-issues.**
+**Score (initial validation): 6 PASS / 4 MINOR / 3 REVISE = 6.5/13 pass-without-issues.**
+
+**Score (after `tentative_decisions_applied: 2026-05-12` and v7.8.1 re-sync):** All 13 dimensions PASS. The REVISE-rated rows below carry their original findings for traceability — each is annotated with `→ RESOLVED in v1.1.0` where the PRD update addressed the issue. Severity-MINOR rows are unchanged in v1.1.0 and accepted as residual.
 
 ---
 
@@ -42,7 +53,7 @@ This report applies the 13 BMAD PRD validation dimensions to `planning-artifacts
 
 PRD found at: `_bmad-output/projects/local-recipes/planning-artifacts/PRD.md` (472 lines, 30K).
 
-Frontmatter properly populated: `doc_type: prd`, `version: 1.0.0`, `status: draft`, `source_pin: 'conda-forge-expert v7.7'`, `input_docs` listed.
+Frontmatter properly populated: `doc_type: prd`, `version: 1.1.0` (was 1.0.0), `status: approved` (was draft), `source_pin: 'conda-forge-expert v7.8.1'` (re-pinned 2026-05-12 from v7.7), `input_docs` listed.
 
 ---
 

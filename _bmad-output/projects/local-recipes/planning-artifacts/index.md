@@ -5,14 +5,14 @@ date: 2026-05-12
 repository_type: monorepo
 parts: 4
 docs_generated: 10
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 ---
 
 # `local-recipes` — Master Documentation Index
 
 This index is your **primary entry point** for AI-assisted development on `local-recipes`. When a Brownfield PRD, story breakdown, or BMAD planning workflow needs the architecture and feature inventory of this repo, point them at this file.
 
-The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v7.7**.
+The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v7.8.1** (re-synced from v7.7 on 2026-05-12 via `bmad-correct-course`; see `sprint-change-proposal-2026-05-12.md`).
 
 ---
 
@@ -56,6 +56,15 @@ The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: han
 | 10 | [index.md](./index.md) | This file — master navigator |
 | — | [project-parts.json](./project-parts.json) | Machine-readable: 4 parts with root paths / key tech / pixi envs / subdirectory inventory, 7 integration points, rebuild build order |
 
+**Validation + change-management artifacts** (produced by BMAD skills as the doc set evolves):
+
+| Document | When written | What it captures |
+|---|---|---|
+| [validation-report-PRD.md](./validation-report-PRD.md) | `bmad-validate-prd` | 13-dimension PRD validation. Verdict history: REVISE (initial) → APPROVED (post tentative-decisions) → APPROVED (re-validated 2026-05-12 post v7.8.1 sync). |
+| [implementation-readiness-report.md](./implementation-readiness-report.md) | `bmad-check-implementation-readiness` | Cross-artifact alignment check across PRD + architecture + epics + project-context. Verdict: READY. |
+| [epics.md](./epics.md) | `bmad-create-epics-and-stories` | 13 epics, ~193 stories, 5 waves. |
+| [sprint-change-proposal-2026-05-12.md](./sprint-change-proposal-2026-05-12.md) | `bmad-correct-course` (2026-05-12) | Documents the v7.7.2 → v7.8.1 sync — env-var additions, phase architecture changes, `_http.py` surface expansion. Records why this doc set's `source_pin` was bumped and which artifacts received substantive vs pin-only updates. |
+
 ---
 
 ## Existing Documentation (Inputs to This Set)
@@ -68,7 +77,7 @@ The above documents are syntheses of these primary sources. A rebuild should tre
 - [`pixi.toml`](../../../../pixi.toml) — 8 envs, ~50 pixi tasks, build features
 
 ### Project-scoped (this project)
-- [`project-context.md`](../project-context.md) — foundational rules every BMAD agent reads on spawn (v7.7-pinned, 63 rules)
+- [`project-context.md`](../project-context.md) — foundational rules every BMAD agent reads on spawn (v7.8.1-pinned, 63 rules)
 - [`implementation-artifacts/deferred-work.md`](../implementation-artifacts/deferred-work.md) — cross-spec deferred items
 - [`implementation-artifacts/spec-cursor-sdk-local-recipe.md`](../implementation-artifacts/spec-cursor-sdk-local-recipe.md) — cursor-sdk recipe spec
 - [`implementation-artifacts/spec-atlas-phase-f-s3-air-gap.md`](../implementation-artifacts/spec-atlas-phase-f-s3-air-gap.md) — Phase F S3 backend spec
@@ -246,5 +255,5 @@ When ready to plan new features against the rebuilt system, run the PRD workflow
 | Total markdown lines | ~3,000 |
 | Generated | 2026-05-12 |
 | Generator | `bmad-document-project` (Path 3 hybrid) |
-| Source pin | conda-forge-expert v7.7 |
+| Source pin | conda-forge-expert v7.8.1 |
 | Verification | live filesystem + source code grep + CHANGELOG cross-reference |

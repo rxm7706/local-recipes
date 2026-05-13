@@ -6,7 +6,7 @@ version: '1.1.0'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 input_docs:
   - planning-artifacts/index.md
   - planning-artifacts/project-overview.md
@@ -452,7 +452,7 @@ Captured here so they aren't forgotten. All have detailed treatment in source do
 
 | ID | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | Skill version drift between rebuild start and finish | High | Medium | Pin to v7.7 at PRD time; document drift items in the next retro |
+| R1 | Skill version drift between rebuild start and finish | High | Medium | Pin to v7.8.1 at PRD re-validation time (2026-05-12); document drift items in the next retro. PRD v1.1.0 was re-pinned from v7.7 → v7.8.1 via `bmad-correct-course` per `sprint-change-proposal-2026-05-12.md`. |
 | R2 | Operator misconfigures `_http.py` and creates a worse cross-host leak | Medium | High | Comprehensive doc in 3+ places; subshell pattern is the simplest mitigation; consider DW2 promotion if any incidents |
 | R3 | rattler-build introduces breaking change during rebuild | Low | High | Pin `rattler-build-conda-compat >=1.2.0,<2.0.0a0` (already in pixi.toml); track upstream releases |
 | R4 | BMAD-METHOD ships v7.0 with breaking changes to skill format | Medium | Medium | Pin BMAD installer version; defer upgrade to a post-rebuild dedicated effort |

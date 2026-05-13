@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 ---
 
 # Project Overview: local-recipes
@@ -27,7 +27,7 @@ source_pin: 'conda-forge-expert v7.7'
 | License | BSD-3-Clause (LICENSE.txt) |
 | Maintainer of new recipes | `rxm7706` (in `extra.recipe-maintainers`) |
 | Recipe corpus | 1,415 v1 `recipe.yaml` files under `recipes/` + 1 at `wagtail/` (NOT part of the rebuild target) |
-| Source pin (for this doc set) | conda-forge-expert skill v7.7 |
+| Source pin (for this doc set) | conda-forge-expert skill v7.8.1 |
 
 ---
 
@@ -257,7 +257,7 @@ Plus structured metadata: **[project-parts.json](./project-parts.json)** — mac
 This document set synthesizes the following existing sources. To rebuild faithfully, an agent should treat these as authoritative for the items they cover and supplement with this set's overlays:
 
 - `CLAUDE.md` — repo-wide AI agent guidance, BMAD↔CFE integration rules, skill index
-- `_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn (v7.7-pinned)
+- `_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn (v7.8.1-pinned)
 - `.claude/skills/conda-forge-expert/SKILL.md` — primary skill spine
 - `.claude/skills/conda-forge-expert/INDEX.md` — task→tool navigator
 - `.claude/skills/conda-forge-expert/CHANGELOG.md` — release history with TL;DR

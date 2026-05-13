@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.7'
+source_pin: 'conda-forge-expert v7.8.1'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -192,7 +192,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 
 | Module | Role |
 |---|---|
-| `_http.py` | ★ Truststore + JFrog/GitHub/.netrc auth chain. Every outbound HTTP request from Parts 1+2+3 routes through here. **Contains the JFROG_API_KEY cross-host leak** (mitigated via env-var hygiene; see `deployment-guide.md`) |
+| `_http.py` | ★ The canonical shared-utility module. Surfaces (v7.8.1): (1) truststore + JFrog/GitHub/.netrc auth chain — `auth_headers_for(url)` extracted in v7.8.0 so `requests`-based callers share the same auth resolution as urllib callers; (2) 14 `resolve_<host>_urls` resolvers — every external host the atlas + skill talks to is redirectable via a `<HOST>_BASE_URL` env var; (3) `atomic_writer` / `atomic_write_bytes` / `atomic_write_text` — `.tmp` + fsync + `os.replace` pattern; (4) `fetch_to_file_resumable(target, urls, ...)` — streaming Range/resume download with atomic finalize. **Contains the JFROG_API_KEY cross-host leak** (mitigated via env-var hygiene; see `deployment-guide.md`). Every outbound HTTP request from Parts 1+2+3 routes through here. |
 | `mapping_manager.py` | PyPI→conda mapping refresh (`update_mapping_cache` MCP tool) |
 | `test-skill.py` | Skill-internal smoke test runner |
 
@@ -266,7 +266,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Operating Principles (6)
 - Critical Constraints (5 + cross-cutting JFROG note)
 - Primary Workflow: The Autonomous Loop (10 steps + step 8b detail)
-- Atlas Intelligence Layer (v7.7.0)
+- Atlas Intelligence Layer (v7.8.1)
 - Recipe Security Boundaries (Always Do / Ask First / Never Do)
 - Build Failure Protocol
 - Pre-PR Quality Gate Checklist
@@ -277,7 +277,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Complementary Skills (which BMAD/practice skills compose with this one)
 - CI Infrastructure Reference (platform assignments, OS versions, compiler pins, bot commands)
 - Ecosystem Updates (May 2026)
-- Recipe Authoring Gotchas (G1-G5; G6 is in CHANGELOG v7.7.1, not yet promoted to SKILL.md)
+- Recipe Authoring Gotchas (G1-G5 in SKILL.md; G6 still in CHANGELOG v7.7.1, not yet promoted to SKILL.md "Gotchas" section)
 
 ### `INDEX.md` (task→tool navigator)
 
@@ -287,7 +287,7 @@ Three doc layers, each loaded by the agent under different conditions:
 
 Release history with a TL;DR section at the top. Every MINOR-version bump triggers a project-context.md re-sync (per the drift contract in `_bmad-output/projects/local-recipes/project-context.md` frontmatter `last_synced_skill_version`).
 
-### `reference/` (11 deep-reference files — loaded on demand)
+### `reference/` (12 deep-reference files — loaded on demand)
 
 | File | When loaded |
 |---|---|
@@ -302,6 +302,7 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 | `dependency-input-formats.md` | scan_project input matrix (~28 formats) |
 | `actionable-intelligence-catalog.md` | Persona-mapped atlas signal index |
 | `conda-forge-ecosystem.md` | Ecosystem overview (bot, smithy, repodata-patches) |
+| `atlas-phase-engineering.md` | **Added in v7.8.0.** Rule book for authoring or refactoring `conda_forge_atlas.py` pipeline phases. 9 patterns: per-host rate limits, GraphQL batching, Retry-After + jitter, per-registry concurrency, atomic writes, incremental commits + idempotent SQL, streaming tarfiles, page-level checkpoints, `<HOST>_BASE_URL` routing convention. |
 
 ### `guides/` (8 workflow guides — loaded on demand)
 
@@ -440,9 +441,9 @@ This subsystem feeds:
 The skill version is the **source of truth** for what rules apply. Two version surfaces:
 
 - `MANIFEST.yaml: version: 7.0.0` — the "schema/portability version" (rarely changes; bumps only when the install protocol changes)
-- `CHANGELOG.md` TL;DR — the **release version** (v7.7.2 as of 2026-05-12)
+- `CHANGELOG.md` TL;DR — the **release version** (v7.8.1 as of 2026-05-12)
 
-Project-context.md pins to MINOR (`last_synced_skill_version: 'conda-forge-expert v7.7'`). When CHANGELOG's MINOR exceeds the pin, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
+Project-context.md pins to MINOR (`last_synced_skill_version: 'conda-forge-expert v7.8.1'`). When CHANGELOG's MINOR exceeds the pin, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
 
 The pin discipline is the rebuild target's drift-control mechanism. A rebuilt repo without this pin will silently diverge.
 
@@ -471,7 +472,7 @@ To rebuild this part faithfully on a clean repo:
 5. **Pixi tasks**: ~30 entries under `[feature.local-recipes.tasks.*]` matching the Tier 2 wrapper names.
 6. **Meta-test**: `tests/meta/test_all_scripts_runnable.py` with SCRIPTS list + no_task_allowlist enforcing the three-place rule.
 7. **Templates**: 41 starter recipes across 13 ecosystems (12 language + 1 conda-forge.yml config-template subdir with 2 starter files).
-8. **Documentation**: SKILL.md + INDEX.md + CHANGELOG.md + reference/* (11 files) + guides/* (8 files) + quickref/* (2 files).
+8. **Documentation**: SKILL.md + INDEX.md + CHANGELOG.md + reference/* (12 files, incl. `atlas-phase-engineering.md` since v7.8.0) + guides/* (8 files) + quickref/* (2 files).
 9. **MANIFEST.yaml + install.py** for portability (skill should be installable into other repos).
 10. **Mapping subsystem**: seed `pypi_conda_mappings/different_names.json` from public data; `custom.yaml` starts empty.
 
