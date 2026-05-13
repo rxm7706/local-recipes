@@ -885,6 +885,7 @@ ATLAS_RELEASE_CADENCE      = SCRIPTS_DIR / "release_cadence.py"
 ATLAS_FIND_ALTERNATIVE     = SCRIPTS_DIR / "find_alternative.py"
 ATLAS_ADOPTION_STAGE       = SCRIPTS_DIR / "adoption_stage.py"
 ATLAS_DETAIL_CF_ATLAS      = SCRIPTS_DIR / "detail_cf_atlas.py"
+ATLAS_PYPI_ONLY_CANDIDATES = SCRIPTS_DIR / "pypi_only_candidates.py"
 ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
 
 
@@ -1055,6 +1056,32 @@ def adoption_stage(
     if maintainer:
         args.extend(["--maintainer", maintainer])
     return json.dumps(_run_script(ATLAS_ADOPTION_STAGE, args), indent=2)
+
+
+@mcp.tool()
+def pypi_only_candidates(limit: int = 100, min_serial: int = 0) -> str:
+    """List PyPI projects with no conda-forge equivalent.
+
+    Reads the `pypi_universe` side table (populated by Phase D's
+    TTL-gated universe upsert in schema v20+) joined LEFT-OUTER against
+    `packages.pypi_name`. Returns rows ordered by `last_serial DESC`
+    (newest/most-active first).
+
+    Use cases (admin persona):
+      • Channel-growth triage — which PyPI projects are worth packaging?
+      • Spot newly-popular PyPI projects (high last_serial) the channel
+        hasn't picked up yet.
+      • Coordination with conda-forge admins on naming conflicts.
+
+    Tunables:
+      - `limit`       — max rows returned (default 100)
+      - `min_serial`  — filter to projects with last_serial >= N
+                        (rough activity proxy; default 0)
+
+    If `pypi_universe` is empty, returns an actionable hint to run
+    `atlas-phase D` first."""
+    args = ["--json", "--limit", str(limit), "--min-serial", str(min_serial)]
+    return json.dumps(_run_script(ATLAS_PYPI_ONLY_CANDIDATES, args), indent=2)
 
 
 @mcp.tool()

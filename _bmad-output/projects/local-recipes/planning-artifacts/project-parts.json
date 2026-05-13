@@ -3,7 +3,7 @@
   "doc_type": "project-parts",
   "project_name": "local-recipes",
   "date": "2026-05-12",
-  "source_pin": "conda-forge-expert v7.8.1",
+  "source_pin": "conda-forge-expert v7.9.0",
   "repository_type": "monorepo",
   "parts": [
     {
@@ -23,12 +23,12 @@
         "FastMCP (for tool exposure)"
       ],
       "pixi_envs": ["local-recipes", "grayskull", "conda-smithy", "vuln-db"],
-      "version_pin": "v7.8.1",
+      "version_pin": "v7.9.0",
       "subdirectories": {
         "SKILL.md": "primary spine: critical constraints, 10-step autonomous loop, recipe authoring gotchas G1-G6",
         "INDEX.md": "task→tool navigator",
         "CHANGELOG.md": "release history with TL;DR section (canonical drift-detection source)",
-        "reference/": "11 deep-reference files (recipe-yaml-reference, meta-yaml-reference, mcp-tools, python-min-policy, conda-forge-yml-reference, pinning-reference, selectors-reference, jinja-functions, dependency-input-formats, actionable-intelligence-catalog, conda-forge-ecosystem)",
+        "reference/": "13 deep-reference files (recipe-yaml-reference, meta-yaml-reference, mcp-tools, python-min-policy, conda-forge-yml-reference, pinning-reference, selectors-reference, jinja-functions, dependency-input-formats, atlas-actionable-intelligence, atlas-phases-overview, atlas-phase-engineering, conda-forge-ecosystem)",
         "guides/": "8 workflow guides (getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, testing-recipes, sdist-missing-license, atlas-operations)",
         "quickref/": "2 quick-reference files (commands-cheatsheet, bot-commands)",
         "scripts/": "~30 canonical Python implementations (single source of truth for behavior)",
@@ -40,7 +40,7 @@
       "part_id": "cf-atlas",
       "display_name": "cf_atlas data pipeline",
       "project_type_id": "data",
-      "description": "Offline-tolerant package-intelligence pipeline that builds and maintains cf_atlas.db (SQLite, schema v19) inventorying ~800k conda-forge packages. 17 ordered phases (B→N, with B.5/B.6/C.5/E.5/G' sub-phases) with TTL gates and checkpoint-aware resumption. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph offline (Phase H) backends.",
+      "description": "Offline-tolerant package-intelligence pipeline that builds and maintains cf_atlas.db (SQLite, schema v20) inventorying conda-forge packages plus a separate pypi_universe side table (the full PyPI directory, ~800k rows). 17 ordered phases (B→N, with B.5/B.6/C.5/E.5/G' sub-phases) with TTL gates and checkpoint-aware resumption. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph offline (Phase H) backends. v7.9.0 actionable-scope audit closed phase-denominator drift across Phase H/J/M and split Phase D into daily-lean + TTL-gated universe upsert.",
       "root_paths": [
         ".claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py",
         ".claude/skills/conda-forge-expert/scripts/_cf_graph_versions.py",
@@ -56,8 +56,8 @@
       "pixi_envs": ["local-recipes", "vuln-db"],
       "pipeline_phases": ["B", "B.5", "B.6", "C", "C.5", "D", "E", "E.5", "F", "G", "G'", "H", "J", "K", "L", "M", "N"],
       "phase_count": 17,
-      "schema_versions": 19,
-      "cli_count": 17,
+      "schema_versions": 20,
+      "cli_count": 18,
       "ttl_gated_phases": ["F", "G", "H", "K"],
       "checkpoint_table": "phase_state",
       "data_artifacts": {
@@ -75,7 +75,7 @@
       "part_id": "mcp-server",
       "display_name": "FastMCP server",
       "project_type_id": "backend",
-      "description": "FastMCP server exposing 35 MCP tools across recipe-authoring, atlas-intelligence, and project-scanning surfaces. Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
+      "description": "FastMCP server exposing 36 MCP tools across recipe-authoring, atlas-intelligence, and project-scanning surfaces. Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
       "root_paths": [
         ".claude/tools/conda_forge_server.py",
         ".claude/tools/gemini_server.py",
@@ -89,7 +89,7 @@
       "pixi_envs": ["local-recipes"],
       "tool_surfaces": {
         "recipe-authoring": "~15 tools: generate_recipe_from_pypi, validate_recipe, edit_recipe, optimize_recipe, scan_for_vulnerabilities, trigger_build, get_build_summary, analyze_build_failure, prepare_submission_branch, submit_pr, migrate_to_v1, update_recipe_from_github, update_recipe, update_cve_database, update_mapping_cache",
-        "atlas-intelligence": "~12 tools: query_atlas, package_health, staleness_report, cve_watcher, behind_upstream, feedstock_health, whodepends, release_cadence, version_downloads, find_alternative, adoption_stage, my_feedstocks, lookup_feedstock, get_feedstock_context, enrich_from_feedstock, check_dependencies, check_github_version, get_conda_name, get_build_summary, analyze_build_failure",
+        "atlas-intelligence": "~13 tools: query_atlas, package_health, staleness_report, cve_watcher, behind_upstream, feedstock_health, whodepends, release_cadence, version_downloads, find_alternative, adoption_stage, pypi_only_candidates, my_feedstocks, lookup_feedstock, get_feedstock_context, enrich_from_feedstock, check_dependencies, check_github_version, get_conda_name, get_build_summary, analyze_build_failure",
         "project-scanning": "~5 tools: scan_project (~28 input formats), run_system_health_check, trigger_build, prepare_submission_branch, submit_pr"
       }
     },

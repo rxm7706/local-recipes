@@ -85,6 +85,7 @@ migration progress, maintainer-load distribution, license auditing.
 | How many feedstocks are bot-stuck? | `feedstock-health --filter stuck --limit 100` | Phase M | Channel-wide list (4,121 stuck channel-wide as of v6.9.0) | ✅ shipped |
 | How many feedstocks are flagged 'bad'? | `feedstock-health --filter bad` | Phase M | List of feedstocks cf-graph has marked unhealthy | ✅ shipped |
 | Channel migration progress (v0→v1)? | Aggregate `recipe_format` distribution | Phase E classifier | "%v0 / %v1 / %unknown" roll-up | ✅ shipped (SQL); 📋 dashboard CLI open |
+| What's on PyPI but not on conda-forge? (candidate-list) | `pypi-only-candidates --limit N --min-serial M` | Phase D + `pypi_universe` side table (schema v20+) | Newest unmatched PyPI projects, ordered by `last_serial DESC` | ✅ shipped (v7.9.0) |
 | Python version coverage matrix? | Parse cf-graph variant configs | Phase J extension | Matrix of feedstocks vs Python 3.10/3.11/3.12 support | 📋 open |
 | CUDA support matrix? | Parse cf-graph variant configs | Phase J extension | Same shape, CUDA variants | 📋 open |
 

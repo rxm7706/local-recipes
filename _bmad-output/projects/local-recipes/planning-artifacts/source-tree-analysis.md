@@ -105,7 +105,9 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │   │   ├── selectors-reference.md            # rattler-build selector syntax
 │   │   │   ├── jinja-functions.md                # ${{ compiler() / stdlib() / pin_subpackage() / cdt() }}
 │   │   │   ├── dependency-input-formats.md       # scan_project input matrix (~28 formats)
-│   │   │   ├── actionable-intelligence-catalog.md  # persona-mapped atlas signal index
+│   │   │   ├── atlas-actionable-intelligence.md  # persona-mapped atlas signal index
+│   │   │   ├── atlas-phases-overview.md          # phase-indexed companion: data source + purpose + intel per stage
+│   │   │   ├── atlas-phase-engineering.md        # engineering patterns (rate limits, GraphQL, atomic writes)
 │   │   │   └── conda-forge-ecosystem.md          # ecosystem overview (bot, smithy, repodata-patches)
 │   │   │
 │   │   ├── guides/                          # 8 workflow guides
@@ -162,6 +164,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │   │   ├── release_cadence.py                # release-cadence (Phase L-based)
 │   │   │   ├── find_alternative.py               # find-alternative
 │   │   │   ├── adoption_stage.py                 # adoption-stage
+│   │   │   ├── pypi_only_candidates.py           # pypi-only-candidates (Phase D side-table reader, v7.9.0+)
 │   │   │   ├── cve_watcher.py                    # cve-watcher
 │   │   │   ├── cve_manager.py                    # CVE DB CRUD (update_cve_database)
 │   │   │   ├── vulnerability_scanner.py          # scan_for_vulnerabilities
@@ -253,7 +256,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │
 └── data/                                    # ★★ Part 1 Tier 3 + Part 2 artifacts (gitignored)
     └── conda-forge-expert/
-        ├── cf_atlas.db                           # ★ Part 2 primary artifact (SQLite, 19 schema versions)
+        ├── cf_atlas.db                           # ★ Part 2 primary artifact (SQLite, 20 schema versions; `packages` + `pypi_universe` + 10 supporting tables)
         ├── cf_atlas.db-shm                       # SQLite shared memory (WAL mode)
         ├── cf_atlas.db-wal                       # SQLite write-ahead log
         ├── cf_atlas_meta.json                    # atlas run metadata

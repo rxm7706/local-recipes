@@ -2,6 +2,71 @@
 
 ## TL;DR — what's new in the latest release
 
+**v7.9.0** (May 13, 2026) — Actionable-scope audit closure: phase-by-phase review against `reference/atlas-actionable-intelligence.md` found 4 phases writing data no persona reads. Bundled fix lands as schema v20 + 29 new unit tests + a new `pypi-only-candidates` CLI / MCP tool. Driven by `docs/specs/atlas-pypi-universe-split.md` via `bmad-quick-dev`.
+
+### Phase H — 56× cold-run denominator cut
+
+`_phase_h_eligible_pypi_names` (`pypi-json` path) lacked a `conda_name IS NOT NULL` filter, so it fetched `pypi.org/pypi/<name>/json` for the ~660k `relationship='pypi_only'` rows that Phase D inserted under v19. The downstream `upstream_versions` UPSERT silently discarded every fetched result via its own `conda_name IS NOT NULL` clause — the network round-trip was pure waste.
+
+- Selector now applies the canonical persona-filter triplet `conda_name IS NOT NULL AND latest_status='active' AND COALESCE(feedstock_archived,0)=0` used by Phases F/G/G'/K/L/N. Denominator drops from ~672k → ~12k.
+- After the schema v20 migration (below) removes pypi_only rows from `packages`, the structural fix makes the gate naturally correct; the explicit clauses are defense-in-depth.
+- Test: `tests/unit/test_phase_h_eligible.py` — 6 fixtures covering pypi_only, archived, inactive, TTL-fresh, no-pypi-name, and the happy path.
+
+### Phase D — split into daily-lean + TTL-gated universe upsert
+
+The legacy v19 Phase D inserted ~660k `pypi_only` rows into `packages` on every build. Refactor into three helpers:
+
+- `_phase_d_update_working_set` (always-on) — updates `pypi_last_serial` on conda-linked rows + discovers name-coincidence matches. Same 40 MB Simple API fetch as before, but no INSERTs.
+- `_phase_d_universe_is_fresh` — TTL probe against `MAX(pypi_universe.fetched_at)`.
+- `_phase_d_upsert_universe` — bulk UPSERT into the new `pypi_universe` side table when TTL is stale. Idempotent via `ON CONFLICT(pypi_name) DO UPDATE`.
+
+New env tunables: `PHASE_D_DISABLED=1`, `PHASE_D_UNIVERSE_DISABLED=1` (keep the lean path, skip universe), `PHASE_D_UNIVERSE_TTL_DAYS` (default 7d).
+
+### Schema v20 — `pypi_universe` side table + self-healing migration
+
+```sql
+CREATE TABLE pypi_universe (
+    pypi_name   TEXT PRIMARY KEY,
+    last_serial INTEGER,
+    fetched_at  INTEGER
+);
+```
+
+- `init_schema` detects existing `relationship='pypi_only'` rows in `packages` and migrates them to `pypi_universe` in a single transaction (`INSERT OR IGNORE` + `DELETE`). Idempotent — re-running is a no-op.
+- Net: ~32k rows in `packages` (down from ~700k), ~800k in `pypi_universe`. `SELECT COUNT(*) FROM packages` finally returns an honest number. `detail-cf-atlas <name>` stops returning confusing pypi-only "matches."
+- Tests: `tests/unit/test_schema_v20_migration.py` — migration correctness, idempotency, fresh-v20 state.
+
+### Phases J + M — archived-feedstock filter at write site
+
+Phase J wrote dependency edges from archived feedstocks into `dependencies` (polluting `whodepends --reverse`); Phase M wrote bot-status columns to archived rows that `feedstock-health` already filtered out at read time. Both now apply the canonical triplet at the write site:
+
+- Phase J builds an `inactive_feedstocks` skip-set from `packages` before opening the cf-graph tarball; reports `skipped_inactive_feedstocks` in stats.
+- Phase M's `rows_to_process` SELECT gains `AND latest_status='active' AND COALESCE(feedstock_archived,0)=0`.
+- Test: `tests/unit/test_phase_j_m_archived.py` — 2 fixtures with mixed active + archived + inactive cases.
+
+### New CLI / MCP tool — `pypi-only-candidates`
+
+Reads the `pypi_universe LEFT JOIN packages` to surface admin-persona "what's on PyPI but not on conda-forge" candidates. Ordered by `last_serial DESC` (newest/most-active first). Flags: `--limit`, `--min-serial`, `--json`. Empty-universe state prints an actionable hint to run `atlas-phase D`. Three-place rule applied: canonical impl + thin wrapper + `pixi.toml` task + meta-test SCRIPTS entry. MCP tool exposed via `conda_forge_server.py`. Test: `tests/unit/test_pypi_only_candidates.py`.
+
+### Catalog impact
+
+`reference/atlas-actionable-intelligence.md` § Channel Health: new row "What's on PyPI but not on conda-forge? (candidate-list)" → ✅ shipped (v7.9.0). Previously a 📋-open SQL-only item.
+
+### Test totals
+
+29 new unit tests (Phase H = 6, Phase J + M = 2, schema v20 = 3, Phase D split = 11, pypi-only-candidates = 7). Plus the meta-test (`test_all_scripts_runnable.py`) gains a `pypi_only_candidates.py` entry. All 432 tests pass after this change (403 prior + 29 new); 1 pre-existing failure (`test_whodepends_reverse_json`) is unrelated and predates the audit.
+
+### Out of scope (deferred specs)
+
+- Persona-aware default profiles for `build-cf-atlas` (E default-on, N auto-scoped).
+- `v_actionable_packages` SQL view as a structural enforcement.
+- Phase H `pypi_last_serial` freshness-gate (depends on this spec landing first).
+- Dropping the unused `vuln_total` column.
+
+Each will get its own quick-dev spec.
+
+---
+
 **v7.8.1** (May 12, 2026) — Audit close-out pass: every remaining HIGH / MEDIUM / LOW finding from the v7.8.0 deep audit is now addressed or explicitly justified as intentional. 44 new unit tests; 403 total tests passing across the CFE suite. Follows the patterns established in `reference/atlas-phase-engineering.md` (added in v7.8.0).
 
 ### Phase H — same rate-limit-safety pattern as Phase F

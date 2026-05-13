@@ -396,11 +396,13 @@ stores conda-forge data. So:
 - Update `.claude/skills/conda-forge-expert/SKILL.md` "Atlas
   Intelligence Layer" section with the new CLIs.
 - Update
-  `.claude/skills/conda-forge-expert/reference/actionable-intelligence-catalog.md`
+  `.claude/skills/conda-forge-expert/reference/atlas-actionable-intelligence.md`
   with the three new tools mapped to personas (esp.
   `pyver-breakdown --policy-check` under § Feedstock Maintainer →
   Decisions, and `platform-breakdown --feedstock-roundup` under same
-  section).
+  section). Also update the Phase F row in
+  `.claude/skills/conda-forge-expert/reference/atlas-phases-overview.md`
+  with the new aggregate tables and CLIs.
 - Per CLAUDE.md Rule 2, end with a CHANGELOG.md entry and a
   `bmad-retrospective` run focused on the CFE skill.
 
@@ -517,7 +519,8 @@ Verified by running them under `unshare -n` (or equivalent) in CI.
                                      section noting api.anaconda.org failure mode)
   CHANGELOG.md                 EDIT (v7.x or v8.0.0 entry per retro semver call)
   quickref/commands-cheatsheet.md  EDIT
-  reference/actionable-intelligence-catalog.md  EDIT
+  reference/atlas-actionable-intelligence.md    EDIT
+  reference/atlas-phases-overview.md            EDIT (Phase F row)
 
 pixi.toml                      EDIT (+3 task entries)
 
@@ -753,8 +756,10 @@ ALTER TABLE package_version_downloads ADD COLUMN source TEXT;
 
 - `.claude/skills/conda-forge-expert/SKILL.md` — Atlas Intelligence
   Layer section; Critical Constraints; Operating Principles.
-- `.claude/skills/conda-forge-expert/reference/actionable-intelligence-catalog.md`
+- `.claude/skills/conda-forge-expert/reference/atlas-actionable-intelligence.md`
   — persona map for the new CLIs.
+- `.claude/skills/conda-forge-expert/reference/atlas-phases-overview.md`
+  — Phase F row gets the new aggregate tables and CLIs.
 - `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md`
   — env-var matrix lands here.
 - `docs/enterprise-deployment.md` — JFrog routing context; the air-gap

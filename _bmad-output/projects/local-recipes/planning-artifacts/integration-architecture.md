@@ -3,7 +3,7 @@ doc_type: integration-architecture
 project_name: local-recipes
 date: 2026-05-12
 parts_integrated: 4
-source_pin: 'conda-forge-expert v7.8.1'
+source_pin: 'conda-forge-expert v7.9.0'
 ---
 
 # Integration Architecture: How the Four Parts Connect

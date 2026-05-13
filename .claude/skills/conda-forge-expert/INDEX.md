@@ -57,7 +57,8 @@ needs the `vuln-db` env; cached counts work everywhere.
 | Is this package mature / declining / silent? | MCP `adoption_stage` · CLI `adoption-stage --package <pkg>` |
 | Suggest a maintained alternative for an archived package | MCP `find_alternative` · CLI `find-alternative <pkg>` |
 | Generic SQL escape hatch | MCP `query_atlas` (read-only, write-keywords blocked) |
-| Catalog of every actionable signal by persona | reference `reference/actionable-intelligence-catalog.md` |
+| Catalog of every actionable signal by persona | reference `reference/atlas-actionable-intelligence.md` |
+| Per-phase overview (data source, purpose, intel each stage produces) | reference `reference/atlas-phases-overview.md` |
 
 ---
 

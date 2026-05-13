@@ -321,6 +321,10 @@ cmd = "python .claude/scripts/conda-forge-expert/find_alternative.py"
 description = "Lifecycle classifier (bleeding-edge / stable / mature / declining / silent). Uses Phase F + Phase I data. --package NAME or --maintainer HANDLE."
 cmd = "python .claude/scripts/conda-forge-expert/adoption_stage.py"
 
+[feature.local-recipes.tasks.pypi-only-candidates]
+description = "List PyPI projects with no conda-forge equivalent. Reads the pypi_universe side table (Phase D, schema v20+). --limit N, --min-serial M, --json. Admin-persona candidate list."
+cmd = "python .claude/scripts/conda-forge-expert/pypi_only_candidates.py"
+
 [feature.local-recipes.tasks.feedstock-health]
 description = "Surface feedstocks with stuck bot version-update PRs / open bot PRs / cf-graph 'bad' flag. --maintainer X, --filter stuck|bad|open-pr|all, --limit N, --json"
 cmd = "python .claude/scripts/conda-forge-expert/feedstock_health.py"

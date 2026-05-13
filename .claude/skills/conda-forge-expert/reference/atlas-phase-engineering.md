@@ -4,7 +4,9 @@ Patterns and constraints for writing or refactoring `conda_forge_atlas.py`
 pipeline phases (B → N) and their per-row workers. These are *engineering*
 concerns (rate limits, resumability, RAM, atomic IO) — distinct from the
 *intelligence* the atlas surfaces, which lives in
-[`actionable-intelligence-catalog.md`](actionable-intelligence-catalog.md).
+[`atlas-actionable-intelligence.md`](atlas-actionable-intelligence.md)
+(persona-indexed) and [`atlas-phases-overview.md`](atlas-phases-overview.md)
+(phase-indexed).
 
 This doc collects the lessons from the 2026-05-12 atlas hardening pass
 (v7.8.0). Treat it as the default rule book for any new phase or any
@@ -368,4 +370,5 @@ external-default and env-var-redirect paths.
 - `_http.py` — shared resolvers, auth, fetch-with-fallback, atomic-write helpers.
 - `conda_forge_atlas.py` — phase implementations; consult `_phase_k_github_graphql_batch` and `phase_l_extra_registries` for canonical examples of patterns §2 and §4.
 - `phase_state` SQLite table — checkpoint storage for §8.
-- `actionable-intelligence-catalog.md` — separate concern: what the atlas surfaces, not how it computes it.
+- `atlas-actionable-intelligence.md` — separate concern: what the atlas surfaces (persona × goal × CLI), not how it computes it.
+- `atlas-phases-overview.md` — phase-indexed companion to the persona catalog: per-phase data source, purpose, what gets written, intelligence unlocked.

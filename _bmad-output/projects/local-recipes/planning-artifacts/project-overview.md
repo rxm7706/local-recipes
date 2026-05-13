@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v7.8.1'
+source_pin: 'conda-forge-expert v7.9.0'
 ---
 
 # Project Overview: local-recipes
@@ -27,7 +27,7 @@ source_pin: 'conda-forge-expert v7.8.1'
 | License | BSD-3-Clause (LICENSE.txt) |
 | Maintainer of new recipes | `rxm7706` (in `extra.recipe-maintainers`) |
 | Recipe corpus | 1,415 v1 `recipe.yaml` files under `recipes/` + 1 at `wagtail/` (NOT part of the rebuild target) |
-| Source pin (for this doc set) | conda-forge-expert skill v7.8.1 |
+| Source pin (for this doc set) | conda-forge-expert skill v7.9.0 |
 
 ---
 

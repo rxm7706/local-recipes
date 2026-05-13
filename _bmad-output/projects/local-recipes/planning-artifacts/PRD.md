@@ -2,16 +2,19 @@
 doc_type: prd
 project_name: local-recipes
 date: 2026-05-12
-version: '1.1.0'
+version: '1.1.1'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
-source_pin: 'conda-forge-expert v7.8.1'
+source_pin: 'conda-forge-expert v7.9.0'
+re_validated: 2026-05-13
 input_docs:
   - planning-artifacts/index.md
   - planning-artifacts/project-overview.md
   - planning-artifacts/integration-architecture.md
   - project-context.md
+edit_history:
+  - { date: '2026-05-13', via: 'bmad-edit-prd', delta: 'v7.8.1 → v7.9.0 sync after actionable-scope audit (docs/specs/atlas-pypi-universe-split.md): schema v19 → v20, +pypi_universe side table, +pypi-only-candidates CLI/MCP, +Phase D split. PATCH bump (no FR/NFR scope shift; count-and-pin sync).' }
 ---
 
 # Product Requirements Document: `local-recipes` Rebuild
@@ -45,8 +48,8 @@ This PRD does not assume a destruction event. The rebuild target supports:
 |---|---|
 | Pixi monorepo scaffolding (8 envs, ~50 tasks) | The 1,415 recipes under `recipes/` |
 | conda-forge-expert skill (Part 1, ~42 scripts + docs) | Recipe-specific upstream patches |
-| cf_atlas data pipeline (Part 2, 17 phases, schema v19) | Historical CHANGELOG entries (only TL;DR + structure) |
-| FastMCP server (Part 3, 35 tools) | Auxiliary `gemini_server.py` (optional) |
+| cf_atlas data pipeline (Part 2, 17 phases, schema v20) | Historical CHANGELOG entries (only TL;DR + structure) |
+| FastMCP server (Part 3, 36 tools) | Auxiliary `gemini_server.py` (optional) |
 | BMAD installer (Part 4, 65 skills, multi-project) | Personal `.envrc` files, IDE-specific config |
 | Enterprise/air-gap layer (`_http.py`, JFrog) | Production JFrog mirror setup (operator's problem) |
 | Tests (41 files + meta-tests for invariants) | Recipe corpus tests (covered by conda-forge CI) |
@@ -114,7 +117,7 @@ JTBD-5.1: Add a new MCP tool / pipeline phase / skill reference without breaking
 
 | ID | Goal | Measurable outcome |
 |---|---|---|
-| G1 | **Faithful rebuild of Parts 1-4** | All 35 MCP tools functional; all 17 atlas phases run; bmad-switch + 6-layer merge work; 64 real skills load (42 BMAD + 21 engineering + 1 CFE; the legacy stray `.claude/skills/data/` dir is not recreated) |
+| G1 | **Faithful rebuild of Parts 1-4** | All 36 MCP tools functional; all 17 atlas phases run; bmad-switch + 6-layer merge work; 64 real skills load (42 BMAD + 21 engineering + 1 CFE; the legacy stray `.claude/skills/data/` dir is not recreated) |
 | G2 | **First-pass recipe authoring success rate ≥90%** | First-pass conda-forge PR acceptance (no review-comment revisions on lint/policy issues) ≥9 of 10 recent recipes |
 | G3 | **Atlas refresh resilient to interrupts** | Mid-run kill of `bootstrap-data --fresh` resumes cleanly via `phase_state` cursor + TTL gates; ≤5% rework |
 | G4 | **Air-gap operation parity** | Full atlas build + recipe authoring + PR submission run with all `*_BASE_URL` set to JFrog endpoints + `JFROG_API_KEY` correctly scoped; zero cross-host leak |
@@ -164,7 +167,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 
 | ID | Feature | Priority | Acceptance |
 |---|---|---|---|
-| F2.1 | SQLite schema v19 with 11 tables | P0 | `init_schema()` creates packages + 10 supporting tables; SCHEMA_VERSION constant matches |
+| F2.1 | SQLite schema v20 with 12 tables (incl. `pypi_universe` side table separating PyPI directory from working set) | P0 | `init_schema()` creates packages + 11 supporting tables; SCHEMA_VERSION constant matches; v19→v20 migration moves `relationship='pypi_only'` rows from `packages` to `pypi_universe` idempotently |
 | F2.2 | 17 phases (B → N) via PHASES registry | P0 | `conda_forge_atlas.py:PHASES` list matches the 17-tuple order; case-insensitive `get_phase()` works |
 | F2.3 | `bootstrap-data` orchestrator | P0 | `--fresh`, `--resume`, `--status`, `--no-vdb`, `--no-cf-atlas`, `--phase-h-source` flags; per-step timeouts via `BOOTSTRAP_<STEP>_TIMEOUT` |
 | F2.4 | `atlas-phase <ID>` single-phase CLI | P0 | `--reset-ttl`, `--list`; supports B/B.5/B.6/C/C.5/D/E/E.5/F/G/G'/H/J/K/L/M/N |
@@ -182,7 +185,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | ID | Feature | Priority | Acceptance |
 |---|---|---|---|
 | F3.1 | `conda_forge_server.py` with `FastMCP("conda-forge-expert")` | P0 | Server starts via stdio transport; registers as `conda-forge-expert` |
-| F3.2 | 35 `@mcp.tool()` registrations | P0 | All 35 tools enumerated in `architecture-mcp-server.md` § "The 35 Tools by Surface" are present and functional |
+| F3.2 | 36 `@mcp.tool()` registrations (incl. `pypi_only_candidates` added in v7.9.0) | P0 | All 36 tools enumerated in `architecture-mcp-server.md` § "The Tools by Surface" are present and functional |
 | F3.3 | Thin-subprocess wrapper pattern | P0 | Every tool body is ≤30 lines; delegates via `_run_script(SCRIPT_PATH, args)` |
 | F3.4 | `_run_script` helper with 3-tier error handling | P0 | Handles FileNotFoundError, JSONDecodeError, TimeoutExpired; returns structured error dict |
 | F3.5 | 2 async tools (`trigger_build`, `update_cve_database`) | P0 | Async tools use `Context` for progress reporting; fire-and-forget pattern for builds |
@@ -452,7 +455,7 @@ Captured here so they aren't forgotten. All have detailed treatment in source do
 
 | ID | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | Skill version drift between rebuild start and finish | High | Medium | Pin to v7.8.1 at PRD re-validation time (2026-05-12); document drift items in the next retro. PRD v1.1.0 was re-pinned from v7.7 → v7.8.1 via `bmad-correct-course` per `sprint-change-proposal-2026-05-12.md`. |
+| R1 | Skill version drift between rebuild start and finish | High | Medium | Pin to v7.9.0 at PRD re-validation time (2026-05-13); document drift items in the next retro. PRD v1.1.0 was re-pinned v7.7 → v7.8.1 via `bmad-correct-course` per `sprint-change-proposal-2026-05-12.md`. PRD v1.1.1 was re-pinned v7.8.1 → v7.9.0 via `bmad-edit-prd` after the actionable-scope audit (`docs/specs/atlas-pypi-universe-split.md`) closed 4 phase-denominator findings; retro at `implementation-artifacts/retro-atlas-pypi-universe-split-2026-05-13.md`. |
 | R2 | Operator misconfigures `_http.py` and creates a worse cross-host leak | Medium | High | Comprehensive doc in 3+ places; subshell pattern is the simplest mitigation; consider DW2 promotion if any incidents |
 | R3 | rattler-build introduces breaking change during rebuild | Low | High | Pin `rattler-build-conda-compat >=1.2.0,<2.0.0a0` (already in pixi.toml); track upstream releases |
 | R4 | BMAD-METHOD ships v7.0 with breaking changes to skill format | Medium | Medium | Pin BMAD installer version; defer upgrade to a post-rebuild dedicated effort |
@@ -576,7 +579,7 @@ Maps each of the 52 features in §5 to its **primary JTBD** (the user job it mos
 
 | Feature | Primary JTBD | Secondary | Why this serves the JTBD |
 |---|---|---|---|
-| F2.1 (SQLite schema v19) | JTBD-1.3 | — | Single source of intelligence data |
+| F2.1 (SQLite schema v20) | JTBD-1.3 | — | Single source of intelligence data; `pypi_universe` side table separates PyPI directory from conda-actionable working set |
 | F2.2 (17 phases via PHASES registry) | JTBD-1.3 | JTBD-2.1 | Pipeline structure enables refresh + air-gap |
 | F2.3 (`bootstrap-data` orchestrator) | JTBD-1.3 | JTBD-2.1 | Single command refreshes everything |
 | F2.4 (`atlas-phase <ID>` CLI) | JTBD-1.3 | — | Cheap single-phase refresh |
