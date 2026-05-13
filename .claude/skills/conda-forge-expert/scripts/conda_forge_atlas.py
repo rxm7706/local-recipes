@@ -132,7 +132,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 20
 
 
 def _get_data_dir() -> Path:
@@ -306,6 +306,23 @@ CREATE TABLE IF NOT EXISTS upstream_versions (
 );
 CREATE INDEX IF NOT EXISTS idx_upstream_name ON upstream_versions(conda_name);
 CREATE INDEX IF NOT EXISTS idx_upstream_source ON upstream_versions(source);
+
+-- Phase D side table (schema v20): the PyPI universe directory. One row
+-- per public PyPI project — separated from `packages` so the working set
+-- stays conda-actionable. Refreshed on its own TTL via
+-- PHASE_D_UNIVERSE_TTL_DAYS (default 7); the daily Phase D run updates
+-- `packages.pypi_last_serial` on conda-linked rows without touching this
+-- table. Read by the `pypi-only-candidates` CLI via LEFT JOIN to
+-- `packages.pypi_name`. The v20 migration block in init_schema migrates
+-- existing `relationship='pypi_only'` rows here and DELETEs them from
+-- `packages`.
+CREATE TABLE IF NOT EXISTS pypi_universe (
+    pypi_name   TEXT PRIMARY KEY,
+    last_serial INTEGER,
+    fetched_at  INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_pypi_universe_serial ON pypi_universe(last_serial);
+CREATE INDEX IF NOT EXISTS idx_pypi_universe_fetched ON pypi_universe(fetched_at);
 
 -- Upstream-version drift history. Captures one row per (snapshot_at,
 -- conda_name, source) tuple at the end of each Phase H/K/L run. Lets
@@ -498,6 +515,51 @@ def init_schema(conn: sqlite3.Connection) -> None:
             )}
             if "source" not in pvd_cols:
                 conn.execute("ALTER TABLE package_version_downloads ADD COLUMN source TEXT")
+
+        # v19 → v20: extract the ~660k `relationship='pypi_only'` rows from
+        # `packages` into the new `pypi_universe` side table. Working-set
+        # queries (Phase F/G/G'/H/K/L/N + every CLI) stop seeing pypi-only
+        # rows; the `pypi-only-candidates` CLI reads them via LEFT JOIN.
+        # Self-healing: INSERT OR IGNORE + DELETE is idempotent; re-running
+        # after success is a no-op because the SELECT returns 0 rows.
+        # Wrapped in its own transaction so a crash mid-migration doesn't
+        # leave half-state.
+        v20_pre_count = conn.execute(
+            "SELECT COUNT(*) FROM packages WHERE relationship = 'pypi_only'"
+        ).fetchone()[0]
+        if v20_pre_count > 0:
+            # The pypi_universe table is in SCHEMA_DDL (created below) but
+            # the migration runs first, so create it inline here. Repeats
+            # are harmless under IF NOT EXISTS.
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS pypi_universe ("
+                "  pypi_name TEXT PRIMARY KEY,"
+                "  last_serial INTEGER,"
+                "  fetched_at INTEGER"
+                ")"
+            )
+            print(f"  v20 migration: moving {v20_pre_count:,} pypi_only rows "
+                  f"to pypi_universe...")
+            conn.execute("BEGIN TRANSACTION")
+            try:
+                conn.execute(
+                    "INSERT OR IGNORE INTO pypi_universe "
+                    "(pypi_name, last_serial, fetched_at) "
+                    "SELECT pypi_name, pypi_last_serial, "
+                    "       COALESCE(downloads_fetched_at, 0) "
+                    "FROM packages "
+                    "WHERE relationship = 'pypi_only' "
+                    "  AND pypi_name IS NOT NULL"
+                )
+                deleted = conn.execute(
+                    "DELETE FROM packages WHERE relationship = 'pypi_only'"
+                ).rowcount
+                conn.commit()
+                print(f"  v20 migration: deleted {deleted:,} pypi_only rows "
+                      f"from packages")
+            except Exception:
+                conn.rollback()
+                raise
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -995,19 +1057,14 @@ def phase_c5_source_url_match(conn: sqlite3.Connection) -> dict:
     return {"folded_into": "E"}
 
 
-def phase_d_pypi_enumeration(conn: sqlite3.Connection) -> dict:
-    """Phase D: enumerate PyPI universe via Simple API v1.
+def _fetch_pypi_simple() -> list[dict]:
+    """Fetch the PyPI Simple v1 catalog (~40 MB, ~800k projects).
 
-    Fetches all ~800k PyPI package names + freshness serials. For each:
-      - if pypi_name already set in a conda row (matched in Phase C) → set pypi_last_serial
-      - elif a conda row exists with same conda_name (case-insensitive) → mark
-        match_source='name_coincidence', match_confidence='likely', set pypi_name
-      - else INSERT a new pypi_only row
+    Shared by Phase D's working-set update and universe upsert paths.
+    Honors `_http.py` resolver fallback for enterprise mirroring via
+    `PYPI_BASE_URL`.
     """
-    t0 = time.monotonic()
-    print("  Fetching PyPI Simple v1 JSON (~40MB)...")
     if _HTTP_AVAILABLE and _resolve_pypi_simple_urls is not None and _fetch_with_fallback is not None:
-        # Each PyPI Simple base URL needs a trailing slash for the index endpoint.
         urls = [f"{base}/" for base in _resolve_pypi_simple_urls()]
         simple = _fetch_with_fallback(
             urls,
@@ -1023,10 +1080,19 @@ def phase_d_pypi_enumeration(conn: sqlite3.Connection) -> dict:
         )
         with urllib.request.urlopen(req, timeout=300) as resp:
             simple = json.load(resp)
-    projects = simple.get("projects", [])
-    print(f"  Got {len(projects):,} PyPI projects")
+    return simple.get("projects", [])
 
-    # Build a quick lookup of existing conda rows
+
+def _phase_d_update_working_set(
+    conn: sqlite3.Connection, projects: list[dict]
+) -> tuple[int, int]:
+    """Phase D's always-on lean path: update conda-linked serials + discover
+    name-coincidence matches.
+
+    Returns (serial_updates, name_coincidence_upgrades). Touches only rows
+    already in `packages` — never inserts. The pypi-only corpus lives in
+    `pypi_universe` (see `_phase_d_upsert_universe`).
+    """
     existing_conda = {row[0].lower(): row[0] for row in
                       conn.execute("SELECT conda_name FROM packages WHERE conda_name IS NOT NULL")
                       if row[0]}
@@ -1034,35 +1100,23 @@ def phase_d_pypi_enumeration(conn: sqlite3.Connection) -> dict:
                      conn.execute("SELECT pypi_name FROM packages WHERE pypi_name IS NOT NULL")
                      if row[0]}
 
-    # Batched commit (v7.7+): every 5k rows. All three branches are
-    # idempotent (UPDATE-by-name is no-op when already correct; INSERT
-    # would duplicate but `existing_pypi` is recomputed implicitly because
-    # we maintain it in-memory below). Cursor advances over the sorted
-    # `projects` list so an operator can see progress in `phase_state`.
-    save_phase_checkpoint(
-        conn, "D", cursor=None, items_completed=0,
-        items_total=len(projects), status="in_progress",
-    )
     commit_every = 5000
     updated_serial = 0
     upgraded_to_coincidence = 0
-    inserted_pypi_only = 0
     written = 0
-    last_name = ""
     for proj in projects:
         pypi_name = proj.get("name", "").lower()
         serial = proj.get("_last-serial")
         if not pypi_name:
             continue
         if pypi_name in existing_pypi:
-            # Already matched via parselmouth — just record serial
             conn.execute(
                 "UPDATE packages SET pypi_last_serial = ? WHERE pypi_name = ?",
                 (serial, pypi_name),
             )
             updated_serial += 1
+            written += 1
         elif pypi_name in existing_conda:
-            # Same-name conda package not yet matched — mark name_coincidence
             conn.execute(
                 """
                 UPDATE packages
@@ -1075,51 +1129,150 @@ def phase_d_pypi_enumeration(conn: sqlite3.Connection) -> dict:
                 (pypi_name, serial, existing_conda[pypi_name]),
             )
             upgraded_to_coincidence += 1
-            # Track that this name now exists as a PyPI row so a duplicate
-            # iteration (which shouldn't happen — the simple-index is unique —
-            # but defensive) doesn't fall through to the INSERT branch.
             existing_pypi.add(pypi_name)
-        else:
-            # PyPI-only row
-            conn.execute(
-                """
-                INSERT INTO packages (
-                    pypi_name, pypi_last_serial,
-                    relationship, match_source, match_confidence
-                ) VALUES (?, ?, 'pypi_only', 'none', 'n/a')
-                """,
-                (pypi_name, serial),
-            )
-            inserted_pypi_only += 1
-            existing_pypi.add(pypi_name)
+            written += 1
+        # else: pypi-only project. NOT inserted into `packages` (v20+).
+        # The pypi_universe upsert handles it.
+        if written and written % commit_every == 0:
+            conn.commit()
+    conn.commit()
+    return updated_serial, upgraded_to_coincidence
 
+
+def _phase_d_universe_is_fresh(
+    conn: sqlite3.Connection, ttl_days: float
+) -> bool:
+    """Probe `pypi_universe` freshness: True iff MAX(fetched_at) is within
+    `ttl_days` of now. Empty table → False (forces first-time upsert).
+    """
+    row = conn.execute(
+        "SELECT MAX(fetched_at) FROM pypi_universe"
+    ).fetchone()
+    if row is None or row[0] is None:
+        return False
+    cutoff = int(time.time()) - int(ttl_days * 86400)
+    return row[0] > cutoff
+
+
+def _phase_d_upsert_universe(
+    conn: sqlite3.Connection, projects: list[dict]
+) -> int:
+    """TTL-gated bulk-write of the PyPI universe directory.
+
+    Each call refreshes every project's `(pypi_name, last_serial, fetched_at)`
+    row. Idempotent via INSERT OR REPLACE; safe to re-run after a partial
+    crash. Incremental commits every 5k rows so a mid-run interrupt leaves
+    a partial-but-coherent snapshot the next run will complete.
+    """
+    now = int(time.time())
+    commit_every = 5000
+    written = 0
+    for proj in projects:
+        pypi_name = proj.get("name", "").lower()
+        serial = proj.get("_last-serial")
+        if not pypi_name:
+            continue
+        conn.execute(
+            "INSERT INTO pypi_universe (pypi_name, last_serial, fetched_at) "
+            "VALUES (?, ?, ?) "
+            "ON CONFLICT(pypi_name) DO UPDATE SET "
+            "  last_serial = excluded.last_serial, "
+            "  fetched_at = excluded.fetched_at",
+            (pypi_name, serial, now),
+        )
         written += 1
-        last_name = pypi_name
         if written % commit_every == 0:
             conn.commit()
-            save_phase_checkpoint(
-                conn, "D", cursor=last_name,
-                items_completed=written, items_total=len(projects),
-                status="in_progress",
-            )
-
     conn.commit()
+    return written
+
+
+def phase_d_pypi_enumeration(conn: sqlite3.Connection) -> dict:
+    """Phase D: enumerate PyPI universe via Simple API v1 (schema v20+).
+
+    Two-tier write strategy:
+      - **Always-on** (every build): update `packages.pypi_last_serial` on
+        conda-linked rows + discover name-coincidence matches. Drives the
+        working-set freshness signal. Cheap; no row inserts.
+      - **TTL-gated** (default 7d via PHASE_D_UNIVERSE_TTL_DAYS): refresh
+        the `pypi_universe` side table with the full ~800k-project
+        catalog. Read by the `pypi-only-candidates` CLI via LEFT JOIN to
+        `packages.pypi_name`.
+
+    The legacy v19 `INSERT INTO packages ... 'pypi_only'` branch was
+    removed in v20; pypi-only projects live in `pypi_universe`, never in
+    `packages`. The v20 schema migration moves any pre-existing
+    `relationship='pypi_only'` rows over and DELETEs them from `packages`
+    so existing atlases self-heal on next `init_schema`.
+
+    Tunables (env vars):
+      - PHASE_D_DISABLED           : "1" to skip the entire phase
+      - PHASE_D_UNIVERSE_DISABLED  : "1" to skip the universe upsert branch
+                                     (keep the lean per-row work). Useful
+                                     for consumer/maintainer profiles that
+                                     never query the universe directly.
+      - PHASE_D_UNIVERSE_TTL_DAYS  : days the universe table stays fresh
+                                     before re-upserting (default 7).
+                                     Lower for admin shops that query the
+                                     candidate list daily.
+    """
+    t0 = time.monotonic()
+
+    if os.environ.get("PHASE_D_DISABLED"):
+        return {
+            "skipped": True,
+            "reason": "PHASE_D_DISABLED=1 set; skipping Phase D.",
+            "duration_seconds": 0.0,
+        }
+
+    print("  Fetching PyPI Simple v1 JSON (~40MB)...")
+    projects = _fetch_pypi_simple()
+    print(f"  Got {len(projects):,} PyPI projects")
+
     save_phase_checkpoint(
-        conn, "D", cursor=last_name,
-        items_completed=written, items_total=len(projects),
-        status="completed",
+        conn, "D", cursor=None, items_completed=0,
+        items_total=len(projects), status="in_progress",
+    )
+
+    # Branch (a) + (b): always run.
+    updated_serial, upgraded_to_coincidence = _phase_d_update_working_set(
+        conn, projects
+    )
+
+    # Branch (c): TTL-gated universe upsert.
+    universe_upserts = 0
+    universe_skipped_reason: str | None = None
+    if os.environ.get("PHASE_D_UNIVERSE_DISABLED"):
+        universe_skipped_reason = "PHASE_D_UNIVERSE_DISABLED=1"
+    else:
+        try:
+            ttl_days = float(os.environ.get("PHASE_D_UNIVERSE_TTL_DAYS", "7"))
+        except ValueError:
+            ttl_days = 7.0
+        if _phase_d_universe_is_fresh(conn, ttl_days):
+            universe_skipped_reason = f"universe TTL fresh (< {ttl_days}d)"
+        else:
+            universe_upserts = _phase_d_upsert_universe(conn, projects)
+
+    save_phase_checkpoint(
+        conn, "D", cursor="", items_completed=len(projects),
+        items_total=len(projects), status="completed",
     )
 
     elapsed = time.monotonic() - t0
     print(f"  Phase D done in {elapsed:.1f}s")
     print(f"    parselmouth-matched serial updates: {updated_serial:,}")
     print(f"    upgraded to name_coincidence:        {upgraded_to_coincidence:,}")
-    print(f"    inserted pypi_only:                  {inserted_pypi_only:,}")
+    if universe_skipped_reason:
+        print(f"    pypi_universe:                       skipped ({universe_skipped_reason})")
+    else:
+        print(f"    pypi_universe upserts:               {universe_upserts:,}")
     return {
         "pypi_projects": len(projects),
         "serial_updates": updated_serial,
         "name_coincidence_upgrades": upgraded_to_coincidence,
-        "pypi_only_inserts": inserted_pypi_only,
+        "universe_upserts": universe_upserts,
+        "universe_skipped_reason": universe_skipped_reason,
         "duration_seconds": round(elapsed, 1),
     }
 
@@ -2519,9 +2672,20 @@ def _phase_h_eligible_pypi_names(conn: sqlite3.Connection) -> tuple[list, int, i
     limit = int(os.environ.get("PHASE_H_LIMIT", "0"))
     cutoff = int(time.time()) - ttl_days * 86400
 
+    # Canonical persona-filter triplet (conda_name + active + !archived) so
+    # the gate matches the rest of the pipeline (Phases F/G/G'/K/L/N).
+    # `conda_name IS NOT NULL` is the load-bearing clause: without it, Phase H
+    # historically fetched pypi.org/pypi/<name>/json for every Phase-D-inserted
+    # `relationship='pypi_only'` row (~660k as of schema v19), with the
+    # downstream `upstream_versions` UPSERT silently dropping the results.
+    # As of schema v20 the pypi_only rows move to the `pypi_universe` side
+    # table, so this clause is also defense-in-depth.
     sql = (
         "SELECT DISTINCT pypi_name FROM packages "
         "WHERE pypi_name IS NOT NULL "
+        "  AND conda_name IS NOT NULL "
+        "  AND COALESCE(latest_status, 'active') = 'active' "
+        "  AND COALESCE(feedstock_archived, 0) = 0 "
         "  AND COALESCE(pypi_version_fetched_at, 0) < ?"
     )
     params: tuple = (cutoff,)
@@ -4013,6 +4177,21 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
     edges = 0
     skipped_self = 0
     skipped_jinja = 0
+    skipped_inactive = 0
+
+    # Pre-pass: collect feedstock_names whose packages-table rows are archived
+    # or inactive. Phase J emits zero edges for these because no `whodepends`
+    # query consumes them (every read path filters on active + !archived).
+    # Snapshot taken BEFORE the BEGIN TRANSACTION so the inside-transaction
+    # DELETE+INSERT sees a coherent view of the skip set.
+    inactive_feedstocks = {
+        row[0] for row in conn.execute(
+            "SELECT DISTINCT feedstock_name FROM packages "
+            "WHERE feedstock_name IS NOT NULL "
+            "  AND (COALESCE(feedstock_archived, 0) = 1 "
+            "       OR COALESCE(latest_status, 'active') = 'inactive')"
+        )
+    }
 
     # Intentional monolithic transaction: `DELETE FROM dependencies` at
     # transaction start gives Phase J full-snapshot semantics — consumers
@@ -4032,6 +4211,9 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
                 if "/node_attrs/" not in member.name or not member.name.endswith(".json"):
                     continue
                 feedstock_basename = member.name.rsplit("/", 1)[-1][:-5]
+                if feedstock_basename in inactive_feedstocks:
+                    skipped_inactive += 1
+                    continue
                 f = tf.extractfile(member)
                 if f is None:
                     continue
@@ -4135,13 +4317,15 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
     print(
         f"  Phase J done in {elapsed:.1f}s — {feedstocks:,} feedstocks, "
         f"{edges:,} edges (skipped {skipped_self:,} self-refs, "
-        f"{skipped_jinja:,} jinja placeholders)"
+        f"{skipped_jinja:,} jinja placeholders, "
+        f"{skipped_inactive:,} archived/inactive feedstocks)"
     )
     return {
         "feedstocks_parsed": feedstocks,
         "edges_written": edges,
         "skipped_self_references": skipped_self,
         "skipped_jinja_placeholders": skipped_jinja,
+        "skipped_inactive_feedstocks": skipped_inactive,
         "duration_seconds": round(elapsed, 1),
     }
 
@@ -4220,9 +4404,17 @@ def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
     # UPDATEs we issue inside the loop (which would otherwise invalidate the
     # cursor on commit). Periodic commits every 500 rows keep progress
     # durable across mid-phase interrupts.
+    # Canonical persona-filter triplet (conda_name + active + !archived) so
+    # Phase M writes bot-status columns only on rows downstream CLIs read.
+    # feedstock-health queries already filter on the same triplet at read
+    # time, so this is a write-side cleanup — no behavior change for read
+    # paths, but cuts per-build write volume on archived feedstocks.
     rows_to_process = list(conn.execute(
         "SELECT conda_name, feedstock_name FROM packages "
-        "WHERE conda_name IS NOT NULL AND feedstock_name IS NOT NULL"
+        "WHERE conda_name IS NOT NULL "
+        "  AND feedstock_name IS NOT NULL "
+        "  AND COALESCE(latest_status, 'active') = 'active' "
+        "  AND COALESCE(feedstock_archived, 0) = 0"
     ))
     commit_every = 500
     for row in rows_to_process:

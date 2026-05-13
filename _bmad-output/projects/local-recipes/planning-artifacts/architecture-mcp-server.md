@@ -4,12 +4,12 @@ part_id: mcp-server
 display_name: FastMCP server
 project_type_id: backend
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.8.1'
+source_pin: 'conda-forge-expert v7.9.0'
 ---
 
 # Architecture: MCP Server (Part 3)
 
-The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 35 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
+The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 36 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
 
 Without Part 3, every BMAD agent would have to invoke pixi tasks directly (slow, bash-shaped, lossy round-tripping through stdout JSON). With Part 3, BMAD agents and Claude Code call `mcp__conda_forge_server__<tool>` natively with structured arguments and typed responses.
 
@@ -20,7 +20,7 @@ Without Part 3, every BMAD agent would have to invoke pixi tasks directly (slow,
 > **Expose Parts 1 + 2 as MCP tools so Claude Code and BMAD agents can invoke them with structured args + JSON responses without shell round-tripping.**
 
 Operationalized:
-- 35 tools registered via `@mcp.tool()` decorators on a single `FastMCP("conda-forge-expert")` instance.
+- 36 tools registered via `@mcp.tool()` decorators on a single `FastMCP("conda-forge-expert")` instance.
 - Each tool's body is a thin `_run_script(SCRIPT_PATH, args, ...)` invocation that subprocess-executes a Tier 1 script and parses JSON stdout.
 - Auto-discovered by Claude Code by path convention (`.claude/tools/*.py`); no `.mcp.json` registration currently (known gap, see Deferred Work below).
 
@@ -84,7 +84,7 @@ Operationalized:
 
 ---
 
-## The 35 Tools by Surface
+## The 36 Tools by Surface
 
 ### Recipe-authoring surface (17 tools)
 
@@ -125,6 +125,7 @@ All read against `cf_atlas.db` (Part 2). All sync. `update_cve_database` is asyn
 | `release_cadence(...)` | `release_cadence.py` | upstream_versions_history (Phase L) |
 | `find_alternative(name, limit=10)` | `find_alternative.py` | packages similarity |
 | `adoption_stage(...)` | `adoption_stage.py` | packages (Phase B + Phase F) |
+| `pypi_only_candidates(limit=100, min_serial=0)` | `pypi_only_candidates.py` | pypi_universe LEFT JOIN packages (Phase D, v7.9.0+) |
 | `cve_watcher(...)` | `cve_watcher.py` | package_version_vulns (Phase G') + vdb/ |
 | `package_health(name)` | composite of Part 1 scripts | packages + feedstock_health join |
 | `query_atlas(...)` | `detail_cf_atlas.py` / direct DB | packages (generic) |
@@ -145,7 +146,7 @@ All read against `cf_atlas.db` (Part 2). All sync. `update_cve_database` is asyn
 
 ## Tool Implementation Pattern
 
-Every tool follows the same skeleton (90% of the 35 tools are 5-10 lines of body code):
+Every tool follows the same skeleton (90% of the 36 tools are 5-10 lines of body code):
 
 ```python
 @mcp.tool()
@@ -315,7 +316,7 @@ When Claude Code loads the MCP server:
 1. Server starts: `python .claude/tools/conda_forge_server.py` (stdio transport).
 2. `mcp = FastMCP("conda-forge-expert")` registers the server.
 3. All `@mcp.tool()` decorators register their wrapped function's name, docstring, and type-hints into the tool schema.
-4. Claude Code sends `tools/list` MCP request; server responds with all 35 tool schemas.
+4. Claude Code sends `tools/list` MCP request; server responds with all 36 tool schemas.
 5. **Tool schemas surface at call time**: Claude Code includes them in the model's context only when the model is about to call a tool, not on every turn. Reduces token cost.
 
 This is why CLAUDE.md says "tool schemas surface at call time" — Claude Code's MCP runtime lazy-fetches them.
@@ -362,7 +363,7 @@ Captured from `docs/specs/claude-team-memory.md` Q13 and surfaced here so the re
 See `integration-architecture.md` for full cross-part contracts. Summary:
 
 - **← Part 1 (skill)**: every MCP tool wraps a Tier 1 canonical script. Part 1's `scripts/` is the implementation; Part 3 is the wire format.
-- **← Part 2 (cf_atlas)**: 16 of the 35 tools query `cf_atlas.db` directly (via Tier 1 scripts). Part 3 doesn't talk to the DB itself — it shells out.
+- **← Part 2 (cf_atlas)**: 16 of the 36 tools query `cf_atlas.db` directly (via Tier 1 scripts). Part 3 doesn't talk to the DB itself — it shells out.
 - **→ Part 4 (BMAD)**: every BMAD agent doing conda-forge work invokes tools via `mcp__conda_forge_server__*` per CLAUDE.md integration rules.
 - **→ Enterprise layer**: each tool's subprocess inherits the env (including `JFROG_API_KEY`); the leak mitigation lives at the launch-shell layer.
 

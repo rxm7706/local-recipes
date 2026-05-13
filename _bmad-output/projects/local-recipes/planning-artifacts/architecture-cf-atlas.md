@@ -4,12 +4,12 @@ part_id: cf-atlas
 display_name: cf_atlas data pipeline
 project_type_id: data
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.8.1'
+source_pin: 'conda-forge-expert v7.9.0'
 ---
 
 # Architecture: cf_atlas (Part 2)
 
-`cf_atlas` is the **offline-tolerant package-intelligence layer** for the system. It builds and maintains `cf_atlas.db` (SQLite, schema v19) — an inventory of every conda-forge package with metadata, dependencies, version skew, vulnerability surface, downloads, and staleness signals. The atlas is what makes Part 1's `scan_for_vulnerabilities` / `behind-upstream` / `feedstock-health` / `whodepends` queries fast and offline.
+`cf_atlas` is the **offline-tolerant package-intelligence layer** for the system. It builds and maintains `cf_atlas.db` (SQLite, schema v20) — an inventory of every conda-forge package with metadata, dependencies, version skew, vulnerability surface, downloads, and staleness signals, plus a separate `pypi_universe` side table holding the PyPI directory (~800k projects) for the admin-persona "what's on PyPI but not on conda-forge" candidate-list query. The atlas is what makes Part 1's `scan_for_vulnerabilities` / `behind-upstream` / `feedstock-health` / `whodepends` queries fast and offline.
 
 Part 2's scripts live inside Part 1's `scripts/` directory by design — the pipeline is the skill's data layer, not a separate codebase. This document focuses on **what** the pipeline does and **why** its structure looks the way it does; Part 1's architecture covers the script-level tier discipline.
 
@@ -33,14 +33,14 @@ Operationalized:
 |---|---|
 | Primary artifact | `.claude/data/conda-forge-expert/cf_atlas.db` (SQLite, WAL mode) |
 | Schema version | **19** (additive migrations only; idempotent on every open) |
-| Schema constant | `SCHEMA_VERSION = 19` in `conda_forge_atlas.py:113` |
+| Schema constant | `SCHEMA_VERSION = 20` in `conda_forge_atlas.py:135` |
 | Tables | 11 (packages + 10 supporting) |
 | Pipeline phases | **17** (B, B.5, B.6, C, C.5, D, E, E.5, F, G, G', H, J, K, L, M, N) |
 | TTL-gated phases | 4 (F, G, H, K) — re-fetch only stale rows |
 | Checkpoint-aware phases | B, D, N (via `phase_state` table) |
 | Air-gap backends | Phase F: S3 parquet; Phase H: cf-graph offline |
 | Public CLIs | 17 (1 orchestrator + 1 single-phase + 15 query CLIs) |
-| MCP exposure | All 17 CLIs have an MCP tool counterpart in `conda_forge_server.py` |
+| MCP exposure | All 18 CLIs have an MCP tool counterpart in `conda_forge_server.py` |
 | Pixi envs used | `local-recipes` (primary), `vuln-db` (Phase G/G' require AppThreat vdb importable) |
 | Lines of orchestrator code | ~4,300 (`conda_forge_atlas.py`) |
 | Approximate package count tracked | ~800k conda-forge packages |
@@ -109,17 +109,17 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 | **B.6** | `phase_b6_yanked_detection` (834) | Detect packages removed from current_repodata since last run | — | — | (uses Phase B's output) |
 | **C** | `phase_c_parselmouth_join` (905) | Join PyPI names via parselmouth mapping | — | — | parselmouth cdn |
 | **C.5** | `phase_c5_source_url_match` (954) | Match recipes to PyPI projects via source URL parsing | — | — | (DB-internal) |
-| **D** | `phase_d_pypi_enumeration` (963) | Enumerate PyPI projects + upgrade-to-coincidence (pypi/conda matches) | — | ✓ | pypi.org index (or `PYPI_BASE_URL`) |
+| **D** | `phase_d_pypi_enumeration` (1060) | Two-tier write strategy (schema v20+): **always-on lean path** updates `pypi_last_serial` on conda-linked rows + discovers name-coincidence matches; **TTL-gated universe upsert** (default 7d via `PHASE_D_UNIVERSE_TTL_DAYS`) refreshes the `pypi_universe` side table with the ~800k-project PyPI directory. Legacy v19 `INSERT INTO packages ... 'pypi_only'` branch removed entirely. Env: `PHASE_D_DISABLED`, `PHASE_D_UNIVERSE_DISABLED`, `PHASE_D_UNIVERSE_TTL_DAYS`. | (universe TTL) | ✓ | pypi.org index (`PYPI_BASE_URL`) |
 | **E** | `phase_e_enrichment` (1148) | Download cf-graph tarball + extract feedstock-level metadata. Cache TTL via `ATLAS_CFGRAPH_TTL_DAYS` (default 1.0). Atomic-write cache; streams tar from disk (saves ~150 MB peak RAM). Incremental commits every 200 enriched rows. | ✓ (cache TTL) | — | github.com (`GITHUB_BASE_URL`) |
 | **E.5** | `phase_e5_archived_feedstocks` (1395) | Identify archived feedstocks via GitHub GraphQL pagination. Page-level `save_phase_checkpoint(cursor=…)` so progress is observable mid-run. Incremental commits every 500 applied rows. | — | ✓ (page-level) | api.github.com (`GITHUB_API_BASE_URL`) |
 | **F** | `phase_f_downloads` (1950) | Per-conda-package total downloads (3 backends: API / S3 parquet / auto). Default `PHASE_F_CONCURRENCY=3` (was 8 pre-v7.8.0). Retry-After honored on 429/503 (60s cap) + ±25% jitter. | ✓ | — | api.anaconda.org (`ANACONDA_API_BASE_URL`) OR AWS S3 (`S3_PARQUET_BASE_URL`) |
 | **G** | `phase_g_vdb_summary` (1994) | AppThreat vdb scan summary per package — **requires `vuln-db` pixi env** | ✓ | — | (local vdb/ DB) |
 | **G'** | `phase_g_prime_per_version_vulns` (4029) | Per-version CVE scoring — writes `package_version_vulns` — **requires `vuln-db`** | (row-absence) | — | (local vdb/ DB) |
-| **H** | `phase_h_pypi_versions` (2560) | PyPI current-version skew detection (2 backends: pypi-json / cf-graph offline). Default `PHASE_H_CONCURRENCY=3` (was 8 pre-v7.8.1). Retry-After + ±25% jitter on the pypi-json path. | ✓ | — | pypi.org JSON (`PYPI_JSON_BASE_URL`) OR github.com (cf-graph) |
-| **J** | `phase_j_dependency_graph` (3383) | Build the dependency graph in the `dependencies` table. **Monolithic transaction by design** — `DELETE FROM dependencies` at txn start gives consumers atomic full-snapshot semantics. | — | — | (DB-internal + cf-graph) |
+| **H** | `phase_h_pypi_versions` (2762) | PyPI current-version skew detection (2 backends: pypi-json / cf-graph offline). Default `PHASE_H_CONCURRENCY=3` (was 8 pre-v7.8.1). Retry-After + ±25% jitter on the pypi-json path. **v7.9.0:** eligible-rows selector now applies the canonical persona-filter triplet `conda_name IS NOT NULL AND latest_status='active' AND COALESCE(feedstock_archived,0)=0` (matches F/G/G'/K/L/N); cold-run denominator drops from ~672k to ~12k (56× cut). | ✓ | — | pypi.org JSON (`PYPI_JSON_BASE_URL`) OR github.com (cf-graph) |
+| **J** | `phase_j_dependency_graph` (3976) | Build the dependency graph in the `dependencies` table. **Monolithic transaction by design** — `DELETE FROM dependencies` at txn start gives consumers atomic full-snapshot semantics. **v7.9.0:** pre-pass builds `inactive_feedstocks` skip-set from `packages` (`feedstock_archived=1 OR latest_status='inactive'`); cf-graph tarball iteration skips matching basenames. New `skipped_inactive_feedstocks` stat in return dict. | — | — | (DB-internal + cf-graph) |
 | **K** | `phase_k_vcs_versions` (2771) | GitHub via **batched GraphQL** (~100 repos/POST; was REST fanout pre-v7.8.0). GitLab + Codeberg still REST. Writes `upstream_versions`. `PHASE_K_GRAPHQL_DISABLED=1` reverts to REST. `PHASE_K_GRAPHQL_BATCH_SIZE` tunes batch size. | ✓ | — | api.github.com (`GITHUB_API_BASE_URL`, covers GraphQL too), gitlab.com (`GITLAB_API_BASE_URL`), codeberg.org (`CODEBERG_API_BASE_URL`) |
 | **L** | `phase_l_extra_registries` (3191) | Extra registry lookups (npm / CRAN / CPAN / LuaRocks / crates / RubyGems / Maven / NuGet). **Per-registry concurrency caps**: npm=nuget=4, cran=cpan=luarocks=maven=2, crates=rubygems=1. Sequential across registries. Override via `PHASE_L_CONCURRENCY_<SOURCE>`. Writes `upstream_versions`. | (per-source) | — | per-registry `<HOST>_BASE_URL` envs (NPM/CRAN/CPAN/LUAROCKS/CRATES/RUBYGEMS/MAVEN/NUGET) |
-| **M** | `phase_m_feedstock_health` (3548) | Compute feedstock health metrics from cf-graph + cached state. Incremental commits every 500 rows. | — | — | (uses Phase E's tarball) |
+| **M** | `phase_m_feedstock_health` (4149) | Compute feedstock health metrics from cf-graph + cached state. Incremental commits every 500 rows. **v7.9.0:** `rows_to_process` SELECT now applies the canonical persona-filter triplet at the write site (matches F/G/G'/K/L/N); no behavior change for `feedstock-health` read paths, but bot-status columns no longer get written on archived/inactive rows that read paths filter out anyway. | — | — | (uses Phase E's tarball) |
 | **N** | `phase_n_github_live` (3744) | Live GitHub queries (default-branch CI status, open issues/PRs, pushed_at) — batched per-feedstock via `gh api graphql`. Rate-limit detection on stderr; 30s/60s backoff + ±25% jitter on hits (more patient than F/H since secondary windows are minutes). | (per-feedstock) | ✓ | api.github.com (`GITHUB_API_BASE_URL`) |
 
 **Why `B` not `A`**: phase A is reserved for future use; the pipeline started at B and the letters have stuck.
@@ -137,9 +137,13 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 
 ---
 
-## Schema (cf_atlas.db, version 19)
+## Schema (cf_atlas.db, version 20)
 
-11 tables. The `packages` table is primary; the rest are supporting.
+12 tables. The `packages` table is primary (conda-actionable working
+set); the rest are supporting. `pypi_universe` (added v7.9.0 / schema v20)
+is the **directory** of every PyPI project — separated from `packages`
+so the working set stays conda-actionable and the universe upsert can
+TTL on its own cadence (default 7d via `PHASE_D_UNIVERSE_TTL_DAYS`).
 
 ```sql
 -- ───── PRIMARY ─────────────────────────────────────────────────────────────────
@@ -271,6 +275,17 @@ CREATE TABLE package_version_vulns (        -- Phase G' per-version CVE scoring
     vuln_critical_affecting_version  INTEGER,
     ...
 );
+
+CREATE TABLE pypi_universe (                -- Phase D side table (v7.9.0 / schema v20)
+    pypi_name   TEXT PRIMARY KEY,           -- ~800k rows, the full PyPI directory
+    last_serial INTEGER,                    -- monotonic per-project serial from Simple API
+    fetched_at  INTEGER                     -- TTL-gate target (PHASE_D_UNIVERSE_TTL_DAYS)
+);
+-- Separated from `packages` so working-set queries (Phase F/G/G'/H/K/L/N + every read
+-- CLI) stop seeing the ~660k PyPI-only rows. Read by `pypi-only-candidates` CLI via
+-- LEFT JOIN to `packages.pypi_name`. v19→v20 migration self-heals in `init_schema`:
+-- moves existing `relationship='pypi_only'` rows from `packages` to `pypi_universe`
+-- via INSERT OR IGNORE + DELETE in one transaction (idempotent on re-runs).
 ```
 
 **Schema migrations**: idempotent on every connection open via `init_schema()`. Migrations are **additive only** — new columns / tables; never DROP or rename. v19 history (chronological): schema started at v1; major additions tracked in CHANGELOG entries v6.0 → v7.7.
@@ -352,7 +367,7 @@ All have a Tier 2 wrapper in `.claude/scripts/conda-forge-expert/` and a pixi ta
 | `bootstrap-data` | `pixi run -e local-recipes bootstrap-data` | Full data refresh: mapping cache + CVE DB + vdb + cf_atlas (B-N) + optional Phase N. `--fresh` for hard reset; `--status` for state; `--resume`; `--no-vdb` / `--no-cf-atlas` to skip heavy steps. Per-step timeouts via `BOOTSTRAP_<STEP>_TIMEOUT` env vars. |
 | `atlas-phase` | `pixi run -e local-recipes atlas-phase <ID>` | Single-phase invocation against the existing DB. `--reset-ttl` for TTL-gated phases (F, G, H, K). `--list` enumerates phases. **Avoids the 30-45 min full rebuild.** |
 
-### Atlas-intelligence query CLIs (15)
+### Atlas-intelligence query CLIs (16)
 
 | CLI | Reads from | Use case |
 |---|---|---|
@@ -370,13 +385,14 @@ All have a Tier 2 wrapper in `.claude/scripts/conda-forge-expert/` and a pixi ta
 | `package-health` | `packages` + `feedstock-health` join | "Holistic health score for package X" |
 | `scan-project` | `packages` + `inventory_cache/` | "Scan this manifest / SBOM / container for conda-forge intelligence" |
 | `my-feedstocks` | `package_maintainers` + GitHub user | "What feedstocks does user X maintain?" |
+| `pypi-only-candidates` | `pypi_universe LEFT JOIN packages` (Phase D, v7.9.0+) | "Which PyPI projects have no conda-forge equivalent yet?" (admin candidate-list, ordered by `last_serial DESC`; flags `--limit N --min-serial M --json`) |
 | `health-check` | various | System-level pipeline health |
 
 ---
 
 ## MCP Exposure
 
-All 17 CLIs have an MCP-tool counterpart in `.claude/tools/conda_forge_server.py` (Part 3). MCP-only tools (no public CLI): `update_cve_database`, `update_mapping_cache`, `lookup_feedstock`, `get_feedstock_context`, `enrich_from_feedstock`, `check_dependencies`, `check_github_version`, `get_conda_name`. The MCP server is the wire format; the canonical implementation is Part 1's `scripts/`.
+All 18 CLIs have an MCP-tool counterpart in `.claude/tools/conda_forge_server.py` (Part 3). MCP-only tools (no public CLI): `update_cve_database`, `update_mapping_cache`, `lookup_feedstock`, `get_feedstock_context`, `enrich_from_feedstock`, `check_dependencies`, `check_github_version`, `get_conda_name`. The MCP server is the wire format; the canonical implementation is Part 1's `scripts/`.
 
 ---
 
@@ -515,6 +531,6 @@ See `integration-architecture.md` for full cross-part contracts. Summary:
 8. **CLI wrappers** (17 in Tier 2): one per phase + 2 orchestration entries (`bootstrap-data`, `atlas-phase`) + 13 query CLIs.
 9. **MCP tool wrappers** in Part 3: one per CLI + the MCP-only tools listed above.
 10. **Tests**: per-phase unit tests with fixtures; meta-tests for schema migration idempotency, TTL gate scoping (`test_atlas_phase_reset_ttl.py`), checkpoint resumability.
-11. **Documentation**: `guides/atlas-operations.md` for cron schedules + hard reset + air-gap; `reference/actionable-intelligence-catalog.md` for persona-mapped signal index.
+11. **Documentation**: `guides/atlas-operations.md` for cron schedules + hard reset + air-gap; `reference/atlas-actionable-intelligence.md` for persona-mapped signal index; `reference/atlas-phases-overview.md` for phase-indexed companion (data source + purpose + intelligence per stage).
 
 Rebuild order matters: Phase B is foundational. Without Phase B's `packages` rows, every other phase short-circuits cleanly (the pipeline doesn't crash, but produces no useful data).

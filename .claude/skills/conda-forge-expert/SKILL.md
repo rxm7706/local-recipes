@@ -232,7 +232,7 @@ When asked to create or update a recipe, execute these steps in order. Each step
 
 ---
 
-## Atlas Intelligence Layer (v7.8.1)
+## Atlas Intelligence Layer (v7.9.0)
 
 The skill carries a SQLite-backed cross-channel package map at
 `.claude/data/conda-forge-expert/cf_atlas.db`, populated by 15 pipeline
@@ -286,8 +286,11 @@ can't easily answer. Recommended triggers:
 
 ### Persona-mapped catalog
 
-Full reference: `reference/actionable-intelligence-catalog.md` — every
-shipped signal mapped to (persona, goal, action, outcome).
+Full reference: `reference/atlas-actionable-intelligence.md`
+— every shipped signal mapped to (persona, goal, action, outcome). For
+the phase-indexed companion (data source / purpose / actionable
+intelligence per pipeline stage), see
+`reference/atlas-phases-overview.md`.
 
 ### Format coverage for `scan-project`
 

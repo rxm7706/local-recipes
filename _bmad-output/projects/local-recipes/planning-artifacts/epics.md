@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v7.8.1'
+source_pin: 'conda-forge-expert v7.9.0'
 total_epics: 13
 total_stories: 193
 waves: 5
@@ -13,6 +13,9 @@ tentative_decisions_applied: 7
 input_docs:
   - planning-artifacts/PRD.md
   - planning-artifacts/architecture.md
+sync_lineage:
+  - { date: '2026-05-12', via: 'bmad-correct-course', from: 'v7.7', to: 'v7.8.1', proposal: 'sprint-change-proposal-2026-05-12.md', note: 'Atlas hardening pass (v7.8.0 + v7.8.1 close-out)' }
+  - { date: '2026-05-13', via: 'bmad-correct-course', from: 'v7.8.1', to: 'v7.9.0', proposal: 'sprint-change-proposal-2026-05-13.md', spec: 'docs/specs/atlas-pypi-universe-split.md', retro: 'implementation-artifacts/retro-atlas-pypi-universe-split-2026-05-13.md', note: 'Actionable-scope audit: Phase H/J/M denominator fix + schema v20 + pypi_universe side table + Phase D split + pypi-only-candidates CLI/MCP. No epic scope change; recorded as a between-epic audit.' }
 ---
 
 # Epics & Stories: `local-recipes` Rebuild
@@ -226,7 +229,7 @@ Wave 2 builds the heart of the system. Tier 1 canonical scripts, then Tier 2 wra
 | E6.S11 | Author `reference/selectors-reference.md` | rattler-build selector syntax + common patterns | Reference complete | S |
 | E6.S12 | Author `reference/jinja-functions.md` | `${{ compiler() / stdlib() / pin_subpackage() / cdt() }}` etc. | Reference complete | S |
 | E6.S13 | Author `reference/dependency-input-formats.md` | scan_project's ~28 input formats matrix | Reference complete | M |
-| E6.S14 | Author `reference/actionable-intelligence-catalog.md` | Persona-mapped atlas signal index | Reference complete | M |
+| E6.S14 | Author `reference/atlas-actionable-intelligence.md` | Persona-mapped atlas signal index (formerly `actionable-intelligence-catalog.md`); paired with phase-indexed `reference/atlas-phases-overview.md` | Reference complete | M |
 | E6.S15 | Author `reference/conda-forge-ecosystem.md` | Ecosystem overview (bot, smithy, repodata-patches) | Reference complete | M |
 | E6.S16 | Author all 8 `guides/*.md` | getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, testing-recipes, sdist-missing-license, atlas-operations | Each guide ~100-300 lines; complete | L |
 | E6.S17 | Author `quickref/commands-cheatsheet.md` | All pixi tasks + raw CLIs + arg conventions | Cheatsheet complete | M |

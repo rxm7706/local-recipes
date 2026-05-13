@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.8.1'
+source_pin: 'conda-forge-expert v7.9.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -176,6 +176,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 | `release_cadence.py` | `release-cadence` | cf_atlas.db (Phase L cadence) |
 | `find_alternative.py` | `find-alternative` | cf_atlas.db (similar packages) |
 | `adoption_stage.py` | `adoption-stage` | cf_atlas.db (popularity tiers) |
+| `pypi_only_candidates.py` | `pypi-only-candidates` | cf_atlas.db `pypi_universe` LEFT JOIN `packages` (Phase D, v7.9.0+) — admin candidate-list of unmatched PyPI projects ordered by `last_serial DESC` |
 | `cve_watcher.py` | `cve-watcher` | vdb/ + cf_atlas.db (Phase G/G' CVE surface) |
 | `cve_manager.py` | (no public CLI; backs `update_cve_database`) | cve/ feed cache |
 | `vulnerability_scanner.py` | (no public CLI; backs `scan_for_vulnerabilities` MCP tool) | vdb/ + recipe |
@@ -266,7 +267,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Operating Principles (6)
 - Critical Constraints (5 + cross-cutting JFROG note)
 - Primary Workflow: The Autonomous Loop (10 steps + step 8b detail)
-- Atlas Intelligence Layer (v7.8.1)
+- Atlas Intelligence Layer (v7.9.0)
 - Recipe Security Boundaries (Always Do / Ask First / Never Do)
 - Build Failure Protocol
 - Pre-PR Quality Gate Checklist
@@ -300,7 +301,8 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 | `selectors-reference.md` | rattler-build selector syntax |
 | `jinja-functions.md` | `${{ compiler() / stdlib() / pin_subpackage() / cdt() }}` |
 | `dependency-input-formats.md` | scan_project input matrix (~28 formats) |
-| `actionable-intelligence-catalog.md` | Persona-mapped atlas signal index |
+| `atlas-actionable-intelligence.md` | Persona-mapped atlas signal index (renamed from `actionable-intelligence-catalog.md`) |
+| `atlas-phases-overview.md` | Phase-indexed companion to the persona catalog: per pipeline stage (B → N), data source, purpose, what gets written, and the actionable intelligence (CLIs / MCP tools / SQL) it unlocks. |
 | `conda-forge-ecosystem.md` | Ecosystem overview (bot, smithy, repodata-patches) |
 | `atlas-phase-engineering.md` | **Added in v7.8.0.** Rule book for authoring or refactoring `conda_forge_atlas.py` pipeline phases. 9 patterns: per-host rate limits, GraphQL batching, Retry-After + jitter, per-registry concurrency, atomic writes, incremental commits + idempotent SQL, streaming tarfiles, page-level checkpoints, `<HOST>_BASE_URL` routing convention. |
 
@@ -377,9 +379,9 @@ The Critical Constraint ("never mix formats in a build run") means `meta.yaml` m
 Part 2 (cf_atlas) is owned conceptually by Part 1 — its scripts live in `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` and its phase-CLI entrypoints share the wrapper layer. The skill exposes the atlas via:
 
 - **Build**: `pixi run -e local-recipes bootstrap-data --fresh` (full) or `pixi run -e local-recipes atlas-phase <ID>` (single phase)
-- **Daily-use CLIs**: `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`, `cve-watcher`, `version-downloads`, `release-cadence`, `find-alternative`, `adoption-stage`, `scan-project`, `detail-cf-atlas`
+- **Daily-use CLIs**: `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`, `cve-watcher`, `version-downloads`, `release-cadence`, `find-alternative`, `adoption-stage`, `scan-project`, `detail-cf-atlas`, `pypi-only-candidates`
 - **MCP exposure**: every CLI has an MCP-tool counterpart for in-session Claude Code use
-- **When to invoke**: before any recipe-authoring decision that depends on package metadata (version skew, CVE surface, alternative packages, popularity tier) — see `reference/actionable-intelligence-catalog.md` for the persona-mapped catalog
+- **When to invoke**: before any recipe-authoring decision that depends on package metadata (version skew, CVE surface, alternative packages, popularity tier) — see `reference/atlas-actionable-intelligence.md` for the persona-mapped catalog and `reference/atlas-phases-overview.md` for the phase-indexed companion
 
 Full Part 2 detail: `architecture-cf-atlas.md`.
 
@@ -441,9 +443,9 @@ This subsystem feeds:
 The skill version is the **source of truth** for what rules apply. Two version surfaces:
 
 - `MANIFEST.yaml: version: 7.0.0` — the "schema/portability version" (rarely changes; bumps only when the install protocol changes)
-- `CHANGELOG.md` TL;DR — the **release version** (v7.8.1 as of 2026-05-12)
+- `CHANGELOG.md` TL;DR — the **release version** (v7.9.0 as of 2026-05-13)
 
-Project-context.md pins to MINOR (`last_synced_skill_version: 'conda-forge-expert v7.8.1'`). When CHANGELOG's MINOR exceeds the pin, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
+Project-context.md pins to MINOR (`last_synced_skill_version: 'conda-forge-expert v7.9.0'`). When CHANGELOG's MINOR exceeds the pin, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
 
 The pin discipline is the rebuild target's drift-control mechanism. A rebuilt repo without this pin will silently diverge.
 
