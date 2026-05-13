@@ -11,7 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import zipfile
-import io
+import os
 import sys
 import time
 from pathlib import Path
@@ -22,6 +22,20 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
+# Shared HTTP helpers from _http:
+#  - atomic_writer: prevents corrupt JSON DB on mid-dump interrupt.
+#  - fetch_to_file_resumable: streams the ~4 GB OSV `all.zip` to disk with
+#    Range/resume so a dropped connection at 95% doesn't restart from byte 0.
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _http import (  # type: ignore[import-not-found]
+        atomic_writer as _atomic_writer,
+        fetch_to_file_resumable as _fetch_to_file_resumable,
+    )
+except ImportError:
+    _atomic_writer = None  # type: ignore[assignment]
+    _fetch_to_file_resumable = None  # type: ignore[assignment]
+
 
 def _get_data_dir() -> Path:
     """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
@@ -30,32 +44,91 @@ def _get_data_dir() -> Path:
 
 # The base directory for storing CVE data
 DATABASE_DIR = _get_data_dir() / "cve"
-ECOSYSTEMS_TO_FETCH = {
-    "PyPI": "https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip",
-    # "npm": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip", # Example for future expansion
-}
+
+# Air-gapped enterprise users can point OSV_VULNS_BUCKET_URL at a mirror
+# of the osv-vulnerabilities GCS bucket (or a JFrog generic-HTTP remote
+# proxying it). Trailing slash is stripped. The per-ecosystem `all.zip`
+# path is appended to whatever base resolves.
+_OSV_VULNS_BUCKET_DEFAULT = "https://osv-vulnerabilities.storage.googleapis.com"
+
+
+def _osv_vulns_bucket_base() -> str:
+    """Resolve the OSV bulk-vulnerabilities bucket: OSV_VULNS_BUCKET_URL env → public default."""
+    return (os.environ.get("OSV_VULNS_BUCKET_URL") or _OSV_VULNS_BUCKET_DEFAULT).rstrip("/")
+
+
+def _osv_ecosystem_zip_url(ecosystem: str) -> str:
+    """Return `<bucket-base>/<ecosystem>/all.zip` for a given ecosystem."""
+    return f"{_osv_vulns_bucket_base()}/{ecosystem}/all.zip"
+
+
+# Ecosystem list (URL is computed at fetch time so env changes take effect).
+ECOSYSTEMS_TO_FETCH = ("PyPI",)
+# Future: ("PyPI", "npm", ...)
 
 def fetch_and_unzip(url: str) -> list[tuple[str, dict]]:
-    """Downloads a zip archive from a URL and yields its JSON contents."""
-    if not REQUESTS_AVAILABLE:
-        raise ImportError("The 'requests' library is required to download the CVE database.")
+    """Stream-download an OSV `all.zip` and yield its JSON contents.
+
+    The zip is ~4 GB for PyPI. Previously this was loaded entirely into
+    memory via `requests.get(...).content` then `zipfile.ZipFile(io.BytesIO(...))`
+    — a dropped connection at 95% restarted from byte 0 and OOMed under
+    memory-constrained containers. Now: stream-download to a `.part` sibling
+    via `_http.fetch_to_file_resumable` (Range/resume + atomic rename),
+    then decompress from the cached file.
+
+    The downloaded zip is kept on disk under
+    `<DATABASE_DIR>/_downloads/<basename>` so a later re-run within the
+    TTL window finds it instantly. Re-download fires only when the
+    indexed DB JSON ages past CVE_TTL_DAYS in `update_database()`.
+    """
+    download_dir = DATABASE_DIR / "_downloads"
+    target_path = download_dir / Path(url).name  # e.g. "all.zip"
 
     print(f"  Downloading from {url}...")
-    try:
-        response = requests.get(url, timeout=300)  # 5-minute timeout for large file
-        response.raise_for_status()
+    if _fetch_to_file_resumable is not None:
+        try:
+            target_path = _fetch_to_file_resumable(
+                target_path, url,
+                chunk_size=4 * 1024 * 1024,   # 4 MB chunks for a 4 GB artifact
+                timeout=600,
+                user_agent="conda-forge-expert/cve-manager",
+            )
+        except Exception as e:
+            print(f"Error: Failed to download CVE database: {e}", file=sys.stderr)
+            return []
+    else:
+        # Fallback for environments where _http.py isn't importable.
+        if not REQUESTS_AVAILABLE:
+            raise ImportError("Neither _http nor requests is available for download.")
+        try:
+            response = requests.get(url, timeout=300, stream=True)
+            response.raise_for_status()
+            download_dir.mkdir(parents=True, exist_ok=True)
+            with open(target_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=4 * 1024 * 1024):
+                    if chunk:
+                        f.write(chunk)
+        except requests.RequestException as e:
+            print(f"Error: Failed to download CVE database: {e}", file=sys.stderr)
+            return []
 
-        with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+    try:
+        with zipfile.ZipFile(target_path) as z:
             file_list = z.namelist()
-            print(f"  Unzipping {len(file_list)} files in memory...")
+            print(f"  Unzipping {len(file_list)} files (streamed from {target_path.stat().st_size:,} bytes on disk)...")
             for filename in file_list:
-                if filename.endswith('.json'):
+                if filename.endswith(".json"):
                     try:
-                        yield filename, json.loads(z.read(filename))
+                        with z.open(filename) as f:
+                            yield filename, json.load(f)
                     except (json.JSONDecodeError, KeyError):
-                        continue # Skip malformed JSON files
-    except requests.RequestException as e:
-        print(f"Error: Failed to download CVE database: {e}", file=sys.stderr)
+                        continue  # Skip malformed JSON files
+    except zipfile.BadZipFile as e:
+        # The .part-then-rename pattern means we should only see a valid
+        # zip here. If we do see corruption, delete the cached file so
+        # the next run does a clean re-download.
+        print(f"Error: cached zip at {target_path} is corrupt ({e}); removing for next run", file=sys.stderr)
+        target_path.unlink(missing_ok=True)
         return []
 
 def process_vulnerabilities(ecosystem: str, vulnerabilities: list[tuple[str, dict]]) -> dict:
@@ -105,9 +178,12 @@ def update_database(force: bool = False):
     print("Starting CVE database update...")
     DATABASE_DIR.mkdir(parents=True, exist_ok=True)
 
-    for ecosystem, url in ECOSYSTEMS_TO_FETCH.items():
+    for ecosystem in ECOSYSTEMS_TO_FETCH:
+        # URL resolved at fetch time so OSV_VULNS_BUCKET_URL changes take effect
+        # without re-importing the module.
+        url = _osv_ecosystem_zip_url(ecosystem)
         db_path = DATABASE_DIR / f"{ecosystem.lower()}_cve_db.json"
-        
+
         CVE_TTL_DAYS = 7
         if db_path.exists() and not force:
             age_days = (time.time() - db_path.stat().st_mtime) / 86400
@@ -115,9 +191,9 @@ def update_database(force: bool = False):
                 print(f"Database for {ecosystem} is {age_days:.1f} days old (TTL={CVE_TTL_DAYS}d). Use --force to refresh.")
                 continue
             print(f"Database for {ecosystem} is {age_days:.1f} days old — refreshing.")
-            
+
         print(f"Updating database for {ecosystem}...")
-        
+
         vulnerabilities = list(fetch_and_unzip(url))
         if not vulnerabilities:
             print(f"Could not fetch data for {ecosystem}. Skipping.", file=sys.stderr)
@@ -126,8 +202,16 @@ def update_database(force: bool = False):
         indexed_db = process_vulnerabilities(ecosystem, vulnerabilities)
         
         print(f"  Saving indexed database to {db_path}...")
-        with open(db_path, "w") as f:
-            json.dump(indexed_db, f) # No indent for smaller file size
+        # Atomic write: a SIGINT or OOM mid-dump previously left a truncated
+        # JSON file that broke vulnerability scans until manually cleaned up.
+        # atomic_writer writes to a .tmp sibling, fsyncs, then renames into
+        # place — interrupt leaves the prior DB intact.
+        if _atomic_writer is not None:
+            with _atomic_writer(db_path, "w") as f:
+                json.dump(indexed_db, f)
+        else:
+            with open(db_path, "w") as f:
+                json.dump(indexed_db, f)
             
         print(f"Successfully updated {ecosystem} database with {len(indexed_db)} packages.")
 

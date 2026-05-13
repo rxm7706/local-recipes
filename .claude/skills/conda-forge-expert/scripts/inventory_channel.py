@@ -52,13 +52,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-# Enterprise HTTP helpers (truststore + .netrc auth)
+# Enterprise HTTP helpers (truststore + .netrc auth + atomic file writes)
 sys.path.insert(0, str(Path(__file__).parent))
 try:
-    from _http import inject_ssl_truststore, make_request as _http_make_request  # type: ignore[import-not-found]
+    from _http import (  # type: ignore[import-not-found]
+        inject_ssl_truststore,
+        make_request as _http_make_request,
+        atomic_write_bytes as _atomic_write_bytes,
+        atomic_write_text as _atomic_write_text,
+    )
     inject_ssl_truststore()
     _HTTP_AVAILABLE = True
 except ImportError:
+    _http_make_request = None  # type: ignore[assignment]
+    _atomic_write_bytes = None  # type: ignore[assignment]
+    _atomic_write_text = None  # type: ignore[assignment]
     _HTTP_AVAILABLE = False
 
 
@@ -100,7 +108,7 @@ class Package:
 
 def _make_request(url: str) -> urllib.request.Request:
     """Build a Request with JFrog/netrc/Bearer auth. Uses _http if available."""
-    if _HTTP_AVAILABLE:
+    if _HTTP_AVAILABLE and _http_make_request is not None:
         return _http_make_request(url, user_agent="inventory-channel/1.0")
     # Fallback: env-var only auth (no .netrc)
     headers: dict[str, str] = {"User-Agent": "inventory-channel/1.0"}
@@ -133,11 +141,27 @@ def fetch_source(url_or_path: str, no_cache: bool, cache_ttl: int) -> tuple[byte
             return (cache_path.read_bytes(), None)
 
     try:
+        # Note: this fetcher reads the entire body into memory and returns
+        # it as `bytes`. For the in-band repodata.json / parquet use cases
+        # (~100 MB max) that's acceptable, and the 24h cache TTL means
+        # interrupted fetches re-run from scratch at most once per day.
+        # If a future caller needs to fetch larger artifacts (>500 MB),
+        # migrate to `_http.fetch_to_file_resumable` which streams to disk
+        # with Range/resume — the same pattern cve_manager uses for the
+        # 4 GB OSV all.zip. Signature would shift from returning bytes to
+        # returning a Path, which is the larger reason this didn't get
+        # migrated as part of the v7.8.1 Range/resume pass.
         req = _make_request(url_or_path)
         with urllib.request.urlopen(req, timeout=300) as resp:
             data = resp.read()
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        cache_path.write_bytes(data)
+        # Atomic write so an interrupt mid-fetch doesn't truncate the cache
+        # file. atomic_write_bytes falls back to a regular write_bytes when
+        # _http isn't importable (offline / external clones).
+        if _atomic_write_bytes is not None:
+            _atomic_write_bytes(cache_path, data)
+        else:
+            cache_path.write_bytes(data)
         return (data, None)
     except urllib.error.HTTPError as e:
         if e.code == 401:
@@ -648,7 +672,12 @@ def main() -> int:
                        atlas_records=atlas_for_sbom)
         sbom_json = json.dumps(sbom, indent=2, default=str)
         if args.sbom_out:
-            Path(args.sbom_out).write_text(sbom_json)
+            # Atomic write protects the user's existing SBOM if this script
+            # crashes mid-write.
+            if _atomic_write_text is not None:
+                _atomic_write_text(args.sbom_out, sbom_json)
+            else:
+                Path(args.sbom_out).write_text(sbom_json)
             print(f"SBOM ({args.sbom}) written to {args.sbom_out}", file=sys.stderr)
         else:
             print(sbom_json)

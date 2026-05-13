@@ -57,6 +57,17 @@ try:
         resolve_conda_forge_urls as _resolve_conda_forge_urls,
         resolve_pypi_simple_urls as _resolve_pypi_simple_urls,
         resolve_github_urls as _resolve_github_urls,
+        resolve_github_api_urls as _resolve_github_api_urls,
+        resolve_gitlab_api_urls as _resolve_gitlab_api_urls,
+        resolve_codeberg_api_urls as _resolve_codeberg_api_urls,
+        resolve_npm_urls as _resolve_npm_urls,
+        resolve_cran_urls as _resolve_cran_urls,
+        resolve_cpan_urls as _resolve_cpan_urls,
+        resolve_luarocks_urls as _resolve_luarocks_urls,
+        resolve_crates_urls as _resolve_crates_urls,
+        resolve_rubygems_urls as _resolve_rubygems_urls,
+        resolve_maven_urls as _resolve_maven_urls,
+        resolve_nuget_urls as _resolve_nuget_urls,
         fetch_with_fallback as _fetch_with_fallback,
     )
     inject_ssl_truststore()
@@ -66,6 +77,17 @@ except ImportError:
     _resolve_conda_forge_urls = None  # type: ignore[assignment]
     _resolve_pypi_simple_urls = None  # type: ignore[assignment]
     _resolve_github_urls = None  # type: ignore[assignment]
+    _resolve_github_api_urls = None  # type: ignore[assignment]
+    _resolve_gitlab_api_urls = None  # type: ignore[assignment]
+    _resolve_codeberg_api_urls = None  # type: ignore[assignment]
+    _resolve_npm_urls = None  # type: ignore[assignment]
+    _resolve_cran_urls = None  # type: ignore[assignment]
+    _resolve_cpan_urls = None  # type: ignore[assignment]
+    _resolve_luarocks_urls = None  # type: ignore[assignment]
+    _resolve_crates_urls = None  # type: ignore[assignment]
+    _resolve_rubygems_urls = None  # type: ignore[assignment]
+    _resolve_maven_urls = None  # type: ignore[assignment]
+    _resolve_nuget_urls = None  # type: ignore[assignment]
     _fetch_with_fallback = None  # type: ignore[assignment]
     _HTTP_AVAILABLE = False
 
@@ -793,33 +815,39 @@ def phase_b5_feedstock_outputs(conn: sqlite3.Connection) -> dict:
     existing = {row[0] for row in conn.execute("SELECT conda_name FROM packages WHERE conda_name IS NOT NULL")}
     print(f"  Existing conda_name rows: {len(existing):,}")
 
-    conn.execute("BEGIN TRANSACTION")
-    try:
-        updated = 0
-        inserted_inactive = 0
-        for pkg_name, feedstocks in mapping.items():
-            feedstock_name = feedstocks[0] if feedstocks else None
-            if pkg_name in existing:
-                conn.execute(
-                    "UPDATE packages SET feedstock_name = ? WHERE conda_name = ?",
-                    (feedstock_name, pkg_name),
-                )
-                updated += 1
-            else:
-                conn.execute(
-                    """
-                    INSERT INTO packages (
-                        conda_name, feedstock_name,
-                        relationship, match_source, match_confidence, latest_status
-                    ) VALUES (?, ?, 'conda_only', 'none', 'n/a', 'inactive')
-                    """,
-                    (pkg_name, feedstock_name),
-                )
-                inserted_inactive += 1
-        conn.execute("COMMIT")
-    except Exception:
-        conn.execute("ROLLBACK")
-        raise
+    # Incremental commits every 500 rows: a mid-phase interrupt on a 30k-row
+    # mapping previously rolled back the entire phase under a single BEGIN/
+    # COMMIT. The (conda_name, ...) UPDATEs and the conda_only INSERTs are
+    # both idempotent (UPDATE-by-PK, INSERT with no UNIQUE that we'd violate
+    # on retry beyond the ones already present in `existing`), so partial
+    # progress survives across runs.
+    updated = 0
+    inserted_inactive = 0
+    processed = 0
+    commit_every = 500
+    for pkg_name, feedstocks in mapping.items():
+        feedstock_name = feedstocks[0] if feedstocks else None
+        if pkg_name in existing:
+            conn.execute(
+                "UPDATE packages SET feedstock_name = ? WHERE conda_name = ?",
+                (feedstock_name, pkg_name),
+            )
+            updated += 1
+        else:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO packages (
+                    conda_name, feedstock_name,
+                    relationship, match_source, match_confidence, latest_status
+                ) VALUES (?, ?, 'conda_only', 'none', 'n/a', 'inactive')
+                """,
+                (pkg_name, feedstock_name),
+            )
+            inserted_inactive += 1
+        processed += 1
+        if processed % commit_every == 0:
+            conn.commit()
+    conn.commit()
 
     elapsed = time.monotonic() - t0
     print(f"  Phase B.5 done in {elapsed:.1f}s — updated {updated:,}, inserted {inserted_inactive:,} inactive")
@@ -843,6 +871,10 @@ def phase_b6_yanked_detection(conn: sqlite3.Connection) -> dict:
     is the most actionable case.
     """
     t0 = time.monotonic()
+    # Intentional monolithic transaction: this phase issues 3 bulk UPDATEs
+    # (no per-row loop) and runs in <1s. An interrupt mid-statement is
+    # virtually impossible to hit and re-running is free. Don't refactor
+    # to incremental commits — there's nothing to checkpoint.
     conn.execute("BEGIN TRANSACTION")
     try:
         # Definition: a row is 'active' iff its conda_name appears in
@@ -918,29 +950,32 @@ def phase_c_parselmouth_join(conn: sqlite3.Connection) -> dict:
     entries = get_pypi_name_mapping()
     print(f"  Got {len(entries):,} mapping entries")
 
-    conn.execute("BEGIN TRANSACTION")
-    try:
-        updated = 0
-        for entry in entries:
-            pypi_name = (entry.get("pypi_name") or "").lower()
-            conda_name = entry.get("conda_name")
-            if not pypi_name or not conda_name:
-                continue
-            relationship = "both_same_name" if pypi_name == conda_name else "both_renamed"
-            cursor = conn.execute(
-                """
-                UPDATE packages
-                   SET pypi_name = ?, relationship = ?,
-                       match_source = 'parselmouth', match_confidence = 'verified'
-                 WHERE conda_name = ?
-                """,
-                (pypi_name, relationship, conda_name),
-            )
-            updated += cursor.rowcount
-        conn.execute("COMMIT")
-    except Exception:
-        conn.execute("ROLLBACK")
-        raise
+    # Incremental commits every 500 entries: a mid-loop interrupt previously
+    # rolled back the whole ~12k-entry parselmouth merge. UPDATEs are
+    # idempotent (UPDATE-by-conda_name, no UNIQUE violations on re-run).
+    updated = 0
+    processed = 0
+    commit_every = 500
+    for entry in entries:
+        pypi_name = (entry.get("pypi_name") or "").lower()
+        conda_name = entry.get("conda_name")
+        if not pypi_name or not conda_name:
+            continue
+        relationship = "both_same_name" if pypi_name == conda_name else "both_renamed"
+        cursor = conn.execute(
+            """
+            UPDATE packages
+               SET pypi_name = ?, relationship = ?,
+                   match_source = 'parselmouth', match_confidence = 'verified'
+             WHERE conda_name = ?
+            """,
+            (pypi_name, relationship, conda_name),
+        )
+        updated += cursor.rowcount
+        processed += 1
+        if processed % commit_every == 0:
+            conn.commit()
+    conn.commit()
 
     elapsed = time.monotonic() - t0
     print(f"  Phase C done in {elapsed:.1f}s — matched {updated:,} conda rows to PyPI")
@@ -1163,6 +1198,15 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
     shallow strategy: clone only node_attrs/ via git sparse-checkout, OR
     fetch individual files on demand for our subset. The full archive is
     ~250MB compressed; node_attrs/ alone is ~150MB.
+
+    Tunables (env vars):
+      - PHASE_E_ENABLED          : "1" to enable Phase E (off by default).
+      - ATLAS_CFGRAPH_TTL_DAYS   : days the cached cf-graph tarball stays
+                                   fresh (default 1.0). Weekly-cron users
+                                   should set ``ATLAS_CFGRAPH_TTL_DAYS=7``
+                                   to skip the ~150MB re-download per run.
+                                   Phases J and M reuse the same cache
+                                   file, so the TTL is shared across them.
     """
     t0 = time.monotonic()
     print("  Phase E: per-package enrichment via cf-graph-countyfair")
@@ -1179,14 +1223,21 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
         }
 
     # Bulk download cf-graph node_attrs via tarball — cache to disk so retries
-    # don't re-download the 139MB archive
+    # don't re-download the 139MB archive. We stream the parse from the cached
+    # file (no in-memory ~150MB BytesIO buffer); only the download path needs
+    # to materialize bytes in RAM.
     import tarfile
-    import io
     cache_path = DATA_DIR / "cf-graph-countyfair.tar.gz"
     cache_age = (time.time() - cache_path.stat().st_mtime) / 86400 if cache_path.exists() else 999
-    if cache_path.exists() and cache_age < 1:
-        print(f"  Using cached cf-graph archive ({cache_path.stat().st_size:,} bytes, {cache_age:.2f}d old)")
-        tar_bytes = cache_path.read_bytes()
+    # TTL was hardcoded at 1 day; weekly-cron users were re-downloading the
+    # ~150MB archive every run for no information gain. Override via env.
+    try:
+        cache_ttl_days = float(os.environ.get("ATLAS_CFGRAPH_TTL_DAYS", "1"))
+    except ValueError:
+        cache_ttl_days = 1.0
+    if cache_path.exists() and cache_age < cache_ttl_days:
+        print(f"  Using cached cf-graph archive ({cache_path.stat().st_size:,} bytes, "
+              f"{cache_age:.2f}d old, TTL {cache_ttl_days}d)")
     else:
         # Multi-URL fallback chain via _http resolver when available; honors
         # GITHUB_BASE_URL for JFrog Generic Remote setups.
@@ -1203,9 +1254,13 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
             req = _make_req(cf_graph_url)
             with urllib.request.urlopen(req, timeout=600) as resp:
                 tar_bytes = resp.read()
-        cache_path.write_bytes(tar_bytes)
+        # Atomic write: tmp + rename so an interrupt during write doesn't
+        # leave a corrupt cache file that fails to open next run.
+        tmp_path = cache_path.with_suffix(cache_path.suffix + ".tmp")
+        tmp_path.write_bytes(tar_bytes)
+        os.replace(tmp_path, cache_path)
         print(f"  Cached to {cache_path}")
-    print(f"  Got {len(tar_bytes):,} bytes; extracting node_attrs/...")
+    print(f"  Streaming node_attrs/ from {cache_path.stat().st_size:,}-byte cache...")
 
     # Build feedstock_name → conda_name map for reverse-lookup
     feedstock_to_conda: dict[str, list[str]] = {}
@@ -1216,172 +1271,175 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
 
     enriched = 0
     pypi_url_matched = 0
-    conn.execute("BEGIN TRANSACTION")
-    try:
-        with tarfile.open(fileobj=io.BytesIO(tar_bytes), mode="r:gz") as tf:
-            for member in tf:
-                if not member.isfile():
-                    continue
-                # Match: cf-graph-countyfair-master/node_attrs/<l>/<l>/<l>/<feedstock>.json
-                if "/node_attrs/" not in member.name or not member.name.endswith(".json"):
-                    continue
-                feedstock_basename = member.name.rsplit("/", 1)[-1][:-5]
-                conda_names = feedstock_to_conda.get(feedstock_basename, [])
-                if not conda_names:
-                    continue
-                f = tf.extractfile(member)
-                if f is None:
-                    continue
-                try:
-                    payload = json.load(f)
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    continue
-                # Extract about.json fields
-                meta_yaml = payload.get("meta_yaml") or {}
-                about = meta_yaml.get("about") or {}
-                extra = meta_yaml.get("extra") or {}
-                source = meta_yaml.get("source") or {}
-                source_url = None
-                if isinstance(source, dict):
-                    source_url = source.get("url")
-                elif isinstance(source, list) and source:
-                    first = source[0]
-                    if isinstance(first, dict):
-                        source_url = first.get("url")
-                summary = about.get("summary")
-                homepage = about.get("home")
-                dev_url = about.get("dev_url")
-                doc_url = about.get("doc_url")
-                repo_url = about.get("repository") or about.get("dev_url")
-                license_family = about.get("license_family")
-                keywords = about.get("keywords") or []
-                maintainers = extra.get("recipe-maintainers") or []
-                # recipe_format detection from cf-graph node_attrs.
-                # cf-graph stores meta_yaml.schema_version: 0 = v0 (meta.yaml,
-                # Jinja-templated), 1 = v1 (recipe.yaml, native YAML context).
-                # Earlier classifier looked for `rendered_recipes` which
-                # cf-graph does not emit — left every row at "unknown".
-                #
-                # The full ladder:
-                #   1. meta_yaml.schema_version explicit (1 → recipe.yaml,
-                #      0 → meta.yaml).
-                #   2. raw_meta_yaml head bytes ({% set → v0, context: → v1).
-                #   3. meta_yaml structural shape (top-level `package` +
-                #      `source`/`build` is v0; top-level `context` is v1).
-                #      Catches CDT packages (~116 globally) which are auto-
-                #      generated v0 without any Jinja templating.
-                recipe_format = None
-                sv = meta_yaml.get("schema_version") if isinstance(meta_yaml, dict) else None
-                if sv == 1:
-                    recipe_format = "recipe.yaml"
-                elif sv == 0:
+    commit_every = 200
+    # Previously: monolithic BEGIN TRANSACTION around the entire ~25k-row
+    # parse loop. A mid-parse interrupt (OOM, Ctrl-C, network blip during
+    # subsequent phases) rolled the whole phase back. Now we commit every
+    # `commit_every` enrichments so progress survives across runs — the
+    # UPDATE SET ... COALESCE(?, col) statements below are idempotent.
+    with tarfile.open(cache_path, "r:gz") as tf:
+        for member in tf:
+            if not member.isfile():
+                continue
+            # Match: cf-graph-countyfair-master/node_attrs/<l>/<l>/<l>/<feedstock>.json
+            if "/node_attrs/" not in member.name or not member.name.endswith(".json"):
+                continue
+            feedstock_basename = member.name.rsplit("/", 1)[-1][:-5]
+            conda_names = feedstock_to_conda.get(feedstock_basename, [])
+            if not conda_names:
+                continue
+            f = tf.extractfile(member)
+            if f is None:
+                continue
+            try:
+                payload = json.load(f)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                continue
+            # Extract about.json fields
+            meta_yaml = payload.get("meta_yaml") or {}
+            about = meta_yaml.get("about") or {}
+            extra = meta_yaml.get("extra") or {}
+            source = meta_yaml.get("source") or {}
+            source_url = None
+            if isinstance(source, dict):
+                source_url = source.get("url")
+            elif isinstance(source, list) and source:
+                first = source[0]
+                if isinstance(first, dict):
+                    source_url = first.get("url")
+            summary = about.get("summary")
+            homepage = about.get("home")
+            dev_url = about.get("dev_url")
+            doc_url = about.get("doc_url")
+            repo_url = about.get("repository") or about.get("dev_url")
+            license_family = about.get("license_family")
+            keywords = about.get("keywords") or []
+            maintainers = extra.get("recipe-maintainers") or []
+            # recipe_format detection from cf-graph node_attrs.
+            # cf-graph stores meta_yaml.schema_version: 0 = v0 (meta.yaml,
+            # Jinja-templated), 1 = v1 (recipe.yaml, native YAML context).
+            # Earlier classifier looked for `rendered_recipes` which
+            # cf-graph does not emit — left every row at "unknown".
+            #
+            # The full ladder:
+            #   1. meta_yaml.schema_version explicit (1 → recipe.yaml,
+            #      0 → meta.yaml).
+            #   2. raw_meta_yaml head bytes ({% set → v0, context: → v1).
+            #   3. meta_yaml structural shape (top-level `package` +
+            #      `source`/`build` is v0; top-level `context` is v1).
+            #      Catches CDT packages (~116 globally) which are auto-
+            #      generated v0 without any Jinja templating.
+            recipe_format = None
+            sv = meta_yaml.get("schema_version") if isinstance(meta_yaml, dict) else None
+            if sv == 1:
+                recipe_format = "recipe.yaml"
+            elif sv == 0:
+                recipe_format = "meta.yaml"
+            else:
+                raw = payload.get("raw_meta_yaml") or ""
+                head = raw[:500]
+                if "{% set" in head or head.lstrip().startswith("{%"):
                     recipe_format = "meta.yaml"
-                else:
-                    raw = payload.get("raw_meta_yaml") or ""
-                    head = raw[:500]
-                    if "{% set" in head or head.lstrip().startswith("{%"):
-                        recipe_format = "meta.yaml"
-                    elif "context:" in head:
+                elif "context:" in head:
+                    recipe_format = "recipe.yaml"
+                elif isinstance(meta_yaml, dict):
+                    # Structural-shape fallback. v1 recipes ALWAYS have a
+                    # top-level `context` key in meta_yaml (the parsed
+                    # YAML reflects this). v0 has package + source/build.
+                    if "context" in meta_yaml:
                         recipe_format = "recipe.yaml"
-                    elif isinstance(meta_yaml, dict):
-                        # Structural-shape fallback. v1 recipes ALWAYS have a
-                        # top-level `context` key in meta_yaml (the parsed
-                        # YAML reflects this). v0 has package + source/build.
-                        if "context" in meta_yaml:
-                            recipe_format = "recipe.yaml"
-                        elif "package" in meta_yaml and (
-                            "source" in meta_yaml or "build" in meta_yaml
-                        ):
-                            recipe_format = "meta.yaml"
-                if recipe_format is None:
-                    recipe_format = "unknown"
-                # Source registry classification
-                registry, extracted = _classify_source_url(source_url)
+                    elif "package" in meta_yaml and (
+                        "source" in meta_yaml or "build" in meta_yaml
+                    ):
+                        recipe_format = "meta.yaml"
+            if recipe_format is None:
+                recipe_format = "unknown"
+            # Source registry classification
+            registry, extracted = _classify_source_url(source_url)
 
-                # Coerce list-typed metadata fields to strings to avoid SQLite errors
-                def _str(v: Any) -> str | None:
-                    if v is None:
-                        return None
-                    if isinstance(v, str):
-                        return v
-                    if isinstance(v, list):
-                        return ", ".join(str(x) for x in v if x)
-                    return str(v)
-                keywords_str = json.dumps(keywords) if keywords else None
-                for conda_name in conda_names:
-                    conn.execute(
+            # Coerce list-typed metadata fields to strings to avoid SQLite errors
+            def _str(v: Any) -> str | None:
+                if v is None:
+                    return None
+                if isinstance(v, str):
+                    return v
+                if isinstance(v, list):
+                    return ", ".join(str(x) for x in v if x)
+                return str(v)
+            keywords_str = json.dumps(keywords) if keywords else None
+            for conda_name in conda_names:
+                conn.execute(
+                    """
+                    UPDATE packages SET
+                        conda_summary = COALESCE(?, conda_summary),
+                        conda_homepage = COALESCE(?, conda_homepage),
+                        conda_dev_url = COALESCE(?, conda_dev_url),
+                        conda_doc_url = COALESCE(?, conda_doc_url),
+                        conda_repo_url = COALESCE(?, conda_repo_url),
+                        conda_license_family = COALESCE(?, conda_license_family),
+                        recipe_format = COALESCE(?, recipe_format),
+                        conda_source_registry = COALESCE(?, conda_source_registry),
+                        conda_keywords = COALESCE(?, conda_keywords)
+                    WHERE conda_name = ?
+                    """,
+                    (
+                        _str(summary), _str(homepage), _str(dev_url), _str(doc_url),
+                        _str(repo_url), _str(license_family), recipe_format, registry,
+                        keywords_str, conda_name,
+                    ),
+                )
+                # C.5 fold-in: deterministic source.url → pypi match
+                if registry == "pypi" and extracted:
+                    cursor = conn.execute(
                         """
                         UPDATE packages SET
-                            conda_summary = COALESCE(?, conda_summary),
-                            conda_homepage = COALESCE(?, conda_homepage),
-                            conda_dev_url = COALESCE(?, conda_dev_url),
-                            conda_doc_url = COALESCE(?, conda_doc_url),
-                            conda_repo_url = COALESCE(?, conda_repo_url),
-                            conda_license_family = COALESCE(?, conda_license_family),
-                            recipe_format = COALESCE(?, recipe_format),
-                            conda_source_registry = COALESCE(?, conda_source_registry),
-                            conda_keywords = COALESCE(?, conda_keywords)
+                            pypi_name = COALESCE(pypi_name, ?),
+                            relationship = CASE WHEN ? = conda_name THEN 'both_same_name' ELSE 'both_renamed' END,
+                            match_source = 'recipe_source_url',
+                            match_confidence = 'verified'
                         WHERE conda_name = ?
+                          AND match_source != 'parselmouth'
                         """,
-                        (
-                            _str(summary), _str(homepage), _str(dev_url), _str(doc_url),
-                            _str(repo_url), _str(license_family), recipe_format, registry,
-                            keywords_str, conda_name,
-                        ),
+                        (extracted, extracted, conda_name),
                     )
-                    # C.5 fold-in: deterministic source.url → pypi match
-                    if registry == "pypi" and extracted:
-                        cursor = conn.execute(
-                            """
-                            UPDATE packages SET
-                                pypi_name = COALESCE(pypi_name, ?),
-                                relationship = CASE WHEN ? = conda_name THEN 'both_same_name' ELSE 'both_renamed' END,
-                                match_source = 'recipe_source_url',
-                                match_confidence = 'verified'
-                            WHERE conda_name = ?
-                              AND match_source != 'parselmouth'
-                            """,
-                            (extracted, extracted, conda_name),
-                        )
-                        if cursor.rowcount:
-                            pypi_url_matched += 1
-                    if registry == "npm" and extracted:
+                    if cursor.rowcount:
+                        pypi_url_matched += 1
+                if registry == "npm" and extracted:
+                    conn.execute(
+                        "UPDATE packages SET npm_name = COALESCE(npm_name, ?) WHERE conda_name = ?",
+                        (extracted, conda_name),
+                    )
+                if registry == "maven":
+                    # Pull groupId:artifactId from the source URL when
+                    # the recipe sources a jar/pom/aar from Maven Central.
+                    m_match = _MAVEN_SOURCE_RE.search(source_url) if isinstance(source_url, str) else None
+                    if m_match:
+                        group_path = m_match.group(1).strip("/")
+                        artifact = m_match.group(2)
+                        group_id = group_path.replace("/", ".")
+                        coord = f"{group_id}:{artifact}"
                         conn.execute(
-                            "UPDATE packages SET npm_name = COALESCE(npm_name, ?) WHERE conda_name = ?",
-                            (extracted, conda_name),
+                            "UPDATE packages SET maven_coord = COALESCE(maven_coord, ?) WHERE conda_name = ?",
+                            (coord, conda_name),
                         )
-                    if registry == "maven":
-                        # Pull groupId:artifactId from the source URL when
-                        # the recipe sources a jar/pom/aar from Maven Central.
-                        m_match = _MAVEN_SOURCE_RE.search(source_url) if isinstance(source_url, str) else None
-                        if m_match:
-                            group_path = m_match.group(1).strip("/")
-                            artifact = m_match.group(2)
-                            group_id = group_path.replace("/", ".")
-                            coord = f"{group_id}:{artifact}"
-                            conn.execute(
-                                "UPDATE packages SET maven_coord = COALESCE(maven_coord, ?) WHERE conda_name = ?",
-                                (coord, conda_name),
-                            )
-                    # Maintainers: insert into junction table
-                    for m in maintainers:
-                        if not isinstance(m, str):
-                            continue
-                        conn.execute(
-                            "INSERT OR IGNORE INTO maintainers(handle) VALUES (?)", (m,)
-                        )
-                        mid = conn.execute(
-                            "SELECT id FROM maintainers WHERE handle = ?", (m,)
-                        ).fetchone()[0]
-                        conn.execute(
-                            "INSERT OR IGNORE INTO package_maintainers(conda_name, maintainer_id) VALUES (?, ?)",
-                            (conda_name, mid),
-                        )
-                    enriched += 1
-        conn.execute("COMMIT")
-    except Exception:
-        conn.execute("ROLLBACK")
-        raise
+                # Maintainers: insert into junction table
+                for m in maintainers:
+                    if not isinstance(m, str):
+                        continue
+                    conn.execute(
+                        "INSERT OR IGNORE INTO maintainers(handle) VALUES (?)", (m,)
+                    )
+                    mid = conn.execute(
+                        "SELECT id FROM maintainers WHERE handle = ?", (m,)
+                    ).fetchone()[0]
+                    conn.execute(
+                        "INSERT OR IGNORE INTO package_maintainers(conda_name, maintainer_id) VALUES (?, ?)",
+                        (conda_name, mid),
+                    )
+                enriched += 1
+                if enriched % commit_every == 0:
+                    conn.commit()
+    conn.commit()
 
     elapsed = time.monotonic() - t0
     print(f"  Phase E done in {elapsed:.1f}s — enriched {enriched:,} rows; pypi_url matches {pypi_url_matched:,}")
@@ -1409,7 +1467,13 @@ def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
     t0 = time.monotonic()
     print("  Phase E.5: querying conda-forge org for archived feedstock repos...")
 
-    # Paginated GraphQL — conda-forge has thousands of feedstocks; we filter to archived only
+    # Paginated GraphQL — conda-forge has thousands of feedstocks; we filter to archived only.
+    # Page-level checkpoints land in `phase_state` so observers can see the
+    # pagination progress mid-run (status='in_progress', items_completed=
+    # accumulated repo count, last_completed_cursor=GraphQL endCursor). A
+    # mid-pagination interrupt still restarts pagination from scratch — the
+    # GraphQL call has no side effects, so re-running is safe and the
+    # archived set rarely shifts more than a handful of repos between runs.
     archived: dict[str, str | None] = {}
     cursor = None
     page = 0
@@ -1431,14 +1495,30 @@ def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
             )
             data = json.loads(result.stdout)
         except subprocess.CalledProcessError as e:
-            print(f"  GraphQL failed on page {page}: {e.stderr[:200]}")
+            err_msg = f"GraphQL failed on page {page}: {e.stderr[:200]}"
+            print(f"  {err_msg}")
+            save_phase_checkpoint(
+                conn, "phase_e5",
+                cursor=cursor,
+                items_completed=len(archived),
+                status="failed",
+                last_error=err_msg,
+            )
+            conn.commit()
             break
         repos = data["data"]["organization"]["repositories"]
         for node in repos["nodes"]:
             archived[node["name"]] = node.get("archivedAt")
+        cursor = repos["pageInfo"]["endCursor"]
+        save_phase_checkpoint(
+            conn, "phase_e5",
+            cursor=cursor,
+            items_completed=len(archived),
+            status="in_progress",
+        )
+        conn.commit()
         if not repos["pageInfo"]["hasNextPage"]:
             break
-        cursor = repos["pageInfo"]["endCursor"]
     print(f"  Found {len(archived):,} archived repos in conda-forge org (across {page} pages)")
 
     def _iso_to_unix(s: str | None) -> int | None:
@@ -1456,34 +1536,45 @@ def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
     }
     print(f"  {len(archived_feedstocks):,} are *-feedstock repos")
 
-    conn.execute("BEGIN TRANSACTION")
-    try:
-        # Default everyone to not-archived; clears stale archived_at on rows
-        # that were unarchived since last run.
-        conn.execute(
-            "UPDATE packages SET feedstock_archived = 0, archived_at = NULL "
-            "WHERE feedstock_name IS NOT NULL"
+    # Default everyone to not-archived first; clears stale archived_at on
+    # rows that were unarchived since last run. Then apply the per-feedstock
+    # marks with periodic commits so a mid-apply interrupt still leaves the
+    # DB in a coherent state (all UPDATEs are idempotent on re-run).
+    conn.execute(
+        "UPDATE packages SET feedstock_archived = 0, archived_at = NULL "
+        "WHERE feedstock_name IS NOT NULL"
+    )
+    conn.commit()
+    # Strip "-feedstock" suffix from GitHub repo names — feedstock-outputs
+    # stores them WITHOUT the suffix (e.g., "numpy" not "numpy-feedstock"),
+    # but GraphQL returns the full repo name.
+    marked = 0
+    with_timestamp = 0
+    applied = 0
+    commit_every = 500
+    for fs_repo_name, archived_iso in archived_feedstocks.items():
+        fs_short = fs_repo_name[:-len("-feedstock")]  # strip suffix
+        ts_unix = _iso_to_unix(archived_iso)
+        if ts_unix is not None:
+            with_timestamp += 1
+        update_cursor = conn.execute(
+            "UPDATE packages SET feedstock_archived = 1, archived_at = ? "
+            "WHERE feedstock_name = ?",
+            (ts_unix, fs_short),
         )
-        # Strip "-feedstock" suffix from GitHub repo names — feedstock-outputs
-        # stores them WITHOUT the suffix (e.g., "numpy" not "numpy-feedstock"),
-        # but GraphQL returns the full repo name.
-        marked = 0
-        with_timestamp = 0
-        for fs_repo_name, archived_iso in archived_feedstocks.items():
-            fs_short = fs_repo_name[:-len("-feedstock")]  # strip suffix
-            ts_unix = _iso_to_unix(archived_iso)
-            if ts_unix is not None:
-                with_timestamp += 1
-            cursor = conn.execute(
-                "UPDATE packages SET feedstock_archived = 1, archived_at = ? "
-                "WHERE feedstock_name = ?",
-                (ts_unix, fs_short),
-            )
-            marked += cursor.rowcount
-        conn.execute("COMMIT")
-    except Exception:
-        conn.execute("ROLLBACK")
-        raise
+        marked += update_cursor.rowcount
+        applied += 1
+        if applied % commit_every == 0:
+            conn.commit()
+    conn.commit()
+    save_phase_checkpoint(
+        conn, "phase_e5",
+        cursor=None,
+        items_completed=len(archived_feedstocks),
+        items_total=len(archived_feedstocks),
+        status="completed",
+    )
+    conn.commit()
 
     elapsed = time.monotonic() - t0
     print(
@@ -1499,6 +1590,62 @@ def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
     }
 
 
+_ANACONDA_API_FALLBACK = "https://api.anaconda.org"
+
+
+def _anaconda_api_base() -> str:
+    """Resolve the api.anaconda.org base URL.
+
+    Priority:
+      1. ANACONDA_API_BASE_URL env var (project convention)
+      2. ANACONDA_API_BASE        env var (legacy, used by detail_cf_atlas.py)
+      3. https://api.anaconda.org
+
+    Air-gapped enterprise users can point this at a JFrog Artifactory or
+    similar generic-HTTP mirror that proxies api.anaconda.org responses.
+    """
+    return (
+        os.environ.get("ANACONDA_API_BASE_URL")
+        or os.environ.get("ANACONDA_API_BASE")
+        or _ANACONDA_API_FALLBACK
+    ).rstrip("/")
+
+
+_RETRY_AFTER_HARD_CAP_SECONDS = 60
+
+
+def _parse_retry_after(value: str | None, *, fallback: float) -> float:
+    """Parse an HTTP `Retry-After` header into a sleep duration in seconds.
+
+    RFC 9110 allows either a delta-seconds integer (`Retry-After: 30`) or
+    an HTTP-date (`Retry-After: Wed, 12 Nov 2025 14:00:00 GMT`). We accept
+    the integer form precisely; for the HTTP-date form we compute the
+    delta against `now`. Anything unparseable falls back to `fallback`.
+
+    Hard-capped at `_RETRY_AFTER_HARD_CAP_SECONDS` (60s) — a buggy or
+    hostile origin can otherwise stall a worker indefinitely. Treat
+    longer Retry-After values as "give up, let TTL re-pick this row next
+    run." Always returns ≥ 0.
+    """
+    if not value:
+        return max(0.0, fallback)
+    s = value.strip()
+    try:
+        secs = float(s)
+    except ValueError:
+        # HTTP-date form. Use email.utils.parsedate_to_datetime — handles
+        # the RFC 5322 / RFC 7231 IMF-fixdate format.
+        try:
+            from email.utils import parsedate_to_datetime
+            import datetime as _dt
+            when = parsedate_to_datetime(s)
+            now = _dt.datetime.now(when.tzinfo or _dt.timezone.utc)
+            secs = (when - now).total_seconds()
+        except Exception:
+            return max(0.0, fallback)
+    return max(0.0, min(secs, float(_RETRY_AFTER_HARD_CAP_SECONDS)))
+
+
 def _phase_f_fetch_one(
     name: str, latest: str | None
 ) -> tuple[str, str | None, dict | None, str, str | None]:
@@ -1506,10 +1653,12 @@ def _phase_f_fetch_one(
 
     status ∈ {'ok', '404', 'fail'}. err_msg is None on success, otherwise a
     short string suitable for `downloads_last_error`. On 429 retries up to 3x
-    with exponential backoff; on other 4xx/5xx returns 'fail' with the HTTP
-    status; on network errors returns 'fail' with the exception class name.
+    honoring the server's `Retry-After` header (capped at 60s); on 503
+    similarly. On other 4xx returns 'fail' with the HTTP status; on network
+    errors retries with exponential backoff + jitter.
     """
-    url = f"https://api.anaconda.org/package/conda-forge/{name}"
+    import random as _random
+    url = f"{_anaconda_api_base()}/package/conda-forge/{name}"
     last_err: str | None = None
     for attempt in range(3):
         try:
@@ -1522,14 +1671,23 @@ def _phase_f_fetch_one(
             last_err = f"HTTP {e.code}"
             if e.code == 404:
                 return (name, latest, None, "404", last_err)
-            if e.code == 429:
-                time.sleep(2 ** attempt + 1)
+            if e.code in (429, 503) and attempt < 2:
+                # Prefer server-stated Retry-After when present; otherwise
+                # fall back to exponential + ±25% jitter so synchronized
+                # workers don't all wake up and re-request together.
+                retry_after = e.headers.get("Retry-After") if e.headers else None
+                base = 2.0 ** attempt + 1.0
+                jitter = base * (0.75 + 0.5 * _random.random())
+                sleep_for = _parse_retry_after(retry_after, fallback=jitter)
+                time.sleep(sleep_for)
                 continue
             return (name, latest, None, "fail", last_err)
         except Exception as e:
             last_err = f"{type(e).__name__}: {str(e)[:120]}"
             if attempt < 2:
-                time.sleep(1 + attempt)
+                # ±25% jitter on transient network failures too.
+                base = 1.0 + attempt
+                time.sleep(base * (0.75 + 0.5 * _random.random()))
                 continue
             return (name, latest, None, "fail", last_err)
     return (name, latest, None, "fail", last_err or "exhausted retries")
@@ -1538,7 +1696,12 @@ def _phase_f_fetch_one(
 def _phase_f_eligible_rows(conn: sqlite3.Connection) -> tuple[list, int, int, int]:
     """Resolve the TTL gate + LIMIT cap and return (rows, ttl_days, concurrency, limit)."""
     ttl_days = int(os.environ.get("PHASE_F_TTL_DAYS", "7"))
-    concurrency = max(1, int(os.environ.get("PHASE_F_CONCURRENCY", "8")))
+    # Default concurrency is 3 (was 8). api.anaconda.org has a soft per-IP
+    # secondary rate limit; 8 workers on a 32k-row backfill reliably tripped
+    # 429s. 3 workers stay well under the threshold while still parallelizing.
+    # Override via PHASE_F_CONCURRENCY when you know the limit is higher
+    # (e.g., authenticated requests, or a JFrog mirror with no rate cap).
+    concurrency = max(1, int(os.environ.get("PHASE_F_CONCURRENCY", "3")))
     limit = int(os.environ.get("PHASE_F_LIMIT", "0"))
     cutoff = int(time.time()) - ttl_days * 86400
 
@@ -1558,12 +1721,15 @@ def _phase_f_eligible_rows(conn: sqlite3.Connection) -> tuple[list, int, int, in
 
 
 def _phase_f_probe_api() -> tuple[bool, str | None]:
-    """Reachability check for `api.anaconda.org` via one GET against `pip`.
+    """Reachability check for the anaconda API via one GET against `pip`.
+
+    Honors ANACONDA_API_BASE_URL so probes against a JFrog mirror don't
+    misclassify the public endpoint as unreachable.
 
     Returns (ok, reason). On success, reason is None. On failure, reason
     is a short tag suitable for logging.
     """
-    url = "https://api.anaconda.org/package/conda-forge/pip"
+    url = f"{_anaconda_api_base()}/package/conda-forge/pip"
     try:
         req = _make_req(url)
         with urllib.request.urlopen(req, timeout=10) as resp:
@@ -1600,7 +1766,7 @@ def _phase_f_via_api(
     if ttl_days is None:
         ttl_days = int(os.environ.get("PHASE_F_TTL_DAYS", "7"))
     if concurrency is None:
-        concurrency = max(1, int(os.environ.get("PHASE_F_CONCURRENCY", "8")))
+        concurrency = max(1, int(os.environ.get("PHASE_F_CONCURRENCY", "3")))
     print(f"  {len(rows):,} rows to refresh (TTL {ttl_days}d, concurrency {concurrency})")
 
     fetched = 0
@@ -1958,17 +2124,36 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
                           on failure run S3 for the whole eligible set.
 
     Tunables (env vars):
-      - PHASE_F_DISABLED     : "1" to skip entirely (opt-out)
-      - PHASE_F_SOURCE       : auto | anaconda-api | s3-parquet (default auto)
-      - PHASE_F_TTL_DAYS     : skip rows refreshed within N days (default 7)
-      - PHASE_F_CONCURRENCY  : API worker pool size (default 8)
-      - PHASE_F_LIMIT        : cap rows processed (debug; 0 = no cap)
-      - PHASE_F_S3_MONTHS    : trailing months to load from S3 (0 = all)
-      - S3_PARQUET_BASE_URL  : enterprise mirror for the parquet bucket
+      - PHASE_F_DISABLED       : "1" to skip entirely (opt-out)
+      - PHASE_F_SOURCE         : auto | anaconda-api | s3-parquet (default
+                                 auto). Large orgs (>30k rows) that
+                                 reliably hit api.anaconda.org's 429 wall
+                                 should set ``PHASE_F_SOURCE=s3-parquet``
+                                 to skip the API path entirely.
+      - PHASE_F_TTL_DAYS       : skip rows refreshed within N days (default 7)
+      - PHASE_F_CONCURRENCY    : API worker pool size (default 3). The
+                                 default was 8 until we observed 25%+
+                                 429-rate failures on 32k-row backfills;
+                                 3 stays under api.anaconda.org's per-IP
+                                 secondary limit. Raise only when you know
+                                 your link tolerates higher load
+                                 (authenticated requests, JFrog mirror).
+      - PHASE_F_LIMIT          : cap rows processed (debug; 0 = no cap)
+      - PHASE_F_S3_MONTHS      : trailing months to load from S3 (0 = all)
+      - S3_PARQUET_BASE_URL    : enterprise mirror for the parquet bucket
+      - ANACONDA_API_BASE_URL  : enterprise mirror for api.anaconda.org
+                                 (e.g. a JFrog generic-HTTP remote). Falls
+                                 back to ANACONDA_API_BASE (legacy) then
+                                 the public host.
 
     Every populated row carries a non-NULL `downloads_source` discriminator
     (`'anaconda-api'` | `'s3-parquet'` | `'merged'`) so consumers can
     surface which dataset produced the number.
+
+    Rate-limit handling: the API path retries on 429 / 503 honoring the
+    server's ``Retry-After`` header (capped at 60s); on other transient
+    failures, it backs off exponentially with ±25% jitter to avoid
+    synchronized retry storms across the worker pool.
     """
     print("  Phase F: per-package download counts")
 
@@ -2268,7 +2453,13 @@ def _phase_h_fetch_one(pypi_name: str
     visible versions appear in `info.version` but should NOT be used as
     upstream-of-record; the boolean is surfaced so behind-upstream and
     consumers can warn / pick the next-newest non-yanked version.
+
+    On 429/503: honors the server's `Retry-After` header (delta-seconds
+    or HTTP-date), capped at 60s via `_parse_retry_after`. On other
+    transient failures: exponential backoff + ±25% jitter so a
+    synchronized worker pool doesn't re-hit pypi.org in lockstep.
     """
+    import random as _random
     url = f"https://pypi.org/pypi/{pypi_name}/json"
     last_err: str | None = None
     for attempt in range(3):
@@ -2297,14 +2488,19 @@ def _phase_h_fetch_one(pypi_name: str
             last_err = f"HTTP {e.code}"
             if e.code == 404:
                 return (pypi_name, None, None, "HTTP 404")
-            if e.code == 429:
-                time.sleep(2 ** attempt + 1)
+            if e.code in (429, 503) and attempt < 2:
+                retry_after = e.headers.get("Retry-After") if e.headers else None
+                base = 2.0 ** attempt + 1.0
+                jitter = base * (0.75 + 0.5 * _random.random())
+                sleep_for = _parse_retry_after(retry_after, fallback=jitter)
+                time.sleep(sleep_for)
                 continue
             return (pypi_name, None, None, last_err)
         except Exception as e:
             last_err = f"{type(e).__name__}: {str(e)[:120]}"
             if attempt < 2:
-                time.sleep(1 + attempt)
+                base = 1.0 + attempt
+                time.sleep(base * (0.75 + 0.5 * _random.random()))
                 continue
             return (pypi_name, None, None, last_err)
     return (pypi_name, None, None, last_err or "exhausted retries")
@@ -2313,7 +2509,13 @@ def _phase_h_fetch_one(pypi_name: str
 def _phase_h_eligible_pypi_names(conn: sqlite3.Connection) -> tuple[list, int, int, int]:
     """Return (rows, ttl_days, concurrency, limit) shared by all Phase H paths."""
     ttl_days = int(os.environ.get("PHASE_H_TTL_DAYS", "7"))
-    concurrency = max(1, int(os.environ.get("PHASE_H_CONCURRENCY", "8")))
+    # Default concurrency is 3 (was 8). pypi.org documents a ~30 req/s per-IP
+    # ceiling for the JSON API; 8 workers on a 100k-row backfill could trip
+    # secondary 429s. 3 stays comfortably under the limit and the cf-graph
+    # backend (PHASE_H_SOURCE=cf-graph) is the right choice anyway for
+    # full backfills. Override via PHASE_H_CONCURRENCY for trusted setups
+    # (authenticated mirrors, JFrog proxy with no rate cap).
+    concurrency = max(1, int(os.environ.get("PHASE_H_CONCURRENCY", "3")))
     limit = int(os.environ.get("PHASE_H_LIMIT", "0"))
     cutoff = int(time.time()) - ttl_days * 86400
 
@@ -2572,10 +2774,25 @@ def phase_h_pypi_versions(conn: sqlite3.Connection) -> dict:
 
     Tunables (env vars):
       - PHASE_H_DISABLED     : "1" to skip entirely
-      - PHASE_H_SOURCE       : pypi-json | cf-graph (default pypi-json)
+      - PHASE_H_SOURCE       : pypi-json | cf-graph (default pypi-json).
+                               Large org / cold-start backfills should
+                               prefer ``cf-graph`` to skip pypi.org entirely;
+                               see v7.7.0 entry in CHANGELOG.md for the
+                               yanked / freshness trade-off.
       - PHASE_H_TTL_DAYS     : skip rows refreshed within N days (default 7)
-      - PHASE_H_CONCURRENCY  : pypi-json worker pool size (default 8)
+      - PHASE_H_CONCURRENCY  : pypi-json worker pool size (default 3). The
+                               default was 8 until the v7.8.1 audit
+                               highlighted pypi.org's documented ~30 req/s
+                               per-IP ceiling; 3 stays under the secondary
+                               limit. Raise only when you know your link
+                               tolerates higher load.
       - PHASE_H_LIMIT        : cap rows processed (debug; 0 = no cap)
+
+    Rate-limit handling (pypi-json path): retries on 429 / 503 honoring
+    the server's ``Retry-After`` header (capped at 60s); on other
+    transient failures, backs off exponentially with ±25% jitter to
+    avoid synchronized retry storms across the worker pool. Same
+    pattern as Phase F — see ``_phase_f_fetch_one``.
 
     Every populated row carries a non-NULL `pypi_version_source` discriminator
     (`'pypi-json'` | `'cf-graph'`) so consumers can surface which dataset
@@ -2665,6 +2882,146 @@ def _gh_token() -> str | None:
     return None
 
 
+def _phase_k_github_graphql_batch(
+    repos: list[tuple[str, str]],
+    gh_token: str,
+    *,
+    batch_size: int = 100,
+) -> dict[tuple[str, str], tuple[str | None, str | None]]:
+    """Resolve latest release/tag for a list of GitHub repos via GraphQL.
+
+    Returns ``{(owner, repo): (version_or_None, err_or_None)}`` with one
+    entry per input repo. The REST fanout in `_phase_k_fetch_one` does
+    one GET per repo (often two — releases/latest then tags fallback);
+    a 4k-row Phase K can hit GitHub's secondary rate limit even with a
+    PAT. This issues one HTTP POST per `batch_size` (default 100) repos
+    using aliased queries, so a 4k-row run is ~40 requests instead of
+    ~14k. Each repo's subquery asks for both `releases(first:1)` and
+    `refs(refPrefix:"refs/tags/", first:1)` so release+tag fallback is
+    resolved server-side in the same round-trip.
+
+    Error handling:
+      - Network / 5xx errors: retry up to 3x with exponential backoff,
+        then mark every repo in that batch as failed.
+      - Per-alias errors (NOT_FOUND, SUSPENDED, etc.) come back as
+        `data[alias] = null` plus an entry in the response's `errors`
+        array with `path: ["<alias>"]`. We map them to per-repo errors.
+      - Repos with neither a release nor a tag get `(None, "no tags")`
+        to match the REST path's behavior.
+
+    GraphQL is auth-only (anonymous queries return 401), so callers
+    must pass a non-empty `gh_token`. The Phase K dispatcher already
+    enforces that.
+    """
+    results: dict[tuple[str, str], tuple[str | None, str | None]] = {}
+    if not repos:
+        return results
+
+    # Honor GITHUB_API_BASE_URL for GitHub Enterprise Server. GHES exposes
+    # GraphQL at `<base>/graphql` under the same `/api` root used for REST,
+    # so a single env var redirects both.
+    if _HTTP_AVAILABLE and _resolve_github_api_urls is not None:
+        endpoint = _resolve_github_api_urls("graphql")[0]
+    else:
+        endpoint = "https://api.github.com/graphql"
+
+    def _build_query(batch: list[tuple[str, str]]) -> str:
+        parts = ["query {"]
+        for i, (owner, repo) in enumerate(batch):
+            owner_lit = json.dumps(owner)
+            repo_lit = json.dumps(repo)
+            parts.append(
+                f"  r{i}: repository(owner: {owner_lit}, name: {repo_lit}) {{\n"
+                f"    releases(first: 1, orderBy: {{field: CREATED_AT, direction: DESC}}) {{\n"
+                f"      nodes {{ tagName }}\n"
+                f"    }}\n"
+                f"    refs(refPrefix: \"refs/tags/\", first: 1, "
+                f"orderBy: {{field: TAG_COMMIT_DATE, direction: DESC}}) {{\n"
+                f"      nodes {{ name }}\n"
+                f"    }}\n"
+                f"  }}"
+            )
+        parts.append("  rateLimit { cost remaining resetAt }")
+        parts.append("}")
+        return "\n".join(parts)
+
+    headers = {
+        "Authorization": f"Bearer {gh_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "cf-atlas/phase-k-graphql",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    for batch_start in range(0, len(repos), batch_size):
+        batch = repos[batch_start:batch_start + batch_size]
+        query = _build_query(batch)
+        body = json.dumps({"query": query}).encode("utf-8")
+
+        payload: dict | None = None
+        batch_err: str | None = None
+        for attempt in range(3):
+            try:
+                req = urllib.request.Request(
+                    endpoint, data=body, headers=headers, method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    payload = json.load(resp)
+                break
+            except urllib.error.HTTPError as e:
+                batch_err = f"HTTP {e.code}"
+                if e.code in (403, 429, 502, 503, 504) and attempt < 2:
+                    time.sleep(2 ** attempt + 2)
+                    continue
+                break
+            except Exception as e:
+                batch_err = f"{type(e).__name__}: {str(e)[:120]}"
+                if attempt < 2:
+                    time.sleep(1 + attempt)
+                    continue
+                break
+
+        if payload is None:
+            for owner, repo in batch:
+                results[(owner, repo)] = (None, batch_err or "graphql batch failed")
+            continue
+
+        data = payload.get("data") or {}
+        errors_by_alias: dict[str, str] = {}
+        for err in (payload.get("errors") or []):
+            path = err.get("path") or []
+            alias = path[0] if path else None
+            etype = err.get("type") or ""
+            msg = err.get("message") or ""
+            if not alias:
+                continue
+            if etype == "NOT_FOUND" or "Could not resolve" in msg:
+                errors_by_alias[alias] = "HTTP 404"
+            else:
+                errors_by_alias[alias] = f"{etype or 'GraphQLError'}: {msg[:80]}"
+
+        for i, (owner, repo) in enumerate(batch):
+            alias = f"r{i}"
+            repo_data = data.get(alias)
+            if repo_data is None:
+                err = errors_by_alias.get(alias, "HTTP 404")
+                results[(owner, repo)] = (None, err)
+                continue
+            release_nodes = (((repo_data.get("releases") or {}).get("nodes")) or [])
+            tag_nodes = (((repo_data.get("refs") or {}).get("nodes")) or [])
+            tag: str | None = None
+            if release_nodes:
+                tag = (release_nodes[0] or {}).get("tagName")
+            if not tag and tag_nodes:
+                tag = (tag_nodes[0] or {}).get("name")
+            if tag:
+                results[(owner, repo)] = (_normalize_release_tag(tag), None)
+            else:
+                results[(owner, repo)] = (None, "no tags")
+
+    return results
+
+
 def _phase_k_fetch_one(host: str, owner_or_path: str, repo: str,
                        gh_token: str | None, gl_token: str | None
                        ) -> tuple[str, str, str, str | None, str | None]:
@@ -2677,11 +3034,19 @@ def _phase_k_fetch_one(host: str, owner_or_path: str, repo: str,
                      fallback to /repository/tags?per_page=1
     """
     if host in ("github", "codeberg"):
-        api_root = (
-            "https://api.github.com"
-            if host == "github"
-            else "https://codeberg.org/api/v1"
-        )
+        # GitHub Enterprise Server / self-hosted Gitea: honor
+        # GITHUB_API_BASE_URL / CODEBERG_API_BASE_URL respectively. Both
+        # use the same `/repos/<o>/<r>` path layout.
+        if host == "github":
+            if _HTTP_AVAILABLE and _resolve_github_api_urls is not None:
+                api_root = _resolve_github_api_urls()[0]
+            else:
+                api_root = "https://api.github.com"
+        else:
+            if _HTTP_AVAILABLE and _resolve_codeberg_api_urls is not None:
+                api_root = _resolve_codeberg_api_urls()[0]
+            else:
+                api_root = "https://codeberg.org/api/v1"
         accept = ("application/vnd.github+json"
                   if host == "github"
                   else "application/json")
@@ -2694,10 +3059,16 @@ def _phase_k_fetch_one(host: str, owner_or_path: str, repo: str,
         return _fetch_release_or_tag(host, owner_or_path, repo, base, headers)
 
     if host == "gitlab":
-        # GitLab requires URL-encoded project path
+        # Self-hosted GitLab: honor GITLAB_API_BASE_URL. GitLab requires
+        # URL-encoded project path; layout under `/projects/<enc>` is
+        # identical across CE/EE/self-hosted.
         from urllib.parse import quote
         encoded = quote(owner_or_path, safe="")
-        base = f"https://gitlab.com/api/v4/projects/{encoded}"
+        if _HTTP_AVAILABLE and _resolve_gitlab_api_urls is not None:
+            api_root = _resolve_gitlab_api_urls()[0]
+        else:
+            api_root = "https://gitlab.com/api/v4"
+        base = f"{api_root}/projects/{encoded}"
         headers = {"Accept": "application/json"}
         if gl_token:
             headers["PRIVATE-TOKEN"] = gl_token
@@ -2791,10 +3162,17 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
     column on packages (for github only; backward-compat with v6.7+).
 
     Tunables:
-      - PHASE_K_DISABLED     : "1" to skip
-      - PHASE_K_TTL_DAYS     : default 7
-      - PHASE_K_CONCURRENCY  : default 8
-      - PHASE_K_LIMIT        : cap rows (debug)
+      - PHASE_K_DISABLED            : "1" to skip
+      - PHASE_K_TTL_DAYS            : default 7
+      - PHASE_K_CONCURRENCY         : REST fanout for GitLab/Codeberg (default 8)
+      - PHASE_K_LIMIT               : cap rows (debug)
+      - PHASE_K_GRAPHQL_DISABLED    : "1" to disable the GitHub GraphQL
+                                      batch path and use REST fanout for
+                                      GitHub too (slower, hits secondary
+                                      rate limits at >~80 concurrent reqs)
+      - PHASE_K_GRAPHQL_BATCH_SIZE  : repos per GraphQL request (default
+                                      100; keep < ~150 to stay under
+                                      GitHub's 500K node-complexity ceiling)
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -2891,77 +3269,124 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
 
     print(f"  {len(work):,} rows have derivable VCS repos: {by_host}")
 
-    with ThreadPoolExecutor(max_workers=concurrency) as ex:
-        futures = {
-            ex.submit(_phase_k_fetch_one, host, owner_path, repo, gh_token, gl_token):
-                (conda_name, host, owner_path, repo)
-            for (conda_name, host, owner_path, repo) in work
-        }
-        for fut in as_completed(futures):
-            conda_name = futures[fut][0]
-            host, owner_or_path, repo, version, err = fut.result()
-            now = int(time.time())
-            url = f"https://{host}.com/{owner_or_path}/{repo}" if host == "github" else (
-                  f"https://gitlab.com/{owner_or_path}" if host == "gitlab" else
-                  f"https://codeberg.org/{owner_or_path}/{repo}")
-            if version is not None:
-                # Write to unified upstream_versions
-                conn.execute(
-                    "INSERT OR REPLACE INTO upstream_versions "
-                    "(conda_name, source, version, url, fetched_at, last_error) "
-                    "VALUES (?, ?, ?, ?, ?, NULL)",
-                    (conda_name, host, version, url, now),
-                )
-                # Backward-compat: also fill github_current_version when source='github'
-                if host == "github":
-                    conn.execute(
-                        "UPDATE packages SET github_current_version = ?, "
-                        "github_version_fetched_at = ?, github_version_last_error = NULL "
-                        "WHERE conda_name = ?",
-                        (version, now, conda_name),
-                    )
-                fetched += 1
-            elif err and ("404" in err or "no tags" in err):
-                conn.execute(
-                    "INSERT OR REPLACE INTO upstream_versions "
-                    "(conda_name, source, version, url, fetched_at, last_error) "
-                    "VALUES (?, ?, NULL, ?, ?, ?)",
-                    (conda_name, host, url, now, err),
-                )
-                if host == "github":
-                    conn.execute(
-                        "UPDATE packages SET github_version_fetched_at = ?, "
-                        "github_version_last_error = ? WHERE conda_name = ?",
-                        (now, err, conda_name),
-                    )
-                not_found += 1
-            else:
-                conn.execute(
-                    "INSERT OR REPLACE INTO upstream_versions "
-                    "(conda_name, source, version, url, fetched_at, last_error) "
-                    "VALUES (?, ?, NULL, ?, ?, ?)",
-                    (conda_name, host, url, now, err or "unknown error"),
-                )
-                if host == "github":
-                    conn.execute(
-                        "UPDATE packages SET github_version_last_error = ? "
-                        "WHERE conda_name = ?",
-                        (err or "unknown error", conda_name),
-                    )
-                failed += 1
+    # Partition: GitHub goes through one GraphQL batch path (avoids the
+    # secondary rate-limit that REST fanout trips at >~80 concurrent
+    # requests); GitLab + Codeberg keep the REST ThreadPoolExecutor since
+    # neither has a GraphQL equivalent and their combined volume is tiny.
+    use_graphql = (
+        not os.environ.get("PHASE_K_GRAPHQL_DISABLED")
+        and bool(gh_token)
+    )
+    graphql_batch_size = max(1, int(os.environ.get("PHASE_K_GRAPHQL_BATCH_SIZE", "100")))
 
-            completed += 1
-            if completed % commit_every == 0:
-                conn.commit()
-            if completed % progress_every == 0:
-                elapsed = time.monotonic() - t0
-                rate = completed / elapsed if elapsed else 0
-                eta_min = (len(work) - completed) / rate / 60 if rate else 0
-                print(
-                    f"    [{completed:,}/{len(work):,}] fetched={fetched:,} "
-                    f"failed={failed:,} 404={not_found:,}  "
-                    f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+    github_work = [w for w in work if w[1] == "github"]
+    other_work = [w for w in work if w[1] != "github"]
+
+    # Pre-compute GitHub results via GraphQL (single pass; one HTTP POST
+    # per ~batch_size repos). Results keyed by (owner, repo).
+    gh_results: dict[tuple[str, str], tuple[str | None, str | None]] = {}
+    if use_graphql and github_work:
+        gh_repos = [(w[2], w[3]) for w in github_work]
+        n_batches = (len(gh_repos) + graphql_batch_size - 1) // graphql_batch_size
+        print(
+            f"    GitHub: {len(gh_repos):,} repos via GraphQL "
+            f"({n_batches} batch{'es' if n_batches != 1 else ''} "
+            f"of up to {graphql_batch_size})"
+        )
+        assert gh_token is not None  # narrowed by use_graphql
+        gh_results = _phase_k_github_graphql_batch(
+            gh_repos, gh_token, batch_size=graphql_batch_size,
+        )
+
+    def _process_result(
+        conda_name: str, host: str, owner_or_path: str, repo: str,
+        version: str | None, err: str | None,
+    ) -> None:
+        nonlocal fetched, failed, not_found, completed
+        now = int(time.time())
+        url = f"https://{host}.com/{owner_or_path}/{repo}" if host == "github" else (
+              f"https://gitlab.com/{owner_or_path}" if host == "gitlab" else
+              f"https://codeberg.org/{owner_or_path}/{repo}")
+        if version is not None:
+            conn.execute(
+                "INSERT OR REPLACE INTO upstream_versions "
+                "(conda_name, source, version, url, fetched_at, last_error) "
+                "VALUES (?, ?, ?, ?, ?, NULL)",
+                (conda_name, host, version, url, now),
+            )
+            if host == "github":
+                conn.execute(
+                    "UPDATE packages SET github_current_version = ?, "
+                    "github_version_fetched_at = ?, github_version_last_error = NULL "
+                    "WHERE conda_name = ?",
+                    (version, now, conda_name),
                 )
+            fetched += 1
+        elif err and ("404" in err or "no tags" in err):
+            conn.execute(
+                "INSERT OR REPLACE INTO upstream_versions "
+                "(conda_name, source, version, url, fetched_at, last_error) "
+                "VALUES (?, ?, NULL, ?, ?, ?)",
+                (conda_name, host, url, now, err),
+            )
+            if host == "github":
+                conn.execute(
+                    "UPDATE packages SET github_version_fetched_at = ?, "
+                    "github_version_last_error = ? WHERE conda_name = ?",
+                    (now, err, conda_name),
+                )
+            not_found += 1
+        else:
+            conn.execute(
+                "INSERT OR REPLACE INTO upstream_versions "
+                "(conda_name, source, version, url, fetched_at, last_error) "
+                "VALUES (?, ?, NULL, ?, ?, ?)",
+                (conda_name, host, url, now, err or "unknown error"),
+            )
+            if host == "github":
+                conn.execute(
+                    "UPDATE packages SET github_version_last_error = ? "
+                    "WHERE conda_name = ?",
+                    (err or "unknown error", conda_name),
+                )
+            failed += 1
+
+        completed += 1
+        if completed % commit_every == 0:
+            conn.commit()
+        if completed % progress_every == 0:
+            elapsed = time.monotonic() - t0
+            rate = completed / elapsed if elapsed else 0
+            eta_min = (len(work) - completed) / rate / 60 if rate else 0
+            print(
+                f"    [{completed:,}/{len(work):,}] fetched={fetched:,} "
+                f"failed={failed:,} 404={not_found:,}  "
+                f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+            )
+
+    # Drain GitHub GraphQL results first (already computed in-process)
+    for (conda_name, host, owner_or_path, repo) in github_work:
+        if use_graphql:
+            version, err = gh_results.get((owner_or_path, repo), (None, "missing in graphql batch"))
+        else:
+            # GraphQL disabled — fall back to REST for github too
+            _, _, _, version, err = _phase_k_fetch_one(
+                host, owner_or_path, repo, gh_token, gl_token,
+            )
+        _process_result(conda_name, host, owner_or_path, repo, version, err)
+
+    # GitLab + Codeberg: keep the REST ThreadPoolExecutor fanout
+    if other_work:
+        with ThreadPoolExecutor(max_workers=concurrency) as ex:
+            futures = {
+                ex.submit(_phase_k_fetch_one, host, owner_path, repo, gh_token, gl_token):
+                    (conda_name, host, owner_path, repo)
+                for (conda_name, host, owner_path, repo) in other_work
+            }
+            for fut in as_completed(futures):
+                conda_name = futures[fut][0]
+                host, owner_or_path, repo, version, err = fut.result()
+                _process_result(conda_name, host, owner_or_path, repo, version, err)
 
     conn.commit()
     # Snapshot covers all VCS sources Phase K touched.
@@ -2997,6 +3422,23 @@ phase_k_github_versions = phase_k_vcs_versions
 # upstream_versions side table with the right `source` label.
 
 def _resolve_npm(name: str) -> tuple[str | None, str | None]:
+    # Honor enterprise npm registry overrides: NPM_BASE_URL (project
+    # convention) and npm_config_registry (npm CLI standard) — see
+    # _http.resolve_npm_urls. The hardcoded registry.npmjs.org fallback
+    # remains for external clones with no override set.
+    if _HTTP_AVAILABLE and _resolve_npm_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_npm_urls(name)
+        try:
+            data = _fetch_with_fallback(
+                urls,
+                timeout=20,
+                user_agent="cf-atlas/6.10 phase-l",
+                return_json=True,
+            )
+            ver = (data.get("dist-tags") or {}).get("latest")
+            return (ver, None)
+        except Exception as e:
+            return (None, f"{type(e).__name__}: {str(e)[:120]}")
     url = f"https://registry.npmjs.org/{name}"
     try:
         with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
@@ -3011,7 +3453,17 @@ def _resolve_npm(name: str) -> tuple[str | None, str | None]:
 
 def _resolve_cran(name: str) -> tuple[str | None, str | None]:
     # crandb.r-pkg.org ships a JSON facade over CRAN that's much friendlier
-    # than scraping cran.r-project.org HTML.
+    # than scraping cran.r-project.org HTML. Honors CRAN_BASE_URL via
+    # _http.resolve_cran_urls for air-gapped enterprise mirrors.
+    if _HTTP_AVAILABLE and _resolve_cran_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_cran_urls(name)
+        try:
+            data = _fetch_with_fallback(
+                urls, timeout=20, user_agent="cf-atlas/phase-l", return_json=True,
+            )
+            return (data.get("Version"), None)
+        except Exception as e:
+            return (None, f"{type(e).__name__}: {str(e)[:120]}")
     url = f"https://crandb.r-pkg.org/{name}"
     try:
         with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
@@ -3024,6 +3476,15 @@ def _resolve_cran(name: str) -> tuple[str | None, str | None]:
 
 
 def _resolve_cpan(dist: str) -> tuple[str | None, str | None]:
+    if _HTTP_AVAILABLE and _resolve_cpan_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_cpan_urls(dist)
+        try:
+            data = _fetch_with_fallback(
+                urls, timeout=20, user_agent="cf-atlas/phase-l", return_json=True,
+            )
+            return (data.get("version"), None)
+        except Exception as e:
+            return (None, f"{type(e).__name__}: {str(e)[:120]}")
     url = f"https://fastapi.metacpan.org/v1/release/{dist}"
     try:
         with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
@@ -3038,23 +3499,30 @@ def _resolve_cpan(dist: str) -> tuple[str | None, str | None]:
 def _resolve_luarocks(name: str) -> tuple[str | None, str | None]:
     # No JSON API; scrape the project page for the leading `<name>-<version>`
     # rockspec link. Brittle — but luarocks coverage on conda-forge is small
-    # (~25 rows) so the fragility is bounded.
+    # (~25 rows) so the fragility is bounded. Honors LUAROCKS_BASE_URL.
+    def _parse_version(html: str) -> tuple[str | None, str | None]:
+        m = re.search(rf"/modules/[^/\"]+/{re.escape(name)}-([^/\"\-]+)-(\d+)\b", html)
+        if m:
+            return (m.group(1), None)
+        m = re.search(rf"{re.escape(name)}-(\d+(?:\.\d+)*(?:[\w.-]*)?)-\d+\.rockspec", html)
+        if m:
+            return (m.group(1), None)
+        return (None, "no version pattern matched")
+
+    if _HTTP_AVAILABLE and _resolve_luarocks_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_luarocks_urls(name)
+        try:
+            raw = _fetch_with_fallback(
+                urls, timeout=20, user_agent="cf-atlas/phase-l",
+            )
+            return _parse_version(raw.decode("utf-8", errors="replace"))
+        except Exception as e:
+            return (None, f"{type(e).__name__}: {str(e)[:120]}")
     url = f"https://luarocks.org/m/{name}"
     try:
         with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
             html = resp.read().decode("utf-8", errors="replace")
-        # Look for the latest-release version pattern. luarocks pages have
-        # `<a href="/modules/<name>/<name>-<version>-<rev>"...`
-        m = re.search(rf"/modules/[^/\"]+/{re.escape(name)}-([^/\"\-]+)-(\d+)\b",
-                      html)
-        if m:
-            return (m.group(1), None)
-        # Fallback: any rockspec link
-        m = re.search(rf"{re.escape(name)}-(\d+(?:\.\d+)*(?:[\w.-]*)?)-\d+\.rockspec",
-                      html)
-        if m:
-            return (m.group(1), None)
-        return (None, "no version pattern matched")
+        return _parse_version(html)
     except urllib.error.HTTPError as e:
         return (None, f"HTTP {e.code}")
     except Exception as e:
@@ -3062,13 +3530,23 @@ def _resolve_luarocks(name: str) -> tuple[str | None, str | None]:
 
 
 def _resolve_crates(name: str) -> tuple[str | None, str | None]:
+    if _HTTP_AVAILABLE and _resolve_crates_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_crates_urls(name)
+        try:
+            data = _fetch_with_fallback(
+                urls, timeout=20, user_agent="cf-atlas/phase-l", return_json=True,
+            )
+            crate = data.get("crate") or {}
+            ver = crate.get("max_stable_version") or crate.get("max_version")
+            return (ver, None)
+        except Exception as e:
+            return (None, f"{type(e).__name__}: {str(e)[:120]}")
     url = f"https://crates.io/api/v1/crates/{name}"
     try:
-        req = _make_req(url, extra_headers={"User-Agent": "cf-atlas/6.10 phase-l"})
+        req = _make_req(url, extra_headers={"User-Agent": "cf-atlas/phase-l"})
         with urllib.request.urlopen(req, timeout=20) as resp:
             data = json.load(resp)
         crate = data.get("crate") or {}
-        # Prefer max_stable_version; fall back to max_version if no stable yet
         ver = crate.get("max_stable_version") or crate.get("max_version")
         return (ver, None)
     except urllib.error.HTTPError as e:
@@ -3078,6 +3556,15 @@ def _resolve_crates(name: str) -> tuple[str | None, str | None]:
 
 
 def _resolve_rubygems(name: str) -> tuple[str | None, str | None]:
+    if _HTTP_AVAILABLE and _resolve_rubygems_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_rubygems_urls(name)
+        try:
+            data = _fetch_with_fallback(
+                urls, timeout=20, user_agent="cf-atlas/phase-l", return_json=True,
+            )
+            return (data.get("version"), None)
+        except Exception as e:
+            return (None, f"{type(e).__name__}: {str(e)[:120]}")
     url = f"https://rubygems.org/api/v1/gems/{name}.json"
     try:
         with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
@@ -3094,7 +3581,8 @@ def _resolve_maven(coord: str) -> tuple[str | None, str | None]:
 
     Uses search.maven.org/solrsearch/select. When only artifactId is known,
     we search by `a:` and accept the first hit (works for unique artifact
-    names; ambiguous names get whatever Solr returns first).
+    names; ambiguous names get whatever Solr returns first). Honors
+    MAVEN_BASE_URL.
     """
     from urllib.parse import quote
     if ":" in coord:
@@ -3102,10 +3590,22 @@ def _resolve_maven(coord: str) -> tuple[str | None, str | None]:
         q = f'g:"{g}" AND a:"{a}"'
     else:
         q = f'a:"{coord}"'
-    url = (
-        f"https://search.maven.org/solrsearch/select?"
-        f"q={quote(q)}&rows=1&wt=json"
-    )
+    query_path = f"solrsearch/select?q={quote(q)}&rows=1&wt=json"
+
+    if _HTTP_AVAILABLE and _resolve_maven_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_maven_urls(query_path)
+        try:
+            data = _fetch_with_fallback(
+                urls, timeout=20, user_agent="cf-atlas/phase-l", return_json=True,
+            )
+            docs = (data.get("response") or {}).get("docs") or []
+            if not docs:
+                return (None, "no Maven artifact matched")
+            ver = docs[0].get("latestVersion") or docs[0].get("v")
+            return (ver, None)
+        except Exception as e:
+            return (None, f"{type(e).__name__}: {str(e)[:120]}")
+    url = f"https://search.maven.org/{query_path}"
     try:
         with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
             data = json.load(resp)
@@ -3122,16 +3622,28 @@ def _resolve_maven(coord: str) -> tuple[str | None, str | None]:
 
 def _resolve_nuget(name: str) -> tuple[str | None, str | None]:
     # NuGet's flat-container endpoint requires lowercase package id.
+    # Honors NUGET_BASE_URL.
+    def _pick_version(data: dict) -> tuple[str | None, str | None]:
+        versions = data.get("versions") or []
+        if not versions:
+            return (None, "no versions")
+        stable = [v for v in versions if "-" not in v]
+        return ((stable[-1] if stable else versions[-1]), None)
+
+    if _HTTP_AVAILABLE and _resolve_nuget_urls is not None and _fetch_with_fallback is not None:
+        urls = _resolve_nuget_urls(name)
+        try:
+            data = _fetch_with_fallback(
+                urls, timeout=20, user_agent="cf-atlas/phase-l", return_json=True,
+            )
+            return _pick_version(data)
+        except Exception as e:
+            return (None, f"{type(e).__name__}: {str(e)[:120]}")
     url = f"https://api.nuget.org/v3-flatcontainer/{name.lower()}/index.json"
     try:
         with urllib.request.urlopen(_make_req(url), timeout=20) as resp:
             data = json.load(resp)
-        versions = data.get("versions") or []
-        if not versions:
-            return (None, "no versions")
-        # Filter out prereleases (containing '-') if any stable exist
-        stable = [v for v in versions if "-" not in v]
-        return ((stable[-1] if stable else versions[-1]), None)
+        return _pick_version(data)
     except urllib.error.HTTPError as e:
         return (None, f"HTTP {e.code}")
     except Exception as e:
@@ -3187,6 +3699,51 @@ _PHASE_L_RESOLVERS = {
     "maven":     (_resolve_maven,     "https://search.maven.org/artifact/"),
 }
 
+# Per-registry default concurrency caps. The old all-in-one ThreadPoolExecutor
+# with PHASE_L_CONCURRENCY=8 produced storms of up to 56 simultaneous reqs
+# across 7 different registries. The defaults below reflect each registry's
+# documented or empirical rate limit:
+#   - crates.io and rubygems.org document ~1 req/sec — keep concurrency at 1.
+#   - cran/cpan/luarocks/maven have no published limit but are small-volume
+#     scrapers; 2 workers each is plenty.
+#   - npm and nuget are CDN-backed and tolerate moderate concurrency.
+# Override per-registry via PHASE_L_CONCURRENCY_<SOURCE> (uppercase).
+# PHASE_L_CONCURRENCY remains as a legacy global override that caps every
+# source uniformly (e.g. PHASE_L_CONCURRENCY=1 forces fully serial).
+_PHASE_L_DEFAULT_CONCURRENCY: dict[str, int] = {
+    "npm":      4,
+    "cran":     2,
+    "cpan":     2,
+    "luarocks": 2,
+    "crates":   1,
+    "rubygems": 1,
+    "maven":    2,
+    "nuget":    4,
+}
+
+
+def _phase_l_concurrency_for(source: str) -> int:
+    """Resolve the worker count for a given Phase L registry.
+
+    Priority:
+      1. PHASE_L_CONCURRENCY_<SOURCE>  (per-source override, takes precedence)
+      2. PHASE_L_CONCURRENCY           (legacy global; applied uniformly)
+      3. _PHASE_L_DEFAULT_CONCURRENCY[source]
+    """
+    per_source = os.environ.get(f"PHASE_L_CONCURRENCY_{source.upper()}")
+    if per_source:
+        try:
+            return max(1, int(per_source))
+        except ValueError:
+            pass
+    legacy = os.environ.get("PHASE_L_CONCURRENCY")
+    if legacy:
+        try:
+            return max(1, int(legacy))
+        except ValueError:
+            pass
+    return _PHASE_L_DEFAULT_CONCURRENCY.get(source, 2)
+
 
 def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
     """Phase L: resolve the latest upstream version from npm / CRAN / CPAN /
@@ -3200,23 +3757,32 @@ def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
 
     Default-on; opt-out via PHASE_L_DISABLED=1. TTL-gated like Phase H/K.
 
-    Maven Central is intentionally not handled here — Maven coords are
-    `<group>:<artifact>` pairs, not single names, and cf_atlas doesn't have
-    a column for that yet. Tracked as a future addition.
+    The previous all-in-one ThreadPoolExecutor with PHASE_L_CONCURRENCY=8
+    could fire up to 56 simultaneous requests across 7 different registries,
+    which reliably tripped per-host secondary rate limits (especially
+    crates.io and rubygems.org, both documented at ~1 req/sec). Phase L now
+    processes registries SEQUENTIALLY and applies a per-registry concurrency
+    cap — see ``_phase_l_concurrency_for`` for defaults.
 
     Tunables:
-      - PHASE_L_DISABLED     : "1" to skip
-      - PHASE_L_TTL_DAYS     : default 7
-      - PHASE_L_CONCURRENCY  : default 8
-      - PHASE_L_LIMIT        : cap rows (debug)
-      - PHASE_L_SOURCES      : comma-separated subset (e.g. "npm,cran") to
-                               restrict which resolvers run
+      - PHASE_L_DISABLED              : "1" to skip
+      - PHASE_L_TTL_DAYS              : default 7
+      - PHASE_L_CONCURRENCY           : legacy global; caps every registry
+                                        uniformly when set (e.g. =1 forces
+                                        fully serial). Defaults to per-source
+                                        values when unset.
+      - PHASE_L_CONCURRENCY_<SOURCE>  : per-source override (uppercase),
+                                        e.g. PHASE_L_CONCURRENCY_CRATES=2.
+      - PHASE_L_LIMIT                 : cap rows (debug)
+      - PHASE_L_SOURCES               : comma-separated subset
+                                        (e.g. "npm,cran") to restrict which
+                                        resolvers run
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     t0 = time.monotonic()
     print("  Phase L: extra-registry upstream-version cache "
-          "(npm/CRAN/CPAN/LuaRocks/crates/RubyGems/NuGet)")
+          "(npm/CRAN/CPAN/LuaRocks/crates/RubyGems/NuGet/Maven)")
 
     if os.environ.get("PHASE_L_DISABLED"):
         return {
@@ -3226,7 +3792,6 @@ def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
         }
 
     ttl_days = int(os.environ.get("PHASE_L_TTL_DAYS", "7"))
-    concurrency = max(1, int(os.environ.get("PHASE_L_CONCURRENCY", "8")))
     limit = int(os.environ.get("PHASE_L_LIMIT", "0"))
     sources_filter = os.environ.get("PHASE_L_SOURCES")
     if sources_filter:
@@ -3291,9 +3856,30 @@ def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
     work = [w for w in work if (w[0], w[1]) not in have_recent]
     if limit > 0:
         work = work[:limit]
-    print(f"  {len(work):,} (conda_name, source) pairs to refresh "
-          f"(TTL {ttl_days}d, concurrency {concurrency}, "
-          f"sources={sorted(active_sources)})")
+
+    # Partition by registry so per-registry concurrency caps actually bound
+    # the per-host load. Order is stable (matches _PHASE_L_RESOLVERS) so log
+    # output is predictable.
+    work_by_source: dict[str, list[tuple[str, str, str, str]]] = {
+        src: [] for src in _PHASE_L_RESOLVERS
+    }
+    for w in work:
+        work_by_source[w[1]].append(w)
+    per_source_workers = {
+        src: _phase_l_concurrency_for(src)
+        for src in _PHASE_L_RESOLVERS
+        if work_by_source[src]
+    }
+    print(
+        f"  {len(work):,} (conda_name, source) pairs to refresh "
+        f"(TTL {ttl_days}d, sources={sorted(active_sources)})"
+    )
+    if per_source_workers:
+        breakdown = ", ".join(
+            f"{src}={len(work_by_source[src]):,}@{per_source_workers[src]}w"
+            for src in _PHASE_L_RESOLVERS if work_by_source[src]
+        )
+        print(f"    per-registry: {breakdown}")
 
     fetched = 0
     failed = 0
@@ -3309,50 +3895,57 @@ def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
         version, err = resolver(query_name)
         return (conda_name, source, version, err, public_url)
 
-    with ThreadPoolExecutor(max_workers=concurrency) as ex:
-        futures = [ex.submit(_dispatch, *w) for w in work]
-        for fut in as_completed(futures):
-            conda_name, source, version, err, public_url = fut.result()
-            now = int(time.time())
-            if version is not None:
-                conn.execute(
-                    "INSERT OR REPLACE INTO upstream_versions "
-                    "(conda_name, source, version, url, fetched_at, last_error) "
-                    "VALUES (?, ?, ?, ?, ?, NULL)",
-                    (conda_name, source, version, public_url, now),
-                )
-                fetched += 1
-                by_source[source] = by_source.get(source, 0) + 1
-            elif err and ("404" in err or "not found" in err.lower()
-                          or "no version" in err.lower()):
-                conn.execute(
-                    "INSERT OR REPLACE INTO upstream_versions "
-                    "(conda_name, source, version, url, fetched_at, last_error) "
-                    "VALUES (?, ?, NULL, ?, ?, ?)",
-                    (conda_name, source, public_url, now, err),
-                )
-                not_found += 1
-            else:
-                conn.execute(
-                    "INSERT OR REPLACE INTO upstream_versions "
-                    "(conda_name, source, version, url, fetched_at, last_error) "
-                    "VALUES (?, ?, NULL, ?, ?, ?)",
-                    (conda_name, source, public_url, now, err or "unknown error"),
-                )
-                failed += 1
+    # One ThreadPoolExecutor per registry, processed sequentially. Each pool
+    # uses the per-registry concurrency cap. When the legacy
+    # PHASE_L_CONCURRENCY=1 is set everything degrades to fully serial.
+    for source, source_work in work_by_source.items():
+        if not source_work:
+            continue
+        workers = per_source_workers[source]
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            futures = [ex.submit(_dispatch, *w) for w in source_work]
+            for fut in as_completed(futures):
+                conda_name, _src, version, err, public_url = fut.result()
+                now = int(time.time())
+                if version is not None:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO upstream_versions "
+                        "(conda_name, source, version, url, fetched_at, last_error) "
+                        "VALUES (?, ?, ?, ?, ?, NULL)",
+                        (conda_name, source, version, public_url, now),
+                    )
+                    fetched += 1
+                    by_source[source] = by_source.get(source, 0) + 1
+                elif err and ("404" in err or "not found" in err.lower()
+                              or "no version" in err.lower()):
+                    conn.execute(
+                        "INSERT OR REPLACE INTO upstream_versions "
+                        "(conda_name, source, version, url, fetched_at, last_error) "
+                        "VALUES (?, ?, NULL, ?, ?, ?)",
+                        (conda_name, source, public_url, now, err),
+                    )
+                    not_found += 1
+                else:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO upstream_versions "
+                        "(conda_name, source, version, url, fetched_at, last_error) "
+                        "VALUES (?, ?, NULL, ?, ?, ?)",
+                        (conda_name, source, public_url, now, err or "unknown error"),
+                    )
+                    failed += 1
 
-            completed += 1
-            if completed % commit_every == 0:
-                conn.commit()
-            if completed % progress_every == 0:
-                elapsed = time.monotonic() - t0
-                rate = completed / elapsed if elapsed else 0
-                eta_min = (len(work) - completed) / rate / 60 if rate else 0
-                print(
-                    f"    [{completed:,}/{len(work):,}] fetched={fetched:,} "
-                    f"failed={failed:,} 404={not_found:,}  "
-                    f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
-                )
+                completed += 1
+                if completed % commit_every == 0:
+                    conn.commit()
+                if completed % progress_every == 0:
+                    elapsed = time.monotonic() - t0
+                    rate = completed / elapsed if elapsed else 0
+                    eta_min = (len(work) - completed) / rate / 60 if rate else 0
+                    print(
+                        f"    [{completed:,}/{len(work):,}] fetched={fetched:,} "
+                        f"failed={failed:,} 404={not_found:,}  "
+                        f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
+                    )
 
     conn.commit()
     # Snapshot all sources Phase L wrote (npm/cran/cpan/luarocks/crates/
@@ -3375,7 +3968,7 @@ def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
         "by_source": by_source,
         "history_snapshot_rows": snap_total,
         "ttl_days": ttl_days,
-        "concurrency": concurrency,
+        "per_source_workers": per_source_workers,
         "duration_seconds": round(elapsed, 1),
     }
 
@@ -3421,6 +4014,14 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
     skipped_self = 0
     skipped_jinja = 0
 
+    # Intentional monolithic transaction: `DELETE FROM dependencies` at
+    # transaction start gives Phase J full-snapshot semantics — consumers
+    # never see a partial dependency graph. Switching to incremental
+    # commits would leak partial snapshots between a mid-run interrupt and
+    # the next re-run. The local cf-graph cache makes re-extract cheap
+    # (~2 min) so all-or-nothing is the right trade-off here. A
+    # staging-table swap would preserve both properties but adds
+    # complexity disproportionate to the Low-severity audit finding.
     conn.execute("BEGIN TRANSACTION")
     try:
         conn.execute("DELETE FROM dependencies")
@@ -3614,72 +4215,75 @@ def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
     bot_stuck = 0
     feedstock_bad_count = 0
 
-    conn.execute("BEGIN TRANSACTION")
-    try:
-        # Iterate over rows in `packages` whose feedstock_name has cf-graph data.
-        for row in conn.execute(
-            "SELECT conda_name, feedstock_name FROM packages "
-            "WHERE conda_name IS NOT NULL AND feedstock_name IS NOT NULL"
-        ):
-            conda_name = row["conda_name"]
-            fs = row["feedstock_name"]
-            pi = pr_info_data.get(fs)
-            vpi = version_pr_info_data.get(fs)
-            if pi is None and vpi is None:
-                continue
-            # PRed: list of {"PR": {state, ...}, "data": {version, ...}}
-            open_count = 0
-            last_state: str | None = None
-            last_version: str | None = None
-            if isinstance(pi, dict):
-                pred = pi.get("PRed") or []
-                if isinstance(pred, list):
-                    for entry in pred:
-                        if not isinstance(entry, dict):
-                            continue
-                        pr = entry.get("PR") or {}
-                        if isinstance(pr, dict) and pr.get("state") == "open":
-                            open_count += 1
-                    if pred:
-                        last = pred[-1]
-                        if isinstance(last, dict):
-                            last_pr = last.get("PR") or {}
-                            last_data = last.get("data") or {}
-                            if isinstance(last_pr, dict):
-                                last_state = last_pr.get("state")
-                            if isinstance(last_data, dict):
-                                last_version = last_data.get("version")
-            bad = 1 if (isinstance(pi, dict) and pi.get("bad")) else 0
-            if isinstance(vpi, dict) and vpi.get("bad"):
-                bad = 1
-            if bad:
-                feedstock_bad_count += 1
-            errs_count = 0
-            if isinstance(vpi, dict):
-                errs = vpi.get("new_version_errors") or {}
-                if isinstance(errs, list):
-                    errs_count = len(errs)
-                elif isinstance(errs, dict):
-                    errs_count = len(errs)
-            if errs_count > 0 or bad:
-                bot_stuck += 1
+    # Iterate over rows in `packages` whose feedstock_name has cf-graph data.
+    # Buffer the SELECT into a list so SQLite doesn't fight with the per-row
+    # UPDATEs we issue inside the loop (which would otherwise invalidate the
+    # cursor on commit). Periodic commits every 500 rows keep progress
+    # durable across mid-phase interrupts.
+    rows_to_process = list(conn.execute(
+        "SELECT conda_name, feedstock_name FROM packages "
+        "WHERE conda_name IS NOT NULL AND feedstock_name IS NOT NULL"
+    ))
+    commit_every = 500
+    for row in rows_to_process:
+        conda_name = row["conda_name"]
+        fs = row["feedstock_name"]
+        pi = pr_info_data.get(fs)
+        vpi = version_pr_info_data.get(fs)
+        if pi is None and vpi is None:
+            continue
+        # PRed: list of {"PR": {state, ...}, "data": {version, ...}}
+        open_count = 0
+        last_state: str | None = None
+        last_version: str | None = None
+        if isinstance(pi, dict):
+            pred = pi.get("PRed") or []
+            if isinstance(pred, list):
+                for entry in pred:
+                    if not isinstance(entry, dict):
+                        continue
+                    pr = entry.get("PR") or {}
+                    if isinstance(pr, dict) and pr.get("state") == "open":
+                        open_count += 1
+                if pred:
+                    last = pred[-1]
+                    if isinstance(last, dict):
+                        last_pr = last.get("PR") or {}
+                        last_data = last.get("data") or {}
+                        if isinstance(last_pr, dict):
+                            last_state = last_pr.get("state")
+                        if isinstance(last_data, dict):
+                            last_version = last_data.get("version")
+        bad = 1 if (isinstance(pi, dict) and pi.get("bad")) else 0
+        if isinstance(vpi, dict) and vpi.get("bad"):
+            bad = 1
+        if bad:
+            feedstock_bad_count += 1
+        errs_count = 0
+        if isinstance(vpi, dict):
+            errs = vpi.get("new_version_errors") or {}
+            if isinstance(errs, list):
+                errs_count = len(errs)
+            elif isinstance(errs, dict):
+                errs_count = len(errs)
+        if errs_count > 0 or bad:
+            bot_stuck += 1
 
-            conn.execute(
-                "UPDATE packages SET "
-                "bot_open_pr_count = ?, "
-                "bot_last_pr_state = ?, "
-                "bot_last_pr_version = ?, "
-                "bot_version_errors_count = ?, "
-                "feedstock_bad = ?, "
-                "bot_status_fetched_at = ? "
-                "WHERE conda_name = ?",
-                (open_count, last_state, last_version, errs_count, bad, now, conda_name),
-            )
-            updated += 1
-        conn.execute("COMMIT")
-    except Exception:
-        conn.execute("ROLLBACK")
-        raise
+        conn.execute(
+            "UPDATE packages SET "
+            "bot_open_pr_count = ?, "
+            "bot_last_pr_state = ?, "
+            "bot_last_pr_version = ?, "
+            "bot_version_errors_count = ?, "
+            "feedstock_bad = ?, "
+            "bot_status_fetched_at = ? "
+            "WHERE conda_name = ?",
+            (open_count, last_state, last_version, errs_count, bad, now, conda_name),
+        )
+        updated += 1
+        if updated % commit_every == 0:
+            conn.commit()
+    conn.commit()
 
     elapsed = time.monotonic() - t0
     print(
@@ -3698,13 +4302,40 @@ def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
     }
 
 
+# Substrings GitHub returns when primary / secondary rate limits trip.
+# `gh api` surfaces these in stderr (with an HTTP 403 status line). When
+# we see one, Phase N retries with backoff instead of giving up; without
+# this detection, transient rate-limit failures used to bake into the
+# checkpoint as permanent "gh api failed" errors, causing every later run
+# to re-burn the same quota fetching the same already-failed rows.
+_GH_RATE_LIMIT_INDICATORS: tuple[str, ...] = (
+    "api rate limit exceeded",
+    "secondary rate limit",
+    "you have exceeded a rate limit",
+    "abuse detection mechanism",
+)
+
+
+def _is_gh_rate_limit_stderr(stderr: str | None) -> bool:
+    if not stderr:
+        return False
+    low = stderr.lower()
+    return any(token in low for token in _GH_RATE_LIMIT_INDICATORS)
+
+
 def _phase_n_query_batch(feedstocks: list[str]) -> tuple[dict | None, str | None]:
     """Issue one GraphQL query with N aliased `repository(...)` blocks.
 
     Returns (data_dict, err). data_dict maps alias `r{i}` → repository
     payload (or None if the repo doesn't exist; GraphQL returns null in
     that case while still completing the request).
+
+    On primary / secondary GitHub rate-limit indicators in stderr,
+    retries up to 3x with exponential backoff (30s → 60s) and ±25% jitter
+    to desynchronize concurrent batches. Other non-zero exits are
+    surfaced immediately as permanent failures.
     """
+    import random as _random
     import subprocess
     if not feedstocks:
         return ({}, None)
@@ -3723,22 +4354,38 @@ def _phase_n_query_batch(feedstocks: list[str]) -> tuple[dict | None, str | None
             '}'
         )
     query = "{ " + " ".join(parts) + " }"
-    try:
-        result = subprocess.run(
-            ["gh", "api", "graphql", "-f", f"query={query}"],
-            capture_output=True, text=True, check=False, timeout=60,
-        )
-    except FileNotFoundError:
-        return (None, "gh CLI not installed")
-    except subprocess.TimeoutExpired:
-        return (None, "gh api timed out (>60s)")
-    if result.returncode != 0:
-        return (None, f"gh api failed: {result.stderr[:200]}")
-    try:
-        payload = json.loads(result.stdout)
-    except json.JSONDecodeError:
-        return (None, "GraphQL response not parseable JSON")
-    return (payload.get("data") or {}, None)
+
+    last_err: str | None = None
+    for attempt in range(3):
+        try:
+            result = subprocess.run(
+                ["gh", "api", "graphql", "-f", f"query={query}"],
+                capture_output=True, text=True, check=False, timeout=60,
+            )
+        except FileNotFoundError:
+            return (None, "gh CLI not installed")
+        except subprocess.TimeoutExpired:
+            return (None, "gh api timed out (>60s)")
+
+        if result.returncode == 0:
+            try:
+                payload = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return (None, "GraphQL response not parseable JSON")
+            return (payload.get("data") or {}, None)
+
+        last_err = result.stderr[:200]
+        if _is_gh_rate_limit_stderr(result.stderr) and attempt < 2:
+            # 30s, 60s base — secondary-limit windows are typically minutes,
+            # so this is more patient than Phase F/H's 2^attempt+1.
+            base = 30.0 * (attempt + 1)
+            sleep_for = min(60.0, base * (0.75 + 0.5 * _random.random()))
+            print(f"    Phase N: gh rate-limit hit, sleeping {sleep_for:.1f}s "
+                  f"(attempt {attempt + 1}/3)")
+            time.sleep(sleep_for)
+            continue
+        return (None, f"gh api failed: {last_err}")
+    return (None, f"gh api failed after retries: {last_err or 'unknown'}")
 
 
 def phase_n_github_live(conn: sqlite3.Connection) -> dict:

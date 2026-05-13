@@ -58,6 +58,20 @@ except ImportError:
     PkgVersion = None  # type: ignore[assignment,misc]
     PACKAGING_AVAILABLE = False
 
+# Enterprise npm registry resolver (NPM_BASE_URL / npm_config_registry chain)
+# + auth_headers_for so requests-based fetches carry JFROG/.netrc headers.
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _http import (  # type: ignore[import-not-found]
+        resolve_npm_urls as _resolve_npm_urls,
+        auth_headers_for as _auth_headers_for,
+    )
+    _HTTP_AVAILABLE = True
+except ImportError:
+    _resolve_npm_urls = None  # type: ignore[assignment]
+    _auth_headers_for = None  # type: ignore[assignment]
+    _HTTP_AVAILABLE = False
+
 
 _SCRIPTS_DIR = Path(__file__).parent
 RECIPE_EDITOR_SCRIPT = _SCRIPTS_DIR / "recipe_editor.py"
@@ -148,30 +162,13 @@ def _is_prerelease(version: str) -> bool:
 
 # ── npm registry ──────────────────────────────────────────────────────────────
 
-def get_latest_npm_version(package_name: str, *, allow_prerelease: bool = False) -> dict[str, Any]:
-    """Query the npm registry for the latest published version.
-
-    Returns ``{"version": "...", "tarball_url": "...", "prerelease": bool}``.
-    Raises ``RuntimeError`` on transport failure.
-    """
-    if not REQUESTS_AVAILABLE:
-        raise RuntimeError("requests library is required for npm registry access.")
-    assert requests is not None
-
-    url = f"https://registry.npmjs.org/{package_name}"
-    try:
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-    except requests.RequestException as exc:
-        raise RuntimeError(f"npm registry request failed: {exc}") from exc
-
-    data = response.json()
-    dist_tags = data.get("dist-tags") or {}
-    latest_tag = dist_tags.get("latest")
-    if not latest_tag:
-        raise RuntimeError(f"npm registry returned no 'latest' tag for {package_name!r}.")
-
-    # Optionally pick the highest *non-prerelease* version when latest IS a pre-release
+def _choose_npm_version(
+    data: dict[str, Any],
+    latest_tag: str,
+    *,
+    allow_prerelease: bool,
+) -> dict[str, Any]:
+    """Pick the version to use from a parsed npm registry response."""
     chosen = latest_tag
     if not allow_prerelease and _is_prerelease(latest_tag):
         # Look for the most recent stable in the versions table
@@ -195,6 +192,52 @@ def get_latest_npm_version(package_name: str, *, allow_prerelease: bool = False)
         "prerelease": _is_prerelease(chosen),
         "latest_dist_tag": latest_tag,
     }
+
+
+def get_latest_npm_version(package_name: str, *, allow_prerelease: bool = False) -> dict[str, Any]:
+    """Query the npm registry for the latest published version.
+
+    Returns ``{"version": "...", "tarball_url": "...", "prerelease": bool}``.
+    Raises ``RuntimeError`` on transport failure.
+
+    Honors enterprise npm registry overrides via ``_http.resolve_npm_urls``:
+    ``NPM_BASE_URL`` (project convention) and ``npm_config_registry`` (npm CLI
+    standard) are tried before the public ``registry.npmjs.org`` fallback.
+    """
+    if not REQUESTS_AVAILABLE:
+        raise RuntimeError("requests library is required for npm registry access.")
+    assert requests is not None
+
+    if _HTTP_AVAILABLE and _resolve_npm_urls is not None:
+        urls = _resolve_npm_urls(package_name)
+    else:
+        urls = [f"https://registry.npmjs.org/{package_name}"]
+
+    last_err: Exception | None = None
+    data: dict[str, Any] | None = None
+    for url in urls:
+        headers = _auth_headers_for(url) if _auth_headers_for is not None else {}
+        try:
+            response = requests.get(url, timeout=30, headers=headers or None)
+            if response.status_code == 404:
+                last_err = requests.HTTPError(f"404 at {url}")
+                continue
+            response.raise_for_status()
+            data = response.json()
+            break
+        except requests.RequestException as exc:
+            last_err = exc
+            continue
+    if data is None:
+        raise RuntimeError(
+            f"npm registry request failed across {len(urls)} source(s); last error: {last_err}"
+        )
+
+    dist_tags = data.get("dist-tags") or {}
+    latest_tag = dist_tags.get("latest")
+    if not latest_tag:
+        raise RuntimeError(f"npm registry returned no 'latest' tag for {package_name!r}.")
+    return _choose_npm_version(data, latest_tag, allow_prerelease=allow_prerelease)
 
 
 # ── Core update logic ─────────────────────────────────────────────────────────

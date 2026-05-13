@@ -2,6 +2,200 @@
 
 ## TL;DR — what's new in the latest release
 
+**v7.8.1** (May 12, 2026) — Audit close-out pass: every remaining HIGH / MEDIUM / LOW finding from the v7.8.0 deep audit is now addressed or explicitly justified as intentional. 44 new unit tests; 403 total tests passing across the CFE suite. Follows the patterns established in `reference/atlas-phase-engineering.md` (added in v7.8.0).
+
+### Phase H — same rate-limit-safety pattern as Phase F
+
+The audit's last HIGH-severity item. Phase H's pypi-json default path used 8 worker threads against pypi.org's documented ~30 req/s per-IP ceiling, with `time.sleep(2 ** attempt + 1)` as the only 429 handling and no `Retry-After` parsing.
+
+- `_phase_h_fetch_one` now honors the server's `Retry-After` header on 429 / 503 via the shared `_parse_retry_after` helper (capped at 60s). On other transient failures: exponential backoff + ±25% jitter so the worker pool doesn't re-hit pypi.org in lockstep.
+- Default `PHASE_H_CONCURRENCY` lowered **8 → 3** to stay under pypi.org's per-IP rate ceiling. Override-friendly for trusted setups.
+- `phase_h_pypi_versions` docstring updated with the new defaults and a pointer to the `PHASE_H_SOURCE=cf-graph` escape hatch for cold-start backfills (which sidesteps pypi.org entirely).
+
+### OSV — air-gap parity for vulnerability scanning
+
+Both ends of the OSV pipeline were hardcoded; air-gap deployments couldn't run vulnerability scans at all.
+
+- `vulnerability_scanner.py`: new `OSV_API_BASE_URL` env var via `_osv_api_base()` + `_osv_querybatch_url()` helpers. Live caller resolves URL at request time so env changes take effect without re-importing.
+- `cve_manager.py`: new `OSV_VULNS_BUCKET_URL` env var via `_osv_vulns_bucket_base()` + `_osv_ecosystem_zip_url(eco)`. `ECOSYSTEMS_TO_FETCH` switched from dict (with baked URLs) to tuple of ecosystem names; URL is composed per-iteration.
+- 8 new tests across `TestOsvApiBase` (4) and `TestOsvVulnsBucketUrl` (4): default public hosts, env redirects, trailing-slash strip, empty-string fallback.
+
+### GitLab / Codeberg / GitHub-API resolvers — self-hosted-friendly Phase K
+
+Phase K's REST tail still hardcoded `gitlab.com/api/v4` and `codeberg.org/api/v1`. The GitHub GraphQL endpoint was also hardcoded — earlier deferred on GHES grounds, but a single env var DOES work for GHES since the `/graphql` endpoint lives under the same `/api` root as REST.
+
+- `_http.py` gains three new resolvers, same shape as `resolve_maven_urls` (path-suffix arg, list return):
+  - `resolve_github_api_urls(path_suffix="")` — `GITHUB_API_BASE_URL` → `https://api.github.com`. Covers BOTH REST and GraphQL under a single env var (set to `https://<ghes>/api`).
+  - `resolve_gitlab_api_urls(path_suffix="")` — `GITLAB_API_BASE_URL` → `https://gitlab.com/api/v4`. Self-hosted GitLab CE/EE has identical path layout.
+  - `resolve_codeberg_api_urls(path_suffix="")` — `CODEBERG_API_BASE_URL` → `https://codeberg.org/api/v1`. Forgejo + self-hosted Gitea share the API.
+- `_phase_k_github_graphql_batch` endpoint resolved via `_resolve_github_api_urls("graphql")[0]`.
+- `_phase_k_fetch_one` GitHub/Codeberg/GitLab REST branches all consult the matching resolver.
+- 11 new tests across the three resolver classes.
+
+### Phase E — cf-graph cache TTL is now env-tunable
+
+The cache TTL was hardcoded at 1 day; weekly-cron operators were re-downloading the ~150MB archive every run for no information gain.
+
+- New `ATLAS_CFGRAPH_TTL_DAYS` env var (default `1.0`, float-parseable for fractional days). Invalid values silently fall back to the default. Cache-hit log message now includes the active TTL so operators see why a re-download was skipped or fired. Phases J and M reuse the same cache, so the TTL is shared across them.
+
+### Phase N — rate-limit detection on the `gh api graphql` subprocess
+
+Phase N called `gh api graphql` as a subprocess and treated any non-zero exit as a permanent failure. Transient rate-limit errors then baked into the checkpoint as "gh api failed", costing more quota every subsequent run to re-fetch the same already-failed rows.
+
+- New `_GH_RATE_LIMIT_INDICATORS` tuple — lowercased substrings: `"api rate limit exceeded"`, `"secondary rate limit"`, `"you have exceeded a rate limit"`, `"abuse detection mechanism"`.
+- New `_is_gh_rate_limit_stderr(stderr)` helper — case-insensitive substring match.
+- `_phase_n_query_batch` now retries up to 3 attempts when stderr matches a rate-limit indicator. Backoff is more patient than Phase F/H (30s/60s base vs `2^attempt+1`) because GitHub's secondary-limit windows are minutes, not seconds. ±25% jitter applies.
+- 6 new tests covering primary / secondary / abuse-detection wording, case-insensitivity, unrelated errors, and empty-stderr safety.
+
+### Phase C — incremental commits
+
+The parselmouth-join loop wrapped ~12k UPDATEs in a single `BEGIN TRANSACTION ... COMMIT`. Mid-loop interrupt rolled back everything.
+
+- Now commits every 500 entries. UPDATEs are idempotent (UPDATE-by-conda_name, no UNIQUE violations on re-run), matching the pattern already used in Phase B5 / E / M.
+
+### Phase B6 / J — intentional-design documentation
+
+The audit flagged these as Low-severity monolithic transactions. Closer inspection: both are intentional, not bugs.
+
+- **Phase B6** (`phase_b6_yanked_detection`): issues 3 bulk UPDATEs (no per-row loop), runs in <1s. Mid-statement interrupt is virtually impossible; re-running is free. Comment added so the next auditor doesn't re-flag it.
+- **Phase J** (`phase_j_dependency_graph`): `DELETE FROM dependencies` at transaction start gives the table full-snapshot semantics — consumers never see a partial dependency graph. Switching to incremental commits would leak partial graphs between an interrupt and the next re-run. The proper fix would be a staging-table swap, but for a Low-severity finding with a cheap (~2 min) re-extract from a local cache, that's disproportionate. Comment added.
+
+### `fetch_to_file_resumable` + cve_manager 4 GB Range/resume
+
+The OSV PyPI `all.zip` is ~4 GB. The previous `requests.get(url).content` pattern loaded the entire response into memory and OOMed under tight container limits; a dropped connection at 95% restarted from byte 0.
+
+- New `_http.fetch_to_file_resumable(target, urls, *, chunk_size, timeout, ...)` helper:
+  - Streams response body to a `.part` sibling of `target` in chunks (default 1 MB).
+  - On retry: reads `.part.stat().st_size` and sends `Range: bytes=<existing>-`.
+  - Handles **206 Partial Content** (append + resume), **200 OK to a Range request** (server ignored Range → restart from 0), and **416 Range Not Satisfiable** (stale `.part` → discard + retry from 0).
+  - Atomic finalize via `os.replace(.part, target)` so consumers never see a half-written file.
+  - Per-URL fallback chain; auth headers via `make_request`; exponential backoff.
+- `cve_manager.fetch_and_unzip` rewired to use the helper:
+  - Streams the OSV zip to `<DATABASE_DIR>/_downloads/<basename>` with 4 MB chunks.
+  - Decompresses from the on-disk file via `zipfile.ZipFile(target_path)` + `z.open(filename)` for per-file streaming reads — no more `io.BytesIO(response.content)` materialization of the full 4 GB in RAM.
+  - On corrupt-zip detection: unlinks the cached file so the next run does a clean re-download.
+  - Falls back to a streaming `requests` path if `_http.py` isn't importable.
+  - Removed now-unused `io` import.
+- 7 new tests in `TestFetchToFileResumable`: fresh download, resume from 206, server-ignores-Range restart, 416 retry, parent-dir auto-create, all-URLs-exhausted, multi-chunk read.
+
+### inventory_channel — intentional in-memory + comment
+
+The audit's last Range/resume finding. `_fetch_url_or_path` returns `bytes` and loads the full body into RAM. For the in-band repodata.json / parquet use cases (~100 MB max) plus the 24h cache TTL, the failure mode is bounded — interrupted fetches re-run from scratch at most once per day. Migration to `fetch_to_file_resumable` would require changing the function signature from returning `bytes` to returning a `Path`, which is a wider refactor than warranted for the LOW severity. Comment added pointing future callers (any artifact >500 MB) at the resumable helper.
+
+### Why this matters
+
+- **Air-gap parity completed**: the atlas now talks to ZERO public hosts that can't be redirected via an env var. JFrog / Artifactory deployments can route every dependency: conda-forge, PyPI, GitHub (archives + API + GraphQL), GitLab API, Codeberg API, npm, CRAN, CPAN, LuaRocks, crates, RubyGems, Maven, NuGet, S3 parquet, OSV API, OSV vulns bucket, api.anaconda.org.
+- **Rate-limit survival completed**: every fanout phase (F / H / K / L / N) now has documented per-host concurrency caps, `Retry-After` parsing (where applicable), and jittered backoff. No HIGH-severity rate-limit findings remain.
+- **Range/resume**: the largest single artifact in the atlas (4 GB OSV zip) no longer restarts from 0 on a dropped connection, and its RAM footprint dropped from ~4 GB to ~4 MB per chunk.
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/scripts/_http.py` — `fetch_to_file_resumable` + 3 new API resolvers.
+- `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` — Phase H rate-limit safety, Phase E TTL override, Phase N rate-limit detection, Phase C incremental commits, B6/J intentional-design comments, Phase K resolver wiring (REST + GraphQL).
+- `.claude/skills/conda-forge-expert/scripts/vulnerability_scanner.py` — `_osv_api_base()` / `_osv_querybatch_url()` helpers.
+- `.claude/skills/conda-forge-expert/scripts/cve_manager.py` — `_osv_vulns_bucket_base()` / `_osv_ecosystem_zip_url()` helpers + Range/resume download via `_http.fetch_to_file_resumable`.
+- `.claude/skills/conda-forge-expert/scripts/inventory_channel.py` — in-memory rationale comment.
+- `.claude/skills/conda-forge-expert/tests/unit/test_http_resolvers.py` — 11 resolver tests + 7 resumable-fetch tests (18 new).
+- `.claude/skills/conda-forge-expert/tests/unit/test_cve_manager.py` — `TestOsvVulnsBucketUrl` (4 new).
+- `.claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py` — `TestOsvApiBase` (4 new).
+- `.claude/skills/conda-forge-expert/tests/unit/test_phase_k_vcs_extraction.py` — Phase N rate-limit + Phase E TTL tests (9 new).
+- `.claude/skills/conda-forge-expert/tests/unit/test_phase_f_dispatch.py` — no test changes (Phase H reuses Phase F's `_parse_retry_after` helper).
+
+### Caveats / known limits
+
+- **GitHub Enterprise Server**: `GITHUB_API_BASE_URL=https://<ghes>/api` covers REST + GraphQL. Tested via the resolver chain; not yet exercised against an actual GHES instance.
+- **OSV API rate-limit handling**: `vulnerability_scanner.py` still uses `requests.post(...)` without `Retry-After` parsing. The OSV API doesn't currently rate-limit the way GitHub does, so this is unaddressed by design. Watch the OSV docs if behavior changes.
+- **`fetch_to_file_resumable` size limit**: the resumable helper streams chunks but reads response status / headers eagerly. For pathological cases where a single chunk read blocks longer than the connection's idle timeout, the worker can stall. This isn't a real issue at 4 GB / 4 MB chunks but documented here for future tuning.
+- **`PHASE_L_CONCURRENCY=0` would fully serialize** — handled correctly (clamped to 1 via `max(1, int(...))`). Just noting in case anyone wonders.
+
+### Verification
+
+- **403 unit tests pass** across the full CFE suite (was 359 at start of v7.8.0; +44 since v7.8.0 retro).
+- 1 pre-existing xpass marker, no regressions.
+- Module imports clean smoke-tested for cve_manager, vulnerability_scanner, conda_forge_atlas after every edit.
+- End-to-end smoke confirmed env-var precedence chains for: OSV API + bucket, GitLab/Codeberg/GitHub API, Phase H concurrency, Phase E TTL.
+- Resumable-fetch tests cover the four real-world branches (200, 206, 200-to-Range, 416) plus parent-dir auto-create, all-URLs-exhausted, and multi-chunk reads.
+
+---
+
+**v7.8.0** (May 12, 2026) — Atlas hardening pass: enterprise-routing parity across 7 more registries, GraphQL Phase K, Phase F rate-limit safety, per-registry Phase L caps, atomic file writes, and incremental commits across B5/E/E5/M. 39 new unit tests; 368 total tests passing across the CFE suite.
+
+The work landed across five waves, each addressing one of the "Top 5 next fixes" from a deep audit of `conda_forge_atlas.py` + sibling scripts that surfaced after the v7.7.2 4,400-row Phase K rate-limit incident. All five themes share the same root: the atlas was originally written for fast public-network runs and accumulated patterns that break in (a) air-gapped JFrog environments, (b) high-volume / sustained runs that trip secondary rate limits, and (c) any environment where a phase can be interrupted mid-run.
+
+### `_http.py` — shared utility surface expanded
+
+- New `auth_headers_for(url)` factored out of `make_request` so `requests`-based callers (`npm_updater.py`, `recipe-generator.py`) can pick up the same JFROG / .netrc / GitHub-token header chain that the urllib path got for free. `make_request` now delegates to it; caller-supplied `extra_headers` still win via `setdefault`.
+- Seven new registry resolvers following the existing `resolve_npm_urls` pattern: `resolve_cran_urls`, `resolve_cpan_urls`, `resolve_luarocks_urls`, `resolve_crates_urls`, `resolve_rubygems_urls`, `resolve_maven_urls` (takes a query-path suffix since Maven uses query strings), `resolve_nuget_urls` (lowercases per NuGet flat-container requirement). Each honors `<HOST>_BASE_URL` env var → public default. Unlocks JFrog air-gap routing for the 7 non-PyPI/non-GitHub upstreams Phase L talks to.
+- `resolve_npm_urls` honors `npm_config_registry` / `NPM_CONFIG_REGISTRY` (the npm CLI standard) in addition to the project-convention `NPM_BASE_URL`.
+- New atomic-write utilities: `atomic_writer(path, mode)` context manager + `atomic_write_bytes` / `atomic_write_text` thin wrappers. Writes to a `.tmp` sibling, fsyncs (best-effort), `os.replace` into place. On exception inside the `with` block: unlinks the `.tmp`, re-raises. Parent directory auto-created. Replaces the bare `json.dump(obj, f)` / `path.write_bytes(data)` patterns that previously left corrupt JSON or truncated caches behind on interrupt.
+
+### Phase K — GraphQL batch replaces REST fanout
+
+The 2026-05-12 incident report (`project_phase_k_secondary_rate_limit.md`): an 8-worker REST pool issued ~14,000 calls against `api.github.com/repos/<o>/<r>/releases/latest` + `/tags` fallback for a 4,400-row Phase K run and tripped GitHub's secondary rate limit on 15% of fetches.
+
+- New `_phase_k_github_graphql_batch(repos, gh_token, batch_size=100)` issues one HTTP POST per ~100 repos. Each repo's aliased subquery asks for both `releases(first:1, orderBy:CREATED_AT)` and `refs(refPrefix:"refs/tags/", first:1, orderBy:TAG_COMMIT_DATE)` so release-then-tag fallback resolves in a single round-trip. 4,400 repos → ~44 requests instead of ~14,000. Per-alias errors (NOT_FOUND, SUSPENDED) come back via `path[0]` and map to the existing `(None, "HTTP 404")` shape so downstream branching is unchanged.
+- `phase_k_vcs_versions` now partitions work into GitHub vs GitLab+Codeberg. GitHub goes through the GraphQL batch; GitLab+Codeberg keep the REST `ThreadPoolExecutor` (no GraphQL equivalents, small volume).
+- Per-result write/commit logic factored into `_process_result` nested function so both paths share it.
+- New env vars: `PHASE_K_GRAPHQL_DISABLED=1` reverts to REST fanout for GitHub if the GraphQL endpoint ever goes down; `PHASE_K_GRAPHQL_BATCH_SIZE` (default 100) tunes batch size below GitHub's ~500K node-complexity ceiling.
+- 5 new unit tests in `test_phase_k_vcs_extraction.py` covering: v-prefix normalization, tag-only fallback, NOT_FOUND mapping, no-release-no-tag → `no tags`, batch splitting (5 repos / batch_size=2 → 3 POSTs).
+
+### Phase F — rate-limit safety on `api.anaconda.org`
+
+- Default `PHASE_F_CONCURRENCY` lowered **8 → 3**. 8-worker fanouts on 32k-row backfills reliably tripped api.anaconda.org's per-IP secondary rate limit; 3 stays under the threshold while still parallelizing.
+- New `_anaconda_api_base()` helper resolves `ANACONDA_API_BASE_URL` (new) → `ANACONDA_API_BASE` (legacy, used by `detail_cf_atlas.py`) → `https://api.anaconda.org`. Trailing slash stripped. Both `_phase_f_fetch_one` and `_phase_f_probe_api` now honor the override.
+- New `_parse_retry_after(value, fallback)` handles both delta-seconds and HTTP-date `Retry-After` header forms, hard-capped at 60 seconds. `_phase_f_fetch_one` now honors the server's `Retry-After` on 429/503 instead of guessing a backoff. When no header is present, falls back to exponential + **±25% jitter** so a synchronized worker pool doesn't re-hit the API in lockstep after a transient blip.
+- `phase_f_downloads` docstring expanded with the new tunables and an explicit pointer for large orgs: *"set `PHASE_F_SOURCE=s3-parquet` to skip the API path entirely."*
+- 12 new unit tests in `test_phase_f_dispatch.py`: 4 cases for `_anaconda_api_base` env-var precedence + trailing-slash handling, 8 cases for `_parse_retry_after` (integer / whitespace / negative / unparseable / 60s cap / HTTP-date / negative fallback / None).
+
+### Phase L — per-registry concurrency caps, sequential across registries
+
+The original all-in-one ThreadPoolExecutor with `PHASE_L_CONCURRENCY=8` could fire **up to 56 simultaneous outbound requests** at startup across all 7 registries, immediately tripping crates.io's and rubygems.org's documented ~1 req/sec ceilings.
+
+- Work is now partitioned by registry and processed **sequentially across registries**, each with its own `ThreadPoolExecutor` at the per-registry concurrency cap.
+- Per-registry defaults reflect documented or empirically-observed limits: **npm=4, nuget=4, cran=cpan=luarocks=maven=2, crates=1, rubygems=1**.
+- New env var `PHASE_L_CONCURRENCY_<SOURCE>` (uppercase) overrides per source. Legacy `PHASE_L_CONCURRENCY` still works as a uniform cap (so `PHASE_L_CONCURRENCY=1` forces fully serial across everything).
+- Phase L startup now prints a per-registry breakdown: `npm=1,234@4w, crates=89@1w, …`.
+- All 7 `_resolve_*` functions (`_resolve_cran`, `_resolve_cpan`, `_resolve_luarocks`, `_resolve_crates`, `_resolve_rubygems`, `_resolve_maven`, `_resolve_nuget`) rewired to use the new `_http.resolve_<host>_urls` chain via `_fetch_with_fallback`. Hardcoded public URLs preserved only as fallback for clones without `_http.py`.
+- Return-dict field rename: `concurrency` → `per_source_workers` (a dict of `{source: workers}`). No internal consumers read this field; if external monitors parse atlas summaries, they may need to update.
+- 14 new resolver unit tests in `test_http_resolvers.py` covering external-default + env-var-redirect for each of the 7 hosts.
+
+### Phases B5 / E / E5 / M — resumability
+
+Monolithic `BEGIN TRANSACTION ... COMMIT` blocks around 20k+ row write loops meant a mid-phase interrupt rolled back all of a phase's work. Replaced with periodic commits + idempotent SQL across four phases:
+
+- **Phase B5** (`phase_b5_feedstock_outputs`): commits every 500 rows. `INSERT` switched to `INSERT OR IGNORE` for re-run idempotency.
+- **Phase E** (`phase_e_enrichment`): commits every 200 enriched rows. The cf-graph tarball is now streamed directly from disk via `tarfile.open(cache_path, "r:gz")` instead of being re-read into `io.BytesIO(tar_bytes)` — saves ~150MB peak RAM. The download path uses `atomic_write_bytes` for the cache file so an interrupted download no longer corrupts the cache; next-run reads the prior file intact.
+- **Phase E5** (`phase_e5_archived_feedstocks`): `save_phase_checkpoint(cursor=<endCursor>)` after each GraphQL page so observers can see pagination progress mid-run. Apply-stage commits every 500 UPDATEs. Final `status='completed'` checkpoint.
+- **Phase M** (`phase_m_feedstock_health`): commits every 500 UPDATEs. Iterator buffered into a list first to avoid cursor invalidation when committing mid-loop.
+
+### npm registry — hardcoded `registry.npmjs.org` purged
+
+The `npm_updater.py` and `recipe-generator.py` autotick/generator scripts hardcoded `https://registry.npmjs.org/<name>` and would 401/403 in air-gapped JFrog environments where users had `npm config set registry <jfrog-url>`. Fixed in three call sites:
+
+- `conda_forge_atlas.py:_resolve_npm` — uses `resolve_npm_urls` via `_fetch_with_fallback`.
+- `npm_updater.py:get_latest_npm_version` — iterates `resolve_npm_urls(name)` with `requests.get(url, headers=auth_headers_for(url))` (matches the existing `fetch_pypi_info` pattern in this file). Refactored a `_choose_npm_version` helper so the `_http`-available and `_http`-unavailable code paths share the version-picking logic.
+- `recipe-generator.py:fetch_npm_info` AND `fetch_pypi_info` — same pattern; `fetch_pypi_info` was a latent bug for any private artifactory PyPI Remote that required `JFROG_API_KEY`. Fixed at the same time.
+
+### New reference doc
+
+- `reference/atlas-phase-engineering.md` — captures the patterns surfaced this session as the default rule book for new phases or refactors. Nine sections: per-host rate limits, GraphQL batching, Retry-After + jitter, per-registry concurrency, atomic writes, incremental commits + idempotent SQL, streaming tarfiles, page-level checkpoints, `<HOST>_BASE_URL` enterprise routing convention.
+
+### Why this matters
+
+- **Air-gap parity**: `behind-upstream`, `staleness-report`, and Phase L now work behind JFrog Artifactory for npm + CRAN + CPAN + LuaRocks + crates + RubyGems + Maven + NuGet (previously only conda-forge / PyPI / GitHub had resolvers).
+- **Rate-limit survival**: Phase F (api.anaconda.org), Phase K (api.github.com), and Phase L (7 registries) now all survive sustained / high-volume runs without secondary-limit failures.
+- **Interrupt survival**: B5 / E / E5 / M / L preserve progress across mid-phase interrupts. Phase E specifically: a 1.5GB cf-graph re-download is no longer the cost of an interrupted Phase E enrichment loop.
+- **No corrupted caches**: cve_manager / mapping_manager / inventory_channel + Phase E's cf-graph tarball can no longer leave truncated JSON / partial bytes behind on SIGINT/OOM. The user's `--sbom-out` file is similarly protected.
+
+### Caveats
+
+- **Phase L return-dict field rename** (`concurrency` → `per_source_workers`) is the only breaking change. Searched the codebase and test suite for consumers; none found. External dashboards parsing atlas build summaries may need a small update.
+- **Phase E cf-graph cache TTL** is still hardcoded to 1 day. For weekly-cron deployments that's a 150MB re-download per run for no information gain. Future: `ATLAS_CFGRAPH_TTL_DAYS` env var override.
+- **`JFROG_API_KEY` still attaches to every outbound request** regardless of host (pre-existing cross-resolver leak documented in `project_http_jfrog_unconditional_injection.md`). `auth_headers_for` preserves the existing semantics; tightening the leak (only attach when URL host matches a `*_BASE_URL` value) is a separate, larger change.
+- **GitHub Enterprise Server is not yet supported** by the Phase K GraphQL path. The endpoint is hardcoded `https://api.github.com/graphql`. GHES uses a different API shape entirely; a single env var won't be enough. Deferred until someone needs it.
+
+---
+
 **v7.7.2** (May 12, 2026) — Phase K URL-derivation regex tightened. The `_GITHUB_REPO_RE` / `_CODEBERG_REPO_RE` repo character classes used to exclude only `/ ? # .`, so when a recipe's `about.dev_url` or `about.repository` field held a multi-URL string (comma-joined, space-joined, or with a parenthetical annotation — common in R/ropensci feedstocks) the captured repo group leaked everything up to the next `/`. Phase K then attempted `releases/latest` URLs like `/repos/eheinzen/arsenal, https:/releases/latest` and `urllib` rejected them with `InvalidURL`. Char class now also excludes `\s , ( ) < > " '`; the gitlab regex got matching whitespace/comma sentinels in its terminator. Surfaced during the 2026-05-12 `atlas-phase K` run on ~4 ropensci feedstocks (r-arsenal, r-azureauth, r-aricode, r-ascii) out of 8,893 fetches. Affected rows auto-heal on the next Phase K run (TTL re-fetch retries them with the corrected derivation). New `test_phase_k_vcs_extraction.py` (14 cases) locks the clean-input, multi-URL, and empty-repo-segment branches.
 
 **v7.7.1** (May 12, 2026) — Three findings landed from staged-recipes PR #33308 (12-recipe `tree-sitter-*` bundle for `repowise`):
