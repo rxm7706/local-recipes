@@ -68,6 +68,13 @@ def db(tmp_path, atlas_mod):
         # comparison: NULL != NULL is NULL in SQL, so this row exercises the
         # `pypi_version_fetched_at IS NULL` branch only when fetched_at is also NULL.
         ("no-serial-e",     "no-serial-e",     None,   None, None, True,  "never_fetched"),
+        # (f) Post-migration: fetched_at populated (pre-v21 run), pypi_last_serial
+        # populated (Phase D ran), but pypi_version_serial_at_fetch is NULL because
+        # the v21 column was just added. The serial-gate must treat this as
+        # "serial moved" (treat NULL-vs-populated as unequal). Plain `!=` returns
+        # NULL here; the SQL must use `IS NOT` (NULL-safe inequality). Caught by
+        # live-DB D2 verification on 2026-05-13.
+        ("post-migr-f",     "post-migr-f",     recent, 700, None, True,  "serial_at_fetch_null"),
     ]
     for conda, pypi, fetched_at, serial, sat, _expected, _reason in seeds:
         conn.execute(
@@ -108,11 +115,51 @@ class TestSerialGateBranches:
         assert "unchanged-d" not in names, \
             "row with unchanged serial + recent fetch should be skipped"
 
-    def test_eligible_set_is_exactly_four(self, db, atlas_mod):
+    def test_eligible_set_is_exactly_five(self, db, atlas_mod):
         rows, *_ = atlas_mod._phase_h_eligible_pypi_names(db)
         names = {r["pypi_name"] for r in rows}
-        assert names == {"never-a", "moved-b", "safety-c", "no-serial-e"}, \
+        assert names == {"never-a", "moved-b", "safety-c",
+                         "no-serial-e", "post-migr-f"}, \
             f"unexpected eligible set: {names}"
+
+    def test_post_migration_null_serial_is_eligible(self, db, atlas_mod):
+        """Post-v21-migration regression: a row with recent fetched_at +
+        populated pypi_last_serial + NULL pypi_version_serial_at_fetch must
+        be eligible. Plain `!=` returns NULL here; only `IS NOT` (NULL-safe
+        inequality) catches this case. Live-DB D2 verification on 2026-05-13
+        showed ~9,800 such rows would be silently skipped under the original
+        SQL."""
+        rows, *_ = atlas_mod._phase_h_eligible_pypi_names(db)
+        names = {r["pypi_name"] for r in rows}
+        assert "post-migr-f" in names
+
+
+class TestEligibilityStats:
+    """`_phase_h_eligibility_stats` returns branch-by-branch counts. Buckets
+    are mutually exclusive and sum to the total eligible count."""
+
+    def test_breakdown_matches_branch_semantics(self, db, atlas_mod):
+        stats = atlas_mod._phase_h_eligibility_stats(db)
+        # never-a (fetched_at NULL) + no-serial-e (fetched_at NULL) = 2
+        assert stats["eligible_never_fetched"] == 2
+        # moved-b (serial moved) + post-migr-f (serial-at-fetch NULL) = 2
+        assert stats["eligible_serial_moved"] == 2
+        # safety-c (40d old, serial unchanged) = 1
+        assert stats["eligible_safety_recheck"] == 1
+        # Total eligible = 2 + 2 + 1 = 5
+        total = (stats["eligible_never_fetched"]
+                 + stats["eligible_serial_moved"]
+                 + stats["eligible_safety_recheck"])
+        assert total == 5
+
+    def test_buckets_match_eligible_rows_count(self, db, atlas_mod):
+        rows, *_ = atlas_mod._phase_h_eligible_pypi_names(db)
+        stats = atlas_mod._phase_h_eligibility_stats(db)
+        assert len(rows) == (
+            stats["eligible_never_fetched"]
+            + stats["eligible_serial_moved"]
+            + stats["eligible_safety_recheck"]
+        )
 
 
 class TestSerialStampOnFetch:

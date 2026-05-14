@@ -2718,6 +2718,45 @@ def _phase_h_fetch_one(pypi_name: str
     return (pypi_name, None, None, last_err or "exhausted retries")
 
 
+def _phase_h_eligibility_stats(conn: sqlite3.Connection) -> dict[str, int]:
+    """Branch-by-branch counts for Phase H eligible-rows (v21+).
+
+    Returns a dict with three keys mirroring the SQL OR clauses in
+    `_phase_h_eligible_pypi_names`:
+
+    - `eligible_never_fetched`     — `pypi_version_fetched_at IS NULL`
+    - `eligible_serial_moved`      — fetched_at populated AND
+                                      `pypi_last_serial IS NOT
+                                      pypi_version_serial_at_fetch`
+    - `eligible_safety_recheck`    — fetched_at populated AND serial
+                                      unchanged AND fetched_at past 30 d
+
+    Buckets are mutually exclusive (the SQL OR is short-circuited by
+    each branch's preconditions). Sum equals the eligible-rows count.
+    """
+    safety_cutoff = int(time.time()) - 30 * 86400
+    base = (
+        "SELECT COUNT(DISTINCT pypi_name) FROM v_actionable_packages "
+        "WHERE pypi_name IS NOT NULL "
+    )
+    never = conn.execute(base + "AND pypi_version_fetched_at IS NULL").fetchone()[0]
+    moved = conn.execute(
+        base + "AND pypi_version_fetched_at IS NOT NULL "
+               "AND pypi_last_serial IS NOT pypi_version_serial_at_fetch"
+    ).fetchone()[0]
+    safety = conn.execute(
+        base + "AND pypi_version_fetched_at IS NOT NULL "
+               "AND pypi_last_serial IS pypi_version_serial_at_fetch "
+               "AND pypi_version_fetched_at < ?",
+        (safety_cutoff,),
+    ).fetchone()[0]
+    return {
+        "eligible_never_fetched":  never,
+        "eligible_serial_moved":   moved,
+        "eligible_safety_recheck": safety,
+    }
+
+
 def _phase_h_eligible_pypi_names(conn: sqlite3.Connection) -> tuple[list, int, int, int]:
     """Return (rows, ttl_days, concurrency, limit) shared by all Phase H paths.
 
@@ -2756,12 +2795,23 @@ def _phase_h_eligible_pypi_names(conn: sqlite3.Connection) -> tuple[list, int, i
     # AND pypi_name IS NOT NULL clause stays here because the view
     # doesn't filter on pypi_name (Phase H is the only consumer that
     # needs that extra narrowing). 3-condition serial-gate (v8.0.0+).
+    #
+    # `IS NOT` is the NULL-safe form of `!=` — required because
+    # `pypi_version_serial_at_fetch` is NULL for every row in the
+    # post-schema-v21-migration state (the column was just added).
+    # Plain `pypi_last_serial != NULL` evaluates to NULL (falsy in
+    # WHERE), which would silently exclude the entire post-migration
+    # working set from condition 2. `IS NOT` correctly returns TRUE
+    # when one side is NULL and the other isn't, so post-migration
+    # rows with a populated `pypi_last_serial` get re-fetched once
+    # to stamp `pypi_version_serial_at_fetch`. Caught by live-DB
+    # verification on 2026-05-13 (retro D2).
     sql = (
         "SELECT DISTINCT pypi_name FROM v_actionable_packages "
         "WHERE pypi_name IS NOT NULL "
         "  AND ("
         "       pypi_version_fetched_at IS NULL "
-        "    OR pypi_last_serial != pypi_version_serial_at_fetch "
+        "    OR pypi_last_serial IS NOT pypi_version_serial_at_fetch "
         "    OR pypi_version_fetched_at < ? "
         "  )"
     )
@@ -2786,7 +2836,16 @@ def _phase_h_via_pypi_json(conn: sqlite3.Connection) -> dict:
     print("  Phase H: PyPI current-version via pypi.org JSON")
 
     rows, ttl_days, concurrency, _ = _phase_h_eligible_pypi_names(conn)
-    print(f"  {len(rows):,} pypi names to refresh (TTL {ttl_days}d, concurrency {concurrency})")
+    stats = _phase_h_eligibility_stats(conn)
+    print(
+        f"  {len(rows):,} pypi names to refresh "
+        f"(TTL {ttl_days}d, concurrency {concurrency})"
+    )
+    print(
+        f"    breakdown: never_fetched={stats['eligible_never_fetched']:,}, "
+        f"serial_moved={stats['eligible_serial_moved']:,}, "
+        f"safety_recheck={stats['eligible_safety_recheck']:,}"
+    )
 
     fetched = 0
     failed = 0
@@ -2887,6 +2946,9 @@ def _phase_h_via_pypi_json(conn: sqlite3.Connection) -> dict:
     )
     return {
         "rows_eligible": len(rows),
+        "eligible_never_fetched":  stats["eligible_never_fetched"],
+        "eligible_serial_moved":   stats["eligible_serial_moved"],
+        "eligible_safety_recheck": stats["eligible_safety_recheck"],
         "fetched": fetched,
         "failed": failed,
         "not_found_404": not_found,
@@ -2929,13 +2991,23 @@ def _phase_h_via_cf_graph(conn: sqlite3.Connection) -> dict:
         }
 
     rows, ttl_days, _, _ = _phase_h_eligible_pypi_names(conn)
+    stats = _phase_h_eligibility_stats(conn)
     eligible_pypi_names = {r["pypi_name"] for r in rows}
     print(f"  {len(eligible_pypi_names):,} pypi names eligible (TTL {ttl_days}d)")
+    print(
+        f"    breakdown: never_fetched={stats['eligible_never_fetched']:,}, "
+        f"serial_moved={stats['eligible_serial_moved']:,}, "
+        f"safety_recheck={stats['eligible_safety_recheck']:,}"
+    )
 
     if not eligible_pypi_names:
         elapsed = time.monotonic() - t0
         return {
-            "rows_eligible": 0, "fetched": 0, "failed": 0, "not_found_404": 0,
+            "rows_eligible": 0,
+            "eligible_never_fetched":  stats["eligible_never_fetched"],
+            "eligible_serial_moved":   stats["eligible_serial_moved"],
+            "eligible_safety_recheck": stats["eligible_safety_recheck"],
+            "fetched": 0, "failed": 0, "not_found_404": 0,
             "history_snapshot_rows": 0,
             "ttl_days": ttl_days,
             "duration_seconds": round(elapsed, 1),
@@ -3015,6 +3087,9 @@ def _phase_h_via_cf_graph(conn: sqlite3.Connection) -> dict:
     )
     return {
         "rows_eligible": len(eligible_pypi_names),
+        "eligible_never_fetched":  stats["eligible_never_fetched"],
+        "eligible_serial_moved":   stats["eligible_serial_moved"],
+        "eligible_safety_recheck": stats["eligible_safety_recheck"],
         "fetched": fetched,
         "failed": 0,
         "not_found_404": not_found,
