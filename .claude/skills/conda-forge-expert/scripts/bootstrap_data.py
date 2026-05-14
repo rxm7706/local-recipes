@@ -132,8 +132,13 @@ PROFILES: dict[str, dict[str, str]] = {
     "maintainer": {
         "PHASE_E_ENABLED": "1",     # cf-graph cache (default-on for maintainer)
         "PHASE_N_ENABLED": "1",     # live GitHub data (auto-scoped)
-        "PHASE_F_SOURCE":  "auto",
-        "PHASE_H_SOURCE":  "auto",
+        "PHASE_F_SOURCE":  "auto",  # atlas accepts "auto" (probe API → S3 fallback)
+        # PHASE_H_SOURCE intentionally NOT set: "auto" is a bootstrap-data
+        # CLI concept (resolves to cf-graph on --fresh, else pypi-json), but
+        # the atlas itself only accepts "pypi-json" or "cf-graph". Leaving
+        # it unset lets the atlas use its default ("pypi-json") and lets
+        # bootstrap-data Step 4 resolve `--phase-h-source` via env_overrides
+        # without leaking "auto" through `os.environ` to other subprocesses.
         # PHASE_N_MAINTAINER set dynamically from `gh api user`
         # PHASE_L_SOURCES set dynamically from populated registry columns
     },
@@ -141,13 +146,13 @@ PROFILES: dict[str, dict[str, str]] = {
         "PHASE_E_ENABLED": "1",
         "PHASE_N_ENABLED": "1",     # channel-wide (no PHASE_N_MAINTAINER)
         "PHASE_F_SOURCE":  "auto",
-        "PHASE_H_SOURCE":  "auto",
+        # PHASE_H_SOURCE intentionally unset — see maintainer profile note.
     },
     "consumer": {
         "PHASE_E_ENABLED": "1",
         "PHASE_N_ENABLED": "",       # opt-in stays opt-in
         "PHASE_F_SOURCE":  "s3-parquet",
-        "PHASE_H_SOURCE":  "cf-graph",
+        "PHASE_H_SOURCE":  "cf-graph",  # concrete atlas value (offline bulk)
         "PHASE_D_UNIVERSE_DISABLED": "1",
     },
 }
@@ -661,8 +666,23 @@ def main() -> int:
                   timeout=_timeout_for("phase_gp"))
         results.append(("phase-gp", ok))
 
-    # Step 6 — Phase N (live GitHub data) — opt-in via --gh
-    if args.gh:
+    # Step 6 — Phase N (live GitHub data) — opt-in via --gh.
+    #
+    # When a profile injects `PHASE_N_ENABLED=1` into `os.environ` and Step 4
+    # ran, the cf-atlas subprocess already executed Phase N (via env
+    # inheritance). Re-invoking build-cf-atlas here would redo every phase
+    # and crash on the inherited `PHASE_H_SOURCE` (bootstrap-data CLI's
+    # "auto" is not an atlas-valid value). Skip the redundant invocation.
+    phase_n_ran_in_step4 = (
+        not args.no_cf_atlas
+        and bool(os.environ.get("PHASE_N_ENABLED", "").strip())
+    )
+    if args.gh and phase_n_ran_in_step4:
+        print()
+        print("  ⓘ Phase N already ran inside the cf_atlas build step "
+              "(PHASE_N_ENABLED was in env via --profile). Skipping the "
+              "redundant Phase N invocation.")
+    elif args.gh:
         cmd = ["pixi", "run", "-e", "local-recipes", "build-cf-atlas"]
         env = {"PHASE_N_ENABLED": "1"}
         if args.maintainer:
