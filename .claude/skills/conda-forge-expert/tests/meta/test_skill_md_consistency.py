@@ -37,12 +37,18 @@ class TestSkillMdConsistency:
 
     def test_skill_md_lists_existing_scripts_only(self):
         """Every `<script_name>.py` mentioned in SKILL.md must exist either in
-        scripts/ (skill-local) or in the project root (e.g. build-locally.py)."""
+        scripts/ (skill-local), in the project root (e.g. build-locally.py),
+        or under tests/ (release-notes / changelog entries legitimately cite
+        new test files)."""
         import re
 
         content = SKILL_MD.read_text()
         scripts_dir = SKILL_DIR / "scripts"
+        tests_dir = SKILL_DIR / "tests"
         existing = {p.name for p in scripts_dir.glob("*.py")}
+        # Tests are referenced from release notes / Version History entries;
+        # they are not "scripts" but they are real files in the skill.
+        existing |= {p.name for p in tests_dir.rglob("test_*.py")}
 
         # Project-level scripts that SKILL.md is allowed to reference
         project_level = {
@@ -56,8 +62,8 @@ class TestSkillMdConsistency:
 
         unknown = referenced - existing - project_level
         assert not unknown, (
-            f"SKILL.md references scripts that don't exist in scripts/ "
-            f"and aren't recognised project-level scripts: {unknown}"
+            f"SKILL.md references scripts that don't exist in scripts/, "
+            f"tests/, or recognised project-level locations: {unknown}"
         )
 
     def test_pixi_toml_tasks_reference_existing_scripts(self):

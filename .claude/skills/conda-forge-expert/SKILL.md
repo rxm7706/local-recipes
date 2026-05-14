@@ -232,7 +232,7 @@ When asked to create or update a recipe, execute these steps in order. Each step
 
 ---
 
-## Atlas Intelligence Layer (v7.9.0)
+## Atlas Intelligence Layer (v8.0.0)
 
 The skill carries a SQLite-backed cross-channel package map at
 `.claude/data/conda-forge-expert/cf_atlas.db`, populated by 15 pipeline
@@ -240,13 +240,31 @@ phases (B → N) and exposed through 17 CLIs + 12 MCP tools. The atlas is
 **offline-safe** for all read paths once built; only Phase G's *fresh*
 vuln data needs the heavy `vuln-db` env (cached counts work everywhere).
 
+Schema v21 (v8.0.0) ships a `v_actionable_packages` view encoding the
+canonical persona-filter triplet `conda_name IS NOT NULL AND
+latest_status='active' AND COALESCE(feedstock_archived,0)=0`. Seven
+phase selectors read from the view, and a structural-enforcement
+meta-test (`tests/meta/test_actionable_scope.py`) prevents future drift.
+Phase H's eligible-rows gate is also serial-aware in v21 — warm-daily
+Phase H drops from ~5 min to ~30 s on a typical day.
+
 ### Build the atlas
 
 ```bash
+# Recommended (v8.0.0+) — persona-aware preset bundle. `maintainer` is
+# the documented default for the most common operator.
+pixi run -e local-recipes bootstrap-data --profile maintainer
+pixi run -e local-recipes bootstrap-data --profile admin      # channel-wide
+pixi run -e local-recipes bootstrap-data --profile consumer   # air-gapped
+
+# Legacy invocations still work (explicit env wins over profile):
 pixi run -e local-recipes build-cf-atlas             # default phases
-PHASE_E_ENABLED=1 pixi run -e local-recipes build-cf-atlas  # incl. cf-graph enrichment
+PHASE_E_ENABLED=1 pixi run -e local-recipes build-cf-atlas  # incl. cf-graph
 PHASE_N_ENABLED=1 PHASE_N_MAINTAINER=rxm7706 ...     # add live GitHub data
 ```
+
+See `reference/atlas-phases-overview.md` § "Profile Reference (v8.0.0)"
+for the full per-phase profile matrix and auto-detection details.
 
 ### Daily-use CLIs (all offline; all support `--json`)
 
@@ -914,6 +932,10 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.0.0** (May 13, 2026): Structural enforcement + persona profiles. Bundle closes 3 of 4 v7.9.0 follow-ups (A3, A4, A5); A6 (vuln_total drop) deferred after the planned drop discovered 4 actual consumers. **MAJOR** because `bootstrap-data --profile maintainer` is the new documented default (no invocations break; legacy no-flag runs print an end-of-run advisory). **Wave A** ships schema v21's `v_actionable_packages` view encoding the canonical persona-filter triplet, refactors 7 phase selectors to read from it, and adds `tests/meta/test_actionable_scope.py` which asserts every `SELECT ... FROM packages WHERE ...` either reads the view or carries a `# scope:` justification comment — preventing the drift v7.9.0 had to fix by hand. **Wave B** adds `pypi_version_serial_at_fetch INTEGER` and makes Phase H eligible-rows serial-aware (never-fetched OR serial-moved OR 30 d safety re-check); warm-daily Phase H drops ~5 min → ~30 s on a typical day. **Wave D** ships `bootstrap_data.py`'s `PROFILES` dict + `--profile {maintainer,admin,consumer}` argparse flag + `_auto_detect_gh_user()` (5 s timeout, graceful degradation) + `_auto_detect_phase_l_sources(maintainer, db_path)` (queries `v_actionable_packages JOIN package_maintainers` for populated registries in scope) + `_print_no_profile_advisory()`. Explicit env vars and CLI flags always win over profile defaults (`os.environ.setdefault` semantics). Maintainer profile auto-derives `PHASE_N_MAINTAINER` from `gh api user --jq .login` and auto-restricts `PHASE_L_SOURCES`; admin runs channel-wide Phase N; consumer uses `PHASE_F_SOURCE=s3-parquet` + `PHASE_H_SOURCE=cf-graph` + skips Phase N + `PHASE_D_UNIVERSE_DISABLED=1` for air-gap friendliness. 5 previously 📋-open Phase-N-gated catalog rows flip to ✅ shipped (`feedstock-health --filter open-prs-human`, `--filter open-issues`, `--filter ci-red`, abandonment composite SQL, maintainer-last-active SQL). New `## Profile Reference (v8.0.0)` appendix in `atlas-phases-overview.md`; per-phase "Profile defaults" lines on D / E / F / H / L / N; `atlas-operations.md` quickstart + cron snippets rewritten for `--profile`. 24 new unit tests (19 persona profiles + 5 Phase H serial-gate). Schema v20 → v21 migration is idempotent and self-healing on next `init_schema`. Updated `config/skill-config.yaml` to 8.0.0.
+
+- **v7.9.0** (May 13, 2026): Actionable-scope audit closure — bundled phase-by-phase fix landing as schema v20 + 29 new unit tests + a new `pypi-only-candidates` CLI. (1) Phase H 56× denominator cut (`_phase_h_eligible_pypi_names` now applies the canonical persona-filter triplet `conda_name IS NOT NULL AND latest_status='active' AND COALESCE(feedstock_archived,0)=0`; denominator drops ~672k → ~12k). (2) Phase D split into daily-lean (`pypi_last_serial` UPDATE on conda-linked rows) + TTL-gated universe upsert (new `_phase_d_upsert_universe` writing into the schema-v20 `pypi_universe` side table). (3) Schema v20: `pypi_universe(pypi_name TEXT PRIMARY KEY, last_serial INTEGER, fetched_at INTEGER)` side table + self-healing migration that moves existing `relationship='pypi_only'` rows out of `packages` into the new table in a single transaction (idempotent — re-running `init_schema` is a no-op). `SELECT COUNT(*) FROM packages` finally returns an honest ~32k working-set count. (4) Phases J + M archived-feedstock filter at the write site (Phase J builds an `inactive_feedstocks` skip-set from `packages` before opening the cf-graph tarball; Phase M's `rows_to_process` SELECT gains the canonical triplet) — closes the v19 bug where archived feedstocks polluted `whodepends --reverse` results. (5) New `pypi-only-candidates` CLI + MCP tool: surfaces admin "what's on PyPI but not on conda-forge" candidates ordered by `last_serial DESC`. Three-place rule applied (canonical impl + thin wrapper + pixi task + meta-test SCRIPTS entry). 29 new unit tests across 5 test files; 432 total passing. The 📋-open SQL-only "what's on PyPI but not on conda-forge?" row flips to ✅ shipped in `reference/atlas-actionable-intelligence.md`. Updated `config/skill-config.yaml` to 7.9.0.
 
 - **v7.8.1** (May 12, 2026): Audit close-out pass — every remaining HIGH / MEDIUM / LOW finding from the v7.8.0 deep audit is now addressed or explicitly justified as intentional. (1) Phase H rate-limit safety: default `PHASE_H_CONCURRENCY` 8→3, `Retry-After` parsing via the shared `_parse_retry_after` helper (capped at 60s), ±25% jitter on exponential backoff — closed the last HIGH item. (2) OSV air-gap parity: new `OSV_API_BASE_URL` env (vulnerability_scanner) + `OSV_VULNS_BUCKET_URL` env (cve_manager) with public-host fallback + per-call URL resolution. (3) Three new API resolvers in `_http.py` — `resolve_github_api_urls` / `resolve_gitlab_api_urls` / `resolve_codeberg_api_urls` (path-suffix arg, list return, mirror the Maven pattern). `GITHUB_API_BASE_URL=https://<ghes>/api` covers GHES REST + GraphQL under one env var. `_phase_k_fetch_one` and `_phase_k_github_graphql_batch` wired. (4) Phase E cf-graph cache TTL is env-tunable via `ATLAS_CFGRAPH_TTL_DAYS` (default 1.0, float-parseable) — closes the weekly-cron 150MB re-download pain. (5) Phase N rate-limit detection: new `_is_gh_rate_limit_stderr` parses `gh api graphql` stderr for primary / secondary / abuse-detection wording; `_phase_n_query_batch` retries up to 3x with 30s/60s base + ±25% jitter on rate-limit hits (more patient than Phase F/H since secondary-limit windows are minutes). (6) Phase C incremental commits every 500 entries (was monolithic BEGIN/COMMIT around 12k UPDATEs). (7) Phase B6 and Phase J left as monolithic transactions with documentation comments — both are intentional designs (B6 = 3 bulk UPDATEs in <1s; J = full-snapshot semantics via `DELETE FROM dependencies` at txn start). (8) New `_http.fetch_to_file_resumable(target, urls, ...)` helper: streams body to a `.part` sibling, uses `Range: bytes=<size>-` to resume, handles 206/200/416 correctly, atomic-renames on success. (9) `cve_manager.fetch_and_unzip` rewired to use it: 4 GB OSV `all.zip` streams to disk in 4 MB chunks and decompresses from the cached file — RAM drops from ~4 GB to ~4 MB; dropped connection at 95% no longer restarts from byte 0. (10) `inventory_channel.py` left in-memory with a comment pointing future callers (artifacts >500 MB) at the resumable helper — the 24h cache TTL bounds the failure mode. 44 new unit tests, 403 total passing. Updated `config/skill-config.yaml` to 7.8.1.
 

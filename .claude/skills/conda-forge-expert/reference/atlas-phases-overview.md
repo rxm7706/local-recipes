@@ -40,19 +40,19 @@ changes a phase.
 | **B.6** | Status (lite yanked) | Phase B temp table (no network) | rebuild | always | `latest_status` = active/inactive |
 | **C** | Parselmouth join | `conda_forge_metadata.autotick_bot.pypi_to_conda` (parselmouth bot, ~12k entries) | rebuild | always | Verified PyPI↔conda name mapping |
 | **C.5** | source.url match | folded into Phase E | — | — | URL → conda-package reverse lookup |
-| **D** | PyPI universe | `pypi.org/simple/` (Simple v1 JSON, ~40 MB / ~800k projects) | rebuild | always | "On PyPI but not on conda-forge" candidate list |
-| **E** | cf-graph enrichment | `github.com/regro/cf-graph-countyfair` (master tarball, ~150 MB) | `ATLAS_CFGRAPH_TTL_DAYS` (default 1 d) | opt-in (`PHASE_E_ENABLED=1`) | Recipe-format, maintainer junction, repo/dev/homepage URLs, extra-registry name columns |
+| **D** | PyPI universe | `pypi.org/simple/` (Simple v1 JSON, ~40 MB / ~800k projects) | rebuild | always (universe upsert skipped under `--profile consumer`) | "On PyPI but not on conda-forge" candidate list |
+| **E** | cf-graph enrichment | `github.com/regro/cf-graph-countyfair` (master tarball, ~150 MB) | `ATLAS_CFGRAPH_TTL_DAYS` (default 1 d) | enabled by every v8.0.0 profile; otherwise opt-in (`PHASE_E_ENABLED=1`) | Recipe-format, maintainer junction, repo/dev/homepage URLs, extra-registry name columns |
 | **E.5** | Archived feedstocks | `gh api graphql` (conda-forge org, `isArchived:true`) | per-run | always | Abandonment detection |
-| **F** | Download counts | `api.anaconda.org/package/conda-forge/<name>` OR `anaconda-package-data.s3.amazonaws.com/conda/monthly/<YYYY>/<YYYY-MM>.parquet` | `PHASE_F_TTL_DAYS=7` | always (auto-source) | Usage signal — leaderboards, bus-factor, adoption-stage, "archived but used" |
+| **F** | Download counts | `api.anaconda.org/package/conda-forge/<name>` OR `anaconda-package-data.s3.amazonaws.com/conda/monthly/<YYYY>/<YYYY-MM>.parquet` | `PHASE_F_TTL_DAYS=7` | always (auto-source; pinned to `s3-parquet` under `--profile consumer`) | Usage signal — leaderboards, bus-factor, adoption-stage, "archived but used" |
 | **G** | vdb risk summary | local AppThreat vdb (per-row purls) | `PHASE_G_TTL_DAYS=7` | always when vdb available (auto-skip in `local-recipes` env) | `cve-watcher`, KEV queue, staleness `--by-risk` |
 | **G'** | per-version vulns | same vdb, all versions in `package_version_downloads` | `PHASE_GP_TTL_DAYS=30` | opt-in (`PHASE_GP_ENABLED=1`) | "Most recent build set with 0 critical CVEs" lockdown |
-| **H** | PyPI current version | `pypi.org/pypi/<name>/json` (PEP 592 yanked) OR Phase E cf-graph cache | `PHASE_H_TTL_DAYS=7` | always (`PHASE_H_SOURCE=pypi-json` default; `cf-graph` on cold-start) | `behind-upstream` (pypi); yanked-upstream alert |
+| **H** | PyPI current version | `pypi.org/pypi/<name>/json` (PEP 592 yanked) OR Phase E cf-graph cache | `PHASE_H_TTL_DAYS=7` | always (`PHASE_H_SOURCE=pypi-json` default; `cf-graph` on cold-start; pinned to `cf-graph` under `--profile consumer`) | `behind-upstream` (pypi); yanked-upstream alert |
 | **I** | Per-version downloads | side-effect of Phase F anaconda-api path | tied to F | with F | `version-downloads`, `release-cadence`, feeds G' |
 | **J** | Dependency graph | reuses Phase E cf-graph tarball | rebuild-each-run | always when cf-graph cached | `whodepends`, dependent counts, CVE cascade alerts |
 | **K** | VCS upstream | `api.github.com/graphql` (batched) + `gitlab.com/api/v4` + `codeberg.org/api/v1` | `PHASE_K_TTL_DAYS=7` | requires GitHub auth; auto-skip without | `behind-upstream` (github/gitlab/codeberg) |
-| **L** | Extra registries | `registry.npmjs.org`, `crandb.r-pkg.org`, `fastapi.metacpan.org`, `luarocks.org`, `crates.io`, `rubygems.org`, `api.nuget.org`, `search.maven.org` | `PHASE_L_TTL_DAYS=7` | always | `behind-upstream` (npm/cran/cpan/luarocks/crates/rubygems/nuget/maven) |
+| **L** | Extra registries | `registry.npmjs.org`, `crandb.r-pkg.org`, `fastapi.metacpan.org`, `luarocks.org`, `crates.io`, `rubygems.org`, `api.nuget.org`, `search.maven.org` | `PHASE_L_TTL_DAYS=7` | always (auto-restricted to populated registries in scope under `--profile maintainer`) | `behind-upstream` (npm/cran/cpan/luarocks/crates/rubygems/nuget/maven) |
 | **M** | Feedstock health | reuses Phase E cf-graph (`pr_info/*.json` + `version_pr_info/*.json`) | rebuild-each-run | always when cf-graph cached | `feedstock-health --filter stuck/open-pr/bad` |
-| **N** | Live GitHub | `gh api graphql` per feedstock | `PHASE_N_TTL_DAYS=1` | opt-in (`PHASE_N_ENABLED=1`, requires `gh auth login`) | Real-time CI / human PRs / issues / pushedAt |
+| **N** | Live GitHub | `gh api graphql` per feedstock | `PHASE_N_TTL_DAYS=1` | enabled by `--profile maintainer` (auto-scoped to `gh api user`) and `--profile admin` (channel-wide); otherwise opt-in (`PHASE_N_ENABLED=1`, requires `gh auth login`) | Real-time CI / human PRs / issues / pushedAt |
 
 For cron cadence, TTL reset, and recovery playbooks, see
 [`../guides/atlas-operations.md`](../guides/atlas-operations.md).
@@ -169,6 +169,10 @@ For cron cadence, TTL reset, and recovery playbooks, see
 - **Tunables.** `PHASE_D_DISABLED=1`, `PHASE_D_UNIVERSE_DISABLED=1` (skip
   just the universe upsert, keep the lean path), `PHASE_D_UNIVERSE_TTL_DAYS`
   (default 7).
+- **Profile defaults (v8.0.0).** Maintainer + admin run both the lean
+  path and the universe upsert. Consumer sets `PHASE_D_UNIVERSE_DISABLED=1`
+  to skip the ~660k-row universe upsert (air-gap friendliness — universe
+  data is reference-only).
 - **Actionable intelligence.**
   - `pypi-only-candidates --limit N --min-serial M` — admin candidate
     list of unmatched PyPI projects, ordered by serial DESC (newest /
@@ -196,6 +200,10 @@ For cron cadence, TTL reset, and recovery playbooks, see
 - **Tunables.** `PHASE_E_ENABLED=1` (off by default — heavy fetch);
   `ATLAS_CFGRAPH_TTL_DAYS` (cache TTL, default 1 d — set to 7 for
   weekly cron). `GITHUB_BASE_URL` for JFrog Generic Remote routing.
+- **Profile defaults (v8.0.0).** All three profiles set `PHASE_E_ENABLED=1`.
+  Phase E feeds J + M + L (maintainer junction, dep graph, bot health,
+  extra-registry names) and is the foundation of every maintainer- and
+  admin-persona CLI; only legacy no-profile invocations leave it off.
 - **Actionable intelligence.**
   - Maintainer junction — backs `my_feedstocks`, maintainer leaderboards,
     download-weighted leaderboard, `--maintainer X` flag on every
@@ -248,6 +256,11 @@ For cron cadence, TTL reset, and recovery playbooks, see
   [`atlas-phase-engineering.md`](atlas-phase-engineering.md) for the
   Retry-After + jitter pattern), `PHASE_F_S3_MONTHS`, `S3_PARQUET_BASE_URL`,
   `ANACONDA_API_BASE_URL`.
+- **Profile defaults (v8.0.0).** Maintainer + admin use `PHASE_F_SOURCE=auto`
+  (probe-then-fallback). Consumer pins `PHASE_F_SOURCE=s3-parquet`
+  (skip the anaconda.org probe — `api.anaconda.org` is firewall-blocked
+  in many enterprise environments and is the atlas's only universally
+  firewall-blocked dependency).
 - **Actionable intelligence.**
   - `version-downloads`, `staleness-report`, `feedstock-health`,
     `adoption-stage` — every CLI that asks "is this used."
@@ -337,6 +350,21 @@ For cron cadence, TTL reset, and recovery playbooks, see
 - **Tunables.** `PHASE_H_SOURCE`, `PHASE_H_TTL_DAYS=7`,
   `PHASE_H_CONCURRENCY=3` (audit-closed default; pypi.org's documented
   ~30 req/s ceiling).
+- **Profile defaults (v8.0.0).** Maintainer + admin use
+  `PHASE_H_SOURCE=auto` (real-time pypi-json). Consumer pins
+  `PHASE_H_SOURCE=cf-graph` — offline bulk read from Phase E's tarball,
+  accepts hours-to-days lag for air-gap friendliness and zero outbound
+  pypi.org traffic.
+- **Serial-gate eligibility (v8.0.0 / schema v21+).** Phase H's
+  pypi-json path now reads `v_actionable_packages` and combines three
+  gates: `pypi_version_fetched_at IS NULL` (never fetched), `pypi_last_serial
+  != pypi_version_serial_at_fetch` (Phase D detected the upstream
+  serial moved), or `pypi_version_fetched_at < (now − 30d)` (safety
+  re-check past TTL). Stats split into `eligible_never_fetched`,
+  `eligible_serial_moved`, `eligible_safety_recheck` so operators see
+  why each row was selected. Net: warm-daily Phase H drops ~5 min →
+  ~30 s on a typical day (only the ~30-100 packages whose serial
+  moved get re-fetched).
 - **Actionable intelligence.**
   - `behind-upstream --maintainer X` — flagship CLI; PEP 440 lag
     classified major/minor/patch.
@@ -452,6 +480,12 @@ For cron cadence, TTL reset, and recovery playbooks, see
   (per-registry override, uppercase), `PHASE_L_SOURCES` (comma list to
   restrict). Each registry honors its `<HOST>_BASE_URL` env for
   enterprise routing.
+- **Profile defaults (v8.0.0).** Admin + consumer leave `PHASE_L_SOURCES`
+  unset (run all 8 resolvers). Maintainer auto-derives `PHASE_L_SOURCES`
+  from `v_actionable_packages JOIN package_maintainers WHERE handle=<gh-user>`
+  — the resolver list collapses to only the registries the maintainer
+  actually tracks (e.g., a maintainer with no Lua feedstocks skips
+  `luarocks` outright). Explicit env-var setting still wins.
 - **Actionable intelligence.**
   - `behind-upstream --maintainer X --source npm | --source cran | ...`
     — multi-ecosystem version lag detection.
@@ -505,6 +539,12 @@ For cron cadence, TTL reset, and recovery playbooks, see
   (scope to one handle's ~700 feedstocks), `PHASE_N_TTL_DAYS=1`,
   `PHASE_N_BATCH_SIZE=25`, `PHASE_N_CONCURRENCY=4`. Auto-skips without
   `gh auth login`.
+- **Profile defaults (v8.0.0).** Maintainer sets `PHASE_N_ENABLED=1`
+  and auto-derives `PHASE_N_MAINTAINER` from `gh api user --jq .login`
+  (operator can override via env var). Admin sets `PHASE_N_ENABLED=1`
+  and leaves `PHASE_N_MAINTAINER` unset (channel-wide; ~700 feedstocks
+  × 25 per batch ≈ 28 GraphQL POSTs ≈ ~30-60 s on the daily slot).
+  Consumer leaves Phase N off (air-gap; no outbound api.github.com).
 - **Actionable intelligence.**
   - 📋 `gh-pulls --maintainer X` / `gh-issues --maintainer X` — open
     human PRs / issues per maintainer.
@@ -549,3 +589,51 @@ The three files form a triangle:
 
 Together they answer: *what intelligence does the atlas surface, where
 in the pipeline does it come from, and how is it engineered?*
+
+---
+
+## Profile Reference (v8.0.0)
+
+`bootstrap-data --profile <name>` and `build-cf-atlas --profile <name>`
+inject a bundle of env-var defaults that select the right phase mix
+for each operator persona. Explicit env vars and explicit CLI flags
+always win (setdefault semantics). Six phases vary across profiles —
+B / B.5 / B.6 / C / G / G' / I / J / K / M are profile-invariant.
+
+| | maintainer (daily) | admin (weekly) | consumer (read-only) |
+|---|---|---|---|
+| **Persona** | Feedstock maintainer running daily on their own scope | Channel-wide operator (mark-broken, archive sweeps, audits) | Air-gapped enterprise consumer (no `api.anaconda.org` / `api.github.com` egress) |
+| **Phase D — universe upsert** | ✅ run | ✅ run | ⏸ skipped (`PHASE_D_UNIVERSE_DISABLED=1`) |
+| **Phase E — cf-graph enrichment** | ✅ enabled (`PHASE_E_ENABLED=1`) | ✅ enabled | ✅ enabled |
+| **Phase F — download counts** | auto-source (probe API → S3 fallback) | auto-source | pinned `s3-parquet` |
+| **Phase H — pypi version** | auto-source (real-time pypi-json) | auto-source | pinned `cf-graph` (offline bulk) |
+| **Phase L — extra registries** | auto-restricted to populated registries in scope via `v_actionable_packages JOIN package_maintainers` | all 8 resolvers | all 8 resolvers |
+| **Phase N — live GitHub** | ✅ enabled, auto-scoped to `gh api user --jq .login` | ✅ enabled, channel-wide (no `PHASE_N_MAINTAINER`) | ⏸ skipped (`PHASE_N_ENABLED=""`) |
+| **Expected wall-clock (warm)** | ~3-5 min (~30 s Phase H serial-gated + ~30-60 s Phase N) | ~5-10 min (channel-wide N adds time) | ~2-3 min (no N, no api.anaconda.org) |
+| **Outbound network egress** | pypi.org + api.github.com + small registries | same as maintainer + larger api.github.com volume | s3.amazonaws.com (parquet) + github.com (cf-graph tarball) only |
+| **Cron cadence** | daily | weekly | daily |
+| **Typical caller** | `bootstrap-data --profile maintainer` | `bootstrap-data --profile admin` | `bootstrap-data --profile consumer` |
+
+### Auto-detection (maintainer profile)
+
+- **`gh api user --jq .login`** — 5 s timeout, gracefully degrades to a
+  printed warning + channel-wide Phase N on `FileNotFoundError`
+  (gh missing), non-zero exit (unauth), or timeout. The detected login
+  is written to `PHASE_N_MAINTAINER` only when env doesn't already set it.
+- **`v_actionable_packages JOIN package_maintainers`** — checks which
+  of the five `<source>_name` columns (`npm`, `cran`, `cpan`, `luarocks`,
+  `maven_coord`) have any populated value among the maintainer's
+  feedstocks. Returns `None` (no restriction) when the DB is missing,
+  the v21 view doesn't exist, or every registry is empty in scope.
+
+### Backward compatibility
+
+Operators with custom cron invocations pinning env vars manually
+(`PHASE_E_ENABLED=1 PHASE_N_ENABLED=1 PHASE_N_MAINTAINER=xyz
+bootstrap-data ...`) continue to work — explicit env wins over profile
+defaults. The no-profile invocation keeps today's silent-skip behavior
+plus an end-of-run advisory (suppressed via `BUILD_CF_ATLAS_QUIET=1`)
+recommending `--profile maintainer`. The advisory is the v8.0.0
+MAJOR-bump signal; if operators eventually report comfort with the
+documented default, v8.1.0 may flip the no-flag invocation silently
+to `--profile maintainer`.

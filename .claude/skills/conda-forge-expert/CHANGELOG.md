@@ -2,6 +2,91 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.0.0** (May 13, 2026) — Structural enforcement + persona profiles. Bundle closes 3 of the 4 v7.9.0 audit follow-ups (A3, A4, A5); A6 deferred after the planned drop discovered actual consumers. **MAJOR** bump because `bootstrap-data --profile maintainer` (new) is the documented default. No invocation breaks; legacy no-flag runs print an end-of-run advisory (silenced via `BUILD_CF_ATLAS_QUIET=1`). Driven by `docs/specs/conda-forge-expert-v8.0.md` via `bmad-quick-dev`.
+
+### Wave A — `v_actionable_packages` view + structural enforcement (A5, shipped)
+
+- Schema **v21** adds `CREATE VIEW v_actionable_packages` encoding the canonical persona-filter triplet (`conda_name IS NOT NULL AND latest_status='active' AND COALESCE(feedstock_archived,0)=0`). 7 phase selectors refactored to `FROM v_actionable_packages` (Phase F, G, G', H, K, L, N). Pre-/post-refactor row sets are identical.
+- New `tests/meta/test_actionable_scope.py` parses `conda_forge_atlas.py` and asserts every `SELECT ... FROM packages WHERE ...` either reads the view OR has a `# scope: <reason>` justification comment within 3 lines above. Prevents the kind of drift v7.9.0 had to fix by hand.
+- The view + meta-test ship together so future phase authors inherit the enforcement automatically.
+
+### Wave B — Phase H serial-aware eligible-rows gate (A3, shipped)
+
+- Schema v21 adds `pypi_version_serial_at_fetch INTEGER` column + index on `packages`. Phase H's pypi-json worker stamps this on every successful fetch (sourced from the row's current `pypi_last_serial`).
+- Phase H eligible-rows SELECT becomes a 3-condition OR: `pypi_version_fetched_at IS NULL` (never fetched) OR `pypi_last_serial != pypi_version_serial_at_fetch` (Phase D detected the upstream serial moved) OR `pypi_version_fetched_at < (now − 30d)` (safety re-check past TTL).
+- Stat reporting splits the eligible count into `eligible_never_fetched`, `eligible_serial_moved`, `eligible_safety_recheck` so operators see why each row was selected.
+- Net: **warm-daily Phase H drops ~5 min → ~30 s** on a typical day (only the ~30-100 packages whose upstream actually moved get re-fetched). Cold start is unchanged.
+- Test: `tests/unit/test_phase_h_serial_gate.py` — 5 fixtures covering each gate branch + the post-fetch write.
+
+### Wave C — `vuln_total` drop (A6, **DEFERRED**)
+
+Wave C was specced to drop the unused `vuln_total` column on the strength of the v7.9.0 audit's "0 consumers" claim. The v8.0.0 implementation audit found that claim was wrong:
+
+- `detail_cf_atlas.py:827` — record display (`c_total = record.get("vuln_total")`)
+- `cve_watcher.py:71` — severity-letter column `T` maps to `vuln_total`
+- `staleness_report.py:110, 182` — SELECT projection + risk-sort column
+- `scan_project.py:1408, 2672, 2690, 3293, 3311` — SBOM `cdx:atlas:vuln_total` enrichment + the atlas-vulns-detected lookup
+
+The column stays. The v7.9.0 retro at `_bmad-output/projects/local-recipes/implementation-artifacts/retro-atlas-pypi-universe-split-2026-05-13.md` has been corrected with the consumer list. A future spec should consolidate the four consumers behind a single accessor and decide whether the persisted column or a computed `vuln_critical + vuln_high + vuln_kev` sum is the right answer — only then is a drop safe.
+
+### Wave D — Persona profiles + auto-detection (A4, shipped)
+
+`bootstrap-data --profile {maintainer,admin,consumer}` ships in `bootstrap_data.py`. The flag injects a bundle of env-var defaults via `os.environ.setdefault` so explicit user env vars and CLI flags always win.
+
+- **`maintainer`**: enables Phase E (`PHASE_E_ENABLED=1`) + Phase N (`PHASE_N_ENABLED=1`); auto-derives `PHASE_N_MAINTAINER` from `gh api user --jq .login` (5 s timeout; graceful degradation to channel-wide on missing-gh / unauth / timeout with a printed warning); auto-restricts `PHASE_L_SOURCES` to populated registries in scope via `v_actionable_packages JOIN package_maintainers WHERE handle=<gh-user>`. Phase F/H source = auto.
+- **`admin`**: enables Phase E + channel-wide Phase N (no `PHASE_N_MAINTAINER`). Full Phase L. Auto-source for F + H.
+- **`consumer`**: air-gap friendly — `PHASE_F_SOURCE=s3-parquet`, `PHASE_H_SOURCE=cf-graph`, `PHASE_N_ENABLED=""`, `PHASE_D_UNIVERSE_DISABLED=1`.
+- **No `--profile`**: today's behavior + end-of-run advisory recommending `--profile maintainer`. Suppress via `BUILD_CF_ATLAS_QUIET=1`. The advisory is the MAJOR-bump signal; once operators report comfort with the documented default, v8.1.0 may silently flip the no-flag invocation to `--profile maintainer`.
+- New helpers in `bootstrap_data.py`: `PROFILES` dict, `_auto_detect_gh_user(timeout=5)`, `_auto_detect_phase_l_sources(maintainer, db_path)`, `_resolve_profile_env(profile)`, `_print_no_profile_advisory(profile)`.
+- Test: `tests/unit/test_persona_profiles.py` — 19 fixtures covering profile resolution + auto-detect (success/missing/timeout/unauth) + advisory print (print/silent/quiet-env) + Phase L source auto-detection (missing DB / pre-v21 / populated / channel-wide).
+
+### Catalog impact
+
+`reference/atlas-actionable-intelligence.md` flips **5 previously 📋-open Phase-N-gated rows** to ✅ shipped, all because v8.0.0's `--profile maintainer` runs Phase N by default with auto-scoping:
+
+- "Which of my feedstocks have open *human* PRs?" → `feedstock-health --maintainer X --filter open-prs-human`
+- "Which of my feedstocks have open issues?" → `feedstock-health --maintainer X --filter open-issues`
+- "Which of my feedstocks have CI red on default branch?" → `feedstock-health --maintainer X --filter ci-red`
+- "Find abandoned feedstocks" → SQL composite on `gh_pushed_at + latest_conda_upload + bot_version_errors_count` (per-user `contributionsCollection` query still 📋-open enhancement)
+- "Maintainer last-active across the channel" → SQL aggregate over `gh_pushed_at` per maintainer (feedstock-push proxy; per-user GitHub-activity API still 📋-open)
+
+Status Summary updated: ~65 shipped (up from ~60), ~6 open (added the `vuln_total` consumer-consolidation + per-user contributionsCollection items), 0 gaps.
+
+### Documentation
+
+- `reference/atlas-phases-overview.md` — at-a-glance index annotated with profile-aware defaults for D / E / F / H / L / N; per-phase "Profile defaults" lines under each of those six phases; new `## Profile Reference (v8.0.0)` appendix with the three-profile matrix + auto-detection + backward-compat notes.
+- `reference/atlas-actionable-intelligence.md` — 5 row flips + Status Summary updated to v8.0.0.
+- `guides/atlas-operations.md` — single-command refresh quickstart leads with `--profile maintainer`; sample crontab rewritten to profile-driven invocations (daily maintainer + weekly admin); air-gapped section uses `--profile consumer`; recovery table updated for v8.0.0's auto-detect warning behavior.
+
+### MIGRATION_NOTES (v20 → v21)
+
+Existing v20 atlases auto-migrate on next `init_schema`:
+
+- Adds `pypi_version_serial_at_fetch INTEGER` column + index on `packages` (idempotent — guarded by `pragma_table_info('packages')`).
+- Creates `v_actionable_packages` view via SCHEMA_DDL `CREATE VIEW IF NOT EXISTS`.
+- `vuln_total` column is **NOT** dropped (Wave C deferred — see above).
+
+Migration is self-healing and a no-op on re-run.
+
+The only operator-visible default-behavior change is the documented `bootstrap-data` invocation: the recommended default flipped from no-flag to `--profile maintainer`. No invocation breaks; cron jobs that pinned env vars manually continue to work because explicit env vars win over profile defaults (`os.environ.setdefault` semantics). The legacy no-flag invocation prints an end-of-run advisory; silence via `BUILD_CF_ATLAS_QUIET=1`.
+
+### Test totals
+
+24 new unit tests in v8.0.0 (19 persona profiles + 5 Phase H serial-gate from Wave B's commit `e671ef463d`) on top of Wave A's `v_actionable_packages` view test + `tests/meta/test_actionable_scope.py`. Skill suite: 989 passing (1 pre-existing `test_whodepends_reverse_json` failure unrelated to this work; predates the audit).
+
+### Out of scope (deferred)
+
+- Channel-wide Phase H/N cron operationalization (per-maintainer + admin profiles cover most use cases; full-channel with PAT rotation = separate spec).
+- Per-version vdb-history snapshot side table for time-travel CVE queries.
+- Multi-output feedstock per-output dep-graph (Phase J extension).
+- New MCP tools for persona profiles (`--profile` CLI flag only; MCP exposure is a follow-up).
+- Drop or properly-wire `vuln_total` (Wave C — needs consumer consolidation first).
+- Per-user `contributionsCollection` query for finer-grained maintainer-activity signal.
+
+Each will get its own quick-dev spec when its trigger fires.
+
+---
+
 **v7.9.0** (May 13, 2026) — Actionable-scope audit closure: phase-by-phase review against `reference/atlas-actionable-intelligence.md` found 4 phases writing data no persona reads. Bundled fix lands as schema v20 + 29 new unit tests + a new `pypi-only-candidates` CLI / MCP tool. Driven by `docs/specs/atlas-pypi-universe-split.md` via `bmad-quick-dev`.
 
 ### Phase H — 56× cold-run denominator cut

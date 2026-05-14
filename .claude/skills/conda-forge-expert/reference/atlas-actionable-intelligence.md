@@ -38,9 +38,9 @@ PR churn, CVE response time, knowing when to update vs archive vs migrate.
 | Which of my feedstocks are behind upstream (CRAN/CPAN/LuaRocks/Maven/crates/RubyGems/NuGet)? | Same | Phase L (per-registry resolver) | Same shape with source label | ✅ shipped |
 | What CVEs landed on my packages this week? | `cve-watcher --maintainer X --since-days 7 --severity C` | Phase G snapshot history (`vuln_history` table) | Delta table: package, then-count, now-count, +N delta | ✅ shipped |
 | Which of my feedstocks have open bot PRs awaiting review? | `feedstock-health --maintainer X --filter open-pr` | Phase M (`bot_open_pr_count`) | Count + last bot-tried version per feedstock | ✅ shipped |
-| Which of my feedstocks have open *human* PRs? | `gh-pulls --maintainer X` (planned) | Phase N — GitHub Pulls API | List of human PRs with age, status | 📋 open (Phase N) |
-| Which of my feedstocks have open issues? | `gh-issues --maintainer X` (planned) | Phase N — GitHub Issues API | Open issue count + most-recent issue title | 📋 open (Phase N) |
-| Which of my feedstocks have CI red on default branch? | `feedstock-health --maintainer X --filter ci-red` (planned) | Phase N — GitHub Checks API | List of feedstocks with failing main-branch CI | 📋 open (Phase N) |
+| Which of my feedstocks have open *human* PRs? | `feedstock-health --maintainer X --filter open-prs-human` | Phase N — GitHub Pulls API (`gh_open_prs_count`) | Per-feedstock open-PR count (bot + human; triangulate with `--filter open-pr` for bot-only via Phase M) | ✅ shipped (v8.0.0 — Phase N default-on under `--profile maintainer`) |
+| Which of my feedstocks have open issues? | `feedstock-health --maintainer X --filter open-issues` | Phase N — GitHub Issues API (`gh_open_issues_count`) | Per-feedstock open-issue count | ✅ shipped (v8.0.0 — Phase N default-on under `--profile maintainer`) |
+| Which of my feedstocks have CI red on default branch? | `feedstock-health --maintainer X --filter ci-red` | Phase N — GitHub Checks API (`gh_default_branch_status`) | List of feedstocks with failing main-branch CI | ✅ shipped (v8.0.0 — Phase N default-on under `--profile maintainer`) |
 | Which of my feedstocks are flagged 'bad' in cf-graph? | `feedstock-health --maintainer X --filter bad` | Phase M (`feedstock_bad`) | Feedstocks where cf-graph's overall health flag is set | ✅ shipped |
 
 ### Decisions
@@ -93,7 +93,7 @@ migration progress, maintainer-load distribution, license auditing.
 
 | Goal | Action | Data source | Outcome | Status |
 |---|---|---|---|---|
-| Find abandoned feedstocks (no maintainer activity + no upstream activity) | Composite: maintainer GitHub-last-active + feedstock last-commit | Phase N (GH user activity + repo last-commit) + maintainer junction | List for mass-archive or take-over | 📋 open (Phase N) |
+| Find abandoned feedstocks (no maintainer activity + no upstream activity) | SQL composite against `gh_pushed_at` + `latest_conda_upload` + `bot_version_errors_count` | Phase N (`gh_pushed_at` per feedstock — admin profile runs channel-wide) + Phase B (`latest_conda_upload`) + Phase M | List for mass-archive or take-over | ✅ shipped (v8.0.0 — Phase N channel-wide under `--profile admin`; per-user `contributionsCollection` query is a 📋-open enhancement) |
 | Bus-factor=1 critical infrastructure | Single-maintainer rows with high downloads + many dependents | Phase F + Phase J + maintainer junction | Recruit help / set up co-maintainership | ✅ shipped (SQL) |
 | Orphans needing new maintainers | Feedstocks where ALL maintainers ignored bot PRs > 6mo | Phase M + Phase N | Take-over candidates | 📋 open (needs Phase N for human PR response data) |
 | Feedstocks marked archived but actively used | `feedstock_archived=1` joined to recent downloads | Phase E.5 + Phase F + Phase I | Find should-not-have-archived cases | ✅ shipped (SQL) |
@@ -104,7 +104,7 @@ migration progress, maintainer-load distribution, license auditing.
 |---|---|---|---|---|
 | Top maintainers by feedstock count | Aggregate `package_maintainers` by handle | Phase E maintainer junction | Identify overloaded maintainers | ✅ shipped (SQL) |
 | Download-weighted maintainer leaderboard | Same join + downloads sum | Phase F + maintainer junction | Reach-weighted "most-impactful maintainer" list | ✅ shipped (SQL) |
-| Maintainer last-active across the channel | GitHub user-activity API | Phase N | Identify dormant maintainers | 📋 open (Phase N) |
+| Maintainer last-active across the channel | SQL aggregate over `gh_pushed_at` per maintainer (latest feedstock push) | Phase N (`gh_pushed_at` — admin profile runs channel-wide) + maintainer junction | Latest-push timestamp per maintainer; dormant-maintainer signal | ✅ shipped (v8.0.0 — feedstock-push proxy; per-user GitHub-activity API is a 📋-open enhancement) |
 
 ### Security & Compliance
 
@@ -187,12 +187,12 @@ SBOM generation, license compliance.
 
 ---
 
-## Status Summary (at v7.6.0)
+## Status Summary (at v8.0.0)
 
 | Status | Count | Notes |
 |---|---|---|
-| ✅ Shipped | ~60 | All 15 pipeline phases (B/B.5/B.6/C/C.5/D/E/E.5/F/G/G'/H/I/J/K/L/M/N); 17 CLIs; full multi-registry coverage (PyPI/GitHub/GitLab/Codeberg/npm/CRAN/CPAN/LuaRocks/crates/RubyGems/NuGet/Maven — including Phase E auto-detection of Maven coordinates from cf-graph URLs); SBOM input/output across CycloneDX 1.4-1.6 (JSON+XML), SPDX 2.x JSON+tag-value+3.0, syft/trivy native; **SBOM relationship traversal rendered as a tree**; container image + OCI manifest probe + live env + GitOps (Argo/Flux with auto git-clone fallback) + K8s scanning; license-check + find-alternative + adoption-stage + SBOM atlas-vuln enrichment; **PyPI yanked-flag detection (PEP 592)**; **12 MCP tools** wrapping the entire read-side surface; **`bootstrap-data` single-command refresh with `--fresh` hard reset** |
-| 📋 Open | ~5 | Channel-wide Phase H/N cron operationalization (per-maintainer scope shipped; full-channel needs PAT rotation or daily 30-min run); per-version vdb-history snapshot side table for time-travel queries; multi-output feedstock per-output dep-graph (Phase J extension — currently captures top-level only); `recipe_format='unknown'` heuristic refinement (116 outliers); CycloneDX Protobuf / SPDX RDF (deferred — heavy deps, marginal use) |
+| ✅ Shipped | ~65 | All 15 pipeline phases (B/B.5/B.6/C/C.5/D/E/E.5/F/G/G'/H/I/J/K/L/M/N); 17 CLIs; full multi-registry coverage (PyPI/GitHub/GitLab/Codeberg/npm/CRAN/CPAN/LuaRocks/crates/RubyGems/NuGet/Maven — including Phase E auto-detection of Maven coordinates from cf-graph URLs); SBOM input/output across CycloneDX 1.4-1.6 (JSON+XML), SPDX 2.x JSON+tag-value+3.0, syft/trivy native; **SBOM relationship traversal rendered as a tree**; container image + OCI manifest probe + live env + GitOps (Argo/Flux with auto git-clone fallback) + K8s scanning; license-check + find-alternative + adoption-stage + SBOM atlas-vuln enrichment; **PyPI yanked-flag detection (PEP 592)**; **12 MCP tools** wrapping the entire read-side surface; **`bootstrap-data` single-command refresh with `--fresh` hard reset**; **v8.0.0: `v_actionable_packages` view + structural-enforcement meta-test**; **Phase H serial-aware eligible-rows gate (warm-daily ~5 min → ~30 s)**; **`--profile maintainer\|admin\|consumer` persona-aware default profiles for `bootstrap-data` with `gh api user` auto-detection**; **5 previously-📋 Phase-N-gated catalog rows flipped to ✅** (open human PRs, open issues, ci-red filter, abandonment composite, maintainer last-active — all via Phase N default-on under `--profile maintainer`) |
+| 📋 Open | ~6 | Channel-wide Phase H/N cron operationalization (per-maintainer scope shipped; full-channel needs PAT rotation or daily 30-min run); per-version vdb-history snapshot side table for time-travel queries; multi-output feedstock per-output dep-graph (Phase J extension — currently captures top-level only); `recipe_format='unknown'` heuristic refinement (116 outliers); CycloneDX Protobuf / SPDX RDF (deferred — heavy deps, marginal use); per-user GitHub `contributionsCollection` query for finer-grained maintainer-activity signal (current `gh_pushed_at` proxy is feedstock-push, not user activity); drop or properly-wire `vuln_total` column (4 consumers found in v8.0.0 audit — column kept; CLI consolidation deferred) |
 | ❌ Gap | 0 | All originally-identified gaps now have a path forward; remaining items are operational/enhancement work, not feature blockers |
 
 The 📋 open items are tracked in

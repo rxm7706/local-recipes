@@ -2,11 +2,11 @@
 doc_type: prd
 project_name: local-recipes
 date: 2026-05-12
-version: '1.1.1'
+version: '1.2.0'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
-source_pin: 'conda-forge-expert v7.9.0'
+source_pin: 'conda-forge-expert v8.0.0'
 re_validated: 2026-05-13
 input_docs:
   - planning-artifacts/index.md
@@ -15,6 +15,7 @@ input_docs:
   - project-context.md
 edit_history:
   - { date: '2026-05-13', via: 'bmad-edit-prd', delta: 'v7.8.1 → v7.9.0 sync after actionable-scope audit (docs/specs/atlas-pypi-universe-split.md): schema v19 → v20, +pypi_universe side table, +pypi-only-candidates CLI/MCP, +Phase D split. PATCH bump (no FR/NFR scope shift; count-and-pin sync).' }
+  - { date: '2026-05-13', via: 'bmad-correct-course', delta: 'v7.9.0 → v8.0.0 sync after structural-enforcement + persona-profile bundle (docs/specs/conda-forge-expert-v8.0.md): schema v20 → v21, +v_actionable_packages view, +Phase H serial-aware eligible-rows gate (pypi_version_serial_at_fetch column), +bootstrap-data --profile {maintainer,admin,consumer} with gh-user / phase-L-sources auto-detection, +tests/meta/test_actionable_scope.py, 5 catalog rows 📋 → ✅. Wave C (drop vuln_total) DEFERRED — 4 consumers found, retro-atlas-pypi-universe-split-2026-05-13.md corrected. MINOR bump (no FR/NFR scope shift; new persona-aware UX surface counts as feature-level addition, no breaking PRD-level change — backward-compatible CLI flag).' }
 ---
 
 # Product Requirements Document: `local-recipes` Rebuild
@@ -185,7 +186,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | ID | Feature | Priority | Acceptance |
 |---|---|---|---|
 | F3.1 | `conda_forge_server.py` with `FastMCP("conda-forge-expert")` | P0 | Server starts via stdio transport; registers as `conda-forge-expert` |
-| F3.2 | 36 `@mcp.tool()` registrations (incl. `pypi_only_candidates` added in v7.9.0) | P0 | All 36 tools enumerated in `architecture-mcp-server.md` § "The Tools by Surface" are present and functional |
+| F3.2 | 36 `@mcp.tool()` registrations (incl. `pypi_only_candidates` added in v7.9.0; v8.0.0 surface is unchanged — persona profiles are CLI-only) | P0 | All 36 tools enumerated in `architecture-mcp-server.md` § "The Tools by Surface" are present and functional |
 | F3.3 | Thin-subprocess wrapper pattern | P0 | Every tool body is ≤30 lines; delegates via `_run_script(SCRIPT_PATH, args)` |
 | F3.4 | `_run_script` helper with 3-tier error handling | P0 | Handles FileNotFoundError, JSONDecodeError, TimeoutExpired; returns structured error dict |
 | F3.5 | 2 async tools (`trigger_build`, `update_cve_database`) | P0 | Async tools use `Context` for progress reporting; fire-and-forget pattern for builds |
@@ -455,7 +456,7 @@ Captured here so they aren't forgotten. All have detailed treatment in source do
 
 | ID | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | Skill version drift between rebuild start and finish | High | Medium | Pin to v7.9.0 at PRD re-validation time (2026-05-13); document drift items in the next retro. PRD v1.1.0 was re-pinned v7.7 → v7.8.1 via `bmad-correct-course` per `sprint-change-proposal-2026-05-12.md`. PRD v1.1.1 was re-pinned v7.8.1 → v7.9.0 via `bmad-edit-prd` after the actionable-scope audit (`docs/specs/atlas-pypi-universe-split.md`) closed 4 phase-denominator findings; retro at `implementation-artifacts/retro-atlas-pypi-universe-split-2026-05-13.md`. |
+| R1 | Skill version drift between rebuild start and finish | High | Medium | Pin to v8.0.0 at PRD re-validation time (2026-05-13). PRD v1.1.0 was re-pinned v7.7 → v7.8.1 via `bmad-correct-course` per `sprint-change-proposal-2026-05-12.md`. PRD v1.1.1 was re-pinned v7.8.1 → v7.9.0 via `bmad-edit-prd` after the actionable-scope audit (`docs/specs/atlas-pypi-universe-split.md`) closed 4 phase-denominator findings; retro at `implementation-artifacts/retro-atlas-pypi-universe-split-2026-05-13.md`. PRD v1.2.0 was re-pinned v7.9.0 → v8.0.0 via `bmad-correct-course` after the structural-enforcement + persona-profile bundle (`docs/specs/conda-forge-expert-v8.0.md`) shipped schema v21's `v_actionable_packages` view + Phase H serial-gate + `bootstrap-data --profile {maintainer,admin,consumer}` (Wave C `vuln_total` drop deferred — 4 actual consumers found, retro corrected); retro at `implementation-artifacts/retro-conda-forge-expert-v8.0-2026-05-13.md`. |
 | R2 | Operator misconfigures `_http.py` and creates a worse cross-host leak | Medium | High | Comprehensive doc in 3+ places; subshell pattern is the simplest mitigation; consider DW2 promotion if any incidents |
 | R3 | rattler-build introduces breaking change during rebuild | Low | High | Pin `rattler-build-conda-compat >=1.2.0,<2.0.0a0` (already in pixi.toml); track upstream releases |
 | R4 | BMAD-METHOD ships v7.0 with breaking changes to skill format | Medium | Medium | Pin BMAD installer version; defer upgrade to a post-rebuild dedicated effort |
