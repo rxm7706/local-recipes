@@ -2,6 +2,47 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.0.1** (May 14, 2026) — Live-DB verification (retro D1/D2) surfaced two bugs in v8.0.0's Wave B + Wave D code; PATCH bump fixes them. Plus the stat-split that Wave B specced but never landed.
+
+### D1 fix — `_auto_detect_phase_l_sources` SQL was malformed
+
+The helper joined `package_maintainers pm ON pm.conda_name = p.conda_name WHERE pm.handle = ?`, but production `package_maintainers(conda_name, maintainer_id)` doesn't have a `handle` column — it joins via `maintainer_id` to a separate `maintainers(id, handle)` table. The test fixture used a 2-table simplification that masked the bug; under live-DB verification the helper would always return `None` for any maintainer because the SQL silently produced no rows. Fix:
+
+- `bootstrap_data.py:_auto_detect_phase_l_sources` now joins the 3-table shape `v_actionable_packages p JOIN package_maintainers pm ON pm.conda_name = p.conda_name JOIN maintainers m ON m.id = pm.maintainer_id WHERE LOWER(m.handle) = LOWER(?)`. The `LOWER()` mirrors `feedstock_health.query`'s case-insensitive handle match (gh handles are case-insensitive on GitHub).
+- `tests/unit/test_persona_profiles.py` fixture updated to the production 3-table schema. New `test_maintainer_handle_match_is_case_insensitive` regression.
+
+### D2 fix — Phase H serial-gate missed the entire post-migration working set
+
+Wave B's serial-gate SQL used `pypi_last_serial != pypi_version_serial_at_fetch`. SQL's `X != NULL` evaluates to NULL (falsy in `WHERE`), so when `pypi_version_serial_at_fetch IS NULL` — the state of every row immediately after the v20 → v21 migration adds the column — condition 2 doesn't fire. Live-DB verification showed 9,788 rows (≈ half the working set) would be silently skipped from the first post-migration warm-daily Phase H run. Fix:
+
+- `conda_forge_atlas.py:_phase_h_eligible_pypi_names` SQL: `pypi_last_serial != pypi_version_serial_at_fetch` → `pypi_last_serial IS NOT pypi_version_serial_at_fetch`. `IS NOT` is the NULL-safe form; it returns TRUE when one side is NULL and the other isn't, so post-migration rows with a populated `pypi_last_serial` get re-fetched once to stamp `pypi_version_serial_at_fetch`.
+- `tests/unit/test_phase_h_serial_gate.py` adds a `post-migr-f` fixture (`fetched_at=recent, last_serial=700, serial_at_fetch=NULL`) that exercises this case. Without the `IS NOT` fix the test would fail.
+
+### D3 ship — Phase H stat-split (specced in v8.0.0, never implemented)
+
+v8.0.0's CHANGELOG + spec promised "stat reporting splits the eligible count into `eligible_never_fetched`, `eligible_serial_moved`, `eligible_safety_recheck` so operators can see why each row was selected." The code only printed `len(rows)`. Now actually shipped:
+
+- New `conda_forge_atlas.py:_phase_h_eligibility_stats(conn) -> dict` returns the three branch counts via mutually-exclusive SQL. Buckets sum to the eligible-rows count.
+- Both `_phase_h_via_pypi_json` and `_phase_h_via_cf_graph` print a `breakdown: never_fetched=X, serial_moved=Y, safety_recheck=Z` line after the eligible-count print, and include the same three keys in the return dict.
+- `tests/unit/test_phase_h_serial_gate.py` adds `TestEligibilityStats` (2 fixtures: bucket counts match branch semantics; buckets sum to eligible-rows count).
+
+### Live verification outcome
+
+Against the real 32,053-row v21 atlas (post-migration state) the gate eligibility now reads:
+
+- never_fetched:     9,654
+- serial_moved:      9,788  (post-migration NULL-serial-at-fetch — would have been 0 without D2 fix)
+- safety_recheck:    0
+- **total eligible:  19,442**
+
+First post-v21 Phase H run is heavy (one-time ~30 min wall-clock at concurrency=3) since every row needs its `pypi_version_serial_at_fetch` stamped. After that, warm-daily should drop to the ~30-100 specced.
+
+### Documentation
+
+Retro `_bmad-output/projects/local-recipes/implementation-artifacts/retro-conda-forge-expert-v8.0-2026-05-13.md` updated with D1 + D2 + D3 verification outcomes and the two bugs caught.
+
+---
+
 **v8.0.0** (May 13, 2026) — Structural enforcement + persona profiles. Bundle closes 3 of the 4 v7.9.0 audit follow-ups (A3, A4, A5); A6 deferred after the planned drop discovered actual consumers. **MAJOR** bump because `bootstrap-data --profile maintainer` (new) is the documented default. No invocation breaks; legacy no-flag runs print an end-of-run advisory (silenced via `BUILD_CF_ATLAS_QUIET=1`). Driven by `docs/specs/conda-forge-expert-v8.0.md` via `bmad-quick-dev`.
 
 ### Wave A — `v_actionable_packages` view + structural enforcement (A5, shipped)

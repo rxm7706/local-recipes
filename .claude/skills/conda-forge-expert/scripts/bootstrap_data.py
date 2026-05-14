@@ -221,10 +221,14 @@ def _auto_detect_phase_l_sources(
         populated: list[str] = []
         for source, col in _PHASE_L_NAME_COLUMNS.items():
             if maintainer:
+                # `package_maintainers(conda_name, maintainer_id)` joins to
+                # `maintainers(id, handle)` — the handle is on the latter.
                 sql = (
                     f"SELECT 1 FROM v_actionable_packages p "
                     f"JOIN package_maintainers pm ON pm.conda_name = p.conda_name "
-                    f"WHERE p.{col} IS NOT NULL AND pm.handle = ? LIMIT 1"
+                    f"JOIN maintainers m ON m.id = pm.maintainer_id "
+                    f"WHERE p.{col} IS NOT NULL AND LOWER(m.handle) = LOWER(?) "
+                    f"LIMIT 1"
                 )
                 params: tuple = (maintainer,)
             else:

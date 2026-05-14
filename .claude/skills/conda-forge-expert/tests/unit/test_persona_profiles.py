@@ -170,7 +170,10 @@ class TestAutoDetectPhaseLSources:
     def test_returns_populated_sources(self, bootstrap_mod, tmp_path):
         db = tmp_path / "atlas.db"
         conn = sqlite3.connect(db)
-        # Minimal schema for the view+join the resolver issues.
+        # Schema mirrors production: package_maintainers joins to a separate
+        # maintainers table (3-table join). The earlier (incorrect) 2-table
+        # fixture masked a SQL bug in _auto_detect_phase_l_sources that
+        # surfaced under live-DB verification on 2026-05-13.
         conn.executescript("""
             CREATE TABLE packages (
                 conda_name TEXT PRIMARY KEY,
@@ -182,9 +185,13 @@ class TestAutoDetectPhaseLSources:
                 luarocks_name TEXT,
                 maven_coord TEXT
             );
+            CREATE TABLE maintainers (
+                id INTEGER PRIMARY KEY,
+                handle TEXT
+            );
             CREATE TABLE package_maintainers (
                 conda_name TEXT,
-                handle TEXT
+                maintainer_id INTEGER
             );
             CREATE VIEW v_actionable_packages AS
                 SELECT * FROM packages
@@ -198,10 +205,11 @@ class TestAutoDetectPhaseLSources:
                 ('foo', 'active', 0, 'foo-pkg', NULL, NULL, NULL, NULL),
                 ('bar', 'active', 0, NULL, 'barpkg', NULL, NULL, NULL),
                 ('baz', 'active', 0, NULL, NULL, NULL, NULL, NULL);
-            INSERT INTO package_maintainers (conda_name, handle) VALUES
-                ('foo', 'rxm7706'),
-                ('bar', 'rxm7706'),
-                ('baz', 'rxm7706');
+            INSERT INTO maintainers (id, handle) VALUES (1, 'rxm7706');
+            INSERT INTO package_maintainers (conda_name, maintainer_id) VALUES
+                ('foo', 1),
+                ('bar', 1),
+                ('baz', 1);
         """)
         conn.commit()
         conn.close()
@@ -214,6 +222,48 @@ class TestAutoDetectPhaseLSources:
         assert "npm" in sources
         assert "cran" in sources
         assert "cpan" not in sources
+
+    def test_maintainer_handle_match_is_case_insensitive(self, bootstrap_mod, tmp_path):
+        """gh handles are case-insensitive on GitHub; the helper must match
+        regardless of casing differences between gh-api output and the atlas's
+        stored handle (matches feedstock_health.query()'s LOWER(...) pattern)."""
+        db = tmp_path / "atlas.db"
+        conn = sqlite3.connect(db)
+        conn.executescript("""
+            CREATE TABLE packages (
+                conda_name TEXT PRIMARY KEY,
+                latest_status TEXT,
+                feedstock_archived INTEGER,
+                npm_name TEXT,
+                cran_name TEXT,
+                cpan_name TEXT,
+                luarocks_name TEXT,
+                maven_coord TEXT
+            );
+            CREATE TABLE maintainers (
+                id INTEGER PRIMARY KEY,
+                handle TEXT
+            );
+            CREATE TABLE package_maintainers (
+                conda_name TEXT,
+                maintainer_id INTEGER
+            );
+            CREATE VIEW v_actionable_packages AS
+                SELECT * FROM packages
+                WHERE conda_name IS NOT NULL
+                  AND COALESCE(latest_status, 'active') = 'active'
+                  AND COALESCE(feedstock_archived, 0) = 0;
+            INSERT INTO packages
+                (conda_name, latest_status, feedstock_archived,
+                 npm_name, cran_name, cpan_name, luarocks_name, maven_coord)
+            VALUES ('foo', 'active', 0, 'foo-pkg', NULL, NULL, NULL, NULL);
+            INSERT INTO maintainers (id, handle) VALUES (1, 'RxM7706');
+            INSERT INTO package_maintainers (conda_name, maintainer_id) VALUES ('foo', 1);
+        """)
+        conn.commit()
+        conn.close()
+        result = bootstrap_mod._auto_detect_phase_l_sources("rxm7706", db_path=db)
+        assert result == "npm"
 
     def test_channel_wide_when_no_maintainer(self, bootstrap_mod, tmp_path):
         db = tmp_path / "atlas.db"
