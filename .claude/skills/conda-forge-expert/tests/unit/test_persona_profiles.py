@@ -82,9 +82,32 @@ class TestProfileResolution:
         assert env["PHASE_E_ENABLED"] == "1"
         assert env["PHASE_N_ENABLED"] == "1"
         assert env["PHASE_F_SOURCE"] == "auto"
-        assert env["PHASE_H_SOURCE"] == "auto"
+        # PHASE_H_SOURCE is intentionally NOT set by maintainer/admin
+        # profiles (atlas rejects "auto"; bootstrap-data CLI resolves it).
+        assert "PHASE_H_SOURCE" not in env
         assert env["PHASE_N_MAINTAINER"] == "rxm7706"
         assert warns == []
+
+    def test_maintainer_and_admin_omit_phase_h_source(self, bootstrap_mod, monkeypatch):
+        """Regression test for v8.0.1 → v8.0.2 bug: profile must not set
+        PHASE_H_SOURCE="auto" because the atlas only accepts "pypi-json"
+        or "cf-graph". Live-DB bootstrap on 2026-05-14 crashed Step 6 (Phase
+        N redundant invocation) because os.environ inherited the "auto"
+        value. Consumer profile keeps PHASE_H_SOURCE="cf-graph" (valid)."""
+        _scrub(monkeypatch)
+        monkeypatch.setattr(bootstrap_mod, "_auto_detect_gh_user",
+                            lambda timeout=5: None)  # noqa: ARG005
+        monkeypatch.setattr(bootstrap_mod, "_auto_detect_phase_l_sources",
+                            lambda maintainer, db_path=None: None)  # noqa: ARG005
+        m_env, _ = bootstrap_mod._resolve_profile_env("maintainer")
+        a_env, _ = bootstrap_mod._resolve_profile_env("admin")
+        c_env, _ = bootstrap_mod._resolve_profile_env("consumer")
+        assert "PHASE_H_SOURCE" not in m_env, \
+            "maintainer profile must not set PHASE_H_SOURCE (atlas rejects 'auto')"
+        assert "PHASE_H_SOURCE" not in a_env, \
+            "admin profile must not set PHASE_H_SOURCE (atlas rejects 'auto')"
+        assert c_env["PHASE_H_SOURCE"] == "cf-graph", \
+            "consumer profile keeps PHASE_H_SOURCE=cf-graph (valid atlas value)"
 
     def test_maintainer_honors_existing_phase_n_maintainer(
         self, bootstrap_mod, monkeypatch,

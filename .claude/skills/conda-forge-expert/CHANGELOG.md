@@ -2,6 +2,27 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.0.2** (May 14, 2026) — First live `bootstrap-data --profile maintainer` run end-to-end surfaced two follow-up bugs in v8.0.1's profile plumbing. Step 4 (cf-atlas build) completed correctly — Phase H stamped 19,386 rows in ~12.6 min, Phase N fetched 722 feedstocks for `rxm7706`, atlas reached steady state (Phase H eligibility dropped 19,442 → 4). Step 6 (Phase N redundant re-invocation) crashed at `PHASE_H_SOURCE='auto' is not one of pypi-json, cf-graph`.
+
+### Root causes
+
+1. **`PROFILES` injected an atlas-illegal value.** `"PHASE_H_SOURCE": "auto"` was set on the maintainer + admin profiles. "auto" is a bootstrap-data CLI concept (resolves to `cf-graph` on `--fresh`, else `pypi-json`). The atlas only accepts `pypi-json` or `cf-graph`. `os.environ.setdefault` from `_resolve_profile_env` injected the bogus value, Step 4's `env_overrides` happened to override it with the resolved concrete value, but Step 6's `env_overrides` only set `PHASE_N_ENABLED`/`PHASE_N_MAINTAINER` — Step 6's subprocess inherited `PHASE_H_SOURCE=auto` from `os.environ` and crashed.
+
+2. **Step 6 was structurally redundant under profiles.** With a profile setting `PHASE_N_ENABLED=1` in env, Step 4's `build-cf-atlas` subprocess sees Phase N enabled via env inheritance and already runs Phase N. Re-invoking `build-cf-atlas` in Step 6 to "add Phase N" re-runs every phase — wasteful and the trigger for the crash above.
+
+### Fixes
+
+- **`bootstrap_data.py:PROFILES`** — `PHASE_H_SOURCE` removed from maintainer + admin (atlas default `pypi-json` covers the warm-run case; the bootstrap-data `--phase-h-source` CLI default still resolves `auto` correctly in Step 4's `env_overrides`). Consumer keeps `PHASE_H_SOURCE=cf-graph` (atlas-valid).
+- **`bootstrap_data.py` Step 6** — now checks `phase_n_ran_in_step4 = not args.no_cf_atlas and bool(os.environ.get("PHASE_N_ENABLED", "").strip())`. When true and `--gh` is set, prints a skip message instead of re-invoking `build-cf-atlas`. Legacy `--gh` invocations without a profile still run Step 6 as before.
+- **`tests/unit/test_persona_profiles.py`** — `test_maintainer_enables_e_and_n` updated to assert `PHASE_H_SOURCE not in env` for maintainer; new `test_maintainer_and_admin_omit_phase_h_source` regression covers the omission for both profiles + the consumer's explicit `cf-graph` value.
+
+### Live verification (post-fix)
+
+- `bootstrap-data --profile maintainer --dry-run`: Step 4 shows `env PHASE_H_SOURCE=pypi-json` (resolved by CLI, not leaked from profile). Step 6 prints the skip message instead of dispatching another subprocess. Summary clean.
+- Atlas DB state confirmed steady: `eligible_never_fetched=1, eligible_serial_moved=3, eligible_safety_recheck=0` — 4-row warm-daily working set, exactly the v8.0.0 spec target.
+
+---
+
 **v8.0.1** (May 14, 2026) — Live-DB verification (retro D1/D2) surfaced two bugs in v8.0.0's Wave B + Wave D code; PATCH bump fixes them. Plus the stat-split that Wave B specced but never landed.
 
 ### D1 fix — `_auto_detect_phase_l_sources` SQL was malformed

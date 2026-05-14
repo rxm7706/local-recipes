@@ -232,7 +232,7 @@ When asked to create or update a recipe, execute these steps in order. Each step
 
 ---
 
-## Atlas Intelligence Layer (v8.0.1)
+## Atlas Intelligence Layer (v8.0.2)
 
 The skill carries a SQLite-backed cross-channel package map at
 `.claude/data/conda-forge-expert/cf_atlas.db`, populated by 15 pipeline
@@ -932,6 +932,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.0.2** (May 14, 2026): First live bootstrap-data --profile maintainer run against the post-v21-migration atlas surfaced two follow-up bugs in v8.0.1's profile plumbing. Step 4 (cf_atlas build) completed correctly: Phase H stamped 19,386 rows in ~12.6 min, Phase N fetched 722 feedstocks for rxm7706, full atlas reached steady state (Phase H eligibility dropped 19,442 → 4). But Step 6 (Phase N redundant re-invocation) crashed at the atlas's Phase H dispatcher with `ValueError: PHASE_H_SOURCE='auto' is not one of pypi-json, cf-graph`. Root cause: PROFILES had `PHASE_H_SOURCE="auto"` (a bootstrap-data CLI concept), `os.environ.setdefault` injected it, and Step 6's subprocess inherited the value because Step 6 didn't explicitly override PHASE_H_SOURCE in env_overrides (it had no reason to — Phase H wasn't its goal). Also caught: Step 6 was redundant under profile invocations because the profile's `PHASE_N_ENABLED=1` env-var inheritance already triggered Phase N inside Step 4. Fixes: (1) PROFILES for maintainer + admin no longer set PHASE_H_SOURCE (atlas defaults to pypi-json; CLI --phase-h-source flag still resolves "auto" correctly in Step 4's env_overrides); consumer keeps PHASE_H_SOURCE=cf-graph (atlas-valid). (2) Step 6 now checks `phase_n_ran_in_step4` (truthy PHASE_N_ENABLED in env + Step 4 actually ran) and prints a skip message instead of re-invoking build-cf-atlas. New regression test `test_maintainer_and_admin_omit_phase_h_source`. Updated `config/skill-config.yaml` to 8.0.2.
 
 - **v8.0.1** (May 14, 2026): D1+D2 live-DB verification PATCH. (1) `_auto_detect_phase_l_sources` SQL fix — the helper joined `package_maintainers` directly on `handle`, but the production schema requires a 3-table join (`pm ON pm.conda_name = p.conda_name JOIN maintainers m ON m.id = pm.maintainer_id WHERE LOWER(m.handle) = LOWER(?)`). Test fixture used a 2-table simplification that masked the bug. Caught by live-DB verification: helper was always returning `None` for any maintainer regardless of their populated registries. (2) Phase H serial-gate NULL-handling fix — `pypi_last_serial != pypi_version_serial_at_fetch` evaluates to NULL (falsy) when serial-at-fetch is NULL, so the entire post-v20→v21-migration working set (~9,800 rows) would have been silently skipped from condition 2. Replaced with `IS NOT` (NULL-safe inequality). Test added covering the post-migration scenario. (3) Phase H stat-split shipped — v8.0.0 specced `eligible_never_fetched / eligible_serial_moved / eligible_safety_recheck` but never landed it. New `_phase_h_eligibility_stats(conn)` helper returns the three branch counts; both pypi-json and cf-graph paths print the breakdown and include it in the return dict. 5 new tests (2 stats + 1 post-migration regression + 1 case-insensitive handle match + 1 fixture-shape fix). Live-DB verification against the real 32,053-row v21 atlas: 9,654 never_fetched + 9,788 serial_moved + 0 safety_recheck = 19,442 eligible (matches eligible-rows count exactly). Updated `config/skill-config.yaml` to 8.0.1.
 
