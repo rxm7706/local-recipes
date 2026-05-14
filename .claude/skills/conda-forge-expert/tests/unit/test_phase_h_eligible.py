@@ -52,7 +52,10 @@ def db(tmp_path, atlas_mod):
     conn = atlas_mod.open_db(db_path)
     atlas_mod.init_schema(conn)
     now = int(time.time())
-    stale = now - 30 * 86400  # 30 days ago, well past PHASE_H_TTL_DAYS=7
+    # 35 days ago — past both PHASE_H_TTL_DAYS=7 (v7.9.0) and the v8.0.0
+    # 30d safety re-check window. Triggers eligibility via the safety
+    # branch regardless of serial state.
+    stale = now - 35 * 86400
 
     # (conda_name, pypi_name, fetched_at, latest_status, feedstock_archived, relationship)
     seeds = [

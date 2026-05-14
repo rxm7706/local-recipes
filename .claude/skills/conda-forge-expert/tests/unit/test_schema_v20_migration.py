@@ -137,11 +137,13 @@ class TestSchemaV20Migration:
         conn = atlas_mod.open_db(db_path)
         atlas_mod.init_schema(conn)
 
-        # Schema version is 20
+        # Schema version is at least 20 (v21+ keeps the pypi_universe table
+        # added in v20; the test asserts forward-compat — fresh DBs land at
+        # whatever SCHEMA_VERSION is, and v20's structural addition persists).
         schema = conn.execute(
             "SELECT value FROM meta WHERE key='schema_version'"
         ).fetchone()
-        assert schema[0] == "20"
+        assert int(schema[0]) >= 20
 
         # pypi_universe table exists
         exists = bool(list(conn.execute(
