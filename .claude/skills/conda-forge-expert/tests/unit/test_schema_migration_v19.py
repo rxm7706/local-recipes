@@ -50,7 +50,7 @@ def _schema_version(conn: sqlite3.Connection) -> int:
 class TestMigrationV19:
     def test_fresh_db_reaches_v19(self, fresh_db, atlas_mod):
         atlas_mod.init_schema(fresh_db)
-        assert _schema_version(fresh_db) == 19
+        assert _schema_version(fresh_db) >= 19
 
     def test_packages_has_downloads_source_column(self, fresh_db, atlas_mod):
         atlas_mod.init_schema(fresh_db)
@@ -72,7 +72,7 @@ class TestMigrationV19:
         atlas_mod.init_schema(fresh_db)
         assert _columns(fresh_db, "packages") == pkgs_before
         assert _columns(fresh_db, "package_version_downloads") == pvd_before
-        assert _schema_version(fresh_db) == 19
+        assert _schema_version(fresh_db) >= 19
 
     def test_v17_simulated_upgrades_cleanly(self, fresh_db, atlas_mod):
         atlas_mod.init_schema(fresh_db)
@@ -100,7 +100,7 @@ class TestMigrationV19:
         assert "pypi_version_source" not in _columns(fresh_db, "packages")
 
         atlas_mod.init_schema(fresh_db)
-        assert _schema_version(fresh_db) == 19
+        assert _schema_version(fresh_db) >= 19
         assert "downloads_source" in _columns(fresh_db, "packages")
         assert "pypi_version_source" in _columns(fresh_db, "packages")
         # pvd already has `source_old` in addition to a recreated `source`;

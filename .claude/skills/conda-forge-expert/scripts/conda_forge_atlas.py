@@ -132,7 +132,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 
 
 def _get_data_dir() -> Path:
@@ -193,6 +193,7 @@ CREATE TABLE IF NOT EXISTS packages (
     pypi_version_fetched_at          INTEGER,
     pypi_version_last_error          TEXT,
     pypi_version_source              TEXT,
+    pypi_version_serial_at_fetch     INTEGER,  -- v21: serial-gate for Phase H
     github_current_version           TEXT,
     github_version_fetched_at        INTEGER,
     github_version_last_error        TEXT,
@@ -324,6 +325,23 @@ CREATE TABLE IF NOT EXISTS pypi_universe (
 CREATE INDEX IF NOT EXISTS idx_pypi_universe_serial ON pypi_universe(last_serial);
 CREATE INDEX IF NOT EXISTS idx_pypi_universe_fetched ON pypi_universe(fetched_at);
 
+-- Canonical persona-filter triplet, encoded as a view (schema v21+) so
+-- phase authors can't drift. Every selector that wants "the conda-
+-- actionable working set" reads FROM v_actionable_packages instead of
+-- repeating the triplet inline. The drift-prevention meta-test
+-- `tests/meta/test_actionable_scope.py` asserts every `SELECT ... FROM
+-- packages WHERE ...` in `conda_forge_atlas.py` either uses this view
+-- OR has an inline `# scope: ...` justification comment within 3 lines
+-- above. Phases that legitimately need a broader scope (B, B.5, B.6,
+-- C, D, E, E.5, J, M — writes / cross-cutting) read packages directly
+-- with such a comment.
+CREATE VIEW IF NOT EXISTS v_actionable_packages AS
+SELECT *
+FROM packages
+WHERE conda_name IS NOT NULL
+  AND COALESCE(latest_status, 'active') = 'active'
+  AND COALESCE(feedstock_archived, 0) = 0;
+
 -- Upstream-version drift history. Captures one row per (snapshot_at,
 -- conda_name, source) tuple at the end of each Phase H/K/L run. Lets
 -- consumers track upstream-velocity trends and compute per-package
@@ -418,6 +436,10 @@ def _dedupe_packages_by_conda_name(conn: sqlite3.Connection) -> int:
 
     Returns the number of rows deleted.
     """
+    # scope: v2→v3 dedupe migration; intentionally scans ALL packages rows
+    # (including archived/inactive) to find duplicates before the UNIQUE
+    # index is created. The view's actionable-filter would miss duplicates
+    # that exist only in archived/inactive rows.
     cur = conn.execute(
         "SELECT COUNT(*) FROM (SELECT 1 FROM packages "
         "WHERE conda_name IS NOT NULL "
@@ -524,6 +546,9 @@ def init_schema(conn: sqlite3.Connection) -> None:
         # after success is a no-op because the SELECT returns 0 rows.
         # Wrapped in its own transaction so a crash mid-migration doesn't
         # leave half-state.
+        # scope: v19→v20 migration probe; reads ALL packages rows to count
+        # pypi_only rows before they migrate to pypi_universe. View would
+        # exclude them (relationship != actionable triplet) — wrong scope.
         v20_pre_count = conn.execute(
             "SELECT COUNT(*) FROM packages WHERE relationship = 'pypi_only'"
         ).fetchone()[0]
@@ -560,6 +585,26 @@ def init_schema(conn: sqlite3.Connection) -> None:
             except Exception:
                 conn.rollback()
                 raise
+
+        # v20 → v21: two changes packaged together.
+        #
+        # (A) Add `pypi_version_serial_at_fetch INTEGER` column to
+        #     `packages`. Stamped by Phase H on each successful fetch
+        #     (alongside `pypi_version_fetched_at`); compared against
+        #     `pypi_last_serial` (populated by Phase D's daily-lean path)
+        #     to gate Phase H's eligible-rows selector. Idempotent.
+        #
+        # (B) The `v_actionable_packages` view is in SCHEMA_DDL below
+        #     (CREATE VIEW IF NOT EXISTS) so no migration step is needed
+        #     here. The executescript at the end of init_schema creates it.
+        #
+        # Wave C (drop vuln_total) deferred from v8.0.0 — discovered
+        # 4 consumers (detail_cf_atlas, cve_watcher, staleness_report,
+        # scan_project) that the original audit missed; needs a re-spec.
+        if "pypi_version_serial_at_fetch" not in existing_cols:
+            conn.execute(
+                "ALTER TABLE packages ADD COLUMN pypi_version_serial_at_fetch INTEGER"
+            )
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -874,6 +919,9 @@ def phase_b5_feedstock_outputs(conn: sqlite3.Connection) -> dict:
     mapping = _download_feedstock_outputs_archive()
     print(f"  Loaded {len(mapping):,} package→feedstock mappings")
 
+    # scope: Phase B.5 inserts inactive placeholder rows for outputs in
+    # feedstock-outputs but not in current_repodata; needs ALL existing
+    # conda_names (including archived/inactive) to decide INSERT vs UPDATE.
     existing = {row[0] for row in conn.execute("SELECT conda_name FROM packages WHERE conda_name IS NOT NULL")}
     print(f"  Existing conda_name rows: {len(existing):,}")
 
@@ -969,9 +1017,13 @@ def phase_b6_yanked_detection(conn: sqlite3.Connection) -> dict:
                 "UPDATE packages SET latest_status = 'active' "
                 "WHERE latest_conda_version IS NOT NULL AND latest_status IS NULL"
             ).rowcount
+        # scope: Phase B.6 reports the active/inactive distribution as
+        # cross-cutting stats; needs to count BOTH classes (the view excludes
+        # inactive by definition).
         active_total = conn.execute(
             "SELECT COUNT(*) FROM packages WHERE latest_status = 'active'"
         ).fetchone()[0]
+        # scope: same — counts the OPPOSITE side of the active/inactive split.
         inactive_total = conn.execute(
             "SELECT COUNT(*) FROM packages WHERE latest_status = 'inactive'"
         ).fetchone()[0]
@@ -1093,9 +1145,15 @@ def _phase_d_update_working_set(
     already in `packages` — never inserts. The pypi-only corpus lives in
     `pypi_universe` (see `_phase_d_upsert_universe`).
     """
+    # scope: Phase D name-coincidence discovery needs to match PyPI projects
+    # against EVERY existing conda row (including archived/inactive — a
+    # later "rebuild from archive" may rely on the cross-ecosystem mapping
+    # being recorded). The view's actionable triplet would miss those.
     existing_conda = {row[0].lower(): row[0] for row in
                       conn.execute("SELECT conda_name FROM packages WHERE conda_name IS NOT NULL")
                       if row[0]}
+    # scope: same — Phase D needs ALL existing pypi_names to decide UPDATE
+    # vs name-coincidence promotion; archived rows must be considered.
     existing_pypi = {row[0] for row in
                      conn.execute("SELECT pypi_name FROM packages WHERE pypi_name IS NOT NULL")
                      if row[0]}
@@ -1415,6 +1473,9 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
         print(f"  Cached to {cache_path}")
     print(f"  Streaming node_attrs/ from {cache_path.stat().st_size:,}-byte cache...")
 
+    # scope: Phase E enrichment needs reverse-lookup map for ALL feedstocks
+    # (including archived) since cf-graph may carry metadata for archived
+    # feedstocks that we still want recorded.
     # Build feedstock_name → conda_name map for reverse-lookup
     feedstock_to_conda: dict[str, list[str]] = {}
     for row in conn.execute(
@@ -1858,12 +1919,12 @@ def _phase_f_eligible_rows(conn: sqlite3.Connection) -> tuple[list, int, int, in
     limit = int(os.environ.get("PHASE_F_LIMIT", "0"))
     cutoff = int(time.time()) - ttl_days * 86400
 
+    # Reads from v_actionable_packages (schema v21+) — encodes the
+    # canonical persona-filter triplet (conda_name + active + !archived).
     sql = (
-        "SELECT DISTINCT conda_name, latest_conda_version FROM packages "
-        "WHERE conda_name IS NOT NULL "
-        "  AND COALESCE(feedstock_archived, 0) = 0 "
-        "  AND latest_status = 'active' "
-        "  AND COALESCE(downloads_fetched_at, 0) < ?"
+        "SELECT DISTINCT conda_name, latest_conda_version "
+        "FROM v_actionable_packages "
+        "WHERE COALESCE(downloads_fetched_at, 0) < ?"
     )
     params: tuple = (cutoff,)
     if limit > 0:
@@ -2393,14 +2454,12 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
     limit = int(os.environ.get("PHASE_G_LIMIT", "0"))
     cutoff = int(time.time()) - ttl_days * 86400
 
+    # Reads from v_actionable_packages (schema v21+) — canonical triplet.
     sql = (
         "SELECT conda_name, pypi_name, npm_name, latest_conda_version, "
         "       conda_repo_url, conda_dev_url "
-        "FROM packages "
-        "WHERE conda_name IS NOT NULL "
-        "  AND COALESCE(feedstock_archived, 0) = 0 "
-        "  AND latest_status = 'active' "
-        "  AND COALESCE(vdb_scanned_at, 0) < ?"
+        "FROM v_actionable_packages "
+        "WHERE COALESCE(vdb_scanned_at, 0) < ?"
     )
     params: tuple = (cutoff,)
     if limit > 0:
@@ -2660,7 +2719,27 @@ def _phase_h_fetch_one(pypi_name: str
 
 
 def _phase_h_eligible_pypi_names(conn: sqlite3.Connection) -> tuple[list, int, int, int]:
-    """Return (rows, ttl_days, concurrency, limit) shared by all Phase H paths."""
+    """Return (rows, ttl_days, concurrency, limit) shared by all Phase H paths.
+
+    Schema v21+ adds serial-aware gating (Layer 2). A row is eligible
+    when ANY of three conditions hold:
+
+    1. **Never fetched** — `pypi_version_fetched_at IS NULL`. Cold-start
+       case; always fetch.
+    2. **Serial moved** — `pypi_last_serial != pypi_version_serial_at_fetch`.
+       Phase D's daily-lean path writes `pypi_last_serial` from the
+       PyPI Simple API; if it doesn't match what Phase H stamped on
+       the last successful fetch, upstream has had at least one new
+       release / yank since.
+    3. **30d safety re-check** — `pypi_version_fetched_at < (now - 30d)`.
+       Even if the serial appears unchanged, periodic re-fetches catch
+       missed events (Phase D outage, serial-wraparound edge cases).
+
+    Result on typical daily runs: only the ~30-100 packages whose
+    upstream actually moved get re-fetched, instead of all ~12k TTL-stale
+    rows. Phase H warm-daily wall-clock drops from ~5 min (TTL boundary)
+    to ~30 s (typical day).
+    """
     ttl_days = int(os.environ.get("PHASE_H_TTL_DAYS", "7"))
     # Default concurrency is 3 (was 8). pypi.org documents a ~30 req/s per-IP
     # ceiling for the JSON API; 8 workers on a 100k-row backfill could trip
@@ -2670,28 +2749,26 @@ def _phase_h_eligible_pypi_names(conn: sqlite3.Connection) -> tuple[list, int, i
     # (authenticated mirrors, JFrog proxy with no rate cap).
     concurrency = max(1, int(os.environ.get("PHASE_H_CONCURRENCY", "3")))
     limit = int(os.environ.get("PHASE_H_LIMIT", "0"))
-    cutoff = int(time.time()) - ttl_days * 86400
+    safety_cutoff = int(time.time()) - 30 * 86400  # 30d safety re-check
 
-    # Canonical persona-filter triplet (conda_name + active + !archived) so
-    # the gate matches the rest of the pipeline (Phases F/G/G'/K/L/N).
-    # `conda_name IS NOT NULL` is the load-bearing clause: without it, Phase H
-    # historically fetched pypi.org/pypi/<name>/json for every Phase-D-inserted
-    # `relationship='pypi_only'` row (~660k as of schema v19), with the
-    # downstream `upstream_versions` UPSERT silently dropping the results.
-    # As of schema v20 the pypi_only rows move to the `pypi_universe` side
-    # table, so this clause is also defense-in-depth.
+    # Reads from v_actionable_packages (schema v21+) — encodes the
+    # canonical triplet (conda_name + active + !archived). The
+    # AND pypi_name IS NOT NULL clause stays here because the view
+    # doesn't filter on pypi_name (Phase H is the only consumer that
+    # needs that extra narrowing). 3-condition serial-gate (v8.0.0+).
     sql = (
-        "SELECT DISTINCT pypi_name FROM packages "
+        "SELECT DISTINCT pypi_name FROM v_actionable_packages "
         "WHERE pypi_name IS NOT NULL "
-        "  AND conda_name IS NOT NULL "
-        "  AND COALESCE(latest_status, 'active') = 'active' "
-        "  AND COALESCE(feedstock_archived, 0) = 0 "
-        "  AND COALESCE(pypi_version_fetched_at, 0) < ?"
+        "  AND ("
+        "       pypi_version_fetched_at IS NULL "
+        "    OR pypi_last_serial != pypi_version_serial_at_fetch "
+        "    OR pypi_version_fetched_at < ? "
+        "  )"
     )
-    params: tuple = (cutoff,)
+    params: tuple = (safety_cutoff,)
     if limit > 0:
         sql += " LIMIT ?"
-        params = (cutoff, limit)
+        params = (safety_cutoff, limit)
     rows = list(conn.execute(sql, params))
     return rows, ttl_days, concurrency, limit
 
@@ -2731,17 +2808,27 @@ def _phase_h_via_pypi_json(conn: sqlite3.Connection) -> dict:
             now = int(time.time())
             if version is not None:
                 yanked_int = 1 if yanked is True else (0 if yanked is False else None)
+                # Stamp pypi_version_serial_at_fetch = pypi_last_serial so the
+                # next eligible-rows gate (v21+) recognizes this row as
+                # "fetched at the current serial" and skips re-fetch until
+                # Phase D bumps pypi_last_serial.
                 conn.execute(
                     "UPDATE packages SET pypi_current_version = ?, "
                     "pypi_current_version_yanked = ?, "
                     "pypi_version_fetched_at = ?, pypi_version_last_error = NULL, "
-                    "pypi_version_source = 'pypi-json' "
+                    "pypi_version_source = 'pypi-json', "
+                    "pypi_version_serial_at_fetch = pypi_last_serial "
                     "WHERE pypi_name = ?",
                     (version, yanked_int, now, pypi_name),
                 )
                 # Mirror to unified upstream_versions side table — one row per
                 # (conda_name, 'pypi'). For multi-conda names sharing one pypi
                 # name (rare), both rows get the same upstream version.
+                # scope: write-side mirror to upstream_versions. Already
+                # filtered on `pypi_name = ? AND conda_name IS NOT NULL`
+                # below; the actionable view would additionally require
+                # active+!archived but historical mirror writes should
+                # land regardless of current archive state.
                 conn.execute(
                     "INSERT OR REPLACE INTO upstream_versions "
                     "(conda_name, source, version, url, fetched_at, last_error) "
@@ -2751,9 +2838,14 @@ def _phase_h_via_pypi_json(conn: sqlite3.Connection) -> dict:
                 )
                 fetched += 1
             elif err == "HTTP 404":
+                # Stamp serial-at-fetch on 404 too — prevents immediate re-fetch
+                # of a deleted-from-PyPI package; eligibility returns on the
+                # next Phase D bump (which won't happen for truly deleted
+                # packages — the row stays in "404 known" state).
                 conn.execute(
                     "UPDATE packages SET pypi_version_fetched_at = ?, "
-                    "pypi_version_last_error = ?, pypi_version_source = 'pypi-json' "
+                    "pypi_version_last_error = ?, pypi_version_source = 'pypi-json', "
+                    "pypi_version_serial_at_fetch = pypi_last_serial "
                     "WHERE pypi_name = ?",
                     (now, err, pypi_name),
                 )
@@ -2850,6 +2942,10 @@ def _phase_h_via_cf_graph(conn: sqlite3.Connection) -> dict:
             "source": "cf-graph",
         }
 
+    # scope: Phase H cf-graph reverse-lookup needs the feedstock_name →
+    # pypi_name map for ALL rows; the `eligible_pypi_names` set (already
+    # filtered through v_actionable_packages above) narrows what gets
+    # written, so this just builds the lookup index.
     pypi_by_feedstock: dict[str, str] = {}
     for row in conn.execute(
         "SELECT feedstock_name, pypi_name FROM packages "
@@ -2884,14 +2980,20 @@ def _phase_h_via_cf_graph(conn: sqlite3.Connection) -> dict:
             )
             not_found += 1
         else:
+            # cf-graph path: stamp pypi_version_serial_at_fetch = pypi_last_serial
+            # so this fetch satisfies the v21+ serial-gate.
             conn.execute(
                 "UPDATE packages SET pypi_current_version = ?, "
                 "pypi_current_version_yanked = NULL, "
                 "pypi_version_fetched_at = ?, pypi_version_last_error = NULL, "
-                "pypi_version_source = 'cf-graph' "
+                "pypi_version_source = 'cf-graph', "
+                "pypi_version_serial_at_fetch = pypi_last_serial "
                 "WHERE pypi_name = ?",
                 (version, now, pypi_name),
             )
+            # scope: write-side mirror to upstream_versions (cf-graph path).
+            # Same rationale as the pypi-json mirror above — `pypi_name = ?
+            # AND conda_name IS NOT NULL` is sufficient for the write.
             conn.execute(
                 "INSERT OR REPLACE INTO upstream_versions "
                 "(conda_name, source, version, url, fetched_at, last_error) "
@@ -3366,18 +3468,16 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
     limit = int(os.environ.get("PHASE_K_LIMIT", "0"))
     cutoff = int(time.time()) - ttl_days * 86400
 
-    # Eligibility: any active row whose URLs reference a known VCS host AND
-    # whose upstream_versions row(s) for vcs sources are stale or absent.
+    # Eligibility: any actionable row whose URLs reference a known VCS host
+    # AND whose upstream_versions row(s) for vcs sources are stale or absent.
+    # Reads from v_actionable_packages (schema v21+) for the canonical triplet.
     sql = (
         "SELECT p.conda_name, p.conda_repo_url, p.conda_dev_url, p.conda_homepage "
-        "FROM packages p "
+        "FROM v_actionable_packages p "
         "LEFT JOIN upstream_versions u "
         "  ON u.conda_name = p.conda_name "
         " AND u.source IN ('github','gitlab','codeberg') "
-        "WHERE p.conda_name IS NOT NULL "
-        "  AND p.latest_status = 'active' "
-        "  AND COALESCE(p.feedstock_archived, 0) = 0 "
-        "  AND COALESCE(u.fetched_at, 0) < ? "
+        "WHERE COALESCE(u.fetched_at, 0) < ? "
         "  AND ("
         "       p.conda_repo_url  LIKE '%github.com/%' "
         "    OR p.conda_dev_url   LIKE '%github.com/%' "
@@ -3966,13 +4066,11 @@ def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
     cutoff = int(time.time()) - ttl_days * 86400
 
     # Build the work list: per (conda_name, source, name_to_query) tuple.
+    # Reads from v_actionable_packages (schema v21+) — canonical triplet.
     rows = list(conn.execute(
         "SELECT conda_name, npm_name, cran_name, cpan_name, luarocks_name, "
         "       maven_coord, conda_repo_url, conda_dev_url, conda_homepage "
-        "FROM packages "
-        "WHERE conda_name IS NOT NULL "
-        "  AND latest_status = 'active' "
-        "  AND COALESCE(feedstock_archived, 0) = 0"
+        "FROM v_actionable_packages"
     ))
 
     work: list[tuple[str, str, str, str]] = []  # (conda_name, source, query_name, public_url)
@@ -4184,6 +4282,9 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
     # query consumes them (every read path filters on active + !archived).
     # Snapshot taken BEFORE the BEGIN TRANSACTION so the inside-transaction
     # DELETE+INSERT sees a coherent view of the skip set.
+    # scope: deliberately queries the OPPOSITE of v_actionable_packages —
+    # we want the archived/inactive feedstocks to skip them. The view
+    # would exclude exactly the rows we need to identify.
     inactive_feedstocks = {
         row[0] for row in conn.execute(
             "SELECT DISTINCT feedstock_name FROM packages "
@@ -4404,17 +4505,14 @@ def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
     # UPDATEs we issue inside the loop (which would otherwise invalidate the
     # cursor on commit). Periodic commits every 500 rows keep progress
     # durable across mid-phase interrupts.
-    # Canonical persona-filter triplet (conda_name + active + !archived) so
+    # Reads from v_actionable_packages (schema v21+) — canonical triplet.
     # Phase M writes bot-status columns only on rows downstream CLIs read.
     # feedstock-health queries already filter on the same triplet at read
     # time, so this is a write-side cleanup — no behavior change for read
     # paths, but cuts per-build write volume on archived feedstocks.
     rows_to_process = list(conn.execute(
-        "SELECT conda_name, feedstock_name FROM packages "
-        "WHERE conda_name IS NOT NULL "
-        "  AND feedstock_name IS NOT NULL "
-        "  AND COALESCE(latest_status, 'active') = 'active' "
-        "  AND COALESCE(feedstock_archived, 0) = 0"
+        "SELECT conda_name, feedstock_name FROM v_actionable_packages "
+        "WHERE feedstock_name IS NOT NULL"
     ))
     commit_every = 500
     for row in rows_to_process:
@@ -4646,14 +4744,12 @@ def phase_n_github_live(conn: sqlite3.Connection) -> dict:
     cutoff = int(time.time()) - ttl_days * 86400
 
     base_select = (
+        # Reads from v_actionable_packages (schema v21+) — canonical triplet.
         "SELECT DISTINCT p.feedstock_name, p.conda_name "
-        "FROM packages p "
+        "FROM v_actionable_packages p "
     )
     where = [
-        "p.conda_name IS NOT NULL",
         "p.feedstock_name IS NOT NULL",
-        "p.latest_status = 'active'",
-        "COALESCE(p.feedstock_archived, 0) = 0",
         "COALESCE(p.gh_status_fetched_at, 0) < ?",
     ]
     params: list[Any] = [cutoff]
@@ -4914,15 +5010,14 @@ def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
     maintainer = os.environ.get("PHASE_GP_MAINTAINER")
     cutoff = int(time.time()) - ttl_days * 86400
 
+    # JOIN to v_actionable_packages (schema v21+) — encodes canonical triplet.
     base = (
         "SELECT pvd.conda_name, pvd.version, p.pypi_name, p.npm_name, "
         "       p.conda_repo_url, p.conda_dev_url "
         "FROM package_version_downloads pvd "
-        "JOIN packages p ON p.conda_name = pvd.conda_name "
+        "JOIN v_actionable_packages p ON p.conda_name = pvd.conda_name "
     )
     where = [
-        "p.latest_status = 'active'",
-        "COALESCE(p.feedstock_archived, 0) = 0",
         "NOT EXISTS (SELECT 1 FROM package_version_vulns pvv "
         "            WHERE pvv.conda_name = pvd.conda_name "
         "              AND pvv.version = pvd.version "
@@ -5133,8 +5228,11 @@ def cmd_stats(args: argparse.Namespace) -> int:
         return 1
     conn = open_db()
     print(f"=== Conda-Forge Atlas Stats ({DB_PATH}) ===")
+    # scope: cmd_stats is the stats-cf-atlas CLI; reports the full
+    # distribution including archived/inactive rows for ops visibility.
     total = conn.execute("SELECT COUNT(*) AS n FROM packages").fetchone()["n"]
     print(f"Total packages: {total:,}")
+    # scope: same — stats reporting needs the full relationship distribution.
     for row in conn.execute(
         "SELECT relationship, COUNT(*) AS n FROM packages GROUP BY relationship ORDER BY n DESC"
     ):
