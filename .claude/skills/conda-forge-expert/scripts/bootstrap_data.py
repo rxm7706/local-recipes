@@ -17,9 +17,24 @@ What it does (in order):
   9. cf_atlas Phase N    — live GitHub data (CI / issues / PRs) — only if --gh and gh auth present
 
 CLI:
-  bootstrap-data [--fresh | --resume | --status] [--no-vdb] [--no-cf-atlas]
+  bootstrap-data [--profile maintainer|admin|consumer]
+                 [--fresh | --resume | --status] [--no-vdb] [--no-cf-atlas]
                  [--phase-h-source auto|pypi-json|cf-graph]
                  [--gh] [--maintainer HANDLE] [--dry-run]
+
+  --profile MODE      : preset bundle of env-var defaults.
+                         * maintainer — daily, scoped to one maintainer's
+                           feedstocks; enables Phase E + Phase N (gh user
+                           auto-detected) + PHASE_L_SOURCES auto-restricted
+                           to populated registries in scope.
+                         * admin — weekly, channel-wide; enables Phase E +
+                           channel-wide Phase N + full Phase L.
+                         * consumer — air-gap-friendly; Phase F via s3-parquet,
+                           Phase H via cf-graph, no Phase N, no Phase D
+                           universe upsert.
+                         Explicit env vars and CLI flags win. Set
+                         BUILD_CF_ATLAS_QUIET=1 to silence the no-profile
+                         advisory printed at end-of-run.
 
   --fresh             : wipe `.claude/data/conda-forge-expert/` first (hard reset).
                          Preserves `cache/parquet/` (immutable historical S3
@@ -60,7 +75,9 @@ Per-step timeouts (seconds) can be overridden via env vars
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 import time
@@ -89,7 +106,6 @@ _DEFAULT_TIMEOUTS: dict[str, int] = {
 
 def _timeout_for(step: str) -> int:
     """Return effective timeout for `step` honouring `BOOTSTRAP_<STEP>_TIMEOUT` env."""
-    import os
     env_key = f"BOOTSTRAP_{step.upper()}_TIMEOUT"
     raw = os.environ.get(env_key, "").strip()
     if raw:
@@ -100,6 +116,173 @@ def _timeout_for(step: str) -> int:
         except ValueError:
             print(f"  warning: ignoring invalid {env_key}={raw!r}")
     return _DEFAULT_TIMEOUTS[step]
+
+
+# v8.0.0 — Persona profiles. `--profile <name>` injects a bundle of env-var
+# defaults that select the right phase mix for each operator persona.
+# Explicit env vars and explicit CLI flags always win (setdefault semantics).
+#
+# - maintainer: a feedstock maintainer running daily on their own scope.
+#   Wants Phase E + Phase N with auto-detected gh user. Phase F/H auto-source.
+# - admin: a channel-wide operator (mark-broken, archive sweeps). Wants
+#   channel-wide Phase N (no PHASE_N_MAINTAINER). Weekly cadence.
+# - consumer: air-gap-friendly read-only build. Wants Phase F via s3-parquet
+#   and Phase H via cf-graph; no Phase N; no Phase D universe upsert.
+PROFILES: dict[str, dict[str, str]] = {
+    "maintainer": {
+        "PHASE_E_ENABLED": "1",     # cf-graph cache (default-on for maintainer)
+        "PHASE_N_ENABLED": "1",     # live GitHub data (auto-scoped)
+        "PHASE_F_SOURCE":  "auto",
+        "PHASE_H_SOURCE":  "auto",
+        # PHASE_N_MAINTAINER set dynamically from `gh api user`
+        # PHASE_L_SOURCES set dynamically from populated registry columns
+    },
+    "admin": {
+        "PHASE_E_ENABLED": "1",
+        "PHASE_N_ENABLED": "1",     # channel-wide (no PHASE_N_MAINTAINER)
+        "PHASE_F_SOURCE":  "auto",
+        "PHASE_H_SOURCE":  "auto",
+    },
+    "consumer": {
+        "PHASE_E_ENABLED": "1",
+        "PHASE_N_ENABLED": "",       # opt-in stays opt-in
+        "PHASE_F_SOURCE":  "s3-parquet",
+        "PHASE_H_SOURCE":  "cf-graph",
+        "PHASE_D_UNIVERSE_DISABLED": "1",
+    },
+}
+
+
+def _auto_detect_gh_user(timeout: int = 5) -> str | None:
+    """Return the authenticated GitHub login via `gh api user --jq .login`.
+
+    Returns None on missing-gh / unauth / timeout — caller prints a warning
+    and proceeds with channel-wide Phase N (slower but correct). Never
+    raises; this is a best-effort enrichment.
+    """
+    try:
+        result = subprocess.run(
+            ["gh", "api", "user", "--jq", ".login"],
+            capture_output=True, text=True, timeout=timeout,
+        )
+    except FileNotFoundError:
+        return None
+    except subprocess.TimeoutExpired:
+        return None
+    if result.returncode != 0:
+        return None
+    login = result.stdout.strip()
+    return login or None
+
+
+# Columns in `packages` that mark which extra registry a feedstock tracks.
+# Order matches `_PHASE_L_RESOLVERS` in conda_forge_atlas.py for consistency.
+# `maven_coord` is a special-case column (group:artifact pair, not a name).
+_PHASE_L_NAME_COLUMNS: dict[str, str] = {
+    "npm":      "npm_name",
+    "cran":     "cran_name",
+    "cpan":     "cpan_name",
+    "luarocks": "luarocks_name",
+    "maven":    "maven_coord",
+}
+
+
+def _auto_detect_phase_l_sources(
+    maintainer: str | None,
+    db_path: Path | None = None,
+) -> str | None:
+    """Return a comma-separated PHASE_L_SOURCES restriction or None.
+
+    Queries `v_actionable_packages` (schema v21+) for which `<source>_name`
+    columns are populated. If `maintainer` is provided, the scope is
+    further restricted to that maintainer's packages via the
+    `package_maintainers` junction.
+
+    Returns None when the DB is missing, the view is unavailable, or
+    every registry is empty in scope — in those cases the caller should
+    leave PHASE_L_SOURCES unset (Phase L runs against all 8 resolvers
+    by default).
+    """
+    path = db_path or (DATA_DIR / "cf_atlas.db")
+    if not path.exists():
+        return None
+    try:
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=2)
+    except sqlite3.OperationalError:
+        return None
+    try:
+        # Confirm the view exists; cold DBs at v20 or earlier won't have it.
+        have_view = bool(list(conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='view' "
+            "AND name='v_actionable_packages'"
+        )))
+        if not have_view:
+            return None
+        populated: list[str] = []
+        for source, col in _PHASE_L_NAME_COLUMNS.items():
+            if maintainer:
+                sql = (
+                    f"SELECT 1 FROM v_actionable_packages p "
+                    f"JOIN package_maintainers pm ON pm.conda_name = p.conda_name "
+                    f"WHERE p.{col} IS NOT NULL AND pm.handle = ? LIMIT 1"
+                )
+                params: tuple = (maintainer,)
+            else:
+                sql = f"SELECT 1 FROM v_actionable_packages WHERE {col} IS NOT NULL LIMIT 1"
+                params = ()
+            try:
+                hit = conn.execute(sql, params).fetchone()
+            except sqlite3.OperationalError:
+                hit = None
+            if hit:
+                populated.append(source)
+    finally:
+        conn.close()
+    if not populated:
+        return None
+    return ",".join(populated)
+
+
+def _resolve_profile_env(
+    profile: str | None,
+    db_path: Path | None = None,
+) -> tuple[dict[str, str], list[str]]:
+    """Compute the env-var dict implied by `--profile`.
+
+    Returns a `(env_defaults, warnings)` pair. Caller merges `env_defaults`
+    via `dict.setdefault` so explicit user env vars win. `warnings` carries
+    advisory lines to print before phase dispatch (e.g., gh auto-detect
+    failure).
+    """
+    if profile is None:
+        return {}, []
+    if profile not in PROFILES:
+        raise ValueError(f"unknown --profile {profile!r}; "
+                         f"choose from {sorted(PROFILES)}")
+    env = dict(PROFILES[profile])
+    warnings: list[str] = []
+    if profile == "maintainer":
+        # If the operator already set PHASE_N_MAINTAINER in env, honor that.
+        existing = os.environ.get("PHASE_N_MAINTAINER", "").strip()
+        if existing:
+            env.setdefault("PHASE_N_MAINTAINER", existing)
+            user = existing
+        else:
+            user = _auto_detect_gh_user()
+            if user:
+                env["PHASE_N_MAINTAINER"] = user
+            else:
+                warnings.append(
+                    "--profile maintainer: `gh api user` auto-detection failed; "
+                    "Phase N will run channel-wide (slower but correct). "
+                    "Set PHASE_N_MAINTAINER=<handle> or run `gh auth login` to scope it."
+                )
+        # Restrict PHASE_L_SOURCES to populated registries in scope.
+        if not os.environ.get("PHASE_L_SOURCES"):
+            sources = _auto_detect_phase_l_sources(user, db_path=db_path)
+            if sources:
+                env["PHASE_L_SOURCES"] = sources
+    return env, warnings
 
 
 def _run(label: str, cmd: list[str], env_overrides: dict | None = None,
@@ -116,7 +299,6 @@ def _run(label: str, cmd: list[str], env_overrides: dict | None = None,
     if dry_run:
         print(f"  [dry-run] would execute the above")
         return True
-    import os
     env = os.environ.copy()
     if env_overrides:
         env.update(env_overrides)
@@ -318,6 +500,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Bootstrap / refresh all conda-forge-expert data in one command."
     )
+    parser.add_argument("--profile",
+                        choices=sorted(PROFILES.keys()),
+                        default=None,
+                        help="Persona-aware preset bundle of env-var defaults "
+                             "(maintainer / admin / consumer). Explicit env "
+                             "vars and CLI flags always win. See module "
+                             "docstring or `reference/atlas-phases-overview.md` "
+                             "for the full profile reference.")
     parser.add_argument("--fresh", action="store_true",
                         help="Wipe .claude/data/conda-forge-expert/ first "
                              "(preserves cache/parquet by default; pair with "
@@ -367,7 +557,30 @@ def main() -> int:
     print(f"  Data dir:  {DATA_DIR}")
     print(f"  Repo:      {REPO_ROOT}")
     print(f"  Mode:      {'dry-run' if args.dry_run else 'live'}")
+    print(f"  Profile:   {args.profile or '(none — see end-of-run advisory)'}")
     print("═" * 70)
+
+    # Resolve --profile into a dict of env-var defaults. Apply via
+    # `os.environ.setdefault` so explicit user-set env vars always win.
+    # Profile may also imply args.gh / args.maintainer / args.phase_h_source
+    # when those aren't already set.
+    profile_env, profile_warnings = _resolve_profile_env(args.profile)
+    for warn in profile_warnings:
+        print(f"  ⚠  {warn}")
+    for key, value in profile_env.items():
+        os.environ.setdefault(key, value)
+    if args.profile in ("maintainer", "admin") and not args.gh:
+        args.gh = True
+    if args.profile == "maintainer" and not args.maintainer:
+        # The profile's PHASE_N_MAINTAINER (auto-detected or env-supplied) is
+        # the recommended scope; lift it onto args.maintainer for the Phase N
+        # command line.
+        detected = os.environ.get("PHASE_N_MAINTAINER", "").strip()
+        if detected:
+            args.maintainer = detected
+    if args.profile == "consumer" and args.phase_h_source == "auto":
+        # Consumer profile pins Phase H to cf-graph (air-gap friendly).
+        args.phase_h_source = "cf-graph"
 
     # --status: print the status table and exit. Mutually exclusive with
     # --fresh in spirit (you ask for one or the other) but we don't enforce
@@ -462,11 +675,30 @@ def main() -> int:
         marker = "✓" if ok else "✗"
         print(f"  {marker} {label}")
     failed = [l for l, ok in results if not ok]
+    _print_no_profile_advisory(args.profile)
     if failed:
         print(f"\n  {len(failed)} step(s) failed: {failed}")
         return 1
     print(f"\n  All {len(results)} step(s) completed successfully.")
     return 0
+
+
+def _print_no_profile_advisory(profile: str | None) -> None:
+    """Print the v8.0.0 advisory recommending `--profile maintainer` when
+    the operator ran without `--profile`. Opt out via BUILD_CF_ATLAS_QUIET=1.
+    The advisory is the MAJOR-bump signal for the v7.x → v8.0.0 default-
+    behavior shift; no invocation breaks, but the documented default flipped.
+    """
+    if profile is not None:
+        return
+    if os.environ.get("BUILD_CF_ATLAS_QUIET", "").strip():
+        return
+    print()
+    print("  ⓘ No --profile specified. Consider `--profile maintainer` for")
+    print("    the default maintainer-scoped atlas (enables Phase E + Phase N")
+    print("    with auto-scoping). See `reference/atlas-phases-overview.md`")
+    print("    for the full profile reference. Set BUILD_CF_ATLAS_QUIET=1")
+    print("    to silence this advisory.")
 
 
 if __name__ == "__main__":

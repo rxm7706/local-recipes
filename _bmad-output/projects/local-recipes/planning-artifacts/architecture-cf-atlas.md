@@ -4,12 +4,12 @@ part_id: cf-atlas
 display_name: cf_atlas data pipeline
 project_type_id: data
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.9.0'
+source_pin: 'conda-forge-expert v8.0.0'
 ---
 
 # Architecture: cf_atlas (Part 2)
 
-`cf_atlas` is the **offline-tolerant package-intelligence layer** for the system. It builds and maintains `cf_atlas.db` (SQLite, schema v20) — an inventory of every conda-forge package with metadata, dependencies, version skew, vulnerability surface, downloads, and staleness signals, plus a separate `pypi_universe` side table holding the PyPI directory (~800k projects) for the admin-persona "what's on PyPI but not on conda-forge" candidate-list query. The atlas is what makes Part 1's `scan_for_vulnerabilities` / `behind-upstream` / `feedstock-health` / `whodepends` queries fast and offline.
+`cf_atlas` is the **offline-tolerant package-intelligence layer** for the system. It builds and maintains `cf_atlas.db` (SQLite, schema v21) — an inventory of every conda-forge package with metadata, dependencies, version skew, vulnerability surface, downloads, and staleness signals, plus a separate `pypi_universe` side table holding the PyPI directory (~800k projects) for the admin-persona "what's on PyPI but not on conda-forge" candidate-list query. The atlas is what makes Part 1's `scan_for_vulnerabilities` / `behind-upstream` / `feedstock-health` / `whodepends` queries fast and offline.
 
 Part 2's scripts live inside Part 1's `scripts/` directory by design — the pipeline is the skill's data layer, not a separate codebase. This document focuses on **what** the pipeline does and **why** its structure looks the way it does; Part 1's architecture covers the script-level tier discipline.
 
@@ -115,7 +115,7 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 | **F** | `phase_f_downloads` (1950) | Per-conda-package total downloads (3 backends: API / S3 parquet / auto). Default `PHASE_F_CONCURRENCY=3` (was 8 pre-v7.8.0). Retry-After honored on 429/503 (60s cap) + ±25% jitter. | ✓ | — | api.anaconda.org (`ANACONDA_API_BASE_URL`) OR AWS S3 (`S3_PARQUET_BASE_URL`) |
 | **G** | `phase_g_vdb_summary` (1994) | AppThreat vdb scan summary per package — **requires `vuln-db` pixi env** | ✓ | — | (local vdb/ DB) |
 | **G'** | `phase_g_prime_per_version_vulns` (4029) | Per-version CVE scoring — writes `package_version_vulns` — **requires `vuln-db`** | (row-absence) | — | (local vdb/ DB) |
-| **H** | `phase_h_pypi_versions` (2762) | PyPI current-version skew detection (2 backends: pypi-json / cf-graph offline). Default `PHASE_H_CONCURRENCY=3` (was 8 pre-v7.8.1). Retry-After + ±25% jitter on the pypi-json path. **v7.9.0:** eligible-rows selector now applies the canonical persona-filter triplet `conda_name IS NOT NULL AND latest_status='active' AND COALESCE(feedstock_archived,0)=0` (matches F/G/G'/K/L/N); cold-run denominator drops from ~672k to ~12k (56× cut). | ✓ | — | pypi.org JSON (`PYPI_JSON_BASE_URL`) OR github.com (cf-graph) |
+| **H** | `phase_h_pypi_versions` (2762) | PyPI current-version skew detection (2 backends: pypi-json / cf-graph offline). Default `PHASE_H_CONCURRENCY=3` (was 8 pre-v7.8.1). Retry-After + ±25% jitter on the pypi-json path. **v7.9.0:** eligible-rows selector now applies the canonical persona-filter triplet `conda_name IS NOT NULL AND latest_status='active' AND COALESCE(feedstock_archived,0)=0` (matches F/G/G'/K/L/N); cold-run denominator drops from ~672k to ~12k (56× cut). **v8.0.0:** selector reads `FROM v_actionable_packages` (canonical view); eligible-rows gate becomes serial-aware (3-condition OR: never-fetched / `pypi_last_serial != pypi_version_serial_at_fetch` / 30 d safety re-check). Phase H stamps `pypi_version_serial_at_fetch` on successful fetch (schema v21 column). Warm-daily wall-clock drops ~5 min → ~30 s. Stats split into `eligible_never_fetched / eligible_serial_moved / eligible_safety_recheck`. | ✓ | — | pypi.org JSON (`PYPI_JSON_BASE_URL`) OR github.com (cf-graph) |
 | **J** | `phase_j_dependency_graph` (3976) | Build the dependency graph in the `dependencies` table. **Monolithic transaction by design** — `DELETE FROM dependencies` at txn start gives consumers atomic full-snapshot semantics. **v7.9.0:** pre-pass builds `inactive_feedstocks` skip-set from `packages` (`feedstock_archived=1 OR latest_status='inactive'`); cf-graph tarball iteration skips matching basenames. New `skipped_inactive_feedstocks` stat in return dict. | — | — | (DB-internal + cf-graph) |
 | **K** | `phase_k_vcs_versions` (2771) | GitHub via **batched GraphQL** (~100 repos/POST; was REST fanout pre-v7.8.0). GitLab + Codeberg still REST. Writes `upstream_versions`. `PHASE_K_GRAPHQL_DISABLED=1` reverts to REST. `PHASE_K_GRAPHQL_BATCH_SIZE` tunes batch size. | ✓ | — | api.github.com (`GITHUB_API_BASE_URL`, covers GraphQL too), gitlab.com (`GITLAB_API_BASE_URL`), codeberg.org (`CODEBERG_API_BASE_URL`) |
 | **L** | `phase_l_extra_registries` (3191) | Extra registry lookups (npm / CRAN / CPAN / LuaRocks / crates / RubyGems / Maven / NuGet). **Per-registry concurrency caps**: npm=nuget=4, cran=cpan=luarocks=maven=2, crates=rubygems=1. Sequential across registries. Override via `PHASE_L_CONCURRENCY_<SOURCE>`. Writes `upstream_versions`. | (per-source) | — | per-registry `<HOST>_BASE_URL` envs (NPM/CRAN/CPAN/LUAROCKS/CRATES/RUBYGEMS/MAVEN/NUGET) |
@@ -137,13 +137,38 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 
 ---
 
-## Schema (cf_atlas.db, version 20)
+## Schema (cf_atlas.db, version 21)
 
-12 tables. The `packages` table is primary (conda-actionable working
-set); the rest are supporting. `pypi_universe` (added v7.9.0 / schema v20)
-is the **directory** of every PyPI project — separated from `packages`
-so the working set stays conda-actionable and the universe upsert can
-TTL on its own cadence (default 7d via `PHASE_D_UNIVERSE_TTL_DAYS`).
+12 tables + 2 views. The `packages` table is primary (conda-actionable
+working set); the rest are supporting. `pypi_universe` (added v7.9.0 /
+schema v20) is the **directory** of every PyPI project — separated from
+`packages` so the working set stays conda-actionable and the universe
+upsert can TTL on its own cadence (default 7 d via
+`PHASE_D_UNIVERSE_TTL_DAYS`).
+
+**v8.0.0 additions (schema v21):**
+
+- `v_actionable_packages` VIEW encodes the canonical persona-filter
+  triplet `conda_name IS NOT NULL AND COALESCE(latest_status,'active')='active' AND COALESCE(feedstock_archived,0)=0`.
+  Seven phase selectors (F / G / G' / H / K / L / N) refactored to
+  `FROM v_actionable_packages`. New `tests/meta/test_actionable_scope.py`
+  asserts every `SELECT ... FROM packages WHERE ...` either reads the
+  view or carries a `# scope:` justification comment within 3 lines
+  above — preventing the drift the v7.9.0 audit had to fix by hand.
+- `packages.pypi_version_serial_at_fetch INTEGER` + index
+  (`idx_pypi_serial_at_fetch`) enable Phase H's serial-aware
+  eligible-rows gate. Phase H stamps this column on every successful
+  fetch from the row's current `pypi_last_serial`; the gate fires when
+  the serial moves, when the row was never fetched, or past the 30 d
+  safety re-check window.
+- `vuln_total` column **kept** (Wave C drop deferred — see retro at
+  `implementation-artifacts/retro-conda-forge-expert-v8.0-2026-05-13.md`
+  and the corrected `retro-atlas-pypi-universe-split-2026-05-13.md`;
+  4 consumers were identified post-spec).
+
+Migration from v20 → v21 is idempotent and self-healing on next
+`init_schema` (column-add guarded by `pragma_table_info`; view created
+via `CREATE VIEW IF NOT EXISTS` in SCHEMA_DDL).
 
 ```sql
 -- ───── PRIMARY ─────────────────────────────────────────────────────────────────

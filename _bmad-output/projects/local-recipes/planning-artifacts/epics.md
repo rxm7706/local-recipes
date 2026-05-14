@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v7.9.0'
+source_pin: 'conda-forge-expert v8.0.0'
 total_epics: 13
 total_stories: 193
 waves: 5
@@ -16,6 +16,7 @@ input_docs:
 sync_lineage:
   - { date: '2026-05-12', via: 'bmad-correct-course', from: 'v7.7', to: 'v7.8.1', proposal: 'sprint-change-proposal-2026-05-12.md', note: 'Atlas hardening pass (v7.8.0 + v7.8.1 close-out)' }
   - { date: '2026-05-13', via: 'bmad-correct-course', from: 'v7.8.1', to: 'v7.9.0', proposal: 'sprint-change-proposal-2026-05-13.md', spec: 'docs/specs/atlas-pypi-universe-split.md', retro: 'implementation-artifacts/retro-atlas-pypi-universe-split-2026-05-13.md', note: 'Actionable-scope audit: Phase H/J/M denominator fix + schema v20 + pypi_universe side table + Phase D split + pypi-only-candidates CLI/MCP. No epic scope change; recorded as a between-epic audit.' }
+  - { date: '2026-05-13', via: 'bmad-correct-course', from: 'v7.9.0', to: 'v8.0.0', proposal: 'sprint-change-proposal-2026-05-13-v8.0.md', spec: 'docs/specs/conda-forge-expert-v8.0.md', retro: 'implementation-artifacts/retro-conda-forge-expert-v8.0-2026-05-13.md', note: 'Structural enforcement + persona profiles: schema v21 v_actionable_packages view + Phase H serial-aware eligible-rows gate + bootstrap-data --profile {maintainer,admin,consumer} with gh-user / phase-L-sources auto-detection + tests/meta/test_actionable_scope.py + 5 catalog rows 📋 → ✅. Wave C (drop vuln_total) DEFERRED — 4 consumers found post-spec; column kept. MAJOR bump (advisory-print soft launch — no invocations break). No epic scope change; recorded as a between-epic audit.' }
 ---
 
 # Epics & Stories: `local-recipes` Rebuild

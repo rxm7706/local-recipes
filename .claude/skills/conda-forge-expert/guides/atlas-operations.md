@@ -10,30 +10,53 @@ backfill cron operationalization" follow-up from earlier releases.
 
 ## Single-command refresh
 
-The fastest way to bring all data current:
+The fastest way to bring all data current. **Pick a profile** (v8.0.0+) —
+`--profile maintainer` is the documented default for the most common
+operator (a feedstock maintainer running daily on their own scope).
 
 ```bash
-# Default — refreshes mapping cache + CVE DB + vdb + cf_atlas (Phases B/B.5/B.6/C/C.5/D/E/E.5/F/G/H/J/K/L/M).
+# Recommended default — maintainer-scoped: Phase E + Phase N auto-scoped
+# to `gh api user`; PHASE_L_SOURCES auto-restricted to populated registries.
+pixi run -e local-recipes bootstrap-data --profile maintainer
+
+# Weekly channel-wide sweep (mark-broken / archive audits / cross-channel CVE)
+pixi run -e local-recipes bootstrap-data --profile admin
+
+# Air-gapped / firewall-blocked: Phase F=s3-parquet, Phase H=cf-graph,
+# no Phase N, no Phase D universe upsert
+pixi run -e local-recipes bootstrap-data --profile consumer
+
+# Legacy invocation (kept for backward compat) — silently skips Phase E
+# and Phase N; end-of-run advisory recommends `--profile maintainer`
 pixi run -e local-recipes bootstrap-data
 
 # Hard reset — wipe `.claude/data/conda-forge-expert/` first
-pixi run -e local-recipes bootstrap-data --fresh
+pixi run -e local-recipes bootstrap-data --profile maintainer --fresh
 
 # Skip the heavy 2.5 GB vdb refresh
-pixi run -e local-recipes bootstrap-data --no-vdb
-
-# Add live GitHub data (Phase N) — needs `gh auth login` first
-pixi run -e local-recipes bootstrap-data --gh --maintainer <handle>
+pixi run -e local-recipes bootstrap-data --profile maintainer --no-vdb
 
 # Add per-version vuln scoring (Phase G') — needs the vuln-db env
-pixi run -e local-recipes bootstrap-data --with-per-version-vulns
+pixi run -e local-recipes bootstrap-data --profile maintainer --with-per-version-vulns
 
 # See what would happen without executing
-pixi run -e local-recipes bootstrap-data --dry-run
+pixi run -e local-recipes bootstrap-data --profile maintainer --dry-run
+
+# Silence the end-of-run no-profile advisory (when running legacy by design)
+BUILD_CF_ATLAS_QUIET=1 pixi run -e local-recipes bootstrap-data
 ```
 
+Explicit env vars and explicit CLI flags always win over profile
+defaults (`os.environ.setdefault` semantics). For example, a cron job
+that pins `PHASE_N_MAINTAINER=alice` keeps that override even when
+combined with `--profile maintainer`. See
+[`../reference/atlas-phases-overview.md`](../reference/atlas-phases-overview.md)
+§ "Profile Reference (v8.0.0)" for the full per-phase profile matrix.
+
 Cold-start total: roughly 30–45 minutes on residential bandwidth (2.5 GB
-vdb is the dominant cost; the rest is < 5 minutes combined).
+vdb is the dominant cost; the rest is < 5 minutes combined). Warm-daily
+under `--profile maintainer` runs ~3-5 min (Phase H drops ~5 min → ~30 s
+thanks to the schema v21 serial-aware eligible-rows gate).
 
 ---
 
@@ -59,39 +82,67 @@ has run.
 | `update-cve-db` (legacy OSV) | weekly | ~1 min | Used only by `scan_for_vulnerabilities` MCP tool |
 | `update-mapping-cache` (parselmouth) | weekly | ~10 s | New PyPI↔conda renames |
 
-### Sample crontab
+### Sample crontab (v8.0.0+ profile-aware)
 
 ```cron
-# Hourly: live GitHub data for one maintainer (cheap, scoped)
-0 * * * *  cd /path/to/repo && \
-    PHASE_N_ENABLED=1 PHASE_N_MAINTAINER=rxm7706 \
-    pixi run -e local-recipes build-cf-atlas >> ~/.cache/cf-atlas.log 2>&1
-
-# Daily 03:00: download counts (Phase F) + PyPI versions (Phase H) + VCS upstream (Phase K)
+# Daily 03:00 — maintainer-scoped refresh. --profile maintainer enables
+# Phase E + Phase N (auto-scoped to `gh api user`) and auto-restricts
+# Phase L sources. Phase H is serial-gated under schema v21 so the
+# warm run only re-fetches packages whose PyPI serial moved (~30 s).
 0 3 * * *  cd /path/to/repo && \
-    pixi run -e local-recipes build-cf-atlas >> ~/.cache/cf-atlas.log 2>&1
+    pixi run -e local-recipes bootstrap-data --profile maintainer --no-vdb \
+        >> ~/.cache/cf-atlas.log 2>&1
 
-# Daily 04:00: vdb risk summary (Phase G — needs vuln-db env)
+# Daily 04:00 — vdb risk summary (Phase G needs vuln-db env)
 0 4 * * *  cd /path/to/repo && \
     pixi run -e vuln-db build-cf-atlas >> ~/.cache/cf-atlas.log 2>&1
 
-# Weekly Sunday 02:00: vdb-refresh (heavy) + cf_atlas full bootstrap
+# Weekly Sunday 02:00 — full vdb refresh + channel-wide admin sweep
+# (mark-broken, archive sweeps, cross-channel CVE; Phase N is channel-wide
+# under --profile admin, ~30-60 s for ~700 batched GraphQL POSTs).
 0 2 * * 0  cd /path/to/repo && \
-    pixi run -e local-recipes bootstrap-data >> ~/.cache/cf-atlas.log 2>&1
+    pixi run -e local-recipes bootstrap-data --profile admin \
+        >> ~/.cache/cf-atlas.log 2>&1
 ```
 
-### Channel-wide vs per-maintainer
+For air-gapped / firewall-blocked environments, swap the daily line:
 
-Phase H + Phase N are tractable at per-maintainer scope (a few hundred
-feedstocks). Channel-wide scope is ~32k feedstocks — Phase H takes 30+
-min, Phase N takes hours due to GitHub GraphQL rate limits. For
-channel-wide intelligence, prefer:
+```cron
+# Daily 03:00 — air-gap-friendly refresh (no Phase N, Phase F via S3
+# parquet, Phase H via cf-graph). Cron job that previously pinned
+# PHASE_F_SOURCE / PHASE_H_SOURCE via env can drop those and use the
+# profile instead — explicit env still wins if you need to override one.
+0 3 * * *  cd /path/to/repo && \
+    pixi run -e local-recipes bootstrap-data --profile consumer --no-vdb \
+        >> ~/.cache/cf-atlas.log 2>&1
+```
 
-- **Phase H channel-wide**: split across multiple cron windows (e.g.,
-  fetch 1k rows per hour), or accept the 30-min run as a daily cost.
-- **Phase N channel-wide**: only feasible with multiple GitHub PATs in
-  rotation OR an enterprise GitHub tier. Per-maintainer scope is the
-  recommended default.
+### Channel-wide vs per-maintainer (and which profile to pick)
+
+Phase H + Phase N have very different costs depending on whether they
+run channel-wide or scoped to one maintainer. As of v8.0.0:
+
+- **Phase H** — schema v21's serial-aware eligible-rows gate (Phase D
+  populates `pypi_last_serial`; Phase H stamps
+  `pypi_version_serial_at_fetch` on successful fetch) means the warm
+  daily run only re-fetches the ~30-100 packages whose upstream serial
+  actually moved. Cold start is still ~30 min. Both `--profile
+  maintainer` and `--profile admin` run Phase H against the full
+  conda-actionable working set (~12k rows); the serial gate keeps the
+  warm cost cheap regardless of scope.
+- **Phase N** —
+  - `--profile maintainer` (default): scoped to `gh api user --jq .login`
+    feedstocks. ~700 feedstocks / 25 per batch ≈ 28 GraphQL POSTs ≈
+    30-60 s. **This is the recommended daily cadence.**
+  - `--profile admin`: channel-wide (~3,400 active conda-actionable
+    feedstocks). ~140 GraphQL POSTs ≈ 5-10 min. Feasible without PAT
+    rotation since v7.8.1's rate-limit detection + jitter retries
+    handle the secondary-limit windows gracefully. **Weekly cadence is
+    the sweet spot** for admin sweeps.
+  - For multi-thousand-maintainer rotation (e.g., reviewing dormant
+    maintainers across the whole channel), use `--profile admin` on a
+    weekly cron and pair with multiple GitHub PATs only if you start
+    seeing secondary-limit retries dominate the wall-clock.
 
 ---
 
@@ -135,8 +186,9 @@ a phase fails, hangs, or finishes with errors logged in `packages.*_last_error`.
 | **K** (VCS upstream) | GitHub rate limit (403) | Wait an hour or set `GITHUB_TOKEN`; rerun `atlas-phase K` |
 | **L** (extra registries) | One registry source 5xx'ing | `atlas-phase L` — TTL-gated per source, only failed rows re-fetch |
 | **M** (feedstock health) | cf-graph not present | Run Phase E first |
-| **N** (live GitHub) | Killed mid-run | Rerun `build-cf-atlas` with `PHASE_N_ENABLED=1`; v7.7+ resumes from the last completed feedstock via `phase_state.last_completed_cursor` |
-| **N** (live GitHub) | `gh auth` missing | `gh auth login` then rerun |
+| **N** (live GitHub) | Killed mid-run | Rerun `bootstrap-data --profile maintainer` (or `--profile admin`); v7.7+ resumes from the last completed feedstock via `phase_state.last_completed_cursor` |
+| **N** (live GitHub) | `gh auth` missing under `--profile maintainer` | v8.0.0 auto-detect prints a warning + proceeds channel-wide. To re-enable scoping, run `gh auth login` and rerun |
+| **N** (live GitHub) | `gh auth` missing in legacy (no-profile) invocation | `gh auth login` then rerun with `--profile maintainer` (recommended) or with `PHASE_N_ENABLED=1` env |
 | **DB corrupted** | `database disk image is malformed` | `bootstrap-data --fresh --yes` (preserves S3 parquet cache by default) |
 
 ### TTL reset recipes
@@ -226,9 +278,12 @@ conn.commit()
 
 ## Air-gapped operations
 
-In offline / air-gapped environments:
+In offline / air-gapped environments, use `--profile consumer` to skip
+the network-bound phases by default:
 
-1. Run `bootstrap-data` on a connected machine.
+1. Run `bootstrap-data --profile consumer` on a connected machine
+   (sets `PHASE_F_SOURCE=s3-parquet`, `PHASE_H_SOURCE=cf-graph`, skips
+   Phase N and the Phase D universe upsert).
 2. Copy `.claude/data/conda-forge-expert/` to the air-gapped machine.
 3. All atlas read-side CLIs work without network access.
 4. Phase F / Phase G fresh fetches need the vuln-db env on a connected box;
