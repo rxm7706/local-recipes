@@ -5824,6 +5824,437 @@ def phase_q_cross_channel(conn: sqlite3.Connection) -> dict:
     }
 
 
+# SPDX normalization — best-effort mapping of free-text PyPI license fields
+# to canonical SPDX identifiers. Covers the ~95% case (OSI-approved licenses
+# in common forms). Falls back to None for ambiguous / unknown strings so
+# downstream consumers know the data is missing.
+_LICENSE_TO_SPDX = {
+    # Canonical SPDX names (lowercased) → canonical SPDX (case-preserved)
+    "mit": "MIT",
+    "mit license": "MIT",
+    "apache 2.0": "Apache-2.0",
+    "apache-2.0": "Apache-2.0",
+    "apache license 2.0": "Apache-2.0",
+    "apache software license": "Apache-2.0",
+    "apache license, version 2.0": "Apache-2.0",
+    "bsd": "BSD-3-Clause",
+    "bsd license": "BSD-3-Clause",
+    "bsd-3-clause": "BSD-3-Clause",
+    "bsd 3-clause": "BSD-3-Clause",
+    "bsd-2-clause": "BSD-2-Clause",
+    "bsd 2-clause": "BSD-2-Clause",
+    "isc": "ISC",
+    "isc license": "ISC",
+    "gpl-2.0": "GPL-2.0-only",
+    "gpl v2": "GPL-2.0-only",
+    "gnu general public license v2 (gplv2)": "GPL-2.0-only",
+    "gpl-3.0": "GPL-3.0-only",
+    "gpl v3": "GPL-3.0-only",
+    "gnu general public license v3 (gplv3)": "GPL-3.0-only",
+    "lgpl-2.1": "LGPL-2.1-only",
+    "lgpl v2.1": "LGPL-2.1-only",
+    "lgpl-3.0": "LGPL-3.0-only",
+    "lgpl v3": "LGPL-3.0-only",
+    "agpl-3.0": "AGPL-3.0-only",
+    "agpl v3": "AGPL-3.0-only",
+    "mpl-2.0": "MPL-2.0",
+    "mozilla public license 2.0 (mpl 2.0)": "MPL-2.0",
+    "unlicense": "Unlicense",
+    "cc0-1.0": "CC0-1.0",
+    "cc0 1.0 universal": "CC0-1.0",
+    "zlib": "Zlib",
+    "psf-2.0": "PSF-2.0",
+    "python software foundation license": "PSF-2.0",
+    "psf": "PSF-2.0",
+}
+
+# OSI-approved SPDX subset that conda-forge accepts. Subset of the full SPDX
+# list; sufficient for the readiness scorer.
+_OSI_APPROVED_SPDX = frozenset({
+    "MIT", "Apache-2.0", "BSD-3-Clause", "BSD-2-Clause", "ISC",
+    "GPL-2.0-only", "GPL-3.0-only", "LGPL-2.1-only", "LGPL-3.0-only",
+    "AGPL-3.0-only", "MPL-2.0", "Unlicense", "CC0-1.0", "Zlib", "PSF-2.0",
+})
+
+
+def _normalize_license_to_spdx(raw: str | None) -> str | None:
+    """Normalize a PyPI `info.license` value to canonical SPDX or return None.
+
+    Handles the ~95% case (OSI-approved licenses in common forms).
+    Unknown / ambiguous strings → None so the consumer knows it's missing.
+    """
+    if not raw:
+        return None
+    raw = raw.strip()
+    if not raw or raw.upper() == "UNKNOWN":
+        return None
+    # Try direct case-insensitive match first
+    key = raw.lower()
+    if key in _LICENSE_TO_SPDX:
+        return _LICENSE_TO_SPDX[key]
+    # Try classifier-style "License :: OSI Approved :: <X>"
+    if "::" in raw:
+        last = raw.rsplit("::", 1)[-1].strip().lower()
+        if last in _LICENSE_TO_SPDX:
+            return _LICENSE_TO_SPDX[last]
+    return None
+
+
+def _classify_packaging_shape(json_doc: dict) -> str:
+    """Deterministic classifier for `packaging_shape` from PyPI JSON metadata.
+
+    Returns one of: 'pure-python', 'cython', 'c-extension', 'rust-pyo3',
+    'fortran', 'multi-output', 'unknown'.
+
+    Rules (in priority order):
+      1. Rust-PyO3: any requires_dist or top-level classifier mentioning
+         `maturin` or `pyo3` → rust-pyo3
+      2. Cython: any requires_dist mentioning `cython` (build dep) → cython
+      3. Pure-python: ALL `urls[]` of type `bdist_wheel` are `*-none-any.whl`
+         (no per-platform wheels) → pure-python
+      4. C-extension: any wheel filename has `cp3X-cp3X` Python ABI tags
+         (per-Python-version binary builds) → c-extension
+      5. Fortran: rare; not detectable from PyPI JSON alone — falls into
+         'unknown' for v8.1.0
+      6. Multi-output: requires upstream-repo introspection — falls into
+         'unknown' for v8.1.0
+      7. Otherwise: 'unknown'
+    """
+    if not isinstance(json_doc, dict):
+        return "unknown"
+    info = json_doc.get("info") or {}
+    requires_dist = info.get("requires_dist") or []
+    classifiers = info.get("classifiers") or []
+    urls = json_doc.get("urls") or []
+
+    # Normalize requires_dist + classifiers to lowercase text bag for keyword scan
+    text_bag: list[str] = []
+    for r in requires_dist:
+        if isinstance(r, str):
+            text_bag.append(r.lower())
+    for c in classifiers:
+        if isinstance(c, str):
+            text_bag.append(c.lower())
+    text_joined = " | ".join(text_bag)
+
+    # Rule 1: Rust-PyO3
+    if "maturin" in text_joined or "pyo3" in text_joined or "programming language :: rust" in text_joined:
+        return "rust-pyo3"
+
+    # Rule 2: Cython
+    if "cython" in text_joined:
+        return "cython"
+
+    # Examine wheel files
+    wheel_filenames: list[str] = []
+    for u in urls:
+        if not isinstance(u, dict):
+            continue
+        if u.get("packagetype") == "bdist_wheel":
+            fn = u.get("filename")
+            if isinstance(fn, str):
+                wheel_filenames.append(fn.lower())
+
+    # Rule 3: Pure-python — every wheel is *-none-any.whl
+    if wheel_filenames and all("none-any.whl" in fn for fn in wheel_filenames):
+        return "pure-python"
+
+    # Rule 4: C-extension — any cp3X-cp3X-<platform> wheel
+    if any(_CPYTHON_ABI_RE.search(fn) for fn in wheel_filenames):
+        return "c-extension"
+
+    return "unknown"
+
+
+_CPYTHON_ABI_RE = re.compile(r"cp3\d+-cp3\d+")
+
+
+def _phase_r_fetch_one(pypi_name: str
+                       ) -> tuple[str, dict | None, str | None]:
+    """Worker for Phase R. Returns (pypi_name, json_doc_or_None, err).
+
+    Hits https://pypi.org/pypi/<name>/json. Same retry shape as
+    `_phase_h_fetch_one` — 3 attempts with Retry-After honored on 429/503
+    and ±25% jitter on exponential backoff otherwise.
+    """
+    import random as _random
+    url = f"https://pypi.org/pypi/{pypi_name}/json"
+    last_err: str | None = None
+    for attempt in range(3):
+        try:
+            req = _make_req(url)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                payload = json.load(resp)
+            return (pypi_name, payload, None)
+        except urllib.error.HTTPError as e:
+            last_err = f"HTTP {e.code}"
+            if e.code == 404:
+                return (pypi_name, None, "HTTP 404")
+            if e.code in (429, 503) and attempt < 2:
+                retry_after = e.headers.get("Retry-After") if e.headers else None
+                base = 2.0 ** attempt + 1.0
+                jitter = base * (0.75 + 0.5 * _random.random())
+                sleep_for = _parse_retry_after(retry_after, fallback=jitter)
+                time.sleep(sleep_for)
+                continue
+            return (pypi_name, None, last_err)
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {str(e)[:120]}"
+            if attempt < 2:
+                base = 1.0 + attempt
+                time.sleep(base * (0.75 + 0.5 * _random.random()))
+                continue
+            return (pypi_name, None, last_err)
+    return (pypi_name, None, last_err or "exhausted retries")
+
+
+def phase_r_pypi_json_enrich(conn: sqlite3.Connection) -> dict:
+    """Phase R: per-project JSON enrichment for the top-N candidate slice.
+
+    Bounded by `PHASE_R_CANDIDATE_LIMIT` (default 5000). The candidate set
+    is pypi-only rows (no conda-forge match) ordered by `last_serial DESC`,
+    OPTIONALLY filtered to `activity_band='hot'` when present, with rows
+    past their per-row TTL re-fetched.
+
+    Per row fetched: parses license / requires_python / classifiers /
+    project URLs / wheel coverage. Computes `packaging_shape` via the
+    deterministic classifier. Normalizes license to SPDX where possible.
+    Stores the raw classifiers JSON + wheel platforms + python tags so
+    downstream consumers can apply richer filters.
+
+    Worker pattern reuses `_phase_h_fetch_one`'s shape (concurrency=3 by
+    default; PHASE_R_CONCURRENCY override).
+
+    Tunables:
+      - PHASE_R_DISABLED         : "1" to skip
+      - PHASE_R_ENABLED          : must be "1" (opt-in)
+      - PHASE_R_CANDIDATE_LIMIT  : default 5000
+      - PHASE_R_TTL_DAYS         : default 7
+      - PHASE_R_CONCURRENCY      : default 3
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    t0 = time.monotonic()
+    print("  Phase R: per-project JSON enrichment for candidate slice")
+
+    if os.environ.get("PHASE_R_DISABLED"):
+        elapsed = time.monotonic() - t0
+        return {
+            "skipped": True,
+            "reason": "PHASE_R_DISABLED=1 set; skipping Phase R.",
+            "duration_seconds": round(elapsed, 1),
+        }
+    if not os.environ.get("PHASE_R_ENABLED"):
+        elapsed = time.monotonic() - t0
+        print("  Phase R is opt-in; set PHASE_R_ENABLED=1 to run.")
+        return {
+            "skipped": True,
+            "reason": "PHASE_R_ENABLED not set; opt-in.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    universe_count = conn.execute(
+        "SELECT COUNT(*) FROM pypi_universe"
+    ).fetchone()[0]
+    if not universe_count:
+        elapsed = time.monotonic() - t0
+        print("  pypi_universe is empty; run Phase D first. Skipping Phase R.")
+        return {
+            "skipped": True,
+            "reason": "pypi_universe empty; run Phase D first.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    candidate_limit = int(os.environ.get("PHASE_R_CANDIDATE_LIMIT", "5000"))
+    ttl_days = int(os.environ.get("PHASE_R_TTL_DAYS", "7"))
+    concurrency = max(1, int(os.environ.get("PHASE_R_CONCURRENCY", "3")))
+    ttl_cutoff = int(time.time()) - ttl_days * 86400
+
+    # Candidate slice: pypi-only rows ordered by serial DESC, EXCLUDING rows
+    # whose pypi_intelligence.json_fetched_at is within TTL.
+    candidates = list(conn.execute(
+        """
+        SELECT u.pypi_name
+        FROM pypi_universe u
+        LEFT JOIN packages p ON p.pypi_name = u.pypi_name AND p.conda_name IS NOT NULL
+        LEFT JOIN pypi_intelligence i ON i.pypi_name = u.pypi_name
+        WHERE p.pypi_name IS NULL
+          AND (i.json_fetched_at IS NULL OR i.json_fetched_at < ?)
+        ORDER BY u.last_serial DESC
+        LIMIT ?
+        """,
+        (ttl_cutoff, candidate_limit),
+    ))
+    if not candidates:
+        elapsed = time.monotonic() - t0
+        print(f"  0 candidates eligible (TTL {ttl_days}d, limit {candidate_limit:,})")
+        return {
+            "candidates_processed": 0,
+            "fetched": 0,
+            "failed": 0,
+            "not_found": 0,
+            "ttl_days": ttl_days,
+            "candidate_limit": candidate_limit,
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    print(
+        f"  {len(candidates):,} candidates to enrich "
+        f"(TTL {ttl_days}d, limit {candidate_limit:,}, concurrency {concurrency})"
+    )
+
+    fetched = 0
+    failed = 0
+    not_found = 0
+    completed = 0
+    progress_every = min(max(200, len(candidates) // 20), 1000) if candidates else 1
+    commit_every = 200
+    now = int(time.time())
+
+    with ThreadPoolExecutor(max_workers=concurrency) as ex:
+        futures = [ex.submit(_phase_r_fetch_one, r["pypi_name"]) for r in candidates]
+        for fut in as_completed(futures):
+            pypi_name, payload, err = fut.result()
+            if payload is not None and err is None:
+                info = payload.get("info") or {}
+                urls = payload.get("urls") or []
+                license_raw = info.get("license")
+                license_spdx = _normalize_license_to_spdx(license_raw)
+                # If license_raw is missing, also check classifiers for OSI tag
+                if not license_spdx:
+                    for c in (info.get("classifiers") or []):
+                        if isinstance(c, str) and c.lower().startswith("license ::"):
+                            sp = _normalize_license_to_spdx(c)
+                            if sp:
+                                license_spdx = sp
+                                break
+                summary = info.get("summary") or None
+                home_page = info.get("home_page") or None
+                proj_urls = info.get("project_urls") or {}
+                if not isinstance(proj_urls, dict):
+                    proj_urls = {}
+                repo_url = proj_urls.get("Repository") or proj_urls.get("Source") or proj_urls.get("Source Code") or None
+                docs_url = proj_urls.get("Documentation") or proj_urls.get("Docs") or None
+                issues_url = proj_urls.get("Issues") or proj_urls.get("Bug Tracker") or proj_urls.get("Tracker") or None
+                requires_python = info.get("requires_python") or None
+                classifiers_json = json.dumps(info.get("classifiers") or [])
+                # Wheel coverage
+                has_wheel = 0
+                has_sdist = 0
+                wheel_platforms_set: set[str] = set()
+                python_tags_set: set[str] = set()
+                for u in urls:
+                    if not isinstance(u, dict):
+                        continue
+                    pt = u.get("packagetype")
+                    fn = u.get("filename") or ""
+                    if pt == "bdist_wheel":
+                        has_wheel = 1
+                        # Filename: name-version-pythontag-abi-platform.whl
+                        parts = fn.rsplit("-", 3)
+                        if len(parts) == 4:
+                            python_tags_set.add(parts[1])
+                            wheel_platforms_set.add(parts[3].rsplit(".whl", 1)[0])
+                    elif pt == "sdist":
+                        has_sdist = 1
+                wheel_platforms_json = json.dumps(sorted(wheel_platforms_set))
+                python_tags_json = json.dumps(sorted(python_tags_set))
+                packaging_shape = _classify_packaging_shape(payload)
+                # Latest version info
+                latest_version = info.get("version") or None
+                latest_upload_at: int | None = None
+                latest_yanked: int | None = None
+                if latest_version:
+                    rel = (payload.get("releases") or {}).get(latest_version) or []
+                    if isinstance(rel, list) and rel:
+                        # Use the most recent upload_time
+                        for f in rel:
+                            t = _iso_to_unix_safe(f.get("upload_time_iso_8601") or f.get("upload_time"))
+                            if t and (latest_upload_at is None or t > latest_upload_at):
+                                latest_upload_at = t
+                        # Yanked: all files yanked
+                        latest_yanked = 1 if all(bool(f.get("yanked")) for f in rel) else 0
+                # Upsert
+                conn.execute(
+                    "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
+                    (pypi_name,),
+                )
+                conn.execute(
+                    """
+                    UPDATE pypi_intelligence SET
+                        latest_version = ?, latest_upload_at = ?, latest_yanked = ?,
+                        requires_python = ?,
+                        license_raw = ?, license_spdx = ?,
+                        summary = ?, home_page = ?, repo_url = ?, docs_url = ?, issues_url = ?,
+                        classifiers = ?,
+                        has_wheel = ?, has_sdist = ?,
+                        wheel_platforms = ?, python_tags = ?,
+                        packaging_shape = ?,
+                        json_fetched_at = ?, json_last_error = NULL
+                    WHERE pypi_name = ?
+                    """,
+                    (
+                        latest_version, latest_upload_at, latest_yanked,
+                        requires_python,
+                        license_raw, license_spdx,
+                        summary, home_page, repo_url, docs_url, issues_url,
+                        classifiers_json,
+                        has_wheel, has_sdist,
+                        wheel_platforms_json, python_tags_json,
+                        packaging_shape,
+                        now, pypi_name,
+                    ),
+                )
+                fetched += 1
+            elif err == "HTTP 404":
+                conn.execute(
+                    "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
+                    (pypi_name,),
+                )
+                conn.execute(
+                    "UPDATE pypi_intelligence SET json_last_error = ?, "
+                    "json_fetched_at = ? WHERE pypi_name = ?",
+                    (err, now, pypi_name),
+                )
+                not_found += 1
+            else:
+                # Transient failure — record last_error but don't bump fetched_at
+                # (so the row stays eligible next run)
+                conn.execute(
+                    "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
+                    (pypi_name,),
+                )
+                conn.execute(
+                    "UPDATE pypi_intelligence SET json_last_error = ? WHERE pypi_name = ?",
+                    (err or "unknown error", pypi_name),
+                )
+                failed += 1
+            completed += 1
+            if completed % progress_every == 0:
+                print(
+                    f"    [{completed:,}/{len(candidates):,}] "
+                    f"fetched={fetched:,} failed={failed:,} 404={not_found:,}"
+                )
+            if completed % commit_every == 0:
+                conn.commit()
+    conn.commit()
+
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase R done in {elapsed:.1f}s — fetched {fetched:,}, "
+        f"failed {failed:,}, 404 {not_found:,}"
+    )
+    return {
+        "candidates_processed": len(candidates),
+        "fetched": fetched,
+        "failed": failed,
+        "not_found": not_found,
+        "ttl_days": ttl_days,
+        "candidate_limit": candidate_limit,
+        "concurrency": concurrency,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
 def write_meta(conn: sqlite3.Connection, build_stats: dict) -> None:
     """Write build provenance to meta table and JSON sidecar."""
     build_stats["schema_version"] = SCHEMA_VERSION
@@ -5856,6 +6287,7 @@ PHASES: list[tuple[str, Any]] = [
     ("O",   phase_o_serial_snapshots),
     ("P",   phase_p_pypi_downloads),
     ("Q",   phase_q_cross_channel),
+    ("R",   phase_r_pypi_json_enrich),
     ("E",   phase_e_enrichment),
     ("E.5", phase_e5_archived_feedstocks),
     ("F",   phase_f_downloads),
