@@ -325,6 +325,10 @@ cmd = "python .claude/scripts/conda-forge-expert/adoption_stage.py"
 description = "List PyPI projects with no conda-forge equivalent. Reads the pypi_universe side table (Phase D, schema v20+). --limit N, --min-serial M, --json. Admin-persona candidate list."
 cmd = "python .claude/scripts/conda-forge-expert/pypi_only_candidates.py"
 
+[feature.local-recipes.tasks.pypi-intelligence]
+description = "Surface PyPI candidates with rich enrichment filters (schema v22+ pypi_intelligence). --not-in-conda-forge, --activity hot|warm|cold|dormant, --license-ok, --noarch-python-candidate, --min-downloads N, --in-bioconda / --in-pytorch / etc., --score-min N, --sort-by score|downloads|serial|name, --limit N, --json. Admin/maintainer-persona ranked candidate list with conda_forge_readiness scores."
+cmd = "python .claude/scripts/conda-forge-expert/pypi_intelligence.py"
+
 [feature.local-recipes.tasks.feedstock-health]
 description = "Surface feedstocks with stuck bot version-update PRs / open bot PRs / cf-graph 'bad' flag. --maintainer X, --filter stuck|bad|open-pr|all, --limit N, --json"
 cmd = "python .claude/scripts/conda-forge-expert/feedstock_health.py"

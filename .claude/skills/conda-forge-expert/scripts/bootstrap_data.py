@@ -141,12 +141,30 @@ PROFILES: dict[str, dict[str, str]] = {
         # without leaking "auto" through `os.environ` to other subprocesses.
         # PHASE_N_MAINTAINER set dynamically from `gh api user`
         # PHASE_L_SOURCES set dynamically from populated registry columns
+        #
+        # v8.1.0 — PyPI intelligence layer:
+        #   Phase O: default-on (cheap; no new HTTP — runs after Phase D)
+        #   Phase Q: default-on (cross-channel BOOLs from bulk repodata)
+        #   Phase P: maintainer profile DOES NOT enable Phase P (BigQuery
+        #            costs + needs google-cloud-bigquery library — admin-tier)
+        #   Phase R: maintainer profile DOES NOT enable Phase R (per-project
+        #            JSON enrichment — admin-tier weekly cadence)
+        #   Phase S: runs only when Phase R has data; harmless no-op otherwise
     },
     "admin": {
         "PHASE_E_ENABLED": "1",
         "PHASE_N_ENABLED": "1",     # channel-wide (no PHASE_N_MAINTAINER)
         "PHASE_F_SOURCE":  "auto",
         # PHASE_H_SOURCE intentionally unset — see maintainer profile note.
+        #
+        # v8.1.0 — admin profile enables all 5 PyPI intelligence phases
+        # for weekly channel-wide refresh of the candidate-list data.
+        # Phase P (BigQuery) requires operator-supplied creds; missing
+        # creds → graceful skip with printed warning.
+        "PHASE_P_ENABLED": "1",
+        "PHASE_R_ENABLED": "1",
+        # Phase O + Q + S have no enable env (run unconditionally unless
+        # PHASE_<X>_DISABLED=1 is set explicitly).
     },
     "consumer": {
         "PHASE_E_ENABLED": "1",
@@ -154,6 +172,11 @@ PROFILES: dict[str, dict[str, str]] = {
         "PHASE_F_SOURCE":  "s3-parquet",
         "PHASE_H_SOURCE":  "cf-graph",  # concrete atlas value (offline bulk)
         "PHASE_D_UNIVERSE_DISABLED": "1",
+        # v8.1.0 — consumer profile disables network-bound PyPI intelligence
+        # phases. Phase O (snapshot-only, no HTTP) still runs.
+        "PHASE_P_DISABLED": "1",
+        "PHASE_Q_DISABLED": "1",
+        "PHASE_R_DISABLED": "1",
     },
 }
 
