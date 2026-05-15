@@ -5,14 +5,14 @@ date: 2026-05-12
 repository_type: monorepo
 parts: 4
 docs_generated: 10
-source_pin: 'conda-forge-expert v8.0.0'
+source_pin: 'conda-forge-expert v8.1.0'
 ---
 
 # `local-recipes` — Master Documentation Index
 
 This index is your **primary entry point** for AI-assisted development on `local-recipes`. When a Brownfield PRD, story breakdown, or BMAD planning workflow needs the architecture and feature inventory of this repo, point them at this file.
 
-The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v8.0.0** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `sprint-change-proposal-2026-05-13-v8.0.md`).
+The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v8.1.0** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `sprint-change-proposal-2026-05-15-v8.1.md`).
 
 ---
 
@@ -255,5 +255,5 @@ When ready to plan new features against the rebuilt system, run the PRD workflow
 | Total markdown lines | ~3,000 |
 | Generated | 2026-05-12 |
 | Generator | `bmad-document-project` (Path 3 hybrid) |
-| Source pin | conda-forge-expert v8.0.0 |
+| Source pin | conda-forge-expert v8.1.0 |
 | Verification | live filesystem + source code grep + CHANGELOG cross-reference |

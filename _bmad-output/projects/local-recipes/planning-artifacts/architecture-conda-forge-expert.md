@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-05-12
-source_pin: 'conda-forge-expert v8.0.0'
+source_pin: 'conda-forge-expert v8.1.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -267,7 +267,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Operating Principles (6)
 - Critical Constraints (5 + cross-cutting JFROG note)
 - Primary Workflow: The Autonomous Loop (10 steps + step 8b detail)
-- Atlas Intelligence Layer (v8.0.0)
+- Atlas Intelligence Layer (v8.1.0)
 - Recipe Security Boundaries (Always Do / Ask First / Never Do)
 - Build Failure Protocol
 - Pre-PR Quality Gate Checklist
@@ -443,7 +443,7 @@ This subsystem feeds:
 The skill version is the **source of truth** for what rules apply. Two version surfaces:
 
 - `MANIFEST.yaml: version: 7.0.0` — the "schema/portability version" (rarely changes; bumps only when the install protocol changes)
-- `CHANGELOG.md` TL;DR — the **release version** (v8.0.0 as of 2026-05-13)
+- `CHANGELOG.md` TL;DR — the **release version** (v8.1.0 as of 2026-05-15)
 
 Project-context.md pins to MINOR (`last_synced_skill_version: 'conda-forge-expert v8.0.0'`). When CHANGELOG's MINOR exceeds the pin, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
 

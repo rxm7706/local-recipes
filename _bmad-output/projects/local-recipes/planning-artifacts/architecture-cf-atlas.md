@@ -4,7 +4,7 @@ part_id: cf-atlas
 display_name: cf_atlas data pipeline
 project_type_id: data
 date: 2026-05-12
-source_pin: 'conda-forge-expert v8.0.0'
+source_pin: 'conda-forge-expert v8.1.0'
 ---
 
 # Architecture: cf_atlas (Part 2)

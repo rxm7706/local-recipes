@@ -3,7 +3,7 @@
   "doc_type": "project-parts",
   "project_name": "local-recipes",
   "date": "2026-05-12",
-  "source_pin": "conda-forge-expert v8.0.0",
+  "source_pin": "conda-forge-expert v8.1.0",
   "repository_type": "monorepo",
   "parts": [
     {
@@ -23,7 +23,7 @@
         "FastMCP (for tool exposure)"
       ],
       "pixi_envs": ["local-recipes", "grayskull", "conda-smithy", "vuln-db"],
-      "version_pin": "v8.0.0",
+      "version_pin": "v8.1.0",
       "subdirectories": {
         "SKILL.md": "primary spine: critical constraints, 10-step autonomous loop, recipe authoring gotchas G1-G6",
         "INDEX.md": "task→tool navigator",
@@ -40,7 +40,7 @@
       "part_id": "cf-atlas",
       "display_name": "cf_atlas data pipeline",
       "project_type_id": "data",
-      "description": "Offline-tolerant package-intelligence pipeline that builds and maintains cf_atlas.db (SQLite, schema v21) inventorying conda-forge packages plus a separate pypi_universe side table (the full PyPI directory, ~800k rows). 17 ordered phases (B→N, with B.5/B.6/C.5/E.5/G' sub-phases) with TTL gates and checkpoint-aware resumption. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph offline (Phase H) backends. v7.9.0 actionable-scope audit closed phase-denominator drift across Phase H/J/M and split Phase D into daily-lean + TTL-gated universe upsert. v8.0.0 structural-enforcement + persona-profiles bundle ships schema v21's v_actionable_packages view (7 phase selectors refactored) + Phase H serial-aware eligible-rows gate (warm-daily ~5 min → ~30 s) + tests/meta/test_actionable_scope.py + bootstrap-data --profile {maintainer,admin,consumer} with gh-user + phase-L-sources auto-detection.",
+      "description": "Offline-tolerant package-intelligence pipeline that builds and maintains cf_atlas.db (SQLite, schema v22) inventorying conda-forge packages (32k working set) plus a separate pypi_universe side table (the full PyPI directory, ~800k rows) plus a pypi_intelligence side table (35-column enrichment layer indexed on pypi_name, 5 tiers). 22 ordered phases (B→N + O/P/Q/R/S, with B.5/B.6/C.5/E.5/G' sub-phases) with TTL gates and checkpoint-aware resumption. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph offline (Phase H) backends. v7.9.0 actionable-scope audit closed phase-denominator drift across Phase H/J/M and split Phase D into daily-lean + TTL-gated universe upsert. v8.0.0 structural-enforcement + persona-profiles bundle ships schema v21's v_actionable_packages view (7 phase selectors refactored) + Phase H serial-aware eligible-rows gate (warm-daily ~5 min → ~30 s) + tests/meta/test_actionable_scope.py + bootstrap-data --profile {maintainer,admin,consumer} with gh-user + phase-L-sources auto-detection. v8.1.0 PyPI intelligence layer adds 5 new phases (O snapshot-based activity_band; P BigQuery downloads opt-in; Q cross-channel BOOLs; R per-project JSON enrichment for top-N candidate slice; S computed conda_forge_readiness + recommended_template), pypi-intelligence CLI + MCP tool, and the pypi_intelligence side table with v_pypi_candidates view.",
       "root_paths": [
         ".claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py",
         ".claude/skills/conda-forge-expert/scripts/_cf_graph_versions.py",
