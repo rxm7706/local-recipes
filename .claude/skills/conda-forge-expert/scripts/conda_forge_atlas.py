@@ -5372,30 +5372,37 @@ def phase_o_serial_snapshots(conn: sqlite3.Connection) -> dict:
         (retain_cutoff,),
     ).rowcount
 
-    # 3. Compute deltas + activity_band via CTE join. For each pypi_name,
-    # find the most-recent snapshot at-or-before week_cutoff and month_cutoff.
-    # COALESCE to current serial when no historical row exists (delta = 0).
+    # 3. Compute deltas + activity_band via GROUP BY aggregation. Earlier
+    # versions used correlated subqueries — the SQLite planner expanded
+    # those into a 806k × 806k catastrophic plan (live-DB verification
+    # 2026-05-15 caught the issue: ~11 min and counting on a 806k-row
+    # universe). GROUP BY is single-pass: O(snapshot-row-count + universe-
+    # row-count) instead of O(universe × snapshot).
     conn.executescript("DROP TABLE IF EXISTS _phase_o_tmp;")
     conn.execute(
         """
         CREATE TEMP TABLE _phase_o_tmp AS
-        WITH week_snap AS (
+        WITH week_max AS (
+            SELECT pypi_name, MAX(snapshot_at) AS max_at
+            FROM pypi_universe_serial_snapshots
+            WHERE snapshot_at <= ?
+            GROUP BY pypi_name
+        ),
+        week_snap AS (
             SELECT s.pypi_name, s.last_serial AS week_serial
             FROM pypi_universe_serial_snapshots s
-            WHERE s.snapshot_at = (
-                SELECT MAX(s2.snapshot_at)
-                FROM pypi_universe_serial_snapshots s2
-                WHERE s2.pypi_name = s.pypi_name AND s2.snapshot_at <= ?
-            )
+            JOIN week_max w ON w.pypi_name = s.pypi_name AND w.max_at = s.snapshot_at
+        ),
+        month_max AS (
+            SELECT pypi_name, MAX(snapshot_at) AS max_at
+            FROM pypi_universe_serial_snapshots
+            WHERE snapshot_at <= ?
+            GROUP BY pypi_name
         ),
         month_snap AS (
             SELECT s.pypi_name, s.last_serial AS month_serial
             FROM pypi_universe_serial_snapshots s
-            WHERE s.snapshot_at = (
-                SELECT MAX(s2.snapshot_at)
-                FROM pypi_universe_serial_snapshots s2
-                WHERE s2.pypi_name = s.pypi_name AND s2.snapshot_at <= ?
-            )
+            JOIN month_max m ON m.pypi_name = s.pypi_name AND m.max_at = s.snapshot_at
         )
         SELECT
             u.pypi_name,
@@ -5409,9 +5416,17 @@ def phase_o_serial_snapshots(conn: sqlite3.Connection) -> dict:
         (week_cutoff, month_cutoff),
     )
 
-    # 4. Two-step upsert (matches Phase D's INSERT OR IGNORE + UPDATE pattern;
-    # cleaner than INSERT ... SELECT ... ON CONFLICT, and preserves any
-    # Phase P/Q/R/S columns already populated on existing rows).
+    # 4. Two-step upsert: INSERT OR IGNORE then UPDATE-FROM-JOIN. The
+    # FROM-clause UPDATE (SQLite 3.33+) is the critical perf fix — the
+    # original `WHERE x IN (subquery)` with correlated SELECTs forced
+    # a 806k × 806k catastrophic plan (live-DB verification 2026-05-15
+    # caught the issue at ~7 min and counting). UPDATE-FROM-JOIN is
+    # O(N) via hash-join on pypi_name.
+    #
+    # CREATE INDEX on the temp table first so the join is index-driven.
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS _phase_o_tmp_idx ON _phase_o_tmp(pypi_name)"
+    )
     conn.execute(
         "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) "
         "SELECT pypi_name FROM _phase_o_tmp"
@@ -5420,18 +5435,17 @@ def phase_o_serial_snapshots(conn: sqlite3.Connection) -> dict:
         """
         UPDATE pypi_intelligence AS i
         SET
-            serial_delta_7d  = (SELECT t.d7  FROM _phase_o_tmp t WHERE t.pypi_name = i.pypi_name),
-            serial_delta_30d = (SELECT t.d30 FROM _phase_o_tmp t WHERE t.pypi_name = i.pypi_name),
-            activity_band = (
-                SELECT CASE
-                    WHEN t.d7  >= ? THEN 'hot'
-                    WHEN t.d30 >= ? THEN 'warm'
-                    WHEN t.d30 >= 1 THEN 'cold'
-                    ELSE 'dormant'
-                END FROM _phase_o_tmp t WHERE t.pypi_name = i.pypi_name
-            ),
+            serial_delta_7d  = t.d7,
+            serial_delta_30d = t.d30,
+            activity_band = CASE
+                WHEN t.d7  >= ? THEN 'hot'
+                WHEN t.d30 >= ? THEN 'warm'
+                WHEN t.d30 >= 1 THEN 'cold'
+                ELSE 'dormant'
+            END,
             serial_delta_calc_at = ?
-        WHERE i.pypi_name IN (SELECT pypi_name FROM _phase_o_tmp)
+        FROM _phase_o_tmp AS t
+        WHERE i.pypi_name = t.pypi_name
         """,
         (hot_threshold, warm_threshold, now),
     ).rowcount
