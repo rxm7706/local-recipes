@@ -132,7 +132,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 21
+SCHEMA_VERSION = 22
 
 
 def _get_data_dir() -> Path:
@@ -374,6 +374,120 @@ CREATE TABLE IF NOT EXISTS package_version_vulns (
 CREATE INDEX IF NOT EXISTS idx_pvv_conda_name ON package_version_vulns(conda_name);
 CREATE INDEX IF NOT EXISTS idx_pvv_critical ON package_version_vulns(vuln_critical_affecting_version);
 
+-- ─── PyPI intelligence layer (schema v22+) ─────────────────────────────────
+-- Architecture: `pypi_universe` stays reference-data-only (3 columns); all
+-- enrichment lands in `pypi_intelligence` joined on pypi_name. Daily
+-- snapshots in `pypi_universe_serial_snapshots` power Phase O's
+-- activity_band classification + serial-delta windows.
+
+-- One snapshot row per (pypi_name, snapshot_at). Phase O writes one
+-- snapshot per Phase D run. Retention: PHASE_O_SNAPSHOT_RETAIN_DAYS
+-- (default 90 d) — older rows pruned on each Phase O run.
+CREATE TABLE IF NOT EXISTS pypi_universe_serial_snapshots (
+    pypi_name    TEXT NOT NULL,
+    last_serial  INTEGER NOT NULL,
+    snapshot_at  INTEGER NOT NULL,
+    PRIMARY KEY (pypi_name, snapshot_at)
+);
+CREATE INDEX IF NOT EXISTS idx_pypi_serial_snap_at   ON pypi_universe_serial_snapshots(snapshot_at);
+CREATE INDEX IF NOT EXISTS idx_pypi_serial_snap_name ON pypi_universe_serial_snapshots(pypi_name);
+
+-- Per-pypi-name enrichment + computed scores. Joins to pypi_universe on
+-- pypi_name. Population is opt-in: Phase O writes activity columns
+-- always; P/Q/R/S are TTL-gated or candidate-gated.
+CREATE TABLE IF NOT EXISTS pypi_intelligence (
+    pypi_name                  TEXT PRIMARY KEY,
+
+    -- Tier 1 — Phase O (no HTTP; from serial-snapshot deltas)
+    activity_band              TEXT,       -- 'hot' / 'warm' / 'cold' / 'dormant'
+    serial_delta_7d            INTEGER,
+    serial_delta_30d           INTEGER,
+    serial_delta_calc_at       INTEGER,
+
+    -- Tier 2 — Phase P (BigQuery, bulk)
+    downloads_30d              INTEGER,
+    downloads_90d              INTEGER,
+    downloads_fetched_at       INTEGER,
+    downloads_source           TEXT,
+
+    -- Tier 2 — Phase Q (cross-channel bulk repodata)
+    in_bioconda                INTEGER,    -- 0/1/NULL
+    in_pytorch                 INTEGER,
+    in_nvidia                  INTEGER,
+    in_robostack               INTEGER,
+    in_homebrew                INTEGER,
+    in_nixpkgs                 INTEGER,
+    in_spack                   INTEGER,
+    in_debian                  INTEGER,
+    in_fedora                  INTEGER,
+    cross_channel_at           INTEGER,
+
+    -- Tier 3 — Phase R (pypi.org/json per-project for candidate slice)
+    latest_version             TEXT,
+    latest_upload_at           INTEGER,
+    latest_yanked              INTEGER,
+    requires_python            TEXT,
+    license_raw                TEXT,
+    license_spdx               TEXT,
+    summary                    TEXT,
+    home_page                  TEXT,
+    repo_url                   TEXT,
+    docs_url                   TEXT,
+    issues_url                 TEXT,
+    classifiers                TEXT,       -- JSON array string
+    has_wheel                  INTEGER,
+    has_sdist                  INTEGER,
+    wheel_platforms            TEXT,       -- JSON list
+    python_tags                TEXT,       -- JSON list
+    packaging_shape            TEXT,       -- 'pure-python' / 'cython' / etc.
+    json_fetched_at            INTEGER,
+    json_last_error            TEXT,
+
+    -- Tier 4 — Phase S (computed; pure SQL)
+    conda_forge_readiness      INTEGER,    -- 0-100 composite
+    bus_factor_proxy           INTEGER,
+    dependency_blast_radius    INTEGER,
+    recommended_template       TEXT,       -- full path like 'templates/python/recipe.yaml'
+    score_calc_at              INTEGER,
+
+    -- Tier 5 — Phase R extension (opt-in GH lookup)
+    staged_recipes_pr_url      TEXT,
+    staged_recipes_pr_state    TEXT,
+    feedstock_request_issue    INTEGER,
+    cf_lookup_at               INTEGER,
+
+    -- Operator overrides (Q1 RESOLVED) — survives Phase S re-runs
+    notes                      TEXT,
+    notes_updated_at           INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_pypi_intel_activity   ON pypi_intelligence(activity_band);
+CREATE INDEX IF NOT EXISTS idx_pypi_intel_downloads  ON pypi_intelligence(downloads_30d);
+CREATE INDEX IF NOT EXISTS idx_pypi_intel_readiness  ON pypi_intelligence(conda_forge_readiness);
+CREATE INDEX IF NOT EXISTS idx_pypi_intel_in_bio     ON pypi_intelligence(in_bioconda);
+CREATE INDEX IF NOT EXISTS idx_pypi_intel_shape      ON pypi_intelligence(packaging_shape);
+
+-- Pre-joined view for the pypi-intelligence CLI / MCP tool. Surfaces
+-- enrichment columns alongside conda_name (NULL = pypi-only candidate).
+CREATE VIEW IF NOT EXISTS v_pypi_candidates AS
+SELECT
+    u.pypi_name,
+    u.last_serial,
+    u.fetched_at AS universe_fetched_at,
+    i.activity_band, i.serial_delta_7d, i.serial_delta_30d,
+    i.downloads_30d, i.downloads_90d,
+    i.in_bioconda, i.in_pytorch, i.in_nvidia, i.in_robostack,
+    i.in_homebrew, i.in_nixpkgs, i.in_spack, i.in_debian, i.in_fedora,
+    i.latest_version, i.latest_upload_at, i.latest_yanked,
+    i.requires_python, i.license_spdx, i.summary,
+    i.repo_url, i.has_wheel, i.has_sdist, i.packaging_shape,
+    i.conda_forge_readiness, i.recommended_template,
+    i.staged_recipes_pr_url, i.staged_recipes_pr_state,
+    i.notes,
+    p.conda_name        -- NULL = pypi-only candidate
+FROM pypi_universe u
+LEFT JOIN pypi_intelligence i ON i.pypi_name = u.pypi_name
+LEFT JOIN packages p ON p.pypi_name = u.pypi_name AND p.conda_name IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_relationship ON packages(relationship);
 CREATE INDEX IF NOT EXISTS idx_match_source ON packages(match_source);
 CREATE INDEX IF NOT EXISTS idx_pypi_name    ON packages(pypi_name);
@@ -605,6 +719,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
             conn.execute(
                 "ALTER TABLE packages ADD COLUMN pypi_version_serial_at_fetch INTEGER"
             )
+
+        # v21 → v22: PyPI intelligence side table + serial snapshots + view.
+        # All new tables / view are in SCHEMA_DDL guarded by IF NOT EXISTS,
+        # so no migration step is needed here. `executescript(SCHEMA_DDL)` at
+        # the end of init_schema creates them. The `packages` table itself
+        # is not modified — `pypi_intelligence` joins on `pypi_name`.
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -5177,6 +5297,178 @@ def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
     }
 
 
+def phase_o_serial_snapshots(conn: sqlite3.Connection) -> dict:
+    """Phase O: snapshot pypi_universe.last_serial daily; compute activity bands.
+
+    Cheap — no new HTTP. Inserts one snapshot row per pypi_universe row at
+    the current timestamp, prunes old snapshots, then computes
+    serial_delta_7d / serial_delta_30d / activity_band for every pypi_name
+    and upserts into `pypi_intelligence`.
+
+    Activity bands (configurable thresholds):
+      - hot      : serial_delta_7d  >= PHASE_O_HOT_THRESHOLD  (default 5)
+      - warm     : serial_delta_30d >= PHASE_O_WARM_THRESHOLD (default 5)
+      - cold     : serial_delta_30d >= 1
+      - dormant  : serial_delta_30d == 0
+
+    First-run behavior: with no prior snapshots, every row classifies as
+    'dormant' (delta = current - current = 0). Steady state emerges after
+    a few daily runs.
+
+    Tunables:
+      - PHASE_O_DISABLED               : "1" to skip
+      - PHASE_O_HOT_THRESHOLD          : default 5 events / 7 days
+      - PHASE_O_WARM_THRESHOLD         : default 5 events / 30 days
+      - PHASE_O_SNAPSHOT_RETAIN_DAYS   : default 90 days
+    """
+    t0 = time.monotonic()
+    print("  Phase O: pypi_universe serial-snapshot deltas + activity bands")
+
+    if os.environ.get("PHASE_O_DISABLED"):
+        elapsed = time.monotonic() - t0
+        return {
+            "skipped": True,
+            "reason": "PHASE_O_DISABLED=1 set; skipping Phase O.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    # Skip cleanly if pypi_universe is empty (cold start before Phase D ran)
+    universe_count = conn.execute(
+        "SELECT COUNT(*) FROM pypi_universe"
+    ).fetchone()[0]
+    if not universe_count:
+        elapsed = time.monotonic() - t0
+        print("  pypi_universe is empty; run Phase D first. Skipping Phase O.")
+        return {
+            "skipped": True,
+            "reason": "pypi_universe empty; run Phase D first.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    now = int(time.time())
+    hot_threshold = int(os.environ.get("PHASE_O_HOT_THRESHOLD", "5"))
+    warm_threshold = int(os.environ.get("PHASE_O_WARM_THRESHOLD", "5"))
+    retain_days = int(os.environ.get("PHASE_O_SNAPSHOT_RETAIN_DAYS", "90"))
+    retain_cutoff = now - retain_days * 86400
+    week_cutoff = now - 7 * 86400
+    month_cutoff = now - 30 * 86400
+
+    # 1. Insert current snapshot — one row per pypi_name. INSERT OR REPLACE
+    # is idempotent within the same second (re-running Phase O immediately
+    # is a no-op for that timestamp).
+    inserted = conn.execute(
+        "INSERT OR REPLACE INTO pypi_universe_serial_snapshots "
+        "(pypi_name, last_serial, snapshot_at) "
+        "SELECT pypi_name, last_serial, ? FROM pypi_universe "
+        "WHERE last_serial IS NOT NULL",
+        (now,),
+    ).rowcount
+
+    # 2. Retention prune
+    pruned = conn.execute(
+        "DELETE FROM pypi_universe_serial_snapshots WHERE snapshot_at < ?",
+        (retain_cutoff,),
+    ).rowcount
+
+    # 3. Compute deltas + activity_band via CTE join. For each pypi_name,
+    # find the most-recent snapshot at-or-before week_cutoff and month_cutoff.
+    # COALESCE to current serial when no historical row exists (delta = 0).
+    conn.executescript("DROP TABLE IF EXISTS _phase_o_tmp;")
+    conn.execute(
+        """
+        CREATE TEMP TABLE _phase_o_tmp AS
+        WITH week_snap AS (
+            SELECT s.pypi_name, s.last_serial AS week_serial
+            FROM pypi_universe_serial_snapshots s
+            WHERE s.snapshot_at = (
+                SELECT MAX(s2.snapshot_at)
+                FROM pypi_universe_serial_snapshots s2
+                WHERE s2.pypi_name = s.pypi_name AND s2.snapshot_at <= ?
+            )
+        ),
+        month_snap AS (
+            SELECT s.pypi_name, s.last_serial AS month_serial
+            FROM pypi_universe_serial_snapshots s
+            WHERE s.snapshot_at = (
+                SELECT MAX(s2.snapshot_at)
+                FROM pypi_universe_serial_snapshots s2
+                WHERE s2.pypi_name = s.pypi_name AND s2.snapshot_at <= ?
+            )
+        )
+        SELECT
+            u.pypi_name,
+            u.last_serial - COALESCE(w.week_serial,  u.last_serial) AS d7,
+            u.last_serial - COALESCE(m.month_serial, u.last_serial) AS d30
+        FROM pypi_universe u
+        LEFT JOIN week_snap  w ON w.pypi_name = u.pypi_name
+        LEFT JOIN month_snap m ON m.pypi_name = u.pypi_name
+        WHERE u.last_serial IS NOT NULL;
+        """,
+        (week_cutoff, month_cutoff),
+    )
+
+    # 4. Two-step upsert (matches Phase D's INSERT OR IGNORE + UPDATE pattern;
+    # cleaner than INSERT ... SELECT ... ON CONFLICT, and preserves any
+    # Phase P/Q/R/S columns already populated on existing rows).
+    conn.execute(
+        "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) "
+        "SELECT pypi_name FROM _phase_o_tmp"
+    )
+    upserted = conn.execute(
+        """
+        UPDATE pypi_intelligence AS i
+        SET
+            serial_delta_7d  = (SELECT t.d7  FROM _phase_o_tmp t WHERE t.pypi_name = i.pypi_name),
+            serial_delta_30d = (SELECT t.d30 FROM _phase_o_tmp t WHERE t.pypi_name = i.pypi_name),
+            activity_band = (
+                SELECT CASE
+                    WHEN t.d7  >= ? THEN 'hot'
+                    WHEN t.d30 >= ? THEN 'warm'
+                    WHEN t.d30 >= 1 THEN 'cold'
+                    ELSE 'dormant'
+                END FROM _phase_o_tmp t WHERE t.pypi_name = i.pypi_name
+            ),
+            serial_delta_calc_at = ?
+        WHERE i.pypi_name IN (SELECT pypi_name FROM _phase_o_tmp)
+        """,
+        (hot_threshold, warm_threshold, now),
+    ).rowcount
+
+    # 5. Band-count summary for logging
+    band_counts = dict(
+        conn.execute(
+            "SELECT activity_band, COUNT(*) FROM pypi_intelligence "
+            "WHERE serial_delta_calc_at = ? GROUP BY activity_band",
+            (now,),
+        )
+    )
+    conn.execute("DROP TABLE IF EXISTS _phase_o_tmp")
+    conn.commit()
+
+    elapsed = time.monotonic() - t0
+    print(
+        f"  Phase O done in {elapsed:.1f}s — snapshot rows: {inserted:,} "
+        f"(+pruned {pruned:,}); upserted {upserted:,} intelligence rows."
+    )
+    if band_counts:
+        breakdown = ", ".join(
+            f"{band}={band_counts.get(band, 0):,}"
+            for band in ("hot", "warm", "cold", "dormant")
+        )
+        print(f"    activity bands: {breakdown}")
+
+    return {
+        "snapshot_rows_inserted":   inserted,
+        "snapshot_rows_pruned":     pruned,
+        "intelligence_rows_upserted": upserted,
+        "activity_band_counts":     band_counts,
+        "hot_threshold":            hot_threshold,
+        "warm_threshold":           warm_threshold,
+        "retain_days":              retain_days,
+        "duration_seconds":         round(elapsed, 1),
+    }
+
+
 def write_meta(conn: sqlite3.Connection, build_stats: dict) -> None:
     """Write build provenance to meta table and JSON sidecar."""
     build_stats["schema_version"] = SCHEMA_VERSION
@@ -5206,6 +5498,7 @@ PHASES: list[tuple[str, Any]] = [
     ("C",   phase_c_parselmouth_join),
     ("C.5", phase_c5_source_url_match),
     ("D",   phase_d_pypi_enumeration),
+    ("O",   phase_o_serial_snapshots),
     ("E",   phase_e_enrichment),
     ("E.5", phase_e5_archived_feedstocks),
     ("F",   phase_f_downloads),
