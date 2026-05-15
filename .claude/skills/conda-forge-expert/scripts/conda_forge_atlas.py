@@ -68,6 +68,7 @@ try:
         resolve_rubygems_urls as _resolve_rubygems_urls,
         resolve_maven_urls as _resolve_maven_urls,
         resolve_nuget_urls as _resolve_nuget_urls,
+        resolve_anaconda_channel_urls as _resolve_anaconda_channel_urls,
         fetch_with_fallback as _fetch_with_fallback,
     )
     inject_ssl_truststore()
@@ -88,6 +89,7 @@ except ImportError:
     _resolve_rubygems_urls = None  # type: ignore[assignment]
     _resolve_maven_urls = None  # type: ignore[assignment]
     _resolve_nuget_urls = None  # type: ignore[assignment]
+    _resolve_anaconda_channel_urls = None  # type: ignore[assignment]
     _fetch_with_fallback = None  # type: ignore[assignment]
     _HTTP_AVAILABLE = False
 
@@ -5469,6 +5471,359 @@ def phase_o_serial_snapshots(conn: sqlite3.Connection) -> dict:
     }
 
 
+_PEP503_NORMALIZE_RE = re.compile(r"[-_.]+")
+
+
+def _pep503_canonical(name: str) -> str:
+    """Return the PEP 503 canonical form of a Python project name.
+
+    Lowercases and collapses any run of `_`, `-`, `.` into a single `-`.
+    Required for matching pypi_universe.pypi_name (which is canonical) to
+    package names from bioconda / pytorch / etc. repodata (which may not be).
+    """
+    return _PEP503_NORMALIZE_RE.sub("-", name.strip().lower())
+
+
+# Cross-channel sources for Phase Q. Each entry is a (channel_name, subdirs)
+# pair; Phase Q fetches `current_repodata.json` for each subdir and unions
+# the package-name set. `noarch` covers Python packages on every channel;
+# bioconda also publishes `linux-64` etc. but for "is this PyPI package
+# packaged on bioconda" the noarch subdir is sufficient (Python packages
+# in bioconda are mostly noarch).
+_PHASE_Q_CONDA_CHANNELS = {
+    "bioconda":   ("bioconda",            ["noarch"]),
+    "pytorch":    ("pytorch",             ["noarch"]),
+    "nvidia":     ("nvidia",              ["noarch"]),
+    "robostack":  ("robostack-staging",   ["noarch"]),
+}
+
+# Note: Phase Q's bulk-index ecosystems (homebrew, nixpkgs, spack, debian,
+# fedora) are documented in the spec as stretch goals; v8.1.0 first cut
+# implements only the four conda channels above. URL-pointer heuristic for
+# the OS/distro signals (count packages whose source URL points at PyPI)
+# is a v8.2.0 follow-up if operators ask. The columns exist in
+# `pypi_intelligence` so the data path is ready.
+
+
+def _phase_q_fetch_channel_pypi_names(
+    channel: str, subdirs: list[str], timeout: int = 60,
+) -> tuple[set[str], str | None]:
+    """Fetch one or more `current_repodata.json` documents for a non-conda-forge
+    channel and return the PEP 503-canonical pypi-style names found in the
+    `packages` / `packages.conda` keys.
+
+    Returns `(pypi_canonical_names_set, error_or_None)`. On any HTTP / parse
+    error, returns `(set(), error_str)` so the caller can log + skip the
+    channel without bringing down Phase Q.
+    """
+    names: set[str] = set()
+    last_err: str | None = None
+    if _resolve_anaconda_channel_urls is None:
+        return set(), "_http module unavailable"
+    for subdir in subdirs:
+        urls = _resolve_anaconda_channel_urls(channel, subdir, "current_repodata.json")
+        ok = False
+        for url in urls:
+            try:
+                req = _make_req(url)
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    raw = resp.read()
+            except (urllib.error.HTTPError, urllib.error.URLError, ConnectionError) as e:
+                last_err = f"{type(e).__name__}: {e}"
+                continue
+            try:
+                doc = json.loads(raw)
+            except (ValueError, json.JSONDecodeError) as e:
+                last_err = f"JSON parse: {e}"
+                continue
+            for bucket in ("packages", "packages.conda"):
+                pkgs = doc.get(bucket) or {}
+                if not isinstance(pkgs, dict):
+                    continue
+                for entry in pkgs.values():
+                    if not isinstance(entry, dict):
+                        continue
+                    pkg_name = entry.get("name")
+                    if isinstance(pkg_name, str) and pkg_name:
+                        names.add(_pep503_canonical(pkg_name))
+            ok = True
+            break
+        if not ok:
+            return set(), last_err
+    return names, None
+
+
+def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
+    """Phase P: bulk-load 30-day and 90-day PyPI download counts via BigQuery.
+
+    Source: `bigquery-public-data.pypi.file_downloads` — Google's official
+    PyPI analytics dataset. Single query covers all 806k pypi_universe
+    rows and aggregates to project-level (per the spec's Q2 resolution —
+    per-version granularity is deferred).
+
+    Auth: `GOOGLE_APPLICATION_CREDENTIALS` env var OR `gcloud auth
+    application-default` cached creds. Missing creds, missing
+    `google-cloud-bigquery` library, or BigQuery 4xx → log + skip
+    gracefully.
+
+    Cost: ~30 GB scanned per query; well within BigQuery free tier
+    (1 TB / month). Default cadence is monthly via `PHASE_P_TTL_DAYS=30`.
+
+    Tunables:
+      - PHASE_P_DISABLED       : "1" to skip
+      - PHASE_P_ENABLED        : must be "1" (opt-in) to run
+      - PHASE_P_BQ_PROJECT     : GCP project override
+      - PHASE_P_TTL_DAYS       : default 30
+    """
+    t0 = time.monotonic()
+    print("  Phase P: PyPI download counts via BigQuery")
+
+    if os.environ.get("PHASE_P_DISABLED"):
+        elapsed = time.monotonic() - t0
+        return {
+            "skipped": True,
+            "reason": "PHASE_P_DISABLED=1 set; skipping Phase P.",
+            "duration_seconds": round(elapsed, 1),
+        }
+    if not os.environ.get("PHASE_P_ENABLED"):
+        elapsed = time.monotonic() - t0
+        print("  Phase P is opt-in; set PHASE_P_ENABLED=1 to run "
+              "(needs google-cloud-bigquery + GOOGLE_APPLICATION_CREDENTIALS).")
+        return {
+            "skipped": True,
+            "reason": "PHASE_P_ENABLED not set; opt-in.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    # Lazy import — google-cloud-bigquery is a heavy dep (~30 MB) and
+    # most operators won't run Phase P, so we don't add it to local-recipes.
+    # Operators wanting Phase P run: `pixi add google-cloud-bigquery`.
+    try:
+        from google.cloud import bigquery  # type: ignore[import-untyped]
+    except ImportError:
+        elapsed = time.monotonic() - t0
+        print("  google-cloud-bigquery not installed; install via "
+              "`pixi add google-cloud-bigquery` to enable Phase P. Skipping.")
+        return {
+            "skipped": True,
+            "reason": "google-cloud-bigquery library not importable.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    bq_project = os.environ.get("PHASE_P_BQ_PROJECT") or None
+    try:
+        client = bigquery.Client(project=bq_project)
+    except Exception as e:
+        elapsed = time.monotonic() - t0
+        print(f"  BigQuery client init failed ({type(e).__name__}: {e}); "
+              f"check GOOGLE_APPLICATION_CREDENTIALS or run "
+              f"`gcloud auth application-default login`. Skipping Phase P.")
+        return {
+            "skipped": True,
+            "reason": f"BigQuery client init failed: {e}",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    # Project-level aggregation; one row per pypi_name canonicalized
+    # via the same PEP 503 transform we use for cross-channel matching.
+    query = """
+        SELECT
+            REGEXP_REPLACE(LOWER(file.project), r'[-_.]+', '-') AS pypi_name,
+            SUM(IF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(),
+                                              INTERVAL 30 DAY), 1, 0))
+                AS downloads_30d,
+            SUM(IF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(),
+                                              INTERVAL 90 DAY), 1, 0))
+                AS downloads_90d
+        FROM `bigquery-public-data.pypi.file_downloads`
+        WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY)
+        GROUP BY pypi_name
+    """
+    print(f"  running query against bigquery-public-data.pypi.file_downloads"
+          f"{f' (project={bq_project})' if bq_project else ''}...")
+    try:
+        rows = list(client.query(query).result())
+    except Exception as e:
+        elapsed = time.monotonic() - t0
+        print(f"  BigQuery query failed ({type(e).__name__}: {e}); skipping.")
+        return {
+            "skipped": True,
+            "reason": f"BigQuery query failed: {e}",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    now = int(time.time())
+    upserted = 0
+    # Two-step upsert: INSERT OR IGNORE to ensure rows exist, then UPDATE.
+    # Bulk INSERT/UPDATE inside one transaction for speed.
+    conn.execute("BEGIN")
+    try:
+        for r in rows:
+            pypi_name = r.get("pypi_name") if hasattr(r, "get") else r["pypi_name"]
+            if not pypi_name:
+                continue
+            d30 = r.get("downloads_30d", 0) if hasattr(r, "get") else r["downloads_30d"]
+            d90 = r.get("downloads_90d", 0) if hasattr(r, "get") else r["downloads_90d"]
+            conn.execute(
+                "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
+                (pypi_name,),
+            )
+            conn.execute(
+                "UPDATE pypi_intelligence SET "
+                "downloads_30d = ?, downloads_90d = ?, "
+                "downloads_fetched_at = ?, downloads_source = ? "
+                "WHERE pypi_name = ?",
+                (int(d30 or 0), int(d90 or 0), now, "bigquery-public", pypi_name),
+            )
+            upserted += 1
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+
+    elapsed = time.monotonic() - t0
+    print(f"  Phase P done in {elapsed:.1f}s — upserted {upserted:,} rows "
+          f"(downloads_30d + downloads_90d).")
+    return {
+        "rows_upserted": upserted,
+        "source": "bigquery-public",
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def phase_q_cross_channel(conn: sqlite3.Connection) -> dict:
+    """Phase Q: populate `pypi_intelligence.in_<channel>` BOOLs from bulk
+    fetches of non-conda-forge channels.
+
+    Conda channels (always-on when Phase Q runs): bioconda, pytorch, nvidia,
+    robostack-staging — each contributes a `current_repodata.json` fetch
+    against `repo.prefix.dev/<channel>/noarch/` (with `<CHANNEL>_BASE_URL`
+    env override for JFrog mirroring). Package names are PEP 503-canonicalized
+    before matching `pypi_universe.pypi_name`.
+
+    Bulk-index ecosystems (default-off, per-ecosystem opt-in via
+    PHASE_Q_<ECOSYSTEM>=1): homebrew, nixpkgs, spack, debian, fedora —
+    URL-pointer heuristic only (count formulas/derivations whose source URL
+    points at PyPI). Stretch goals; not implemented in v8.1.0 first cut.
+
+    Tunables:
+      - PHASE_Q_DISABLED          : "1" to skip
+      - PHASE_Q_TTL_DAYS          : default 7
+      - <CHANNEL>_BASE_URL        : per-channel JFrog mirror env (uppercase)
+    """
+    t0 = time.monotonic()
+    print("  Phase Q: cross-channel presence (bioconda/pytorch/nvidia/robostack)")
+
+    if os.environ.get("PHASE_Q_DISABLED"):
+        elapsed = time.monotonic() - t0
+        return {
+            "skipped": True,
+            "reason": "PHASE_Q_DISABLED=1 set; skipping Phase Q.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    universe_count = conn.execute(
+        "SELECT COUNT(*) FROM pypi_universe"
+    ).fetchone()[0]
+    if not universe_count:
+        elapsed = time.monotonic() - t0
+        print("  pypi_universe is empty; run Phase D first. Skipping Phase Q.")
+        return {
+            "skipped": True,
+            "reason": "pypi_universe empty; run Phase D first.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    # Pre-load the canonical pypi_universe name set for fast intersection.
+    universe_names = {
+        _pep503_canonical(r[0])
+        for r in conn.execute(
+            "SELECT pypi_name FROM pypi_universe WHERE pypi_name IS NOT NULL"
+        )
+    }
+
+    now = int(time.time())
+    per_channel_stats: dict[str, dict] = {}
+    total_matches = 0
+    failures: list[str] = []
+
+    for col_short, (channel_name, subdirs) in _PHASE_Q_CONDA_CHANNELS.items():
+        col = f"in_{col_short}"
+        ch_t0 = time.monotonic()
+        names, err = _phase_q_fetch_channel_pypi_names(channel_name, subdirs)
+        if err is not None:
+            print(f"    {col_short}: fetch failed — {err}; column not updated")
+            failures.append(f"{col_short}={err}")
+            per_channel_stats[col_short] = {
+                "skipped": True, "error": err, "matches": 0,
+            }
+            continue
+        # Intersect with pypi_universe
+        matched = names & universe_names
+        # Also reset the column to 0 for rows NOT in matched (so a package
+        # that was on bioconda but isn't anymore correctly flips to 0).
+        # Two-step upsert pattern.
+        conn.execute("BEGIN")
+        try:
+            # Ensure pypi_intelligence rows exist for every matched name
+            if matched:
+                # Chunk the bulk INSERT to avoid SQLite's 999 var limit
+                matched_list = list(matched)
+                CHUNK = 900
+                for i in range(0, len(matched_list), CHUNK):
+                    chunk = matched_list[i:i + CHUNK]
+                    ph = ",".join(["(?)"] * len(chunk))
+                    conn.execute(
+                        f"INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES {ph}",
+                        chunk,
+                    )
+                # Set column = 1 for matched
+                for i in range(0, len(matched_list), CHUNK):
+                    chunk = matched_list[i:i + CHUNK]
+                    ph = ",".join(["?"] * len(chunk))
+                    conn.execute(
+                        f"UPDATE pypi_intelligence SET {col} = 1, "
+                        f"cross_channel_at = ? WHERE pypi_name IN ({ph})",
+                        (now, *chunk),
+                    )
+            # Set column = 0 for any prior-matched name not in this batch.
+            # We DON'T flip non-matched-and-never-matched rows from NULL → 0;
+            # only flip rows that previously had this column = 1.
+            conn.execute(
+                f"UPDATE pypi_intelligence SET {col} = 0, cross_channel_at = ? "
+                f"WHERE {col} = 1 AND pypi_name NOT IN ("
+                f"  SELECT pypi_name FROM pypi_intelligence WHERE {col} = 1 "
+                f"  AND cross_channel_at = ?)",
+                (now, now),
+            )
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
+        elapsed_ch = time.monotonic() - ch_t0
+        per_channel_stats[col_short] = {
+            "channel": channel_name,
+            "names_in_channel": len(names),
+            "matches_in_universe": len(matched),
+            "duration_seconds": round(elapsed_ch, 1),
+        }
+        total_matches += len(matched)
+        print(f"    {col_short:<10} ({channel_name}): {len(names):,} names; "
+              f"{len(matched):,} matched in universe ({elapsed_ch:.1f}s)")
+
+    elapsed = time.monotonic() - t0
+    print(f"  Phase Q done in {elapsed:.1f}s — "
+          f"total matches across channels: {total_matches:,}")
+    return {
+        "channels_processed": len(_PHASE_Q_CONDA_CHANNELS) - len(failures),
+        "channels_failed":    len(failures),
+        "failures":           failures,
+        "total_matches":      total_matches,
+        "per_channel":        per_channel_stats,
+        "duration_seconds":   round(elapsed, 1),
+    }
+
+
 def write_meta(conn: sqlite3.Connection, build_stats: dict) -> None:
     """Write build provenance to meta table and JSON sidecar."""
     build_stats["schema_version"] = SCHEMA_VERSION
@@ -5499,6 +5854,8 @@ PHASES: list[tuple[str, Any]] = [
     ("C.5", phase_c5_source_url_match),
     ("D",   phase_d_pypi_enumeration),
     ("O",   phase_o_serial_snapshots),
+    ("P",   phase_p_pypi_downloads),
+    ("Q",   phase_q_cross_channel),
     ("E",   phase_e_enrichment),
     ("E.5", phase_e5_archived_feedstocks),
     ("F",   phase_f_downloads),
