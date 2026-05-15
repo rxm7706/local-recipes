@@ -2,6 +2,104 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.1.0** (May 15, 2026) — PyPI intelligence layer. 5 new phases (O/P/Q/R/S) + new `pypi-intelligence` CLI + MCP tool + persona-profile integration. **MINOR bump** — fully additive: no schema deletions, no existing-CLI changes, no breaking FR/NFR. Driven by `docs/specs/atlas-pypi-intelligence.md` via `bmad-quick-dev`. Architecture lock (per spec frontmatter): `pypi_universe` stays reference-data-only (3 cols forever); all enrichment in a new `pypi_intelligence` side table joined on `pypi_name`.
+
+### Schema v22 — additive only
+
+Three new objects, all `IF NOT EXISTS`-guarded so v21 atlases upgrade on next `init_schema` without operator action:
+
+- **`pypi_intelligence`** — 35-column side table (Tier 1: activity_band + serial deltas; Tier 2: downloads_30d/90d + cross-channel `in_*` BOOLs; Tier 3: license/requires_python/classifiers/repo_url/wheel coverage/packaging_shape; Tier 4: conda_forge_readiness + recommended_template; Tier 5: staged_recipes_pr_url + operator `notes`). PK = pypi_name. Indexed on activity_band, downloads_30d, conda_forge_readiness, in_bioconda, packaging_shape.
+- **`pypi_universe_serial_snapshots`** — `(pypi_name, last_serial, snapshot_at)` PK. Powers Phase O's delta-based activity classification. Retention 90 d default (`PHASE_O_SNAPSHOT_RETAIN_DAYS`).
+- **`v_pypi_candidates`** view — pre-joins universe + intelligence + packages LEFT-OUTER for the new CLI's read path. Surfaces conda_name (NULL = pypi-only candidate).
+
+### Phase O — activity band classification (no HTTP)
+
+Runs immediately after Phase D. Writes a daily snapshot of `pypi_universe.last_serial`, prunes retention-aged rows, then computes per-name `serial_delta_7d` / `serial_delta_30d` via temp-table CTE and classifies into `hot` / `warm` / `cold` / `dormant`. First-run = all-dormant (no historical data). Two-step upsert preserves Phase P/Q/R/S columns on existing intelligence rows.
+
+Tunables: `PHASE_O_DISABLED`, `PHASE_O_HOT_THRESHOLD=5`, `PHASE_O_WARM_THRESHOLD=5`, `PHASE_O_SNAPSHOT_RETAIN_DAYS=90`.
+
+### Phase P — BigQuery PyPI downloads (opt-in, admin profile)
+
+Lazy-imports `google.cloud.bigquery` (not in local-recipes env by default; operators add via `pixi add google-cloud-bigquery`). Three-layer gate: PHASE_P_DISABLED > PHASE_P_ENABLED required > library importable + BQ client init. Single project-level aggregation query against `bigquery-public-data.pypi.file_downloads` for the last 90 days (~30 GB scanned; well within 1 TB/month free tier). Default cadence monthly via `PHASE_P_TTL_DAYS=30`. Per-version granularity deferred to v8.2.0 (per spec Q2 resolution — per-version would 200× the scan cost and blow the BQ free tier).
+
+### Phase Q — Cross-channel presence (default-on)
+
+Bulk-fetches `current_repodata.json` from bioconda / pytorch / nvidia / robostack-staging via the new `resolve_anaconda_channel_urls` resolver in `_http.py` (with `<CHANNEL>_BASE_URL` JFrog mirror env support). PEP 503-canonical name matching on both sides via the new `_pep503_canonical` helper. Per-channel error isolation — one channel's 5xx doesn't stop the others. Flips `in_<channel> = 1` on matches and back to 0 on drop-off. Bulk-index ecosystems (homebrew/nixpkgs/spack/debian/fedora) have columns in `pypi_intelligence` but implementations are stretch goals deferred to v8.2.0.
+
+Tunables: `PHASE_Q_DISABLED`, `PHASE_Q_TTL_DAYS=7`, `<CHANNEL>_BASE_URL` per-channel mirror env.
+
+### Phase R — Per-project JSON enrichment (opt-in, admin profile)
+
+Bounded by `PHASE_R_CANDIDATE_LIMIT=5000`. Candidate slice SQL: pypi-only rows ordered by `last_serial DESC`, excluding TTL-fresh (`json_fetched_at < now - PHASE_R_TTL_DAYS×86400`). Worker pattern reuses `_phase_h_fetch_one`'s shape (3-attempt retry + Retry-After + ±25% jitter; default concurrency 3). Per fetched row parses license / requires_python / project_urls / classifiers / wheel coverage and stores raw classifier list + wheel platforms + python tags as JSON. Computes `packaging_shape` via deterministic classifier: pure-python / rust-pyo3 (maturin or `Programming Language :: Rust` classifier) / cython (Cython in requires_dist) / c-extension (cp3X ABI tags in wheel filenames) / unknown. License normalization via `_normalize_license_to_spdx` covering MIT, Apache, BSD-{2,3}-Clause, ISC, GPL/LGPL/AGPL/MPL variants, Unlicense, CC0, Zlib, PSF.
+
+Cold-cost at concurrency=3: ~28 min for the top-5k slice. Warm-daily TTL gate keeps re-fetches small.
+
+### Phase S — Computed scores (default-on, pure SQL)
+
+Reads upstream Tier 1+3 columns and writes Tier 4 (`conda_forge_readiness` 0-100 composite + `recommended_template` full path). 6-component weighted formula:
+
+- license_ok × 25 (license_spdx in OSI-approved set)
+- requires_python_ok × 20 (>=3.10 explicit OR NULL = unspecified)
+- has_repo × 15 (repo_url populated)
+- recent_release × 15 (latest_upload_at within 2 years)
+- has_sdist × 10
+- packaging_shape_ok × 15 (pure-python/rust-pyo3/cython=full; c-extension=half=7; else 0)
+
+`recommended_template` maps packaging_shape → `templates/python/{recipe.yaml | maturin-recipe.yaml | compiled-recipe.yaml}` (full paths so consumers can directly invoke conda-forge-expert with the template, per spec Q3 resolution).
+
+### New `pypi-intelligence` CLI + MCP tool
+
+Reads `v_pypi_candidates` with rich filter composition: `--not-in-conda-forge`, `--activity hot|warm|cold|dormant`, `--license-ok`, `--noarch-python-candidate`, `--min-downloads N`, `--score-min N`, `--in-{bioconda,pytorch,nvidia,robostack,...}`, `--sort-by score|downloads|serial|name`, `--limit N`, `--json`. Default surfaces top-25 pypi-only candidates by `conda_forge_readiness DESC` — the flagship admin "what should I package next?" query.
+
+`pypi_intelligence` MCP tool exposes the same filter surface. Pixi task `pypi-intelligence` wired in `pixi.toml`; canonical impl + thin wrapper + meta-test SCRIPTS entry per the three-place rule.
+
+### Persona profile integration
+
+| Profile | Phase O | Phase P | Phase Q | Phase R | Phase S |
+|---|---|---|---|---|---|
+| `maintainer` | ✓ | — | ✓ | — | ✓ (no-op without R data) |
+| `admin` | ✓ | ✓ (BQ creds-gated) | ✓ | ✓ | ✓ |
+| `consumer` | ✓ | ✗ | ✗ | ✗ | ✓ (no-op without R data) |
+
+### MIGRATION_NOTES (v21 → v22)
+
+Existing v21 atlases auto-migrate on next `init_schema`:
+
+- New tables `pypi_intelligence`, `pypi_universe_serial_snapshots` created via `CREATE TABLE IF NOT EXISTS`
+- New view `v_pypi_candidates` created via `CREATE VIEW IF NOT EXISTS`
+- `packages` table is NOT modified
+- `pypi_universe` table is NOT modified (stays 3 cols by design)
+
+No operator action; no behavior change for existing CLIs. The new `pypi-intelligence` CLI is the only new operator surface.
+
+### Test totals
+
+51 new unit tests across 5 new test modules (test_phase_o_snapshots.py = 10, test_phase_p_bigquery.py = 4, test_phase_q_cross_channel.py = 12, test_phase_r_enrichment.py = 18, test_phase_s_scores.py = 13, test_pypi_intelligence_cli.py = 10) + meta-test `SCRIPTS` list updated with `pypi_intelligence.py`. Skill suite: **1,064 passing** (was 1,039 post-v8.0.2; +25 new across Wave C+D after Wave A+B's +10+16 = +26 went in earlier commits = +51 total v8.1.0 = ✓). No regressions.
+
+### Open questions resolution (all pre-locked before BMAD intake)
+
+All 8 spec open questions resolved 2026-05-14:
+
+1. `notes` column for hand-curated overrides → **yes**, added to schema.
+2. BigQuery granularity → **project-level**, per-version deferred to v8.2.0.
+3. `recommended_template` → **full path** (e.g., `templates/python/recipe.yaml`).
+4. Non-PyPI ecosystem heuristic → **URL-pointer** (files.pythonhosted.org / pypi.org); columns exist but stretch implementations deferred to v8.2.0.
+5. `staged_recipes_pr_url` source → **fallback chain** (local fork default; `PHASE_R_GH_LOOKUP=1` opt-in for GitHub Search).
+6. Snapshot retention → **90 days** default, env-tunable.
+7. Readiness formula → **raw weights** (percentile rank deferred to v8.2.0).
+8. PRD bump → **MINOR** (v1.2.0 → v1.3.0) — additive, no breaking FR/NFR.
+
+### Out of scope (deferred)
+
+- Bulk-index ecosystems (homebrew/nixpkgs/spack/debian/fedora) — columns exist; implementations stretch to v8.2.0.
+- Per-version BigQuery granularity — would blow free tier; v8.2.0 if operator demand surfaces.
+- `bus_factor_proxy` + `dependency_blast_radius` — columns exist but populated NULL in v8.1.0 (needs deps.dev / repo-contributor data).
+- Auto-recipe-generation from `recommended_template` — column is a suggestion only.
+- BigQuery service-account provisioning automation — operator BYO via `GOOGLE_APPLICATION_CREDENTIALS`.
+- `conda_forge_readiness_percentile` — raw-weight only in v8.1.0; percentile derived column is v8.2.0.
+
+---
+
 **v8.0.2** (May 14, 2026) — First live `bootstrap-data --profile maintainer` run end-to-end surfaced two follow-up bugs in v8.0.1's profile plumbing. Step 4 (cf-atlas build) completed correctly — Phase H stamped 19,386 rows in ~12.6 min, Phase N fetched 722 feedstocks for `rxm7706`, atlas reached steady state (Phase H eligibility dropped 19,442 → 4). Step 6 (Phase N redundant re-invocation) crashed at `PHASE_H_SOURCE='auto' is not one of pypi-json, cf-graph`.
 
 ### Root causes

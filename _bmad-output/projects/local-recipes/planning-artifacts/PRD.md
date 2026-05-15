@@ -2,11 +2,11 @@
 doc_type: prd
 project_name: local-recipes
 date: 2026-05-12
-version: '1.2.0'
+version: '1.3.0'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
-source_pin: 'conda-forge-expert v8.0.0'
+source_pin: 'conda-forge-expert v8.1.0'
 re_validated: 2026-05-13
 input_docs:
   - planning-artifacts/index.md
@@ -16,6 +16,7 @@ input_docs:
 edit_history:
   - { date: '2026-05-13', via: 'bmad-edit-prd', delta: 'v7.8.1 → v7.9.0 sync after actionable-scope audit (docs/specs/atlas-pypi-universe-split.md): schema v19 → v20, +pypi_universe side table, +pypi-only-candidates CLI/MCP, +Phase D split. PATCH bump (no FR/NFR scope shift; count-and-pin sync).' }
   - { date: '2026-05-13', via: 'bmad-correct-course', delta: 'v7.9.0 → v8.0.0 sync after structural-enforcement + persona-profile bundle (docs/specs/conda-forge-expert-v8.0.md): schema v20 → v21, +v_actionable_packages view, +Phase H serial-aware eligible-rows gate (pypi_version_serial_at_fetch column), +bootstrap-data --profile {maintainer,admin,consumer} with gh-user / phase-L-sources auto-detection, +tests/meta/test_actionable_scope.py, 5 catalog rows 📋 → ✅. Wave C (drop vuln_total) DEFERRED — 4 consumers found, retro-atlas-pypi-universe-split-2026-05-13.md corrected. MINOR bump (no FR/NFR scope shift; new persona-aware UX surface counts as feature-level addition, no breaking PRD-level change — backward-compatible CLI flag).' }
+  - { date: '2026-05-15', via: 'bmad-correct-course', delta: 'v8.0.x → v8.1.0 sync after PyPI intelligence layer (docs/specs/atlas-pypi-intelligence.md): schema v21 → v22, +pypi_intelligence side table (35 cols across 5 tiers + operator notes), +pypi_universe_serial_snapshots history, +v_pypi_candidates view, +5 new phases (O/P/Q/R/S), +pypi-intelligence CLI + MCP tool + profile integration. pypi_universe stays reference-data-only (3 cols, locked). Phase P (BigQuery) lazy-imports google-cloud-bigquery for admin-tier opt-in. Phase R bounded to top-N candidate slice (default 5000). All 8 spec open questions pre-resolved before BMAD intake. 51 new tests, 1,064 total. MINOR bump (additive — no FR/NFR scope shift; no existing CLI changes; new pypi-intelligence CLI and MCP tool are opt-in surfaces). Retro: implementation-artifacts/retro-atlas-pypi-intelligence-2026-05-15.md.' }
 ---
 
 # Product Requirements Document: `local-recipes` Rebuild

@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v8.0.0'
+source_pin: 'conda-forge-expert v8.1.0'
 total_epics: 13
 total_stories: 193
 waves: 5
@@ -17,6 +17,7 @@ sync_lineage:
   - { date: '2026-05-12', via: 'bmad-correct-course', from: 'v7.7', to: 'v7.8.1', proposal: 'sprint-change-proposal-2026-05-12.md', note: 'Atlas hardening pass (v7.8.0 + v7.8.1 close-out)' }
   - { date: '2026-05-13', via: 'bmad-correct-course', from: 'v7.8.1', to: 'v7.9.0', proposal: 'sprint-change-proposal-2026-05-13.md', spec: 'docs/specs/atlas-pypi-universe-split.md', retro: 'implementation-artifacts/retro-atlas-pypi-universe-split-2026-05-13.md', note: 'Actionable-scope audit: Phase H/J/M denominator fix + schema v20 + pypi_universe side table + Phase D split + pypi-only-candidates CLI/MCP. No epic scope change; recorded as a between-epic audit.' }
   - { date: '2026-05-13', via: 'bmad-correct-course', from: 'v7.9.0', to: 'v8.0.0', proposal: 'sprint-change-proposal-2026-05-13-v8.0.md', spec: 'docs/specs/conda-forge-expert-v8.0.md', retro: 'implementation-artifacts/retro-conda-forge-expert-v8.0-2026-05-13.md', note: 'Structural enforcement + persona profiles: schema v21 v_actionable_packages view + Phase H serial-aware eligible-rows gate + bootstrap-data --profile {maintainer,admin,consumer} with gh-user / phase-L-sources auto-detection + tests/meta/test_actionable_scope.py + 5 catalog rows 📋 → ✅. Wave C (drop vuln_total) DEFERRED — 4 consumers found post-spec; column kept. MAJOR bump (advisory-print soft launch — no invocations break). No epic scope change; recorded as a between-epic audit.' }
+  - { date: '2026-05-15', via: 'bmad-correct-course', from: 'v8.0.x', to: 'v8.1.0', proposal: 'sprint-change-proposal-2026-05-15-v8.1.md', spec: 'docs/specs/atlas-pypi-intelligence.md', retro: 'implementation-artifacts/retro-atlas-pypi-intelligence-2026-05-15.md', note: 'PyPI intelligence layer: schema v21 → v22, +pypi_intelligence side table (35 cols across 5 tiers + operator notes), +pypi_universe_serial_snapshots history, +v_pypi_candidates view, +5 new phases (O/P/Q/R/S), +pypi-intelligence CLI + MCP tool + profile integration. pypi_universe stays reference-data-only (3 cols, locked). 51 new tests, 1,064 total. MINOR bump (additive — no FR/NFR scope shift). No epic scope change; recorded as a between-epic audit.' }
 ---
 
 # Epics & Stories: `local-recipes` Rebuild
