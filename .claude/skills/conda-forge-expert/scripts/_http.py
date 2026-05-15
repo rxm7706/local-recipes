@@ -684,6 +684,35 @@ def resolve_codeberg_api_urls(path_suffix: str = "") -> list[str]:
     return [f"{b}/{path_suffix.lstrip('/')}" for b in base_list]
 
 
+def resolve_anaconda_channel_urls(
+    channel: str,
+    subdir: str = "noarch",
+    filename: str = "current_repodata.json",
+) -> list[str]:
+    """Ordered chain for a non-conda-forge anaconda.org channel.
+
+    Used by Phase Q (cross-channel presence) for bioconda / pytorch /
+    nvidia / robostack-staging / etc. Returns one or more URLs pointing
+    at `<channel>/<subdir>/<filename>`.
+
+    Priority:
+      1. <CHANNEL>_BASE_URL env var (uppercase + s/-/_/g; e.g.
+         BIOCONDA_BASE_URL, PYTORCH_BASE_URL,
+         ROBOSTACK_STAGING_BASE_URL)
+      2. https://repo.prefix.dev/<channel>     (public CDN mirror)
+      3. https://conda.anaconda.org/<channel>  (last resort)
+
+    JFrog auth headers attach automatically via `make_request` when the
+    resolved host matches an env-var-configured mirror.
+    """
+    env_key = f"{channel.upper().replace('-', '_')}_BASE_URL"
+    bases: list[str | None] = [os.environ.get(env_key)]
+    bases.append(f"https://repo.prefix.dev/{channel}")
+    bases.append(f"https://conda.anaconda.org/{channel}")
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{subdir}/{filename}" for b in base_list]
+
+
 def resolve_s3_parquet_urls(month: str) -> list[str]:
     """Ordered chain for `anaconda-package-data` S3 monthly parquet files.
 
