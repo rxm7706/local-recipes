@@ -2,7 +2,7 @@
 doc_type: development-guide
 project_name: local-recipes
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.9.0'
+source_pin: 'conda-forge-expert v8.1.0'
 ---
 
 # Development Guide

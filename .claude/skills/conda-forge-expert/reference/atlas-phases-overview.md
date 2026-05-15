@@ -41,6 +41,11 @@ changes a phase.
 | **C** | Parselmouth join | `conda_forge_metadata.autotick_bot.pypi_to_conda` (parselmouth bot, ~12k entries) | rebuild | always | Verified PyPI↔conda name mapping |
 | **C.5** | source.url match | folded into Phase E | — | — | URL → conda-package reverse lookup |
 | **D** | PyPI universe | `pypi.org/simple/` (Simple v1 JSON, ~40 MB / ~800k projects) | rebuild | always (universe upsert skipped under `--profile consumer`) | "On PyPI but not on conda-forge" candidate list |
+| **O** | PyPI activity snapshots | Phase D's `pypi_universe.last_serial` (no new HTTP; snapshot table is local) | retain `PHASE_O_SNAPSHOT_RETAIN_DAYS=90` | always (v8.1.0+) | `pypi_intelligence.activity_band` (hot/warm/cold/dormant) + `serial_delta_{7d,30d}` |
+| **P** | PyPI downloads | BigQuery `bigquery-public-data.pypi.file_downloads` (project-level aggregate, last 90 d) | `PHASE_P_TTL_DAYS=30` | opt-in admin-tier (`PHASE_P_ENABLED=1`; needs `google-cloud-bigquery` + `GOOGLE_APPLICATION_CREDENTIALS`) | `pypi_intelligence.downloads_30d` + `downloads_90d` — the demand-side signal for `pypi-intelligence` ranking |
+| **Q** | Cross-channel presence | `current_repodata.json` for bioconda / pytorch / nvidia / robostack-staging via `<CHANNEL>_BASE_URL` | `PHASE_Q_TTL_DAYS=7` | default-on under maintainer+admin profiles | `pypi_intelligence.in_<channel>` BOOLs — "this PyPI project is packaged on bioconda but not conda-forge" migration queries |
+| **R** | Per-project enrichment | `pypi.org/pypi/<name>/json` for top-N (default 5000) candidate slice | `PHASE_R_TTL_DAYS=7` | opt-in admin-tier (`PHASE_R_ENABLED=1`) | `pypi_intelligence.{latest_version, license_spdx, requires_python, classifiers, repo_url, packaging_shape, has_wheel/sdist, wheel_platforms, python_tags}` |
+| **S** | Computed scores | pure SQL over `pypi_intelligence` Tier 1-3 columns | per-run | always when Phase R has data | `pypi_intelligence.conda_forge_readiness` (0-100 composite) + `recommended_template` (full `templates/python/<x>.yaml` path) |
 | **E** | cf-graph enrichment | `github.com/regro/cf-graph-countyfair` (master tarball, ~150 MB) | `ATLAS_CFGRAPH_TTL_DAYS` (default 1 d) | enabled by every v8.0.0 profile; otherwise opt-in (`PHASE_E_ENABLED=1`) | Recipe-format, maintainer junction, repo/dev/homepage URLs, extra-registry name columns |
 | **E.5** | Archived feedstocks | `gh api graphql` (conda-forge org, `isArchived:true`) | per-run | always | Abandonment detection |
 | **F** | Download counts | `api.anaconda.org/package/conda-forge/<name>` OR `anaconda-package-data.s3.amazonaws.com/conda/monthly/<YYYY>/<YYYY-MM>.parquet` | `PHASE_F_TTL_DAYS=7` | always (auto-source; pinned to `s3-parquet` under `--profile consumer`) | Usage signal — leaderboards, bus-factor, adoption-stage, "archived but used" |
@@ -177,8 +182,174 @@ For cron cadence, TTL reset, and recovery playbooks, see
   - `pypi-only-candidates --limit N --min-serial M` — admin candidate
     list of unmatched PyPI projects, ordered by serial DESC (newest /
     most-active first). Reads `pypi_universe LEFT JOIN packages`.
-  - `pypi_last_serial` change-detection feeds the `📋 open` Phase H full
-    backfill heuristic ("only re-fetch rows whose serial moved").
+  - `pypi_last_serial` change-detection feeds Phase H's serial-aware
+    eligible-rows gate (shipped v8.0.0, schema v21).
+
+## Phase O — PyPI activity snapshots (v8.1.0+)
+
+- **Data source.** None — Phase O reads `pypi_universe.last_serial`
+  (populated by Phase D's daily-lean path) and writes one snapshot
+  row per pypi_name into `pypi_universe_serial_snapshots`. Zero new
+  HTTP. Schema v22.
+- **Purpose.** Materialize a per-pypi-name activity classification
+  (`hot` / `warm` / `cold` / `dormant`) based on rolling serial deltas
+  over 7-day and 30-day windows. Powers the `--activity` filter on the
+  new `pypi-intelligence` CLI and the candidate-slice prioritization
+  for Phase R (rising-activity rows get re-fetched within TTL).
+- **What gets written.**
+  - `pypi_universe_serial_snapshots(pypi_name, last_serial, snapshot_at)`
+    — one row per `(pypi_name, snapshot_at)` PK. Retention default 90 d
+    (`PHASE_O_SNAPSHOT_RETAIN_DAYS`).
+  - `pypi_intelligence.{activity_band, serial_delta_7d, serial_delta_30d,
+    serial_delta_calc_at}` — upserted via INSERT OR IGNORE + UPDATE-FROM-JOIN.
+- **Implementation note.** Initial v8.1.0 implementation used a
+  CTE-with-correlated-subqueries pattern that triggered a 806k × 806k
+  catastrophic plan on the live atlas (11+ min and counting). L1
+  verification 2026-05-15 caught the issue; the fix (commit
+  `124c5a449d`) replaces the correlated subqueries with a single-pass
+  GROUP BY aggregation + UPDATE-FROM-JOIN. Now **5.2 s** for first-run
+  Phase O against 806k snapshot rows.
+- **Tunables.** `PHASE_O_DISABLED`, `PHASE_O_HOT_THRESHOLD=5` (events / 7 d),
+  `PHASE_O_WARM_THRESHOLD=5` (events / 30 d), `PHASE_O_SNAPSHOT_RETAIN_DAYS=90`.
+- **Profile defaults (v8.1.0+).** All three profiles run Phase O (cheap;
+  no new HTTP). Consumer runs O only (skips P/Q/R/S).
+- **Actionable intelligence.**
+  - `pypi-intelligence --activity hot --limit 50` — surfaces actively-
+    moving PyPI projects (>= `PHASE_O_HOT_THRESHOLD` events in 7 days).
+  - First-run behavior: every row classifies as `dormant` because there
+    are no historical snapshots yet to compute deltas against. Steady
+    state emerges after the second daily run.
+
+## Phase P — BigQuery PyPI downloads (v8.1.0+, opt-in)
+
+- **Data source.** `bigquery-public-data.pypi.file_downloads` — Google's
+  official PyPI analytics dataset. Single project-level aggregation
+  query over the last 90 days (~30 GB scanned per run; well within
+  BigQuery free tier's 1 TB/month).
+- **Purpose.** Populate the only adoption signal `pypi_intelligence`
+  has access to. Without Phase P, the `conda_forge_readiness` ranking
+  is structural-only (license, requires_python, packaging_shape) and
+  surfaces high-readiness-but-zero-demand candidates. Phase P adds the
+  demand-side filter (`pypi-intelligence --min-downloads N`).
+- **What gets written.** `pypi_intelligence.{downloads_30d, downloads_90d,
+  downloads_fetched_at, downloads_source='bigquery-public'}`.
+- **Auth.** Lazy-imports `google.cloud.bigquery` (not in `local-recipes`
+  env by default — operators run `pixi add google-cloud-bigquery`).
+  Reads `GOOGLE_APPLICATION_CREDENTIALS` or `gcloud auth application-default`
+  cached creds. Missing library or creds → printed install hint +
+  clean skip with structured result dict; never raises.
+- **Tunables.** `PHASE_P_DISABLED`, `PHASE_P_ENABLED` (must = "1" to run;
+  opt-in admin-tier), `PHASE_P_BQ_PROJECT` (GCP project override),
+  `PHASE_P_TTL_DAYS=30`.
+- **Profile defaults (v8.1.0+).** Admin only (`PHASE_P_ENABLED=1`).
+  Maintainer + consumer skip (BigQuery costs + heavy dep).
+- **Per-version granularity is out of scope** for v8.1.0 — would 200×
+  the scan cost and blow the BQ free tier. Project-level only.
+
+## Phase Q — Cross-channel presence (v8.1.0+)
+
+- **Data source.** `current_repodata.json` for four non-conda-forge
+  anaconda.org channels: `bioconda`, `pytorch`, `nvidia`,
+  `robostack-staging`. Each channel's noarch repodata is fetched via
+  the new `resolve_anaconda_channel_urls` resolver in `_http.py`, with
+  `<CHANNEL>_BASE_URL` env priority (uppercase + `-`→`_` normalization)
+  for JFrog mirroring → `repo.prefix.dev/<channel>` fallback →
+  `conda.anaconda.org/<channel>` last resort.
+- **Purpose.** Surface "this PyPI project is already packaged on
+  bioconda but not conda-forge" migration candidates. PEP 503
+  canonicalization on both sides via `_pep503_canonical` ensures
+  `tree_sitter` (PyPI form) matches `tree-sitter` (bioconda form).
+- **What gets written.** `pypi_intelligence.{in_bioconda, in_pytorch,
+  in_nvidia, in_robostack, cross_channel_at}` — BOOL flips on match,
+  flips back to 0 if a previously-matched name drops off.
+- **Per-channel error isolation.** One channel's HTTP 5xx doesn't
+  stop the others; per-channel stats logged in the return dict.
+- **Tunables.** `PHASE_Q_DISABLED`, `PHASE_Q_TTL_DAYS=7`, per-channel
+  `<CHANNEL>_BASE_URL` for JFrog mirroring.
+- **Profile defaults (v8.1.0+).** Maintainer + admin run; consumer
+  skips (network-bound).
+- **Bulk-index ecosystems** (homebrew, nixpkgs, spack, debian, fedora) —
+  the `pypi_intelligence.in_<ecosystem>` columns exist in schema v22
+  but the per-ecosystem fetch implementations are stretch goals
+  deferred to v8.2.0. URL-pointer heuristic (count formulas whose
+  source URL points at PyPI) will be the implementation pattern.
+
+## Phase R — Per-project JSON enrichment (v8.1.0+, opt-in)
+
+- **Data source.** `pypi.org/pypi/<name>/json` per row, bounded to the
+  top-N (default 5000) pypi-only candidate slice by `last_serial DESC`.
+  Reuses Phase H's worker shape: 3-attempt retry + Retry-After
+  honored on 429/503 + ±25% jitter on backoff. Default concurrency = 3
+  to stay under pypi.org's documented ~30 req/s per-IP ceiling.
+- **Purpose.** Fetch the metadata needed for the `conda_forge_readiness`
+  score — license, requires_python, classifiers, project URLs, wheel
+  coverage, sdist availability, packaging-shape signals.
+- **Candidate slice SQL.** `pypi-only rows ORDER BY last_serial DESC,
+  excluding TTL-fresh json_fetched_at, LIMIT PHASE_R_CANDIDATE_LIMIT`.
+  Activity-band-flagged rows (`activity_band='hot'`) can also enter
+  the slice past the TTL gate; this rotation lets surging projects
+  re-enrich faster than the default 7-day TTL.
+- **What gets written.** `pypi_intelligence.{latest_version,
+  latest_upload_at, latest_yanked, requires_python, license_raw,
+  license_spdx (normalized), summary, home_page, repo_url, docs_url,
+  issues_url, classifiers (JSON array), has_wheel, has_sdist,
+  wheel_platforms (JSON list), python_tags (JSON list), packaging_shape,
+  json_fetched_at, json_last_error}`.
+- **`_classify_packaging_shape` deterministic rules** (priority order):
+  rust-pyo3 (maturin / pyo3 / `Programming Language :: Rust` classifier)
+  → cython (`Cython` in requires_dist) → pure-python (all wheels are
+  `*-none-any.whl`) → c-extension (any `cp3X-cp3X` ABI in wheel
+  filename) → unknown. Fortran + multi-output classifications are
+  v8.2.0 stretch goals (need upstream-repo introspection).
+- **`_normalize_license_to_spdx`.** Covers ~30 OSI-approved canonical
+  forms (MIT / Apache-2.0 / BSD-{2,3}-Clause / ISC / GPL/LGPL/AGPL/MPL
+  variants / Unlicense / CC0 / Zlib / PSF). Live-DB coverage rate
+  measured at ~52% on the top-5k slice; v8.2.0 may expand the map or
+  wire in a proper SPDX expression parser.
+- **Tunables.** `PHASE_R_DISABLED`, `PHASE_R_ENABLED` (opt-in admin-tier),
+  `PHASE_R_CANDIDATE_LIMIT=5000`, `PHASE_R_TTL_DAYS=7`,
+  `PHASE_R_CONCURRENCY=3`, `PHASE_R_GH_LOOKUP` (opt-in; adds
+  staged-recipes PR-state lookup).
+- **Profile defaults (v8.1.0+).** Admin only. Maintainer + consumer skip.
+- **Live-DB performance.** Spec estimated ~28 min for the top-5k cold
+  pass. **Actual: 171.8 s (~2.9 min) at concurrency=3** because
+  pypi.org/json payloads are small + CDN-cached. 9× faster than estimate.
+
+## Phase S — Computed scores (v8.1.0+)
+
+- **Data source.** Pure SQL UPDATE over `pypi_intelligence` Tier 1-3
+  columns. No HTTP, no external state.
+- **Purpose.** Composite 0-100 `conda_forge_readiness` score that
+  ranks pypi-only candidates by how packageable they are, plus a
+  `recommended_template` (full path) suggestion for direct conda-
+  forge-expert invocation.
+- **Readiness formula (6-component weighted sum, max 100):**
+  - `license_ok × 25` — `license_spdx IN <OSI-approved-subset>`
+  - `requires_python_ok × 20` — `>=3.10` explicit OR NULL (unspecified
+    = assumed OK; conda-forge floor is 3.10)
+  - `has_repo × 15` — `repo_url` populated
+  - `recent_release × 15` — `latest_upload_at` within 2 years
+  - `has_sdist × 10`
+  - `packaging_shape_ok × 15` — pure-python/rust-pyo3/cython = full;
+    c-extension = half (7); fortran/multi-output/unknown = 0
+- **`recommended_template` mapping.** pure-python →
+  `templates/python/recipe.yaml`; rust-pyo3 →
+  `templates/python/maturin-recipe.yaml`; cython / c-extension →
+  `templates/python/compiled-recipe.yaml`; else NULL (manual).
+- **Skips rows without Phase R data** (`json_fetched_at IS NULL`) —
+  score would be meaningless without enrichment.
+- **Tunable.** `PHASE_S_DISABLED`.
+- **Profile defaults (v8.1.0+).** Always runs when Phase R has data;
+  graceful no-op when it doesn't.
+- **Live-DB performance.** 0.3 s for 5,000-row score update.
+- **Actionable intelligence.**
+  - `pypi-intelligence --not-in-conda-forge --score-min 70 --limit 25`
+    — flagship admin "what should I package next?" query.
+  - `pypi-intelligence --score-min 90 --in-bioconda` — high-readiness
+    candidates already on bioconda (migration opportunities).
+  - `bus_factor_proxy` + `dependency_blast_radius` columns exist but
+    populate NULL in v8.1.0 (v8.2.0 stretch — needs deps.dev /
+    repo-contributor data).
 
 ## Phase E — cf-graph enrichment
 
