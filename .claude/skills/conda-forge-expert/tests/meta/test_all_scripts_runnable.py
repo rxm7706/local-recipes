@@ -38,6 +38,7 @@ SCRIPTS = [
     "recipe_editor.py",
     "recipe-generator.py",
     "pypi_only_candidates.py",
+    "pypi_intelligence.py",
     "recipe_optimizer.py",
     "recipe_updater.py",
     "release_cadence.py",

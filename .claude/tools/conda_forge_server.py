@@ -886,6 +886,7 @@ ATLAS_FIND_ALTERNATIVE     = SCRIPTS_DIR / "find_alternative.py"
 ATLAS_ADOPTION_STAGE       = SCRIPTS_DIR / "adoption_stage.py"
 ATLAS_DETAIL_CF_ATLAS      = SCRIPTS_DIR / "detail_cf_atlas.py"
 ATLAS_PYPI_ONLY_CANDIDATES = SCRIPTS_DIR / "pypi_only_candidates.py"
+ATLAS_PYPI_INTELLIGENCE = SCRIPTS_DIR / "pypi_intelligence.py"
 ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
 
 
@@ -1082,6 +1083,72 @@ def pypi_only_candidates(limit: int = 100, min_serial: int = 0) -> str:
     `atlas-phase D` first."""
     args = ["--json", "--limit", str(limit), "--min-serial", str(min_serial)]
     return json.dumps(_run_script(ATLAS_PYPI_ONLY_CANDIDATES, args), indent=2)
+
+
+@mcp.tool()
+def pypi_intelligence(
+    not_in_conda_forge: bool = True,
+    activity: str | None = None,
+    license_ok: bool = False,
+    noarch_python_candidate: bool = False,
+    min_downloads: int | None = None,
+    score_min: int | None = None,
+    in_bioconda: bool = False,
+    in_pytorch: bool = False,
+    in_nvidia: bool = False,
+    in_robostack: bool = False,
+    sort_by: str = "score",
+    limit: int = 25,
+) -> str:
+    """Surface PyPI candidates with rich enrichment filters from the
+    `pypi_intelligence` side table (schema v22+).
+
+    Combines 5 tiers of enrichment from Phases O / P / Q / R / S:
+      • activity_band + serial_delta_* (Phase O)
+      • downloads_30d + downloads_90d (Phase P — BigQuery)
+      • in_<channel> BOOLs (Phase Q — cross-channel)
+      • license_spdx / requires_python / repo_url / packaging_shape
+        (Phase R — per-project JSON)
+      • conda_forge_readiness (0-100) + recommended_template (Phase S)
+
+    Default behavior: surfaces the top-25 pypi-only candidates ordered
+    by conda_forge_readiness DESC — the "what should I package next?"
+    admin/maintainer-persona query.
+
+    Filters compose with AND:
+      - `not_in_conda_forge` (default True) — only pypi-only rows
+      - `activity` ∈ {hot, warm, cold, dormant} (Phase O classification)
+      - `license_ok` — OSI-approved SPDX license_spdx only
+      - `noarch_python_candidate` — pure-python + requires_python >=3.10
+      - `min_downloads` — downloads_30d >= N (Phase P)
+      - `score_min` — conda_forge_readiness >= N
+      - `in_<channel>` — only rows present on that channel (Phase Q)
+
+    Sort keys: score (default; conda_forge_readiness DESC), downloads
+    (downloads_30d DESC), serial (last_serial DESC), name (alpha).
+    """
+    args = ["--json", "--limit", str(limit), "--sort-by", sort_by]
+    if not_in_conda_forge:
+        args.append("--not-in-conda-forge")
+    if activity:
+        args.extend(["--activity", activity])
+    if license_ok:
+        args.append("--license-ok")
+    if noarch_python_candidate:
+        args.append("--noarch-python-candidate")
+    if min_downloads is not None:
+        args.extend(["--min-downloads", str(min_downloads)])
+    if score_min is not None:
+        args.extend(["--score-min", str(score_min)])
+    if in_bioconda:
+        args.append("--in-bioconda")
+    if in_pytorch:
+        args.append("--in-pytorch")
+    if in_nvidia:
+        args.append("--in-nvidia")
+    if in_robostack:
+        args.append("--in-robostack")
+    return json.dumps(_run_script(ATLAS_PYPI_INTELLIGENCE, args), indent=2)
 
 
 @mcp.tool()

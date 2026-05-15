@@ -6255,6 +6255,129 @@ def phase_r_pypi_json_enrich(conn: sqlite3.Connection) -> dict:
     }
 
 
+# Phase S — packaging-shape → recipe-template mapping. Full paths so
+# consumers can directly invoke conda-forge-expert with the template.
+# (Q3 RESOLVED: store full path, not just template name.)
+_PACKAGING_SHAPE_TO_TEMPLATE: dict[str, str | None] = {
+    "pure-python":   "templates/python/recipe.yaml",
+    "rust-pyo3":     "templates/python/maturin-recipe.yaml",
+    "cython":        "templates/python/compiled-recipe.yaml",
+    "c-extension":   "templates/python/compiled-recipe.yaml",
+    "fortran":       None,           # manual — no template
+    "multi-output":  None,           # manual — no template
+    "unknown":       None,
+}
+
+
+def phase_s_computed_scores(conn: sqlite3.Connection) -> dict:
+    """Phase S: compute conda_forge_readiness + recommended_template.
+
+    Pure SQL UPDATE chain — no HTTP. Reads upstream columns (Tier 3 from
+    Phase R + Tier 1 from Phase O) and writes Tier 4 scores in one pass.
+
+    `conda_forge_readiness` is a 0-100 composite (per spec § Design):
+      - license_ok (license_spdx is OSI-approved)           × 25
+      - requires_python_ok (>=3.10 OR unspecified)          × 20
+      - has_repo (repo_url populated)                       × 15
+      - recent_release (latest_upload_at within 2 years)    × 15
+      - has_sdist                                           × 10
+      - packaging_shape_ok                                  × 15
+            (pure-python/rust-pyo3/cython=full;
+             c-extension=half; fortran/multi-output/unknown=0)
+
+    `recommended_template` is mapped from `packaging_shape` via the
+    _PACKAGING_SHAPE_TO_TEMPLATE dict. Full path for direct invocation.
+
+    bus_factor_proxy + dependency_blast_radius are placeholders in
+    v8.1.0 (set to NULL) — populated by future specs that wire in
+    deps.dev / repo-contributor data.
+
+    Tunable:
+      - PHASE_S_DISABLED : "1" to skip
+    """
+    t0 = time.monotonic()
+    print("  Phase S: computed scores (conda_forge_readiness + recommended_template)")
+
+    if os.environ.get("PHASE_S_DISABLED"):
+        elapsed = time.monotonic() - t0
+        return {
+            "skipped": True,
+            "reason": "PHASE_S_DISABLED=1 set; skipping Phase S.",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    now = int(time.time())
+    two_years_ago = now - 2 * 365 * 86400
+
+    # OSI-approved SPDX set inlined as SQL CASE (~25 values). Keep in sync
+    # with _OSI_APPROVED_SPDX above.
+    osi_set_sql = "(" + ",".join(f"'{lic}'" for lic in sorted(_OSI_APPROVED_SPDX)) + ")"
+
+    # Single UPDATE — all components computed inline. Skip rows with no
+    # Phase R enrichment (json_fetched_at IS NULL) since their score
+    # would be meaningless.
+    updated = conn.execute(
+        f"""
+        UPDATE pypi_intelligence
+        SET
+            conda_forge_readiness = (
+                CASE WHEN license_spdx IN {osi_set_sql} THEN 25 ELSE 0 END
+              + CASE
+                    WHEN requires_python IS NULL THEN 20
+                    WHEN requires_python LIKE '%>=3.1%' OR requires_python LIKE '%>=3.2%' THEN 20
+                    WHEN requires_python LIKE '%>=3.9%' THEN 10
+                    ELSE 0
+                END
+              + CASE WHEN repo_url IS NOT NULL THEN 15 ELSE 0 END
+              + CASE WHEN latest_upload_at IS NOT NULL AND latest_upload_at >= {two_years_ago} THEN 15 ELSE 0 END
+              + CASE WHEN has_sdist = 1 THEN 10 ELSE 0 END
+              + CASE
+                    WHEN packaging_shape IN ('pure-python','rust-pyo3','cython') THEN 15
+                    WHEN packaging_shape = 'c-extension' THEN 7
+                    ELSE 0
+                END
+            ),
+            recommended_template = CASE packaging_shape
+                WHEN 'pure-python'  THEN 'templates/python/recipe.yaml'
+                WHEN 'rust-pyo3'    THEN 'templates/python/maturin-recipe.yaml'
+                WHEN 'cython'       THEN 'templates/python/compiled-recipe.yaml'
+                WHEN 'c-extension'  THEN 'templates/python/compiled-recipe.yaml'
+                ELSE NULL
+            END,
+            score_calc_at = {now}
+        WHERE json_fetched_at IS NOT NULL
+        """,
+    ).rowcount
+    conn.commit()
+
+    # Summary stats
+    band_stats = dict(conn.execute(
+        "SELECT CASE "
+        "  WHEN conda_forge_readiness IS NULL THEN 'unscored' "
+        "  WHEN conda_forge_readiness >= 80 THEN 'high' "
+        "  WHEN conda_forge_readiness >= 50 THEN 'medium' "
+        "  WHEN conda_forge_readiness >= 30 THEN 'low' "
+        "  ELSE 'very-low' END AS band, COUNT(*) "
+        "FROM pypi_intelligence GROUP BY band"
+    ))
+
+    elapsed = time.monotonic() - t0
+    print(f"  Phase S done in {elapsed:.1f}s — scored {updated:,} rows")
+    if band_stats:
+        breakdown = ", ".join(
+            f"{b}={band_stats.get(b, 0):,}"
+            for b in ("high", "medium", "low", "very-low", "unscored")
+            if band_stats.get(b)
+        )
+        if breakdown:
+            print(f"    readiness bands: {breakdown}")
+    return {
+        "rows_scored": updated,
+        "readiness_bands": band_stats,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
 def write_meta(conn: sqlite3.Connection, build_stats: dict) -> None:
     """Write build provenance to meta table and JSON sidecar."""
     build_stats["schema_version"] = SCHEMA_VERSION
@@ -6288,6 +6411,7 @@ PHASES: list[tuple[str, Any]] = [
     ("P",   phase_p_pypi_downloads),
     ("Q",   phase_q_cross_channel),
     ("R",   phase_r_pypi_json_enrich),
+    ("S",   phase_s_computed_scores),
     ("E",   phase_e_enrichment),
     ("E.5", phase_e5_archived_feedstocks),
     ("F",   phase_f_downloads),
