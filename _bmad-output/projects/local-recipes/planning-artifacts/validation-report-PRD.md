@@ -4,13 +4,16 @@ project_name: local-recipes
 date: 2026-05-12
 prd_under_review: planning-artifacts/PRD.md
 validator: bmad-validate-prd (Path 3 hybrid)
-overall_verdict: APPROVED (re-validated 2026-05-12 post v7.8.1 sync)
+overall_verdict: APPROVED (re-validated 2026-05-15 post v8.1.0 sync)
 status: final
-source_pin: 'conda-forge-expert v7.9.0'
+source_pin: 'conda-forge-expert v8.1.0'
 verdict_history:
   - { date: '2026-05-12 (initial)', verdict: 'REVISE', notes: 'Material issues across D3 / D5 / D6 / D7 / D9 / D10 on the v7.7-pinned draft PRD.' }
   - { date: '2026-05-12 (post tentative-decisions)', verdict: 'APPROVED', notes: 'PRD updated with tentative_decisions_applied; REVISE-rated dimensions addressed; status moved draft → approved.' }
   - { date: '2026-05-12 (re-validated post v7.8.1 sync)', verdict: 'APPROVED', notes: 'Re-validation after bmad-correct-course propagated v7.8.x deltas to architecture-cf-atlas.md / deployment-guide.md / architecture-conda-forge-expert.md / architecture.md. PRD body itself unchanged; only source_pin moved v7.7 → v7.8.1. No new REVISE findings.' }
+  - { date: '2026-05-13 (re-validated post v7.9.0 sync)', verdict: 'APPROVED', notes: 'v7.9.0 actionable-scope audit (schema v20 + pypi_universe side table + pypi-only-candidates CLI/MCP + Phase D split). PRD MINOR-bumped 1.1.0 → 1.1.1 → 1.2.0 across the v7.9.0/v8.0.0 syncs. Feature counts updated. No new REVISE findings.' }
+  - { date: '2026-05-13 (re-validated post v8.0.0 sync)', verdict: 'APPROVED', notes: 'v8.0.0 structural-enforcement + persona-profile bundle (schema v21 + v_actionable_packages view + Phase H serial-aware eligible-rows gate + bootstrap-data --profile flag with auto-detection). PRD MINOR-bumped 1.1.1 → 1.2.0. v8.0.0 is the first MAJOR skill bump but PRD scope unchanged (additive UX). No new REVISE findings.' }
+  - { date: '2026-05-15 (re-validated post v8.1.0 sync)', verdict: 'APPROVED', notes: 'v8.1.0 PyPI intelligence layer (schema v22 + pypi_intelligence side table + 5 new phases O/P/Q/R/S + new pypi-intelligence CLI + new MCP tool + persona-profile integration). PRD MINOR-bumped 1.2.0 → 1.3.0 (fully additive — no FR/NFR scope shift; new CLI + MCP tool are opt-in surfaces; existing CLIs unchanged). All 8 spec open questions pre-resolved before BMAD intake; L1 + L2 live-DB verification complete (Phase O perf-fix shipped as 124c5a449d; Phase R 9× faster than estimate; score distribution well-discriminated across 5k enriched candidates). No new REVISE findings.' }
 ---
 
 # PRD Validation Report

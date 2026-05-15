@@ -75,7 +75,7 @@
       "part_id": "mcp-server",
       "display_name": "FastMCP server",
       "project_type_id": "backend",
-      "description": "FastMCP server exposing 36 MCP tools across recipe-authoring, atlas-intelligence, and project-scanning surfaces. Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
+      "description": "FastMCP server exposing 37 MCP tools across recipe-authoring, atlas-intelligence, and project-scanning surfaces (v8.1.0 added `pypi_intelligence` wrapping the new ranked-candidate-list CLI). Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
       "root_paths": [
         ".claude/tools/conda_forge_server.py",
         ".claude/tools/gemini_server.py",

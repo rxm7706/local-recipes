@@ -4,12 +4,14 @@ part_id: mcp-server
 display_name: FastMCP server
 project_type_id: backend
 date: 2026-05-12
-source_pin: 'conda-forge-expert v7.9.0'
+source_pin: 'conda-forge-expert v8.1.0'
 ---
 
 # Architecture: MCP Server (Part 3)
 
-The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 36 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
+The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 37 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
+
+**v8.1.0 surface deltas:** added `pypi_intelligence` MCP tool (atlas-intelligence surface; wraps the new `pypi-intelligence` CLI) bringing the total to 37. New tool exposes the v8.1.0 PyPI intelligence layer's rich filter chain (`--score-min`, `--activity`, `--license-ok`, `--noarch-python-candidate`, `--min-downloads`, per-channel `--in-*`, `--sort-by score|downloads|serial|name`) directly to MCP callers.
 
 Without Part 3, every BMAD agent would have to invoke pixi tasks directly (slow, bash-shaped, lossy round-tripping through stdout JSON). With Part 3, BMAD agents and Claude Code call `mcp__conda_forge_server__<tool>` natively with structured arguments and typed responses.
 

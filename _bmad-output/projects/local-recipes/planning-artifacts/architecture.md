@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v7.9.0'
+source_pin: 'conda-forge-expert v8.1.0'
 consolidates:
   - architecture-conda-forge-expert.md
   - architecture-cf-atlas.md
@@ -49,8 +49,8 @@ This document is the **executive architecture** for the rebuild. It consolidates
                                                       ▼
                                      ┌──────────────────────────────────────┐
                                      │  Part 2: cf_atlas data pipeline      │
-                                     │  - 17 phases (B → N) in PHASES       │
-                                     │  - SQLite schema v19 (11 tables)     │
+                                     │  - 22 phases (B → N + O/P/Q/R/S)     │
+                                     │  - SQLite schema v22 (13 tables/views)│
                                      │  - TTL gates on F, G, H, K           │
                                      │  - phase_state checkpoint (B, D, N)  │
                                      │  - S3-parquet + cf-graph offline     │
@@ -128,7 +128,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
 
 **Components**:
 - **Orchestrator**: `conda_forge_atlas.py` (~4,300 lines) with the PHASES registry
-- **Phases**: 17 ordered functions (B, B.5, B.6, C, C.5, D, E, E.5, F, G, G', H, J, K, L, M, N)
+- **Phases**: 22 ordered functions (B, B.5, B.6, C, C.5, D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N) — v8.1.0 added O/P/Q/R/S for the PyPI intelligence layer
 - **Schema**: 11 tables, version 19, idempotent additive migrations
 - **TTL gates**: 4 phases (F, G, H, K) with `*_fetched_at` timestamps
 - **Checkpointing**: 3 phases (B, D, N) with `phase_state` cursor
