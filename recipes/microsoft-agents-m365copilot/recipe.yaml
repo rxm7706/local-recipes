@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  version: "1.6.0"
+
+package:
+  name: microsoft-agents-m365copilot
+  version: ${{ version }}
+
+source:
+  # Primary: PyPI sdist (does NOT ship LICENSE — see secondary source).
+  - url: https://pypi.org/packages/source/m/microsoft-agents-m365copilot/microsoft_agents_m365copilot-${{ version }}.tar.gz
+    sha256: cc3ccc74d937c52c2690806004248d2adbe20b05ce2c7b0d0149318e0645bf6a
+  # Secondary: pull the LICENSE from upstream Git. No GitHub tag exists for
+  # the Python v1.6.0 release (the repo only tags JS releases as
+  # `@microsoft/agents-m365copilot-v*`), so we pin to a specific commit on
+  # main. Bump together with the version on every update.
+  - url: https://raw.githubusercontent.com/microsoft/Agents-M365Copilot/0376aa418345d7f719b7b75d6e784fa7a765d9d0/LICENSE
+    sha256: c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383
+    file_name: LICENSE
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - microsoft-agents-m365copilot-core >=1.0.0
+    - microsoft-kiota-authentication-azure >=1.8.0,<2.0.0
+    - microsoft-kiota-bundle >=1.8.0,<2.0.0
+    - httpx >=0.23.0
+
+tests:
+  - python:
+      imports:
+        - microsoft_agents_m365copilot
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: Microsoft Agents M365 Copilot Python SDK
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/Agents-M365Copilot/tree/main/python
+  repository: https://github.com/microsoft/Agents-M365Copilot
+  documentation: https://github.com/microsoft/Agents-M365Copilot/tree/main/python/packages/microsoft_agents_m365copilot
+
+extra:
+  recipe-maintainers:
+    - rxm7706
