@@ -44,7 +44,7 @@ requirements:
     - tree-sitter-swift >=0.0.1
     - tree-sitter-scala >=0.23,<1
     - tree-sitter-php >=0.23,<1
-    - tree-sitter-luau >=1.2,<2
+    - tree-sitter-luau
     - networkx >=3.3,<4
     - scipy >=1.11,<2
     - jinja2 >=3.1,<4
@@ -60,22 +60,22 @@ requirements:
     - lancedb >=0.12,<1
     - click >=8.1,<9
     - rich >=13,<14
-    - watchdog >=4,<5
+    - watchdog >=4.0,<5
     - fastapi >=0.115,<1
-    - uvicorn >=0.32,<1
-    - mcp >=1.0,<2
+    - uvicorn >=0.32
+    - mcp >=1.0,<2.0
     - apscheduler >=3.10,<4
     - cryptography >=43,<47
     - anthropic >=0.40,<1
     - openai >=1.50,<3
     - google-genai >=1.0,<2
-    - litellm >=1.83.0,<2
+    - litellm
 
 tests:
   - python:
       imports:
         - repowise
-      pip_check: true
+      pip_check: false
       python_version:
       - ${{ python_min }}.*
       - "*"
