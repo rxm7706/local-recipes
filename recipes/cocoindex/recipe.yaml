@@ -2,19 +2,18 @@
 schema_version: 1
 
 context:
-  name: cocoindex
-  version: "1.0.3"
+  version: "1.0.5"
 
 package:
-  name: ${{ name }}
+  name: cocoindex
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-    sha256: 1b242c348b501ec8b9836a626a1779a7f6185f479818dac73f7d9dd769d9b192
+  url: https://pypi.org/packages/source/c/cocoindex/cocoindex-${{ version }}.tar.gz
+  sha256: f46434482584f16ab977af8274943b75a9ad58c29b54f5f36ab7f90a61559fdd
 
 build:
-  number: 1
+  number: 0
   script:
     - if: unix
       then: |
@@ -38,18 +37,18 @@ requirements:
         - python
         - cross-python_${{ target_platform }}
         - crossenv
-        - maturin >=1.10,<2.0
+        - maturin >=1.10.0,<2.0
   host:
     - python
     - pip
-    - maturin >=1.10,<2.0
+    - maturin >=1.10.0,<2.0
   run:
     - python
     - typing_extensions >=4.12
     - click >=8.1.8
     - rich >=14.0.0
     - python-dotenv >=1.1.0
-    - watchfiles >=1.1.0
+    - watchdog >=6.0.0
     - numpy >=1.23.2
     - psutil >=7.2.1
     - msgspec >=0.19.0
