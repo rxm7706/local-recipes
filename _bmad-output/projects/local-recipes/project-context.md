@@ -8,7 +8,7 @@ status: 'complete'
 rule_count: 63
 optimized_for_llm: true
 sync_sources: ['CLAUDE.md', '.claude/skills/conda-forge-expert/SKILL.md', '.claude/skills/conda-forge-expert/reference/', '.claude/skills/conda-forge-expert/guides/', '.claude/skills/conda-forge-expert/quickref/', '.claude/skills/conda-forge-expert/CHANGELOG.md', 'docs/enterprise-deployment.md']
-last_synced_skill_version: 'conda-forge-expert v8.1.0'
+last_synced_skill_version: 'conda-forge-expert v8.3.0'
 maintenance_model: 'hand-edited rulebook; per-section (Sync: ...) tags name the upstream source. Re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns) on each CHANGELOG MINOR bump'
 ---
 

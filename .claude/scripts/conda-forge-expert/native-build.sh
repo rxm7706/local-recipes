@@ -15,6 +15,11 @@
 #
 # The recipe argument can be a recipe.yaml file or its containing directory.
 # Auto-detects the host platform from `uname -ms`.
+#
+# Also auto-injects build_artifacts/<config>/ as a file:// channel if it already
+# contains any locally built artifacts (repodata.json), so a recipe that depends
+# on another recipe built earlier in the same session can resolve it in the test
+# env without manual --channel plumbing.
 
 set -euo pipefail
 
@@ -58,5 +63,21 @@ fi
 
 CMD+=(--output-dir "${REPO_ROOT}/build_artifacts/${CONFIG}")
 
+# Auto-inject any locally built artifacts as an extra channel so cross-recipe
+# `run:` deps in the same session (e.g. recipe B depends on recipe A built
+# moments ago) resolve in the test env. Detected by the presence of a
+# repodata.json under build_artifacts/<config>/<subdir>/. We can't simply pass
+# `--channel file://…` because the variant config already sets channel_sources
+# and rattler-build rejects mixing the two — so we write a tmp variant config
+# that overrides channel_sources with the local channel prepended to conda-forge.
+LOCAL_CHANNEL_ROOT="${REPO_ROOT}/build_artifacts/${CONFIG}"
+if compgen -G "${LOCAL_CHANNEL_ROOT}/*/repodata.json" > /dev/null 2>&1; then
+  LOCAL_VARIANT="$(mktemp -t local-channel-variant.XXXXXX.yaml)"
+  trap 'rm -f "${LOCAL_VARIANT}"' EXIT
+  printf 'channel_sources:\n  - file://%s,conda-forge\n' "${LOCAL_CHANNEL_ROOT}" > "${LOCAL_VARIANT}"
+  CMD+=(--variant-config "${LOCAL_VARIANT}")
+  echo "→ auto-injected local channel: file://${LOCAL_CHANNEL_ROOT}" >&2
+fi
+
 echo "→ ${CMD[*]}"
-exec "${CMD[@]}"
+"${CMD[@]}"

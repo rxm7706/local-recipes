@@ -2,6 +2,55 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.3.0** (May 17, 2026) — Three new recipe-authoring gotchas. **MINOR bump** — additive only; no behavior changes; no version-pin movement. Driven by the Microsoft Agents 4-recipe staged-recipes bundle (`azure-identity-broker` + `microsoft-kiota-bundle` + `microsoft-agents-m365copilot{-core,}`) and the `yo` + `generator-code` npm bundle from the same session. Companion BMAD retro: [`retro-npm-and-microsoft-bundles-2026-05-17.md`](../../../_bmad-output/projects/local-recipes/implementation-artifacts/retro-npm-and-microsoft-bundles-2026-05-17.md).
+
+### G7 — Grayskull's inferred Python import name can be wrong
+
+Grayskull defaults `tests[].python.imports:` to the PyPI distribution name with hyphens converted to underscores. This is right in the common case (`numpy` → `numpy`) but wrong whenever upstream namespaces differently: re-exported short names (`microsoft-kiota-bundle` → `kiota_bundle`), dotted namespace packages (`azure-identity-broker` → `azure.identity.broker`), or renamed-on-PyPI packages (`PyYAML` → `yaml`, `beautifulsoup4` → `bs4`). The only authoritative source is the sdist's top-level `__init__.py`. Verify with `tar tzf <sdist> | grep '__init__.py$' | head -3`. Case: `microsoft-kiota-bundle` v1.10.1 generated `imports: [microsoft_kiota_bundle]`, actual is `kiota_bundle` — matches the convention of every other already-shipped `microsoft-kiota-*` feedstock.
+
+### G8 — Grayskull adds redundant `wheel` + `setuptools` host deps for poetry-core projects
+
+Belt-and-suspenders behavior. For any PEP 517 project with a single declared backend (`poetry-core`, `hatchling`, `flit-core`, `pdm-backend`, `scikit-build-core`), only that backend + `pip` is needed in `host:`. Inspect the sdist's `pyproject.toml` `[build-system].requires` and drop everything not listed. Case: `microsoft-agents-m365copilot-core` and `microsoft-agents-m365copilot` both got the redundant pair despite declaring only `poetry-core`; the third sibling `microsoft-kiota-bundle` was emitted clean. Grayskull's behavior is non-deterministic — always inspect.
+
+### G9 — Monorepo upstreams may have no per-language Git tag — pin the LICENSE to a commit hash
+
+G4 (sdist-missing-LICENSE) shows the secondary `source:` pattern for fetching LICENSE from `https://raw.githubusercontent.com/<org>/<repo>/v${{ version }}/LICENSE`. That pattern is 404 whenever the repo only tags its JS / .NET / Java releases under different names. Example: `microsoft/Agents-M365Copilot` only tags `@microsoft/agents-m365copilot-v1.6.0` (JS); the Python `microsoft-agents-m365copilot` v1.6.0 has no `v1.6.0` tag. Fix: pin to a specific 40-char commit SHA + sha256, and add a maintenance note to the PR description — autotick won't refresh the LICENSE commit on version bumps, so the maintainer must do it manually. Case: `microsoft-agents-m365copilot` v1.6.0 LICENSE pinned to commit `0376aa418345d7f719b7b75d6e784fa7a765d9d0`. The sibling `microsoft-agents-m365copilot-core` v1.0.0 sdist *does* ship LICENSE, so no secondary source was needed there — even within one monorepo, per-package patterns vary.
+
+### Production validation of the v8.2.0 `native-build.sh` auto-channel injection
+
+The auto-channel-injection feature shipped in v8.2.0 was used end-to-end across a 4-recipe sequential build (`azure-identity-broker` → `microsoft-kiota-bundle` → `microsoft-agents-m365copilot-core` → `microsoft-agents-m365copilot`). The 4th recipe's `run:` depends on `microsoft-kiota-bundle` + `microsoft-agents-m365copilot-core`; neither is on conda-forge yet. The test phase resolved both from `file://${REPO_ROOT}/build_artifacts/linux64` without manual `--variant-config` or `--channel` plumbing — confirming the v8.2.0 design holds. Total build time ~1 minute for all four (pure-Python noarch).
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/SKILL.md` — added G7 / G8 / G9 sections + new Version History entry.
+- `.claude/skills/conda-forge-expert/CHANGELOG.md` — this entry.
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — version 8.2.0 → 8.3.0.
+- `_bmad-output/projects/local-recipes/implementation-artifacts/retro-npm-and-microsoft-bundles-2026-05-17.md` — BMAD-project retro covering both bundles + v8.2.0 + v8.3.0 landings.
+- `_bmad-output/projects/local-recipes/project-context.md` — `last_synced_skill_version` bumped 8.1.0 → 8.3.0.
+
+---
+
+**v8.2.0** (May 17, 2026) — Local-build ergonomics + new gotcha. Driven by the `yo` + `generator-code` two-recipe bundling session. **MINOR bump** — new gotcha (additive) + additive change to `native-build.sh` (no flag changes; existing callers unaffected).
+
+### Recipe Authoring Gotcha G6 (SKILL.md)
+
+New entry under `## Recipe Authoring Gotchas`: "npm packages with rich transitive deps ship `node_modules/.bin/` symlinks that fail noarch builds." Documents the symptom (rattler-build's noarch validator rejecting the artifact post-write with a list of `node_modules/.bin/` symlinks and the misleading `--allow-symlinks-on-windows` hint), the cause (npm creates symlinks for every transitive dep's executable; packages like Yeoman generators with `ejs` / `jake` / `semver` / `yosay` / `@octokit/*` hit this; minimal-dep packages like `copilot-api` / `openspec` do not), and the surgical fix (`find ${PREFIX}/lib/node_modules/<name> -type d -name .bin -exec rm -rf {} +` between `npm install --global` and `pnpm install`). Explains why `--allow-symlinks-on-windows` is a local-only escape hatch (staged-recipes CI does not pass it) and why `--no-bin-links` is wrong (kills the top-level CLI shim too). Case study: `generator-code` v1.11.18 local build — first attempt produced `-hccbf638_0.conda` then was rejected; fixed and rebuilt clean as `-h5e06de4_0.conda` (0 symlinks).
+
+### `native-build.sh` auto-injects the local channel
+
+`native-build.sh` (the implementation behind `pixi run -e local-recipes recipe-build`) now detects locally built artifacts under `build_artifacts/<config>/*/repodata.json` and prepends `file://${REPO_ROOT}/build_artifacts/<config>` to `channel_sources`. Implemented via a `mktemp`'d 3rd `--variant-config` file that overrides `channel_sources` (we can't use `--channel` directly — rattler-build rejects the combination with a variant-set `channel_sources`). Cleaned up via an `EXIT` trap; the script no longer `exec`s the rattler-build command so the trap actually fires.
+
+Use case: recipe B has `run: A` where A was just built locally and has not yet landed on conda-forge (the typical staged-recipes bundle submission flow). Before v8.2.0 this required hand-rolling a tmp variant config and invoking `rattler-build build` directly, bypassing the wrapper. After v8.2.0 the standard `pixi run -e local-recipes recipe-build recipes/B` Just Works.
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/SKILL.md` — added G6 section + new Version History entry.
+- `.claude/skills/conda-forge-expert/CHANGELOG.md` — this entry.
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — version 8.1.0 → 8.2.0.
+- `.claude/scripts/conda-forge-expert/native-build.sh` — auto-inject local channel; switched `exec` to direct invocation so the `EXIT` trap cleans the tmp variant config.
+
+---
+
 **v8.1.0** (May 15, 2026) — PyPI intelligence layer. 5 new phases (O/P/Q/R/S) + new `pypi-intelligence` CLI + MCP tool + persona-profile integration. **MINOR bump** — fully additive: no schema deletions, no existing-CLI changes, no breaking FR/NFR. Driven by `docs/specs/atlas-pypi-intelligence.md` via `bmad-quick-dev`. Architecture lock (per spec frontmatter): `pypi_universe` stays reference-data-only (3 cols forever); all enrichment in a new `pypi_intelligence` side table joined on `pypi_name`.
 
 ### Schema v22 — additive only
