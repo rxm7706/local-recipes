@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+context:
+  version: "0.11.0"
+  python_min: "3.10"
+
+package:
+  name: mark
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mark/mark-${{ version }}.tar.gz
+  sha256: 3291089ec02735f2e552b76d30fc814d359dfeac63033fc4efbe60f604cb0aab
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - mark = mark.cli:mark_cli
+      - mark-setup-browsers = mark.setup_browsers:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - pyyaml 6.0.2.*
+    - ipython 8.32.0.*
+    - click >=8.1.8,<9.0.0
+    - crawl4ai >=0.7.8,<0.8.0
+    - llm >=0.25.0,<0.26.0
+    - click-default-group >=1.2.4,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - mark
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - mark --help
+      - mark-setup-browsers --help
+
+about:
+  summary: Mark lets you seamlessly use markdown, images and links to interact with LLMs
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/relston/mark
+
+extra:
+  recipe-maintainers:
+    - rxm7706
