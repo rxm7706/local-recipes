@@ -3,101 +3,173 @@ schema_version: 1
 
 context:
   name: fastmcp
-  version: "3.3.0"
+  version: "3.3.1"
   python_min: "3.10"
 
-package:
+recipe:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastmcp-${{ version }}.tar.gz
-  sha256: 48c7fffdb6865cb9658ac02c2ff589caaaa3cd68e2cc37ed51402fa46e46c2eb
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastmcp-${{ version }}.tar.gz
+    sha256: 979362ea557de42a5f40342563c7e4b236bcc8e7cd192715f50030695d1a71cd
+    target_directory: fastmcp/
+  - url: https://pypi.org/packages/source/${{ name[0] }}/fastmcp-slim/fastmcp_slim-${{ version }}.tar.gz
+    sha256: 0957835fc59452e143ab2f4b7836d2d2df9b2d9958408edc79ba8b56232b2a88
+    target_directory: fastmcp-slim/
 
 build:
   number: 0
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - fastmcp = fastmcp.cli:app
 
-requirements:
-  host:
-    - python ${{ python_min }}.*
-    - hatchling
-    - uv-dynamic-versioning >=0.7.0
-    - pip
-  run:
-    - python >=${{ python_min }},<4
-    - typing_extensions
-    - pydantic-core
-    - httpcore
-    - starlette
-    - pydocket
-    - cryptography
-    - pydantic-settings
-    - fastmcp-slim ==3.3.0
-    #- "fastmcp-slim[mcp]
-    - exceptiongroup >=1.2.2
-    - httpx >=0.28.1,<1.0
-    - mcp >=1.24.0,<2.0
-    - opentelemetry-api >=1.20.0
-    - authlib >=1.6.11
-    - cyclopts >=4.0.0
-    - griffelib >=2.0.0
-    - jsonref >=1.1.0
-    - jsonschema-path >=0.3.4
-    - openapi-pydantic >=0.5.1
-    - packaging >=24.0
-    #- "py-key-value-aio[filetree,keyring,memory]>=0.4.4,<0.5.0",
-    - py-key-value-aio >=0.4.4,<0.5.0
-    - cachetools >=5.0.0
-    - keyring >=25.6.0
-    - aiofile >=3.5.0
-    - anyio >=4.4.0
-    - pyperclip >=1.9.0
-    - python-multipart >=0.0.26
-    - pyyaml >=6.0,<7.0
-    - uncalled-for >=0.2.0
-    - uvicorn >=0.35
-    - watchfiles >=1.0.0
-    - websockets >=15.0.1
-  run_constraints:
-    - openai >=1.102.0
-    - anthropic >=0.48.0
-    - azure-identity >=1.16.0
-    - google-genai >=1.18.0
-    - prefab-ui >=0.18.0
-    - pydocket >=0.19.0
-    - pydantic-monty ==0.0.11
-    - pyjwt >=2.12.0
+outputs:
+  - package:
+      name: fastmcp-slim
+      version: ${{ version }}
 
-tests:
-  - python:
-      imports:
-        - fastmcp
-      pip_check: true
-      python_version:
-      - ${{ python_min }}.*
-      - "*"
-  - requirements:
-      run:
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install ./fastmcp-slim -vv --no-deps --no-build-isolation
+      python:
+        entry_points:
+          - fastmcp = fastmcp.cli:app
+
+    requirements:
+      host:
         - python ${{ python_min }}.*
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
         - pip
-    script:
-      - fastmcp --help
+      run:
+        - python >=${{ python_min }},<4
+        - email-validator >=2.0.0
+        - platformdirs >=4.0.0
+        - pydantic >=2.11.7
+        - pydantic-settings >=2.0.0
+        - python-dotenv >=1.1.0
+        - rich >=13.9.4
+        - typing_extensions >=4.0.0
+      run_constraints:
+        - anthropic >=0.48.0
+        - authlib >=1.6.11
+        - azure-identity >=1.16.0
+        - cyclopts >=4.0.0
+        - exceptiongroup >=1.2.2
+        - google-genai >=1.18.0
+        - griffelib >=2.0.0
+        - httpx >=0.28.1,<1.0
+        - jsonref >=1.1.0
+        - jsonschema-path >=0.3.4
+        - mcp >=1.24.0,<2.0
+        - openai >=1.102.0
+        - openapi-pydantic >=0.5.1
+        - opentelemetry-api >=1.20.0
+        - packaging >=24.0
+        - prefab-ui >=0.18.0
+        - pydantic-monty ==0.0.16
+        - pydocket >=0.20.0
+        - pyjwt >=2.12.0
+        #- "py-key-value-aio[filetree,keyring,memory]>=0.4.4,<0.5.0",
+        - py-key-value-aio >=0.4.4,<0.5.0
+        - pyperclip >=1.9.0
+        - python-multipart >=0.0.26
+        - pyyaml >=6.0,<7.0
+        - uncalled-for >=0.2.0
+        - uvicorn >=0.35
+        - watchfiles >=1.0.0
+        - websockets >=15.0.1
+
+    tests:
+      - python:
+          imports:
+            - fastmcp
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+    about:
+      summary: The dependency-slim FastMCP package.
+      license_file: fastmcp/LICENSE
+
+  - package:
+      name: fastmcp
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install ./fastmcp -vv --no-deps --no-build-isolation
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+        - pip
+      run:
+        - python >=${{ python_min }},<4
+        - fastmcp-slim =${{ version }}
+        #- "fastmcp-slim[mcp]
+        - authlib >=1.6.11
+        - cyclopts >=4.0.0
+        - exceptiongroup >=1.2.2
+        - griffelib >=2.0.0
+        - httpx >=0.28.1,<1.0
+        - jsonref >=1.1.0
+        - jsonschema-path >=0.3.4
+        - mcp >=1.24.0,<2.0
+        - openapi-pydantic >=0.5.1
+        - opentelemetry-api >=1.20.0
+        - packaging >=24.0
+        - py-key-value-aio >=0.4.4,<0.5.0
+        #- "py-key-value-aio[filetree,keyring,memory]>=0.4.4,<0.5.0",
+        - aiofile >=3.5.0
+        - anyio >=4.4.0
+        - cachetools >=5.0.0
+        - keyring >=25.6.0
+        - pyperclip >=1.9.0
+        - python-multipart >=0.0.26
+        - pyyaml >=6.0,<7.0
+        - uncalled-for >=0.2.0
+        - uvicorn >=0.35
+        - watchfiles >=1.0.0
+        - websockets >=15.0.1
+      run_constraints:
+        - anthropic >=0.48.0
+        - azure-identity >=1.16.0
+        - google-genai >=1.18.0
+        - openai >=1.102.0
+        - prefab-ui >=0.18.0
+        - pydantic-monty ==0.0.16
+        - pydocket >=0.20.0
+        - pyjwt >=2.12.0
+
+    tests:
+      - python:
+          imports:
+            - fastmcp
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - fastmcp --help
+
+    about:
+      license_file: fastmcp/LICENSE
 
 about:
   summary: The fast, Pythonic way to build MCP servers and clients.
   homepage: https://gofastmcp.com
-  license: Apache-2.0
-  license_file: LICENSE
   documentation: https://gofastmcp.com
   repository: https://github.com/PrefectHQ/fastmcp
+  license: Apache-2.0
+  license_file: fastmcp/LICENSE
 
 extra:
   recipe-maintainers:
-    - rxm7706
     - dbast
     - moritzwilksch
+    - rxm7706

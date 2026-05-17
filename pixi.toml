@@ -18,16 +18,16 @@ platforms = [
 
 [feature.python.dependencies]
 python = ">=3.12.13,3.12.*"       # Python language interpreter
-pixi = ">=0.68.0"                 # Pixi package & environment manager
+pixi = ">=0.68.1"                 # Pixi package & environment manager
 gh = ">=2.92.0"                   # GitHub CLI for PR / issue / repo automation
 nodejs = ">=24.14.1,24.*"         # Pin to LTS version
 bmad-method = ">=6.6.0"           # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=0.8.7"              # Spec-kit for spec-driven development
+spec-kit = ">=0.8.11"              # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
 [feature.build.dependencies]
-conda = ">=26.3.2"                # conda package manager
+conda = ">=26.5.0"                # conda package manager
 conda-libmamba-solver = ">=24.9.0"  # fast libmamba-backed solver for conda
 conda-build = ">=25.3.1"          # v0 recipe build engine (meta.yaml)
 conda-index = ">=0.3.0"           # repodata.json index generator
@@ -397,7 +397,7 @@ cmd = "python .claude/scripts/conda-forge-expert/atlas_phase.py"
 #[feature.python.dependencies]
 python = "3.12.*"                 # Python language interpreter
 ##[feature.build.dependencies]
-conda = ">=26.3.2"                # conda package manager
+conda = ">=26.5.0"                # conda package manager
 conda-libmamba-solver = ">=24.9.0"  # fast libmamba-backed solver for conda
 conda-build = ">=25.3.1"          # v0 recipe build engine (meta.yaml)
 conda-index = ">=0.3.0"           # repodata.json index generator
@@ -427,35 +427,37 @@ setuptools-scm = ">=9.2.2"        # version metadata from VCS tags
 hatchling = ">=1.29.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.5.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=6.2.0"                 # PyPI artifact uploader
-uv = ">=0.11.12"                  # fast Rust-based Python package installer / resolver
+uv = ">=0.11.14"                  # fast Rust-based Python package installer / resolver
 wheel = ">=0.47.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
 pnpm = ">=10.33.2"                # fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
-conda-lock = ">=4.0.0"            # generate cross-platform lockfiles for conda envs
+conda-lock = ">=2.5.7"            # generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.1"            # bundle a conda env into a relocatable archive
 conda-tree = ">=1.1.2"            # visualize conda dependency tree
 feedrattler = ">=0.3.14"          # convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.68.0"                 # Pixi package & environment manager
+pixi = ">=0.68.1"                 # Pixi package & environment manager
 rattler-build = ">=0.64.1"        # Rust-native v1 conda recipe build engine
-pixi-build-rattler-build = ">=0.3.10"  # pixi build backend that delegates to rattler-build
-pixi-build-cmake = ">=0.3.11"     # pixi build backend for CMake projects
-pixi-build-python = ">=0.4.8"     # pixi build backend for Python projects
-pixi-build-rust = ">=0.4.8"       # pixi build backend for Rust / Cargo projects
+pixi-build-rattler-build = ">=0.3.11"  # pixi build backend that delegates to rattler-build
+pixi-build-cmake = ">=0.3.12"     # pixi build backend for CMake projects
+pixi-build-python = ">=0.5.0"     # pixi build backend for Python projects
+pixi-build-rust = ">=0.4.9"       # pixi build backend for Rust / Cargo projects
+#ixi-build-go = ">=0.3.0"         # pixi-experimental-backends build backend for Go projects
+#pixi-build-nodejs = ">=0.3.0"    # pixi-experimental-backends build backend for Node.js projects
 pixi-diff = ">=0.1.5"             # diff two pixi.lock files
 pixi-inject = ">=0.1.1"           # inject extra deps into an existing pixi env
-pixi-install-to-prefix = ">=0.1.2"  # install a pixi env to an arbitrary prefix
+pixi-install-to-prefix = ">=0.1.4"  # install a pixi env to an arbitrary prefix
 pixi-kernel = ">=0.7.1"           # Jupyter kernel that uses pixi-managed envs
 pixi-outdated = ">=0.2.1"         # list outdated deps in pixi.toml
-pixi-pack = ">=0.7.6"             # bundle a pixi env for offline / air-gapped install
+pixi-pack = ">=0.7.8"             # bundle a pixi env for offline / air-gapped install
 pixi-pycharm = ">=0.0.11"         # PyCharm / IDE integration helper for pixi
-pixi-unpack = ">=0.7.6"           # unpack a pixi-pack bundle on the target machine
+pixi-unpack = ">=0.7.8"           # unpack a pixi-pack bundle on the target machine
 py-rattler = ">=0.22.0"           # Python bindings for the Rust rattler conda lib
 py-rattler-build = ">=0.64.1"     # Python bindings for rattler-build
 ## Document processing & Deckcraft additions (markitdown + charts + ML for local image gen + LLM backends + Python bindings)
 # mark                            # Interact with LLMs using markdown and images
-accelerate = ">=1.13.0"              # Hugging Face accelerate (distributed/training helpers)
+accelerate = ">=1.13.0"           # Hugging Face accelerate (distributed/training helpers)
 d2 = ">=0.7.1"                    # Terrastruct D2 diagram-as-code compiler
 defusedxml = ">=0.7.1"            # XXE-resistant safe XML parser
 hf-transfer = ">=0.1.9"           # 3x faster GGUF/safetensors downloads at first-run model fetch (cross-platform)
@@ -473,21 +475,21 @@ pdfplumber = ">=0.11.9"           # extract text, tables, and metadata from PDFs
 pillow = ">=12.2.0"               # Python imaging library (PIL fork)
 playwright-python = ">=1.59.0"    # Python bindings (the existing 'playwright' is the Node binary)
 plotly = ">=6.6.0"                # interactive web-based plotting library
-poppler = ">=26.2.0"              # PDF rendering library (pdf2image backend)
+poppler = ">=26.5.0"              # PDF rendering library (pdf2image backend)
 pymupdf = ">=1.27.2.2"            # MuPDF Python bindings — fast PDF text/layout extraction
 pypdf = ">=6.11.0"                # pure-Python PDF reader / writer / splitter
 pytesseract = ">=0.3.13"          # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
 python-docx = ">=1.2.0"           # read / write Microsoft Word .docx files
 python-pptx = ">=1.0.2"           # read / write Microsoft PowerPoint .pptx files
 qpdf = ">=12.3.2"                 # PDF transformation, linearization, and compression CLI
-sentence-transformers = ">=5.4.1" # dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
+sentence-transformers = ">=5.5.0" # dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
 sentencepiece = ">=0.2.1"         # tokenizer lib (transitive on linux+osx via mlx-lm; explicit for win-64 parity); needed by SD3+/T5/MarianMT
 tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pytesseract)
-transformers = ">=5.8.0"          # Hugging Face transformers (model hub + pipelines)
+transformers = ">=5.8.1"          # Hugging Face transformers (model hub + pipelines)
 ## Data processing & conversion (ibis + adjacent ecosystem)
 duckdb = ">=1.5.2"                # embedded analytical SQL database
-pandas = ">=3.0.2"                # DataFrame library for tabular data
-polars = ">=1.40.0"               # Rust-backed columnar DataFrame library
+pandas = ">=3.0.3"                # DataFrame library for tabular data
+polars = ">=1.40.1"               # Rust-backed columnar DataFrame library
 pyarrow = ">=24.0.0"              # Apache Arrow Python bindings
 pyarrow-all = ">=24.0.0"          # pyarrow with all optional extras (parquet, datasets, …)
 ibis-duckdb = ">=12.0.0"          # Ibis backend for DuckDB
@@ -497,32 +499,33 @@ ibis-postgres = ">=12.0.0"        # Ibis backend for PostgreSQL
 ibis-mssql = ">=12.0.0"           # Ibis backend for Microsoft SQL Server
 ibis-oracle = ">=12.0.0"          # Ibis backend for Oracle Database
 pydantic = ">=2.13.4"             # type-hint-driven data validation
-ruff = ">=0.15.12"                # fast Rust-based Python linter + formatter
+ruff = ">=0.15.13"                # fast Rust-based Python linter + formatter
 pyright = ">=1.1.409"             # Microsoft's static type checker for Python
 mypy = ">=1.20.2"                 # static type checker for Python
-pyrefly = ">=0.64.1"              # Meta's fast Rust-based Python type checker
+pyrefly = ">=1.0.0"               # Meta's fast Rust-based Python type checker
 pytest = ">=9.0.3"                # Python test framework
 pytest-mock = ">=3.15.1"          # pytest fixture wrapper around `unittest.mock`
 pytest-cov = ">=7.1.0"            # coverage.py plugin for pytest
 pytest-xdist = ">=3.8.0"          # parallel / distributed test execution for pytest
-playwright = ">=1.59.1"           # Node binary for browser automation (CLI)
+playwright = ">=1.60.0"           # Node binary for browser automation (CLI)
 ## MCP, A2A & conversion (MCP + adjacent ecosystem)
 #aichat = ">=0.30.0"
-a2a-sdk = ">=1.0.2"               # Official Python SDK for the Agent2Agent (A2A) Protocol
+a2a-sdk = ">=1.0.3"               # Official Python SDK for the Agent2Agent (A2A) Protocol
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
 claude-agent-acp = ">=0.23.1"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 diffusers = ">=0.37.1"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
-fasta2a = ">=0.6.0"               # FastAPI-style implementation of the A2A protocol
-fastmcp = ">=3.2.4"               # FastMCP framework for building MCP servers
+fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A protocol
+fastmcp = ">=3.3.1"               # FastMCP framework for building MCP servers
 github-copilot-sdk =">=0.1.22"    # GitHub Copilot Python SDK
 langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
 langchain-mcp-adapters = ">=0.2.2"  # LangChain ↔ MCP tool/resource adapters
 lumen-ai-anthropic = ">=1.0.0"    # Lumen AI's Anthropic backend integration
-mcp = ">=1.27.0"                  # Official Model Context Protocol Python SDK
-ollama = ">=0.20.7"               # Ollama Go server (local LLM runtime)
+mcp = ">=1.27.1"                  # Official Model Context Protocol Python SDK
+ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=1.61.0"          # Pydantic-AI agent framework
-"llama.cpp" = ">=9010"            # llama.cpp local LLM inference engine
+"llama.cpp" = ">=9102"            # llama.cpp local LLM inference engine
+#crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
 #litellm = ">=1.83.14"             # NOT ADDED - Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
 #imaginairy = "*"                  # NOT ADDED - Outdated on Conda-forge
@@ -535,24 +538,24 @@ pydantic-ai = ">=1.61.0"          # Pydantic-AI agent framework
 #python-a2a = ">=0.5.10,<1"        # NOT FOUND - No updates
 yamllint = ">=1.38.0"             # YAML linter
 taplo = ">=0.10.0"                # TOML linter / formatter / language server
-moto = ">=5.2.0"                  # mock AWS SDK for Python tests
+moto = ">=5.2.1"                  # mock AWS SDK for Python tests
 nbqa = ">=1.9.0"                  # apply Python linters / formatters to Jupyter notebooks
-sqlfluff = ">=4.1.0"              # SQL linter and formatter
-go-sops = ">=3.13.0"              # Mozilla SOPS encrypted-secret editor
+sqlfluff = ">=4.2.1"              # SQL linter and formatter
+go-sops = ">=3.13.1"              # Mozilla SOPS encrypted-secret editor
 age = ">=1.3.1"                   # modern simple file encryption tool
 yarn = ">=4.14.1"                 # Node package manager (Berry)
-requests = ">=2.33.1"             # Python HTTP client library
+requests = ">=2.34.2"             # Python HTTP client library
 ## Visual Studio Code Extensions
 ## Visual Studio Code Extensions (vscodepy + adjacent Microsoft Azure ecosystem)
-#agent-framework = "*"             # NOT FOUND - Add to conda-forge
-azure-identity = ">=1.25.3"              #
-#azure-identity-broker = "*"       # NOT FOUND - Add to conda-forge
+#agent-framework = "*"            # NOT FOUND - Add to conda-forge
+azure-identity = ">=1.25.3"       #
+#azure-identity-broker = "*"      # NOT FOUND - Add to conda-forge
 #microsoft-agents-m365copilot = "*"  # NOT FOUND - Add to conda-forge
-msgraph-sdk = ">=1.48.0"                 #
-#vscodepy = "*"                    # NOT FOUND - Add to conda-forge
+msgraph-sdk = ">=1.48.0"          #
+#vscodepy = "*"                   # NOT FOUND - Add to conda-forge
 ## Visual Studio Code Extensions (npm yo and adjacent ecosystem)
-#generator-code = "*"              # NOT FOUND - Add to conda-forge
-#yo = "*"                          # NOT FOUND - Add to conda-forge
+#generator-code = "*"             # NOT FOUND - Add to conda-forge
+#yo = "*"                         # NOT FOUND - Add to conda-forge
 
 ## MLX (Apple's array framework) and mlx-lm (LLM runner).
 ## mlx-lm is noarch python; the native mlx C++ lib builds for linux-64 + osx-arm64
@@ -574,10 +577,10 @@ mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers t
 [dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"                 # Python language interpreter
-pixi = ">=0.68.0"                 # Pixi package & environment manager
-conda = ">=26.3.2"                # conda package manager
+pixi = ">=0.68.1"                 # Pixi package & environment manager
+conda = ">=26.5.0"                # conda package manager
 pip = ">=26.1.1"                  # Python package installer
-uv = ">=0.11.12"                  # fast Rust-based Python package installer / resolver
+uv = ">=0.11.14"                  # fast Rust-based Python package installer / resolver
 
 #[pypi-dependencies]
 #daft = ">=0.6.8"
