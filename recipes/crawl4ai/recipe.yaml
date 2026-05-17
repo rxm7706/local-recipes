@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.6"
+  python_min: "3.11"
+
+package:
+  name: crawl4ai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/crawl4ai/crawl4ai-${{ version }}.tar.gz
+  sha256: 2a2afab05ae021435fe025cfc5732f5dcebcefd7ff9a529e41050642ee954316
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - crawl4ai-download-models = crawl4ai.model_loader:main
+      - crawl4ai-migrate = crawl4ai.migrations:main
+      - crawl4ai-setup = crawl4ai.install:post_install
+      - crawl4ai-doctor = crawl4ai.install:doctor
+      - crwl = crawl4ai.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=64.0.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - aiofiles >=24.1.0
+    - aiohttp >=3.11.11
+    - aiosqlite >=0.20,<1.dev0
+    - anyio >=4.0.0
+    - lxml >=5.3,<6.dev0
+    - unclecode-litellm ==1.81.13  # TBD
+    - numpy >=1.26.0,<3
+    - pillow >=10.4
+    - playwright-python >=1.49.0
+    - patchright-python >=1.49.0  # TBD
+    - python-dotenv >=1.0,<2.dev0
+    - requests >=2.26,<3.dev0
+    - beautifulsoup4 >=4.12,<5.dev0
+    - playwright-stealth >=2.0.0
+    - python-xxhash >=3.4,<4.dev0
+    - rank-bm25 >=0.2,<1.dev0
+    - snowballstemmer >=2.2,<3.dev0
+    - pydantic >=2.10
+    - pyopenssl >=25.3.0
+    - psutil >=6.1.1
+    - pyyaml >=6.0
+    - nltk >=3.9.1
+    - rich >=13.9.4
+    - cssselect >=1.2.0
+    - httpx >=0.27.2
+    - fake-useragent >=2.0.3
+    - click >=8.1.7
+    - chardet >=5.2.0
+    - brotli >=1.1.0
+    - humanize >=4.10.0
+    - lark >=1.2.2
+    - alphashape >=1.3.1
+    - shapely >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - crawl4ai
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - crawl4ai-download-models --help
+      - crawl4ai-migrate --help
+      - crawl4ai-setup --help
+      - crawl4ai-doctor --help
+      - crwl --help
+
+about:
+  summary: "Crawl4AI: Open-source LLM Friendly Web Crawler & scraper"
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/unclecode/crawl4ai
+
+extra:
+  recipe-maintainers:
+    - rxm7706
