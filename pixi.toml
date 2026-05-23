@@ -20,9 +20,9 @@ platforms = [
 python = ">=3.12.13,3.12.*"       # Python language interpreter
 pixi = ">=0.69.0"                 # Pixi package & environment manager
 gh = ">=2.92.0"                   # GitHub CLI for PR / issue / repo automation
-nodejs = ">=24.14.1,24.*"         # Pin to LTS version
+nodejs = ">=24.14.1,24.*,<25.0"   # Pin to LTS version
 bmad-method = ">=6.7.1"           # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=0.8.13"              # Spec-kit for spec-driven development
+spec-kit = ">=0.8.13"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
@@ -423,19 +423,20 @@ jinja2-ospath = ">=0.3.0"         # Jinja2 extension for filesystem path operati
 # cibuildwheel = ">=3.2.1" # Dependency bashlex Failed for platform 'linux-aarch64'
 pip = ">=26.1.1"                  # Python package installer
 setuptools = ">=81.0.0"           # Python build backend (setup.py / pyproject.toml)
-setuptools-scm = ">=10.0.5"        # version metadata from VCS tags
+setuptools-scm = ">=10.0.5"       # Version metadata from VCS tags
 hatchling = ">=1.29.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.5.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=6.2.0"                 # PyPI artifact uploader
-uv = ">=0.11.16"                  # fast Rust-based Python package installer / resolver
+uv = ">=0.11.16"                  # Fast Rust-based Python package installer / resolver
 wheel = ">=0.47.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=10.33.2"                # fast disk-efficient Node package manager
+pnpm = ">=10.33.2"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
-conda-lock = ">=2.5.7"            # generate cross-platform lockfiles for conda envs
-conda-pack = ">=0.9.1"            # bundle a conda env into a relocatable archive
-conda-tree = ">=1.2.0"            # visualize conda dependency tree
-feedrattler = ">=0.3.14"          # convert conda-forge feedstocks to rattler-build (v1) format
+conda-lock = ">=2.5.7"            # Generate cross-platform lockfiles for conda envs
+conda-pack = ">=0.9.1"            # Bundle a conda env into a relocatable archive
+conda-pypi = ">=0.9.0"            # Better PyPI interoperability for the conda ecosystem
+conda-tree = ">=1.2.0"            # Visualize conda dependency tree
+feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.69.0"                 # Pixi package & environment manager
 rattler-build = ">=0.65.0"        # Rust-native v1 conda recipe build engine
@@ -445,49 +446,57 @@ pixi-build-python = ">=0.5.1"     # pixi build backend for Python projects
 pixi-build-rust = ">=0.4.10"       # pixi build backend for Rust / Cargo projects
 #ixi-build-go = ">=0.3.0"         # pixi-experimental-backends build backend for Go projects
 #pixi-build-nodejs = ">=0.3.0"    # pixi-experimental-backends build backend for Node.js projects
-pixi-diff = ">=0.1.5"             # diff two pixi.lock files
-pixi-inject = ">=0.1.2"           # inject extra deps into an existing pixi env
-pixi-install-to-prefix = ">=0.1.5"  # install a pixi env to an arbitrary prefix
-pixi-kernel = ">=0.7.1"           # Jupyter kernel that uses pixi-managed envs
-pixi-outdated = ">=0.2.1"         # list outdated deps in pixi.toml
-pixi-pack = ">=0.7.9"             # bundle a pixi env for offline / air-gapped install
+pixi-unpack = ">=0.7.9"           # Unpack a pixi-pack bundle on the target machine
 pixi-pycharm = ">=0.0.11"         # PyCharm / IDE integration helper for pixi
-pixi-unpack = ">=0.7.9"           # unpack a pixi-pack bundle on the target machine
+pixi-pack = ">=0.7.9"             # Bundle a pixi env for offline / air-gapped install
+pixi-to-conda-lock  = ">=0.4.3"   # pixi-to-conda-lock converts a pixi.lock file to a conda-lock.yml file.
+#pixi-skills = ">=0.1.5"           # Manage coding agent skills using pixi  #NOTE python >=3.13
+pixi-outdated = ">=0.2.1"         # List outdated deps in pixi.toml
+pixi-kernel = ">=0.7.1"           # Jupyter kernel that uses pixi-managed envs
+pixi-install-to-prefix = ">=0.1.5"  # Install a pixi env to an arbitrary prefix
+pixi-inject = ">=0.1.2"           # Inject extra deps into an existing pixi env
+pixi-inspect = ">=2.0.2"          # pixi-inspect is a pixi extension used to inspect and retrieve metadata from a conda package.
+#pixi-devenv = ">=0.3.1"           # Tool to work with multiple pixi projects in development mode.  #NOTE python >=3.13
+#pixi-browse = ">=0.0.13"          # Browse conda packages interactively #NOTE python >=3.13
+pixi-diff = ">=0.1.5"             # Diff two pixi.lock files
 py-rattler = ">=0.22.0"           # Python bindings for the Rust rattler conda lib
 py-rattler-build = ">=0.65.0"     # Python bindings for rattler-build
+## Nebi - local-first workspace management for Pixi (CLI + Desktop)
+nebi-cli = ">=0.11"               # Local-first workspace management for Pixi
+#nebi-desktop = ">=0.11"           # Nebi desktop application - local-first workspace management for Pixi #NOTE webkit2gtk4.1 2.48.5 would require __glibc >=2.34,<3.0.a0, for which no candidates were found
 ## Document processing & Deckcraft additions (markitdown + charts + ML for local image gen + LLM backends + Python bindings)
 # mark                            # Interact with LLMs using markdown and images
 accelerate = ">=1.13.0"           # Hugging Face accelerate (distributed/training helpers)
 d2 = ">=0.7.1"                    # Terrastruct D2 diagram-as-code compiler
 defusedxml = ">=0.7.1"            # XXE-resistant safe XML parser
 hf-transfer = ">=0.1.9"           # 3x faster GGUF/safetensors downloads at first-run model fetch (cross-platform)
-lxml = ">=6.1.1"                  # fast XML / HTML parser (libxml2 bindings)
+lxml = ">=6.1.1"                  # Fast XML / HTML parser (libxml2 bindings)
 markitdown = ">=0.1.5"            # Microsoft's document → Markdown converter
 marp-cli = ">=4.2.3"              # Marp CLI for Markdown → slide-deck rendering
-matplotlib = ">=3.10.9"           # general-purpose 2D plotting library
+matplotlib = ">=3.10.9"           # General-purpose 2D plotting library
 mermaid-py= ">=0.8.4"             # Python wrapper around the Mermaid diagram renderer
 odfpy = ">=1.4.1"                 # ODP/ODT style extraction (stretch goal in FR-46d); OpenDocument Apache-2.0 noarch lib
 ollama-python = ">=0.6.2"         # Python client (the existing 'ollama' is the Go server binary)
-openpyxl = ">=3.1.5"              # read / write Office Open XML .xlsx files
-pandoc = ">=3.9.0.2"              # universal document format converter
-pdf2image = ">=1.17.0"            # convert PDF pages to PIL images (Poppler-backed)
-pdfplumber = ">=0.11.9"           # extract text, tables, and metadata from PDFs
+openpyxl = ">=3.1.5"              # Read / write Office Open XML .xlsx files
+pandoc = ">=3.9.0.2"              # Universal document format converter
+pdf2image = ">=1.17.0"            # Convert PDF pages to PIL images (Poppler-backed)
+pdfplumber = ">=0.11.9"           # Extract text, tables, and metadata from PDFs
 pillow = ">=12.2.0"               # Python imaging library (PIL fork)
 playwright-python = ">=1.60.0"    # Python bindings (the existing 'playwright' is the Node binary)
-plotly = ">=6.6.0"                # interactive web-based plotting library
+plotly = ">=6.6.0"                # Interactive web-based plotting library
 poppler = ">=26.5.0"              # PDF rendering library (pdf2image backend)
 pymupdf = ">=1.27.2.2"            # MuPDF Python bindings — fast PDF text/layout extraction
-pypdf = ">=6.12.1"                # pure-Python PDF reader / writer / splitter
+pypdf = ">=6.12.1"                # Pure-Python PDF reader / writer / splitter
 pytesseract = ">=0.3.13"          # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
-python-docx = ">=1.2.0"           # read / write Microsoft Word .docx files
-python-pptx = ">=1.0.2"           # read / write Microsoft PowerPoint .pptx files
+python-docx = ">=1.2.0"           # Read / write Microsoft Word .docx files
+python-pptx = ">=1.0.2"           # Read / write Microsoft PowerPoint .pptx files
 qpdf = ">=12.3.2"                 # PDF transformation, linearization, and compression CLI
-sentence-transformers = ">=5.5.1" # dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
-sentencepiece = ">=0.2.1"         # tokenizer lib (transitive on linux+osx via mlx-lm; explicit for win-64 parity); needed by SD3+/T5/MarianMT
+sentence-transformers = ">=5.5.1" # Dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
+sentencepiece = ">=0.2.1"         # Tokenizer lib (transitive on linux+osx via mlx-lm; explicit for win-64 parity); needed by SD3+/T5/MarianMT
 tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pytesseract)
 transformers = ">=5.9.0"          # Hugging Face transformers (model hub + pipelines)
 ## Data processing & conversion (ibis + adjacent ecosystem)
-duckdb = ">=1.5.3"                # embedded analytical SQL database
+duckdb = ">=1.5.3"                # Embedded analytical SQL database
 pandas = ">=3.0.3"                # DataFrame library for tabular data
 polars = ">=1.40.1"               # Rust-backed columnar DataFrame library
 pyarrow = ">=24.0.0"              # Apache Arrow Python bindings
