@@ -38,6 +38,8 @@ RECIPE_UPDATER_SCRIPT = SCRIPTS_DIR / "recipe_updater.py"
 SUBMIT_PR_SCRIPT = SCRIPTS_DIR / "submit_pr.py"
 GITHUB_VERSION_CHECKER_SCRIPT = SCRIPTS_DIR / "github_version_checker.py"
 GITHUB_UPDATER_SCRIPT = SCRIPTS_DIR / "github_updater.py"
+ENV_INSPECT_SCRIPT = SCRIPTS_DIR / "env_inspect.py"
+MY_FEEDSTOCKS_SCRIPT = SCRIPTS_DIR / "my_feedstocks.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
@@ -1208,27 +1210,105 @@ def query_atlas(
 
 
 @mcp.tool()
-def my_feedstocks(maintainer: str) -> str:
-    """List all feedstocks where MAINTAINER is in the recipe-maintainers
-    list. Returns name, version, downloads, status, archived flag — a
-    portfolio-level overview. Use staleness_report / feedstock_health for
-    deeper dives into specific signals."""
-    return query_atlas(
-        select=(
-            "conda_name, feedstock_name, latest_conda_version, "
-            "latest_conda_upload, total_downloads, latest_status, "
-            "feedstock_archived, recipe_format, "
-            "vuln_critical_affecting_current"
-        ),
-        where=(
-            f"conda_name IS NOT NULL AND conda_name IN ("
-            f"SELECT pm.conda_name FROM package_maintainers pm "
-            f"JOIN maintainers m ON m.id = pm.maintainer_id "
-            f"WHERE LOWER(m.handle) = LOWER('{maintainer}'))"
-        ),
-        order_by="total_downloads DESC",
-        limit=1000,
-    )
+def my_feedstocks(
+    maintainer: str,
+    triage: bool = False,
+    limit: int = 25,
+    include_archived: bool = False,
+) -> str:
+    """Per-maintainer feedstock portfolio + triage view.
+
+    Default: portfolio overview (name, version, downloads, status, archived flag)
+    sorted by total downloads.
+
+    triage=True: ranks feedstocks by an urgency score composed of KEV/Critical/
+    High CVE counts, CI-red status, stuck-bot attempts, behind-upstream lag,
+    open PR / issue counts. Returns top `limit` rows grouped by severity band
+    (CRIT / WARN / REV / ok). Use this for the morning "what needs my attention"
+    triage call.
+
+    include_archived=False (default): hides archived feedstocks.
+
+    Use staleness_report / feedstock_health for deeper dives into specific
+    signals; this tool composes those signals into one ranked list.
+    """
+    args = ["--maintainer", maintainer, "--json", "--limit", str(limit)]
+    if triage:
+        args.append("--triage")
+    if include_archived:
+        args.append("--include-archived")
+    return json.dumps(_run_script(MY_FEEDSTOCKS_SCRIPT, args, timeout=60), indent=2)
+
+
+@mcp.tool()
+def env_inspect(
+    mode: str = "default",
+    environment: str | None = None,
+    prefix: str | None = None,
+    scope: str = "roots",
+    sbom_format: str = "cyclonedx",
+    diff_to: str | None = None,
+    no_live: bool = False,
+    include: str | None = None,
+    exclude: str | None = None,
+) -> str:
+    """Inspect a pixi/conda env from multiple angles.
+
+    Modes (`mode=`):
+      - default     : list root packages (in-degree 0 in the resolved DAG)
+      - audit       : classify manifest explicits as pure-intent /
+                      transitively-covered / drifted
+      - freshness   : env vs conda-forge vs PyPI lag (live PyPI fetch unless
+                      no_live=True); uses cf_atlas for bot/PR state
+      - security    : CVE counts (Phase G) affecting installed versions
+      - bus_factor  : maintainer counts per package; flags bus_factor=1
+      - licenses    : SPDX rollup; flags non-permissive / unknown licenses
+      - sbom        : emit a CycloneDX (default) or SPDX SBOM for the env
+      - diff        : diff this env against `diff_to` (other pixi env name)
+
+    Env resolution:
+      - environment NAME: pixi env name (resolved via `pixi info --json`)
+      - prefix PATH    : explicit conda prefix
+      - else           : $CONDA_PREFIX (active env)
+
+    scope (for freshness/security/bus_factor/licenses/sbom): roots | explicits | all.
+    include / exclude: regex filters on the scope.
+    """
+    args: list[str] = ["--json", "--scope", scope]
+    if environment:
+        args.extend(["--environment", environment])
+    if prefix:
+        args.extend(["--prefix", prefix])
+
+    if mode == "default":
+        pass
+    elif mode == "audit":
+        args.append("--audit")
+    elif mode == "freshness":
+        args.append("--freshness")
+        if no_live:
+            args.append("--no-live")
+    elif mode == "security":
+        args.append("--security")
+    elif mode == "bus_factor":
+        args.append("--bus-factor")
+    elif mode == "licenses":
+        args.append("--licenses")
+    elif mode == "sbom":
+        args.extend(["--sbom", sbom_format])
+    elif mode == "diff":
+        if not diff_to:
+            return json.dumps({"error": "mode=diff requires diff_to=OTHER_ENV"})
+        args.extend(["--diff", diff_to])
+    else:
+        return json.dumps({"error": f"unknown mode '{mode}'. Valid: default/audit/freshness/security/bus_factor/licenses/sbom/diff"})
+
+    if include:
+        args.extend(["--include", include])
+    if exclude:
+        args.extend(["--exclude", exclude])
+
+    return json.dumps(_run_script(ENV_INSPECT_SCRIPT, args, timeout=180), indent=2)
 
 
 @mcp.tool()

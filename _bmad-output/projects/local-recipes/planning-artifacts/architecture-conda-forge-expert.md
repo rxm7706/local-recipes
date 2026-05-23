@@ -60,7 +60,7 @@ The `JFROG_API_KEY` cross-host leak (per `docs/enterprise-deployment.md` § 2 �
 │
 ├────────────────────────────────────────────────────────────────────────────┤
 │  Tier 2: CLI WRAPPER LAYER  (.claude/scripts/conda-forge-expert/)
-│  → 34 thin (~10-30 line) subprocess wrappers.
+│  → 36 thin (~10-30 line) subprocess wrappers.
 │  → Pixi tasks (~30 in pixi.toml) invoke these, NOT the Tier 1 modules directly.
 │  → Some Tier 1 modules are internal-only and have no wrapper (`_http.py`,
 │    `_cf_graph_versions.py`, `_parquet_cache.py`, `_sbom.py`, `mapping_manager.py`).
@@ -125,7 +125,7 @@ Missing any one breaks the meta-test.
 
 ---
 
-## Tier 1: The 42 Canonical Scripts
+## Tier 1: The 44 Canonical Scripts
 
 Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/scripts/<name>.py`):
 
@@ -156,7 +156,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 
 | Module | Role |
 |---|---|
-| `conda_forge_atlas.py` | **Orchestrator**: 17-phase pipeline B→N, PHASES registry, `run_single_phase()` |
+| `conda_forge_atlas.py` | **Orchestrator**: 22-phase pipeline B→S (v8.1.0 added O/P/Q/R/S), PHASES registry, `run_single_phase()` |
 | `_cf_graph_versions.py` | Phase H cf-graph offline backend (v7.7.0) |
 | `_parquet_cache.py` | Phase F S3 parquet cache layer (v7.6.0) |
 | `atlas_phase.py` | Single-phase CLI entrypoint (`pixi run atlas-phase <ID>`) |
@@ -164,7 +164,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 | `detail_cf_atlas.py` | Query helpers (`detail-cf-atlas` CLI) |
 | `inventory_channel.py` | Channel inventory cache for `scan_project` |
 
-### Atlas-intelligence query CLIs (11 modules — Part 2 read side)
+### Atlas-intelligence query CLIs (13 modules — Part 2 read side)
 
 | Module | CLI command | Reads from |
 |---|---|---|
@@ -177,17 +177,20 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 | `find_alternative.py` | `find-alternative` | cf_atlas.db (similar packages) |
 | `adoption_stage.py` | `adoption-stage` | cf_atlas.db (popularity tiers) |
 | `pypi_only_candidates.py` | `pypi-only-candidates` | cf_atlas.db `pypi_universe` LEFT JOIN `packages` (Phase D, v7.9.0+) — admin candidate-list of unmatched PyPI projects ordered by `last_serial DESC` |
+| `pypi_intelligence.py` | `pypi-intelligence` | cf_atlas.db `pypi_intelligence` side table (v8.1.0; activity_band / download counts / cross-channel BOOLs / packaging shape / conda-forge readiness score) |
+| `my_feedstocks.py` | `my-feedstocks` (default = portfolio; `--triage` = ranked punch list) | cf_atlas.db `package_maintainers` JOIN + composite urgency score across Phase G/H/M/N (v8.5.0) |
 | `cve_watcher.py` | `cve-watcher` | vdb/ + cf_atlas.db (Phase G/G' CVE surface) |
 | `cve_manager.py` | (no public CLI; backs `update_cve_database`) | cve/ feed cache |
 | `vulnerability_scanner.py` | (no public CLI; backs `scan_for_vulnerabilities` MCP tool) | vdb/ + recipe |
 
-### Project-scanning + health (3 modules)
+### Project-scanning + env-inspection + health (4 modules)
 
 | Module | Role | MCP tool counterpart |
 |---|---|---|
 | `scan_project.py` | Scan project for conda-forge intel (~28 input formats: manifests, lock files, SBOMs, container images, GitOps CRs, K8s manifests, OCI archives, OCI registry probes) | `scan_project` |
+| `env_inspect.py` | Inspect a pixi/conda env from 8 angles via flag dispatcher: default (graph roots) / `--audit` (manifest hygiene) / `--freshness` (env vs cf vs PyPI lag) / `--security` (CVE rollup) / `--bus-factor` (SPoF list) / `--licenses` (SPDX rollup + non-permissive flag) / `--sbom {cyclonedx,spdx}` / `--diff OTHER_ENV`. All modes share `--scope {roots,explicits,all}`. Atlas-join helper layer with stale-warning + live PyPI fetch (default-on, 6h disk cache). Renamed v8.5.1 (was `env_roots.py` v8.3.1) | `env_inspect` |
 | `health_check.py` | System health check | `run_system_health_check` |
-| `_sbom.py` | SBOM parsing helpers (CycloneDX / SPDX / Syft) — internal helper for scan_project | (internal) |
+| `_sbom.py` | SBOM parsing helpers (CycloneDX / SPDX / Syft) — internal helper for scan_project + env_inspect SBOM mode | (internal) |
 
 ### Shared infrastructure (3 modules — used by all 4 parts)
 
@@ -199,7 +202,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 
 ---
 
-## Tier 2: The 34 CLI Wrappers
+## Tier 2: The 36 CLI Wrappers
 
 `.claude/scripts/conda-forge-expert/*.py` — each is a ~10-30 line subprocess wrapper. Most names mirror Tier 1 scripts. One additional wrapper:
 

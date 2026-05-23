@@ -22,7 +22,7 @@ Without Part 3, every BMAD agent would have to invoke pixi tasks directly (slow,
 > **Expose Parts 1 + 2 as MCP tools so Claude Code and BMAD agents can invoke them with structured args + JSON responses without shell round-tripping.**
 
 Operationalized:
-- 36 tools registered via `@mcp.tool()` decorators on a single `FastMCP("conda-forge-expert")` instance.
+- 37 tools registered via `@mcp.tool()` decorators on a single `FastMCP("conda-forge-expert")` instance.
 - Each tool's body is a thin `_run_script(SCRIPT_PATH, args, ...)` invocation that subprocess-executes a Tier 1 script and parses JSON stdout.
 - Auto-discovered by Claude Code by path convention (`.claude/tools/*.py`); no `.mcp.json` registration currently (known gap, see Deferred Work below).
 
@@ -36,8 +36,8 @@ Operationalized:
 | Auxiliary servers | `gemini_server.py` (Gemini API bridge), `mcp_call.py` (JSON-RPC shell client) |
 | Framework | FastMCP (`from fastmcp import FastMCP, Context`) |
 | MCP instance name | `conda-forge-expert` (declared at module level: `mcp = FastMCP("conda-forge-expert")`) |
-| Total `@mcp.tool` registrations | **35** (verified via `grep -c "@mcp.tool" conda_forge_server.py`) |
-| Sync tools | 33 |
+| Total `@mcp.tool` registrations | **37** (verified via `grep -c "@mcp.tool" conda_forge_server.py`; v8.5.0 added `env_inspect` 8-mode dispatcher; v8.5.0 also extended `my_feedstocks` with `triage`/`limit`/`include_archived` params — same tool, enriched interface) |
+| Sync tools | 35 |
 | Async tools | 2 (`update_cve_database`, `trigger_build` — long-running) |
 | Lines of code | 1,199 (`conda_forge_server.py`) + 143 (`gemini_server.py`) + 42 (`mcp_call.py`) |
 | Auto-start mechanism | Claude Code path-convention discovery of `.claude/tools/*.py` |
@@ -131,7 +131,8 @@ All read against `cf_atlas.db` (Part 2). All sync. `update_cve_database` is asyn
 | `cve_watcher(...)` | `cve_watcher.py` | package_version_vulns (Phase G') + vdb/ |
 | `package_health(name)` | composite of Part 1 scripts | packages + feedstock_health join |
 | `query_atlas(...)` | `detail_cf_atlas.py` / direct DB | packages (generic) |
-| `my_feedstocks(maintainer)` | `feedstock_lookup.py` | package_maintainers + GitHub user |
+| `my_feedstocks(maintainer, triage=False, limit=25, include_archived=False)` | `my_feedstocks.py` (v8.5.0; was direct SQL → `feedstock_lookup.py`) | `package_maintainers` join + composite urgency score (Phase G CVE / Phase N CI-red / Phase M stuck-bot / Phase H upstream lag / open PRs+issues). `triage=True` ranks by score and emits severity-banded punch list |
+| `env_inspect(mode, environment, prefix, scope, sbom_format, diff_to, no_live, include, exclude)` | `env_inspect.py` (v8.5.0; renamed from `env_roots.py` at v8.5.1) | 8-mode dispatcher: `default` (roots) / `audit` / `freshness` / `security` / `bus_factor` / `licenses` / `sbom` / `diff`. All modes share `--scope {roots,explicits,all}`. Atlas-stale warning + live PyPI fetch (default-on, 6h disk cache) |
 | `scan_project(...)` | `scan_project.py` | packages + inventory_cache/ + ~28 input formats |
 | `update_cve_database(force=False, ctx=Context) [async]` | `cve_manager.py` | cve/ feed cache |
 | `update_mapping_cache(force=False)` | `mapping_manager.py` | pypi_conda_map.json |
@@ -148,7 +149,7 @@ All read against `cf_atlas.db` (Part 2). All sync. `update_cve_database` is asyn
 
 ## Tool Implementation Pattern
 
-Every tool follows the same skeleton (90% of the 36 tools are 5-10 lines of body code):
+Every tool follows the same skeleton (~90% of the 37 tools are 5-10 lines of body code; the `env_inspect` dispatcher is ~30 lines because of the 8-mode flag mapping):
 
 ```python
 @mcp.tool()
@@ -365,7 +366,7 @@ Captured from `docs/specs/claude-team-memory.md` Q13 and surfaced here so the re
 See `integration-architecture.md` for full cross-part contracts. Summary:
 
 - **← Part 1 (skill)**: every MCP tool wraps a Tier 1 canonical script. Part 1's `scripts/` is the implementation; Part 3 is the wire format.
-- **← Part 2 (cf_atlas)**: 16 of the 36 tools query `cf_atlas.db` directly (via Tier 1 scripts). Part 3 doesn't talk to the DB itself — it shells out.
+- **← Part 2 (cf_atlas)**: 17 of the 37 tools query `cf_atlas.db` directly (via Tier 1 scripts; v8.5.0's `env_inspect` adds atlas joins for the freshness/security/bus-factor/licenses modes). Part 3 doesn't talk to the DB itself — it shells out.
 - **→ Part 4 (BMAD)**: every BMAD agent doing conda-forge work invokes tools via `mcp__conda_forge_server__*` per CLAUDE.md integration rules.
 - **→ Enterprise layer**: each tool's subprocess inherits the env (including `JFROG_API_KEY`); the leak mitigation lives at the launch-shell layer.
 

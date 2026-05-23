@@ -123,6 +123,14 @@ cmd = "bash scripts/sync-public-fork.sh"
 description = "Verify that the shell is running inside the local-recipes pixi environment"
 cmd = "bash scripts/ensure-local-recipes-env.sh"
 
+[feature.local-recipes.tasks.env-inspect]
+description = "Inspect a pixi/conda env from multiple angles: default lists root packages; flags select mode (--audit / --freshness / --security / --bus-factor / --licenses / --sbom / --diff). Defaults to the active env; pass --environment NAME or --prefix PATH to inspect any env. Add --json for machine-readable output."
+cmd = "python .claude/scripts/conda-forge-expert/env_inspect.py"
+
+[feature.local-recipes.tasks.my-feedstocks]
+description = "Per-maintainer feedstock portfolio + --triage punch list (ranks by KEV/Critical CVEs, CI-red, stuck bots, upstream lag, open PRs/issues). Defaults to $GITHUB_USERNAME or $USER; override with --maintainer."
+cmd = "python .claude/scripts/conda-forge-expert/my_feedstocks.py"
+
 [feature.local-recipes.tasks.bmad-preflight]
 description = "Verify local-recipes env, BMAD installation, and active project before BMAD workflows"
 cmd = "bash scripts/ensure-bmad-preflight.sh"

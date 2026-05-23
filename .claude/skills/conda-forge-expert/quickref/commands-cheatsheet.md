@@ -314,6 +314,60 @@ pixi run -e local-recipes bmad-preflight
 
 # Full diagnostic on the dev environment (also: run_system_health_check MCP tool)
 pixi run -e local-recipes health-check
+
+# List root packages of a pixi/conda env's resolved dep graph (works for any env)
+pixi run -e local-recipes env-inspect                              # active env
+pixi run -e local-recipes env-inspect -- --environment build       # another pixi env
+pixi run -e local-recipes env-inspect -- --prefix /path/to/prefix  # arbitrary conda prefix
+pixi run -e local-recipes env-inspect -- --json                    # machine-readable
+
+# Manifest audit: classify pixi.toml explicits as pure-intent / transitively-
+# covered / drifted. Surfaces candidates to drop from pixi.toml without
+# changing the resolved env (verify your pin first).
+pixi run -e local-recipes env-inspect -- --audit                   # active env
+pixi run -e local-recipes env-inspect -- --audit -e build          # another env
+pixi run -q -e local-recipes env-inspect -- --audit --json         # for piping
+
+# Freshness audit: env-vs-conda-forge-vs-PyPI for each installed package,
+# bucketed by action (cf-behind-pypi-no-PR / env-behind-cf / in-sync / …).
+# Uses cf_atlas for name mapping + bot/PR state; live-fetches PyPI by default.
+pixi run -e local-recipes env-inspect -- --freshness                # roots (default scope)
+pixi run -e local-recipes env-inspect -- --freshness --scope explicits
+pixi run -e local-recipes env-inspect -- --freshness --scope all    # every installed pkg
+pixi run -e local-recipes env-inspect -- --freshness --no-live      # atlas-only, faster
+pixi run -e local-recipes env-inspect -- --freshness --include '^pixi-'  # name regex
+pixi run -q -e local-recipes env-inspect -- --freshness --json      # for piping
+
+# Security audit: CVE counts (KEV / Critical / High / total) per installed pkg
+pixi run -e local-recipes env-inspect -- --security                 # roots scope
+pixi run -e local-recipes env-inspect -- --security --scope all     # full env
+
+# Bus-factor: maintainer count per pkg; flags bus_factor=1 (SPoF) and =0 (unmapped)
+pixi run -e local-recipes env-inspect -- --bus-factor
+
+# License inventory: SPDX rollup + non-permissive flag
+pixi run -e local-recipes env-inspect -- --licenses --scope all
+
+# SBOM emission (CycloneDX 1.6 or SPDX); JSON to stdout
+pixi run -q -e local-recipes env-inspect -- --sbom cyclonedx --scope all > env.cdx.json
+pixi run -q -e local-recipes env-inspect -- --sbom spdx --scope all > env.spdx.json
+
+# Env diff (this env vs another pixi env)
+pixi run -e local-recipes env-inspect -- --diff build               # vs `build` env
+```
+
+### Maintainer workflow
+
+```bash
+# Per-maintainer feedstock portfolio (sorted by total downloads)
+pixi run -e local-recipes my-feedstocks -- --maintainer rxm7706
+
+# Triage: today's punch list across ALL your feedstocks, ranked by urgency
+# (KEV / Critical CVE / CI red / stuck bot / behind upstream / open PRs+issues).
+# Severity bands: CRIT (≥1000) → WARN (≥50) → REV (≥10) → ok.
+pixi run -e local-recipes my-feedstocks -- --maintainer rxm7706 --triage
+pixi run -e local-recipes my-feedstocks -- --maintainer rxm7706 --triage --limit 50
+pixi run -q -e local-recipes my-feedstocks -- --maintainer rxm7706 --triage --json
 ```
 
 ### Recipe authoring
