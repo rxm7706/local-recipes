@@ -488,6 +488,39 @@ JFROG_API_KEY=$MY_KEY \
   pixi run -e local-recipes detail-cf-atlas <name>
 ```
 
+### Phase P — BigQuery PyPI downloads (opt-in, admin profile)
+
+```bash
+# One-time setup (per workstation)
+# 1. Set GCP billing project in .env (gitignored)
+echo 'PHASE_P_BQ_PROJECT=<your-gcp-project-id>' >> .env
+
+# 2. ADC auth — opens browser for OAuth (linux + macOS only; the
+#    `gcloud` env is separate from local-recipes because the SDK is ~91 MB)
+pixi run -e gcloud gcloud auth application-default login \
+    --project <your-gcp-project-id>
+
+# 3. Enable the BigQuery API on the project (one-time, two options):
+#    (a) browser: console.developers.google.com/apis/api/bigquery.googleapis.com/overview?project=<id>
+#    (b) gcloud CLI (requires a *separate* second auth):
+pixi run -e gcloud gcloud auth login
+pixi run -e gcloud gcloud services enable bigquery.googleapis.com \
+    --project <your-gcp-project-id>
+
+# Run Phase P standalone (fastest when atlas is otherwise fresh)
+PHASE_P_ENABLED=1 pixi run -e local-recipes \
+    python .claude/scripts/conda-forge-expert/atlas_phase.py P
+
+# Or as part of a channel-wide refresh (admin profile enables it
+# automatically when google-cloud-bigquery is importable):
+pixi run -e local-recipes bootstrap-data --profile admin
+```
+
+**Cost:** ~30 GB scanned per query; within the 1 TB/month BigQuery
+free tier. Default cadence monthly via `PHASE_P_TTL_DAYS=30`. See
+`reference/atlas-phases-overview.md` § Phase P for the full setup
+walkthrough.
+
 ### Vulnerability scanning (vuln-db env)
 
 ```bash

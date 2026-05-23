@@ -233,11 +233,12 @@ For cron cadence, TTL reset, and recovery playbooks, see
   demand-side filter (`pypi-intelligence --min-downloads N`).
 - **What gets written.** `pypi_intelligence.{downloads_30d, downloads_90d,
   downloads_fetched_at, downloads_source='bigquery-public'}`.
-- **Auth.** Lazy-imports `google.cloud.bigquery` (not in `local-recipes`
-  env by default — operators run `pixi add google-cloud-bigquery`).
-  Reads `GOOGLE_APPLICATION_CREDENTIALS` or `gcloud auth application-default`
-  cached creds. Missing library or creds → printed install hint +
-  clean skip with structured result dict; never raises.
+- **Auth.** Lazy-imports `google.cloud.bigquery` (bundled in
+  `local-recipes` env since v8.5.2+; the lib reads
+  `GOOGLE_APPLICATION_CREDENTIALS` or `gcloud auth application-default`
+  cached creds at `~/.config/gcloud/application_default_credentials.json`).
+  Missing library or creds → printed install hint + clean skip with
+  structured result dict; never raises.
 - **Tunables.** `PHASE_P_DISABLED`, `PHASE_P_ENABLED` (must = "1" to run;
   opt-in admin-tier), `PHASE_P_BQ_PROJECT` (GCP project override),
   `PHASE_P_TTL_DAYS=30`.
@@ -245,6 +246,60 @@ For cron cadence, TTL reset, and recovery playbooks, see
   Maintainer + consumer skip (BigQuery costs + heavy dep).
 - **Per-version granularity is out of scope** for v8.1.0 — would 200×
   the scan cost and blow the BQ free tier. Project-level only.
+
+### Phase P operator setup (one-time)
+
+Phase P needs a GCP billing project (free to create at
+console.cloud.google.com — even free-tier queries bill against one)
+and a one-time interactive `gcloud` auth. Once configured, future
+runs are unattended.
+
+```bash
+# 1. Set the GCP project ID (any project where the BigQuery API is
+#    enabled and you have query access). Put this in .env so every
+#    pixi-activated shell picks it up automatically.
+echo 'PHASE_P_BQ_PROJECT=<your-gcp-project-id>' >> .env
+
+# 2. One-time interactive auth — opens a browser for OAuth. The
+#    `gcloud` env (separate from `local-recipes` because the SDK is
+#    ~91 MB) carries the `gcloud` CLI; it's linux + macOS only.
+pixi run -e gcloud gcloud auth application-default login \
+    --project <your-gcp-project-id>
+
+# 3. One-time API enable. Two ways — either the browser console:
+#      https://console.developers.google.com/apis/api/bigquery.googleapis.com/overview?project=<your-gcp-project-id>
+#    Click "Enable". Or via gcloud (requires a *second* auth — the
+#    CLI uses different creds than ADC):
+pixi run -e gcloud gcloud auth login   # needed once for the CLI itself
+pixi run -e gcloud gcloud services enable bigquery.googleapis.com \
+    --project <your-gcp-project-id>
+
+# 4. Verify the client lib + creds resolve cleanly.
+pixi run -e local-recipes python -c "
+from google.cloud import bigquery; import google.auth
+creds, proj = google.auth.default()
+print('lib version:', bigquery.__version__)
+print('creds type:', type(creds).__name__)
+"
+```
+
+### Phase P run
+
+```bash
+# Standalone (just Phase P — fastest when the rest of the atlas is fresh)
+PHASE_P_ENABLED=1 pixi run -e local-recipes \
+    python .claude/scripts/conda-forge-expert/atlas_phase.py P
+
+# As part of a channel-wide refresh (admin profile auto-sets
+# PHASE_P_ENABLED=1 when google-cloud-bigquery is importable):
+pixi run -e local-recipes bootstrap-data --profile admin
+```
+
+Expected: single query against `bigquery-public-data.pypi.file_downloads`
+scans ~30 GB (within the 1 TB/month BQ free tier), completes in
+~1-2 min, upserts `downloads_30d` + `downloads_90d` into
+`pypi_intelligence` for the ~300k PyPI projects with any download
+activity in the last 90 days.
 
 ## Phase Q — Cross-channel presence (v8.1.0+)
 

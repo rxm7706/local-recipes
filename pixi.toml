@@ -92,6 +92,18 @@ cmd = "conda-smithy recipe-lint --conda-forge recipes/*"
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 dependencies.shellcheck = ">=0.10.0"
 
+[feature.gcloud-sdk]
+# Heavy (~91 MB) opt-in feature carrying the `gcloud` CLI for one-time
+# interactive auth (`gcloud auth application-default login`). Once
+# Application Default Credentials are cached at
+# `~/.config/gcloud/application_default_credentials.json`, the
+# `google-cloud-bigquery` lib in the `local-recipes` env picks them up
+# automatically and you don't need the `gcloud` env again until you
+# want to refresh creds or switch projects.
+# Linux + macOS only — google-cloud-sdk isn't on conda-forge for win-64.
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64"]
+dependencies.google-cloud-sdk = ">=569.0.0"
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
@@ -107,6 +119,7 @@ grayskull = ["python", "grayskull"]
 conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
 vuln-db = ["python", "vuln-db"]
+gcloud = ["python", "gcloud-sdk"]
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
@@ -505,6 +518,7 @@ tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pyte
 transformers = ">=5.9.0"          # Hugging Face transformers (model hub + pipelines)
 ## Data processing & conversion (ibis + adjacent ecosystem)
 duckdb = ">=1.5.3"                # Embedded analytical SQL database
+google-cloud-bigquery = ">=3.41.0" # BigQuery client — cf_atlas Phase P (opt-in via PHASE_P_ENABLED=1; needs ADC creds via the `gcloud` env)
 pandas = ">=3.0.3"                # DataFrame library for tabular data
 polars = ">=1.40.1"               # Rust-backed columnar DataFrame library
 pyarrow = ">=24.0.0"              # Apache Arrow Python bindings

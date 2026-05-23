@@ -2,6 +2,52 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.5.2** (May 23, 2026) — Fix Phase K's silent indefinite-hang failure mode on channel-wide admin runs. **PATCH bump** — bug fix only, no API changes; default behavior unchanged for callers that don't set the new tunables. Hang was reproducible on consecutive 2026-05-23 channel-wide runs (25,257 rows, both concurrency=8 and concurrency=2) with zero log output for >25 min while holding ESTAB TCP sockets to `api.github.com:443` and consuming essentially zero CPU; `gh api rate_limit` confirmed it wasn't a rate-limit. Four-component fix in `_phase_k_github_graphql_batch` (in `scripts/conda_forge_atlas.py`):
+
+- **Hard wall-clock cutoff** via `_phase_k_fetch_with_hard_timeout` — runs `urlopen` + `json.load` in a daemon thread and waits on an `Event` with a budget (default 45s, override via `PHASE_K_BATCH_HARD_TIMEOUT_S`). When the budget expires the runner thread is abandoned (daemon flag prevents process-exit blocking) and `TimeoutError` is raised. The previous `timeout=60` argument to `urlopen` was apparently not firing reliably — likely a `truststore.inject_into_ssl()` / HTTP/2-keepalive interaction.
+- **Per-batch progress log** every N batches (default 4, override via `PHASE_K_LOG_EVERY_N_BATCHES`), mirroring Phase N's `[i/N batches] fetched=X 404=Y failed=Z rate=...` cadence. Previously the function emitted nothing between phase start and phase end, so the operator had no signal short of `ps`/`ss` forensics.
+- **Per-batch checkpoint to `phase_state`** — every batch writes a row with `status='running'`, the current `batch=N` cursor, and any last-batch error string. A final row flips to `status='completed'` when Phase K finishes. A hang/kill now leaves a forensic trail showing exactly which batch never returned.
+- **Explicit exception classification** in the retry loop — `socket.timeout` / `TimeoutError`, `urllib.error.URLError` / `ConnectionError` / `OSError`, and `urllib.error.HTTPError` each branch to a logged retry path with the v7.8.1 ±25% jitter backoff (new `_phase_k_backoff_seconds(attempt, cap=60)` helper). A catch-all `Exception` branch logs `unexpected <Type>` and treats it as fatal-for-the-batch (no retry — there's no reason to think round 2 will differ).
+
+The fix is gated behind no env vars — it's the new default behavior for every Phase K run. Live smoke test (`PHASE_K_LIMIT=50`) completed cleanly in 3.0s with per-batch logging and a `phase_state` row showing `status='completed'`. 12 new unit tests cover backoff jitter band, hard-timeout cutoff under runner blocking, exception-type classification (timeout / URLError / HTTPError 404 vs 503 / unexpected KeyError), success-path progress logging, and checkpoint-with-error recording. Suite: 1088 passing + 2 skipped + 1 XPASS.
+
+**Operator impact:** the `PHASE_K_DISABLED=1` workaround documented in the 2026-05-23 hang incident is no longer needed for channel-wide runs; the default invocation `pixi run -e local-recipes bootstrap-data --profile admin` should now complete Phase K either successfully (~5-15 min) or with explicit per-batch errors visible in the log and in `phase_state`.
+
+**Files touched:**
+- `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` — `_phase_k_github_graphql_batch` refactored; new helpers `_phase_k_backoff_seconds`, `_phase_k_fetch_with_hard_timeout`; `phase_k_vcs_versions` plumbs `conn` + `run_started_at` and writes final 'completed' checkpoint
+- `.claude/skills/conda-forge-expert/tests/unit/test_phase_k_hang_fix.py` (new — 12 tests)
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — 8.5.1 → 8.5.2
+- `_bmad-output/projects/local-recipes/implementation-artifacts/spec-phase-k-hang-fix.md` (new — single-story spec)
+- Memory: `~/.claude/projects/.../project_phase_k_hang_on_admin_runs.md` updated to reflect the fix
+
+**Also folded into v8.5.2:** two additive fixes from the post-Phase-K audit work the same day. Both close items found in the 2026-05-23 admin-refresh audit; neither warrants its own version bump.
+
+### Phase N partial-batch recovery
+
+Phase N's GraphQL batch handler treated any `gh api graphql` non-zero exit as whole-batch failure. But GitHub returns valid partial data + an `errors[]` array (with `gh` exiting non-zero) when one repo in a batch doesn't exist — e.g. a renamed/deleted feedstock — and the gh CLI surfaces that as exit code 1 even though the response body is fully usable. The 2026-05-23 audit caught this: exactly 50 of 27,287 feedstocks were marked failed, in groups of 25 (= two whole batches each poisoned by one non-existent feedstock — `staged-recipes-feedstock` and `nss-cos7-aarch64-feedstock`).
+
+Fix: parse `stdout` regardless of `returncode` in `_phase_n_query_batch`. When the response body has a `data` dict (even alongside an `errors[]` array), use the partial data and let the existing `_row_from_payload` mark `payload is None` aliases as `repo not found (404)`. Only when stdout is empty/unparseable do we fall through to the existing rate-limit-retry / whole-batch-fail path. Matches the pattern Phase K's `_phase_k_github_graphql_batch` already uses for the same GraphQL behavior.
+
+Live-verified: targeted Phase N rerun on the 50 previously-failed feedstocks recovered 48 with fresh data; only the 2 actually-missing repos remained, correctly flagged with `gh_status_last_error = 'repo not found (404)'`. 6 new unit tests cover partial-data recovery, clean-success regression, whole-batch failure on bad creds, rate-limit retry preservation, and unparseable-payload edge cases.
+
+### Phase Q robostack 404 fix
+
+`_PHASE_Q_CONDA_CHANNELS["robostack"]` had two bugs that combined to silently zero out the robostack channel column for every PyPI row:
+
+1. **Wrong subdir.** Was `["noarch"]`, but robostack-staging's `noarch/repodata.json` is empty (only 0 packages — ROS packages are compiled C++ with Python bindings, not noarch). The actual package set (8,487 entries at audit time) lives in `linux-64`. Changed to `["linux-64"]`.
+2. **Missing `repodata.json` fallback.** `_phase_q_fetch_channel_pypi_names` only tried `current_repodata.json` — the optimized "latest-only" subset that bioconda/pytorch/nvidia publish. robostack-staging doesn't generate that file; it only ships the full `repodata.json`. Added a filename fallback in the fetcher: try `current_repodata.json` first, fall back to `repodata.json` on 404. Other channels remain unaffected (they have `current_repodata.json`, fast path wins). The full file is ~5-10× larger but still streams via urllib at our scale.
+
+Result: Phase Q now finds 1,650 names in robostack-staging. PyPI-universe overlap is just 1 (`draco` — Google's mesh-compression lib, pip-installable + used in ROS 3D workflows); the low ratio is expected since robostack packages mostly use `ros-<distro>-<pkg>` naming that doesn't match PyPI. The signal column is now correctly populated rather than silently failing.
+
+### Phase P documentation
+
+Phase P (`google-cloud-bigquery` PyPI downloads) was previously documented as needing `pixi add google-cloud-bigquery`. As of this version the lib is bundled in the `local-recipes` env, and a new `gcloud` pixi env (linux + macOS, the `google-cloud-sdk` package is not on conda-forge for win-64) carries the SDK for one-time `gcloud auth application-default login`. Updated:
+- `pixi.toml` — `google-cloud-bigquery >=3.41.0` added to `[feature.local-recipes.dependencies]`; new `[feature.gcloud-sdk]` carrying `google-cloud-sdk >=569.0.0` (linux + macOS only); new `gcloud` env in `[environments]`
+- `reference/atlas-phases-overview.md` — § Phase P expanded with 4-step operator setup walkthrough (project ID → ADC auth → API enable → verify) + standalone & bootstrap run commands
+- `quickref/commands-cheatsheet.md` — new "Phase P — BigQuery PyPI downloads" subsection between Atlas and Vulnerability sections
+
+Live-verified: 850,477 PyPI projects' download counts ingested in 158s from `bigquery-public-data.pypi.file_downloads` (~30 GB scanned, within BQ free tier). The `pypi-intelligence --sort-by downloads` ranking now has its demand-side signal; top output includes `fastapi-cloud-cli` (score=100, 25M/mo, pure-python, MIT, repo verified) as a slam-dunk packaging candidate.
+
 **v8.5.1** (May 23, 2026) — Rename `env-roots` → `env-inspect` + clear a standing meta-test false positive. **PATCH bump** — pure rename, no behavior change. The tool was misnomered after v8.5.0 expanded it from "list roots" into an 8-mode env inspector (roots / audit / freshness / security / bus-factor / licenses / sbom / diff). Renames touched:
 
 - Canonical script: `scripts/env_roots.py` → `scripts/env_inspect.py`

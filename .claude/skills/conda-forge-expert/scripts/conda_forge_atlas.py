@@ -3345,11 +3345,70 @@ def _gh_token() -> str | None:
     return None
 
 
+def _phase_k_backoff_seconds(attempt: int, *, cap: float = 60.0) -> float:
+    """Jittered exponential backoff for Phase K retries.
+
+    Matches the v7.8.1 Phase F/H pattern: ``min(cap, 2**attempt + 2)``
+    seconds, multiplied by a uniform jitter in ``[0.75, 1.25]``.
+    """
+    import random
+    base = min(cap, float(2 ** attempt + 2))
+    return base * random.uniform(0.75, 1.25)
+
+
+def _phase_k_fetch_with_hard_timeout(
+    req: "urllib.request.Request",
+    *,
+    hard_timeout_s: float,
+):
+    """Run ``urlopen`` + ``json.load`` with a hard wall-clock cutoff.
+
+    ``urllib``'s ``timeout=`` parameter applies to socket operations,
+    but has been observed to hang indefinitely on stalled streams
+    (likely a ``truststore`` / HTTP/2 keepalive interaction —
+    2026-05-23 cf_atlas Phase K admin-run incident). This wrapper
+    enforces a hard cutoff by running the request in a daemon thread
+    and waiting on an ``Event`` with a wall-clock budget. If the
+    budget expires, the runner thread is abandoned (daemon-flagged,
+    so process exit isn't blocked) and ``TimeoutError`` is raised.
+
+    Returns the parsed JSON payload on success; re-raises the inner
+    exception on failure.
+    """
+    import threading
+    result: dict = {"payload": None, "err": None}
+    done = threading.Event()
+
+    def _runner() -> None:
+        try:
+            with urllib.request.urlopen(req, timeout=hard_timeout_s) as resp:
+                result["payload"] = json.load(resp)
+        except BaseException as e:  # noqa: BLE001 — re-raised on caller side
+            result["err"] = e
+        finally:
+            done.set()
+
+    t = threading.Thread(target=_runner, daemon=True)
+    t.start()
+    # +5s grace for urllib's own timeout to fire first when it does work.
+    if not done.wait(timeout=hard_timeout_s + 5.0):
+        raise TimeoutError(
+            f"phase-k batch exceeded hard {hard_timeout_s}s timeout"
+        )
+    if result["err"] is not None:
+        raise result["err"]
+    return result["payload"]
+
+
 def _phase_k_github_graphql_batch(
     repos: list[tuple[str, str]],
     gh_token: str,
     *,
     batch_size: int = 100,
+    conn: "sqlite3.Connection | None" = None,
+    run_started_at: int | None = None,
+    hard_timeout_s: float = 45.0,
+    progress_every_n_batches: int = 4,
 ) -> dict[tuple[str, str], tuple[str | None, str | None]]:
     """Resolve latest release/tag for a list of GitHub repos via GraphQL.
 
@@ -3416,7 +3475,19 @@ def _phase_k_github_graphql_batch(
         "X-GitHub-Api-Version": "2022-11-28",
     }
 
+    import socket  # for narrow exception classification below
+
+    n_batches = (len(repos) + batch_size - 1) // batch_size
+    t_start = time.monotonic()
+    # Running counters for progress reporting and CHECKPOINTING. These
+    # mirror the outer Phase K counters but only over the GraphQL slice;
+    # the outer `_process_result` recomputes its own totals from `results`.
+    running_fetched = 0
+    running_not_found = 0
+    running_failed = 0
+
     for batch_start in range(0, len(repos), batch_size):
+        batch_idx = batch_start // batch_size
         batch = repos[batch_start:batch_start + batch_size]
         query = _build_query(batch)
         body = json.dumps({"query": query}).encode("utf-8")
@@ -3428,59 +3499,130 @@ def _phase_k_github_graphql_batch(
                 req = urllib.request.Request(
                     endpoint, data=body, headers=headers, method="POST",
                 )
-                with urllib.request.urlopen(req, timeout=60) as resp:
-                    payload = json.load(resp)
+                payload = _phase_k_fetch_with_hard_timeout(
+                    req, hard_timeout_s=hard_timeout_s,
+                )
                 break
             except urllib.error.HTTPError as e:
                 batch_err = f"HTTP {e.code}"
                 if e.code in (403, 429, 502, 503, 504) and attempt < 2:
-                    time.sleep(2 ** attempt + 2)
+                    print(
+                        f"    batch {batch_idx + 1}/{n_batches}: {batch_err}, "
+                        f"retry {attempt + 1}/3"
+                    )
+                    time.sleep(_phase_k_backoff_seconds(attempt))
                     continue
+                print(f"    batch {batch_idx + 1}/{n_batches}: {batch_err} (giving up)")
                 break
-            except Exception as e:
-                batch_err = f"{type(e).__name__}: {str(e)[:120]}"
+            except (TimeoutError, socket.timeout):
+                batch_err = f"timeout after {hard_timeout_s}s"
                 if attempt < 2:
-                    time.sleep(1 + attempt)
+                    print(
+                        f"    batch {batch_idx + 1}/{n_batches}: {batch_err}, "
+                        f"retry {attempt + 1}/3"
+                    )
+                    time.sleep(_phase_k_backoff_seconds(attempt))
                     continue
+                print(f"    batch {batch_idx + 1}/{n_batches}: {batch_err} (giving up)")
+                break
+            except (urllib.error.URLError, ConnectionError, OSError) as e:
+                # OSError covers e.g. broken pipe, connection reset.
+                batch_err = f"network: {type(e).__name__}"
+                if attempt < 2:
+                    print(
+                        f"    batch {batch_idx + 1}/{n_batches}: {batch_err}, "
+                        f"retry {attempt + 1}/3"
+                    )
+                    time.sleep(_phase_k_backoff_seconds(attempt))
+                    continue
+                print(f"    batch {batch_idx + 1}/{n_batches}: {batch_err} (giving up)")
+                break
+            except Exception as e:  # truly unexpected — log + abandon this batch
+                batch_err = f"unexpected {type(e).__name__}: {str(e)[:100]}"
+                print(f"    batch {batch_idx + 1}/{n_batches}: {batch_err} (fatal)")
                 break
 
         if payload is None:
             for owner, repo in batch:
                 results[(owner, repo)] = (None, batch_err or "graphql batch failed")
-            continue
+            running_failed += len(batch)
+        else:
+            data = payload.get("data") or {}
+            errors_by_alias: dict[str, str] = {}
+            for err in (payload.get("errors") or []):
+                path = err.get("path") or []
+                alias = path[0] if path else None
+                etype = err.get("type") or ""
+                msg = err.get("message") or ""
+                if not alias:
+                    continue
+                if etype == "NOT_FOUND" or "Could not resolve" in msg:
+                    errors_by_alias[alias] = "HTTP 404"
+                else:
+                    errors_by_alias[alias] = (
+                        f"{etype or 'GraphQLError'}: {msg[:80]}"
+                    )
 
-        data = payload.get("data") or {}
-        errors_by_alias: dict[str, str] = {}
-        for err in (payload.get("errors") or []):
-            path = err.get("path") or []
-            alias = path[0] if path else None
-            etype = err.get("type") or ""
-            msg = err.get("message") or ""
-            if not alias:
-                continue
-            if etype == "NOT_FOUND" or "Could not resolve" in msg:
-                errors_by_alias[alias] = "HTTP 404"
-            else:
-                errors_by_alias[alias] = f"{etype or 'GraphQLError'}: {msg[:80]}"
+            for i, (owner, repo) in enumerate(batch):
+                alias = f"r{i}"
+                repo_data = data.get(alias)
+                if repo_data is None:
+                    err = errors_by_alias.get(alias, "HTTP 404")
+                    results[(owner, repo)] = (None, err)
+                    if "404" in err:
+                        running_not_found += 1
+                    else:
+                        running_failed += 1
+                    continue
+                release_nodes = (((repo_data.get("releases") or {}).get("nodes")) or [])
+                tag_nodes = (((repo_data.get("refs") or {}).get("nodes")) or [])
+                tag: str | None = None
+                if release_nodes:
+                    tag = (release_nodes[0] or {}).get("tagName")
+                if not tag and tag_nodes:
+                    tag = (tag_nodes[0] or {}).get("name")
+                if tag:
+                    results[(owner, repo)] = (_normalize_release_tag(tag), None)
+                    running_fetched += 1
+                else:
+                    results[(owner, repo)] = (None, "no tags")
+                    running_not_found += 1
 
-        for i, (owner, repo) in enumerate(batch):
-            alias = f"r{i}"
-            repo_data = data.get(alias)
-            if repo_data is None:
-                err = errors_by_alias.get(alias, "HTTP 404")
-                results[(owner, repo)] = (None, err)
-                continue
-            release_nodes = (((repo_data.get("releases") or {}).get("nodes")) or [])
-            tag_nodes = (((repo_data.get("refs") or {}).get("nodes")) or [])
-            tag: str | None = None
-            if release_nodes:
-                tag = (release_nodes[0] or {}).get("tagName")
-            if not tag and tag_nodes:
-                tag = (tag_nodes[0] or {}).get("name")
-            if tag:
-                results[(owner, repo)] = (_normalize_release_tag(tag), None)
-            else:
-                results[(owner, repo)] = (None, "no tags")
+        # Per-batch checkpoint so a hang or kill leaves a forensic trail
+        # in `phase_state`. Best-effort: a failed write must not derail
+        # the whole phase (the next successful batch will overwrite it).
+        if conn is not None and run_started_at is not None:
+            try:
+                items_done = min((batch_idx + 1) * batch_size, len(repos))
+                conn.execute(
+                    "INSERT OR REPLACE INTO phase_state "
+                    "(phase_name, run_started_at, last_completed_cursor, "
+                    " items_completed, items_total, status, last_error) "
+                    "VALUES ('K', ?, ?, ?, ?, 'running', ?)",
+                    (
+                        run_started_at, f"batch={batch_idx + 1}",
+                        items_done, len(repos), batch_err,
+                    ),
+                )
+                conn.commit()
+            except Exception:
+                pass  # checkpoint is observability-only; never block on it
+
+        # Per-batch progress log — every N batches, plus the last one.
+        if (
+            (batch_idx % max(1, progress_every_n_batches) == 0)
+            or batch_idx == n_batches - 1
+        ):
+            elapsed = time.monotonic() - t_start
+            done_repos = min((batch_idx + 1) * batch_size, len(repos))
+            rate = done_repos / elapsed if elapsed > 0 else 0.0
+            eta_min = (len(repos) - done_repos) / rate / 60 if rate > 0 else 0.0
+            print(
+                f"    GitHub GraphQL [{batch_idx + 1}/{n_batches} batches] "
+                f"fetched={running_fetched:,} 404={running_not_found:,} "
+                f"failed={running_failed:,}  rate={rate:.1f}/s "
+                f"ETA={eta_min:.1f}min"
+            )
 
     return results
 
@@ -3663,7 +3805,10 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
     ttl_days = int(os.environ.get("PHASE_K_TTL_DAYS", "7"))
     concurrency = max(1, int(os.environ.get("PHASE_K_CONCURRENCY", "8")))
     limit = int(os.environ.get("PHASE_K_LIMIT", "0"))
+    hard_timeout_s = float(os.environ.get("PHASE_K_BATCH_HARD_TIMEOUT_S", "45"))
+    log_every_n = max(1, int(os.environ.get("PHASE_K_LOG_EVERY_N_BATCHES", "4")))
     cutoff = int(time.time()) - ttl_days * 86400
+    run_started_at = int(time.time())
 
     # Eligibility: any actionable row whose URLs reference a known VCS host
     # AND whose upstream_versions row(s) for vcs sources are stale or absent.
@@ -3756,7 +3901,12 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
         )
         assert gh_token is not None  # narrowed by use_graphql
         gh_results = _phase_k_github_graphql_batch(
-            gh_repos, gh_token, batch_size=graphql_batch_size,
+            gh_repos, gh_token,
+            batch_size=graphql_batch_size,
+            conn=conn,
+            run_started_at=run_started_at,
+            hard_timeout_s=hard_timeout_s,
+            progress_every_n_batches=log_every_n,
         )
 
     def _process_result(
@@ -3860,6 +4010,24 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
         f"failed {failed:,}, 404/no-tags {not_found:,}, no_repo {no_repo:,} "
         f"(by host: {by_host}), history snapshot rows: {snap_total:,}"
     )
+    # Final checkpoint — flip status to 'completed' so operators can tell
+    # a successful run apart from a hang/kill where the last row is still
+    # marked 'running'.
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO phase_state "
+            "(phase_name, run_started_at, last_completed_cursor, "
+            " items_completed, items_total, run_completed_at, status, last_error) "
+            "VALUES ('K', ?, ?, ?, ?, ?, 'completed', NULL)",
+            (
+                run_started_at, f"complete",
+                fetched + failed + not_found, len(work),
+                int(time.time()),
+            ),
+        )
+        conn.commit()
+    except Exception:
+        pass  # observability-only
     return {
         "rows_eligible": len(rows),
         "fetched": fetched,
@@ -3870,6 +4038,7 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
         "history_snapshot_rows": snap_total,
         "ttl_days": ttl_days,
         "concurrency": concurrency,
+        "hard_timeout_s": hard_timeout_s,
         "duration_seconds": round(elapsed, 1),
     }
 
@@ -4854,12 +5023,27 @@ def _phase_n_query_batch(feedstocks: list[str]) -> tuple[dict | None, str | None
         except subprocess.TimeoutExpired:
             return (None, "gh api timed out (>60s)")
 
-        if result.returncode == 0:
+        # Parse stdout regardless of returncode. GitHub GraphQL returns
+        # valid partial data + an `errors[]` array when one repo in a
+        # batch doesn't exist (e.g. renamed / deleted feedstock); the
+        # `gh` CLI then exits non-zero even though the response body is
+        # usable. Without this, a single missing repo poisons the whole
+        # batch of 25 (the 2026-05-23 admin run lost exactly 50 = 2 × 25
+        # feedstocks this way: one bad feedstock per batch).
+        # `_row_from_payload` already maps `payload is None` to a clean
+        # per-feedstock "repo not found (404)" error, so partial data is
+        # the right shape downstream.
+        payload: dict | None = None
+        if result.stdout.strip():
             try:
                 payload = json.loads(result.stdout)
             except json.JSONDecodeError:
-                return (None, "GraphQL response not parseable JSON")
-            return (payload.get("data") or {}, None)
+                payload = None
+        if payload is not None and isinstance(payload.get("data"), dict):
+            return (payload["data"], None)
+        # No usable payload — keep the existing error-path behavior.
+        if result.returncode == 0:
+            return (None, "GraphQL response not parseable JSON")
 
         last_err = result.stderr[:200]
         if _is_gh_rate_limit_stderr(result.stderr) and attempt < 2:
@@ -5508,7 +5692,12 @@ _PHASE_Q_CONDA_CHANNELS = {
     "bioconda":   ("bioconda",            ["noarch"]),
     "pytorch":    ("pytorch",             ["noarch"]),
     "nvidia":     ("nvidia",              ["noarch"]),
-    "robostack":  ("robostack-staging",   ["noarch"]),
+    # robostack: noarch is empty (ROS packages are compiled C++ with
+    # Python bindings); the actual package set lives in `linux-64`.
+    # Also: robostack-staging doesn't publish `current_repodata.json` —
+    # the fetch helper now falls back to `repodata.json` automatically
+    # when the optimized form returns 404.
+    "robostack":  ("robostack-staging",   ["linux-64"]),
 }
 
 # Note: Phase Q's bulk-index ecosystems (homebrew, nixpkgs, spack, debian,
@@ -5534,35 +5723,51 @@ def _phase_q_fetch_channel_pypi_names(
     last_err: str | None = None
     if _resolve_anaconda_channel_urls is None:
         return set(), "_http module unavailable"
+    # Try `current_repodata.json` (the optimized "latest only" subset) first;
+    # fall back to `repodata.json` (full history) when the channel doesn't
+    # publish the optimized form. Some channels — notably robostack — only
+    # generate `repodata.json`. The full file is larger (5-10× typically)
+    # but still streams via urllib without buffering issues at our scale.
+    repodata_filenames = ("current_repodata.json", "repodata.json")
     for subdir in subdirs:
-        urls = _resolve_anaconda_channel_urls(channel, subdir, "current_repodata.json")
-        ok = False
-        for url in urls:
-            try:
-                req = _make_req(url)
-                with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    raw = resp.read()
-            except (urllib.error.HTTPError, urllib.error.URLError, ConnectionError) as e:
-                last_err = f"{type(e).__name__}: {e}"
-                continue
-            try:
-                doc = json.loads(raw)
-            except (ValueError, json.JSONDecodeError) as e:
-                last_err = f"JSON parse: {e}"
-                continue
-            for bucket in ("packages", "packages.conda"):
-                pkgs = doc.get(bucket) or {}
-                if not isinstance(pkgs, dict):
+        subdir_ok = False
+        for filename in repodata_filenames:
+            urls = _resolve_anaconda_channel_urls(channel, subdir, filename)
+            for url in urls:
+                try:
+                    req = _make_req(url)
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        raw = resp.read()
+                except urllib.error.HTTPError as e:
+                    last_err = f"HTTPError: {e}"
+                    # 404 on current_repodata.json → try repodata.json next.
+                    # Other HTTP errors fall through to the URL loop's next mirror.
+                    if e.code == 404 and filename == "current_repodata.json":
+                        break  # break URL loop; outer filename loop tries repodata.json
                     continue
-                for entry in pkgs.values():
-                    if not isinstance(entry, dict):
+                except (urllib.error.URLError, ConnectionError) as e:
+                    last_err = f"{type(e).__name__}: {e}"
+                    continue
+                try:
+                    doc = json.loads(raw)
+                except (ValueError, json.JSONDecodeError) as e:
+                    last_err = f"JSON parse: {e}"
+                    continue
+                for bucket in ("packages", "packages.conda"):
+                    pkgs = doc.get(bucket) or {}
+                    if not isinstance(pkgs, dict):
                         continue
-                    pkg_name = entry.get("name")
-                    if isinstance(pkg_name, str) and pkg_name:
-                        names.add(_pep503_canonical(pkg_name))
-            ok = True
-            break
-        if not ok:
+                    for entry in pkgs.values():
+                        if not isinstance(entry, dict):
+                            continue
+                        pkg_name = entry.get("name")
+                        if isinstance(pkg_name, str) and pkg_name:
+                            names.add(_pep503_canonical(pkg_name))
+                subdir_ok = True
+                break  # break URL loop
+            if subdir_ok:
+                break  # break filename loop
+        if not subdir_ok:
             return set(), last_err
     return names, None
 
