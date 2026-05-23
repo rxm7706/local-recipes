@@ -2,11 +2,11 @@
 doc_type: prd
 project_name: local-recipes
 date: 2026-05-12
-version: '1.4.0'
+version: '1.4.1'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
-source_pin: 'conda-forge-expert v8.5.1'
+source_pin: 'conda-forge-expert v8.5.2'
 re_validated: 2026-05-23
 input_docs:
   - planning-artifacts/index.md
@@ -18,6 +18,7 @@ edit_history:
   - { date: '2026-05-13', via: 'bmad-correct-course', delta: 'v7.9.0 → v8.0.0 sync after structural-enforcement + persona-profile bundle (docs/specs/conda-forge-expert-v8.0.md): schema v20 → v21, +v_actionable_packages view, +Phase H serial-aware eligible-rows gate (pypi_version_serial_at_fetch column), +bootstrap-data --profile {maintainer,admin,consumer} with gh-user / phase-L-sources auto-detection, +tests/meta/test_actionable_scope.py, 5 catalog rows 📋 → ✅. Wave C (drop vuln_total) DEFERRED — 4 consumers found, retro-atlas-pypi-universe-split-2026-05-13.md corrected. MINOR bump (no FR/NFR scope shift; new persona-aware UX surface counts as feature-level addition, no breaking PRD-level change — backward-compatible CLI flag).' }
   - { date: '2026-05-15', via: 'bmad-correct-course', delta: 'v8.0.x → v8.1.0 sync after PyPI intelligence layer (docs/specs/atlas-pypi-intelligence.md): schema v21 → v22, +pypi_intelligence side table (35 cols across 5 tiers + operator notes), +pypi_universe_serial_snapshots history, +v_pypi_candidates view, +5 new phases (O/P/Q/R/S), +pypi-intelligence CLI + MCP tool + profile integration. pypi_universe stays reference-data-only (3 cols, locked). Phase P (BigQuery) lazy-imports google-cloud-bigquery for admin-tier opt-in. Phase R bounded to top-N candidate slice (default 5000). All 8 spec open questions pre-resolved before BMAD intake. 51 new tests, 1,064 total. MINOR bump (additive — no FR/NFR scope shift; no existing CLI changes; new pypi-intelligence CLI and MCP tool are opt-in surfaces). Retro: implementation-artifacts/retro-atlas-pypi-intelligence-2026-05-15.md.' }
   - { date: '2026-05-23', via: 'bmad-correct-course', delta: 'v8.1.0 → v8.5.1 sync after env-inspect suite (5 releases: v8.3.1 env-roots utility, v8.3.2 --audit, v8.4.0 --freshness, v8.5.0 Batch A+B+C [5 modes + my_feedstocks CLI + 2 MCP tools], v8.5.1 rename env-roots → env-inspect + clear standing `__init__.py` meta-test false positive introduced by v8.3.0). Closes 5 of 7 📋-open consumer-tier items in atlas-actionable-intelligence.md. Script count ~42 → ~44 (env_inspect.py + my_feedstocks.py); MCP tool count 36 → 37 (added env_inspect 8-mode dispatcher; extended my_feedstocks with triage/limit/include_archived). Atlas phase count and schema body references aligned to v22 / 22 phases (sync-miss from v8.1.0). Meta-test suite: 521/523 pass, 2 documented skips, 0 failures. MINOR bump (additive — no FR/NFR scope shift; no breaking CLI or MCP changes). Retro: implementation-artifacts/retro-env-inspect-suite-2026-05-23.md.' }
+  - { date: '2026-05-23', via: 'bmad-correct-course', delta: 'v8.5.1 → v8.5.2 sync after the 2026-05-23 admin-refresh audit (spec-phase-k-hang-fix.md + retro-phase-k-hang-fix-2026-05-23.md): 4 bundled fixes. (a) Phase K hang fix — _phase_k_fetch_with_hard_timeout daemon-thread watchdog (45s default, env PHASE_K_BATCH_HARD_TIMEOUT_S) replaces urllib timeout that did not fire on stalled streams; per-batch progress log every N batches (env PHASE_K_LOG_EVERY_N_BATCHES, default 4); per-batch checkpoint into phase_state with running/completed status + cursor; explicit exception classification (timeout / network / HTTP / unexpected) with v7.8.1 jitter backoff helper _phase_k_backoff_seconds. (b) Phase P enablement — google-cloud-bigquery>=3.41.0 bundled in local-recipes env; new [feature.gcloud-sdk] + gcloud env for one-time gcloud auth application-default login; PHASE_P_BQ_PROJECT in .env; 4-step operator setup walkthrough in reference/atlas-phases-overview.md § Phase P. Live-verified 850,477 PyPI projects ingested. (c) Phase Q robostack 404 fix — subdir corrected to linux-64 (noarch is empty for ROS packages); current_repodata.json → repodata.json fallback in _phase_q_fetch_channel_pypi_names. Now 4/4 channels reporting. (d) Phase N partial-batch recovery — parse gh stdout regardless of returncode so partial {data, errors[]} responses from one-missing-repo batches recover the other 24 instead of poisoning the whole batch. 48 of 50 previously-failed feedstocks now recovered; the 2 remaining are real missing repos. PATCH bump (no FR/NFR scope shift; no breaking CLI or MCP changes). Suite 1088 → 1094 passing. Sprint change proposal: planning-artifacts/sprint-change-proposal-2026-05-23-v8.5.2.md. Retro: implementation-artifacts/retro-phase-k-hang-fix-2026-05-23.md.' }
 ---
 
 # Product Requirements Document: `local-recipes` Rebuild
@@ -459,6 +460,7 @@ Captured here so they aren't forgotten. All have detailed treatment in source do
 | DW8 | DB-GPT conda-forge packaging | `docs/specs/db-gpt-conda-forge.md` |
 | DW9 | Claude team memory subsystem | `docs/specs/claude-team-memory.md` |
 | DW10 | Cursor SDK local recipe | `_bmad-output/projects/local-recipes/implementation-artifacts/spec-cursor-sdk-local-recipe.md` |
+| DW11 | Extend per-batch checkpoint + hard-timeout watchdog pattern (introduced in v8.5.2 Phase K hang fix) to Phases L (registry version) and M (cf-graph pr_info); both still write checkpoints only at phase end | `retro-phase-k-hang-fix-2026-05-23.md` § Follow-up |
 
 ---
 
