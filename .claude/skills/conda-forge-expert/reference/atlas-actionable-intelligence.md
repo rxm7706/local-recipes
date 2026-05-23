@@ -153,9 +153,14 @@ SBOM generation, license compliance.
 |---|---|---|---|---|
 | Scan my pixi.lock / requirements.txt for vulns | `scan-project pixi.lock` | `scan_project.py` (existing) + vdb | CVE list across closure | ✅ shipped |
 | Same scan offline (no vuln-db env required) | `scan-project --use-cached-vulns` (planned) | `scan_project.py` + Phase G cache | Same output, no heavy env | 📋 open |
-| Bus-factor my dependencies | `bus-factor-my-env pixi.lock` (planned) — match manifest names to atlas, get maintainer counts | `scan_project.py` parser + maintainer junction | Single-points-of-failure list | 📋 open |
-| License compatibility for my project | `scan-project --license-check --target Apache-2.0` (planned) | `scan_project.py` + license matrix | Yes/no with offending deps | 📋 open |
-| SBOM (CycloneDX/SPDX) | `scan-project --sbom cyclonedx` | `scan_project.py` (existing) | Standard SBOM | ✅ shipped |
+| Bus-factor my dependencies | `env-inspect --bus-factor` (live env via conda-meta + atlas maintainer junction); or `bus-factor-my-env pixi.lock` for manifest-mode (still 📋) | `scan_project.py` parser + maintainer junction | Single-points-of-failure list | ✅ shipped (v8.5.0 — env-mode; manifest-mode still 📋) |
+| License compatibility for my project | `env-inspect --licenses` for env rollup + non-permissive flag; `scan-project --license-check --target Apache-2.0` for target-comparison (still 📋) | `scan_project.py` + license matrix | Yes/no with offending deps | ✅ shipped (v8.5.0 — env rollup; target-license comparison still 📋) |
+| SBOM (CycloneDX/SPDX) | `scan-project --sbom cyclonedx` (manifest/image/etc.); `env-inspect --sbom cyclonedx\|spdx` (live env mode) | `scan_project.py` + `env_inspect.py` + `_sbom.py` | Standard SBOM | ✅ shipped (v8.5.0 — env mode added) |
+| Env-vs-env drift (set + version diff) | `env-inspect --diff OTHER_ENV` | `conda-meta/` of both envs | only-in-A / only-in-B / version-different / in-sync | ✅ shipped (v8.5.0) |
+| Env-level CVE rollup | `env-inspect --security` for installed-version CVE counts; `scan-project pixi.lock` for manifest-mode | Phase G `package_version_vulns` | Per-pkg KEV/Critical/High/total ranked | ✅ shipped (v8.5.0 — env-mode; manifest-mode shipped earlier) |
+| Env-version-vs-conda-forge-vs-PyPI lag | `env-inspect --freshness` with `--scope roots\|explicits\|all` (live PyPI by default; `--no-live` for atlas-only) | Phase B (cf) + Phase H/live (pypi) + Phase M (bot) | Status-banded list (cf-behind-pypi-no-PR / env-behind-cf / in-sync / …) | ✅ shipped (v8.4.0) |
+| Manifest hygiene audit (pure-intent / transitively-covered / drifted explicits) | `env-inspect --audit` | `conda-meta/` + `pixi list --explicit --json` | Three-bucket pixi.toml cleanup list | ✅ shipped (v8.3.2) |
+| Maintainer triage (composite) | `my-feedstocks --triage --maintainer NAME` (composes CVE / CI-red / stuck-bot / behind-upstream / open-PRs+issues into one urgency score; severity-banded) | Phase B/G/H/M/N composite | Top-N daily punch list | ✅ shipped (v8.5.0) |
 | SBOM enriched with cached vuln annotations | `scan-project --sbom cyclonedx --enrich-vulns-from-atlas` (planned) | `scan_project.py` + Phase G | SBOM with CVE tags, no vdb env required | 📋 open |
 | Reproduce env at known-safe state | "Show me the most recent build set with 0 critical CVEs" | Per-version vuln data — Phase G extension | Locked env recommendation | 📋 open (needs per-version vulns) |
 

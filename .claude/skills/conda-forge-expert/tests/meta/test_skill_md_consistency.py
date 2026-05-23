@@ -56,6 +56,10 @@ class TestSkillMdConsistency:
             "setup.py",
             "script.py",          # rare, generic
             "conda_forge_server.py",  # MCP server, lives at .claude/tools/
+            # Universal Python conventions — appear in shell-example prose
+            # (e.g. `tar tzf <sdist> | grep '__init__.py$'` in G7 gotcha) and
+            # in package-path illustrations, not as references to repo scripts.
+            "__init__.py",
         }
 
         referenced = set(re.findall(r"\b([A-Za-z_][A-Za-z0-9_-]*\.py)\b", content))

@@ -2,6 +2,190 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.5.1** (May 23, 2026) — Rename `env-roots` → `env-inspect` + clear a standing meta-test false positive. **PATCH bump** — pure rename, no behavior change. The tool was misnomered after v8.5.0 expanded it from "list roots" into an 8-mode env inspector (roots / audit / freshness / security / bus-factor / licenses / sbom / diff). Renames touched:
+
+- Canonical script: `scripts/env_roots.py` → `scripts/env_inspect.py`
+- Wrapper: `.claude/scripts/conda-forge-expert/env_roots.py` → `env_inspect.py`
+- Pixi task: `env-roots` → `env-inspect`
+- argparse `prog`: `env-roots` → `env-inspect`
+- MCP tool: `env_roots()` → `env_inspect()`
+- Path constant in MCP server: `ENV_ROOTS_SCRIPT` → `ENV_INSPECT_SCRIPT`
+- Meta-test `SCRIPTS` entry
+- `quickref/commands-cheatsheet.md` (20 references)
+- `reference/atlas-actionable-intelligence.md` (7 references)
+- Module docstring + `--help` description updated to enumerate all 8 modes
+
+**No back-compat alias.** Existing references in CHANGELOG entries v8.3.1–v8.5.0 are historical and intentionally left pointing to `env-roots` (they describe what shipped at the time).
+
+### Meta-test false-positive cleared
+
+`test_skill_md_lists_existing_scripts_only` has been failing on `main` since v8.3.0 — its regex `\b([A-Za-z_][A-Za-z0-9_-]*\.py)\b` was matching `__init__.py` 4 times in the G7 gotcha section's shell-example prose (`tar tzf <sdist> | grep '__init__.py$'`) and path-illustration (`microsoft_kiota_bundle-1.10.1/kiota_bundle/__init__.py → kiota_bundle`). Those are universal Python conventions, not references to repo scripts. Folded into this release by adding `"__init__.py"` to the test's `project_level` allowlist with a comment explaining why. Detected and fixed in the v8.5.1 cleanup pass rather than carrying it into a separate PATCH.
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/scripts/env_inspect.py` (renamed from `env_roots.py`; prog + docstring updated)
+- `.claude/scripts/conda-forge-expert/env_inspect.py` (renamed wrapper)
+- `.claude/tools/conda_forge_server.py` — `ENV_INSPECT_SCRIPT` constant + `env_inspect()` tool function
+- `pixi.toml` — task renamed
+- `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py` — `env_inspect.py` in SCRIPTS
+- `.claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py` — `__init__.py` added to `project_level` allowlist with rationale comment
+- `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md` + `reference/atlas-actionable-intelligence.md` — sed-replaced
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — 8.5.0 → 8.5.1
+
+### Test status
+
+**521 of 523 meta tests pass; 2 documented skips (`health_check.py`, `mapping_manager.py` no `--help`); 0 failures.** The standing pre-existing `__init__.py` false positive is resolved.
+
+---
+
+**v8.5.0** (May 23, 2026) — Batch A + B + C: env-side suite completion + maintainer triage + MCP surface. **MINOR bump** — three new modes on `env_roots`, a new `my_feedstocks` CLI script, two new MCP tools (plus an extension of an existing one). All additive; existing `env-roots`, `--audit`, `--freshness` behavior unchanged.
+
+### Batch A — consumer parity (env-roots completes the env-side suite)
+
+Five new modes on `env_roots`, all sharing the same scope (`--scope roots|explicits|all`) and atlas-join machinery introduced in v8.4.0:
+
+| Mode | What it gives the consumer | Data source |
+|---|---|---|
+| `--security` | CVE counts (KEV / Critical / High / total) affecting installed versions, sorted by severity. Atlas-stale warning. | `package_version_vulns` (Phase G) |
+| `--bus-factor` | Per-package maintainer count; explicit list of bus_factor=1 packages (single-maintainer SPoFs) | `package_maintainers + maintainers` (Phase E) |
+| `--licenses` | SPDX rollup with non-permissive (GPL/AGPL/LGPL family) callout + unknown-license list + top-N license counts | `packages.conda_license` (Phase B) |
+| `--sbom cyclonedx\|spdx` | Standard CycloneDX 1.6 or SPDX JSON SBOM for the env; reuses `_sbom.emit_cyclonedx` / `emit_spdx` and `scan_project.Dep` | `conda-meta/` + atlas licenses |
+| `--diff OTHER_ENV` | Set + version diff between this env and another pixi env (only-in-A / only-in-B / version-different / in-sync) | `conda-meta/` of both |
+
+Sample on `local-recipes` roots (84 pkgs): 11 vulnerable / 0 KEV / 1 High; 31 bus_factor=1; 5 non-permissive (`d2` MPL+GPL, `pandoc` GPL-2, `pymupdf` AGPL-3, `shellcheck` GPL-3, `yamllint` GPL-3). `--diff build` showed 621 pkgs only in local-recipes vs. 2 only in build vs. 6 version-different.
+
+### Batch B — maintainer triage (`my_feedstocks --triage`)
+
+New `my_feedstocks` script (canonical at `scripts/my_feedstocks.py` + wrapper at `.claude/scripts/conda-forge-expert/`) wraps and replaces the SQL-shaped existing MCP tool. Default mode is the same portfolio overview; `--triage` ranks all feedstocks by an urgency score:
+
+```
++1000 × KEV CVE
++ 100 × Critical CVE
++  20 × High CVE
++  50 × CI red on default branch
++  30 × stuck-bot (bot_version_errors_count > 0)
++  20 × feedstock_bad
++  10 × behind upstream (cf < pypi)
++   5 × open bot PR
++   1 × human PR / open issue (capped at 10 issues)
+- 1000 × archived (deprioritize)
+```
+
+Output grouped by severity band: **CRIT (≥1000)** → **WARN (≥50)** → **REV (≥10)** → **ok**. Maintainer resolved via `--maintainer NAME`, else `$GITHUB_USERNAME`, else `$USER`. `--include-archived` reincludes archived feedstocks (hidden by default).
+
+Sample on `rxm7706` (732 feedstocks): 1 WARN (`weasyprint` — 1 High + stuck bot + behind upstream + 1 issue), 14 REV (dominated by `opentelemetry-instrumentation-*` stuck-bot cases). All others below the action threshold.
+
+### Batch C — MCP wrappers
+
+Two MCP tools added/extended on `.claude/tools/conda_forge_server.py`:
+
+- **`env_roots(mode, environment, prefix, scope, sbom_format, diff_to, no_live, include, exclude)`** — single tool covers all 8 modes via `mode=`. Lets Claude run env audits inline during chat.
+- **`my_feedstocks(maintainer, triage, limit, include_archived)`** — extends the existing tool with `triage` + `limit` + `include_archived` so the same chat-call can pull either the portfolio or the punch list.
+
+Both call the CLI under `--json` via the existing `_run_script` helper (so JFrog / truststore / netrc fallbacks transparently apply).
+
+### Catalog updates
+
+The following catalog entries in `reference/atlas-actionable-intelligence.md` § III flip from 📋 open → ✅ shipped:
+
+- "Bus-factor my dependencies" → `env-roots --bus-factor`
+- "License compatibility for my project" → `env-roots --licenses` (rollup + non-permissive flag; project-target-license comparison still 📋 for `scan-project --target`)
+- "SBOM for an env" → `env-roots --sbom` (CycloneDX + SPDX)
+- "Env-vs-env drift" → `env-roots --diff`
+- "Env-level CVE rollup" → `env-roots --security`
+
+Remaining consumer 📋 items: watch-mode / notification daemon, safe-set lockfile recommender, env-alternatives (for archived feedstocks).
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/scripts/env_roots.py` — added `atlas_vulns_for()`, `atlas_maintainers_for()`, `atlas_licenses_for()`, `_classify_license()`, `run_security()`, `run_bus_factor()`, `run_licenses()`, `run_sbom()`, `run_diff()`; new CLI flags `--security`, `--bus-factor`, `--licenses`, `--sbom {cyclonedx,spdx}`, `--diff OTHER_ENV`.
+- `.claude/skills/conda-forge-expert/scripts/my_feedstocks.py` — **new canonical script** (260 lines): portfolio + triage scoring + severity-band rendering + JSON output. Auto-detect maintainer via $GITHUB_USERNAME / $USER.
+- `.claude/scripts/conda-forge-expert/my_feedstocks.py` — wrapper shim.
+- `.claude/tools/conda_forge_server.py` — `MY_FEEDSTOCKS_SCRIPT` + `ENV_ROOTS_SCRIPT` constants; extended `my_feedstocks()` tool with `triage`/`limit`/`include_archived`; new `env_roots()` tool dispatching 8 modes.
+- `pixi.toml` — new `[feature.local-recipes.tasks.my-feedstocks]` task.
+- `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py` — registered `my_feedstocks.py`.
+- `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md` — env-roots Batch A modes + maintainer workflow section.
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — version 8.4.0 → 8.5.0.
+
+### Test status
+
+516 of 519 meta tests pass; 2 pre-existing skips (`health_check.py`, `mapping_manager.py` no `--help`); 1 pre-existing failure unrelated to this work (`test_skill_md_lists_existing_scripts_only` flags `__init__.py` — present on main before this change).
+
+---
+
+**v8.4.0** (May 23, 2026) — `env-roots --freshness`: env-scoped lag analysis joining cf_atlas with live PyPI. **MINOR bump** — additive new mode; existing default and `--audit` paths unchanged. Driven by the use case: as a pixi.toml maintainer, "tell me where my env is behind conda-forge, and where conda-forge is behind PyPI, so I know what to bump, what to wait on, and what to switch to `[pypi-dependencies]`."
+
+### What it does
+
+For each installed package within `--scope roots|explicits|all` (default `roots`), join:
+
+- env version (`conda-meta/`)
+- conda-forge latest + bot/autotick state (`cf_atlas.db` → `packages` table — `latest_conda_version`, `bot_open_pr_count`, `bot_last_pr_state`, `bot_last_pr_version`, `feedstock_archived`)
+- PyPI latest (live fetch by default; `--no-live` falls back to atlas `pypi_current_version`)
+
+…then classify into action buckets:
+
+| Status | Meaning |
+|---|---|
+| `cf_behind_pypi_no_pr` | conda-forge lags PyPI, no autotick PR — feedstock action needed |
+| `cf_behind_pypi_pr_open` | autotick PR is open — wait |
+| `cf_behind_pypi_stale_pr` | PR closed but cf still old — stuck |
+| `env_behind_cf` | local env older than cf — re-lock to upgrade |
+| `feedstock_archived` | terminal — no future cf updates |
+| `no_atlas_row` | off-channel / local build / new pkg |
+| `in_sync` | no action needed (collapsed by default; `--verbose` to list) |
+
+### Stale-data handling
+
+Live PyPI fetch is default-on with a 6 h on-disk cache (`.claude/data/conda-forge-expert/env_freshness_cache/pypi_versions.json`), 8 worker default, regex `--include`/`--exclude` filters. If `cf_atlas.db` is older than 7 days, a `⚠ atlas DB is N days old` header fires; partial results still render. Pass `--no-live` to skip PyPI entirely (useful air-gapped / offline). Pass `pixi run -q` to suppress the pixi-task banner for clean JSON piping.
+
+### Sample on `local-recipes` (84 roots)
+
+```
+Summary: 9 cf_behind_pypi_no_pr, 2 cf_behind_pypi_stale_pr, 3 env_behind_cf, 70 in_sync
+```
+
+`--scope all` (857 pkgs) surfaces 43 cf-behind-pypi / 9 stuck / 51 env-behind-cf — a working punch list for feedstock-maintenance ping/PR pass.
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/scripts/env_roots.py` — new `--freshness` mode (~250 lines): `_import_http()` lazy loader, `load_atlas()`, `fetch_pypi_version()` via `_http` chain (truststore + JFrog + netrc), `live_pypi_lookups()` with `ThreadPoolExecutor`, `classify()` with explicit env-vs-cf-vs-pypi priority rules (env<cf wins over pypi-lag), `cache_load`/`cache_save` JSON cache, `--scope`, `--no-live`, `--workers`, `--cache-ttl`, `--include`/`--exclude`, `--verbose`, JSON renderer. Lazy `_http` import resolves the pyright "possibly unbound" issue cleanly.
+- `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md` — freshness examples added under "Environment & preflight".
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — version 8.3.2 → 8.4.0.
+
+---
+
+**v8.3.2** (May 23, 2026) — `env-roots --audit` for manifest hygiene. **PATCH bump** — additive flag; no behavior changes to the default mode. Joins the existing root-extraction logic with `pixi list --explicit --json` to classify every manifest explicit into three buckets:
+
+- **Pure intent** — declared AND still a root (the packages that genuinely capture your top-level intent).
+- **Transitively-covered** — declared but ALSO pulled in transitively by another explicit. Candidates to drop from `pixi.toml` without changing the resolved env (verify your pin is no tighter than the transitive one before deleting).
+- **Drifted roots** — a root in the env but NOT declared in the manifest. Usually empty; non-zero means something installed outside the manifest (manual `conda install`, leftover from a removed dep, etc.).
+
+Sample output on `local-recipes`: 134 explicits → 84 pure-intent + 50 transitively-covered + 0 drifted. The 50-strong covered list (e.g. `pytest`, `pandas`, `requests`, `setuptools`, `wheel`, `pip`, `python`) is a ready-made cleanup batch.
+
+Audit requires a pixi env (`--environment NAME` or run inside `pixi run -e <env>`); `--prefix PATH` mode has no manifest to consult and cannot audit. JSON output (`--audit --json`, pair with `pixi run -q` to suppress the task banner) emits a structured `{summary, pure_intent, transitively_covered, drifted_roots}` payload for downstream tooling.
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/scripts/env_roots.py` — added `--audit` flag, `list_explicits()` + `resolve_env_name()` helpers, three-section text renderer, structured JSON renderer.
+- `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md` — documented audit examples under "Environment & preflight".
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — version 8.3.1 → 8.3.2.
+
+---
+
+**v8.3.1** (May 23, 2026) — New `env-roots` utility. **PATCH bump** — additive only; no behavior changes; no version-pin movement. Adds a small read-only inspector that lists the roots of a conda/pixi env's resolved dependency graph (installed packages that nothing else in the env depends on), so you can quickly tell what you actually asked for vs. what came along transitively. Works for any pixi env (`--environment NAME`) or arbitrary conda prefix (`--prefix PATH`); defaults to `$CONDA_PREFIX`. Supports `--json` for machine-readable output. Why it lives in conda-forge-expert: complements existing `health-check`, `verify-env`, and `dependency-checker` env-inspection tools when debugging build envs and minimizing recipe `host:` / `run:` over-specification.
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/scripts/env_roots.py` — new canonical script (CLI: `--prefix`, `--environment`, `--manifest-path`, `--json`).
+- `.claude/scripts/conda-forge-expert/env_roots.py` — wrapper shim (delegates to canonical).
+- `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py` — registered in `SCRIPTS`.
+- `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md` — documented under "Environment & preflight".
+- `pixi.toml` — `[feature.local-recipes.tasks.env-roots]` task wired to the wrapper.
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — version 8.3.0 → 8.3.1.
+
+---
+
 **v8.3.0** (May 17, 2026) — Three new recipe-authoring gotchas. **MINOR bump** — additive only; no behavior changes; no version-pin movement. Driven by the Microsoft Agents 4-recipe staged-recipes bundle (`azure-identity-broker` + `microsoft-kiota-bundle` + `microsoft-agents-m365copilot{-core,}`) and the `yo` + `generator-code` npm bundle from the same session. Companion BMAD retro: [`retro-npm-and-microsoft-bundles-2026-05-17.md`](../../../_bmad-output/projects/local-recipes/implementation-artifacts/retro-npm-and-microsoft-bundles-2026-05-17.md).
 
 ### G7 — Grayskull's inferred Python import name can be wrong

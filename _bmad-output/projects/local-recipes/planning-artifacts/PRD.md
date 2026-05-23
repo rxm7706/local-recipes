@@ -2,12 +2,12 @@
 doc_type: prd
 project_name: local-recipes
 date: 2026-05-12
-version: '1.3.0'
+version: '1.4.0'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
-source_pin: 'conda-forge-expert v8.1.0'
-re_validated: 2026-05-13
+source_pin: 'conda-forge-expert v8.5.1'
+re_validated: 2026-05-23
 input_docs:
   - planning-artifacts/index.md
   - planning-artifacts/project-overview.md
@@ -17,11 +17,12 @@ edit_history:
   - { date: '2026-05-13', via: 'bmad-edit-prd', delta: 'v7.8.1 → v7.9.0 sync after actionable-scope audit (docs/specs/atlas-pypi-universe-split.md): schema v19 → v20, +pypi_universe side table, +pypi-only-candidates CLI/MCP, +Phase D split. PATCH bump (no FR/NFR scope shift; count-and-pin sync).' }
   - { date: '2026-05-13', via: 'bmad-correct-course', delta: 'v7.9.0 → v8.0.0 sync after structural-enforcement + persona-profile bundle (docs/specs/conda-forge-expert-v8.0.md): schema v20 → v21, +v_actionable_packages view, +Phase H serial-aware eligible-rows gate (pypi_version_serial_at_fetch column), +bootstrap-data --profile {maintainer,admin,consumer} with gh-user / phase-L-sources auto-detection, +tests/meta/test_actionable_scope.py, 5 catalog rows 📋 → ✅. Wave C (drop vuln_total) DEFERRED — 4 consumers found, retro-atlas-pypi-universe-split-2026-05-13.md corrected. MINOR bump (no FR/NFR scope shift; new persona-aware UX surface counts as feature-level addition, no breaking PRD-level change — backward-compatible CLI flag).' }
   - { date: '2026-05-15', via: 'bmad-correct-course', delta: 'v8.0.x → v8.1.0 sync after PyPI intelligence layer (docs/specs/atlas-pypi-intelligence.md): schema v21 → v22, +pypi_intelligence side table (35 cols across 5 tiers + operator notes), +pypi_universe_serial_snapshots history, +v_pypi_candidates view, +5 new phases (O/P/Q/R/S), +pypi-intelligence CLI + MCP tool + profile integration. pypi_universe stays reference-data-only (3 cols, locked). Phase P (BigQuery) lazy-imports google-cloud-bigquery for admin-tier opt-in. Phase R bounded to top-N candidate slice (default 5000). All 8 spec open questions pre-resolved before BMAD intake. 51 new tests, 1,064 total. MINOR bump (additive — no FR/NFR scope shift; no existing CLI changes; new pypi-intelligence CLI and MCP tool are opt-in surfaces). Retro: implementation-artifacts/retro-atlas-pypi-intelligence-2026-05-15.md.' }
+  - { date: '2026-05-23', via: 'bmad-correct-course', delta: 'v8.1.0 → v8.5.1 sync after env-inspect suite (5 releases: v8.3.1 env-roots utility, v8.3.2 --audit, v8.4.0 --freshness, v8.5.0 Batch A+B+C [5 modes + my_feedstocks CLI + 2 MCP tools], v8.5.1 rename env-roots → env-inspect + clear standing `__init__.py` meta-test false positive introduced by v8.3.0). Closes 5 of 7 📋-open consumer-tier items in atlas-actionable-intelligence.md. Script count ~42 → ~44 (env_inspect.py + my_feedstocks.py); MCP tool count 36 → 37 (added env_inspect 8-mode dispatcher; extended my_feedstocks with triage/limit/include_archived). Atlas phase count and schema body references aligned to v22 / 22 phases (sync-miss from v8.1.0). Meta-test suite: 521/523 pass, 2 documented skips, 0 failures. MINOR bump (additive — no FR/NFR scope shift; no breaking CLI or MCP changes). Retro: implementation-artifacts/retro-env-inspect-suite-2026-05-23.md.' }
 ---
 
 # Product Requirements Document: `local-recipes` Rebuild
 
-> **Rebuild target:** the AI-assisted, semi-autonomous conda-forge packaging factory + offline-tolerant package-intelligence layer + 35-tool MCP API + BMAD multi-project planning infrastructure. **Not the 1,415 existing recipes** — those are outputs.
+> **Rebuild target:** the AI-assisted, semi-autonomous conda-forge packaging factory + offline-tolerant package-intelligence layer + 37-tool MCP API + BMAD multi-project planning infrastructure. **Not the 1,415 existing recipes** — those are outputs.
 
 ---
 
@@ -49,9 +50,9 @@ This PRD does not assume a destruction event. The rebuild target supports:
 | In scope | Out of scope |
 |---|---|
 | Pixi monorepo scaffolding (8 envs, ~50 tasks) | The 1,415 recipes under `recipes/` |
-| conda-forge-expert skill (Part 1, ~42 scripts + docs) | Recipe-specific upstream patches |
-| cf_atlas data pipeline (Part 2, 17 phases, schema v20) | Historical CHANGELOG entries (only TL;DR + structure) |
-| FastMCP server (Part 3, 36 tools) | Auxiliary `gemini_server.py` (optional) |
+| conda-forge-expert skill (Part 1, ~44 scripts + docs) | Recipe-specific upstream patches |
+| cf_atlas data pipeline (Part 2, 22 phases, schema v22) | Historical CHANGELOG entries (only TL;DR + structure) |
+| FastMCP server (Part 3, 37 tools) | Auxiliary `gemini_server.py` (optional) |
 | BMAD installer (Part 4, 65 skills, multi-project) | Personal `.envrc` files, IDE-specific config |
 | Enterprise/air-gap layer (`_http.py`, JFrog) | Production JFrog mirror setup (operator's problem) |
 | Tests (41 files + meta-tests for invariants) | Recipe corpus tests (covered by conda-forge CI) |
@@ -80,6 +81,14 @@ This PRD does not assume a destruction event. The rebuild target supports:
 **JTBD-1.4**: "Plan a multi-recipe feature with BMAD without losing track of conda-forge constraints."
 - Today: BMAD↔CFE integration rules in CLAUDE.md (mandatory skill invocation + retro).
 - Success: BMAD-driven story-spec implementations produce conda-forge-ready recipes; no late-stage "wait, this violates STD-001" surprises.
+
+**JTBD-1.5**: "Get a daily punch list across all my feedstocks ranked by urgency."
+- Today: `my-feedstocks --triage --maintainer <handle>` (added v8.5.0). Composes Phase G CVE counts + Phase N CI-red flags + Phase M stuck-bot attempts + Phase H upstream lag + open PR / issue counts into one severity-banded score (CRIT ≥1000 / WARN ≥50 / REV ≥10 / ok).
+- Success: top-N (default 25) actionable rows per session-start; the CRIT+WARN bands give a "drop-everything" set, REV gives a review queue, all without five separate CLI calls.
+
+**JTBD-1.6**: "Audit my pixi-managed env from multiple angles from a single CLI."
+- Today: `env-inspect` (added v8.3.1, renamed at v8.5.1 — was `env-roots`). Eight modes share one `--scope roots|explicits|all` filter: default (graph roots), `--audit` (manifest hygiene: pure-intent / transitively-covered / drifted), `--freshness` (env vs conda-forge vs PyPI lag, live PyPI fetch by default), `--security` (CVE rollup), `--bus-factor` (single-maintainer SPoF list), `--licenses` (SPDX rollup + non-permissive flag), `--sbom {cyclonedx,spdx}` (standard SBOM emission), `--diff OTHER_ENV` (cross-env set+version delta).
+- Success: env-side question answered in one command without ad-hoc SQL against `cf_atlas.db`; partial-results-with-stale-warning when atlas is older than 7 days; live PyPI fetch (default-on, 6 h disk cache) keeps `--freshness` accurate even on stale atlas data.
 
 #### U2: Enterprise operator (air-gap / JFrog admin)
 
@@ -119,7 +128,7 @@ JTBD-5.1: Add a new MCP tool / pipeline phase / skill reference without breaking
 
 | ID | Goal | Measurable outcome |
 |---|---|---|
-| G1 | **Faithful rebuild of Parts 1-4** | All 36 MCP tools functional; all 17 atlas phases run; bmad-switch + 6-layer merge work; 64 real skills load (42 BMAD + 21 engineering + 1 CFE; the legacy stray `.claude/skills/data/` dir is not recreated) |
+| G1 | **Faithful rebuild of Parts 1-4** | All 37 MCP tools functional; all 22 atlas phases run; bmad-switch + 6-layer merge work; 64 real skills load (42 BMAD + 21 engineering + 1 CFE; the legacy stray `.claude/skills/data/` dir is not recreated) |
 | G2 | **First-pass recipe authoring success rate ≥90%** | First-pass conda-forge PR acceptance (no review-comment revisions on lint/policy issues) ≥9 of 10 recent recipes |
 | G3 | **Atlas refresh resilient to interrupts** | Mid-run kill of `bootstrap-data --fresh` resumes cleanly via `phase_state` cursor + TTL gates; ≤5% rework |
 | G4 | **Air-gap operation parity** | Full atlas build + recipe authoring + PR submission run with all `*_BASE_URL` set to JFrog endpoints + `JFROG_API_KEY` correctly scoped; zero cross-host leak |
@@ -152,8 +161,8 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F1.1 | 3-tier directory architecture | P0 | `scripts/` + `.claude/scripts/.../conda-forge-expert/` + `.claude/data/conda-forge-expert/` directories exist with the discipline enforced by `tests/meta/test_all_scripts_runnable.py` |
 | F1.2 | 10-step autonomous loop in SKILL.md | P0 | SKILL.md § "Primary Workflow: The Autonomous Loop" enumerates 10 ordered steps with step 8b as the human gate |
 | F1.3 | 5 Critical Constraints | P0 | SKILL.md § "Critical Constraints" enumerates: never-mix-formats, stdlib-required, python-min, PyPI-url-pattern, build.bat-call-prefix |
-| F1.4 | 42 Tier 1 canonical scripts | P0 | All 42 scripts in `scripts/` accept `--json` and emit valid JSON on stdout |
-| F1.5 | 34 Tier 2 CLI wrappers + pixi tasks | P0 | All 34 wrappers in `.claude/scripts/conda-forge-expert/` delegate to Tier 1 via subprocess; each has a matching pixi task |
+| F1.4 | 44 Tier 1 canonical scripts | P0 | All 44 scripts in `scripts/` accept `--json` and emit valid JSON on stdout |
+| F1.5 | 36 Tier 2 CLI wrappers + pixi tasks | P0 | All 36 wrappers in `.claude/scripts/conda-forge-expert/` delegate to Tier 1 via subprocess; each has a matching pixi task |
 | F1.6 | 17-lint-code recipe optimizer | P0 | `optimize_recipe` flags STD-001 through OPT-NNN with structured output |
 | F1.7 | 6 Recipe Authoring Gotchas (G1-G6) | P0 | SKILL.md § "Recipe Authoring Gotchas" enumerates G1-G6 with cause + fix |
 | F1.8 | 41 recipe templates across 13 ecosystems | P0 | `templates/` contains v1 + v0 variants for python, rust, go, c-cpp, r, java, ruby, dotnet, fortran, multi-output, nodejs, perl + conda-forge-yml config-template; verified 41 files (39 `.yaml` + 2 `.yml`) / 13 dirs at 2026-05-12 |
@@ -169,8 +178,8 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 
 | ID | Feature | Priority | Acceptance |
 |---|---|---|---|
-| F2.1 | SQLite schema v20 with 12 tables (incl. `pypi_universe` side table separating PyPI directory from working set) | P0 | `init_schema()` creates packages + 11 supporting tables; SCHEMA_VERSION constant matches; v19→v20 migration moves `relationship='pypi_only'` rows from `packages` to `pypi_universe` idempotently |
-| F2.2 | 17 phases (B → N) via PHASES registry | P0 | `conda_forge_atlas.py:PHASES` list matches the 17-tuple order; case-insensitive `get_phase()` works |
+| F2.1 | SQLite schema v22 with 14 tables (incl. `pypi_universe` side table separating PyPI directory from working set + `pypi_intelligence` enrichment + `pypi_universe_serial_snapshots` history) | P0 | `init_schema()` creates packages + 13 supporting tables; SCHEMA_VERSION constant matches; v19→v22 migrations applied idempotently on stale DBs |
+| F2.2 | 22 phases (B → S; B/B.5/B.6/C/C.5/D/E/E.5/F/G/G'/H/J/K/L/M/N + O/P/Q/R/S added v8.1.0) via PHASES registry | P0 | `conda_forge_atlas.py:PHASES` list matches the 22-tuple order; case-insensitive `get_phase()` works |
 | F2.3 | `bootstrap-data` orchestrator | P0 | `--fresh`, `--resume`, `--status`, `--no-vdb`, `--no-cf-atlas`, `--phase-h-source` flags; per-step timeouts via `BOOTSTRAP_<STEP>_TIMEOUT` |
 | F2.4 | `atlas-phase <ID>` single-phase CLI | P0 | `--reset-ttl`, `--list`; supports B/B.5/B.6/C/C.5/D/E/E.5/F/G/G'/H/J/K/L/M/N |
 | F2.5 | TTL gates on F/G/H/K phases | P0 | Scoped `UPDATE packages SET *_fetched_at = NULL` predicates match phase eligibility; tested by `test_atlas_phase_reset_ttl.py` |
@@ -178,7 +187,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F2.7 | Phase F S3 parquet backend | P0 | `PHASE_F_SOURCE=auto\|anaconda-api\|s3-parquet`; auto path probes api.anaconda.org, falls through |
 | F2.8 | Phase H cf-graph offline backend | P0 | `PHASE_H_SOURCE=pypi-json\|cf-graph`; `--fresh` defaults to cf-graph for fast cold-start |
 | F2.9 | 60s progress heartbeat + capped cadence | P0 | `progress_every = min(max(N, len // 40), 2500)` + 60s wall-clock heartbeat closes "Phase H hangs" UX bug |
-| F2.10 | 17 public CLIs (orchestration + 15 query) | P0 | All have Tier 2 wrappers + pixi tasks; all read-side CLIs offline-safe |
+| F2.10 | 19 public CLIs (orchestration + 17 query, incl. `pypi-intelligence` v8.1.0 + `env-inspect` v8.3.1/v8.5.1 + `my-feedstocks --triage` v8.5.0) | P0 | All have Tier 2 wrappers + pixi tasks; all read-side CLIs offline-safe |
 | F2.11 | Phase G/G' require `vuln-db` env | P0 | Phases short-circuit cleanly if `vuln-db` not active; `VDB_HOME` env var auto-set by env activation |
 | F2.12 | Idempotent additive schema migrations | P0 | `init_schema()` on a stale DB migrates to v19 without data loss |
 
@@ -187,7 +196,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | ID | Feature | Priority | Acceptance |
 |---|---|---|---|
 | F3.1 | `conda_forge_server.py` with `FastMCP("conda-forge-expert")` | P0 | Server starts via stdio transport; registers as `conda-forge-expert` |
-| F3.2 | 36 `@mcp.tool()` registrations (incl. `pypi_only_candidates` added in v7.9.0; v8.0.0 surface is unchanged — persona profiles are CLI-only) | P0 | All 36 tools enumerated in `architecture-mcp-server.md` § "The Tools by Surface" are present and functional |
+| F3.2 | 37 `@mcp.tool()` registrations (incl. `pypi_only_candidates` v7.9.0, `pypi_intelligence` v8.1.0, `env_inspect` 8-mode dispatcher v8.5.0/v8.5.1, extended `my_feedstocks` with triage v8.5.0) | P0 | All 37 tools enumerated in `architecture-mcp-server.md` § "The Tools by Surface" are present and functional |
 | F3.3 | Thin-subprocess wrapper pattern | P0 | Every tool body is ≤30 lines; delegates via `_run_script(SCRIPT_PATH, args)` |
 | F3.4 | `_run_script` helper with 3-tier error handling | P0 | Handles FileNotFoundError, JSONDecodeError, TimeoutExpired; returns structured error dict |
 | F3.5 | 2 async tools (`trigger_build`, `update_cve_database`) | P0 | Async tools use `Context` for progress reporting; fire-and-forget pattern for builds |
@@ -564,8 +573,8 @@ Maps each of the 52 features in §5 to its **primary JTBD** (the user job it mos
 | F1.1 (3-tier architecture) | JTBD-3.1 | JTBD-5.1 | Discipline lets new agents navigate; meta-test enforces |
 | F1.2 (10-step autonomous loop) | JTBD-1.1 | JTBD-3.1 | The loop IS the agent's mental model of recipe authoring |
 | F1.3 (5 Critical Constraints) | JTBD-1.1 | JTBD-4.1 | Non-negotiables prevent auto-rejection |
-| F1.4 (42 Tier 1 scripts) | JTBD-1.1 | JTBD-3.1 | Behavior source-of-truth |
-| F1.5 (34 Tier 2 wrappers + tasks) | JTBD-1.1 | JTBD-1.4 | Pixi-task surface for shell + BMAD use |
+| F1.4 (44 Tier 1 scripts) | JTBD-1.1 | JTBD-3.1, JTBD-1.5, JTBD-1.6 | Behavior source-of-truth |
+| F1.5 (36 Tier 2 wrappers + tasks) | JTBD-1.1 | JTBD-1.4 | Pixi-task surface for shell + BMAD use |
 | F1.6 (17-lint-code optimizer) | JTBD-1.1 | JTBD-4.1 | Catches lint issues pre-review |
 | F1.7 (G1-G6 gotchas) | JTBD-1.2 | JTBD-3.1 | Non-obvious failures enumerated so agents avoid them |
 | F1.8 (41 templates / 13 ecosystems) | JTBD-1.1 | — | Recipe scaffolding |
@@ -582,7 +591,7 @@ Maps each of the 52 features in §5 to its **primary JTBD** (the user job it mos
 | Feature | Primary JTBD | Secondary | Why this serves the JTBD |
 |---|---|---|---|
 | F2.1 (SQLite schema v20) | JTBD-1.3 | — | Single source of intelligence data; `pypi_universe` side table separates PyPI directory from conda-actionable working set |
-| F2.2 (17 phases via PHASES registry) | JTBD-1.3 | JTBD-2.1 | Pipeline structure enables refresh + air-gap |
+| F2.2 (22 phases via PHASES registry) | JTBD-1.3 | JTBD-2.1 | Pipeline structure enables refresh + air-gap |
 | F2.3 (`bootstrap-data` orchestrator) | JTBD-1.3 | JTBD-2.1 | Single command refreshes everything |
 | F2.4 (`atlas-phase <ID>` CLI) | JTBD-1.3 | — | Cheap single-phase refresh |
 | F2.5 (TTL gates on F/G/H/K) | JTBD-1.3 | JTBD-2.1 | Stale-row re-fetch cheap; full rebuild rare |
@@ -590,7 +599,7 @@ Maps each of the 52 features in §5 to its **primary JTBD** (the user job it mos
 | F2.7 (Phase F S3 parquet backend) | JTBD-2.1 | — | Closes api.anaconda.org dependency |
 | F2.8 (Phase H cf-graph backend) | JTBD-2.1 | JTBD-1.3 | Closes pypi.org dependency; fast cold start |
 | F2.9 (60s heartbeat + capped cadence) | JTBD-1.3 | — | "Phase H hangs" UX bug closed |
-| F2.10 (17 public CLIs) | JTBD-1.3 | JTBD-4.1 | Read-side intelligence surface |
+| F2.10 (19 public CLIs) | JTBD-1.3, JTBD-1.5, JTBD-1.6 | JTBD-4.1 | Read-side intelligence surface |
 | F2.11 (Phase G/G' require vuln-db) | JTBD-2.1 | JTBD-1.1 | Vulnerability scanning data |
 | F2.12 (Idempotent schema migrations) | JTBD-5.1 | — | Safe to re-run on stale DBs |
 
