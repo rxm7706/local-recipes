@@ -2736,6 +2736,77 @@ def _load_epss_scores(conn: sqlite3.Connection) -> dict[str, tuple[float, float]
     }
 
 
+def _load_cwe_categories(conn: sqlite3.Connection) -> dict[str, str]:
+    """Load CWE→cf_atlas_category mapping for Phase G / G' overlay (v8.6.0 Wave B).
+
+    Returns {cwe_id: cf_atlas_category}, e.g. {"CWE-79": "Injection",
+    "CWE-22": "Traversal", "CWE-9999": "Other"}. Empty dict when the
+    `cwe_categories` table is missing (pre-v24 DBs) or empty (operator
+    hasn't run `fetch-cwe-catalog` yet). Phase G/G' degrade gracefully
+    to no-CWE-counting in that case.
+    """
+    have_table = bool(list(conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='cwe_categories'"
+    )))
+    if not have_table:
+        return {}
+    return {
+        row[0]: row[1]
+        for row in conn.execute(
+            "SELECT cwe_id, cf_atlas_category FROM cwe_categories"
+        )
+    }
+
+
+def _aggregate_v8_6_0_overlays(
+    affecting: list[dict],
+    epss_map: dict[str, tuple[float, float]],
+    cwe_map: dict[str, str],
+) -> tuple[float | None, float | None, str | None, str | None]:
+    """Compute the four v8.6.0 Wave B per-package aggregations.
+
+    Pure function — used by both Phase G (current-version aggregation) and
+    Phase G' (per-version aggregation). Returns
+    (max_epss_score, max_epss_percentile, cwe_top, cwe_categories_json).
+
+    - max_epss_*: highest EPSS values across affecting CVEs; None when
+      no affecting CVE has an entry in epss_map (don't store 0.0 — distinct
+      from "scored 0.0" which is a real signal).
+    - cwe_top: most-frequent cf_atlas_category across affecting CVEs;
+      None when no CWE info available. CWEs not in the seed seed-map but
+      with a populated CWE field count as 'Other'.
+    - cwe_categories_json: JSON dict of category→count, e.g.
+      `{"RCE": 3, "Injection": 1, "Other": 2}`; None when empty.
+    """
+    if not affecting:
+        return (None, None, None, None)
+
+    epss_scores: list[float] = []
+    epss_pcts: list[float] = []
+    cwe_counts: dict[str, int] = {}
+    for v in affecting:
+        cve_id = v.get("id")
+        if cve_id and cve_id in epss_map:
+            s, p = epss_map[cve_id]
+            epss_scores.append(s)
+            epss_pcts.append(p)
+        cwe = v.get("cwe")
+        if cwe:
+            cat = cwe_map.get(cwe, "Other")
+            cwe_counts[cat] = cwe_counts.get(cat, 0) + 1
+
+    max_epss = max(epss_scores) if epss_scores else None
+    max_epss_pct = max(epss_pcts) if epss_pcts else None
+    if cwe_counts:
+        cwe_top = max(cwe_counts, key=lambda k: cwe_counts[k])
+        cwe_json = json.dumps(cwe_counts, sort_keys=True)
+    else:
+        cwe_top = None
+        cwe_json = None
+
+    return (max_epss, max_epss_pct, cwe_top, cwe_json)
+
+
 def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
     """Phase G: cache vdb risk summary into the packages table.
 
@@ -2814,17 +2885,29 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
     rows = list(conn.execute(sql, params))
     print(f"  {len(rows):,} rows to scan (TTL {ttl_days}d)")
 
-    # DW13 KEV overlay: load the CISA Known Exploited Vulnerabilities CVE
-    # set once per phase run. `cisa_kev` is populated by `fetch-cisa-kev`
-    # (an out-of-band task — not a cf_atlas phase). When empty, the overlay
-    # is a no-op and KEV counts fall back to vdb's native `kev` field (which
-    # appthreat's aqua.py default-ignores `kevc`, so it stays 0).
+    # DW13 KEV overlay + v8.6.0 Wave B EPSS/CWE overlays: load the three CVE
+    # → metadata maps once per phase run. All three are populated by
+    # out-of-band `fetch-*` tasks. Empty-map cases degrade gracefully — the
+    # corresponding columns just stay 0/NULL until the operator runs the
+    # fetcher.
     kev_cves = _load_kev_cves(conn)
+    epss_map = _load_epss_scores(conn)
+    cwe_map = _load_cwe_categories(conn)
     if kev_cves:
         print(f"  KEV overlay active: {len(kev_cves):,} CISA-catalogued CVE IDs loaded")
     else:
         print("  KEV overlay: 0 CVE IDs loaded — run `pixi run -e local-recipes "
               "fetch-cisa-kev` to populate vuln_kev_affecting_current")
+    if epss_map:
+        print(f"  EPSS overlay active: {len(epss_map):,} CVE → (score, percentile) entries loaded")
+    else:
+        print("  EPSS overlay: 0 entries loaded — run `pixi run -e local-recipes "
+              "fetch-epss` to populate vuln_max_epss_score / _percentile")
+    if cwe_map:
+        print(f"  CWE overlay active: {len(cwe_map):,} CWE → cf_atlas_category mappings loaded")
+    else:
+        print("  CWE overlay: 0 mappings loaded — run `pixi run -e local-recipes "
+              "fetch-cwe-catalog` to populate vuln_cwe_top / _categories_json")
 
     scanned = 0
     failed = 0
@@ -2851,6 +2934,10 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
                     "vuln_critical_affecting_current = 0, "
                     "vuln_high_affecting_current = 0, "
                     "vuln_kev_affecting_current = 0, "
+                    "vuln_max_epss_score = NULL, "
+                    "vuln_max_epss_percentile = NULL, "
+                    "vuln_cwe_top = NULL, "
+                    "vuln_cwe_categories_json = NULL, "
                     "vdb_scanned_at = ?, vdb_last_error = NULL "
                     "WHERE conda_name = ?",
                     (now, row["conda_name"]),
@@ -2868,6 +2955,9 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
         crit = sum(1 for v in affecting if v.get("severity") == "Critical")
         high = sum(1 for v in affecting if v.get("severity") == "High")
         kev = sum(1 for v in affecting if v.get("kev") or v.get("id") in kev_cves)
+        max_epss, max_epss_pct, cwe_top, cwe_json = _aggregate_v8_6_0_overlays(
+            affecting, epss_map, cwe_map
+        )
         total = len(data.get("all_vulns") or [])
         conn.execute(
             "UPDATE packages SET "
@@ -2875,9 +2965,14 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
             "vuln_critical_affecting_current = ?, "
             "vuln_high_affecting_current = ?, "
             "vuln_kev_affecting_current = ?, "
+            "vuln_max_epss_score = ?, "
+            "vuln_max_epss_percentile = ?, "
+            "vuln_cwe_top = ?, "
+            "vuln_cwe_categories_json = ?, "
             "vdb_scanned_at = ?, vdb_last_error = NULL "
             "WHERE conda_name = ?",
-            (total, crit, high, kev, now, row["conda_name"]),
+            (total, crit, high, kev, max_epss, max_epss_pct, cwe_top, cwe_json,
+             now, row["conda_name"]),
         )
         scanned += 1
 
@@ -5655,13 +5750,25 @@ def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
     print(f"  {len(rows):,} (package, version) pairs to score "
           f"(maintainer={maintainer or 'all'}, TTL {ttl_days}d)")
 
-    # DW13 KEV overlay (same load as Phase G — see _load_kev_cves docstring).
+    # DW13 KEV + v8.6.0 Wave B EPSS/CWE overlays (same loaders as Phase G).
     kev_cves = _load_kev_cves(conn)
+    epss_map = _load_epss_scores(conn)
+    cwe_map = _load_cwe_categories(conn)
     if kev_cves:
         print(f"  KEV overlay active: {len(kev_cves):,} CISA-catalogued CVE IDs loaded")
     else:
         print("  KEV overlay: 0 CVE IDs loaded — run `pixi run -e local-recipes "
               "fetch-cisa-kev` to populate vuln_kev_affecting_version")
+    if epss_map:
+        print(f"  EPSS overlay active: {len(epss_map):,} CVE → (score, percentile) entries loaded")
+    else:
+        print("  EPSS overlay: 0 entries loaded — run `pixi run -e local-recipes "
+              "fetch-epss` to populate per-version vuln_max_epss_score")
+    if cwe_map:
+        print(f"  CWE overlay active: {len(cwe_map):,} CWE → cf_atlas_category mappings loaded")
+    else:
+        print("  CWE overlay: 0 mappings loaded — run `pixi run -e local-recipes "
+              "fetch-cwe-catalog` to populate per-version vuln_cwe_top")
 
     scanned = 0
     failed = 0
@@ -5691,14 +5798,21 @@ def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
         crit = sum(1 for v in affecting if v.get("severity") == "Critical")
         high = sum(1 for v in affecting if v.get("severity") == "High")
         kev = sum(1 for v in affecting if v.get("kev") or v.get("id") in kev_cves)
+        max_epss, _max_epss_pct, cwe_top, _cwe_json = _aggregate_v8_6_0_overlays(
+            affecting, epss_map, cwe_map
+        )
+        # per-version table only carries the 2 scalar columns (max_epss + cwe_top);
+        # _max_epss_pct + _cwe_json are written by Phase G into packages directly.
         total = len(data.get("all_vulns") or [])
         conn.execute(
             "INSERT OR REPLACE INTO package_version_vulns "
             "(conda_name, version, vuln_total, "
             " vuln_critical_affecting_version, vuln_high_affecting_version, "
-            " vuln_kev_affecting_version, scanned_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (r["conda_name"], r["version"], total, crit, high, kev, now),
+            " vuln_kev_affecting_version, vuln_max_epss_score, vuln_cwe_top, "
+            " scanned_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (r["conda_name"], r["version"], total, crit, high, kev,
+             max_epss, cwe_top, now),
         )
         scanned += 1
         if scanned % commit_every == 0:
@@ -5750,6 +5864,13 @@ def _phase_g_sync_current_rollup(conn: sqlite3.Connection) -> int:
     2026-05-23 channel-wide CVE audit (6 false positives detected where
     the atlas-stored count flagged a feedstock as currently vulnerable
     but the live vdb scan saw the now-latest version was clean).
+
+    v8.6.0 Wave B extension: also propagates the 2 per-version v8.6.0
+    columns (`vuln_max_epss_score`, `vuln_cwe_top`) from
+    package_version_vulns to packages. The other 2 v8.6.0 packages columns
+    (`vuln_max_epss_percentile`, `vuln_cwe_categories_json`) are written
+    directly by Phase G into packages and have no per-version source — not
+    synced here.
     """
     cur = conn.execute(
         "UPDATE packages SET "
@@ -5772,7 +5893,17 @@ def _phase_g_sync_current_rollup(conn: sqlite3.Connection) -> int:
         "   SELECT vuln_kev_affecting_version FROM package_version_vulns "
         "    WHERE conda_name = packages.conda_name "
         "      AND version    = packages.latest_conda_version"
-        " ), 0)"
+        " ), 0),"
+        " vuln_max_epss_score = COALESCE(("
+        "   SELECT vuln_max_epss_score FROM package_version_vulns "
+        "    WHERE conda_name = packages.conda_name "
+        "      AND version    = packages.latest_conda_version"
+        " ), packages.vuln_max_epss_score),"
+        " vuln_cwe_top = COALESCE(("
+        "   SELECT vuln_cwe_top FROM package_version_vulns "
+        "    WHERE conda_name = packages.conda_name "
+        "      AND version    = packages.latest_conda_version"
+        " ), packages.vuln_cwe_top)"
         "WHERE conda_name IS NOT NULL "
         "  AND latest_conda_version IS NOT NULL "
         "  AND EXISTS ("
