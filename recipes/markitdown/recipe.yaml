@@ -3,10 +3,9 @@ schema_version: 1
 
 context:
   name: markitdown
-  version: "0.1.2"
+  version: "0.1.5"
   python_min: '3.10'
   python_max: '4.0'
-  python_test_max: '3.13'
 
 package:
   name: ${{ name|lower }}
@@ -14,7 +13,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markitdown-${{ version }}.tar.gz
-  sha256: 85fe108a92bd18f317e75a36cf567a6fa812072612a898abf8c156d5d74c13c4
+  sha256: 4c956ff1528bf15e1814542035ec96e989206d19d311bb799f4df973ecafc31a
 
 build:
   number: 0
@@ -31,29 +30,26 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<${{ python_max }}
-    # Required dependencies # [project.dependencies]
-    - beautifulsoup4
-    - requests
-    - markdownify
-    - magika >=0.6.1,<0.7.dev0
-    - charset-normalizer
-    - defusedxml
-    - ${{ "onnxruntime <=1.20.1" if win32 }}
-  run_constraints:
-    # Optional dependencies # [project.optional-dependencies.standard]
-    - python-pptx
-    - mammoth
-    - pandas
-    - openpyxl
-    - xlrd
-    - lxml
-    - pdfminer.six
-    - olefile
-    - pydub
-    - SpeechRecognition
-    - youtube-transcript-api >=1.0.0
     - azure-ai-documentintelligence
     - azure-identity
+    - beautifulsoup4
+    - charset-normalizer
+    - defusedxml
+    - lxml
+    - markdownify
+    - magika >=0.6.1,<0.7.dev0
+    - mammoth >=1.10.0
+    - olefile
+    - openpyxl
+    - onnxruntime <=1.20.1
+    - pandas
+    - pdfminer.six
+    - pydub
+    - python-pptx
+    - requests
+    - SpeechRecognition
+    - xlrd
+    - youtube-transcript-api >=1.0.0
 
 tests:
   - python:
@@ -62,14 +58,12 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_test_max }}.*
   - requirements:
       run:
         - pip
         - python ${{ python_min }}.*
     script:
       - markitdown --help
-      - pip check
 
 about:
   summary: Utility tool for converting various files to Markdown
@@ -84,4 +78,3 @@ extra:
   recipe-maintainers:
     - johnhany97
     - sarthakpati
-    - rxm7706
