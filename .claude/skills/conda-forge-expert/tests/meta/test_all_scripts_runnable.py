@@ -18,6 +18,7 @@ SCRIPTS = [
     "conda_forge_atlas.py",
     "cve_manager.py",
     "cve_watcher.py",
+    "cwe_catalog_fetcher.py",
     "dependency-checker.py",
     "detail_cf_atlas.py",
     "env_inspect.py",
