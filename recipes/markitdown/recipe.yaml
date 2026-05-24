@@ -30,26 +30,30 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<${{ python_max }}
-    - azure-ai-documentintelligence
-    - azure-identity
     - beautifulsoup4
+    - requests
+    - markdownify
+    - magika >=0.6.1,<0.7.0
     - charset-normalizer
     - defusedxml
-    - lxml
-    - markdownify
-    - magika >=0.6.1,<0.7.dev0
-    - mammoth >=1.10.0
-    - olefile
-    - openpyxl
-    - onnxruntime <=1.20.1
-    - pandas
-    - pdfminer.six
-    - pydub
+    # https://github.com/microsoft/markitdown/blob/main/packages/markitdown/pyproject.toml#L35
+  run_constraints:
+    #- onnxruntime <=1.20.1  # https://github.com/microsoft/markitdown/pull/1551/changes
     - python-pptx
-    - requests
-    - SpeechRecognition
+    - mammoth >=1.11.0
+    - pandas
+    - openpyxl
     - xlrd
+    - lxml
+    - pdfminer.six >=20251230
+    - pdfplumber >=0.11.9
+    - olefile
+    - pydub
+    - SpeechRecognition
     - youtube-transcript-api >=1.0.0
+    - azure-ai-documentintelligence
+    #- azure-ai-contentunderstanding >=1.2.0b1   # TBD conda-forge
+    - azure-identity
 
 tests:
   - python:
@@ -57,7 +61,8 @@ tests:
         - markitdown
       pip_check: true
       python_version:
-        - ${{ python_min }}.*
+      - ${{ python_min }}.*
+      - "*"
   - requirements:
       run:
         - pip
