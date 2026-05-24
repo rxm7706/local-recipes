@@ -14,6 +14,7 @@ SCRIPTS = [
     "atlas_phase.py",
     "behind_upstream.py",
     "bootstrap_data.py",
+    "cisa_kev_fetcher.py",
     "conda_forge_atlas.py",
     "cve_manager.py",
     "cve_watcher.py",

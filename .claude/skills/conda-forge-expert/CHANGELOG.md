@@ -2,6 +2,57 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.5.3** (May 23, 2026) — Two independent atlas vulnerability-data fixes bundled, both surfaced by the 2026-05-23 channel-wide audit: DW13 (CISA KEV signal) and DW12 (rollup-staleness drift). **PATCH bump** — additive (new table + new helper + new pixi task) and a self-correcting SQL tail step; no API breaks, no behavior change for callers that don't touch the new `cisa_kev` table. **Schema v22 → v23.**
+
+### DW13 — CISA Known Exploited Vulnerabilities catalog (Path C)
+
+The original DW13 plan was to add the `aqua` source to `vdb-refresh` via `--cache-os`. A 33 GB download + crash later, the postmortem found that **appthreat-vulnerability-db's `aqua.py:30` hardcodes the `kevc` directory (CISA's KEV catalog inside the Aqua vuln-list) into `DEFAULT_IGNORE_SOURCE_PATTERNS`**. The include-override env vars (`VDB_INCLUDE_*`) only look up keys in `config.LINUX_DISTRO_VULN_LIST_PATHS`, which has no `kevc` entry — so there is no documented way to flip the default. Even a *successful* `--cache-os` run downloads ~33 GB of distro CVE data and **still** leaves `vuln_kev_affecting_current = 0` across the channel.
+
+Path C bypasses vdb for KEV entirely. CISA publishes the catalog as a ~2 MB JSON feed at `https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json`; pulling it directly is 4-5 orders of magnitude smaller and immune to vdb's source-suppression default.
+
+- New `cisa_kev` table (schema v23) — 13 columns + 3 indexes; cve_id PK so re-fetches are pure UPSERT. Free-text `knownRansomwareCampaignUse` mapped to tri-state `INTEGER` (`Known→1, Unknown→0, other→NULL` for future-proofing).
+- New `scripts/cisa_kev_fetcher.py` (~250 lines) + `scripts/fetch_cisa_kev.py` wrapper + pixi task `fetch-cisa-kev` (three-place rule honored). Uses `_http.fetch_with_fallback` for retry semantics; idempotent INSERT OR REPLACE; `--dry-run` / `--json` / `--db` / `--timeout` flags.
+- New `_load_kev_cves(conn)` helper in `conda_forge_atlas.py`. Phase G and Phase G' both call it once at run start and OR the result with vdb's per-CVE `kev` field: `sum(1 for v in affecting if v.get("kev") or v.get("id") in kev_cves)`. When the table is missing or empty, the formula degrades cleanly to vdb's native behavior (which is always 0 today — same as before the fix; no regression).
+- Phase G + G' both print whether the overlay is active at run start (`KEV overlay active: 1,602 CISA-catalogued CVE IDs loaded`) or empty with a hint to run `fetch-cisa-kev`.
+- `vdb-refresh` task reverted to `--cache` (was momentarily switched to `--cache-os` during the failed first attempt). Pixi task docstring now records the trap so future maintainers don't repeat the 33 GB experiment.
+
+**Live verification:** `pixi run -e local-recipes fetch-cisa-kev` → **1,602 CVEs** loaded in **0.74 s** from CISA catalog version `2026.05.22` (released yesterday). 323 (~20%) flagged with known ransomware-campaign use.
+
+### DW12 — `vuln_*_affecting_current` rollup-staleness drift
+
+Caught by the same 2026-05-23 audit: the `packages.vuln_*_affecting_current` columns are written by Phase G against `latest_conda_version` at G-run time. When Phase B advances `latest_conda_version` on a subsequent run, the rollup goes stale until the next Phase G. The audit found 6 false positives (airflow, ibis-framework, jupyterlite-core, pytorch-cpu, starlette, strawberry-graphql) — atlas-stored counts flagged the feedstock as currently vulnerable but the live vdb scan saw the now-latest version was clean.
+
+Fix landed two ways for defense in depth:
+
+- **`_phase_g_sync_current_rollup` tail step** in `phase_g_prime_per_version_vulns` — pure-SQL UPDATE that re-derives the four rollup columns from `package_version_vulns` at the row's CURRENT `latest_conda_version`. O(N) idempotent; commits inside the same transaction as the per-version vuln writes so a partial run never leaves the rollup half-synced.
+- **`v_current_version_vulns` SQL view** — query-time-correct alternative joining `package_version_vulns` to `packages.latest_conda_version` at SELECT time. New code should prefer the view; the rollup columns are retained for backward-compat and synced by the tail step so existing readers don't have to migrate.
+
+### Reference + meta-DB hygiene
+
+- `appthreat-vulnerability-db`'s `--cache-os` flag is a documented trap (looks correct, blows up to 33 GB, doesn't deliver KEV). The aqua.py ignore-list pattern (`kevc`, `oval`, `glad`, `mariner`, distros) is undocumented in vdb's README; the catalog of what `--cache-os` actually adds is `AquaSource — alpine-unfixed + everything in LINUX_DISTRO_VULN_LIST_PATHS not in IGNORE`. For conda-forge purposes, **none of those add useful signal** — they're OS-distro CVEs (RHEL/Debian/Ubuntu/Alpine) that don't map to conda-forge package coordinates. Keep `vdb-refresh` on `--cache` (OSV + GHSA only) for application CVEs and use `fetch-cisa-kev` for the KEV overlay.
+- 33 GB of orphaned `data.vdb6` + `data.index.vdb6` from the crashed pull were deleted (`vdb.meta` was already stale-pointing at the pre-crash 893,580-record OSV+GHSA snapshot; the data files were inconsistent with their own metadata).
+
+### Files touched
+
+- `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` — `SCHEMA_VERSION` 22→23; `cisa_kev` table + 3 indexes added to `SCHEMA_DDL` (DW13); `v_current_version_vulns` view added (DW12); `_load_kev_cves` helper (DW13); `_phase_g_sync_current_rollup` helper (DW12); Phase G + Phase G' wired with overlay-load + overlay-formula (DW13) and Phase G' tail step (DW12); v22→v23 migration comment.
+- `.claude/skills/conda-forge-expert/scripts/cisa_kev_fetcher.py` (new, ~250 lines)
+- `.claude/scripts/conda-forge-expert/cisa_kev_fetcher.py` (new wrapper; filename matches the canonical script so `test_every_user_script_has_a_pixi_task` passes)
+- `pixi.toml` — `fetch-cisa-kev` task added under `feature.local-recipes.tasks`; `vdb-refresh` reverted to `--cache` with explanatory docstring
+- `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py` — `cisa_kev_fetcher.py` added to SCRIPTS list
+- `.claude/skills/conda-forge-expert/tests/unit/test_cisa_kev_fetcher.py` (new — 19 tests across mapping / upsert / load-helper / overlay-formula)
+- `.claude/skills/conda-forge-expert/tests/unit/test_phase_g_rollup_sync.py` (new — covers DW12 rollup sync; landed in same release)
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — 8.5.2 → 8.5.3
+- `_bmad-output/projects/local-recipes/planning-artifacts/PRD.md` — DW13 marked SHIPPED in §9
+- `_bmad-output/projects/local-recipes/implementation-artifacts/retro-dw12-dw13-2026-05-23.md` (new — retro per BMAD↔CFE Rule 2)
+
+### Test status
+
+**1,099 tests passing** in the post-DW13 suite (+ 2 documented skips, 1 documented xpassed); 0 failures. New tests cover: `_map_ransomware_use` tri-state, `upsert_kev_rows` insert/update/idempotent/missing-cve-id/cwes-json-serialize, `_load_kev_cves` missing-table/empty/populated, and the overlay formula's empty/local-match/OR-dedup/missing-id behaviors. The DW12 rollup-sync test file adds 5 more cases.
+
+**Operator impact:** Run `pixi run -e local-recipes fetch-cisa-kev` once (then daily/weekly via cron). Next Phase G or G' will write real `vuln_kev_affecting_current` numbers instead of zeros. The historic schema v22 DBs auto-upgrade in-place on next `init_schema` call (CREATE TABLE IF NOT EXISTS — no migration step required beyond the SCHEMA_DDL block running).
+
+---
+
 **v8.5.2** (May 23, 2026) — Fix Phase K's silent indefinite-hang failure mode on channel-wide admin runs. **PATCH bump** — bug fix only, no API changes; default behavior unchanged for callers that don't set the new tunables. Hang was reproducible on consecutive 2026-05-23 channel-wide runs (25,257 rows, both concurrency=8 and concurrency=2) with zero log output for >25 min while holding ESTAB TCP sockets to `api.github.com:443` and consuming essentially zero CPU; `gh api rate_limit` confirmed it wasn't a rate-limit. Four-component fix in `_phase_k_github_graphql_batch` (in `scripts/conda_forge_atlas.py`):
 
 - **Hard wall-clock cutoff** via `_phase_k_fetch_with_hard_timeout` — runs `urlopen` + `json.load` in a daemon thread and waits on an `Event` with a budget (default 45s, override via `PHASE_K_BATCH_HARD_TIMEOUT_S`). When the budget expires the runner thread is abandoned (daemon flag prevents process-exit blocking) and `TimeoutError` is raised. The previous `timeout=60` argument to `urlopen` was apparently not firing reliably — likely a `truststore.inject_into_ssl()` / HTTP/2-keepalive interaction.
