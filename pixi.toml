@@ -173,6 +173,10 @@ cmd = "python .claude/scripts/conda-forge-expert/health_check.py"
 description = "Download and update the local CVE vulnerability database"
 cmd = "python .claude/scripts/conda-forge-expert/cve_manager.py"
 
+[feature.local-recipes.tasks.fetch-cisa-kev]
+description = "Refresh the CISA Known Exploited Vulnerabilities table in cf_atlas.db (DW13 / Path C). Pulls ~2 MB JSON directly from cisa.gov and upserts into the `cisa_kev` table. Phase G / G' overlay this on vdb's per-CVE output so `vuln_kev_affecting_current` reflects the live CISA catalogue (vdb's aqua source ignores `kevc/` by default). Runs in seconds. Pass --dry-run to skip the DB write; --json for machine-readable output."
+cmd = "python .claude/scripts/conda-forge-expert/cisa_kev_fetcher.py"
+
 [feature.local-recipes.tasks.scan-vulnerabilities]
 description = "Scan a recipe's dependencies for vulnerabilities using the local CVE database"
 cmd = "python .claude/scripts/conda-forge-expert/vulnerability_scanner.py"
@@ -387,7 +391,7 @@ VDB_CACHE = "$PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb-cache"
 TRUSTSTORE = "1"
 
 [feature.vuln-db.tasks.vdb-refresh]
-description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 min first time, ~600MB at .claude/data/conda-forge-expert/vdb/)"
+description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 min first time, ~600MB at .claude/data/conda-forge-expert/vdb/). Sources: OSV + GHSA. NOTE on KEV: --cache-os was evaluated for DW13 to add AquaSource (which carries NVD + distro CVEs), but appthreat-vulnerability-db's aqua.py hardcodes `kevc` (CISA KEV) into DEFAULT_IGNORE_SOURCE_PATTERNS with no env-var override, so --cache-os would download ~33 GB and still leave vuln_kev_affecting_current=0. KEV is therefore pulled out-of-band via `fetch-cisa-kev` (Path C; <1 MB direct from cisa.gov) and Phase G / G' overlay the result onto vdb's per-CVE output."
 cmd = 'python -c "import truststore; truststore.inject_into_ssl(); from vdb.cli import main; main()" --cache'
 
 [feature.vuln-db.tasks.detail-cf-atlas]

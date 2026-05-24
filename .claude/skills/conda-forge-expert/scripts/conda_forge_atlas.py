@@ -134,7 +134,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 22
+SCHEMA_VERSION = 23
 
 
 def _get_data_dir() -> Path:
@@ -525,6 +525,64 @@ SELECT
     CASE WHEN luarocks_name IS NOT NULL
          THEN 'https://luarocks.org/modules/' || luarocks_name END AS luarocks_url
 FROM packages p;
+
+-- v23 (DW13): CISA Known Exploited Vulnerabilities catalog. Populated by
+-- `cisa_kev_fetcher.py` (run as `pixi run -e local-recipes fetch-cisa-kev`)
+-- which pulls https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+-- directly. Each row is one CISA-catalogued CVE.
+--
+-- Why a separate table rather than relying on vdb's `kev` flag: appthreat-
+-- vulnerability-db's aqua.py hardcodes `kevc` (CISA KEV) into
+-- DEFAULT_IGNORE_SOURCE_PATTERNS with no env-var override; even a
+-- successful `vdb --cache-os` run downloads ~33 GB of distro CVE data but
+-- still leaves the KEV signal empty. Phase G / G' load this table at
+-- start and overlay it on vdb's per-CVE `kev` field — a CVE in this table
+-- counts toward `vuln_kev_affecting_current` regardless of what vdb says.
+CREATE TABLE IF NOT EXISTS cisa_kev (
+    cve_id                  TEXT PRIMARY KEY,
+    vendor                  TEXT,
+    product                 TEXT,
+    vulnerability_name      TEXT,
+    date_added              TEXT,           -- ISO date string (CISA format)
+    short_description       TEXT,
+    required_action         TEXT,
+    due_date                TEXT,           -- ISO date string
+    known_ransomware_use    INTEGER,        -- 0 / 1; CISA "knownRansomwareCampaignUse" mapped Known→1, Unknown→0
+    notes                   TEXT,
+    cwes                    TEXT,           -- JSON array string (may be NULL)
+    cisa_catalog_version    TEXT,           -- CISA's own catalogVersion string at fetch time
+    source_fetched_at       INTEGER         -- UNIX seconds when this row was upserted
+);
+CREATE INDEX IF NOT EXISTS idx_cisa_kev_date    ON cisa_kev(date_added);
+CREATE INDEX IF NOT EXISTS idx_cisa_kev_vendor  ON cisa_kev(vendor);
+CREATE INDEX IF NOT EXISTS idx_cisa_kev_product ON cisa_kev(product);
+
+-- v_current_version_vulns: query-time-correct view of per-current-version
+-- vuln counts. Joins package_version_vulns (the per-version truth source
+-- populated by Phase G') against packages.latest_conda_version (advanced
+-- by Phase B). Eliminates the rollup-staleness drift class that the
+-- packages.vuln_*_affecting_current columns suffer from — those columns
+-- are computed by Phase G against latest_conda_version at G-run time, and
+-- go stale when Phase B advances latest_conda_version on a later run.
+--
+-- New code should JOIN this view instead of reading the rollup columns;
+-- the rollup columns are kept for backward-compat (and synced by Phase
+-- G's tail step, see _phase_g_sync_current_rollup) but the view is
+-- always-correct without any sync step.
+CREATE VIEW IF NOT EXISTS v_current_version_vulns AS
+SELECT
+    p.conda_name,
+    p.feedstock_name,
+    p.latest_conda_version AS current_version,
+    COALESCE(pvv.vuln_total, 0) AS vuln_total_current,
+    COALESCE(pvv.vuln_critical_affecting_version, 0) AS vuln_critical_current,
+    COALESCE(pvv.vuln_high_affecting_version, 0) AS vuln_high_current,
+    COALESCE(pvv.vuln_kev_affecting_version, 0) AS vuln_kev_current,
+    pvv.scanned_at AS vuln_scanned_at
+FROM packages p
+LEFT JOIN package_version_vulns pvv
+       ON pvv.conda_name = p.conda_name
+      AND pvv.version    = p.latest_conda_version;
 """
 
 
@@ -727,6 +785,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
         # so no migration step is needed here. `executescript(SCHEMA_DDL)` at
         # the end of init_schema creates them. The `packages` table itself
         # is not modified — `pypi_intelligence` joins on `pypi_name`.
+
+        # v22 → v23 (DW13): cisa_kev side table. Populated by the
+        # `fetch-cisa-kev` task (not a cf_atlas phase — runs independently
+        # against the public CISA JSON feed). Phase G / G' load it at start
+        # and overlay it on vdb's per-CVE `kev` field. All-new IF NOT EXISTS
+        # DDL in SCHEMA_DDL — no migration step required here.
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -2512,6 +2576,24 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
     )
 
 
+def _load_kev_cves(conn: sqlite3.Connection) -> set[str]:
+    """Load the CISA KEV cve_id set for Phase G / G' overlay (DW13).
+
+    Returns an empty set when the `cisa_kev` table is missing (older
+    pre-v23 DBs) or empty (operator hasn't run `fetch-cisa-kev` yet).
+    Empty-set behavior is intentional: Phase G / G' degrade gracefully
+    to vdb's native `kev` field (which appthreat-vulnerability-db's
+    aqua.py ignores by default — so the effective count is 0 either way
+    until the operator runs the fetcher).
+    """
+    have_table = bool(list(conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='cisa_kev'"
+    )))
+    if not have_table:
+        return set()
+    return {row[0] for row in conn.execute("SELECT cve_id FROM cisa_kev")}
+
+
 def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
     """Phase G: cache vdb risk summary into the packages table.
 
@@ -2590,6 +2672,18 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
     rows = list(conn.execute(sql, params))
     print(f"  {len(rows):,} rows to scan (TTL {ttl_days}d)")
 
+    # DW13 KEV overlay: load the CISA Known Exploited Vulnerabilities CVE
+    # set once per phase run. `cisa_kev` is populated by `fetch-cisa-kev`
+    # (an out-of-band task — not a cf_atlas phase). When empty, the overlay
+    # is a no-op and KEV counts fall back to vdb's native `kev` field (which
+    # appthreat's aqua.py default-ignores `kevc`, so it stays 0).
+    kev_cves = _load_kev_cves(conn)
+    if kev_cves:
+        print(f"  KEV overlay active: {len(kev_cves):,} CISA-catalogued CVE IDs loaded")
+    else:
+        print("  KEV overlay: 0 CVE IDs loaded — run `pixi run -e local-recipes "
+              "fetch-cisa-kev` to populate vuln_kev_affecting_current")
+
     scanned = 0
     failed = 0
     no_purls = 0
@@ -2631,7 +2725,7 @@ def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:
         affecting = data.get("affecting_latest_version", []) or []
         crit = sum(1 for v in affecting if v.get("severity") == "Critical")
         high = sum(1 for v in affecting if v.get("severity") == "High")
-        kev = sum(1 for v in affecting if v.get("kev"))
+        kev = sum(1 for v in affecting if v.get("kev") or v.get("id") in kev_cves)
         total = len(data.get("all_vulns") or [])
         conn.execute(
             "UPDATE packages SET "
@@ -5419,6 +5513,14 @@ def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
     print(f"  {len(rows):,} (package, version) pairs to score "
           f"(maintainer={maintainer or 'all'}, TTL {ttl_days}d)")
 
+    # DW13 KEV overlay (same load as Phase G — see _load_kev_cves docstring).
+    kev_cves = _load_kev_cves(conn)
+    if kev_cves:
+        print(f"  KEV overlay active: {len(kev_cves):,} CISA-catalogued CVE IDs loaded")
+    else:
+        print("  KEV overlay: 0 CVE IDs loaded — run `pixi run -e local-recipes "
+              "fetch-cisa-kev` to populate vuln_kev_affecting_version")
+
     scanned = 0
     failed = 0
     # Cap at 2,500 so multi-100k-row runs still emit a line every ~30-60s
@@ -5446,7 +5548,7 @@ def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
         affecting = data.get("affecting_latest_version") or []
         crit = sum(1 for v in affecting if v.get("severity") == "Critical")
         high = sum(1 for v in affecting if v.get("severity") == "High")
-        kev = sum(1 for v in affecting if v.get("kev"))
+        kev = sum(1 for v in affecting if v.get("kev") or v.get("id") in kev_cves)
         total = len(data.get("all_vulns") or [])
         conn.execute(
             "INSERT OR REPLACE INTO package_version_vulns "
@@ -5469,18 +5571,76 @@ def phase_g_prime_per_version_vulns(conn: sqlite3.Connection) -> dict:
             )
 
     conn.commit()
+
+    # Tail step (v8.5.3+ DW12 fix): sync the packages.vuln_*_affecting_current
+    # rollup columns from package_version_vulns at the row's CURRENT
+    # latest_conda_version. The rollup columns are otherwise written only by
+    # Phase G against latest_conda_version at G-run time, so they drift when
+    # Phase B advances latest_conda_version on a subsequent run. This UPDATE
+    # restores correctness in O(N) without re-querying vdb — pure SQL.
+    # New code should prefer the v_current_version_vulns view (always-correct
+    # without any sync); these columns are kept for backward-compat.
+    rollup_synced = _phase_g_sync_current_rollup(conn)
+    print(f"  Phase G' rollup-sync tail step: synced {rollup_synced:,} rows "
+          f"(packages.vuln_*_affecting_current ← package_version_vulns @ latest_conda_version)")
+
     elapsed = time.monotonic() - t0
     print(
         f"  Phase G' done in {elapsed:.1f}s — scanned: {scanned:,}, "
-        f"failed: {failed:,}"
+        f"failed: {failed:,}, rollup-synced: {rollup_synced:,}"
     )
     return {
         "rows_eligible": len(rows),
         "scanned": scanned,
         "failed": failed,
         "ttl_days": ttl_days,
+        "rollup_synced": rollup_synced,
         "duration_seconds": round(elapsed, 1),
     }
+
+
+def _phase_g_sync_current_rollup(conn: sqlite3.Connection) -> int:
+    """Sync packages.vuln_*_affecting_current from package_version_vulns at
+    the row's CURRENT latest_conda_version. Returns the count of rows
+    updated. Idempotent; safe to call multiple times.
+
+    Eliminates the rollup-staleness drift class identified in the
+    2026-05-23 channel-wide CVE audit (6 false positives detected where
+    the atlas-stored count flagged a feedstock as currently vulnerable
+    but the live vdb scan saw the now-latest version was clean).
+    """
+    cur = conn.execute(
+        "UPDATE packages SET "
+        " vuln_total = COALESCE(("
+        "   SELECT vuln_total FROM package_version_vulns "
+        "    WHERE conda_name = packages.conda_name "
+        "      AND version    = packages.latest_conda_version"
+        " ), packages.vuln_total),"
+        " vuln_critical_affecting_current = COALESCE(("
+        "   SELECT vuln_critical_affecting_version FROM package_version_vulns "
+        "    WHERE conda_name = packages.conda_name "
+        "      AND version    = packages.latest_conda_version"
+        " ), 0),"
+        " vuln_high_affecting_current = COALESCE(("
+        "   SELECT vuln_high_affecting_version FROM package_version_vulns "
+        "    WHERE conda_name = packages.conda_name "
+        "      AND version    = packages.latest_conda_version"
+        " ), 0),"
+        " vuln_kev_affecting_current = COALESCE(("
+        "   SELECT vuln_kev_affecting_version FROM package_version_vulns "
+        "    WHERE conda_name = packages.conda_name "
+        "      AND version    = packages.latest_conda_version"
+        " ), 0)"
+        "WHERE conda_name IS NOT NULL "
+        "  AND latest_conda_version IS NOT NULL "
+        "  AND EXISTS ("
+        "    SELECT 1 FROM package_version_vulns "
+        "    WHERE conda_name = packages.conda_name "
+        "      AND version    = packages.latest_conda_version"
+        "  )"
+    )
+    conn.commit()
+    return cur.rowcount or 0
 
 
 def phase_o_serial_snapshots(conn: sqlite3.Connection) -> dict:
