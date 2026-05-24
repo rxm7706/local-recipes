@@ -1,10 +1,8 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: "getdaft"
-  version: "0.6.7"
-  python_min: '3.10'
+  version: "0.6.13"
 
 package:
   name: ${{ name | lower }}
@@ -12,17 +10,22 @@ package:
 
 source:
   url: https://github.com/Eventual-Inc/Daft/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 6db23da58825e1418666313dae5cafb8a1dc97d8390ca527f512bb996a2771b6
+  sha256: ff2705e21dcdbfc60ac8e8e363fc17d405a54c753b2f1c792a7ea45776ec1303
 
 build:
   number: 0
 
 requirements:
   build:
-    #- ${{ stdlib('c') }}
+    - ${{ stdlib('c') }}
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ compiler('rust') }}
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - python
+        - maturin >=1.5.0,<2.0.0
     - pkg-config
     - make
     - cargo-bundle-licenses
@@ -31,8 +34,8 @@ requirements:
     - nodejs
   host:
     - python
-    - maturin >=1.5.0,<2.0.0
     - pip
+    - maturin >=1.5.0,<2.0.0
     - openssl
     - xz-tools
   run:
@@ -41,6 +44,7 @@ requirements:
     - fsspec
     - tqdm
     - typing_extensions >=4.0.0
+    - packaging
 
 tests:
   - python:
@@ -65,5 +69,4 @@ about:
 extra:
   recipe-maintainers:
     - thewchan
-    - rxm7706
     - whophil
