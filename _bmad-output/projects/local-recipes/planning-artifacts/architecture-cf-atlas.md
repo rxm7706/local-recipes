@@ -4,12 +4,12 @@ part_id: cf-atlas
 display_name: cf_atlas data pipeline
 project_type_id: data
 date: 2026-05-12
-source_pin: 'conda-forge-expert v8.5.2'
+source_pin: 'conda-forge-expert v8.5.3'
 ---
 
 # Architecture: cf_atlas (Part 2)
 
-`cf_atlas` is the **offline-tolerant package-intelligence layer** for the system. It builds and maintains `cf_atlas.db` (SQLite, schema v21) — an inventory of every conda-forge package with metadata, dependencies, version skew, vulnerability surface, downloads, and staleness signals, plus a separate `pypi_universe` side table holding the PyPI directory (~800k projects) for the admin-persona "what's on PyPI but not on conda-forge" candidate-list query. The atlas is what makes Part 1's `scan_for_vulnerabilities` / `behind-upstream` / `feedstock-health` / `whodepends` queries fast and offline.
+`cf_atlas` is the **offline-tolerant package-intelligence layer** for the system. It builds and maintains `cf_atlas.db` (SQLite, schema v23) — an inventory of every conda-forge package with metadata, dependencies, version skew, vulnerability surface, downloads, and staleness signals, plus a separate `pypi_universe` side table holding the PyPI directory (~800k projects) for the admin-persona "what's on PyPI but not on conda-forge" candidate-list query, plus a `pypi_intelligence` enrichment side table (v8.1.0+) and a `cisa_kev` overlay table (v8.5.3+). The atlas is what makes Part 1's `scan_for_vulnerabilities` / `behind-upstream` / `feedstock-health` / `whodepends` queries fast and offline.
 
 Part 2's scripts live inside Part 1's `scripts/` directory by design — the pipeline is the skill's data layer, not a separate codebase. This document focuses on **what** the pipeline does and **why** its structure looks the way it does; Part 1's architecture covers the script-level tier discipline.
 
@@ -113,8 +113,8 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 | **E** | `phase_e_enrichment` (1148) | Download cf-graph tarball + extract feedstock-level metadata. Cache TTL via `ATLAS_CFGRAPH_TTL_DAYS` (default 1.0). Atomic-write cache; streams tar from disk (saves ~150 MB peak RAM). Incremental commits every 200 enriched rows. | ✓ (cache TTL) | — | github.com (`GITHUB_BASE_URL`) |
 | **E.5** | `phase_e5_archived_feedstocks` (1395) | Identify archived feedstocks via GitHub GraphQL pagination. Page-level `save_phase_checkpoint(cursor=…)` so progress is observable mid-run. Incremental commits every 500 applied rows. | — | ✓ (page-level) | api.github.com (`GITHUB_API_BASE_URL`) |
 | **F** | `phase_f_downloads` (1950) | Per-conda-package total downloads (3 backends: API / S3 parquet / auto). Default `PHASE_F_CONCURRENCY=3` (was 8 pre-v7.8.0). Retry-After honored on 429/503 (60s cap) + ±25% jitter. | ✓ | — | api.anaconda.org (`ANACONDA_API_BASE_URL`) OR AWS S3 (`S3_PARQUET_BASE_URL`) |
-| **G** | `phase_g_vdb_summary` (1994) | AppThreat vdb scan summary per package — **requires `vuln-db` pixi env** | ✓ | — | (local vdb/ DB) |
-| **G'** | `phase_g_prime_per_version_vulns` (4029) | Per-version CVE scoring — writes `package_version_vulns` — **requires `vuln-db`** | (row-absence) | — | (local vdb/ DB) |
+| **G** | `phase_g_vdb_summary` (1994) | AppThreat vdb scan summary per package — **requires `vuln-db` pixi env**. **v8.5.3 (DW13):** loads `cisa_kev` CVE IDs once via `_load_kev_cves(conn)` and ORs the result with vdb's per-CVE `kev` flag so `vuln_kev_affecting_current` reflects the live CISA catalogue (vdb's aqua source default-ignores `kevc/`). Phase prints "KEV overlay active: N CVE IDs loaded" or a hint to run `fetch-cisa-kev` when the table is empty. | ✓ | — | (local vdb/ DB + cisa_kev table) |
+| **G'** | `phase_g_prime_per_version_vulns` (4029) | Per-version CVE scoring — writes `package_version_vulns` — **requires `vuln-db`**. **v8.5.3 (DW13):** same KEV overlay as Phase G. **v8.5.3 (DW12):** ends with `_phase_g_sync_current_rollup` pure-SQL tail step that re-derives `packages.vuln_*_affecting_current` from `package_version_vulns` at the row's CURRENT `latest_conda_version` — closes the rollup-staleness drift surfaced by the 2026-05-23 channel-wide CVE audit (6 false positives where Phase B advanced `latest_conda_version` after a Phase G run wrote stale rollup counts). Idempotent + commits inside the same transaction as the per-version writes. | (row-absence) | — | (local vdb/ DB + cisa_kev table) |
 | **H** | `phase_h_pypi_versions` (2762) | PyPI current-version skew detection (2 backends: pypi-json / cf-graph offline). Default `PHASE_H_CONCURRENCY=3` (was 8 pre-v7.8.1). Retry-After + ±25% jitter on the pypi-json path. **v7.9.0:** eligible-rows selector now applies the canonical persona-filter triplet `conda_name IS NOT NULL AND latest_status='active' AND COALESCE(feedstock_archived,0)=0` (matches F/G/G'/K/L/N); cold-run denominator drops from ~672k to ~12k (56× cut). **v8.0.0:** selector reads `FROM v_actionable_packages` (canonical view); eligible-rows gate becomes serial-aware (3-condition OR: never-fetched / `pypi_last_serial != pypi_version_serial_at_fetch` / 30 d safety re-check). Phase H stamps `pypi_version_serial_at_fetch` on successful fetch (schema v21 column). Warm-daily wall-clock drops ~5 min → ~30 s. Stats split into `eligible_never_fetched / eligible_serial_moved / eligible_safety_recheck`. | ✓ | — | pypi.org JSON (`PYPI_JSON_BASE_URL`) OR github.com (cf-graph) |
 | **J** | `phase_j_dependency_graph` (3976) | Build the dependency graph in the `dependencies` table. **Monolithic transaction by design** — `DELETE FROM dependencies` at txn start gives consumers atomic full-snapshot semantics. **v7.9.0:** pre-pass builds `inactive_feedstocks` skip-set from `packages` (`feedstock_archived=1 OR latest_status='inactive'`); cf-graph tarball iteration skips matching basenames. New `skipped_inactive_feedstocks` stat in return dict. | — | — | (DB-internal + cf-graph) |
 | **K** | `phase_k_vcs_versions` (2771) | GitHub via **batched GraphQL** (~100 repos/POST; was REST fanout pre-v7.8.0). GitLab + Codeberg still REST. Writes `upstream_versions`. `PHASE_K_GRAPHQL_DISABLED=1` reverts to REST. `PHASE_K_GRAPHQL_BATCH_SIZE` tunes batch size. | ✓ | — | api.github.com (`GITHUB_API_BASE_URL`, covers GraphQL too), gitlab.com (`GITLAB_API_BASE_URL`), codeberg.org (`CODEBERG_API_BASE_URL`) |
@@ -137,14 +137,21 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 
 ---
 
-## Schema (cf_atlas.db, version 21)
+## Schema (cf_atlas.db, version 23)
 
-12 tables + 2 views. The `packages` table is primary (conda-actionable
+13 tables + 3 views. The `packages` table is primary (conda-actionable
 working set); the rest are supporting. `pypi_universe` (added v7.9.0 /
 schema v20) is the **directory** of every PyPI project — separated from
 `packages` so the working set stays conda-actionable and the universe
 upsert can TTL on its own cadence (default 7 d via
 `PHASE_D_UNIVERSE_TTL_DAYS`).
+
+**v8.5.3 additions (schema v23):**
+
+- New `cisa_kev` side table (13 columns + 3 indexes; cve_id PK so re-fetches are pure UPSERT). Populated by `cisa_kev_fetcher.py` from the CISA Known Exploited Vulnerabilities JSON feed at `https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json` (~2 MB / ~1,602 CVEs / 0.74 s end-to-end). Joined per-CVE by Phase G + G' overlay loops via the new `_load_kev_cves(conn) -> set[str]` helper. Free-text `knownRansomwareCampaignUse` mapped to tri-state INTEGER (Known→1, Unknown→0, other→NULL). Live verification 2026-05-23: 1,602 CVEs loaded; 323 (~20%) flagged with known ransomware-campaign use; 1 actionable conda-forge feedstock surfaced channel-wide (`salt-2016.3.0`, 3 KEV CVEs).
+- New `v_current_version_vulns` VIEW (DW12 fix): query-time-correct JOIN of `package_version_vulns` to `packages.latest_conda_version`. Eliminates the rollup-staleness drift class that `packages.vuln_*_affecting_current` columns suffer from when Phase B advances `latest_conda_version` between Phase G runs. New code should prefer the view; the rollup columns are retained for backward-compat and synced by Phase G''s new `_phase_g_sync_current_rollup` pure-SQL tail step.
+- Migration v22 → v23 is idempotent and self-healing on next `init_schema` (CREATE TABLE / VIEW IF NOT EXISTS; no ALTER TABLE needed).
+- **v8.6.0 forward-flag** (in-flight, not yet shipped): `docs/specs/atlas-appthreat-deep-signals.md` adds schema v23 → v24 with three new side tables (`epss_scores` from FIRST.org daily CSV; `cwe_categories` from MITRE catalog with a hand-curated 5-8-bucket cf_atlas mapping; `package_hardening` from blint binary inspection) + 6 new columns on `packages` (`vuln_max_epss_score`, `vuln_max_epss_percentile`, `vuln_cwe_top`, `vuln_cwe_categories_json`, `vuln_total_active`, `vuln_withdrawn_count`) + 3 new columns on `package_version_vulns` + 2 new phases (T blint, U EPSS overlay). Phase G/G' will gain two new helpers symmetric to `_load_kev_cves`: `_load_epss_scores(conn)` and `_load_cwe_categories(conn)`. ~18 stories in 4 waves; two-PR ship.
 
 **v8.0.0 additions (schema v21):**
 
