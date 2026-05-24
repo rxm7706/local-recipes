@@ -472,6 +472,7 @@ conda-pypi = ">=0.9.0"            # Better PyPI interoperability for the conda e
 feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.69.0"                 # Pixi package & environment manager
+#pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
 rattler-build = ">=0.65.0"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.3.12"  # pixi build backend that delegates to rattler-build
 pixi-build-cmake = ">=0.3.13"     # pixi build backend for CMake projects
