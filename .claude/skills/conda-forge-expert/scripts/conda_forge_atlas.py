@@ -134,7 +134,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 23
+SCHEMA_VERSION = 24
 
 
 def _get_data_dir() -> Path:
@@ -188,6 +188,14 @@ CREATE TABLE IF NOT EXISTS packages (
     vuln_critical_affecting_current  INTEGER,
     vuln_high_affecting_current      INTEGER,
     vuln_kev_affecting_current       INTEGER,
+    -- v24 (v8.6.0 Wave A — provisioned for Wave B): EPSS / CWE / withdrawn
+    -- rollup columns; Phase G/G' Wave B populates them via the overlay extension.
+    vuln_max_epss_score              REAL,
+    vuln_max_epss_percentile         REAL,
+    vuln_cwe_top                     TEXT,
+    vuln_cwe_categories_json         TEXT,
+    vuln_total_active                INTEGER,
+    vuln_withdrawn_count             INTEGER,
     vdb_scanned_at                   INTEGER,
     vdb_last_error                   TEXT,
     pypi_current_version             TEXT,
@@ -370,6 +378,11 @@ CREATE TABLE IF NOT EXISTS package_version_vulns (
     vuln_critical_affecting_version  INTEGER,
     vuln_high_affecting_version      INTEGER,
     vuln_kev_affecting_version       INTEGER,
+    -- v24 (v8.6.0 Wave A — provisioned for Wave B): per-version EPSS / CWE /
+    -- active-only count; Phase G' Wave B populates them.
+    vuln_max_epss_score              REAL,
+    vuln_cwe_top                     TEXT,
+    vuln_total_active                INTEGER,
     scanned_at                       INTEGER,
     PRIMARY KEY (conda_name, version)
 );
@@ -557,6 +570,68 @@ CREATE INDEX IF NOT EXISTS idx_cisa_kev_date    ON cisa_kev(date_added);
 CREATE INDEX IF NOT EXISTS idx_cisa_kev_vendor  ON cisa_kev(vendor);
 CREATE INDEX IF NOT EXISTS idx_cisa_kev_product ON cisa_kev(product);
 
+-- v24 (v8.6.0 Wave A): FIRST.org Exploit Prediction Scoring System (EPSS)
+-- scores. Populated by `epss_fetcher.py` (run as `pixi run -e local-recipes
+-- fetch-epss`) which pulls the daily CSV at
+-- https://epss.empiricalsecurity.com/epss_scores-current.csv.gz (Cyentia
+-- rebranded to Empirical Security). FIRST publishes both `epss` (0-1
+-- exploitation probability) and `percentile` (0-1 proportion of CVEs at or
+-- below this score) as decimals; we normalize `percentile` to 0-100 at
+-- store time to match CISA's published convention (cheaper than
+-- normalizing at every read). Phase G / G' load this into a
+-- {cve_id: (score, percentile)} dict via `_load_epss_scores(conn)` and
+-- compute per-package `vuln_max_epss_score` / `vuln_max_epss_percentile`
+-- in Wave B once the CWE rollup + withdrawn filter land in the same loop.
+CREATE TABLE IF NOT EXISTS epss_scores (
+    cve_id              TEXT PRIMARY KEY,
+    epss_score          REAL NOT NULL,    -- 0.0-1.0 exploitation probability
+    epss_percentile     REAL NOT NULL,    -- 0.0-100.0 (normalized from FIRST's 0-1)
+    snapshot_date       TEXT,             -- ISO date of the FIRST.org snapshot (from CSV header comment)
+    source_fetched_at   INTEGER           -- UNIX seconds when this row was upserted
+);
+CREATE INDEX IF NOT EXISTS idx_epss_score      ON epss_scores(epss_score);
+CREATE INDEX IF NOT EXISTS idx_epss_percentile ON epss_scores(epss_percentile);
+
+-- v24 (v8.6.0 Wave A — provisioned for Wave B): MITRE CWE catalog + a
+-- cf_atlas-specific high-level category mapping ('RCE' / 'DoS' /
+-- 'Info-Disclosure' / 'Auth-Bypass' / 'Memory-Safety' / 'Traversal' /
+-- 'Injection' / 'Other'). Populated in Wave B by `cwe_catalog_fetcher.py`
+-- which pulls MITRE's CSV + applies a committed seed-mapping JSON. Phase
+-- G / G' aggregate per-CVE CWE into per-package `vuln_cwe_top` (most-
+-- frequent category). Wave A only creates the empty table so the schema
+-- migration is one bump rather than two.
+CREATE TABLE IF NOT EXISTS cwe_categories (
+    cwe_id              TEXT PRIMARY KEY,   -- e.g., 'CWE-79', 'CWE-22'
+    cwe_name            TEXT,               -- MITRE's `Name` column
+    cf_atlas_category   TEXT,               -- one of the 8 high-level buckets, or 'Other'
+    cwe_abstraction     TEXT,               -- MITRE's `Weakness Abstraction` (Class/Base/Variant/Compound)
+    source_fetched_at   INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_cwe_category ON cwe_categories(cf_atlas_category);
+
+-- v24 (v8.6.0 Wave A — provisioned for Wave C): per-package binary
+-- hardening profile from OWASP/blint. Per (conda_name, version, subdir)
+-- row. Wave A only creates the empty table; Wave C ships Phase T which
+-- runs blint against local `build_artifacts/` (maintainer) or downloaded
+-- top-N CVE-flagged .conda files (admin) and populates these rows.
+CREATE TABLE IF NOT EXISTS package_hardening (
+    conda_name              TEXT NOT NULL,
+    version                 TEXT NOT NULL,
+    subdir                  TEXT NOT NULL,   -- linux-64 / osx-arm64 / win-64 / noarch
+    binary_count            INTEGER,         -- # binaries in the .conda artifact
+    pie_pct                 REAL,            -- % of binaries with Position Independent Executable
+    relro_pct               REAL,            -- % with full RELRO
+    stack_canary_pct        REAL,            -- % with stack canary
+    nx_pct                  REAL,            -- % with non-executable stack
+    fortify_pct             REAL,            -- % with fortify-source
+    hardening_score         INTEGER,         -- 0-100 composite (mean of the 5 % columns)
+    blint_version           TEXT,            -- blint version that produced this profile
+    source_fetched_at       INTEGER,
+    PRIMARY KEY (conda_name, version, subdir)
+);
+CREATE INDEX IF NOT EXISTS idx_hardening_score ON package_hardening(hardening_score);
+CREATE INDEX IF NOT EXISTS idx_hardening_conda ON package_hardening(conda_name);
+
 -- v_current_version_vulns: query-time-correct view of per-current-version
 -- vuln counts. Joins package_version_vulns (the per-version truth source
 -- populated by Phase G') against packages.latest_conda_version (advanced
@@ -695,9 +770,37 @@ def init_schema(conn: sqlite3.Connection) -> None:
             ("maven_coord",                      "ALTER TABLE packages ADD COLUMN maven_coord TEXT"),
             ("downloads_source",                 "ALTER TABLE packages ADD COLUMN downloads_source TEXT"),
             ("pypi_version_source",              "ALTER TABLE packages ADD COLUMN pypi_version_source TEXT"),
+            # v24 (v8.6.0 Wave A — provisioned for Waves B/C): EPSS + CWE rollup
+            # + withdrawn-active count + withdrawn-skipped count columns. All NULL on
+            # pre-v24 rows; populated by Phase G/G' overlay extension in Wave B
+            # (EPSS-max + CWE-top + vuln_total_active + vuln_withdrawn_count).
+            ("vuln_max_epss_score",              "ALTER TABLE packages ADD COLUMN vuln_max_epss_score REAL"),
+            ("vuln_max_epss_percentile",         "ALTER TABLE packages ADD COLUMN vuln_max_epss_percentile REAL"),
+            ("vuln_cwe_top",                     "ALTER TABLE packages ADD COLUMN vuln_cwe_top TEXT"),
+            ("vuln_cwe_categories_json",         "ALTER TABLE packages ADD COLUMN vuln_cwe_categories_json TEXT"),
+            ("vuln_total_active",                "ALTER TABLE packages ADD COLUMN vuln_total_active INTEGER"),
+            ("vuln_withdrawn_count",             "ALTER TABLE packages ADD COLUMN vuln_withdrawn_count INTEGER"),
         ):
             if col not in existing_cols:
                 conn.execute(ddl)
+
+        # v24 (v8.6.0 Wave A — provisioned for Waves B/C): per-version EPSS + CWE
+        # + active-only count columns on package_version_vulns. Populated by
+        # Phase G' overlay extension in Wave B.
+        pvv_exists = bool(list(conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='package_version_vulns'"
+        )))
+        if pvv_exists:
+            pvv_cols = {row["name"] for row in conn.execute(
+                "PRAGMA table_info(package_version_vulns)"
+            )}
+            for col, ddl in (
+                ("vuln_max_epss_score",   "ALTER TABLE package_version_vulns ADD COLUMN vuln_max_epss_score REAL"),
+                ("vuln_cwe_top",          "ALTER TABLE package_version_vulns ADD COLUMN vuln_cwe_top TEXT"),
+                ("vuln_total_active",     "ALTER TABLE package_version_vulns ADD COLUMN vuln_total_active INTEGER"),
+            ):
+                if col not in pvv_cols:
+                    conn.execute(ddl)
 
         # v17 → v18: package_version_downloads gains a `source` discriminator
         # so consumers can tell anaconda-api rows (upload_unix populated) from
@@ -791,6 +894,18 @@ def init_schema(conn: sqlite3.Connection) -> None:
         # against the public CISA JSON feed). Phase G / G' load it at start
         # and overlay it on vdb's per-CVE `kev` field. All-new IF NOT EXISTS
         # DDL in SCHEMA_DDL — no migration step required here.
+
+        # v23 → v24 (v8.6.0 Wave A — AppThreat Deep Signals foundation):
+        # three new side tables (`epss_scores`, `cwe_categories`,
+        # `package_hardening`) created via IF NOT EXISTS DDL in SCHEMA_DDL
+        # (no migration step needed for the tables). Six new columns added
+        # to `packages` and three to `package_version_vulns` via the
+        # ALTER TABLE migration ladder above (guarded by the existing-cols
+        # pragma_table_info set). All new columns NULL on pre-migration rows
+        # — Phase G/G' Wave B populates them via the overlay-loop extension
+        # (EPSS-max + CWE-top + active-only count + withdrawn skip count).
+        # Phase T (Wave C) populates `package_hardening`. `cwe_categories`
+        # populated by `cwe_catalog_fetcher.py` in Wave B.
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -2592,6 +2707,33 @@ def _load_kev_cves(conn: sqlite3.Connection) -> set[str]:
     if not have_table:
         return set()
     return {row[0] for row in conn.execute("SELECT cve_id FROM cisa_kev")}
+
+
+def _load_epss_scores(conn: sqlite3.Connection) -> dict[str, tuple[float, float]]:
+    """Load FIRST.org EPSS scores for Phase G / G' overlay (v8.6.0 Wave A).
+
+    Returns {cve_id: (epss_score, epss_percentile_0_100)}. Empty dict when
+    the `epss_scores` table is missing (pre-v24 DBs) or empty (operator
+    hasn't run `fetch-epss` yet). Wave A only ships this loader; the
+    overlay-loop consumer (`max(epss_map.get(v['id'], (0.0, 0.0))[0]
+    for v in affecting)` and the matching percentile rollup) lands in
+    Wave B alongside the CWE rollup + withdrawn filter so all Phase-G-
+    loop changes ship in one PR.
+
+    `epss_score` is 0.0-1.0 (FIRST's native scale). `epss_percentile` is
+    0.0-100.0 (normalized at store time — see `epss_fetcher.py`).
+    """
+    have_table = bool(list(conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='epss_scores'"
+    )))
+    if not have_table:
+        return {}
+    return {
+        row[0]: (row[1], row[2])
+        for row in conn.execute(
+            "SELECT cve_id, epss_score, epss_percentile FROM epss_scores"
+        )
+    }
 
 
 def phase_g_vdb_summary(conn: sqlite3.Connection) -> dict:

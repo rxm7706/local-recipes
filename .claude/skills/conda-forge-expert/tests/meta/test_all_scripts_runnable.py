@@ -21,6 +21,7 @@ SCRIPTS = [
     "dependency-checker.py",
     "detail_cf_atlas.py",
     "env_inspect.py",
+    "epss_fetcher.py",
     "failure_analyzer.py",
     "feedstock_context.py",
     "feedstock_enrich.py",
