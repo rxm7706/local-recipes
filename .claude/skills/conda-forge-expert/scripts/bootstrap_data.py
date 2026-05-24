@@ -133,6 +133,12 @@ PROFILES: dict[str, dict[str, str]] = {
         "PHASE_E_ENABLED": "1",     # cf-graph cache (default-on for maintainer)
         "PHASE_N_ENABLED": "1",     # live GitHub data (auto-scoped)
         "PHASE_F_SOURCE":  "auto",  # atlas accepts "auto" (probe API → S3 fallback)
+        # v8.6.0 Wave D: auto-refresh the CISA KEV / EPSS / CWE catalogs
+        # before vdb-refresh + cf_atlas build. Cheap (~1-5 s each); ensures
+        # Phase G/G' overlays have fresh data without operator action.
+        "BOOTSTRAP_FETCH_CISA_KEV":    "1",  # daily
+        "BOOTSTRAP_FETCH_EPSS":        "1",  # daily (FIRST.org refreshes daily)
+        "BOOTSTRAP_FETCH_CWE_CATALOG": "1",  # weekly TTL inside fetcher itself
         # PHASE_H_SOURCE intentionally NOT set: "auto" is a bootstrap-data
         # CLI concept (resolves to cf-graph on --fresh, else pypi-json), but
         # the atlas itself only accepts "pypi-json" or "cf-graph". Leaving
@@ -155,6 +161,11 @@ PROFILES: dict[str, dict[str, str]] = {
         "PHASE_E_ENABLED": "1",
         "PHASE_N_ENABLED": "1",     # channel-wide (no PHASE_N_MAINTAINER)
         "PHASE_F_SOURCE":  "auto",
+        # v8.6.0 Wave D: auto-refresh CISA KEV + EPSS + CWE catalogs.
+        # Same cadence as maintainer — catalog data isn't maintainer-scoped.
+        "BOOTSTRAP_FETCH_CISA_KEV":    "1",
+        "BOOTSTRAP_FETCH_EPSS":        "1",
+        "BOOTSTRAP_FETCH_CWE_CATALOG": "1",
         # PHASE_H_SOURCE intentionally unset — see maintainer profile note.
         #
         # v8.1.0 — admin profile enables all 5 PyPI intelligence phases
@@ -654,6 +665,27 @@ def main() -> int:
                   ["pixi", "run", "-e", "local-recipes", "update-cve-db"],
                   dry_run=args.dry_run, timeout=_timeout_for("cve_db"))
         results.append(("cve-db", ok))
+
+    # Step 2a — CISA KEV catalog (v8.5.3 DW13; v8.6.0 Wave D: profile auto-run)
+    if os.environ.get("BOOTSTRAP_FETCH_CISA_KEV", "").strip():
+        ok = _run("Refresh CISA Known Exploited Vulnerabilities (~2 MB JSON from cisa.gov)",
+                  ["pixi", "run", "-e", "local-recipes", "fetch-cisa-kev"],
+                  dry_run=args.dry_run, timeout=_timeout_for("mapping_cache"))
+        results.append(("fetch-cisa-kev", ok))
+
+    # Step 2b — FIRST.org EPSS scores (v8.6.0 Wave A; Wave D: profile auto-run)
+    if os.environ.get("BOOTSTRAP_FETCH_EPSS", "").strip():
+        ok = _run("Refresh FIRST.org EPSS scores (~3 MB gzipped CSV from epss.empiricalsecurity.com)",
+                  ["pixi", "run", "-e", "local-recipes", "fetch-epss"],
+                  dry_run=args.dry_run, timeout=_timeout_for("mapping_cache"))
+        results.append(("fetch-epss", ok))
+
+    # Step 2c — MITRE CWE catalog (v8.6.0 Wave B; Wave D: profile auto-run)
+    if os.environ.get("BOOTSTRAP_FETCH_CWE_CATALOG", "").strip():
+        ok = _run("Refresh MITRE CWE Research Concepts catalog (~640 KB zip from cwe.mitre.org)",
+                  ["pixi", "run", "-e", "local-recipes", "fetch-cwe-catalog"],
+                  dry_run=args.dry_run, timeout=_timeout_for("mapping_cache"))
+        results.append(("fetch-cwe-catalog", ok))
 
     # Step 3 — vdb (heavy)
     if not args.no_vdb:

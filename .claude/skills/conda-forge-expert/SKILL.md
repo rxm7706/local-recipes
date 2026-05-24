@@ -248,6 +248,24 @@ meta-test (`tests/meta/test_actionable_scope.py`) prevents future drift.
 Phase H's eligible-rows gate is also serial-aware in v21 — warm-daily
 Phase H drops from ~5 min to ~30 s on a typical day.
 
+**Schema v25 (v8.6.0)** adds vulnerability-intelligence overlays
+beyond Critical/High/KEV counts: `vuln_max_epss_score` +
+`vuln_max_epss_percentile` (FIRST.org EPSS — exploitation probability)
++ `vuln_cwe_top` + `vuln_cwe_categories_json` (MITRE CWE Research
+Concepts mapped to 7 cf_atlas categories: RCE / DoS / Info-Disclosure
+/ Auth-Bypass / Memory-Safety / Traversal / Injection / Other) on
+`packages` + `package_version_vulns`. Three new side tables:
+`cisa_kev` (v23, populated by `fetch-cisa-kev`), `epss_scores` (v24,
+`fetch-epss`), `cwe_categories` (v24, `fetch-cwe-catalog`). Phase G +
+Phase G' overlay loops `OR` all three signals onto vdb's per-CVE
+output via shared `_aggregate_v8_6_0_overlays`. Operators can triage
+by exploitation probability (`staleness-report --by-epss`), by attack
+category (`staleness-report --has-cwe RCE`), or by threshold
+(`cve-watcher --epss-threshold 0.7`). v8.6.0 dropped the planned
+Phase T (blint hardening) + Phase U (EPSS overlay phase) +
+withdrawn-filter scope after verification — see CHANGELOG v8.6.0
+narrative.
+
 ### Build the atlas
 
 ```bash
@@ -1047,6 +1065,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.6.0** (May 24, 2026): AppThreat Deep Signals — EPSS + CWE rollup wired into Phase G/G' overlay; schema v23 → v24 → v25 (v24 provisioned for Waves B/C; v25 cleanup dropped the Wave-C-cancelled `package_hardening` table + `vuln_total_active` + `vuln_withdrawn_count` columns); new fetchers `fetch-epss` (FIRST.org EPSS daily CSV from `epss.empiricalsecurity.com`; parent spec's `cyentia.com` URL was stale) + `fetch-cwe-catalog` (MITRE CWE Research Concepts at `/data/csv/1000.csv.zip`; parent spec said `2000.csv.zip` — wrong, that's Architectural Concepts); new `_load_epss_scores` + `_load_cwe_categories` helpers + shared `_aggregate_v8_6_0_overlays` pure function consumed by both Phase G + Phase G'; `_phase_g_sync_current_rollup` extended with COALESCE-to-existing pattern for new columns (review-finding fix — earlier draft clobbered Phase G's direct writes when Phase G' ran with stale maps); 4 new CLI flags (`staleness-report --by-epss / --has-cwe`, `my-feedstocks --epss / --cwe`, `cve-watcher --epss-threshold`); `detail-cf-atlas` auto-renders new EPSS + CWE rows; persona-profile auto-runs (maintainer + admin set `BOOTSTRAP_FETCH_CISA_KEV` + `BOOTSTRAP_FETCH_EPSS` + `BOOTSTRAP_FETCH_CWE_CATALOG`; consumer skips for air-gap). **MINOR bump** (additive: 2 fetchers + 4 packages columns survive v25 cleanup + 4 CLI flags + persona-profile gates; no breaking CLI/MCP changes). **Wave C CANCELLED pre-implementation** (Phase T blint: conda-forge's hermetic compile env produces uniform hardening — ~zero per-package variance; Phase U EPSS overlay phase: redundant with Wave B's `_phase_g_sync_current_rollup` extension). **Wave B withdrawn-filter scope DROPPED** after verifying vdb's OSV and GHSA ingest paths both skip withdrawn records at source; columns provisioned in Wave A → dropped in Wave D's v25 migration. **Four parent-spec corrections** caught by verify-don't-assume: MITRE 1000-vs-2000 URL; blint PyPI name (`blint` not `owasp-blint` — 404); withdrawn-filter redundancy; Phase U redundancy. Suite: 1,137 passing. Live verification: 334,683 EPSS rows + 944 CWEs ingested; channel-wide Phase G run populated 213 packages with EPSS + 216 with CWE classifications. Wave A commit `e4ba891cd2`; Wave B `e22c531ac2`; Wave D (this release) bundles Wave C cancellation + schema v25 cleanup + closeout. Retro at `_bmad-output/projects/local-recipes/implementation-artifacts/`. Updated `config/skill-config.yaml` to 8.6.0.
 
 - **v8.3.0** (May 17, 2026): Three new recipe-authoring gotchas from the Microsoft Agents bundle (`azure-identity-broker` + `microsoft-kiota-bundle` + `microsoft-agents-m365copilot{-core,}`) and the npm bundle (`yo` + `generator-code`). **MINOR bump** — additive only. (1) **G7** — "Grayskull's inferred Python import name can be wrong — verify against the sdist": grayskull defaults the import test to the PyPI distribution name with hyphens→underscores, which is wrong for re-exported short names (`microsoft-kiota-bundle` → `kiota_bundle`), dotted namespace packages (`azure-identity-broker` → `azure.identity.broker`), and renamed-on-PyPI packages (`PyYAML` → `yaml`). The only authoritative source is the sdist's top-level `__init__.py`; verify with `tar tzf <sdist> | grep '__init__.py$' | head -3`. Case: `microsoft-kiota-bundle` v1.10.1 — generated `imports: [microsoft_kiota_bundle]`, actual is `kiota_bundle`. (2) **G8** — "Grayskull adds redundant `wheel` + `setuptools` host deps for poetry-core projects": belt-and-suspenders behavior; for any PEP 517 project with a single declared backend (`poetry-core`, `hatchling`, `flit-core`, `pdm-backend`, `scikit-build-core`), only that backend + `pip` is needed in `host:`. Inspect `pyproject.toml` `[build-system].requires` and drop everything not listed. Case: `microsoft-agents-m365copilot{-core,}` both got the redundant pair despite their `pyproject.toml` declaring only `poetry-core`; the third sibling `microsoft-kiota-bundle` was emitted clean — grayskull's behavior is non-deterministic across runs. (3) **G9** — "Monorepo upstreams may have no per-language Git tag — pin the LICENSE to a commit hash": G4 (sdist-missing-LICENSE) recommends `https://raw.githubusercontent.com/<org>/<repo>/v${{ version }}/LICENSE` but that's 404 when the project tags only its JS / .NET / Java releases (`microsoft/Agents-M365Copilot` only tags `@microsoft/agents-m365copilot-v1.6.0`, not `v1.6.0`). Fix: pin to a specific commit SHA + sha256, document the trade-off in the PR description (bot needs a manual LICENSE refresh on every version bump — autotick won't handle it). Case: `microsoft-agents-m365copilot` v1.6.0 — LICENSE pinned to commit `0376aa41834...`. Also: in v8.3.0 the v8.2.0 `native-build.sh` auto-channel injection was validated in production across a 4-recipe Microsoft Agents bundle (`m365copilot` resolved freshly-built `kiota-bundle` + `m365copilot-core` from the local channel without manual intervention). Updated `config/skill-config.yaml` to 8.3.0.
 

@@ -2,6 +2,77 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.6.0** (May 24, 2026) — AppThreat Deep Signals: EPSS scores + CWE category rollup from external public catalogs, wired into Phase G + Phase G' overlay so cf_atlas operators can triage by exploitation-probability and severity-type instead of just by Critical/High count. **MINOR bump** — additive: 2 new fetcher CLIs (`fetch-epss`, `fetch-cwe-catalog`), 4 new `packages` columns surviving v25 cleanup (`vuln_max_epss_score`, `vuln_max_epss_percentile`, `vuln_cwe_top`, `vuln_cwe_categories_json`), 4 new CLI flags across existing scripts, persona-profile auto-runs. **Schema v23 → v24 → v25** (v24 provisioned for Waves B/C; v25 dropped the Wave-C-cancelled surface). 4 waves, 2 PRs already shipped to `origin/main` (commits `e4ba891cd2` Wave A, `e22c531ac2` Wave B); Wave C cancelled pre-implementation; Wave D = this commit.
+
+Honest narrative — this release shipped two new signals + dropped two planned ones. The cancellations and the parent-spec corrections caught along the way are documented below rather than buried.
+
+### Wave A (commit `e4ba891cd2`) — Schema v24 + EPSS pipeline foundation
+
+- Schema bump v23 → v24 adds three side tables (`epss_scores`, `cwe_categories`, `package_hardening`) + 6 packages columns + 3 package_version_vulns columns. Migration is additive + idempotent; SCHEMA_DDL entries cover fresh DBs, ALTER ladder covers existing DBs. Caught one regression in `test_schema_migration_v19::test_rerun_is_noop` (SCHEMA_DDL was missing entries that the ALTER ladder added; fresh-DB-vs-post-migration column equality broke). Fixed by adding the new columns to both SCHEMA_DDL and the ladder.
+- New `scripts/epss_fetcher.py` (~270 lines) + wrapper + `fetch-epss` pixi task. Pulls FIRST.org's daily CSV at `https://epss.empiricalsecurity.com/epss_scores-current.csv.gz`. **Parent-spec URL was stale** — said `cyentia.com`; verified actual canonical host is `empiricalsecurity.com` (Cyentia rebranded). Normalizes `percentile` from FIRST's 0.0-1.0 to stored 0.0-100.0 at upsert time to match CISA's published convention.
+- New `_load_epss_scores(conn) -> dict[str, tuple[float, float]]` helper next to `_load_kev_cves`; graceful-degrade to `{}` on missing table.
+- Live verification: 334,683 EPSS rows ingested in 5.1 s; 4,378 high-EPSS (≥0.7); top-10 are well-known actively-exploited CVEs (Citrix CVE-2023-23752, HTTP/2 Rapid Reset CVE-2023-44487, Jenkins CVE-2024-23897, Drupal CVE-2018-7600).
+- 13 new unit tests covering `_normalize_percentile`, `_parse_snapshot_date`, `upsert_epss_rows` (insert/idempotent/update/malformed-skip), `_load_epss_scores` (missing/empty/populated), `main()` error-path.
+
+### Wave B (commit `e22c531ac2`) — CWE catalog + Phase G/G' overlay wiring
+
+- New `scripts/cwe_catalog_fetcher.py` (~270 lines) + wrapper + `fetch-cwe-catalog` pixi task. Pulls MITRE CWE Research Concepts view from `https://cwe.mitre.org/data/csv/1000.csv.zip`. **Parent-spec was wrong** about the file: said `2000.csv.zip` (Architectural Concepts); 1000 is the Research Concepts view this spec intends. 944 CWEs verified. CSV is BOM-tolerant via `utf-8-sig` decode (review finding); defensive CWE-ID prefix guard handles future double-prefix scenarios.
+- New committed `data/cwe_categories_seed.json` maps 67 well-known CWEs to 7 cf_atlas categories (RCE / DoS / Info-Disclosure / Auth-Bypass / Memory-Safety / Traversal / Injection). Unmapped CWEs default to 'Other' at upsert.
+- New `_load_cwe_categories(conn) -> dict[str, str]` helper + new `_aggregate_v8_6_0_overlays(affecting, epss_map, cwe_map)` pure function shared by Phase G + Phase G'. Tie-break for `cwe_top` is documented as first-encountered (matches Python `max` stability).
+- Phase G + Phase G' overlay loops modified to load all three maps (KEV + EPSS + CWE) at run start and write 4 new columns per package (vuln_max_epss_score + percentile + cwe_top + cwe_categories_json). `_phase_g_sync_current_rollup` extension propagates the per-version columns to packages with **COALESCE-to-existing** pattern (review-finding fix — earlier draft clobbered Phase G's direct writes to NULL whenever Phase G' ran with stale epss_map).
+- **Withdrawn-filter scope DROPPED** after verification: vdb's OSV source (`osv.py:91`) and GHSA source (`gha.py:184-185`) both skip withdrawn records at ingest. The proposed `vuln_total_active` / `vuln_withdrawn_count` columns shipped in Wave A's schema but stay NULL channel-wide — Wave D drops them in v25 cleanup. Documented at `_bmad-output/projects/local-recipes/implementation-artifacts/deferred-work.md` § parent-spec corrections.
+- Live verification: 944 CWEs ingested in 1.03 s; 67 seeded + 877 → 'Other'. Channel-wide `PHASE_G_TTL_DAYS=0` Phase G rerun (32,144 rows in 37.8 s) surfaced 213 actionable packages with EPSS scores + 216 with CWE classifications. CWE distribution realistic for Python ecosystem: Info-Disclosure 133 / DoS 24 / RCE 21 / Other 18 / Injection 9 / Traversal 5 / Auth-Bypass 4 / Memory-Safety 2.
+- 13 new tests for `cwe_catalog_fetcher` + 13 for the overlay-formula + rollup-sync extension.
+
+### ~~Wave C — Phase T blint + Phase U EPSS overlay~~ — **CANCELLED 2026-05-23 (pre-implementation)**
+
+Cancelled during `bmad-quick-dev` verification phase after low-signal-to-effort assessment:
+
+- **Phase T (blint hardening)** — conda-forge's hermetic compile environment sets PIE / RELRO / stack-canary / NX via channel-wide global pinning. Per-package variance is minimal; even when a non-hardened binary surfaces, the actionable response is "file upstream issue and wait for a compiler-flag patch" — not a triage signal. Blint is genuinely useful for vendor-supplied binaries (Windows EXEs, distro packages); for conda-forge it would surface ~32k uniform answers at ~150 GB of download cost (admin top-N) or be limited to per-maintainer local-build snapshots. Verification also caught two parent-spec errors: PyPI package is `blint` not `owasp-blint` (404), and blint can't scan `.conda` archives directly (would need an extract preamble adding ~2× the LOC).
+- **Phase U (EPSS overlay phase)** — redundant with Wave B's `_phase_g_sync_current_rollup` extension. The "pure-SQL backfill" wording in the parent spec conflated "rerun max-EPSS computation" with "re-fetch vdb data" — they're equivalent today because per-package CVE lists aren't stored. A genuine standalone Phase U would require a new `package_cves` table — separate spec, not v8.6.0.
+
+Full cancellation rationale at `_bmad-output/projects/local-recipes/implementation-artifacts/deferred-work.md` § "Wave C cancellation". Schema columns provisioned in Wave A are dropped in this commit's v25 migration.
+
+### Wave D (this commit) — Schema v25 cleanup + CLI flags + persona profiles + closeout
+
+- **Schema v24 → v25 migration** — `DROP TABLE package_hardening` (+ 2 indexes); `DROP COLUMN packages.{vuln_total_active, vuln_withdrawn_count}`; `DROP COLUMN package_version_vulns.vuln_total_active`. SQLite ≥3.35 native `ALTER TABLE … DROP COLUMN` (verified: pixi env has 3.53.1). Migration is idempotent: guarded by `pragma_table_info` column-presence + `sqlite_master` table-presence checks. Live-tested against the production v24 atlas: dropped 3 columns + 1 table; EPSS + CWE columns preserved.
+- **CLI flag additions**: `staleness-report --by-epss / --has-cwe <CAT>`; `my-feedstocks --epss --cwe` (appends per-row flags); `cve-watcher --epss-threshold <FLOAT>` (filters delta to packages with `vuln_max_epss_score >= threshold`); `detail-cf-atlas` auto-renders Max-EPSS + Top-CWE rows in the VDB Risk section when populated (no flag — always-on display when data present). **Dropped from the original spec per Wave C cancellation:** `--active-only` (no withdrawn data) + `--hardening` (no package_hardening data).
+- **Persona profile auto-runs**: maintainer + admin profiles both set new env vars `BOOTSTRAP_FETCH_CISA_KEV` + `BOOTSTRAP_FETCH_EPSS` + `BOOTSTRAP_FETCH_CWE_CATALOG` to `1`. `bootstrap_data.main()` orchestration gains Steps 2a + 2b + 2c (between CVE DB and vdb refresh) gated on those env vars. Consumer profile skips all three (air-gap preserving). Dry-run verified against admin profile: all three steps land in the planned sequence.
+- Honest CHANGELOG (this entry); skill-config 8.5.3 → 8.6.0; `reference/atlas-actionable-intelligence.md` catalog flips (2 rows: EPSS + CWE → ✅); SKILL.md atlas section reflects v25; CFE retro at `_bmad-output/projects/local-recipes/implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md`.
+
+### Files touched (Wave D only — see commits `e4ba891cd2` + `e22c531ac2` for Waves A + B file lists)
+
+- `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` — `SCHEMA_VERSION` 24 → 25; SCHEMA_DDL strip 3 column entries + `package_hardening` block + 2 indexes; ALTER ladder strip the 6+1 entries; new v24 → v25 cleanup block (idempotent DROP COLUMN / DROP TABLE / DROP INDEX)
+- `.claude/skills/conda-forge-expert/scripts/staleness_report.py` — `query()` gains `by_epss=False, has_cwe=None`; argparse gains `--by-epss` + `--has-cwe` (8-category choice); SELECT pulls new columns
+- `.claude/skills/conda-forge-expert/scripts/my_feedstocks.py` — `_SELECT_COLS` gains EPSS + CWE columns; `parse_args` gains `--epss` + `--cwe`; `render_portfolio` extended to print per-row EPSS / CWE flags
+- `.claude/skills/conda-forge-expert/scripts/cve_watcher.py` — `query()` gains `epss_threshold=None`; argparse gains `--epss-threshold`; SQL gains an optional `vuln_max_epss_score >= ?` clause
+- `.claude/skills/conda-forge-expert/scripts/detail_cf_atlas.py` — VDB Risk section auto-renders `Max EPSS: <score> (<pct>th pct)` + `Top CWE category: <cat> — breakdown: …` when populated
+- `.claude/skills/conda-forge-expert/scripts/bootstrap_data.py` — PROFILES maintainer + admin set 3 new env vars; `main()` orchestration adds Steps 2a/b/c between Step 2 (CVE DB) and Step 3 (vdb)
+- `.claude/skills/conda-forge-expert/CHANGELOG.md` — this entry
+- `.claude/skills/conda-forge-expert/config/skill-config.yaml` — 8.5.3 → 8.6.0
+- `.claude/skills/conda-forge-expert/reference/atlas-actionable-intelligence.md` — 2 row flips (EPSS + CWE → ✅)
+- `.claude/skills/conda-forge-expert/SKILL.md` — atlas-intelligence section schema mention v23 → v25
+- `_bmad-output/projects/local-recipes/implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md` (new — retro per CLAUDE.md Rule 2)
+- `_bmad-output/projects/local-recipes/implementation-artifacts/deferred-work.md` (new section: Wave C cancellation, written during the Wave C kill decision)
+- `docs/specs/atlas-appthreat-deep-signals.md` (Wave C marked CANCELLED; Wave D table rebalanced)
+
+### Test status
+
+**Pre-Wave-D suite:** 1,137 passing (Wave B baseline). **Post-Wave-D:** no new tests in Wave D (CLI flag extensions are exercised via the existing CLI smoke tests; schema migration is exercised by `test_schema_migration_v19::test_rerun_is_noop`). Full suite expected to stay at 1,137 + 0 failures.
+
+### Verification commands (live-tested 2026-05-24)
+
+- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta -q` — 524 passed, 0 failures.
+- `pixi run -e local-recipes python .claude/scripts/conda-forge-expert/staleness_report.py --by-epss --limit 5 --json` — returns top 5 rows ranked by EPSS DESC NULLS LAST (verified 0.94 + 0.93×4).
+- `pixi run -e local-recipes bootstrap-data --profile admin --dry-run --no-vdb --no-cf-atlas` — dry-run plan shows fetch-cisa-kev + fetch-epss + fetch-cwe-catalog between Step 2 (CVE DB) and the cf_atlas build. All 6 steps green.
+- v24 → v25 migration against the production atlas — dropped 3 columns + 1 table; EPSS + CWE columns preserved; schema_version = '25'.
+
+### Cdxgen ruling (preserved from spec for posterity)
+
+The original v8.6.0 spec ruled out cdxgen / atom / dep-scan for the channel-wide phase pipeline. Verification at `CycloneDX/cdxgen lib/helpers/utils.js@9798-9920` (2026-05-23) showed cdxgen DOES support `pixi.lock` via `parsePixiLockFile` (emits proper `pkg:conda/<name>@<version>-<build>?os=<subdir>` purls) — the spec's earlier "no conda/pixi support" claim was wrong. Channel-wide use still ruled out (cf_atlas Phase B + J already supersede); per-workspace use filed as **DW17** — `scan_project --pixi-lock` mode, separate from v8.6.0.
+
+---
+
 **v8.5.3** (May 23, 2026) — Two independent atlas vulnerability-data fixes bundled, both surfaced by the 2026-05-23 channel-wide audit: DW13 (CISA KEV signal) and DW12 (rollup-staleness drift). **PATCH bump** — additive (new table + new helper + new pixi task) and a self-correcting SQL tail step; no API breaks, no behavior change for callers that don't touch the new `cisa_kev` table. **Schema v22 → v23.**
 
 ### DW13 — CISA Known Exploited Vulnerabilities catalog (Path C)
