@@ -5,14 +5,14 @@ date: 2026-05-12
 repository_type: monorepo
 parts: 4
 docs_generated: 10
-source_pin: 'conda-forge-expert v8.5.2'
+source_pin: 'conda-forge-expert v8.5.3'
 ---
 
 # `local-recipes` — Master Documentation Index
 
 This index is your **primary entry point** for AI-assisted development on `local-recipes`. When a Brownfield PRD, story breakdown, or BMAD planning workflow needs the architecture and feature inventory of this repo, point them at this file.
 
-The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v8.5.2** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `sprint-change-proposal-2026-05-15-v8.1.md`; v8.1.0 → v8.5.1 on 2026-05-23 after the env-inspect suite — see retro-env-inspect-suite-2026-05-23.md; v8.5.1 → v8.5.2 on 2026-05-23 after the admin-refresh audit close-out — see `sprint-change-proposal-2026-05-23-v8.5.2.md`).
+The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v8.5.3** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `sprint-change-proposal-2026-05-15-v8.1.md`; v8.1.0 → v8.5.1 on 2026-05-23 after the env-inspect suite — see `retro-env-inspect-suite-2026-05-23.md`; v8.5.1 → v8.5.2 on 2026-05-23 after the admin-refresh audit close-out — see `sprint-change-proposal-2026-05-23-v8.5.2.md`; v8.5.2 → v8.5.3 on 2026-05-23 after the same-day emergent DW12+DW13 bundle close-out — see `sprint-change-proposal-2026-05-23-v8.5.3.md` + `implementation-artifacts/retro-dw12-dw13-2026-05-23.md`). **In-flight v8.6.0 spec intake-ready** at `docs/specs/atlas-appthreat-deep-signals.md` (mirrored as `implementation-artifacts/spec-appthreat-deep-signals.md`) — AppThreat deep signals (blint + EPSS + CWE rollup + withdrawn filter); schema v23 → v24; ~18 stories in 4 waves.
 
 ---
 
@@ -64,6 +64,7 @@ The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: han
 | [implementation-readiness-report.md](./implementation-readiness-report.md) | `bmad-check-implementation-readiness` | Cross-artifact alignment check across PRD + architecture + epics + project-context. Verdict: READY. |
 | [epics.md](./epics.md) | `bmad-create-epics-and-stories` | 13 epics, ~193 stories, 5 waves. |
 | [sprint-change-proposal-2026-05-12.md](./sprint-change-proposal-2026-05-12.md) | `bmad-correct-course` (2026-05-12) | Documents the v7.7.2 → v7.8.1 sync — env-var additions, phase architecture changes, `_http.py` surface expansion. Records why this doc set's `source_pin` was bumped and which artifacts received substantive vs pin-only updates. |
+| [sprint-change-proposal-2026-05-23-v8.5.3.md](./sprint-change-proposal-2026-05-23-v8.5.3.md) | `bmad-correct-course` (2026-05-23) | Documents the v8.5.2 → v8.5.3 sync — DW12 rollup-staleness fix + DW13 CISA KEV via Path C (after `vdb --cache-os` crashed at 33 GB pre-DW13-overlay). Also acknowledges the v8.6.0 spec at `docs/specs/atlas-appthreat-deep-signals.md` as intake-ready. |
 
 ---
 
@@ -99,6 +100,10 @@ The above documents are syntheses of these primary sources. A rebuild should tre
 
 ### Specs (BMAD-consumable, planned but not all implemented)
 - [`docs/specs/atlas-phase-f-s3-backend.md`](../../../../docs/specs/atlas-phase-f-s3-backend.md) — Wave 1 shipped in v7.6.0; Waves 2-3 deferred
+- [`docs/specs/atlas-pypi-universe-split.md`](../../../../docs/specs/atlas-pypi-universe-split.md) — shipped v7.9.0 (2026-05-13)
+- [`docs/specs/conda-forge-expert-v8.0.md`](../../../../docs/specs/conda-forge-expert-v8.0.md) — shipped v8.0.0 (2026-05-13)
+- [`docs/specs/atlas-pypi-intelligence.md`](../../../../docs/specs/atlas-pypi-intelligence.md) — shipped v8.1.0 (2026-05-15)
+- [`docs/specs/atlas-appthreat-deep-signals.md`](../../../../docs/specs/atlas-appthreat-deep-signals.md) — **in-flight v8.6.0**: blint hardening + EPSS + CWE rollup + withdrawn filter; schema v23 → v24; ~18 stories in 4 waves
 - [`docs/specs/conda-forge-tracker.md`](../../../../docs/specs/conda-forge-tracker.md) — 13 stories, channel-aware migration path
 - [`docs/specs/copilot-bridge-vscode-extension.md`](../../../../docs/specs/copilot-bridge-vscode-extension.md) — sideload-only VS Code extension
 - [`docs/specs/db-gpt-conda-forge.md`](../../../../docs/specs/db-gpt-conda-forge.md) — 13-story DB-GPT packaging plan
@@ -255,5 +260,5 @@ When ready to plan new features against the rebuilt system, run the PRD workflow
 | Total markdown lines | ~3,000 |
 | Generated | 2026-05-12 |
 | Generator | `bmad-document-project` (Path 3 hybrid) |
-| Source pin | conda-forge-expert v8.5.2 |
+| Source pin | conda-forge-expert v8.5.3 |
 | Verification | live filesystem + source code grep + CHANGELOG cross-reference |

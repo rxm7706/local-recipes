@@ -4,9 +4,9 @@ project_name: local-recipes
 date: 2026-05-12
 prd_under_review: planning-artifacts/PRD.md
 validator: bmad-validate-prd (Path 3 hybrid)
-overall_verdict: APPROVED (re-validated 2026-05-15 post v8.1.0 sync)
+overall_verdict: APPROVED (re-validated 2026-05-15 post v8.1.0 sync; pin moved through v8.5.1 / v8.5.2 / v8.5.3 as PATCH bumps that don't require re-validation — see verdict_history)
 status: final
-source_pin: 'conda-forge-expert v8.1.0'
+source_pin: 'conda-forge-expert v8.5.3'
 verdict_history:
   - { date: '2026-05-12 (initial)', verdict: 'REVISE', notes: 'Material issues across D3 / D5 / D6 / D7 / D9 / D10 on the v7.7-pinned draft PRD.' }
   - { date: '2026-05-12 (post tentative-decisions)', verdict: 'APPROVED', notes: 'PRD updated with tentative_decisions_applied; REVISE-rated dimensions addressed; status moved draft → approved.' }
@@ -14,6 +14,7 @@ verdict_history:
   - { date: '2026-05-13 (re-validated post v7.9.0 sync)', verdict: 'APPROVED', notes: 'v7.9.0 actionable-scope audit (schema v20 + pypi_universe side table + pypi-only-candidates CLI/MCP + Phase D split). PRD MINOR-bumped 1.1.0 → 1.1.1 → 1.2.0 across the v7.9.0/v8.0.0 syncs. Feature counts updated. No new REVISE findings.' }
   - { date: '2026-05-13 (re-validated post v8.0.0 sync)', verdict: 'APPROVED', notes: 'v8.0.0 structural-enforcement + persona-profile bundle (schema v21 + v_actionable_packages view + Phase H serial-aware eligible-rows gate + bootstrap-data --profile flag with auto-detection). PRD MINOR-bumped 1.1.1 → 1.2.0. v8.0.0 is the first MAJOR skill bump but PRD scope unchanged (additive UX). No new REVISE findings.' }
   - { date: '2026-05-15 (re-validated post v8.1.0 sync)', verdict: 'APPROVED', notes: 'v8.1.0 PyPI intelligence layer (schema v22 + pypi_intelligence side table + 5 new phases O/P/Q/R/S + new pypi-intelligence CLI + new MCP tool + persona-profile integration). PRD MINOR-bumped 1.2.0 → 1.3.0 (fully additive — no FR/NFR scope shift; new CLI + MCP tool are opt-in surfaces; existing CLIs unchanged). All 8 spec open questions pre-resolved before BMAD intake; L1 + L2 live-DB verification complete (Phase O perf-fix shipped as 124c5a449d; Phase R 9× faster than estimate; score distribution well-discriminated across 5k enriched candidates). No new REVISE findings.' }
+  - { date: '2026-05-23 (re-validated post v8.5.3 sync)', verdict: 'APPROVED', notes: 'PATCH bumps v8.1.0 → v8.5.1 (env-inspect suite — additive: 2 new Tier 1 scripts + 1 MCP tool + 1 extended MCP tool) → v8.5.2 (Phase K/N/P/Q reliability bundle — additive: Phase K daemon-thread hard-timeout watchdog + per-batch checkpoint, Phase P google-cloud-bigquery enabled in local-recipes env, Phase Q robostack 404 fix, Phase N partial-batch recovery) → v8.5.3 (DW12 rollup-staleness fix via v_current_version_vulns view + _phase_g_sync_current_rollup tail step + DW13 CISA KEV via Path C: new cisa_kev side table + cisa_kev_fetcher.py + fetch-cisa-kev pixi task + _load_kev_cves helper + Phase G/G overlay loop modification) do not require re-validation; FR/NFR set unchanged across all three PATCH bumps. PRD pin moved v8.1.0 → v8.5.3 retroactively via sequential bmad-correct-course passes; PRD body validated content unchanged. v8.6.0 spec at docs/specs/atlas-appthreat-deep-signals.md (mirrored at implementation-artifacts/spec-appthreat-deep-signals.md) is intake-ready — full re-validation will run when v8.6.0 ships (MINOR bump; new opt-in surfaces — epss_scores + cwe_categories + package_hardening tables, Phase T + U, new CLIs and pixi tasks — require dimension re-scoring on D2 [Specificity], D7 [Testability], D9 [Phasing], D10 [Risk Management]). No new REVISE findings.' }
 ---
 
 # PRD Validation Report
