@@ -53,6 +53,8 @@ def query(
     by_risk: bool = False,
     has_vulns: bool = False,
     bot_stuck: bool = False,
+    by_epss: bool = False,
+    has_cwe: str | None = None,
 ) -> list[dict[str, Any]]:
     """Run the staleness query and return result rows as dicts.
 
@@ -93,15 +95,25 @@ def query(
         )
     if bot_stuck:
         where.append("COALESCE(p.bot_version_errors_count, 0) > 0")
+    if has_cwe is not None:
+        where.append("p.vuln_cwe_top = ?")
+        params.append(has_cwe)
 
-    order_clause = (
-        "COALESCE(p.vuln_critical_affecting_current, 0) DESC, "
-        "COALESCE(p.vuln_high_affecting_current, 0) DESC, "
-        "COALESCE(p.vuln_kev_affecting_current, 0) DESC, "
-        "p.latest_conda_upload ASC"
-        if by_risk
-        else "p.latest_conda_upload ASC"
-    )
+    if by_epss:
+        # NULLS LAST so packages without EPSS data sort after scored ones.
+        order_clause = (
+            "CASE WHEN p.vuln_max_epss_score IS NULL THEN 1 ELSE 0 END, "
+            "p.vuln_max_epss_score DESC, p.latest_conda_upload ASC"
+        )
+    elif by_risk:
+        order_clause = (
+            "COALESCE(p.vuln_critical_affecting_current, 0) DESC, "
+            "COALESCE(p.vuln_high_affecting_current, 0) DESC, "
+            "COALESCE(p.vuln_kev_affecting_current, 0) DESC, "
+            "p.latest_conda_upload ASC"
+        )
+    else:
+        order_clause = "p.latest_conda_upload ASC"
 
     select_cols = (
         "p.conda_name, p.feedstock_name, p.latest_conda_version, "
@@ -109,6 +121,7 @@ def query(
         "p.recipe_format, p.feedstock_archived, "
         "p.vuln_total, p.vuln_critical_affecting_current, "
         "p.vuln_high_affecting_current, p.vuln_kev_affecting_current, "
+        "p.vuln_max_epss_score, p.vuln_max_epss_percentile, p.vuln_cwe_top, "
         "p.vdb_scanned_at"
     )
 
@@ -212,6 +225,16 @@ def main() -> int:
                         help="Filter to feedstocks where the conda-forge bot has "
                              "failed to land a version-update PR at least once "
                              "(requires Phase M data)")
+    parser.add_argument("--by-epss", action="store_true", dest="by_epss",
+                        help="Sort by max-EPSS DESC, NULLS LAST. Operationally "
+                             "ranks by exploitation probability (requires Wave B "
+                             "EPSS overlay — `fetch-epss` + Phase G run).")
+    parser.add_argument("--has-cwe", default=None,
+                        choices=["RCE", "DoS", "Info-Disclosure", "Auth-Bypass",
+                                 "Memory-Safety", "Traversal", "Injection", "Other"],
+                        help="Filter to feedstocks whose top CWE category matches "
+                             "(requires Wave B CWE overlay — `fetch-cwe-catalog` "
+                             "+ Phase G run).")
     parser.add_argument("--json", action="store_true",
                         help="Output JSON instead of a formatted table")
     args = parser.parse_args()
@@ -224,6 +247,8 @@ def main() -> int:
         by_risk=args.by_risk,
         has_vulns=args.has_vulns,
         bot_stuck=args.bot_stuck,
+        by_epss=args.by_epss,
+        has_cwe=args.has_cwe,
     )
     if args.json:
         print(json.dumps(rows, indent=2, default=str))

@@ -33,7 +33,8 @@ DB_PATH = _get_data_dir() / "cf_atlas.db"
 
 
 def query(*, maintainer: str | None, since_days: int, severity: str,
-          only_increases: bool, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+          only_increases: bool, limit: int,
+          epss_threshold: float | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if not DB_PATH.exists():
         print(f"cf_atlas.db not found at {DB_PATH}.", file=sys.stderr)
         sys.exit(1)
@@ -90,6 +91,18 @@ def query(*, maintainer: str | None, since_days: int, severity: str,
         base_sql += " AND (COALESCE(l." + sev_col + ", 0) - COALESCE(o." + sev_col + ", 0)) > 0"
     else:
         base_sql += " AND COALESCE(l." + sev_col + ", 0) != COALESCE(o." + sev_col + ", 0)"
+
+    if epss_threshold is not None:
+        # Wave B v8.6.0 EPSS overlay: filter to packages with high
+        # exploitation probability. vuln_max_epss_score lives on packages,
+        # not vuln_history, so we add it as a JOIN-side filter on p.
+        # Bare comparison (no COALESCE) — SQLite three-valued logic
+        # treats NULL >= ? as unknown=false, correctly excluding rows
+        # without EPSS data instead of coalescing them to 0 (which would
+        # match any threshold of 0 and silently miss real signal at
+        # higher thresholds when --epss-threshold 0 is used as a probe).
+        base_sql += " AND p.vuln_max_epss_score >= ?"
+        params.append(epss_threshold)
 
     if maintainer:
         base_sql = base_sql.replace(
@@ -163,6 +176,12 @@ def main() -> int:
                         help="Only show packages where the count went up")
     parser.add_argument("--limit", type=int, default=25,
                         help="Maximum rows (default 25)")
+    parser.add_argument("--epss-threshold", type=float, default=None, dest="epss_threshold",
+                        help="Filter delta to packages with vuln_max_epss_score >= "
+                             "threshold (Wave B v8.6.0 EPSS overlay; e.g. 0.7 = top "
+                             "decile by exploitation probability). Needs fetch-epss "
+                             "+ Phase G run; without those, packages have NULL EPSS "
+                             "and the filter excludes them.")
     parser.add_argument("--json", action="store_true",
                         help="Output JSON instead of a formatted table")
     args = parser.parse_args()
@@ -170,7 +189,7 @@ def main() -> int:
     rows, meta = query(
         maintainer=args.maintainer, since_days=args.since_days,
         severity=args.severity, only_increases=args.only_increases,
-        limit=args.limit,
+        limit=args.limit, epss_threshold=args.epss_threshold,
     )
     if args.json:
         print(json.dumps({"meta": meta, "rows": rows}, indent=2, default=str))

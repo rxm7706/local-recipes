@@ -22,7 +22,7 @@
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
 | Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
-| Surface area | `conda-forge-expert` skill — schema v23 → v24 migration adding 3 new side tables (`epss_scores`, `cwe_categories`, `package_hardening`); 2 new atlas phases (T, U); Phase G + G' overlay enhancements for CWE rollup + withdrawn filter (no new phases for those); 2 new fetcher CLIs (`fetch-epss`, `fetch-cwe-catalog`); 1 new admin CLI (`blint-channel-top-n`); persona profile integration |
+| Surface area | `conda-forge-expert` skill — schema v23 → v24 migration in Wave A provisioning `epss_scores` + `cwe_categories` (kept) + `package_hardening` (dropped in Wave D's v25 cleanup, Wave C cancelled); 2 new fetcher CLIs (`fetch-epss`, `fetch-cwe-catalog`); Phase G + G' overlay enhancements for EPSS-max + CWE rollup (withdrawn filter dropped pre-Wave-B; Phase T/U + `blint-channel-top-n` cancelled pre-Wave-C). Final shipped surface: 2 new tables + 2 new fetcher CLIs + Phase G/G' overlay wiring + Wave D persona-profile + Wave D schema v25 cleanup. |
 | Scope | Four signal expansions surfaced by the v8.5.3 DW12/DW13 retro: **(A)** blint hardening profiles for built artifacts (PIE/RELRO/stack-canary/NX); **(B)** EPSS scores (FIRST.org `epss_scores-current.csv.gz`) joined per CVE; **(C)** CWE category rollups (MITRE CWE catalog → high-level RCE/DoS/traversal/etc. labels) folded into Phase G/G' output; **(D)** withdrawn-advisory filter excluding OSV `withdrawn`-marked entries from vuln counts. Architecture mirrors the DW13 Path C pattern: external-catalog fetcher + side table + Phase G/G' overlay helper. |
 | Version | conda-forge-expert v8.5.x → **v8.6.0** (MINOR — additive features, no breaking change; new fetchers / phases / CLI / schema additions, no deprecations) |
 | Out of scope | Full-channel blint scan (we'd need to download every `.conda` artifact — ~150 GB; Phase T is **bounded** to either locally-built `build_artifacts/` OR a top-N CVE-flagged slice); CWE → CVSS v4 metric inference; auto-yanking of conda packages based on EPSS; CVSS v4 ingestion (separate spec — NVD's CVSS v4 rollout still incomplete); `cdxgen` / `atom` / `dep-scan` integration (see "What's been ruled out" §); per-CVE EPSS history (we store the latest snapshot only; FIRST.org's daily CSV is overwrite-only — historical trends would need our own snapshot retention table, deferred) |
@@ -323,23 +323,27 @@ The withdrawn filter requires `_extract_vuln_fields` in `detail_cf_atlas.py` to 
 | S9 | `_load_cwe_categories(conn)` helper; `_extract_vuln_fields` in `detail_cf_atlas.py` gains `withdrawn` field surfacing | S |
 | S10 | Phase G + Phase G' overlay loop modifications: CWE category counting, withdrawn-skip, EPSS-max — all in the existing per-CVE iteration; write new columns alongside existing | M |
 
-### Wave C — Phase T (blint) + Phase U (EPSS overlay phase) (~5 stories)
+### ~~Wave C — Phase T (blint) + Phase U (EPSS overlay phase)~~ — **CANCELLED 2026-05-23 (pre-implementation kill)**
+
+Cancelled during the Wave C `bmad-quick-dev` verification phase after low-signal-to-effort assessment. See `_bmad-output/projects/local-recipes/implementation-artifacts/deferred-work.md` § "Wave C cancellation (Phase T blint + Phase U EPSS overlay)" for full rationale + Wave D follow-up.
+
+**Summary of reasoning:**
+- **Phase T (blint hardening)** — conda-forge's hermetic compile environment sets PIE / RELRO / stack-canary / NX via channel-wide global pinning. Per-package variance is minimal; even when a non-hardened binary surfaces, the actionable response is "file an upstream issue and wait for a compiler flag" — not a triage signal. Blint is genuinely useful for vendor-supplied binaries (Windows EXEs, distro packages); for conda-forge it would surface ~32k uniform answers at ~150 GB of download cost.
+- **Phase U (EPSS overlay)** — redundant with Wave B's `_phase_g_sync_current_rollup` extension which already propagates `vuln_max_epss_score` from `package_version_vulns` to `packages` with COALESCE-to-existing. The "pure-SQL backfill" wording conflated "rerun max-EPSS computation" with "re-fetch vdb data" — they're equivalent today because per-package CVE lists aren't stored. A genuine Phase U would require a new `package_cves` table — separate spec, not v8.6.0.
+- **blint output verification** also surfaced that the package name is `blint` not `owasp-blint` (PyPI 404 on the latter) AND that blint cannot scan `.conda` archives directly (requires extract-then-walk). Both would have been pre-implementation friction without delivering operational signal.
+
+Schema columns provisioned in Wave A for this wave (`package_hardening` table, `packages.vuln_total_active`, `packages.vuln_withdrawn_count`, `package_version_vulns.vuln_total_active`) are dropped in Wave D via a v24 → v25 migration. (The `vuln_total_active` + `vuln_withdrawn_count` columns also become moot because the v8.6.0 Wave B withdrawn-filter was already dropped after verifying vdb pre-filters at ingest — see existing parent-spec-correction entry in deferred-work.md.)
+
+### Wave D — Schema v25 cleanup + CLI flags + profile integration + closeout (~5 stories)
+
+Wave D scope was rebalanced 2026-05-23 after Wave C was cancelled. Original CLI flags for `--has-hardening` + `--active-only` + persona-profile entries for Phase T/U dropped. New stories S16′ (schema v25 migration) added.
 
 | ID | Story | Effort |
 |---|---|---|
-| S11 | `phase_t_blint_hardening` — local mode (scan `build_artifacts/`); writes per-(conda_name, version, subdir) rows. Imports `blint` lazily; graceful skip if not installed | L |
-| S12 | `phase_t_blint_hardening` — admin top-N mode (download top-N from anaconda.org, blint, populate). Reuses Phase F's anaconda.org URL resolution; per-package concurrency from `_http.py` | L |
-| S13 | `phase_u_epss_overlay` — pure-SQL backfill when `package_version_vulns` has fresh CVE-list data; falls back to vdb re-scan otherwise. Tunables documented | M |
-| S14 | `tests/unit/test_phase_t_blint.py` — ~6 tests: local-mode fixture with sample `.conda`, hardening-score computation, top-N candidate query | M |
-| S15 | `tests/unit/test_phase_u_epss.py` — ~5 tests: pure-SQL backfill, missing-epss-scores graceful degrade, max-EPSS computation across CVE list | M |
-
-### Wave D — CLI flags + profile integration + closeout (~5 stories)
-
-| ID | Story | Effort |
-|---|---|---|
-| S16 | CLI flag additions: `staleness-report --by-epss / --has-cwe / --active-only`; `my-feedstocks --epss --cwe --hardening`; `cve-watcher --epss-threshold`; `detail-cf-atlas` auto-renders new rows | M |
-| S17 | Persona profile updates in `bootstrap_data.py`: admin enables Phase T top-N + U + fetch-epss + fetch-cwe-catalog; maintainer enables Phase T local + U + fetch-epss; consumer enables U only if epss_scores pre-populated | M |
-| S18 | Closeout: CHANGELOG v8.6.0 entry covering all four signal additions + cdxgen ruling rationale; SKILL.md atlas-section bumped to v24; `skill-config.yaml` 8.5.3 → 8.6.0; `reference/atlas-actionable-intelligence.md` catalog flips (4 rows: EPSS / CWE / hardening / active-only); CFE retro per CLAUDE.md Rule 2 | M |
+| **S16′** (new) | **Schema v25 migration**: DROP TABLE `package_hardening` (+ its 2 indexes); DROP COLUMN `packages.vuln_total_active` + `packages.vuln_withdrawn_count` + `package_version_vulns.vuln_total_active`. Remove the corresponding SCHEMA_DDL entries + the ALTER TABLE ladder entries. Bump SCHEMA_VERSION 24 → 25. Self-healing v24→v25 migration block (idempotent — SQLite 3.35.0+ supports `ALTER TABLE … DROP COLUMN`; for older SQLite fall back to "rebuild via SELECT INTO new table" — but pixi pins to 3.46+ so the modern path applies). | M |
+| S16 (reduced) | CLI flag additions: `staleness-report --by-epss / --has-cwe`; `my-feedstocks --epss --cwe`; `cve-watcher --epss-threshold`; `detail-cf-atlas` auto-renders new rows. **DROPPED from S16:** `--active-only` flag (no withdrawn data to filter), `--hardening` column (no `package_hardening` data to show). | M |
+| S17 (reduced) | Persona profile updates in `bootstrap_data.py`: admin auto-runs `fetch-epss` daily + `fetch-cwe-catalog` weekly; maintainer auto-runs `fetch-epss` daily. **DROPPED from S17:** Phase T enablement (cancelled), Phase U enablement (cancelled), consumer-mode logic for Phase U. | S |
+| S18 | Closeout: CHANGELOG v8.6.0 entry covering EPSS + CWE rollup + Wave C cancellation rationale + schema v25 cleanup + cdxgen ruling rationale; SKILL.md atlas-section bumped to v25; `skill-config.yaml` 8.5.3 → 8.6.0; `reference/atlas-actionable-intelligence.md` catalog flips (2 rows: EPSS / CWE — withdrawn + hardening rows stay 📋 with Wave-C-cancelled rationale); CFE retro per CLAUDE.md Rule 2 | M |
 
 ### Wave sequencing rationale
 

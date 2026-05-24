@@ -134,7 +134,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 24
+SCHEMA_VERSION = 25
 
 
 def _get_data_dir() -> Path:
@@ -188,14 +188,13 @@ CREATE TABLE IF NOT EXISTS packages (
     vuln_critical_affecting_current  INTEGER,
     vuln_high_affecting_current      INTEGER,
     vuln_kev_affecting_current       INTEGER,
-    -- v24 (v8.6.0 Wave A — provisioned for Wave B): EPSS / CWE / withdrawn
-    -- rollup columns; Phase G/G' Wave B populates them via the overlay extension.
+    -- v24 (v8.6.0 Wave A) + v25 (v8.6.0 Wave D cleanup): EPSS / CWE rollup
+    -- columns survive; vuln_total_active + vuln_withdrawn_count dropped in v25
+    -- after Wave B withdrawn-filter + Wave C blint cancellations (no producer).
     vuln_max_epss_score              REAL,
     vuln_max_epss_percentile         REAL,
     vuln_cwe_top                     TEXT,
     vuln_cwe_categories_json         TEXT,
-    vuln_total_active                INTEGER,
-    vuln_withdrawn_count             INTEGER,
     vdb_scanned_at                   INTEGER,
     vdb_last_error                   TEXT,
     pypi_current_version             TEXT,
@@ -378,11 +377,10 @@ CREATE TABLE IF NOT EXISTS package_version_vulns (
     vuln_critical_affecting_version  INTEGER,
     vuln_high_affecting_version      INTEGER,
     vuln_kev_affecting_version       INTEGER,
-    -- v24 (v8.6.0 Wave A — provisioned for Wave B): per-version EPSS / CWE /
-    -- active-only count; Phase G' Wave B populates them.
+    -- v24 (v8.6.0 Wave A) + v25 cleanup: per-version EPSS + CWE survive;
+    -- vuln_total_active dropped in v25 (Wave B withdrawn-filter cancelled).
     vuln_max_epss_score              REAL,
     vuln_cwe_top                     TEXT,
-    vuln_total_active                INTEGER,
     scanned_at                       INTEGER,
     PRIMARY KEY (conda_name, version)
 );
@@ -609,28 +607,12 @@ CREATE TABLE IF NOT EXISTS cwe_categories (
 );
 CREATE INDEX IF NOT EXISTS idx_cwe_category ON cwe_categories(cf_atlas_category);
 
--- v24 (v8.6.0 Wave A — provisioned for Wave C): per-package binary
--- hardening profile from OWASP/blint. Per (conda_name, version, subdir)
--- row. Wave A only creates the empty table; Wave C ships Phase T which
--- runs blint against local `build_artifacts/` (maintainer) or downloaded
--- top-N CVE-flagged .conda files (admin) and populates these rows.
-CREATE TABLE IF NOT EXISTS package_hardening (
-    conda_name              TEXT NOT NULL,
-    version                 TEXT NOT NULL,
-    subdir                  TEXT NOT NULL,   -- linux-64 / osx-arm64 / win-64 / noarch
-    binary_count            INTEGER,         -- # binaries in the .conda artifact
-    pie_pct                 REAL,            -- % of binaries with Position Independent Executable
-    relro_pct               REAL,            -- % with full RELRO
-    stack_canary_pct        REAL,            -- % with stack canary
-    nx_pct                  REAL,            -- % with non-executable stack
-    fortify_pct             REAL,            -- % with fortify-source
-    hardening_score         INTEGER,         -- 0-100 composite (mean of the 5 % columns)
-    blint_version           TEXT,            -- blint version that produced this profile
-    source_fetched_at       INTEGER,
-    PRIMARY KEY (conda_name, version, subdir)
-);
-CREATE INDEX IF NOT EXISTS idx_hardening_score ON package_hardening(hardening_score);
-CREATE INDEX IF NOT EXISTS idx_hardening_conda ON package_hardening(conda_name);
+-- v25 (v8.6.0 Wave D cleanup): `package_hardening` table dropped — Wave C
+-- (Phase T blint) was cancelled pre-implementation after low-signal-to-effort
+-- assessment (conda-forge's hermetic compile environment produces uniform
+-- hardening across the channel; per-package variance is minimal). See
+-- CHANGELOG v8.6.0 + deferred-work.md § Wave C cancellation. A future
+-- v8.7.x can re-add a similar table if hardening variance ever surfaces.
 
 -- v_current_version_vulns: query-time-correct view of per-current-version
 -- vuln counts. Joins package_version_vulns (the per-version truth source
@@ -770,23 +752,27 @@ def init_schema(conn: sqlite3.Connection) -> None:
             ("maven_coord",                      "ALTER TABLE packages ADD COLUMN maven_coord TEXT"),
             ("downloads_source",                 "ALTER TABLE packages ADD COLUMN downloads_source TEXT"),
             ("pypi_version_source",              "ALTER TABLE packages ADD COLUMN pypi_version_source TEXT"),
-            # v24 (v8.6.0 Wave A — provisioned for Waves B/C): EPSS + CWE rollup
-            # + withdrawn-active count + withdrawn-skipped count columns. All NULL on
-            # pre-v24 rows; populated by Phase G/G' overlay extension in Wave B
-            # (EPSS-max + CWE-top + vuln_total_active + vuln_withdrawn_count).
+            # v24 (v8.6.0 Wave A — provisioned for Wave B): EPSS + CWE rollup
+            # columns. All NULL on pre-v24 rows; populated by Phase G/G' overlay
+            # extension in Wave B (EPSS-max + CWE-top). The v24-also-added
+            # vuln_total_active + vuln_withdrawn_count columns were dropped in
+            # v25 cleanup below after the Wave B withdrawn-filter + Wave C blint
+            # cancellations left them without a producer.
             ("vuln_max_epss_score",              "ALTER TABLE packages ADD COLUMN vuln_max_epss_score REAL"),
             ("vuln_max_epss_percentile",         "ALTER TABLE packages ADD COLUMN vuln_max_epss_percentile REAL"),
             ("vuln_cwe_top",                     "ALTER TABLE packages ADD COLUMN vuln_cwe_top TEXT"),
             ("vuln_cwe_categories_json",         "ALTER TABLE packages ADD COLUMN vuln_cwe_categories_json TEXT"),
-            ("vuln_total_active",                "ALTER TABLE packages ADD COLUMN vuln_total_active INTEGER"),
-            ("vuln_withdrawn_count",             "ALTER TABLE packages ADD COLUMN vuln_withdrawn_count INTEGER"),
+            # v24 also added vuln_total_active + vuln_withdrawn_count here; both
+            # dropped in v25 cleanup below (no producer — Wave B withdrawn-filter
+            # cancelled + Wave C blint cancelled).
         ):
             if col not in existing_cols:
                 conn.execute(ddl)
 
-        # v24 (v8.6.0 Wave A — provisioned for Waves B/C): per-version EPSS + CWE
-        # + active-only count columns on package_version_vulns. Populated by
-        # Phase G' overlay extension in Wave B.
+        # v24 (v8.6.0 Wave A — provisioned for Wave B): per-version EPSS + CWE
+        # columns on package_version_vulns. Populated by Phase G' overlay
+        # extension in Wave B. (vuln_total_active also added in v24, dropped
+        # in v25 cleanup — see below.)
         pvv_exists = bool(list(conn.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name='package_version_vulns'"
         )))
@@ -797,10 +783,47 @@ def init_schema(conn: sqlite3.Connection) -> None:
             for col, ddl in (
                 ("vuln_max_epss_score",   "ALTER TABLE package_version_vulns ADD COLUMN vuln_max_epss_score REAL"),
                 ("vuln_cwe_top",          "ALTER TABLE package_version_vulns ADD COLUMN vuln_cwe_top TEXT"),
-                ("vuln_total_active",     "ALTER TABLE package_version_vulns ADD COLUMN vuln_total_active INTEGER"),
             ):
                 if col not in pvv_cols:
                     conn.execute(ddl)
+
+        # v24 → v25 (v8.6.0 Wave D cleanup): drop the Wave-A-provisioned-but-
+        # never-populated surface. Wave B's withdrawn-filter scope was dropped
+        # after verifying vdb pre-filters at ingest at the source; Wave C
+        # (Phase T blint) was cancelled pre-implementation after low-signal-
+        # to-effort assessment. The columns + table provisioned for both are
+        # dropped here. SQLite ≥3.35 supports native DROP COLUMN; pixi pins
+        # 3.46+ so the modern path applies (verified: pixi env has sqlite
+        # 3.53.1). Idempotent: guarded by column-presence / table-presence
+        # checks AND a top-level schema-version gate (the cleanup only runs
+        # against atlases that were previously stamped at v24 or later).
+        prior_schema_row = conn.execute(
+            "SELECT value FROM meta WHERE key='schema_version'"
+        ).fetchone()
+        prior_schema = prior_schema_row[0] if prior_schema_row else None
+        if prior_schema and prior_schema >= "24":
+            # Re-snapshot column sets here (existing_cols may be stale by now;
+            # the ladder ABOVE this block did its own ADDs).
+            packages_cols_now = {row["name"] for row in conn.execute(
+                "PRAGMA table_info(packages)"
+            )}
+            if "vuln_total_active" in packages_cols_now:
+                conn.execute("ALTER TABLE packages DROP COLUMN vuln_total_active")
+            if "vuln_withdrawn_count" in packages_cols_now:
+                conn.execute("ALTER TABLE packages DROP COLUMN vuln_withdrawn_count")
+            if pvv_exists:
+                pvv_cols_now = {row["name"] for row in conn.execute(
+                    "PRAGMA table_info(package_version_vulns)"
+                )}
+                if "vuln_total_active" in pvv_cols_now:
+                    conn.execute("ALTER TABLE package_version_vulns DROP COLUMN vuln_total_active")
+            ph_exists = bool(list(conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='package_hardening'"
+            )))
+            if ph_exists:
+                conn.execute("DROP INDEX IF EXISTS idx_hardening_score")
+                conn.execute("DROP INDEX IF EXISTS idx_hardening_conda")
+                conn.execute("DROP TABLE IF EXISTS package_hardening")
 
         # v17 → v18: package_version_downloads gains a `source` discriminator
         # so consumers can tell anaconda-api rows (upload_unix populated) from
@@ -903,9 +926,15 @@ def init_schema(conn: sqlite3.Connection) -> None:
         # ALTER TABLE migration ladder above (guarded by the existing-cols
         # pragma_table_info set). All new columns NULL on pre-migration rows
         # — Phase G/G' Wave B populates them via the overlay-loop extension
-        # (EPSS-max + CWE-top + active-only count + withdrawn skip count).
-        # Phase T (Wave C) populates `package_hardening`. `cwe_categories`
-        # populated by `cwe_catalog_fetcher.py` in Wave B.
+        # (EPSS-max + CWE-top). Wave B withdrawn-filter scope was dropped after
+        # verifying vdb pre-filters at ingest; Wave C (Phase T blint) was
+        # cancelled pre-implementation after low-signal-to-effort assessment.
+        # `cwe_categories` populated by `cwe_catalog_fetcher.py` in Wave B.
+        #
+        # v24 → v25 (v8.6.0 Wave D cleanup): the Wave-A-provisioned columns +
+        # table that had no producer after the Wave B/C cancellations are
+        # dropped above in the ALTER ladder. SQLite ≥3.35 native DROP COLUMN;
+        # pixi pins 3.46+ (verified: env has 3.53.1). Idempotent.
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.

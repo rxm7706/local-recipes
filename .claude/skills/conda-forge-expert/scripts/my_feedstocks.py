@@ -40,6 +40,7 @@ _SELECT_COLS = [
     "feedstock_archived", "recipe_format",
     "vuln_critical_affecting_current", "vuln_high_affecting_current",
     "vuln_kev_affecting_current",
+    "vuln_max_epss_score", "vuln_max_epss_percentile", "vuln_cwe_top",
     "bot_open_pr_count", "bot_last_pr_state", "bot_last_pr_version",
     "bot_version_errors_count", "feedstock_bad",
     "pypi_current_version", "github_current_version",
@@ -179,11 +180,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--triage", action="store_true", help="Rank by urgency score; emit top-N punch list")
     p.add_argument("--limit", type=int, default=25, help="Max rows in --triage output (default 25)")
     p.add_argument("--include-archived", action="store_true", help="Include archived feedstocks (default: hidden)")
+    p.add_argument("--epss", action="store_true",
+                   help="Append max-EPSS score to per-row flags (Wave B v8.6.0 — needs fetch-epss + Phase G run)")
+    p.add_argument("--cwe", action="store_true",
+                   help="Append top CWE category to per-row flags (Wave B v8.6.0 — needs fetch-cwe-catalog + Phase G run)")
     p.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     return p.parse_args(argv)
 
 
-def render_portfolio(rows: list[dict[str, Any]], maintainer: str) -> None:
+def render_portfolio(rows: list[dict[str, Any]], maintainer: str,
+                     show_epss: bool = False, show_cwe: bool = False) -> None:
     print(f"Feedstock portfolio for maintainer '{maintainer}' ({len(rows)} feedstocks):\n")
     print(f"{'PACKAGE':<32} {'VERSION':<14} {'DOWNLOADS':>12} STATUS")
     for r in rows:
@@ -198,6 +204,18 @@ def render_portfolio(rows: list[dict[str, Any]], maintainer: str) -> None:
             flags.append(f"KEV={kev}")
         if crit:
             flags.append(f"CRIT={crit}")
+        if show_epss:
+            epss = r.get("vuln_max_epss_score")
+            if epss is not None:
+                pct = r.get("vuln_max_epss_percentile")
+                # Guard against NULL percentile so a true 0th-percentile reading
+                # (legitimate signal) isn't conflated with "no percentile data".
+                pct_s = f"@{pct:.0f}pct" if pct is not None else "@?pct"
+                flags.append(f"EPSS={epss:.2f}{pct_s}")
+        if show_cwe:
+            cwe_top = r.get("vuln_cwe_top")
+            if cwe_top:
+                flags.append(f"CWE={cwe_top}")
         flag_s = " " + ",".join(flags) if flags else ""
         print(
             f"  {r['conda_name']:<30} {(r.get('latest_conda_version') or '-'):<14} "
@@ -253,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
                 "count": len(rows), "rows": rows,
             }, indent=2))
             return 0
-        render_portfolio(rows, maintainer)
+        render_portfolio(rows, maintainer, show_epss=args.epss, show_cwe=args.cwe)
         return 0
 
     scored = []

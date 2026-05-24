@@ -840,6 +840,25 @@ def render(record: dict[str, Any] | None,
         latest_v = record.get("latest_conda_version") or "?"
         p(f"  RISK: {risk}")
         p(f"  Affecting v{latest_v}: {c_crit} Critical, {c_high} High, {c_kev} KEV")
+        # v8.6.0 Wave B EPSS + CWE overlays — render when populated.
+        c_epss = record.get("vuln_max_epss_score")
+        c_epss_pct = record.get("vuln_max_epss_percentile")
+        if c_epss is not None:
+            pct_s = f" ({c_epss_pct:.1f}th pct)" if c_epss_pct is not None else ""
+            p(f"  Max EPSS across affecting CVEs: {c_epss:.4f}{pct_s}")
+        c_cwe = record.get("vuln_cwe_top")
+        c_cwe_json = record.get("vuln_cwe_categories_json")
+        if c_cwe:
+            cats_s = ""
+            if c_cwe_json:
+                try:
+                    cats = json.loads(c_cwe_json)
+                    if isinstance(cats, dict):
+                        parts = [f"{k}={v}" for k, v in sorted(cats.items(), key=lambda kv: -kv[1])]
+                        cats_s = f" — breakdown: {', '.join(parts)}"
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    pass
+            p(f"  Top CWE category: {c_cwe}{cats_s}")
         p(f"  Total vulns indexed across all versions: {c_total if c_total is not None else '—'}")
         p(f"  Scanned: {_humanize_timestamp(cached_scan_ts)}")
         if c_err:
