@@ -349,6 +349,42 @@ def _extract_entry_points_from_sdist(sdist_path: Path) -> list[str]:
     return points
 
 
+def _build_source_url_template(name: str, version: str, sdist_filename: str) -> str:
+    """Return a grayskull-style interpolated PyPI sdist URL or empty string on parse failure.
+
+    Examples:
+    - ``("httpx", "0.28.1", "httpx-0.28.1.tar.gz")`` →
+      ``https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz``
+    - ``("py-yaml12", "0.1.0", "py_yaml12-0.1.0.tar.gz")`` →
+      ``...${{ name | replace("-", "_") }}-${{ version }}.tar.gz``
+
+    When the filename's stem can't be expressed as a transformation of ``name``
+    (e.g. project rename, unusual sdist layout), returns empty string and the
+    caller falls back to the literal-URL form.
+    """
+    suffix = f"-{version}.tar.gz"
+    if not sdist_filename.endswith(suffix):
+        return ""
+    stem = sdist_filename[: -len(suffix)]
+    # Determine which jinja transformation reproduces the stem from ``name``.
+    if stem == name:
+        stem_template = "${{ name }}"
+    elif stem == name.lower():
+        stem_template = "${{ name | lower }}"
+    elif stem == name.replace("-", "_"):
+        stem_template = '${{ name | replace("-", "_") }}'
+    elif stem == name.lower().replace("-", "_"):
+        stem_template = '${{ name | lower | replace("-", "_") }}'
+    else:
+        return ""  # caller falls back to literal URL
+    return (
+        "https://pypi.org/packages/source/"
+        + "${{ name[0] }}/${{ name }}/"
+        + stem_template
+        + "-${{ version }}.tar.gz"
+    )
+
+
 # Maturin-routing rule (G1+G2): treat the package as maturin/PyO3 when EITHER
 # (a) the build_backend was detected as "maturin" by sdist [build-system].requires,
 # OR (b) classifier "Programming Language :: Rust" appears AND a wheel matrix
@@ -539,12 +575,23 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     # docs/enterprise-deployment.md §3 for the full rationale.
     pkg_name = info["name"]
     first_letter = pkg_name[0].lower()
-    source_url = ""
+    source_url = ""           # templated URL emitted into the recipe (v8.9.1)
+    concrete_source_url = ""  # literal URL used by _ensure_sdist_cached
     sha256 = ""
     for release in data["releases"].get(version, []):
         if release["packagetype"] == "sdist":
             filename = release["filename"]
-            source_url = f"https://pypi.org/packages/source/{first_letter}/{pkg_name}/{filename}"
+            concrete_source_url = (
+                f"https://pypi.org/packages/source/{first_letter}/{pkg_name}/{filename}"
+            )
+            # v8.9.1: emit grayskull-style interpolated URL when the filename
+            # follows the normal `<stem>-<version>.tar.gz` form, so version
+            # bumps only change `${{ version }}`. Falls back to the literal
+            # URL when the filename doesn't parse cleanly.
+            source_url = (
+                _build_source_url_template(pkg_name, version, filename)
+                or concrete_source_url
+            )
             sha256 = release["digests"]["sha256"]
             break
     if not source_url:
@@ -585,7 +632,12 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     # This unlocks: maturin detection from pyproject.toml [build-system].requires,
     # accurate import-name from Cargo.toml [lib] / __init__.py, abi3 feature detection,
     # [project.scripts] entry-point extraction.
-    sdist_path = _ensure_sdist_cached(source_url, info["name"], version) if source_url else None
+    # Download via the CONCRETE url; recipe-emitted `source_url` may be templated.
+    sdist_path = (
+        _ensure_sdist_cached(concrete_source_url, info["name"], version)
+        if concrete_source_url
+        else None
+    )
 
     # Prefer pyproject.toml [build-system].requires when sdist is available (G2 fix).
     build_backend = "setuptools"
@@ -821,8 +873,15 @@ source:
 build:
   number: 0
   script:
-    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-    - ${{{{ PYTHON }}}} -m pip install . -vv --no-deps --no-build-isolation
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{{{ PYTHON }}}} -m pip install . -vv --no-deps --no-build-isolation
 {version_independent_block}requirements:
   build:
     - if: build_platform != target_platform

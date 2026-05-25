@@ -22,6 +22,14 @@ source:
 
 build:
   number: 0
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
+      # for any Rust build. cargo build (invoked via maturin) inherits these
+      # and produces a stripped + LTO-optimized cdylib.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    # build.sh / build.bat are auto-discovered by rattler-build.
 
 requirements:
   build:

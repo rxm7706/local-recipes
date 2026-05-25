@@ -30,9 +30,17 @@ source:
 build:
   number: 0
   script:
-    # Bundle third-party licenses from the Cargo dependency graph (100% adoption).
-    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
+      # for any Rust build (CLI binary or PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars; the cdylib in
+      # the wheel is stripped + LTO-optimized.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      # Bundle third-party licenses from the Cargo dependency graph (100% adoption).
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   # OPT-IN: When Cargo.toml declares pyo3 abi3 feature (e.g.
   # `default = ["abi3"]` + `abi3 = ["pyo3/abi3-py310"]`), the wheel is
   # CPython-stable-ABI and works across Python 3.10+. Uncomment to mark it.
