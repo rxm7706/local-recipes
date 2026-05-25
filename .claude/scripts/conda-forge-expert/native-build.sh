@@ -94,6 +94,12 @@ fi
 # write the combined list to the tmp file. The tmp file is passed last so its
 # channel_sources wins — and it already contains everything the recipe asked
 # for.
+#
+# IMPORTANT: rattler-build (like conda-build) treats each YAML list ENTRY in
+# `channel_sources` as a separate VARIANT axis — `channel_sources: [A, B]`
+# means "build the recipe once with channels=[A] and once with channels=[B]".
+# To combine multiple channels into ONE variant (which is what we want here),
+# we write a single comma-separated entry: `channel_sources: ['A,B']`.
 LOCAL_CHANNEL_ROOT="${REPO_ROOT}/build_artifacts/${CONFIG}"
 if compgen -G "${LOCAL_CHANNEL_ROOT}/*/repodata.json" > /dev/null 2>&1; then
   LOCAL_VARIANT="$(mktemp -t local-channel-variant.XXXXXX.yaml)"
@@ -116,16 +122,20 @@ PY
 )
   fi
 
+  # Build a single comma-separated channel set: local channel first, then
+  # whatever the recipe asked for (or conda-forge as the default fallback).
+  CHANNEL_SET="file://${LOCAL_CHANNEL_ROOT}"
+  if [[ -n "${RECIPE_CHANNELS}" ]]; then
+    while IFS= read -r ch; do
+      [[ -n "$ch" ]] && CHANNEL_SET="${CHANNEL_SET},${ch}"
+    done <<<"${RECIPE_CHANNELS}"
+  else
+    CHANNEL_SET="${CHANNEL_SET},conda-forge"
+  fi
+
   {
     printf 'channel_sources:\n'
-    printf '  - file://%s\n' "${LOCAL_CHANNEL_ROOT}"
-    if [[ -n "${RECIPE_CHANNELS}" ]]; then
-      while IFS= read -r ch; do
-        printf '  - %s\n' "$ch"
-      done <<<"${RECIPE_CHANNELS}"
-    else
-      printf '  - conda-forge\n'
-    fi
+    printf '  - %s\n' "${CHANNEL_SET}"
   } > "${LOCAL_VARIANT}"
   CMD+=(--variant-config "${LOCAL_VARIANT}")
   if [[ -n "${RECIPE_CHANNELS}" ]]; then
