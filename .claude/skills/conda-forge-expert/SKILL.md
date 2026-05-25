@@ -148,6 +148,74 @@ if errorlevel 1 exit /b 1
 
 `call` is harmless on real `.exe` (`node.exe`, `cargo.exe`, `rustc.exe`); when in doubt, add it. See `guides/ci-troubleshooting.md` § "Silent build.bat Termination".
 
+### Every v1 Recipe Must Declare the Schema Header
+
+Every `recipe.yaml` (v1 format) **must** start with these two lines verbatim — no blank line before them:
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+```
+
+The comment drives editor schema validation (VS Code, Helix, Zed, IntelliJ); `schema_version: 1` flips rattler-build into the v1 parser. Build tooling treats v1 as implicit when the file is named `recipe.yaml`, so omitting either line is not a build error.
+
+**Empirical adoption**: only 1 in 30 recent merged staged-recipes PRs (Apr–May 2026) carries the comment header; conda-forge reviewers do not block PRs that omit it. This is a **local-recipes repo convention**, enforced by the `tests/meta/test_recipe_yaml_schema_header.py` meta-test and by the optimizer's `SCHEMA-001` check — both written specifically for this repo so editor validation is on by default for every recipe under `recipes/`.
+
+`recipe-generator.py` enforces this on all three v1 generation paths (PyPI/grayskull, rattler-generate for CRAN/CPAN/LuaRocks, npm). The `optimize_recipe` check **SCHEMA-001** flags any user-edited recipe.yaml that drops them.
+
+`meta.yaml` (v0 format) does **not** use the schema header — it predates the prefix-dev schema. Only apply this rule to `recipe.yaml`.
+
+### Rust Recipe Standards (CLI binaries — conda-forge 2026 canonical pattern)
+
+Every new Rust **CLI** recipe must adopt the canonical pattern documented at
+[conda-forge.org/docs/maintainer/example_recipes/rust](https://conda-forge.org/docs/maintainer/example_recipes/rust/)
+and used by 17/17 CLI Rust recipes merged to staged-recipes in Apr–May 2026.
+The pattern is not optional — reviewers will request these five elements:
+
+> **Source-of-truth note**: `rattler-build`'s own tutorial at
+> <https://rattler-build.prefix.dev/latest/tutorials/rust/> shows plain
+> `cargo install --locked --bins` (no `auditable`, no `--no-track`). That
+> tutorial describes the tool, not the conda-forge style overlay. When the
+> two diverge, conda-forge docs + the merged-PR sample (17/17) win for
+> staged-recipes submissions.
+
+1. **`cargo auditable install`** (not plain `cargo install`) — embeds dependency SBOM into the binary.
+2. **`--locked --no-track --bins`** flags — reproducible, no `.crates.toml` in prefix, binary-only install.
+3. **Unix/Win install root split** — `--root ${{ PREFIX }}` on unix, `--root %LIBRARY_PREFIX%` on win.
+4. **`script.env` + `script.content` shape** — set `CARGO_PROFILE_RELEASE_STRIP: symbols` and `CARGO_PROFILE_RELEASE_LTO: fat` via the env map, then list commands under `content:`. Avoids the [G1 "exports don't carry across script entries"](#g1-script-list-entries-run-in-separate-shells--env-vars-do-not-carry-across-entries) trap.
+5. **Both `cargo-bundle-licenses` and `cargo-auditable` in build deps** — both packages are required, not interchangeable.
+
+Canonical CLI skeleton (see [`templates/rust/cli-recipe.yaml`](templates/rust/cli-recipe.yaml) for the full template):
+
+```yaml
+build:
+  number: 0
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - if: unix
+        then:
+          - cargo auditable install --locked --no-track --bins --root ${{ PREFIX }} --path .
+        else:
+          - cargo auditable install --locked --no-track --bins --root %LIBRARY_PREFIX% --path .
+      - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - cargo-auditable
+```
+
+**Exceptions** (different patterns are correct for these — do not force the CLI pattern):
+- **pyo3/maturin Python extensions** — use `${{ PYTHON }} -m pip install . --no-deps --no-build-isolation` (the build is driven by maturin via pip; `cargo install` doesn't apply). Template: [`templates/python/maturin-recipe.yaml`](templates/python/maturin-recipe.yaml).
+- **Rust libraries (cdylib/staticlib)** — no `cargo install`; build with `cargo build --release` and copy artifacts. Template: [`templates/rust/library-recipe.yaml`](templates/rust/library-recipe.yaml).
+- **Rust compilers / non-trivial projects with custom build scripts** (e.g. inko) — keep upstream's build flow; still apply the env map for STRIP/LTO when possible.
+
 ---
 
 ## Primary Workflow: The Autonomous Loop
@@ -1065,6 +1133,10 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.8.0** (May 25, 2026): Python recipe generator + template alignment with conda-forge canonical pure-python example. **MINOR bump** — additive + corrective. Driven by deep-research of [conda-forge.org pure-python](https://conda-forge.org/docs/maintainer/example_recipes/pure-python/) + rattler-build's [Python tutorial](https://rattler-build.prefix.dev/latest/tutorials/python/) and [Rust tutorial](https://rattler-build.prefix.dev/latest/tutorials/rust/), validated against 30 fresh merged Python staged-recipes PRs + 27 Rust PRs. Key finding: the conda-forge docs + recent merged PRs **lead** rattler-build's tutorials by ~12 months on Rust (rattler-build shows plain `cargo install`; conda-forge + PR sample show `cargo auditable install --locked --no-track --bins` at 17/17 adoption). Source-of-truth order codified in skill: conda-forge docs > merged PRs > rattler-build tutorials. Five generator gaps closed in `scripts/recipe-generator.py`: (1) `generate_recipe_yaml` now emits the CFEP-25 dual-version test matrix (`python_version: [${{ python_min }}.*, "*"]`); without this the optimizer's TEST-002 fired on every recipe the generator just produced — self-consistency fix. (2) `about:` block now includes `description: |`, `repository`, `documentation` extracted from PyPI's `project_urls` (handles all spelling variants: Repository/Source/Source Code/Code, Documentation/Docs, Homepage/Home). (3) `_extract_project_urls()` helper added; populated into the new `PackageInfo.repository` + `.documentation` fields. (4) `python_min:` in context is conditionally emitted only when the conda-forge floor (3.10) is exceeded — at the default it's now omitted, matching what 26/30 sampled PRs do. (5) New `_resolve_python_min()` helper clamps the parsed `python_requires` floor to the conda-forge minimum (3.10) — previously a package declaring `python_requires>=3.9` produced an invalid recipe with `python_min: "3.9"`. (6) `determine_build_backend()` now detects `pdm-backend` and `scikit-build-core` (1/30 emerging + modern compiled backend). (7) `generate_meta_yaml` mirrors patterns #1, #2, #4, #5 in v0 jinja syntax. Three template updates: (8) `templates/python/noarch-recipe.yaml` drops `python_min: "3.10"` from context (replaced with explanatory comment) + adds `pdm-backend` and `scikit-build-core` to the commented backend list. (9) `compiled-recipe.yaml` + `maturin-recipe.yaml` were already correct — no `python_min` in context. SKILL.md edits: (10) "Every v1 Recipe Must Declare the Schema Header" subsection now honest about empirical scope — 1/30 fresh PRs carry the comment; this is a local-recipes repo convention, not a conda-forge-wide requirement; reviewers do not block PRs that omit it. (11) Rust Recipe Standards subsection gains a one-line source-of-truth note explaining the divergence from rattler-build's tutorial. Live verification: `python recipe-generator.py pypi rich` now emits a clean recipe.yaml that passes `optimize_recipe` without TEST-002 or ABT-001 firing; `python_min: "3.9"` (rich's PyPI floor) correctly clamped to 3.10 + omitted from context. **No existing recipes in `recipes/` were touched** — generator-side change, idempotent for unchanged recipes.
+
+- **v8.7.0** (May 25, 2026): Rust recipe template refresh + universal schema-header enforcement. **MINOR bump** — additive: new optimizer check + 3 template rewrites + 1 new SKILL.md subsection; no behavior change for non-Rust recipes. Driven by a 21-PR sample (6 first-pass + 15 expanded) of CLI Rust recipes merged to conda-forge/staged-recipes Apr–May 2026 plus the live [conda-forge.org/docs/maintainer/example_recipes/rust](https://conda-forge.org/docs/maintainer/example_recipes/rust/) page. Adoption across the CLI-Rust slice (17/17 = 100%): `cargo auditable install` (instead of plain `cargo install`), `--locked --no-track --bins`, unix/win install-root split (`${{ PREFIX }}` vs `%LIBRARY_PREFIX%`), `script.env`+`script.content` shape with `CARGO_PROFILE_RELEASE_STRIP: symbols` + `CARGO_PROFILE_RELEASE_LTO: fat`, `cargo-bundle-licenses` + `cargo-auditable` together in build deps, `package_contents` with `strict: true`. Holdouts in the 21-PR sample were all justified non-CLI patterns: pyo3/maturin Python extensions (`cachebox`, `phonors`, `cocoindex` — use pip install), Rust compilers with custom build scripts (`inko` — nushell `interpreter:` script), and 1 partial-adoption case (`goose`). Five concrete changes shipped: (1) **`templates/rust/cli-recipe.yaml`** — full rewrite to canonical pattern (auditable + no-track + bins + unix/win split + env map + LTO/strip + cargo-auditable in build + strict package_contents); shell-completion block commented in as opt-in. (2) **`templates/rust/library-recipe.yaml`** — added the env map for STRIP/LTO; kept the cdylib pattern (no `cargo install` — libs use `cargo build --release` + manual copy). (3) **`templates/rust/cli-meta.yaml`** — meta.yaml v0 mirror of cli-recipe.yaml (auditable + no-track + bins via `script_env:` since v0 lacks script.env+content) for legacy feedstocks. (4) **New optimizer check `SCHEMA-001`** in `recipe_optimizer.py` — flags any `recipe.yaml` (v1 file) that lacks the `# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json` header or `schema_version: 1` directive. Wired before format-mixing in the critical-constraints batch. Generator already emits both lines on all 3 v1 generation paths (PyPI/grayskull at line 255-256, rattler-generate via `_ensure_yaml_language_server_header` at line 1350, npm path explicit at line 1079-1080); SCHEMA-001 closes the gap for user-edited / hand-migrated recipes. v0 meta.yaml files are excluded from the check (the prefix-dev schema is v1-only). (5) **SKILL.md** — new "Every v1 Recipe Must Declare the Schema Header" + "Rust Recipe Standards (CLI binaries — conda-forge 2026 canonical pattern)" subsections in Critical Constraints, listing the 5 universal patterns + explicit exception list (pyo3/maturin, cdylib libraries, custom-script projects). Quarterly audit cron sweep should flag any future drift in the upstream docs. Updated `config/skill-config.yaml` to 8.7.0.
 
 - **v8.6.0** (May 24, 2026): AppThreat Deep Signals — EPSS + CWE rollup wired into Phase G/G' overlay; schema v23 → v24 → v25 (v24 provisioned for Waves B/C; v25 cleanup dropped the Wave-C-cancelled `package_hardening` table + `vuln_total_active` + `vuln_withdrawn_count` columns); new fetchers `fetch-epss` (FIRST.org EPSS daily CSV from `epss.empiricalsecurity.com`; parent spec's `cyentia.com` URL was stale) + `fetch-cwe-catalog` (MITRE CWE Research Concepts at `/data/csv/1000.csv.zip`; parent spec said `2000.csv.zip` — wrong, that's Architectural Concepts); new `_load_epss_scores` + `_load_cwe_categories` helpers + shared `_aggregate_v8_6_0_overlays` pure function consumed by both Phase G + Phase G'; `_phase_g_sync_current_rollup` extended with COALESCE-to-existing pattern for new columns (review-finding fix — earlier draft clobbered Phase G's direct writes when Phase G' ran with stale maps); 4 new CLI flags (`staleness-report --by-epss / --has-cwe`, `my-feedstocks --epss / --cwe`, `cve-watcher --epss-threshold`); `detail-cf-atlas` auto-renders new EPSS + CWE rows; persona-profile auto-runs (maintainer + admin set `BOOTSTRAP_FETCH_CISA_KEV` + `BOOTSTRAP_FETCH_EPSS` + `BOOTSTRAP_FETCH_CWE_CATALOG`; consumer skips for air-gap). **MINOR bump** (additive: 2 fetchers + 4 packages columns survive v25 cleanup + 4 CLI flags + persona-profile gates; no breaking CLI/MCP changes). **Wave C CANCELLED pre-implementation** (Phase T blint: conda-forge's hermetic compile env produces uniform hardening — ~zero per-package variance; Phase U EPSS overlay phase: redundant with Wave B's `_phase_g_sync_current_rollup` extension). **Wave B withdrawn-filter scope DROPPED** after verifying vdb's OSV and GHSA ingest paths both skip withdrawn records at source; columns provisioned in Wave A → dropped in Wave D's v25 migration. **Four parent-spec corrections** caught by verify-don't-assume: MITRE 1000-vs-2000 URL; blint PyPI name (`blint` not `owasp-blint` — 404); withdrawn-filter redundancy; Phase U redundancy. Suite: 1,137 passing. Live verification: 334,683 EPSS rows + 944 CWEs ingested; channel-wide Phase G run populated 213 packages with EPSS + 216 with CWE classifications. Wave A commit `e4ba891cd2`; Wave B `e22c531ac2`; Wave D (this release) bundles Wave C cancellation + schema v25 cleanup + closeout. Retro at `_bmad-output/projects/local-recipes/implementation-artifacts/`. Updated `config/skill-config.yaml` to 8.6.0.
 

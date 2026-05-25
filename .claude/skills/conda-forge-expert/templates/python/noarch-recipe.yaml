@@ -5,7 +5,9 @@ schema_version: 1
 context:
   name: REPLACE_NAME
   version: "REPLACE_VERSION"
-  python_min: "3.10"
+  # `python_min` defaults to 3.10 from conda-forge-pinning. Uncomment and set
+  # only when upstream's python_requires demands a higher floor.
+  # python_min: "3.11"
 
 package:
   name: ${{ name | lower }}
@@ -29,6 +31,8 @@ requirements:
     # - setuptools
     # - flit-core
     # - poetry-core
+    # - pdm-backend
+    # - scikit-build-core   # for packages with compiled extensions
   run:
     - python >=${{ python_min }}
     # Add runtime dependencies here

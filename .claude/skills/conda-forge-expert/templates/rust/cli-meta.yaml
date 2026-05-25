@@ -1,4 +1,9 @@
-# Template: Rust CLI application
+# Template: Rust CLI application (meta.yaml v0 / conda-build)
+#
+# Prefer the v1 recipe.yaml template (cli-recipe.yaml) for new submissions.
+# This v0 form is only for legacy feedstocks that have not yet migrated.
+#
+# Validated against the same conda-forge canonical pattern as cli-recipe.yaml.
 {% set name = "REPLACE_NAME" %}
 {% set version = "REPLACE_VERSION" %}
 
@@ -12,23 +17,28 @@ source:
 
 build:
   number: 0
+  script_env:
+    - CARGO_PROFILE_RELEASE_STRIP=symbols
+    - CARGO_PROFILE_RELEASE_LTO=fat
   script:
-    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-    - cargo install --locked --root $PREFIX --path .
+    - cargo auditable install --locked --no-track --bins --root $PREFIX --path .                # [unix]
+    - cargo auditable install --locked --no-track --bins --root %LIBRARY_PREFIX% --path .       # [win]
+    - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
 
 requirements:
   build:
-    - {{ compiler('c') }}
     - {{ stdlib('c') }}
+    - {{ compiler('c') }}
     - {{ compiler('rust') }}
     - cargo-bundle-licenses
+    - cargo-auditable
 
 test:
   commands:
-    - {{ name }} --version
     - {{ name }} --help
-    - test -f $PREFIX/bin/{{ name }}         # [unix]
-    - if not exist %PREFIX%\bin\{{ name }}.exe exit 1  # [win]
+    - {{ name }} --version
+    - test -f $PREFIX/bin/{{ name }}                       # [unix]
+    - if not exist %LIBRARY_PREFIX%\bin\{{ name }}.exe exit 1   # [win]
 
 about:
   home: REPLACE_HOMEPAGE
@@ -37,6 +47,8 @@ about:
     - LICENSE
     - THIRDPARTY.yml
   summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
   dev_url: REPLACE_REPO_URL
 
 extra:

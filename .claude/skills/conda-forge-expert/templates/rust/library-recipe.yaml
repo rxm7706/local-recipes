@@ -1,5 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Template: Rust library with C bindings (cdylib)
+# Template: Rust library with C bindings (cdylib / staticlib)
+#
+# Unlike CLI recipes, libraries do not use `cargo install` — the build is driven
+# by the upstream `build.rs` / `cargo build --release` flow followed by manual
+# copy of the produced `lib*.so` / `*.dylib` / `*.dll` into ${{ PREFIX }}/lib.
+# Adjust the script body to match the upstream's expected install path.
 schema_version: 1
 
 context:
@@ -16,14 +21,28 @@ source:
 
 build:
   number: 0
+  # Strip + LTO match the conda-forge canonical CLI profile. Drop if the upstream
+  # build script already sets release-profile values via Cargo.toml.
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
+      # Replace with upstream's build/install commands (`cargo build --release` +
+      # copy of artifacts into ${{ PREFIX }}/lib + headers into ${{ PREFIX }}/include).
+      # - cargo build --release --lib
+      # - if: unix
+      #   then:
+      #     - install -Dm755 target/release/lib${{ name }}${{ shlib_ext }} ${{ PREFIX }}/lib/lib${{ name }}${{ shlib_ext }}
   run_exports:
     - ${{ pin_subpackage(name, upper_bound="x.x") }}
 
 requirements:
   build:
-    - ${{ compiler("c") }}
-    - ${{ stdlib("c") }}
-    - ${{ compiler("rust") }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('rust') }}
     - cargo-bundle-licenses
 
 tests:
@@ -33,11 +52,14 @@ tests:
 
 about:
   homepage: REPLACE_HOMEPAGE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
   license: REPLACE_LICENSE
   license_file:
     - LICENSE
     - THIRDPARTY.yml
-  summary: REPLACE_SUMMARY
+  repository: REPLACE_REPO_URL
 
 extra:
   recipe-maintainers:
