@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: xorq
-  version: "0.3.0"
+  version: "0.3.26"
   python_min: '3.10'
 
 package:
-  name: ${{ name|lower }}
+  name: xorq
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/xorq-${{ version }}.tar.gz
-  sha256: 81da18c7359600ef9d68aa8e9491d455434d0a860a6b093182ff30960931cd47
+  url: https://pypi.org/packages/source/x/xorq/xorq-${{ version }}.tar.gz
+  sha256: fc4dfce5d5037c7f0e35083fecaddc9997a191037acf0520b23a26356db204b3
 
 build:
   number: 0
-  noarch: python
+  skip: match(python, ">=3.14") or match(python, ">=2,<3")
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
@@ -29,54 +28,64 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - dask-core ==2025.1.0
-    - attrs >=24.0.0,<26
-    - pyarrow >=13.0.0,<21
+    - attrs >=24.1.0
+    - pyarrow >=13.0.0,<22
     - structlog >=24.2.0,<26
-    - pytest-mock >=3.14.0,<4
-    - python-cityhash >=0.4.7,<1
+    - cityhash >=0.4.7,<1
     - pandas >=1.5.3,<3
     - pyarrow-hotfix >=0.4,<1
     - geoarrow-types >=0.2,<1
-    - pythran >=0.17.0
+    - if: darwin
+      then: pythran >=0.17.0
     - atpublic >=5.1
     - parsy >=2
     - python-dateutil >=2.8.2
     - pytz >=2022.7
-    - sqlglot ==25.20.2
+    - sqlglot >=23.4,!=26.32.0,<28.7.0
+    - tomlkit >=0.12
     - toolz >=0.11
     - typing_extensions >=4.3.0
-    - pyyaml >=6.0.2
+    - py-yaml12  # TBD Conda-forge
     - cloudpickle >=3.1.1
     - envyaml >=1.10.211231
-    - xorq-datafusion ==0.2.3
+    - xorq-datafusion ==0.2.7  # TBD Conda-forge
     - opentelemetry-sdk >=1.32.1
     - opentelemetry-exporter-otlp >=1.32.1
+    - opentelemetry-exporter-otlp-proto-grpc >=1.32.1
     - opentelemetry-exporter-prometheus >=0.55b1
     - prometheus_client >=0.22.1
     - cryptography >=45.0.3
     - strenum >=0.4.15
     - uv >=0.7.20
     - rich >=13.9.4
+    - click >=8.0
+    - git-annex >=10.20250220
+    - gitpython >=3.1.46
+    - textual >=1.0.0
+    - filelock >=3.13
+    - xorq-dasher >=0.1.0  # TBD Conda-forge
 
 tests:
   - python:
       imports:
         - xorq
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
   - requirements:
       run:
+        - python ${{ python_min }}.*
         - pip
-        - python ${{ python_min }}.
     script:
       - xorq --help
 
 about:
   summary: Data processing library built on top of Ibis and DataFusion to write multi-engine data workflows.
-  homepage: https://github.com/xorq-labs/xorq
   license: Apache-2.0
   license_file: LICENSE
+  homepage: https://www.xorq.dev/
+  documentation: https://docs.xorq.dev/
 
 extra:
   recipe-maintainers:
