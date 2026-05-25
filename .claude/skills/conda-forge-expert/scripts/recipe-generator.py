@@ -93,6 +93,12 @@ class PackageInfo:
     python_requires: str = ">=3.10"
     author: str = ""
     build_backend: str = "setuptools" # Default to setuptools
+    # v8.9.0 additions — populated from sdist inspection when available.
+    import_name: str = ""               # actual top-level Python import name
+    has_abi3: bool = False              # Cargo.toml declares pyo3 abi3 feature
+    sys_platform_deps: dict[str, list[str]] = field(default_factory=dict)
+    # ^ maps "win"/"linux"/"osx" → list of conda-mapped run deps; sourced
+    # from requires_dist markers like `colorama ; sys_platform == 'win32'`.
 
 
 def determine_build_backend(requires_dist: list[str]) -> str:
@@ -136,6 +142,297 @@ def _resolve_python_min(python_requires: str) -> str:
     detected = (int(match.group(1)), int(match.group(2)))
     floor = tuple(int(p) for p in _CONDA_FORGE_PYTHON_FLOOR.split("."))
     return ".".join(str(p) for p in max(detected, floor))
+
+
+# --- v8.9.0 sdist cache + extraction helpers ----------------------------
+# Driven by the conda-forge-expert v8.9.0 spec (docs/specs/conda-forge-expert-v8.9.md).
+# When the generator routes a maturin/PyO3 package, several authoritative
+# facts (import name, abi3 feature, [project.scripts] entry points) live in
+# the sdist's pyproject.toml + Cargo.toml + src/lib.rs and are NOT exposed
+# via PyPI's JSON API. We download the sdist once per run, cache it under
+# /tmp, and inspect on demand.
+
+import tarfile as _tarfile
+import tempfile as _tempfile
+
+_SDIST_CACHE_DIR = Path(_tempfile.gettempdir()) / "cfe-sdist-cache"
+
+
+def _sdist_cache_path(name: str, version: str) -> Path:
+    """Return where the sdist tarball is cached for (name, version)."""
+    _SDIST_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", f"{name}-{version}.tar.gz")
+    return _SDIST_CACHE_DIR / safe
+
+
+def _ensure_sdist_cached(source_url: str, name: str, version: str) -> Path | None:
+    """Download the sdist to the cache directory if not already present.
+
+    Returns the cache path, or None when download fails. Idempotent — re-runs
+    in the same generator invocation hit the cache. Network errors return
+    None rather than raising so the generator can fall back to heuristics.
+    """
+    if not source_url or not source_url.endswith(".tar.gz"):
+        return None
+    target = _sdist_cache_path(name, version)
+    if target.exists() and target.stat().st_size > 0:
+        return target
+    if not REQUESTS_AVAILABLE or requests is None:
+        return None
+    try:
+        # Reuse the same _http auth path as fetch_pypi_info for JFrog mirrors.
+        headers = {}
+        try:
+            from _http import auth_headers_for  # type: ignore[import-not-found]
+            headers = auth_headers_for(source_url) or {}
+        except ImportError:
+            pass
+        r = requests.get(source_url, timeout=60, headers=headers or None)
+        r.raise_for_status()
+        target.write_bytes(r.content)
+        return target
+    except Exception:  # noqa: BLE001 — network/IO failure → fallback path
+        return None
+
+
+def _read_sdist_files(sdist_path: Path, suffixes: tuple[str, ...]) -> dict[str, str]:
+    """Return a mapping of <inside-tarball-path> → file-text for files
+    whose name ends with any suffix in ``suffixes``.
+
+    Only reads small text files (<256 KB) to bound memory. Tar layout
+    assumed: ``<name>-<version>/<rest>``.
+    """
+    result: dict[str, str] = {}
+    try:
+        with _tarfile.open(sdist_path, "r:gz") as tf:
+            for member in tf.getmembers():
+                if not member.isfile():
+                    continue
+                if member.size > 256 * 1024:
+                    continue
+                if not any(member.name.endswith(s) for s in suffixes):
+                    continue
+                f = tf.extractfile(member)
+                if f is None:
+                    continue
+                try:
+                    result[member.name] = f.read().decode("utf-8", errors="replace")
+                except Exception:  # noqa: BLE001
+                    continue
+    except (_tarfile.TarError, OSError):
+        return {}
+    return result
+
+
+_PYMODULE_RE = re.compile(r"#\[pymodule(?:_init|\([^)]*\))?\]\s*(?:pub\s+)?fn\s+(\w+)")
+_CARGO_LIB_NAME_RE = re.compile(r"^\s*name\s*=\s*\"([^\"]+)\"", re.MULTILINE)
+_CARGO_ABI3_FEATURE_RE = re.compile(
+    r"^\s*abi3\s*=\s*\[[^\]]*pyo3/abi3-py3\d+|^\s*default\s*=\s*\[[^\]]*\"abi3\"|"
+    r"pyo3\s*=\s*\{[^}]*features\s*=\s*\[[^\]]*\"abi3-py3\d+\"",
+    re.MULTILINE,
+)
+_PYPROJECT_BUILD_SYSTEM_RE = re.compile(
+    r"\[build-system\][^\[]*?requires\s*=\s*\[([^\]]*)\]",
+    re.DOTALL,
+)
+_PYPROJECT_SCRIPTS_RE = re.compile(
+    r"\[project\.scripts\]\s*\n([^\[]*)",
+    re.DOTALL,
+)
+
+
+def _extract_import_name_from_sdist(sdist_path: Path, distribution_name: str) -> str:
+    """Return the actual top-level Python import name.
+
+    Strategy:
+    1. PyO3/maturin packages: read Cargo.toml ``[lib] name`` and verify against
+       ``src/lib.rs`` ``#[pymodule] pub fn <X>()`` — both agree → that's the import.
+    2. Pure-Python: find the first ``<root>/<X>/__init__.py`` path and return ``<X>``.
+       Handles namespace packages by returning the deepest single-init path.
+    3. Fall back to empty string when ambiguous; caller uses naive
+       ``distribution_name.replace("-", "_")`` heuristic.
+
+    Driven by SKILL.md G7 (Grayskull's inferred import name can be wrong).
+    """
+    files = _read_sdist_files(sdist_path, ("Cargo.toml", "lib.rs"))
+    cargo_text = next((v for k, v in files.items() if k.endswith("/Cargo.toml")), "")
+    librs_text = next((v for k, v in files.items() if k.endswith("/src/lib.rs")), "")
+    if cargo_text:
+        # Find [lib] section's name = "..." (not the package name).
+        lib_section_match = re.search(r"\[lib\]\s*([^\[]*)", cargo_text, re.DOTALL)
+        if lib_section_match:
+            lib_name_match = _CARGO_LIB_NAME_RE.search(lib_section_match.group(1))
+            if lib_name_match:
+                cargo_lib_name = lib_name_match.group(1)
+                if librs_text:
+                    pymod = _PYMODULE_RE.search(librs_text)
+                    if pymod and pymod.group(1) == cargo_lib_name:
+                        return cargo_lib_name
+                # Cargo says X, src/lib.rs unreadable or doesn't agree → trust Cargo.
+                return cargo_lib_name
+    # Pure-Python: locate __init__.py paths.
+    init_files = _read_sdist_files(sdist_path, ("__init__.py",))
+    if init_files:
+        # Each path is like ``<name>-<version>/<module>/__init__.py`` or deeper.
+        # Strip the root prefix + trailing __init__.py.
+        candidates: list[str] = []
+        for path in init_files:
+            parts = path.split("/")
+            if len(parts) < 3:
+                continue
+            module_parts = parts[1:-1]  # drop root + drop __init__.py
+            if not module_parts:
+                continue
+            candidates.append(".".join(module_parts))
+        if candidates:
+            # Prefer the shortest (top-level) candidate — usually the package root.
+            candidates.sort(key=lambda c: (c.count("."), len(c)))
+            return candidates[0]
+    return ""
+
+
+def _extract_abi3_from_sdist(sdist_path: Path) -> bool:
+    """Return True when Cargo.toml declares the pyo3 abi3 feature.
+
+    Three forms match:
+    - ``default = ["abi3"]`` + ``abi3 = ["pyo3/abi3-py3XX"]`` (feature-flag style; py-yaml12)
+    - ``pyo3 = { features = ["abi3-py3XX"] }`` (inline-feature style)
+    - ``abi3 = ["pyo3/abi3-py3XX"]`` (bare feature, no default — opt-in)
+    """
+    files = _read_sdist_files(sdist_path, ("Cargo.toml",))
+    cargo_text = next((v for k, v in files.items() if k.endswith("/Cargo.toml")), "")
+    if not cargo_text:
+        return False
+    return bool(_CARGO_ABI3_FEATURE_RE.search(cargo_text))
+
+
+def _extract_build_system_requires_from_sdist(sdist_path: Path) -> list[str]:
+    """Return the list of strings from pyproject.toml [build-system].requires.
+
+    This is the authoritative source for the build backend (G2). PyPI's
+    ``requires_dist`` only contains runtime deps, not build-system requires.
+    """
+    files = _read_sdist_files(sdist_path, ("pyproject.toml",))
+    pyproject = next((v for k, v in files.items() if k.endswith("/pyproject.toml")), "")
+    if not pyproject:
+        return []
+    match = _PYPROJECT_BUILD_SYSTEM_RE.search(pyproject)
+    if not match:
+        return []
+    raw_list = match.group(1)
+    items = re.findall(r'["\']([^"\']+)["\']', raw_list)
+    return items
+
+
+def _extract_entry_points_from_sdist(sdist_path: Path) -> list[str]:
+    """Return console-script entry points from pyproject.toml [project.scripts].
+
+    Format: ``["my-cli = my_package.cli:main", ...]``. Per knowledge_base,
+    only console_scripts need recipe-level declaration.
+    """
+    files = _read_sdist_files(sdist_path, ("pyproject.toml",))
+    pyproject = next((v for k, v in files.items() if k.endswith("/pyproject.toml")), "")
+    if not pyproject:
+        return []
+    match = _PYPROJECT_SCRIPTS_RE.search(pyproject)
+    if not match:
+        return []
+    block = match.group(1)
+    points: list[str] = []
+    for line in block.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = re.match(r'([A-Za-z0-9_\-.]+)\s*=\s*"([^"]+)"', line)
+        if m:
+            points.append(f"{m.group(1)} = {m.group(2)}")
+    return points
+
+
+# Maturin-routing rule (G1+G2): treat the package as maturin/PyO3 when EITHER
+# (a) the build_backend was detected as "maturin" by sdist [build-system].requires,
+# OR (b) classifier "Programming Language :: Rust" appears AND a wheel matrix
+# in releases is platform-specific. (b) is the fallback when (a) fails.
+def _is_maturin_pyo3(info: dict, sdist_path: Path | None) -> bool:
+    """Return True when the package should route to the maturin recipe path."""
+    if sdist_path is not None:
+        requires = _extract_build_system_requires_from_sdist(sdist_path)
+        for r in requires:
+            if "maturin" in r.lower():
+                return True
+    classifiers = info.get("classifiers", []) or []
+    if any("Rust" in c for c in classifiers):
+        # Check at least one platform-specific wheel exists in the latest release.
+        version = info.get("version", "")
+        # data["releases"] not visible here; signal via classifier alone (admin
+        # may set it without uploading wheels, but PyPI normally requires both).
+        return True
+    return False
+
+
+def _can_noarch_python(info: dict, build_backend: str, sdist_path: Path | None) -> tuple[bool, list[str]]:
+    """Advisory check — should this recipe be ``noarch: python``?
+
+    Returns (verdict, reasons). Verdict is True only when ALL knowledge_base
+    requirements are met:
+    - No compiled extensions (maturin/scikit-build-core/meson-python ⇒ False).
+    - No Rust/C/C++ classifier.
+    - No OS-specific markers in requires_dist that need __win/__unix selectors.
+      (Note: those *can* be handled in noarch:python via virtual packages;
+       this validator flags them as a hint to use the selectors-aware path.)
+    """
+    reasons: list[str] = []
+    if build_backend in ("maturin", "scikit-build-core", "meson-python"):
+        reasons.append(f"build backend {build_backend!r} produces compiled extensions")
+    classifiers = info.get("classifiers", []) or []
+    if any("Rust" in c for c in classifiers):
+        reasons.append("'Programming Language :: Rust' classifier present")
+    if any("C++" in c for c in classifiers):
+        reasons.append("'Programming Language :: C++' classifier present")
+    requires_dist = info.get("requires_dist") or []
+    has_platform_markers = any(
+        "sys_platform" in r or "platform_system" in r for r in requires_dist
+    )
+    if has_platform_markers:
+        reasons.append("requires_dist has sys_platform markers (use __win/__unix selectors)")
+    return (not reasons, reasons)
+
+
+def _classify_sys_platform_deps(requires_dist: list[str]) -> dict[str, list[str]]:
+    """Map sys_platform markers to platform-keyed dep lists.
+
+    Example: ``colorama ; sys_platform == 'win32'`` → ``{"win": ["colorama"]}``.
+    Used by the noarch generator to emit ``if: win / then:`` selector blocks.
+    """
+    result: dict[str, list[str]] = {}
+    platform_map = {
+        "'win32'": "win",
+        '"win32"': "win",
+        "'linux'": "linux",
+        '"linux"': "linux",
+        "'darwin'": "osx",
+        '"darwin"': "osx",
+    }
+    for req in requires_dist:
+        if "sys_platform" not in req:
+            continue
+        # Split spec from marker: "pkg ; sys_platform == 'win32'"
+        if ";" not in req:
+            continue
+        spec, marker = req.split(";", 1)
+        marker = marker.strip()
+        m = re.search(r"sys_platform\s*==\s*(['\"][^'\"]+['\"])", marker)
+        if not m:
+            continue
+        platform = platform_map.get(m.group(1))
+        if not platform:
+            continue
+        pkg_match = re.match(r"^([a-zA-Z0-9_-]+)", spec.strip())
+        if not pkg_match:
+            continue
+        conda_name = _pypi_to_conda_name(pkg_match.group(1).lower())
+        result.setdefault(platform, []).append(conda_name)
+    return result
 
 
 # PyPI project_urls key variations seen in the wild. PEP 621 doesn't fix
@@ -284,13 +581,47 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         if match:
             dependencies.append(_pypi_to_conda_name(match.group(1).lower()))
 
-    build_backend = determine_build_backend(requires_dist)
+    # v8.9.0: download sdist for authoritative metadata when source_url is available.
+    # This unlocks: maturin detection from pyproject.toml [build-system].requires,
+    # accurate import-name from Cargo.toml [lib] / __init__.py, abi3 feature detection,
+    # [project.scripts] entry-point extraction.
+    sdist_path = _ensure_sdist_cached(source_url, info["name"], version) if source_url else None
+
+    # Prefer pyproject.toml [build-system].requires when sdist is available (G2 fix).
+    build_backend = "setuptools"
+    if sdist_path is not None:
+        build_system_requires = _extract_build_system_requires_from_sdist(sdist_path)
+        if build_system_requires:
+            build_backend = determine_build_backend(build_system_requires)
+    if build_backend == "setuptools":
+        # Fallback: check classifiers + requires_dist heuristic (legacy path).
+        build_backend = determine_build_backend(requires_dist)
+    # Maturin override via classifier (G1 disambiguation): if Rust classifier
+    # is present but build_backend didn't match maturin from requires, force it.
+    classifiers = info.get("classifiers", []) or []
+    if build_backend == "setuptools" and any("Rust" in c for c in classifiers):
+        if sdist_path is not None:
+            # Confirm by looking for src/lib.rs + Cargo.toml in the sdist.
+            cargo_files = _read_sdist_files(sdist_path, ("Cargo.toml",))
+            if cargo_files:
+                build_backend = "maturin"
 
     # Parse python_requires
     python_requires = info.get("requires_python", ">=3.10") or ">=3.10"
 
-    # Parse entry points from project_urls or classifiers
-    entry_points = []
+    # Entry points from sdist's [project.scripts] (G4 / Wave D S18).
+    entry_points = _extract_entry_points_from_sdist(sdist_path) if sdist_path else []
+
+    # Import name from sdist (G4 / SKILL.md G7 canonical fix).
+    import_name = ""
+    if sdist_path is not None:
+        import_name = _extract_import_name_from_sdist(sdist_path, info["name"])
+
+    # abi3 detection for PyO3 packages (Wave B / G3.c gated emission).
+    has_abi3 = bool(sdist_path and _extract_abi3_from_sdist(sdist_path))
+
+    # OS-conditional run deps from sys_platform markers (Wave D / S16).
+    sys_platform_deps = _classify_sys_platform_deps(requires_dist)
 
     homepage, repository, documentation = _extract_project_urls(info)
 
@@ -306,9 +637,13 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         source_url=source_url,
         sha256=sha256,
         dependencies=dependencies,
+        entry_points=entry_points,
         python_requires=python_requires,
         author=info.get("author", ""),
         build_backend=build_backend,
+        import_name=import_name,
+        has_abi3=has_abi3,
+        sys_platform_deps=sys_platform_deps,
     )
 
 
@@ -326,7 +661,15 @@ def generate_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
       so both the floor and the top of the build matrix are exercised.
     - ``about:`` emits ``description``, ``repository``, ``documentation``
       when the PyPI metadata exposes them via project_urls.
+    - **v8.9.0**: routes maturin/PyO3 packages to ``_generate_maturin_recipe_yaml``
+      instead of producing an incorrect ``noarch: python`` recipe.
     """
+    # v8.9.0: route to maturin-pyo3 path when detected. The maturin generator
+    # produces a compiled-extension recipe (no noarch, Rust toolchain in build,
+    # maturin in host) modelled on the phonors PR pattern (modal 27-PR sample).
+    if info.build_backend == "maturin":
+        return _generate_maturin_recipe_yaml(info, output_dir)
+
     # Parse python_min from python_requires, then clamp to the conda-forge
     # floor (3.10) — Python 3.9 was dropped from the build matrix in Aug 2025
     # so any upstream-declared floor below 3.10 is moot for conda-forge.
@@ -367,11 +710,22 @@ requirements:
     for dep in info.dependencies[:10]:  # Limit to avoid huge lists
         recipe += f"    - {dep}\n"
 
+    # v8.9.0: emit OS-conditional run deps when requires_dist had sys_platform markers.
+    if info.sys_platform_deps:
+        # Insert virtual-package selector block before the closing of run section.
+        for platform, deps in info.sys_platform_deps.items():
+            recipe += f"    - if: {platform}\n      then:\n"
+            for dep in deps:
+                recipe += f"        - {dep}\n"
+
+    # v8.9.0: prefer extracted import_name from sdist (G7 fix); fall back to heuristic.
+    import_name = info.import_name or info.name.replace("-", "_").lower()
+
     recipe += f'''
 tests:
   - python:
       imports:
-        - {info.name.replace("-", "_").lower()}
+        - {import_name}
       pip_check: true
       python_version:
         - ${{{{ python_min }}}}.*
@@ -401,6 +755,133 @@ extra:
     recipe_path = output_dir / "recipe.yaml"
     recipe_path.write_text(recipe)
 
+    return recipe_path
+
+
+def _generate_maturin_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
+    """Generate a maturin/PyO3 recipe.yaml (v8.9.0).
+
+    Models the **phonors** pattern (modal 27-PR PyO3 sample):
+    - No ``noarch: python`` (compiled extension is platform-specific).
+    - Build deps: ``${{ stdlib('c') }}``, ``${{ compiler('c') }}``,
+      ``${{ compiler('rust') }}``, ``cargo-bundle-licenses``.
+    - Host deps: ``maturin >=1.7,<2.0``, ``pip``, ``python``.
+    - Script: 2-liner (``cargo-bundle-licenses`` + ``pip install``).
+    - ``THIRDPARTY.yml`` added to ``about.license_file``.
+    - ``build.python.version_independent: true`` emitted ONLY when sdist's
+      Cargo.toml declares the abi3 feature (info.has_abi3 = True).
+    - No Windows CARGO_HOME block (0/25 CLI Rust adoption + 1/27 PyO3
+      adoption with package-specific cause; not canonical).
+    - No CFEP-25 dual-version test matrix (1/27 PyO3 adoption; the build
+      matrix already exercises each Python version).
+    """
+    python_min = _resolve_python_min(info.python_requires)
+    context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != "3.10" else ""
+
+    # Source URL: sdist filename may use underscore-form even when PyPI name uses hyphens.
+    # Prefer the actual filename from info.source_url; otherwise synthesise.
+    source_url = info.source_url or (
+        f"https://pypi.org/packages/source/{info.name[0]}/{info.name}/"
+        f"{info.name.replace('-', '_')}-{info.version}.tar.gz"
+    )
+
+    # version_independent block: gated on Cargo.toml abi3 feature (v8.9.0 G3.c).
+    # Includes the trailing blank line that separates the `build:` section
+    # from `requirements:` in the assembled f-string when this block is emitted.
+    version_independent_block = ""
+    if info.has_abi3:
+        version_independent_block = (
+            "  python:\n"
+            "    # Cargo.toml declares pyo3 abi3 feature — wheel is\n"
+            "    # CPython-stable-ABI and works across Python versions.\n"
+            "    version_independent: true\n"
+            "\n"
+        )
+    else:
+        version_independent_block = "\n"
+
+    recipe = f'''# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Generated v8.9.0 from python-maturin path; PyO3/maturin detected via sdist
+# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026).
+schema_version: 1
+
+context:
+  name: {info.name}
+  version: "{info.version}"
+{context_python_min_line}
+package:
+  name: ${{{{ name | lower }}}}
+  version: ${{{{ version }}}}
+
+source:
+  url: {source_url}
+  sha256: {info.sha256 or "REPLACE_SHA256"}
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{{{ PYTHON }}}} -m pip install . -vv --no-deps --no-build-isolation
+{version_independent_block}requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{{{ target_platform }}}}
+        - crossenv
+        - maturin >=1,<2
+    - ${{{{ compiler("c") }}}}
+    - ${{{{ stdlib("c") }}}}
+    - ${{{{ compiler("rust") }}}}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    - python
+'''
+
+    # Add runtime dependencies (skip optional/extra markers).
+    for dep in info.dependencies[:10]:
+        recipe += f"    - {dep}\n"
+
+    # Prefer sdist-extracted import_name (G4 fix). For maturin packages this is
+    # nearly always different from the PyPI distribution name (e.g. py-yaml12 → yaml12).
+    import_name = info.import_name or info.name.replace("-", "_").lower()
+
+    recipe += f'''
+tests:
+  - python:
+      imports:
+        - {import_name}
+      pip_check: true
+
+about:
+  homepage: {info.homepage or "REPLACE_HOMEPAGE"}
+  license: {info.license or "REPLACE_LICENSE"}
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: {info.summary or "REPLACE_SUMMARY"}
+  description: |
+    {info.summary or "REPLACE_DESCRIPTION"}
+'''
+    if info.repository:
+        recipe += f"  repository: {info.repository}\n"
+    if info.documentation:
+        recipe += f"  documentation: {info.documentation}\n"
+
+    recipe += '''
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER
+'''
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    recipe_path = output_dir / "recipe.yaml"
+    recipe_path.write_text(recipe)
     return recipe_path
 
 

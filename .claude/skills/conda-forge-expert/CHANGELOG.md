@@ -2,6 +2,44 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.9.0** (May 25, 2026) — Maturin/PyO3 generator routing + sdist-driven import-name extraction + abi3-gated `version_independent` + maturin template rewrite to the empirical phonors-pattern minimum. **MINOR bump**, additive + corrective. Driven by the `recipes/py-yaml12` build surfacing that `recipe-generator.py pypi <name>` produced an incorrect `noarch: python` recipe for a PyO3 package. Spec: `docs/specs/conda-forge-expert-v8.9.md`. Empirical sample: 52 Rust label PRs + 27 PyO3/maturin PRs (Mar 2020 – May 2026) + 30 pure-python PRs + 5 docs sources (added [conda-forge.org knowledge_base](https://conda-forge.org/docs/maintainer/knowledge_base/)).
+
+### Key learnings landed in code
+
+- **`cargo auditable install --locked --no-track --bins` is CLI Rust style** (93% of CLI sample; 0% in PyO3 sample). PyO3 packages should NOT include it.
+- **Windows `CARGO_HOME` workaround is package-specific, not canonical** (0/25 CLI Rust + 1/27 PyO3 with documented git-checkout-depth justification). Maturin template no longer includes it.
+- **CFEP-25 dual-version test matrix is a pure-python convention** (19/30 = 63% in pure-python; 1/27 = 4% in PyO3). The maturin template's `python_version` is opt-in commented, not default.
+- **`version_independent: true` is conditional on Cargo.toml abi3 feature** (2/27 PyO3 use it, both with abi3 declared). Generator extracts the abi3 feature from sdist and emits `version_independent: true` only when present.
+- **Import name lives in sdist's Cargo.toml + src/lib.rs `#[pymodule]`, not the PyPI distribution name** (G7 trap). py-yaml12 distribution → yaml12 import; microsoft-kiota-bundle → kiota_bundle; azure-identity-broker → azure.identity.broker.
+- **Authoritative build backend lives in `pyproject.toml [build-system].requires`, not PyPI's `requires_dist`** (G2). Maturin's wheels-only delivery means `requires_dist` doesn't list maturin.
+
+### Generator changes (`scripts/recipe-generator.py`)
+
+1. **Sdist cache**: `_sdist_cache_path()` + `_ensure_sdist_cached()` — downloads sdist once per generator run under `/tmp/cfe-sdist-cache/`, air-gap safe (network failure → fall back to heuristics). Reuses `_http.auth_headers_for` for JFrog mirror auth.
+2. **Import-name extraction**: `_extract_import_name_from_sdist()` — reads `Cargo.toml [lib] name` + cross-validates with `src/lib.rs #[pymodule] pub fn <X>()` for PyO3; falls back to shortest-`__init__.py` path for pure-Python. Closes G7.
+3. **Abi3 detection**: `_extract_abi3_from_sdist()` — regex matches three Cargo.toml abi3 forms. Gates `version_independent: true` emission.
+4. **Build-system extraction**: `_extract_build_system_requires_from_sdist()` — parses `pyproject.toml [build-system].requires` as the primary build-backend source.
+5. **Entry-point extraction**: `_extract_entry_points_from_sdist()` — parses `[project.scripts]` (Wave D / S18 placeholder; not yet emitted into recipe — wired into `PackageInfo.entry_points` for future use).
+6. **OS-marker classification**: `_classify_sys_platform_deps()` — maps `colorama ; sys_platform == 'win32'` to `{"win": ["colorama"]}`. Generator now emits `if: win / then:` selector blocks in the noarch path when markers are present (Wave D / S16; per knowledge_base virtual-package rule).
+7. **Maturin route**: `generate_recipe_yaml()` checks `info.build_backend == "maturin"` first and delegates to **`_generate_maturin_recipe_yaml()`** — a compiled-extension recipe modelled on the phonors PR (modal 27-PR PyO3 pattern), with optional `version_independent: true` block, no `noarch: python`, Rust toolchain in build, maturin in host.
+
+### Template changes
+
+8. **`templates/python/maturin-recipe.yaml`** rewritten to phonors-pattern minimum (2-line script, no CFEP-25 matrix in tests, no Windows CARGO_HOME, no LTO/strip env; `version_independent` annotated as opt-in commented block). Header comment now carries empirical adoption percentages for each pattern.
+9. **`templates/rust/cli-recipe.yaml`** — added the `provider: osx_arm64: azure` conda-forge.yml note next to the shell-completion block (per conda-forge.org Rust example page).
+
+### Live verification
+
+- `recipe-generator.py pypi py-yaml12` now emits a clean maturin recipe with import `yaml12` + `version_independent: true` (abi3 auto-detected from Cargo.toml) + 0 optimizer suggestions.
+- `recipe-generator.py pypi rich` continues to emit a clean noarch recipe (no regression).
+- `recipes/py-yaml12` builds 4 artifacts cleanly on Linux (py310/py311/py312/py313).
+
+### What's NOT in v8.9.0 (deferred)
+
+- `[project.scripts]` → `build.python.entry_points` recipe emission (Wave D / S18) — extraction helper is wired but the generator doesn't yet emit the block. Most CLI Python packages can hand-add it for now.
+- `_can_noarch_python()` advisory validator (Wave D / S15) — implemented but not yet wired into the generator's main path. Available for future use.
+- Sample-anchored doc header in noarch recipes (Wave D / S19) — already done for maturin path; not yet replicated to noarch.
+
 **v8.8.0** (May 25, 2026) — Python recipe generator + template alignment with conda-forge canonical pure-python example. **MINOR bump**, additive + corrective. Deep-research pass: read [conda-forge.org/pure-python](https://conda-forge.org/docs/maintainer/example_recipes/pure-python/) + [rattler-build/python](https://rattler-build.prefix.dev/latest/tutorials/python/) + [rattler-build/rust](https://rattler-build.prefix.dev/latest/tutorials/rust/), validated against 30 fresh merged Python PRs + 27 Rust PRs from staged-recipes. Key meta-finding codified: conda-forge docs lead rattler-build tutorials by ~12 months on Rust patterns. Source-of-truth ranking from now on: **conda-forge docs > merged PRs > rattler-build tutorials**.
 
 ### Generator changes (`scripts/recipe-generator.py`)

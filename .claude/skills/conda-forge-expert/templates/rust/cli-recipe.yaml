@@ -44,6 +44,10 @@ build:
       - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
       # Optional: shell completions when upstream supports `<bin> completion --shell <X>`
       # or the clap-derived `COMPLETE=<shell>` env var. Drop this block if not applicable.
+      # When enabled, also drop `provider: osx_arm64: azure` into a sibling
+      # conda-forge.yml: completion generation runs the native binary which fails
+      # under osx-64 → osx-arm64 cross-compilation. See conda-forge.org's Rust
+      # example page for the full note.
       # - if: unix
       #   then:
       #     - mkdir -p $PREFIX/share/bash-completion/completions $PREFIX/share/fish/vendor_completions.d $PREFIX/share/zsh/site-functions

@@ -1,5 +1,14 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Template: Python package with Rust extensions (maturin/pyo3)
+# Template: Python package with Rust extensions (maturin/PyO3)
+#
+# Modal pattern across 27 merged PyO3 PRs (Mar 2020 – May 2026); closest to
+# the **phonors** PR shape. Empirical adoption %s:
+#   - cargo-bundle-licenses + Rust toolchain in build:  100%
+#   - maturin in host:                                   67%   (other 33% pre-date convention)
+#   - CFEP-25 dual-version test matrix:                   4%   — NOT default; opt-in below
+#   - Windows CARGO_HOME workaround:                      4%   — NOT default; package-specific only
+#   - CARGO_PROFILE_RELEASE_{STRIP,LTO}:                  7-11% — CLI Rust opt; rarely useful for PyO3
+#   - version_independent: true:                          7%   — only when Cargo.toml has abi3 feature
 schema_version: 1
 
 context:
@@ -11,49 +20,58 @@ package:
   version: ${{ version }}
 
 source:
+  # NOTE: many maturin sdists use the underscore-form filename even when the
+  # distribution name uses hyphens (e.g. `py-yaml12` → `py_yaml12-<ver>.tar.gz`).
+  # `generate_recipe_from_pypi` writes the correct form; for hand edits,
+  # double-check the actual sdist filename against pypi.org/project/<name>/.
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: REPLACE_SHA256
 
 build:
   number: 0
   script:
-    # Bundle third-party licenses from Cargo dependencies
+    # Bundle third-party licenses from the Cargo dependency graph (100% adoption).
     - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  # Conda-forge floor is Python 3.10 (Aug 2025). Add a skip only if the
-  # upstream package or maturin requires a higher Python floor.
-  # `py < N` is silently ignored by rattler-build v1 — use match(python, ...).
-  # skip:
-  #   - match(python, "<3.11")
+  # OPT-IN: When Cargo.toml declares pyo3 abi3 feature (e.g.
+  # `default = ["abi3"]` + `abi3 = ["pyo3/abi3-py310"]`), the wheel is
+  # CPython-stable-ABI and works across Python 3.10+. Uncomment to mark it.
+  # python:
+  #   version_independent: true
 
 requirements:
   build:
-    - ${{ compiler("c") }}
-    - ${{ stdlib("c") }}
-    - ${{ compiler("rust") }}
-    - cargo-bundle-licenses
-    # Cross-compilation
     - if: build_platform != target_platform
       then:
         - python
         - cross-python_${{ target_platform }}
         - crossenv
-        - maturin >=1.0,<2.0
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
   host:
     - python
     - pip
-    - maturin >=1.0,<2.0
+    - maturin >=1.7,<2.0
   run:
     - python
 
 tests:
   - python:
       imports:
+        # NOTE: the actual Python import name often differs from the PyPI
+        # distribution name for PyO3 packages — `[lib] name` in Cargo.toml
+        # and the `#[pymodule]` declaration in src/lib.rs are authoritative.
+        # `generate_recipe_from_pypi` extracts the correct name; verify on
+        # hand edits by listing the sdist's __init__.py paths.
         - ${{ name | replace("-", "_") }}
       pip_check: true
-  - script:
-      - ${{ name }} --version
-      - ${{ name }} --help
+  # OPT-IN: When the package provides a CLI shim via [project.scripts]:
+  # - script:
+  #     - ${{ name }} --version
+  #     - ${{ name }} --help
 
 about:
   homepage: REPLACE_HOMEPAGE
@@ -62,6 +80,8 @@ about:
     - LICENSE
     - THIRDPARTY.yml
   summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
   repository: REPLACE_REPO_URL
 
 extra:
