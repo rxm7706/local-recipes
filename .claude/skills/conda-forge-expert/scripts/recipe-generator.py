@@ -82,6 +82,8 @@ class PackageInfo:
     summary: str = ""
     description: str = ""
     homepage: str = ""
+    repository: str = ""
+    documentation: str = ""
     license: str = ""
     license_file: str = "LICENSE"
     source_url: str = ""
@@ -94,7 +96,11 @@ class PackageInfo:
 
 
 def determine_build_backend(requires_dist: list[str]) -> str:
-    """Attempt to guess the build backend from requirements if possible, else default."""
+    """Attempt to guess the build backend from requirements if possible, else default.
+
+    Detected backends, in priority order: hatchling, flit-core, poetry-core,
+    pdm-backend, scikit-build-core, maturin. Falls back to setuptools.
+    """
     for req in requires_dist:
         req_lower = req.lower()
         if "hatchling" in req_lower:
@@ -103,9 +109,65 @@ def determine_build_backend(requires_dist: list[str]) -> str:
             return "flit-core"
         elif "poetry" in req_lower:
             return "poetry-core"
+        elif "pdm-backend" in req_lower or "pdm_backend" in req_lower:
+            return "pdm-backend"
+        elif "scikit-build-core" in req_lower or "scikit_build_core" in req_lower:
+            return "scikit-build-core"
         elif "maturin" in req_lower:
             return "maturin"
     return "setuptools"
+
+
+# conda-forge global Python floor (CFEP-25 + Aug 2025 build-matrix drop of 3.9).
+# Never emit a recipe with python_min below this value, even when the upstream
+# package declares a lower floor in its python_requires.
+_CONDA_FORGE_PYTHON_FLOOR = "3.10"
+
+
+def _resolve_python_min(python_requires: str) -> str:
+    """Parse ``python_requires`` and clamp to the conda-forge floor.
+
+    Returns the higher of the parsed ``>=X.Y`` and ``3.10``. Defaults to
+    ``3.10`` when ``python_requires`` is empty or unparseable.
+    """
+    match = re.search(r">=\s*(\d+)\.(\d+)", python_requires or "")
+    if not match:
+        return _CONDA_FORGE_PYTHON_FLOOR
+    detected = (int(match.group(1)), int(match.group(2)))
+    floor = tuple(int(p) for p in _CONDA_FORGE_PYTHON_FLOOR.split("."))
+    return ".".join(str(p) for p in max(detected, floor))
+
+
+# PyPI project_urls key variations seen in the wild. PEP 621 doesn't fix
+# the spelling, so packages use Repository/Source/Source Code/Code interchangeably
+# and Documentation/Docs interchangeably. Order matters — first match wins.
+_REPOSITORY_KEYS = ("Repository", "Source", "Source Code", "Code", "GitHub", "source")
+_DOCUMENTATION_KEYS = ("Documentation", "Docs", "documentation")
+_HOMEPAGE_KEYS = ("Homepage", "Home", "homepage", "home")
+
+
+def _extract_project_urls(info: dict) -> tuple[str, str, str]:
+    """Return (homepage, repository, documentation) from PyPI ``info`` dict.
+
+    Prefers ``info["project_urls"]`` (PEP 621 / modern packaging); falls back
+    to legacy top-level ``home_page`` for homepage. Returns empty strings when
+    a URL is not present rather than ``None`` so callers can plug into f-strings.
+    """
+    project_urls = info.get("project_urls") or {}
+    if not isinstance(project_urls, dict):
+        project_urls = {}
+
+    def _pick(keys: tuple[str, ...]) -> str:
+        for k in keys:
+            v = project_urls.get(k)
+            if v:
+                return v
+        return ""
+
+    homepage = _pick(_HOMEPAGE_KEYS) or info.get("home_page") or info.get("project_url") or ""
+    repository = _pick(_REPOSITORY_KEYS)
+    documentation = _pick(_DOCUMENTATION_KEYS)
+    return homepage, repository, documentation
 
 
 def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> PackageInfo:
@@ -230,12 +292,16 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     # Parse entry points from project_urls or classifiers
     entry_points = []
 
+    homepage, repository, documentation = _extract_project_urls(info)
+
     return PackageInfo(
         name=info["name"],
         version=version,
         summary=info.get("summary", ""),
         description=info.get("description", "")[:500],
-        homepage=info.get("home_page") or info.get("project_url") or "",
+        homepage=homepage,
+        repository=repository,
+        documentation=documentation,
         license=info.get("license", ""),
         source_url=source_url,
         sha256=sha256,
@@ -247,10 +313,26 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
 
 
 def generate_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
-    """Generate recipe.yaml (v1 format)."""
-    # Parse python_min from python_requires
-    match = re.search(r">=\s*(\d+\.\d+)", info.python_requires)
-    python_min = match.group(1) if match else "3.10"
+    """Generate recipe.yaml (v1 format).
+
+    Aligned with conda-forge.org/docs/maintainer/example_recipes/pure-python/
+    (May 2026). Notable choices:
+
+    - ``python_min`` is emitted in ``context:`` only when > 3.10. At the
+      conda-forge floor the default from ``conda-forge-pinning`` is used,
+      so an explicit declaration is no-op churn.
+    - ``tests[].python.python_version`` uses the CFEP-25 dual-version
+      ``[${{ python_min }}.*, "*"]`` list (staged-recipes#32857 r3039190932)
+      so both the floor and the top of the build matrix are exercised.
+    - ``about:`` emits ``description``, ``repository``, ``documentation``
+      when the PyPI metadata exposes them via project_urls.
+    """
+    # Parse python_min from python_requires, then clamp to the conda-forge
+    # floor (3.10) — Python 3.9 was dropped from the build matrix in Aug 2025
+    # so any upstream-declared floor below 3.10 is moot for conda-forge.
+    python_min = _resolve_python_min(info.python_requires)
+    # CFEP-25 floor: only declare in context when overriding the default 3.10.
+    context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != "3.10" else ""
 
     recipe = f'''# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
@@ -258,8 +340,7 @@ schema_version: 1
 context:
   name: {info.name}
   version: "{info.version}"
-  python_min: "{python_min}"
-
+{context_python_min_line}
 package:
   name: ${{{{ name | lower }}}}
   version: ${{{{ version }}}}
@@ -292,13 +373,24 @@ tests:
       imports:
         - {info.name.replace("-", "_").lower()}
       pip_check: true
+      python_version:
+        - ${{{{ python_min }}}}.*
+        - "*"
 
 about:
   homepage: {info.homepage or "REPLACE_HOMEPAGE"}
   license: {info.license or "REPLACE_LICENSE"}
   license_file: {info.license_file}
   summary: {info.summary or "REPLACE_SUMMARY"}
+  description: |
+    {info.summary or "REPLACE_DESCRIPTION"}
+'''
+    if info.repository:
+        recipe += f"  repository: {info.repository}\n"
+    if info.documentation:
+        recipe += f"  documentation: {info.documentation}\n"
 
+    recipe += '''
 extra:
   recipe-maintainers:
     - REPLACE_MAINTAINER
@@ -313,14 +405,29 @@ extra:
 
 
 def generate_meta_yaml(info: PackageInfo, output_dir: Path) -> Path:
-    """Generate meta.yaml (legacy format)."""
-    # Parse python_min
-    match = re.search(r">=\s*(\d+\.\d+)", info.python_requires)
-    python_min = match.group(1) if match else "3.10"
+    """Generate meta.yaml (legacy v0 format).
+
+    Mirrors the v1 ``generate_recipe_yaml`` patterns where v0 syntax supports
+    them: emits ``{% set python_min %}`` only when above the 3.10 floor,
+    includes ``description``/``dev_url``/``doc_url`` from project_urls, and
+    uses the CFEP-25 dual-version test stanza via the conda-build ``test.requires``
+    machinery (``python ={python_min}`` for the floor build).
+    """
+    python_min = _resolve_python_min(info.python_requires)
+    # Only declare ``python_min`` jinja var when overriding the 3.10 default.
+    set_python_min_line = (
+        f'{{% set python_min = "{python_min}" %}}\n' if python_min != "3.10" else ""
+    )
+    # In v0 the python_min jinja variable defaults to 3.10 from conda-forge-pinning
+    # via the recipe's CBC; when omitted from the recipe, fall through to using
+    # the literal floor in the run requirement so the recipe remains valid even
+    # without a CBC override.
+    py_host = "{{ python_min }}" if set_python_min_line else "3.10"
+    py_run = "{{ python_min }}" if set_python_min_line else "3.10"
 
     recipe = f'''{{% set name = "{info.name}" %}}
 {{% set version = "{info.version}" %}}
-
+{set_python_min_line}
 package:
   name: {{{{ name|lower }}}}
   version: {{{{ version }}}}
@@ -336,11 +443,11 @@ build:
 
 requirements:
   host:
-    - python {{{{ python_min }}}}
+    - python {py_host}
     - pip
     - {info.build_backend}
   run:
-    - python >={{{{ python_min }}}}
+    - python >={py_run}
 '''
 
     for dep in info.dependencies[:10]:
@@ -354,12 +461,20 @@ test:
     - pip check
   requires:
     - pip
+    - python {py_host}
 
 about:
   home: {info.homepage or "REPLACE_HOMEPAGE"}
   license: {info.license or "REPLACE_LICENSE"}
   license_file: {info.license_file}
   summary: {info.summary or "REPLACE_SUMMARY"}
+  description: |
+    {info.summary or "REPLACE_DESCRIPTION"}'''
+    if info.repository:
+        recipe += f"\n  dev_url: {info.repository}"
+    if info.documentation:
+        recipe += f"\n  doc_url: {info.documentation}"
+    recipe += '''
 
 extra:
   recipe-maintainers:

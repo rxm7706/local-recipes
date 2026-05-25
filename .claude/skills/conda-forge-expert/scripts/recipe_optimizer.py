@@ -6,7 +6,10 @@ Goes beyond basic validation and checks for common anti-patterns, suggesting
 improvements for dependency placement, redundant selectors, security, and
 conda-forge best practices.
 
-Check codes (14 total):
+Check codes (15 total):
+  SCHEMA-001  v1 recipe.yaml missing the `# yaml-language-server: $schema=...` header.
+              Editors lose live schema validation against prefix-dev/recipe-format
+              and `schema_version: 1` may be implicit-only. Always include both.
   DEP-001  Dev dependency in run requirements
   DEP-002  noarch:python Python upper bound in run (should be run_constrained)
   PIN-001  Exact version pin in run requirements
@@ -603,6 +606,56 @@ def analyze_maintainers(data: Dict) -> List[OptimizationSuggestion]:
     return suggestions
 
 
+_SCHEMA_HEADER_PREFIX = "# yaml-language-server:"
+
+
+def analyze_schema_header(recipe_path: Path, data: Dict) -> List[OptimizationSuggestion]:
+    """SCHEMA-001 — v1 recipe.yaml must declare the prefix-dev/recipe-format schema.
+
+    Two lines together act as the v1 marker: the `# yaml-language-server: $schema=...`
+    comment (drives editor validation) and `schema_version: 1` (drives rattler-build's
+    v1 parser). The comment is technically optional for builds but conda-forge style
+    expects it on every v1 recipe.
+    """
+    suggestions: List[OptimizationSuggestion] = []
+    # Only applies to v1 recipes (or recipe.yaml files that should be v1).
+    is_v1_file = recipe_path.name == "recipe.yaml"
+    has_schema_version_1 = data.get("schema_version") == 1
+    if not (is_v1_file or has_schema_version_1):
+        return suggestions
+
+    try:
+        first_lines = recipe_path.read_text(encoding="utf-8").lstrip().splitlines()[:5]
+    except OSError:
+        return suggestions
+
+    has_header = any(line.startswith(_SCHEMA_HEADER_PREFIX) for line in first_lines)
+    if not has_header:
+        suggestions.append(OptimizationSuggestion(
+            code="SCHEMA-001",
+            message=(
+                "v1 recipe.yaml is missing the `# yaml-language-server: $schema=...` header. "
+                "Editors lose live validation against prefix-dev/recipe-format."
+            ),
+            suggestion=(
+                "Prepend the two canonical lines at the very top of recipe.yaml:\n"
+                "  # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json\n"
+                "  schema_version: 1"
+            ),
+            confidence=1.0,
+        ))
+
+    if is_v1_file and not has_schema_version_1:
+        suggestions.append(OptimizationSuggestion(
+            code="SCHEMA-001",
+            message="recipe.yaml is missing `schema_version: 1`.",
+            suggestion="Add `schema_version: 1` directly under the yaml-language-server header.",
+            confidence=1.0,
+        ))
+
+    return suggestions
+
+
 def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
     """Runs all optimization checks on a given recipe file."""
     if not RUAMEL_AVAILABLE:
@@ -620,6 +673,7 @@ def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
     # Critical constraints first (confidence 1.0 — will block CI)
     all_suggestions.extend(analyze_stdlib_compliance(data))
     all_suggestions.extend(analyze_format_mixing(recipe_path))
+    all_suggestions.extend(analyze_schema_header(recipe_path, data))
     # Security checks
     all_suggestions.extend(analyze_source_security(data))
     # Completeness checks
