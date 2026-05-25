@@ -154,6 +154,7 @@ outputs:
       - requirements:
           run:
             - python ${{ python_min }}.*
+            - pip
         script:
           - fastmcp --help
 

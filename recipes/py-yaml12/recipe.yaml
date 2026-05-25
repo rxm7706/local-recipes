@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0"
+  python_min: '3.10'
+
+package:
+  name: py-yaml12
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/py-yaml12/py_yaml12-${{ version }}.tar.gz
+  sha256: e7b6140fad56d5528e6d51c7b8ff79bdb27631b73a9a7c1bc4b55fda1bddbaef
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        # Unix recipe
+        - export OPENSSL_DIR="$PREFIX"
+      else:
+        # Win recipe  # work around long path problem,
+        # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
+        - set CARGO_HOME=C:\.cargo
+        - if not exist %CARGO_HOME% md %CARGO_HOME%
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    version_independent: true
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1,<2
+
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.7,<2.0
+    - pip
+  run:
+    - python
+
+
+tests:
+  - python:
+      imports:
+        - yaml12
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: A modern YAML 1.2 parser and emitter for Python, written in Rust.
+  license: MIT
+  license_file:
+    - LICENSE
+    - tests/yaml-test-suite/License
+  homepage: https://github.com/posit-dev/py-yaml12
+  repository: https://github.com/posit-dev/py-yaml12
+  documentation: https://posit-dev.github.io/py-yaml12/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
