@@ -2,6 +2,16 @@
 
 ## TL;DR — what's new in the latest release
 
+**v8.9.1** (May 25, 2026) — Two corrections on top of v8.9.0 (same-day PATCH).
+
+1. **Grayskull-style interpolated source URLs**. `_build_source_url_template()` emits `https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/<stem>-${{ version }}.tar.gz` where `<stem>` is `${{ name }}` / `${{ name | replace("-", "_") }}` / `${{ name | lower }}` / `${{ name | lower | replace("-", "_") }}` depending on how the sdist filename relates to the distribution name. v8.9.0 hardcoded literals — a regression from grayskull and from the previous py-yaml12 recipe. Also fixes a latent v8.9.0 bug: `fetch_pypi_info` was passing the templated URL (with `${{ ... }}` unrendered) to `_ensure_sdist_cached`, which broke maturin detection because the sdist download failed silently. Now tracks both concrete (for download) and templated (for recipe) URLs.
+
+2. **CARGO_PROFILE_RELEASE_{STRIP, LTO} env vars in the maturin template**. The conda-forge.org/.../rust page documents these as recommended for any Rust build, not just CLI binaries. v8.9.0 incorrectly excluded them from the maturin template based on empirical 27-PR adoption (3-7/27) — but the docs are **prescriptive**, not descriptive. Maturin invokes `cargo build` internally and inherits these env vars, producing a stripped + LTO-optimized cdylib. Cargo-auditable was investigated and **skipped** in this patch — maturin uses `cargo build` not `cargo install`, so wiring it would require a `CARGO=cargo-auditable` wrapper not first-class supported by maturin.
+
+3. **py-yaml12 recipe updated** to match the new generator output (interpolated URL + env vars).
+
+Live verification: `pypi py-yaml12` emits a clean maturin recipe with all three fixes; `pypi rich` emits a clean noarch recipe with the interpolated URL too. Both pass `optimize_recipe` with 0 suggestions.
+
 **v8.9.0** (May 25, 2026) — Maturin/PyO3 generator routing + sdist-driven import-name extraction + abi3-gated `version_independent` + maturin template rewrite to the empirical phonors-pattern minimum. **MINOR bump**, additive + corrective. Driven by the `recipes/py-yaml12` build surfacing that `recipe-generator.py pypi <name>` produced an incorrect `noarch: python` recipe for a PyO3 package. Spec: `docs/specs/conda-forge-expert-v8.9.md`. Empirical sample: 52 Rust label PRs + 27 PyO3/maturin PRs (Mar 2020 – May 2026) + 30 pure-python PRs + 5 docs sources (added [conda-forge.org knowledge_base](https://conda-forge.org/docs/maintainer/knowledge_base/)).
 
 ### Key learnings landed in code
