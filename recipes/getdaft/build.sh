@@ -4,6 +4,12 @@ set -euo pipefail
 export OPENSSL_DIR=${PREFIX}
 export OPENSSL_NO_VENDOR=1
 
+# Per conda-forge.org/docs/maintainer/example_recipes/rust/ — strip symbols
+# from the release cdylib. LTO is intentionally NOT set here: daft's 500+
+# crate dep tree exceeds the conda-forge Windows runner's RAM budget during
+# fat-LTO final link (Azure build 1526273 OOM'd all 10 Windows configs).
+export CARGO_PROFILE_RELEASE_STRIP=symbols
+
 # build dashboard assets using bun
 pushd ./src/daft-dashboard/frontend
 npm install
