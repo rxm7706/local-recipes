@@ -22,14 +22,12 @@ source:
 
 build:
   number: 0
-  script:
-    env:
-      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
-      # for any Rust build. cargo build (invoked via maturin) inherits these
-      # and produces a stripped + LTO-optimized cdylib.
-      CARGO_PROFILE_RELEASE_STRIP: symbols
-      CARGO_PROFILE_RELEASE_LTO: fat
-    # build.sh / build.bat are auto-discovered by rattler-build.
+  # CARGO_PROFILE_RELEASE_STRIP=symbols is set inside build.sh / build.bat
+  # (the auto-discovered build scripts). LTO is DROPPED for getdaft —
+  # daft's 500+ Rust crate dep tree exceeds the ~7 GB RAM budget of
+  # conda-forge's Windows hosted runner during the fat-LTO final-link
+  # (verified: Azure build 1526273, all 10 Windows configs OOM/timed out
+  # after 32 min of silent linker activity).
 
 requirements:
   build:
