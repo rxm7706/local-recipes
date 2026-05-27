@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v7.8.1'
+source_pin: 'conda-forge-expert v8.10.0'
 ---
 
 # Source Tree Analysis
@@ -124,7 +124,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │   │   ├── commands-cheatsheet.md            # pixi tasks + raw CLIs
 │   │   │   └── bot-commands.md                   # @conda-forge-admin slash commands
 │   │   │
-│   │   ├── scripts/                         # ★★ Tier 1: canonical Python implementations (42 modules)
+│   │   ├── scripts/                         # ★★ Tier 1: canonical Python implementations (50 modules)
 │   │   │   │
 │   │   │   ├── # ── Recipe lifecycle (Part 1 core) ──
 │   │   │   ├── recipe-generator.py               # generate_recipe_from_pypi entrypoint (grayskull + post-processing)
@@ -147,7 +147,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │   │   ├── name_resolver.py                  # PyPI→conda name resolution engine
 │   │   │   │
 │   │   │   ├── # ── cf_atlas pipeline (Part 2 core) ──
-│   │   │   ├── conda_forge_atlas.py              # ★ orchestrator: 17 phases B→N, PHASES registry, run_single_phase
+│   │   │   ├── conda_forge_atlas.py              # ★ orchestrator: 22 phases B→N + O→S (v8.1.0 PyPI intel), PHASES registry, run_single_phase
 │   │   │   ├── _cf_graph_versions.py             # Phase H cf-graph offline backend (v7.7.0)
 │   │   │   ├── _parquet_cache.py                 # Phase F S3 parquet cache layer (v7.6.0)
 │   │   │   ├── atlas_phase.py                    # single-phase CLI entrypoint
@@ -251,7 +251,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │   └── browser-testing-with-devtools/
 │
 ├── scripts/                                 # ★★ Part 1 Tier 2: CLI wrapper layer
-│   └── conda-forge-expert/                  # 34 thin subprocess wrappers (delegate to skill scripts/)
+│   └── conda-forge-expert/                  # 41 thin subprocess wrappers (delegate to skill scripts/)
 │       ├── (most names mirror skill scripts/, plus prepare_pr.py which delegates to submit_pr.py --prepare-only)
 │
 └── data/                                    # ★★ Part 1 Tier 3 + Part 2 artifacts (gitignored)
@@ -449,7 +449,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | `.claude/skills/conda-forge-expert/SKILL.md` | Part 1 | Skill's primary spine — read by Claude Code on every conda-forge task |
 | `.claude/skills/conda-forge-expert/CHANGELOG.md` | Part 1 | Canonical drift-detection source — every MINOR bump triggers a project-context re-sync |
 | `.claude/skills/conda-forge-expert/scripts/_http.py` | all (Parts 1+2+3) | Every outbound HTTP request routes through here. Contains the JFROG_API_KEY cross-host leak (mitigated via env-var hygiene; see deployment-guide.md) |
-| `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` | Part 2 | 17-phase pipeline orchestrator + schema migrations |
+| `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` | Part 2 | 22-phase pipeline orchestrator (B→N + v8.1.0 O→S) + schema migrations (v25) |
 | `.claude/tools/conda_forge_server.py` | Part 3 | 35 MCP tools — auto-started at Claude Code session boot |
 | `_bmad-output/projects/local-recipes/project-context.md` | Part 4 | Foundational rules every BMAD agent reads on spawn (v7.8.1-pinned) |
 | `_bmad/custom/.active-project` | Part 4 | Determines which project's `.bmad-config.toml` overlays apply |

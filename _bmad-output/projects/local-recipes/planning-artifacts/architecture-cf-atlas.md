@@ -4,7 +4,7 @@ part_id: cf-atlas
 display_name: cf_atlas data pipeline
 project_type_id: data
 date: 2026-05-12
-source_pin: 'conda-forge-expert v8.6.0'
+source_pin: 'conda-forge-expert v8.10.0'
 ---
 
 # Architecture: cf_atlas (Part 2)
@@ -32,15 +32,15 @@ Operationalized:
 | Field | Value |
 |---|---|
 | Primary artifact | `.claude/data/conda-forge-expert/cf_atlas.db` (SQLite, WAL mode) |
-| Schema version | **19** (additive migrations only; idempotent on every open) |
-| Schema constant | `SCHEMA_VERSION = 20` in `conda_forge_atlas.py:135` |
-| Tables | 11 (packages + 10 supporting) |
-| Pipeline phases | **17** (B, B.5, B.6, C, C.5, D, E, E.5, F, G, G', H, J, K, L, M, N) |
+| Schema version | **25** (additive migrations only; idempotent on every open) |
+| Schema constant | `SCHEMA_VERSION = 25` in `conda_forge_atlas.py:137` |
+| Tables | 11 (packages + 10 supporting) — plus `pypi_universe`, `pypi_intelligence`, `cisa_kev`, `epss_scores`, `cwe_categories` side tables (v7.9.0/v8.1.0/v8.5.3/v8.6.0) |
+| Pipeline phases | **22** (B, B.5, B.6, C, C.5, D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N) — Phases O–S added in v8.1.0 as the PyPI intelligence layer |
 | TTL-gated phases | 4 (F, G, H, K) — re-fetch only stale rows |
 | Checkpoint-aware phases | B, D, N (via `phase_state` table) |
 | Air-gap backends | Phase F: S3 parquet; Phase H: cf-graph offline |
-| Public CLIs | 17 (1 orchestrator + 1 single-phase + 15 query CLIs) |
-| MCP exposure | All 18 CLIs have an MCP tool counterpart in `conda_forge_server.py` |
+| Public CLIs | 19 (1 orchestrator + 1 single-phase + 17 query CLIs — `pypi-only-candidates` added v7.9.0; `pypi-intelligence` added v8.1.0) |
+| MCP exposure | All 19 CLIs have an MCP tool counterpart in `conda_forge_server.py` |
 | Pixi envs used | `local-recipes` (primary), `vuln-db` (Phase G/G' require AppThreat vdb importable) |
 | Lines of orchestrator code | ~4,300 (`conda_forge_atlas.py`) |
 | Approximate package count tracked | ~800k conda-forge packages |
@@ -82,14 +82,15 @@ Operationalized:
                         └────────┴───────┴──────┼──────┴──────┴──────┴──────┘
                                                 ▼
                                      ┌──────────────────────┐
-                                     │  cf_atlas.db (v19)   │
+                                     │  cf_atlas.db (v25)   │
                                      │   packages           │
                                      │   + 10 supporting    │
+                                     │   + 5 side tables    │
                                      └──────────┬───────────┘
                                                 │
                   ┌──────────────────────────────┼───────────────────────────────────┐
                   ▼                              ▼                                   ▼
-            17 query CLIs                Part 3 (MCP)                       Part 1 (skill)
+            19 query CLIs                Part 3 (MCP)                       Part 1 (skill)
             (atlas-phase,                35 MCP tools                       recipe-lifecycle
              staleness-report,           expose every CLI                   consumes atlas
              behind-upstream,                                               for validation +
@@ -98,7 +99,9 @@ Operationalized:
 
 ---
 
-## The 17 Phases (verified against `conda_forge_atlas.py:PHASES` registry)
+## The 22 Phases (verified against `conda_forge_atlas.py:PHASES` registry — see also `.claude/skills/conda-forge-expert/reference/atlas-phases-overview.md` for the canonical per-phase reference)
+
+> The ASCII pipeline diagram above does not depict the v8.1.0 PyPI intelligence phases (**O**, **P**, **Q**, **R**, **S**) — they slot in between Phase D and Phase E and write to the `pypi_intelligence` side table joined on `pypi_name`. The phase table below is authoritative for the full set.
 
 Phases run in dependency order. Each phase populates specific columns on the `packages` table or writes to a supporting table. Function names below match `conda_forge_atlas.py`.
 
@@ -110,6 +113,11 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 | **C** | `phase_c_parselmouth_join` (905) | Join PyPI names via parselmouth mapping | — | — | parselmouth cdn |
 | **C.5** | `phase_c5_source_url_match` (954) | Match recipes to PyPI projects via source URL parsing | — | — | (DB-internal) |
 | **D** | `phase_d_pypi_enumeration` (1060) | Two-tier write strategy (schema v20+): **always-on lean path** updates `pypi_last_serial` on conda-linked rows + discovers name-coincidence matches; **TTL-gated universe upsert** (default 7d via `PHASE_D_UNIVERSE_TTL_DAYS`) refreshes the `pypi_universe` side table with the ~800k-project PyPI directory. Legacy v19 `INSERT INTO packages ... 'pypi_only'` branch removed entirely. Env: `PHASE_D_DISABLED`, `PHASE_D_UNIVERSE_DISABLED`, `PHASE_D_UNIVERSE_TTL_DAYS`. | (universe TTL) | ✓ | pypi.org index (`PYPI_BASE_URL`) |
+| **O** | `phase_o_serial_snapshots` | **v8.1.0 PyPI intelligence layer.** Daily serial-snapshot deltas + `activity_band` classification (hot / warm / cold / silent) into `pypi_universe_serial_snapshots` (90-day rolling history). No HTTP — operates entirely off Phase D's `pypi_last_serial`. Default-on under maintainer + admin profiles; disabled under consumer (air-gap). Env: `PHASE_O_DISABLED`, `HOT_THRESHOLD`, `WARM_THRESHOLD`, `SNAPSHOT_RETAIN_DAYS`. | — | — | (DB-internal) |
+| **P** | `phase_p_pypi_downloads` | **v8.1.0 PyPI intelligence layer.** Opt-in BigQuery `pypi.file_downloads` ingest for 30/90-day download counts. Admin profile only (cost-bearing). Requires `google-cloud-bigquery` + `GOOGLE_APPLICATION_CREDENTIALS`. Writes to `pypi_intelligence.dl_last_30d` + `.dl_last_90d`. | — | — | bigquery.googleapis.com |
+| **Q** | `phase_q_cross_channel` | **v8.1.0 PyPI intelligence layer.** Cross-channel `in_<channel>` BOOLs from bulk `current_repodata.json` fetches against `repo.prefix.dev/<channel>/noarch/` for bioconda / pytorch / nvidia / robostack-staging. PEP 503 name canonicalization on both sides. Per-channel `<CHANNEL>_BASE_URL` env override for JFrog mirroring. Default-on under maintainer + admin profiles. | — | — | per-channel `<CHANNEL>_BASE_URL` |
+| **R** | `phase_r_pypi_json_enrich` | **v8.1.0 PyPI intelligence layer.** Per-project `pypi.org/pypi/<name>/json` enrichment bounded to the top-N candidate slice (`CANDIDATE_LIMIT=5000` default). Extracts license, requires_python, classifiers, repo_url, packaging_shape classifier (`_classify_packaging_shape`). Admin profile only. Concurrency cap `PHASE_R_CONCURRENCY=3`; TTL 7 d. | ✓ | — | pypi.org JSON (`PYPI_JSON_BASE_URL`) |
+| **S** | `phase_s_computed_scores` | **v8.1.0 PyPI intelligence layer.** Computes `conda_forge_readiness` (0-100 composite, 6-component weighted) + `recommended_template` (full template path) on the rows enriched by Phase R. No HTTP — pure SQL + Python. Default-on whenever Phase R has run. | — | — | (DB-internal) |
 | **E** | `phase_e_enrichment` (1148) | Download cf-graph tarball + extract feedstock-level metadata. Cache TTL via `ATLAS_CFGRAPH_TTL_DAYS` (default 1.0). Atomic-write cache; streams tar from disk (saves ~150 MB peak RAM). Incremental commits every 200 enriched rows. | ✓ (cache TTL) | — | github.com (`GITHUB_BASE_URL`) |
 | **E.5** | `phase_e5_archived_feedstocks` (1395) | Identify archived feedstocks via GitHub GraphQL pagination. Page-level `save_phase_checkpoint(cursor=…)` so progress is observable mid-run. Incremental commits every 500 applied rows. | — | ✓ (page-level) | api.github.com (`GITHUB_API_BASE_URL`) |
 | **F** | `phase_f_downloads` (1950) | Per-conda-package total downloads (3 backends: API / S3 parquet / auto). Default `PHASE_F_CONCURRENCY=3` (was 8 pre-v7.8.0). Retry-After honored on 429/503 (60s cap) + ±25% jitter. | ✓ | — | api.anaconda.org (`ANACONDA_API_BASE_URL`) OR AWS S3 (`S3_PARQUET_BASE_URL`) |
