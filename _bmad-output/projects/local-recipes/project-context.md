@@ -8,7 +8,7 @@ status: 'complete'
 rule_count: 63
 optimized_for_llm: true
 sync_sources: ['CLAUDE.md', '.claude/skills/conda-forge-expert/SKILL.md', '.claude/skills/conda-forge-expert/reference/', '.claude/skills/conda-forge-expert/guides/', '.claude/skills/conda-forge-expert/quickref/', '.claude/skills/conda-forge-expert/CHANGELOG.md', 'docs/enterprise-deployment.md']
-last_synced_skill_version: 'conda-forge-expert v8.8.0'
+    last_synced_skill_version: 'conda-forge-expert v8.10.0'
 maintenance_model: 'hand-edited rulebook; per-section (Sync: ...) tags name the upstream source. Re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns) on each CHANGELOG MINOR bump'
 ---
 
@@ -43,7 +43,7 @@ Versions live in `pixi.toml` — read it, do not duplicate version numbers in pr
 - v1 `recipe.yaml` with `schema_version: 1` and the rattler-build schema header on line 1 (`# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json`).
 - **Schema-validation header is mandatory on v1.** `generate_recipe_from_pypi` + `generate_npm_recipe_yaml` emit it; `tests/meta/test_recipe_yaml_schema_header.py` enforces it. *Skip rule*: the meta-test silently skips any file lacking a `schema_version:` line — so when hand-authoring, add `schema_version: 1` and the header together.
 - v0 `meta.yaml` is migration source only. When you touch a v0 recipe, migrate it in the same PR: `migrate_to_v1` → `validate_recipe` → delete `meta.yaml` → commit.
-- v1 substitution: `${{ name }}` / `${{ version }}`.
+- v1 templating: only `${{ version }}` interpolates in `package.name` and `source.url`. `context.name` and `${{ name | lower }}` / `${{ name[0] }}` chains were dropped in v8.10.0 — `package.name` is the literal distribution name, and `source.url`'s path segments (first letter, distribution name, sdist stem) are literal. `${{ python_min }}` still substitutes (defaults to 3.10 from conda-forge-pinning when omitted from context).
 - License: valid SPDX identifier. `license_file` MUST be a list, even with one entry.
 
 ## Compiler & stdlib Rule

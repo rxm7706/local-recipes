@@ -261,15 +261,18 @@ The modern format with native YAML (no Jinja2).
 schema_version: 1
 
 context:
-  name: example
   version: "1.0.0"
 
 package:
-  name: ${{ name|lower }}
+  # Literal distribution name — `context.name` and `${{ name | lower }}`
+  # interpolation are no longer used (2026 grayskull / conda-forge convention).
+  name: example
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  # Path segments (first letter, distribution name, sdist filename stem) are
+  # literal; only `${{ version }}` interpolates.
+  url: https://pypi.org/packages/source/e/example/example-${{ version }}.tar.gz
   sha256: abc123...
 
 build:
