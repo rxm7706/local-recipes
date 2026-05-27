@@ -12,19 +12,22 @@
 schema_version: 1
 
 context:
-  name: REPLACE_NAME
   version: "REPLACE_VERSION"
 
 package:
-  name: ${{ name | lower }}
+  # Literal distribution name — `context.name` and `${{ name | lower }}` are
+  # no longer used (2026 grayskull / conda-forge convention).
+  name: REPLACE_NAME
   version: ${{ version }}
 
 source:
-  # NOTE: many maturin sdists use the underscore-form filename even when the
-  # distribution name uses hyphens (e.g. `py-yaml12` → `py_yaml12-<ver>.tar.gz`).
-  # `generate_recipe_from_pypi` writes the correct form; for hand edits,
-  # double-check the actual sdist filename against pypi.org/project/<name>/.
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  # Path segments (first letter, distribution name, sdist stem) are literal;
+  # only `${{ version }}` interpolates. Many maturin sdists use the
+  # underscore-form filename even when the distribution name uses hyphens
+  # (e.g. `py-yaml12` → `py_yaml12-<ver>.tar.gz`); double-check against
+  # pypi.org/project/<name>/. `generate_recipe_from_pypi` writes the
+  # correct stem automatically.
+  url: https://pypi.org/packages/source/R/REPLACE_NAME/REPLACE_SDIST_STEM-${{ version }}.tar.gz
   sha256: REPLACE_SHA256
 
 build:

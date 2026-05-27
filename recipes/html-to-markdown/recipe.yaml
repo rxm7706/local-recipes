@@ -2,33 +2,40 @@
 schema_version: 1
 
 context:
-  name: html-to-markdown
-  version: "2.23.4"
+  version: "3.5.2"
   python_min: '3.10'
 
 package:
-  name: ${{ name|lower }}
+  name: html-to-markdown
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/html_to_markdown-${{ version }}.tar.gz
-  sha256: 3452274e9a8409fcdde73b22fcc6147e4e84c9d95164497209173f430a670e75
+  # Upstream PyPI sdist (3.5.x) is broken: workspace declares a path dep on
+  # crates/html-to-markdown/ but the directory is not in the tarball, so
+  # `cargo metadata` fails before the maturin build can start. The GitHub
+  # tag tarball ships the full workspace. Same class as SKILL.md G5.
+  url: https://github.com/kreuzberg-dev/html-to-markdown/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 8d977a7d763b0ea0c987483a1dd49a67b3513fd73ad17d0939759377c3bce1db
 
 build:
   number: 0
   script:
-    - if: unix
-      then:
-        # Unix recipe
-        - export OPENSSL_DIR="$PREFIX"
-      else:
-        # Win recipe  # work around long path problem,
-        # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
-        - set CARGO_HOME=C:\.cargo
-        - md %CARGO_HOME%
-        - if errorlevel 1 exit 1
-    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
+      # for any Rust build. maturin invokes cargo build and inherits these.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      # GH source has no root-level pyproject.toml (the sdist synthesizes one);
+      # the maturin entrypoint lives at packages/python/. cargo-bundle-licenses
+      # runs at the workspace root so it sees all crates.
+      - if: unix
+        then: |
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install ./packages/python -vv --no-deps --no-build-isolation
+        else: |
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          %PYTHON% -m pip install .\packages\python -vv --no-deps --no-build-isolation
   python:
     version_independent: true
 
@@ -41,14 +48,13 @@ requirements:
         - crossenv
         - maturin >=1.9,<2
 
-    - ${{ compiler("c") }}
+    - ${{ stdlib('c') }}
     - ${{ compiler("rust") }}
-    #- ${{ stdlib('c') }}
+    - ${{ compiler("c") }}
     - cargo-bundle-licenses
   host:
     - python
-    - maturin >=1.9,<2
-    - tomli >=2
+    - maturin >=1,<2
     - pip
   run:
     - python
@@ -71,8 +77,10 @@ about:
   license: MIT
   license_file:
     - LICENSE
+    - crates/html-to-markdown-py/src/LICENSE
     - THIRDPARTY.yml
-  homepage: https://github.com/kreuzberg-dev/html-to-markdown
+  homepage: https://pypi.org/project/html-to-markdown/
+  repository: https://github.com/kreuzberg-dev/html-to-markdown
 
 extra:
   recipe-maintainers:
