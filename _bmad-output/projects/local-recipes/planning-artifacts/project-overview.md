@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-05-12
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v8.1.0'
+source_pin: 'conda-forge-expert v8.10.0'
 ---
 
 # Project Overview: local-recipes
@@ -27,7 +27,7 @@ source_pin: 'conda-forge-expert v8.1.0'
 | License | BSD-3-Clause (LICENSE.txt) |
 | Maintainer of new recipes | `rxm7706` (in `extra.recipe-maintainers`) |
 | Recipe corpus | 1,415 v1 `recipe.yaml` files under `recipes/` + 1 at `wagtail/` (NOT part of the rebuild target) |
-| Source pin (for this doc set) | conda-forge-expert skill v8.1.0 |
+| Source pin (for this doc set) | conda-forge-expert skill v8.10.0 |
 
 ---
 
@@ -36,7 +36,7 @@ source_pin: 'conda-forge-expert v8.1.0'
 `local-recipes` is **not a conda recipe project** — it's the **infrastructure that produces** conda-forge recipes, plus the offline intelligence and air-gap-tolerant tooling to maintain them at scale. A new contributor inheriting this repository would receive four conceptually-separable systems wrapped into one pixi monorepo:
 
 1. **conda-forge-expert** — a Claude Code skill that encodes the full conda-forge packaging lifecycle (generate → validate → build → submit). 10-step autonomous loop with one human-gated checkpoint at step 8b. Versions, schemas, and policies are pinned in code so the skill produces conda-forge-acceptable recipes on first authoring.
-2. **cf_atlas** — a 22-phase offline package-intelligence pipeline (`bootstrap-data`, `atlas-phase`) that builds and maintains a SQLite database (`cf_atlas.db`, schema v22) inventorying ~33k conda-actionable + ~806k PyPI directory packages with metadata, version skew, vulnerability surface, dependency graphs, staleness signals, and (v8.1.0+) per-PyPI-project enrichment scores. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph (Phase H) offline backends. Three side tables: `packages` (working set, ~33k conda-actionable), `pypi_universe` (reference data, ~806k PyPI directory), `pypi_intelligence` (35-column enrichment side table joined on `pypi_name`, populated by the v8.1.0 Phase O/P/Q/R/S chain).
+2. **cf_atlas** — a 22-phase offline package-intelligence pipeline (`bootstrap-data`, `atlas-phase`) that builds and maintains a SQLite database (`cf_atlas.db`, schema v25 as of v8.6.0) inventorying ~33k conda-actionable + ~806k PyPI directory packages with metadata, version skew, vulnerability surface, dependency graphs, staleness signals, and (v8.1.0+) per-PyPI-project enrichment scores plus (v8.5.3 / v8.6.0) CISA KEV / EPSS / CWE overlays on the vulnerability columns. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph (Phase H) offline backends. Three side tables: `packages` (working set, ~33k conda-actionable), `pypi_universe` (reference data, ~806k PyPI directory), `pypi_intelligence` (35-column enrichment side table joined on `pypi_name`, populated by the v8.1.0 Phase O/P/Q/R/S chain).
 3. **FastMCP server** — `.claude/tools/conda_forge_server.py` exposing 35 MCP tools that surface the skill's lifecycle, the atlas's intelligence, and project-scanning capabilities to Claude Code's MCP runtime. Auto-started at session boot.
 4. **BMAD infrastructure** — the BMAD-METHOD installer (`_bmad/`) plus a multi-project planning layout (`_bmad-output/projects/<slug>/`) with six-layer config merge, 65 installed skills, and `scripts/bmad-switch` for active-project resolution. Drives planning + dev + review + retro workflows for any project hosted in this repo.
 
@@ -257,7 +257,7 @@ Plus structured metadata: **[project-parts.json](./project-parts.json)** — mac
 This document set synthesizes the following existing sources. To rebuild faithfully, an agent should treat these as authoritative for the items they cover and supplement with this set's overlays:
 
 - `CLAUDE.md` — repo-wide AI agent guidance, BMAD↔CFE integration rules, skill index
-- `_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn (v8.1.0-pinned)
+- `_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn (v8.10.0-pinned)
 - `.claude/skills/conda-forge-expert/SKILL.md` — primary skill spine
 - `.claude/skills/conda-forge-expert/INDEX.md` — task→tool navigator
 - `.claude/skills/conda-forge-expert/CHANGELOG.md` — release history with TL;DR

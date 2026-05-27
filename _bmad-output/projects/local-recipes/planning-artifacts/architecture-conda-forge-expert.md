@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-05-12
-source_pin: 'conda-forge-expert v8.6.0'
+source_pin: 'conda-forge-expert v8.10.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -448,7 +448,7 @@ The skill version is the **source of truth** for what rules apply. Two version s
 - `MANIFEST.yaml: version: 7.0.0` — the "schema/portability version" (rarely changes; bumps only when the install protocol changes)
 - `CHANGELOG.md` TL;DR — the **release version** (v8.1.0 as of 2026-05-15)
 
-Project-context.md pins to MINOR (`last_synced_skill_version: 'conda-forge-expert v8.0.0'`). When CHANGELOG's MINOR exceeds the pin, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
+Project-context.md pins to MINOR (`last_synced_skill_version: 'conda-forge-expert v8.10.0'` as of 2026-05-26). When CHANGELOG's MINOR exceeds the pin, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
 
 The pin discipline is the rebuild target's drift-control mechanism. A rebuilt repo without this pin will silently diverge.
 

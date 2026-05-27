@@ -5,7 +5,7 @@ date: 2026-05-12
 repository_type: monorepo
 parts: 4
 docs_generated: 10
-source_pin: 'conda-forge-expert v8.6.0'
+source_pin: 'conda-forge-expert v8.10.0'
 ---
 
 # `local-recipes` — Master Documentation Index
@@ -23,7 +23,7 @@ The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: han
 - **Build engine:** Pixi + rattler-build
 - **Default pixi env:** `local-recipes` (8 envs total)
 - **Recipe corpus:** 1,415 v1 recipes (outputs; NOT part of the rebuild target)
-- **Skill version:** v7.7.2 (pinned to v7.7 MINOR)
+- **Skill version:** v8.10.0 (re-synced 2026-05-26)
 
 > See **[project-overview.md](./project-overview.md)** for the full executive summary, technology stack, and four-part decomposition.
 
