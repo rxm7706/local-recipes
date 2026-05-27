@@ -3,18 +3,23 @@
 schema_version: 1
 
 context:
-  name: REPLACE_NAME
   version: "REPLACE_VERSION"
   # `python_min` defaults to 3.10 from conda-forge-pinning. Uncomment and set
   # only when upstream's python_requires demands a higher floor.
   # python_min: "3.11"
 
 package:
-  name: ${{ name | lower }}
+  # Write the distribution name literally (already lowercase, hyphens). This
+  # is the 2026 grayskull / conda-forge convention — `context.name` and
+  # `${{ name | lower }}` substitution are no longer used.
+  name: REPLACE_NAME
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  # Path segments (first letter, distribution name, sdist filename stem) are
+  # literal; only `${{ version }}` interpolates. The stem may use underscores
+  # while the distribution name uses hyphens (PyPI normalizes that way).
+  url: https://pypi.org/packages/source/R/REPLACE_NAME/REPLACE_SDIST_STEM-${{ version }}.tar.gz
   sha256: REPLACE_SHA256
 
 build:

@@ -3,15 +3,19 @@
 schema_version: 1
 
 context:
-  name: REPLACE_NAME
   version: "REPLACE_VERSION"
 
 package:
-  name: ${{ name | lower }}
+  # Literal distribution name (2026 grayskull / conda-forge convention).
+  # `context.name` and `${{ name | lower }}` substitution are no longer used.
+  name: REPLACE_NAME
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  # Path segments (first letter, distribution name, sdist stem) are literal;
+  # only `${{ version }}` interpolates. Stem may use underscores even when
+  # the distribution name uses hyphens.
+  url: https://pypi.org/packages/source/R/REPLACE_NAME/REPLACE_SDIST_STEM-${{ version }}.tar.gz
   sha256: REPLACE_SHA256
 
 build:

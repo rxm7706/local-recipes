@@ -350,38 +350,32 @@ def _extract_entry_points_from_sdist(sdist_path: Path) -> list[str]:
 
 
 def _build_source_url_template(name: str, version: str, sdist_filename: str) -> str:
-    """Return a grayskull-style interpolated PyPI sdist URL or empty string on parse failure.
+    """Return a literal PyPI sdist URL with only ``${{ version }}`` templated.
 
-    Examples:
-    - ``("httpx", "0.28.1", "httpx-0.28.1.tar.gz")`` →
-      ``https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz``
+    Matches the convention grayskull and conda-forge maintainers have adopted
+    in 2026: path segments (first letter, distribution name, sdist filename
+    stem) are written literally so they survive version bumps unchanged, and
+    only ``${{ version }}`` interpolates. Drops the older ``${{ name[0] }}`` /
+    ``${{ name }}`` / ``${{ name | replace("-", "_") }}`` chain — the literal
+    form is more legible, removes a class of jinja-typo bugs, and pairs with
+    the matching change to omit ``name`` from ``context:`` entirely.
+
+    Example:
     - ``("py-yaml12", "0.1.0", "py_yaml12-0.1.0.tar.gz")`` →
-      ``...${{ name | replace("-", "_") }}-${{ version }}.tar.gz``
+      ``https://pypi.org/packages/source/p/py-yaml12/py_yaml12-${{ version }}.tar.gz``
 
-    When the filename's stem can't be expressed as a transformation of ``name``
-    (e.g. project rename, unusual sdist layout), returns empty string and the
-    caller falls back to the literal-URL form.
+    Returns the empty string only when the sdist filename doesn't end in the
+    expected ``-<version>.tar.gz`` shape; the caller falls back to the
+    concrete URL in that case.
     """
     suffix = f"-{version}.tar.gz"
     if not sdist_filename.endswith(suffix):
         return ""
     stem = sdist_filename[: -len(suffix)]
-    # Determine which jinja transformation reproduces the stem from ``name``.
-    if stem == name:
-        stem_template = "${{ name }}"
-    elif stem == name.lower():
-        stem_template = "${{ name | lower }}"
-    elif stem == name.replace("-", "_"):
-        stem_template = '${{ name | replace("-", "_") }}'
-    elif stem == name.lower().replace("-", "_"):
-        stem_template = '${{ name | lower | replace("-", "_") }}'
-    else:
-        return ""  # caller falls back to literal URL
+    first_letter = name[0].lower()
     return (
-        "https://pypi.org/packages/source/"
-        + "${{ name[0] }}/${{ name }}/"
-        + stem_template
-        + "-${{ version }}.tar.gz"
+        f"https://pypi.org/packages/source/{first_letter}/{name}/"
+        f"{stem}-${{{{ version }}}}.tar.gz"
     )
 
 
@@ -729,19 +723,27 @@ def generate_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
     # CFEP-25 floor: only declare in context when overriding the default 3.10.
     context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != "3.10" else ""
 
+    # Canonical 2026 shape: ``context:`` only carries ``version`` (+ optional
+    # ``python_min`` override); ``package.name`` is the literal distribution
+    # name; ``source.url`` interpolates only ``${{ version }}``. Matches what
+    # current grayskull emits and what conda-forge reviewers expect.
+    literal_name = info.name.lower()
+    fallback_url = (
+        f"https://pypi.org/packages/source/{literal_name[0]}/{literal_name}/"
+        f"{literal_name}-${{{{ version }}}}.tar.gz"
+    )
     recipe = f'''# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
-  name: {info.name}
   version: "{info.version}"
 {context_python_min_line}
 package:
-  name: ${{{{ name | lower }}}}
+  name: {literal_name}
   version: ${{{{ version }}}}
 
 source:
-  url: {info.source_url or f"https://pypi.org/packages/source/{info.name[0]}/{info.name}/{info.name}-{info.version}.tar.gz"}
+  url: {info.source_url or fallback_url}
   sha256: {info.sha256 or "REPLACE_SHA256"}
 
 build:
@@ -831,11 +833,15 @@ def _generate_maturin_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
     context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != "3.10" else ""
 
     # Source URL: sdist filename may use underscore-form even when PyPI name uses hyphens.
-    # Prefer the actual filename from info.source_url; otherwise synthesise.
-    source_url = info.source_url or (
-        f"https://pypi.org/packages/source/{info.name[0]}/{info.name}/"
-        f"{info.name.replace('-', '_')}-{info.version}.tar.gz"
+    # Prefer the actual filename from info.source_url; otherwise synthesise a
+    # literal URL with only ``${{ version }}`` templated (matches the 2026
+    # grayskull / conda-forge convention).
+    literal_name = info.name.lower()
+    fallback_url = (
+        f"https://pypi.org/packages/source/{literal_name[0]}/{literal_name}/"
+        f"{literal_name.replace('-', '_')}-${{{{ version }}}}.tar.gz"
     )
+    source_url = info.source_url or fallback_url
 
     # version_independent block: gated on Cargo.toml abi3 feature (v8.9.0 G3.c).
     # Includes the trailing blank line that separates the `build:` section
@@ -853,17 +859,18 @@ def _generate_maturin_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
         version_independent_block = "\n"
 
     recipe = f'''# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Generated v8.9.0 from python-maturin path; PyO3/maturin detected via sdist
+# Generated from python-maturin path; PyO3/maturin detected via sdist
 # pyproject.toml [build-system].requires. Modelled on phonors PR pattern
-# (modal 27-PR PyO3 sample, Mar 2020 – May 2026).
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+# ``source.url`` (only ``${{ version }}`` templated), no ``name`` in context.
 schema_version: 1
 
 context:
-  name: {info.name}
   version: "{info.version}"
 {context_python_min_line}
 package:
-  name: ${{{{ name | lower }}}}
+  name: {literal_name}
   version: ${{{{ version }}}}
 
 source:
@@ -965,6 +972,15 @@ def generate_meta_yaml(info: PackageInfo, output_dir: Path) -> Path:
     py_host = "{{ python_min }}" if set_python_min_line else "3.10"
     py_run = "{{ python_min }}" if set_python_min_line else "3.10"
 
+    # ``info.source_url`` carries v1 ``${{ version }}`` syntax; translate
+    # to v0 ``{{ version }}`` so the meta.yaml renders correctly under
+    # conda-build's jinja.
+    v0_source_url = (info.source_url or "").replace("${{ version }}", "{{ version }}")
+    v0_fallback = (
+        "https://pypi.org/packages/source/"
+        f"{{{{ name[0] }}}}/{{{{ name }}}}/"
+        f"{{{{ name }}}}-{{{{ version }}}}.tar.gz"
+    )
     recipe = f'''{{% set name = "{info.name}" %}}
 {{% set version = "{info.version}" %}}
 {set_python_min_line}
@@ -973,7 +989,7 @@ package:
   version: {{{{ version }}}}
 
 source:
-  url: {info.source_url or f"https://pypi.org/packages/source/{{{{ name[0] }}}}/{{{{ name }}}}/{{{{ name }}}}-{{{{ version }}}}.tar.gz"}
+  url: {v0_source_url or v0_fallback}
   sha256: {info.sha256 or "REPLACE_SHA256"}
 
 build:

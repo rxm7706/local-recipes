@@ -112,24 +112,37 @@ Python 3.9 was dropped from the conda-forge build matrix in August 2025. The flo
 ### PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern
 Recipe `source.url:` for PyPI artifacts **must** route through `https://pypi.org/packages/...`, never `https://files.pythonhosted.org/packages/<hash>/...`. The hashed `files.pythonhosted.org` URL is what PyPI's JSON API returns and what `grayskull` historically emitted, but it bypasses standard JFrog Artifactory PyPI Remote Repository proxies in air-gapped corporate environments.
 
-**Sdist (preferred):**
+**Canonical 2026 shape** — `package.name` is the literal distribution name; `context:` carries only `version` (+ optional `python_min` override); the URL's path segments are literal and only `${{ version }}` interpolates. This is what current `grayskull` emits and what conda-forge reviewers expect:
+
+```yaml
+context:
+  version: "1.0.0"
+
+package:
+  name: my-package
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/my-package/my-package-${{ version }}.tar.gz
+```
+
+For sdist filenames that use underscores instead of hyphens (e.g. `litellm_proxy_extras-0.4.69.tar.gz` for project `litellm-proxy-extras`, `py_yaml12-0.1.0.tar.gz` for `py-yaml12`), keep the path-2 segment hyphenated (distribution name) and the filename stem underscored:
+
 ```yaml
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-```
-For sdist filenames that use underscores instead of hyphens (e.g. `litellm_proxy_extras-0.4.69.tar.gz` for project `litellm-proxy-extras`), hard-code the underscore form:
-```yaml
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/litellm_proxy_extras-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/litellm-proxy-extras/litellm_proxy_extras-${{ version }}.tar.gz
 ```
 
 **Wheel (only when no sdist exists upstream):**
 ```yaml
 source:
-  url: https://pypi.org/packages/${{ py_tag }}/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}-${{ py_tag }}-none-any.whl
+  url: https://pypi.org/packages/<py-tag>/m/my-package/my-package-${{ version }}-<py-tag>-none-any.whl
 ```
-where `${{ py_tag }}` is the wheel's Python tag (`py3`, `py2.py3`, `cp310`, …). The `<py-tag>` segment is upstream-specific and may change on a version bump — flag this with a recipe comment.
+where `<py-tag>` is the wheel's Python tag (`py3`, `py2.py3`, `cp310`, …). The `<py-tag>` segment is upstream-specific and may change on a version bump — flag this with a recipe comment.
 
-The `recipe-generator.py` script emits these patterns automatically from the upstream filename; manual edits and recipe reviews must enforce the same form. See `docs/enterprise-deployment.md` §3 for the full proxy rationale.
+**Why fully literal?** The older `${{ name[0] }}` / `${{ name }}` / `${{ name | replace("-", "_") }}` chain was a holdover from `context.name`-style recipes. Now that the distribution name lives only in `package.name`, the URL is just a path — write it as a path. Renames are rare, version bumps are common, and the literal form is more legible and removes a class of jinja-typo bugs.
+
+The `recipe-generator.py` script emits this shape automatically; manual edits and recipe reviews must enforce the same form. See `docs/enterprise-deployment.md` §3 for the full proxy rationale.
 
 ### `build.bat` Must `call` Every `.cmd` Shim (pnpm/npm/yarn)
 On Windows, `pnpm`, `npm`, `yarn`, `npx`, and similar tools ship as `.cmd` wrappers. Invoking a `.cmd` from a `.bat` **without `call`** causes cmd.exe to **transfer control** to the shim — when it returns, the parent script terminates with exit 0 instead of continuing. The build appears to succeed but later steps never run, and rattler-build emits misleading errors like `× No license files were copied`.
@@ -591,14 +604,15 @@ test:
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 context:
-  name: my-package
   version: "1.0.0"
-  python_min: "3.10"
+  # Omit python_min when the conda-forge floor (3.10) is fine; only declare
+  # when upstream's python_requires demands a higher floor.
 package:
-  name: ${{ name }}
+  name: my-package
   version: ${{ version }}
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  # Path segments are literal; only ${{ version }} interpolates.
+  url: https://pypi.org/packages/source/m/my-package/my-package-${{ version }}.tar.gz
   sha256: <sha256>
 build:
   noarch: python
@@ -611,9 +625,11 @@ requirements:
     - python >=${{ python_min }}
 tests:
   - python:
-      imports: [${{ name }}]
+      imports: [my_package]
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 about:
   license: MIT
   license_file: LICENSE
@@ -1133,6 +1149,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.10.0** (May 26, 2026): Drop `context.name` from Python v1 recipes; switch `package.name` and `source.url` to fully-literal form. **MINOR bump** — additive + corrective; matches what current grayskull emits and what conda-forge reviewers asked for on `recipes/xorq-datafusion` and `recipes/py-yaml12`. Three concrete changes in `scripts/recipe-generator.py`: (1) `_build_source_url_template()` rewritten to emit `https://pypi.org/packages/source/<first-letter>/<distribution-name>/<sdist-stem>-${{ version }}.tar.gz` — only `${{ version }}` interpolates; first letter, distribution name, and sdist filename stem are all literal. Drops the v8.9.1 `${{ name[0] }}` / `${{ name }}` / `${{ name | replace("-", "_") }}` chain entirely. (2) `generate_recipe_yaml()` (noarch path) drops `name:` from `context:`, switches `package.name:` from `${{ name | lower }}` to literal `info.name.lower()`. (3) `_generate_maturin_recipe_yaml()` does the same. (4) `generate_meta_yaml()` (v0 path) translates the v1 `${{ version }}` syntax in `info.source_url` down to v0 `{{ version }}` so meta.yaml renders correctly under conda-build jinja (closes a latent bug that surfaced once `info.source_url` carries v1 syntax). Three template updates: (5) `templates/python/noarch-recipe.yaml`, (6) `templates/python/compiled-recipe.yaml`, (7) `templates/python/maturin-recipe.yaml` — all drop the `context.name` line, switch `package.name` to a `REPLACE_NAME` literal placeholder, and rewrite the URL to literal segments with `REPLACE_SDIST_STEM-${{ version }}` for the filename stem (preserves the hyphen-vs-underscore distinction reviewers care about). SKILL.md updates: (8) "PyPI `source.url` Must Use..." critical-constraint section rewritten to show the literal pattern as canonical, including the why ("renames are rare, version bumps are common; the literal form is more legible and removes a class of jinja-typo bugs"). (9) "Recipe Formats Quick Reference" v1 example block updated to match. Live verification: `recipe-generator.py pypi rich` emits `package.name: rich` + `source.url: .../r/rich/rich-${{ version }}.tar.gz` + no `context.name`; `recipe-generator.py pypi py-yaml12` emits `package.name: py-yaml12` + `.../p/py-yaml12/py_yaml12-${{ version }}.tar.gz` (matches the user's existing `recipes/py-yaml12/recipe.yaml` byte-for-byte in the changed sections). 44/44 `test_recipe_generator.py` tests still pass. Non-Python templates (Rust CLI, Go, R, etc.) and v0 meta.yaml templates are intentionally untouched — grayskull's literal-URL convention applies to v1 Python recipes; v0 meta.yaml is legacy and grayskull's v0 output still emits `{% set name %}`. Updated `config/skill-config.yaml` to 8.10.0.
 
 - **v8.9.1** (May 25, 2026): Two corrections on top of v8.9.0. **PATCH bump** — additive + corrective; same-day follow-up. (1) **Grayskull-style interpolated source URL**: new `_build_source_url_template()` helper emits `https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/<stem-template>-${{ version }}.tar.gz` where `<stem-template>` is `${{ name }}`, `${{ name | lower }}`, `${{ name | replace("-", "_") }}`, or `${{ name | lower | replace("-", "_") }}` depending on how the sdist filename relates to the distribution name. Version bumps now only touch `${{ version }}`. Falls back to a literal URL when the filename doesn't parse cleanly. `fetch_pypi_info` now tracks both the **concrete** URL (used internally to download the sdist) and the **templated** URL (emitted into the recipe) — fixes the v8.9.0 latent bug where I'd routed `source_url` through the sdist-cache helper with unrendered jinja inside. (2) **CARGO_PROFILE_RELEASE_{STRIP, LTO} env vars are conda-forge documented standard for ALL Rust builds**, not just CLI binaries. Per [conda-forge.org/.../rust](https://conda-forge.org/docs/maintainer/example_recipes/rust/) — "this recipe template supports different features: `CARGO_PROFILE_RELEASE_STRIP=symbols` … `CARGO_PROFILE_RELEASE_LTO=fat`". My v8.9.0 chose to **skip** these in the maturin template based on the empirical 27-PR sample where only 3-7/27 used them. But the docs are prescriptive, not descriptive — empirical low adoption reflects older PyO3 recipes authored before the guidance landed, not a maintainer rejection of the pattern. The maturin template + `_generate_maturin_recipe_yaml` now emit `script.env` with both env vars; `cargo build` (invoked internally by maturin) inherits them and produces a stripped + LTO-optimized cdylib. Cargo-auditable was investigated but **skipped** in this patch — maturin uses `cargo build` not `cargo install`, so wiring `cargo auditable` would require a `CARGO=cargo-auditable` wrapper that isn't first-class supported by maturin; defer to v8.10+ if community pressure builds. (3) Updated `recipes/py-yaml12/recipe.yaml` to match the new generator output (interpolated URL + env vars). Live verification: `recipe-generator.py pypi py-yaml12` emits the maturin route with `version_independent: true` + env vars + interpolated URL + 0 optimizer suggestions. `recipe-generator.py pypi rich` emits the noarch route with interpolated URL + 0 optimizer suggestions. Updated `config/skill-config.yaml` to 8.9.1.
 
