@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  name: cityhash
-  version: "0.4.9"
-  python_min: '3.10'
+  version: "0.4.10"
 
 package:
-  name: python-${{ name|lower }}
+  name: python-cityhash
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cityhash-${{ version }}.tar.gz
-  sha256: e897d5d4faa6eff7c6c706d488e5e9eee129b7f41f9db498a4ba8701ce89122f
+  url: https://pypi.org/packages/source/c/cityhash/cityhash-${{ version }}.tar.gz
+  sha256: 7e35da9aaf5fcf91da3fea23405874db55ffa58b1abc441d39cce0c8704a9c15
 
 build:
   number: 0
@@ -27,6 +25,7 @@ requirements:
 
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
     #- ${{ stdlib("c") }}
   host:
     - python
