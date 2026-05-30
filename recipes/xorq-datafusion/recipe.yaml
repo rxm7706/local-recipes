@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.2.7"
+  version: "0.2.8"
 
 package:
   name: xorq-datafusion
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/x/xorq-datafusion/xorq_datafusion-${{ version }}.tar.gz
-  sha256: be1dbdbef6ea513df1aae189fe5fa6e54a8e8556dc824a74a888473b4c1929cb
+  sha256: 531ad0c0fb2fc8e547a11d6716d6739b8df352edec0dfa9e409f703cbae36693
 
 build:
   number: 0
@@ -19,7 +19,8 @@ build:
       # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
       # for any Rust build. maturin invokes cargo build and inherits these.
       CARGO_PROFILE_RELEASE_STRIP: symbols
-      CARGO_PROFILE_RELEASE_LTO: fat
+      #CARGO_PROFILE_RELEASE_LTO: fat # note time out issues
+      PYTHONUTF8: "1"
     content:
       # Multi-line `then: |` so OPENSSL_DIR export persists into pip install
       # (per SKILL.md G1: separate `- ` list entries run in independent shells).
@@ -59,8 +60,8 @@ tests:
         - xorq_datafusion
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: xorq Python DataFusion Bindings.

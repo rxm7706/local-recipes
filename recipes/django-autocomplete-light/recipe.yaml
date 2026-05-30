@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.1"
+  python_min: "3.11"
+
+package:
+  name: django-autocomplete-light
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-autocomplete-light/django_autocomplete_light-${{ version }}.tar.gz
+  sha256: cdf7c7ae8596d4f1b2bb85e04cc25ef8438c70ad5eb9e7592b5afac2d3ec266c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=65.5.1
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - django >=5.2
+
+tests:
+  - python:
+      imports:
+        - dal
+        - dal_alight
+        - dal_alight_queryset_sequence
+        - dal_contenttypes
+        - dal_queryset_sequence
+        - dal_select2
+        - dal_select2_queryset_sequence
+        - dal_select2_taggit
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: Fresh autocompletes for Django
+  license: MIT
+  license_file: LICENSE
+  homepage: http://django-autocomplete-light.rtfd.org
+  repository: https://github.com/yourlabs/django-autocomplete-light
+
+extra:
+  recipe-maintainers:
+    - rxm7706
