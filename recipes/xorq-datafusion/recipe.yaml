@@ -11,6 +11,8 @@ package:
 source:
   url: https://pypi.org/packages/source/x/xorq-datafusion/xorq_datafusion-${{ version }}.tar.gz
   sha256: 531ad0c0fb2fc8e547a11d6716d6739b8df352edec0dfa9e409f703cbae36693
+  patches:
+    - patches/0001-drop-pyarrow-upper-bound.patch
 
 build:
   number: 0
@@ -52,7 +54,7 @@ requirements:
     - pip
   run:
     - python
-    - pyarrow >=18.0.0,<22.0.0
+    - pyarrow >=18.0.0 #,<22.0.0
 
 tests:
   - python:
