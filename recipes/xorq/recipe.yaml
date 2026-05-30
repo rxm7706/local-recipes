@@ -12,10 +12,12 @@ package:
 source:
   url: https://pypi.org/packages/source/x/xorq/xorq-${{ version }}.tar.gz
   sha256: fc4dfce5d5037c7f0e35083fecaddc9997a191037acf0520b23a26356db204b3
+  patches:
+    - patches/0001-strip-cli-tool-deps-for-conda-forge.patch
 
 build:
   number: 0
-  skip: match(python, ">=3.14") or match(python, ">=2,<3")
+  noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
@@ -27,15 +29,20 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }},<=3.14
     - attrs >=24.1.0
-    - pyarrow >=13.0.0,<22
+    - pyarrow >=13.0.0 #,<22
+    # xorq.flight.action imports pyarrow.flight unconditionally; conda-forge
+    # splits the runtime out so pyarrow alone may land pyarrow-core without
+    # libarrow_flight.so. Pin the runtime explicitly.
+    - libarrow-flight >=13.0.0 #,<22
     - structlog >=24.2.0,<26
     - python-cityhash >=0.4.7,<1
     - pandas >=1.5.3,<3
     - pyarrow-hotfix >=0.4,<1
     - geoarrow-types >=0.2,<1
     - pythran >=0.17.0
+    - setuptools
     - atpublic >=5.1
     - parsy >=2
     - python-dateutil >=2.8.2
@@ -62,7 +69,7 @@ requirements:
     - gitpython >=3.1.46
     - textual >=1.0.0
     - filelock >=3.13
-    - xorq-dasher >=0.1.0  # TBD Conda-forge
+    - xorq-dasher >=0.1.0
 
 tests:
   - python:

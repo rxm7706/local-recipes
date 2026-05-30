@@ -1,0 +1,20 @@
+From: conda-forge recipe maintainers
+Subject: [PATCH] Drop pyarrow<22 upper bound
+
+Upstream caps pyarrow at <22 defensively, but the bindings are
+compatible with newer pyarrow releases on conda-forge. The conda-forge
+pyarrow pin already constrains the ABI through the global pinning, so
+the upper bound is redundant here and only blocks bumps. Dropping it
+lets the conda solver use whatever pyarrow conda-forge currently ships.
+
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -12,7 +12,7 @@
+ ]
+ dynamic = ["version"]
+ dependencies = [
+-    "pyarrow>=18.0.0,<22; python_version >= '3.10' and python_version < '4.0'",
++    "pyarrow>=18.0.0; python_version >= '3.10' and python_version < '4.0'",
+ ]
+
+ [dependency-groups]
