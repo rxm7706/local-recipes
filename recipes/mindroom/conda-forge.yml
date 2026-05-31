@@ -1,0 +1,10 @@
+# Per-recipe staged-recipes override for `mindroom`.
+#
+# mindroom auto-publishes a calver release on most commits (~250
+# releases/month). Without intervention, the conda-forge autotick bot
+# would file a constant stream of bump PRs. The `skip` pattern below
+# directs the bot to skip every upstream release; we cherry-pick
+# approximately monthly snapshots manually instead.
+bot:
+  version_updates:
+    skip: true

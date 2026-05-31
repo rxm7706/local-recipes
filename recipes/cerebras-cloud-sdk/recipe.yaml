@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.67.0"
+
+package:
+  name: cerebras-cloud-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cerebras-cloud-sdk/cerebras_cloud_sdk-${{ version }}.tar.gz
+  sha256: 3aed6f86c6c7a83ee9d4cfb08a2acea089cebf2af5b8aed116ef79995a4f4813
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-fancy-pypi-readme
+  run:
+    - python >=${{ python_min }}
+    - anyio >=3.5,<5
+    - distro >=1.7,<2
+    - httpx >=0.23,<1
+    # httpx[http2] extra pulls in h2 — conda-forge has no httpx-extras
+    # split, so list h2 directly.
+    - h2 >=4,<5
+    - pydantic >=1.9,<3
+    - sniffio
+    - typing_extensions >=4.10,<5
+
+tests:
+  - python:
+      # Dotted namespace package — src/cerebras/cloud/sdk/__init__.py is
+      # the real module; src/cerebras/cloud/__init__.py is just a PEP 420
+      # namespace stub.
+      imports:
+        - cerebras.cloud.sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Cerebras/cerebras-cloud-sdk-python
+  repository: https://github.com/Cerebras/cerebras-cloud-sdk-python
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The official Python library for the Cerebras API
+  description: |
+    The official Python library for the Cerebras Cloud API, providing
+    convenient access to the Cerebras inference REST API from any Python
+    3.10+ application. Includes type definitions for request params and
+    response fields, and offers both synchronous and async clients
+    powered by httpx.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
