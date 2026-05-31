@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Generated from python-maturin path; PyO3/maturin detected via sdist
+# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
+schema_version: 1
+
+context:
+  version: "0.9.0.post2"
+
+package:
+  name: vodozemac
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/vodozemac/vodozemac-${{ version }}.tar.gz
+  sha256: 2f1f46a3e317b371ee27785321ca3a5fb236920f86188497c6107b531f4e59ec
+
+build:
+  number: 0
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - vodozemac
+      pip_check: true
+
+about:
+  homepage: https://github.com/matrix-nio/vodozemac-python
+  repository: https://github.com/matrix-nio/vodozemac-python
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Python bindings for vodozemac
+  description: |
+    Python bindings for vodozemac, a Rust implementation of the Olm and Megolm
+    end-to-end encryption protocols used by the Matrix communication standard.
+    vodozemac is the modern replacement for the libolm C library.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

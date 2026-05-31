@@ -1,0 +1,38 @@
+From: rxm7706 <rxm7706@protonmail.com>
+Subject: [PATCH] Loosen agno + fastapi pins to match conda-forge availability
+
+Upstream pins `agno==2.5.13` exactly and `fastapi>=0.116.1`, but
+conda-forge currently ships `agno 2.6.1` (no 2.5.13 build) and the
+`chromadb` feedstock pins `fastapi ==0.115.9` exactly across its
+entire 1.x line.
+
+Without this patch, the wheel METADATA carries the strict upstream
+requirements and `pip check` fails at test time even though the
+runtime works fine.
+
+This patch should be removed when:
+  * conda-forge ships agno 2.5.13 OR upstream mindroom bumps its
+    agno pin to 2.6.x, AND
+  * conda-forge's chromadb feedstock loosens its fastapi pin to
+    allow >=0.116.
+
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -16,7 +16,7 @@
+ ]
+ dynamic = [ "version" ]
+ dependencies = [
+-  "agno[anthropic,google,ollama,openai]==2.5.13",
++  "agno[anthropic,google,ollama,openai]>=2.5,<3",
+   "aiohttp>=3.13.3",
+   "aiosqlite>=0.20",
+   "anthropic>=0.70",
+@@ -27,7 +27,7 @@
+   "cron-descriptor>=1.4.5",
+   "croniter>=6",
+   "cryptography>=47",
+-  "fastapi[standard]>=0.116.1",
++  "fastapi[standard]>=0.115,<1",
+   "filetype>=1.2",
+   "google-auth>=2.40.3",
+   "google-genai",
