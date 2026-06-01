@@ -28,6 +28,9 @@ Check codes (15 total):
             the [python_min, "*"] list — misses Python-version-specific breakage at the
             top of the build matrix. Convention established by ocefpaf on
             staged-recipes#32857 (https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932).
+  TEST-003  noarch:python recipe substitutes package_contents.site_packages for
+            python.imports without an inline `# CFEP-25-justified:` comment.
+            conda-forge web-service review fires the canonical CFEP-25 hint.
   MAINT-001  Missing recipe-maintainers in extra section
 """
 from __future__ import annotations
@@ -267,11 +270,26 @@ def analyze_build_script(recipe_dir: Path) -> List[OptimizationSuggestion]:
 _PY_SELECTOR_RE = re.compile(r"^\s*py\s*[<>=!]+\s*\d+\s*$")
 
 
-def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
+_TEST_003_JUSTIFICATION_PREFIX = "# CFEP-25-justified:"
+
+
+def analyze_selectors(data: Dict, recipe_path: Path | None = None) -> List[OptimizationSuggestion]:
     """Analyzes platform selectors (SEL-001), CFEP-25 python_min compliance (SEL-002),
     and v0-style `py < N` selectors in v1 recipes (SEL-003).
     """
     suggestions = []
+    # If recipe carries a CFEP-25-justified comment, the recipe is intentionally
+    # using package_contents instead of python.imports — so the "tests python
+    # block missing python_version" half of SEL-002 doesn't apply. TEST-003
+    # handles the substitution check; SEL-002 here only enforces context/host/run.
+    has_cfep25_justification = False
+    if recipe_path is not None:
+        try:
+            has_cfep25_justification = (
+                _TEST_003_JUSTIFICATION_PREFIX in recipe_path.read_text(encoding="utf-8")
+            )
+        except OSError:
+            pass
 
     build_section = data.get("build", {}) or {}
 
@@ -353,7 +371,7 @@ def analyze_selectors(data: Dict) -> List[OptimizationSuggestion]:
             missing: List[str] = []
             if not has_python_min_host:
                 missing.append("host (python ${{ python_min }}.*)")
-            if not has_python_version_test:
+            if not has_python_version_test and not has_cfep25_justification:
                 missing.append("tests python block (python_version: ${{ python_min }}.*)")
             if missing:
                 suggestions.append(OptimizationSuggestion(
@@ -582,6 +600,102 @@ def analyze_noarch_python_test_matrix(data: Dict) -> List[OptimizationSuggestion
     return suggestions
 
 
+def analyze_noarch_python_test_type(
+    recipe_path: Path, data: Dict
+) -> List[OptimizationSuggestion]:
+    """TEST-003: noarch:python recipe substitutes ``package_contents`` for
+    ``python.imports`` without justification.
+
+    The canonical CFEP-25 test for a noarch:python library is:
+
+        tests:
+          - python:
+              imports: [<pkg>]
+              pip_check: true
+              python_version:
+                - ${{ python_min }}.*
+                - "*"
+
+    This is what conda-forge's web-service review (the post-merge linter) expects
+    and what every reviewer asks for. A ``package_contents.site_packages:`` test
+    in place of it is technically valid YAML, builds, and passes ``conda-smithy
+    lint`` locally — but the web-service review will fire the canonical CFEP-25
+    hint ("you should usually use the pin ``python_version: ${{ python_min }}.*``
+    or ``python ${{ python_min }}.*`` for the python_version or python entry").
+
+    Allowed escape hatch: recipes whose test environment cannot resolve the
+    runtime stack (Django web apps where ``import mymodule`` fails without
+    ``DJANGO_SETTINGS_MODULE``; ML benchmarks with deps not on conda-forge) may
+    keep ``package_contents`` by carrying an inline justification comment of the
+    form ``# CFEP-25-justified: <reason>`` directly above the ``tests:`` block.
+    The presence of that comment in the file (anywhere) suppresses TEST-003.
+
+    Reference: rxm7706/local-recipes Phase-6c retrospective; conda-forge
+    web-service review run #26723641060.
+    """
+    suggestions: List[OptimizationSuggestion] = []
+
+    build = data.get("build") or {}
+    if build.get("noarch") != "python":
+        return suggestions
+
+    tests = data.get("tests") or []
+    if not isinstance(tests, list) or not tests:
+        return suggestions
+
+    has_python_imports = False
+    has_package_contents_site = False
+    for entry in tests:
+        if not isinstance(entry, dict):
+            continue
+        if isinstance(entry.get("python"), dict) and entry["python"].get("imports"):
+            has_python_imports = True
+        pc = entry.get("package_contents")
+        if isinstance(pc, dict) and pc.get("site_packages"):
+            has_package_contents_site = True
+
+    if has_python_imports or not has_package_contents_site:
+        return suggestions
+
+    # Look for justification comment anywhere in the file
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        text = ""
+    if _TEST_003_JUSTIFICATION_PREFIX in text:
+        return suggestions
+
+    suggestions.append(OptimizationSuggestion(
+        code="TEST-003",
+        message=(
+            "noarch:python recipe uses package_contents.site_packages instead "
+            "of the canonical python.imports test. conda-forge's web-service "
+            "review (the post-merge linter) will fire the CFEP-25 hint."
+        ),
+        suggestion=(
+            "Restore the canonical CFEP-25 triad:\n"
+            "tests:\n"
+            "  - python:\n"
+            "      imports: [<pkg>]\n"
+            "      pip_check: true\n"
+            "      python_version:\n"
+            "      - ${{ python_min }}.*\n"
+            "      - \"*\"\n"
+            "\n"
+            "If the test env genuinely cannot resolve the runtime stack "
+            "(Django web app needing DJANGO_SETTINGS_MODULE; ML benchmark "
+            "with unresolvable deps), keep package_contents and add an "
+            "inline justification comment:\n"
+            "# CFEP-25-justified: <one-line reason>\n"
+            "tests:\n"
+            "  - package_contents:\n"
+            "      site_packages: [<module>]"
+        ),
+        confidence=0.85,
+    ))
+    return suggestions
+
+
 def analyze_maintainers(data: Dict) -> List[OptimizationSuggestion]:
     """Check that recipe-maintainers is populated (MAINT-001).
 
@@ -680,13 +794,14 @@ def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
     all_suggestions.extend(analyze_maintainers(data))
     all_suggestions.extend(analyze_tests_section(data))
     all_suggestions.extend(analyze_noarch_python_test_matrix(data))
+    all_suggestions.extend(analyze_noarch_python_test_type(recipe_path, data))
     all_suggestions.extend(analyze_about_section(data))
     # Quality and style checks
     all_suggestions.extend(analyze_dependencies(data))
     all_suggestions.extend(analyze_noarch_python_constraints(data))
     all_suggestions.extend(analyze_pinning(data))
     all_suggestions.extend(analyze_build_script(recipe_path.parent))
-    all_suggestions.extend(analyze_selectors(data))
+    all_suggestions.extend(analyze_selectors(data, recipe_path))
 
     return all_suggestions
 

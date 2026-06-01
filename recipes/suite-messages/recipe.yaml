@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/messages is a deployed Django web application, not
+# a library. `pip install` ships the importable backend module
+# (messages-backend); running the service additionally requires Postgres,
+# Redis/Celery, OIDC provider, S3-compatible storage, SMTP, and frontend
+# build artifacts that this recipe does not install. conda-forge declines
+# web-application recipes as a matter of policy.
+#
+# Pinned to commit d91e97d8c2c4 on suitenumerique/messages (no PyPI release).
+# Build context: src/backend/ subdirectory (this recipe pip-installs from
+# there).
+#
+
+context:
+  version: "0.7.0"
+  commit: "d91e97d8c2c44d2b45c1ae70736805eec54cace9"
+  python_min: "3.14"
+
+package:
+  name: suite-messages
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/messages/archive/${{ commit }}.tar.gz
+    sha256: 7f9865bba474cdc9acdfb91924d4b171e0583796ba4b871be7576456c98be4df
+  # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
+build:
+  number: 0
+  noarch: python
+  script:
+    - |
+      cd src/backend
+      # Upstream pyproject.toml omits [tool.uv.build-backend].module-name.
+      # Inject it via sed so uv_build doesn't fall back to the
+      # distribution name (which doesn't match any source dir here).
+      sed -i '/^\[tool\.uv\.build-backend\]$/a module-name = [\"core\", \"e2e\", \"messages\"]' pyproject.toml
+      ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build
+  run:
+    - python >=${{ python_min }}
+    - boto3
+    - botocore
+    - celery
+    - cryptography
+    - defusedxml
+    - dj-database-url
+    - django
+    - django-celery-beat
+    - django-celery-results
+    - django-configurations
+    - django-cors-headers
+    - django-countries
+    - django-fernet-encrypted-fields
+    - django-filter
+    - django-lasuite
+    - django-prometheus
+    - django-redis
+    - django-storages
+    - django-timezone-field
+    - djangorestframework
+    - dkimpy
+    - dnspython
+    - drf-spectacular
+    - opensearch-py
+    - factory-boy
+    - flanker
+    - gunicorn
+    - icalendar
+    - jsonschema
+    - nested-multipart-parser
+    - openai
+    - psycopg
+    - pyjwt
+    - pysocks
+    - python-keycloak
+    - python-magic
+    - pyzstd
+    - redis-py
+    - requests
+    - sentry-sdk
+    - libpff-python
+    - url-normalize
+    - whitenoise
+    - prometheus-client
+
+# CFEP-25-justified: Django web-app backend — `import <module>` raises
+# ImproperlyConfigured without DJANGO_SETTINGS_MODULE, and the test env
+# can't resolve the full transitive Django-plugin chain. site_packages
+# presence is the testable invariant.
+tests:
+  - package_contents:
+      site_packages:
+        - messages
+
+about:
+  homepage: https://github.com/suitenumerique/messages
+  repository: https://github.com/suitenumerique/messages
+  summary: La Suite numérique messages backend (Django web application — local-only)
+  description: |
+    suitenumerique/messages backend. Distribution name "messages-backend".
+    This is a Django web service, not a library — installing this conda
+    package gives you the importable backend code; running the service
+    requires additional infrastructure (Postgres + Redis + Celery + OIDC +
+    S3 + SMTP + frontend).
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/st-home is a Next.js / React frontend application,
+# not a library. The npm package is declared `"private": true` (cannot be
+# published to npm). This conda recipe ships the SOURCE TREE under
+# ${PREFIX}/share/suite-st-home/. Running the app additionally requires:
+#   - npm install  (pulls dev dependencies)
+#   - npm run build  (next build / vite build)
+#   - a backend service (the corresponding suite-st-home Django app, if any)
+# conda-forge declines frontend-app recipes as a matter of policy.
+
+context:
+  version: "0.0.0"
+  commit: "bf9757fa2ce6ddf9f7746e4d78996e53739e1d3d"
+
+package:
+  name: suite-st-home
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/st-home/archive/${{ commit }}.tar.gz
+    sha256: 96ed7f1c4f84bd5acb79b010c0a8c19a8e46f22fe3de4119bf8f7c43749c7b43
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${{ PREFIX }}/share/suite-st-home"
+        - cp -R . "${{ PREFIX }}/share/suite-st-home/"
+
+requirements:
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - share/suite-st-home/package.json
+
+about:
+  homepage: https://github.com/suitenumerique/st-home
+  repository: https://github.com/suitenumerique/st-home
+  summary: Homepage of La Suite territoriale (Next.js source)
+  description: |
+    Frontend source tree for suitenumerique/st-home (Next.js app). Shipped
+    as a source-only package under ${PREFIX}/share/suite-st-home/. To run:
+    cd into that directory, then `npm install && npm run build`.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
