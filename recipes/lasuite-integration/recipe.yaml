@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: scoped npm library (@gouvfr-lasuite/integration) intended for bundler
+# use; zero runtime deps, ships precompiled artifacts only.
+
+context:
+  version: "1.0.3"
+
+package:
+  name: lasuite-integration
+  version: ${{ version }}
+
+source:
+  # npm tarball ships no LICENSE; fall back to org-level MIT from
+  # suitenumerique/.github (the integration GitHub repo declares no license).
+  - url: https://registry.npmjs.org/@gouvfr-lasuite/integration/-/integration-${{ version }}.tgz
+    sha256: 8ece117a563c0974802d5ee4e6249a54c3e435f422dced4bf728abbd9e6df01b
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+        - npm pack --ignore-scripts
+        - npm install -ddd --global --no-bin-links gouvfr-lasuite-integration-${{ version }}.tgz
+
+requirements:
+  build:
+    - nodejs >=20
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - lib/node_modules/@gouvfr-lasuite/integration/package.json
+
+about:
+  homepage: https://github.com/suitenumerique/integration
+  repository: https://github.com/suitenumerique/integration
+  summary: API and templates for La Suite numérique common UI integration
+  description: |
+    @gouvfr-lasuite/integration provides shared API stubs and templates used
+    across La Suite frontends to integrate with the common header, search,
+    and account-menu surface defined by the Suite design system.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

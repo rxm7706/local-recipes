@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/helpcenter is a Next.js / React frontend application,
+# not a library. The npm package is declared `"private": true` (cannot be
+# published to npm). This conda recipe ships the SOURCE TREE under
+# ${PREFIX}/share/suite-helpcenter/. Running the app additionally requires:
+#   - npm install  (pulls dev dependencies)
+#   - npm run build  (next build / vite build)
+#   - a backend service (the corresponding suite-helpcenter Django app, if any)
+# conda-forge declines frontend-app recipes as a matter of policy.
+
+context:
+  version: "0.0.0"
+  commit: "8a76bd67c2f4d59be18be497a8340f3e7b41843b"
+
+package:
+  name: suite-helpcenter
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/helpcenter/archive/${{ commit }}.tar.gz
+    sha256: 45937c59c2693213f3244e51e18a19e69fbae8ce79e4d6f23638e66db7ffe61c
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${{ PREFIX }}/share/suite-helpcenter"
+        - cp -R . "${{ PREFIX }}/share/suite-helpcenter/"
+
+requirements:
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - share/suite-helpcenter/package.json
+
+about:
+  homepage: https://github.com/suitenumerique/helpcenter
+  repository: https://github.com/suitenumerique/helpcenter
+  summary: DSFR helpcenter site generator for La Suite (Next.js source)
+  description: |
+    Frontend source tree for suitenumerique/helpcenter (Next.js app). Shipped
+    as a source-only package under ${PREFIX}/share/suite-helpcenter/. To run:
+    cd into that directory, then `npm install && npm run build`.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

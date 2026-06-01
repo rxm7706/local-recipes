@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/st-transfers is a deployed Django web application, not
+# a library. `pip install` ships the importable backend module
+# (transferts-backend); running the service additionally requires Postgres,
+# Redis/Celery, OIDC provider, S3-compatible storage, SMTP, and frontend
+# build artifacts that this recipe does not install. conda-forge declines
+# web-application recipes as a matter of policy.
+#
+# Pinned to commit 7354df74ba80 on suitenumerique/st-transfers (no PyPI release).
+# Build context: src/backend/ subdirectory (this recipe pip-installs from
+# there).
+
+context:
+  version: "0.1.0"
+  commit: "7354df74ba802f7f30fe930670c9905c6bdb2793"
+  python_min: "3.13"
+
+package:
+  name: suite-st-transfers
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/st-transfers/archive/${{ commit }}.tar.gz
+    sha256: b3c875af074e9287a40ef62714e47f369f3130b21597c1be2d845589ec7885bc
+  # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
+build:
+  number: 0
+  noarch: python
+  script:
+    - |
+      cd src/backend
+      # Upstream pyproject.toml omits [tool.uv.build-backend].module-name.
+      # Inject it via sed so uv_build doesn't fall back to the
+      # distribution name (which doesn't match any source dir here).
+      sed -i '/^\[tool\.uv\.build-backend\]$/a module-name = [\"core\", \"transferts\"]' pyproject.toml
+      ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build
+  run:
+    - python >=${{ python_min }}
+    - boto3
+    - botocore
+    - celery
+    - dj-database-url
+    - django
+    - django-celery-beat
+    - django-celery-results
+    - django-configurations
+    - django-cors-headers
+    - django-filter
+    - django-lasuite
+    - django-redis
+    - django-storages
+    - django-timezone-field
+    - djangorestframework
+    - drf-spectacular
+    - factory-boy
+    - gunicorn
+    - psycopg
+    - pyjwt
+    - redis-py
+    - requests
+    - sentry-sdk
+    - whitenoise
+
+# CFEP-25-justified: Django web-app backend — `import <module>` raises
+# ImproperlyConfigured without DJANGO_SETTINGS_MODULE, and the test env
+# can't resolve the full transitive Django-plugin chain. site_packages
+# presence is the testable invariant.
+tests:
+  - package_contents:
+      site_packages:
+        - transferts
+
+about:
+  homepage: https://github.com/suitenumerique/st-transfers
+  repository: https://github.com/suitenumerique/st-transfers
+  summary: La Suite numérique st-transfers backend (Django web application — local-only)
+  description: |
+    suitenumerique/st-transfers backend. Distribution name "transferts-backend".
+    This is a Django web service, not a library — installing this conda
+    package gives you the importable backend code; running the service
+    requires additional infrastructure (Postgres + Redis + Celery + OIDC +
+    S3 + SMTP + frontend).
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

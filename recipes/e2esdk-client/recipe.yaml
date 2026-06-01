@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: published under @socialgouv (the upstream author); suitenumerique/e2esdk
+# is a downstream fork. The recipe pulls from the canonical npm registry under
+# @socialgouv. Beta version (1.0.0-beta.1) — pre-release.
+
+context:
+  version: "1.0.0-beta.1"
+
+package:
+  name: e2esdk-client
+  version: ${{ version }}
+
+source:
+  # npm tarball ships no LICENSE; fetch from SocialGouv/e2esdk upstream.
+  - url: https://registry.npmjs.org/@socialgouv/e2esdk-client/-/e2esdk-client-${{ version }}.tgz
+    sha256: 027fd75c9e7701c76a4ae9e46e02d2757ed770c4964c5629cd52d63cc424fbd2
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        # NB: skip pnpm install --prod / pnpm-licenses — upstream depends on
+        # @socialgouv/e2esdk-config-typescript via workspace:* which isn't
+        # in the public registry. Ship LICENSE only.
+        - export npm_config_prefix="${PREFIX}"
+        - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+        - npm pack --ignore-scripts
+        - npm install -ddd --global --no-bin-links socialgouv-e2esdk-client-${{ version }}.tgz
+        - find ${PREFIX}/lib/node_modules -type d -name .bin -exec rm -rf {} + || true
+
+requirements:
+  build:
+    - nodejs >=20
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - lib/node_modules/@socialgouv/e2esdk-client/package.json
+
+about:
+  homepage: https://github.com/SocialGouv/e2esdk
+  repository: https://github.com/suitenumerique/e2esdk
+  summary: End-to-end encryption client SDK for web applications (socialgouv/e2esdk)
+  description: |
+    @socialgouv/e2esdk-client is the browser/Node client for the e2esdk
+    end-to-end encryption stack. suitenumerique/e2esdk is a downstream fork
+    tracking the upstream socialgouv release. The published npm package
+    comes from the upstream socialgouv namespace.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -101,6 +101,86 @@ class PackageInfo:
     # from requires_dist markers like `colorama ; sys_platform == 'win32'`.
 
 
+_PEP508_NAME_SPEC_RE = re.compile(
+    r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)"          # name
+    r"\s*(?:\[[^\]]*\])?"                         # [extras] discarded
+    r"\s*(?P<spec>[<>=!~][^;]*)?"                 # version spec (optional)
+)
+
+
+def _parse_requires_dist_specs(requires_dist: list[str]) -> list[str]:
+    """Parse PyPI requires_dist entries into conda specifier strings.
+
+    Preserves PEP 440 version ranges (``>=X.Y``, ``<Z``) and translates them
+    into the space-separated conda form (``- pkg >=X.Y,<Z``). Skips entries
+    that are extras-only (``; extra == ``) and applies these rules to env
+    markers:
+
+    * ``; extra == 'X'`` — always dropped (recipe ships the base extras only).
+    * ``; sys_platform == 'win32'`` (and friends) — currently dropped; the
+      caller already runs ``_classify_sys_platform_deps`` to produce a
+      ``win:`` selector dict. (Future: collapse to ``if: win then:`` block.)
+    * ``; python_version`` markers — kept; if multiple variants for the same
+      package appear, the loosest combined range wins (so the conda solver
+      can pick a version that works on every supported Python).
+
+    Each surviving entry is then routed through ``_pypi_to_conda_name``.
+    """
+    # First pass: collect (conda_name, spec_str) tuples, deduplicating by name.
+    by_name: dict[str, list[str]] = {}
+    for raw in requires_dist:
+        # Drop deps that ONLY exist under an extra (e.g. `pytest; extra == "dev"`)
+        if "extra ==" in raw:
+            continue
+        # Strip env marker tail for spec parsing; we already filtered extras.
+        # Drop sys_platform markers — handled separately by selectors.
+        before_semi = raw.split(";", 1)[0]
+        marker = raw[len(before_semi) + 1:] if ";" in raw else ""
+        if "sys_platform" in marker or "platform_system" in marker:
+            continue
+        m = _PEP508_NAME_SPEC_RE.match(before_semi)
+        if not m:
+            continue
+        pypi_name = m.group(1).lower()
+        # Skip degenerate matches that captured nothing
+        if not pypi_name:
+            continue
+        spec_raw = (m.group("spec") or "").strip()
+        # Normalize whitespace inside the spec — `>=5.0 , <6` → `>=5.0,<6`
+        spec = re.sub(r"\s+", "", spec_raw)
+        conda_name = _pypi_to_conda_name(pypi_name)
+        by_name.setdefault(conda_name, []).append(spec)
+
+    out: list[str] = []
+    for name, specs in by_name.items():
+        # Drop empty-string entries; if multiple non-empty specs, take the
+        # one with the LOWEST floor (loosest lower bound) so the solver can
+        # pick anything ≥ that. Heuristic but covers the common variant-
+        # marker case (`lxml >=4.8 (py310)` vs `lxml >=4.9 (py311)`).
+        non_empty = [s for s in specs if s]
+        if not non_empty:
+            out.append(name)
+            continue
+        if len(non_empty) == 1:
+            chosen = non_empty[0]
+        else:
+            # Pick the spec with the lowest >= bound (string-compare is OK
+            # for the common case of >=N.M.P where N is single-digit).
+            def _lo(s: str) -> tuple[int, ...]:
+                m = re.search(r">=([\d.]+)", s)
+                if not m:
+                    return (0,)
+                parts = m.group(1).split(".")
+                try:
+                    return tuple(int(p) for p in parts)
+                except ValueError:
+                    return (0,)
+            chosen = min(non_empty, key=_lo)
+        # Convert PEP 440 `>=X.Y` syntax to conda's ` >=X.Y` (space-separated)
+        out.append(f"{name} {chosen}" if chosen else name)
+    return out
+
+
 def determine_build_backend(requires_dist: list[str]) -> str:
     """Attempt to guess the build backend from requirements if possible, else default.
 
@@ -611,16 +691,15 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     # divergences (e.g. PyPI `redis` → conda-forge `redis-py`,
     # PyPI `soundfile` → conda-forge `pysoundfile`) are translated
     # automatically. Identity-mapped names pass through unchanged.
-    dependencies = []
+    #
+    # v8.10.1: capture PEP 508 version specifiers (>=X, <Y) so upstream's
+    # declared compatibility ranges flow into the recipe. Previously only
+    # the bare package name was extracted, producing `- django` instead of
+    # `- django >=5.0` — breaks downstream solvers and triggers reviewer
+    # comments. Also handles `; python_version >= 'X'` env markers by
+    # collapsing variant entries into a single conda spec (loosest range).
     requires_dist = info.get("requires_dist") or []
-    for req in requires_dist:
-        # Skip optional/extra dependencies
-        if "extra ==" in req or ";" in req:
-            continue
-        # Extract package name
-        match = re.match(r"^([a-zA-Z0-9_-]+)", req)
-        if match:
-            dependencies.append(_pypi_to_conda_name(match.group(1).lower()))
+    dependencies = _parse_requires_dist_specs(requires_dist)
 
     # v8.9.0: download sdist for authoritative metadata when source_url is available.
     # This unlocks: maturin detection from pyproject.toml [build-system].requires,

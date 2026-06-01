@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: scoped React component library (@openfun/cunningham-react), foundation
+# of the OpenFUN/La Suite design system. Bundler-driven consumption; ships
+# precompiled dist artifacts.
+
+context:
+  version: "4.0.0"
+
+package:
+  name: cunningham-react
+  version: ${{ version }}
+
+source:
+  # npm tarball ships no LICENSE; fetch openfun/cunningham's MIT.
+  - url: https://registry.npmjs.org/@openfun/cunningham-react/-/cunningham-react-${{ version }}.tgz
+    sha256: e0602dd0767523c45a99b06f9362a3c93951d64ab5bcaceb7af43513fe995c58
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        # NB: skip pnpm install --prod / pnpm-licenses — upstream pulls a
+        # private @openfun/typescript-configs dep that 404s from the public
+        # registry. Ship LICENSE only.
+        - export npm_config_prefix="${PREFIX}"
+        - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+        - npm pack --ignore-scripts
+        - npm install -ddd --global --no-bin-links openfun-cunningham-react-${{ version }}.tgz
+        - find ${PREFIX}/lib/node_modules -type d -name .bin -exec rm -rf {} + || true
+
+requirements:
+  build:
+    - nodejs >=20
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - lib/node_modules/@openfun/cunningham-react/package.json
+
+about:
+  homepage: https://github.com/openfun/cunningham
+  repository: https://github.com/suitenumerique/cunningham
+  summary: Cunningham React design system from OpenFUN, used by La Suite numérique
+  description: |
+    @openfun/cunningham-react is a React component library implementing the
+    Cunningham design system. It is the foundational UI layer for OpenFUN
+    products and La Suite numérique frontends (re-exported under
+    @gouvfr-lasuite/ui-kit). suitenumerique/cunningham is a curated mirror.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

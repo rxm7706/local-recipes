@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY SKELETON — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/containers is a fork of runpod/containers,
+# consisting only of Dockerfiles (no installable software). conda-forge
+# rejects Docker-recipe packaging as out of scope. This skeleton ships
+# the Dockerfile source tree under ${PREFIX}/share/suite-containers/
+# for local reference.
+
+context:
+  version: "0.0.0"
+  commit: "e75f960cc81e4d3942a9ea1fccc34ac682487b06"
+
+package:
+  name: suite-containers
+  version: ${{ version }}
+
+source:
+  url: https://github.com/suitenumerique/containers/archive/${{ commit }}.tar.gz
+  sha256: 5c46b81ca9fd0510c2beca24c63ad6fb1e3ffba86b8f4ed0458b9fb12748363c
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${PREFIX}/share/suite-containers"
+        - cp -R . "${PREFIX}/share/suite-containers/"
+
+requirements: {}
+
+tests:
+  - package_contents:
+      files:
+        - share/suite-containers/README.md
+
+about:
+  homepage: https://github.com/runpod/containers
+  repository: https://github.com/suitenumerique/containers
+  summary: Dockerfile collection for La Suite (fork of runpod/containers; source-only)
+  description: |
+    Dockerfile source tree for suitenumerique/containers (fork of
+    runpod/containers). Shipped under ${PREFIX}/share/suite-containers/.
+    Use as a reference for building La Suite-tuned RunPod images.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

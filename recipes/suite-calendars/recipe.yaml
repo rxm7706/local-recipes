@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/calendars is a deployed Django web application, not
+# a library. `pip install` ships the importable backend module
+# (calendars); running the service additionally requires Postgres,
+# Redis/Celery, OIDC provider, S3-compatible storage, SMTP, and frontend
+# build artifacts that this recipe does not install. conda-forge declines
+# web-application recipes as a matter of policy.
+#
+# Pinned to commit cf837936bcb7 on suitenumerique/calendars (no PyPI release).
+# Build context: src/backend/ subdirectory (this recipe pip-installs from
+# there).
+#
+
+context:
+  version: "0.10.1"
+  commit: "cf837936bcb774bc273dfe881758e1bf2ae7b127"
+  python_min: "3.13"
+
+package:
+  name: suite-calendars
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/calendars/archive/${{ commit }}.tar.gz
+    sha256: c6790ee67f68bf0e0c128b0f1d504b0dc57b6507b956e42f446cb40d6556500e
+  # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd src/backend && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - brotli
+    - dj-database-url
+    - caldav
+    - dramatiq
+    - django
+    - django-dramatiq
+    - django-configurations
+    - django-fernet-encrypted-fields
+    - django-cors-headers
+    - django-countries
+    - django-filter
+    - django-lasuite
+    - django-parler
+    - django-redis
+    - django-timezone-field
+    - djangorestframework
+    - djangorestframework-api-key
+    - drf-spectacular
+    - drf-standardized-errors
+    - factory-boy
+    - gunicorn
+    - jsonschema
+    - mozilla-django-oidc
+    - nested-multipart-parser
+    - pillow
+    - psycopg
+    - pyjwt
+    - redis-py
+    - requests
+    - sentry-sdk
+    - url-normalize
+    - whitenoise
+
+# CFEP-25-justified: Django web-app backend — `import <module>` raises
+# ImproperlyConfigured without DJANGO_SETTINGS_MODULE, and the test env
+# can't resolve the full transitive Django-plugin chain. site_packages
+# presence is the testable invariant.
+tests:
+  - package_contents:
+      site_packages:
+        - calendars
+
+about:
+  homepage: https://github.com/suitenumerique/calendars
+  repository: https://github.com/suitenumerique/calendars
+  summary: La Suite numérique calendars backend (Django web application — local-only)
+  description: |
+    suitenumerique/calendars backend. Distribution name "calendars".
+    This is a Django web service, not a library — installing this conda
+    package gives you the importable backend code; running the service
+    requires additional infrastructure (Postgres + Redis + Celery + OIDC +
+    S3 + SMTP + frontend).
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

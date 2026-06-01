@@ -178,6 +178,66 @@ The comment drives editor schema validation (VS Code, Helix, Zed, IntelliJ); `sc
 
 `meta.yaml` (v0 format) does **not** use the schema header — it predates the prefix-dev schema. Only apply this rule to `recipe.yaml`.
 
+### Canonical Test Block for `noarch: python` Recipes
+
+The canonical test for a `noarch: python` library recipe is the CFEP-25 triad:
+
+```yaml
+tests:
+  - python:
+      imports:
+        - <top_level_module>
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+```
+
+This is what conda-forge's web-service review (the post-merge linter) expects on every noarch:python recipe. A recipe that uses `package_contents.site_packages:` instead — even when the artifact is otherwise clean — **will be flagged** by the web service with the canonical hint:
+
+> noarch: python recipes should usually follow the syntax in our documentation for specifying the Python version. For the `tests[].python.python_version` or `tests[].requirements.run` section of the recipe, you should usually use the pin `python_version: ${{ python_min }}.*` or `python ${{ python_min }}.*` for the python_version or python entry.
+
+`conda-smithy lint` (the local linter the skill's `validate_recipe` runs) does **not** fire this; it's a web-service-only check. So a recipe can pass every local gate, build cleanly, install correctly — and still get a review comment from the web service.
+
+**Escape hatch — when `package_contents.site_packages:` is permitted:**
+
+Only when the test environment genuinely cannot exercise `python.imports`:
+
+- **Django web apps** — `import myapp.<module>` raises `ImproperlyConfigured` without `DJANGO_SETTINGS_MODULE`, and the test env's solver can't resolve the 40+ transitive Django-plugin chain even if settings were configured.
+- **ML benchmarks** with non-conda-forge deps (`mediapipe`, etc.) that the test env can't install.
+- **C extensions shipped under a `noarch: python` recipe** (legacy grayskull-emitted pattern) where the ABI-specific `.so` won't match the test env's Python.
+
+In these cases, document the reason **directly above the `tests:` block** with an inline comment whose first token is `# CFEP-25-justified:`:
+
+```yaml
+# CFEP-25-justified: Django web-app backend — import fails without
+# DJANGO_SETTINGS_MODULE configured.
+tests:
+  - package_contents:
+      site_packages:
+        - <module>
+```
+
+The `recipe_optimizer` check **`TEST-003`** flags any noarch:python recipe missing both `python.imports:` AND the `# CFEP-25-justified:` comment. This catches the same drift that a web-service review would catch — before submission.
+
+`recipe-generator.py` always emits the canonical CFEP-25 triad on the PyPI / grayskull path. Manual edits and remediation passes must not silently substitute `package_contents` without the justification comment.
+
+### Canonical License-File Placement
+
+Per [conda-forge.org/docs/maintainer/adding_pkgs/](https://conda-forge.org/docs/maintainer/adding_pkgs/) — "License files":
+
+> The license should only be shipped along with the recipe if there is no license file in the downloaded archive. If there is a license file in the archive, please set `license_file` to the path of the license file in the archive.
+
+This produces three patterns in order of preference:
+
+1. **Upstream archive ships LICENSE** (the common case) — use `license_file: LICENSE` and let rattler-build pick it up from the extracted source tarball. No file in the recipe directory, no secondary source.
+2. **Upstream archive does not ship LICENSE** — drop the `LICENSE` file **directly into `recipes/<name>/`** alongside `recipe.yaml`. Use `license_file: LICENSE`. rattler-build resolves the path relative to the recipe directory when the file is not found in the extracted source. Also notify the upstream developers that the license file is missing — shipping LICENSE in the recipe is a workaround, not a long-term solution.
+3. **Secondary `source.url` fetching LICENSE from GitHub** (the pattern this skill used pre-v8.10.0) — works but is **non-canonical**. Adds a brittle commit-pin + sha256 maintenance burden and looks unusual to reviewers. Convert to pattern (2) when you encounter it.
+
+When pattern (2) is used, ship the LICENSE in-recipe and remove the stale "upstream archive ships no LICENSE; secondary source pulled..." comment from `source:`. The `source:` block can return to its flat single-URL form.
+
+Why this matters: the conda-forge web-service review accepts any of the three patterns, but reviewers occasionally flag (3) ("can this be simplified?"). (1) is invisible; (2) reads as deliberate and gets a free conversational checkpoint with reviewers ("ship LICENSE in-recipe because upstream archive omits it").
+
 ### Rust Recipe Standards (CLI binaries — conda-forge 2026 canonical pattern)
 
 Every new Rust **CLI** recipe must adopt the canonical pattern documented at

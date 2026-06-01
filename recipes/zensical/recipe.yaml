@@ -13,10 +13,7 @@ package:
 source:
   - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
     sha256: e64ac31897602a6c4ab1d58d76386e0abc428539cbb2f7432111b6f8afa8f19e
-  # https://github.com/zensical/ui/issues/1
-  - url: https://raw.githubusercontent.com/zensical/ui/refs/heads/master/LICENSE
-    sha256: 58e749c581576a39a77e51af3f45bcfb93ce0fc3a983faa4b3fe7416bdfc14d4
-    file_name: LICENSE-zensical-ui
+  # https://github.com/zensical/ui/issues/1-zensical-ui
   - url: https://raw.githubusercontent.com/lucide-icons/lucide/refs/heads/main/LICENSE
     sha256: 3c57143f22dac950efebf84002e360bba5458c7b90fe583b0667aaaef1a7256e
     file_name: LICENSE-lucide

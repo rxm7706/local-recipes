@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/conversations is a deployed Django web application, not
+# a library. `pip install` ships the importable backend module
+# (conversations); running the service additionally requires Postgres,
+# Redis/Celery, OIDC provider, S3-compatible storage, SMTP, and frontend
+# build artifacts that this recipe does not install. conda-forge declines
+# web-application recipes as a matter of policy.
+#
+# Pinned to commit 119b814f5ad1 on suitenumerique/conversations (no PyPI release).
+# Build context: src/backend/ subdirectory (this recipe pip-installs from
+# there).
+#
+
+context:
+  version: "0.0.16"
+  commit: "119b814f5ad1e9d5e206527424913bbfeb9fa829"
+  python_min: "3.13"
+
+package:
+  name: suite-conversations
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/conversations/archive/${{ commit }}.tar.gz
+    sha256: 3f9fec046615179365c0d8d2cf34ec066bf92116289a26fcd6678c6f939f9380
+  # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd src/backend && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - deprecated
+    - beautifulsoup4
+    - boto3
+    - brotli
+    - django-configurations
+    - django-cors-headers
+    - django-countries
+    - django-filter
+    - django-lasuite
+    - django-parler
+    - django-pydantic-field
+    - django-redis
+    - django-storages
+    - django-timezone-field
+    - django
+    - djangorestframework
+    - drf-spectacular
+    - dockerflow
+    - easy-thumbnails
+    - factory-boy
+    - gunicorn
+    - jaraco.context
+    - jsonschema
+    - langfuse
+    - lxml
+    - markdown
+    - markitdown
+    - mozilla-django-oidc
+    - nested-multipart-parser
+    - posthog
+    - pydantic
+    - pydantic-ai-slim
+    - psycopg
+    - pyjwt
+    - python-magic
+    - redis-py
+    - requests
+    - semchunk
+    - sentry-sdk
+    - trafilatura
+    - uvicorn
+    - whitenoise
+    - pypdf
+    - odfdo
+    - django-solo
+    - tiktoken
+
+# CFEP-25-justified: Django web-app backend — `import <module>` raises
+# ImproperlyConfigured without DJANGO_SETTINGS_MODULE, and the test env
+# can't resolve the full transitive Django-plugin chain. site_packages
+# presence is the testable invariant.
+tests:
+  - package_contents:
+      site_packages:
+        - conversations
+
+about:
+  homepage: https://github.com/suitenumerique/conversations
+  repository: https://github.com/suitenumerique/conversations
+  summary: La Suite numérique conversations backend (Django web application — local-only)
+  description: |
+    suitenumerique/conversations backend. Distribution name "conversations".
+    This is a Django web service, not a library — installing this conda
+    package gives you the importable backend code; running the service
+    requires additional infrastructure (Postgres + Redis + Celery + OIDC +
+    S3 + SMTP + frontend).
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

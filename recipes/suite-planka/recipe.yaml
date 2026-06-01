@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY SKELETON — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/planka is an **ARCHIVED** fork of plankanban/planka.
+# conda-forge rejects fork recipes; archived forks are doubly inappropriate.
+# This skeleton exists for catalog completeness only — no installable
+# artifact is produced beyond a source-tree dump. Use the upstream
+# plankanban/planka project if you actually need Planka.
+
+context:
+  version: "0.0.0"
+  commit: "bcea2f3425de5b95f5cf30259bc41d060f20638d"
+
+package:
+  name: suite-planka
+  version: ${{ version }}
+
+source:
+  url: https://github.com/suitenumerique/planka/archive/${{ commit }}.tar.gz
+  sha256: 2711f24f42ead23ebbf7dd3b203f2b5f918d5f1087c6483ad9f59bc12bf03b60
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${PREFIX}/share/suite-planka"
+        - cp -R . "${PREFIX}/share/suite-planka/"
+
+requirements: {}
+
+tests:
+  - package_contents:
+      files:
+        - share/suite-planka/package.json
+
+about:
+  homepage: https://github.com/plankanban/planka
+  repository: https://github.com/suitenumerique/planka
+  summary: Archived fork of Planka (skeleton recipe; not a runnable artifact)
+  description: |
+    DO NOT USE. The suitenumerique/planka repository is archived. This
+    skeleton recipe is here only for catalog completeness. Install
+    upstream plankanban/planka directly if you need a working Planka.
+  license: AGPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
