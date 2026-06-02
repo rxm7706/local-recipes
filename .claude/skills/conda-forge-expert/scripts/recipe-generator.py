@@ -1506,20 +1506,6 @@ def _template_npm_source_url(url: str, version: str) -> str:
     return url
 
 
-def _template_npm_tarball_filename(filename: str, version: str) -> str:
-    """Replace the literal version in an ``npm pack`` output filename with
-    the ``${PKG_VERSION}`` env var (injected by rattler-build into build
-    scripts), so ``build.sh`` survives version bumps.
-
-    ``bmalph-2.11.0.tgz``           → ``bmalph-${PKG_VERSION}.tgz``
-    ``openai-codex-1.2.3.tgz``      → ``openai-codex-${PKG_VERSION}.tgz``
-    """
-    suffix = f"-{version}.tgz"
-    if filename.endswith(suffix):
-        return filename[: -len(suffix)] + "-${PKG_VERSION}.tgz"
-    return filename
-
-
 def fetch_npm_info(
     package_name: str,
     version: Optional[str] = None,
@@ -1696,99 +1682,91 @@ def fetch_npm_info(
     )
 
 
-def _build_sh_template(
-    info: NpmPackageInfo,
-    *,
-    prepare_fix: bool = False,
-    no_bin_links: bool = False,
-    third_party_licenses: bool = True,
-) -> str:
-    """Canonical ``build.sh`` for an npm conda-forge recipe.
-
-    Pattern source: PRs 28481 / 29752 / 32368 / 32549. ``npm pack`` then
-    ``npm install --global`` lets npm itself create the bin shims; we just
-    add the Windows ``.cmd`` wrapper for the noarch-on-Linux build host.
-    """
-    bin_lines = []
-    for command in sorted(info.bin_entries):
-        bin_lines += [
-            f'tee "${{PREFIX}}"/bin/{command}.cmd << EOF',
-            f"call %CONDA_PREFIX%\\bin\\node %CONDA_PREFIX%\\bin\\{command} %*",
-            "EOF",
-            "",
-        ]
-
-    no_bin_links_flag = " \\\n    --no-bin-links" if no_bin_links else ""
-    prepare_block = ""
-    if prepare_fix:
-        prepare_block = (
-            "# Strip upstream's prepare script — it can run husky/git hooks\n"
-            "# that aren't available in the conda-forge build sandbox.\n"
-            "mv package.json package.json.bak\n"
-            'jq \'del(.scripts.prepare)\' package.json.bak > package.json\n\n'
-        )
-
-    pnpm_block = ""
-    if third_party_licenses:
-        pnpm_block = (
-            "# Generate the third-party license disclaimer (required by conda-forge\n"
-            "# for npm packages with runtime dependencies — declared in\n"
-            "# `about.license_file`).\n"
-            "pnpm install\n"
-            "pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt\n\n"
-        )
-
-    return (
-        "#!/usr/bin/env bash\n"
-        "\n"
-        "set -o xtrace -o nounset -o pipefail -o errexit\n"
-        "\n"
-        f"{prepare_block}"
-        f"# Pack the package and install it globally into the conda prefix.\n"
-        f"# `npm install --global` creates the bin shims for us.\n"
-        f"npm pack --ignore-scripts\n"
-        f"npm install -ddd \\\n"
-        f"    --global \\\n"
-        f"    --build-from-source{no_bin_links_flag} \\\n"
-        f'    "${{SRC_DIR}}/{_template_npm_tarball_filename(info.tarball_filename, info.version)}"\n'
-        f"\n"
-        f"{pnpm_block}"
-        f"# Windows .cmd wrappers (the noarch build runs on Linux but the\n"
-        f"# package needs to be usable on Windows once installed).\n"
-        + "\n".join(bin_lines)
-    )
-
-
 def _inline_build_script(
     info: NpmPackageInfo,
     *,
     prepare_fix: bool,
     third_party_licenses: bool = True,
 ) -> list[str]:
-    """Return the lines for a v1 inline ``build.script:`` block (openspec-style)."""
-    cmds: list[str] = []
+    """Return the lines for a v1 inline ``build.script:`` block with per-platform
+    ``if: unix / then / else`` branches — the merged 2026 canonical pattern.
+
+    Why per-platform inline (not noarch:generic + build.sh):
+
+    - ``noarch: generic`` + ``npm install --global`` creates a ``bin/<cmd>``
+      symlink that fails rattler-build's Windows-portability check
+      (PR 33557 first attempt). Symlinks aren't portable to Windows.
+    - ``noarch: generic`` also triggers a Windows-platform build attempt in
+      staged-recipes CI; without a ``build.bat`` the build runs nothing,
+      generates no ``third-party-licenses.txt``, and rattler-build fails
+      with "No license files were copied" (PR 33557 first attempt).
+    - The merged openspec PR (#32368) sidesteps both by dropping
+      ``noarch: generic`` and letting each platform's npm produce native
+      bin shims (Unix: symlinks to .js files; Windows: ``.cmd`` wrappers).
+      bmalph PR #33557's second attempt confirmed the pattern works
+      cleanly on linux_64, osx_64, and win_64 simultaneously.
+
+    The tarball filename is jinja-templated (``${{ version }}``) — rattler-build
+    pre-renders it before the shell runs, so bumping ``context.version`` flows
+    through correctly (autotick-friendly).
+    """
+    templated_tarball = info.tarball_filename.replace(
+        f"-{info.version}.tgz", "-${{ version }}.tgz"
+    )
+
+    # ── Unix branch ────────────────────────────────────────────────────────
+    unix_cmds: list[str] = ["set -ex"]
     if prepare_fix:
-        cmds += [
+        unix_cmds += [
             "mv package.json package.json.bak",
             "jq 'del(.scripts.prepare)' package.json.bak > package.json",
         ]
-    templated_tarball = _template_npm_tarball_filename(info.tarball_filename, info.version)
-    cmds += [
+    if third_party_licenses:
+        unix_cmds.append("pnpm install --ignore-scripts")
+    unix_cmds += [
         "npm pack --ignore-scripts",
-        f'npm install -ddd --global --build-from-source "${{SRC_DIR}}/{templated_tarball}"',
+        f'npm install --global "${{SRC_DIR}}/{templated_tarball}"',
     ]
     if third_party_licenses:
-        cmds += [
-            "pnpm install",
-            "pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt",
-        ]
-    for command in sorted(info.bin_entries):
-        cmds.append(
-            f"tee \"${{PREFIX}}\"/bin/{command}.cmd <<< 'call %CONDA_PREFIX%\\bin\\node %CONDA_PREFIX%\\bin\\{command} %*'"
+        unix_cmds.append(
+            "pnpm-licenses generate-disclaimer --prod "
+            "--output-file=third-party-licenses.txt"
         )
-    out = ["  script:"]
-    for c in cmds:
-        out.append(f"    - {c}")
+
+    # ── Windows branch ─────────────────────────────────────────────────────
+    # `call` for every .cmd shim (G3 in SKILL.md / canonical_npm_recipe_pattern
+    # auto-memory). Explicit ERRORLEVEL guards after each step because
+    # rattler-build's cmd.exe runner doesn't propagate exit codes through
+    # chained `call`s the way bash's `set -e` does.
+    win_cmds: list[str] = []
+
+    def _emit_win(cmd: str) -> None:
+        win_cmds.append(cmd)
+        win_cmds.append("if %ERRORLEVEL% neq 0 exit 1")
+
+    if prepare_fix:
+        _emit_win("move package.json package.json.bak")
+        _emit_win('jq "del(.scripts.prepare)" package.json.bak > package.json')
+    if third_party_licenses:
+        _emit_win("call pnpm install --ignore-scripts")
+    _emit_win("call npm pack --ignore-scripts")
+    _emit_win(f"call npm install --global %SRC_DIR%/{templated_tarball}")
+    if third_party_licenses:
+        _emit_win(
+            "call pnpm-licenses generate-disclaimer --prod "
+            "--output-file=third-party-licenses.txt"
+        )
+
+    out: list[str] = [
+        "  script:",
+        "    - if: unix",
+        "      then:",
+    ]
+    for c in unix_cmds:
+        out.append(f"        - {c}")
+    out.append("      else:")
+    for c in win_cmds:
+        out.append(f"        - {c}")
     return out
 
 
@@ -1819,26 +1797,35 @@ def generate_npm_recipe_yaml(
     *,
     prepare_fix: bool = False,
     test_mode: str = "script",
-    inline_build: bool = False,
-    with_build_bat: bool = False,
-    no_bin_links: bool = False,
     third_party_licenses: bool = True,
     feedstock_mode: bool = False,
 ) -> Path:
     """Generate a v1 npm recipe matching the canonical conda-forge pattern.
 
-    Default output: ``<output_dir>/<conda-name>/{recipe.yaml, build.sh, conda-forge.yml}``.
-    ``build.bat`` is only written when ``with_build_bat=True`` (rare — noarch:generic
-    builds run on Linux only, so build.sh creates both unix and Windows wrappers).
-    ``inline_build=True`` puts the build script directly inside ``recipe.yaml`` and
-    skips the separate ``build.sh`` (openspec-style single-file recipe).
+    Default output: ``<output_dir>/<conda-name>/recipe.yaml`` only.
+    Per-platform inline build (openspec / PR #32368 + bmalph / PR #33557):
+    ``build.script:`` carries ``if: unix / then / else`` branches, no
+    ``noarch: generic``, no separate ``build.sh``, no per-recipe
+    ``conda-forge.yml``.
+
+    Why the per-platform inline pattern:
+
+    - The legacy "noarch:generic + standalone build.sh + tee Windows shim"
+      pattern fails on current staged-recipes CI: rattler-build's symlink
+      portability check rejects the ``bin/<cmd>`` symlink that npm install
+      --global creates on Unix; and the Windows leg of CI runs no build
+      script when there's no build.bat, dropping the LICENSE staging.
+    - The merged openspec recipe (#32368) uses per-platform inline build
+      with no ``noarch:`` and no standalone scripts. Each platform's native
+      ``npm install --global`` creates the right shape for that platform
+      (Unix symlinks, Windows .cmd wrappers).
 
     ``third_party_licenses=False`` produces the husky-style minimal recipe
     (PR 28481) for packages with no runtime dependencies — drops `pnpm` /
     `pnpm-licenses` from the build deps, makes ``license_file`` a single
     string, and skips the disclaimer step in the build script.
 
-    Pattern source: PRs 28481 / 29752 / 32368 / 32549.
+    Pattern source: PRs 28481 / 29752 / 32368 / 32549 / 33557 (bmalph).
     """
     pkg_dir = output_dir / info.conda_name
     pkg_dir.mkdir(parents=True, exist_ok=True)
@@ -1880,33 +1867,20 @@ def generate_npm_recipe_yaml(
         "",
     ]
 
-    # Native packages need platform-specific builds — drop noarch:generic.
-    # We still emit `build.script:` (inline) or rely on build.sh.
-    noarch_line = None if info.has_native_build else "  noarch: generic"
-
-    if inline_build:
-        build_block = [
-            "build:",
-            *_inline_build_script(
-                info,
-                prepare_fix=prepare_fix,
-                third_party_licenses=third_party_licenses,
-            ),
-            "  number: 0",
-        ]
-        if noarch_line:
-            build_block.append(noarch_line)
-        build_block.append("")
-        recipe_lines += build_block
-    else:
-        build_block = [
-            "build:",
-            "  number: 0",
-        ]
-        if noarch_line:
-            build_block.append(noarch_line)
-        build_block.append("")
-        recipe_lines += build_block
+    # Per-platform inline-build is the canonical pattern (openspec PR
+    # #32368 + bmalph PR #33557). Drop noarch:generic for ALL npm recipes —
+    # native packages were already per-platform; pure-JS packages now match.
+    build_block = [
+        "build:",
+        "  number: 0",
+        *_inline_build_script(
+            info,
+            prepare_fix=prepare_fix,
+            third_party_licenses=third_party_licenses,
+        ),
+        "",
+    ]
+    recipe_lines += build_block
 
     build_reqs = []
     # Native compilation: emit C/C++ compilers, stdlib, python (node-gyp uses
@@ -1923,10 +1897,16 @@ def generate_npm_recipe_yaml(
     build_reqs.append("    - nodejs")
     if third_party_licenses:
         build_reqs += ["    - pnpm", "    - pnpm-licenses"]
+    # ``host: nodejs`` matches the merged openspec PR #32368 + bmalph
+    # PR #33557 — the host env is the one rattler-build resolves test
+    # specs against, so without nodejs in host the cross-channel solver
+    # can miss the dep.
     recipe_lines += [
         "requirements:",
         "  build:",
         *build_reqs,
+        "  host:",
+        "    - nodejs",
         "  run:",
         "    - nodejs",
         "",
@@ -1973,63 +1953,26 @@ def generate_npm_recipe_yaml(
     recipe_path = pkg_dir / "recipe.yaml"
     recipe_path.write_text("\n".join(recipe_lines), encoding="utf-8")
 
-    # ── build.sh ──────────────────────────────────────────────────────────
-    if not inline_build:
-        (pkg_dir / "build.sh").write_text(
-            _build_sh_template(
-                info,
-                prepare_fix=prepare_fix,
-                no_bin_links=no_bin_links,
-                third_party_licenses=third_party_licenses,
-            ),
-            encoding="utf-8",
-        )
-
-    # ── build.bat (opt-in only) ───────────────────────────────────────────
-    # Most canonical npm recipes don't ship build.bat — noarch:generic builds
-    # run on Linux only, so build.sh handles both unix and Windows wrappers.
-    # claude-agent-acp (PR 32549) does ship one, but it's optional.
-    if with_build_bat and not inline_build:
-        bat_lines = [
-            "@echo on",
-            "",
-            "call npm pack --ignore-scripts || goto :error",
-            f"call npm install -ddd --global --build-from-source {'--no-bin-links ' if no_bin_links else ''}%SRC_DIR%\\{info.tarball_filename} || goto :error",
-            "",
-            ":: Generate third-party license disclaimer",
-            "call pnpm install || goto :error",
-            "call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt || goto :error",
-            "",
-            "goto :eof",
-            "",
-            ":error",
-            "echo Failed with error #%errorlevel%.",
-            "exit 1",
-        ]
-        (pkg_dir / "build.bat").write_text("\r\n".join(bat_lines), encoding="utf-8")
-
     # ── conda-forge.yml ───────────────────────────────────────────────────
+    # Per-recipe conda-forge.yml is only written when ``feedstock_mode=True``.
+    # The default per-platform inline build doesn't restrict noarch_platforms
+    # (it isn't noarch) and doesn't need shellcheck-on-build.sh (no
+    # standalone build.sh exists). Staged-recipes' defaults handle the rest.
     if feedstock_mode:
         # Full feedstock-style conda-forge.yml — for updating an existing
         # <pkg>-feedstock repo. Adds bot/github/output_validation/conda_build
-        # fields that only take effect post-merge. Mirrors the shape used by
-        # conda-forge/bmad-method-feedstock (/recipe/recipe.yaml's sibling).
+        # fields that only take effect post-merge.
         cfy_lines = [
             "# Feedstock-level conda-forge.yml. See:",
             "# https://conda-forge.org/docs/maintainer/conda_forge_yml",
             "conda_build_tool: rattler-build",
             "conda_install_tool: pixi",
-            "noarch_platforms:",
-            "  - linux_64",
-            "  - win_64",
             "github:",
             "  branch_name: main",
             "  tooling_branch_name: main",
             "conda_build:",
             "  error_overlinking: true",
             "conda_forge_output_validation: true",
-            "shellcheck:",
-            "  enabled: true",
             "bot:",
             "  automerge: true",
             "  inspection: hint-all",
@@ -2037,21 +1980,12 @@ def generate_npm_recipe_yaml(
             "  run_deps_from_wheel: true",
             "",
         ]
-    else:
-        # Staged-recipes-friendly subset — bot/github/etc. take effect only
-        # after staged-recipes merges into a feedstock anyway, so we keep
-        # the file minimal during PR review.
-        cfy_lines = [
-            "# Per-recipe conda-forge.yml — merged into the rendered feedstock",
-            "# at PR-merge time. See https://conda-forge.org/docs/maintainer/conda_forge_yml",
-            "conda_build_tool: rattler-build",
-            "noarch_platforms:",
-            "  - linux_64",
-            "shellcheck:",
-            "  enabled: true",
-            "",
-        ]
-    (pkg_dir / "conda-forge.yml").write_text("\n".join(cfy_lines), encoding="utf-8")
+        (pkg_dir / "conda-forge.yml").write_text(
+            "\n".join(cfy_lines), encoding="utf-8"
+        )
+    # Default (non-feedstock) mode emits no per-recipe conda-forge.yml —
+    # staged-recipes' defaults cover everything and per-platform builds
+    # don't need a noarch_platforms restriction.
 
     return recipe_path
 
@@ -2282,21 +2216,6 @@ Examples:
              "(claude-agent-acp pattern — for non-runnable CLIs).",
     )
     npm_parser.add_argument(
-        "--inline-build", action="store_true",
-        help="Embed build script in recipe.yaml's `build.script` block "
-             "(openspec pattern — single-file recipe; no separate build.sh).",
-    )
-    npm_parser.add_argument(
-        "--with-build-bat", action="store_true",
-        help="Also emit build.bat (rare — noarch:generic builds run on "
-             "Linux only, so build.sh handles both unix + Windows wrappers).",
-    )
-    npm_parser.add_argument(
-        "--no-bin-links", action="store_true",
-        help="Pass --no-bin-links to npm install (claude-agent-acp pattern — "
-             "use when bin entries are inside scoped paths).",
-    )
-    npm_parser.add_argument(
         "--no-third-party-licenses", action="store_true",
         dest="no_third_party_licenses",
         help="Skip pnpm-licenses third-party-licenses.txt generation (husky "
@@ -2461,9 +2380,6 @@ Examples:
                 output_dir,
                 prepare_fix=args.prepare_fix,
                 test_mode=args.test_mode,
-                inline_build=args.inline_build,
-                with_build_bat=args.with_build_bat,
-                no_bin_links=args.no_bin_links,
                 third_party_licenses=third_party_licenses,
                 feedstock_mode=args.feedstock_mode,
             )
@@ -2475,8 +2391,6 @@ Examples:
                     file=sys.stderr,
                 )
             extras = []
-            if args.inline_build:
-                extras.append("inline-build")
             if args.prepare_fix:
                 extras.append("prepare-fix")
             if args.test_mode != "script":

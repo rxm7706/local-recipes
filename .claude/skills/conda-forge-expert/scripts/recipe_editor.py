@@ -92,6 +92,12 @@ def execute_actions(recipe_path: Path, actions: List[Dict[str, Any]]) -> Dict[st
     yaml = YAML()
     yaml.preserve_quotes = True
     yaml.indent(mapping=2, sequence=4, offset=2)
+    # ruamel.yaml's default width=80 folds long strings into multi-line YAML
+    # (continuation indented one level deeper). The fold is semantically a
+    # no-op but cosmetically reviewers ask "why is this wrapped?". Bump to
+    # a value larger than any plausible command line so single-line items
+    # stay single-line through the load-modify-dump cycle.
+    yaml.width = 4096
 
     try:
         with open(recipe_path) as f:
