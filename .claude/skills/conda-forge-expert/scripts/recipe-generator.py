@@ -1484,6 +1484,42 @@ def _npm_tarball_filename(raw_name: str, version: str) -> str:
     return f"{raw_name}-{version}.tgz"
 
 
+def _template_npm_source_url(url: str, version: str) -> str:
+    """Replace the literal version in an npm-source tarball URL with the
+    ``${{ version }}`` template so autotick-style ``context.version`` bumps
+    actually flow through to ``source.url``.
+
+    Handles the two URL shapes the npm path emits:
+      - npm registry: ``.../-/<basename>-<version>.tgz``
+      - GitHub archive (when ``--source github``): ``.../v<version>.tar.gz``
+
+    Falls back to the literal URL if neither suffix matches — autotick will
+    still recompute the hash, but the URL will not auto-bump. Better than
+    silently mangling an unrecognized URL shape.
+    """
+    npm_suffix = f"-{version}.tgz"
+    if url.endswith(npm_suffix):
+        return url[: -len(npm_suffix)] + "-${{ version }}.tgz"
+    gh_suffix = f"v{version}.tar.gz"
+    if url.endswith(gh_suffix):
+        return url[: -len(gh_suffix)] + "v${{ version }}.tar.gz"
+    return url
+
+
+def _template_npm_tarball_filename(filename: str, version: str) -> str:
+    """Replace the literal version in an ``npm pack`` output filename with
+    the ``${PKG_VERSION}`` env var (injected by rattler-build into build
+    scripts), so ``build.sh`` survives version bumps.
+
+    ``bmalph-2.11.0.tgz``           → ``bmalph-${PKG_VERSION}.tgz``
+    ``openai-codex-1.2.3.tgz``      → ``openai-codex-${PKG_VERSION}.tgz``
+    """
+    suffix = f"-{version}.tgz"
+    if filename.endswith(suffix):
+        return filename[: -len(suffix)] + "-${PKG_VERSION}.tgz"
+    return filename
+
+
 def fetch_npm_info(
     package_name: str,
     version: Optional[str] = None,
@@ -1587,10 +1623,11 @@ def fetch_npm_info(
         prefer_github = False
 
     if prefer_github:
-        source_url = f"{repository_url}/archive/refs/tags/v{version}.tar.gz"
-        sha256, license_filename = _hash_and_inspect_tarball(source_url)
+        concrete_source_url = f"{repository_url}/archive/refs/tags/v{version}.tar.gz"
+        sha256, license_filename = _hash_and_inspect_tarball(concrete_source_url)
+        source_url = _template_npm_source_url(concrete_source_url, version)
     else:
-        source_url = tarball_url
+        source_url = _template_npm_source_url(tarball_url, version) if tarball_url else ""
         if tarball_url:
             sha256, license_filename = _hash_and_inspect_tarball(tarball_url)
         else:
@@ -1675,7 +1712,7 @@ def _build_sh_template(
     bin_lines = []
     for command in sorted(info.bin_entries):
         bin_lines += [
-            f"tee ${{PREFIX}}/bin/{command}.cmd << EOF",
+            f'tee "${{PREFIX}}"/bin/{command}.cmd << EOF',
             f"call %CONDA_PREFIX%\\bin\\node %CONDA_PREFIX%\\bin\\{command} %*",
             "EOF",
             "",
@@ -1713,7 +1750,7 @@ def _build_sh_template(
         f"npm install -ddd \\\n"
         f"    --global \\\n"
         f"    --build-from-source{no_bin_links_flag} \\\n"
-        f"    ${{SRC_DIR}}/{info.tarball_filename}\n"
+        f'    "${{SRC_DIR}}/{_template_npm_tarball_filename(info.tarball_filename, info.version)}"\n'
         f"\n"
         f"{pnpm_block}"
         f"# Windows .cmd wrappers (the noarch build runs on Linux but the\n"
@@ -1735,9 +1772,10 @@ def _inline_build_script(
             "mv package.json package.json.bak",
             "jq 'del(.scripts.prepare)' package.json.bak > package.json",
         ]
+    templated_tarball = _template_npm_tarball_filename(info.tarball_filename, info.version)
     cmds += [
         "npm pack --ignore-scripts",
-        f"npm install -ddd --global --build-from-source ${{SRC_DIR}}/{info.tarball_filename}",
+        f'npm install -ddd --global --build-from-source "${{SRC_DIR}}/{templated_tarball}"',
     ]
     if third_party_licenses:
         cmds += [
@@ -1746,7 +1784,7 @@ def _inline_build_script(
         ]
     for command in sorted(info.bin_entries):
         cmds.append(
-            f"tee ${{PREFIX}}/bin/{command}.cmd <<< 'call %CONDA_PREFIX%\\bin\\node %CONDA_PREFIX%\\bin\\{command} %*'"
+            f"tee \"${{PREFIX}}\"/bin/{command}.cmd <<< 'call %CONDA_PREFIX%\\bin\\node %CONDA_PREFIX%\\bin\\{command} %*'"
         )
     out = ["  script:"]
     for c in cmds:

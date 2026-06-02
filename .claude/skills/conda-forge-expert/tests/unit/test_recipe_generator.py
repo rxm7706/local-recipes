@@ -69,7 +69,7 @@ class TestRecipeGenerator:
             repository_url="https://github.com/example/example-pkg",
             tarball_url="https://registry.npmjs.org/example-pkg/-/example-pkg-1.0.0.tgz",
             tarball_filename="example-pkg-1.0.0.tgz",
-            source_url="https://registry.npmjs.org/example-pkg/-/example-pkg-1.0.0.tgz",
+            source_url="https://registry.npmjs.org/example-pkg/-/example-pkg-${{ version }}.tgz",
             sha256="a" * 64,
             bin_entries={"example-pkg": "bin/cli.js"},
             node_major=20,
@@ -119,8 +119,16 @@ class TestRecipeGenerator:
         assert "%CONDA_PREFIX%\\bin\\node" in build_sh
         # Manual cp -r staging is gone
         assert "cp -r ." not in build_sh
-        # Tarball filename embedded
-        assert info.tarball_filename in build_sh
+        # Tarball filename is templated with ${PKG_VERSION} (autotick-friendly)
+        assert "example-pkg-${PKG_VERSION}.tgz" in build_sh
+        # The literal version must NOT appear in the npm install line
+        assert "example-pkg-1.0.0.tgz" not in build_sh
+        # shellcheck SC2086: ${PREFIX} must be quoted in the tee command
+        # (conda-forge web-service review catches the unquoted form)
+        assert 'tee "${PREFIX}"/bin/' in build_sh
+        # Recipe source.url must also use ${{ version }}, not a literal
+        assert "example-pkg-${{ version }}.tgz" in content
+        assert "example-pkg-1.0.0.tgz" not in content
 
         # ── No build.bat by default (noarch builds run on Linux only) ────
         assert not (pkg_dir / "build.bat").exists()
@@ -147,6 +155,41 @@ class TestRecipeGenerator:
         # Tarball filename: scope + name (joined by `-`)
         assert mod._npm_tarball_filename("@openai/codex", "1.2.3") == "openai-codex-1.2.3.tgz"
         assert mod._npm_tarball_filename("husky", "9.1.5") == "husky-9.1.5.tgz"
+
+    def test_npm_url_and_filename_are_version_templated(self, load_module):
+        """source.url uses ``${{ version }}`` so autotick-style version
+        bumps actually re-render the URL; build.sh's tarball filename uses
+        ``${PKG_VERSION}`` so the bash script renders correctly at build
+        time. Without these, an autotick that updates only context.version
+        produces a silent mismatch (URL still points at the old version,
+        sha256 recomputes against the old tarball, recipe ships the wrong
+        version)."""
+        mod = load_module("recipe-generator.py")
+        # npm registry URL — scope-less
+        assert mod._template_npm_source_url(
+            "https://registry.npmjs.org/bmalph/-/bmalph-2.11.0.tgz", "2.11.0"
+        ) == "https://registry.npmjs.org/bmalph/-/bmalph-${{ version }}.tgz"
+        # npm registry URL — scoped (scope dropped in the filename)
+        assert mod._template_npm_source_url(
+            "https://registry.npmjs.org/@openai/codex/-/codex-1.2.3.tgz", "1.2.3"
+        ) == "https://registry.npmjs.org/@openai/codex/-/codex-${{ version }}.tgz"
+        # GitHub archive URL (the --source github path)
+        assert mod._template_npm_source_url(
+            "https://github.com/x/y/archive/refs/tags/v2.11.0.tar.gz", "2.11.0"
+        ) == "https://github.com/x/y/archive/refs/tags/v${{ version }}.tar.gz"
+        # Unrecognized URL shape falls back to literal — autotick's
+        # calculate_hash still works, but the URL won't auto-bump (the
+        # alternative is silently mangling).
+        weird = "https://example.com/no-version-here.tar.bz2"
+        assert mod._template_npm_source_url(weird, "1.0.0") == weird
+
+        # build.sh tarball filename: bash env var, not jinja
+        assert mod._template_npm_tarball_filename(
+            "bmalph-2.11.0.tgz", "2.11.0"
+        ) == "bmalph-${PKG_VERSION}.tgz"
+        assert mod._template_npm_tarball_filename(
+            "openai-codex-1.2.3.tgz", "1.2.3"
+        ) == "openai-codex-${PKG_VERSION}.tgz"
 
     def test_npm_test_mode_package_contents(self, load_module, tmp_path):
         """`--test-mode package_contents` should emit package_contents.bin block."""
