@@ -79,19 +79,20 @@ class TestRecipeGenerator:
         content = recipe_path.read_text()
         pkg_dir = recipe_path.parent
 
-        # ── Canonical recipe.yaml shape ─────────────────────────────────
+        # ── Canonical recipe.yaml shape (v8.11.0 per-platform inline) ───
         # Editor schema header lets VS Code/Helix validate live against
         # prefix-dev/recipe-format. Required on every emitted recipe.yaml.
         assert "# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json" in content
         # Reference PRs omit `schema_version`, but we emit it explicitly so our
         # validate_recipe.py is happy. Both forms are accepted by rattler-build.
         assert "schema_version: 1" in content
-        assert "noarch: generic" in content
+        # v8.11.0: per-platform builds; noarch:generic is gone.
+        assert "noarch: generic" not in content
         # Source URL embedded (npm registry by default)
         assert info.source_url in content
         # sha256 embedded
         assert "a" * 64 in content
-        # Bin command rendered into a flat script test (no if:unix/win branching)
+        # Bin command rendered into a flat script test
         assert "example-pkg --help" in content
         # Canonical pattern doesn't emit `.bat` test variants
         assert "example-pkg.bat --help" not in content
@@ -107,41 +108,37 @@ class TestRecipeGenerator:
         assert "__unix" not in content
         assert "__win" not in content
 
-        # ── build.sh follows canonical pattern ───────────────────────────
-        assert (pkg_dir / "build.sh").exists()
-        build_sh = (pkg_dir / "build.sh").read_text()
-        assert "npm pack --ignore-scripts" in build_sh
-        assert "npm install -ddd" in build_sh
-        assert "--global" in build_sh
-        assert "pnpm-licenses generate-disclaimer" in build_sh
-        assert "third-party-licenses.txt" in build_sh
-        # The Windows .cmd wrapper uses the canonical form
-        assert "%CONDA_PREFIX%\\bin\\node" in build_sh
-        # Manual cp -r staging is gone
-        assert "cp -r ." not in build_sh
-        # Tarball filename is templated with ${PKG_VERSION} (autotick-friendly)
-        assert "example-pkg-${PKG_VERSION}.tgz" in build_sh
-        # The literal version must NOT appear in the npm install line
-        assert "example-pkg-1.0.0.tgz" not in build_sh
-        # shellcheck SC2086: ${PREFIX} must be quoted in the tee command
-        # (conda-forge web-service review catches the unquoted form)
-        assert 'tee "${PREFIX}"/bin/' in build_sh
+        # ── Inline build.script with per-platform branches ───────────────
+        # The v8.11.0 canonical pattern (openspec PR #32368 + bmalph PR #33557).
+        assert "script:" in content
+        assert "if: unix" in content
+        assert "then:" in content
+        assert "else:" in content
+        # Unix branch
+        assert "set -ex" in content
+        assert "pnpm install --ignore-scripts" in content
+        assert "npm pack --ignore-scripts" in content
+        assert 'npm install --global "${SRC_DIR}/example-pkg-${{ version }}.tgz"' in content
+        assert "pnpm-licenses generate-disclaimer --prod" in content
+        # Windows branch — `call` + ERRORLEVEL guards
+        assert "call pnpm install --ignore-scripts" in content
+        assert "call npm pack --ignore-scripts" in content
+        assert "call npm install --global %SRC_DIR%/example-pkg-${{ version }}.tgz" in content
+        assert "call pnpm-licenses generate-disclaimer --prod" in content
+        assert "if %ERRORLEVEL% neq 0 exit 1" in content
+        # The literal version must NOT appear in any install line
+        assert "example-pkg-1.0.0.tgz" not in content
         # Recipe source.url must also use ${{ version }}, not a literal
         assert "example-pkg-${{ version }}.tgz" in content
-        assert "example-pkg-1.0.0.tgz" not in content
 
-        # ── No build.bat by default (noarch builds run on Linux only) ────
+        # ── No standalone build files in the v8.11.0 default ──────────────
+        assert not (pkg_dir / "build.sh").exists()
         assert not (pkg_dir / "build.bat").exists()
         # Critical: must NOT use v0's bld.bat
         assert not (pkg_dir / "bld.bat").exists()
-
-        # ── conda-forge.yml emitted ──────────────────────────────────────
-        cfy = pkg_dir / "conda-forge.yml"
-        assert cfy.exists()
-        cfy_text = cfy.read_text()
-        assert "conda_build_tool: rattler-build" in cfy_text
-        assert "noarch_platforms" in cfy_text
-        assert "shellcheck" in cfy_text
+        # No per-recipe conda-forge.yml — staged-recipes defaults cover it
+        # and noarch_platforms is not relevant (the recipe isn't noarch).
+        assert not (pkg_dir / "conda-forge.yml").exists()
 
     def test_npm_scoped_package_handling(self, load_module):
         """Scoped npm names (`@scope/name`) → conda name `name`, tarball
@@ -156,14 +153,12 @@ class TestRecipeGenerator:
         assert mod._npm_tarball_filename("@openai/codex", "1.2.3") == "openai-codex-1.2.3.tgz"
         assert mod._npm_tarball_filename("husky", "9.1.5") == "husky-9.1.5.tgz"
 
-    def test_npm_url_and_filename_are_version_templated(self, load_module):
+    def test_npm_source_url_is_version_templated(self, load_module):
         """source.url uses ``${{ version }}`` so autotick-style version
-        bumps actually re-render the URL; build.sh's tarball filename uses
-        ``${PKG_VERSION}`` so the bash script renders correctly at build
-        time. Without these, an autotick that updates only context.version
-        produces a silent mismatch (URL still points at the old version,
-        sha256 recomputes against the old tarball, recipe ships the wrong
-        version)."""
+        bumps actually re-render the URL. Without this, an autotick that
+        updates only context.version produces a silent mismatch (URL still
+        points at the old version, sha256 recomputes against the old
+        tarball, recipe ships the wrong version)."""
         mod = load_module("recipe-generator.py")
         # npm registry URL — scope-less
         assert mod._template_npm_source_url(
@@ -182,14 +177,6 @@ class TestRecipeGenerator:
         # alternative is silently mangling).
         weird = "https://example.com/no-version-here.tar.bz2"
         assert mod._template_npm_source_url(weird, "1.0.0") == weird
-
-        # build.sh tarball filename: bash env var, not jinja
-        assert mod._template_npm_tarball_filename(
-            "bmalph-2.11.0.tgz", "2.11.0"
-        ) == "bmalph-${PKG_VERSION}.tgz"
-        assert mod._template_npm_tarball_filename(
-            "openai-codex-1.2.3.tgz", "1.2.3"
-        ) == "openai-codex-${PKG_VERSION}.tgz"
 
     def test_npm_test_mode_package_contents(self, load_module, tmp_path):
         """`--test-mode package_contents` should emit package_contents.bin block."""
@@ -211,9 +198,9 @@ class TestRecipeGenerator:
         # No script: --help block
         assert "thing --help" not in content
 
-    def test_npm_inline_build(self, load_module, tmp_path):
-        """`--inline-build` should embed build commands in recipe.yaml and
-        skip the separate build.sh."""
+    def test_npm_inline_build_default(self, load_module, tmp_path):
+        """Default generator output (no flags) emits the inline build
+        commands in recipe.yaml and no separate build.sh."""
         mod = load_module("recipe-generator.py")
         info = mod.NpmPackageInfo(
             raw_name="thing", conda_name="thing", version="1.0.0",
@@ -223,19 +210,18 @@ class TestRecipeGenerator:
             sha256="0" * 64,
             bin_entries={"thing": "cli.js"},
         )
-        recipe_path = mod.generate_npm_recipe_yaml(
-            info, tmp_path, inline_build=True
-        )
+        recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path)
         content = recipe_path.read_text()
         # build.script: block embedded
         assert "  script:" in content
         assert "npm pack --ignore-scripts" in content
-        assert "pnpm install" in content
+        assert "pnpm install --ignore-scripts" in content
         # No separate build.sh
         assert not (recipe_path.parent / "build.sh").exists()
 
     def test_npm_prepare_fix(self, load_module, tmp_path):
-        """`--prepare-fix` injects the jq prepare-script-strip step."""
+        """`--prepare-fix` injects the jq prepare-script-strip step into
+        both the Unix and Windows branches of the inline build script."""
         mod = load_module("recipe-generator.py")
         info = mod.NpmPackageInfo(
             raw_name="thing", conda_name="thing", version="1.0.0",
@@ -245,10 +231,14 @@ class TestRecipeGenerator:
             sha256="0" * 64,
             bin_entries={"thing": "cli.js"},
         )
-        mod.generate_npm_recipe_yaml(info, tmp_path, prepare_fix=True)
-        build_sh = (tmp_path / "thing" / "build.sh").read_text()
-        assert "jq" in build_sh
-        assert "del(.scripts.prepare)" in build_sh
+        recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path, prepare_fix=True)
+        content = recipe_path.read_text()
+        # jq strip lands in the inline script (both branches)
+        assert "jq" in content
+        assert "del(.scripts.prepare)" in content
+        # Unix branch uses mv; Windows branch uses move
+        assert "mv package.json package.json.bak" in content
+        assert "move package.json package.json.bak" in content
 
     def test_npm_native_build_emits_compilers_and_drops_noarch(
         self, load_module, tmp_path,
@@ -282,11 +272,11 @@ class TestRecipeGenerator:
         data = yaml.safe_load(content)
         assert data["requirements"]["run"] == ["nodejs"]
 
-    def test_npm_pure_js_keeps_noarch_generic(
+    def test_npm_pure_js_omits_noarch_and_compilers(
         self, load_module, tmp_path,
     ):
-        """Pure-JS packages (no native compilation) keep noarch:generic and
-        do NOT emit compiler deps."""
+        """Pure-JS packages (no native compilation) in v8.11.0:
+        per-platform inline build, no noarch:generic, no compiler deps."""
         mod = load_module("recipe-generator.py")
         info = mod.NpmPackageInfo(
             raw_name="husky", conda_name="husky", version="9.1.7",
@@ -300,7 +290,13 @@ class TestRecipeGenerator:
         )
         recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path)
         content = recipe_path.read_text()
-        assert "noarch: generic" in content
+        # Per-platform inline build — no noarch:generic.
+        assert "noarch: generic" not in content
+        # Inline if:unix/then/else block is present.
+        assert "if: unix" in content
+        assert "then:" in content
+        assert "else:" in content
+        # Pure-JS — no compiler deps emitted.
         assert "compiler('c')" not in content
         assert "stdlib('c')" not in content
 
@@ -333,18 +329,21 @@ class TestRecipeGenerator:
             "conda_install_tool: pixi",
         ):
             assert field_name in cfy, f"missing {field_name} in feedstock conda-forge.yml"
-        # Staged-recipes-friendly fields still present
         assert "conda_build_tool: rattler-build" in cfy
-        assert "shellcheck:" in cfy
-        # Both linux_64 AND win_64 in feedstock mode
-        assert "- linux_64" in cfy
-        assert "- win_64" in cfy
+        # v8.11.0: feedstock cfy no longer carries noarch_platforms or a
+        # shellcheck-enable (the new default doesn't ship build.sh and isn't
+        # noarch). If the user opts into the legacy standalone-build path,
+        # the staged-recipes cfy is emitted with those keys instead.
+        assert "noarch_platforms" not in cfy
+        assert "shellcheck:" not in cfy
 
-    def test_npm_default_mode_omits_feedstock_only_fields(
+    def test_npm_default_mode_omits_conda_forge_yml(
         self, load_module, tmp_path,
     ):
-        """Default (non-feedstock) mode keeps the conda-forge.yml minimal —
-        bot/github/output_validation are feedstock-only and shouldn't appear."""
+        """v8.11.0 default (per-platform inline) mode emits NO per-recipe
+        conda-forge.yml — staged-recipes defaults cover everything and the
+        legacy ``noarch_platforms: [linux_64]`` restriction is irrelevant
+        because the recipe isn't noarch."""
         mod = load_module("recipe-generator.py")
         info = mod.NpmPackageInfo(
             raw_name="thing", conda_name="thing", version="1.0.0",
@@ -356,36 +355,14 @@ class TestRecipeGenerator:
             bin_entries={"thing": "cli.js"},
         )
         recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path)
-        cfy = (recipe_path.parent / "conda-forge.yml").read_text()
-        # Feedstock-only fields must NOT appear
-        for forbidden in ("bot:", "automerge:", "github:", "branch_name:",
-                          "conda_forge_output_validation",
-                          "conda_install_tool:"):
-            assert forbidden not in cfy, (
-                f"feedstock-only field {forbidden!r} leaked into "
-                f"staged-recipes-friendly conda-forge.yml"
-            )
-
-    def test_npm_with_build_bat_opt_in(self, load_module, tmp_path):
-        """`--with-build-bat` opt-in should produce a build.bat file."""
-        mod = load_module("recipe-generator.py")
-        info = mod.NpmPackageInfo(
-            raw_name="thing", conda_name="thing", version="1.0.0",
-            tarball_url="https://example.com/thing-1.0.0.tgz",
-            tarball_filename="thing-1.0.0.tgz",
-            source_url="https://example.com/thing-1.0.0.tgz",
-            sha256="0" * 64,
-            bin_entries={"thing": "cli.js"},
-        )
-        mod.generate_npm_recipe_yaml(info, tmp_path, with_build_bat=True)
-        assert (tmp_path / "thing" / "build.bat").exists()
+        assert not (recipe_path.parent / "conda-forge.yml").exists()
 
     def test_npm_no_third_party_licenses_zero_dep_pattern(
         self, load_module, tmp_path
     ):
         """`third_party_licenses=False` produces the husky-style zero-dep
         recipe: no pnpm/pnpm-licenses build deps, license_file as a single
-        string, and no pnpm-licenses block in build.sh."""
+        string, and no pnpm-licenses step in the inline build script."""
         mod = load_module("recipe-generator.py")
         info = mod.NpmPackageInfo(
             raw_name="husky", conda_name="husky", version="9.1.5",
@@ -406,14 +383,14 @@ class TestRecipeGenerator:
         # license_file becomes a single string
         assert "license_file: LICENSE" in content
         assert "third-party-licenses.txt" not in content
-        # build.sh omits the pnpm-licenses block
-        build_sh = (recipe_path.parent / "build.sh").read_text()
-        assert "pnpm install" not in build_sh
-        assert "pnpm-licenses" not in build_sh
-        assert "third-party-licenses.txt" not in build_sh
-        # But still does the `npm pack` + `npm install --global` + Windows wrapper
-        assert "npm pack --ignore-scripts" in build_sh
-        assert "%CONDA_PREFIX%\\bin\\node" in build_sh
+        # Inline script omits the pnpm-licenses block on BOTH branches
+        assert "pnpm install" not in content
+        assert "pnpm-licenses" not in content
+        # But still does the `npm pack` + `npm install --global` on both branches
+        assert "npm pack --ignore-scripts" in content
+        assert "call npm pack --ignore-scripts" in content
+        assert 'npm install --global "${SRC_DIR}/husky-${{ version }}.tgz"' in content
+        assert "call npm install --global %SRC_DIR%/husky-${{ version }}.tgz" in content
 
     def test_extract_readme_paragraph_skips_images_and_badges(self, load_module):
         """Description cleanup: skip image/badge lines, take first prose paragraph."""
@@ -620,11 +597,11 @@ class TestRecipeGenerator:
         assert license_value == ""
         assert warning is None
 
-    def test_npm_no_third_party_licenses_inline_build(
+    def test_npm_no_third_party_licenses_inline_skips_pnpm_licenses(
         self, load_module, tmp_path
     ):
-        """Combining --no-third-party-licenses with --inline-build also
-        skips the pnpm-licenses commands inside the inline script."""
+        """``third_party_licenses=False`` skips the pnpm-licenses commands
+        inside the inline build script (both unix and Windows branches)."""
         mod = load_module("recipe-generator.py")
         info = mod.NpmPackageInfo(
             raw_name="husky", conda_name="husky", version="9.1.5",
@@ -636,7 +613,7 @@ class TestRecipeGenerator:
             bin_entries={"husky": "bin.js"},
         )
         recipe_path = mod.generate_npm_recipe_yaml(
-            info, tmp_path, inline_build=True, third_party_licenses=False,
+            info, tmp_path, third_party_licenses=False,
         )
         content = recipe_path.read_text()
         assert "  script:" in content
@@ -662,7 +639,12 @@ class TestRecipeGenerator:
         # Canonical recipes use a literal package.name (not a context substitution
         # via ${{ name }}, since context.name is omitted from the canonical shape).
         assert data["package"]["name"] == "x"
-        assert data["build"]["noarch"] == "generic"
+        # v8.11.0: per-platform inline build, no noarch:generic.
+        assert "noarch" not in data["build"]
+        # The inline build.script carries an if/then/else mapping.
+        script = data["build"]["script"]
+        assert isinstance(script, list)
+        assert any(isinstance(s, dict) and s.get("if") == "unix" for s in script)
 
     @pytest.mark.network
     def test_npm_live_against_husky(self, script_runner, tmp_path):
@@ -681,7 +663,8 @@ class TestRecipeGenerator:
         assert recipe.exists()
         data = yaml.safe_load(recipe.read_text())
         assert data["package"]["name"] == "husky"
-        assert data["build"]["noarch"] == "generic"
+        # v8.11.0: per-platform inline build, no noarch:generic.
+        assert "noarch" not in data["build"]
         # Source URL is npm registry (not GitHub)
         assert "registry.npmjs.org" in data["source"]["url"]
         # Husky-style minimal: nodejs only, no pnpm/pnpm-licenses
@@ -706,11 +689,13 @@ class TestRecipeGenerator:
         # Conda name is the unscoped basename
         recipe = tmp_path / "codex" / "recipe.yaml"
         assert recipe.exists()
-        # build.sh references the scope-prefixed tarball filename
-        build_sh = (tmp_path / "codex" / "build.sh").read_text()
-        assert "openai-codex" in build_sh
-        # And contains the prepare-fix workaround
-        assert "del(.scripts.prepare)" in build_sh
+        content = recipe.read_text()
+        # v8.11.0: inline script references the scope-prefixed tarball
+        # filename, NOT a separate build.sh.
+        assert not (tmp_path / "codex" / "build.sh").exists()
+        assert "openai-codex" in content
+        # And the prepare-fix workaround lands inside the inline script.
+        assert "del(.scripts.prepare)" in content
 
     def test_template_python_noarch(self, script_runner, tmp_path):
         rc, out, err = script_runner(

@@ -14,13 +14,31 @@ source:
 
 build:
   number: 0
-  noarch: generic
+  script:
+    - if: unix
+      then:
+        - set -ex
+        - pnpm install --ignore-scripts
+        - npm pack --ignore-scripts
+        - npm install --global "${SRC_DIR}/bmalph-${{ version }}.tgz"
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+      else:
+        - call pnpm install --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --global %SRC_DIR%/bmalph-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
 
 requirements:
   build:
     - nodejs
     - pnpm
     - pnpm-licenses
+  host:
+    - nodejs
   run:
     - nodejs
 
@@ -33,8 +51,7 @@ about:
   license_file:
     - LICENSE
     - third-party-licenses.txt
-  summary: Unified AI Development Framework - BMAD phases with Ralph execution 
-    loop
+  summary: Unified AI Development Framework - BMAD phases with Ralph execution loop
   description: |
     [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) planning + [Ralph](https://github.com/snarktank/ralph) autonomous implementation, wired through platform-specific instructions, skills, and command indexes.
   homepage: https://github.com/LarsCowe/bmalph
