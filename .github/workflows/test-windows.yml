@@ -59,7 +59,7 @@ jobs:
       recipes: ${{ steps.detect.outputs.recipes }}
       has_recipes: ${{ steps.detect.outputs.has_recipes }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -114,12 +114,12 @@ jobs:
       PYTHONUNBUFFERED: 1
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Miniforge
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
           conda-solver: libmamba
@@ -195,7 +195,7 @@ jobs:
           conda-index "${CONDA_BLD_PATH}" || echo "Warning: conda-index failed, but build artifacts are available"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: win-64-${{ matrix.recipe }}

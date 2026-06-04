@@ -76,7 +76,7 @@ jobs:
       run_windows: ${{ steps.platforms.outputs.windows }}
       run_macos: ${{ steps.platforms.outputs.macos }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

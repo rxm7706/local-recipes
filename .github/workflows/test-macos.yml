@@ -87,7 +87,7 @@ jobs:
       recipes: ${{ steps.detect.outputs.recipes }}
       has_recipes: ${{ steps.detect.outputs.has_recipes }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -138,10 +138,10 @@ jobs:
       MACOSX_SDK_VERSION: ${{ github.event.inputs.osx_64_sdk_version || '' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Miniforge
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
           conda-solver: libmamba
@@ -239,7 +239,7 @@ jobs:
           fi
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: osx-64-${{ matrix.recipe }}
@@ -266,10 +266,10 @@ jobs:
       MACOSX_SDK_VERSION: ${{ github.event.inputs.osx_arm64_sdk_version || '' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Miniforge
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
           conda-solver: libmamba
@@ -343,7 +343,7 @@ jobs:
           fi
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: osx-arm64-${{ matrix.recipe }}
