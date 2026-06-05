@@ -43,6 +43,7 @@ tests:
       - pip check
     requirements:
       run:
+        - python ${{ python_min }}.*
         - pip
         - fastapi >=0.115.12
 
