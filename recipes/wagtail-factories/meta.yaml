@@ -1,5 +1,6 @@
 {% set name = "wagtail-factories" %}
-{% set version = "4.1.0" %}
+{% set version = "4.5.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +8,7 @@ package:
 
 source:
   url: https://github.com/wagtail/wagtail-factories/archive/v{{ version }}.tar.gz
-  sha256: 397e3c7dee90eb7295536959f912717c23be9ff3f1f3d6af0335e86d91026f2b
+  sha256: 1676550835d2179e9085e09712bcc1c0bf42c33c8b9cfed5ab9537eda0ccc464
 
 build:
   noarch: python
@@ -16,12 +17,14 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
-    - factory_boy >=3.2
-    - wagtail >=4.1
+    - django
+    - python >={{ python_min }}
+    - factory_boy >=3.2,<4
+    - wagtail >=7.0
 
 test:
   source_files:
@@ -33,16 +36,17 @@ test:
     - pip check
   requires:
     - pip
-    - factory_boy >=3.2
-    - wagtail >=4.1
+    - factory_boy >=3.2,<4
+    - wagtail >=7.0
     - djangorestframework
     - django-taggit
-    - pytest ==6.2.5
-    - pytest-django ==4.5.0
-    - pytest-cov ==3.0.0
-    - pytest-pythonpath ==0.7.3
-    - coverage ==6.0
-    - ruff ==0.2.1
+    - python {{ python_min }}
+    - pytest ==9.0.3
+    - pytest-django ==4.12.0
+    - pytest-cov ==7.1.0
+    - coverage ==7.13.5
+    - ruff ==0.15.12
+    - tox ==4.32.0
 
 about:
   home: https://github.com/wagtail/wagtail-factories/
