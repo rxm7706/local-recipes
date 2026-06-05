@@ -2,17 +2,16 @@
 schema_version: 1
 
 context:
-  name: ag-ui-langgraph
-  version: "0.0.37"
+  version: "0.0.40"
   python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: ag-ui-langgraph
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: d5708caa69ac2da18d5aa255ae6109238a8bcba4a9720f906ac3c9222aacb5ce
+  url: https://pypi.org/packages/source/a/ag-ui-langgraph/ag_ui_langgraph-${{ version }}.tar.gz
+  sha256: 11b009920b79fe97162f53777ecd7860c8a0999479d55f5d85d8da979d5be28f
 
 build:
   number: 0
@@ -30,7 +29,7 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - ag-ui-protocol >=0.1.15
-    - ag-ui-a2ui-toolkit >=0.0.1
+    - ag-ui-a2ui-toolkit >=0.0.2
     - langchain >=1.2.0
     - langchain-core >=0.3.0
     - langgraph >=0.3.25,<2

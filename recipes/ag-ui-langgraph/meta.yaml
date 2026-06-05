@@ -1,14 +1,14 @@
 {% set name = "ag-ui-langgraph" %}
-{% set version = "0.0.34" %}
+{% set version = "0.0.40" %}
 {% set python_min = "3.10" %}
 
 package:
-  name: {{ name|lower }}
+  name: ag-ui-langgraph
   version: {{ version }}
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/ag_ui_langgraph-{{ version }}.tar.gz
-  sha256: 755323d5256407ce62d6b9af447a9f1250554e7056c5e2115027a4174a736c41
+  sha256: 11b009920b79fe97162f53777ecd7860c8a0999479d55f5d85d8da979d5be28f
 
 build:
   entry_points:
@@ -24,7 +24,8 @@ requirements:
     - pip
   run:
     - python >={{ python_min }}
-    - ag-ui-protocol >=0.1.10
+    - ag-ui-protocol >=0.1.15
+    - ag-ui-a2ui-toolkit >=0.0.1
     - langchain >=1.2.0
     - langchain-core >=0.3.0
     - langgraph >=0.3.25,<2
