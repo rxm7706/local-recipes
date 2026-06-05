@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.0.1"
+  version: "0.0.2"
   python_min: "3.10"
 
 package:
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/ag-ui-a2ui-toolkit/ag_ui_a2ui_toolkit-${{ version }}.tar.gz
-  sha256: 82cf57e363a3967b4564369e9e329900b65899aac685f7cea1dac1263f5b898d
+  sha256: 5908fa7a9cf474fa26d8821ac15b135bdca2c1cfddce0b7c580c6382d1f0bfd9
 
 build:
   number: 0
@@ -39,7 +39,7 @@ about:
   summary: Framework-agnostic helpers for building A2UI subagent tools — op builders, prompt assembly, history walkers, and request/envelope orchestration shared across framework adapters.
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/ag-ui-protocol/ag-ui
+  homepage: https://pypi.org/project/ag-ui-a2ui-toolkit/
   repository: https://github.com/ag-ui-protocol/ag-ui
 
 extra:
