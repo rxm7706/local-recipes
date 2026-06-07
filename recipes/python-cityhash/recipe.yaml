@@ -13,7 +13,7 @@ source:
   sha256: 7e35da9aaf5fcf91da3fea23405874db55ffa58b1abc441d39cce0c8704a9c15
 
 build:
-  number: 0
+  number: 2
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
@@ -22,11 +22,10 @@ requirements:
       then:
         - python
         - cross-python_${{ target_platform }}
-
+        - cython
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
-    - ${{ compiler('c') }}
-    #- ${{ stdlib("c") }}
+    - ${{ stdlib('c') }}
   host:
     - python
     - cython
@@ -44,13 +43,25 @@ tests:
         - cityhashcrc
         - farmhash
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python bindings for CityHash and FarmHash
+  homepage: https://pypi.org/project/cityhash
+  repository: https://github.com/escherba/python-cityhash
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/escherba/python-cityhash
+  summary: Python bindings for CityHash and FarmHash
+  description: |
+    Python wrapper for FarmHash and CityHash — two families of fast
+    non-cryptographic hash functions originally from Google. The package
+    exposes three Python modules (cityhash, cityhashcrc, farmhash) that
+    each wrap the respective C/C++ reference implementation. Commonly
+    used for hashing strings into 64- or 128-bit fingerprints where
+    collision rate matters more than cryptographic security (e.g.
+    sharding keys, content addressing, bloom-filter seeds).
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - charlesbluca
