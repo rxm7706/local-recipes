@@ -6,7 +6,7 @@ prd_under_review: planning-artifacts/PRD.md
 validator: bmad-validate-prd (Path 3 hybrid)
 overall_verdict: APPROVED (re-validated 2026-05-26 post v8.10.0 sync; pin moved through v8.7.0 / v8.8.0 / v8.9.0 / v8.9.1 / v8.10.0 as 4 MINOR + 1 PATCH skill bumps with skill-internal scope only — no D-dimension re-score required — see verdict_history)
 status: final
-source_pin: 'conda-forge-expert v8.10.0'
+source_pin: 'conda-forge-expert v8.11.1'
 verdict_history:
   - { date: '2026-05-12 (initial)', verdict: 'REVISE', notes: 'Material issues across D3 / D5 / D6 / D7 / D9 / D10 on the v7.7-pinned draft PRD.' }
   - { date: '2026-05-12 (post tentative-decisions)', verdict: 'APPROVED', notes: 'PRD updated with tentative_decisions_applied; REVISE-rated dimensions addressed; status moved draft → approved.' }
@@ -387,3 +387,54 @@ These are **out of scope** for the PRD validation:
 - Whether the open questions (Q-PRD-01 to Q-PRD-07) have correct answers (separate effort)
 
 The next validation report (`implementation-readiness-report.md`) covers PRD↔architecture↔epics consistency.
+
+---
+
+## Re-validation Run — 2026-06-07 (post-v8.11.1 sync)
+
+**Verdict:** PASS — no structural change since the 2026-05-24 / 2026-05-26 runs.
+
+**Driver:** bmad-correct-course sprint change proposal at `planning-artifacts/sprint-change-proposal-2026-06-07-v8.11.1.md` (v8.10.0 → v8.11.1 frontmatter sync covering v8.10.1 PATCH + v8.11.0 MINOR + v8.11.1 PATCH npm-generator releases).
+
+**Scope of re-validation:** PRD §5 (Features), §9 (Deferred Work), §3 (JTBDs), §10 (Risks), §11 (Dependencies), Appendix C (JTBD ↔ Feature traceability).
+
+### Findings
+
+1. **Feature counts unchanged.** F1.4 (44 Tier 1 scripts), F1.5 (36 Tier 2 wrappers), F1.6 (17 lint codes), F1.8 (41 templates / 13 ecosystems), F2.2 (22 phases), F2.10 (21 public CLIs), F3.2 (37 MCP tools), F4.5 (64 real skills) — none affected by v8.10.1 / v8.11.0 / v8.11.1. The npm-generator changes are body-only on `templates/nodejs/npm-recipe.yaml` (rewritten in place, not added/removed) + `scripts/recipe-generator.py` internals (`_inline_build_script` rewritten; legacy `_build_sh_template` deleted in v8.11.1 — internal generator helper, not a script module). Live verification: `find .claude/skills/conda-forge-expert/templates -mindepth 2 -type f \\( -name "*.yaml" -o -name "*.yml" \\) | wc -l` returns 41 (3 nodejs files: native-recipe.yaml + npm-meta.yaml + npm-recipe.yaml).
+
+2. **Deferred Work unchanged.** DW1-DW20 still apply as written. No new DW row added; no DW row closed.
+
+3. **JTBD coverage matrix unchanged.** Appendix C lists 11 JTBDs × 52 features; none are affected by the npm-generator subsurface change. JTBD-1.1 (author recipe with confidence) is incidentally **improved** by v8.11.0 — the per-platform inline pattern is empirically more reliable on staged-recipes CI than noarch:generic (bmalph PR #33557 attempt 2 verified linux_64 3m17s / osx_64 6m14s / win_64 3m20s green), but no feature ID changes coverage. F1.8 still primary-serves JTBD-1.1.
+
+4. **Risks unchanged.** R1 (skill version drift between rebuild start and finish) is the active risk addressed by this proposal's source_pin sync; the prior risk text (last edit `2026-05-13`) is non-blocking because the rebuild has not commenced. R2-R7 untouched by the npm-generator changes.
+
+5. **Approval gates unchanged.** Q-PRD-01 through Q-PRD-07 all remain confirmed (2026-05-12). The v8.11.0 default-flip on npm did not touch any Q-PRD decision domain.
+
+6. **Edit_history entry well-formed.** New 2026-06-07 entry (lines after the 2026-05-26 entry) covers: three release IDs + three release dates + scope classification + driver (bmalph PR #33557 + openspec PR #32368) + 12-file planning-artifact source_pin list + project-context.md sync confirmation + outstanding v8.11.x retro flag per CLAUDE.md Rule 2 + sprint change proposal cross-reference. Structurally consistent with prior entries.
+
+7. **No downstream cascade required.** Architecture documents (`architecture.md`, `architecture-conda-forge-expert.md`, `architecture-cf-atlas.md`, `architecture-mcp-server.md`, `architecture-bmad-infra.md`, `integration-architecture.md`) — source_pin bumped; no body content references the npm-specific recipe shape or the `--inline-build` CLI flag. `source-tree-analysis.md` script counts (50/41 from the v8.10.0 sync) are still approximately correct — `_build_sh_template` deletion lowers the in-script function count, not the module count.
+
+### Net change
+
+Frontmatter-only. PRD body content holds.
+
+### Re-validation effort
+
+1 reviewer pass; pull-quote check against:
+- Template count (`find templates -mindepth 2 -type f` → 41 ✓)
+- MCP tool count (`grep -c '^@mcp.tool' .claude/tools/conda_forge_server.py` → 38; **drift of +1 vs. PRD's 37**, predates this bundle, not introduced by v8.10.1/v8.11.0/v8.11.1 — flagged for future audit)
+- Phase count + schema version (unchanged at 22 / v25 ✓)
+- Skill version (`config/skill-config.yaml` → 8.11.1 ✓ matches new PRD pin)
+
+### Outcome
+
+- PRD `re_validated` field bumped to `2026-06-07` ✓
+- PRD `version` PATCH-bumped v1.4.4 → v1.4.5 ✓
+- PRD `source_pin` bumped v8.10.0 → v8.11.1 ✓
+- PRD `status` remains `approved` (no scope shift triggered re-approval cycle)
+
+### Out-of-scope, deferred
+
+- Full multi-step `bmad-validate-prd` 10-step interactive re-run (over-engineered for frontmatter-only sync; the prior 2026-05-12 run remains the authoritative deep validation).
+- MCP tool count drift (37 → 38) — surface for next audit pass; not introduced by this bundle.
+- v8.11.x CFE-skill retro (recommended filename: `implementation-artifacts/retro-conda-forge-expert-v8.11-2026-06-07.md`) — per CLAUDE.md Rule 2; tracked in the sprint change proposal's § "Out-of-scope follow-up".

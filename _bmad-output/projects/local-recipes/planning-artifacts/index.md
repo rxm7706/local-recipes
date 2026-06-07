@@ -5,7 +5,7 @@ date: 2026-05-12
 repository_type: monorepo
 parts: 4
 docs_generated: 10
-source_pin: 'conda-forge-expert v8.10.0'
+source_pin: 'conda-forge-expert v8.11.1'
 ---
 
 # `local-recipes` — Master Documentation Index

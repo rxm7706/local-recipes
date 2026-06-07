@@ -4,7 +4,7 @@ part_id: bmad-infra
 display_name: BMAD infrastructure
 project_type_id: infra
 date: 2026-05-12
-source_pin: 'conda-forge-expert v8.10.0'
+source_pin: 'conda-forge-expert v8.11.1'
 ---
 
 # Architecture: BMAD Infrastructure (Part 4)
