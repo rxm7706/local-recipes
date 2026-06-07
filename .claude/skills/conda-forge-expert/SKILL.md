@@ -360,7 +360,8 @@ When asked to create or update a recipe, execute these steps in order. Each step
     - This is the **inspection checkpoint** between a green local build and the PR. Open `fork_branch_url` in a browser, run `gh pr diff` against an imagined PR, or pull the fork locally and review the diff before authorizing step 9.
     - Idempotent — if the remote branch's tree already matches the local HEAD, the push is skipped (`pushed: false` in the result). Force-push uses `--force-with-lease` so a divergent remote errors instead of being clobbered. The result also reports `synced_commits` (how many commits the fork's main was behind upstream — useful drift signal).
     - **Skip when**: you're submitting via `submit_pr` end-to-end and don't need an inspection point (e.g., a trivial recipe re-submission). `submit_pr` calls this internally; running it standalone first is the human-in-the-loop variant.
-    - **Optional add-on**: drop a `conda-forge.yml` next to `recipe.yaml` to override staged-recipes defaults for this recipe. The most common opt-ins: `azure: { store_build_artifacts: true }` (Azure saves built `.conda` files as downloadable pipeline artifacts; default is `false`), `os_version: { linux_64: alma9 }` (newer glibc), and `noarch_platforms` (extra CI matrix for noarch:python). Full reference: [`reference/conda-forge-yml-reference.md`](reference/conda-forge-yml-reference.md). Starter template: [`templates/conda-forge-yml/staged-recipes/conda-forge.yml`](templates/conda-forge-yml/staged-recipes/conda-forge.yml).
+    - **Follow-up commits on an existing PR branch**: `prepare_submission_branch` hardcodes the commit message to `"Add recipe for <name>"`, which is misleading for any commit other than the initial submission (CI fixes, reviewer feedback, version bumps). For follow-ups, fall back to direct git on the local fork checkout — `git -C <fork> checkout <pr-branch>`, copy updated files from `recipes/<name>/`, `git add` + `git commit -m "<descriptive message>"` + `git push origin <branch>`. The fork path is reported in step 8b's `dry_run=True` result (`fork_path`).
+    - **Optional add-on**: drop a `conda-forge.yml` next to `recipe.yaml` to override staged-recipes defaults for this recipe. The most common opt-ins: `azure: { store_build_artifacts: true }` (Azure saves built `.conda` files as downloadable pipeline artifacts; default is `false`), `os_version: { linux_64: alma9 }` (newer glibc), and `noarch_platforms` (extra CI matrix for noarch:python — also required to silence `lint_noarch_selectors` when `requirements.run:` carries an `if: <platform> / then:` selector; see [G12](#g12-platform-conditional-run-deps-in-noarchpython-recipes-need-noarch_platforms-in-conda-forgeyml)). Full reference: [`reference/conda-forge-yml-reference.md`](reference/conda-forge-yml-reference.md). Starter template: [`templates/conda-forge-yml/staged-recipes/conda-forge.yml`](templates/conda-forge-yml/staged-recipes/conda-forge.yml).
     - > *Skills: [`shipping-and-launch`] — staged rollout; [`git-workflow-and-versioning`] — branch-then-PR pattern.*
 
 9.  **Submit PR** — `submit_pr(recipe_name="<name>", dry_run=True)` → verify → `submit_pr(recipe_name="<name>")`
@@ -1196,6 +1197,78 @@ The `-py` suffix and the underscore-preserved spelling are both real divergence 
 **Fix — in the recipe**: edit `requirements.run:` to use the conda-forge feedstock spelling. grayskull emits the PyPI name (`wasmtime`); the recipe must hand-edit to the feedstock spelling (`wasmtime-py`). The optimizer doesn't catch this divergence today — closing that gap is open work.
 
 **Case study**: scoping pass for `simonw/micropython-wasm` (Jun 7, 2026). Initial manual repodata search for `wasmtime` across noarch + linux-64 + osx-64 + osx-arm64 + win-64 + linux-aarch64 + linux-ppc64le returned 0 hits in all 7 subdirs; concluded `wasmtime` was missing and proposed a two-recipe bundle (build `wasmtime` as a maturin/pyo3 prerequisite first, then `micropython-wasm` on top). User pointed at https://anaconda.org/conda-forge/wasmtime-py/overview and `conda-forge/wasmtime-py-feedstock`; re-check by feedstock name confirmed 39 builds × 5 platforms (linux-64 / osx-64 / osx-arm64 / win-64 / linux-aarch64) at v45.0.0. The single-recipe scope held; no prerequisite needed. The hand-edit `requirements.run: [..., wasmtime-py]` was the only change to grayskull's output. Auto-memory `feedback_pypi_conda_mapping_unreliable.md` updated in parallel with the second confirmed divergence pattern (the first being `tree_sitter` from G7's bundle).
+
+### G11. PyPI sdist symlinks fail hatchling's wheel build on Windows
+
+**Symptom**: a `noarch: python` recipe builds cleanly on linux_64 + osx_64 but fails on win_64 during hatchling's wheel-build phase with:
+
+```
+OSError: [WinError 123] The filename, directory name, or volume label syntax is incorrect:
+  'D:\bld\bld\rattler-build_<name>_<id>\work\<path>\conftest.py'
+pip._internal.exceptions.MetadataGenerationFailed: metadata generation failed
+```
+
+The recipe is otherwise correct, deps resolve, build succeeds in isolation on Linux + macOS.
+
+**Why**: the upstream PyPI sdist ships POSIX symlinks via tar's symlink record. Linux + macOS build agents extract them as real symlinks and `os.stat` follows them transparently. Windows Azure Pipelines runners lack `SeCreateSymbolicLinkPrivilege` by default, so tar's symlink-extraction falls back to writing a text stub containing the literal target path (e.g. `../../../some/path`). `os.stat` on that stub fails — Windows parses the content as a malformed path and returns `WinError 123 / ERROR_INVALID_NAME`. Hatchling iterates every included file during the wheel build and calls `os.stat` on each one, so the first symlink in iteration order triggers the failure.
+
+This is distinct from **G6** (npm `node_modules/.bin/` symlinks): G6 fires at rattler-build's noarch-Windows-portability check *after* the wheel is built; G11 fires *during* hatchling's wheel build itself (pre-validation).
+
+**Fix**: extend the recipe's downstream pyproject.toml patch with a `[tool.hatch.build.targets.wheel]` `exclude:` entry for the offending symlinked path:
+
+```diff
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -8,6 +8,7 @@
+ # wheel ZIP).  By excluding here we ensure only force-include writes the files.
+ exclude = [
+     "python/<name>/env_templates/**",
++    "python/<name>/<offending>/conftest.py",
+ ]
+```
+
+The symlink target file usually still ships under its real path elsewhere in the wheel, so test discovery for the target's tests still works. Exclude each symlinked path explicitly — broad `**/conftest.py` globs strip more than needed and break test discovery for unrelated test packages.
+
+**How to detect upstream symlinks before pushing to CI**:
+
+```bash
+curl -sL "https://pypi.org/packages/source/<x>/<name>/<name>-<version>.tar.gz" \
+  | tar tvz - | grep '^l'
+```
+
+`tar tvz` lists entries with their type — symlinks appear as `lrwxr-xr-x ... -> <target>`. Run on every new noarch:python recipe to flag the symlink risk before the staged-recipes push.
+
+**Case study**: staged-recipes PR #33534 (xorq 0.3.26, Jun 7, 2026). Two consecutive CI runs (Azure buildId 1533937 + 1533940) failed at the same line of the same log with `OSError: [WinError 123] ... 'D:\bld\bld\rattler-build_xorq_<id>\work\python\xorq\common\utils\tests\conftest.py'`. Inspection via `tar tvzf` revealed exactly one symlink: `python/xorq/common/utils/tests/conftest.py` → `../../../backends/xorq_datafusion/tests/conftest.py`. The target file `python/xorq/backends/xorq_datafusion/tests/conftest.py` was a normal file in the same sdist. Patch added the symlinked path to the existing `[tool.hatch.build.targets.wheel]` exclude list (alongside `python/xorq/env_templates/**`); next CI run (Azure buildId 1533952) was win_64 GREEN. Target's tests still discoverable via the surviving target file.
+
+### G12. Platform-conditional `run:` deps in noarch:python recipes need `noarch_platforms` in `conda-forge.yml`
+
+**Symptom**: a `noarch: python` recipe uses the canonical rattler-build v1 `if: linux / then:` selector to gate a Linux-only runtime dep, and conda-smithy lint hard-fails on staged-recipes-linter with:
+
+```
+❌ noarch packages can't have selectors. If the selectors are necessary, please remove noarch: python.
+```
+
+rattler-build itself accepts the selector (`rattler_lint_ran: true` in `validate_recipe` returns clean) — this is purely a conda-smithy lint rule, code `R1-002` (`lint_noarch_selectors`).
+
+**Why**: the lint rule exists to catch *build-time* selector mistakes in noarch recipes (selectors in `build.script:`, `build.skip:`, `requirements.host:`, `requirements.build:` produce broken artifacts because there's only one noarch build). But the rule fires on *runtime* selectors in `requirements.run:` too, even though those are evaluated at install time by the conda solver and are semantically correct.
+
+The v1-specific implementation of the rule (`lint_recipe_v1_noarch_and_runtime_dependencies` in `conda-smithy/linter/`) has a documented escape hatch: when the recipe's `conda-forge.yml` declares `noarch_platforms` with **>=2 entries**, the lint gate flips from "no selectors allowed in noarch" to "selectors are OK because the author has tested cross-platform". This is the canonical design — *not* a `linter.skip` opt-out.
+
+**Fix**: drop a `conda-forge.yml` next to `recipe.yaml` listing every platform you have verified the selector resolves correctly on:
+
+```yaml
+# recipes/<name>/conda-forge.yml
+noarch_platforms:
+  - linux_64
+  - osx_64
+  - win_64
+```
+
+The minimum for the gate flip is 2 platforms. List only what you've verified — adding `win_64` when the recipe has unresolved Windows issues will trigger CI on Windows and produce a different failure.
+
+**When NOT to use this**: if your selectors are in build-time fields (`build.script:`, `build.skip:`, `requirements.host:`, `requirements.build:`), the noarch artifact really IS broken on at least one platform — the lint is correctly rejecting your recipe. Either remove `noarch: python` and produce per-platform builds, or restructure so the build is platform-independent.
+
+**Case study**: staged-recipes PR #33534 (xorq 0.3.26, Jun 7, 2026). After landing G11's symlink patch and adding an `if: linux / then:` selector to gate `git-annex` (which has 139 conda-forge linux-64 builds + zero on every other platform), the next CI run fired R1-002 on the linter. Research subagent traced the rule to `conda_smithy/linter/lint_recipe.py` line 302 (`if "lint_noarch_selectors" not in lints_to_skip`) with the v1 path in `conda_recipe_v1_linter.py` → `lint_usage_of_selectors_for_noarch()` and message class `NoarchSelectorsV1`. Adding `recipes/xorq/conda-forge.yml` with `noarch_platforms: [linux_64, osx_64, win_64]` (all three because the symlink patch made Windows viable) flipped the lint on the subsequent push. Final CI run (head `0be2b938e4`) went all-green across linter + conda-forge-linter + linux_64 + osx_64 + win_64. Two-commit fix sequence on top of the existing PR head: `ffbe7aa174` (selector + symlink patch) → `0be2b938e4` (conda-forge.yml).
 
 ---
 
