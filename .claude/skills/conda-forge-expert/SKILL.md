@@ -1172,6 +1172,31 @@ Add a maintenance note to the PR description: **"On every version bump, the bot 
 
 **Case study**: staged-recipes Microsoft Agents bundle (May 2026). `microsoft-agents-m365copilot` v1.6.0 has no `python/v1.6.0` or `v1.6.0` tag on `microsoft/Agents-M365Copilot` — only `@microsoft/agents-m365copilot-v1.6.0` (JS). Pinned LICENSE to commit `0376aa418345d7f719b7b75d6e784fa7a765d9d0` with sha256 `c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383`. `microsoft-agents-m365copilot-core` v1.0.0 sdist *did* ship LICENSE, so no secondary source was needed there — even within a single monorepo, the per-package pattern varies.
 
+### G10. PyPI Python bindings to non-Python language runtimes use the `-py` suffix on conda-forge
+
+**Symptom**: a recipe-generation flow declares a `requirements.run:` dep "missing" from conda-forge because a manual repodata search for the literal PyPI distribution name returns 0 hits across every platform. grayskull's emitted `requirements.run:` carries the PyPI name; the conda-forge feedstock actually exists under a name with a `-py` suffix.
+
+**Why**: when upstream PyPI publishes a Python binding to a non-Python language runtime (Rust, C, C++, Go), conda-forge convention disambiguates the binding from the underlying native package by suffixing the recipe name with `-py`. The PyPI distribution stays under the bare name; the conda-forge feedstock is `<name>-py`. The `-py` form is preferred when the native runtime is itself separately packageable on conda-forge (today or hypothetically) and conda-forge wants to leave the bare name available for the native package.
+
+| PyPI distribution | conda-forge feedstock | Underlying runtime |
+|---|---|---|
+| `wasmtime` | `wasmtime-py` | Bytecode Alliance WASM runtime (Rust, pyo3 binding) |
+| `tree_sitter` | `tree_sitter` (underscore preserved) | C parser library (binding + native ship together) |
+
+The `-py` suffix and the underscore-preserved spelling are both real divergence patterns and they apply to different conda-forge packaging decisions. There is no algorithmic rule — the PyPI → conda mapping is a per-feedstock choice. The mapping cache in `get_conda_name` doesn't always capture either pattern.
+
+**Fix — before declaring a dep missing**: check three name forms in order before concluding a dep isn't on conda-forge:
+
+1. The PyPI distribution name exactly (`wasmtime`).
+2. The name with `-` ↔ `_` swapped (`tree-sitter` ↔ `tree_sitter`).
+3. The name with a `-py` suffix (`wasmtime-py`).
+
+`check_dependencies` does this lookup correctly via the grayskull mapping cache; manual repodata searches by literal name miss the suffix forms. If a dep isn't on conda-forge after all three checks, then it's genuinely missing — at that point the scoping decision (package the prerequisite first vs. defer) is real.
+
+**Fix — in the recipe**: edit `requirements.run:` to use the conda-forge feedstock spelling. grayskull emits the PyPI name (`wasmtime`); the recipe must hand-edit to the feedstock spelling (`wasmtime-py`). The optimizer doesn't catch this divergence today — closing that gap is open work.
+
+**Case study**: scoping pass for `simonw/micropython-wasm` (Jun 7, 2026). Initial manual repodata search for `wasmtime` across noarch + linux-64 + osx-64 + osx-arm64 + win-64 + linux-aarch64 + linux-ppc64le returned 0 hits in all 7 subdirs; concluded `wasmtime` was missing and proposed a two-recipe bundle (build `wasmtime` as a maturin/pyo3 prerequisite first, then `micropython-wasm` on top). User pointed at https://anaconda.org/conda-forge/wasmtime-py/overview and `conda-forge/wasmtime-py-feedstock`; re-check by feedstock name confirmed 39 builds × 5 platforms (linux-64 / osx-64 / osx-arm64 / win-64 / linux-aarch64) at v45.0.0. The single-recipe scope held; no prerequisite needed. The hand-edit `requirements.run: [..., wasmtime-py]` was the only change to grayskull's output. Auto-memory `feedback_pypi_conda_mapping_unreliable.md` updated in parallel with the second confirmed divergence pattern (the first being `tree_sitter` from G7's bundle).
+
 ---
 
 ## Skill Automation
