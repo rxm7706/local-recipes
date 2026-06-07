@@ -1,54 +1,54 @@
 # suitenumerique — Local Recipes Build Report
 
-**Build date**: 2026-05-31 (initial build + Phase 6c remediation + Phase 6d canonical-test/dep/license fixes)
+**Original build date**: 2026-05-31 (initial build + Phase 6c remediation + Phase 6d canonical-test/dep/license fixes)
+**Last reviewed**: 2026-06-07 (conda-forge availability re-check with the four-form PyPI→conda name-divergence rule from skill v8.11.4 G10)
 **Scope**: every public repo under [github.com/orgs/suitenumerique](https://github.com/orgs/suitenumerique/repositories) (43 repos)
 **Mode**: local-only; **no PRs opened** against `conda-forge/staged-recipes`
 **Artifacts directory**: `build_artifacts/linux64/{noarch,linux-64}/`
+
+> **2026-06-07 re-audit finding** (full details in § "2026-06-07 Re-audit" below): three of the original 15 "submission-ready" recipes are **already on conda-forge** and should be DROPPED from the submission plan — `django-lasuite` (bare-name feedstock at v0.0.26, created 2026-04-13), `dockerflow` (bare-name at v2026.3.4, created 2026-06-01 — just 7 days before this audit), and `langfuse` (`langfuse-python` feedstock at v4.7.1, illustrates the `-python` suffix divergence pattern). Revised genuine submission-ready set: **15 → 12**. The 31 local-only recipes are unchanged. Per-recipe tables below annotate the three already-on-CF entries inline.
 
 ---
 
 ## Result at a glance
 
-| Tier | What | Recipes | Built | Flagged local-only |
-|------|------|---------|-------|--------------------|
-| A | Clean conda-forge candidates | 1 | 1 | 0 |
-| B | npm libraries | 5 | 5 | 5 |
-| C | Python libs not on PyPI | 3 | 3 | 3 |
-| D | Django web-app backends | 15 | 15 | 15 |
-| E | Frontend apps (Next.js / source-tree) | 4 | 4 | 4 |
-| F | Forks of upstream projects | 4 | 4 | 4 |
-| 6b | Missing Django deps (now available) | 14 | 14 | 0 |
-| G | Skipped (docs / infra / placeholder) | 12 | 0 | — |
-| **Total** | | **46** | **46** | **31** |
+| Tier | What | Recipes | Built | Flagged local-only | Already on conda-forge (re-audited 2026-06-07) |
+|------|------|---------|-------|--------------------|-------------------------------------------------|
+| A | Clean conda-forge candidates | 1 | 1 | 0 | 1 (`django-lasuite`) |
+| B | npm libraries | 5 | 5 | 5 | 0 |
+| C | Python libs not on PyPI | 3 | 3 | 3 | 0 |
+| D | Django web-app backends | 15 | 15 | 15 | 0 |
+| E | Frontend apps (Next.js / source-tree) | 4 | 4 | 4 | 0 |
+| F | Forks of upstream projects | 4 | 4 | 4 | 0 |
+| 6b | Missing Django deps (now available) | 14 | 14 | 0 | 2 (`dockerflow`, `langfuse` → `langfuse-python`) |
+| G | Skipped (docs / infra / placeholder) | 12 | 0 | — | — |
+| **Total** | | **46** | **46** | **31** | **3** |
+
+**Genuinely submission-ready (post-2026-06-07): 12 recipes** (was 15 on 2026-05-31; dropped `django-lasuite`, `dockerflow`, `langfuse` — all already on conda-forge).
 
 Every recipe under tiers B–F carries a banner at the top of `recipe.yaml`:
 ```yaml
 # ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
 # Reason: ...
 ```
-The Tier-A recipe (`django-lasuite`) and the 14 Phase-6b dep recipes carry no warning — they are clean candidates if you later choose to submit them.
+The Tier-A recipe (`django-lasuite`) and the 14 Phase-6b dep recipes carry no warning — they are clean candidates if you later choose to submit them. (Three of those 15 no-warning recipes turned out to already be on conda-forge per the 2026-06-07 re-audit; the warning's absence still reflects "would be a clean submission candidate", just one that's already been submitted by someone else.)
 
 ## Conda-forge submission plan (dependency-ordered)
 
-Of the 46 recipes, **15 are conda-forge-submission-ready**: Tier-A `django-lasuite` + all 14 Phase-6b dep recipes. The 31 local-only recipes (Tiers B/C/D/E/F) are out of scope — they carry the `⚠️ LOCAL-ONLY` banner because conda-forge declines web apps, npm component libraries, forks, and frontend source trees.
+**Revised 2026-06-07**: of the 46 recipes, **12 are genuinely conda-forge-submission-ready** (down from 15 on 2026-05-31 after the four-form name-divergence re-audit; see § "2026-06-07 Re-audit" for the three recipes that turned out to already be on conda-forge). The 31 local-only recipes (Tiers B/C/D/E/F) are out of scope — they carry the `⚠️ LOCAL-ONLY` banner because conda-forge declines web apps, npm component libraries, forks, and frontend source trees.
 
-I checked each candidate's run requirements against `conda-forge` (channel-only, with the local channel excluded) using `dependency-checker.py`. Result: **only one inter-recipe edge** in the candidate set.
+Each candidate's run requirements were checked against `conda-forge` (channel-only, with the local channel excluded) using `dependency-checker.py`. Result: **only one inter-recipe edge** in the candidate set (django-zxcvbn-password-validator → zxcvbn).
 
-### Submission graph
+### Submission graph (revised 2026-06-07)
 
 ```
 Wave 1 (independent — submit in any order, parallel PRs OK):
-  django-lasuite         (deps: django, djangorestframework, joserfc,
-                          mozilla-django-oidc, pyjwt, requests, requests-toolbelt)
   brevo-python           (deps: httpx, pydantic, pydantic-core, typing_extensions)
-  dockerflow             (deps: python only)
   nested-multipart-parser (deps: python only)
   django-pydantic-field  (deps: django, pydantic, typing_extensions)
   django-fernet-encrypted-fields (deps: django, cryptography)
   djangorestframework-api-key    (deps: packaging)
   zxcvbn                 (deps: python only)          ← Wave-2 prerequisite
-  langfuse               (deps: httpx, pydantic, backoff, wrapt, packaging,
-                          opentelemetry-api/sdk/exporter-otlp-proto-http)
   odfdo                  (deps: lxml)
   flanker                (deps: attrs, chardet, cryptography, idna, ply,
                           regex, six, tld, webob)
@@ -58,26 +58,31 @@ Wave 1 (independent — submit in any order, parallel PRs OK):
 
 Wave 2 (after zxcvbn merges):
   django-zxcvbn-password-validator  (deps: django, zxcvbn)
+
+Already on conda-forge — DO NOT submit (verified 2026-06-07):
+  django-lasuite   →  conda-forge/django-lasuite-feedstock (bare-name, v0.0.26)
+  dockerflow       →  conda-forge/dockerflow-feedstock (bare-name, v2026.3.4)
+  langfuse         →  conda-forge/langfuse-python-feedstock (-python suffix, v4.7.1)
 ```
 
-### Recommended submission order
+### Recommended submission order (revised 2026-06-07)
 
 | Wave | Count | Recipes | Rationale |
 |---|---|---|---|
-| **1a — high-priority** | 1 | `django-lasuite` | Unblocks every other Suite recipe locally. Already on PyPI, MIT, well-maintained upstream. |
-| **1b — independent** | 13 | `brevo-python`, `dockerflow`, `nested-multipart-parser`, `django-pydantic-field`, `django-fernet-encrypted-fields`, `djangorestframework-api-key`, `zxcvbn`, `langfuse`, `odfdo`, `flanker`, `ironcalc`, `libpff-python`, `py3langid` | Each has all run deps satisfied by current conda-forge. Order within the wave doesn't matter; submit in parallel as separate PRs. |
+| ~~**1a — high-priority**~~ | ~~1~~ → **0** | ~~`django-lasuite`~~ | **Removed** — `conda-forge/django-lasuite-feedstock` v0.0.26 already exists (created 2026-04-13). Verified by feedstock recipe `source.url: pypi.org/packages/source/d/django-lasuite/django-lasuite-${{ version }}.tar.gz`. |
+| **1b — independent** | ~~13~~ → **11** | `brevo-python`, `nested-multipart-parser`, `django-pydantic-field`, `django-fernet-encrypted-fields`, `djangorestframework-api-key`, `zxcvbn`, `odfdo`, `flanker`, `ironcalc`, `libpff-python`, `py3langid` | Each has all run deps satisfied by current conda-forge. Order within the wave doesn't matter; submit in parallel as separate PRs. **Dropped**: `dockerflow` (already at `conda-forge/dockerflow-feedstock` v2026.3.4 since 2026-06-01); `langfuse` (already at `conda-forge/langfuse-python-feedstock` v4.7.1 — `-python` suffix divergence). |
 | **2** | 1 | `django-zxcvbn-password-validator` | Wait for `zxcvbn` (Wave 1) to merge before submitting; otherwise conda-forge CI can't resolve the run dep. |
 
 ### Practical considerations
 
-- **PR cadence**: conda-forge/staged-recipes reviewers prefer no more than ~3–4 PRs in flight from one author at a time. Suggested cadence: open 3 from Wave 1 (start with `django-lasuite`, `dockerflow`, `nested-multipart-parser` — the highest-impact deps), wait for first merge, open next 3, etc. Whole Wave 1 should clear in 1–3 weeks at this rate.
+- **PR cadence**: conda-forge/staged-recipes reviewers prefer no more than ~3–4 PRs in flight from one author at a time. Revised suggested cadence: open 3 from Wave 1b (start with `nested-multipart-parser`, `djangorestframework-api-key`, `brevo-python` — the highest-impact small-dep deps now that `django-lasuite` and `dockerflow` are off the list), wait for first merge, open next 3, etc. Whole Wave 1 should clear in 1–3 weeks at this rate.
 - **Wave-1 risk recipes** (likely to draw extra review):
   - `libpff-python` — grayskull-emitted `noarch: python` ships a CPython-ABI `.so` (G4 recipe-style mismatch). Review will request switching to `noarch: false` or adding per-Python builds. Consider rewriting the recipe before submission.
   - `ironcalc` — Rust + maturin build per-Python; needs `cross-python_${{ target_platform }}` + `crossenv` host. Review may ask for `THIRDPARTY.yml` via `cargo-bundle-licenses`; recipe already does this.
-  - `langfuse` and `odfdo` carry `pip_check: false` with inline justification — reviewers may ask to address the upstream wrapt<2 / lxml env-marker constraints instead. Acceptable answer: cite upstream issue + flag PR.
+  - `odfdo` carries `pip_check: false` with inline justification — reviewers may ask to address the upstream lxml env-marker constraint instead. Acceptable answer: cite upstream issue + flag PR. (`langfuse` previously also in this group; now off the list since it's already on conda-forge.)
   - `flanker` — large transitive dep list (9 packages); reviewers may ask whether `tld`/`webob` versions match the latest. `recipe-generator.py` v8.10.1's PEP 508 parser should have captured these correctly.
 - **Wave-2 timing**: don't open `django-zxcvbn-password-validator` until `zxcvbn` shows green on conda-forge (typically 1–2 hours after merge for the bot to update repodata).
-- **Tier-D Django app deps now resolve locally** but most of these recipes won't submit because conda-forge declines web apps. The Phase-6b recipes are still worth submitting for their broader value — `dockerflow`, `langfuse`, `odfdo` are widely useful outside La Suite.
+- **Tier-D Django app deps now resolve locally** but most of these recipes won't submit because conda-forge declines web apps. Of the originally-listed widely-useful Phase-6b dep recipes, only `odfdo` is still in the genuinely-submission-ready set — `dockerflow` and `langfuse` were already submitted by others (kudos to whoever got there first).
 
 ### What this section does NOT cover
 
@@ -149,7 +154,7 @@ Total: 13 + 2 + 16 + 12 + 3 = **46 recipes, all tested at build time**.
 
 | conda name | upstream | version | notes |
 |---|---|---|---|
-| `django-lasuite` | [`suitenumerique/django-lasuite`](https://github.com/suitenumerique/django-lasuite) | 0.0.26 | Published on PyPI; MIT; common Django library used by every other Suite backend. The only Tier-A submission candidate. |
+| `django-lasuite` | [`suitenumerique/django-lasuite`](https://github.com/suitenumerique/django-lasuite) | 0.0.26 | Published on PyPI; MIT; common Django library used by every other Suite backend. ✅ **Already on conda-forge as `django-lasuite-feedstock` v0.0.26 since 2026-04-13** (verified 2026-06-07 — bare-name match; feedstock `source.url` points to PyPI `django-lasuite`). Local recipe is redundant for submission; can be installed from conda-forge directly. |
 
 ## Tier B — npm libraries (5, all local-only)
 
@@ -228,14 +233,14 @@ Built so Tier-D recipes resolve cleanly. None carry the local-only banner.
 | conda name | version | license | test type | notes |
 |---|---|---|---|---|
 | `brevo-python` | 4.0.10 | MIT | `site_packages: [brevo]` | Brevo (ex Sendinblue) email API client. LICENSE pulled from `getbrevo/brevo-python/HEAD/LICENSE.md`. |
-| `dockerflow` | 2026.3.4 | MPL-2.0 | `site_packages: [dockerflow]` | Mozilla Dockerflow healthcheck for Django/Flask. Used by 12 of 15 Django apps. |
+| `dockerflow` | 2026.3.4 | MPL-2.0 | `site_packages: [dockerflow]` | Mozilla Dockerflow healthcheck for Django/Flask. Used by 12 of 15 Django apps. ✅ **Already on conda-forge as `dockerflow-feedstock` v2026.3.4 since 2026-06-01** (verified 2026-06-07 — bare-name match). Local recipe redundant for submission. |
 | `nested-multipart-parser` | 1.6.0 | MIT | `site_packages: [nested_multipart_parser]` | DRF multipart parser for nested form data. Used by 11 of 15 Django apps. |
 | `django-pydantic-field` | 0.5.4 | MIT | `site_packages: [django_pydantic_field]` | Pydantic field for Django models. Build backend uv-build. |
 | `django-fernet-encrypted-fields` | 0.4.0 | MIT | `site_packages: [encrypted_fields]` | Fernet-encrypted Django model fields. |
 | `djangorestframework-api-key` | 3.1.0 | MIT | `site_packages: [rest_framework_api_key]` | DRF API-key auth. |
 | `django-zxcvbn-password-validator` | 1.6.0 | MIT | `site_packages: [django_zxcvbn_password_validator]` | zxcvbn-strength password validator for Django auth. |
 | `zxcvbn` | 4.5.0 | MIT | `python.imports: [zxcvbn]` + `pip_check` | Added in Phase 6c remediation — dep of `django-zxcvbn-password-validator`. |
-| `langfuse` | 4.7.1 | MIT | `site_packages: [langfuse]` | LLM observability SDK. Build backend uv-build. |
+| `langfuse` | 4.7.1 | MIT | `site_packages: [langfuse]` | LLM observability SDK. Build backend uv-build. ✅ **Already on conda-forge as `langfuse-python-feedstock` v4.7.1** (verified 2026-06-07 — `-python` suffix divergence; PyPI distribution `langfuse` maps to conda feedstock `langfuse-python` to disambiguate from upstream's polyglot SDK family `langfuse-js`, `langfuse-go`, etc.). Local recipe redundant for submission. Illustrates the four-form name-divergence check codified in skill v8.11.4 G10. |
 | `odfdo` | 3.22.8 | Apache-2.0 | `site_packages: [odfdo]` | OpenDocument (ODF) read/write library. Build backend uv-build. |
 | `flanker` | 0.9.11 | Apache-2.0 | `site_packages: [flanker]` | Mailgun email address/MIME parser. |
 | `ironcalc` | 0.7.0 | Apache-2.0 | `site_packages: [ironcalc]` | Rust-based spreadsheet engine; built per-Python (py310..py313). |
@@ -327,3 +332,109 @@ The sweep calls the canonical `conda-forge-expert` scripts:
 - `.claude/scripts/conda-forge-expert/vulnerability_scanner.py`
 
 These are the same scripts the MCP tools `validate_recipe`, `optimize_recipe`, `check_dependencies`, and `scan_for_vulnerabilities` wrap — the report is equivalent to running each MCP tool on every recipe.
+
+---
+
+## 2026-06-07 Re-audit
+
+The original 2026-05-31 report listed 15 conda-forge-submission-ready recipes (Tier-A `django-lasuite` + the 14 Phase-6b deps). On 2026-06-07 the user flagged that one of those, `langfuse`, was actually already on conda-forge under a different feedstock name (`langfuse-python`). That single observation triggered a full re-audit of every "submission-ready" candidate using the **four-form PyPI→conda name-divergence check** codified in skill v8.11.4 G10:
+
+1. Bare PyPI distribution name (`langfuse`)
+2. Hyphen↔underscore swap (`langfuse` ↔ `langfuse_`)
+3. `-py` suffix (`langfuse-py`)
+4. `-python` suffix (`langfuse-python`) — **this is where it lived**
+
+### Method
+
+For each of the 15 candidates: query `conda.anaconda.org/conda-forge/{noarch,linux-64}/repodata.json` for each of the four name forms, then cross-verify hits by fetching the feedstock's `recipe/recipe.yaml` (or `recipe/meta.yaml`) via `gh api repos/conda-forge/<feedstock-name>-feedstock/contents/recipe/recipe.yaml` and confirming the `source.url` points at the expected PyPI distribution. A research subagent ran the bulk query; surprising results were re-verified manually.
+
+### Findings — three recipes already on conda-forge
+
+| Recipe | PyPI name | conda-forge feedstock | Pattern | Version | Feedstock created | Verification |
+|---|---|---|---|---|---|---|
+| `django-lasuite` | `django-lasuite` | `django-lasuite-feedstock` | bare name | v0.0.26 | 2026-04-13 | 2 noarch builds at v0.0.26; feedstock `source.url: pypi.org/packages/source/d/django-lasuite/django-lasuite-${{ version }}.tar.gz` matches local recipe's source. |
+| `dockerflow` | `dockerflow` | `dockerflow-feedstock` | bare name | v2026.3.4 | **2026-06-01** | 1 noarch build at v2026.3.4; feedstock created just 7 days before this audit (after the original 2026-05-31 report was written). |
+| `langfuse` | `langfuse` | `langfuse-python-feedstock` | **`-python` suffix** | v4.7.1 | (recipe at v4.7.1) | 61 noarch builds; latest matches PyPI `langfuse` v4.7.1; recipe `source.url: pypi.org/packages/source/l/langfuse/langfuse-${{ version }}.tar.gz` confirms identity. The `-python` suffix disambiguates from upstream's polyglot SDK family (`langfuse-js`, `langfuse-go`). |
+
+The other 12 candidates were checked against all four name forms; none were found on conda-forge under any spelling. They remain genuinely submission-ready.
+
+### Findings — 12 recipes still genuinely submission-ready
+
+| Recipe | Local version | Pattern matched against (none found) |
+|---|---|---|
+| `brevo-python` | 4.0.10 | `brevo-python` / `brevo_python` / `brevo-python-py` / `brevo-python-python` — all 0 hits |
+| `nested-multipart-parser` | 1.6.0 | (all four forms checked, 0 hits) |
+| `django-pydantic-field` | 0.5.4 | (all four forms checked, 0 hits) |
+| `django-fernet-encrypted-fields` | 0.4.0 | (all four forms checked, 0 hits) |
+| `djangorestframework-api-key` | 3.1.0 | (all four forms checked, 0 hits) |
+| `zxcvbn` | 4.5.0 | (all four forms checked, 0 hits) |
+| `odfdo` | 3.22.8 | (all four forms checked, 0 hits) |
+| `flanker` | 0.9.11 | (all four forms checked, 0 hits) |
+| `ironcalc` | 0.7.0 | (all four forms checked, 0 hits) |
+| `libpff-python` | 20231205 | already named with `-python` suffix; bare `libpff` also 0 hits |
+| `py3langid` | 0.3.0 | (all four forms checked, 0 hits) |
+| `django-zxcvbn-password-validator` | 1.6.0 | (all four forms checked, 0 hits) — Wave-2 (depends on `zxcvbn`) |
+
+### Tier-D / Tier-E / Tier-F / Tier-B / Tier-C re-check
+
+A 5-recipe spot check across `lasuite-ui-kit` (B), `cunningham-react` (B), `meet-whisperx` (C), `suite-docs` (D), `suite-livekit-sip` (F): all carry the correct `⚠️ LOCAL-ONLY` banner; tier classification still accurate; artifacts present. No discrepancies found.
+
+Note: Tier-E frontend recipes live under `recipes/<name>-frontend/` (e.g. `recipes/suite-projects-frontend/`), not `recipes/<name>/`. Build artifacts use the suffix-stripped name (`suite-projects-*.conda`) because `package.name:` strips `-frontend`. An initial pass of the re-audit's research subagent flagged these as "missing recipe files" — false alarm; resolved on manual verification.
+
+### Action items
+
+1. **Update local Wave-1a / Wave-1b plan** (done — see § "Submission plan" above): drop `django-lasuite`, `dockerflow`, `langfuse` from the queue.
+2. **Update local channel install instructions** to prefer conda-forge for the three already-on-CF packages:
+   ```bash
+   # Before (mixed local + conda-forge):
+   conda install -c file://...build_artifacts/linux64 django-lasuite dockerflow langfuse suite-docs
+   # After (CF for available packages, local for the rest):
+   conda install -c conda-forge django-lasuite dockerflow langfuse-python
+   conda install -c file://...build_artifacts/linux64 suite-docs
+   ```
+   Note: `langfuse` on conda-forge is named `langfuse-python` (`-python` suffix). Importing it in Python is still `import langfuse`.
+3. **For Tier-D recipes depending on these three**: their `requirements.run:` blocks can stay as-is — the conda solver pulls from conda-forge directly when the dep is satisfiable there. The local-channel fallback only fires when conda-forge can't satisfy.
+4. **Auto-memory cross-skill**: the `langfuse → langfuse-python` finding extended skill v8.11.4's G10 from a 3-form to a 4-form check and added the third confirmed divergence pattern to `feedback_pypi_conda_mapping_unreliable.md`. The `dockerflow` and `django-lasuite` findings (bare-name matches that just hadn't existed on 2026-05-31) are not divergence-pattern data — they're "someone else got there first" data, and no skill changes are warranted for them. (`dockerflow` was created 2026-06-01, only 1 day after the original report.)
+
+### What changed between 2026-05-31 and 2026-06-07
+
+| Item | 2026-05-31 | 2026-06-07 | Cause |
+|---|---|---|---|
+| Submission-ready count | 15 | 12 | 3 already on CF (1 since-2026-04, 1 since-2026-06-01, 1 the agent missed due to `-python` suffix) |
+| Wave 1a | 1 (`django-lasuite`) | 0 | `django-lasuite` already on CF (would have been a duplicate-feedstock rejection) |
+| Wave 1b | 13 | 11 | `dockerflow` + `langfuse` already on CF |
+| Wave 2 | 1 (`django-zxcvbn-password-validator`) | 1 | unchanged |
+| Recipes built | 46 | 46 | unchanged |
+| Local-only count | 31 | 31 | unchanged |
+| Skill version | n/a | v8.11.4 | G10 broadened from 3-form to 4-form check based on the `langfuse-python` finding |
+
+### Re-audit reproducibility
+
+To re-run this audit later, for each candidate recipe under `recipes/`:
+
+```bash
+NAME=langfuse  # or whatever recipe
+for form in "$NAME" "${NAME//-/_}" "$NAME-py" "$NAME-python"; do
+  echo "Checking conda-forge for: $form"
+  for sub in noarch linux-64; do
+    hits=$(curl -sL "https://conda.anaconda.org/conda-forge/${sub}/repodata.json" | \
+      python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+pkgs = list(d.get('packages',{}).values()) + list(d.get('packages.conda',{}).values())
+h = [p for p in pkgs if p.get('name')==\"$form\"]
+print(f'  $sub: {len(h)} builds')
+")
+    echo "$hits"
+  done
+done
+```
+
+If any name form returns >0 builds, fetch the feedstock recipe to cross-verify identity:
+
+```bash
+gh api "repos/conda-forge/${MATCHED_NAME}-feedstock/contents/recipe/recipe.yaml" \
+  --jq '.content' | base64 -d | head -20
+```
+
+Look for `source.url` matching the expected PyPI distribution — that confirms the conda-forge feedstock is the same package, not an unrelated namespace clash.
