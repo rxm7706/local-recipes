@@ -1173,30 +1173,36 @@ Add a maintenance note to the PR description: **"On every version bump, the bot 
 
 **Case study**: staged-recipes Microsoft Agents bundle (May 2026). `microsoft-agents-m365copilot` v1.6.0 has no `python/v1.6.0` or `v1.6.0` tag on `microsoft/Agents-M365Copilot` — only `@microsoft/agents-m365copilot-v1.6.0` (JS). Pinned LICENSE to commit `0376aa418345d7f719b7b75d6e784fa7a765d9d0` with sha256 `c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383`. `microsoft-agents-m365copilot-core` v1.0.0 sdist *did* ship LICENSE, so no secondary source was needed there — even within a single monorepo, the per-package pattern varies.
 
-### G10. PyPI Python bindings to non-Python language runtimes use the `-py` suffix on conda-forge
+### G10. PyPI → conda-forge name divergence — verify across four spellings before declaring a dep missing
 
-**Symptom**: a recipe-generation flow declares a `requirements.run:` dep "missing" from conda-forge because a manual repodata search for the literal PyPI distribution name returns 0 hits across every platform. grayskull's emitted `requirements.run:` carries the PyPI name; the conda-forge feedstock actually exists under a name with a `-py` suffix.
+**Symptom**: a recipe-generation flow declares a `requirements.run:` dep "missing" from conda-forge because a manual repodata search for the literal PyPI distribution name returns 0 hits across every platform. grayskull's emitted `requirements.run:` carries the PyPI name; the conda-forge feedstock actually exists under a name with a `-py` or `-python` suffix, or with an unexpected hyphen↔underscore form.
 
-**Why**: when upstream PyPI publishes a Python binding to a non-Python language runtime (Rust, C, C++, Go), conda-forge convention disambiguates the binding from the underlying native package by suffixing the recipe name with `-py`. The PyPI distribution stays under the bare name; the conda-forge feedstock is `<name>-py`. The `-py` form is preferred when the native runtime is itself separately packageable on conda-forge (today or hypothetically) and conda-forge wants to leave the bare name available for the native package.
+**Why**: when upstream PyPI publishes a Python distribution whose bare name collides with — or could collide with — a non-Python package, conda-forge convention disambiguates by suffixing the feedstock name. The PyPI distribution stays under the bare name; the conda-forge feedstock adds a discriminator. There is no algorithmic rule — the choice of `-py` vs `-python` vs underscore-preserved vs bare is a per-feedstock decision. The `get_conda_name` mapping cache doesn't always capture either suffix form.
 
-| PyPI distribution | conda-forge feedstock | Underlying runtime |
-|---|---|---|
-| `wasmtime` | `wasmtime-py` | Bytecode Alliance WASM runtime (Rust, pyo3 binding) |
-| `tree_sitter` | `tree_sitter` (underscore preserved) | C parser library (binding + native ship together) |
+| PyPI distribution | conda-forge feedstock | Pattern | Why the divergence |
+|---|---|---|---|
+| `wasmtime` | `wasmtime-py` | `-py` suffix | Disambiguates the pyo3 Python binding from the underlying Rust WASM runtime, in case the runtime is ever packaged separately. |
+| `langfuse` | `langfuse-python` | `-python` suffix | Disambiguates from upstream's polyglot SDK family (langfuse-js, langfuse-go, etc.); `-python` names the Python distribution explicitly. |
+| `tree_sitter` | `tree_sitter` | underscore preserved (no suffix) | Binding + native C library ship in the same feedstock; no disambiguation needed. PyPI's underscore form carries straight through. |
 
-The `-py` suffix and the underscore-preserved spelling are both real divergence patterns and they apply to different conda-forge packaging decisions. There is no algorithmic rule — the PyPI → conda mapping is a per-feedstock choice. The mapping cache in `get_conda_name` doesn't always capture either pattern.
+The `-py` and `-python` forms tend to appear when the upstream project has a multi-language SDK family or a native runtime that conda-forge wants room to package separately. The underscore-preserved form appears when the binding and the native code ship in a single combined feedstock. **None of these are predictable from the PyPI name alone — you have to check.**
 
-**Fix — before declaring a dep missing**: check three name forms in order before concluding a dep isn't on conda-forge:
+**Fix — before declaring a dep missing**: check four name forms in order before concluding a dep isn't on conda-forge:
 
-1. The PyPI distribution name exactly (`wasmtime`).
+1. The PyPI distribution name exactly (`wasmtime`, `langfuse`).
 2. The name with `-` ↔ `_` swapped (`tree-sitter` ↔ `tree_sitter`).
 3. The name with a `-py` suffix (`wasmtime-py`).
+4. The name with a `-python` suffix (`langfuse-python`).
 
-`check_dependencies` does this lookup correctly via the grayskull mapping cache; manual repodata searches by literal name miss the suffix forms. If a dep isn't on conda-forge after all three checks, then it's genuinely missing — at that point the scoping decision (package the prerequisite first vs. defer) is real.
+`check_dependencies` does this lookup correctly via the grayskull mapping cache; manual repodata searches by literal name miss every suffix form. If a dep isn't on conda-forge after all four checks, then it's genuinely missing — at that point the scoping decision (package the prerequisite first vs. defer) is real.
 
-**Fix — in the recipe**: edit `requirements.run:` to use the conda-forge feedstock spelling. grayskull emits the PyPI name (`wasmtime`); the recipe must hand-edit to the feedstock spelling (`wasmtime-py`). The optimizer doesn't catch this divergence today — closing that gap is open work.
+**Fix — in the recipe**: edit `requirements.run:` to use the conda-forge feedstock spelling. grayskull emits the PyPI name (`wasmtime`, `langfuse`); the recipe must hand-edit to the feedstock spelling (`wasmtime-py`, `langfuse-python`). The optimizer doesn't catch this divergence today — closing that gap is open work (proposed `DEP-005` "PyPI name in run requirements has a `-py` or `-python` feedstock on conda-forge").
 
-**Case study**: scoping pass for `simonw/micropython-wasm` (Jun 7, 2026). Initial manual repodata search for `wasmtime` across noarch + linux-64 + osx-64 + osx-arm64 + win-64 + linux-aarch64 + linux-ppc64le returned 0 hits in all 7 subdirs; concluded `wasmtime` was missing and proposed a two-recipe bundle (build `wasmtime` as a maturin/pyo3 prerequisite first, then `micropython-wasm` on top). User pointed at https://anaconda.org/conda-forge/wasmtime-py/overview and `conda-forge/wasmtime-py-feedstock`; re-check by feedstock name confirmed 39 builds × 5 platforms (linux-64 / osx-64 / osx-arm64 / win-64 / linux-aarch64) at v45.0.0. The single-recipe scope held; no prerequisite needed. The hand-edit `requirements.run: [..., wasmtime-py]` was the only change to grayskull's output. Auto-memory `feedback_pypi_conda_mapping_unreliable.md` updated in parallel with the second confirmed divergence pattern (the first being `tree_sitter` from G7's bundle).
+**Case study 1** (`-py` suffix): scoping pass for `simonw/micropython-wasm` (Jun 7, 2026). Initial manual repodata search for `wasmtime` across noarch + linux-64 + osx-64 + osx-arm64 + win-64 + linux-aarch64 + linux-ppc64le returned 0 hits in all 7 subdirs; concluded `wasmtime` was missing and proposed a two-recipe bundle. User pointed at `conda-forge/wasmtime-py-feedstock`; re-check by feedstock name confirmed 39 builds × 5 platforms at v45.0.0. The hand-edit `requirements.run: [..., wasmtime-py]` was the only change to grayskull's output.
+
+**Case study 2** (`-python` suffix): suitenumerique build-report audit (Jun 7, 2026). The 2026-05-31 SUITENUMERIQUE_SUMMARY.md listed `langfuse` as a Wave-1b conda-forge-submission-ready recipe ("not on conda-forge — clean candidate"). Re-check on user prompt found `conda-forge/langfuse-python-feedstock` at v4.7.1 (matching PyPI `langfuse` 4.7.1; 61 noarch builds; recipe `source.url: pypi.org/packages/source/l/langfuse/langfuse-${{ version }}.tar.gz` confirms identity). The local-recipes `recipes/langfuse/` build was redundant for submission; Wave-1b count dropped 13 → 12.
+
+Auto-memory `feedback_pypi_conda_mapping_unreliable.md` is the live cross-skill reference for this multi-form check; it carries all three confirmed patterns.
 
 ### G11. PyPI sdist symlinks fail hatchling's wheel build on Windows
 
