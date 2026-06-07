@@ -937,7 +937,9 @@ Patterns that look right but fail silently or produce broken recipes. Each entry
 
 **Symptom**: an `export FOO=bar` in one script entry has no effect in the next entry. `pip install` later in the script doesn't see `CFLAGS` you set earlier.
 
-**Why**: rattler-build evaluates each top-level item under `build.script:` (when given as a YAML list) as an independent shell invocation. Shell state — env vars, `cd`, function definitions — does not survive between entries.
+**Why**: rattler-build evaluates each top-level item under `build.script:` (when given as a YAML list) as an independent shell invocation. Shell state — env vars and function definitions — does not survive between entries.
+
+**Caveat — CWD specifically *does* persist across entries.** Env vars and shell functions don't carry, but the current working directory does. If entry 1 ends with CWD inside a subdirectory, entry 2 starts there too. See **G13** for the cross-platform CWD-isolation pattern (pushd/popd) and the Windows cmd.exe `(...)` -is-not-a-subshell trap that makes naive bash subshell patterns fail on Windows.
 
 **Fix**: choose one of three patterns:
 
@@ -1275,6 +1277,52 @@ The minimum for the gate flip is 2 platforms. List only what you've verified —
 **When NOT to use this**: if your selectors are in build-time fields (`build.script:`, `build.skip:`, `requirements.host:`, `requirements.build:`), the noarch artifact really IS broken on at least one platform — the lint is correctly rejecting your recipe. Either remove `noarch: python` and produce per-platform builds, or restructure so the build is platform-independent.
 
 **Case study**: staged-recipes PR #33534 (xorq 0.3.26, Jun 7, 2026). After landing G11's symlink patch and adding an `if: linux / then:` selector to gate `git-annex` (which has 139 conda-forge linux-64 builds + zero on every other platform), the next CI run fired R1-002 on the linter. Research subagent traced the rule to `conda_smithy/linter/lint_recipe.py` line 302 (`if "lint_noarch_selectors" not in lints_to_skip`) with the v1 path in `conda_recipe_v1_linter.py` → `lint_usage_of_selectors_for_noarch()` and message class `NoarchSelectorsV1`. Adding `recipes/xorq/conda-forge.yml` with `noarch_platforms: [linux_64, osx_64, win_64]` (all three because the symlink patch made Windows viable) flipped the lint on the subsequent push. Final CI run (head `0be2b938e4`) went all-green across linter + conda-forge-linter + linux_64 + osx_64 + win_64. Two-commit fix sequence on top of the existing PR head: `ffbe7aa174` (selector + symlink patch) → `0be2b938e4` (conda-forge.yml).
+
+### G13. CWD persists across `script:` list entries — and `(cmd)` is not a subshell on Windows cmd.exe
+
+**Symptom**: a multi-entry `build.script:` list works on Linux + macOS but on Windows the second entry fails with `Directory '.' is not installable. Neither 'setup.py' nor 'pyproject.toml' found.` (or similar CWD-confused error). The first entry uses a `cd subdir && ...` pattern, sometimes wrapped in `(parens)` to "isolate" the change.
+
+**Why** (two interlocking facts the skill didn't previously capture):
+
+1. **rattler-build's script-list entries share CWD across entries.** G1 documents that environment variables don't carry across entries — but CWD specifically *does* carry. If entry 1 ends with CWD inside a subdirectory, entry 2 starts there. (Verified empirically on solvor PR #33647 buildId 1534140 Windows leg; also reproduced on local Linux builds.)
+
+2. **On Windows cmd.exe, `(cmd1 && cmd2)` is command grouping, not a subshell.** On bash, `(cd dir && do_thing)` runs the entire group in a child process — the `cd` only affects that child, so when control returns to the parent shell, CWD is unchanged. On cmd.exe, `(...)` is purely syntactic grouping (parentheses associate the AND chain) — there is no child process, so the `cd` permanently changes the parent shell's CWD. The same recipe that "works" on Linux is broken on Windows.
+
+**Fix**: use `pushd` / `popd`, which work identically in both bash AND cmd.exe — `pushd dir` changes CWD and pushes the previous CWD onto a stack; `popd` restores it. Both shells implement this the same way, and the recipe stays one source for all three platforms:
+
+```yaml
+build:
+  script:
+    # Cross-platform CWD isolation across script-list entries.
+    - pushd subdir && some_tool --output ../result.yml && popd
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+```
+
+Forward slashes in the relative output path (`../result.yml`) work on both shells; cmd.exe accepts `/` as a path separator in this context. No `if: unix / then / else:` block is needed.
+
+**Alternative**: collapse the two entries into one long-form entry with a single shell invocation. This sidesteps CWD-persistence entirely (CWD changes are scoped to that one entry by definition):
+
+```yaml
+build:
+  script:
+    - if: unix
+      then: |
+        cd subdir
+        some_tool --output ../result.yml
+        cd ..
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      else: |
+        pushd subdir
+        some_tool --output ../result.yml
+        popd
+        "%PYTHON%" -m pip install . -vv --no-deps --no-build-isolation
+```
+
+The pushd/popd form (preferred) is shorter and avoids platform forking. Use the collapsed-entry form only when entries need shell-specific syntax beyond CWD.
+
+**When this comes up in practice**: any maturin/PyO3 recipe whose `[tool.maturin].manifest-path` points at a Cargo.toml in a subdirectory (e.g. solvor's `rust/Cargo.toml`). `cargo-bundle-licenses` does not have a `--manifest-path` flag — it operates on whichever directory it's invoked from. So the recipe must `pushd` to the Cargo.toml's directory before invoking, write `THIRDPARTY.yml` back up via `--output ../THIRDPARTY.yml`, and `popd` before the pip step.
+
+**Case study**: staged-recipes PR #33647 (solvor 0.6.2, Jun 7, 2026). Initial fix to a `cargo-bundle-licenses` Cargo-not-found error used a bash-subshell pattern: `- (cd rust && cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml)`. Local Linux build succeeded; Windows CI buildId 1534140 failed at line 1106 of the log with `pip._internal.exceptions.InstallationError: Directory '.' is not installable. Neither 'setup.py' nor 'pyproject.toml' found.` (the cmd prompt visible in the log was `(base) %SRC_DIR%\rust>...`, confirming CWD had leaked into the pip step). Replaced with `pushd rust && cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml && popd`; subsequent CI run on `efd84c9ee6` went all-green across linter + linux_64 + osx_64 + win_64.
 
 ---
 
