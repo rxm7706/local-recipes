@@ -43,9 +43,13 @@ about:
   homepage: https://brevo.com
   license: MIT
   license_file: LICENSE
-  summary: REPLACE_SUMMARY
+  summary: Python client for the Brevo (ex Sendinblue) transactional email API
   description: |
-    REPLACE_DESCRIPTION
+    brevo-python is the official Python client for the Brevo
+    (formerly Sendinblue) transactional email and marketing API.
+    It provides programmatic access to transactional email sending,
+    contact management, SMS, automation workflows, and analytics
+    endpoints.
   repository: https://github.com/getbrevo/brevo-python
   documentation: https://developers.brevo.com
 
