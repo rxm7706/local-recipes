@@ -3,7 +3,7 @@
 
 [workspace]
 name = "staged-recipes"
-requires-pixi = ">=0.67.2"
+requires-pixi = ">=0.70.1"
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
@@ -622,7 +622,7 @@ pydantic-ai = ">=1.61.0"          # Pydantic-AI agent framework
 #python-a2a = ">=0.5.10,<1"        # NOT FOUND - No updates
 yamllint = ">=1.38.0"             # YAML linter
 taplo = ">=0.10.0"                # TOML linter / formatter / language server
-moto = ">=5.2.1"                  # mock AWS SDK for Python tests
+moto = ">=5.2.2"                  # mock AWS SDK for Python tests
 nbqa = ">=1.9.0"                  # apply Python linters / formatters to Jupyter notebooks
 sqlfluff = ">=4.2.2"              # SQL linter and formatter
 go-sops = ">=3.13.1"              # Mozilla SOPS encrypted-secret editor
