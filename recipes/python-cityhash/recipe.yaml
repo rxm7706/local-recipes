@@ -40,12 +40,14 @@ tests:
   - python:
       imports:
         - cityhash
-        - cityhashcrc
+        # cityhashcrc requires SSE4.2 intrinsics that upstream doesn't build
+        # on Windows — skip there. linux/osx ship all three modules from the
+        # same compile.
+        - if: not win
+          then:
+            - cityhashcrc
         - farmhash
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   homepage: https://pypi.org/project/cityhash
