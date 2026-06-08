@@ -1324,6 +1324,40 @@ The pushd/popd form (preferred) is shorter and avoids platform forking. Use the 
 
 **Case study**: staged-recipes PR #33647 (solvor 0.6.2, Jun 7, 2026). Initial fix to a `cargo-bundle-licenses` Cargo-not-found error used a bash-subshell pattern: `- (cd rust && cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml)`. Local Linux build succeeded; Windows CI buildId 1534140 failed at line 1106 of the log with `pip._internal.exceptions.InstallationError: Directory '.' is not installable. Neither 'setup.py' nor 'pyproject.toml' found.` (the cmd prompt visible in the log was `(base) %SRC_DIR%\rust>...`, confirming CWD had leaked into the pip step). Replaced with `pushd rust && cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml && popd`; subsequent CI run on `efd84c9ee6` went all-green across linter + linux_64 + osx_64 + win_64.
 
+### G14. Autotick bot v0 version bumps can fail the conda-forge-linter `package.version` float-parse rule
+
+**Symptom**: a `[bot-automerge] <pkg> vX.Y` PR from `regro-cf-autotick-bot` against a v0 (`meta.yaml`) feedstock fails the conda-forge-linter check with:
+
+> ❌ `package.version has a value that is interpreted as a floating-point number. Please quote it (like "0.14" or "{{ var }}") to ensure that it is interpreted as string and preserved exactly.`
+
+The Linux build itself passes; only the linter blocks. With `bot.automerge: true`, the bot still refuses to merge because lint=failed.
+
+**Why**: the lint runs *after* jinja rendering. The autotick bot edits `{% set version = "0.14" %}` (correctly quoted at the jinja level) but does NOT change the YAML-level template:
+
+```yaml
+package:
+  name: {{ name|lower }}
+  version: {{ version }}     # ← renders to: version: 0.14
+```
+
+YAML then types the rendered value: `0.14` (bare) → float; `"0.14"` (quoted) → string. The lint correctly flags the float interpretation because PyPI versions like `1.0` could collapse to `1` (an integer) and lose precision in extreme cases. For most versions it's only a type-mismatch, but the rule fires either way.
+
+This affects already-merged v0 recipes whose `package.version` was never quoted at the YAML level — the original submission may have passed because the lint rule was added later. The next autotick bump exposes the issue.
+
+**Fix — minimal, keep v0**: quote `package.version` at the YAML level:
+
+```yaml
+package:
+  name: {{ name|lower }}
+  version: "{{ version }}"     # ← keeps the string type after rendering
+```
+
+The jinja `{% set version = "X.Y" %}` line stays unchanged. The double quotes around `{{ version }}` survive jinja and become YAML quotes, so the rendered value is `version: "0.14"`.
+
+**Long-term fix — migrate to v1**: v1 recipe.yaml uses `${{ version }}` substitution and the v1 parser preserves the original string type by construction. The float-parse class of bugs simply doesn't exist on v1. If the maintainer is already touching the recipe to fix this lint, it's often the right moment to also do the v0 → v1 migration (per the Migration Protocol).
+
+**Case study**: feedstock PR #8 on `conda-forge/wagtail-ab-testing-feedstock` (Jun 7, 2026) — autotick bot bumped `0.13` → `0.14` and the conda-forge-linter blocked with the float-parse message. v0.13 had presumably passed when the recipe was first submitted; the lint rule was added or tightened since. Local fix went straight to v1: wrote `recipe/recipe.yaml`, updated `conda-forge.yml` with `conda_build_tool: rattler-build`, deleted `recipe/meta.yaml` after a clean v1 build (`wagtail-ab-testing-0.14-pyhcf101f3_0.conda`, 148 KiB), and aligned `conda-forge.yml` with the python-cityhash template (`bot.check_solvable`, `bot.run_deps_from_wheel`, `conda_install_tool: pixi`). The float-parse issue can't recur on v1.
+
 ---
 
 ## Skill Automation
