@@ -2,8 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.0.40"
-  python_min: "3.10"
+  version: "0.0.41"
 
 package:
   name: ag-ui-langgraph
@@ -11,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/ag-ui-langgraph/ag_ui_langgraph-${{ version }}.tar.gz
-  sha256: 11b009920b79fe97162f53777ecd7860c8a0999479d55f5d85d8da979d5be28f
+  sha256: 3ea1fcb49b147d9532b0a90f2a5554d6ffd0d9365590fa2557ba16a881aeeb7a
 
 build:
   number: 0
@@ -43,7 +42,6 @@ tests:
       - pip check
     requirements:
       run:
-        - python ${{ python_min }}.*
         - pip
         - fastapi >=0.115.12
 
