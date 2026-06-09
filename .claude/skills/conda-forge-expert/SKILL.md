@@ -564,6 +564,18 @@ When `get_build_summary` returns `status: failed`, invoke the six-step triage fr
 
 **Maximum debug loop**: 5 iterations. If the build still fails after 5 cycles, stop and report findings to the user with a diagnosis — don't continue guessing.
 
+### Diagnostic chain for feedstock CI test failures
+
+When an existing feedstock's CI fails on a **test phase** (build passed, package built, then test env import/script failed) — distinct from a build-phase failure — the failure is almost always a runtime-dep version mismatch between the recipe's declared lower bound and what upstream actually needs. Use this chain:
+
+1. **Capture the exact ImportError / test command output** via `gh run view <run-id> --repo conda-forge/<name>-feedstock --log-failed | tail -200`. Look for `ImportError: cannot import name 'X' from 'Y'` — `Y` is the offending dep, `X` is the missing symbol.
+2. **Cross-check upstream's `pyproject.toml` `[project.dependencies]`** via `WebFetch(https://pypi.org/pypi/<name>/json)` or by reading the sdist's `pyproject.toml` directly. Compare upstream's declared lower bound for `Y` against the recipe's `requirements.run:` lower bound — discrepancies are the prime suspect.
+3. **Check the offending dep's feedstock state** via `lookup_feedstock(pkg_name=<Y>)`. If conda-forge is behind the required version, the fix has a prerequisite: bump `<Y>`'s feedstock first, then bump the consumer's pin. For local verification, build the prerequisite locally so v8.2.0's local-channel auto-inject can resolve it.
+4. **Confirm the test environment's Python version** from the CI log (`Specs: ... ag-ui-langgraph ==0.0.41 pyhcf101f3_0` + `python 3.14.5 habeac84_100_cp314` in the resolution table). If the recipe's test `requirements.run:` lacks a `python` pin, the solver resolves to the newest available Python rather than `python_min` — verification on the lowest-supported version is silently skipped. Add `python ${{ python_min }}.*` to the test reqs (see [Sub-workflow: Updating an existing recipe](#sub-workflow-updating-an-existing-recipe-diff-before-apply) for the diff-before-apply pattern).
+5. **Bump the recipe's lower bound** to match upstream's declared minimum. Don't tighten further than upstream — that's a different decision (security/compat).
+
+Most "ImportError on CI" failures resolve at step 2 once the upstream pyproject is consulted. The chain failed on `conda-forge/ag-ui-langgraph-feedstock` PR #22 because the recipe pinned `ag-ui-a2ui-toolkit >=0.0.2` but upstream's `pyproject.toml` had been bumped to `>=0.0.3` (where the `A2UIGuidelines` symbol was added) — a one-line recipe edit, but the diagnosis needed the full chain.
+
 ---
 
 ## Pre-PR Quality Gate Checklist
