@@ -395,6 +395,12 @@ Use the **move-aside + fresh-generate + diff + selective-apply** pattern:
 - Long `source.url` line-folded across two lines by ruamel.yaml's default `width=80` — looks like `weasyprint-${{ version \n    }}.tar.gz`. Cosmetic only; recipe still builds. The v8.11.1 line-fold fix landed in `edit_recipe` but not in the grayskull subprocess emit path. Restore the clean single-line form.
 - `python_min: "3.10"` emitted into `context:` even at the conda-forge default floor — per v8.8.0 design it should be omitted at the default; the fix didn't fully land in the grayskull path. Drop it unless overriding the floor.
 
+**Special-case categorizations** to apply during the 3-bucket walk:
+
+- **Test `requirements.run:` missing a `python` pin → ALWAYS a correction to apply**. When a test environment doesn't pin `python`, the solver resolves to the newest available cpython (the conda-forge default), bypassing `python_min` verification on the lowest-supported version. Symptom in CI logs: the resolution table shows `python 3.14.5 ... cp314` for a recipe whose `python_min` is `3.10`. Add `python ${{ python_min }}.*` to the script-test's `requirements.run:` (or use the CFEP-25 triad's `python_version: [${{ python_min }}.*, "*"]` for python-test-blocks). The optimizer's `SEL-002` only fires on the python-test-block form; it doesn't flag the missing `python` pin in a script-test's `requirements.run:` — this categorization must be done by hand during the diff walk.
+- **Upstream's explicit `requires-python = "<X,>=Y"` upper bound → a correction to apply** when migrating from a speculative `<4.0`. Tightening to upstream's declared maximum (`<3.15` for `requires-python = "<3.15,>=3.10"`) matches what the wheel build matrix actually supports. The optimizer's `DEP-002` flags this as a hard upper bound in `run:` — acknowledge the trade-off in the categorization (upstream-explicit upper bounds are widely accepted by reviewers; the `DEP-002` suggestion to move it to `run_constrained` is for **speculative** upper bounds, not upstream-declared ones).
+- **Run dep lower-bound bumps where upstream's `pyproject.toml` advanced → a correction to apply, but check the dep's feedstock state first**. When upstream has bumped a transitive dep's lower bound (e.g. `ag-ui-a2ui-toolkit>=0.0.2` → `>=0.0.3`) and the new version isn't on conda-forge yet, the fix becomes 2-step: bump the prerequisite feedstock first, then the consumer. For local verification, build the prerequisite locally so v8.2.0's local-channel auto-inject can resolve it. See [G15](#g15-rebuilding-the-same-recipe-re-hashes-the-conda-artifact-but-leaves-repodatajson-stale) for the rebuild-hash-mismatch trap that surfaces during cross-package local fixes.
+
 > *Skills: [`code-review-and-quality`] — categorize each hunk by axis (correctness/standards/style); [`source-driven-development`] — PyPI's `project_urls` is authoritative for `about.*`, the existing recipe is authoritative for system-lib deps grayskull can't see; [`incremental-implementation`] — restore-then-apply, not generate-then-merge.*
 
 ---
@@ -1394,6 +1400,46 @@ The jinja `{% set version = "X.Y" %}` line stays unchanged. The double quotes ar
 **Long-term fix — migrate to v1**: v1 recipe.yaml uses `${{ version }}` substitution and the v1 parser preserves the original string type by construction. The float-parse class of bugs simply doesn't exist on v1. If the maintainer is already touching the recipe to fix this lint, it's often the right moment to also do the v0 → v1 migration (per the Migration Protocol).
 
 **Case study**: feedstock PR #8 on `conda-forge/wagtail-ab-testing-feedstock` (Jun 7, 2026) — autotick bot bumped `0.13` → `0.14` and the conda-forge-linter blocked with the float-parse message. v0.13 had presumably passed when the recipe was first submitted; the lint rule was added or tightened since. Local fix went straight to v1: wrote `recipe/recipe.yaml`, updated `conda-forge.yml` with `conda_build_tool: rattler-build`, deleted `recipe/meta.yaml` after a clean v1 build (`wagtail-ab-testing-0.14-pyhcf101f3_0.conda`, 148 KiB), and aligned `conda-forge.yml` with the python-cityhash template (`bot.check_solvable`, `bot.run_deps_from_wheel`, `conda_install_tool: pixi`). The float-parse issue can't recur on v1.
+
+### G15. Rebuilding the same recipe re-hashes the `.conda` artifact but leaves `repodata.json` stale
+
+**Symptom**: a downstream recipe's build (or test) fails with:
+
+```
+× failed to fetch <pkg>-<ver>-<build>.conda
+  ├─▶ failed to interact with the package cache layer.
+  ╰─▶ hash mismatch when extracting file:///.../build_artifacts/.../<pkg>-<ver>-<build>.conda:
+      expected <SHA-A>, got <SHA-B>, total size NNNN bytes
+```
+
+The downstream recipe references the dep correctly; the artifact exists on disk at the expected path; nothing in the recipe is wrong. The mismatch is purely between the on-disk `.conda` file and the channel's `repodata.json` record.
+
+**Why**: rattler-build embeds the build timestamp into the `.conda` zip's central directory. A second build of the *same recipe sources* on the same machine produces an artifact with **identical contents but different bytes** (the embedded timestamp differs), so its sha256 differs from the first build. rattler-build's normal write path is atomic — it writes the new artifact AND updates `repodata.json` to point at the new hash. But the failure mode appears when:
+
+1. The first build produces `pkg-1.0.0-h00.conda` with sha256 A and writes A into `repodata.json`.
+2. A second `rattler-build build` invocation on the same recipe overwrites the artifact with sha256 B but the `repodata.json` update path doesn't fire (rattler-build's internal index cache thinks A is current; or the index step is skipped because nothing's "changed").
+3. A downstream build resolves the dep via repodata → expects A → reads the file → gets B → hash mismatch error.
+
+The most common trigger in this skill's workflow is verifying a green build by re-running `pixi run -e local-recipes rattler-build build --recipe recipes/X/recipe.yaml ...` twice — once to capture the build summary, a second time to grep for `✔ all tests passed!`. The second run silently invalidates the channel for any other recipe depending on X.
+
+**Fix**: delete the on-disk artifact, then rebuild — rattler-build writes the new artifact AND updates `repodata.json` atomically on a fresh build (vs. an idempotent re-run):
+
+```bash
+# Delete the stale artifact + force a fresh build that re-indexes
+rm build_artifacts/<config>/noarch/<pkg>-<ver>-<build>.conda
+pixi run -e local-recipes rattler-build build --recipe recipes/<pkg>/recipe.yaml \
+  --variant-config .ci_support/<config>.yaml \
+  --variant-config .pixi/envs/local-recipes/conda_build_config.yaml \
+  --output-dir build_artifacts/<config>
+```
+
+The rebuild produces the same byte-equivalent artifact (modulo timestamp), but this time `repodata.json` is updated to match. The downstream build then resolves cleanly.
+
+**Don't use** `pixi run rattler-index` — the task isn't bound in this skill's pixi env. `rattler-index fs <channel-path>` is a real subcommand but invoking it through the unconfigured pixi task just dumps the task list. The rebuild path above is the practical re-index.
+
+**When this comes up in practice**: cross-package local fix workflows. v8.2.0 documented the `native-build.sh` auto-channel-injection feature — when recipe B has `run: A` and A was just built locally, the build of B auto-prepends `file://${REPO_ROOT}/build_artifacts/<config>` to `channel_sources`. The auto-inject is correct, but it relies on `repodata.json` being current. Rebuilding A invalidates this contract.
+
+**Case study**: `ag-ui-langgraph 0.0.41` fix session, Jun 9, 2026. Bumped `ag-ui-a2ui-toolkit` 0.0.2 → 0.0.3, built it (first build wrote artifact + indexed). Then ran the same build command a second time to capture `✔ all tests passed!` in a grep-friendly form — that second build wrote new artifact bytes but the repodata still referenced the first build's hash. The `ag-ui-langgraph 0.0.41` build then failed at the test phase with the exact `hash mismatch when extracting file://.../ag-ui-a2ui-toolkit-0.0.3-pyhc364b38_0.conda: expected 85ea90d5..., got 766570d75...` error. Fix: `rm` the stale artifact, rebuild ag-ui-a2ui-toolkit — repodata refreshed in step. Downstream ag-ui-langgraph build then resolved 0.0.3 cleanly and tests passed.
 
 ---
 
