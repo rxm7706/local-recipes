@@ -370,7 +370,32 @@ When asked to create or update a recipe, execute these steps in order. Each step
     - When step 8b already pushed the branch, `submit_pr`'s prep phase no-ops (idempotency check) and proceeds straight to opening the PR
     - If PR creation fails after a successful push, the result includes `branch` + `fork_branch_url` + a `hint` to retry just the PR step — no need to re-push
     - See [Pre-PR Quality Gate Checklist](#pre-pr-quality-gate-checklist) before calling
+    - **Feedstock updates branch off here.** `submit_pr` targets `conda-forge/staged-recipes` — correct for **new** package submissions. For updates to an **existing** feedstock (version bumps, dep fixes, CI fixes), the PR target is `conda-forge/<name>-feedstock` directly, not staged-recipes. `lookup_feedstock(pkg_name=<name>)` returning `exists=True` is the signal — when it does, skip steps 8b + 9 and instead: (a) clone the feedstock, (b) copy `recipes/<name>/recipe.yaml` over `recipe/recipe.yaml`, (c) bump `build.number` (or reset to 0 on version bump), (d) open a PR against the feedstock. Steps 1–8 (gates + native build) apply identically to both paths.
     - > *Skills: [`shipping-and-launch`] — complete pre-submit checklist; [`git-workflow-and-versioning`] — atomic commit (`feat: add <name> recipe`); [`documentation-and-adrs`] — PR description must explain WHY.*
+
+### Sub-workflow: Updating an existing recipe (diff-before-apply)
+
+When the task is **refreshing an existing local recipe** (version bump on a feedstock you maintain locally, applying a grayskull-canonical-pattern update, or re-validating an older recipe against current conventions), do **not** run `generate_recipe_from_pypi` straight into `recipes/<name>/` — grayskull happily drops critical hand-curated content (C-FFI deps, build workarounds, secondary sources, lint-justified comments). The autotick path (`update_recipe`) only handles version + sha256; anything structural needs a manual diff.
+
+Use the **move-aside + fresh-generate + diff + selective-apply** pattern:
+
+1. `mv recipes/<name> recipes/<name>.current` — stash the live recipe.
+2. `generate_recipe_from_pypi(package_name=<name>, version=<new>)` — grayskull writes a fresh recipe into `recipes/<name>/`.
+3. `enrich_from_feedstock(recipe_path=recipes/<name>/recipe.yaml)` — pulls maintainers + curated about-fields from the existing feedstock (idempotent).
+4. `diff -u recipes/<name>.current/recipe.yaml recipes/<name>/recipe.yaml` — produce the full diff.
+5. **Categorize each hunk into three buckets** before touching anything:
+   - **Corrections to apply** — canonical pattern updates (v8.10.0 literal `package.name`/`source.url`, CFEP-25 test triad, PyPI-authoritative `about.*` metadata, dropped speculative pins). Grayskull and the current canonical patterns are the source of truth.
+   - **Regressions to reject** — grayskull-dropped content the recipe needs (system C-libs like `pango`/`glib` that aren't on PyPI, workaround pins documented with comments, `pip check` test commands, secondary `source.url` entries, downstream patches).
+   - **Stylistic (no change)** — equivalent formatting differences (block-scalar vs folded `description:`, maintainer ordering). Preserve current to minimize churn.
+6. **Present the categorization to the user** in a 3-column table before applying — this is the inspection checkpoint. Surface the regressions explicitly with one-line justifications; the user is the final reviewer on whether grayskull dropping `glib` is genuinely safe.
+7. On approval: `rm -rf recipes/<name> && mv recipes/<name>.current recipes/<name>` to restore the live recipe as the base, then apply only the approved corrections via `edit_recipe` or `Edit`. Restoring the base avoids accidentally inheriting any grayskull-emitted bug (e.g., the line-folded source URL caveat below) that wasn't on the categorization list.
+8. Re-run steps 2–7 of the main loop (`validate_recipe` / `optimize_recipe` / `check_dependencies` / `scan_for_vulnerabilities` / build) on the merged result.
+
+**Known grayskull-path emit drifts** to expect during step 4 (do not silently inherit):
+- Long `source.url` line-folded across two lines by ruamel.yaml's default `width=80` — looks like `weasyprint-${{ version \n    }}.tar.gz`. Cosmetic only; recipe still builds. The v8.11.1 line-fold fix landed in `edit_recipe` but not in the grayskull subprocess emit path. Restore the clean single-line form.
+- `python_min: "3.10"` emitted into `context:` even at the conda-forge default floor — per v8.8.0 design it should be omitted at the default; the fix didn't fully land in the grayskull path. Drop it unless overriding the floor.
+
+> *Skills: [`code-review-and-quality`] — categorize each hunk by axis (correctness/standards/style); [`source-driven-development`] — PyPI's `project_urls` is authoritative for `about.*`, the existing recipe is authoritative for system-lib deps grayskull can't see; [`incremental-implementation`] — restore-then-apply, not generate-then-merge.*
 
 ---
 
