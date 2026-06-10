@@ -18,11 +18,11 @@ platforms = [
 
 [feature.python.dependencies]
 python = ">=3.12.13,3.12.*"       # Python language interpreter
-pixi = ">=0.70.1"                 # Pixi package & environment manager
+pixi = ">=0.70.2"                 # Pixi package & environment manager
 gh = ">=2.93.0"                   # GitHub CLI for PR / issue / repo automation
 nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
 bmad-method = ">=6.8.0"           # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=0.9.5"             # Spec-kit for spec-driven development
+spec-kit = ">=0.10.1"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
 
@@ -463,15 +463,15 @@ twine = ">=6.2.0"                 # PyPI artifact uploader
 uv = ">=0.11.19"                  # Fast Rust-based Python package installer / resolver
 wheel = ">=0.47.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=11.0.3"                # Fast disk-efficient Node package manager
+pnpm = ">=11.5.2"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=2.5.7"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.1"            # Bundle a conda env into a relocatable archive
-conda-pypi = ">=0.9.0"            # Better PyPI interoperability for the conda ecosystem
+conda-pypi = ">=0.10.0"            # Better PyPI interoperability for the conda ecosystem
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
 feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.70.1"                 # Pixi package & environment manager
+pixi = ">=0.70.2"                 # Pixi package & environment manager
 #pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
 rattler-build = ">=0.65.1"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.3.13"  # pixi build backend that delegates to rattler-build
@@ -525,7 +525,7 @@ tablib = ">=3.9.0"                # Tabular data handling
 tabulate = ">=0.10.0"             # Pretty-print tabular data
 # Category 8: Visualization & Dashboards
 # See: docs/reference/package-taxonomy.md#8-visualization--dashboards
-bokeh = ">=3.9.0"                 # Statistical and novel interactive HTML plots for Python
+bokeh = ">=3.9.1"                 # Statistical and novel interactive HTML plots for Python
 bokeh-django = ">=0.2.1"          # Bokeh integration for Django web applications.
 kedro-viz = ">=12.3.0"            # Visualize your Kedro pipelines in the browser with Kedro-Viz
 panel = ">=1.9.3"                 # The powerful data exploration & web app framework for Python.
@@ -563,7 +563,7 @@ plotly = ">=6.8.0"                # Interactive web-based plotting library
 poppler = ">=26.5.0"              # PDF rendering library (pdf2image backend)
 pydub = ">=0.25.1"                # Audio processing library for Python (used in speechrecognition for audio manipulation)
 pymupdf = ">=1.27.2.2"            # MuPDF Python bindings — fast PDF text/layout extraction
-pypdf = ">=6.13.0"                # Pure-Python PDF reader / writer / splitter
+pypdf = ">=6.13.1"                # Pure-Python PDF reader / writer / splitter
 pytesseract = ">=0.3.13"          # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
 python-docx = ">=1.2.0"           # Read / write Microsoft Word .docx files
 python-pptx = ">=1.0.2"           # Read / write Microsoft PowerPoint .pptx files
@@ -603,12 +603,12 @@ fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A prot
 fastmcp = ">=3.4.2"               # FastMCP framework for building MCP servers
 github-copilot-sdk =">=0.1.22"    # GitHub Copilot Python SDK
 langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
-langchain-mcp-adapters = ">=0.2.2"  # LangChain ↔ MCP tool/resource adapters
+langchain-mcp-adapters = ">=0.3.0"  # LangChain ↔ MCP tool/resource adapters
 lumen-ai-anthropic = ">=1.0.0"    # Lumen AI's Anthropic backend integration
 mcp = ">=1.27.2"                  # Official Model Context Protocol Python SDK
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=1.61.0"          # Pydantic-AI agent framework
-"llama.cpp" = ">=9222"            # llama.cpp local LLM inference engine
+"llama.cpp" = ">=9574"            # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
 #litellm = ">=1.83.14"             # NOT ADDED - Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
@@ -661,7 +661,7 @@ mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers t
 [dependencies]
 #[feature.python.dependencies]
 python = "3.12.*"                 # Python language interpreter
-pixi = ">=0.70.1"                 # Pixi package & environment manager
+pixi = ">=0.70.2"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
 pip = ">=26.1.2"                  # Python package installer
 uv = ">=0.11.19"                  # fast Rust-based Python package installer / resolver
