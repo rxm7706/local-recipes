@@ -183,10 +183,12 @@ def _normalize_grayskull_test_matrix(recipe_path: Path) -> bool:
     def _expand(match: re.Match[str]) -> str:
         indent = match.group("indent")
         value = match.group("value")
+        # Canonical YAML: list items indented 2 spaces deeper than the parent key.
+        # See recipe_optimizer.py FMT-001 for the enforcement check.
         return (
             f'{indent}python_version:\n'
-            f'{indent}- {value}\n'
-            f'{indent}- "*"'
+            f'{indent}  - {value}\n'
+            f'{indent}  - "*"'
         )
 
     new_text, n = _GRAYSKULL_PYTHON_VERSION_RE.subn(_expand, text)
@@ -196,20 +198,223 @@ def _normalize_grayskull_test_matrix(recipe_path: Path) -> bool:
     return True
 
 
+# --- v8.12.0 grayskull post-processors --------------------------------------
+# Grayskull's defaults are conservative ("emit something that works") rather
+# than canonical ("emit what conda-forge reviewers want"). These post-processors
+# narrow the gap so generated recipes need fewer hand-edits. Each is idempotent
+# — running it on an already-clean recipe is a no-op.
+
+# Belt-and-suspenders backends grayskull adds even when pyproject declares only
+# one. Pure PEP-517 backends are emitted alongside these by grayskull regardless
+# of [build-system].requires content. Item 5 / G8.
+_BELT_AND_SUSPENDERS_HOST_DEPS = ("wheel", "setuptools")
+# PEP-517 backends — when one of these is present in host, the host pair above
+# is redundant and should be stripped.
+_PEP517_BACKENDS = (
+    "poetry-core", "hatchling", "flit-core", "pdm-backend",
+    "scikit-build-core", "maturin", "meson-python",
+)
+
+
+def _strip_belt_and_suspenders_host(recipe_path: Path) -> bool:
+    """Item 5 / G8 — remove redundant ``wheel`` + ``setuptools`` from host when
+    a PEP-517 backend (poetry-core / hatchling / flit-core / pdm-backend / ...)
+    is also declared. Grayskull's defaults emit them as belt-and-suspenders.
+
+    Returns True if any host line was removed.
+    """
+    try:
+        lines = recipe_path.read_text(encoding="utf-8").splitlines(keepends=True)
+    except OSError:
+        return False
+
+    # Find the host block. Conservatively: between `  host:` (2-space indent
+    # under `requirements:`) and the next sibling key at the same depth.
+    host_start = host_end = None
+    for i, line in enumerate(lines):
+        if line.rstrip() == "  host:":
+            host_start = i + 1
+            for j in range(host_start, len(lines)):
+                stripped = lines[j].lstrip(" ")
+                # blank line ends nothing; sibling key (e.g. "  run:", "  build:") ends host
+                if stripped and not stripped.startswith("-") and lines[j][:4] == "  " and lines[j][2] != " ":
+                    host_end = j
+                    break
+            else:
+                host_end = len(lines)
+            break
+
+    if host_start is None:
+        return False
+
+    host_lines = lines[host_start:host_end]
+    host_pkgs = [
+        ln.lstrip(" -").split()[0].lower()
+        for ln in host_lines
+        if ln.lstrip().startswith("- ")
+    ]
+    if not any(b in host_pkgs for b in _PEP517_BACKENDS):
+        return False  # no PEP-517 backend declared → keep wheel+setuptools
+
+    modified = False
+    kept = []
+    for ln in host_lines:
+        stripped = ln.lstrip().rstrip()
+        if stripped.startswith("- "):
+            pkg = stripped[2:].split()[0].lower()
+            if pkg in _BELT_AND_SUSPENDERS_HOST_DEPS:
+                modified = True
+                continue
+        kept.append(ln)
+
+    if not modified:
+        return False
+    new_lines = lines[:host_start] + kept + lines[host_end:]
+    recipe_path.write_text("".join(new_lines), encoding="utf-8")
+    return True
+
+
+_RUN_PYTHON_LOW_FLOOR_RE = re.compile(
+    r"^(?P<indent>[ \t]+)-[ \t]+python[ \t]+>=3\.(?P<minor>[0-9])(?:[ \t]*,[ \t]*<4(?:\.0)?)?[ \t]*$",
+    re.MULTILINE,
+)
+
+
+def _clamp_run_python_floor(recipe_path: Path) -> bool:
+    """Item 6 — clamp ``- python >=3.X`` (X<10) in run to ``>=${{ python_min }}``
+    (or literal ``>=3.10`` when python_min is not declared in context).
+
+    Conda-forge floor is 3.10; emitting ``>=3.9`` invites the solver to consider
+    Python versions the build matrix no longer ships. Grayskull echoes upstream's
+    ``python_requires`` verbatim; this clamps it.
+
+    Returns True if any line was rewritten.
+    """
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+    has_python_min_ctx = bool(re.search(r"^context:\s*\n(?:[ \t]+[^\n]*\n)*?[ \t]+python_min:", text, re.MULTILINE))
+    replacement = "${{ python_min }}" if has_python_min_ctx else "3.10"
+
+    def _sub(m: re.Match[str]) -> str:
+        minor = int(m.group("minor"))
+        if minor >= 10:
+            return m.group(0)  # already at/above floor
+        return f'{m.group("indent")}- python >={replacement}'
+
+    new_text, n = _RUN_PYTHON_LOW_FLOOR_RE.subn(_sub, text)
+    if n == 0 or new_text == text:
+        return False
+    recipe_path.write_text(new_text, encoding="utf-8")
+    return True
+
+
+_SUMMARY_TRAILING_VERSION_RE = re.compile(
+    r"^(?P<head>[ \t]*summary:[ \t]+.+?)[ \t]*\([Vv]?\d+(?:\.\d+){0,3}[A-Za-z0-9._-]*\)[ \t]*$",
+    re.MULTILINE,
+)
+_GRAYSKULL_README_COMMENT_RE = re.compile(
+    r"^[ \t]*#[ \t]*readme[ \t]*\r?\n", re.MULTILINE | re.IGNORECASE,
+)
+
+
+def _normalize_summary(recipe_path: Path) -> bool:
+    """Item 8 — strip trailing parenthetical version tags from ``about.summary``
+    (e.g. ``"… SDK (V1.0)"``) and drop grayskull's ``# readme`` placeholder
+    comments. Both are pure-cosmetic grayskull noise that reviewers consistently
+    flag.
+
+    Returns True if the file was modified.
+    """
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+    new_text, n1 = _SUMMARY_TRAILING_VERSION_RE.subn(lambda m: m.group("head").rstrip(), text)
+    new_text, n2 = _GRAYSKULL_README_COMMENT_RE.subn("", new_text)
+    if n1 == 0 and n2 == 0:
+        return False
+    recipe_path.write_text(new_text, encoding="utf-8")
+    return True
+
+
+def _add_missing_repository(recipe_path: Path, package_name: str) -> bool:
+    """Item 9 — emit ``about.repository`` from PyPI's ``project_urls`` when
+    grayskull dropped it. Grayskull is inconsistent across runs; this re-fetches
+    the PyPI JSON and adds the URL only when the recipe is missing the field.
+
+    Idempotent. Network-bound; failures are silently ignored.
+
+    Returns True if the file was modified.
+    """
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+    if re.search(r"^[ \t]*repository:[ \t]+\S", text, re.MULTILINE):
+        return False  # already present
+
+    # Locate the about block + the homepage line; insert repository: after it.
+    homepage_m = re.search(r"^([ \t]*)homepage:[ \t]+\S+.*$", text, re.MULTILINE)
+    if homepage_m is None:
+        return False  # no about/homepage anchor — give up rather than guess
+    indent = homepage_m.group(1)
+
+    # Pull project_urls from PyPI; pick the first matching key.
+    try:
+        import urllib.request
+        with urllib.request.urlopen(
+            f"https://pypi.org/pypi/{package_name}/json", timeout=10
+        ) as resp:
+            data = json.loads(resp.read())
+    except Exception:
+        return False
+
+    urls = (data.get("info") or {}).get("project_urls") or {}
+    repo_url = None
+    for key in ("Repository", "Source", "Source Code", "Code", "GitHub", "source"):
+        if key in urls and urls[key]:
+            repo_url = urls[key]
+            break
+    if not repo_url:
+        return False
+
+    inject = f"{indent}repository: {repo_url}\n"
+    new_text = text[:homepage_m.end() + 1] + inject + text[homepage_m.end() + 1:]
+    recipe_path.write_text(new_text, encoding="utf-8")
+    return True
+
+
 @mcp.tool()
 def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> str:
     """Generate a conda-forge recipe from a PyPI package using grayskull.
 
     After grayskull writes the recipe, the output is post-processed to apply
-    conda-forge conventions that grayskull does not emit. Currently:
+    conda-forge conventions that grayskull does not emit. Currently (v8.12.0):
 
     - ``tests[].python.python_version`` is rewritten from the single-value form
-      grayskull emits to the two-entry list form ``[${{ python_min }}.*, "*"]``
-      (ocefpaf convention from staged-recipes#32857 r3039190932). See
-      ``_normalize_grayskull_test_matrix`` for rationale.
+      to the canonical two-entry list form ``[${{ python_min }}.*, "*"]`` with
+      list items indented 2 spaces deeper than the parent key (FMT-001).
+      Per ocefpaf, staged-recipes#32857 r3039190932.
     - The ``# yaml-language-server: $schema=...`` directive is prepended so
-      editors keep live schema validation. See
-      ``_ensure_yaml_language_server_header``.
+      editors keep live schema validation.
+    - Belt-and-suspenders ``wheel`` + ``setuptools`` are stripped from host
+      when a PEP-517 backend (poetry-core / hatchling / flit-core / ...) is
+      declared. G8 / item 5.
+    - Run ``python >=3.X`` lower bounds below 3.10 are clamped to the
+      conda-forge floor. Item 6.
+    - Trailing ``(V1.0)``-style version tags on ``about.summary`` are stripped
+      and grayskull's stray ``# readme`` comment artifacts are removed. Item 8.
+    - ``about.repository`` is fetched from PyPI's project_urls when grayskull
+      dropped it. Item 9.
+
+    Pre-release lower-bound clamping (item 7) is a known gap deferred to a
+    follow-up — requires a conda-forge channel lookup to know whether a stable
+    release satisfying the lower bound exists.
     """
     try:
         pkg_spec = f"{package_name}=={version}" if version else package_name
@@ -230,15 +435,27 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
             recipe_path = recipe_dir / "recipe.yaml"
             normalized = False
             schema_header_added = False
+            host_stripped = False
+            run_floor_clamped = False
+            summary_normalized = False
+            repository_added = False
             if recipe_path.exists():
                 normalized = _normalize_grayskull_test_matrix(recipe_path)
                 schema_header_added = _ensure_yaml_language_server_header(recipe_path)
+                host_stripped = _strip_belt_and_suspenders_host(recipe_path)
+                run_floor_clamped = _clamp_run_python_floor(recipe_path)
+                summary_normalized = _normalize_summary(recipe_path)
+                repository_added = _add_missing_repository(recipe_path, package_name)
             return json.dumps({
                 "success": True,
                 "message": f"Recipe generated at {recipe_dir}",
                 "post_processing": {
                     "python_version_list_form": normalized,
                     "yaml_language_server_header": schema_header_added,
+                    "host_belt_and_suspenders_stripped": host_stripped,
+                    "run_python_floor_clamped": run_floor_clamped,
+                    "summary_normalized": summary_normalized,
+                    "about_repository_added": repository_added,
                 },
                 "stdout": result.stdout
             }, indent=2)
