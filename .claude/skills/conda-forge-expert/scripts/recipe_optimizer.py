@@ -6,7 +6,7 @@ Goes beyond basic validation and checks for common anti-patterns, suggesting
 improvements for dependency placement, redundant selectors, security, and
 conda-forge best practices.
 
-Check codes (15 total):
+Check codes (17 total):
   SCHEMA-001  v1 recipe.yaml missing the `# yaml-language-server: $schema=...` header.
               Editors lose live schema validation against prefix-dev/recipe-format
               and `schema_version: 1` may be implicit-only. Always include both.
@@ -15,6 +15,10 @@ Check codes (15 total):
   PIN-001  Exact version pin in run requirements
   ABT-001  Missing license_file in about section
   ABT-002  v0/meta.yaml about-field names used in v1 recipe.yaml (silently ignored)
+  LIC-001  Pattern-(3) secondary-source LICENSE detected; canonical placement is
+           pattern (2) — ship LICENSE in the recipe directory and flatten source.
+  FMT-001  YAML list items under a mapping key indented at the SAME depth as the
+           parent key (non-canonical; should be 2 spaces deeper).
   SCRIPT-001  sudo used in build.sh
   SCRIPT-002  pip install --upgrade in build.sh
   SEL-001  Redundant platform skip conditions
@@ -720,6 +724,108 @@ def analyze_maintainers(data: Dict) -> List[OptimizationSuggestion]:
     return suggestions
 
 
+_LICENSE_URL_RE = re.compile(r"/LICENSE(\.[A-Za-z]+)?$|/COPYING$", re.IGNORECASE)
+
+
+def analyze_license_placement(data: Dict) -> List[OptimizationSuggestion]:
+    """LIC-001 — Detect pattern-(3) secondary-source LICENSE and suggest pattern (2).
+
+    Canonical License-File Placement (SKILL.md):
+      (1) sdist ships LICENSE → license_file: LICENSE alone
+      (2) sdist omits LICENSE → ship LICENSE in recipes/<name>/ alongside recipe.yaml
+      (3) secondary source.url pulling LICENSE from GitHub → NON-CANONICAL
+
+    Pattern (3) works but adds brittle commit-pin maintenance and looks
+    unusual to reviewers. When detected, suggest converting to pattern (2).
+    """
+    suggestions: List[OptimizationSuggestion] = []
+    sources = data.get("source")
+    if not isinstance(sources, list):
+        return suggestions  # single-URL source can't be pattern (3) by definition
+
+    for i, src in enumerate(sources):
+        if not isinstance(src, dict):
+            continue
+        url = str(src.get("url", "")).strip()
+        file_name = str(src.get("file_name", "")).strip().lower()
+        is_license_url = bool(_LICENSE_URL_RE.search(url))
+        is_license_filename = file_name in {"license", "license.txt", "license.md", "copying"}
+        if is_license_url or is_license_filename:
+            suggestions.append(OptimizationSuggestion(
+                code="LIC-001",
+                message=(
+                    f"source[{i}] is a secondary source fetching LICENSE from {url or '<missing url>'} — "
+                    "non-canonical pattern (3) per SKILL.md § Canonical License-File Placement."
+                ),
+                suggestion=(
+                    "Convert to pattern (2): download the LICENSE once and ship it in the "
+                    "recipe directory next to recipe.yaml. Then flatten `source:` to a single "
+                    "URL block. rattler-build resolves `license_file: LICENSE` relative to the "
+                    "recipe directory when not found in the source archive. Eliminates the "
+                    "commit-pin maintenance burden on every version bump."
+                ),
+                confidence=0.9,
+            ))
+            break  # one LIC-001 per recipe is enough
+
+    return suggestions
+
+
+# FMT-001 — non-canonical list indent under mapping key.
+# Match: optional whitespace + key: + EOL + immediately next non-empty line
+# is a list item (`-`) at the SAME indent as the key.
+_FMT_LIST_INDENT_RE = re.compile(
+    r"^(?P<indent>[ ]*)(?P<key>[A-Za-z_][A-Za-z0-9_\-]*):[ \t]*\r?\n"
+    r"(?P<list_block>(?:(?P=indent)-[ \t][^\r\n]*\r?\n)+)",
+    re.MULTILINE,
+)
+
+
+def analyze_yaml_indent(recipe_path: Path) -> List[OptimizationSuggestion]:
+    """FMT-001 — list items under a mapping key indented at the same depth as
+    the parent key (non-canonical).
+
+    Canonical YAML for a list value under a mapping key indents the list items
+    deeper than the key (typically 2 spaces). The same-depth form is valid YAML
+    (the `-` counts as one level of indent) but reviewers consistently flag it
+    and several editors render it ambiguously.
+
+    Done as raw-text parsing because ruamel.yaml's load step normalizes indent
+    away; by the time the AST exists, the original formatting is gone.
+    """
+    suggestions: List[OptimizationSuggestion] = []
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return suggestions
+
+    seen_keys: set[str] = set()
+    for m in _FMT_LIST_INDENT_RE.finditer(text):
+        key = m.group("key")
+        # Avoid flagging top-level keys (no indent) — top-level lists are stylistic.
+        if not m.group("indent"):
+            continue
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        suggestions.append(OptimizationSuggestion(
+            code="FMT-001",
+            message=(
+                f"List items under `{key}:` are indented at the same depth as the parent key. "
+                "Canonical YAML indents list items 2 spaces deeper than the key."
+            ),
+            suggestion=(
+                f"Indent the `-` items 2 spaces further than `{key}:`. Example:\n"
+                f"    {key}:\n"
+                f"      - item1\n"
+                f"      - item2"
+            ),
+            confidence=0.85,
+        ))
+
+    return suggestions
+
+
 _SCHEMA_HEADER_PREFIX = "# yaml-language-server:"
 
 
@@ -796,6 +902,9 @@ def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
     all_suggestions.extend(analyze_noarch_python_test_matrix(data))
     all_suggestions.extend(analyze_noarch_python_test_type(recipe_path, data))
     all_suggestions.extend(analyze_about_section(data))
+    all_suggestions.extend(analyze_license_placement(data))
+    # Formatting checks (raw-text)
+    all_suggestions.extend(analyze_yaml_indent(recipe_path))
     # Quality and style checks
     all_suggestions.extend(analyze_dependencies(data))
     all_suggestions.extend(analyze_noarch_python_constraints(data))

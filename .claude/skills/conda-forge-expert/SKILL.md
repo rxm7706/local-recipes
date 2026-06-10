@@ -791,7 +791,7 @@ extra:
 | `generate_recipe_from_cran` | R package from CRAN via rattler-build | `recipe-generator.py cran ggplot2` |
 | `generate_recipe_from_cpan` | Perl package from CPAN via rattler-build | `recipe-generator.py cpan Moose` |
 | `generate_recipe_from_luarocks` | Lua package via rattler-build | `recipe-generator.py luarocks lua-cjson` |
-| `edit_recipe` | **Primary editing tool.** Structured actions: update, add, remove. Never edit YAML directly. | `edit_recipe('recipes/numpy/recipe.yaml', [{"action": "update", "path": "context.version", "value": "2.0.0"}])` |
+| `edit_recipe` | **Primary editing tool.** Structured actions: `update`, `add`. For deletions, fall back to `Edit` — `remove` is **not** supported by the wrapper today (tool returns `Unknown action type: remove`); see v8.11.9 CHANGELOG. Never edit YAML directly except for deletions. | `edit_recipe('recipes/numpy/recipe.yaml', [{"action": "update", "path": "context.version", "value": "2.0.0"}])` |
 | `get_conda_name` | Resolves a PyPI package name to its conda-forge equivalent (cache-first) | `get_conda_name(pypi_name="python-dateutil")` |
 
 ### Validation & Quality
@@ -799,7 +799,7 @@ extra:
 |---|---|---|
 | `validate_recipe` | Schema, license, checksums + `rattler-build lint` pass | `validate_recipe(recipe_path="recipes/numpy")` |
 | `check_dependencies` | Verifies all deps exist on conda-forge. Batch repodata.json — fast, air-gapped-friendly, JFrog Artifactory-compatible | `check_dependencies(recipe_path="recipes/numpy")` |
-| `optimize_recipe` | 16 check codes — **critical** (STD-001: compiler without stdlib; STD-002: format mixing), **security** (SEC-001: no sha256), **completeness** (MAINT-001: no maintainers; TEST-001: no tests; TEST-002: noarch:python tests pinned to a single Python version instead of `[python_min, "*"]` ([staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932)); ABT-001: no license_file; ABT-002: v0 about-fields in v1 recipe), **quality** (DEP-001/002, PIN-001, SCRIPT-001/002, SEL-001/002/003) | `optimize_recipe(recipe_path="recipes/numpy")` |
+| `optimize_recipe` | 18 check codes — **critical** (STD-001: compiler without stdlib; STD-002: format mixing; SCHEMA-001: missing v1 schema header), **security** (SEC-001: no sha256), **completeness** (MAINT-001: no maintainers; TEST-001: no tests; TEST-002: noarch:python tests pinned to a single Python version instead of `[python_min, "*"]` ([staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932)); TEST-003: package_contents substituted for python.imports without justification; ABT-001: no license_file; ABT-002: v0 about-fields in v1 recipe; **LIC-001: secondary-source LICENSE pattern (3) detected, convert to in-recipe pattern (2)** [v8.12.0]), **formatting** (**FMT-001: list items indented at parent-key depth instead of 2 spaces deeper** [v8.12.0]), **quality** (DEP-001/002, PIN-001, SCRIPT-001/002, SEL-001/002/003) | `optimize_recipe(recipe_path="recipes/numpy")` |
 
 ### Build & Debug
 | Tool | Description | Example |
