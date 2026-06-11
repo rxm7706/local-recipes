@@ -68,6 +68,13 @@ If any of these resolves favourably:
 
 ## How this recipe is used in the meantime
 
+- **Check for upstream updates**: `./update.py --check` (exits 1 if outdated).
+- **Apply an update**: `./update.py --apply --build` refreshes `context.version`
+  + the five platform sha256s + the LICENSE.md sha256 from upstream's signed
+  `SHA256SUMS.txt`, then rebuilds and verifies install on linux-64. The script
+  warns loudly if LICENSE.md sha256 changes between releases — that would mean
+  upstream relicensed, in which case revisit this entire DO_NOT_SUBMIT rationale
+  against the new terms before continuing.
 - **Local build**: `python build-locally.py linux-64` (or via the
   `trigger_build` MCP tool with `config="linux-64"`).
 - **Personal channel**: upload the resulting `.conda` artefact to your own
