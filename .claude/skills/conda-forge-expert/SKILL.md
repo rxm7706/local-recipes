@@ -1463,6 +1463,48 @@ The rebuild produces the same byte-equivalent artifact (modulo timestamp), but t
 
 **Case study**: S3 `lyric-task 0.1.7` build (2026-06-11). PyPI `/packages/source/l/lyric-task/lyric_task-0.1.7.tar.gz` returned 503 for >12 min; backing CDN at `files.pythonhosted.org/packages/1d/ff/.../lyric_task-0.1.7.tar.gz` returned 200 throughout. URL-swap workaround applied; build green at 14.62 KiB; URL reverted; `validate_recipe` + `optimize_recipe` clean post-revert; fork pushed.
 
+### G17. `pnpm install --ignore-scripts` doesn't suppress the root project's lifecycle scripts
+
+**Symptom**: a Node-workspace recipe (pnpm monorepo with a custom `postinstall: node ./scripts/postinstall.mjs`) is set up with `pnpm install --ignore-scripts --filter '@org/<app>...'` to skip sibling-workspace builds — but the root `postinstall` runs anyway and fails. Typically the failure is that the upstream's `postinstall` script tries to build sibling workspaces whose dependencies the filtered install didn't fetch:
+
+```
+. postinstall$ node ./scripts/postinstall.mjs
+. postinstall: > @org/sibling@X.Y.Z build /path/to/packages/sibling
+. postinstall: > node ./esbuild.config.mjs && tsc -p tsconfig.json --emitDeclarationOnly
+. postinstall: Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'esbuild' imported from /packages/sibling/esbuild.config.mjs
+```
+
+**Why**: pnpm's `--ignore-scripts` only suppresses **dependency** install scripts (i.e. `node_modules/<dep>/package.json` lifecycle scripts). The **root project's** own `pre*` / `post*` lifecycle scripts run regardless. This is documented but counter-intuitive — recipe authors often think `--ignore-scripts` is the global "no scripts" switch. It is not. The behavior is consistent with npm too; both tools draw the same dependency-vs-root distinction.
+
+A common case: an upstream monorepo's root `postinstall` builds every workspace under `packages/*` + `tools/*` (electron-builder workflows, codegen for sibling apps, native-addon prebuilds). A recipe that only ships one app (`apps/<daemon>`) uses `--filter '@org/<daemon>...'` to skip the heavyweight sibling workspaces — but the root `postinstall` still tries to build them and fails because their deps weren't fetched.
+
+**Fix**: strip the root project's `postinstall` from `package.json` **before** running `pnpm install`. A short Python snippet keeps the patch idempotent and avoids a downstream `patches/<name>.patch` to re-roll on every version bump:
+
+```bash
+# In build.sh, after `cd "${SRC_ROOT}"` and before `pnpm install`:
+python -c "
+import json, pathlib
+p = pathlib.Path('package.json')
+d = json.loads(p.read_text())
+d.get('scripts', {}).pop('postinstall', None)
+p.write_text(json.dumps(d, indent=2))
+"
+
+pnpm install \
+  --frozen-lockfile \
+  --strict-peer-dependencies=false \
+  --ignore-scripts \
+  --filter '@org/<daemon>...'
+```
+
+Keep the `--ignore-scripts` flag — it still does useful work on dependency-side install scripts (skips native compile scripts on packages we'll explicitly rebuild later via `pnpm --filter ... rebuild <native-dep>`).
+
+**Why not patch via `patches/<name>.patch`**: a `patches/` patch is more visible to reviewers but requires re-rolling on every version bump (the JSON line numbers shift, hunks fuzz-fail). The Python `pop()` form is robust across upstream restructures and idempotent (no-ops if the script is already absent).
+
+**Other root scripts to consider**: `preinstall`, `prepare`, `prepublish` — same root-vs-dependency distinction applies to all lifecycle scripts. Audit `package.json scripts:` for anything in install-phase scope that does work outside the recipe's surface.
+
+**Case study**: `recipes/open-design/build.sh` (Jun 11, 2026). The recipe was authored at v0.2.0 with `--ignore-scripts` and a comment ("`--ignore-scripts` skips the root package's postinstall") that was empirically false — the recipe had never actually been built. Bumping to v0.9.0 surfaced the bug when upstream's `scripts/postinstall.mjs` `buildTargets` list grew from 4 to 13 (adding `packages/download`, `packages/host`, `packages/registry-protocol`, `packages/agui-adapter`, `packages/plugin-runtime`, `packages/diagnostics`, `tools/dev`, `tools/pack`, `tools/serve`). The newly-added `packages/download` workspace's build script needed `esbuild` which the `@open-design/daemon...` filter didn't fetch. Fix shipped as the Python-pop snippet above; build green at `open-design-0.9.0-h07aa61f_0.conda` (9.51 MiB).
+
 ---
 
 ## Skill Automation

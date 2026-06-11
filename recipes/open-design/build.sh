@@ -22,12 +22,26 @@ pnpm --version
 # `tsc -b` for the workspace and the better-sqlite3 native build can spike RAM.
 export NODE_OPTIONS="--max-old-space-size=4096"
 
+# --- strip heavyweight root postinstall -------------------------------------
+# Upstream's `postinstall: node ./scripts/postinstall.mjs` builds every
+# workspace under packages/* and tools/* — pulling in electron-builder,
+# 7zip-bin arm64 binaries, and esbuild deps that the daemon doesn't need.
+# pnpm's `--ignore-scripts` only suppresses *dependency* install scripts;
+# the root project's own lifecycle scripts run regardless. Strip the script
+# from package.json before install so the workspace's daemon build chain
+# (which runs explicitly via `pnpm --filter ... run build` below) is the
+# only thing that runs.
+python -c "
+import json, pathlib
+p = pathlib.Path('package.json')
+d = json.loads(p.read_text())
+d.get('scripts', {}).pop('postinstall', None)
+p.write_text(json.dumps(d, indent=2))
+"
+
 # --- filtered install -------------------------------------------------------
-# `--ignore-scripts` skips the root package's postinstall (which builds the
-# tools/* workspaces — they pull in electron-builder and a 7zip-bin arm64 blob
-# that we don't want). better-sqlite3's native build runs separately below.
 # `--filter '@open-design/daemon...'` resolves only the daemon's transitive
-# workspace + npm dep tree — but pnpm still populates .pnpm/ for everything in
+# workspace + npm dep tree. pnpm still populates .pnpm/ for everything in
 # the lockfile, which is fine because we ship via `pnpm deploy` (below), not
 # via copying the workspace node_modules.
 pnpm install \
