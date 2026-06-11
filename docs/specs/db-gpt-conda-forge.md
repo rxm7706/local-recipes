@@ -13,15 +13,15 @@
 
 ## Status
 
-| Field | Value |
-|---|---|
-| Status | **Draft v1** — ready for `bmad-quick-dev` intake; one open question (Q1) blocks story finalization |
-| Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
-| Upstream | `eosphoros-ai/DB-GPT` v0.8.0 (released 2026-03-27, MIT license) |
-| Target | `conda-forge/staged-recipes` — 7 outputs in a single multi-output recipe, plus 7 prerequisite recipes (3 trivial pure-Python, 3 itkwasm-pattern noarch, 1 cocoindex-class Rust+PyO3) |
-| Distribution | conda-forge (linux-64, osx-64, osx-arm64, win-64) — `noarch: python` for all outputs |
-| Lifetime | Long-running — feedstocks become autotick-maintained after first PR lands |
+| Field        | Value                                                                                                                                                                                   |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status       | **Draft v1** — ready for `bmad-quick-dev` intake; one open question (Q1) blocks story finalization                                                                             |
+| Owner        | rxm7706                                                                                                                                                                                 |
+| Track        | BMAD Quick Flow (tech-spec only, no PRD/architecture phase)                                                                                                                             |
+| Upstream     | `eosphoros-ai/DB-GPT` v0.8.0 (released 2026-03-27, MIT license)                                                                                                                       |
+| Target       | `conda-forge/staged-recipes` — 7 outputs in a single multi-output recipe, plus 7 prerequisite recipes (3 trivial pure-Python, 3 itkwasm-pattern noarch, 1 cocoindex-class Rust+PyO3) |
+| Distribution | conda-forge (linux-64, osx-64, osx-arm64, win-64) —`noarch: python` for all outputs                                                                                                  |
+| Lifetime     | Long-running — feedstocks become autotick-maintained after first PR lands                                                                                                              |
 
 ---
 
@@ -50,7 +50,6 @@ staged-recipes PR. Without packaging:
   while their parent Python imports cross-reference each other. A
   multi-output recipe is closer to upstream's intent (uv workspace, all
   members release together at the same version).
-
 - **Full prerequisite chain to enable `dbgpt-app`'s `[code]` extra.** The
   `code` extra hard-pulls `lyric-py`, `lyric-py-worker`, `lyric-js-worker`,
   `lyric-component-ts-transpiling`. The PyPI sdists for the three worker
@@ -66,15 +65,17 @@ staged-recipes PR. Without packaging:
   surveyed in **§ "WASM toolchain on conda-forge"** below; this section
   states the bottom line.
 
-  | Package | Build dependency | conda-forge status |
-  |---|---|---|
-  | `lyric-task` | pure Python | trivial — already pip-installable |
-  | `lyric-py` | maturin + protoc | feasible — `protobuf` 6.33 on conda-forge |
-  | `lyric-py-worker` | `componentize-py` + `wasm-tools` | both **NOT on conda-forge** |
-  | `lyric-js-worker` | `nodejs` + `@bytecodealliance/jco` (npm) | jco **NOT on conda-forge** |
-  | `lyric-component-ts-transpiling` | `cargo build --target wasm32-wasip1` | `rust-std-wasm32-wasip1` **NOT on conda-forge** (only `wasm32-unknown-unknown` and `wasm32-unknown-emscripten` are shipped) |
+  | Package                            | Build dependency                             | conda-forge status                                                                                                                      |
+  | ---------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+  | `lyric-task`                     | pure Python                                  | trivial — already pip-installable                                                                                                      |
+  | `lyric-py`                       | maturin + protoc                             | feasible —`protobuf` 6.33 on conda-forge                                                                                             |
+  | `lyric-py-worker`                | `componentize-py` + `wasm-tools`         | both**NOT on conda-forge**                                                                                                        |
+  | `lyric-js-worker`                | `nodejs` + `@bytecodealliance/jco` (npm) | jco**NOT on conda-forge**                                                                                                         |
+  | `lyric-component-ts-transpiling` | `cargo build --target wasm32-wasip1`       | `rust-std-wasm32-wasip1` **NOT on conda-forge** (only `wasm32-unknown-unknown` and `wasm32-unknown-emscripten` are shipped) |
 
   Two paths exist for shipping the workers on conda-forge:
+
+
   - **Vendor the upstream `.wasm` blob** as a `noarch: python` recipe
     (the `itkwasm-downsample-wasi` precedent on main conda-forge —
     see § "WASM toolchain on conda-forge — current state" for the full
@@ -91,7 +92,6 @@ staged-recipes PR. Without packaging:
 
   Q1's `B-full` option uses the vendor-the-blob path and is multi-day,
   not multi-week.
-
 - **`dbgpt-acc-flash-attn` accelerator.** Not pulled by `dbgpt-app`'s base
   dependencies (only `dbgpt-acc-auto` is). flash-attn itself is heavy
   (CUDA-only, GPU-tier). Out of scope for this v1 effort.
@@ -106,38 +106,38 @@ to the parallel `emscripten-forge` distribution).
 
 **Runtimes and bindings on conda-forge already (✓):**
 
-| Package | Version | Origin | Purpose |
-|---|---|---|---|
-| `wasmtime-py` | 44.0.0 | Bytecode Alliance | Python embedding of Wasmtime — bundles `_libwasmtime.so` (the runtime) inside the conda artifact, so installing this gives you both the Python API *and* the Wasmtime engine |
-| `wasmer` | 7.1.0 | Wasmer | Standalone Wasmer CLI/runtime |
-| `python-wasmer` | 1.1.0 | Wasmer | Wasmer Python bindings |
-| `python-wasmer-compiler-{cranelift,llvm,singlepass}` | 1.1.0 | Wasmer | Compiler-backend variants |
+| Package                                                | Version | Origin            | Purpose                                                                                                                                                                           |
+| ------------------------------------------------------ | ------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wasmtime-py`                                        | 44.0.0  | Bytecode Alliance | Python embedding of Wasmtime — bundles `_libwasmtime.so` (the runtime) inside the conda artifact, so installing this gives you both the Python API *and* the Wasmtime engine |
+| `wasmer`                                             | 7.1.0   | Wasmer            | Standalone Wasmer CLI/runtime                                                                                                                                                     |
+| `python-wasmer`                                      | 1.1.0   | Wasmer            | Wasmer Python bindings                                                                                                                                                            |
+| `python-wasmer-compiler-{cranelift,llvm,singlepass}` | 1.1.0   | Wasmer            | Compiler-backend variants                                                                                                                                                         |
 
 **Build tools on conda-forge already (✓):**
 
-| Package | Version | Origin | Purpose |
-|---|---|---|---|
-| `emscripten` | 4.0.9 | Emscripten | C/C++ → wasm32-emscripten via emcc |
-| `emsdk` | 3.1.46 | Emscripten | SDK manager |
-| `binaryen` | 121 | WebAssembly CG | WASM optimizer (used by emscripten) |
-| `wabt` | 1.0.41 | WebAssembly CG | WebAssembly Binary Toolkit (`wasm2wat`, `wat2wasm`) |
-| `wasm-pack` | 0.14.0 | Rust+WebAssembly WG | Rust → WASM packager |
-| `pyodide-build` | 0.34.3 | Pyodide | Pyodide build infrastructure |
-| `pyodide-py` | 0.22.0 | Pyodide | Pyodide Python helpers |
-| `micropip` | 0.11.1 | Pyodide | In-browser pip emulator |
-| `rust-std-wasm32-unknown-unknown` | 1.95.0 | Rust | Rust target — bare WASM, no syscalls |
-| `rust-std-wasm32-unknown-emscripten` | 1.95.0 | Rust | Rust target — emscripten ABI |
-| `cargo-c` | 0.10.22 | Rust | Cargo C-API subcommand (peripheral) |
+| Package                                | Version | Origin              | Purpose                                                 |
+| -------------------------------------- | ------- | ------------------- | ------------------------------------------------------- |
+| `emscripten`                         | 4.0.9   | Emscripten          | C/C++ → wasm32-emscripten via emcc                     |
+| `emsdk`                              | 3.1.46  | Emscripten          | SDK manager                                             |
+| `binaryen`                           | 121     | WebAssembly CG      | WASM optimizer (used by emscripten)                     |
+| `wabt`                               | 1.0.41  | WebAssembly CG      | WebAssembly Binary Toolkit (`wasm2wat`, `wat2wasm`) |
+| `wasm-pack`                          | 0.14.0  | Rust+WebAssembly WG | Rust → WASM packager                                   |
+| `pyodide-build`                      | 0.34.3  | Pyodide             | Pyodide build infrastructure                            |
+| `pyodide-py`                         | 0.22.0  | Pyodide             | Pyodide Python helpers                                  |
+| `micropip`                           | 0.11.1  | Pyodide             | In-browser pip emulator                                 |
+| `rust-std-wasm32-unknown-unknown`    | 1.95.0  | Rust                | Rust target — bare WASM, no syscalls                   |
+| `rust-std-wasm32-unknown-emscripten` | 1.95.0  | Rust                | Rust target — emscripten ABI                           |
+| `cargo-c`                            | 0.10.22 | Rust                | Cargo C-API subcommand (peripheral)                     |
 
 **Existing WASI-target packages on conda-forge (the precedent that
 matters):**
 
-| Package | Version | Pattern |
-|---|---|---|
-| `itkwasm` | 1.0b195 | Python wrapper over wasmtime-py — `_libwasmtime.so` is built into wasmtime-py, so itkwasm runs WASI binaries without needing wasi-sdk |
-| `itkwasm-downsample` | 1.8.1 | Pure-Python loader; depends on `itkwasm` + `itkwasm-downsample-wasi` |
-| `itkwasm-downsample-wasi` | 1.8.1 | **`noarch: python`. Just `pip install`s the upstream PyPI sdist that ships the pre-built `.wasm` blob.** Recipe is ~30 lines. |
-| `itkwasm-downsample-emscripten` | 1.8.1 | Emscripten variant — same pattern, different blob |
+| Package                           | Version | Pattern                                                                                                                                   |
+| --------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `itkwasm`                       | 1.0b195 | Python wrapper over wasmtime-py —`_libwasmtime.so` is built into wasmtime-py, so itkwasm runs WASI binaries without needing wasi-sdk   |
+| `itkwasm-downsample`            | 1.8.1   | Pure-Python loader; depends on `itkwasm` + `itkwasm-downsample-wasi`                                                                  |
+| `itkwasm-downsample-wasi`       | 1.8.1   | **`noarch: python`. Just `pip install`s the upstream PyPI sdist that ships the pre-built `.wasm` blob.** Recipe is ~30 lines. |
+| `itkwasm-downsample-emscripten` | 1.8.1   | Emscripten variant — same pattern, different blob                                                                                        |
 
 The **`itkwasm-downsample-wasi` recipe is the load-bearing precedent
 for Lyric.** It demonstrates that conda-forge accepts a noarch Python
@@ -159,17 +159,17 @@ write-up of the policy, but the pattern has stuck.
 `.wasm` blobs from source rather than vendoring them via the itkwasm
 pattern):**
 
-| Tool | Origin | Source-build use |
-|---|---|---|
-| `wasmtime` (standalone CLI) | Bytecode Alliance | Run/test WASI binaries outside Python — `wasmtime-py` already provides the runtime library, so this is rarely needed |
-| `wasi-sdk` | WebAssembly CG | C/Rust → wasm32-wasi compilation |
-| `wasi-libc` | WebAssembly CG | Standalone WASI libc |
-| `wasm-tools` | Bytecode Alliance | `wasm-tools strip` / `wasm-tools component new` — used by upstream `lyric-py-worker` Makefile |
-| `componentize-py` | Bytecode Alliance | Python → WASM Component packager — used by upstream `lyric-py-worker` Makefile |
-| `jco` | Bytecode Alliance (npm) | JavaScript Component Tools — used by upstream `lyric-js-worker` Makefile |
-| `wit-bindgen` | Bytecode Alliance | Component interface generator |
-| `cargo-component` | Bytecode Alliance | Cargo subcommand for WASM Component Model |
-| `rust-std-wasm32-wasi` / `wasm32-wasip1` / `wasm32-wasip2` | Rust | Rust target — required for `cargo build --target wasm32-wasi*` |
+| Tool                                                             | Origin                  | Source-build use                                                                                                       |
+| ---------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `wasmtime` (standalone CLI)                                    | Bytecode Alliance       | Run/test WASI binaries outside Python —`wasmtime-py` already provides the runtime library, so this is rarely needed |
+| `wasi-sdk`                                                     | WebAssembly CG          | C/Rust → wasm32-wasi compilation                                                                                      |
+| `wasi-libc`                                                    | WebAssembly CG          | Standalone WASI libc                                                                                                   |
+| `wasm-tools`                                                   | Bytecode Alliance       | `wasm-tools strip` / `wasm-tools component new` — used by upstream `lyric-py-worker` Makefile                   |
+| `componentize-py`                                              | Bytecode Alliance       | Python → WASM Component packager — used by upstream `lyric-py-worker` Makefile                                     |
+| `jco`                                                          | Bytecode Alliance (npm) | JavaScript Component Tools — used by upstream `lyric-js-worker` Makefile                                            |
+| `wit-bindgen`                                                  | Bytecode Alliance       | Component interface generator                                                                                          |
+| `cargo-component`                                              | Bytecode Alliance       | Cargo subcommand for WASM Component Model                                                                              |
+| `rust-std-wasm32-wasi` / `wasm32-wasip1` / `wasm32-wasip2` | Rust                    | Rust target — required for `cargo build --target wasm32-wasi*`                                                      |
 
 **Why emscripten doesn't help here.** Lyric's workers target **WASI
 Preview 1** (`wasm32-wasip1`), not Emscripten. The two ABIs are not
@@ -206,16 +206,13 @@ is non-trivial. The 3 worker recipes are each ~30 lines following the
   `check_dependencies`, `scan_for_vulnerabilities`, `trigger_build`, and
   `submit_pr`. Each of the recipes in this spec runs the full 9-step
   autonomous loop without manual intervention.
-
 - **Existing pin-loosening memory entry** at
   `feedback_loosen_pins.md` — when an exact-pin upstream dep is not
   available on conda-forge at that exact version, loosen to `>=N` and
   add a `# TODO: tighten once N.x is available` comment.
-
 - **Existing v0↔v1 about-field mapping memory** at
   `reference_v0_v1_about_fields.md` — every output in the multi-output
   recipe must use v1 names (`homepage`, `repository`, `documentation`).
-
 - **Existing canonical recipe patterns** in the skill's
   `templates/multi-output/lib-python-recipe.yaml` — directly applicable
   to the DB-GPT 6/7-output recipe.
@@ -287,8 +284,7 @@ without further effort from this spec:
   output we shipped.
 - The `dbgpt-acc-flash-attn` accelerator (NG1) gets a future feedstock
   attempt only when CUDA infrastructure on conda-forge stabilizes —
-  tracked in `_bmad-output/projects/local-recipes/
-  implementation-artifacts/deferred-work.md`.
+  tracked in `_bmad-output/projects/local-recipes/ implementation-artifacts/deferred-work.md`.
 
 ---
 
@@ -300,12 +296,12 @@ Q1 is resolved (**B-full** — see § "Open Questions"). 13 stories total.
 wave depends on the previous wave's PRs entering staged-recipes review
 queue, not necessarily merging):
 
-| Wave | Stories | Description |
-|---|---|---|
-| 1 | S1, S3 | Independent leaf recipes |
-| 2 | S2, S4 | Depend on Wave 1 |
-| 3 | S5, S6, S7 | Depend on S3 + S4 |
-| 4 | S8–S12 | The DB-GPT multi-output recipe stories |
+| Wave | Stories    | Description                            |
+| ---- | ---------- | -------------------------------------- |
+| 1    | S1, S3     | Independent leaf recipes               |
+| 2    | S2, S4     | Depend on Wave 1                       |
+| 3    | S5, S6, S7 | Depend on S3 + S4                      |
+| 4    | S8–S12    | The DB-GPT multi-output recipe stories |
 
 ### Story S0 — Decide Q1 (`dbgpt-app` inclusion path)
 
@@ -335,6 +331,7 @@ documented).
 conda-forge as a prerequisite for `auto-gpt-plugin-template`.
 
 **Acceptance criteria**:
+
 - `recipes/abstract-singleton/recipe.yaml` validates clean.
 - `optimize_recipe` reports zero check-code warnings.
 - `pixi run -e local-recipes recipe-build recipes/abstract-singleton`
@@ -354,6 +351,7 @@ conda-forge as a prerequisite for `auto-gpt-plugin-template`.
 inside `dbgpt-app`.
 
 **Acceptance criteria**:
+
 - `recipes/auto-gpt-plugin-template/recipe.yaml` validates clean.
 - Run-deps include `abstract-singleton` (in conda-forge review queue
   via S1).
@@ -373,6 +371,7 @@ across the lyric-* family). Required by `lyric-py` and all 3 lyric
 workers.
 
 **Acceptance criteria**:
+
 - `recipes/lyric-task/recipe.yaml` validates clean.
 - `noarch: python`.
 - Source from PyPI (`lyric_task-0.1.7.tar.gz`).
@@ -395,6 +394,7 @@ Source-builds from the `lyric-project/lyric-runtime` workspace via
 maturin.
 
 **Acceptance criteria**:
+
 - `recipes/lyric-py/recipe.yaml` validates clean.
 - Source from upstream tag `pylyric-v0.1.7` (or whatever upstream tags
   for the 0.1.7 release — verify in `lyric-project/lyric-runtime`
@@ -432,6 +432,7 @@ pip-installs the upstream PyPI sdist (which contains the pre-built
 `itkwasm-downsample-wasi-feedstock`.
 
 **Acceptance criteria**:
+
 - `recipes/lyric-py-worker/recipe.yaml` validates clean.
 - `noarch: python`.
 - Source from PyPI sdist (`lyric_py_worker-0.1.7.tar.gz`, 10.7 MB —
@@ -463,6 +464,7 @@ following the same itkwasm pattern. Sdist contains a pre-built
 JS-targeted `.wasm` (3.5 MB).
 
 **Acceptance criteria**:
+
 - `noarch: python`.
 - Source from PyPI sdist (`lyric_js_worker-0.1.7.tar.gz`, 3.5 MB).
 - Run-deps: `${{ pin_compatible('lyric-task', max_pin='x.x') }}`,
@@ -482,6 +484,7 @@ JS-targeted `.wasm` (3.5 MB).
 recipe (1.8 MB sdist; smallest of the three itkwasm-pattern workers).
 
 **Acceptance criteria**:
+
 - `noarch: python`.
 - Source from PyPI sdist
   (`lyric_component_ts_transpiling-0.1.7.tar.gz`).
@@ -504,14 +507,14 @@ template at
 `.claude/skills/conda-forge-expert/templates/multi-output/lib-python-recipe.yaml`.
 
 **Acceptance criteria**:
+
 - `recipes/db-gpt/recipe.yaml` exists with `schema_version: 1`.
 - Top-level `source.url` points to
   `https://github.com/eosphoros-ai/DB-GPT/archive/v${{ version }}.tar.gz`.
 - `source.sha256` computed fresh during this story.
 - Seven `outputs:` entries: `dbgpt`, `dbgpt-client`, `dbgpt-ext`,
   `dbgpt-serve`, `dbgpt-acc-auto`, `dbgpt-sandbox`, `dbgpt-app`.
-- Each output's `script:` is `cd packages/<member-name> && ${{ PYTHON }}
-  -m pip install . --no-deps --no-build-isolation -vv` (note the
+- Each output's `script:` is `cd packages/<member-name> && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv` (note the
   `dbgpt`-PyPI-name-vs-`dbgpt-core`-source-dir asymmetry — see
   Technical Approach § "Internal name mapping").
 
@@ -526,6 +529,7 @@ references resolve to *this* recipe's outputs at the same build, not
 to an unrelated upstream PyPI package.
 
 **Acceptance criteria**:
+
 - `dbgpt-ext` run-deps include
   `${{ pin_subpackage('dbgpt', exact=True) }}`.
 - `dbgpt-client` run-deps include
@@ -550,17 +554,16 @@ to an unrelated upstream PyPI package.
 ### Story S10 — Loosen all `==` pins per project convention
 
 **Goal**: Replace every upstream `package==X.Y.Z` pin with `package
->=X.Y.Z`, `package >=X.Y` (drop patch level), or a justified narrow
-range, with an inline `# TODO: tighten once <pin> stays current`
-comment per the `feedback_loosen_pins.md` rule.
+
+> =X.Y.Z `, `package >=X.Y `(drop patch level), or a justified narrow range, with an inline`# TODO: tighten once <pin> stays current `comment per the`feedback_loosen_pins.md` rule.
 
 **Acceptance criteria**:
+
 - No `==` pins remain in any output's `requirements.run` except where
   upstream's API genuinely requires it (re-verify in upstream
   changelog before keeping any). Expected zero kept after audit.
 - Each loosened pin has a TODO comment naming the original upstream
-  pin verbatim (e.g., `# TODO: tighten once aiohttp==3.8.4 is no
-  longer the upstream floor`).
+  pin verbatim (e.g., `# TODO: tighten once aiohttp==3.8.4 is no longer the upstream floor`).
 - Pins that are already loose upstream (e.g., `pydantic>=2.6.0`) carry
   through unchanged.
 
@@ -584,6 +587,7 @@ single root `LICENSE` (MIT) and no per-package `LICENSE` files
 (verified via API listing — all `packages/*/LICENSE` return 404).
 
 **Acceptance criteria**:
+
 - Top-level `about.license: MIT` (matches every output's
   `pyproject.toml`).
 - Top-level `about.license_file: LICENSE` — single file, shared by
@@ -601,6 +605,7 @@ single root `LICENSE` (MIT) and no per-package `LICENSE` files
 multi-output recipe and submit the PR.
 
 **Acceptance criteria**:
+
 - `validate_recipe(recipe_path="recipes/db-gpt")`: zero errors, zero
   warnings.
 - `optimize_recipe`: zero check-code warnings (especially STD-002
@@ -638,8 +643,7 @@ only if needed.
 
 ### FR-1: DB-GPT recipe sources from upstream GitHub archive, not PyPI sdists
 
-A single `source.url:
-https://github.com/eosphoros-ai/DB-GPT/archive/v${{ version }}.tar.gz`
+A single `source.url: https://github.com/eosphoros-ai/DB-GPT/archive/v${{ version }}.tar.gz`
 keeps all 7 outputs in lockstep (same SHA, same version, same uv
 workspace). Per-output PyPI sdists are not used here because they
 de-couple the outputs and break the internal `dbgpt-*` cross-references
@@ -742,7 +746,7 @@ recipes/
 ### Output dependency graph
 
 ```
-            ┌── dbgpt-acc-auto (no deps)
+┌── dbgpt-acc-auto (no deps)
             │
             └── dbgpt (core)
                   ├── dbgpt-ext
@@ -773,27 +777,27 @@ Docker / CI-parity build needed because there are no native artifacts.
 The pins below are the audit list for Story S5. The "loosened to" column
 is the proposed value subject to `check_dependencies` confirmation.
 
-| Upstream pin | Loosened to | Notes |
-|---|---|---|
-| `aiohttp==3.8.4` | `aiohttp >=3.8.4` | conda-forge has 3.10+ |
-| `chardet==5.1.0` | `chardet >=5.1.0` | |
-| `importlib-resources==5.12.0` | `importlib_resources >=5.12.0` | hyphen→underscore for conda |
-| `pandas==2.2.3` | `pandas >=2.2.3` | |
-| `psutil==5.9.4` | `psutil >=5.9.4` | |
-| `colorama==0.4.6` | `colorama >=0.4.6` | |
-| `gTTS==2.3.1` | `gtts >=2.3.1` | conda name is lowercase |
-| `alembic==1.12.0` | `alembic >=1.12.0` | |
-| `openpyxl==3.1.2` | `openpyxl >=3.1.2` | |
-| `xlrd==2.0.1` | `xlrd >=2.0.1` | |
-| `duckdb-engine==0.9.1` | `duckdb-engine >=0.9.1` | |
-| `sqlparse==0.4.4` | `sqlparse >=0.4.4` | |
-| `mysqlclient==2.1.0` | `mysqlclient >=2.1.0` | |
-| `oracledb==3.1.0` | `oracledb >=3.1.0` | |
-| `spacy==3.7` | `spacy >=3.7` | |
-| `tenacity<=8.3.0` | `tenacity >=8.0,<9` | upper bound retained — upstream uses ≤ |
-| `fastapi<0.113.0` | `fastapi >=0.100.0,<1` | upper bound: drop the 0.113 cap (likely stale) |
-| `numpy<2.0.0` | `numpy >=1.21,<3` | re-evaluate during S5 — drop NumPy 1 cap if upstream tested |
-| `onnxruntime<=1.18.1` | `onnxruntime >=1.14.1` | drop upper cap; re-evaluate |
+| Upstream pin                    | Loosened to                      | Notes                                                        |
+| ------------------------------- | -------------------------------- | ------------------------------------------------------------ |
+| `aiohttp==3.8.4`              | `aiohttp >=3.8.4`              | conda-forge has 3.10+                                        |
+| `chardet==5.1.0`              | `chardet >=5.1.0`              |                                                              |
+| `importlib-resources==5.12.0` | `importlib_resources >=5.12.0` | hyphen→underscore for conda                                 |
+| `pandas==2.2.3`               | `pandas >=2.2.3`               |                                                              |
+| `psutil==5.9.4`               | `psutil >=5.9.4`               |                                                              |
+| `colorama==0.4.6`             | `colorama >=0.4.6`             |                                                              |
+| `gTTS==2.3.1`                 | `gtts >=2.3.1`                 | conda name is lowercase                                      |
+| `alembic==1.12.0`             | `alembic >=1.12.0`             |                                                              |
+| `openpyxl==3.1.2`             | `openpyxl >=3.1.2`             |                                                              |
+| `xlrd==2.0.1`                 | `xlrd >=2.0.1`                 |                                                              |
+| `duckdb-engine==0.9.1`        | `duckdb-engine >=0.9.1`        |                                                              |
+| `sqlparse==0.4.4`             | `sqlparse >=0.4.4`             |                                                              |
+| `mysqlclient==2.1.0`          | `mysqlclient >=2.1.0`          |                                                              |
+| `oracledb==3.1.0`             | `oracledb >=3.1.0`             |                                                              |
+| `spacy==3.7`                  | `spacy >=3.7`                  |                                                              |
+| `tenacity<=8.3.0`             | `tenacity >=8.0,<9`            | upper bound retained — upstream uses ≤                     |
+| `fastapi<0.113.0`             | `fastapi >=0.100.0,<1`         | upper bound: drop the 0.113 cap (likely stale)               |
+| `numpy<2.0.0`                 | `numpy >=1.21,<3`              | re-evaluate during S5 — drop NumPy 1 cap if upstream tested |
+| `onnxruntime<=1.18.1`         | `onnxruntime >=1.14.1`         | drop upper cap; re-evaluate                                  |
 
 The last three rows are "audit during S5" — the upper-bound caps are
 likely stale and should be dropped if upstream runs CI against
@@ -804,15 +808,15 @@ NumPy 2 / ONNX 1.20+. If unsure, keep the cap and add a TODO.
 The conda recipe names map to PyPI names map to source directories as
 follows. **Do not confuse them.**
 
-| Conda recipe `outputs[i].package.name` | PyPI dist name | Source subdir | Hatch wheel target |
-|---|---|---|---|
-| `dbgpt` | `dbgpt` | `packages/dbgpt-core` | `src/dbgpt` |
-| `dbgpt-client` | `dbgpt-client` | `packages/dbgpt-client` | `src/dbgpt_client` |
-| `dbgpt-ext` | `dbgpt-ext` | `packages/dbgpt-ext` | `src/dbgpt_ext` |
-| `dbgpt-serve` | `dbgpt-serve` | `packages/dbgpt-serve` | `src/dbgpt_serve` |
-| `dbgpt-acc-auto` | `dbgpt-acc-auto` | `packages/dbgpt-accelerator/dbgpt-acc-auto` | `src/dbgpt_acc_auto` |
-| `dbgpt-sandbox` | `dbgpt-sandbox` | `packages/dbgpt-sandbox` | `src/dbgpt_sandbox` |
-| `dbgpt-app` *(Q1)* | `dbgpt-app` | `packages/dbgpt-app` | `src/dbgpt_app` |
+| Conda recipe `outputs[i].package.name` | PyPI dist name     | Source subdir                                 | Hatch wheel target     |
+| ---------------------------------------- | ------------------ | --------------------------------------------- | ---------------------- |
+| `dbgpt`                                | `dbgpt`          | `packages/dbgpt-core`                       | `src/dbgpt`          |
+| `dbgpt-client`                         | `dbgpt-client`   | `packages/dbgpt-client`                     | `src/dbgpt_client`   |
+| `dbgpt-ext`                            | `dbgpt-ext`      | `packages/dbgpt-ext`                        | `src/dbgpt_ext`      |
+| `dbgpt-serve`                          | `dbgpt-serve`    | `packages/dbgpt-serve`                      | `src/dbgpt_serve`    |
+| `dbgpt-acc-auto`                       | `dbgpt-acc-auto` | `packages/dbgpt-accelerator/dbgpt-acc-auto` | `src/dbgpt_acc_auto` |
+| `dbgpt-sandbox`                        | `dbgpt-sandbox`  | `packages/dbgpt-sandbox`                    | `src/dbgpt_sandbox`  |
+| `dbgpt-app` *(Q1)*                   | `dbgpt-app`      | `packages/dbgpt-app`                        | `src/dbgpt_app`      |
 
 Note the asymmetry: PyPI's `dbgpt` lives under `packages/dbgpt-core/`
 in the source tree.
@@ -833,17 +837,14 @@ in the source tree.
   every prerequisite recipe's test stage.
 - **AC-4.** A user on a fresh pixi env can install **any** included
   package by name and import its primary module:
-    - `pixi add dbgpt && pixi run python -c "import dbgpt"`
-    - …and same for `dbgpt-client`, `dbgpt-ext`, `dbgpt-serve`,
-      `dbgpt-acc-auto`, `dbgpt-sandbox`, `dbgpt-app`.
-    - Prerequisite recipes installable independently:
-      `pixi add lyric-py && pixi run python -c "import lyric"`,
-      `pixi add lyric-task lyric-py-worker lyric-js-worker
-      lyric-component-ts-transpiling abstract-singleton
-      auto-gpt-plugin-template`.
+  - `pixi add dbgpt && pixi run python -c "import dbgpt"`
+  - …and same for `dbgpt-client`, `dbgpt-ext`, `dbgpt-serve`,
+    `dbgpt-acc-auto`, `dbgpt-sandbox`, `dbgpt-app`.
+  - Prerequisite recipes installable independently:
+    `pixi add lyric-py && pixi run python -c "import lyric"`,
+    `pixi add lyric-task lyric-py-worker lyric-js-worker lyric-component-ts-transpiling abstract-singleton auto-gpt-plugin-template`.
 - **AC-5.** dbgpt-app's `[code]` extra works without external pip:
-  `pixi add dbgpt-app && pixi run python -c "from dbgpt_app import
-  cli"` succeeds with no `ImportError: lyric_py_worker` (or
+  `pixi add dbgpt-app && pixi run python -c "from dbgpt_app import cli"` succeeds with no `ImportError: lyric_py_worker` (or
   equivalent), and the documented code-sandbox entrypoint starts.
   Verified in a pixi env containing only conda-forge channel
   packages.
@@ -857,6 +858,7 @@ in the source tree.
   `B-six-plus-app-patched` form (`import dbgpt_app` succeeds; the
   `[code]` extra is documented as unavailable in the PR body and
   feedstock README).
+
 ---
 
 ## Open Questions
@@ -871,14 +873,12 @@ The `dbgpt-app` package hard-pulls `dbgpt[code]` (lyric-* workers) and
   outputs. Zero prerequisite recipes. Single PR. Users who want
   `dbgpt-app` install it via pip on top of conda-installed dbgpt-*.
   Cleanest from a conda-forge review perspective.
-
 - **B-six-plus-app-patched**: Ship 7 outputs, with a recipe-side patch
   that removes `code` from `dbgpt-app`'s `dependencies` array. Adds
   S1+S2 (abstract-singleton, auto-gpt-plugin-template) as 2 prerequisite
   PRs. Total 3 PRs. Users get `dbgpt-app` from conda-forge but without
   the code-execution sandbox feature; documented in PR body and
   feedstock README.
-
 - **B-full**: Ship all 7 outputs with `dbgpt-app` fully functional —
   the `code` extra is preserved by packaging the lyric-* worker
   stack on conda-forge using the `itkwasm-downsample-wasi` vendor-the-
@@ -960,15 +960,15 @@ re-verification in S8:
 
 ### External dependencies that are NOT on conda-forge — landed by this spec's prerequisite stories
 
-| PyPI dep | Story | Pattern | Effort |
-|---|---|---|---|
-| `abstract-singleton` | S1 | trivial pure-Python noarch | 30 min |
-| `auto-gpt-plugin-template` | S2 | trivial pure-Python noarch | 20 min |
-| `lyric-task` | S3 | trivial pure-Python noarch | 30 min |
-| `lyric-py` | S4 | Rust+maturin+protoc, per-platform | 4–6 h (cocoindex-class) |
-| `lyric-py-worker` | S5 | itkwasm-pattern noarch (vendored .wasm) | 45 min |
-| `lyric-js-worker` | S6 | itkwasm-pattern noarch (vendored .wasm) | 30 min |
-| `lyric-component-ts-transpiling` | S7 | itkwasm-pattern noarch (vendored .wasm) | 30 min |
+| PyPI dep                           | Story | Pattern                                 | Effort                   |
+| ---------------------------------- | ----- | --------------------------------------- | ------------------------ |
+| `abstract-singleton`             | S1    | trivial pure-Python noarch              | 30 min                   |
+| `auto-gpt-plugin-template`       | S2    | trivial pure-Python noarch              | 20 min                   |
+| `lyric-task`                     | S3    | trivial pure-Python noarch              | 30 min                   |
+| `lyric-py`                       | S4    | Rust+maturin+protoc, per-platform       | 4–6 h (cocoindex-class) |
+| `lyric-py-worker`                | S5    | itkwasm-pattern noarch (vendored .wasm) | 45 min                   |
+| `lyric-js-worker`                | S6    | itkwasm-pattern noarch (vendored .wasm) | 30 min                   |
+| `lyric-component-ts-transpiling` | S7    | itkwasm-pattern noarch (vendored .wasm) | 30 min                   |
 
 **No upstreaming of WASI-side toolchain required.** The original
 estimate that `B-full` needed `wasi-sdk`, `wasm-tools`,
@@ -977,6 +977,7 @@ was based on assuming we'd source-rebuild the `.wasm` blobs. The
 itkwasm-downsample-wasi precedent (see § "WASM toolchain on
 conda-forge — current state") demonstrates that conda-forge accepts
 vendored `.wasm` from upstream PyPI sdists when:
+
 1. The runtime that executes the WASM (`wasmtime-py`) is itself built
    from source on conda-forge, **and**
 2. Upstream has reproducible WASM build CI (verified for
@@ -1102,6 +1103,7 @@ run quick-dev — implement the intent in docs/specs/db-gpt-conda-forge.md
 ```
 
 The story sequencing constraints inside `bmad-quick-dev`:
+
 - S2 depends on S1 entering review queue.
 - S4 depends on S3 entering review queue (and is the only
   cocoindex-class effort).
