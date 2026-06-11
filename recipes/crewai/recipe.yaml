@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: crewai
   version: "1.14.1"
-  python_min: "3.10"
 
 
 package:

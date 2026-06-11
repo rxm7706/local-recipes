@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.41.1"
-  python_min: "3.10"
 
 package:
   name: opentelemetry-api

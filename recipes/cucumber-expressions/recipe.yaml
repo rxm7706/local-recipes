@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: cucumber-expressions
   version: "18.1.0"
-  python_min: '3.10'
 
 
 package:

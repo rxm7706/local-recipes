@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: curl-cffi
   version: "0.11.1"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}

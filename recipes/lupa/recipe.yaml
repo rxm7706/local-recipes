@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: lupa
   version: "2.6"
-  python_min: '3.10'
   python_check_max: "3.13"
 
 package:

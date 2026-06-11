@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: langchain-core
   version: "0.3.76"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

@@ -49,6 +49,36 @@ _active_build: Optional[subprocess.Popen] = None
 _PYTHON = sys.executable
 
 
+def _extract_json_from_stdout(stdout: str) -> Any:
+    """Best-effort JSON extraction from script stdout.
+
+    v8.13.0 — handles two cases:
+
+    - Direct: the entire stdout is valid JSON.
+    - Prefixed: scripts that print a progress/status line before the JSON
+      body (notably ``prepare_submission_branch`` / ``submit_pr`` which emit
+      ``  Syncing fork with upstream conda-forge/staged-recipes ...`` before
+      the JSON result). Finds the first ``{`` or ``[`` at the start of a line
+      and parses from there.
+
+    Raises ``json.JSONDecodeError`` if no parseable JSON structure is found.
+    """
+    try:
+        return json.loads(stdout)
+    except json.JSONDecodeError:
+        pass
+    # Find first '{' or '[' at the start of a line (after optional whitespace)
+    # to skip leading progress lines without misreading a stray '{' in text.
+    match = re.search(r"^[ \t]*[{\[]", stdout, re.MULTILINE)
+    if match is None:
+        raise json.JSONDecodeError("No JSON structure found in stdout", stdout, 0)
+    # Drop any leading whitespace so json.loads accepts the slice cleanly.
+    start = match.start()
+    while start < len(stdout) and stdout[start] in " \t":
+        start += 1
+    return json.loads(stdout[start:])
+
+
 def _run_script(script_path: Path, args: List[str], input_text: str | None = None, timeout: int = 120) -> Dict[str, Any]:
     """Run a Python script that outputs JSON and parse the result."""
     if not script_path.exists():
@@ -65,7 +95,7 @@ def _run_script(script_path: Path, args: List[str], input_text: str | None = Non
             timeout=timeout,
         )
         try:
-            return json.loads(result.stdout)
+            return _extract_json_from_stdout(result.stdout)
         except json.JSONDecodeError:
             return {
                 "error": "Failed to parse JSON output",
@@ -389,6 +419,289 @@ def _add_missing_repository(recipe_path: Path, package_name: str) -> bool:
     return True
 
 
+# --- v8.13.0 grayskull post-processors (generator-hardening sprint) --------
+# Closes C1+correction, C2, C3 from the S1+S3 retros. Each post-processor is
+# idempotent and follows the existing v8.12.x pattern: bool return + dedicated
+# entry in the `post_processing:` MCP response.
+
+_DEFAULT_CONDA_FORGE_PYTHON_FLOOR = "3.10"
+_PINNING_PYTHON_MIN_RE = re.compile(
+    r"^python_min:\s*\n(?:[ \t]*#[^\n]*\n)*[ \t]*-\s*['\"]?(?P<value>\d+\.\d+)['\"]?",
+    re.MULTILINE,
+)
+_PINNING_CONFIG_PATH = (
+    ".pixi/envs/local-recipes/conda_build_config.yaml"
+)
+
+
+def _read_conda_forge_python_floor() -> str:
+    """Read the current conda-forge ``python_min`` floor dynamically.
+
+    v8.13.0 — reads from the local pinning config that
+    ``conda-forge-pinning-feedstock`` materialises into the ``local-recipes``
+    pixi env. This matches what local rattler-build resolves at build time, so
+    the post-processors stay consistent with the build matrix.
+
+    Falls back to the literal default (``3.10`` as of 2026-06-11) if the file
+    is missing or unparseable — never blocks the generator path. The floor
+    moves over time; the fallback is a snapshot, not a contract.
+    """
+    repo_root = Path(__file__).parent.parent.parent
+    pinning = repo_root / _PINNING_CONFIG_PATH
+    try:
+        text = pinning.read_text(encoding="utf-8")
+    except OSError:
+        return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+    match = _PINNING_PYTHON_MIN_RE.search(text)
+    if match is None:
+        return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+    return match.group("value")
+
+
+_CONTEXT_PYTHON_MIN_RE = re.compile(
+    r"^(?P<indent>[ \t]+)python_min:[ \t]+['\"]?(?P<value>\d+\.\d+)['\"]?[ \t]*\r?\n",
+    re.MULTILINE,
+)
+
+
+def _clamp_or_drop_context_python_min(
+    recipe_path: Path, floor: str | None = None
+) -> bool:
+    """v8.13.0 — drop ``context.python_min`` line when at/below conda-forge floor.
+
+    Closes C1 from the S1 retro (refined by the 2026-06-11 operator correction):
+    grayskull emits ``python_min:`` echoing upstream's ``requires-python``, but
+    for any value ``<=`` the conda-forge floor the line is either redundant
+    (matches default) or wrong (below floor). The canonical form is to omit
+    the line entirely — references to ``${{ python_min }}`` resolve from
+    ``conda-forge-pinning`` at build time. Per SKILL.md § Python Version Policy
+    item 6: "Recipes do NOT need ``python_min`` in context unless overriding
+    the default."
+
+    Behaviour:
+
+    - ``value <= floor`` → DROP the line (pinning supplies it)
+    - ``value > floor`` → KEEP (legitimate override — upstream needs higher)
+    - absent → no-op
+
+    Floor is read dynamically by ``_read_conda_forge_python_floor`` unless an
+    override is passed.
+
+    Returns True if the file was modified.
+    """
+    if floor is None:
+        floor = _read_conda_forge_python_floor()
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    match = _CONTEXT_PYTHON_MIN_RE.search(text)
+    if match is None:
+        return False
+    value = match.group("value")
+    try:
+        value_tuple = tuple(int(p) for p in value.split("."))
+        floor_tuple = tuple(int(p) for p in floor.split("."))
+    except ValueError:
+        return False
+    if value_tuple > floor_tuple:
+        return False  # legitimate override; keep
+    new_text = text[:match.start()] + text[match.end():]
+    if new_text == text:
+        return False
+    recipe_path.write_text(new_text, encoding="utf-8")
+    return True
+
+
+def _add_missing_description(
+    recipe_path: Path, package_name: str, info: dict | None = None
+) -> bool:
+    """v8.13.0 — emit ``about.description`` from PyPI when grayskull dropped it.
+
+    Closes C2 from the S1 retro: the v8.8.0 changelog claimed grayskull's
+    output gains ``about.description`` from PyPI's ``info.description``, but
+    v8.12.0 only landed ``about.repository``. Parallels ``_add_missing_repository``.
+
+    Skips insertion when:
+
+    - ``about.description`` already present in the recipe
+    - PyPI ``info.description`` is empty or trivially short (<20 chars stripped)
+    - description equals summary verbatim (would duplicate noise)
+
+    Source priority: passed-in ``info`` dict (test fixtures, future caller
+    optimisations) → live PyPI JSON fetch. Network failure is silently
+    treated as "no description available" — never blocks the chain.
+
+    Returns True if the file was modified.
+    """
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    # Already present (scalar OR block-scalar form)
+    if re.search(r"^[ \t]+description:[ \t]+\S", text, re.MULTILINE):
+        return False
+    if re.search(r"^[ \t]+description:[ \t]*\|", text, re.MULTILINE):
+        return False
+
+    if info is None:
+        try:
+            import urllib.request
+            with urllib.request.urlopen(
+                f"https://pypi.org/pypi/{package_name}/json", timeout=10
+            ) as resp:
+                data = json.loads(resp.read())
+            info = data.get("info") or {}
+        except Exception:
+            return False
+    if not info:
+        return False
+
+    description = (info.get("description") or "").strip()
+    summary_in_pypi = (info.get("summary") or "").strip()
+    if len(description) < 20:
+        return False
+    if description == summary_in_pypi:
+        return False
+
+    # Anchor: the local summary line
+    summary_m = re.search(r"^(?P<indent>[ \t]*)summary:[ \t]+.*\r?\n", text, re.MULTILINE)
+    if summary_m is None:
+        return False
+    indent = summary_m.group("indent")
+
+    # Take first paragraph; cap to 500 chars to avoid embedding a full README.
+    first_para = description.split("\n\n")[0].strip()
+    if len(first_para) > 500:
+        first_para = first_para[:497].rstrip() + "..."
+    # Build a block scalar; each line indented 2 spaces deeper than the parent.
+    body_lines = first_para.split("\n")
+    body_indented = "\n".join(f"{indent}  {ln}" for ln in body_lines)
+    inject = f"{indent}description: |\n{body_indented}\n"
+
+    insert_pos = summary_m.end()
+    new_text = text[:insert_pos] + inject + text[insert_pos:]
+    recipe_path.write_text(new_text, encoding="utf-8")
+    return True
+
+
+_PLACEHOLDER_SUMMARIES = (
+    "Add your description here",
+    "Add description here",
+    "TODO",
+    "FIXME",
+)
+_PLACEHOLDER_LICENSE_FILES = (
+    "PLEASE_ADD_LICENSE_FILE",
+    "PLEASE_ADD_LICENSE",
+    "FIXME",
+    "TODO",
+)
+_CLASSIFIER_TO_SPDX = {
+    "License :: OSI Approved :: MIT License": "MIT",
+    "License :: OSI Approved :: Apache Software License": "Apache-2.0",
+    "License :: OSI Approved :: BSD License": "BSD-3-Clause",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)": "GPL-3.0-only",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)": "LGPL-3.0-only",
+    "License :: OSI Approved :: ISC License (ISCL)": "ISC",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
+}
+
+
+def _strip_grayskull_placeholders(
+    recipe_path: Path, info: dict | None = None
+) -> bool:
+    """v8.13.0 — flag/repair grayskull placeholder literals in ``about:`` fields.
+
+    Closes C3 from the S3 retro: grayskull emits the literal placeholder
+    ``"Add your description here"`` (default from ``uv init`` / ``rye init`` /
+    ``hatch init``), empty ``license:``, and ``"PLEASE_ADD_LICENSE_FILE"``
+    when PyPI metadata is sparse. Reviewers reject the PR on the first one
+    alone.
+
+    Three behaviours:
+
+    1. ``about.summary`` matches a known placeholder → prepend a recipe-comment
+       marker ``# TODO: review — grayskull placeholder; replace with meaningful summary``
+       above the line so the operator sees it. We do NOT overwrite the value
+       (there's no authoritative source to pull from).
+    2. ``about.license`` empty AND PyPI classifier maps to a recognised SPDX
+       identifier → substitute the SPDX value in-line. Pulls from passed-in
+       ``info`` or fetches PyPI JSON.
+    3. ``about.license_file`` matches a known placeholder → prepend
+       ``# TODO: vendor LICENSE per SKILL.md pattern (2)`` marker. Real
+       substitution requires knowing whether the sdist ships a LICENSE,
+       which lives outside the post-processor's scope.
+
+    Returns True if any pattern fired and the file was modified.
+    """
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    new_text = text
+    fired = False
+
+    # Pattern 1: summary placeholder
+    for placeholder in _PLACEHOLDER_SUMMARIES:
+        pattern = re.compile(
+            rf"^(?P<indent>[ \t]*)summary:[ \t]+{re.escape(placeholder)}[ \t]*\r?\n",
+            re.MULTILINE,
+        )
+        m = pattern.search(new_text)
+        if m:
+            indent = m.group("indent")
+            replacement = (
+                f"{indent}# TODO: review — grayskull placeholder; replace with meaningful summary\n"
+                f"{m.group(0)}"
+            )
+            new_text = new_text[:m.start()] + replacement + new_text[m.end():]
+            fired = True
+            break  # only one summary line
+
+    # Pattern 2: empty license + classifier-derived inference
+    license_m = re.search(r"^(?P<indent>[ \t]*)license:[ \t]*\r?\n", new_text, re.MULTILINE)
+    if license_m:
+        local_info = info
+        if local_info is None:
+            # Skip network fetch for the empty-license case if no info is provided;
+            # leaving as-is is safer than guessing. Caller passes info when available.
+            local_info = {}
+        classifiers = (local_info or {}).get("classifiers") or []
+        inferred = None
+        for cls in classifiers:
+            if cls in _CLASSIFIER_TO_SPDX:
+                inferred = _CLASSIFIER_TO_SPDX[cls]
+                break
+        if inferred:
+            indent = license_m.group("indent")
+            replacement = f"{indent}license: {inferred}\n"
+            new_text = new_text[:license_m.start()] + replacement + new_text[license_m.end():]
+            fired = True
+
+    # Pattern 3: license_file placeholder
+    for placeholder in _PLACEHOLDER_LICENSE_FILES:
+        pattern = re.compile(
+            rf"^(?P<indent>[ \t]*)license_file:[ \t]+{re.escape(placeholder)}[ \t]*\r?\n",
+            re.MULTILINE,
+        )
+        m = pattern.search(new_text)
+        if m:
+            indent = m.group("indent")
+            replacement = (
+                f"{indent}# TODO: vendor LICENSE per SKILL.md pattern (2) — sdist may have none\n"
+                f"{m.group(0)}"
+            )
+            new_text = new_text[:m.start()] + replacement + new_text[m.end():]
+            fired = True
+            break
+
+    if not fired or new_text == text:
+        return False
+    recipe_path.write_text(new_text, encoding="utf-8")
+    return True
+
+
 @mcp.tool()
 def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> str:
     """Generate a conda-forge recipe from a PyPI package using grayskull.
@@ -439,6 +752,9 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
             run_floor_clamped = False
             summary_normalized = False
             repository_added = False
+            context_python_min_dropped = False
+            description_added = False
+            placeholders_stripped = False
             if recipe_path.exists():
                 normalized = _normalize_grayskull_test_matrix(recipe_path)
                 schema_header_added = _ensure_yaml_language_server_header(recipe_path)
@@ -446,6 +762,23 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
                 run_floor_clamped = _clamp_run_python_floor(recipe_path)
                 summary_normalized = _normalize_summary(recipe_path)
                 repository_added = _add_missing_repository(recipe_path, package_name)
+                # v8.13.0 post-processors. Fetch PyPI info once for C2 + C3.
+                _pypi_info: dict | None = None
+                try:
+                    import urllib.request
+                    with urllib.request.urlopen(
+                        f"https://pypi.org/pypi/{package_name}/json", timeout=10
+                    ) as resp:
+                        _pypi_info = (json.loads(resp.read()) or {}).get("info") or {}
+                except Exception:
+                    _pypi_info = None
+                context_python_min_dropped = _clamp_or_drop_context_python_min(recipe_path)
+                description_added = _add_missing_description(
+                    recipe_path, package_name, info=_pypi_info
+                )
+                placeholders_stripped = _strip_grayskull_placeholders(
+                    recipe_path, info=_pypi_info
+                )
             return json.dumps({
                 "success": True,
                 "message": f"Recipe generated at {recipe_dir}",
@@ -456,6 +789,9 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
                     "run_python_floor_clamped": run_floor_clamped,
                     "summary_normalized": summary_normalized,
                     "about_repository_added": repository_added,
+                    "context_python_min_dropped": context_python_min_dropped,
+                    "about_description_added": description_added,
+                    "grayskull_placeholders_stripped": placeholders_stripped,
                 },
                 "stdout": result.stdout
             }, indent=2)

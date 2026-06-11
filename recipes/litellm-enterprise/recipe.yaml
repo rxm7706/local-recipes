@@ -15,7 +15,6 @@ schema_version: 1
 context:
   name: litellm-enterprise
   version: "0.1.39"
-  python_min: "3.10"
 
 package:
   name: ${{ name }}

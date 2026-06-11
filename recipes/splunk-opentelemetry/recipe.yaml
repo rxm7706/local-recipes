@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "2.10.1"
-  python_min: '3.10'
   python_max: '4.0'
   python_test_max: '3.14'
   opentelemetry_api_version: '1.41.0'

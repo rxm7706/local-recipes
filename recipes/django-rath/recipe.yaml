@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: django-rath
   version: "0.1.0"
-  python_min: "3.10"
 
 package:
   name: ${{ name }}

@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: django-permissionedforms
   version: "0.1"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}
