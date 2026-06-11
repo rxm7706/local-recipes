@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: open-design
-  version: "0.2.0"
+  version: "0.9.0"
   nodejs_min: "24"
   pnpm_version: "10.33.2"
 
@@ -13,7 +13,7 @@ package:
 
 source:
   url: https://github.com/nexu-io/open-design/archive/refs/tags/open-design-v${{ version }}.tar.gz
-  sha256: c3762ae58866ea462a336a683870762e4f6733eb41fa9b3592e678e421b31219
+  sha256: d6df78ddd614de87dceb85c2a8cb1b94e76223a7c84b20415918ef71c6e01006
 
 build:
   number: 0
