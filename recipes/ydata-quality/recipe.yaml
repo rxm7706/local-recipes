@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: ydata-quality
   version: "0.1.2"
-  python_min: '3.7'
 
 package:
   name: ${{ name|lower }}

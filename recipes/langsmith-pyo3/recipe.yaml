@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: langsmith-pyo3
   version: "0.1.0rc5"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

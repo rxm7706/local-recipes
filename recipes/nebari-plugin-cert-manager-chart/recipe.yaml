@@ -3,7 +3,6 @@ schema_version: 1
 context:
   name: nebari-plugin-cert-manager-chart
   version: "0.0.1"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

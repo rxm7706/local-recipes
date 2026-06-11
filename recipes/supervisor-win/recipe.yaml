@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: supervisor-win
   version: "4.7.0"
-  python_min: '3.10'
   python_check_max: "3.14"
 
 package:

@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: opendataloader-pdf
   version: "2.2.1"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

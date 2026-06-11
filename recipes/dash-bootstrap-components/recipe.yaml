@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: dash-bootstrap-components
   version: "2.0.3"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}

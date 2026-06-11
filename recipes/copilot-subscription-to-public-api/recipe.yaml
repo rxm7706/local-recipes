@@ -12,7 +12,6 @@ schema_version: 1
 context:
   name: copilot-subscription-to-public-api
   version: "0.1.0"
-  python_min: "3.10"
   commit: 8f5bbf6708641ce597a88bb42a70d1d6171753e7
 
 package:

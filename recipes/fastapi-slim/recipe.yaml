@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: fastapi-slim
   version: "0.121.1"
-  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}

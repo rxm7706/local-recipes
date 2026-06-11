@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: fixedint
   version: "0.1.6"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}

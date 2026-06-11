@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: mozilla-django-oidc
   version: "5.0.1"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

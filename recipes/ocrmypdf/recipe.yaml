@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: ocrmypdf
   version: "16.11.1"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

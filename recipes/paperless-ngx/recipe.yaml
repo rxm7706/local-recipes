@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: paperless-ngx
   version: "2.19.2"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

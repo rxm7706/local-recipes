@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: django-bolt
   version: "0.2.4"
-  python_min: '3.10'
   maturin_min: "1.9"
 
 package:

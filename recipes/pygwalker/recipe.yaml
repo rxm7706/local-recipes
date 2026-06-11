@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: pygwalker
   version: "0.4.9.15"
-  python_min: "3.10"
 
 package:
   name: ${{ name }}

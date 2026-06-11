@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: grpc-google-iam-v1
   version: "0.14.3"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

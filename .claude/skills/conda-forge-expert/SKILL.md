@@ -368,10 +368,13 @@ When asked to create or update a recipe, execute these steps in order. Each step
     - Success: `pr_url` returned; PR opens on conda-forge/staged-recipes
     - Run `dry_run=True` first — it checks `gh auth`, fork presence, and branch state
     - When step 8b already pushed the branch, `submit_pr`'s prep phase no-ops (idempotency check) and proceeds straight to opening the PR
+    - **Post-edit rebuild discipline (v8.13.0)**: if the recipe was edited (e.g., a step-04 PATCH finding applied) AFTER the green build but BEFORE `prepare_submission_branch`, **re-run `trigger_build` first**. The fork branch should always reflect a verified-green state — pushing a recipe whose latest edit was never built leaves an unverified surface for conda-forge CI to discover. Same-package extension of G15; cheap insurance.
     - If PR creation fails after a successful push, the result includes `branch` + `fork_branch_url` + a `hint` to retry just the PR step — no need to re-push
     - See [Pre-PR Quality Gate Checklist](#pre-pr-quality-gate-checklist) before calling
     - **Feedstock updates branch off here.** `submit_pr` targets `conda-forge/staged-recipes` — correct for **new** package submissions. For updates to an **existing** feedstock (version bumps, dep fixes, CI fixes), the PR target is `conda-forge/<name>-feedstock` directly, not staged-recipes. `lookup_feedstock(pkg_name=<name>)` returning `exists=True` is the signal — when it does, skip steps 8b + 9 and instead: (a) clone the feedstock, (b) copy `recipes/<name>/recipe.yaml` over `recipe/recipe.yaml`, (c) bump `build.number` (or reset to 0 on version bump), (d) open a PR against the feedstock. Steps 1–8 (gates + native build) apply identically to both paths.
     - > *Skills: [`shipping-and-launch`] — complete pre-submit checklist; [`git-workflow-and-versioning`] — atomic commit (`feat: add <name> recipe`); [`documentation-and-adrs`] — PR description must explain WHY.*
+
+**Retro→spec feed-forward (v8.13.0)**: when this skill area has a recent retro entry in `_bmad-output/projects/<project>/implementation-artifacts/retro-*.md`, pre-apply its known-gaps workarounds as Execution checklist items in the new recipe-authoring spec — do not assume the skill has been patched. The S1+S3 retros' C1 / C2 / R1 workarounds were pre-applied into S3's spec on 2026-06-11; result was zero step-04 PATCH iterations even before v8.13.0 landed the actual generator fixes. Verified pattern; treat retro entries as "expected workarounds until shipped" rather than "shipped fixes available."
 
 ### Sub-workflow: Updating an existing recipe (diff-before-apply)
 
@@ -791,7 +794,7 @@ extra:
 | `generate_recipe_from_cran` | R package from CRAN via rattler-build | `recipe-generator.py cran ggplot2` |
 | `generate_recipe_from_cpan` | Perl package from CPAN via rattler-build | `recipe-generator.py cpan Moose` |
 | `generate_recipe_from_luarocks` | Lua package via rattler-build | `recipe-generator.py luarocks lua-cjson` |
-| `edit_recipe` | **Primary editing tool.** Structured actions: `update`, `add`. For deletions, fall back to `Edit` — `remove` is **not** supported by the wrapper today (tool returns `Unknown action type: remove`); see v8.11.9 CHANGELOG. Never edit YAML directly except for deletions. | `edit_recipe('recipes/numpy/recipe.yaml', [{"action": "update", "path": "context.version", "value": "2.0.0"}])` |
+| `edit_recipe` | **Primary editing tool.** Four supported actions (per `scripts/recipe_editor.py`): `update` (set or *insert* a scalar at any path; `set_nested_item` uses `setdefault` so intermediate keys are created and a missing leaf is added cleanly), `add_to_list` (append item to an existing list at path), `remove_from_list` (remove item from an existing list at path), `calculate_hash` (refresh `sha256` in a `source:` block). For arbitrary key deletions OR multi-line block-scalar inserts (e.g., a `description: \|` body), fall back to direct `Edit`. **There is no `add` action** — SKILL.md v8.11.1 incorrectly listed it; corrected in v8.13.0 after empirical retest. | `edit_recipe('recipes/numpy/recipe.yaml', [{"action": "update", "path": "about.description", "value": "Short text"}])` (insert), `[{"action": "add_to_list", "path": "about.license_file", "value": "LICENSE.txt"}]` (append) |
 | `get_conda_name` | Resolves a PyPI package name to its conda-forge equivalent (cache-first) | `get_conda_name(pypi_name="python-dateutil")` |
 
 ### Validation & Quality
@@ -1440,6 +1443,25 @@ The rebuild produces the same byte-equivalent artifact (modulo timestamp), but t
 **When this comes up in practice**: cross-package local fix workflows. v8.2.0 documented the `native-build.sh` auto-channel-injection feature — when recipe B has `run: A` and A was just built locally, the build of B auto-prepends `file://${REPO_ROOT}/build_artifacts/<config>` to `channel_sources`. The auto-inject is correct, but it relies on `repodata.json` being current. Rebuilding A invalidates this contract.
 
 **Case study**: `ag-ui-langgraph 0.0.41` fix session, Jun 9, 2026. Bumped `ag-ui-a2ui-toolkit` 0.0.2 → 0.0.3, built it (first build wrote artifact + indexed). Then ran the same build command a second time to capture `✔ all tests passed!` in a grep-friendly form — that second build wrote new artifact bytes but the repodata still referenced the first build's hash. The `ag-ui-langgraph 0.0.41` build then failed at the test phase with the exact `hash mismatch when extracting file://.../ag-ui-a2ui-toolkit-0.0.3-pyhc364b38_0.conda: expected 85ea90d5..., got 766570d75...` error. Fix: `rm` the stale artifact, rebuild ag-ui-a2ui-toolkit — repodata refreshed in step. Downstream ag-ui-langgraph build then resolved 0.0.3 cleanly and tests passed.
+
+### G16. PyPI Varnish CDN degradation on `/packages/source/<letter>/...` route
+
+**Symptom**: rattler-build's source fetch fails with `HTTP status server error (503 Service Unavailable)` when downloading from `https://pypi.org/packages/source/<letter>/<name>/<sdist>` — the canonical URL pattern conda-forge mandates. The same artifact at `https://files.pythonhosted.org/packages/<2-char>/<2-char>/<long-hash>/<sdist>` returns 200. Sustained — observed >12 min on 2026-06-11 for `lyric-task` 0.1.7. PyPI's `Retry-After` header is `0` (suggesting transient cache miss) but reality is a sustained route degradation.
+
+**Why**: `pypi.org/packages/source/...` goes through PyPI's Varnish CDN edge layer for cache + routing. `files.pythonhosted.org/packages/<hash>/...` is the backing CDN (Fastly historically) and serves the same bytes. When Varnish has cache-routing issues, the `pypi.org` route returns 503 while the backing CDN keeps serving.
+
+**Workaround**: URL-swap the recipe's `source.url` temporarily for the local build only.
+
+1. Edit `source.url` to the `https://files.pythonhosted.org/packages/<hash>/<sdist>` form. The sha256 stays unchanged (identical bytes); `validate_recipe` won't complain.
+2. Build green via `recipe-build`.
+3. **REVERT** `source.url` to the canonical `https://pypi.org/packages/source/<letter>/...` form before pushing the fork. The submitted recipe ships canonical; conda-forge CI uses its own infrastructure unaffected by today's Varnish issue.
+4. Re-run `validate_recipe` + `optimize_recipe` post-revert to confirm the recipe is still clean.
+
+**Risk**: forgetting to revert leaves the recipe with a non-canonical URL that bypasses JFrog Artifactory PyPI Remote Repository proxies in air-gapped environments (SKILL.md "PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern" critical constraint). Always re-validate after the revert.
+
+**Detection at scale**: `curl -sI 'https://pypi.org/packages/source/<letter>/<name>/<sdist>'` returns 503 while `curl -sI 'https://files.pythonhosted.org/packages/<hash>/<sdist>'` returns 200 → Varnish issue, not a bytes issue. PyPI status page (`status.python.org`) lags real outages by several minutes — trust the dual probe.
+
+**Case study**: S3 `lyric-task 0.1.7` build (2026-06-11). PyPI `/packages/source/l/lyric-task/lyric_task-0.1.7.tar.gz` returned 503 for >12 min; backing CDN at `files.pythonhosted.org/packages/1d/ff/.../lyric_task-0.1.7.tar.gz` returned 200 throughout. URL-swap workaround applied; build green at 14.62 KiB; URL reverted; `validate_recipe` + `optimize_recipe` clean post-revert; fork pushed.
 
 ---
 

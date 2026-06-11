@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: agntcy-acp
   version: "1.5.2"
-  python_min: '3.10'
   python_check_max: "3.14"
 
 package:

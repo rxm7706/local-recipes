@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.14.1"
-  python_min: "3.10"
 
 recipe:
   name: crewai-suite

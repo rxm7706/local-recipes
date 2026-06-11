@@ -3,7 +3,6 @@ schema_version: 1
 context:
   name: limeade
   version: "0.1.1"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}

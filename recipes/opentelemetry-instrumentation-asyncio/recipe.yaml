@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: opentelemetry-instrumentation-asyncio
   version: "0.56b0"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}

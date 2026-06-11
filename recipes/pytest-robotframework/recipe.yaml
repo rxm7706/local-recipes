@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: pytest-robotframework
   version: "4.4.0.post2"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}

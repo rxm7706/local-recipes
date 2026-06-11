@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: markitdown-mcp
   version: "0.0.1a4"
-  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

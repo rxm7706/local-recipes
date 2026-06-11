@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: azure-monitor-opentelemetry-exporter
   version: "1.0.0b37"
-  python_min: '3.9'
 
 package:
   name: ${{ name|lower }}

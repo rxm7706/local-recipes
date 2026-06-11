@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: bigframes
   version: "2.29.1"
-  python_min: '3.10'
   python_max: '4.0'
   python_test_max: '3.15'
 

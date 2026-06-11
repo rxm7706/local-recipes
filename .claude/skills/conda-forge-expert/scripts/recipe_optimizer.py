@@ -195,13 +195,69 @@ _V0_TO_V1_ABOUT_FIELDS = {
 }
 
 
+_PLACEHOLDER_SUMMARY_PATTERNS = (
+    "add your description here",
+    "add description here",
+    "todo",
+    "fixme",
+)
+_PLACEHOLDER_LICENSE_FILE_VALUES = (
+    "please_add_license_file",
+    "please_add_license",
+    "fixme",
+    "todo",
+)
+
+# v8.13.0 — SEL-004 floor reader. Mirrors `_read_conda_forge_python_floor` in
+# `.claude/tools/conda_forge_server.py`. The two would-be-duplicated readers
+# stay separate because the optimizer can run in fresh environments where the
+# pixi env's pinning file isn't materialised — both implement the same
+# graceful-fallback behaviour.
+_DEFAULT_CONDA_FORGE_PYTHON_FLOOR = "3.10"
+_PINNING_PYTHON_MIN_RE = re.compile(
+    r"^python_min:\s*\n(?:[ \t]*#[^\n]*\n)*[ \t]*-\s*['\"]?(?P<value>\d+\.\d+)['\"]?",
+    re.MULTILINE,
+)
+
+
+def _read_conda_forge_python_floor() -> str:
+    """Read conda-forge's current python_min floor dynamically.
+
+    v8.13.0 — supports SEL-004. Reads from
+    `.pixi/envs/local-recipes/conda_build_config.yaml`'s `python_min:` list
+    (the materialised conda-forge-pinning value). Falls back to the literal
+    default (`3.10`) when the file is missing or unparseable — never blocks
+    the optimizer path. The floor moves over time; the fallback is a
+    snapshot, not a contract.
+    """
+    try:
+        repo_root = Path(__file__).resolve().parents[3]
+    except (IndexError, OSError):
+        return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+    pinning = repo_root / ".pixi/envs/local-recipes/conda_build_config.yaml"
+    try:
+        text = pinning.read_text(encoding="utf-8")
+    except OSError:
+        return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+    m = _PINNING_PYTHON_MIN_RE.search(text)
+    if m is None:
+        return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+    return m.group("value")
+
+
 def analyze_about_section(data: Dict) -> List[OptimizationSuggestion]:
-    """Check about section for conda-forge required fields and v0/v1 field-name mismatches.
+    """Check about section for conda-forge required fields, v0/v1 field-name mismatches,
+    and grayskull placeholder literals.
 
     ABT-001  Missing license_file
     ABT-002  v0 (meta.yaml) about-field names used in v1 recipe.yaml — rattler-build
              silently accepts unknown keys, so these become a data-loss bug rather than
              a validation error. Verified against prefix-dev/recipe-format $defs.About.
+    ABT-003  Placeholder-shaped about-field — grayskull echoes upstream pyproject's
+             placeholder defaults (`summary: "Add your description here"`) directly,
+             plus its own `license_file: PLEASE_ADD_LICENSE_FILE` and empty `license:`
+             when PyPI metadata is sparse. Conda-forge reviewers reject the PR on the
+             first one alone. v8.13.0 — closes C3 from the S3 retro.
     """
     suggestions = []
     about = data.get("about", {}) or {}
@@ -217,6 +273,63 @@ def analyze_about_section(data: Dict) -> List[OptimizationSuggestion]:
             ),
             confidence=0.95,
         ))
+
+    # --- ABT-003: placeholder-shaped about-fields ---
+    summary = about.get("summary")
+    if isinstance(summary, str):
+        s = summary.strip().lower()
+        is_placeholder = (
+            any(p in s for p in _PLACEHOLDER_SUMMARY_PATTERNS)
+            or len(summary.strip()) < 8
+            or summary.strip() == ""
+        )
+        if is_placeholder:
+            suggestions.append(OptimizationSuggestion(
+                code="ABT-003",
+                message=f"'about.summary' is a placeholder/trivial value: {summary!r}",
+                suggestion=(
+                    "Replace with a meaningful one-line summary (~50-100 chars). "
+                    "Grayskull echoes upstream pyproject's placeholder defaults "
+                    "(`uv init` / `rye init` / `hatch init` emit "
+                    "'Add your description here'); the recipe should not ship them."
+                ),
+                confidence=1.0,
+            ))
+
+    if "license" in about:
+        lic = about.get("license")
+        if lic is None or (isinstance(lic, str) and not lic.strip()):
+            suggestions.append(OptimizationSuggestion(
+                code="ABT-003",
+                message="'about.license' is empty or null.",
+                suggestion=(
+                    "Set the SPDX identifier explicitly (MIT, Apache-2.0, BSD-3-Clause, "
+                    "GPL-3.0-only, ...). When PyPI metadata's 'license' field is None, "
+                    "infer from the OSI-approved classifier (e.g., 'License :: OSI Approved :: "
+                    "MIT License' → 'MIT') or read from the upstream LICENSE file."
+                ),
+                confidence=1.0,
+            ))
+
+    license_file = about.get("license_file")
+    if license_file is not None:
+        values_to_check = (
+            [license_file] if isinstance(license_file, str)
+            else list(license_file) if isinstance(license_file, list) else []
+        )
+        for v in values_to_check:
+            if isinstance(v, str) and v.strip().lower() in _PLACEHOLDER_LICENSE_FILE_VALUES:
+                suggestions.append(OptimizationSuggestion(
+                    code="ABT-003",
+                    message=f"'about.license_file' is a grayskull placeholder: {v!r}",
+                    suggestion=(
+                        "Replace with the real filename. If upstream sdist ships LICENSE, use "
+                        "`license_file: [LICENSE]`. If sdist has none, vendor the LICENSE "
+                        "into the recipe directory per SKILL.md Canonical License-File "
+                        "Placement pattern (2) and reference it the same way."
+                    ),
+                    confidence=1.0,
+                ))
 
     # ABT-002 only applies to v1 recipes — v0 meta.yaml legitimately uses these names.
     if data.get("schema_version") == 1:
@@ -392,6 +505,54 @@ def analyze_selectors(data: Dict, recipe_path: Path | None = None) -> List[Optim
                         "(4) tests python block: python_version: ${{ python_min }}.*"
                     ),
                     confidence=0.75,
+                ))
+
+    # --- SEL-004: Redundant or below-floor python_min in context (v8.13.0) ---
+    # Closes the 2026-06-11 operator correction + reinforces C1 from S1+S3 retros.
+    # Conda-forge floor is read dynamically from the materialised pinning config.
+    # Per SKILL.md § Python Version Policy item 6, `context.python_min` should be
+    # OMITTED at the default floor — pinning supplies it.
+    context = data.get("context", {}) or {}
+    ctx_python_min = context.get("python_min")
+    if isinstance(ctx_python_min, str) and ctx_python_min.strip():
+        floor = _read_conda_forge_python_floor()
+        try:
+            value_tuple = tuple(int(p) for p in ctx_python_min.strip().split("."))
+            floor_tuple = tuple(int(p) for p in floor.split("."))
+        except ValueError:
+            value_tuple = floor_tuple = None
+        if value_tuple is not None and floor_tuple is not None:
+            if value_tuple == floor_tuple:
+                suggestions.append(OptimizationSuggestion(
+                    code="SEL-004",
+                    message=(
+                        f"Redundant 'context.python_min: \"{ctx_python_min}\"' — "
+                        f"matches the default conda-forge floor ({floor})."
+                    ),
+                    suggestion=(
+                        "Remove the 'python_min:' line from 'context:'. "
+                        "Conda-forge-pinning supplies the floor; `${{ python_min }}` "
+                        "references throughout the CFEP-25 triad continue to resolve "
+                        "correctly. Per SKILL.md § Python Version Policy item 6."
+                    ),
+                    confidence=1.0,
+                ))
+            elif value_tuple < floor_tuple:
+                suggestions.append(OptimizationSuggestion(
+                    code="SEL-004",
+                    message=(
+                        f"'context.python_min: \"{ctx_python_min}\"' is below the "
+                        f"conda-forge floor ({floor}) — invalid for staged-recipes."
+                    ),
+                    suggestion=(
+                        f"Remove the 'python_min:' line from 'context:'. "
+                        f"Conda-forge-pinning supplies the current floor ({floor}); "
+                        "below-floor values are never legitimate. Likely caused by "
+                        "the v8.12.x generator C1 gap echoing upstream's "
+                        "`requires-python` lower bound; v8.13.0 generator drops the "
+                        "line for new recipes."
+                    ),
+                    confidence=1.0,
                 ))
 
     return suggestions
