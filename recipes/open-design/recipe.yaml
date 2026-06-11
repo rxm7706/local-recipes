@@ -17,11 +17,21 @@ source:
 
 build:
   number: 0
-  # First-pass: Linux x86_64 only. The `od` daemon is pure Node + better-sqlite3
-  # (native addon) and should also work on linux-aarch64, osx-*, and win-64,
-  # but each adds build-system surface area; expand once linux-64 is green.
+  # Supported: linux-64 (verified green locally), linux-aarch64, osx-arm64.
+  # The unix build path (build.sh) is platform-agnostic: corepack-driven pnpm,
+  # `pnpm deploy` flat node_modules, node-gyp compile of better-sqlite3 via
+  # conda-forge's per-platform compiler+stdlib. linux-aarch64 + osx-arm64
+  # rely on conda-forge CI for verification (no native cross-build from
+  # linux-64 host; QEMU/Docker is opt-in).
+  # Skipped (deliberate):
+  #   - win-64: build.bat hardcodes the v0.2.0 4-workspace list; needs a
+  #     refresh against v0.9.0's expanded `packages/*` set before re-enabling.
+  #   - osx-64: focusing on Apple Silicon; Intel Mac path untested.
+  #   - linux-ppc64le: rare; not worth the build time.
   skip:
-    - not (linux and x86_64)
+    - win
+    - osx and x86_64
+    - linux and ppc64le
   script:
     - if: unix
       then: bash $RECIPE_DIR/build.sh
