@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: open-design
+  version: "0.2.0"
+  nodejs_min: "24"
+  pnpm_version: "10.33.2"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/nexu-io/open-design/archive/refs/tags/open-design-v${{ version }}.tar.gz
+  sha256: c3762ae58866ea462a336a683870762e4f6733eb41fa9b3592e678e421b31219
+
+build:
+  number: 0
+  # First-pass: Linux x86_64 only. The `od` daemon is pure Node + better-sqlite3
+  # (native addon) and should also work on linux-aarch64, osx-*, and win-64,
+  # but each adds build-system surface area; expand once linux-64 is green.
+  skip:
+    - not (linux and x86_64)
+  script:
+    - if: unix
+      then: bash $RECIPE_DIR/build.sh
+    - if: win
+      then: call %RECIPE_DIR%\build.bat
+
+requirements:
+  build:
+    # Node.js + corepack (corepack ships with nodejs >= 16.13)
+    - nodejs ${{ nodejs_min }}.*
+    # python is required by node-gyp to compile the better-sqlite3 native addon
+    - python 3.12.*
+    - if: unix
+      then:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - make
+    - if: win
+      then:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+
+  host:
+    - nodejs ${{ nodejs_min }}.*
+
+  run:
+    - nodejs ${{ nodejs_min }}.*
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -x ${PREFIX}/bin/od
+          - test -f ${PREFIX}/lib/${{ name }}/dist/cli.js
+          - od --help
+        else:
+          - if not exist "%LIBRARY_BIN%\od.cmd" exit /b 1
+          - od --help
+
+  - package_contents:
+      bin:
+        - if: unix
+          then: od
+        - if: win
+          then: od.cmd
+
+about:
+  homepage: https://github.com/nexu-io/open-design
+  repository: https://github.com/nexu-io/open-design
+  documentation: https://github.com/nexu-io/open-design#readme
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - ThirdPartyNotices.txt
+  summary: Local-first, open-source design product driven by code-agent CLIs
+  description: |
+    Open Design (`od`) is a local-first design product that detects your
+    installed code-agent CLI (Claude Code, Codex, Cursor, Gemini, OpenCode,
+    Qwen, Copilot, Hermes, Kimi), runs design Skills against curated Design
+    Systems, and streams artifacts (web prototypes, slides, images, videos,
+    HyperFrames) into a sandboxed preview with HTML / PDF / PPTX / MP4 export.
+
+    This conda package ships only the `od` daemon CLI from `apps/daemon` —
+    the desktop GUI (Electron) and web app are not included.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
