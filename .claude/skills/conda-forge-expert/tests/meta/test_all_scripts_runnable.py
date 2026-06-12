@@ -40,6 +40,7 @@ SCRIPTS = [
     "my_feedstocks.py",
     "name_resolver.py",
     "npm_updater.py",
+    "pr_artifacts.py",
     "recipe_editor.py",
     "recipe-generator.py",
     "pypi_only_candidates.py",

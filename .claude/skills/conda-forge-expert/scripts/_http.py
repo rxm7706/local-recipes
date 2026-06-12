@@ -183,7 +183,7 @@ def netrc_credentials(url: str) -> tuple[str, str] | None:
 
 # ── Request builder with enterprise auth ─────────────────────────────────────
 
-def auth_headers_for(url: str) -> dict[str, str]:
+def auth_headers_for(url: str, skip_auth: bool = False) -> dict[str, str]:
     """Build the enterprise auth headers for `url`.
 
     Auth priority (first match wins):
@@ -196,7 +196,17 @@ def auth_headers_for(url: str) -> dict[str, str]:
     Pure function — no User-Agent, no extra headers, no urllib coupling.
     Use this for `requests`-based callers; `make_request` wraps it for the
     urllib path. Both paths share the same auth-resolution semantics.
+
+    `skip_auth=True` returns an empty dict without consulting any env var
+    or netrc entry. Use this for known-public endpoints where leaking
+    JFROG_API_KEY / GITHUB_TOKEN cross-host would be a misconfiguration
+    (e.g. dev.azure.com's public conda-forge feedstock-builds project).
+    The unconditional JFROG_API_KEY injection in step 1 above is the
+    documented cross-resolver leak — `skip_auth` is the call-site opt-out
+    until a host allowlist lands.
     """
+    if skip_auth:
+        return {}
     headers: dict[str, str] = {}
     host = urlparse(url).netloc.lower()
 
@@ -229,18 +239,22 @@ def make_request(
     url: str,
     extra_headers: dict[str, str] | None = None,
     user_agent: str = "conda-forge-expert/1.0",
+    skip_auth: bool = False,
 ) -> urllib.request.Request:
     """
     Build a urllib.request.Request with enterprise authentication headers.
 
-    Auth chain delegated to `auth_headers_for(url)` so the urllib and
-    `requests` paths share the same semantics.
+    Auth chain delegated to `auth_headers_for(url, skip_auth=...)` so the
+    urllib and `requests` paths share the same semantics. Pass
+    `skip_auth=True` for known-public endpoints (e.g. dev.azure.com's
+    public conda-forge feedstock-builds project) — prevents JFROG_API_KEY
+    or GITHUB_TOKEN from leaking cross-host.
     """
     headers: dict[str, str] = {"User-Agent": user_agent}
     if extra_headers:
         headers.update(extra_headers)
     # Caller-supplied Authorization wins over the auto-resolved one.
-    auto = auth_headers_for(url)
+    auto = auth_headers_for(url, skip_auth=skip_auth)
     for k, v in auto.items():
         headers.setdefault(k, v)
     return urllib.request.Request(url, headers=headers)
@@ -877,6 +891,7 @@ def fetch_to_file_resumable(
     user_agent: str = "conda-forge-expert/1.0",
     extra_headers: dict[str, str] | None = None,
     max_retries: int = 3,
+    skip_auth: bool = False,
 ) -> Path:
     """Stream-download to a file with Range/resume + atomic rename.
 
@@ -914,7 +929,12 @@ def fetch_to_file_resumable(
                 headers["Range"] = f"bytes={existing}-"
 
             try:
-                req = make_request(url, extra_headers=headers, user_agent=user_agent)
+                req = make_request(
+                    url,
+                    extra_headers=headers,
+                    user_agent=user_agent,
+                    skip_auth=skip_auth,
+                )
                 with open_url(req, timeout=timeout) as resp:
                     # Python 3.10+ exposes .status on HTTPResponse; fall back
                     # to .getcode() for older runtimes.

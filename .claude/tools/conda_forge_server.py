@@ -40,6 +40,7 @@ GITHUB_VERSION_CHECKER_SCRIPT = SCRIPTS_DIR / "github_version_checker.py"
 GITHUB_UPDATER_SCRIPT = SCRIPTS_DIR / "github_updater.py"
 ENV_INSPECT_SCRIPT = SCRIPTS_DIR / "env_inspect.py"
 MY_FEEDSTOCKS_SCRIPT = SCRIPTS_DIR / "my_feedstocks.py"
+PR_ARTIFACTS_SCRIPT = SCRIPTS_DIR / "pr_artifacts.py"
 
 # Path to the build summary file
 SUMMARY_FILE = Path(__file__).parent.parent.parent / "build_summary.json"
@@ -1475,6 +1476,57 @@ def staleness_report(
     if include_archived:
         args.append("--all-status")
     return json.dumps(_run_script(ATLAS_STALENESS_SCRIPT, args), indent=2)
+
+
+@mcp.tool()
+def download_pr_artifacts(
+    pr_ref: str,
+    repo: str = "conda-forge/staged-recipes",
+    build_id: int | None = None,
+    output_dir: str | None = None,
+    extract: bool = True,
+    platforms: list[str] | None = None,
+    all_runs: bool = False,
+    force: bool = False,
+    check_name: str | None = None,
+) -> str:
+    """Fetch CI-published .conda artifacts for a conda-forge staged-recipes or
+    feedstock PR into a local mamba channel layout (v8.14.0).
+
+    Resolves the Azure DevOps `buildId` via `gh pr checks`, streams the
+    `conda_pkgs_(linux|osx|win)` ZIPs from the public `feedstock-builds`
+    Azure project (anonymous; `skip_auth=True` so JFROG_API_KEY / GITHUB_TOKEN
+    don't leak cross-host), and extracts them into
+    `build_artifacts/pr/<pr-number>/<buildId>/extracted/<platform>/*.conda`
+    — a valid `file://` mamba channel.
+
+    Idempotent (`pr-artifacts.json` manifest is the cache key); `force=True`
+    re-fetches. Read-only — no PR modification, no env mutation, no
+    auto-install.
+
+    Returns the parsed manifest dict (or `{"error": ...}` on failure).
+    """
+    args = ["--json", "--repo", repo]
+    if build_id is not None:
+        args.extend(["--build-id", str(build_id)])
+    if output_dir:
+        args.extend(["--output-dir", output_dir])
+    if not extract:
+        args.append("--no-extract")
+    if platforms:
+        args.extend(["--platforms", ",".join(platforms)])
+    if all_runs:
+        args.append("--all-runs")
+    if force:
+        args.append("--force")
+    if check_name:
+        args.extend(["--check-name", check_name])
+    # `--` terminates optional-args parsing so a `pr_ref` that starts with
+    # `-` (caller error or crafted MCP input) cannot be reinterpreted by
+    # argparse as a flag.
+    args.extend(["--", str(pr_ref)])
+    # 10 min timeout — multi-platform Azure ZIPs can run several minutes.
+    return json.dumps(_run_script(PR_ARTIFACTS_SCRIPT, args, timeout=600), indent=2)
 
 
 @mcp.tool()
