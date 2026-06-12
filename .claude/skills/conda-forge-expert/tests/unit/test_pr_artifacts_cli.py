@@ -32,14 +32,18 @@ spec.loader.exec_module(pra)
 
 
 def _make_fixture_zip(zip_path: Path, platform: str, conda_name: str) -> None:
-    """Build a fixture ZIP that mirrors the Azure `conda_pkgs_<job>.zip` layout:
-    `conda-build_<job>/<platform>/<conda_name>` + a sibling repodata.json.
+    """Build a fixture ZIP that mirrors the real Azure layout (verified
+    against PR #33693 buildId 1536673): a single wrapper dir named after
+    the artifact (`conda_pkgs_linux/`, `conda_pkgs_osx/`, `conda_pkgs_win/`)
+    with the `.conda` + repodata + index siblings directly inside.
+    There is NO inner `<platform>/` subdir — that's synthesized by
+    `extract_zip` from the `platform` kwarg the caller passes.
     """
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_path, "w") as zf:
-        wrapper = f"conda-build_{platform.replace('-', '_')}"
-        zf.writestr(f"{wrapper}/{platform}/{conda_name}", b"fake conda bytes")
-        zf.writestr(f"{wrapper}/{platform}/repodata.json", b'{"packages": {}}')
+        wrapper = f"conda_pkgs_{platform.split('-')[0]}"
+        zf.writestr(f"{wrapper}/{conda_name}", b"fake conda bytes")
+        zf.writestr(f"{wrapper}/repodata.json", b'{"packages": {}}')
 
 
 def _stub_network(monkeypatch, tmp_path: Path, build_id: int, platform: str = "linux-64") -> dict:
@@ -261,12 +265,25 @@ class TestExtractZipSafety:
 
     def test_absolute_path_rejected(self, tmp_path):
         zp = tmp_path / "evil.zip"
-        # First segment is the conda-build_<job>/ wrapper that extract_zip
-        # strips; after stripping the member is `/etc/passwd` (absolute).
+        # First segment is the wrapper that extract_zip strips; after
+        # stripping the member is `/etc/passwd` (absolute).
         self._build_zip(zp, [("wrapper//etc/passwd", b"pwned")])
         with pytest.raises(ValueError, match="unsafe path"):
             pra.extract_zip(zp, tmp_path / "out")
         assert not (tmp_path / "etc" / "passwd").exists()
+
+    def test_absolute_path_rejected_with_platform_prefix(self, tmp_path):
+        """Regression: a malicious member `wrapper//etc/passwd` strips to
+        absolute `/etc/passwd`. Naive `f"{platform}/{inner}"` would yield
+        `linux-64//etc/passwd` which Path normalizes to a non-absolute
+        path inside dest, defeating the abs-path check. The fix runs the
+        safety check on `inner` BEFORE re-nesting under <platform>/.
+        """
+        zp = tmp_path / "evil.zip"
+        self._build_zip(zp, [("wrapper//etc/passwd", b"pwned")])
+        with pytest.raises(ValueError, match="unsafe path"):
+            pra.extract_zip(zp, tmp_path / "out", platform="linux-64")
+        assert not (tmp_path / "out" / "linux-64" / "etc" / "passwd").exists()
 
     def test_dot_dot_traversal_rejected(self, tmp_path):
         zp = tmp_path / "evil.zip"
@@ -274,19 +291,64 @@ class TestExtractZipSafety:
         # would escape the destination root.
         self._build_zip(zp, [("wrapper/../../etc/foo", b"pwned")])
         with pytest.raises(ValueError, match="unsafe path|outside destination"):
-            pra.extract_zip(zp, tmp_path / "out")
+            pra.extract_zip(zp, tmp_path / "out", platform="linux-64")
 
     def test_clean_zip_extracts_normally(self, tmp_path):
+        """Real Azure layout: one wrapper dir, no inner <platform>/.
+        `extract_zip` synthesizes the platform subdir from the kwarg
+        the caller passes (sourced from `art["platform"]`).
+        """
         zp = tmp_path / "good.zip"
         self._build_zip(zp, [
-            ("conda-build_linux/linux-64/foo-1.0.0-h00.conda", b"bytes"),
-            ("conda-build_linux/linux-64/repodata.json", b"{}"),
+            ("conda_pkgs_linux/foo-1.0.0-h00.conda", b"bytes"),
+            ("conda_pkgs_linux/repodata.json", b"{}"),
         ])
         out = tmp_path / "out"
-        written = pra.extract_zip(zp, out)
+        written = pra.extract_zip(zp, out, platform="linux-64")
         assert (out / "linux-64" / "foo-1.0.0-h00.conda").exists()
         assert (out / "linux-64" / "repodata.json").exists()
         assert written == ["linux-64/foo-1.0.0-h00.conda"]
+
+    def test_noarch_stub_written_when_missing(self, tmp_path):
+        """`_write_noarch_stub` creates `noarch/repodata.json` with the
+        v2 shape mamba/conda need to load the channel.
+        """
+        out = tmp_path / "extracted"
+        out.mkdir()
+        stub = pra._write_noarch_stub(out)
+        assert stub == out / "noarch" / "repodata.json"
+        data = json.loads(stub.read_text())
+        assert data["info"]["subdir"] == "noarch"
+        assert data["repodata_version"] == 2
+        assert data["packages.conda"] == {}
+
+    def test_noarch_stub_idempotent_when_present(self, tmp_path):
+        """If a real `noarch/repodata.json` already exists (e.g. a
+        future channel that ships noarch packages), don't clobber it.
+        """
+        out = tmp_path / "extracted"
+        (out / "noarch").mkdir(parents=True)
+        real = out / "noarch" / "repodata.json"
+        marker = '{"info":{"subdir":"noarch"},"packages.conda":{"keep":"me"}}'
+        real.write_text(marker)
+        stub = pra._write_noarch_stub(out)
+        assert stub.read_text() == marker
+
+    def test_platforms_filter_short_circuits_whole_zip(self, tmp_path):
+        """`platforms` is the user's --platforms filter; a zip whose
+        per-artifact `platform` isn't in it short-circuits without
+        touching the filesystem.
+        """
+        zp = tmp_path / "good.zip"
+        self._build_zip(zp, [
+            ("conda_pkgs_osx/foo-1.0.0-h00.conda", b"bytes"),
+        ])
+        out = tmp_path / "out"
+        written = pra.extract_zip(
+            zp, out, platform="osx-64", platforms=["linux-64"]
+        )
+        assert written == []
+        assert not (out / "osx-64").exists()
 
 
 class TestCheckNameMatching:
