@@ -19,6 +19,81 @@ Cross-compilation builds packages for a **target platform** different from the *
 - Building Linux ARM from x86_64
 - Any scenario where native builds aren't available
 
+## Local cross-build for a downloadable artifact
+
+When a staged-recipes PR needs a `.conda` for a platform the staged-recipes
+Azure matrix doesn't build (typically `osx-arm64` and `linux-aarch64`), use
+the `recipe-build-cross` pixi task. It produces a `.conda` you can ship to
+a target-platform machine for hands-on verification before the feedstock's
+post-merge CI publishes the official one.
+
+```bash
+# Cross-build to osx-arm64 from a linux-64 dev box
+pixi run -e local-recipes recipe-build-cross recipes/<name> osx-arm64
+
+# Output:
+# build_artifacts/osxarm64/osx-arm64/<name>-<version>-<hash>.conda
+```
+
+Supported targets: `osx-arm64`, `osx-64`, `linux-aarch64`, `linux-64`, `win-64`.
+
+What the wrapper does on top of plain `rattler-build build` — see
+`.claude/scripts/conda-forge-expert/cross-build.sh` for the implementation:
+
+1. Loads `.ci_support/<config>.yaml` + the `conda-forge-pinning` overlay so
+   variant resolution matches upstream CI.
+2. Sets `CONDA_OVERRIDE_OSX` / `CONDA_OVERRIDE_GLIBC` so the host
+   virtual-package solve succeeds when the build host doesn't match.
+3. **osx-* targets**: copies the recipe to a tempdir, injects
+   `cctools_<arch>` + `ld64_<arch>` into `requirements.build` (provides the
+   cross `<triple>-install_name_tool`), and appends a 6-line shim to
+   `build.sh` that symlinks it to the plain name rattler-build's Mach-O
+   relinker searches for. Source recipe is untouched.
+4. **win-64 target**: overrides `build.script` to `bash ./build.sh` so
+   rattler-build doesn't try to spawn `build.bat` under cmd.exe (absent on
+   a unix host). The recipe's `build.sh` MUST handle
+   `target_platform == "win-64"` itself — typically by writing to
+   `${PREFIX}/Library/bin` with `.exe` suffixes. The wrapper does not
+   auto-translate `build.bat`; if the recipe ships only `build.bat`, the
+   wrapper errors with a clear message.
+5. Passes `--test skip` — rattler-build can't execute foreign-arch
+   binaries on the host. Verify on the target machine manually.
+
+**Scope**: tuned for binary-repackage recipes (the staged-recipes pattern
+for prebuilt CLI tools like `gh-copilot-cli`, `pixi`, `microsoft-edit`).
+Compiled-source cross-builds need more wiring (sysroot, kernel-headers,
+compiler shims) that this wrapper doesn't set up — for those, build
+natively or use the Docker entrypoint.
+
+**Single-output only**: the cctools-injection regex matches a single
+top-level `requirements.build:` block. Multi-output recipes should edit
+their own build deps and use `rattler-build build` directly.
+
+### win-64 cross-build recipe pattern
+
+For the win-64 cross path to work, the recipe's `build.sh` must branch on
+`${target_platform}`:
+
+```bash
+#!/bin/bash
+set -euxo pipefail
+
+if [[ "${target_platform}" == win-* ]]; then
+  BIN_DIR="${PREFIX}/Library/bin"
+  EXE=".exe"
+else
+  BIN_DIR="${PREFIX}/bin"
+  EXE=""
+fi
+
+mkdir -p "${BIN_DIR}"
+cp "./copilot${EXE}" "${BIN_DIR}/copilot${EXE}"
+```
+
+This same `build.sh` runs cleanly under both the native unix build and the
+cross-to-win path. Keep `build.bat` for staged-recipes' native win-64 CI
+runner — the cross path doesn't touch it.
+
 ## Basic Setup
 
 ### recipe.yaml
