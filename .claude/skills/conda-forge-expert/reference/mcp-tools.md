@@ -37,6 +37,7 @@ The tools fall into three layers:
 | `update_mapping_cache` | Update the local PyPI-to-Conda name-mapping cache from Grayskull. Run when `get_conda_name` misses a package. |
 | `migrate_to_v1` | **meta.yaml → recipe.yaml** via `feedrattler`. meta.yaml is preserved; review and remove it manually after validation. |
 | `submit_pr` | Push the recipe to your staged-recipes fork and open a PR to conda-forge. Always `dry_run=True` first. |
+| `download_pr_artifacts` | **v8.14.0.** Fetch CI-published `.conda` artifacts from a conda-forge staged-recipes or feedstock PR via the Azure DevOps Build Artifacts REST API. Resolves the Azure `buildId` from `gh pr checks`, anonymously streams the `conda_pkgs_(linux\|osx\|win)` ZIPs (no PAT, no `az login`), and extracts them into `build_artifacts/pr/<pr-number>/<buildId>/extracted/` — a valid `file://` mamba channel. Idempotent (manifest-keyed cache); `force=True` re-fetches. Read-only — no PR modification. Use to spot-check artifacts before merge approval or to bulk-fetch for offline smoke-tests. |
 | `get_conda_name` | Resolve a PyPI package name to its conda-forge equivalent. |
 | `run_system_health_check` | Full diagnostic on the development environment. |
 

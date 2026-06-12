@@ -150,6 +150,12 @@ pixi run -e local-recipes recipe-build-cross recipes/<name> win-64
 
 # CI-fidelity build inside Docker (alma9 sysroot)
 pixi run -e local-recipes recipe-build-docker linux64
+
+# Download CI-published .conda artifacts from a PR (v8.14.0; inverse of
+# recipe-build-cross — use when Azure DID build, to spot-check before merge).
+# Anonymous Azure auth; idempotent (manifest-cached); --force to re-fetch.
+pixi run -e local-recipes pr-artifacts 33693
+pixi run -e local-recipes pr-artifacts https://github.com/conda-forge/numpy-feedstock/pull/42
 ```
 
 `recipe-build-cross` injects `cctools_<arch>` + `ld64_<arch>` for osx
@@ -157,6 +163,12 @@ targets, shims `install_name_tool`, sets `CONDA_OVERRIDE_OSX/GLIBC`, and
 skips tests (verify on the target). See `guides/cross-compilation.md`
 § "Local cross-build for a downloadable artifact" for the win-64
 target-platform-aware `build.sh` pattern.
+
+`pr-artifacts` resolves the Azure `buildId` via `gh pr checks`, lists
+artifacts via the public Azure REST API (no PAT), and extracts to
+`build_artifacts/pr/<pr-number>/<buildId>/extracted/<platform>/*.conda`
+— a valid `file://` mamba channel. See
+`guides/testing-recipes.md` § "Downloading artifacts from a PR".
 
 ## Linting
 

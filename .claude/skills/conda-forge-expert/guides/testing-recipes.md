@@ -547,8 +547,48 @@ tests:
 | Unit tests | Optional | `pytest tests/unit/` |
 | Integration | Optional | `pytest tests/integration/` |
 
+## Downloading artifacts from a PR (v8.14.0)
+
+After staged-recipes' Azure CI publishes `.conda` files for a PR, the
+v8.14.0 `pr-artifacts` pixi task / `download_pr_artifacts` MCP tool
+pulls them down as a local `file://` mamba channel — no Azure UI
+click-through, no PAT, no `az login`. Useful for reviewer smoke-tests
+("install the artifact before approving") and offline test runs.
+
+```bash
+# 1. Fetch every conda_pkgs_* artifact from a PR (default = latest run).
+pixi run -e local-recipes pr-artifacts 33693
+# → build_artifacts/pr/33693/<buildId>/extracted/{linux-64,osx-64,win-64}/*.conda
+# → build_artifacts/pr/33693/<buildId>/pr-artifacts.json  (manifest + cache key)
+
+# 2. Install from the local channel into a throwaway env.
+mamba create -n smoke -c file://$PWD/build_artifacts/pr/33693/<buildId>/extracted gh-copilot-cli
+mamba run -n smoke gh-copilot --version
+
+# Optional flags worth knowing:
+#   --build-id 1536673        # skip gh-CLI lookup; download a specific run
+#   --all-runs                # fetch every Azure rebuild on the PR
+#   --platforms linux-64      # only extract one platform's subdir
+#   --keep-zips               # preserve the .zip files alongside extracted/
+#   --force                   # re-fetch even when pr-artifacts.json shows it cached
+#   --json                    # emit the manifest to stdout (MCP consumes this)
+```
+
+The fetch is **anonymous and read-only** against the public
+`conda-forge/feedstock-builds` Azure project; `_http.skip_auth=True` is
+hard-wired to prevent `JFROG_API_KEY` / `GITHUB_TOKEN` from leaking
+cross-host. Feedstock PRs work too — pass the full URL
+(`https://github.com/conda-forge/<pkg>-feedstock/pull/N`) and the
+check-row auto-detect picks up `<pkg>-feedstock`.
+
+This is the inverse of v8.13.2's `recipe-build-cross` (which produces
+artifacts locally when Azure CI doesn't cover the target platform).
+Use `pr-artifacts` when CI did build; use `recipe-build-cross` when it
+didn't.
+
 ## Resources
 
 - [conda-build Testing](https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#test-section)
 - [rattler-build Tests](https://rattler-build.prefix.dev/latest/reference/recipe_schema/#tests)
 - [pytest Documentation](https://docs.pytest.org/)
+- [Azure DevOps Build Artifacts REST API](https://learn.microsoft.com/en-us/rest/api/azure/devops/build/artifacts/list)

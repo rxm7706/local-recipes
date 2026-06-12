@@ -169,6 +169,10 @@ cmd = "python build-locally.py"
 description = "Cross-platform rattler-build for producing a downloadable .conda artifact for a target the host can't reach natively (e.g. osx-arm64 from linux-64). Mutates a temp recipe copy to inject Mach-O cross-tools + install_name_tool shim (osx targets) or override the win build script. Tests are skipped (verify on the target machine). Tuned for binary-repackage recipes — compiled-source cross-builds need more wiring. Usage: pixi run -e local-recipes recipe-build-cross <recipe> <target-platform>"
 cmd = "bash .claude/scripts/conda-forge-expert/cross-build.sh"
 
+[feature.local-recipes.tasks.pr-artifacts]
+description = "Download CI-published .conda artifacts from a conda-forge staged-recipes or feedstock PR via the Azure DevOps Build Artifacts REST API. Resolves the Azure buildId from `gh pr checks`, anonymously streams the conda_pkgs_(linux|osx|win) ZIPs, and extracts them into build_artifacts/pr/<pr-number>/<buildId>/extracted/ — a valid file:// mamba channel. Idempotent (manifest-keyed cache); --force re-fetches. Read-only — no PR modification, no env mutation. Usage: pixi run -e local-recipes pr-artifacts <pr-number-or-url> [--repo <owner/repo>] [--build-id <id>] [--all-runs] [--platforms linux-64,osx-64] [--no-extract] [--keep-zips] [--force] [--json]"
+cmd = "python .claude/scripts/conda-forge-expert/pr_artifacts.py"
+
 [feature.local-recipes.tasks.health-check]
 description = "Run a health check on the local development environment"
 cmd = "python .claude/scripts/conda-forge-expert/health_check.py"
