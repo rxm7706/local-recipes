@@ -165,6 +165,10 @@ cmd = "bash .claude/scripts/conda-forge-expert/native-build.sh"
 description = "Docker build for full conda-forge CI fidelity (alma9 sysroot, isolated env). Opt-in only — use when the native build passes but you want CI-parity verification before submission. Usage: pixi run -e local-recipes recipe-build-docker <config> (e.g. linux64)"
 cmd = "python build-locally.py"
 
+[feature.local-recipes.tasks.recipe-build-cross]
+description = "Cross-platform rattler-build for producing a downloadable .conda artifact for a target the host can't reach natively (e.g. osx-arm64 from linux-64). Mutates a temp recipe copy to inject Mach-O cross-tools + install_name_tool shim (osx targets) or override the win build script. Tests are skipped (verify on the target machine). Tuned for binary-repackage recipes — compiled-source cross-builds need more wiring. Usage: pixi run -e local-recipes recipe-build-cross <recipe> <target-platform>"
+cmd = "bash .claude/scripts/conda-forge-expert/cross-build.sh"
+
 [feature.local-recipes.tasks.health-check]
 description = "Run a health check on the local development environment"
 cmd = "python .claude/scripts/conda-forge-expert/health_check.py"

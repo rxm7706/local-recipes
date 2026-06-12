@@ -134,6 +134,30 @@ python build-locally.py osxarm64
 python build-locally.py --filter "win*"
 ```
 
+### Local builds via pixi (recommended)
+
+```bash
+# Native host platform — fast, no Docker
+pixi run -e local-recipes recipe-build recipes/<name>
+
+# Cross-platform (downloadable artifact for staged-recipes platforms the
+# Azure matrix doesn't build at PR time, e.g. osx-arm64 / linux-aarch64).
+# Output: build_artifacts/<config>/<target-platform>/*.conda
+pixi run -e local-recipes recipe-build-cross recipes/<name> osx-arm64
+pixi run -e local-recipes recipe-build-cross recipes/<name> osx-64
+pixi run -e local-recipes recipe-build-cross recipes/<name> linux-aarch64
+pixi run -e local-recipes recipe-build-cross recipes/<name> win-64
+
+# CI-fidelity build inside Docker (alma9 sysroot)
+pixi run -e local-recipes recipe-build-docker linux64
+```
+
+`recipe-build-cross` injects `cctools_<arch>` + `ld64_<arch>` for osx
+targets, shims `install_name_tool`, sets `CONDA_OVERRIDE_OSX/GLIBC`, and
+skips tests (verify on the target). See `guides/cross-compilation.md`
+§ "Local cross-build for a downloadable artifact" for the win-64
+target-platform-aware `build.sh` pattern.
+
 ## Linting
 
 ```bash
