@@ -287,27 +287,48 @@ _AZURE_BUILD_RESULT_URL = (
 def extract_zip(
     zip_path: str | Path,
     dest: str | Path,
+    *,
+    platform: str | None = None,
     platforms: list[str] | None = None,
 ) -> list[str]:
-    """Extract an Azure `conda_pkgs_<job>.zip` into `dest/<platform>/`.
+    """Extract one Azure `conda_pkgs_<job>.zip` into `dest/<platform>/`.
 
-    Azure ZIPs ship `conda-build_<job>/<platform>/*` (one wrapper dir +
-    per-platform subdir). We flatten exactly one level so `dest` ends up
-    with `linux-64/foo.conda`, `osx-64/...`, etc. — a valid `file://`
-    mamba channel layout. `platforms` filters which subdirs to extract;
-    None → all.
+    Each Azure artifact ZIP ships its files under a single wrapper dir
+    named after the artifact — `conda_pkgs_linux/<file>`,
+    `conda_pkgs_osx/<file>`, `conda_pkgs_win/<file>` — with NO inner
+    platform subdir. We strip that wrapper and re-nest the files under
+    `dest/<platform>/` (synthesized from the `platform` kwarg, which the
+    caller sources from `art["platform"]`) so the union of all platforms
+    forms a valid `file://` mamba channel layout: `extracted/linux-64/*.conda`,
+    `extracted/osx-64/...`, etc., each with its own subdir-matched
+    `repodata.json`.
+
+    Verified against PR #33693 buildId 1536673: each ZIP carried
+    `conda_pkgs_<job>/{<pkg>.conda, repodata.json, repodata_from_packages.json,
+    index.html, .cache/cache.db}` at one level. No inner `<platform>/` dir.
+
+    `platforms` is the user's `--platforms` filter (the list passed via
+    `--platforms linux-64,osx-64`). When set and the zip's `platform` is
+    not in it, extraction is a no-op (returns `[]`).
 
     Returns the list of `.conda` files written (relative to `dest`).
 
     Path safety: Azure artifacts originate from arbitrary PR builds and
-    must be treated as untrusted. Every member is resolved against
-    `dest`; any member whose resolved path escapes `dest` (absolute
-    paths, `..` traversal, symlink shenanigans) raises ValueError before
-    a single byte is written. Mirrors the Python 3.12+ `extractall`
-    `filter="data"` guard.
+    must be treated as untrusted. Each member's *post-wrapper* path is
+    checked for absolute paths and `..` traversal BEFORE re-nesting
+    under `<platform>/` — otherwise a malicious member like
+    `wrapper//etc/passwd` (post-wrapper `/etc/passwd`, absolute) would
+    be neutralized by the prefix into `dest/<platform>/etc/passwd`,
+    silently writing inside `dest`. The final `target.relative_to(dest)`
+    check is a belt-and-suspenders backstop. Mirrors the Python 3.12+
+    `extractall(filter="data")` guard.
     """
     zip_path = Path(zip_path)
     dest = Path(dest).resolve()
+    # Whole-zip platform filter — one ZIP carries exactly one platform,
+    # so when the user has restricted via --platforms we can short-circuit.
+    if platforms is not None and platform is not None and platform not in platforms:
+        return []
     dest.mkdir(parents=True, exist_ok=True)
     written: list[str] = []
     with zipfile.ZipFile(zip_path) as zf:
@@ -318,23 +339,21 @@ def extract_zip(
             parts = name.split("/")
             if len(parts) < 2:
                 # Top-level file (no wrapper dir) — keep verbatim.
-                rel = name
+                inner = name
             else:
-                # Drop the first segment (the conda-build_<job>/ wrapper).
-                rel = "/".join(parts[1:])
-            if platforms is not None:
-                # rel looks like '<platform>/foo.conda' — gate on first segment.
-                first = rel.split("/", 1)[0]
-                if first not in platforms:
-                    continue
-            # Zip-Slip guard: reject absolute paths, `..` traversal, and
-            # any resolved path that escapes `dest`.
-            rel_path = Path(rel)
-            if rel_path.is_absolute() or ".." in rel_path.parts:
+                # Drop the first segment (the conda_pkgs_<job>/ wrapper).
+                inner = "/".join(parts[1:])
+            # Zip-Slip guard on the post-wrapper path (BEFORE re-nesting
+            # under <platform>/ — see security note in docstring).
+            inner_path = Path(inner)
+            if inner_path.is_absolute() or ".." in inner_path.parts:
                 raise ValueError(
                     f"Refusing to extract member with unsafe path: {name!r}"
                 )
-            target = (dest / rel_path).resolve()
+            # Re-nest under <platform>/ when the caller passed one; else
+            # write at dest root (legacy / test-only path).
+            rel = f"{platform}/{inner}" if platform else inner
+            target = (dest / rel).resolve()
             try:
                 target.relative_to(dest)
             except ValueError:
@@ -386,6 +405,38 @@ def _read_cached_manifest(build_dir: Path) -> dict[str, Any] | None:
     if not _REQUIRED_MANIFEST_KEYS.issubset(data.keys()):
         return None
     return data
+
+
+def _write_noarch_stub(extracted_dir: Path) -> Path:
+    """Write an empty `noarch/repodata.json` if absent.
+
+    Conda solvers (mamba, conda, py-rattler) probe every channel for
+    every standard subdir, and a missing `noarch/repodata.json` hard-fails
+    channel loading: `Could not read a file:// file [...noarch/repodata.json]`
+    + `Subdir noarch not loaded!`. Azure's per-platform ZIPs never carry
+    a noarch payload, so without this stub the otherwise-correctly-indexed
+    `linux-64/` / `osx-64/` / `win-64/` subdirs are wasted: the solver
+    refuses to consider the channel and the operator has to fall back to
+    `mamba install <path>.conda`. The stub matches the repodata_version=2
+    shape that rattler-build emits for each per-platform subdir inside
+    the Azure ZIPs (verified PR #33693 buildId 1536673).
+    """
+    noarch_dir = extracted_dir / "noarch"
+    noarch_dir.mkdir(parents=True, exist_ok=True)
+    stub = noarch_dir / "repodata.json"
+    if stub.exists():
+        return stub
+    stub.write_text(
+        json.dumps(
+            {
+                "info": {"subdir": "noarch"},
+                "packages": {},
+                "packages.conda": {},
+                "repodata_version": 2,
+            }
+        )
+    )
+    return stub
 
 
 def _write_manifest_atomic(build_dir: Path, manifest: dict[str, Any]) -> Path:
@@ -458,7 +509,12 @@ def fetch_one_build(
         }
         if extract:
             platforms_filter = platforms if platforms else None
-            conda_files = extract_zip(zip_path, extracted_dir, platforms=platforms_filter)
+            conda_files = extract_zip(
+                zip_path,
+                extracted_dir,
+                platform=art["platform"],
+                platforms=platforms_filter,
+            )
             entry["conda_files"] = conda_files
             entry["extracted_to"] = (
                 f"extracted/{art['platform']}/" if art["platform"] else "extracted/"
@@ -466,6 +522,15 @@ def fetch_one_build(
             if not keep_zips:
                 zip_path.unlink(missing_ok=True)
         manifest_artifacts.append(entry)
+
+    # Write an empty noarch/repodata.json if it's missing. Conda solvers
+    # (mamba, conda, rattler) probe every channel for a noarch subdir
+    # and hard-fail when it's absent; Azure's per-platform ZIPs never
+    # carry a noarch payload, so without this stub the resulting
+    # channel is unusable via `mamba install -c file://... <pkg>` even
+    # though every per-platform `.conda` is correctly indexed.
+    if extract and any(e["conda_files"] for e in manifest_artifacts):
+        _write_noarch_stub(extracted_dir)
 
     channel_url = (
         f"file://{extracted_dir.resolve()}" if extract and extracted_dir.exists() else None
