@@ -237,11 +237,17 @@ def download_artifact(
     """Stream-download one artifact ZIP into `target_dir/<name>.zip`.
 
     Uses `_http.fetch_to_file_resumable` for `.part`+atomic-rename
-    semantics. After the stream completes, verifies the on-disk byte
-    count against the declared `artifact["size"]` (when present) — a
-    Content-Length-shaped guard against partial downloads that don't
-    raise during streaming. Raises `RuntimeError` on size mismatch and
-    leaves the bad `.zip` in place for forensics.
+    semantics. After the stream completes, validates the on-disk file's
+    ZIP integrity: opens it with `zipfile.ZipFile` and runs `testzip()`
+    which CRC-validates every member. Raises `RuntimeError` on a
+    corrupt/truncated ZIP and leaves the bad `.zip` in place for forensics.
+
+    Azure's `artifact["size"]` is the artifact's logical/content size
+    (sum of contained files), not the on-demand ZIP-stream size, so the
+    two routinely diverge (PR #33693 buildId 1536673:
+    declared 85,000,797 vs delivered 89,492,340; zip was valid). The
+    integrity check catches actual truncation/corruption without
+    rejecting valid downloads whose declared metadata is stale.
     """
     name = artifact["name"]
     url = artifact["download_url"]
@@ -255,12 +261,18 @@ def download_artifact(
         timeout=timeout,
         skip_auth=True,  # see list_azure_artifacts
     )
-    declared = artifact.get("size")
-    actual = target.stat().st_size
-    if declared is not None and actual != declared:
+    try:
+        with zipfile.ZipFile(target) as zf:
+            bad_member = zf.testzip()
+    except zipfile.BadZipFile as exc:
         raise RuntimeError(
-            f"Size mismatch for {name}: declared {declared} bytes, got "
-            f"{actual} bytes. The .zip was left at {target} for forensics."
+            f"Corrupt ZIP for {name}: {exc}. The .zip was left at "
+            f"{target} for forensics."
+        ) from exc
+    if bad_member is not None:
+        raise RuntimeError(
+            f"CRC failure in {name}: member {bad_member!r} is corrupt. "
+            f"The .zip was left at {target} for forensics."
         )
     return target
 
