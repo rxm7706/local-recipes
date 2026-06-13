@@ -510,12 +510,26 @@ cost below $1/run.
 - **Purpose.** Populate the atlas's **only** "is anyone using this?"
   signal.
 - **What gets written.**
-  - `packages.{total_downloads, downloads_30d, downloads_fetched_at,
-    downloads_source}`. `downloads_source ∈
+  - `packages.{total_downloads, latest_version_downloads,
+    downloads_fetched_at, downloads_source}`. `downloads_source ∈
     {'anaconda-api','s3-parquet','merged'}` — API and S3 totals do
     NOT agree numerically (S3 ~1.5× API on popular packages); treat
     as correlated, not interchangeable.
-  - `package_version_downloads` (Phase I side-effect, anaconda-api path).
+  - `packages.{downloads_30d, downloads_90d, downloads_trend_90d,
+    first_nonzero_month, last_nonzero_month}` (**v8.18.0 — Wave 2,
+    s3-parquet path only**). Rolling-window adoption signals + slope
+    + lifetime months. NULL on `downloads_source='anaconda-api'`
+    rows (consumer-detection contract — check provenance first).
+    `downloads_trend_90d` capped at `+10.0`; NULL when <6 months
+    of data or prev-90d window is zero (div-by-zero guard).
+  - `package_platform_downloads` + `package_python_downloads`
+    (**v8.18.0 — Wave 2 breakdown tables**). Per-`(conda_name,
+    platform/python)` 90d + lifetime totals. Re-runs INSERT OR
+    REPLACE keyed on PK. Empty `pkg_platform=''` (noarch) is
+    remapped to synthetic `'noarch'`. Dirty `pkg_python` (e.g.
+    `'7.3'`, `'2.30'`) dropped via regex
+    `^(2\.7|3\.[0-9]{1,2})$`.
+  - `package_version_downloads` (Phase I side-effect, both paths).
 - **Tunables.** `PHASE_F_SOURCE`, `PHASE_F_TTL_DAYS=7`,
   `PHASE_F_CONCURRENCY=3` (lowered 8→3 in v7.8.0 — see
   [`atlas-phase-engineering.md`](atlas-phase-engineering.md) for the
@@ -544,10 +558,17 @@ cost below $1/run.
     many-dependents.
   - Download-weighted maintainer leaderboard.
   - "Archived but actively used" (with E.5 + I).
-  - 📋 Open (Wave 2 / 3 in `docs/specs/atlas-phase-f-s3-backend.md`):
-    rolling 30/90-day windows, trend slope, platform / Python / channel
-    breakdowns, plus `platform_breakdown`, `pyver_breakdown`,
-    `channel_split` CLIs.
+  - ✅ shipped v8.18.0 (Wave 2 from `docs/specs/atlas-phase-f-s3-backend.md`):
+    rolling 30/90-day windows, 90-day trend slope, first/last nonzero month,
+    per-platform + per-Python breakdown tables. Computed in one extended
+    parquet sweep — no extra HTTP. A v26 → v27 migration writes a
+    one-shot `phase_f_force_refresh_pending` meta sentinel so the new
+    columns populate from the cached parquet on first post-migration
+    Phase F run (operator can also set `PHASE_F_FORCE_REFRESH=1`
+    manually).
+  - 📋 Open (Wave 3 in `docs/specs/atlas-phase-f-s3-backend.md`):
+    `platform_breakdown`, `pyver_breakdown` (incl. `--policy-check`
+    for python_min validation), `channel_split` CLIs.
 
 ## Phase G — vdb risk summary
 
