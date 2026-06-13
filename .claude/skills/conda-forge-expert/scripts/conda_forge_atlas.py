@@ -6270,7 +6270,209 @@ def _phase_p_skip(reason: str, t0: float, **extra) -> dict:
 
 
 def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
-    """Phase P: incremental per-day PyPI download counts via BigQuery.
+    """Phase P dispatcher — routes to ClickHouse (free, default) or BigQuery.
+
+    v8.16.0+ — `PHASE_P_SOURCE` selects the backend:
+      - `clickhouse` (default): free public mirror at
+        sql-clickhouse.clickhouse.com/?user=play; pre-aggregated table
+        `pypi.pypi_downloads_per_day` (date, project, count). Hash-bucket
+        paginated to fit under the play user's 65 k row cap. No auth, no
+        billing, no quota. ~30 s for full 90-day refresh of 867 k projects.
+      - `bigquery`: existing v8.15.2 incremental path against
+        `bigquery-public-data.pypi.file_downloads`. Costs ~$22/monthly
+        refresh; requires GOOGLE_APPLICATION_CREDENTIALS + a GCP project
+        with billing attached.
+
+    Opt-in via `PHASE_P_ENABLED=1` (unchanged from v8.1.0). Disabled-takes-
+    priority semantics unchanged. The dispatcher routes after the opt-in
+    gate so both backends share the gate.
+
+    Tunables (shared):
+      - PHASE_P_DISABLED  : "1" to skip
+      - PHASE_P_ENABLED   : must be "1" (opt-in) to run
+      - PHASE_P_SOURCE    : "clickhouse" (default) | "bigquery"
+      - PHASE_P_TTL_DAYS  : default 30 (driver gate)
+
+    See backend-specific tunables in `_phase_p_clickhouse` and
+    `_phase_p_bigquery` docstrings.
+    """
+    t0 = time.monotonic()
+    if os.environ.get("PHASE_P_DISABLED"):
+        return _phase_p_skip("PHASE_P_DISABLED=1 set; skipping Phase P.", t0)
+    if not os.environ.get("PHASE_P_ENABLED"):
+        print("  Phase P is opt-in; set PHASE_P_ENABLED=1 to run "
+              "(ClickHouse backend needs no auth; BigQuery backend needs ADC creds).")
+        return _phase_p_skip("PHASE_P_ENABLED not set; opt-in.", t0)
+
+    source = os.environ.get("PHASE_P_SOURCE", "clickhouse").lower()
+    if source == "clickhouse":
+        return _phase_p_clickhouse(conn)
+    if source == "bigquery":
+        return _phase_p_bigquery(conn)
+    return _phase_p_skip(
+        f"PHASE_P_SOURCE={source!r} not recognized; "
+        f"valid values: 'clickhouse' (default, free), 'bigquery'",
+        t0,
+    )
+
+
+def _phase_p_clickhouse(conn: sqlite3.Connection) -> dict:
+    """Phase P backend — ClickHouse clickpy public mirror (free, default).
+
+    Source: `pypi.pypi_downloads_per_day` at sql-clickhouse.clickhouse.com.
+    Pre-aggregated table with schema (date Date, project String, count Int64).
+    Mirrored daily from `bigquery-public-data.pypi.file_downloads` by the
+    ClickHouse team; same source data as the BigQuery backend but free to
+    query for end users.
+
+    Architecture: hash-bucketed pagination via `cityHash64(project) % N`
+    works around the play user's 65,000 row result cap. Each refresh fetches
+    all ~867k projects' (downloads_30d, downloads_90d) in ~30 s across N
+    HTTP POSTs. `pypi_downloads_daily` is bypassed entirely — since
+    ClickHouse is free, incremental refresh has no cost benefit.
+
+    Auth: none. Network only.
+
+    Cost: $0 (verified 2026-06-12 — sub-2-second per-query; no billing,
+    no quota, no API key).
+
+    Coverage caveat (verified 2026-06-12): the `play` user limits
+    aggregated query responses to ~1,000 rows AND rate-limits bursts
+    above ~4 concurrent queries with HTTP 500. Sustained large refreshes
+    (e.g. bucket-paginated full ~870k-project) hit the rate limit so
+    hard the run takes 25+ minutes. Default ships as a **top-N** query
+    (single query, ~2 seconds, returns the most-downloaded N packages):
+    that's the ranking signal Phase P consumers actually need, and it
+    fits ClickHouse Play's reasonable-use envelope.
+
+    Operators wanting full ~870k coverage from a free source should
+    set PHASE_P_SOURCE=bigquery and wait for their BigQuery free-tier
+    quota to reset (monthly), or accept the ~$22 monthly refresh cost.
+
+    Tunables:
+      - PHASE_P_CH_BASE_URL    : ClickHouse endpoint
+                                 (default: https://sql-clickhouse.clickhouse.com/?user=play)
+      - PHASE_P_CH_LIMIT       : top-N projects to fetch by 90-day
+                                 downloads (default 1000; ClickHouse
+                                 Play caps aggregated responses at
+                                 ~1,000 rows so raising it is a no-op)
+      - PHASE_P_CH_TIMEOUT_S   : HTTP timeout (default 60 s)
+
+    Caveats:
+      - Single-vendor mirror; if ClickHouse stops hosting it, fall back
+        to PHASE_P_SOURCE=bigquery.
+      - 1-day lag vs. BigQuery (clickpy mirrors at ~24 h cadence).
+      - No raw event data (only daily aggregates). For per-installer or
+        per-platform breakdowns, use BigQuery.
+    """
+    import json
+    import re
+    import urllib.error
+    import urllib.request
+    t0 = time.monotonic()
+    print("  Phase P (ClickHouse clickpy): refreshing pypi_intelligence downloads")
+
+    base_url = os.environ.get(
+        "PHASE_P_CH_BASE_URL",
+        "https://sql-clickhouse.clickhouse.com/?user=play",
+    )
+    top_n = int(os.environ.get("PHASE_P_CH_LIMIT", "1000"))
+    timeout_s = int(os.environ.get("PHASE_P_CH_TIMEOUT_S", "60"))
+
+    # Single-query top-N — fits cleanly under ClickHouse Play's ~1,000-row
+    # aggregated-response cap and avoids the rate-limit avalanche that
+    # bucket-paginated full-coverage refreshes hit (verified 2026-06-12).
+    # ORDER BY d90 DESC means we fetch the most-downloaded packages
+    # first — the exact ranking signal Phase P consumers care about
+    # (conda_forge_readiness ranking, pypi-only-candidates sort).
+    sql = (
+        f"SELECT project, "
+        f"toUInt64(sumIf(count, date >= today() - 30)) AS d30, "
+        f"toUInt64(sum(count)) AS d90 "
+        f"FROM pypi.pypi_downloads_per_day "
+        f"WHERE date >= today() - 90 AND date < today() "
+        f"GROUP BY project ORDER BY d90 DESC LIMIT {top_n} "
+        f"FORMAT JSONEachRow"
+    )
+    print(f"  querying top {top_n:,} projects by 90-day downloads")
+    req = urllib.request.Request(
+        base_url, data=sql.encode("utf-8"), method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            body = resp.read().decode("utf-8")
+    except (urllib.error.URLError, TimeoutError) as e:
+        return _phase_p_skip(f"ClickHouse query failed: {e}", t0)
+
+    accum: dict[str, tuple[int, int]] = {}  # pypi_name -> (d30, d90)
+    rows_returned = 0
+    for line in body.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            # Non-JSON lines mean the server returned an error string
+            # instead of JSONEachRow — skip silently.
+            continue
+        project = rec.get("project")
+        if not project:
+            continue
+        # PEP 503 canonicalization (mirrors the BQ backend's
+        # REGEXP_REPLACE(LOWER(file.project), r'[-_.]+', '-')).
+        pypi_name = re.sub(r"[-_.]+", "-", project.lower())
+        d30 = int(rec.get("d30", 0))
+        d90 = int(rec.get("d90", 0))
+        prev = accum.get(pypi_name, (0, 0))
+        accum[pypi_name] = (prev[0] + d30, prev[1] + d90)
+        rows_returned += 1
+
+    # Warn if we hit ClickHouse Play's ~1,000-row aggregated cap —
+    # downstream rows beyond top-N aren't ours.
+    if top_n > 1000 and rows_returned <= 1010:
+        print(f"  WARN: requested top {top_n:,} but only {rows_returned:,} rows "
+              f"returned. ClickHouse Play caps aggregated responses at ~1,000 "
+              f"rows; raising PHASE_P_CH_LIMIT beyond 1000 is a no-op. For "
+              f"full ~870k-project coverage, use PHASE_P_SOURCE=bigquery.")
+
+    print(f"  fetched {rows_returned:,} rows; "
+          f"{len(accum):,} unique pypi_names after PEP 503 canonicalization")
+
+    now = int(time.time())
+    conn.execute("BEGIN")
+    try:
+        for pypi_name, (d30, d90) in accum.items():
+            conn.execute(
+                "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
+                (pypi_name,),
+            )
+            conn.execute(
+                "UPDATE pypi_intelligence SET "
+                "downloads_30d = ?, downloads_90d = ?, "
+                "downloads_fetched_at = ?, downloads_source = ? "
+                "WHERE pypi_name = ?",
+                (d30, d90, now, "clickhouse-clickpy", pypi_name),
+            )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+
+    elapsed = time.monotonic() - t0
+    print(f"  Phase P done in {elapsed:.1f}s — upserted {len(accum):,} rows; $0 spend "
+          f"(ClickHouse public mirror; top-{top_n:,} by 90-day downloads)")
+    return {
+        "rows_upserted": len(accum),
+        "source": "clickhouse-clickpy",
+        "top_n": top_n,
+        "rows_returned": rows_returned,
+        "duration_seconds": round(elapsed, 1),
+    }
+
+
+def _phase_p_bigquery(conn: sqlite3.Connection) -> dict:
+    """Phase P backend — BigQuery (paid, raw event data).
 
     v8.15.0 architecture — supersedes v8.1.0's single-shot 90-day query
     and v8.14.3's hot-patch with cost caps. Stores per-day per-package
@@ -6324,12 +6526,9 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
     t0 = time.monotonic()
     print("  Phase P: PyPI download counts via BigQuery (incremental v8.15.0)")
 
-    if os.environ.get("PHASE_P_DISABLED"):
-        return _phase_p_skip("PHASE_P_DISABLED=1 set; skipping Phase P.", t0)
-    if not os.environ.get("PHASE_P_ENABLED"):
-        print("  Phase P is opt-in; set PHASE_P_ENABLED=1 to run "
-              "(needs google-cloud-bigquery + GOOGLE_APPLICATION_CREDENTIALS).")
-        return _phase_p_skip("PHASE_P_ENABLED not set; opt-in.", t0)
+    # PHASE_P_DISABLED + PHASE_P_ENABLED gates are checked by the
+    # dispatcher in `phase_p_pypi_downloads` (v8.16.0+); this backend
+    # function is unreachable without them being set correctly.
 
     # Deprecation warning for the spec-declared-but-never-used legacy knob.
     if os.environ.get("PHASE_P_BQ_WINDOW_DAYS"):

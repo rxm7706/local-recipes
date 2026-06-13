@@ -444,6 +444,51 @@ structure (TL;DR table + tunables + decision tree + runbook +
 alternative-source verification + cost projection) for any future
 volume-billed phase.
 
+**(e) Free sources have operational gates too.** When adding a free
+public dataset as a Phase data source, the feature docs ("read-only
+public access to dataset X") almost never cover the **operational
+constraints** that determine whether the source is usable in
+production. Probe for each before committing the architecture:
+
+- **Response row caps.** Many providers truncate aggregated query
+  responses to fit memory limits. ClickHouse Play caps aggregated
+  responses at ~1,000 rows (verified 2026-06-12 — `GROUP BY project`
+  with no ORDER BY returns ≤1,000 rows even when underlying data has
+  millions). Detect: run a known-large aggregated query, compare
+  result row count to a separate `SELECT count() FROM (...)` of the
+  same subquery.
+- **Sustained-burst rate limits.** "Burst" performance (a few
+  concurrent queries) typically tests fine; "sustained" (hundreds of
+  concurrent queries over minutes) hits hard limits not in docs.
+  ClickHouse Play: 4-concurrent burst works; 4-concurrent sustained
+  over 1,500 buckets returned HTTP 500 on ~95% of requests. Detect:
+  run the target throughput pattern (parallel × duration), not just
+  a single concurrent test.
+- **Quota walls (free tiers).** Most free tiers reset monthly but
+  have hard caps; the 2026-06-12 BigQuery `unbilled.analysis` error
+  surfaced this for the operator's GCP project. Detect: query the
+  service's quota endpoint or attempt a small-then-medium query and
+  observe the failure mode.
+- **Response format quirks.** Servers may stream "OK" responses with
+  embedded errors instead of HTTP error codes (ClickHouse plays
+  back errors as plain text lines mixed with JSONEachRow data when
+  the FORMAT directive is in flight). Plan for graceful parsing
+  failure → skip the line, don't crash.
+- **Authentication tier limits.** "Public" / "play" / "anonymous"
+  users have stricter limits than authenticated ones. ClickHouse
+  Cloud's paid tiers have higher caps. Distinguish "the feature
+  works for everyone" from "the feature works at production scale
+  for everyone with their own account".
+
+The operational constraints determine the actual usable architecture.
+Phase P's v8.16.0 design pivoted from bucketed-pagination (architected
+around feature docs alone) to single-query top-N (architected around
+verified operational constraints) when live testing revealed the cap
++ rate-limit reality. Bucket-pagination would have shipped a system
+that takes 25+ minutes wall-clock with 90% retry cost vs. a 4-second
+single-query alternative. **Always validate operational behavior
+before committing the architecture**, not just feature availability.
+
 ---
 
 ## 11. Per-day local cache for rolling-window queries

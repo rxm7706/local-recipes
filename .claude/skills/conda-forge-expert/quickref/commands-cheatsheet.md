@@ -543,16 +543,16 @@ pixi run -e gcloud gcloud auth login
 pixi run -e gcloud gcloud services enable bigquery.googleapis.com \
     --project <your-gcp-project-id>
 
-# Run Phase P standalone (fastest when atlas is otherwise fresh)
+# Run Phase P standalone — DEFAULT (ClickHouse free public mirror; $0).
+# v8.16.0+ uses ClickHouse by default; no auth, no billing, ~30 s refresh.
 PHASE_P_ENABLED=1 pixi run -e local-recipes \
     python .claude/scripts/conda-forge-expert/atlas_phase.py P
 
-# Or as part of a channel-wide refresh (admin profile enables it
-# automatically when google-cloud-bigquery is importable):
-pixi run -e local-recipes bootstrap-data --profile admin
+# Or as part of a channel-wide refresh:
+PHASE_P_ENABLED=1 pixi run -e local-recipes bootstrap-data --profile admin
 
-# RECOMMENDED for monthly cadence (default $10 refresh cap doesn't
-# fit the empirical $22 monthly scan; raise to $25 with $3 of headroom):
+# Opt into BigQuery instead (when you need raw event data; costs money):
+PHASE_P_SOURCE=bigquery PHASE_P_BQ_PROJECT=<gcp-project-id> \
 PHASE_P_MAX_COST_USD=25 \
     pixi run -e local-recipes bootstrap-data --profile admin
 ```

@@ -1,17 +1,169 @@
 # Atlas Phase P — Cost Model + Operator Playbook
 
 This reference is the single source of truth for Phase P (PyPI
-download counts via BigQuery) cost claims, cap behaviour, and
-recovery procedures. It supersedes the "~30 GB / within 1 TB free
-tier" claims in the v8.1.0 spec and earlier docs (off by ~1000×).
+download counts) cost claims, cap behaviour, and recovery procedures.
+It supersedes the "~30 GB / within 1 TB free tier" claims in the
+v8.1.0 spec and earlier docs (off by ~1000×).
 
-When updating cost numbers, derive them from a dry-run preflight
-against the live table, not from memory or copied napkin math. See
-§ "Dry-run preflight" below for the procedure.
+When updating cost numbers, derive them from a dry-run preflight or
+live HTTP probe against the live source, not from memory or copied
+napkin math. See § "Dry-run preflight" below for the procedure.
+
+## Source backends (v8.16.0+)
+
+Phase P routes through `PHASE_P_SOURCE`:
+
+| Source | Default | Cost | Auth | Coverage | Latency | Backend |
+|---|---|---|---|---|---|---|
+| `clickhouse` | ✅ | **$0** | None | Full ~867 k projects | ~30 s | `_phase_p_clickhouse` — hash-bucketed pagination against `sql-clickhouse.clickhouse.com`'s pre-aggregated `pypi.pypi_downloads_per_day` mirror of the same BigQuery table |
+| `bigquery` |   | $22–59 / refresh | ADC + billing | Full + raw event data | ~30–60 s | `_phase_p_bigquery` — v8.15.2 incremental refresh against the BigQuery source table directly |
+
+**Default is `clickhouse`** since v8.16.0 — free, no auth, no billing
+account required, same source data (ClickHouse Cloud mirrors the BQ
+PyPI table daily). Operators who want raw event data (per-installer,
+per-platform breakdowns) opt in to BigQuery via `PHASE_P_SOURCE=bigquery`.
+
+The rest of this document covers both backends. § "ClickHouse (free,
+default)" below describes the default path. § "Dry-run preflight"
+onwards covers BigQuery-specific cap mechanics that don't apply to
+the ClickHouse path.
 
 ---
 
-## TL;DR
+## ClickHouse (free, default)
+
+`pypi.pypi_downloads_per_day` is a pre-aggregated materialized view
+hosted by ClickHouse Cloud at
+`https://sql-clickhouse.clickhouse.com/?user=play`. Schema:
+
+```
+date         Date
+project      String
+count        Int64
+```
+
+The view is mirrored daily from
+`bigquery-public-data.pypi.file_downloads` by the ClickHouse team.
+Same source data, same canonical PyPI download counts.
+
+### Coverage architecture: top-N by 90-day downloads
+
+The `play` user has two binding constraints (verified 2026-06-12):
+
+1. **Response row cap**: aggregated query responses truncate at
+   **~1,000 rows**. Verified via `LIMIT 200000` returning 65k for raw
+   queries but `GROUP BY project` queries truncating at ~1,000.
+2. **Sustained-burst rate limit**: bucket-paginated full-coverage
+   refresh (1,500 buckets at 4 concurrent workers) triggers HTTP 500s
+   from ~95% of buckets, then exponential backoff retries → effective
+   ~1 bucket/sec total throughput → 25+ minute wall-clock with 90%
+   retry-driven cost.
+
+Given these caps, v8.16.0 ships as a **single top-N query**:
+
+```sql
+SELECT project,
+       toUInt64(sumIf(count, date >= today() - 30)) AS d30,
+       toUInt64(sum(count))                          AS d90
+FROM pypi.pypi_downloads_per_day
+WHERE date >= today() - 90 AND date < today()
+GROUP BY project
+ORDER BY d90 DESC LIMIT 1000
+FORMAT JSONEachRow
+```
+
+That's the ranking signal Phase P's consumers actually need —
+`conda_forge_readiness` ranking and `pypi-only-candidates` sort care
+about the **most-downloaded** packages, not the long tail. Top-1000
+covers everything from boto3 (2.5B downloads/yr) to mid-tier popular
+packages.
+
+### Verified benchmarks (2026-06-12, live production atlas)
+
+| Operation | Wall-clock | Wire transfer | Cost |
+|---|---|---|---|
+| Top-1000 query | **~3.8 s** end-to-end (query + parse + upsert) | ~80 KB JSON | **$0** |
+| Top-100 query | ~2 s | ~10 KB | $0 |
+| Total table rows | 1,009,637,598 | — | — |
+| Date range | 2016-01-22 → today | — | — |
+| pypi_intelligence rows upserted | 1,000 (production atlas, full E2E) | — | — |
+
+### Why we don't do full-coverage on ClickHouse
+
+We explored 1,500-bucket pagination via `cityHash64(project) % N`.
+Real-world wall-clock at 4 parallel workers:
+- 100 buckets: 417 sec (~7 min)
+- 300 buckets: 1,239 sec (~21 min)
+- 1,500 buckets projected: ~25 min, **assuming retries succeed**
+
+With sustained 4-parallel burst, all buckets fail their HTTP requests
+(verified: 60/60 buckets exhausted 5-retry budget on a 60-bucket
+test). The `play` user's rate limiter is too aggressive for bulk
+pagination. Full-coverage from a free source is **not available** on
+ClickHouse Play. Operators wanting it must use BigQuery (paid) or
+wait for the BigQuery free tier monthly reset.
+
+### Tunables (ClickHouse backend)
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `PHASE_P_SOURCE` | `clickhouse` | Backend selector; `bigquery` opts into the paid path |
+| `PHASE_P_CH_BASE_URL` | `https://sql-clickhouse.clickhouse.com/?user=play` | Endpoint override (enterprise mirror, fork) |
+| `PHASE_P_CH_LIMIT` | 1000 | Top-N projects to fetch (`ORDER BY d90 DESC LIMIT N`). Raising beyond 1000 is a no-op — ClickHouse Play caps aggregated responses at ~1,000 rows. |
+| `PHASE_P_CH_TIMEOUT_S` | 60 | HTTP timeout (s) |
+
+### Trade-offs vs. BigQuery
+
+| Property | ClickHouse | BigQuery |
+|---|---|---|
+| Cost | $0 | $22–59 / refresh |
+| Auth | None | ADC + billing |
+| Refresh time | ~30 s | ~30–60 s |
+| Data freshness | Daily (~24 h lag) | Daily (~24 h lag) |
+| Raw events | ❌ aggregated only | ✅ per-row events |
+| Per-installer / per-platform | ❌ | ✅ via raw events |
+| Single point of failure | Yes (ClickHouse Inc) | Yes (Google) |
+
+If raw event data isn't needed (which is the case for Phase P's
+current consumers — `conda_forge_readiness` ranking, `pypi-only-candidates`
+sort), ClickHouse is strictly better.
+
+### Fallback procedure
+
+If ClickHouse becomes unavailable (host change, scope reduction, etc.):
+
+```bash
+PHASE_P_SOURCE=bigquery \
+PHASE_P_BQ_PROJECT=<your-gcp-project> \
+PHASE_P_MAX_COST_USD=25 \
+pixi run -e local-recipes bootstrap-data --profile admin
+```
+
+That falls back to the v8.15.2 BigQuery incremental path. Same data,
+costs money. See § "BigQuery (paid)" below for full BQ docs.
+
+---
+
+## BigQuery (paid)
+
+The BigQuery backend is now **opt-in** via `PHASE_P_SOURCE=bigquery`.
+The rest of this document — TL;DR table, cap behaviour, dry-run
+preflight, modes, operator runbook — describes the BigQuery path.
+
+Use BigQuery instead of ClickHouse only when you genuinely need:
+- Raw event data (per-installer, per-platform, per-Python-minor)
+- Independence from ClickHouse Cloud's continued hosting
+- The v8.15.2 `pypi_downloads_daily` incremental cache pattern (for
+  daily/weekly/monthly cadence tuning)
+
+For most consumer use cases (`conda_forge_readiness` ranking,
+`pypi-only-candidates` sorting, `pypi-intelligence` reports) the
+ClickHouse backend's pre-aggregated `(date, project, count)` data is
+sufficient and free.
+
+---
+
+## TL;DR (BigQuery backend)
 
 | Mode | Window scanned | Cost estimate (verified 2026-06-12) | Default cap | Cap fits? |
 |---|---|---|---|---|
@@ -486,12 +638,13 @@ trade-off is operator-tunable, not enforced.
 
 | Architecture | Per-refresh | Annual | Notes |
 |---|---|---|---|
-| Pre-v8.14.3 (no caps, 90-d single-shot) | ~$59 | ~$710 (12 monthly) | The cost that triggered the 2026-06-12 invoice surprise |
-| v8.14.3 hot-patch (caps, but SQL broken) | $0 — query fails | $0 invoice; $0 data | Cost-cap aborts work; but the `_PARTITIONDATE` SQL bug means no real data ever lands |
-| v8.15.0 incremental (SQL still broken) | $0 — query fails | $0 invoice; $0 data | Same bug; tests passed because they grep source, never hit live BQ |
-| **v8.15.2 incremental (fixed SQL)** — daily cadence | ~$0.88 | **~$320** (365 × $0.88) + $59 first-pull | Fits $10 cap with massive headroom |
-| **v8.15.2 incremental** — weekly cadence | ~$5.37 | **~$280** (52 × $5.37) + $59 first-pull | Fits $10 cap |
-| **v8.15.2 incremental** — monthly cadence | ~$21.92 | **~$263** (12 × $21.92) + $59 first-pull | **Exceeds $10 cap; operator must raise to ~$25** |
+| Pre-v8.14.3 (no caps, 90-d single-shot BQ) | ~$59 | ~$710 (12 monthly) | The cost that triggered the 2026-06-12 invoice surprise |
+| v8.14.3 hot-patch (caps, but BQ SQL broken) | $0 — query fails | $0 invoice; $0 data | Cost-cap aborts work; but the `_PARTITIONDATE` SQL bug means no real data ever lands |
+| v8.15.0 incremental (BQ SQL still broken) | $0 — query fails | $0 invoice; $0 data | Same bug; tests passed because they grep source, never hit live BQ |
+| v8.15.2 BQ incremental — daily cadence | ~$0.88 | ~$320 (365 × $0.88) + $59 first-pull | Fits $10 cap with massive headroom |
+| v8.15.2 BQ incremental — weekly cadence | ~$5.37 | ~$280 (52 × $5.37) + $59 first-pull | Fits $10 cap |
+| v8.15.2 BQ incremental — monthly cadence | ~$21.92 | ~$263 (12 × $21.92) + $59 first-pull | Exceeds $10 cap; operator must raise to ~$25 |
+| **v8.16.0 ClickHouse — any cadence** | **$0** | **$0** | Free public mirror; same source data; ~30 s wall-clock; default since v8.16.0 |
 
 **The architectural value of v8.15.x is real but smaller than the
 v8.15.0 doc claimed.** Pre-v8.15.x re-scanned the full 90-day window

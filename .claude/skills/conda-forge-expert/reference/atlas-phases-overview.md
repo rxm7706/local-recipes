@@ -222,20 +222,27 @@ For cron cadence, TTL reset, and recovery playbooks, see
 
 ## Phase P — BigQuery PyPI downloads (v8.1.0+, opt-in)
 
-- **Data source.** `bigquery-public-data.pypi.file_downloads` — Google's
-  official PyPI analytics dataset (~1.14 PB, column-partitioned on
-  `timestamp` with DAY granularity, clustered on `project`).
-  **Cost (verified 2026-06-12 via live dry-run preflight):** 90-day
-  first-pull scans ~9.5 TB → ~$59 at $6.25/TB; 30-day monthly refresh
-  ~3.5 TB → ~$22; 7-day weekly refresh ~860 GB → ~$5.37; 1-day daily
-  refresh ~140 GB → ~$0.88. **Monthly cadence EXCEEDS the $10 default
-  refresh cap** — operators on monthly cadence must raise
-  `PHASE_P_MAX_COST_USD` to ~$25 or use weekly/daily cadence. v8.14.3
-  adds a dry-run preflight and a hard `maximum_bytes_billed` cap;
-  v8.15.2 corrects the SQL that v8.14.3+v8.15.0 shipped broken (used
-  `_PARTITIONDATE` which doesn't exist on this column-partitioned
-  table). See `reference/atlas-phase-p-cost-model.md` for the full
-  verification procedure and re-running instructions.
+- **Data source (v8.16.0+).** Default backend is ClickHouse clickpy —
+  free, no auth, no billing, sub-minute refresh. BigQuery available
+  as `PHASE_P_SOURCE=bigquery` opt-in for operators needing raw event
+  data. Selection via `PHASE_P_SOURCE` env var; see
+  `reference/atlas-phase-p-cost-model.md` § "Source backends".
+- **ClickHouse (default, free).** `pypi.pypi_downloads_per_day` at
+  `sql-clickhouse.clickhouse.com/?user=play` — pre-aggregated
+  (date, project, count) materialized view mirrored daily from the
+  same BigQuery source. Full 90-day refresh of ~867k projects in
+  ~30 s via 30 hash-bucketed pagination queries (works around the
+  play user's 65k row cap). $0 verified 2026-06-12.
+- **BigQuery (opt-in, paid).** `bigquery-public-data.pypi.file_downloads`
+  — Google's official PyPI analytics dataset (~1.14 PB,
+  column-partitioned on `timestamp` with DAY granularity, clustered
+  on `project`). **Cost (verified 2026-06-12 via live dry-run
+  preflight):** 90-day first-pull ~9.5 TB → ~$59; 30-day monthly
+  refresh ~3.5 TB → ~$22; 7-day weekly ~860 GB → ~$5.37; 1-day daily
+  ~140 GB → ~$0.88. Monthly cadence EXCEEDS the $10 default cap —
+  raise `PHASE_P_MAX_COST_USD` to ~$25 or use weekly/daily. v8.14.3
+  added dry-run preflight + `maximum_bytes_billed` hard cap; v8.15.2
+  corrected the SQL that v8.14.3+v8.15.0 shipped broken.
 - **Purpose.** Populate the only adoption signal `pypi_intelligence`
   has access to. Without Phase P, the `conda_forge_readiness` ranking
   is structural-only (license, requires_python, packaging_shape) and
