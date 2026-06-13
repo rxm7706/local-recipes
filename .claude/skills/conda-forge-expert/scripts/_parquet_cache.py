@@ -107,7 +107,7 @@ def read_filtered(
     months: Iterable[str],
     *,
     pkg_names: set[str] | None = None,
-    data_source: str = "conda-forge",
+    data_source: str | None = "conda-forge",
 ):
     """Read the listed cached months filtered to `data_source` and pkg_names.
 
@@ -115,6 +115,10 @@ def read_filtered(
     (`time`, `data_source`, `pkg_name`, `pkg_version`, `pkg_platform`,
     `pkg_python`, `counts`). Predicate pushdown handles `data_source` and
     optional `pkg_name` filtering inside the parquet reader.
+
+    Pass ``data_source=None`` to skip the channel filter — used by Phase F
+    Wave 3's per-channel breakdown sweep, which needs ALL channels (not
+    just conda-forge) to populate `package_channel_downloads`.
     """
     try:
         import pyarrow.parquet as pq
@@ -125,11 +129,15 @@ def read_filtered(
         ) from exc
 
     paths = [str(cache_dir() / f"{m}.parquet") for m in months]
-    filters: list = [("data_source", "=", data_source)]
+    filters: list = []
+    if data_source is not None:
+        filters.append(("data_source", "=", data_source))
     if pkg_names:
         filters.append(("pkg_name", "in", list(pkg_names)))
     columns = [
         "time", "data_source", "pkg_name", "pkg_version",
         "pkg_platform", "pkg_python", "counts",
     ]
+    if not filters:
+        return pq.read_table(paths, columns=columns)
     return pq.read_table(paths, filters=filters, columns=columns)

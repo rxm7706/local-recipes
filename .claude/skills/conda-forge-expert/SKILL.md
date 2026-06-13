@@ -477,6 +477,9 @@ for the full per-phase profile matrix and auto-detection details.
 | `release-cadence [--package <pkg>] [--maintainer X]` | Trend classifier (accelerating/stable/decelerating/silent) |
 | `find-alternative <archived-pkg>` | Suggest healthier replacements |
 | `adoption-stage [--package <pkg>] [--maintainer X]` | Lifecycle classifier (bleeding-edge/stable/mature/declining/silent) |
+| `platform-breakdown <pkg> \| --top N --platform P \| --feedstock-roundup --maintainer X` | Per-platform 90d download breakdown (Phase F+ Wave 2 data); maintainer triage for ARM/win-64/aarch64 share questions |
+| `pyver-breakdown <pkg> \| --policy-check [--maintainer X] [--threshold-pct N]` | Per-Python download breakdown; `--policy-check` **(headline value)** compares declared `python_min` against the empirical floor and flags bump-safe candidates, sorted bump-safe → aligned → aggressive |
+| `channel-split <pkg> \| --defaults-share-min N --top M \| --migration-checklist --maintainer X` | Per-channel 90d download breakdown (conda-forge / defaults / bioconda / pytorch / ...); `--migration-checklist` emits paste-into-GitHub-issue markdown for defaults-heavy packages |
 | `scan-project [PATH \| --image <ref> \| --sbom-in <file> \| --conda-env <path> \| --venv <path> \| --helm-chart <path> \| --kustomize <dir> \| --argo-app <file> \| --flux-cr <file>] [--license-check] [--sbom cyclonedx]` | Unified scanner — manifests, container images, SBOMs (8+ formats), live envs, GitOps |
 
 ### MCP exposure

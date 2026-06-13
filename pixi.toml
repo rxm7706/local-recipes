@@ -350,9 +350,21 @@ cmd = "python .claude/scripts/conda-forge-expert/whodepends.py"
 description = "Find conda-forge feedstocks behind their PyPI counterpart (uses Phase H pypi_current_version). --maintainer X to scope. --json for machine output."
 cmd = "python .claude/scripts/conda-forge-expert/behind_upstream.py"
 
+[feature.local-recipes.tasks.channel-split]
+description = "Per-channel conda-forge download breakdown (Phase F+ Wave 3, schema v28). Surfaces packages with significant defaults-channel share for migration targeting. Single package: PKG. Top-N: --defaults-share-min 10.0 --top 50. Checklist: --migration-checklist --maintainer X. --format markdown|json|csv (default markdown). Read-only; offline."
+cmd = "python .claude/scripts/conda-forge-expert/channel_split.py"
+
 [feature.local-recipes.tasks.cve-watcher]
 description = "Diff vuln_history snapshots — what CVE changes since N days ago. --maintainer X, --severity C|H|K|T, --only-increases, --since-days N, --json"
 cmd = "python .claude/scripts/conda-forge-expert/cve_watcher.py"
+
+[feature.local-recipes.tasks.platform-breakdown]
+description = "Per-platform conda-forge download breakdown (Phase F+ Wave 2). Single package: PKG. Ranking: --top 50 --platform linux-aarch64. Maintainer roundup: --feedstock-roundup --maintainer X. --format markdown|json|csv (default markdown). Read-only; offline."
+cmd = "python .claude/scripts/conda-forge-expert/platform_breakdown.py"
+
+[feature.local-recipes.tasks.pyver-breakdown]
+description = "Per-Python conda-forge download breakdown + python_min policy check (Phase F+ Wave 3). Single package: PKG. Policy check: --policy-check PKG (or --maintainer X). --threshold-pct N (default 2.0). Sort order in --policy-check: bump-safe -> aligned -> aggressive. --format markdown|json|csv (default markdown). Read-only; offline."
+cmd = "python .claude/scripts/conda-forge-expert/pyver_breakdown.py"
 
 [feature.local-recipes.tasks.find-alternative]
 description = "Suggest healthier conda-forge packages for an archived/abandoned one. Combines keyword/summary/dependent/maintainer overlap with recency × downloads."

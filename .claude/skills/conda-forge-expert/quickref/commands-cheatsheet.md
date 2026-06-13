@@ -645,6 +645,18 @@ pixi run -e local-recipes release-cadence --maintainer <handle>
 pixi run -e local-recipes adoption-stage --package <pkg>
 pixi run -e local-recipes find-alternative <archived-pkg>
 
+# Per-platform / per-Python / per-channel breakdowns (Phase F+ Wave 3, v8.19.0)
+pixi run -e local-recipes platform-breakdown <pkg>                       # single-pkg
+pixi run -e local-recipes platform-breakdown --top 50 --platform linux-aarch64
+pixi run -e local-recipes platform-breakdown --feedstock-roundup --maintainer <handle>
+pixi run -e local-recipes pyver-breakdown <pkg>                          # single-pkg
+pixi run -e local-recipes pyver-breakdown --policy-check --maintainer <handle> \
+    --threshold-pct 2.0                                                   # bump-safe finder
+pixi run -e local-recipes channel-split <pkg>                            # single-pkg
+pixi run -e local-recipes channel-split --defaults-share-min 10.0 --top 50
+pixi run -e local-recipes channel-split --migration-checklist --maintainer <handle> \
+    > migration-issue.md                                                  # paste into GitHub issue
+
 # Unified scanner (also has inventory-channel and scan-project below)
 pixi run -e vuln-db scan-project <path>                          # local manifest discovery
 pixi run -e vuln-db scan-project --image python:3.12             # container (syft/trivy)

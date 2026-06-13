@@ -459,6 +459,14 @@ cost below $1/run.
   - `packages.{conda_summary, conda_homepage, conda_dev_url,
     conda_repo_url, conda_keywords, recipe_format, npm_name, cran_name,
     cpan_name, luarocks_name, maven_coord}`.
+  - `packages.python_min` (**v8.19.0 Wave 3**, schema v28) — recipe-author
+    override of the conda-forge-pinning default, regex-extracted from
+    `raw_meta_yaml` (v1: `python_min: "3.11"` inside `context:`; v0:
+    `{% set python_min = "3.11" %}`). NULL for recipes that inherit the
+    pinning default (~91% of feedstocks per a 2026-06-13 survey of cached
+    node_attrs). Single-writer contract: Phase E owns; Phase F never
+    touches. Consumed by `pyver_breakdown --policy-check` to flag
+    bump-safe candidates.
   - `package_maintainers(conda_name, maintainer_handle)` junction.
   - Page-level checkpoints (`save_phase_checkpoint(cursor=...)`)
     survive mid-pagination interrupts.
@@ -529,6 +537,15 @@ cost below $1/run.
     remapped to synthetic `'noarch'`. Dirty `pkg_python` (e.g.
     `'7.3'`, `'2.30'`) dropped via regex
     `^(2\.7|3\.[0-9]{1,2})$`.
+  - `package_channel_downloads` (**v8.19.0 — Wave 3 breakdown
+    table**, schema v28). Per-`(conda_name, data_source)` 90d +
+    lifetime totals captured from a SEPARATE parquet read that
+    skips the Wave 2 `data_source='conda-forge'` filter so the
+    channel cuts include `defaults` / `bioconda` / `pytorch` /
+    `nvidia` / etc. Raw channel string written as-is (no
+    normalization). DELETE-by-scope-key + INSERT OR REPLACE
+    chunked (mirrors v8.18.0 H1 pattern). Consumed by
+    `channel-split` CLI to surface migration opportunities.
   - `package_version_downloads` (Phase I side-effect, both paths).
 - **Tunables.** `PHASE_F_SOURCE`, `PHASE_F_TTL_DAYS=7`,
   `PHASE_F_CONCURRENCY=3` (lowered 8→3 in v7.8.0 — see
@@ -566,9 +583,17 @@ cost below $1/run.
     columns populate from the cached parquet on first post-migration
     Phase F run (operator can also set `PHASE_F_FORCE_REFRESH=1`
     manually).
-  - 📋 Open (Wave 3 in `docs/specs/atlas-phase-f-s3-backend.md`):
-    `platform_breakdown`, `pyver_breakdown` (incl. `--policy-check`
-    for python_min validation), `channel_split` CLIs.
+  - ✅ shipped v8.19.0 (Wave 3 from `docs/specs/atlas-phase-f-s3-backend.md`):
+    `platform-breakdown`, `pyver-breakdown` (incl. `--policy-check` for
+    python_min validation against the new `packages.python_min` column),
+    `channel-split` (incl. `--migration-checklist` markdown emit) CLIs +
+    MCP tools + pixi tasks. All three consume the Wave 2/3 breakdown
+    tables (`package_platform_downloads`, `package_python_downloads`,
+    `package_channel_downloads`) and `packages.python_min` (Phase E
+    write). Schema migration v27 → v28 sets BOTH
+    `phase_e_force_refresh_pending` AND `phase_f_force_refresh_pending`
+    one-shot sentinels so the column + table populate on the next
+    bootstrap-data run without waiting for natural TTL expiry.
 
 ## Phase G — vdb risk summary
 

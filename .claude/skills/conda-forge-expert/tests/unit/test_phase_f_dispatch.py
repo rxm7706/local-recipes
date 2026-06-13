@@ -205,14 +205,27 @@ class TestS3ParquetWave2Metrics:
         })
 
     def _patch_parquet(self, monkeypatch, table, months):
+        """Patch _parquet_cache and RECORD the data_source arg per call.
+
+        AA-mock: Wave 2 calls read_filtered with data_source='conda-forge'
+        (filtered read), and Wave 3 calls it with data_source=None
+        (unfiltered, all-channel read). The recorded list lets tests
+        assert both call shapes happened — preventing regressions where
+        a refactor accidentally reuses the Wave 2 Table for Wave 3.
+        """
+        self._data_source_calls: list[str | None] = []
+
+        def _record_read_filtered(months, pkg_names=None, data_source="conda-forge"):
+            self._data_source_calls.append(data_source)
+            return table
+
         import _parquet_cache  # type: ignore[import-not-found]
         monkeypatch.setattr(_parquet_cache, "list_s3_parquet_months",
                             lambda: months)
         monkeypatch.setattr(_parquet_cache, "ensure_month",
                             lambda month, current_month=None: Path("/tmp/unused"))
         monkeypatch.setattr(_parquet_cache, "read_filtered",
-                            lambda months, pkg_names=None,
-                            data_source="conda-forge": table)
+                            _record_read_filtered)
 
     def test_populates_30_90_day_and_lifetime_months(
         self, monkeypatch, db, atlas_mod
@@ -702,6 +715,85 @@ class TestS3ParquetWave2Metrics:
             "SELECT COUNT(*) FROM package_platform_downloads "
             "WHERE conda_name = 'django'"
         ).fetchone()[0] == 0
+
+    def test_per_channel_breakdown_populated_and_idempotent(
+        self, monkeypatch, db, atlas_mod
+    ):
+        """Wave 3 (v8.19.0): `package_channel_downloads` populates with all
+        channels the parquet ships (conda-forge + defaults + bioconda +
+        pytorch + ...) and re-running Phase F replaces rows, doesn't
+        accumulate (DELETE+INSERT chunked pattern from v8.18.0 H1).
+        """
+        _scrub_phase_f_env(monkeypatch)
+        monkeypatch.setenv("PHASE_F_SOURCE", "s3-parquet")
+        monkeypatch.setenv("PHASE_F_FORCE_REFRESH", "1")
+        import pyarrow as pa
+        months = ["2026-04"]
+        # Multi-channel data for `requests`; single-channel for `django`.
+        rows = [
+            # conda-forge filtered rows (drive total_downloads etc.)
+            ("2026-04", "conda-forge", "requests", "2.31.0",
+             "linux-64", "3.12", 100),
+            # Additional channels (only visible to channel sweep — Wave 2
+            # filters to conda-forge so these don't affect d30/d90/total).
+            ("2026-04", "defaults",    "requests", "2.31.0",
+             "linux-64", "3.12", 50),
+            ("2026-04", "bioconda",    "requests", "2.31.0",
+             "linux-64", "3.12", 25),
+            ("2026-04", "conda-forge", "django",   "5.0.0",
+             "noarch",   "3.11", 1),
+        ]
+        table = pa.table({
+            "time":         [r[0] for r in rows],
+            "data_source":  [r[1] for r in rows],
+            "pkg_name":     [r[2] for r in rows],
+            "pkg_version":  [r[3] for r in rows],
+            "pkg_platform": [r[4] for r in rows],
+            "pkg_python":   [r[5] for r in rows],
+            "counts":       [r[6] for r in rows],
+        })
+        # Mock to return the same Table regardless of data_source filter —
+        # Phase F calls read_filtered twice: once with data_source='conda-forge'
+        # (Wave 2 path), once with data_source=None (Wave 3 channel path).
+        self._patch_parquet(monkeypatch, table, months)
+        atlas_mod.phase_f_downloads(db)
+
+        chan_rows = list(db.execute(
+            "SELECT data_source, downloads_90d, downloads_total "
+            "FROM package_channel_downloads "
+            "WHERE conda_name = 'requests' ORDER BY data_source"
+        ))
+        by_chan = {r["data_source"]: r for r in chan_rows}
+        # All three channels present (Wave 3's data_source=None filter
+        # captures everything).
+        assert "conda-forge" in by_chan
+        assert "defaults" in by_chan
+        assert "bioconda" in by_chan
+        assert by_chan["conda-forge"]["downloads_90d"] == 100
+        assert by_chan["defaults"]["downloads_90d"] == 50
+        assert by_chan["bioconda"]["downloads_90d"] == 25
+
+        # Idempotency: re-run does not accumulate (PK = (conda_name, data_source)).
+        atlas_mod.phase_f_downloads(db)
+        n_rows = db.execute(
+            "SELECT COUNT(*) FROM package_channel_downloads "
+            "WHERE conda_name = 'requests'"
+        ).fetchone()[0]
+        assert n_rows == 3
+
+        # AA-mock: Phase F must call read_filtered with BOTH data_source
+        # variants — 'conda-forge' for Wave 2 (filtered Wave 2 metrics)
+        # and None for Wave 3 (all-channel breakdown). Asserting both
+        # appeared prevents a regression where a refactor reuses the
+        # Wave 2 Table for the Wave 3 sweep (which would silently drop
+        # the per-channel data we just verified above).
+        assert "conda-forge" in self._data_source_calls, (
+            "Phase F Wave 2 must call read_filtered(data_source='conda-forge')"
+        )
+        assert None in self._data_source_calls, (
+            "Phase F Wave 3 must call read_filtered(data_source=None) "
+            "to capture all channels"
+        )
 
     def test_api_path_leaves_wave2_columns_null(self, monkeypatch, db, atlas_mod):
         """downloads_source='anaconda-api' rows must have NULL Wave 2 columns."""
