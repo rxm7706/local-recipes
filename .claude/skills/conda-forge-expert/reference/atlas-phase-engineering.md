@@ -512,6 +512,28 @@ that takes 25+ minutes wall-clock with 90% retry cost vs. a 4-second
 single-query alternative. **Always validate operational behavior
 before committing the architecture**, not just feature availability.
 
+**(f) Docstring + reference doc MUST match shipped code at ship time.**
+When live testing forces an architecture pivot mid-implementation, the
+function docstring, the reference doc (`atlas-phases-overview.md` Phase
+description), and the CHANGELOG entry all need a re-read against the
+final code before the commit lands. v8.16.0 shipped with three
+mutually-contradictory descriptions of Phase P/ClickHouse: the CHANGELOG
+entry and reference doc described the original `cityHash64 % 30`
+bucket-pagination architecture; the function docstring's "Architecture:"
+header repeated the same; only the function body shipped the actual
+top-N single-query implementation that live testing forced. v8.16.2's
+retro caught and corrected the docstring + reference; the CHANGELOG
+entry retains the original language (per immutable-history discipline)
+but now carries an erratum banner pointing at v8.16.2. The fix at ship
+time would have cost ~5 minutes of re-reading; the retro cost ~2 hours
+across two PATCH versions. Discipline rule: **before pushing a ship
+commit for any phase with code that diverged from the spec mid-
+implementation, re-read docstring + reference doc + CHANGELOG entry
+against the actual code** — confirm each describes what shipped, not
+what was originally planned. The CHANGELOG-entry erratum-banner pattern
+(see v8.16.0 entry's `**ERRATUM (v8.16.5):**` line for the canonical
+form) is the recovery mechanism when the at-ship check is skipped.
+
 ---
 
 ## 11. Per-day local cache for rolling-window queries
