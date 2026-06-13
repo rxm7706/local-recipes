@@ -61,10 +61,17 @@ class TestPhaseP_OptInGate:
         assert "opt-in" in result.get("reason", "")
 
 
+@pytest.fixture
+def bq_source(monkeypatch):
+    """v8.16.0+ default is PHASE_P_SOURCE=clickhouse; BigQuery-specific
+    tests pin to bigquery so they exercise that backend."""
+    monkeypatch.setenv("PHASE_P_SOURCE", "bigquery")
+
+
 class TestPhaseP_MissingLibrary:
     """When google-cloud-bigquery is not importable, Phase P skips gracefully."""
 
-    def test_missing_library_skips(self, db, atlas_mod, monkeypatch):
+    def test_missing_library_skips(self, db, atlas_mod, monkeypatch, bq_source):
         monkeypatch.setenv("PHASE_P_ENABLED", "1")
         # google-cloud-bigquery is not in the local-recipes env by default;
         # the lazy `from google.cloud import bigquery` will raise ImportError.
@@ -91,7 +98,7 @@ class TestPhaseP_QueryShape:
         # the query string is embedded in the function body. Verify the
         # documented shape via source-level grep.
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "bigquery-public-data.pypi.file_downloads" in src
         assert "downloads_30d" in src
         assert "downloads_90d" in src
@@ -114,7 +121,7 @@ class TestPhaseP_CostGuardrails:
         bounds; literals (vs. CURRENT_TIMESTAMP()) keep pruning prune-safe
         against planner mood swings."""
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "timestamp >= TIMESTAMP '" in src, (
             "Phase P SQL must filter on the timestamp column with literal "
             "TIMESTAMP bounds (table is column-partitioned on `timestamp`)"
@@ -135,7 +142,7 @@ class TestPhaseP_CostGuardrails:
 
     def test_dry_run_preflight_present(self, atlas_mod):
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "dry_run=True" in src, (
             "Phase P must dry-run the query first to estimate cost"
         )
@@ -145,7 +152,7 @@ class TestPhaseP_CostGuardrails:
 
     def test_maximum_bytes_billed_set(self, atlas_mod):
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "maximum_bytes_billed" in src, (
             "Phase P real query must pass maximum_bytes_billed as a hard "
             "server-side cap to prevent runaway scans"
@@ -153,7 +160,7 @@ class TestPhaseP_CostGuardrails:
 
     def test_job_timeout_ms_set(self, atlas_mod):
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "job_timeout_ms" in src, (
             "Phase P real query must pass job_timeout_ms to prevent zombie "
             "jobs charging slot time on flat-rate billing accounts"
@@ -163,14 +170,14 @@ class TestPhaseP_CostGuardrails:
         """First-pull (empty pypi_downloads_daily) uses a wider budget
         than a refresh — code must read both env vars."""
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "PHASE_P_MAX_COST_USD" in src
         assert "PHASE_P_MAX_COST_FIRST_PULL_USD" in src
         assert "MAX(download_date)" in src, (
             "First-pull detection must read pypi_downloads_daily's max date"
         )
 
-    def test_dryrun_above_cap_aborts(self, db, atlas_mod, monkeypatch):
+    def test_dryrun_above_cap_aborts(self, db, atlas_mod, monkeypatch, bq_source):
         """When the dry-run estimate exceeds the cap, Phase P returns
         skipped with cost in the reason — the real query is NOT submitted."""
         import types
@@ -241,7 +248,7 @@ class TestPhaseP_IncrementalArchitecture:
         `DATE(timestamp)` as the day column (not `_PARTITIONDATE`,
         which is invalid on this column-partitioned table)."""
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "GROUP BY pypi_name, download_date" in src, (
             "Phase P v8.15.2 must aggregate per (pypi_name, download_date), "
             "where download_date is DATE(timestamp)"
@@ -252,14 +259,14 @@ class TestPhaseP_IncrementalArchitecture:
 
     def test_inserts_into_pypi_downloads_daily(self, atlas_mod):
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "INSERT OR IGNORE INTO pypi_downloads_daily" in src, (
             "Phase P must INSERT OR IGNORE per-day rows into pypi_downloads_daily"
         )
 
     def test_recomputes_pypi_intelligence_from_local_table(self, atlas_mod):
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "FROM pypi_downloads_daily" in src and "downloads_30d" in src, (
             "Phase P must recompute pypi_intelligence.downloads_30d/90d "
             "from the local pypi_downloads_daily table via SQL aggregation"
@@ -270,13 +277,13 @@ class TestPhaseP_IncrementalArchitecture:
 
     def test_gc_prunes_retain_days(self, atlas_mod):
         import inspect
-        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        src = inspect.getsource(atlas_mod._phase_p_bigquery)
         assert "PHASE_P_RETAIN_DAYS" in src
         assert "DELETE FROM pypi_downloads_daily WHERE download_date" in src, (
             "GC must DELETE pypi_downloads_daily rows older than the retain cutoff"
         )
 
-    def test_no_new_partitions_short_circuits(self, db, atlas_mod, monkeypatch):
+    def test_no_new_partitions_short_circuits(self, db, atlas_mod, monkeypatch, bq_source):
         """When pypi_downloads_daily.MAX(download_date) is today-1,
         no new BQ partitions to query → early skip with no client.query()."""
         import datetime
@@ -325,7 +332,7 @@ class TestPhaseP_IncrementalArchitecture:
         assert "no new partitions" in result.get("reason", "")
         assert result.get("mode") == "incremental"
 
-    def test_gap_above_90d_reverts_to_first_pull(self, db, atlas_mod, monkeypatch):
+    def test_gap_above_90d_reverts_to_first_pull(self, db, atlas_mod, monkeypatch, bq_source):
         """When MAX(download_date) is 120 days ago, mode flips to
         first-pull (uses the larger cap)."""
         import datetime
@@ -377,7 +384,7 @@ class TestPhaseP_IncrementalArchitecture:
         assert result.get("skipped") is True
         assert result.get("mode") == "first-pull-after-gap"
 
-    def test_force_first_pull_wipes_daily_table(self, db, atlas_mod, monkeypatch):
+    def test_force_first_pull_wipes_daily_table(self, db, atlas_mod, monkeypatch, bq_source):
         """PHASE_P_FORCE_FIRST_PULL=1 deletes existing pypi_downloads_daily
         rows before mode detection runs (which then sees an empty table)."""
         import datetime
@@ -434,7 +441,7 @@ class TestPhaseP_IncrementalArchitecture:
             "SELECT COUNT(*) FROM pypi_downloads_daily"
         ).fetchone()[0] == 0
 
-    def test_deprecated_window_days_warns(self, db, atlas_mod, monkeypatch, capsys):
+    def test_deprecated_window_days_warns(self, db, atlas_mod, monkeypatch, capsys, bq_source):
         """PHASE_P_BQ_WINDOW_DAYS was declared in v8.1.0 spec but never
         consumed; v8.15.0 logs a deprecation warning when set."""
         monkeypatch.setenv("PHASE_P_ENABLED", "1")
