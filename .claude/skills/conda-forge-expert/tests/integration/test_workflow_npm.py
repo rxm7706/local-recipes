@@ -57,16 +57,34 @@ class TestWorkflowNpmCanonical:
         assert recipe_path.exists()
         recipe_dir = recipe_path.parent
 
-        # All four canonical files
-        for name in ("recipe.yaml", "build.sh", "conda-forge.yml"):
-            assert (recipe_dir / name).exists(), f"missing {name}"
-        # No build.bat by default
+        # Canonical files for the merged 2026 inline-script pattern
+        # (openspec PR #32368 + bmalph PR #33557): only recipe.yaml in
+        # default mode — no separate build.sh, no build.bat (per-platform
+        # build commands live inline in recipe.yaml's build.script), and
+        # no per-recipe conda-forge.yml (staged-recipes' defaults handle
+        # it; conda-forge.yml is emitted only under feedstock_mode=True).
+        assert (recipe_dir / "recipe.yaml").exists(), "missing recipe.yaml"
+        assert not (recipe_dir / "build.sh").exists(), (
+            "build.sh leaked back into the npm generator — the 2026 "
+            "canonical pattern uses inline build.script, not a standalone "
+            "build.sh. See recipe-generator.py:_inline_build_script."
+        )
         assert not (recipe_dir / "build.bat").exists()
+        assert not (recipe_dir / "conda-forge.yml").exists(), (
+            "conda-forge.yml leaked under default (non-feedstock) mode — "
+            "per-recipe conda-forge.yml is feedstock-mode-only since the "
+            "merged 2026 pattern. See recipe-generator.py:1986."
+        )
 
         # The generated YAML must parse and have key fields
         data = yaml.safe_load(recipe_path.read_text())
         assert data["package"]["name"] == "example-pkg"
-        assert data["build"]["noarch"] == "generic"
+        # The merged pattern dropped noarch:generic — native packages were
+        # already per-platform; pure-JS now matches. recipe-generator.py:1871.
+        assert "noarch" not in data["build"], (
+            "noarch leaked back into the npm generator — the 2026 canonical "
+            "pattern drops noarch:generic for ALL npm recipes."
+        )
         assert "pnpm" in data["requirements"]["build"]
 
         # 2. Validate (subprocess — exercises the actual validator script)
