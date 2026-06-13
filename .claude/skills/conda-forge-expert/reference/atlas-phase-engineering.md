@@ -50,6 +50,63 @@ Every phase concurrency knob is overridable via env vars. The convention
 is `PHASE_<ID>_CONCURRENCY` for the legacy global, plus per-host
 overrides where relevant (e.g. `PHASE_L_CONCURRENCY_<SOURCE>`).
 
+**v8.20.0 — sustained-rate scheduler as the canonical pattern when the
+GraphQL alternative isn't available.** Concurrency caps alone aren't
+enough when the registry's secondary-limit threshold sits at a per-second
+rate rather than a concurrent-worker count: an 8-worker pool fired at the
+GitHub REST API hit ~70 req/s peak burst (each worker firing one request
+at a time, but in lockstep) and tripped a 15% 403 rate on a 4,400-row
+Phase K fanout (2026-05-12 incident — auto-memory
+`project_phase_k_secondary_rate_limit.md`). The fix is a token-bucket
+scheduler that paces total throughput, not per-worker concurrency. The
+canonical implementation is `_RateLimitedScheduler` in
+`scripts/conda_forge_atlas.py` (single-process, stdlib `time.monotonic()`,
+~30 LOC):
+
+```python
+class _RateLimitedScheduler:
+    def __init__(self, rps: float, bucket_capacity: int = 10):
+        if rps <= 0:
+            raise ValueError(...)
+        self.rps = float(rps)
+        self.bucket_capacity = int(bucket_capacity)
+        self.bucket = float(bucket_capacity)
+        self.last_refill = time.monotonic()
+
+    def acquire(self):
+        now = time.monotonic()
+        elapsed = now - self.last_refill
+        self.bucket = min(self.bucket_capacity,
+                          self.bucket + elapsed * self.rps)
+        self.last_refill = now
+        if self.bucket < 1.0:
+            wait = (1.0 - self.bucket) / self.rps
+            time.sleep(wait)
+            self.bucket = 0.0
+            self.last_refill = time.monotonic()
+        else:
+            self.bucket -= 1.0
+```
+
+Caller invokes `scheduler.acquire()` immediately before each HTTP
+request; the bucket caps incidental bursts (default capacity 10) while
+the sustained rate (default 3.0 req/s) sits ~3× under GitHub's
+secondary-limit threshold. Phase K wraps the scheduler with: (1) a
+`PHASE_K_AGGRESSIVE=1` opt-in that restores the previous
+`ThreadPoolExecutor(max_workers=8)` burst pattern + emits a one-line
+stderr warning at Phase K entry (audit trail for operators who see 403
+spam later); (2) per-request timing lines to stderr for the first 30 s
+so operators verify the scheduler is engaged, then silent unless
+`PHASE_K_DEBUG_SCHEDULER=1` is set; (3) a one-shot
+`meta.phase_k_403_backfill_pending=1` sentinel installed at `init_schema`
+time alongside an install marker `meta.phase_k_first_run_post_v8_20_0=1`
+written atomically — the next Phase K run expands its eligibility list
+to include all `last_error LIKE '%403%'` rows regardless of TTL, then
+DELETEs the sentinel before fanout starts (mid-run crashes recover via
+the natural `last_error != NULL` TTL bypass). Pattern reach: any phase
+fanning out to a host with documented sustained-rate limits but no
+GraphQL alternative (Codeberg, GitLab REST, crates.io, rubygems.org).
+
 ---
 
 ## 2. GraphQL batching beats REST fanout for GitHub
