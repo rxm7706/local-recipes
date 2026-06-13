@@ -365,6 +365,217 @@ external-default and env-var-redirect paths.
 
 ---
 
+## 10. Volume-billed APIs need a hard cap, a dry-run, and a documented price
+
+Some atlas phases call paid-by-volume APIs where a single query can
+cost real money — BigQuery on-demand at $6.25/TB scanned is the
+canonical example; OSV.dev bulk endpoints, GitHub GraphQL points
+budget, and ecosyste.ms paid tiers fit the same shape. Three
+defences must be in place before any such phase ships:
+
+**(a) Hard server-side cap.** Use the provider's "abort if this query
+would cost more than $N" primitive, not a client-side estimate. For
+BigQuery this is `bigquery.QueryJobConfig(maximum_bytes_billed=N)` —
+if actual processed bytes exceed N, BQ aborts with HTTP 400 `Query
+exceeded limit for bytes billed` and **bills $0**. That's the right
+failure mode: fail-fast with no spend, not "succeed and bill $500".
+
+```python
+# Compute byte ceiling from operator's USD cap.
+cap_usd = float(os.environ.get("PHASE_X_MAX_COST_USD", "10"))
+usd_per_tb = float(os.environ.get("PHASE_X_USD_PER_TB", "6.25"))
+max_bytes = int((cap_usd / usd_per_tb) * 1e12)
+
+client.query(
+    sql,
+    job_config=bigquery.QueryJobConfig(
+        maximum_bytes_billed=max_bytes,
+        job_timeout_ms=int(os.environ.get("PHASE_X_JOB_TIMEOUT_MS", "600000")),
+    ),
+).result()
+```
+
+**(b) Dry-run preflight.** If the provider offers a free planning or
+quote endpoint, use it to estimate cost before submitting the real
+query. BigQuery's dry-run mode returns `total_bytes_processed`
+without consuming quota:
+
+```python
+dry = client.query(
+    sql,
+    job_config=bigquery.QueryJobConfig(dry_run=True, use_query_cache=False),
+)
+est_bytes = dry.total_bytes_processed or 0
+est_usd = (est_bytes / 1e12) * usd_per_tb
+if est_usd > cap_usd:
+    return {"skipped": True, "reason": f"est ${est_usd:.2f} > ${cap_usd:.2f} cap"}
+```
+
+Always print the dry-run estimate to stdout before submitting the
+real query. Operators inspecting the run output see the cost
+upfront — no surprises. The same pattern fits any provider with a
+free quote endpoint (look for `--dry-run` flags, `validateOnly: true`
+query params, or `Cost-Preview: yes` headers in REST APIs).
+
+**(c) Documented price + verifiable source.** Every cost claim in
+the phase's docstring + the operator-facing reference doc MUST
+cite an empirical source: a dry-run output (`as of 2026-06-12,
+trailing 90 days = ~2.5–4 TB → ~$15–25 at $6.25/TB`), a measured
+benchmark, or `bq show --schema <table>` table-statistics output.
+Napkin numbers without provenance drift silently — see § "Verify,
+Don't Assume" in SKILL.md. The 2026-06-12 BigQuery invoice surprise
+($500+ for one Phase P refresh against a documented "~30 GB / within
+free tier" expectation) traced to a 2016 napkin number copied
+through ~25 documentation sites over 10 years without anyone re-
+verifying.
+
+**Tunables convention.** Every volume-billed phase ships with the
+following operator-tunable env vars:
+- `PHASE_X_MAX_COST_USD` — per-run cap (USD); BQ aborts above.
+- `PHASE_X_MAX_COST_FIRST_PULL_USD` — separate cap for the cold-
+  start case where larger budget is acceptable.
+- `PHASE_X_USD_PER_TB` (or `_USD_PER_REQUEST`, etc.) — provider
+  price; override for non-US regions.
+- `PHASE_X_JOB_TIMEOUT_MS` — wall-clock cap to prevent zombie jobs.
+
+Canonical implementation: `phase_p_pypi_downloads`. Operator-facing
+doc: `reference/atlas-phase-p-cost-model.md` — copy that doc's
+structure (TL;DR table + tunables + decision tree + runbook +
+alternative-source verification + cost projection) for any future
+volume-billed phase.
+
+---
+
+## 11. Per-day local cache for rolling-window queries
+
+When a phase queries a rolling N-day window from a paid or rate-
+limited source, store per-day rows in a local side table and
+recompute rolling aggregates via SQL. Querying only the *new* days
+since the last refresh — instead of re-scanning the full window —
+drops sustained cost by 1-2 orders of magnitude.
+
+**Schema shape.** One row per `(entity, date)` with a non-zero
+filter to avoid bloating the table with implicit zeros:
+
+```sql
+CREATE TABLE IF NOT EXISTS phase_x_daily (
+    entity_id     TEXT NOT NULL,
+    measure_date  TEXT NOT NULL,         -- ISO 'YYYY-MM-DD'
+    value         INTEGER NOT NULL,      -- always >= 1; zero rows not stored
+    PRIMARY KEY (entity_id, measure_date)
+);
+CREATE INDEX IF NOT EXISTS idx_phase_x_daily_date ON phase_x_daily(measure_date);
+CREATE INDEX IF NOT EXISTS idx_phase_x_daily_id   ON phase_x_daily(entity_id);
+```
+
+**Mode selection.** Detect first-pull vs incremental from
+`MAX(measure_date)`:
+
+```python
+last_row = conn.execute("SELECT MAX(measure_date) FROM phase_x_daily").fetchone()
+last_date_str = last_row[0] if last_row else None
+today = datetime.date.today()
+
+if last_date_str is None:
+    mode = "first-pull"
+    window_start = today - datetime.timedelta(days=N)
+elif (today - datetime.date.fromisoformat(last_date_str)).days > N:
+    mode = "first-pull-after-gap"
+    window_start = today - datetime.timedelta(days=N)
+else:
+    mode = "incremental"
+    window_start = datetime.date.fromisoformat(last_date_str) + datetime.timedelta(days=1)
+
+if window_start >= today:
+    return {"skipped": True, "reason": "no new data since last refresh"}
+```
+
+**Aggregation.** Drive rolling-window outputs from the local table
+via INSERT ... ON CONFLICT:
+
+```python
+cutoff_window = (today - datetime.timedelta(days=N)).isoformat()
+conn.execute("""
+    INSERT INTO consumer_table (entity_id, rolling_value, fetched_at, source)
+    SELECT entity_id, COALESCE(SUM(value), 0), ?, 'phase-x-incremental'
+    FROM phase_x_daily
+    WHERE measure_date >= ?
+    GROUP BY entity_id
+    ON CONFLICT(entity_id) DO UPDATE SET
+        rolling_value = excluded.rolling_value,
+        fetched_at    = excluded.fetched_at,
+        source        = excluded.source
+""", (now, cutoff_window))
+```
+
+**GC.** Prune rows older than `RETAIN_DAYS` (5-day slack beyond the
+window for boundary safety) on each refresh:
+
+```python
+retain_days = int(os.environ.get("PHASE_X_RETAIN_DAYS", str(N + 5)))
+gc_cutoff = (today - datetime.timedelta(days=retain_days)).isoformat()
+conn.execute("DELETE FROM phase_x_daily WHERE measure_date < ?", (gc_cutoff,))
+```
+
+**Force-rebootstrap escape hatch.** Operators suspecting cache
+corruption need a one-shot way to wipe + re-bootstrap:
+
+```python
+if os.environ.get("PHASE_X_FORCE_FIRST_PULL"):
+    conn.execute("DELETE FROM phase_x_daily")
+    conn.commit()
+```
+
+Canonical implementation: `phase_p_pypi_downloads` + schema v26
+`pypi_downloads_daily`. Storage profile: ~50–100k active entities
+× N=90 days × ~50 bytes/row ≈ 225–450 MB steady state.
+
+---
+
+## 12. Dry-run preflight is free observability
+
+Many paid APIs offer a free planning / quote / validation endpoint
+that returns enough information to predict cost or behaviour without
+billing for the real query. Use them aggressively — they're the
+cheapest possible observability layer.
+
+**Pattern.** Before any paid query:
+
+1. Submit the dry-run / quote variant.
+2. Print the predicted cost / latency / row count to stdout.
+3. Compare against operator cap.
+4. Abort with a clear `skipped` result if over budget; submit
+   the real query otherwise.
+
+**Provider examples** (verify current state before relying on these
+— they shift over time):
+
+- **BigQuery**: `QueryJobConfig(dry_run=True, use_query_cache=False)`
+  returns `total_bytes_processed`. No quota consumed. Used in
+  `phase_p_pypi_downloads`.
+- **OSV.dev bulk**: REST endpoints return `Content-Length` on HEAD
+  requests; useful for estimating download size before committing
+  to a multi-GB pull.
+- **GitHub GraphQL**: every query returns `rateLimit { cost
+  remaining resetAt }` in the response — submit a tiny probe first
+  to see remaining points before launching a fanout. Used in
+  `_phase_k_github_graphql_batch`.
+- **ecosyste.ms** + **deps.dev**: return result-count headers on
+  list endpoints; use `?per_page=1` as a free probe before deciding
+  how many pages to fetch.
+
+**Rule of thumb.** If a provider charges per request or per byte,
+look for the free preflight. If documentation doesn't mention one,
+ask the provider — almost all volume-billed APIs ship one because
+their own dashboards need it.
+
+The dry-run output is also the right source-of-truth for the
+quantitative claims in operator-facing docs (per § "Verify, Don't
+Assume" in SKILL.md). Print + document the preflight value, and
+the documentation never drifts from reality.
+
+---
+
 ## Cross-references
 
 - `_http.py` — shared resolvers, auth, fetch-with-fallback, atomic-write helpers.
