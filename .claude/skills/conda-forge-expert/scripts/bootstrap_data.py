@@ -172,7 +172,16 @@ PROFILES: dict[str, dict[str, str]] = {
     "admin": {
         "PHASE_E_ENABLED": "1",
         "PHASE_N_ENABLED": "1",     # channel-wide (no PHASE_N_MAINTAINER)
-        "PHASE_F_SOURCE":  "auto",
+        # v8.17.0: pin to s3-parquet. Verified 2026-06-13 against full --fresh
+        # admin run: API path serial ~6 req/s × ~32k packages = ~83 min wall;
+        # S3 parquet bulk sweep is seconds for the same coverage. The numbers
+        # disagree by ~0.5–1.5× per the discrepancy table in
+        # docs/specs/atlas-phase-f-s3-backend.md § "Verified discrepancies" —
+        # consumers MUST check `packages.downloads_source` before treating
+        # admin-profile numbers as API-equivalent. Operators wanting API
+        # numbers for an admin run set PHASE_F_SOURCE=auto (or
+        # =anaconda-api) explicitly.
+        "PHASE_F_SOURCE":  "s3-parquet",
         # v8.6.0 Wave D: auto-refresh CISA KEV + EPSS + CWE catalogs.
         # Same cadence as maintainer — catalog data isn't maintainer-scoped.
         "BOOTSTRAP_FETCH_CISA_KEV":    "1",

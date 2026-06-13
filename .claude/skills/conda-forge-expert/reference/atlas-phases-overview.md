@@ -48,7 +48,7 @@ changes a phase.
 | **S** | Computed scores | pure SQL over `pypi_intelligence` Tier 1-3 columns | per-run | always when Phase R has data | `pypi_intelligence.conda_forge_readiness` (0-100 composite) + `recommended_template` (full `templates/python/<x>.yaml` path) |
 | **E** | cf-graph enrichment | `github.com/regro/cf-graph-countyfair` (master tarball, ~150 MB) | `ATLAS_CFGRAPH_TTL_DAYS` (default 1 d) | enabled by every v8.0.0 profile; otherwise opt-in (`PHASE_E_ENABLED=1`) | Recipe-format, maintainer junction, repo/dev/homepage URLs, extra-registry name columns |
 | **E.5** | Archived feedstocks | `gh api graphql` (conda-forge org, `isArchived:true`) | per-run | always | Abandonment detection |
-| **F** | Download counts | `api.anaconda.org/package/conda-forge/<name>` OR `anaconda-package-data.s3.amazonaws.com/conda/monthly/<YYYY>/<YYYY-MM>.parquet` | `PHASE_F_TTL_DAYS=7` | always (auto-source; pinned to `s3-parquet` under `--profile consumer`) | Usage signal — leaderboards, bus-factor, adoption-stage, "archived but used" |
+| **F** | Download counts | `api.anaconda.org/package/conda-forge/<name>` OR `anaconda-package-data.s3.amazonaws.com/conda/monthly/<YYYY>/<YYYY-MM>.parquet` | `PHASE_F_TTL_DAYS=7` | always (`s3-parquet` pinned under `--profile admin` (v8.17.0+) and `--profile consumer`; `--profile maintainer` uses `auto` since maintainer-scoped row sets are small) | Usage signal — leaderboards, bus-factor, adoption-stage, "archived but used" |
 | **G** | vdb risk summary | local AppThreat vdb (per-row purls) | `PHASE_G_TTL_DAYS=7` | always when vdb available (auto-skip in `local-recipes` env) | `cve-watcher`, KEV queue, staleness `--by-risk` |
 | **G'** | per-version vulns | same vdb, all versions in `package_version_downloads` | `PHASE_GP_TTL_DAYS=30` | opt-in (`PHASE_GP_ENABLED=1`) | "Most recent build set with 0 critical CVEs" lockdown |
 | **H** | PyPI current version | `pypi.org/pypi/<name>/json` (PEP 592 yanked) OR Phase E cf-graph cache | `PHASE_H_TTL_DAYS=7` | always (`PHASE_H_SOURCE=pypi-json` default; `cf-graph` on cold-start; pinned to `cf-graph` under `--profile consumer`) | `behind-upstream` (pypi); yanked-upstream alert |
@@ -521,11 +521,22 @@ cost below $1/run.
   [`atlas-phase-engineering.md`](atlas-phase-engineering.md) for the
   Retry-After + jitter pattern), `PHASE_F_S3_MONTHS`, `S3_PARQUET_BASE_URL`,
   `ANACONDA_API_BASE_URL`.
-- **Profile defaults (v8.0.0).** Maintainer + admin use `PHASE_F_SOURCE=auto`
-  (probe-then-fallback). Consumer pins `PHASE_F_SOURCE=s3-parquet`
-  (skip the anaconda.org probe — `api.anaconda.org` is firewall-blocked
-  in many enterprise environments and is the atlas's only universally
-  firewall-blocked dependency).
+- **Profile defaults (v8.17.0+).** Admin + consumer pin
+  `PHASE_F_SOURCE=s3-parquet`. Maintainer uses `auto` (probe-then-fallback)
+  because maintainer-scoped row sets are small (~dozens to hundreds of
+  feedstocks) and the API path completes in seconds at that size.
+  **Why admin flipped from `auto` to `s3-parquet` in v8.17.0** (verified
+  2026-06-13): the API path is serial ~6 req/s × ~32k packages = ~83 min
+  wall-clock for a full --fresh admin run; the S3 parquet bulk sweep
+  covers the same row set in seconds. The numbers disagree by
+  ~0.5–1.5× per the discrepancy table in
+  `docs/specs/atlas-phase-f-s3-backend.md` § "Verified discrepancies".
+  **Consumer impact**: admin-profile `total_downloads` numbers shift to
+  S3 totals; consumers querying `packages.total_downloads` for an
+  admin-built DB MUST check `packages.downloads_source = 's3-parquet'`
+  before treating them as API-equivalent. Operators wanting API
+  numbers for admin runs can set `PHASE_F_SOURCE=auto` (or `=anaconda-api`)
+  explicitly to override.
 - **Actionable intelligence.**
   - `version-downloads`, `staleness-report`, `feedstock-health`,
     `adoption-stage` — every CLI that asks "is this used."
@@ -870,7 +881,7 @@ B / B.5 / B.6 / C / G / G' / I / J / K / M are profile-invariant.
 | **Persona** | Feedstock maintainer running daily on their own scope | Channel-wide operator (mark-broken, archive sweeps, audits) | Air-gapped enterprise consumer (no `api.anaconda.org` / `api.github.com` egress) |
 | **Phase D — universe upsert** | ✅ run | ✅ run | ⏸ skipped (`PHASE_D_UNIVERSE_DISABLED=1`) |
 | **Phase E — cf-graph enrichment** | ✅ enabled (`PHASE_E_ENABLED=1`) | ✅ enabled | ✅ enabled |
-| **Phase F — download counts** | auto-source (probe API → S3 fallback) | auto-source | pinned `s3-parquet` |
+| **Phase F — download counts** | auto-source (probe API → S3 fallback) | pinned `s3-parquet` (v8.17.0+ — was `auto`) | pinned `s3-parquet` |
 | **Phase H — pypi version** | auto-source (real-time pypi-json) | auto-source | pinned `cf-graph` (offline bulk) |
 | **Phase L — extra registries** | auto-restricted to populated registries in scope via `v_actionable_packages JOIN package_maintainers` | all 8 resolvers | all 8 resolvers |
 | **Phase N — live GitHub** | ✅ enabled, auto-scoped to `gh api user --jq .login` | ✅ enabled, channel-wide (no `PHASE_N_MAINTAINER`) | ⏸ skipped (`PHASE_N_ENABLED=""`) |
