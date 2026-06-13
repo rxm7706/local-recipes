@@ -6247,15 +6247,29 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
     `google-cloud-bigquery` library, or BigQuery 4xx → log + skip
     gracefully.
 
-    Cost: ~30 GB scanned per query; well within BigQuery free tier
-    (1 TB / month). Default cadence is monthly via `PHASE_P_TTL_DAYS=30`.
+    Cost (v8.14.3 — corrected from v8.1.0's "~30 GB" claim, off by ~1000×).
+    A 90-day `_PARTITIONDATE`-pruned scan of the `file.project` column
+    processes ~2.5–4 TB at on-demand pricing of $6.25/TB → ~$15–25/run
+    typical. Dry-run preflight prints the live estimate before submission;
+    `maximum_bytes_billed` is a hard server-side cap (BQ aborts and bills
+    $0 if exceeded); `job_timeout_ms` prevents zombie jobs charging slot
+    time. Default caps: $100 first-pull, $10 per refresh.
+
+    See `docs/specs/atlas-phase-p-incremental.md` for the v8.15.0
+    incremental architecture that drives steady-state refresh cost
+    below $1/run via a local per-day cache.
 
     Tunables:
-      - PHASE_P_DISABLED       : "1" to skip
-      - PHASE_P_ENABLED        : must be "1" (opt-in) to run
-      - PHASE_P_BQ_PROJECT     : GCP project override
-      - PHASE_P_TTL_DAYS       : default 30
+      - PHASE_P_DISABLED                : "1" to skip
+      - PHASE_P_ENABLED                 : must be "1" (opt-in) to run
+      - PHASE_P_BQ_PROJECT              : GCP project override
+      - PHASE_P_TTL_DAYS                : default 30 (driver gate)
+      - PHASE_P_MAX_COST_USD            : default 10 (refresh cap, USD)
+      - PHASE_P_MAX_COST_FIRST_PULL_USD : default 100 (first-pull cap, USD)
+      - PHASE_P_JOB_TIMEOUT_MS          : default 600000 (10 min)
+      - PHASE_P_USD_PER_TB              : default 6.25 (BQ on-demand price)
     """
+    import datetime as _dt
     t0 = time.monotonic()
     print("  Phase P: PyPI download counts via BigQuery")
 
@@ -6305,25 +6319,103 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
             "duration_seconds": round(elapsed, 1),
         }
 
+    # Cap mode: first-pull (no prior downloads) gets a larger budget than
+    # a refresh. Detection looks for any prior populated row in
+    # pypi_intelligence — a fresh atlas, or one whose Phase P has never
+    # run, is first-pull.
+    has_prior = conn.execute(
+        "SELECT COUNT(*) FROM pypi_intelligence "
+        "WHERE downloads_fetched_at IS NOT NULL"
+    ).fetchone()[0]
+    if has_prior:
+        cap_usd = float(os.environ.get("PHASE_P_MAX_COST_USD", "10"))
+        cap_label = "refresh"
+    else:
+        cap_usd = float(os.environ.get("PHASE_P_MAX_COST_FIRST_PULL_USD", "100"))
+        cap_label = "first-pull"
+    usd_per_tb = float(os.environ.get("PHASE_P_USD_PER_TB", "6.25"))
+    timeout_ms = int(os.environ.get("PHASE_P_JOB_TIMEOUT_MS", "600000"))
+
     # Project-level aggregation; one row per pypi_name canonicalized
     # via the same PEP 503 transform we use for cross-channel matching.
-    query = """
+    # _PARTITIONDATE literal dates guarantee partition pruning; the
+    # v8.1.0 CURRENT_TIMESTAMP() form occasionally degraded to a full
+    # scan, contributing to the 2026-06-12 cost surprise.
+    today = _dt.date.today()
+    d30 = (today - _dt.timedelta(days=30)).isoformat()
+    d90 = (today - _dt.timedelta(days=90)).isoformat()
+    today_s = today.isoformat()
+    query = f"""
         SELECT
             REGEXP_REPLACE(LOWER(file.project), r'[-_.]+', '-') AS pypi_name,
-            SUM(IF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(),
-                                              INTERVAL 30 DAY), 1, 0))
-                AS downloads_30d,
-            SUM(IF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(),
-                                              INTERVAL 90 DAY), 1, 0))
-                AS downloads_90d
+            SUM(IF(_PARTITIONDATE >= DATE '{d30}', 1, 0)) AS downloads_30d,
+            COUNT(*) AS downloads_90d
         FROM `bigquery-public-data.pypi.file_downloads`
-        WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY)
+        WHERE _PARTITIONDATE >= DATE '{d90}'
+          AND _PARTITIONDATE <  DATE '{today_s}'
         GROUP BY pypi_name
     """
-    print(f"  running query against bigquery-public-data.pypi.file_downloads"
-          f"{f' (project={bq_project})' if bq_project else ''}...")
+
+    # Dry-run preflight — free; returns total_bytes_processed without
+    # submitting a real query. Prints the live estimate so operators see
+    # the cost upfront and aborts before any spend if over the cap.
     try:
-        rows = list(client.query(query).result())
+        dry = client.query(
+            query,
+            job_config=bigquery.QueryJobConfig(
+                dry_run=True, use_query_cache=False
+            ),
+        )
+        bytes_processed = dry.total_bytes_processed or 0
+        est_gb = bytes_processed / 1e9
+        est_usd = (est_gb / 1000.0) * usd_per_tb
+    except Exception as e:
+        elapsed = time.monotonic() - t0
+        print(f"  BigQuery dry-run failed ({type(e).__name__}: {e}); skipping.")
+        return {
+            "skipped": True,
+            "reason": f"BigQuery dry-run failed: {e}",
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    print(f"  dry-run: ~{est_gb:,.0f} GB scan, est ~${est_usd:.2f} "
+          f"(cap ${cap_usd:.2f}; mode={cap_label})")
+
+    if est_usd > cap_usd:
+        elapsed = time.monotonic() - t0
+        msg = (f"estimated ${est_usd:.2f} exceeds ${cap_usd:.2f} {cap_label} "
+               f"cap; raise PHASE_P_MAX_COST_USD or "
+               f"PHASE_P_MAX_COST_FIRST_PULL_USD to override")
+        print(f"  {msg}")
+        return {
+            "skipped": True,
+            "reason": msg,
+            "estimated_usd": round(est_usd, 2),
+            "estimated_gb": round(est_gb, 1),
+            "cap_usd": cap_usd,
+            "mode": cap_label,
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    # Real query with hard byte cap + wall-clock timeout (belt-and-braces).
+    # maximum_bytes_billed: server-side ceiling; if exceeded, BQ aborts with
+    #   $0 bill rather than running over budget.
+    # job_timeout_ms: prevents zombie jobs from accumulating slot time on
+    #   flat-rate billing accounts. Real queries complete in 30-60 s.
+    max_bytes = int((cap_usd / usd_per_tb) * 1e12)
+    print(f"  submitting query against bigquery-public-data.pypi.file_downloads"
+          f"{f' (project={bq_project})' if bq_project else ''} "
+          f"(maximum_bytes_billed={max_bytes:,}, job_timeout_ms={timeout_ms})")
+    try:
+        rows = list(
+            client.query(
+                query,
+                job_config=bigquery.QueryJobConfig(
+                    maximum_bytes_billed=max_bytes,
+                    job_timeout_ms=timeout_ms,
+                ),
+            ).result()
+        )
     except Exception as e:
         elapsed = time.monotonic() - t0
         print(f"  BigQuery query failed ({type(e).__name__}: {e}); skipping.")
@@ -6343,8 +6435,8 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
             pypi_name = r.get("pypi_name") if hasattr(r, "get") else r["pypi_name"]
             if not pypi_name:
                 continue
-            d30 = r.get("downloads_30d", 0) if hasattr(r, "get") else r["downloads_30d"]
-            d90 = r.get("downloads_90d", 0) if hasattr(r, "get") else r["downloads_90d"]
+            d30v = r.get("downloads_30d", 0) if hasattr(r, "get") else r["downloads_30d"]
+            d90v = r.get("downloads_90d", 0) if hasattr(r, "get") else r["downloads_90d"]
             conn.execute(
                 "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
                 (pypi_name,),
@@ -6354,7 +6446,7 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
                 "downloads_30d = ?, downloads_90d = ?, "
                 "downloads_fetched_at = ?, downloads_source = ? "
                 "WHERE pypi_name = ?",
-                (int(d30 or 0), int(d90 or 0), now, "bigquery-public", pypi_name),
+                (int(d30v or 0), int(d90v or 0), now, "bigquery-public", pypi_name),
             )
             upserted += 1
         conn.execute("COMMIT")
@@ -6364,10 +6456,14 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
 
     elapsed = time.monotonic() - t0
     print(f"  Phase P done in {elapsed:.1f}s — upserted {upserted:,} rows "
-          f"(downloads_30d + downloads_90d).")
+          f"(downloads_30d + downloads_90d); est cost ~${est_usd:.2f}")
     return {
         "rows_upserted": upserted,
         "source": "bigquery-public",
+        "estimated_usd": round(est_usd, 2),
+        "estimated_gb": round(est_gb, 1),
+        "cap_usd": cap_usd,
+        "mode": cap_label,
         "duration_seconds": round(elapsed, 1),
     }
 

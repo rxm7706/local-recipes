@@ -12,6 +12,21 @@
 > the `conda-forge-expert` skill before touching atlas code. Per Rule 2, the
 > effort closes with a CFE-skill retrospective and a `CHANGELOG.md` entry.
 
+> **🛑 Erratum (2026-06-12, v8.14.3 hot-patch).** This spec's cost claims for
+> Phase P (lines 105–111, 134, 245, 437, 743) state "~30 GB scanned per
+> query, within the 1 TB/month free tier". That number is **wrong by
+> ~1000×**. The real per-run scan is **~2.5–4 TB** (~$15–25/run at on-demand
+> $6.25/TB); pre-fix queries occasionally degraded to ~25–45 TB scans
+> (~$170+/run). A 2026-06-12 operator invoice surprise of **$500+** was the
+> trigger to investigate. The v8.14.3 hot-patch adds dry-run preflight +
+> `maximum_bytes_billed` hard cap on the existing single-shot query; the
+> v8.15.0 architectural fix (`docs/specs/atlas-phase-p-incremental.md`)
+> replaces it with an incremental-refresh design that drives steady-state
+> cost below $1/run while preserving full per-package exactness. **Read
+> those two documents** for current behavior. This spec's body below
+> records what shipped in v8.1.0 and is preserved as-is for historical
+> context.
+
 ---
 
 ## Status
