@@ -292,21 +292,63 @@ PHASE_P_USD_PER_TB=7.25 pixi run -e local-recipes bootstrap-data --profile admin
 
 ## Operator runbook
 
-### Routine refresh (monthly)
+### Routine refresh — monthly cadence (recommended default)
+
+Monthly cadence at current table size costs ~$22/refresh, which
+exceeds the $10 default cap. **The default config will dry-run-abort
+without an explicit cap override.** This is the deliberate operator-
+respect default per the user's $10/refresh tolerance — Phase P opts
+out of spending until the operator explicitly approves a higher
+budget. Recommended config:
 
 ```bash
+# Monthly cadence with cap raised to match the empirical cost.
+# The $25 cap gives ~$3 of headroom for table growth between refreshes.
+export PHASE_P_MAX_COST_USD=25
+export PHASE_P_TTL_DAYS=30   # explicit; matches the default
+
 pixi run -e local-recipes bootstrap-data --profile admin
 ```
 
 Admin profile sets `PHASE_P_ENABLED=1`. Phase P:
 1. Detects mode = `incremental` from `pypi_downloads_daily.MAX(download_date)`.
-2. Dry-runs the query for the new days since last refresh.
-3. If estimate ≤ $10, submits real query with `maximum_bytes_billed`.
+2. Dry-runs the query for the new days since last refresh (~30 d).
+3. If estimate ≤ $25, submits real query with `maximum_bytes_billed`.
 4. INSERTs new rows into `pypi_downloads_daily`.
 5. Recomputes `pypi_intelligence.downloads_30d/90d` via local SQL aggregation.
 6. GCs rows older than 95 days.
 
-Typical wall-clock: 30–60 s per refresh.
+Typical wall-clock: 60–120 s per monthly refresh.
+Annual cost: ~$322 (12 × ~$22 refresh + $59 first-pull).
+
+### Routine refresh — weekly cadence (alternative; fits default cap)
+
+If you prefer to keep the $10 default cap unchanged, switch to weekly
+cadence — fits the cap with ~$5/run of headroom:
+
+```bash
+export PHASE_P_TTL_DAYS=7
+pixi run -e local-recipes bootstrap-data --profile admin
+```
+
+Annual cost: ~$338 (52 × ~$5.37 + $59 first-pull). Roughly comparable
+to monthly; primary trade-off is data freshness — weekly's `downloads_30d`
+window is at most 7 days stale; monthly's is at most 30 days stale.
+For `conda_forge_readiness` ranking purposes, either is fine.
+
+### Routine refresh — daily cadence (alternative; cheapest per-run)
+
+Daily cadence costs ~$0.88/run. Fits the $10 default cap with massive
+headroom. Best choice if you want fresh data and don't mind 365 small
+jobs/year:
+
+```bash
+export PHASE_P_TTL_DAYS=1
+pixi run -e local-recipes bootstrap-data --profile admin
+```
+
+Annual cost: ~$380 (365 × ~$0.88 + $59 first-pull). Most expensive
+total but offers a 1-day-stale-max window.
 
 ### Cost-spike investigation
 
