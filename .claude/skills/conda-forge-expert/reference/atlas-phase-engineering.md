@@ -534,6 +534,62 @@ what was originally planned. The CHANGELOG-entry erratum-banner pattern
 (see v8.16.0 entry's `**ERRATUM (v8.16.5):**` line for the canonical
 form) is the recovery mechanism when the at-ship check is skipped.
 
+**(g) `INSERT OR REPLACE` alone doesn't deliver "replace" semantics on
+partial reruns.** A many-to-many breakdown table (e.g.
+`package_platform_downloads` with PK `(conda_name, pkg_platform)`)
+populated via `INSERT OR REPLACE` only touches the (PK) rows present in
+the *current* sweep. If a `(numpy, osx-arm64)` row vanishes from a
+later parquet window — because that platform's downloads dropped to
+zero, because the dataset shape changed, or because the eligible-rows
+set shrank under `PHASE_F_LIMIT` — the prior `osx-arm64` row stays in
+the table as a zombie. The PK-level "replace" only achieves "replace
+existing keys"; it cannot delete keys that disappeared. Spec language
+saying "re-running Phase F replaces, doesn't accumulate" implies
+*scope-level* replacement, which `INSERT OR REPLACE` does NOT deliver.
+**Fix pattern**: `DELETE FROM <table> WHERE <scope_key> IN (<eligible>)`
+before the bulk `INSERT OR REPLACE`, in the same transaction. Chunk the
+DELETE to fit SQLite's 999 host-parameter cap if eligible-set is large
+(canonical: 500-row chunks). v8.18.0's Phase F+ Wave 2 H1 patch is the
+canonical implementation; see `_phase_f_via_s3` in
+`scripts/conda_forge_atlas.py` around the breakdown-table writes. When
+authoring spec Boundaries for many-to-many tables, write **DELETE +
+INSERT**, not "INSERT OR REPLACE keyed on PK" — the latter is a
+mechanism, not the semantic intent.
+
+**(h) Provenance-column value claims in spec Boundaries must be
+verified against the dispatcher's actual write paths.** When a spec
+Boundary says "this column populates when `<source_col> ∈ {A, B}`",
+grep the writers for both values before approving the spec — not the
+column-definition comment. v8.18.0's Wave 2 spec Boundaries claimed
+Wave 2 columns populate when `downloads_source ∈ {'s3-parquet',
+'merged'}`. The reviewer (H4) caught that the Phase F dispatcher
+(`_phase_f_via_auto`) uses `'merged'` only as a *run-summary* label
+returned in the `source` field of the result dict — no per-row write
+in `packages.downloads_source` ever assigns `'merged'`. The spec
+Boundary was based on the v7.6.0 column-DDL comment (which lists three
+allowed values as a static enum), not on the live writer behavior.
+Fix pattern: before signing off Wave-N spec Boundaries that constrain
+on a multi-value column, `grep "<column> *=" scripts/conda_forge_atlas.py`
+and enumerate the actual literals written by the running code.
+Discrepancies become either spec corrections (this case — `'merged'`
+removed from the Wave 2 spec) or code patches (the column-DDL comment
+becomes misleading and needs an erratum).
+
+**(i) Step-04 adversarial review is load-bearing for Phase-F-class
+changes.** The bmad-quick-dev step-04 three-reviewer protocol (blind
+hunter + edge case hunter + acceptance auditor) surfaced 13 patches in
+v8.18.0 — 3 HIGH (stale zombie rows, NULL-overwrite of valid prior
+data, doc/code divergence on `'merged'`), 5 MED (non-atomic migration,
+hidden side-effects in a "read" function, force-refresh + limit
+interaction, regex 3.81 known-limitation, exactly-6-months boundary
+test), and 5 LOW. Without that pass, all 5 H/M HIGHs would have shipped
+silently. For any change that touches schema migration, multi-table
+aggregation, or provenance-column writes, **treat the step-04 pass as a
+required ship gate, not optional polish**. Single-line code changes
+(version bumps, env-var defaults) can skip; anything that adds a column,
+writes to multiple tables in one transaction, or introduces a new
+provenance label must go through the three-reviewer pass.
+
 ---
 
 ## 11. Per-day local cache for rolling-window queries
