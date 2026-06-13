@@ -60,6 +60,14 @@ class TestSkillMdConsistency:
             # (e.g. `tar tzf <sdist> | grep '__init__.py$'` in G7 gotcha) and
             # in package-path illustrations, not as references to repo scripts.
             "__init__.py",
+            # External-file citations — paths inside other packages or wheel
+            # layouts that SKILL.md case studies cite by path (PR #33534
+            # Windows symlink exclusion; PR #33536 NoarchSelectorsV1 lint
+            # tracing). These are not local scripts; they document where a
+            # rule or file lives in conda-smithy / inside a recipe's sdist.
+            "conftest.py",                # PR #33534 sdist Windows symlink
+            "lint_recipe.py",             # conda_smithy/linter v0 path
+            "conda_recipe_v1_linter.py",  # conda_smithy/linter v1 path
         }
 
         referenced = set(re.findall(r"\b([A-Za-z_][A-Za-z0-9_-]*\.py)\b", content))
