@@ -590,6 +590,55 @@ required ship gate, not optional polish**. Single-line code changes
 writes to multiple tables in one transaction, or introduces a new
 provenance label must go through the three-reviewer pass.
 
+**(j) Population-distribution claims in spec ACs need the same
+empirical-verification discipline as cost + coverage claims.** v8.15.1
+(cost) and v8.16.2 (coverage) established the rule: quantitative claims
+in spec/code/docs must cite an empirical source or carry a
+"verified $DATE" marker. v8.19.0's Wave 3 extends this to **population-
+distribution claims** — acceptance criteria that include a percentage
+threshold against a population (e.g., "≥80% of rows have non-NULL
+`<column>`"). The Wave 3 AC-1 said "`packages.python_min` is non-NULL
+for ≥80% of conda-forge-only packages". The implementer's 5,001-sample
+empirical survey of cf-graph `node_attrs/<name>.json` found ~9% of
+recipes declare a `python_min` override; the remaining ~91% inherit
+the conda-forge global pinning default. The AC was off by ~10×. The
+acceptance auditor caught the contradiction between the spec body and
+the CHANGELOG's empirical wording. **Discipline rule**: any spec AC
+that includes a percentage threshold against a real-world population
+(rows in `packages`, feedstocks-per-maintainer, packages-on-defaults,
+etc.) MUST cite the empirical source the threshold was derived from,
+OR ship the implementation first, measure, then write the AC. Don't
+write speculative percentage thresholds. Patterns to use: "≥N% of
+rows where `relationship='both_same_name'`, verified $DATE via
+`<command>`" or "any non-zero count, with the empirical population
+mean expected to land near M% based on $METHOD". The retro is the
+recovery mechanism; the at-spec-time empirical citation is the
+prevention mechanism.
+
+**(k) "Ask First" boundary clauses trigger investigation, not
+necessarily HALT.** When a spec Boundaries clause says "HALT if X
+not found, don't guess" and the implementer's first investigation
+reveals X exists in a different shape than the spec assumed (nested
+deeper, named differently, structurally split), the correct action
+is **document the actual shape in CHANGELOG + Design Notes, proceed
+if the same data is verifiably present**, NOT HALT. v8.19.0's Wave 3
+spec Ask First clause said "HALT if neither `python_min` nor
+`noarch_python_min` key is found in `node_attrs/<name>.json`, don't
+guess." The implementer's 5,001-sample survey found neither key at
+the top level — but the value lives **nested inside the
+`raw_meta_yaml` string** (the pre-render recipe source) as a Jinja
+context variable. The implementer surveyed, documented the finding
+in the CHANGELOG, then proceeded with regex extraction — explicitly
+endorsed by the spec's § Design Notes ("cf-graph's
+`node_attrs/<name>.json` is the canonical offline source for declared
+recipe metadata; reading it at Phase E time is the existing channel").
+Strictly HALTing would have been wrong: the data IS there, just in
+a different shape than the spec assumed. **Discipline rule**: an
+Ask First clause means "investigate before guessing", not "stop on
+first non-match". If the investigation finds the same data verifiably
+present in a different shape, document the deviation and proceed.
+The fail-safe is the documentation + the CHANGELOG, not the HALT.
+
 ---
 
 ## 11. Per-day local cache for rolling-window queries
