@@ -552,18 +552,19 @@ PHASE_P_ENABLED=1 pixi run -e local-recipes \
 pixi run -e local-recipes bootstrap-data --profile admin
 ```
 
-**Cost (v8.14.3 — corrected):** ~2.5–4 TB scanned per run at the
-`file.project` + `_PARTITIONDATE` projection level → ~$15–25/run at
-on-demand pricing of $6.25/TB. The v8.1.0 "~30 GB / within 1 TB free
-tier" claim was off by ~1000× and contributed to a 2026-06-12 invoice
-surprise. Phase P now runs a dry-run preflight before every query and
-respects `PHASE_P_MAX_COST_USD` (default $10 refresh,
-`PHASE_P_MAX_COST_FIRST_PULL_USD` default $100 first-pull) as a hard
-server-side cap (`maximum_bytes_billed`). Default cadence monthly via
-`PHASE_P_TTL_DAYS=30`. See `reference/atlas-phases-overview.md`
-§ Phase P for the full setup walkthrough and
-`docs/specs/atlas-phase-p-incremental.md` for the v8.15.0 incremental
-architecture that drives steady-state cost below $1/run.
+**Cost (verified 2026-06-12 via live dry-run preflight):**
+- 90-day first-pull: ~9.5 TB → ~$59 at $6.25/TB (fits $100 default cap)
+- 30-day monthly refresh: ~3.5 TB → ~$22 (**EXCEEDS $10 default cap** —
+  raise `PHASE_P_MAX_COST_USD=25` or use weekly/daily cadence)
+- 7-day weekly refresh: ~860 GB → ~$5.37 (fits $10 default cap)
+- 1-day daily refresh: ~140 GB → ~$0.88 (fits $10 cap easily)
+
+Default cadence is monthly (`PHASE_P_TTL_DAYS=30`) but the empirical
+cost exceeds the default $10 cap. Choose: (a) weekly cadence
+(`PHASE_P_TTL_DAYS=7`) keeps you under the cap; (b) monthly cadence
+requires `PHASE_P_MAX_COST_USD=25`. See
+`reference/atlas-phase-p-cost-model.md` for the full cost model and
+re-running the dry-run preflight to refresh these numbers.
 
 ### Vulnerability scanning (vuln-db env)
 

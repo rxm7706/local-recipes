@@ -223,15 +223,19 @@ For cron cadence, TTL reset, and recovery playbooks, see
 ## Phase P — BigQuery PyPI downloads (v8.1.0+, opt-in)
 
 - **Data source.** `bigquery-public-data.pypi.file_downloads` — Google's
-  official PyPI analytics dataset. Single project-level aggregation
-  query over the last 90 days. **Cost (v8.14.3 — corrected):** ~2.5–4 TB
-  scanned per run at the `file.project` + `_PARTITIONDATE` projection
-  level → ~$15–25/run at on-demand $6.25/TB. The v8.1.0 docs (and the
-  inherited spec) claimed "~30 GB / within 1 TB free tier" — that figure
-  was off by ~1000× and contributed to a 2026-06-12 invoice surprise.
-  v8.14.3 adds a dry-run preflight and a hard `maximum_bytes_billed`
-  cap (`PHASE_P_MAX_COST_USD` default $10 refresh /
-  `PHASE_P_MAX_COST_FIRST_PULL_USD` default $100 first-pull).
+  official PyPI analytics dataset (~1.14 PB, column-partitioned on
+  `timestamp` with DAY granularity, clustered on `project`).
+  **Cost (verified 2026-06-12 via live dry-run preflight):** 90-day
+  first-pull scans ~9.5 TB → ~$59 at $6.25/TB; 30-day monthly refresh
+  ~3.5 TB → ~$22; 7-day weekly refresh ~860 GB → ~$5.37; 1-day daily
+  refresh ~140 GB → ~$0.88. **Monthly cadence EXCEEDS the $10 default
+  refresh cap** — operators on monthly cadence must raise
+  `PHASE_P_MAX_COST_USD` to ~$25 or use weekly/daily cadence. v8.14.3
+  adds a dry-run preflight and a hard `maximum_bytes_billed` cap;
+  v8.15.2 corrects the SQL that v8.14.3+v8.15.0 shipped broken (used
+  `_PARTITIONDATE` which doesn't exist on this column-partitioned
+  table). See `reference/atlas-phase-p-cost-model.md` for the full
+  verification procedure and re-running instructions.
 - **Purpose.** Populate the only adoption signal `pypi_intelligence`
   has access to. Without Phase P, the `conda_forge_readiness` ranking
   is structural-only (license, requires_python, packaging_shape) and
