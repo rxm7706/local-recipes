@@ -6288,15 +6288,23 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
     `google-cloud-bigquery` library, or BigQuery 4xx → log + skip
     gracefully.
 
-    Cost profile:
-      - first-pull (empty pypi_downloads_daily): ~2.5–4 TB (~$15–25);
-        capped at $100 by PHASE_P_MAX_COST_FIRST_PULL_USD.
-      - incremental refresh (N new days since last run): proportional
-        to N — typically ~$0.30–$2 for monthly cadence; capped at $10
-        by PHASE_P_MAX_COST_USD.
+    Cost profile (verified 2026-06-12 via live dry-run preflight against
+    the 1.14 PB `bigquery-public-data.pypi.file_downloads` table):
+      - first-pull (90 d, empty pypi_downloads_daily): ~9.5 TB scan →
+        ~$59 at $6.25/TB. Capped at $100 by PHASE_P_MAX_COST_FIRST_PULL_USD.
+      - incremental refresh — daily cadence (1 new day):
+        ~140 GB → ~$0.88. Fits the $10 default cap easily.
+      - incremental refresh — weekly cadence (7 new days):
+        ~860 GB → ~$5.37. Fits the $10 default cap.
+      - incremental refresh — monthly cadence (30 new days):
+        ~3.5 TB → ~$21.92. **EXCEEDS the $10 default cap** —
+        operators on monthly cadence must raise PHASE_P_MAX_COST_USD
+        to ~$25 or use weekly/daily cadence.
       - gap > 90 days since last refresh: reverts to first-pull mode +
         prints warning.
       - no new partitions since last run: early no-op (no BQ traffic).
+    Re-run the dry-run preflight from `reference/atlas-phase-p-cost-model.md`
+    to verify these numbers against current table growth.
 
     Tunables:
       - PHASE_P_DISABLED                : "1" to skip
@@ -6392,16 +6400,23 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
     timeout_ms = int(os.environ.get("PHASE_P_JOB_TIMEOUT_MS", "600000"))
     days_in_window = (window_end - window_start).days
 
-    # --- Build query (literal _PARTITIONDATE; one row per pypi_name × day) ---
+    # --- Build query (literal TIMESTAMP bounds on the partition column) ---
+    # `bigquery-public-data.pypi.file_downloads` is partitioned by the
+    # `timestamp` column directly (column-based partitioning, DAY
+    # granularity). The `_PARTITIONDATE` pseudo-column is only valid on
+    # ingestion-time-partitioned tables — using it here raises
+    # `Unrecognized name: _PARTITIONDATE` (verified live 2026-06-12).
+    # The right form is `WHERE timestamp >= TIMESTAMP '...'` with
+    # `DATE(timestamp)` projected for the per-day GROUP BY.
     query = f"""
         SELECT
             REGEXP_REPLACE(LOWER(file.project), r'[-_.]+', '-') AS pypi_name,
-            _PARTITIONDATE AS download_date,
+            DATE(timestamp) AS download_date,
             COUNT(*) AS downloads
         FROM `bigquery-public-data.pypi.file_downloads`
-        WHERE _PARTITIONDATE >= DATE '{window_start.isoformat()}'
-          AND _PARTITIONDATE <  DATE '{window_end.isoformat()}'
-        GROUP BY pypi_name, _PARTITIONDATE
+        WHERE timestamp >= TIMESTAMP '{window_start.isoformat()} 00:00:00 UTC'
+          AND timestamp <  TIMESTAMP '{window_end.isoformat()} 00:00:00 UTC'
+        GROUP BY pypi_name, download_date
     """
 
     # --- Dry-run preflight — free; returns total_bytes_processed ---

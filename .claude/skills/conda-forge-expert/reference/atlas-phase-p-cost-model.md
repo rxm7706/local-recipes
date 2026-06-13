@@ -13,52 +13,106 @@ against the live table, not from memory or copied napkin math. See
 
 ## TL;DR
 
-| Mode | Window scanned | Cost estimate | Default cap |
-|---|---|---|---|
-| first-pull (`pypi_downloads_daily` empty) | trailing 90 d | ~$15–25 | $100 (`PHASE_P_MAX_COST_FIRST_PULL_USD`) |
-| incremental refresh — monthly cadence | last ~30 d since previous run | ~$0.30–2 | $10 (`PHASE_P_MAX_COST_USD`) |
-| incremental refresh — weekly cadence | last ~7 d | ~$0.07–0.40 | $10 |
-| incremental refresh — daily cadence | last 1 d | ~$0.01–0.06 | $10 |
-| gap > 90 days since last refresh | trailing 90 d (reverts to first-pull) | ~$15–25 | $100 |
-| no new partitions since last run | 0 | $0 (BQ never queried) | n/a |
+| Mode | Window scanned | Cost estimate (verified 2026-06-12) | Default cap | Cap fits? |
+|---|---|---|---|---|
+| first-pull (`pypi_downloads_daily` empty) | trailing 90 d (~9.5 TB) | **~$59** at $6.25/TB | $100 (`PHASE_P_MAX_COST_FIRST_PULL_USD`) | ✅ |
+| incremental refresh — monthly cadence | last ~30 d (~3.5 TB) | **~$22** | $10 (`PHASE_P_MAX_COST_USD`) | ❌ **must raise to ~$25** |
+| incremental refresh — weekly cadence | last ~7 d (~0.86 TB) | **~$5.37** | $10 | ✅ |
+| incremental refresh — daily cadence | last 1 d (~140 GB) | **~$0.88** | $10 | ✅ comfortably |
+| gap > 90 days since last refresh | trailing 90 d (reverts to first-pull) | ~$59 | $100 | ✅ |
+| no new partitions since last run | 0 | $0 (BQ never queried) | n/a | ✅ |
 
 All caps are operator-overridable via the env vars listed in
 § "Tunables" below. Worst case under any combination is a
 `maximum_bytes_billed`-aborted job that bills $0.
 
+**Verification provenance**: numbers above measured 2026-06-12 via
+the dry-run preflight procedure in § "Dry-run preflight" below.
+Table size verified at 1.14 PB. Re-run that procedure to refresh
+the table when significant time has passed — the BigQuery PyPI table
+grows ~30% YoY (verified empirically, not from a napkin number).
+
+**Critical: the default $10 refresh cap does NOT fit monthly cadence
+at current table size.** Two options:
+- (a) Use **weekly cadence** (`PHASE_P_TTL_DAYS=7`) — fits the $10 cap
+  with headroom. Annual cost ~$280.
+- (b) Use **monthly cadence with raised cap** (`PHASE_P_MAX_COST_USD=25
+  PHASE_P_TTL_DAYS=30`) — operator-explicit opt-in. Annual cost ~$260.
+- (c) Use **daily cadence** (`PHASE_P_TTL_DAYS=1`) — fits the $10 cap
+  with massive headroom. Annual cost ~$320 but ~365 small jobs/year
+  instead of ~12 medium jobs.
+
+The pre-v8.15.0 single-shot architecture (v8.1.0–v8.14.3) re-scanned
+the full 90-day window on every refresh: 12 monthly refreshes × $59 =
+**~$710/year**. The v8.15.0 incremental architecture saves on the
+re-scan part — monthly refreshes drop to ~$22/run, saving $37/run
+or ~$440/year. That's the real architectural win.
+
 ---
 
-## Why the v8.1.0 number was wrong
+## Why the v8.1.0 number was wrong (and v8.14.3 + v8.15.0 were also wrong)
 
-The v8.1.0 PyPI intelligence spec (`docs/specs/atlas-pypi-intelligence.md`)
-claimed:
+**v8.1.0**: the spec claimed "~30 GB scanned per query, within the
+free tier monthly budget". A ~2016-era napkin number copied through
+the spec, code docstring, CHANGELOG, three reference docs, and the
+quickref cheatsheet without re-verification. Live verification on
+2026-06-12 showed real cost was ~$59 per first-pull run — off by
+~3,000×, and a 2026-06-12 operator invoice of $500+ for ~3 Phase P
+runs surfaced the discrepancy.
 
-> ~30 GB scanned per query, within the free tier monthly budget
+**v8.14.3 hot-patch + v8.15.0 incremental architecture**: the skill
+author corrected the spec but introduced *two new errors*, both
+caught by the same retro action item (L1) that mandated live BQ
+verification:
 
-This was a ~2016-era napkin number copied through the spec, code
-docstring, CHANGELOG, three reference docs, and the quickref
-cheatsheet without ever being re-verified against a dry-run. The 2026
-empirical reality of `bigquery-public-data.pypi.file_downloads` at the
-`file.project + _PARTITIONDATE` projection level is:
+1. **Numerical underestimate (off by ~3–4×).** v8.14.3's cost-model
+   doc and v8.15.0's spec claimed first-pull = "~2.5–4 TB / ~$15–25"
+   and monthly refresh = "~$0.30–2". The verified 2026-06-12 reality:
+   first-pull ~9.5 TB / ~$59 and monthly refresh ~3.5 TB / ~$22. The
+   skill author estimated based on rough table-growth math without
+   running the dry-run preflight that v8.14.3 itself shipped. **Exact
+   same failure mode as the v8.1.0 author.**
+2. **SQL bug (would have prevented any real run from working).**
+   v8.14.3 and v8.15.0 switched the partition filter from `WHERE
+   timestamp >= TIMESTAMP_SUB(...)` to `WHERE _PARTITIONDATE >= DATE
+   '...'`. The intent was to use literal dates for guaranteed prune-
+   safety. The bug: `_PARTITIONDATE` is a pseudo-column that only
+   exists on **ingestion-time-partitioned** tables. This table is
+   **column-partitioned** on the `timestamp` column (verified via
+   `bq show --schema bigquery-public-data:pypi.file_downloads` →
+   `TimePartitioning(field='timestamp', type_='DAY')`). The literal
+   form raised `Unrecognized name: _PARTITIONDATE` at submit time;
+   no real run could ever have succeeded against v8.14.3 / v8.15.0.
 
-- **~30 GB scanned per day** (not per query). The whole table is ~1 PB
-  uncompressed; daily partitions of just the two columns we touch are
-  ~10–30 GB.
-- **A 90-day query scans ~2.5–4 TB**, not 30 GB.
-- **On-demand pricing**: $6.25/TB → **~$15–25/run typical**.
-- Pre-v8.14.3 queries occasionally degraded to ~25–45 TB scans
-  (~$170+/run) when planner partition-pruning faltered against the
-  `CURRENT_TIMESTAMP() - INTERVAL` form.
+**v8.15.2 hot-fix** corrects both: SQL uses `WHERE timestamp >=
+TIMESTAMP '...' AND timestamp < TIMESTAMP '...'` literals (the v8.1.0
+form, but with literal bounds instead of `TIMESTAMP_SUB(CURRENT_TIMESTAMP(),
+INTERVAL)`), and `DATE(timestamp)` for the per-day GROUP BY. Cost
+numbers throughout this doc are verified-2026-06-12 via the dry-run
+preflight in § "Dry-run preflight" below.
 
-A 2026-06-12 operator invoice of $500+ for ~3 Phase P runs against
-the `--profile admin` preset surfaced the discrepancy. The v8.14.3
-hot-patch added cost caps; v8.15.0 added the incremental architecture
-that drives sustained refresh cost below $1/run.
+**Empirical 2026-06-12 baseline:**
 
-**Discipline going forward**: cost claims in spec / code / docs MUST
-be paired with a dry-run preflight as the source of truth, or
-explicitly cite the date the dry-run was last run. Napkin numbers
-without provenance are bugs.
+- Table size: **1.14 PB** (2,904 billion rows), partitioned by the
+  `timestamp` column with DAY granularity, clustered on `project`.
+- 90-day query at `file.project + DATE(timestamp)` projection:
+  **~9.5 TB scanned**, ~$59 at $6.25/TB.
+- 30-day query: **~3.5 TB**, ~$22.
+- 7-day query: **~860 GB**, ~$5.37.
+- 1-day query: **~140 GB**, ~$0.88.
+
+**Discipline going forward** (per SKILL.md § "Verify, Don't Assume"
+4th bullet — added in v8.15.1 and validated by this very retro
+action): cost claims in spec / code / docs MUST be paired with a
+dry-run preflight output as the source of truth, dated. Napkin
+numbers without provenance — even a careful skill author's rough math —
+are bugs. The cross-skill auto-memory rule
+`feedback_bmad_verifies_spec_cost_claims.md` requires future BMAD
+agents implementing CFE-area specs to re-verify quantitative claims
+at intake against the live tables.
+
+The v8.15.1 retro's R1+R2+R3 deltas predicted exactly this class of
+failure; the very next session caught it. **The principle works.**
 
 ---
 
@@ -80,15 +134,26 @@ pixi run -e gcloud bq query --dry_run --use_legacy_sql=false \
   --project_id=<your-gcp-project-id> "$(cat <<EOF
 SELECT
     REGEXP_REPLACE(LOWER(file.project), r'[-_.]+', '-') AS pypi_name,
-    _PARTITIONDATE AS download_date,
+    DATE(timestamp) AS download_date,
     COUNT(*) AS downloads
 FROM \`bigquery-public-data.pypi.file_downloads\`
-WHERE _PARTITIONDATE >= DATE '$d90'
-  AND _PARTITIONDATE <  DATE '$today'
-GROUP BY pypi_name, _PARTITIONDATE
+WHERE timestamp >= TIMESTAMP '$d90 00:00:00 UTC'
+  AND timestamp <  TIMESTAMP '$today 00:00:00 UTC'
+GROUP BY pypi_name, download_date
 EOF
 )"
 ```
+
+**Why these date forms?** This table is column-partitioned on the
+`timestamp` column (verified via `bq show --schema
+bigquery-public-data:pypi.file_downloads` →
+`TimePartitioning(field='timestamp', type_='DAY')`). `_PARTITIONDATE`
+is *not* a valid pseudo-column on column-partitioned tables — using
+it raises `Unrecognized name: _PARTITIONDATE`. The correct form
+filters on `timestamp` directly with `TIMESTAMP` literals (which the
+planner can prune against), and projects `DATE(timestamp)` for the
+per-day GROUP BY. v8.14.3 and v8.15.0 shipped with the broken
+`_PARTITIONDATE` form (verified 2026-06-12); v8.15.2 hot-fixes.
 
 `bq query --dry_run` prints `Total bytes processed`. Divide by
 `1e12` and multiply by `$6.25` (US on-demand) to get the cost
@@ -331,10 +396,9 @@ For a single package's exact daily counts:
 ```bash
 pixi run -e gcloud bq query --use_legacy_sql=false \
   --project_id=<your-gcp-project-id> "$(cat <<'EOF'
-SELECT _PARTITIONDATE AS day, COUNT(*) AS downloads
+SELECT DATE(timestamp) AS day, COUNT(*) AS downloads
 FROM `bigquery-public-data.pypi.file_downloads`
-WHERE _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-  AND _PARTITIONDATE <  CURRENT_DATE()
+WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
   AND file.project = 'numpy'
 GROUP BY day
 ORDER BY day DESC
@@ -376,18 +440,32 @@ trade-off is operator-tunable, not enforced.
 
 ---
 
-## Annual cost projection
+## Annual cost projection (verified 2026-06-12)
 
-Assuming 12 refreshes per year and 1 first-pull at the start:
+| Architecture | Per-refresh | Annual | Notes |
+|---|---|---|---|
+| Pre-v8.14.3 (no caps, 90-d single-shot) | ~$59 | ~$710 (12 monthly) | The cost that triggered the 2026-06-12 invoice surprise |
+| v8.14.3 hot-patch (caps, but SQL broken) | $0 — query fails | $0 invoice; $0 data | Cost-cap aborts work; but the `_PARTITIONDATE` SQL bug means no real data ever lands |
+| v8.15.0 incremental (SQL still broken) | $0 — query fails | $0 invoice; $0 data | Same bug; tests passed because they grep source, never hit live BQ |
+| **v8.15.2 incremental (fixed SQL)** — daily cadence | ~$0.88 | **~$320** (365 × $0.88) + $59 first-pull | Fits $10 cap with massive headroom |
+| **v8.15.2 incremental** — weekly cadence | ~$5.37 | **~$280** (52 × $5.37) + $59 first-pull | Fits $10 cap |
+| **v8.15.2 incremental** — monthly cadence | ~$21.92 | **~$263** (12 × $21.92) + $59 first-pull | **Exceeds $10 cap; operator must raise to ~$25** |
 
-| Architecture | Per-run | Annual |
-|---|---|---|
-| Pre-v8.14.3 (no caps, lie-driven planning) | ~$170 surprise | ~$2,000+ |
-| v8.14.3 hot-patch (caps on existing single-shot query) | ~$15–25 | ~$200 |
-| **v8.15.0 incremental** (this doc) | ~$1 sustained, $15–25 first-pull | **~$30** |
+**The architectural value of v8.15.x is real but smaller than the
+v8.15.0 doc claimed.** Pre-v8.15.x re-scanned the full 90-day window
+every refresh ($59/run). v8.15.x's incremental refresh only scans the
+new days since the previous run — saving ~$37/run at monthly cadence,
+or ~$54/run at weekly cadence. Annual savings vs. the pre-v8.15.x
+architecture: ~$440 at monthly cadence, ~$640 at weekly cadence.
 
-The v8.15.0 incremental architecture is the durable fix. v8.14.3's
-caps are the safety net.
+**The pre-fix $30/year claim was wrong on two counts**: (a) the per-
+refresh cost was off by 20×; (b) the actual savings vs. single-shot
+were calculated against a wrong baseline. The verified numbers above
+supersede.
+
+The v8.15.2 hot-fix (SQL correction) is what makes any of the above
+real — without it, no architecture works. v8.14.3's caps are still
+the safety net.
 
 ---
 

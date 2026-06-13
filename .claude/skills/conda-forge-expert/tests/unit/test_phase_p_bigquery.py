@@ -105,20 +105,32 @@ class TestPhaseP_CostGuardrails:
     dates, dry-run preflight, maximum_bytes_billed hard cap,
     job_timeout_ms wall-clock cap."""
 
-    def test_uses_partition_date_not_timestamp(self, atlas_mod):
-        """The v8.1.0 form used CURRENT_TIMESTAMP() against the `timestamp`
-        column, which occasionally degraded planner pruning. The hot-patch
-        switches to literal _PARTITIONDATE bounds."""
+    def test_query_uses_literal_timestamp_bounds(self, atlas_mod):
+        """v8.15.2 — `bigquery-public-data.pypi.file_downloads` is column-
+        partitioned on the `timestamp` column. `_PARTITIONDATE` is only
+        valid on ingestion-time-partitioned tables — using it here raises
+        `Unrecognized name: _PARTITIONDATE` (verified live 2026-06-12).
+        The correct form filters with literal `timestamp >= TIMESTAMP '...'`
+        bounds; literals (vs. CURRENT_TIMESTAMP()) keep pruning prune-safe
+        against planner mood swings."""
         import inspect
         src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
-        assert "_PARTITIONDATE" in src, (
-            "Phase P query must filter by _PARTITIONDATE for guaranteed pruning"
+        assert "timestamp >= TIMESTAMP '" in src, (
+            "Phase P SQL must filter on the timestamp column with literal "
+            "TIMESTAMP bounds (table is column-partitioned on `timestamp`)"
         )
         # The v8.1.0 SQL form had `TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ... DAY)`.
-        # Reject only that specific SQL pattern so docstrings can still
-        # mention the legacy form as historical context.
+        # Reject only the specific SQL fragment so docstrings can mention the
+        # legacy form as historical context.
         assert "TIMESTAMP_SUB(CURRENT_TIMESTAMP()" not in src, (
             "v8.1.0's TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ...) SQL must not survive"
+        )
+        # v8.14.3 / v8.15.0 shipped a `_PARTITIONDATE`-filtered query that
+        # raised `Unrecognized name: _PARTITIONDATE` against this table.
+        # Reject the broken form so it can't regress.
+        assert "_PARTITIONDATE >=" not in src, (
+            "v8.14.3/v8.15.0's _PARTITIONDATE form does not work against "
+            "this column-partitioned table (verified 2026-06-12); regression"
         )
 
     def test_dry_run_preflight_present(self, atlas_mod):
@@ -224,14 +236,18 @@ class TestPhaseP_IncrementalArchitecture:
     selection (first-pull/incremental/gap-revert/no-op), GC pruning,
     force-first-pull recovery, deprecated tunable warning."""
 
-    def test_query_groups_by_pypi_name_and_partition_date(self, atlas_mod):
-        """v8.15.0 SQL emits per-day per-package rows instead of
-        pre-aggregated 30d/90d sums."""
+    def test_query_groups_by_pypi_name_and_day(self, atlas_mod):
+        """v8.15.2 SQL emits per-day per-package rows. Uses
+        `DATE(timestamp)` as the day column (not `_PARTITIONDATE`,
+        which is invalid on this column-partitioned table)."""
         import inspect
         src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
-        assert "GROUP BY pypi_name, _PARTITIONDATE" in src, (
-            "Phase P v8.15.0 must aggregate per (pypi_name, _PARTITIONDATE), "
-            "not just pypi_name"
+        assert "GROUP BY pypi_name, download_date" in src, (
+            "Phase P v8.15.2 must aggregate per (pypi_name, download_date), "
+            "where download_date is DATE(timestamp)"
+        )
+        assert "DATE(timestamp) AS download_date" in src, (
+            "Per-day grouping uses DATE(timestamp), not _PARTITIONDATE"
         )
 
     def test_inserts_into_pypi_downloads_daily(self, atlas_mod):
