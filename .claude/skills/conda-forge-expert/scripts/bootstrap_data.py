@@ -51,7 +51,9 @@ Per-step timeouts (seconds) can be overridden via env vars
   BOOTSTRAP_MAPPING_CACHE_TIMEOUT  default 300
   BOOTSTRAP_CVE_DB_TIMEOUT         default 600
   BOOTSTRAP_VDB_TIMEOUT            default 3600
-  BOOTSTRAP_CF_ATLAS_TIMEOUT       default 7200  (cold --fresh can take 50+ min)
+  BOOTSTRAP_CF_ATLAS_TIMEOUT       default 14400 (cold --fresh --profile admin
+                                                   can take ~130 min: F~83 +
+                                                   K~30 + N~14 + H~12 + others)
   BOOTSTRAP_PHASE_GP_TIMEOUT       default 3600
   BOOTSTRAP_PHASE_N_TIMEOUT        default 3600
   --status            : print phase_state checkpoint table + per-phase
@@ -90,15 +92,25 @@ DATA_DIR = (
 REPO_ROOT = Path(__file__).resolve().parents[5]
 
 
-# Per-step timeouts (seconds). Defaults sized for cold `--fresh` runs:
-# cf-atlas alone can take 50+ min when Phase F+K+L each spend 20-30 min on
-# network-bound fetches. Override any of these via env var if your environment
-# is faster / slower than typical. Use `0` (or unset) to use the default.
+# Per-step timeouts (seconds). Defaults sized for cold `--fresh --profile admin`
+# runs against the full channel (~33k feedstocks). Override any of these via env
+# var if your environment is faster / slower. Use `0` (or unset) for default.
+#
+# cf_atlas: verified 2026-06-13 against a full --fresh --profile admin refresh.
+# Phase F (anaconda.org per-package downloads, serial ~6 req/s) dominates at
+# ~83 min for ~32k packages. K (GitHub GraphQL VCS versions) ~30 min. N (GitHub
+# live data — CI/issues/PRs across 27k feedstocks) ~14 min if --gh is set.
+# H (PyPI current-version) ~12 min. L/M/B/E/etc. ~5 min combined. Total ~130
+# min cold; 14400s (4h) leaves slack for slower networks. Default was 7200s
+# (2h) through v8.16.5 — operators saw false-negative `✗ cf-atlas-build` when
+# the wrapper timed out before the Python subprocess finished. v8.16.6 bumps
+# the floor. Structural fix (per-phase wrapper invocations) deferred — see
+# session retro in CHANGELOG v8.16.5.
 _DEFAULT_TIMEOUTS: dict[str, int] = {
     "mapping_cache":  300,     # parselmouth refresh — usually <10s
     "cve_db":         600,     # OSV.dev download — usually ~10s
     "vdb":           3600,     # AppThreat refresh — usually 5-10 min, slack for cold
-    "cf_atlas":      7200,     # cold --fresh worst-case: F~25 + K~30 + L~20 + others
+    "cf_atlas":     14400,     # cold --fresh worst-case: F~83 + K~30 + N~14 + H~12 + others
     "phase_gp":      3600,     # per-version vuln scoring — can be 5-30 min
     "phase_n":       3600,     # live GitHub — channel-wide can be 30+ min
 }
