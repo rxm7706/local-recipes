@@ -98,3 +98,122 @@ class TestPhaseP_QueryShape:
         assert "GROUP BY pypi_name" in src
         # PEP 503-canonical pypi_name on the BQ side too
         assert "REGEXP_REPLACE(LOWER(file.project)" in src
+
+
+class TestPhaseP_CostGuardrails:
+    """v8.14.3 hot-patch — partition pruning via _PARTITIONDATE literal
+    dates, dry-run preflight, maximum_bytes_billed hard cap,
+    job_timeout_ms wall-clock cap."""
+
+    def test_uses_partition_date_not_timestamp(self, atlas_mod):
+        """The v8.1.0 form used CURRENT_TIMESTAMP() against the `timestamp`
+        column, which occasionally degraded planner pruning. The hot-patch
+        switches to literal _PARTITIONDATE bounds."""
+        import inspect
+        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        assert "_PARTITIONDATE" in src, (
+            "Phase P query must filter by _PARTITIONDATE for guaranteed pruning"
+        )
+        # The v8.1.0 SQL form had `TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ... DAY)`.
+        # Reject only that specific SQL pattern so docstrings can still
+        # mention the legacy form as historical context.
+        assert "TIMESTAMP_SUB(CURRENT_TIMESTAMP()" not in src, (
+            "v8.1.0's TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ...) SQL must not survive"
+        )
+
+    def test_dry_run_preflight_present(self, atlas_mod):
+        import inspect
+        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        assert "dry_run=True" in src, (
+            "Phase P must dry-run the query first to estimate cost"
+        )
+        assert "total_bytes_processed" in src, (
+            "Dry-run preflight must read total_bytes_processed to compute cost"
+        )
+
+    def test_maximum_bytes_billed_set(self, atlas_mod):
+        import inspect
+        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        assert "maximum_bytes_billed" in src, (
+            "Phase P real query must pass maximum_bytes_billed as a hard "
+            "server-side cap to prevent runaway scans"
+        )
+
+    def test_job_timeout_ms_set(self, atlas_mod):
+        import inspect
+        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        assert "job_timeout_ms" in src, (
+            "Phase P real query must pass job_timeout_ms to prevent zombie "
+            "jobs charging slot time on flat-rate billing accounts"
+        )
+
+    def test_first_pull_and_refresh_caps_distinguished(self, atlas_mod):
+        """First-pull (no prior downloads_fetched_at) uses a wider budget
+        than a refresh — code must read both env vars."""
+        import inspect
+        src = inspect.getsource(atlas_mod.phase_p_pypi_downloads)
+        assert "PHASE_P_MAX_COST_USD" in src
+        assert "PHASE_P_MAX_COST_FIRST_PULL_USD" in src
+        assert "downloads_fetched_at IS NOT NULL" in src, (
+            "First-pull detection must read pypi_intelligence.downloads_fetched_at"
+        )
+
+    def test_dryrun_above_cap_aborts(self, db, atlas_mod, monkeypatch):
+        """When the dry-run estimate exceeds the cap, Phase P returns
+        skipped with cost in the reason — the real query is NOT submitted."""
+        import types
+
+        # Build a mock `google.cloud.bigquery` module surface that returns
+        # a huge dry-run estimate so the cap aborts before the real query.
+        fake_bigquery = types.SimpleNamespace()
+
+        class _FakeJobConfig:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+        fake_bigquery.QueryJobConfig = _FakeJobConfig
+
+        class _FakeDryJob:
+            # 100 TB scanned → ~$625 at default $6.25/TB; blows past $0.01 cap
+            total_bytes_processed = 100 * (10 ** 12)
+
+        real_query_calls = []
+
+        class _FakeClient:
+            def __init__(self, project=None):
+                self.project = project
+
+            def query(self, query, job_config=None):
+                if job_config and getattr(job_config, "kwargs", {}).get("dry_run"):
+                    return _FakeDryJob()
+                # Should NEVER reach here when dry-run aborts
+                real_query_calls.append(query)
+                raise AssertionError(
+                    "real query was submitted after dry-run abort — "
+                    "cap enforcement broken"
+                )
+
+        fake_bigquery.Client = _FakeClient
+
+        fake_cloud = types.ModuleType("google.cloud")
+        fake_cloud.bigquery = fake_bigquery  # type: ignore[attr-defined]
+        fake_google = types.ModuleType("google")
+        fake_google.cloud = fake_cloud  # type: ignore[attr-defined]
+
+        monkeypatch.setitem(sys.modules, "google", fake_google)
+        monkeypatch.setitem(sys.modules, "google.cloud", fake_cloud)
+        monkeypatch.setitem(sys.modules, "google.cloud.bigquery", fake_bigquery)
+
+        monkeypatch.setenv("PHASE_P_ENABLED", "1")
+        monkeypatch.delenv("PHASE_P_DISABLED", raising=False)
+        monkeypatch.setenv("PHASE_P_MAX_COST_USD", "0.01")
+        monkeypatch.setenv("PHASE_P_MAX_COST_FIRST_PULL_USD", "0.01")
+
+        result = atlas_mod.phase_p_pypi_downloads(db)
+
+        assert result.get("skipped") is True
+        assert "exceeds" in result.get("reason", "")
+        assert result.get("estimated_usd") is not None
+        assert result.get("estimated_usd") > 0.01
+        assert real_query_calls == [], (
+            "real query was submitted despite dry-run estimate exceeding cap"
+        )

@@ -224,8 +224,14 @@ For cron cadence, TTL reset, and recovery playbooks, see
 
 - **Data source.** `bigquery-public-data.pypi.file_downloads` — Google's
   official PyPI analytics dataset. Single project-level aggregation
-  query over the last 90 days (~30 GB scanned per run; well within
-  BigQuery free tier's 1 TB/month).
+  query over the last 90 days. **Cost (v8.14.3 — corrected):** ~2.5–4 TB
+  scanned per run at the `file.project` + `_PARTITIONDATE` projection
+  level → ~$15–25/run at on-demand $6.25/TB. The v8.1.0 docs (and the
+  inherited spec) claimed "~30 GB / within 1 TB free tier" — that figure
+  was off by ~1000× and contributed to a 2026-06-12 invoice surprise.
+  v8.14.3 adds a dry-run preflight and a hard `maximum_bytes_billed`
+  cap (`PHASE_P_MAX_COST_USD` default $10 refresh /
+  `PHASE_P_MAX_COST_FIRST_PULL_USD` default $100 first-pull).
 - **Purpose.** Populate the only adoption signal `pypi_intelligence`
   has access to. Without Phase P, the `conda_forge_readiness` ranking
   is structural-only (license, requires_python, packaging_shape) and
@@ -295,11 +301,16 @@ PHASE_P_ENABLED=1 pixi run -e local-recipes \
 pixi run -e local-recipes bootstrap-data --profile admin
 ```
 
-Expected: single query against `bigquery-public-data.pypi.file_downloads`
-scans ~30 GB (within the 1 TB/month BQ free tier), completes in
-~1-2 min, upserts `downloads_30d` + `downloads_90d` into
-`pypi_intelligence` for the ~300k PyPI projects with any download
-activity in the last 90 days.
+Expected: dry-run preflight prints estimated scan + cost (typical
+~2.5–4 TB scan → ~$15–25 at on-demand $6.25/TB); if the estimate is
+below the operator cap (`PHASE_P_MAX_COST_USD` default $10 refresh /
+`PHASE_P_MAX_COST_FIRST_PULL_USD` default $100 first-pull), the real
+query runs with `maximum_bytes_billed` as a hard server-side ceiling.
+Completes in ~1-2 min and upserts `downloads_30d` + `downloads_90d`
+into `pypi_intelligence` for the ~300k PyPI projects with any download
+activity in the last 90 days. See `docs/specs/atlas-phase-p-incremental.md`
+for the v8.15.0 incremental architecture that drives steady-state
+cost below $1/run.
 
 ## Phase Q — Cross-channel presence (v8.1.0+)
 

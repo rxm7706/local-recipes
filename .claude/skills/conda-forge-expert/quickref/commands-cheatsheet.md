@@ -552,10 +552,18 @@ PHASE_P_ENABLED=1 pixi run -e local-recipes \
 pixi run -e local-recipes bootstrap-data --profile admin
 ```
 
-**Cost:** ~30 GB scanned per query; within the 1 TB/month BigQuery
-free tier. Default cadence monthly via `PHASE_P_TTL_DAYS=30`. See
-`reference/atlas-phases-overview.md` § Phase P for the full setup
-walkthrough.
+**Cost (v8.14.3 — corrected):** ~2.5–4 TB scanned per run at the
+`file.project` + `_PARTITIONDATE` projection level → ~$15–25/run at
+on-demand pricing of $6.25/TB. The v8.1.0 "~30 GB / within 1 TB free
+tier" claim was off by ~1000× and contributed to a 2026-06-12 invoice
+surprise. Phase P now runs a dry-run preflight before every query and
+respects `PHASE_P_MAX_COST_USD` (default $10 refresh,
+`PHASE_P_MAX_COST_FIRST_PULL_USD` default $100 first-pull) as a hard
+server-side cap (`maximum_bytes_billed`). Default cadence monthly via
+`PHASE_P_TTL_DAYS=30`. See `reference/atlas-phases-overview.md`
+§ Phase P for the full setup walkthrough and
+`docs/specs/atlas-phase-p-incremental.md` for the v8.15.0 incremental
+architecture that drives steady-state cost below $1/run.
 
 ### Vulnerability scanning (vuln-db env)
 
