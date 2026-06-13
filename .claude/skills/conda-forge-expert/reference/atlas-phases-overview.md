@@ -230,9 +230,26 @@ For cron cadence, TTL reset, and recovery playbooks, see
 - **ClickHouse (default, free).** `pypi.pypi_downloads_per_day` at
   `sql-clickhouse.clickhouse.com/?user=play` — pre-aggregated
   (date, project, count) materialized view mirrored daily from the
-  same BigQuery source. Full 90-day refresh of ~867k projects in
-  ~30 s via 30 hash-bucketed pagination queries (works around the
-  play user's 65k row cap). $0 verified 2026-06-12.
+  same BigQuery source. Single-query top-N (ORDER BY 90-day
+  downloads DESC LIMIT 1,000) in ~2 s; $0 verified 2026-06-12.
+  **Coverage caveat (verify-quantitative-claims, v8.16.2):** the
+  default ships top-1,000 packages, which is ~3.3% of the ~30k
+  `pypi_intelligence` candidate rows. Packages outside top-1,000
+  by 90-day downloads have NULL `downloads_30d`/`downloads_90d`
+  under the default backend — NULL means "not in top-1,000",
+  NOT "zero downloads". `downloads_source = 'clickhouse-clickpy'`
+  is the provenance marker; consumers should check it before
+  acting on missing-data assumptions. The bucket-paginated
+  full-coverage design v8.16.0 originally specified was abandoned
+  during implementation — ClickHouse Play's ~1,000-row aggregated
+  response cap + rate-limit on sustained bursts made full coverage
+  impractical (25+ min wall-clock with 95% retry overhead). For
+  full ~870k-project coverage from a free source, set
+  `PHASE_P_SOURCE=bigquery` and wait for the GCP free-tier
+  monthly quota reset, or accept the ~$22 monthly cost. Note:
+  `pypi_downloads_daily` (schema v26) is **unused** under the
+  ClickHouse default — the table stays at 0 rows; it only
+  populates when `PHASE_P_SOURCE=bigquery`.
 - **BigQuery (opt-in, paid).** `bigquery-public-data.pypi.file_downloads`
   — Google's official PyPI analytics dataset (~1.14 PB,
   column-partitioned on `timestamp` with DAY granularity, clustered
