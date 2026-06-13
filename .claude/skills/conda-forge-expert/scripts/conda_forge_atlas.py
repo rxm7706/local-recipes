@@ -1411,7 +1411,13 @@ def phase_c_parselmouth_join(conn: sqlite3.Connection) -> dict:
     """
     t0 = time.monotonic()
     try:
-        from conda_forge_metadata.autotick_bot.pypi_to_conda import get_pypi_name_mapping
+        # conda-forge-metadata renamed `autotick_bot` → `conda_forge_bot`
+        # in 0.16.x. Try the new path first; fall back to the old one for
+        # operators pinned to older releases.
+        try:
+            from conda_forge_metadata.conda_forge_bot.pypi_to_conda import get_pypi_name_mapping
+        except ImportError:
+            from conda_forge_metadata.autotick_bot.pypi_to_conda import get_pypi_name_mapping
     except ImportError as e:
         raise RuntimeError("conda-forge-metadata required for Phase C") from e
 
