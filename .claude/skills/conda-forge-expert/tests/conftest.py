@@ -212,8 +212,15 @@ def stub_responses(monkeypatch):
 
 @pytest.fixture
 def stub_metadata_api(monkeypatch):
-    """Replace conda_forge_metadata.autotick_bot.pypi_to_conda with a fake."""
-    import conda_forge_metadata.autotick_bot.pypi_to_conda as mod
+    """Replace conda_forge_metadata.{conda_forge_bot,autotick_bot}.pypi_to_conda with a fake.
+
+    conda-forge-metadata 0.16.x renamed `autotick_bot` → `conda_forge_bot`.
+    Try the new path first, fall back to old for operators pinned to older releases.
+    """
+    try:
+        import conda_forge_metadata.conda_forge_bot.pypi_to_conda as mod
+    except ImportError:
+        import conda_forge_metadata.autotick_bot.pypi_to_conda as mod  # type: ignore[import-not-found,no-redef]
 
     fake_mapping = [
         {"pypi_name": "pillow", "conda_name": "pillow", "import_name": "PIL"},

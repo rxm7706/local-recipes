@@ -21,7 +21,13 @@ except ImportError:
     pass
 
 try:
-    from conda_forge_metadata.autotick_bot.pypi_to_conda import map_pypi_to_conda
+    # conda-forge-metadata renamed `autotick_bot` → `conda_forge_bot`
+    # in 0.16.x. Try the new path first; fall back to the old one for
+    # operators pinned to older releases.
+    try:
+        from conda_forge_metadata.conda_forge_bot.pypi_to_conda import map_pypi_to_conda
+    except ImportError:
+        from conda_forge_metadata.autotick_bot.pypi_to_conda import map_pypi_to_conda  # type: ignore[import-not-found,no-redef]
 except ImportError:
     map_pypi_to_conda = None  # type: ignore[assignment]
 
