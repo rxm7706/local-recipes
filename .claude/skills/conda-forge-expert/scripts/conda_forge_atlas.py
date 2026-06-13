@@ -134,7 +134,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 26
+SCHEMA_VERSION = 27
 
 
 def _get_data_dir() -> Path:
@@ -184,6 +184,22 @@ CREATE TABLE IF NOT EXISTS packages (
     downloads_fetch_attempts INTEGER,
     downloads_last_error     TEXT,
     downloads_source         TEXT,
+    -- Per-row attribution: downloads_source ∈ {'anaconda-api', 's3-parquet'}.
+    -- The dispatcher's run-summary label 'merged' (when the auto path mixes
+    -- both sources for a single run) is NEVER written here — per-row
+    -- provenance always reflects the dataset that actually populated the
+    -- row, so consumers can filter on it without ambiguity.
+    -- v27 (v8.18.0) — Phase F+ Wave 2: rolling-window + lifetime month
+    -- signals computed in the same parquet sweep. Populated only on rows
+    -- with downloads_source='s3-parquet' (the per-row tag for the parquet
+    -- path). NULL on API-path rows. downloads_30d/90d at monthly resolution
+    -- (parquet is monthly only); downloads_trend_90d is (cur90 - prev90)/prev90,
+    -- NULL when <6mo of data or when either window is zero, capped at +10.0.
+    downloads_30d            INTEGER,
+    downloads_90d            INTEGER,
+    downloads_trend_90d      REAL,
+    first_nonzero_month      TEXT,
+    last_nonzero_month       TEXT,
     vuln_total                       INTEGER,
     vuln_critical_affecting_current  INTEGER,
     vuln_high_affecting_current      INTEGER,
@@ -494,6 +510,40 @@ CREATE TABLE IF NOT EXISTS pypi_downloads_daily (
 CREATE INDEX IF NOT EXISTS idx_pypi_dl_daily_date ON pypi_downloads_daily(download_date);
 CREATE INDEX IF NOT EXISTS idx_pypi_dl_daily_name ON pypi_downloads_daily(pypi_name);
 
+-- Schema v27 (v8.18.0) — Phase F+ Wave 2 per-dimension download breakdowns.
+-- Produced by `_phase_f_via_s3` on the same parquet sweep that populates
+-- packages.total_downloads. INSERT OR REPLACE keyed on PK so re-running
+-- Phase F replaces, doesn't accumulate. Populated only for rows with
+-- downloads_source='s3-parquet' (the per-row attribution tag; the
+-- dispatcher's 'merged' label is a run-summary value only, NEVER written
+-- to per-row columns). Rows with downloads_source='anaconda-api' have
+-- zero entries here.
+-- Noarch packages appear in package_platform_downloads under the synthetic
+-- 'noarch' platform string (parquet's pkg_platform='' is remapped). Dirty
+-- pkg_python values (e.g. '7.3', '3.81', '2.30' — confirmed via inspection
+-- 2026-05-10) are dropped via regex ^(2\\.7|3\\.[0-9]{1,2})$ at write time.
+CREATE TABLE IF NOT EXISTS package_platform_downloads (
+    conda_name        TEXT NOT NULL,
+    pkg_platform      TEXT NOT NULL,
+    downloads_90d     INTEGER NOT NULL,
+    downloads_total   INTEGER NOT NULL,
+    fetched_at        INTEGER NOT NULL,
+    PRIMARY KEY (conda_name, pkg_platform)
+);
+CREATE INDEX IF NOT EXISTS idx_package_platform_downloads_conda_name
+    ON package_platform_downloads(conda_name);
+
+CREATE TABLE IF NOT EXISTS package_python_downloads (
+    conda_name        TEXT NOT NULL,
+    pkg_python        TEXT NOT NULL,
+    downloads_90d     INTEGER NOT NULL,
+    downloads_total   INTEGER NOT NULL,
+    fetched_at        INTEGER NOT NULL,
+    PRIMARY KEY (conda_name, pkg_python)
+);
+CREATE INDEX IF NOT EXISTS idx_package_python_downloads_conda_name
+    ON package_python_downloads(conda_name);
+
 -- Pre-joined view for the pypi-intelligence CLI / MCP tool. Surfaces
 -- enrichment columns alongside conda_name (NULL = pypi-only candidate).
 CREATE VIEW IF NOT EXISTS v_pypi_candidates AS
@@ -780,6 +830,15 @@ def init_schema(conn: sqlite3.Connection) -> None:
             # v24 also added vuln_total_active + vuln_withdrawn_count here; both
             # dropped in v25 cleanup below (no producer — Wave B withdrawn-filter
             # cancelled + Wave C blint cancelled).
+            # v26 → v27 (v8.18.0 Phase F+ Wave 2): rolling-window + lifetime
+            # month signals on packages. All NULL on pre-v27 rows; populated
+            # by `_phase_f_via_s3` on the next run (kicked one-time by the
+            # `phase_f_force_refresh_pending` meta sentinel set below).
+            ("downloads_30d",                    "ALTER TABLE packages ADD COLUMN downloads_30d INTEGER"),
+            ("downloads_90d",                    "ALTER TABLE packages ADD COLUMN downloads_90d INTEGER"),
+            ("downloads_trend_90d",              "ALTER TABLE packages ADD COLUMN downloads_trend_90d REAL"),
+            ("first_nonzero_month",              "ALTER TABLE packages ADD COLUMN first_nonzero_month TEXT"),
+            ("last_nonzero_month",               "ALTER TABLE packages ADD COLUMN last_nonzero_month TEXT"),
         ):
             if col not in existing_cols:
                 conn.execute(ddl)
@@ -960,6 +1019,51 @@ def init_schema(conn: sqlite3.Connection) -> None:
         # cost below $1/run. All-new IF NOT EXISTS DDL in SCHEMA_DDL — no
         # migration step required here. `packages` and `pypi_intelligence`
         # are not modified.
+
+        # v26 → v27 (v8.18.0 — Phase F+ Wave 2): five new columns on
+        # `packages` (`downloads_30d`, `downloads_90d`,
+        # `downloads_trend_90d`, `first_nonzero_month`,
+        # `last_nonzero_month`) added via the ALTER ladder above. Two new
+        # side tables (`package_platform_downloads`,
+        # `package_python_downloads`) created via IF NOT EXISTS DDL in
+        # SCHEMA_DDL — no migration step required for the tables. All five
+        # column additions are guarded by the existing-cols pragma_table_info
+        # set so the migration is idempotent on already-v27 DBs.
+        #
+        # Force-refresh trigger: write a `meta` row sentinel
+        # `phase_f_force_refresh_pending = '1'` once on a v26 → v27 upgrade
+        # so the next Phase F run bypasses the 7-day TTL and re-aggregates
+        # the cached parquet, populating the new columns + tables without
+        # waiting for natural TTL expiry. `_phase_f_eligible_rows` reads
+        # and clears the sentinel on first consumption. Survives process
+        # restart between migration and Phase F (precedent: meta-table
+        # sentinels like `pypi_last_serial`, `built_at`).
+        try:
+            prior_schema_int = int(prior_schema) if prior_schema else 0
+        except (TypeError, ValueError):
+            prior_schema_int = 0
+        if 0 < prior_schema_int < 27:
+            # M2 fix: wrap the v26 → v27 sentinel write in an explicit
+            # BEGIN IMMEDIATE / COMMIT so the migration step + sentinel
+            # land atomically. The 5 ALTER TABLE entries that bracket
+            # this block are SQLite DDL and each runs in its own implicit
+            # transaction; the sentinel-row meta INSERT is the one
+            # operation we group with an explicit BEGIN so a crash
+            # between the ladder finishing and the sentinel landing
+            # doesn't leave the DB in a half-migrated state (Wave 2
+            # columns present, sentinel missing — operators would wait
+            # for natural TTL expiry instead of seeing populated columns
+            # on first post-migration Phase F run).
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                conn.execute(
+                    "INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
+                    ("phase_f_force_refresh_pending", "1"),
+                )
+                conn.execute("COMMIT")
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -2269,7 +2373,19 @@ def _phase_f_fetch_one(
 
 
 def _phase_f_eligible_rows(conn: sqlite3.Connection) -> tuple[list, int, int, int]:
-    """Resolve the TTL gate + LIMIT cap and return (rows, ttl_days, concurrency, limit)."""
+    """Resolve the TTL gate + LIMIT cap and return (rows, ttl_days, concurrency, limit).
+
+    Force-refresh trigger (v8.18.0 Phase F+ Wave 2): the TTL gate is bypassed
+    when either (a) `PHASE_F_FORCE_REFRESH=1` is set in the env (operator
+    override), or (b) the `meta.phase_f_force_refresh_pending = '1'`
+    sentinel row exists (written by the v26 → v27 migration to populate the
+    new Wave-2 columns + tables on first run after upgrade without waiting
+    for natural TTL expiry). The sentinel is READ here (so it can drive TTL
+    bypass) but NOT deleted — the dispatcher in `phase_f_downloads` clears
+    it once it can confirm work has actually started (M1 fix). This keeps
+    the eligible-rows resolver side-effect-free and avoids the hidden
+    commit + stdout print that previously lived here.
+    """
     ttl_days = int(os.environ.get("PHASE_F_TTL_DAYS", "7"))
     # Default concurrency is 3 (was 8). api.anaconda.org has a soft per-IP
     # secondary rate limit; 8 workers on a 32k-row backfill reliably tripped
@@ -2278,19 +2394,46 @@ def _phase_f_eligible_rows(conn: sqlite3.Connection) -> tuple[list, int, int, in
     # (e.g., authenticated requests, or a JFrog mirror with no rate cap).
     concurrency = max(1, int(os.environ.get("PHASE_F_CONCURRENCY", "3")))
     limit = int(os.environ.get("PHASE_F_LIMIT", "0"))
+
+    force_refresh = os.environ.get("PHASE_F_FORCE_REFRESH") == "1"
+    if not force_refresh:
+        meta_row = conn.execute(
+            "SELECT value FROM meta WHERE key = 'phase_f_force_refresh_pending'"
+        ).fetchone()
+        if meta_row and meta_row[0] == "1":
+            force_refresh = True
+            # Sentinel READ only — the dispatcher (`phase_f_downloads`)
+            # is responsible for deleting + committing it after the work
+            # has at least started. Keeping the read-only contract here
+            # avoids the hidden commit + stdout print side effect (M1).
+
     cutoff = int(time.time()) - ttl_days * 86400
 
     # Reads from v_actionable_packages (schema v21+) — encodes the
     # canonical persona-filter triplet (conda_name + active + !archived).
-    sql = (
-        "SELECT DISTINCT conda_name, latest_conda_version "
-        "FROM v_actionable_packages "
-        "WHERE COALESCE(downloads_fetched_at, 0) < ?"
-    )
-    params: tuple = (cutoff,)
-    if limit > 0:
-        sql += " LIMIT ?"
-        params = (cutoff, limit)
+    if force_refresh:
+        # TTL bypass — match every actionable row regardless of
+        # downloads_fetched_at. Used post-v26→v27 migration to populate
+        # Wave 2 columns immediately, and via PHASE_F_FORCE_REFRESH=1
+        # for operator-initiated reruns.
+        sql = (
+            "SELECT DISTINCT conda_name, latest_conda_version "
+            "FROM v_actionable_packages"
+        )
+        params: tuple = ()
+        if limit > 0:
+            sql += " LIMIT ?"
+            params = (limit,)
+    else:
+        sql = (
+            "SELECT DISTINCT conda_name, latest_conda_version "
+            "FROM v_actionable_packages "
+            "WHERE COALESCE(downloads_fetched_at, 0) < ?"
+        )
+        params = (cutoff,)
+        if limit > 0:
+            sql += " LIMIT ?"
+            params = (cutoff, limit)
     rows = list(conn.execute(sql, params))
     return rows, ttl_days, concurrency, limit
 
@@ -2508,6 +2651,7 @@ def _phase_f_via_s3(
     """
     sys.path.insert(0, str(Path(__file__).parent))
     import _parquet_cache  # type: ignore[import-not-found]
+    import pyarrow as pa
     import pyarrow.compute as pc
 
     t0 = time.monotonic()
@@ -2574,6 +2718,172 @@ def _phase_f_via_s3(
             continue
         per_version.setdefault(pkg, {})[ver] = int(sum_v[i] or 0)
 
+    # ── Wave 2 (v8.18.0) — three additional pyarrow group-bys on the same
+    #    loaded Table; no extra network. Compute:
+    #     (a) per-(pkg_name, time) totals → derive rolling 30d/90d, trend
+    #         slope, first/last nonzero month per package.
+    #     (b) per-(pkg_name, pkg_platform) → totals + 90d for the
+    #         package_platform_downloads breakdown table. Empty platform
+    #         strings are remapped to synthetic 'noarch'.
+    #     (c) per-(pkg_name, pkg_python) → totals + 90d for the
+    #         package_python_downloads breakdown table. pkg_python values
+    #         are pre-filtered through the regex ^(2\.7|3\.[0-9]{1,2})$
+    #         documented below to drop dirty parquet data (e.g. '7.3',
+    #         '3.81', '2.30' — confirmed via inspection 2026-05-10).
+
+    # Months loaded in this parquet sweep, sorted ascending. Used to
+    # pick the trailing 1 month for 30d, 3 months for 90d, months 4-6 for
+    # the prior-90d window. We use the loaded-month list (not the union
+    # of months observed per package) so a package that was dormant for
+    # part of the window still gets a correct rolling window — its
+    # absent months count as zero downloads, not as missing rank slots.
+    months_present = sorted(set(months))
+
+    # Aggregate 3: per-(pkg_name, time) cells, including zero counts so
+    # first_nonzero/last_nonzero can be computed by filtering. counts is
+    # always >=0 in the parquet; we use nz_table for the nonzero-month
+    # detection and the full table for rolling totals.
+    by_pkg_time_nz = nz_table.group_by(["pkg_name", "time"]).aggregate([
+        ("counts", "sum"),
+    ])
+    pkg_t = by_pkg_time_nz["pkg_name"].to_pylist()
+    time_t = by_pkg_time_nz["time"].to_pylist()
+    sum_t = by_pkg_time_nz["counts_sum"].to_pylist()
+    per_pkg_month: dict[str, dict[str, int]] = {}
+    for i, pkg in enumerate(pkg_t):
+        m = time_t[i]
+        if not pkg or not m:
+            continue
+        per_pkg_month.setdefault(pkg, {})[m] = int(sum_t[i] or 0)
+
+    # Build rolling-window + lifetime-months signals per package.
+    rolling_30d: dict[str, int] = {}
+    rolling_90d: dict[str, int] = {}
+    trend_90d: dict[str, float | None] = {}
+    first_nz: dict[str, str] = {}
+    last_nz: dict[str, str] = {}
+    for pkg, mmap in per_pkg_month.items():
+        # mmap is {month: counts} where counts > 0 only (from nz_table).
+        nz_months = sorted(mmap.keys())
+        if not nz_months:
+            continue
+        first_nz[pkg] = nz_months[0]
+        last_nz[pkg] = nz_months[-1]
+        # Rolling windows anchored on the months observed in this sweep.
+        # downloads_30d == single most-recent month (parquet is monthly).
+        # downloads_90d == sum of last 3 months in months_present (not
+        # nz_months — a package that went dormant 2 months ago should see
+        # a 90d total dominated by its current zeros).
+        if months_present:
+            last3 = months_present[-3:]
+            prev3 = months_present[-6:-3] if len(months_present) >= 6 else []
+            cur30 = mmap.get(months_present[-1], 0)
+            cur90 = sum(mmap.get(m, 0) for m in last3)
+            prev90 = sum(mmap.get(m, 0) for m in prev3) if prev3 else 0
+            rolling_30d[pkg] = int(cur30)
+            rolling_90d[pkg] = int(cur90)
+            # Trend slope: (cur90 - prev90) / prev90. NULL when fewer than
+            # 6 months of data OR prev90 == 0 (div-by-zero guard). Capped
+            # at +10.0 to dampen new-package outliers; floor at -1.0
+            # implicit (downloads can't go negative).
+            if len(months_present) < 6 or prev90 == 0 or cur90 == 0:
+                trend_90d[pkg] = None
+            else:
+                slope = (cur90 - prev90) / prev90
+                if slope > 10.0:
+                    slope = 10.0
+                trend_90d[pkg] = float(slope)
+        else:
+            rolling_30d[pkg] = 0
+            rolling_90d[pkg] = 0
+            trend_90d[pkg] = None
+
+    # Last-3-months window for the 90d aggregates.
+    last3_set = set(months_present[-3:]) if months_present else set()
+    if last3_set:
+        last3_array = pa.array(list(last3_set), type=pa.string())
+        # pyarrow.compute.is_in exists at runtime but isn't in the type stubs.
+        win_table = table.filter(pc.is_in(pc.field("time"), value_set=last3_array))  # type: ignore[attr-defined]
+    else:
+        win_table = None
+
+    # Aggregate 4: per-(pkg_name, pkg_platform) → totals + 90d windows.
+    # Remap pkg_platform='' → synthetic 'noarch' AFTER the group-by in
+    # Python-side: pyarrow's empty-string handling at group_by varies
+    # across versions, but the cardinality at this step is small (~packages
+    # × ~platforms), so the loop cost is negligible.
+    by_plat_total = table.group_by(["pkg_name", "pkg_platform"]).aggregate([
+        ("counts", "sum"),
+    ])
+    by_plat_90d = win_table.group_by(["pkg_name", "pkg_platform"]).aggregate([
+        ("counts", "sum"),
+    ]) if win_table is not None else None
+
+    plat_total_map: dict[tuple[str, str], int] = {}
+    plat_pkg = by_plat_total["pkg_name"].to_pylist()
+    plat_name = by_plat_total["pkg_platform"].to_pylist()
+    plat_sum = by_plat_total["counts_sum"].to_pylist()
+    for i, p in enumerate(plat_pkg):
+        if not p:
+            continue
+        # pkg_platform='' (noarch) → synthetic 'noarch' for clarity in
+        # consumer queries; pkg_platform=NULL also normalized to 'noarch'.
+        plat = plat_name[i] if plat_name[i] else "noarch"
+        key = (p, plat)
+        # Aggregate manually since two raw labels ('' and NULL) may
+        # collapse to the same synthetic 'noarch' after normalization.
+        plat_total_map[key] = plat_total_map.get(key, 0) + int(plat_sum[i] or 0)
+
+    plat_90d_map: dict[tuple[str, str], int] = {}
+    if by_plat_90d is not None:
+        plat_pkg_w = by_plat_90d["pkg_name"].to_pylist()
+        plat_name_w = by_plat_90d["pkg_platform"].to_pylist()
+        plat_sum_w = by_plat_90d["counts_sum"].to_pylist()
+        for i, p in enumerate(plat_pkg_w):
+            if not p:
+                continue
+            plat = plat_name_w[i] if plat_name_w[i] else "noarch"
+            key = (p, plat)
+            plat_90d_map[key] = plat_90d_map.get(key, 0) + int(plat_sum_w[i] or 0)
+
+    # Aggregate 5: per-(pkg_name, pkg_python) → totals + 90d windows.
+    # Filter pkg_python through ^(2\.7|3\.[0-9]{1,2})$ at write time to
+    # drop dirty parquet values (confirmed 2026-05-10: '7.3', '3.81',
+    # '2.30' etc. appear in raw parquet); per-row filtering keeps the
+    # rest of the aggregation cheap.
+    py_regex = re.compile(r"^(2\.7|3\.[0-9]{1,2})$")
+    by_py_total = table.group_by(["pkg_name", "pkg_python"]).aggregate([
+        ("counts", "sum"),
+    ])
+    by_py_90d = win_table.group_by(["pkg_name", "pkg_python"]).aggregate([
+        ("counts", "sum"),
+    ]) if win_table is not None else None
+
+    py_total_map: dict[tuple[str, str], int] = {}
+    py_pkg = by_py_total["pkg_name"].to_pylist()
+    py_name = by_py_total["pkg_python"].to_pylist()
+    py_sum = by_py_total["counts_sum"].to_pylist()
+    for i, p in enumerate(py_pkg):
+        if not p:
+            continue
+        py = py_name[i]
+        if not py or not py_regex.match(py):
+            continue
+        py_total_map[(p, py)] = int(py_sum[i] or 0)
+
+    py_90d_map: dict[tuple[str, str], int] = {}
+    if by_py_90d is not None:
+        py_pkg_w = by_py_90d["pkg_name"].to_pylist()
+        py_name_w = by_py_90d["pkg_python"].to_pylist()
+        py_sum_w = by_py_90d["counts_sum"].to_pylist()
+        for i, p in enumerate(py_pkg_w):
+            if not p:
+                continue
+            py = py_name_w[i]
+            if not py or not py_regex.match(py):
+                continue
+            py_90d_map[(p, py)] = int(py_sum_w[i] or 0)
+
     fetched = 0
     not_found = 0
     completed = 0
@@ -2583,9 +2893,22 @@ def _phase_f_via_s3(
     for name in eligible_names:
         total = totals.get(name)
         latest = latest_version_by_name.get(name)
+        # Wave 2 (v8.18.0): rolling-window + lifetime-months signals.
+        # NULL when the package had no nonzero parquet rows (covered by
+        # the `total is None` branch below — leaves the columns NULL).
+        d30 = rolling_30d.get(name)
+        d90 = rolling_90d.get(name)
+        t90 = trend_90d.get(name)
+        fnz = first_nz.get(name)
+        lnz = last_nz.get(name)
         if total is None:
             # Package had no rows in the parquet sweep. Leave any prior
             # downloads_last_error in place (don't mask a real error with NULL).
+            # H3 fix: do NOT NULL-clobber Wave 2 columns here — a row that
+            # was populated by a prior valid sweep but happens to fall out
+            # of the current sweep's filter window should keep the prior
+            # values intact (best-available signal). Only the s3-parquet
+            # "bookkeeping" columns are updated.
             conn.execute(
                 "UPDATE packages SET total_downloads = 0, "
                 "latest_version_downloads = 0, downloads_fetched_at = ?, "
@@ -2602,9 +2925,12 @@ def _phase_f_via_s3(
                 "latest_version_downloads = ?, downloads_fetched_at = ?, "
                 "downloads_fetch_attempts = COALESCE(downloads_fetch_attempts, 0) + 1, "
                 "downloads_last_error = NULL, "
-                "downloads_source = 's3-parquet' "
+                "downloads_source = 's3-parquet', "
+                "downloads_30d = ?, downloads_90d = ?, "
+                "downloads_trend_90d = ?, "
+                "first_nonzero_month = ?, last_nonzero_month = ? "
                 "WHERE conda_name = ?",
-                (total, latest_dl, now, name),
+                (total, latest_dl, now, d30, d90, t90, fnz, lnz, name),
             )
             # UPSERT preserves upload_unix/file_count from any prior API
             # write — S3 has neither column. Without this, an auto-mode run
@@ -2625,6 +2951,59 @@ def _phase_f_via_s3(
         completed += 1
         if completed % commit_every == 0:
             conn.commit()
+
+    # Wave 2 (v8.18.0): bulk-write per-platform + per-python breakdowns in
+    # one BEGIN/COMMIT after the main row loop. INSERT OR REPLACE keyed on
+    # PK so re-running Phase F replaces, doesn't accumulate. Scope: only
+    # write rows whose conda_name is in eligible_names (avoid writing
+    # rows for packages outside the current run's eligible set on a
+    # partial run).
+    # H1 fix: prevents stale rows when a platform/python version vanishes
+    # from a later sweep (INSERT OR REPLACE alone only refreshes keys
+    # observed in the current run; DELETE FROM ... WHERE conda_name IN
+    # the eligible set wipes any prior (platform/python) entries that
+    # no longer appear, so the breakdown table reflects the latest sweep).
+    eligible_list = list(eligible_names)
+    # Chunk by SQLite's 999-host-parameter limit (use 500 for headroom).
+    chunk_size = 500
+    for i in range(0, len(eligible_list), chunk_size):
+        chunk = eligible_list[i:i + chunk_size]
+        placeholders = ",".join("?" * len(chunk))
+        conn.execute(
+            f"DELETE FROM package_platform_downloads "
+            f"WHERE conda_name IN ({placeholders})",
+            chunk,
+        )
+        conn.execute(
+            f"DELETE FROM package_python_downloads "
+            f"WHERE conda_name IN ({placeholders})",
+            chunk,
+        )
+
+    plat_rows = [
+        (pkg, plat, plat_90d_map.get((pkg, plat), 0), total_v, now)
+        for (pkg, plat), total_v in plat_total_map.items()
+        if pkg in eligible_names
+    ]
+    py_rows = [
+        (pkg, py, py_90d_map.get((pkg, py), 0), total_v, now)
+        for (pkg, py), total_v in py_total_map.items()
+        if pkg in eligible_names
+    ]
+    if plat_rows:
+        conn.executemany(
+            "INSERT OR REPLACE INTO package_platform_downloads "
+            "(conda_name, pkg_platform, downloads_90d, downloads_total, fetched_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            plat_rows,
+        )
+    if py_rows:
+        conn.executemany(
+            "INSERT OR REPLACE INTO package_python_downloads "
+            "(conda_name, pkg_python, downloads_90d, downloads_total, fetched_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            py_rows,
+        )
 
     conn.commit()
     elapsed = time.monotonic() - t0
@@ -2741,14 +3120,46 @@ def phase_f_downloads(conn: sqlite3.Connection) -> dict:
 
     source = os.environ.get("PHASE_F_SOURCE", "auto").lower()
     if source == "anaconda-api":
-        return _phase_f_via_api(conn)
-    if source == "s3-parquet":
-        return _phase_f_via_s3(conn)
-    if source == "auto":
-        return _phase_f_via_auto(conn)
-    raise ValueError(
-        f"PHASE_F_SOURCE={source!r} is not one of auto, anaconda-api, s3-parquet"
-    )
+        result = _phase_f_via_api(conn)
+    elif source == "s3-parquet":
+        result = _phase_f_via_s3(conn)
+    elif source == "auto":
+        result = _phase_f_via_auto(conn)
+    else:
+        raise ValueError(
+            f"PHASE_F_SOURCE={source!r} is not one of auto, anaconda-api, s3-parquet"
+        )
+
+    # M1 + M3 fix: sentinel-consume is dispatcher-owned.
+    # After the work has started (i.e., a phase-runner returned), clear the
+    # meta sentinel so subsequent runs return to normal TTL behavior. But
+    # if PHASE_F_LIMIT is positive the run only refreshed a debug-capped
+    # subset; preserve the sentinel so the next unconstrained run still
+    # bypasses TTL and finishes populating Wave 2 columns.
+    try:
+        limit_for_sentinel = int(os.environ.get("PHASE_F_LIMIT", "0"))
+    except ValueError:
+        limit_for_sentinel = 0
+    sentinel_row = conn.execute(
+        "SELECT value FROM meta WHERE key = 'phase_f_force_refresh_pending'"
+    ).fetchone()
+    if sentinel_row and sentinel_row[0] == "1":
+        if limit_for_sentinel > 0:
+            print(
+                "  Phase F: PHASE_F_LIMIT set; force-refresh sentinel "
+                "preserved for next run"
+            )
+        else:
+            conn.execute(
+                "DELETE FROM meta WHERE key = 'phase_f_force_refresh_pending'"
+            )
+            conn.commit()
+            print(
+                "  Phase F: force-refresh sentinel consumed "
+                "(post-migration trigger)"
+            )
+
+    return result
 
 
 def _load_kev_cves(conn: sqlite3.Connection) -> set[str]:

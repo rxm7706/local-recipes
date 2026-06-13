@@ -78,8 +78,12 @@ class TestSchemaV26Migration:
         pk_cols = sorted([r["name"] for r in rows if r["pk"] > 0])
         assert pk_cols == ["download_date", "pypi_name"]
 
-    def test_schema_version_is_26(self, atlas_mod):
-        assert atlas_mod.SCHEMA_VERSION == 26
+    def test_schema_version_is_at_least_26(self, atlas_mod):
+        # v26 added pypi_downloads_daily. Forward-compat: later versions
+        # keep the table; this test guards that the constant stays >= 26
+        # (a regression below the v26 floor would silently break
+        # consumers of pypi_downloads_daily).
+        assert atlas_mod.SCHEMA_VERSION >= 26
 
     def test_re_init_is_idempotent(self, db, atlas_mod):
         """init_schema can run twice on the same DB without error."""
@@ -91,12 +95,18 @@ class TestSchemaV26Migration:
             "WHERE type='table' AND name='pypi_downloads_daily'"
         ).fetchone()[0] == 1
 
-    def test_meta_records_schema_version_26(self, db):
+    def test_meta_records_schema_version_at_least_26(self, db, atlas_mod):
+        # L5 fix: clamp to the band [26, current SCHEMA_VERSION] so a
+        # forward-compat run stays valid AND an accidental constant
+        # regression (e.g. a typo dropping SCHEMA_VERSION below 26 or
+        # ahead of the constant) trips this guard. The upper bound is
+        # the module's current SCHEMA_VERSION — bumped each ship.
         row = db.execute(
             "SELECT value FROM meta WHERE key='schema_version'"
         ).fetchone()
         assert row is not None
-        assert row[0] == "26"
+        v = int(row[0])
+        assert 26 <= v <= atlas_mod.SCHEMA_VERSION
 
 
 class TestInsertOrIgnoreIdempotency:
