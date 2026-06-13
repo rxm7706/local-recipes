@@ -1444,6 +1444,10 @@ ATLAS_DETAIL_CF_ATLAS      = SCRIPTS_DIR / "detail_cf_atlas.py"
 ATLAS_PYPI_ONLY_CANDIDATES = SCRIPTS_DIR / "pypi_only_candidates.py"
 ATLAS_PYPI_INTELLIGENCE = SCRIPTS_DIR / "pypi_intelligence.py"
 ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
+# v8.19.0 Phase F+ Wave 3 — per-platform / per-Python / per-channel breakdowns.
+ATLAS_PLATFORM_BREAKDOWN   = SCRIPTS_DIR / "platform_breakdown.py"
+ATLAS_PYVER_BREAKDOWN      = SCRIPTS_DIR / "pyver_breakdown.py"
+ATLAS_CHANNEL_SPLIT        = SCRIPTS_DIR / "channel_split.py"
 
 
 @mcp.tool()
@@ -1476,6 +1480,108 @@ def staleness_report(
     if include_archived:
         args.append("--all-status")
     return json.dumps(_run_script(ATLAS_STALENESS_SCRIPT, args), indent=2)
+
+
+@mcp.tool()
+def platform_breakdown(
+    package: str | None = None,
+    top: int | None = None,
+    platform: str | None = None,
+    feedstock_roundup: bool = False,
+    maintainer: str | None = None,
+) -> str:
+    """Per-platform conda-forge download breakdown from cf_atlas Phase F+ Wave 2.
+
+    Three modes (one per call):
+      - Single package: pass `package` only.
+      - Top-N by platform: pass `top` + `platform` (ranks packages by absolute
+        90d downloads on that platform).
+      - Feedstock roundup: pass `feedstock_roundup=True` + `maintainer` to see
+        a maintainer's per-feedstock platform shares.
+
+    Returns JSON list. Read-only — reads `package_platform_downloads` (schema
+    v27+) from cf_atlas.db; offline.
+    """
+    args = ["--format", "json"]
+    if feedstock_roundup:
+        args.append("--feedstock-roundup")
+        if maintainer:
+            args.extend(["--maintainer", maintainer])
+    elif top is not None:
+        args.extend(["--top", str(top)])
+        if platform:
+            args.extend(["--platform", platform])
+    elif package:
+        args.append(package)
+    return json.dumps(_run_script(ATLAS_PLATFORM_BREAKDOWN, args), indent=2)
+
+
+@mcp.tool()
+def pyver_breakdown(
+    package: str | None = None,
+    policy_check: bool = False,
+    maintainer: str | None = None,
+    threshold_pct: float = 2.0,
+) -> str:
+    """Per-Python conda-forge download breakdown + python_min policy check.
+
+    Single package: pass `package` for the per-Python distribution + empirical
+    floor footer. Policy check: `policy_check=True` (optionally with
+    `package` and/or `maintainer`) joins `packages.python_min` (declared
+    floor written by Phase E) against the empirical floor (smallest Python
+    with >=`threshold_pct`% of 90d downloads) and flags rows as bump-safe /
+    aligned / aggressive / unknown / stale. Sort order: bump-safe first.
+
+    Returns JSON list. Read-only — reads `package_python_downloads` +
+    `packages.python_min` (schema v28); offline.
+    """
+    args = ["--format", "json", "--threshold-pct", str(threshold_pct)]
+    if policy_check:
+        args.append("--policy-check")
+    if maintainer:
+        args.extend(["--maintainer", maintainer])
+    if package:
+        args.append(package)
+    return json.dumps(_run_script(ATLAS_PYVER_BREAKDOWN, args), indent=2)
+
+
+@mcp.tool()
+def channel_split(
+    package: str | None = None,
+    defaults_share_min: float | None = None,
+    top: int = 50,
+    migration_checklist: bool = False,
+    maintainer: str | None = None,
+) -> str:
+    """Per-channel conda-forge download breakdown from cf_atlas Phase F+ Wave 3.
+
+    Single package: pass `package` to see how downloads split across
+    `conda-forge` / `defaults` / `bioconda` / `pytorch` / etc. Defaults-share
+    filter: `defaults_share_min` floor + `top` cap (ranked by absolute
+    defaults 90d downloads — high-volume defaults users are the migration
+    candidates). Migration checklist: `migration_checklist=True` +
+    `maintainer` emits markdown checkbox lines suitable for paste into a
+    GitHub issue.
+
+    Returns JSON list. Read-only — reads `package_channel_downloads`
+    (schema v28); offline.
+    """
+    args = ["--format", "json"]
+    if migration_checklist:
+        args.append("--migration-checklist")
+        if maintainer:
+            args.extend(["--maintainer", maintainer])
+        if defaults_share_min is not None:
+            args.extend(["--defaults-share-min", str(defaults_share_min)])
+        args.extend(["--top", str(top)])
+    elif defaults_share_min is not None:
+        args.extend(["--defaults-share-min", str(defaults_share_min)])
+        args.extend(["--top", str(top)])
+        if maintainer:
+            args.extend(["--maintainer", maintainer])
+    elif package:
+        args.append(package)
+    return json.dumps(_run_script(ATLAS_CHANNEL_SPLIT, args), indent=2)
 
 
 @mcp.tool()

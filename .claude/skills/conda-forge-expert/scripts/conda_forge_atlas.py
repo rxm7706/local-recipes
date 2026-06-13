@@ -134,7 +134,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 27
+SCHEMA_VERSION = 28
 
 
 def _get_data_dir() -> Path:
@@ -200,6 +200,17 @@ CREATE TABLE IF NOT EXISTS packages (
     downloads_trend_90d      REAL,
     first_nonzero_month      TEXT,
     last_nonzero_month       TEXT,
+    -- v28 (v8.19.0) — Phase F+ Wave 3: declared `python_min` from the recipe.
+    -- Single-writer contract: Phase E owns this column; Phase F never touches
+    -- it. Source: cf-graph `node_attrs/<name>.json` → `raw_meta_yaml`. v1
+    -- recipes (schema_version: 1) declare python_min in their `context:` block
+    -- as e.g. `python_min: "3.11"`; v0 recipes use Jinja `{% set python_min =
+    -- "3.11" %}`. Both are recipe-author overrides of the conda-forge-pinning
+    -- default — recipes at the global floor leave the value unset, in which
+    -- case this column stays NULL (consumers compare against the pinning
+    -- default explicitly, not against NULL). Surfaced by `pyver_breakdown
+    -- --policy-check` to flag bump-safe candidates.
+    python_min               TEXT,
     vuln_total                       INTEGER,
     vuln_critical_affecting_current  INTEGER,
     vuln_high_affecting_current      INTEGER,
@@ -544,6 +555,29 @@ CREATE TABLE IF NOT EXISTS package_python_downloads (
 CREATE INDEX IF NOT EXISTS idx_package_python_downloads_conda_name
     ON package_python_downloads(conda_name);
 
+-- Schema v28 (v8.19.0) — Phase F+ Wave 3 per-channel download breakdown.
+-- Produced by `_phase_f_via_s3` on the same parquet sweep as the Wave 2
+-- breakdowns, but reading WITHOUT the `data_source='conda-forge'` filter so
+-- the channel cuts include `defaults` / `bioconda` / `pytorch` / `nvidia`
+-- / etc. — i.e. every channel the parquet ships for each package. PK is
+-- (conda_name, data_source); raw channel strings are written as-is (no
+-- channel-name normalization — consumers see exactly what the parquet has).
+-- Re-runs use the same DELETE-by-scope-key + INSERT OR REPLACE chunked
+-- discipline as Wave 2 so stale-channel zombies don't accumulate when a
+-- channel's downloads drop to zero between sweeps. Populated only for rows
+-- with `downloads_source='s3-parquet'`; the API-path fallback never touches
+-- this table (NG4 in `docs/specs/atlas-phase-f-wave3-cli-surface.md`).
+CREATE TABLE IF NOT EXISTS package_channel_downloads (
+    conda_name        TEXT NOT NULL,
+    data_source       TEXT NOT NULL,
+    downloads_90d     INTEGER NOT NULL,
+    downloads_total   INTEGER NOT NULL,
+    fetched_at        INTEGER NOT NULL,
+    PRIMARY KEY (conda_name, data_source)
+);
+CREATE INDEX IF NOT EXISTS idx_package_channel_downloads_conda_name
+    ON package_channel_downloads(conda_name);
+
 -- Pre-joined view for the pypi-intelligence CLI / MCP tool. Surfaces
 -- enrichment columns alongside conda_name (NULL = pypi-only candidate).
 CREATE VIEW IF NOT EXISTS v_pypi_candidates AS
@@ -839,6 +873,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
             ("downloads_trend_90d",              "ALTER TABLE packages ADD COLUMN downloads_trend_90d REAL"),
             ("first_nonzero_month",              "ALTER TABLE packages ADD COLUMN first_nonzero_month TEXT"),
             ("last_nonzero_month",               "ALTER TABLE packages ADD COLUMN last_nonzero_month TEXT"),
+            # v27 → v28 (v8.19.0 Phase F+ Wave 3): declared `python_min` from
+            # cf-graph node_attrs raw_meta_yaml. NULL on pre-v28 rows; Phase E
+            # populates after the migration's force-refresh sentinel kicks the
+            # next admin/cron pass. Single-writer contract: Phase E owns;
+            # Phase F never touches.
+            ("python_min",                       "ALTER TABLE packages ADD COLUMN python_min TEXT"),
         ):
             if col not in existing_cols:
                 conn.execute(ddl)
@@ -1056,6 +1096,42 @@ def init_schema(conn: sqlite3.Connection) -> None:
             # on first post-migration Phase F run).
             conn.execute("BEGIN IMMEDIATE")
             try:
+                conn.execute(
+                    "INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
+                    ("phase_f_force_refresh_pending", "1"),
+                )
+                conn.execute("COMMIT")
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
+
+        # v27 → v28 (v8.19.0 — Phase F+ Wave 3): adds `packages.python_min`
+        # (Phase E populates from cf-graph node_attrs raw_meta_yaml) AND the
+        # `package_channel_downloads` side table (Phase F's existing parquet
+        # sweep populates with an additional per-(pkg, data_source) group-by
+        # that drops Wave 2's `data_source='conda-forge'` filter so the
+        # channel cuts include all channels the parquet ships). The column
+        # is added via the ALTER ladder above (column-guarded); the table is
+        # created via the IF NOT EXISTS DDL in SCHEMA_DDL — no migration step
+        # is needed for either DDL action.
+        #
+        # Force-refresh trigger: write BOTH meta sentinels on a v27 → v28
+        # upgrade — `phase_e_force_refresh_pending` so the next Phase E run
+        # re-streams the cf-graph tarball even if the TTL is hot and
+        # populates `python_min`, AND `phase_f_force_refresh_pending` so
+        # the next Phase F run bypasses its 7-day TTL and re-aggregates
+        # the cached parquet to populate `package_channel_downloads`
+        # without waiting for natural TTL expiry. Both writes share one
+        # BEGIN IMMEDIATE / COMMIT (mirrors the v26 → v27 M2 pattern) so a
+        # crash between the ladder finishing and the sentinels landing
+        # doesn't leave the DB in a half-migrated state.
+        if 0 < prior_schema_int < 28:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                conn.execute(
+                    "INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
+                    ("phase_e_force_refresh_pending", "1"),
+                )
                 conn.execute(
                     "INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
                     ("phase_f_force_refresh_pending", "1"),
@@ -1856,6 +1932,47 @@ def _classify_source_url(source_url: Any) -> tuple[str | None, str | None]:
     return (registry, None)
 
 
+# Schema v28 (v8.19.0 Wave 3): regex extractors for `python_min` declared in
+# the recipe's raw_meta_yaml. Module-level so they compile once across the
+# ~28k-feedstock Phase E loop. Verified 2026-06-13 against a 5,001-sample
+# survey of cached cf-graph `node_attrs/*.json`: ~6.6% of recipes set a v1
+# override (`python_min: "3.11"` in `context:`); ~2.7% set the v0 form
+# (`{% set python_min = "3.11" %}`); the remaining ~91% inherit the
+# conda-forge-pinning default and leave the column NULL.
+_PYTHON_MIN_V1_RE = re.compile(
+    r"^\s*python_min:\s*['\"]?(\d+\.\d+)['\"]?", re.MULTILINE
+)
+_PYTHON_MIN_V0_RE = re.compile(
+    r"\{%\s*set\s+python_min\s*=\s*['\"](\d+\.\d+)['\"]\s*%\}"
+)
+
+
+def _extract_declared_python_min(raw_meta_yaml: str | None) -> str | None:
+    """Return the recipe's declared `python_min` override, or None.
+
+    cf-graph stores recipes as a `raw_meta_yaml` string. `python_min` is
+    NOT a top-level node_attrs key — it appears only as a Jinja context
+    variable that the recipe author declares when overriding the conda-
+    forge-pinning default. The two override syntaxes:
+
+    - v1 (`schema_version: 1`): `python_min: "3.11"` inside `context:`.
+    - v0 (`meta.yaml`):         `{% set python_min = "3.11" %}` at top.
+
+    Returns None when neither form matches (recipe inherits the pinning
+    default — leave `packages.python_min` NULL; `pyver_breakdown
+    --policy-check` renders such rows as "unknown" with a stderr advisory).
+    """
+    if not raw_meta_yaml or not isinstance(raw_meta_yaml, str):
+        return None
+    m1 = _PYTHON_MIN_V1_RE.search(raw_meta_yaml)
+    if m1:
+        return m1.group(1)
+    m0 = _PYTHON_MIN_V0_RE.search(raw_meta_yaml)
+    if m0:
+        return m0.group(1)
+    return None
+
+
 def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
     """Phase E: per-package enrichment via cf-graph-countyfair node_attrs.
 
@@ -1911,6 +2028,16 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
         cache_ttl_days = float(os.environ.get("ATLAS_CFGRAPH_TTL_DAYS", "1"))
     except ValueError:
         cache_ttl_days = 1.0
+    # v28 (v8.19.0 Wave 3): force-refresh sentinel written by the v27 → v28
+    # migration. When set, re-stream the existing cache file (re-parse, not
+    # re-download — the bottleneck is the parse for `python_min` extraction,
+    # not the GitHub fetch). The cache file itself is still valid; we just
+    # need a fresh Phase E run against the existing tarball.
+    force_refresh_row = conn.execute(
+        "SELECT value FROM meta WHERE key='phase_e_force_refresh_pending'"
+    ).fetchone()
+    force_refresh = bool(force_refresh_row and force_refresh_row[0] == "1")
+
     if cache_path.exists() and cache_age < cache_ttl_days:
         print(f"  Using cached cf-graph archive ({cache_path.stat().st_size:,} bytes, "
               f"{cache_age:.2f}d old, TTL {cache_ttl_days}d)")
@@ -1994,6 +2121,20 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
             license_family = about.get("license_family")
             keywords = about.get("keywords") or []
             maintainers = extra.get("recipe-maintainers") or []
+            # v28 (v8.19.0 Wave 3): declared `python_min` from raw_meta_yaml.
+            # The value is not a top-level node_attrs key — it lives inside
+            # `raw_meta_yaml` as a Jinja context override (v0: `{% set
+            # python_min = "3.11" %}`; v1: `python_min: "3.11"` in the
+            # `context:` block). Recipes that inherit the conda-forge-pinning
+            # default DO NOT declare it; we leave `python_min` NULL for them.
+            # The recipe-author override is what makes the column actionable
+            # — `pyver_breakdown --policy-check` compares this declared
+            # value against the empirical floor from `package_python_downloads`
+            # to flag bump-safe candidates. NULL rows render as "unknown" in
+            # the policy-check output (consumer responsibility to surface).
+            raw_meta_yaml = payload.get("raw_meta_yaml") or ""
+            declared_python_min = _extract_declared_python_min(raw_meta_yaml)
+
             # recipe_format detection from cf-graph node_attrs.
             # cf-graph stores meta_yaml.schema_version: 0 = v0 (meta.yaml,
             # Jinja-templated), 1 = v1 (recipe.yaml, native YAML context).
@@ -2067,6 +2208,17 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
                         keywords_str, conda_name,
                     ),
                 )
+                # v28 (v8.19.0 Wave 3): write declared `python_min` per row.
+                # Unconditional UPDATE so the value can transition from
+                # non-NULL back to NULL (the recipe author dropped the
+                # override) on a full re-enrichment pass — COALESCE-wrapping
+                # or guarding `if not None` would pin a stale value across
+                # cf-graph updates. Phase E is the single writer for this
+                # column; idempotent on re-run.
+                conn.execute(
+                    "UPDATE packages SET python_min = ? WHERE conda_name = ?",
+                    (declared_python_min, conda_name),
+                )
                 # C.5 fold-in: deterministic source.url → pypi match
                 if registry == "pypi" and extracted:
                     cursor = conn.execute(
@@ -2118,6 +2270,14 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
                 enriched += 1
                 if enriched % commit_every == 0:
                     conn.commit()
+    # v28 (v8.19.0 Wave 3): clear the force-refresh sentinel now that Phase E
+    # has actually completed. Side-effect-free read-then-clear at the end of
+    # the loop mirrors the Phase F sentinel-clear contract: confirm work
+    # started, then drop the trigger.
+    if force_refresh:
+        conn.execute("DELETE FROM meta WHERE key='phase_e_force_refresh_pending'")
+        conn.commit()
+
     conn.commit()
 
     elapsed = time.monotonic() - t0
@@ -2884,6 +3044,64 @@ def _phase_f_via_s3(
                 continue
             py_90d_map[(p, py)] = int(py_sum_w[i] or 0)
 
+    # ── Wave 3 (v8.19.0) — per-(pkg_name, data_source) breakdown table.
+    #    Channel breakdown intentionally captures ALL channels (conda-forge
+    #    AND defaults AND bioconda AND pytorch AND nvidia AND ...) so the
+    #    `channel_split` CLI can surface migration opportunities. This means
+    #    a SEPARATE parquet read without the `data_source='conda-forge'`
+    #    filter — we don't expand the Wave 2 `table` because Wave 2's reads
+    #    + group-bys are already keyed on that filter and reusing the Table
+    #    would only show conda-forge channel rows.
+    #
+    #    Cost: ~13 MB × len(months) of additional parquet bytes streamed
+    #    from the local cache (no extra HTTP — files already cached by the
+    #    Wave 2 sweep). Memory profile mirrors Wave 2: one Table per sweep,
+    #    one group-by per dimension, dict() materialization, GC'd.
+    channel_total_map: dict[tuple[str, str], int] = {}
+    channel_90d_map: dict[tuple[str, str], int] = {}
+    chan_table = _parquet_cache.read_filtered(
+        months, pkg_names=eligible_names, data_source=None
+    )
+    if chan_table.num_rows > 0:
+        if last3_set:
+            last3_array_chan = pa.array(list(last3_set), type=pa.string())
+            chan_win_table = chan_table.filter(
+                pc.is_in(pc.field("time"), value_set=last3_array_chan)  # type: ignore[attr-defined]
+            )
+        else:
+            chan_win_table = None
+
+        by_chan_total = chan_table.group_by(["pkg_name", "data_source"]).aggregate([
+            ("counts", "sum"),
+        ])
+        chan_pkg = by_chan_total["pkg_name"].to_pylist()
+        chan_name = by_chan_total["data_source"].to_pylist()
+        chan_sum = by_chan_total["counts_sum"].to_pylist()
+        for i, p in enumerate(chan_pkg):
+            if not p:
+                continue
+            ch = chan_name[i]
+            if not ch:
+                # parquet NULL/empty channel — skip; no actionable signal
+                # for `channel_split` (consumer expects raw strings only).
+                continue
+            channel_total_map[(p, ch)] = int(chan_sum[i] or 0)
+
+        if chan_win_table is not None:
+            by_chan_90d = chan_win_table.group_by(["pkg_name", "data_source"]).aggregate([
+                ("counts", "sum"),
+            ])
+            chan_pkg_w = by_chan_90d["pkg_name"].to_pylist()
+            chan_name_w = by_chan_90d["data_source"].to_pylist()
+            chan_sum_w = by_chan_90d["counts_sum"].to_pylist()
+            for i, p in enumerate(chan_pkg_w):
+                if not p:
+                    continue
+                ch = chan_name_w[i]
+                if not ch:
+                    continue
+                channel_90d_map[(p, ch)] = int(chan_sum_w[i] or 0)
+
     fetched = 0
     not_found = 0
     completed = 0
@@ -2979,6 +3197,16 @@ def _phase_f_via_s3(
             f"WHERE conda_name IN ({placeholders})",
             chunk,
         )
+        # Wave 3 (v8.19.0): mirror the H1 DELETE-by-scope-key + INSERT OR
+        # REPLACE pattern for the new per-channel table so stale channels
+        # (e.g. a package that disappeared from `defaults` between sweeps)
+        # don't accumulate zombies. Same 500-row chunk size for SQLite's
+        # 999-host-parameter cap headroom.
+        conn.execute(
+            f"DELETE FROM package_channel_downloads "
+            f"WHERE conda_name IN ({placeholders})",
+            chunk,
+        )
 
     plat_rows = [
         (pkg, plat, plat_90d_map.get((pkg, plat), 0), total_v, now)
@@ -3003,6 +3231,24 @@ def _phase_f_via_s3(
             "(conda_name, pkg_python, downloads_90d, downloads_total, fetched_at) "
             "VALUES (?, ?, ?, ?, ?)",
             py_rows,
+        )
+
+    # Wave 3 (v8.19.0): per-channel breakdown bulk write. Same shape as the
+    # Wave 2 platform/python writes; PK is (conda_name, data_source). The
+    # raw channel string is written as-is (no normalization) so consumers see
+    # exactly what the parquet ships — `channel_split` filters on
+    # `data_source='defaults'` directly without a lookup table.
+    chan_rows = [
+        (pkg, ch, channel_90d_map.get((pkg, ch), 0), total_v, now)
+        for (pkg, ch), total_v in channel_total_map.items()
+        if pkg in eligible_names
+    ]
+    if chan_rows:
+        conn.executemany(
+            "INSERT OR REPLACE INTO package_channel_downloads "
+            "(conda_name, data_source, downloads_90d, downloads_total, fetched_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            chan_rows,
         )
 
     conn.commit()
