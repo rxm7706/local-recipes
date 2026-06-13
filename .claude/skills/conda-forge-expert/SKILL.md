@@ -64,6 +64,7 @@ Conda-forge standards evolve rapidly. Before implementing a pattern:
 - Check current rattler-build/conda-forge docs — don't rely on memory.
 - When fixing build failures, verify the fix against official docs before applying.
 - Cite sources for non-obvious recipe decisions in the PR description.
+- **Pair quantitative claims with a verifiable source.** Cost, scan size, duration, and count claims in spec/code/docs MUST cite their source (dry-run preflight output, measured benchmark, `bq show` table stats) or carry a "verified $DATE" marker. Numerical claims decay silently — the 2026-06-12 BigQuery invoice surprise traced to a 2016 napkin number ("~30 GB scanned per query, within free tier") copied through the v8.1.0 spec, code docstring, CHANGELOG, three reference docs, and the quickref cheatsheet without anyone re-verifying. Real cost in 2026 was ~2.5–4 TB per run (~$15–25), off by ~1000×. Treat quantitative claims as time-bounded; require a procedure future operators can re-run. See `reference/atlas-phase-p-cost-model.md` for the canonical application of this discipline.
 
 ---
 
