@@ -766,14 +766,27 @@ cost below $1/run.
   - `packages.github_current_version` (legacy column, backward-compat
     with v6.7+).
 - **Tunables.** `PHASE_K_DISABLED`, `PHASE_K_TTL_DAYS=7`,
-  `PHASE_K_CONCURRENCY` (REST fanout), `PHASE_K_GRAPHQL_DISABLED`
-  (force REST), `PHASE_K_GRAPHQL_BATCH_SIZE=100` (keep <150 for the
-  500K node-complexity ceiling). Auto-skips without GitHub auth — 60
-  req/hr unauth is too low for backfill.
+  `PHASE_K_CONCURRENCY=8` (REST fanout; only consulted under
+  `PHASE_K_AGGRESSIVE=1`), `PHASE_K_GRAPHQL_DISABLED` (force REST),
+  `PHASE_K_GRAPHQL_BATCH_SIZE=100` (keep <150 for the 500K node-
+  complexity ceiling). **v8.20.0 sustained-rate scheduler**:
+  `PHASE_K_REQUESTS_PER_SECOND=3.0` (REST fanout target; ~3× under
+  GitHub's secondary-rate-limit threshold), `PHASE_K_AGGRESSIVE`
+  (unset = use scheduler; `=1` to restore the previous 8-worker burst),
+  `PHASE_K_DEBUG_SCHEDULER` (unset = silent after 30s; `=1` to keep
+  timing logs streaming). Auto-skips without GitHub auth — 60 req/hr
+  unauth is too low for backfill.
+- **Cold wall-clock.** ~60-75 min full-channel under the default
+  sustained-rate scheduler; ~30 min with `PHASE_K_AGGRESSIVE=1` at the
+  cost of ~15% HTTP 403 churn (v8.5.x baseline, 2026-05-12 incident).
+  Incremental TTL-skip runs (<100 new rows) finish in roughly the same
+  wall-clock either way — burst pattern never triggers at that scale.
 - **Actionable intelligence.**
   - `behind-upstream --maintainer X` adds a SOURCE column distinguishing
     `pypi` vs `github`/`gitlab`/`codeberg` so VCS-source recipes are no
     longer invisible.
+  - ✅ Resolved in v8.20.0: secondary-rate-limit 403 churn on full-
+    channel REST fanouts (15% → <1% target via sustained-rate scheduler).
   - 📋 Open: full-channel backfill (currently per-maintainer scope);
     `bot-pr-context` composite with H + J.
 

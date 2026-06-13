@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sqlite3
@@ -1152,6 +1153,36 @@ def init_schema(conn: sqlite3.Connection) -> None:
                 print(f"  Migration v2→v3: deleted {n_deleted:,} duplicate rows")
 
     conn.executescript(SCHEMA_DDL)
+    # v8.20.0 one-time install marker + 403-backfill sentinel.
+    # The pair `phase_k_first_run_post_v8_20_0` (install marker) +
+    # `phase_k_403_backfill_pending` (consumable signal) lands exactly once on
+    # the first init_schema call after upgrading to v8.20.0; on subsequent
+    # init_schema calls the install marker short-circuits the install. The
+    # backfill sentinel is consumed by `phase_k_vcs_versions` (deleted from
+    # `meta` after the eligibility list is built but before fanout starts) so
+    # that the next post-upgrade Phase K run expands eligibility to include
+    # the 2026-05-12 zombie 403 rows regardless of TTL. NO schema bump — the
+    # `meta` table accepts arbitrary `(key, value)` pairs without DDL.
+    # Atomic write so a crash between the two INSERTs cannot leave the marker
+    # without the sentinel.
+    install_marker = conn.execute(
+        "SELECT value FROM meta WHERE key='phase_k_first_run_post_v8_20_0'"
+    ).fetchone()
+    if install_marker is None:
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
+                ("phase_k_403_backfill_pending", "1"),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
+                ("phase_k_first_run_post_v8_20_0", "1"),
+            )
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
     conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
                  ("schema_version", str(SCHEMA_VERSION)))
     conn.commit()
@@ -1270,6 +1301,76 @@ def _aggregate_repodata_records(repodata_by_subdir: dict[str, dict]) -> dict[str
         del agg["_latest_build_number"]
         del agg["_latest_timestamp"]
     return aggregated
+
+
+# ── Phase K rate-limited scheduler (v8.20.0) ─────────────────────────────────
+# Single-process token-bucket scheduler that throttles the Phase K REST fanout
+# to a sustained, polite rate. Default 3.0 RPS leaves a ~3× safety margin under
+# GitHub's empirically-observed ~10 req/s secondary-rate-limit threshold (2026-
+# 05-12 incident: 8-worker burst → ~70 req/s peak → 15% HTTP 403s on a 4,400-
+# row fanout while primary quota stayed <1%). GraphQL batch path stays at
+# `PHASE_K_GRAPHQL_BATCH_SIZE=100` and does NOT go through the scheduler — it
+# already runs at sustained <1 req/s for the same volume. Operators who prefer
+# the older burst behavior (faster wall-clock, higher 403 churn) set
+# `PHASE_K_AGGRESSIVE=1` to restore the `ThreadPoolExecutor(max_workers=8)`
+# path. See `reference/atlas-phase-engineering.md` § 1 + § 10 (g)–(k) for the
+# discipline rules + auto-memory `project_phase_k_secondary_rate_limit.md` for
+# the empirical incident. Stdlib only; no threading.Lock needed because the
+# default path is single-worker.
+class _RateLimitedScheduler:
+    """Token-bucket scheduler. Single-process, stdlib only, `time.monotonic()`-
+    based (immune to wall-clock adjustments). `acquire()` blocks until at
+    least one token is available, then consumes it.
+    """
+
+    def __init__(self, rps: float, bucket_capacity: int = 10) -> None:
+        if rps <= 0:
+            raise ValueError(
+                f"_RateLimitedScheduler: rps must be > 0; got {rps!r}"
+            )
+        if bucket_capacity < 1:
+            raise ValueError(
+                f"_RateLimitedScheduler: bucket_capacity must be >= 1; "
+                f"got {bucket_capacity!r}"
+            )
+        # I/O matrix row 6 — operator-misconfig warning. Glacial RPS doesn't
+        # break the scheduler but does balloon Phase K wall-clock; surface it
+        # at construction so the operator sees the warning before the run
+        # starts churning.
+        if rps < 0.1:
+            print(
+                f"  Phase K: PHASE_K_REQUESTS_PER_SECOND={rps} is glacially "
+                f"slow — expect Phase K wall-clock to grow proportionally "
+                f"(1 request every {1/rps:.0f}s)",
+                file=sys.stderr,
+            )
+        self.rps = float(rps)
+        self.bucket_capacity = int(bucket_capacity)
+        # Bucket starts full so a small initial burst (up to bucket_capacity)
+        # completes without forced sleeps — this preserves incremental Phase K
+        # speed for runs that only touch a handful of rows.
+        self.bucket: float = float(bucket_capacity)
+        self.last_refill: float = time.monotonic()
+
+    def acquire(self) -> None:
+        now = time.monotonic()
+        elapsed = now - self.last_refill
+        # Refill the bucket up to capacity based on elapsed wall-clock.
+        self.bucket = min(
+            float(self.bucket_capacity),
+            self.bucket + elapsed * self.rps,
+        )
+        self.last_refill = now
+        if self.bucket < 1.0:
+            wait = (1.0 - self.bucket) / self.rps
+            time.sleep(wait)
+            # After sleeping for `wait` seconds we have exactly 1 token; spend
+            # it and reset the refill clock to "now after the sleep" so the
+            # next acquire's elapsed math starts from a clean point.
+            self.bucket = 0.0
+            self.last_refill = time.monotonic()
+        else:
+            self.bucket -= 1.0
 
 
 def phase_b_conda_enumeration(conn: sqlite3.Connection) -> dict:
@@ -4817,15 +4918,26 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
     Tunables:
       - PHASE_K_DISABLED            : "1" to skip
       - PHASE_K_TTL_DAYS            : default 7
-      - PHASE_K_CONCURRENCY         : REST fanout for GitLab/Codeberg (default 8)
+      - PHASE_K_CONCURRENCY         : REST fanout for GitLab/Codeberg (default 8);
+                                      only consulted under PHASE_K_AGGRESSIVE=1
       - PHASE_K_LIMIT               : cap rows (debug)
       - PHASE_K_GRAPHQL_DISABLED    : "1" to disable the GitHub GraphQL
                                       batch path and use REST fanout for
-                                      GitHub too (slower, hits secondary
-                                      rate limits at >~80 concurrent reqs)
+                                      GitHub too (slower; uses the v8.20.0
+                                      sustained-rate scheduler by default)
       - PHASE_K_GRAPHQL_BATCH_SIZE  : repos per GraphQL request (default
                                       100; keep < ~150 to stay under
                                       GitHub's 500K node-complexity ceiling)
+      - PHASE_K_REQUESTS_PER_SECOND : (v8.20.0) sustained-rate target for the
+                                      REST fanout (default 3.0; ~3× under
+                                      GitHub's secondary-limit threshold)
+      - PHASE_K_AGGRESSIVE          : (v8.20.0) "1" restores the previous
+                                      8-worker ThreadPoolExecutor burst pattern
+                                      (faster wall-clock, ~15% HTTP 403 churn
+                                      on full-channel fanouts)
+      - PHASE_K_DEBUG_SCHEDULER     : (v8.20.0) "1" keeps per-request scheduler
+                                      timing logs past the first-30s default
+                                      cutoff (useful for diagnostics)
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -4855,6 +4967,35 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
     limit = int(os.environ.get("PHASE_K_LIMIT", "0"))
     hard_timeout_s = float(os.environ.get("PHASE_K_BATCH_HARD_TIMEOUT_S", "45"))
     log_every_n = max(1, int(os.environ.get("PHASE_K_LOG_EVERY_N_BATCHES", "4")))
+    # v8.20.0 — sustained-rate scheduler defaults. Strict `== "1"` parse so
+    # `PHASE_K_AGGRESSIVE=0` (or any non-"1" truthy-looking string) does NOT
+    # silently re-arm the burst pattern. RPS parse is defensive — bad values
+    # fall back to 3.0 with a stderr warning rather than crashing Phase K.
+    _rps_env = os.environ.get("PHASE_K_REQUESTS_PER_SECOND", "3.0")
+    try:
+        rps_default = float(_rps_env)
+        if not math.isfinite(rps_default) or rps_default <= 0:
+            raise ValueError(
+                f"PHASE_K_REQUESTS_PER_SECOND must be finite and positive, "
+                f"got {_rps_env!r}"
+            )
+    except ValueError as e:
+        print(
+            f"  Phase K: invalid PHASE_K_REQUESTS_PER_SECOND={_rps_env!r}, "
+            f"falling back to 3.0 — {e}",
+            file=sys.stderr,
+        )
+        rps_default = 3.0
+    aggressive_mode = os.environ.get("PHASE_K_AGGRESSIVE") == "1"
+    debug_scheduler = os.environ.get("PHASE_K_DEBUG_SCHEDULER") == "1"
+    if aggressive_mode:
+        # One-line stderr warning so operators reviewing CI captures can tell
+        # at a glance which path was used (default vs. legacy burst).
+        print(
+            "  PHASE_K_AGGRESSIVE=1 — using 8-worker burst pattern; "
+            "expect HTTP 403 churn",
+            file=sys.stderr,
+        )
     cutoff = int(time.time()) - ttl_days * 86400
     run_started_at = int(time.time())
 
@@ -4887,6 +5028,44 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
         sql += " LIMIT ?"
         params = (cutoff, limit)
     rows = list(conn.execute(sql, params))
+
+    # v8.20.0 — one-shot 403 backfill. The first init_schema call after upgrade
+    # writes `meta.phase_k_403_backfill_pending=1`. On its first consumption
+    # (here), expand the eligibility set to include every `last_error LIKE
+    # '%403%'` row regardless of TTL — this cleans up zombie 403 rows from the
+    # 2026-05-12 incident (and any other accumulated 403 residue). The sentinel
+    # is READ here but DELETED only AFTER fanout completes successfully (see
+    # end of this function) — mid-run crash preserves it so next run re-expands
+    # eligibility (per spec I/O matrix row 3 idempotent recovery). If the
+    # sentinel is NOT set, eligibility is the standard TTL-gated set and
+    # nothing extra happens.
+    sentinel_row = conn.execute(
+        "SELECT value FROM meta WHERE key='phase_k_403_backfill_pending'"
+    ).fetchone()
+    sentinel_consumed = sentinel_row is not None
+    if sentinel_row is not None:
+        existing_names = {row["conda_name"] for row in rows}
+        backfill_sql = (
+            "SELECT p.conda_name, p.conda_repo_url, p.conda_dev_url, "
+            "       p.conda_homepage "
+            "FROM v_actionable_packages p "
+            "JOIN upstream_versions u "
+            "  ON u.conda_name = p.conda_name "
+            " AND u.source IN ('github','gitlab','codeberg') "
+            "WHERE u.last_error LIKE '%403%' "
+            "GROUP BY p.conda_name"
+        )
+        extra_rows = [
+            row for row in conn.execute(backfill_sql)
+            if row["conda_name"] not in existing_names
+        ]
+        if extra_rows:
+            rows.extend(extra_rows)
+            print(
+                f"  v8.20.0 403-backfill: +{len(extra_rows):,} rows added to "
+                f"eligibility list (last_error LIKE '%403%'; TTL bypassed)"
+            )
+
     print(f"  {len(rows):,} rows to scan (TTL {ttl_days}d, concurrency {concurrency})")
 
     by_host = {"github": 0, "gitlab": 0, "codeberg": 0}
@@ -4915,6 +5094,14 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
         elapsed = time.monotonic() - t0
         print(f"  Phase K done in {elapsed:.1f}s — no derivable repos; "
               f"no_repo: {no_repo:,}")
+        # Empty-work-set is still a successful completion of the eligibility
+        # build + fanout (there was simply nothing to fan out). Clear the
+        # sentinel so the one-shot semantic holds.
+        if sentinel_consumed:
+            conn.execute(
+                "DELETE FROM meta WHERE key='phase_k_403_backfill_pending'"
+            )
+            conn.commit()
         return {
             "rows_eligible": len(rows),
             "fetched": 0, "failed": 0, "not_found": 0, "no_repo": no_repo,
@@ -5023,31 +5210,91 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
                 f"rate={rate:.1f}/s  ETA={eta_min:.1f}min"
             )
 
-    # Drain GitHub GraphQL results first (already computed in-process)
+    # v8.20.0 — sustained-rate scheduler for the REST fanout. Aggressive mode
+    # restores the previous 8-worker ThreadPoolExecutor burst (faster but ~15%
+    # HTTP 403 churn on full-channel fanouts). Default mode wraps each REST
+    # call in `scheduler.acquire()` so the sustained rate stays at
+    # `PHASE_K_REQUESTS_PER_SECOND` (default 3.0 req/s, ~3× under GitHub's
+    # secondary-limit threshold). First-30s timing lines stream to stderr so
+    # operators verify the scheduler is engaged; after 30s the scheduler goes
+    # silent unless `PHASE_K_DEBUG_SCHEDULER=1` is set. GraphQL results have
+    # already been computed above and are drained without scheduler involvement
+    # (each GraphQL batch is one HTTP POST per 100 repos — well under the
+    # secondary limit by construction).
+    scheduler: _RateLimitedScheduler | None = None
+    scheduler_request_count = 0
+    if not aggressive_mode:
+        scheduler = _RateLimitedScheduler(rps=rps_default)
+
+    def _scheduled_fetch_one(
+        host: str, owner_or_path: str, repo: str,
+    ) -> tuple[str, str, str, str | None, str | None]:
+        """Acquire a scheduler token + log first-30s timing, then fetch."""
+        nonlocal scheduler_request_count
+        assert scheduler is not None  # narrowed in default mode
+        scheduler.acquire()
+        scheduler_request_count += 1
+        elapsed_s = time.monotonic() - t0
+        if debug_scheduler or elapsed_s < 30.0:
+            print(
+                f"    phase-k: req {scheduler_request_count} at "
+                f"t={elapsed_s:.2f}s (target rate {rps_default:.1f} req/s)",
+                file=sys.stderr,
+            )
+        return _phase_k_fetch_one(
+            host, owner_or_path, repo, gh_token, gl_token,
+        )
+
+    # Drain GitHub GraphQL results first (already computed in-process). When
+    # GraphQL is disabled, GitHub falls through to the REST scheduler path.
     for (conda_name, host, owner_or_path, repo) in github_work:
         if use_graphql:
             version, err = gh_results.get((owner_or_path, repo), (None, "missing in graphql batch"))
         else:
-            # GraphQL disabled — fall back to REST for github too
-            _, _, _, version, err = _phase_k_fetch_one(
-                host, owner_or_path, repo, gh_token, gl_token,
-            )
+            # GraphQL disabled — REST fallback. Aggressive mode preserves the
+            # original direct-call path (still no concurrency at this loop
+            # level; ThreadPoolExecutor was previously only used for
+            # GitLab/Codeberg); default mode pipes through the scheduler.
+            if aggressive_mode:
+                _, _, _, version, err = _phase_k_fetch_one(
+                    host, owner_or_path, repo, gh_token, gl_token,
+                )
+            else:
+                _, _, _, version, err = _scheduled_fetch_one(
+                    host, owner_or_path, repo,
+                )
         _process_result(conda_name, host, owner_or_path, repo, version, err)
 
-    # GitLab + Codeberg: keep the REST ThreadPoolExecutor fanout
+    # GitLab + Codeberg: aggressive mode keeps the REST ThreadPoolExecutor;
+    # default mode runs serially through the scheduler.
     if other_work:
-        with ThreadPoolExecutor(max_workers=concurrency) as ex:
-            futures = {
-                ex.submit(_phase_k_fetch_one, host, owner_path, repo, gh_token, gl_token):
-                    (conda_name, host, owner_path, repo)
-                for (conda_name, host, owner_path, repo) in other_work
-            }
-            for fut in as_completed(futures):
-                conda_name = futures[fut][0]
-                host, owner_or_path, repo, version, err = fut.result()
-                _process_result(conda_name, host, owner_or_path, repo, version, err)
+        if aggressive_mode:
+            with ThreadPoolExecutor(max_workers=concurrency) as ex:
+                futures = {
+                    ex.submit(_phase_k_fetch_one, host, owner_path, repo, gh_token, gl_token):
+                        (conda_name, host, owner_path, repo)
+                    for (conda_name, host, owner_path, repo) in other_work
+                }
+                for fut in as_completed(futures):
+                    conda_name = futures[fut][0]
+                    host, owner_or_path, repo, version, err = fut.result()
+                    _process_result(conda_name, host, owner_or_path, repo, version, err)
+        else:
+            for (conda_name, host, owner_path, repo) in other_work:
+                _, _, _, version, err = _scheduled_fetch_one(
+                    host, owner_path, repo,
+                )
+                _process_result(conda_name, host, owner_path, repo, version, err)
 
     conn.commit()
+    # Sentinel deleted AFTER fanout completes — mid-run crash preserves it so
+    # next run re-expands eligibility (per spec I/O matrix row 3 idempotent
+    # recovery). Only DELETE on the success path; do NOT wrap in try/finally.
+    if sentinel_consumed:
+        conn.execute(
+            "DELETE FROM meta WHERE key='phase_k_403_backfill_pending'"
+        )
+        conn.commit()
     # Snapshot covers all VCS sources Phase K touched.
     snap_total = 0
     for src in ("github", "gitlab", "codeberg"):

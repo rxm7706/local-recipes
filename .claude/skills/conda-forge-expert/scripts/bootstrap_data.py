@@ -52,10 +52,30 @@ Per-step timeouts (seconds) can be overridden via env vars
   BOOTSTRAP_CVE_DB_TIMEOUT         default 600
   BOOTSTRAP_VDB_TIMEOUT            default 3600
   BOOTSTRAP_CF_ATLAS_TIMEOUT       default 14400 (cold --fresh --profile admin
-                                                   can take ~130 min: F~83 +
-                                                   K~30 + N~14 + H~12 + others)
+                                                   can take ~160 min on the
+                                                   v8.20.0+ sustained-rate
+                                                   default: F~83 + K~60-75 +
+                                                   N~14 + H~12 + others; the
+                                                   14,400s = 4h cap still has
+                                                   ~80 min of slack)
   BOOTSTRAP_PHASE_GP_TIMEOUT       default 3600
   BOOTSTRAP_PHASE_N_TIMEOUT        default 3600
+
+Phase K sustained-rate scheduler (v8.20.0):
+  PHASE_K_REQUESTS_PER_SECOND      default 3.0  — sustained-rate target for
+                                                   the REST fanout; well under
+                                                   GitHub's secondary-rate-
+                                                   limit threshold (~10 req/s
+                                                   per IP/token combination)
+  PHASE_K_AGGRESSIVE               unset (=use sustained-rate scheduler);
+                                   =1 to restore the previous 8-worker
+                                   ThreadPoolExecutor burst (faster wall-
+                                   clock, ~15% HTTP 403 churn on full-channel
+                                   fanouts)
+  PHASE_K_DEBUG_SCHEDULER          unset (=silent after the first-30s
+                                   verification window); =1 to keep per-
+                                   request scheduler timing logs streaming
+                                   to stderr for diagnostics
   --status            : print phase_state checkpoint table + per-phase
                          freshness summary, then exit (no execution).
   --resume            : default bootstrap is already resume-friendly because
@@ -98,19 +118,23 @@ REPO_ROOT = Path(__file__).resolve().parents[5]
 #
 # cf_atlas: verified 2026-06-13 against a full --fresh --profile admin refresh.
 # Phase F (anaconda.org per-package downloads, serial ~6 req/s) dominates at
-# ~83 min for ~32k packages. K (GitHub GraphQL VCS versions) ~30 min. N (GitHub
-# live data — CI/issues/PRs across 27k feedstocks) ~14 min if --gh is set.
-# H (PyPI current-version) ~12 min. L/M/B/E/etc. ~5 min combined. Total ~130
-# min cold; 14400s (4h) leaves slack for slower networks. Default was 7200s
-# (2h) through v8.16.5 — operators saw false-negative `✗ cf-atlas-build` when
-# the wrapper timed out before the Python subprocess finished. v8.16.6 bumps
-# the floor. Structural fix (per-phase wrapper invocations) deferred — see
-# session retro in CHANGELOG v8.16.5.
+# ~83 min for ~32k packages. K~60-75 (sustained-rate v8.20.0+; K~30 with
+# PHASE_K_AGGRESSIVE=1, faster but ~15% HTTP 403 churn). N (GitHub live data
+# — CI/issues/PRs across 27k feedstocks) ~14 min if --gh is set. H (PyPI
+# current-version) ~12 min. L/M/B/E/etc. ~5 min combined. Total ~160 min cold
+# on the v8.20.0+ sustained-rate default; 14400s (4h) leaves ~80 min of slack
+# for slower networks. Default was 7200s (2h) through v8.16.5 — operators saw
+# false-negative `✗ cf-atlas-build` when the wrapper timed out before the
+# Python subprocess finished. v8.16.6 bumps the floor. Structural fix
+# (per-phase wrapper invocations) deferred — see session retro in CHANGELOG
+# v8.16.5.
 _DEFAULT_TIMEOUTS: dict[str, int] = {
     "mapping_cache":  300,     # parselmouth refresh — usually <10s
     "cve_db":         600,     # OSV.dev download — usually ~10s
     "vdb":           3600,     # AppThreat refresh — usually 5-10 min, slack for cold
-    "cf_atlas":     14400,     # cold --fresh worst-case: F~83 + K~30 + N~14 + H~12 + others
+    "cf_atlas":     14400,     # cold --fresh worst-case (v8.20.0+ sustained-rate):
+                               # F~83 + K~60-75 (sustained) | K~30 (PHASE_K_AGGRESSIVE=1)
+                               # + N~14 + H~12 + others
     "phase_gp":      3600,     # per-version vuln scoring — can be 5-30 min
     "phase_n":       3600,     # live GitHub — channel-wide can be 30+ min
 }
