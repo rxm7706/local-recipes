@@ -45,7 +45,13 @@ except ImportError:
     yaml = None  # type: ignore[assignment]
 
 try:
-    from conda_forge_metadata.autotick_bot.pypi_to_conda import get_pypi_name_mapping
+    # conda-forge-metadata renamed `autotick_bot` → `conda_forge_bot`
+    # in 0.16.x. Try the new path first; fall back to the old one for
+    # operators pinned to older releases.
+    try:
+        from conda_forge_metadata.conda_forge_bot.pypi_to_conda import get_pypi_name_mapping
+    except ImportError:
+        from conda_forge_metadata.autotick_bot.pypi_to_conda import get_pypi_name_mapping  # type: ignore[no-redef]
     METADATA_AVAILABLE = True
 except ImportError:
     get_pypi_name_mapping = None  # type: ignore[assignment]
