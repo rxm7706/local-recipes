@@ -134,7 +134,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 25
+SCHEMA_VERSION = 26
 
 
 def _get_data_dir() -> Path:
@@ -478,6 +478,21 @@ CREATE INDEX IF NOT EXISTS idx_pypi_intel_downloads  ON pypi_intelligence(downlo
 CREATE INDEX IF NOT EXISTS idx_pypi_intel_readiness  ON pypi_intelligence(conda_forge_readiness);
 CREATE INDEX IF NOT EXISTS idx_pypi_intel_in_bio     ON pypi_intelligence(in_bioconda);
 CREATE INDEX IF NOT EXISTS idx_pypi_intel_shape      ON pypi_intelligence(packaging_shape);
+
+-- Schema v26 (v8.15.0) — per-day per-package PyPI download counts. Source
+-- of truth for computing pypi_intelligence.downloads_30d/90d via local
+-- SQL aggregation. INSERT-only on Phase P refresh (rows where
+-- downloads >= 1); GC prunes rows older than PHASE_P_RETAIN_DAYS (95
+-- default) on each Phase P run. Drives steady-state refresh cost below
+-- $1/run by querying only the new BQ partitions since the last refresh.
+CREATE TABLE IF NOT EXISTS pypi_downloads_daily (
+    pypi_name      TEXT NOT NULL,
+    download_date  TEXT NOT NULL,        -- ISO 'YYYY-MM-DD' (SQLite has no DATE)
+    downloads      INTEGER NOT NULL,     -- always >= 1; zero-count rows not stored
+    PRIMARY KEY (pypi_name, download_date)
+);
+CREATE INDEX IF NOT EXISTS idx_pypi_dl_daily_date ON pypi_downloads_daily(download_date);
+CREATE INDEX IF NOT EXISTS idx_pypi_dl_daily_name ON pypi_downloads_daily(pypi_name);
 
 -- Pre-joined view for the pypi-intelligence CLI / MCP tool. Surfaces
 -- enrichment columns alongside conda_name (NULL = pypi-only candidate).
@@ -935,6 +950,16 @@ def init_schema(conn: sqlite3.Connection) -> None:
         # table that had no producer after the Wave B/C cancellations are
         # dropped above in the ALTER ladder. SQLite ≥3.35 native DROP COLUMN;
         # pixi pins 3.46+ (verified: env has 3.53.1). Idempotent.
+
+        # v25 → v26 (v8.15.0): new `pypi_downloads_daily` side table holds
+        # per-day per-package PyPI download counts. Source of truth for
+        # computing pypi_intelligence.downloads_30d/90d via local SQL
+        # aggregation, replacing v8.1.0's single-shot 90-day BQ aggregate
+        # that scanned ~2.5-4 TB per refresh. The new architecture queries
+        # only NEW partitions since the last refresh, driving steady-state
+        # cost below $1/run. All-new IF NOT EXISTS DDL in SCHEMA_DDL — no
+        # migration step required here. `packages` and `pypi_intelligence`
+        # are not modified.
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -6234,131 +6259,152 @@ def _phase_q_fetch_channel_pypi_names(
     return names, None
 
 
+def _phase_p_skip(reason: str, t0: float, **extra) -> dict:
+    """Early-exit helper for Phase P — DRYs the 6 skip paths."""
+    return {
+        "skipped": True,
+        "reason": reason,
+        "duration_seconds": round(time.monotonic() - t0, 1),
+        **extra,
+    }
+
+
 def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
-    """Phase P: bulk-load 30-day and 90-day PyPI download counts via BigQuery.
+    """Phase P: incremental per-day PyPI download counts via BigQuery.
+
+    v8.15.0 architecture — supersedes v8.1.0's single-shot 90-day query
+    and v8.14.3's hot-patch with cost caps. Stores per-day per-package
+    counts in `pypi_downloads_daily` (schema v26) and queries BigQuery
+    only for partitions newer than the last refresh.
 
     Source: `bigquery-public-data.pypi.file_downloads` — Google's official
-    PyPI analytics dataset. Single query covers all 806k pypi_universe
-    rows and aggregates to project-level (per the spec's Q2 resolution —
-    per-version granularity is deferred).
+    PyPI analytics dataset. Per-day project-level aggregation
+    (`GROUP BY pypi_name, _PARTITIONDATE`) replaces v8.14.3's pre-aggregated
+    30d/90d sums. Downstream consumers (pypi_intelligence.downloads_30d/90d)
+    are recomputed from the local table via SQL after each refresh.
 
     Auth: `GOOGLE_APPLICATION_CREDENTIALS` env var OR `gcloud auth
     application-default` cached creds. Missing creds, missing
     `google-cloud-bigquery` library, or BigQuery 4xx → log + skip
     gracefully.
 
-    Cost (v8.14.3 — corrected from v8.1.0's "~30 GB" claim, off by ~1000×).
-    A 90-day `_PARTITIONDATE`-pruned scan of the `file.project` column
-    processes ~2.5–4 TB at on-demand pricing of $6.25/TB → ~$15–25/run
-    typical. Dry-run preflight prints the live estimate before submission;
-    `maximum_bytes_billed` is a hard server-side cap (BQ aborts and bills
-    $0 if exceeded); `job_timeout_ms` prevents zombie jobs charging slot
-    time. Default caps: $100 first-pull, $10 per refresh.
-
-    See `docs/specs/atlas-phase-p-incremental.md` for the v8.15.0
-    incremental architecture that drives steady-state refresh cost
-    below $1/run via a local per-day cache.
+    Cost profile:
+      - first-pull (empty pypi_downloads_daily): ~2.5–4 TB (~$15–25);
+        capped at $100 by PHASE_P_MAX_COST_FIRST_PULL_USD.
+      - incremental refresh (N new days since last run): proportional
+        to N — typically ~$0.30–$2 for monthly cadence; capped at $10
+        by PHASE_P_MAX_COST_USD.
+      - gap > 90 days since last refresh: reverts to first-pull mode +
+        prints warning.
+      - no new partitions since last run: early no-op (no BQ traffic).
 
     Tunables:
       - PHASE_P_DISABLED                : "1" to skip
       - PHASE_P_ENABLED                 : must be "1" (opt-in) to run
       - PHASE_P_BQ_PROJECT              : GCP project override
       - PHASE_P_TTL_DAYS                : default 30 (driver gate)
+      - PHASE_P_RETAIN_DAYS             : default 95 (GC threshold;
+                                          5d slack beyond 90d window)
       - PHASE_P_MAX_COST_USD            : default 10 (refresh cap, USD)
       - PHASE_P_MAX_COST_FIRST_PULL_USD : default 100 (first-pull cap, USD)
       - PHASE_P_JOB_TIMEOUT_MS          : default 600000 (10 min)
       - PHASE_P_USD_PER_TB              : default 6.25 (BQ on-demand price)
+      - PHASE_P_FORCE_FIRST_PULL        : "1" wipes pypi_downloads_daily +
+                                          forces a clean 90-day re-bootstrap
     """
     import datetime as _dt
     t0 = time.monotonic()
-    print("  Phase P: PyPI download counts via BigQuery")
+    print("  Phase P: PyPI download counts via BigQuery (incremental v8.15.0)")
 
     if os.environ.get("PHASE_P_DISABLED"):
-        elapsed = time.monotonic() - t0
-        return {
-            "skipped": True,
-            "reason": "PHASE_P_DISABLED=1 set; skipping Phase P.",
-            "duration_seconds": round(elapsed, 1),
-        }
+        return _phase_p_skip("PHASE_P_DISABLED=1 set; skipping Phase P.", t0)
     if not os.environ.get("PHASE_P_ENABLED"):
-        elapsed = time.monotonic() - t0
         print("  Phase P is opt-in; set PHASE_P_ENABLED=1 to run "
               "(needs google-cloud-bigquery + GOOGLE_APPLICATION_CREDENTIALS).")
-        return {
-            "skipped": True,
-            "reason": "PHASE_P_ENABLED not set; opt-in.",
-            "duration_seconds": round(elapsed, 1),
-        }
+        return _phase_p_skip("PHASE_P_ENABLED not set; opt-in.", t0)
 
-    # Lazy import — google-cloud-bigquery is a heavy dep (~30 MB) and
-    # most operators won't run Phase P, so we don't add it to local-recipes.
-    # Operators wanting Phase P run: `pixi add google-cloud-bigquery`.
+    # Deprecation warning for the spec-declared-but-never-used legacy knob.
+    if os.environ.get("PHASE_P_BQ_WINDOW_DAYS"):
+        print("  warning: PHASE_P_BQ_WINDOW_DAYS is deprecated (v8.15.0); "
+              "window is now mode-determined (first-pull=90d, "
+              "incremental=since last refresh). Ignored.")
+
+    # Lazy import — google-cloud-bigquery is a heavy dep (~30 MB).
     try:
         from google.cloud import bigquery  # type: ignore[import-untyped]
     except ImportError:
-        elapsed = time.monotonic() - t0
         print("  google-cloud-bigquery not installed; install via "
               "`pixi add google-cloud-bigquery` to enable Phase P. Skipping.")
-        return {
-            "skipped": True,
-            "reason": "google-cloud-bigquery library not importable.",
-            "duration_seconds": round(elapsed, 1),
-        }
+        return _phase_p_skip("google-cloud-bigquery library not importable.", t0)
 
     bq_project = os.environ.get("PHASE_P_BQ_PROJECT") or None
     try:
         client = bigquery.Client(project=bq_project)
     except Exception as e:
-        elapsed = time.monotonic() - t0
         print(f"  BigQuery client init failed ({type(e).__name__}: {e}); "
               f"check GOOGLE_APPLICATION_CREDENTIALS or run "
               f"`gcloud auth application-default login`. Skipping Phase P.")
-        return {
-            "skipped": True,
-            "reason": f"BigQuery client init failed: {e}",
-            "duration_seconds": round(elapsed, 1),
-        }
+        return _phase_p_skip(f"BigQuery client init failed: {e}", t0)
 
-    # Cap mode: first-pull (no prior downloads) gets a larger budget than
-    # a refresh. Detection looks for any prior populated row in
-    # pypi_intelligence — a fresh atlas, or one whose Phase P has never
-    # run, is first-pull.
-    has_prior = conn.execute(
-        "SELECT COUNT(*) FROM pypi_intelligence "
-        "WHERE downloads_fetched_at IS NOT NULL"
-    ).fetchone()[0]
-    if has_prior:
-        cap_usd = float(os.environ.get("PHASE_P_MAX_COST_USD", "10"))
-        cap_label = "refresh"
-    else:
+    # --- Mode + window selection ---
+    today = _dt.date.today()
+    if os.environ.get("PHASE_P_FORCE_FIRST_PULL"):
+        conn.execute("DELETE FROM pypi_downloads_daily")
+        conn.commit()
+        print("  PHASE_P_FORCE_FIRST_PULL=1 — pypi_downloads_daily wiped; "
+              "running first-pull")
+
+    last_row = conn.execute(
+        "SELECT MAX(download_date) FROM pypi_downloads_daily"
+    ).fetchone()
+    last_date_str = last_row[0] if last_row else None
+
+    if last_date_str is None:
+        mode = "first-pull"
+        window_start = today - _dt.timedelta(days=90)
         cap_usd = float(os.environ.get("PHASE_P_MAX_COST_FIRST_PULL_USD", "100"))
-        cap_label = "first-pull"
+    else:
+        last_date = _dt.date.fromisoformat(last_date_str)
+        gap_days = (today - last_date).days
+        if gap_days > 90:
+            mode = "first-pull-after-gap"
+            window_start = today - _dt.timedelta(days=90)
+            cap_usd = float(os.environ.get("PHASE_P_MAX_COST_FIRST_PULL_USD", "100"))
+            print(f"  gap since last refresh ({gap_days} d) > 90; "
+                  f"reverting to first-pull mode")
+        else:
+            mode = "incremental"
+            window_start = last_date + _dt.timedelta(days=1)
+            cap_usd = float(os.environ.get("PHASE_P_MAX_COST_USD", "10"))
+
+    window_end = today  # excluded
+    if window_start >= window_end:
+        print(f"  pypi_downloads_daily already current through "
+              f"{last_date_str}; no new partitions to query.")
+        return _phase_p_skip(
+            "no new partitions since last refresh",
+            t0,
+            mode=mode,
+            last_date=last_date_str,
+        )
+
     usd_per_tb = float(os.environ.get("PHASE_P_USD_PER_TB", "6.25"))
     timeout_ms = int(os.environ.get("PHASE_P_JOB_TIMEOUT_MS", "600000"))
+    days_in_window = (window_end - window_start).days
 
-    # Project-level aggregation; one row per pypi_name canonicalized
-    # via the same PEP 503 transform we use for cross-channel matching.
-    # _PARTITIONDATE literal dates guarantee partition pruning; the
-    # v8.1.0 CURRENT_TIMESTAMP() form occasionally degraded to a full
-    # scan, contributing to the 2026-06-12 cost surprise.
-    today = _dt.date.today()
-    d30 = (today - _dt.timedelta(days=30)).isoformat()
-    d90 = (today - _dt.timedelta(days=90)).isoformat()
-    today_s = today.isoformat()
+    # --- Build query (literal _PARTITIONDATE; one row per pypi_name × day) ---
     query = f"""
         SELECT
             REGEXP_REPLACE(LOWER(file.project), r'[-_.]+', '-') AS pypi_name,
-            SUM(IF(_PARTITIONDATE >= DATE '{d30}', 1, 0)) AS downloads_30d,
-            COUNT(*) AS downloads_90d
+            _PARTITIONDATE AS download_date,
+            COUNT(*) AS downloads
         FROM `bigquery-public-data.pypi.file_downloads`
-        WHERE _PARTITIONDATE >= DATE '{d90}'
-          AND _PARTITIONDATE <  DATE '{today_s}'
-        GROUP BY pypi_name
+        WHERE _PARTITIONDATE >= DATE '{window_start.isoformat()}'
+          AND _PARTITIONDATE <  DATE '{window_end.isoformat()}'
+        GROUP BY pypi_name, _PARTITIONDATE
     """
 
-    # Dry-run preflight — free; returns total_bytes_processed without
-    # submitting a real query. Prints the live estimate so operators see
-    # the cost upfront and aborts before any spend if over the cap.
+    # --- Dry-run preflight — free; returns total_bytes_processed ---
     try:
         dry = client.query(
             query,
@@ -6370,38 +6416,28 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
         est_gb = bytes_processed / 1e9
         est_usd = (est_gb / 1000.0) * usd_per_tb
     except Exception as e:
-        elapsed = time.monotonic() - t0
         print(f"  BigQuery dry-run failed ({type(e).__name__}: {e}); skipping.")
-        return {
-            "skipped": True,
-            "reason": f"BigQuery dry-run failed: {e}",
-            "duration_seconds": round(elapsed, 1),
-        }
+        return _phase_p_skip(f"BigQuery dry-run failed: {e}", t0)
 
-    print(f"  dry-run: ~{est_gb:,.0f} GB scan, est ~${est_usd:.2f} "
-          f"(cap ${cap_usd:.2f}; mode={cap_label})")
+    print(f"  mode={mode}; window=[{window_start}, {window_end}) "
+          f"({days_in_window} d); dry-run: ~{est_gb:,.0f} GB scan, "
+          f"est ~${est_usd:.2f} (cap ${cap_usd:.2f})")
 
     if est_usd > cap_usd:
-        elapsed = time.monotonic() - t0
-        msg = (f"estimated ${est_usd:.2f} exceeds ${cap_usd:.2f} {cap_label} "
-               f"cap; raise PHASE_P_MAX_COST_USD or "
+        msg = (f"estimated ${est_usd:.2f} exceeds ${cap_usd:.2f} {mode} cap; "
+               f"raise PHASE_P_MAX_COST_USD or "
                f"PHASE_P_MAX_COST_FIRST_PULL_USD to override")
         print(f"  {msg}")
-        return {
-            "skipped": True,
-            "reason": msg,
-            "estimated_usd": round(est_usd, 2),
-            "estimated_gb": round(est_gb, 1),
-            "cap_usd": cap_usd,
-            "mode": cap_label,
-            "duration_seconds": round(elapsed, 1),
-        }
+        return _phase_p_skip(
+            msg,
+            t0,
+            estimated_usd=round(est_usd, 2),
+            estimated_gb=round(est_gb, 1),
+            cap_usd=cap_usd,
+            mode=mode,
+        )
 
-    # Real query with hard byte cap + wall-clock timeout (belt-and-braces).
-    # maximum_bytes_billed: server-side ceiling; if exceeded, BQ aborts with
-    #   $0 bill rather than running over budget.
-    # job_timeout_ms: prevents zombie jobs from accumulating slot time on
-    #   flat-rate billing accounts. Real queries complete in 30-60 s.
+    # --- Real query with hard byte cap + wall-clock timeout ---
     max_bytes = int((cap_usd / usd_per_tb) * 1e12)
     print(f"  submitting query against bigquery-public-data.pypi.file_downloads"
           f"{f' (project={bq_project})' if bq_project else ''} "
@@ -6417,53 +6453,91 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
             ).result()
         )
     except Exception as e:
-        elapsed = time.monotonic() - t0
         print(f"  BigQuery query failed ({type(e).__name__}: {e}); skipping.")
-        return {
-            "skipped": True,
-            "reason": f"BigQuery query failed: {e}",
-            "duration_seconds": round(elapsed, 1),
-        }
+        return _phase_p_skip(f"BigQuery query failed: {e}", t0)
+
+    # --- Bulk INSERT into pypi_downloads_daily ---
+    # Only store rows where downloads >= 1 (zero-count days are implicit
+    # absence). Cuts steady-state storage from ~600k × 90 = 54M rows to
+    # ~50k–100k active × 90 = ~5M rows (~225-450 MB).
+    insert_rows = []
+    for r in rows:
+        name = r.get("pypi_name") if hasattr(r, "get") else r["pypi_name"]
+        if not name:
+            continue
+        downloads = r.get("downloads", 0) if hasattr(r, "get") else r["downloads"]
+        if not downloads:
+            continue
+        date_val = r.get("download_date") if hasattr(r, "get") else r["download_date"]
+        date_str = date_val.isoformat() if hasattr(date_val, "isoformat") else str(date_val)
+        insert_rows.append((name, date_str, int(downloads)))
 
     now = int(time.time())
-    upserted = 0
-    # Two-step upsert: INSERT OR IGNORE to ensure rows exist, then UPDATE.
-    # Bulk INSERT/UPDATE inside one transaction for speed.
     conn.execute("BEGIN")
     try:
-        for r in rows:
-            pypi_name = r.get("pypi_name") if hasattr(r, "get") else r["pypi_name"]
-            if not pypi_name:
-                continue
-            d30v = r.get("downloads_30d", 0) if hasattr(r, "get") else r["downloads_30d"]
-            d90v = r.get("downloads_90d", 0) if hasattr(r, "get") else r["downloads_90d"]
-            conn.execute(
-                "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
-                (pypi_name,),
+        conn.executemany(
+            "INSERT OR IGNORE INTO pypi_downloads_daily "
+            "(pypi_name, download_date, downloads) VALUES (?, ?, ?)",
+            insert_rows,
+        )
+        # `executemany` doesn't surface per-row outcomes; sum changes
+        # explicitly. We're inside one BEGIN/COMMIT so this is consistent.
+        rows_inserted = conn.execute("SELECT changes()").fetchone()[0]
+
+        # --- Recompute pypi_intelligence.downloads_30d/90d ---
+        cutoff_30d = (today - _dt.timedelta(days=30)).isoformat()
+        cutoff_90d = (today - _dt.timedelta(days=90)).isoformat()
+        conn.execute(
+            """
+            INSERT INTO pypi_intelligence (
+                pypi_name, downloads_30d, downloads_90d,
+                downloads_fetched_at, downloads_source
             )
-            conn.execute(
-                "UPDATE pypi_intelligence SET "
-                "downloads_30d = ?, downloads_90d = ?, "
-                "downloads_fetched_at = ?, downloads_source = ? "
-                "WHERE pypi_name = ?",
-                (int(d30v or 0), int(d90v or 0), now, "bigquery-public", pypi_name),
-            )
-            upserted += 1
+            SELECT
+                pypi_name,
+                COALESCE(SUM(CASE WHEN download_date >= ? THEN downloads ELSE 0 END), 0),
+                COALESCE(SUM(downloads), 0),
+                ?,
+                'bigquery-incremental'
+            FROM pypi_downloads_daily
+            WHERE download_date >= ?
+            GROUP BY pypi_name
+            ON CONFLICT(pypi_name) DO UPDATE SET
+                downloads_30d        = excluded.downloads_30d,
+                downloads_90d        = excluded.downloads_90d,
+                downloads_fetched_at = excluded.downloads_fetched_at,
+                downloads_source     = excluded.downloads_source
+            """,
+            (cutoff_30d, now, cutoff_90d),
+        )
+
+        # --- GC: prune daily rows older than PHASE_P_RETAIN_DAYS ---
+        retain_days = int(os.environ.get("PHASE_P_RETAIN_DAYS", "95"))
+        gc_cutoff = (today - _dt.timedelta(days=retain_days)).isoformat()
+        rows_pruned = conn.execute(
+            "DELETE FROM pypi_downloads_daily WHERE download_date < ?",
+            (gc_cutoff,),
+        ).rowcount
+
         conn.execute("COMMIT")
     except Exception:
         conn.execute("ROLLBACK")
         raise
 
     elapsed = time.monotonic() - t0
-    print(f"  Phase P done in {elapsed:.1f}s — upserted {upserted:,} rows "
-          f"(downloads_30d + downloads_90d); est cost ~${est_usd:.2f}")
+    print(f"  Phase P done in {elapsed:.1f}s — mode={mode}, inserted "
+          f"{rows_inserted:,} daily rows, pruned {rows_pruned:,}; "
+          f"est cost ~${est_usd:.2f}")
     return {
-        "rows_upserted": upserted,
-        "source": "bigquery-public",
+        "mode": mode,
+        "window_start": window_start.isoformat(),
+        "window_end": window_end.isoformat(),
+        "rows_inserted": rows_inserted,
+        "rows_pruned": rows_pruned,
         "estimated_usd": round(est_usd, 2),
         "estimated_gb": round(est_gb, 1),
         "cap_usd": cap_usd,
-        "mode": cap_label,
+        "source": "bigquery-incremental",
         "duration_seconds": round(elapsed, 1),
     }
 
