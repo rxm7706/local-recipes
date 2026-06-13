@@ -429,6 +429,29 @@ free tier" expectation) traced to a 2016 napkin number copied
 through ~25 documentation sites over 10 years without anyone re-
 verifying.
 
+**(d) Coverage/cardinality claims need a verifiable denominator.**
+Cost discipline is well-internalized (v8.15.1+) but coverage claims
+escaped the rule until v8.16.2. When a phase ships under a free or
+cap-limited backend, the docstring/spec/reference doc MUST state
+what fraction of the candidate set the phase actually populates,
+expressed as a verifiable ratio with both numerator and denominator.
+"Top-1,000 by 90-day downloads" is incomplete; "top-1,000 ≈ 3.3 %
+of the ~30k `pypi_intelligence` candidate rows; remaining 96.7 %
+have NULL `downloads_30d`/`downloads_90d`" is verifiable. NULL is
+not silent — readers acting on missing values without a coverage
+caveat reach wrong conclusions ("package has no downloads") instead
+of right ones ("package is outside our measurement window").
+Implementation rule: phases with partial coverage MUST populate
+the relevant `*_source` provenance column (e.g.
+`pypi_intelligence.downloads_source = 'clickhouse-clickpy'`) and
+the consumer-facing reference doc MUST teach readers to check
+that column before treating NULL as zero. Phase P v8.16.0 shipped
+the source column but the coverage caveat lived only in the code
+docstring — `atlas-actionable-intelligence.md` didn't surface it
+until v8.16.2's retro. Don't repeat the gap: the rule is
+**numerator + denominator + provenance + consumer-side caveat**,
+all four together, at ship time.
+
 **Tunables convention.** Every volume-billed phase ships with the
 following operator-tunable env vars:
 - `PHASE_X_MAX_COST_USD` — per-run cap (USD); BQ aborts above.

@@ -1417,7 +1417,7 @@ def phase_c_parselmouth_join(conn: sqlite3.Connection) -> dict:
         try:
             from conda_forge_metadata.conda_forge_bot.pypi_to_conda import get_pypi_name_mapping
         except ImportError:
-            from conda_forge_metadata.autotick_bot.pypi_to_conda import get_pypi_name_mapping
+            from conda_forge_metadata.autotick_bot.pypi_to_conda import get_pypi_name_mapping  # type: ignore[import-not-found,no-redef]
     except ImportError as e:
         raise RuntimeError("conda-forge-metadata required for Phase C") from e
 
@@ -6331,11 +6331,19 @@ def _phase_p_clickhouse(conn: sqlite3.Connection) -> dict:
     ClickHouse team; same source data as the BigQuery backend but free to
     query for end users.
 
-    Architecture: hash-bucketed pagination via `cityHash64(project) % N`
-    works around the play user's 65,000 row result cap. Each refresh fetches
-    all ~867k projects' (downloads_30d, downloads_90d) in ~30 s across N
-    HTTP POSTs. `pypi_downloads_daily` is bypassed entirely — since
-    ClickHouse is free, incremental refresh has no cost benefit.
+    Architecture: single top-N query (ORDER BY d90 DESC LIMIT
+    PHASE_P_CH_LIMIT, default 1,000). The bucket-paginated full-coverage
+    design v8.16.0 originally specified was abandoned during
+    implementation when live testing showed ClickHouse Play's ~1,000-row
+    response cap on aggregated GROUP BY queries + aggressive rate-limit
+    on sustained concurrent bursts (HTTP 500 at >4 parallel queries)
+    made the full-coverage paginated refresh impractical (25+ min
+    wall-clock with 95% retry overhead). Each refresh is a single HTTP
+    POST returning the most-downloaded N packages in ~2 s.
+    `pypi_downloads_daily` is bypassed entirely — since ClickHouse is
+    free, incremental refresh has no cost benefit, and the per-day
+    breakdown isn't queried from the API anyway (the SUM aggregates are
+    server-side).
 
     Auth: none. Network only.
 
