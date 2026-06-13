@@ -550,6 +550,11 @@ PHASE_P_ENABLED=1 pixi run -e local-recipes \
 # Or as part of a channel-wide refresh (admin profile enables it
 # automatically when google-cloud-bigquery is importable):
 pixi run -e local-recipes bootstrap-data --profile admin
+
+# RECOMMENDED for monthly cadence (default $10 refresh cap doesn't
+# fit the empirical $22 monthly scan; raise to $25 with $3 of headroom):
+PHASE_P_MAX_COST_USD=25 \
+    pixi run -e local-recipes bootstrap-data --profile admin
 ```
 
 **Cost (verified 2026-06-12 via live dry-run preflight):**
