@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.14.2"
+
+package:
+  name: confluent-kafka-python
+  version: ${{ version }}
+
+source:
+  url: https://github.com/confluentinc/confluent-kafka-python/archive/v${{ version }}.tar.gz
+  sha256: ecb337684adf26a78fd04eb5ef294d49325af6929a3a856d4981029875baaf13
+  patches:
+    - 0001-Fix-setup-for-windows.patch  # [win]
+
+build:
+  number: 0
+  script:
+    - export CFLAGS="${CFLAGS} -I${PREFIX}/include"  # [unix]
+    - export LDFLAGS="${LDFLAGS} -I${PREFIX}/lib"    # [unix]
+    - set CFLAGS="%CFLAGS% /I%LIBRARY_INC%"          # [win]
+    - set LDFLAGS="%LDFLAGS% /I%LIBRARY_LIB%"        # [win]
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  # This package does not support PyPy.
+  # See https://github.com/confluentinc/confluent-kafka-python/issues/1747#issuecomment-2112004625
+  # skip: true  # [python_impl == 'pypy']
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+  host:
+    - python
+    - setuptools >=62
+    - wheel
+    - pip
+    - librdkafka >={{ version }}
+  run:
+    - python
+    - librdkafka >={{ version }}
+
+tests:
+  - python:
+      imports:
+        - confluent_kafka
+      pip_check: true
+
+about:
+  summary: Confluent's Python client for Apache Kafka
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/confluentinc/confluent-kafka-python
+  description: |
+    Confluent's Kafka client for Python wraps the librdkafka C library,
+    providing full Kafka protocol support with great performance and
+    reliability.
+  documentation: http://docs.confluent.io/current/clients/confluent-kafka-python/index.html
+
+extra:
+  recipe-maintainers:
+    - lpsinger
+    - mariusvniekerk
+    - mrocklin
+    - rmax
+    - rxm7706
+    - timkpaine
