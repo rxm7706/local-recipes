@@ -972,3 +972,45 @@ recommending `--profile maintainer`. The advisory is the v8.0.0
 MAJOR-bump signal; if operators eventually report comfort with the
 documented default, v8.1.0 may flip the no-flag invocation silently
 to `--profile maintainer`.
+
+### Wrapper false-negative — fixed structurally in v8.22.0
+
+Through v8.16.5 the `bootstrap-data` orchestrator ran the entire
+cf_atlas build as one `cf-atlas-build` subprocess under a single
+14,400 s wrapper timeout. When the wrapper hit the deadline before the
+underlying Python subprocess returned, the bootstrap printed `✗ cf-
+atlas-build` while the subprocess continued running to clean exit —
+operators relying on the wrapper exit code saw a false negative.
+v8.16.6 mitigated the symptom by raising the timeout; v8.22.0 lands
+the structural fix.
+
+**The split.** `bootstrap-data` now invokes the cf_atlas pipeline as
+**four independently-reported sub-steps**, each with its own timeout
++ ✓/✗ line:
+
+| Sub-step         | Phases run                                     | Default timeout (env override)         | Failure semantics |
+|------------------|------------------------------------------------|----------------------------------------|-------------------|
+| `cf-atlas-core`  | All EXCEPT F/K/N (B/B.5/B.6/C/C.5/D/O/P/Q/R/S/E/E.5/G/G'/H/J/L/M) | 1,800 s (`BOOTSTRAP_CF_ATLAS_CORE_TIMEOUT`) | HARD — aborts the bootstrap |
+| `cf-atlas-F`     | Phase F only (anaconda.org downloads)          | 7,200 s (`BOOTSTRAP_CF_ATLAS_F_TIMEOUT`)    | SOFT — continue |
+| `cf-atlas-K`     | Phase K only (VCS upstream fanout)             | 7,200 s (`BOOTSTRAP_CF_ATLAS_K_TIMEOUT`)    | SOFT — continue |
+| `cf-atlas-N`     | Phase N only (live GitHub); runs when admin profile is active OR `--gh` is set | 3,600 s (`BOOTSTRAP_CF_ATLAS_N_TIMEOUT`)    | SOFT — continue |
+
+The bootstrap summary aggregates the four sub-step outcomes into a
+single `cf-atlas-build` line — `✓` when all four succeeded, `⚠` when
+core succeeded but at least one of F/K/N returned non-zero, `✗` when
+core failed. The aggregate `⚠` is NOT counted toward the bootstrap
+exit code (operators told the bootstrap to continue past soft
+failures; the sub-step `✗` already surfaces what went wrong).
+
+**Routing.** Each sub-step shells out to
+`pixi run -e local-recipes build-cf-atlas -- --only PHASE_LIST` (or
+`--skip F,K,N` for core). The `--skip` / `--only` flags landed on
+`conda_forge_atlas.py build` in v8.22.0 specifically to make the
+split atomic — they're mutually exclusive and case-insensitive.
+
+**Legacy escape hatch.** Setting `BOOTSTRAP_CF_ATLAS_TIMEOUT`
+explicitly RESTORES the v8.16.6 single-subprocess invocation. Useful
+when an operator wants pre-v8.22.0 behavior (one timeout, one ✓/✗
+line) or when the split surfaces an unexpected interaction. Operators
+who never set `BOOTSTRAP_CF_ATLAS_TIMEOUT` get the new behavior by
+default.

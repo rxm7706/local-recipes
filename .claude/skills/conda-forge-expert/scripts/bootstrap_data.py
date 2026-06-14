@@ -51,13 +51,35 @@ Per-step timeouts (seconds) can be overridden via env vars
   BOOTSTRAP_MAPPING_CACHE_TIMEOUT  default 300
   BOOTSTRAP_CVE_DB_TIMEOUT         default 600
   BOOTSTRAP_VDB_TIMEOUT            default 3600
-  BOOTSTRAP_CF_ATLAS_TIMEOUT       default 14400 (cold --fresh --profile admin
-                                                   can take ~160 min on the
-                                                   v8.20.0+ sustained-rate
-                                                   default: F~83 + K~60-75 +
-                                                   N~14 + H~12 + others; the
-                                                   14,400s = 4h cap still has
-                                                   ~80 min of slack)
+  BOOTSTRAP_CF_ATLAS_TIMEOUT       default 14400 — legacy monolithic wrapper.
+                                                   Setting this explicitly
+                                                   RESTORES the single-
+                                                   subprocess behavior the
+                                                   v8.22.0 split replaced
+                                                   (operator escape hatch).
+                                                   When UNSET, the atlas
+                                                   build runs as 4 sub-steps
+                                                   with the per-step
+                                                   timeouts below.
+  BOOTSTRAP_CF_ATLAS_CORE_TIMEOUT  default 1800   — v8.22.0 sub-step 1: all
+                                                   phases EXCEPT F/K/N.
+                                                   HARD failure aborts
+                                                   the bootstrap.
+  BOOTSTRAP_CF_ATLAS_F_TIMEOUT     default 7200   — v8.22.0 sub-step 2:
+                                                   Phase F only (~83 min
+                                                   serial API path; seconds
+                                                   via s3-parquet). SOFT
+                                                   failure — continue.
+  BOOTSTRAP_CF_ATLAS_K_TIMEOUT     default 7200   — v8.22.0 sub-step 3:
+                                                   Phase K only (~60-75 min
+                                                   sustained-rate v8.20.0+).
+                                                   SOFT failure.
+  BOOTSTRAP_CF_ATLAS_N_TIMEOUT     default 3600   — v8.22.0 sub-step 4:
+                                                   Phase N only (~14 min
+                                                   channel-wide). Runs when
+                                                   admin profile is active
+                                                   OR --gh is set. SOFT
+                                                   failure.
   BOOTSTRAP_PHASE_GP_TIMEOUT       default 3600
   BOOTSTRAP_PHASE_N_TIMEOUT        default 3600
 
@@ -132,9 +154,28 @@ _DEFAULT_TIMEOUTS: dict[str, int] = {
     "mapping_cache":  300,     # parselmouth refresh — usually <10s
     "cve_db":         600,     # OSV.dev download — usually ~10s
     "vdb":           3600,     # AppThreat refresh — usually 5-10 min, slack for cold
-    "cf_atlas":     14400,     # cold --fresh worst-case (v8.20.0+ sustained-rate):
+    "cf_atlas":     14400,     # legacy monolithic wrapper (kept as escape hatch):
                                # F~83 + K~60-75 (sustained) | K~30 (PHASE_K_AGGRESSIVE=1)
-                               # + N~14 + H~12 + others
+                               # + N~14 + H~12 + others. v8.22.0 SPLIT this step
+                               # into 4 sub-steps (core / F / K / N) so each gets
+                               # its own ✓/✗ + per-step timeout. Setting
+                               # BOOTSTRAP_CF_ATLAS_TIMEOUT explicitly RESTORES
+                               # the legacy single-subprocess behavior — that's
+                               # the operator escape hatch when the split
+                               # surfaces unexpected behavior.
+    "cf_atlas_core": 1800,     # v8.22.0 — all phases EXCEPT F/K/N (B/B.5/B.6/C/
+                               # C.5/D/O/P/Q/R/S/E/E.5/G/G'/H/J/L/M). 30 min cap;
+                               # measured ~5-12 min on the 2026-06-13 admin run.
+                               # HARD failure aborts the bootstrap.
+    "cf_atlas_F":    7200,     # v8.22.0 — Phase F only (~83 min serial via
+                               # anaconda.org API; seconds via s3-parquet).
+                               # 2h cap. SOFT failure — report + continue.
+    "cf_atlas_K":    7200,     # v8.22.0 — Phase K only (~60-75 min sustained-
+                               # rate v8.20.0+; ~30 min PHASE_K_AGGRESSIVE=1).
+                               # 2h cap. SOFT failure.
+    "cf_atlas_N":    3600,     # v8.22.0 — Phase N only (~14 min channel-wide).
+                               # 1h cap. Runs when admin profile is active OR
+                               # --gh is set. SOFT failure.
     "phase_gp":      3600,     # per-version vuln scoring — can be 5-30 min
     "phase_n":       3600,     # live GitHub — channel-wide can be 30+ min
 }
@@ -584,6 +625,130 @@ def print_status() -> int:
     return 0
 
 
+def _run_cf_atlas_subprocess(
+    only_phases: list[str] | None,
+    skip_phases: list[str] | None,
+    timeout: int,
+    step_label: str,
+    description: str,
+    env_overrides: dict[str, str],
+    dry_run: bool = False,
+) -> bool:
+    """Run `build-cf-atlas` with `--only PHASES` or `--skip PHASES`.
+
+    v8.22.0 helper for the 4-sub-step orchestrator. Builds the command
+    list and forwards to `_run` so banner output + timing + ✓/✗
+    rendering stay identical to the legacy single-step path.
+    """
+    cmd = ["pixi", "run", "-e", "local-recipes", "build-cf-atlas"]
+    if only_phases and skip_phases:
+        raise ValueError("only_phases and skip_phases are mutually exclusive")
+    if only_phases:
+        cmd += ["--", "--only", ",".join(only_phases)]
+    elif skip_phases:
+        cmd += ["--", "--skip", ",".join(skip_phases)]
+    return _run(
+        description,
+        cmd,
+        env_overrides=env_overrides,
+        dry_run=dry_run,
+        timeout=timeout,
+    )
+
+
+def _step_cf_atlas_split(
+    phase_h: str,
+    gh_enabled: bool,
+    phase_n_maintainer: str | None,
+    dry_run: bool = False,
+) -> list[tuple[str, bool]]:
+    """Run cf_atlas as 4 independently-reported sub-steps.
+
+    v8.22.0 STRUCTURAL FIX (v8.16.5 retro P2). Replaces the monolithic
+    `build-cf-atlas` invocation. Returns the list of
+    `(step_label, ok)` pairs the caller appends to the overall
+    `results` list. Sub-step labels:
+
+      * `cf-atlas-core` — all phases EXCEPT F/K/N. HARD failure: when
+        this returns False, the function short-circuits and returns
+        without running F/K/N. The caller's aggregate ✗ logic then
+        aborts the bootstrap.
+      * `cf-atlas-F` — Phase F only. SOFT failure (logged, continue).
+      * `cf-atlas-K` — Phase K only. SOFT failure.
+      * `cf-atlas-N` — Phase N only. Runs only when `gh_enabled=True`.
+        SOFT failure.
+
+    Each sub-step gets its own timeout via `BOOTSTRAP_CF_ATLAS_<X>_TIMEOUT`.
+    """
+    sub_results: list[tuple[str, bool]] = []
+    base_env: dict[str, str] = {
+        "PHASE_E_ENABLED": "1",  # pull cf-graph
+        "PHASE_H_SOURCE": phase_h,
+    }
+
+    # 1. Core phases — all EXCEPT F/K/N. HARD failure aborts further sub-steps.
+    core_skip = ["F", "K", "N"]
+    core_ok = _run_cf_atlas_subprocess(
+        only_phases=None,
+        skip_phases=core_skip,
+        timeout=_timeout_for("cf_atlas_core"),
+        step_label="cf-atlas-core",
+        description=(
+            f"cf_atlas core phases (B/B.5/B.6/C/C.5/D/O/P/Q/R/S/E/E.5/G/G'/"
+            f"H[{phase_h}]/J/L/M; skip F/K/N)"
+        ),
+        env_overrides=dict(base_env),
+        dry_run=dry_run,
+    )
+    sub_results.append(("cf-atlas-core", core_ok))
+    if not core_ok:
+        # HARD failure on core — abort F/K/N (would compound corruption).
+        return sub_results
+
+    # 2. Phase F — SOFT failure.
+    f_ok = _run_cf_atlas_subprocess(
+        only_phases=["F"],
+        skip_phases=None,
+        timeout=_timeout_for("cf_atlas_F"),
+        step_label="cf-atlas-F",
+        description="cf_atlas Phase F (anaconda.org download counts)",
+        env_overrides=dict(base_env),
+        dry_run=dry_run,
+    )
+    sub_results.append(("cf-atlas-F", f_ok))
+
+    # 3. Phase K — SOFT failure.
+    k_ok = _run_cf_atlas_subprocess(
+        only_phases=["K"],
+        skip_phases=None,
+        timeout=_timeout_for("cf_atlas_K"),
+        step_label="cf-atlas-K",
+        description="cf_atlas Phase K (VCS upstream-version fanout)",
+        env_overrides=dict(base_env),
+        dry_run=dry_run,
+    )
+    sub_results.append(("cf-atlas-K", k_ok))
+
+    # 4. Phase N — SOFT failure; runs only when gh enabled.
+    if gh_enabled:
+        n_env = dict(base_env)
+        n_env["PHASE_N_ENABLED"] = "1"
+        if phase_n_maintainer:
+            n_env["PHASE_N_MAINTAINER"] = phase_n_maintainer
+        n_ok = _run_cf_atlas_subprocess(
+            only_phases=["N"],
+            skip_phases=None,
+            timeout=_timeout_for("cf_atlas_N"),
+            step_label="cf-atlas-N",
+            description="cf_atlas Phase N (live GitHub data — CI / issues / PRs)",
+            env_overrides=n_env,
+            dry_run=dry_run,
+        )
+        sub_results.append(("cf-atlas-N", n_ok))
+
+    return sub_results
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Bootstrap / refresh all conda-forge-expert data in one command."
@@ -694,7 +859,9 @@ def main() -> int:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    results: list[tuple[str, bool]] = []
+    # v8.22.0: `ok` may be None for the aggregate `cf-atlas-build` row,
+    # signalling ⚠ (core ✓ but at least one of F/K/N returned non-zero).
+    results: list[tuple[str, bool | None]] = []
 
     # Step 1 — mapping cache (parselmouth)
     if not args.no_mapping:
@@ -739,10 +906,32 @@ def main() -> int:
                   dry_run=args.dry_run, timeout=_timeout_for("vdb"))
         results.append(("vdb-refresh", ok))
 
-    # Step 4 — cf_atlas full build with all default + cf-graph + Phase L
+    # Step 4 — cf_atlas build.
+    #
+    # v8.22.0 STRUCTURAL FIX (carryover P2 from the v8.16.5 retro): the
+    # legacy single-subprocess invocation called `build-cf-atlas` once for
+    # all ~21 phases serially under one 14,400s wrapper timeout. When the
+    # wrapper timed out before the Python subprocess finished, operators
+    # saw `✗ cf-atlas-build` while the subprocess kept running to clean
+    # exit — false-negative on the bootstrap exit code. v8.16.6 mitigated
+    # the symptom by raising the timeout; v8.22.0 lands the structural
+    # fix by splitting the step into 4 sub-steps:
+    #
+    #   cf-atlas-core  — all phases EXCEPT F/K/N (HARD failure → abort)
+    #   cf-atlas-F     — Phase F only            (SOFT failure → continue)
+    #   cf-atlas-K     — Phase K only            (SOFT failure → continue)
+    #   cf-atlas-N     — Phase N only (admin or --gh; SOFT failure)
+    #
+    # Each sub-step gets its own ✓/✗ line + per-step timeout
+    # (BOOTSTRAP_CF_ATLAS_{CORE,F,K,N}_TIMEOUT). The aggregate
+    # `cf-atlas-build` line reflects the worst sub-step outcome: ✓ if all
+    # green, ⚠ if any soft failure, ✗ if core failed.
+    #
+    # LEGACY ESCAPE HATCH: setting BOOTSTRAP_CF_ATLAS_TIMEOUT explicitly
+    # falls back to the v8.16.6 single-subprocess invocation. Useful when
+    # the operator wants pre-v8.22.0 behavior (one timeout, one ✓/✗) or
+    # when the split surfaces an unexpected interaction.
     if not args.no_cf_atlas:
-        cmd = ["pixi", "run", "-e", "local-recipes", "build-cf-atlas"]
-        env = {"PHASE_E_ENABLED": "1"}  # pull cf-graph
         # Phase H source dispatch. cf-graph is fast + offline but lags pypi.org
         # by hours; the auto policy picks cf-graph only on --fresh (where
         # speed-of-cold-start matters and a few hours of lag is acceptable
@@ -751,11 +940,56 @@ def main() -> int:
             phase_h = "cf-graph" if args.fresh else "pypi-json"
         else:
             phase_h = args.phase_h_source
-        env["PHASE_H_SOURCE"] = phase_h
-        ok = _run(f"Build cf_atlas (B/B.5/B.6/C/C.5/D/E/E.5/F/G/H[{phase_h}]/J/K/L/M)",
-                  cmd, env_overrides=env, dry_run=args.dry_run,
-                  timeout=_timeout_for("cf_atlas"))
-        results.append(("cf-atlas-build", ok))
+
+        # Phase N runs only when --gh is set OR a profile already enabled
+        # PHASE_N_ENABLED in env. The legacy Step 6 below skips its own
+        # invocation when Phase N already ran inside Step 4 — under the
+        # split, Phase N is sub-step 4 here, so Step 6 will always see
+        # `phase_n_ran_in_step4=True` and short-circuit.
+        phase_n_enabled = (
+            args.gh
+            or bool(os.environ.get("PHASE_N_ENABLED", "").strip())
+        )
+
+        legacy_override = os.environ.get(
+            "BOOTSTRAP_CF_ATLAS_TIMEOUT", "").strip()
+
+        if legacy_override:
+            # Legacy escape hatch — one big subprocess, one ✓/✗ line.
+            cmd = ["pixi", "run", "-e", "local-recipes", "build-cf-atlas"]
+            env = {"PHASE_E_ENABLED": "1", "PHASE_H_SOURCE": phase_h}
+            ok = _run(f"Build cf_atlas (B/B.5/B.6/C/C.5/D/E/E.5/F/G/H[{phase_h}]/J/K/L/M) "
+                      f"[legacy monolithic]",
+                      cmd, env_overrides=env, dry_run=args.dry_run,
+                      timeout=_timeout_for("cf_atlas"))
+            results.append(("cf-atlas-build", ok))
+        else:
+            sub_results = _step_cf_atlas_split(
+                phase_h=phase_h,
+                gh_enabled=phase_n_enabled,
+                phase_n_maintainer=args.maintainer,
+                dry_run=args.dry_run,
+            )
+            results.extend(sub_results)
+
+            # Aggregate ✓/⚠/✗ line for `cf-atlas-build`.
+            #
+            # Sub-step labels: cf-atlas-core (HARD), cf-atlas-F/K/N (SOFT).
+            core_ok = next(
+                (ok for label, ok in sub_results if label == "cf-atlas-core"),
+                None,
+            )
+            soft_failed = any(
+                not ok for label, ok in sub_results
+                if label != "cf-atlas-core"
+            )
+            if core_ok is False:
+                aggregate_ok = False  # ✗
+            elif soft_failed:
+                aggregate_ok = None  # ⚠ — sentinel handled in summary
+            else:
+                aggregate_ok = True
+            results.append(("cf-atlas-build", aggregate_ok))
 
     # Step 5 — Phase G' per-version vuln scoring (opt-in)
     if args.with_pgp and not args.no_vdb:
@@ -773,6 +1007,11 @@ def main() -> int:
     # inheritance). Re-invoking build-cf-atlas here would redo every phase
     # and crash on the inherited `PHASE_H_SOURCE` (bootstrap-data CLI's
     # "auto" is not an atlas-valid value). Skip the redundant invocation.
+    #
+    # v8.22.0: when the split path ran (no BOOTSTRAP_CF_ATLAS_TIMEOUT
+    # override), Phase N is sub-step 4 of Step 4 and `cf-atlas-N` is
+    # already in `results`. We still short-circuit here via the same
+    # phase_n_ran_in_step4 check so we don't double-run Phase N.
     phase_n_ran_in_step4 = (
         not args.no_cf_atlas
         and bool(os.environ.get("PHASE_N_ENABLED", "").strip())
@@ -780,8 +1019,8 @@ def main() -> int:
     if args.gh and phase_n_ran_in_step4:
         print()
         print("  ⓘ Phase N already ran inside the cf_atlas build step "
-              "(PHASE_N_ENABLED was in env via --profile). Skipping the "
-              "redundant Phase N invocation.")
+              "(PHASE_N_ENABLED was in env via --profile, or v8.22.0 split). "
+              "Skipping the redundant Phase N invocation.")
     elif args.gh:
         cmd = ["pixi", "run", "-e", "local-recipes", "build-cf-atlas"]
         env = {"PHASE_N_ENABLED": "1"}
@@ -796,9 +1035,22 @@ def main() -> int:
     print("  Bootstrap summary")
     print("═" * 70)
     for label, ok in results:
-        marker = "✓" if ok else "✗"
+        # v8.22.0: the aggregate `cf-atlas-build` line uses None as the
+        # "soft failure" sentinel (core ✓ but at least one of F/K/N
+        # returned non-zero). Sub-step lines (cf-atlas-core / F / K / N)
+        # remain plain bool — they carry their own ✓/✗ per the
+        # individual step contract.
+        if ok is None:
+            marker = "⚠"
+        elif ok:
+            marker = "✓"
+        else:
+            marker = "✗"
         print(f"  {marker} {label}")
-    failed = [l for l, ok in results if not ok]
+    # The aggregate ⚠ outcome is NOT counted as a failure for the exit
+    # code — operators told the bootstrap to continue past soft failures
+    # in F/K/N; the sub-step ✗ already surfaces what went wrong.
+    failed = [l for l, ok in results if ok is False]
     _print_no_profile_advisory(args.profile)
     if failed:
         print(f"\n  {len(failed)} step(s) failed: {failed}")
