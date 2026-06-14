@@ -6,11 +6,11 @@ context:
   version: "0.63b1"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-confluent-kafka
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_confluent_kafka-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-confluent-kafka/opentelemetry_instrumentation_confluent_kafka-${{ version }}.tar.gz
   sha256: bd10c489380ea0ae227fa05cc5fc58ca20f3667d33ec550e1d809bffae2cc02d
 
 build:
@@ -24,11 +24,12 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<4.0
-    - python-confluent-kafka >=1.8.2,<=2.11.0
-    - opentelemetry-instrumentation ==${{ version }}
+    - python >=${{ python_min }}
+    - opentelemetry-instrumentation==${{ version }}
+    - opentelemetry-semantic-conventions==${{ version }}
     - opentelemetry-api >=1.12,<2.dev0
-    - wrapt >=1.0.0,<2.0.0
+    - wrapt >=1.0.0,<3.0.0
+    - python-confluent-kafka >=1.8.2,<=2.11.0
 
 tests:
   - python:
