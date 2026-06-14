@@ -129,6 +129,20 @@ def read_filtered(
         ) from exc
 
     paths = [str(cache_dir() / f"{m}.parquet") for m in months]
+    months_list = list(months) if not isinstance(months, list) else months
+    # DW-W3-4 (v8.21.0): scale guard. An unfiltered all-channel read across
+    # 12+ months loads the entire anaconda-package-data archive (~150 MB+).
+    # Warn so the caller notices accidental fanout (e.g. a Phase F refactor
+    # that forgets to scope months). Hardcoded threshold; bump if the steady
+    # state grows.
+    if len(months_list) > 12 and pkg_names is None and data_source is None:
+        print(
+            f"  _parquet_cache.read_filtered: WARNING — loading "
+            f"{len(months_list)} months with no pkg_names + no data_source "
+            f"filter; this materializes the entire all-channel parquet "
+            f"(~150 MB+). Scope the call or accept the cost.",
+            file=sys.stderr,
+        )
     filters: list = []
     if data_source is not None:
         filters.append(("data_source", "=", data_source))

@@ -159,6 +159,89 @@ class TestSchemaV28Migration:
         assert row is not None and row[0] == "numpy"
         conn.close()
 
+    def test_v27_migration_recovers_from_partial_kill(
+        self, tmp_path, atlas_mod
+    ):
+        """DW-test-1 (v8.21.0): simulate a SIGKILL mid-DDL on the v27 → v28
+        migration. After re-running init_schema cleanly, assert
+        (a) `packages.python_min` column present, (b)
+        `package_channel_downloads` table present, (c) BOTH
+        `phase_e_force_refresh_pending` and `phase_f_force_refresh_pending`
+        sentinels set, (d) schema_version at SCHEMA_VERSION.
+
+        Strategy: subclass sqlite3.Connection so the second `ALTER TABLE
+        packages` call raises mid-ladder, then re-run init_schema with the
+        plain Connection to verify idempotent recovery.
+        """
+        import sqlite3
+
+        db_path = tmp_path / "cf_atlas.db"
+        _seed_v27_db(db_path, atlas_mod)
+
+        call_log: list[str] = []
+
+        # v27 → v28 only adds ONE new column (`packages.python_min`) +
+        # one new table; the ALTER ladder fires that one ADD COLUMN, then
+        # the sentinel writes wait. Crash AT that first ALTER so the
+        # migration aborts mid-state (column added, sentinels not written).
+        class _CrashingConnection(sqlite3.Connection):
+            def execute(self, sql, *args, **kwargs):  # type: ignore[override]
+                call_log.append(sql)
+                if (
+                    "ALTER TABLE packages" in sql
+                    and "python_min" in sql
+                ):
+                    # Let the ALTER execute first so the column lands, then
+                    # crash on the next call (which is typically another
+                    # PRAGMA or sentinel write — exercises the post-DDL
+                    # recovery path).
+                    result = super().execute(sql, *args, **kwargs)
+                    raise RuntimeError(
+                        "simulated SIGKILL mid-v28-migration (DW-test-1)"
+                    )
+                return super().execute(sql, *args, **kwargs)
+
+        crashing_conn = sqlite3.connect(
+            str(db_path), factory=_CrashingConnection
+        )
+        crashing_conn.row_factory = sqlite3.Row
+        with pytest.raises(RuntimeError, match="simulated SIGKILL"):
+            atlas_mod.init_schema(crashing_conn)
+        crashing_conn.close()
+
+        # Re-run init_schema cleanly. Idempotent migration ladder must
+        # complete end-to-end from whatever partial state was left.
+        recovery_conn = atlas_mod.open_db(db_path)
+        atlas_mod.init_schema(recovery_conn)
+
+        # (a) packages.python_min present.
+        cols = {r[1] for r in recovery_conn.execute("PRAGMA table_info(packages)")}
+        assert "python_min" in cols, "recovery missing packages.python_min"
+
+        # (b) package_channel_downloads table present.
+        tbl_exists = bool(list(recovery_conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' "
+            "AND name='package_channel_downloads'"
+        )))
+        assert tbl_exists, "recovery missing package_channel_downloads table"
+
+        # (c) BOTH sentinels set so the next Phase E + Phase F populate.
+        for sentinel_key in ("phase_e_force_refresh_pending",
+                             "phase_f_force_refresh_pending"):
+            sentinel = recovery_conn.execute(
+                "SELECT value FROM meta WHERE key=?", (sentinel_key,)
+            ).fetchone()
+            assert sentinel is not None and sentinel[0] == "1", (
+                f"recovery missing {sentinel_key}=1"
+            )
+
+        # (d) schema_version at SCHEMA_VERSION.
+        schema = recovery_conn.execute(
+            "SELECT value FROM meta WHERE key='schema_version'"
+        ).fetchone()
+        assert int(schema[0]) == atlas_mod.SCHEMA_VERSION
+        recovery_conn.close()
+
     def test_already_v28_db_is_idempotent_no_op(self, tmp_path, atlas_mod):
         """Re-running init_schema on a v28 DB must not re-set the sentinels."""
         db_path = tmp_path / "cf_atlas.db"

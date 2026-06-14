@@ -31,6 +31,7 @@ Pixi:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import datetime as dt
 import io
@@ -359,42 +360,44 @@ def main() -> int:
                         help="Output format (default markdown).")
     args = parser.parse_args()
 
-    conn = _open_db()
+    # DW-W3-4 (v8.21.0): contextlib.closing wraps the DB so the connection
+    # is released even when the in-process MCP-server wrapper reuses the
+    # script (subprocess mode is fine; in-process mode leaked).
+    with contextlib.closing(_open_db()) as conn:
+        if args.policy_check:
+            rows, n_unknown_declared = run_policy_check(
+                conn,
+                package=args.package,
+                maintainer=args.maintainer,
+                threshold_pct=args.threshold_pct,
+            )
+            if args.format == "json":
+                print(json.dumps(rows, indent=2, default=str))
+            elif args.format == "csv":
+                sys.stdout.write(_emit_csv_policy(rows))
+            else:
+                sys.stdout.write(render_markdown_policy(
+                    rows, args.threshold_pct, args.maintainer, args.package,
+                ))
+            # Spec I/O matrix line 47: non-zero exit if ALL packages are unknown.
+            if rows and n_unknown_declared == len(rows):
+                return 1
+            return 0
 
-    if args.policy_check:
-        rows, n_unknown_declared = run_policy_check(
-            conn,
-            package=args.package,
-            maintainer=args.maintainer,
-            threshold_pct=args.threshold_pct,
-        )
+        # Single-package non-policy mode.
+        if not args.package:
+            print("error: provide PACKAGE, or use --policy-check.", file=sys.stderr)
+            return 2
+        rows = query_single_package(conn, args.package)
         if args.format == "json":
             print(json.dumps(rows, indent=2, default=str))
         elif args.format == "csv":
-            sys.stdout.write(_emit_csv_policy(rows))
+            sys.stdout.write(_emit_csv_single(rows))
         else:
-            sys.stdout.write(render_markdown_policy(
-                rows, args.threshold_pct, args.maintainer, args.package,
+            sys.stdout.write(render_markdown_single(
+                rows, args.package, args.threshold_pct,
             ))
-        # Spec I/O matrix line 47: non-zero exit if ALL packages are unknown.
-        if rows and n_unknown_declared == len(rows):
-            return 1
         return 0
-
-    # Single-package non-policy mode.
-    if not args.package:
-        print("error: provide PACKAGE, or use --policy-check.", file=sys.stderr)
-        return 2
-    rows = query_single_package(conn, args.package)
-    if args.format == "json":
-        print(json.dumps(rows, indent=2, default=str))
-    elif args.format == "csv":
-        sys.stdout.write(_emit_csv_single(rows))
-    else:
-        sys.stdout.write(render_markdown_single(
-            rows, args.package, args.threshold_pct,
-        ))
-    return 0
 
 
 if __name__ == "__main__":

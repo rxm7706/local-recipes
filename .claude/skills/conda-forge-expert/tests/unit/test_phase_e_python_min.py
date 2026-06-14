@@ -78,6 +78,45 @@ class TestExtractDeclaredPythonMin:
         assert atlas_mod._extract_declared_python_min("") is None
         assert atlas_mod._extract_declared_python_min(None) is None  # type: ignore[arg-type]
 
+    def test_v1_yaml_tag_str_extraction(self, atlas_mod):
+        """DW-W3-1 (v8.21.0): YAML `!!str` tag between the colon and the
+        value extracts cleanly."""
+        raw = (
+            "schema_version: 1\n\n"
+            "context:\n"
+            "  name: tagged\n"
+            "  python_min: !!str \"3.11\"\n"
+        )
+        assert atlas_mod._extract_declared_python_min(raw) == "3.11"
+
+    def test_v0_jinja_conditional_returns_none(self, atlas_mod):
+        """DW-W3-2 (v8.21.0): when the v0 `{% set python_min %}` block is
+        wrapped in a non-trivial `{% if %}`/`{% endif %}` (e.g. CUDA-only
+        override), the extractor returns None — the recipe only declares
+        the override conditionally, so `pyver_breakdown --policy-check`
+        must not treat it as bump-safe.
+        """
+        raw = (
+            "{% if cuda_compiler_version != \"None\" %}\n"
+            "{% set python_min = \"3.11\" %}\n"
+            "{% endif %}\n\n"
+            "package:\n"
+        )
+        assert atlas_mod._extract_declared_python_min(raw) is None
+
+    def test_v0_jinja_set_outside_if_returns_value(self, atlas_mod):
+        """DW-W3-2 (v8.21.0): bare `{% set python_min = "3.11" %}` not
+        wrapped in any `{% if %}` extracts as before — the new
+        conditional-detection logic must not break the unconditional
+        path.
+        """
+        raw = (
+            "{% set name = 'foo' %}\n"
+            "{% set python_min = \"3.11\" %}\n\n"
+            "package:\n"
+        )
+        assert atlas_mod._extract_declared_python_min(raw) == "3.11"
+
 
 class TestPhaseEPythonMinWrite:
     """Phase E populates `packages.python_min` from a mocked cf-graph tarball."""

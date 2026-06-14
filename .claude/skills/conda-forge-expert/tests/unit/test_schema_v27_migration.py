@@ -178,6 +178,72 @@ class TestSchemaV27Migration:
         assert row is not None and row[0] == "numpy"
         conn.close()
 
+    def test_v26_migration_recovers_from_partial_kill(
+        self, tmp_path, atlas_mod
+    ):
+        """DW-test-1 (v8.21.0): simulate a SIGKILL mid-ALTER ladder on the
+        v26 → v27 migration. After re-running init_schema with the
+        monkeypatch removed, assert (a) all 5 v27 columns present, (b)
+        sentinel set, (c) schema_version='27' (or higher SCHEMA_VERSION).
+
+        Strategy: subclass sqlite3.Connection so the Nth ALTER TABLE call
+        raises mid-ladder. Re-running init_schema on the same DB with the
+        unwrapped Connection confirms the migration ladder is genuinely
+        idempotent.
+        """
+        import sqlite3
+
+        db_path = tmp_path / "cf_atlas.db"
+        _seed_v26_db(db_path, atlas_mod)
+
+        call_log: list[str] = []
+
+        class _CrashingConnection(sqlite3.Connection):
+            def execute(self, sql, *args, **kwargs):  # type: ignore[override]
+                call_log.append(sql)
+                alter_count = sum(1 for s in call_log if "ALTER TABLE" in s)
+                if "ALTER TABLE packages" in sql and alter_count == 3:
+                    raise RuntimeError(
+                        "simulated SIGKILL mid-v27-migration (DW-test-1)"
+                    )
+                return super().execute(sql, *args, **kwargs)
+
+        crashing_conn = sqlite3.connect(
+            str(db_path), factory=_CrashingConnection
+        )
+        crashing_conn.row_factory = sqlite3.Row
+        with pytest.raises(RuntimeError, match="simulated SIGKILL"):
+            atlas_mod.init_schema(crashing_conn)
+        crashing_conn.close()
+
+        # Re-run init_schema cleanly on the same DB. Idempotent ladder must
+        # complete the migration end-to-end.
+        recovery_conn = atlas_mod.open_db(db_path)
+        atlas_mod.init_schema(recovery_conn)
+
+        # (a) All 5 v27 columns present on packages.
+        cols = {r[1] for r in recovery_conn.execute("PRAGMA table_info(packages)")}
+        for required in (
+            "downloads_30d", "downloads_90d", "downloads_trend_90d",
+            "first_nonzero_month", "last_nonzero_month",
+        ):
+            assert required in cols, f"recovery missing column {required}"
+
+        # (b) Force-refresh sentinel set so the next Phase F populates.
+        sentinel = recovery_conn.execute(
+            "SELECT value FROM meta WHERE key='phase_f_force_refresh_pending'"
+        ).fetchone()
+        assert sentinel is not None and sentinel[0] == "1", (
+            "recovery must end with phase_f_force_refresh_pending=1 set"
+        )
+
+        # (c) schema_version at SCHEMA_VERSION (>=27).
+        schema = recovery_conn.execute(
+            "SELECT value FROM meta WHERE key='schema_version'"
+        ).fetchone()
+        assert int(schema[0]) >= 27
+        recovery_conn.close()
+
     def test_already_v27_db_is_idempotent_no_op(self, tmp_path, atlas_mod):
         """Re-running init_schema on a v27 DB must not re-set the sentinel."""
         db_path = tmp_path / "cf_atlas.db"

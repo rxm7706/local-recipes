@@ -1321,6 +1321,13 @@ class _RateLimitedScheduler:
     """Token-bucket scheduler. Single-process, stdlib only, `time.monotonic()`-
     based (immune to wall-clock adjustments). `acquire()` blocks until at
     least one token is available, then consumes it.
+
+    **NOT thread-safe; use only from a single thread.** If multi-worker
+    pacing is needed, wrap each `acquire()` call site in
+    `threading.Lock`. The default Phase K path is single-worker by
+    construction; `PHASE_K_AGGRESSIVE=1` uses a ThreadPoolExecutor but
+    bypasses the scheduler, so the constraint holds there too
+    (DW-K-6, v8.21.0).
     """
 
     def __init__(self, rps: float, bucket_capacity: int = 10) -> None:
@@ -2041,11 +2048,25 @@ def _classify_source_url(source_url: Any) -> tuple[str | None, str | None]:
 # (`{% set python_min = "3.11" %}`); the remaining ~91% inherit the
 # conda-forge-pinning default and leave the column NULL.
 _PYTHON_MIN_V1_RE = re.compile(
-    r"^\s*python_min:\s*['\"]?(\d+\.\d+)['\"]?", re.MULTILINE
+    # DW-W3-1 (v8.21.0): optionally consume a YAML type tag like `!!str`
+    # (or any `!!<word>`) between the colon and the value so recipes
+    # written as `python_min: !!str "3.11"` extract correctly. Rare in the
+    # 5,001-sample survey but valid YAML.
+    r"^\s*python_min:\s*(?:!!\w+\s+)?['\"]?(\d+\.\d+)['\"]?", re.MULTILINE
 )
 _PYTHON_MIN_V0_RE = re.compile(
     r"\{%\s*set\s+python_min\s*=\s*['\"](\d+\.\d+)['\"]\s*%\}"
 )
+# DW-W3-2 (v8.21.0): Jinja conditional-wrap detectors used by
+# `_extract_declared_python_min` to flag v0 `{% set %}` blocks whose
+# wrapping `{% if … %}` makes the declaration conditional on a recipe
+# variable (e.g. `cuda_compiler_version != "None"`). When the wrapping
+# condition is non-trivial we treat the recipe as undeclared so
+# `pyver_breakdown --policy-check` doesn't mark a CUDA-only override as
+# bump-safe across the whole feedstock.
+_JINJA_IF_OPEN_RE = re.compile(r"\{%\s*if\b([^%]*?)%\}")
+_JINJA_ENDIF_RE = re.compile(r"\{%\s*endif\s*%\}")
+_JINJA_TRIVIAL_TRUE_RE = re.compile(r"^\s*(?:true|True|1)\s*$")
 
 
 def _extract_declared_python_min(raw_meta_yaml: str | None) -> str | None:
@@ -2070,6 +2091,46 @@ def _extract_declared_python_min(raw_meta_yaml: str | None) -> str | None:
         return m1.group(1)
     m0 = _PYTHON_MIN_V0_RE.search(raw_meta_yaml)
     if m0:
+        # DW-W3-2 (v8.21.0): if the v0 `{% set python_min %}` block is
+        # wrapped in a non-trivial `{% if <condition> %} … {% endif %}`,
+        # treat the recipe as undeclared. Common case:
+        # `{% if cuda_compiler_version != "None" %}{% set python_min = "3.11" %}{% endif %}`
+        # — the override only applies under the CUDA path, so flagging the
+        # whole feedstock bump-safe based on it would be wrong (consumer:
+        # `pyver_breakdown --policy-check`). Scan backwards for the
+        # nearest `{% if … %}` and forward for `{% endif %}`; if both
+        # exist around the match AND the condition is non-trivial
+        # (anything other than `true`/`True`/`1`/empty), return None.
+        match_start = m0.start()
+        # Find the nearest `{% if … %}` before the match.
+        last_if: re.Match[str] | None = None
+        for if_match in _JINJA_IF_OPEN_RE.finditer(raw_meta_yaml, 0, match_start):
+            last_if = if_match
+        if last_if is not None:
+            # Walk endifs forward from last_if.end() and balance against any
+            # nested ifs to find the matching endif. If we cross our match
+            # position before closing the outer if, the match is inside the
+            # conditional block.
+            cursor = last_if.end()
+            depth = 1
+            wraps_match = False
+            while depth > 0 and cursor < len(raw_meta_yaml):
+                next_if = _JINJA_IF_OPEN_RE.search(raw_meta_yaml, cursor)
+                next_endif = _JINJA_ENDIF_RE.search(raw_meta_yaml, cursor)
+                if next_endif is None:
+                    break
+                if next_if is not None and next_if.start() < next_endif.start():
+                    depth += 1
+                    cursor = next_if.end()
+                else:
+                    depth -= 1
+                    if depth == 0 and next_endif.start() > match_start:
+                        wraps_match = True
+                    cursor = next_endif.end()
+            if wraps_match:
+                condition = last_if.group(1)
+                if not _JINJA_TRIVIAL_TRUE_RE.match(condition or ""):
+                    return None
         return m0.group(1)
     return None
 
@@ -2955,6 +3016,23 @@ def _phase_f_via_s3(
     table = _parquet_cache.read_filtered(
         months, pkg_names=eligible_names, data_source="conda-forge"
     )
+    # DW-W2-2 (v8.21.0): PEP 503 canonicalize pkg_name BEFORE group_by and
+    # before the eligible_names matching. Mirrors the precedent established
+    # in `_phase_p_clickhouse` (see v8.16.2 § Phase P: `REGEXP_REPLACE(LOWER(
+    # file.project), r'[-_.]+', '-')`). Without this, a parquet row with
+    # `pkg_name='Pillow'` (capital P) misses the lookup against
+    # `eligible_names={'pillow'}` and Wave 2 columns silently stay NULL.
+    # Applied to BOTH this Wave 2 table and the Wave 3 channel_table below.
+    if table.num_rows > 0:
+        normalized_pkg = [
+            _pep503_canonical(n) if n else n
+            for n in table["pkg_name"].to_pylist()
+        ]
+        table = table.set_column(
+            table.schema.get_field_index("pkg_name"),
+            "pkg_name",
+            pa.array(normalized_pkg, type=pa.string()),
+        )
     print(f"  parquet rows after filter: {table.num_rows:,}")
 
     nz_table = table.filter(pc.field("counts") > 0)
@@ -3108,11 +3186,14 @@ def _phase_f_via_s3(
             plat_90d_map[key] = plat_90d_map.get(key, 0) + int(plat_sum_w[i] or 0)
 
     # Aggregate 5: per-(pkg_name, pkg_python) → totals + 90d windows.
-    # Filter pkg_python through ^(2\.7|3\.[0-9]{1,2})$ at write time to
-    # drop dirty parquet values (confirmed 2026-05-10: '7.3', '3.81',
-    # '2.30' etc. appear in raw parquet); per-row filtering keeps the
-    # rest of the aggregation cheap.
-    py_regex = re.compile(r"^(2\.7|3\.[0-9]{1,2})$")
+    # Filter pkg_python through ^(2\.7|3\.([0-9]|1[0-9]|20))$ at write
+    # time to drop dirty parquet values (confirmed 2026-05-10: '7.3',
+    # '3.81', '2.30' etc. appear in raw parquet); per-row filtering keeps
+    # the rest of the aggregation cheap. v8.21.0 DW-W2-1: tightened upper
+    # bound to `3.20` (closing the v8.18.0 docstring drift where '3.81'
+    # technically matched `3.[0-9]{1,2}`). Re-tighten when Python 3.21
+    # ships.
+    py_regex = re.compile(r"^(2\.7|3\.([0-9]|1[0-9]|20))$")
     by_py_total = table.group_by(["pkg_name", "pkg_python"]).aggregate([
         ("counts", "sum"),
     ])
@@ -3164,6 +3245,18 @@ def _phase_f_via_s3(
         months, pkg_names=eligible_names, data_source=None
     )
     if chan_table.num_rows > 0:
+        # DW-W2-2 (v8.21.0): same PEP 503 canonicalization as the Wave 2
+        # table above so mixed-case parquet rows (e.g. 'Pillow') align with
+        # the lowercase-canonical `eligible_names` set.
+        normalized_chan_pkg = [
+            _pep503_canonical(n) if n else n
+            for n in chan_table["pkg_name"].to_pylist()
+        ]
+        chan_table = chan_table.set_column(
+            chan_table.schema.get_field_index("pkg_name"),
+            "pkg_name",
+            pa.array(normalized_chan_pkg, type=pa.string()),
+        )
         if last3_set:
             last3_array_chan = pa.array(list(last3_set), type=pa.string())
             chan_win_table = chan_table.filter(
@@ -4996,6 +5089,19 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
             "expect HTTP 403 churn",
             file=sys.stderr,
         )
+    else:
+        # DW-K-3 (v8.21.0): PHASE_K_CONCURRENCY does nothing in sustained-
+        # rate mode (the default path runs serially through the scheduler).
+        # Surface a one-line advisory so an operator who set it expecting
+        # throughput control isn't silently surprised.
+        _conc_env = os.environ.get("PHASE_K_CONCURRENCY")
+        if _conc_env is not None:
+            print(
+                f"  Phase K: PHASE_K_CONCURRENCY={_conc_env} ignored in "
+                f"sustained-rate mode; use PHASE_K_AGGRESSIVE=1 or "
+                f"PHASE_K_REQUESTS_PER_SECOND=N to control throughput",
+                file=sys.stderr,
+            )
     cutoff = int(time.time()) - ttl_days * 86400
     run_started_at = int(time.time())
 
@@ -5044,27 +5150,39 @@ def phase_k_vcs_versions(conn: sqlite3.Connection) -> dict:
     ).fetchone()
     sentinel_consumed = sentinel_row is not None
     if sentinel_row is not None:
-        existing_names = {row["conda_name"] for row in rows}
-        backfill_sql = (
-            "SELECT p.conda_name, p.conda_repo_url, p.conda_dev_url, "
-            "       p.conda_homepage "
-            "FROM v_actionable_packages p "
-            "JOIN upstream_versions u "
-            "  ON u.conda_name = p.conda_name "
-            " AND u.source IN ('github','gitlab','codeberg') "
-            "WHERE u.last_error LIKE '%403%' "
-            "GROUP BY p.conda_name"
-        )
-        extra_rows = [
-            row for row in conn.execute(backfill_sql)
-            if row["conda_name"] not in existing_names
-        ]
-        if extra_rows:
-            rows.extend(extra_rows)
+        # DW-K-1 (v8.21.0): when PHASE_K_LIMIT is set (debug knob), skip
+        # the backfill expansion entirely. Otherwise a `PHASE_K_LIMIT=10`
+        # debug run on a freshly-upgraded DB could append thousands of
+        # `last_error LIKE '%403%'` rows, exploding the run. Sentinel is
+        # still DELETEd on success per the existing one-shot contract.
+        if limit > 0:
             print(
-                f"  v8.20.0 403-backfill: +{len(extra_rows):,} rows added to "
-                f"eligibility list (last_error LIKE '%403%'; TTL bypassed)"
+                "  Phase K: PHASE_K_LIMIT set; skipping 403 backfill "
+                "expansion (set PHASE_K_LIMIT=0 to enable)",
+                file=sys.stderr,
             )
+        else:
+            existing_names = {row["conda_name"] for row in rows}
+            backfill_sql = (
+                "SELECT p.conda_name, p.conda_repo_url, p.conda_dev_url, "
+                "       p.conda_homepage "
+                "FROM v_actionable_packages p "
+                "JOIN upstream_versions u "
+                "  ON u.conda_name = p.conda_name "
+                " AND u.source IN ('github','gitlab','codeberg') "
+                "WHERE u.last_error LIKE '%403%' "
+                "GROUP BY p.conda_name"
+            )
+            extra_rows = [
+                row for row in conn.execute(backfill_sql)
+                if row["conda_name"] not in existing_names
+            ]
+            if extra_rows:
+                rows.extend(extra_rows)
+                print(
+                    f"  v8.20.0 403-backfill: +{len(extra_rows):,} rows added to "
+                    f"eligibility list (last_error LIKE '%403%'; TTL bypassed)"
+                )
 
     print(f"  {len(rows):,} rows to scan (TTL {ttl_days}d, concurrency {concurrency})")
 
