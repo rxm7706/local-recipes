@@ -8552,13 +8552,80 @@ def run_single_phase(phase_id: str, conn: sqlite3.Connection) -> dict:
 
 # --- CLI ---
 
+def _parse_phase_list(raw: str | None) -> list[str]:
+    """Parse a comma-separated `--skip` / `--only` value into a normalized
+    list of phase IDs. Validates each entry against `PHASES`. Case- and
+    whitespace-insensitive. Returns `[]` for None / empty.
+
+    Used by `cmd_build` to support the v8.22.0 wrapper-split refactor —
+    `bootstrap_data.py` calls `conda_forge_atlas.py build --only F`
+    (etc.) so each sub-step gets its own timeout + independent ✓/✗
+    reporting instead of one monolithic step that times out.
+    """
+    if not raw:
+        return []
+    out: list[str] = []
+    valid = {name.upper() for name, _ in PHASES}
+    for piece in raw.split(","):
+        token = piece.strip().upper()
+        if not token:
+            continue
+        if token not in valid:
+            raise ValueError(
+                f"unknown phase {piece.strip()!r}; "
+                f"valid: {', '.join(name for name, _ in PHASES)}"
+            )
+        out.append(token)
+    return out
+
+
 def cmd_build(args: argparse.Namespace) -> int:
-    """Build the unified map via the full pipeline."""
+    """Build the unified map via the full pipeline.
+
+    v8.22.0 — supports `--skip PHASES` and `--only PHASES` (comma-
+    separated phase IDs, case-insensitive). `--only` runs only the
+    listed phases in the order given; `--skip` excludes the listed
+    phases from the default pipeline. The two options are mutually
+    exclusive; mixing them is a hard error.
+
+    `bootstrap_data.py` routes its 4-sub-step orchestrator through
+    `--only` so each sub-step (core / F / K / N) gets its own timeout
+    + ✓/✗ line — replaces the monolithic `cf-atlas-build` wrapper
+    that surfaced a false-negative when the wrapper timed out before
+    the Python subprocess finished (v8.16.5 retro P2).
+    """
     print("=== Unified Map Build ===")
     conn = open_db()
     init_schema(conn)
     print(f"  DB: {DB_PATH}")
     print(f"  Schema version: {SCHEMA_VERSION}")
+
+    skip_phases = _parse_phase_list(getattr(args, "skip", None))
+    only_phases = _parse_phase_list(getattr(args, "only", None))
+    if skip_phases and only_phases:
+        print("  ERROR: --skip and --only are mutually exclusive", file=sys.stderr)
+        return 2
+
+    if only_phases:
+        # Preserve the order the operator passed (sub-step orchestrators
+        # may want to run F first, then K, etc.). Each must be unique.
+        phases_to_run: list[tuple[str, Any]] = []
+        seen: set[str] = set()
+        for token in only_phases:
+            if token in seen:
+                continue
+            seen.add(token)
+            phases_to_run.append(get_phase(token))
+        print(f"  --only: running {len(phases_to_run)} phase(s): "
+              f"{', '.join(name for name, _ in phases_to_run)}")
+    else:
+        skip_set = set(skip_phases)
+        phases_to_run = [
+            (name, fn) for name, fn in PHASES if name.upper() not in skip_set
+        ]
+        if skip_set:
+            print(f"  --skip: excluding {len(skip_set)} phase(s): "
+                  f"{', '.join(sorted(skip_set))}")
 
     if args.dry_run:
         print("  --dry-run: skeleton only, no pipeline execution")
@@ -8567,7 +8634,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         return 0
 
     stats: dict[str, Any] = {"phases_run": []}
-    for name, fn in PHASES:
+    for name, fn in phases_to_run:
         print(f"--- Phase {name} ---")
         try:
             phase_stats = fn(conn)
@@ -8635,6 +8702,14 @@ def main() -> int:
                          help="Create schema only; skip pipeline phases")
     p_build.add_argument("--export-json", action="store_true",
                          help="Also dump full table to cf_atlas_export.json")
+    p_build.add_argument("--skip", default=None,
+                         help="Comma-separated phase IDs to exclude from the "
+                              "default pipeline (e.g. 'F,K,N'). Case-"
+                              "insensitive. Mutually exclusive with --only.")
+    p_build.add_argument("--only", default=None,
+                         help="Comma-separated phase IDs to run, in the order "
+                              "given (e.g. 'F'). Case-insensitive. Skips all "
+                              "other phases. Mutually exclusive with --skip.")
     p_build.set_defaults(func=cmd_build)
 
     p_query = sub.add_parser("query", help="Look up a package by name")
