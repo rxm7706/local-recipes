@@ -5,26 +5,31 @@ context:
   version: "2.14.2"
 
 package:
-  name: confluent-kafka-python
+  name: python-confluent-kafka
   version: ${{ version }}
 
 source:
-  url: https://github.com/confluentinc/confluent-kafka-python/archive/v${{ version }}.tar.gz
+  url: https://github.com/confluentinc/confluent-kafka-python/archive/refs/tags/v${{ version }}.tar.gz
   sha256: ecb337684adf26a78fd04eb5ef294d49325af6929a3a856d4981029875baaf13
   patches:
-    - 0001-Fix-setup-for-windows.patch  # [win]
+    - if: win
+      then: 0001-Fix-setup-for-windows.patch
 
 build:
-  number: 0
+  number: 1
+  # Upstream does not support PyPy.
+  # https://github.com/confluentinc/confluent-kafka-python/issues/1747#issuecomment-2112004625
+  skip: match(python_impl, "pypy")
   script:
-    - export CFLAGS="${CFLAGS} -I${PREFIX}/include"  # [unix]
-    - export LDFLAGS="${LDFLAGS} -I${PREFIX}/lib"    # [unix]
-    - set CFLAGS="%CFLAGS% /I%LIBRARY_INC%"          # [win]
-    - set LDFLAGS="%LDFLAGS% /I%LIBRARY_LIB%"        # [win]
-    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  # This package does not support PyPy.
-  # See https://github.com/confluentinc/confluent-kafka-python/issues/1747#issuecomment-2112004625
-  # skip: true  # [python_impl == 'pypy']
+    - if: unix
+      then: |
+        export CFLAGS="${CFLAGS} -I${PREFIX}/include"
+        export LDFLAGS="${LDFLAGS} -I${PREFIX}/lib"
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      else: |
+        set "CFLAGS=%CFLAGS% /I%LIBRARY_INC%"
+        set "LDFLAGS=%LDFLAGS% /I%LIBRARY_LIB%"
+        %PYTHON% -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
@@ -37,13 +42,18 @@ requirements:
         - crossenv
   host:
     - python
+    - pip
     - setuptools >=62
     - wheel
-    - pip
-    - librdkafka >={{ version }}
+    - librdkafka >=${{ version }}
   run:
     - python
-    - librdkafka >={{ version }}
+    - librdkafka >=${{ version }}
+    # Upstream requirements/requirements.txt declares
+    # `typing-extensions ; python_version < "3.11"`. The runtime overhead on
+    # 3.11+ is negligible, so we ship it unconditionally rather than gating
+    # the marker into a conda-forge selector.
+    - typing_extensions
 
 tests:
   - python:
@@ -53,13 +63,13 @@ tests:
 
 about:
   summary: Confluent's Python client for Apache Kafka
-  license: Apache-2.0
-  license_file: LICENSE
-  homepage: https://github.com/confluentinc/confluent-kafka-python
   description: |
     Confluent's Kafka client for Python wraps the librdkafka C library,
     providing full Kafka protocol support with great performance and
     reliability.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/confluentinc/confluent-kafka-python
   documentation: http://docs.confluent.io/current/clients/confluent-kafka-python/index.html
 
 extra:
