@@ -31,6 +31,21 @@ build:
       # packages with deep dep graphs (~600 crates incl. tree-sitter ×
       # ~70 grammars + hyper + tower + rustls + heed). STRIP: symbols
       # also skipped to minimize matrix complexity.
+      # EXPERIMENT (Option A): redirect Windows wininet INetCache out
+      # of the rattler-build work directory so the post-build Azure 7z
+      # archive step can enumerate the work tree cleanly. Under strict
+      # env-isolation (rattler-build v0.62+), %LOCALAPPDATA% resolves
+      # inside the sandboxed CONDA_BLD_PATH; wininet then writes its IE
+      # cache there, and the Content.IE5 subtree gets restricted Windows
+      # ACLs that 7z cannot enumerate (CFE skill G18). Pointing
+      # LOCALAPPDATA at C:\Temp keeps the cache on the C: drive (Azure
+      # agents have it writable) and OUTSIDE the work tree. If this
+      # redirect works on Azure win CI, the conda-forge.yml in this
+      # branch unscopes `workflow_settings.store_build_artifacts: true`
+      # back to all platforms — restoring Windows artifact archival for
+      # the v8.14.0 pr-artifacts smoke-test workflow. LOCALAPPDATA is
+      # Windows-only — Linux + macOS ignore it.
+      #LOCALAPPDATA: 'C:\Temp\cocoindex_appdata'
     content:
       - if: unix
         then: |
