@@ -763,6 +763,58 @@ derived or measured. The discipline is the same: write the claim
 empirically grounded (cite the source, do the math), or ship-first-
 measure-then-write-the-claim.
 
+**(n) Wrapper-timeout false-negatives are a structural defect, not
+a tuning problem.** v8.16.6 raised the `bootstrap-data` cf-atlas
+wrapper timeout from 7,200 s → 14,400 s to mitigate a wrapper-level
+false-negative: `bootstrap-data --profile admin` printed
+`✗ cf-atlas-build` while the Python subprocess kept running and
+finished cleanly. Raising the timeout only widens the slack window
+before the false-negative recurs — it doesn't fix the underlying
+defect that **one operator-facing ✓/✗ aggregates ~21 phases under
+one wrapper**, hiding which phase actually slipped past the wall
+clock when individual phase durations span 100× (Phase F's
+s3-parquet ~30 s vs. Phase K's sustained-rate ~75 min). v8.22.0
+fixed it structurally by splitting the wrapper into 4 sub-steps
+(`core` / `F` / `K` / `N`) each with its own timeout +
+independent ✓/✗ reporting. **Discipline rule**: when a wrapper
+around N phases produces a single boolean exit code while
+individual phase durations vary by 100×, the wrapper's "did it
+succeed" semantics are degenerate. Raise the timeout once to stop
+the symptom (v8.16.6-class mitigation buys time), then split the
+wrapper (v8.22.0-class structural fix). **Always keep a legacy
+escape hatch** (`BOOTSTRAP_CF_ATLAS_TIMEOUT=14400` restores the
+v8.16.6 single-subprocess behavior) for operators with log-scrapers
+or monitors keyed on the old single-row summary shape. The escape
+hatch is cheap to maintain (one env-var check + one fallback
+branch) and saves the cross-org coordination cost of a breaking
+change to `bootstrap-data` summary output.
+
+**(o) Phase-ordering invariants survive sub-step splits only if
+you preserve canonical ordering inside each sub-step.** v8.22.0's
+4-sub-step split (`core` / `F` / `K` / `N`) had to preserve the
+canonical PHASES execution order INSIDE the `core` sub-step:
+B → B.5 → B.6 → C → C.5 → D → O → P → Q → R → S → E → E.5 → G →
+G' → H → J → L → M. Phase J (which reads `cf-graph.tar.gz`
+populated by Phase E) MUST run after Phase E within the same
+sub-step, or it silently produces zero rows. Two new operator
+flags shipped with v8.22.0 (`--skip PHASES`, `--only PHASES`)
+expose phase selection to the operator; the implementation
+preserves operator-specified order under `--only` (the operator is
+explicit), but iterates **canonical PHASES order minus the skip
+set** under `--skip` so the safe default holds when the operator
+doesn't reorder. **Discipline rule**: in any phase-orchestration
+refactor that adds operator-facing phase-selection flags, the
+canonical PHASES list is the source of truth for ordering UNLESS
+the operator's flag explicitly opts out. A wrapper-split refactor
+doesn't introduce new schema or tables, but it can silently
+violate phase prerequisites by reordering — verify ordering
+invariants in tests that seed Phase-E-output and assert Phase J
+reads it, not just by inspection of the dispatcher list. The
+`test_cmd_build_only_preserves_listed_order` /
+`test_cmd_build_skip_excludes_phases` pair in
+`tests/unit/test_conda_forge_atlas_build.py` is the v8.22.0
+template for this discipline.
+
 ---
 
 ## 11. Per-day local cache for rolling-window queries
