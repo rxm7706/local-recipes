@@ -25,6 +25,7 @@ Pixi:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import io
 import json
@@ -247,51 +248,54 @@ def main() -> int:
                         help="Output format (default markdown).")
     args = parser.parse_args()
 
-    conn = _open_db()
-    rows: list[dict[str, Any]]
-    mode: str
+    # DW-W3-4 (v8.21.0): contextlib.closing wraps the DB so the connection
+    # is released even when the in-process MCP-server wrapper reuses the
+    # script (subprocess mode is fine; in-process mode leaked).
+    with contextlib.closing(_open_db()) as conn:
+        rows: list[dict[str, Any]]
+        mode: str
 
-    if args.feedstock_roundup:
-        if not args.maintainer:
-            print("error: --feedstock-roundup requires --maintainer",
+        if args.feedstock_roundup:
+            if not args.maintainer:
+                print("error: --feedstock-roundup requires --maintainer",
+                      file=sys.stderr)
+                return 2
+            rows = query_feedstock_roundup(conn, args.maintainer)
+            rows = _annotate_shares(rows)
+            mode = "roundup"
+        elif args.top is not None:
+            if not args.platform:
+                print("error: --top requires --platform", file=sys.stderr)
+                return 2
+            rows = query_top_by_platform(conn, args.platform, args.top)
+            # Single-platform queries: share_pct is N/A (intra-package share is
+            # always 100% on the filtered platform); set to None to make
+            # downstream renderers skip it cleanly.
+            for r in rows:
+                r["share_pct"] = None
+            mode = "top"
+        elif args.package:
+            rows = query_single_package(conn, args.package)
+            rows = _annotate_shares(rows)
+            mode = "single"
+        else:
+            print("error: provide PACKAGE, --top + --platform, or "
+                  "--feedstock-roundup + --maintainer",
                   file=sys.stderr)
             return 2
-        rows = query_feedstock_roundup(conn, args.maintainer)
-        rows = _annotate_shares(rows)
-        mode = "roundup"
-    elif args.top is not None:
-        if not args.platform:
-            print("error: --top requires --platform", file=sys.stderr)
-            return 2
-        rows = query_top_by_platform(conn, args.platform, args.top)
-        # Single-platform queries: share_pct is N/A (intra-package share is
-        # always 100% on the filtered platform); set to None to make
-        # downstream renderers skip it cleanly.
-        for r in rows:
-            r["share_pct"] = None
-        mode = "top"
-    elif args.package:
-        rows = query_single_package(conn, args.package)
-        rows = _annotate_shares(rows)
-        mode = "single"
-    else:
-        print("error: provide PACKAGE, --top + --platform, or "
-              "--feedstock-roundup + --maintainer",
-              file=sys.stderr)
-        return 2
 
-    if args.format == "json":
-        print(json.dumps(rows, indent=2, default=str))
-    elif args.format == "csv":
-        sys.stdout.write(_emit_csv(rows))
-    else:
-        if mode == "single":
-            sys.stdout.write(render_markdown_single(rows, args.package or "?"))
-        elif mode == "top":
-            sys.stdout.write(render_markdown_top(rows, args.platform or "?"))
+        if args.format == "json":
+            print(json.dumps(rows, indent=2, default=str))
+        elif args.format == "csv":
+            sys.stdout.write(_emit_csv(rows))
         else:
-            sys.stdout.write(render_markdown_roundup(rows, args.maintainer or "?"))
-    return 0
+            if mode == "single":
+                sys.stdout.write(render_markdown_single(rows, args.package or "?"))
+            elif mode == "top":
+                sys.stdout.write(render_markdown_top(rows, args.platform or "?"))
+            else:
+                sys.stdout.write(render_markdown_roundup(rows, args.maintainer or "?"))
+        return 0
 
 
 if __name__ == "__main__":

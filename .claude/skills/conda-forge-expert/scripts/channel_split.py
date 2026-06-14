@@ -28,6 +28,7 @@ Pixi:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import io
 import json
@@ -308,60 +309,62 @@ def main() -> int:
                         help="Output format (default markdown).")
     args = parser.parse_args()
 
-    conn = _open_db()
+    # DW-W3-4 (v8.21.0): contextlib.closing wraps the DB so the connection
+    # is released even when the in-process MCP-server wrapper reuses the
+    # script (subprocess mode is fine; in-process mode leaked).
+    with contextlib.closing(_open_db()) as conn:
+        if args.migration_checklist:
+            if not args.maintainer:
+                print("error: --migration-checklist requires --maintainer",
+                      file=sys.stderr)
+                return 2
+            # Default threshold for the checklist when none given.
+            floor = args.defaults_share_min if args.defaults_share_min is not None else 10.0
+            rows = query_defaults_heavy(
+                conn,
+                defaults_share_min=floor,
+                top=args.top,
+                maintainer=args.maintainer,
+            )
+            if args.format == "json":
+                print(json.dumps(rows, indent=2, default=str))
+            elif args.format == "csv":
+                sys.stdout.write(_emit_csv(rows))
+            else:
+                sys.stdout.write(render_migration_checklist(rows))
+            return 0
 
-    if args.migration_checklist:
-        if not args.maintainer:
-            print("error: --migration-checklist requires --maintainer",
+        if args.defaults_share_min is not None:
+            rows = query_defaults_heavy(
+                conn,
+                defaults_share_min=args.defaults_share_min,
+                top=args.top,
+                maintainer=args.maintainer,
+            )
+            if args.format == "json":
+                print(json.dumps(rows, indent=2, default=str))
+            elif args.format == "csv":
+                sys.stdout.write(_emit_csv(rows))
+            else:
+                sys.stdout.write(render_markdown_top(
+                    rows, defaults_share_min=args.defaults_share_min,
+                ))
+            return 0
+
+        if not args.package:
+            print("error: provide PACKAGE, --defaults-share-min, or "
+                  "--migration-checklist + --maintainer",
                   file=sys.stderr)
             return 2
-        # Default threshold for the checklist when none given.
-        floor = args.defaults_share_min if args.defaults_share_min is not None else 10.0
-        rows = query_defaults_heavy(
-            conn,
-            defaults_share_min=floor,
-            top=args.top,
-            maintainer=args.maintainer,
-        )
+
+        rows = query_single_package(conn, args.package)
         if args.format == "json":
             print(json.dumps(rows, indent=2, default=str))
         elif args.format == "csv":
             sys.stdout.write(_emit_csv(rows))
         else:
-            sys.stdout.write(render_migration_checklist(rows))
+            sys.stdout.write(render_markdown_single(rows, args.package))
         return 0
-
-    if args.defaults_share_min is not None:
-        rows = query_defaults_heavy(
-            conn,
-            defaults_share_min=args.defaults_share_min,
-            top=args.top,
-            maintainer=args.maintainer,
-        )
-        if args.format == "json":
-            print(json.dumps(rows, indent=2, default=str))
-        elif args.format == "csv":
-            sys.stdout.write(_emit_csv(rows))
-        else:
-            sys.stdout.write(render_markdown_top(
-                rows, defaults_share_min=args.defaults_share_min,
-            ))
-        return 0
-
-    if not args.package:
-        print("error: provide PACKAGE, --defaults-share-min, or "
-              "--migration-checklist + --maintainer",
-              file=sys.stderr)
-        return 2
-
-    rows = query_single_package(conn, args.package)
-    if args.format == "json":
-        print(json.dumps(rows, indent=2, default=str))
-    elif args.format == "csv":
-        sys.stdout.write(_emit_csv(rows))
-    else:
-        sys.stdout.write(render_markdown_single(rows, args.package))
-    return 0
 
 
 if __name__ == "__main__":

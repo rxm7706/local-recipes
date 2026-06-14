@@ -107,6 +107,13 @@ the natural `last_error != NULL` TTL bypass). Pattern reach: any phase
 fanning out to a host with documented sustained-rate limits but no
 GraphQL alternative (Codeberg, GitLab REST, crates.io, rubygems.org).
 
+**Codeberg note (v8.21.0):** the 3 RPS default is uncited for Codeberg —
+auto-memory `project_phase_k_secondary_rate_limit.md` covers GitHub only.
+Volume is small (~16 rows in a typical channel-wide Phase K run), and
+Codeberg's documented limits are higher than GitHub's; 3 RPS appears
+safe. Revisit if Codeberg-hosted feedstocks grow above ~100 OR a
+Codeberg HTTP 403 surfaces in `upstream_versions.last_error`.
+
 ---
 
 ## 2. GraphQL batching beats REST fanout for GitHub

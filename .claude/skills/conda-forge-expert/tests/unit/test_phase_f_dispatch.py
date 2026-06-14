@@ -385,6 +385,71 @@ class TestS3ParquetWave2Metrics:
         ).fetchone()
         assert row["downloads_trend_90d"] is None  # prev_90d == 0
 
+    def test_pep503_normalization_matches_mixed_case_parquet(
+        self, monkeypatch, tmp_path, atlas_mod
+    ):
+        """DW-W2-2 (v8.21.0): parquet rows with non-canonical pkg_name
+        (e.g. capital-P `Pillow`) must align with the lowercase canonical
+        eligible_names set so Wave 2 columns + breakdown tables populate.
+        Mirrors the `_phase_p_clickhouse` PEP 503 precedent.
+        """
+        # Build a DB with conda_name='pillow' (lowercase canonical) so the
+        # eligible_names set will contain only the canonical form.
+        db_path = tmp_path / "cf_atlas.db"
+        conn = atlas_mod.open_db(db_path)
+        atlas_mod.init_schema(conn)
+        conn.execute(
+            "INSERT INTO packages (conda_name, relationship, match_source, "
+            "match_confidence, latest_status, latest_conda_version, "
+            "feedstock_archived, downloads_fetched_at) "
+            "VALUES (?, 'has_conda', 'test', 'high', 'active', '10.0.0', 0, 0)",
+            ("pillow",),
+        )
+        conn.commit()
+
+        _scrub_phase_f_env(monkeypatch)
+        monkeypatch.setenv("PHASE_F_SOURCE", "s3-parquet")
+        import pyarrow as pa
+        months = ["2026-04"]
+        # Parquet ships the capital-P spelling — without DW-W2-2 the
+        # lookup against eligible_names={'pillow'} would miss entirely.
+        rows = [
+            ("2026-04", "conda-forge", "Pillow", "10.0.0",
+             "linux-64", "3.12", 500),
+        ]
+        table = pa.table({
+            "time":         [r[0] for r in rows],
+            "data_source":  [r[1] for r in rows],
+            "pkg_name":     [r[2] for r in rows],
+            "pkg_version":  [r[3] for r in rows],
+            "pkg_platform": [r[4] for r in rows],
+            "pkg_python":   [r[5] for r in rows],
+            "counts":       [r[6] for r in rows],
+        })
+        self._patch_parquet(monkeypatch, table, months)
+        atlas_mod.phase_f_downloads(conn)
+
+        row = conn.execute(
+            "SELECT total_downloads, downloads_source FROM packages "
+            "WHERE conda_name = 'pillow'"
+        ).fetchone()
+        assert row is not None
+        assert row["downloads_source"] == "s3-parquet"
+        # 500 downloads landed via the PEP 503 normalization — without it
+        # the row would be treated as `total_downloads=0` (no-data path).
+        assert row["total_downloads"] == 500, (
+            f"DW-W2-2: PEP 503 normalization must let parquet 'Pillow' "
+            f"match canonical 'pillow'; got total_downloads={row['total_downloads']}"
+        )
+        # Platform breakdown also populated.
+        plat_row = conn.execute(
+            "SELECT pkg_platform, downloads_total "
+            "FROM package_platform_downloads "
+            "WHERE conda_name = 'pillow'"
+        ).fetchone()
+        assert plat_row is not None and plat_row["downloads_total"] == 500
+        conn.close()
+
     def test_per_platform_breakdown_populated(self, monkeypatch, db, atlas_mod):
         _scrub_phase_f_env(monkeypatch)
         monkeypatch.setenv("PHASE_F_SOURCE", "s3-parquet")
@@ -472,12 +537,12 @@ class TestS3ParquetWave2Metrics:
     def test_python_regex_filter_drops_dirty_values(
         self, monkeypatch, db, atlas_mod
     ):
-        """Dirty pkg_python values that don't match ^(2\\.7|3\\.[0-9]{1,2})$
-        must not write rows. Per the spec regex, '7.3' (wrong major) and
-        '2.30' (wrong minor for py2) are dropped; '3.81' technically
-        matches `3.[0-9]{1,2}` and is kept (regex limitation — spec wording
-        mentions '3.81' as ambiguous; the documented regex is what gates).
-        Empty string and NULL also dropped.
+        """Dirty pkg_python values that don't match
+        ^(2\\.7|3\\.([0-9]|1[0-9]|20))$ must not write rows. v8.21.0
+        DW-W2-1 tightened the upper bound to `3.20` so '3.81' is now
+        dropped (previously kept; closes the v8.18.0 docstring drift).
+        '7.3' (wrong major), '2.30' (wrong py2 minor), empty string, and
+        NULL also dropped.
         """
         _scrub_phase_f_env(monkeypatch)
         monkeypatch.setenv("PHASE_F_SOURCE", "s3-parquet")
@@ -492,6 +557,8 @@ class TestS3ParquetWave2Metrics:
              "linux-64", "2.30", 999),    # dirty (wrong py2 minor) → dropped
             ("2026-04", "conda-forge", "requests", "2.31.0",
              "linux-64", "2.7", 50),      # valid (py2.7 special case) → kept
+            ("2026-04", "conda-forge", "requests", "2.31.0",
+             "linux-64", "3.81", 999),    # DW-W2-1: now dropped (>3.20)
             ("2026-04", "conda-forge", "requests", "2.31.0",
              "linux-64", "",  999),       # empty → dropped
             ("2026-04", "conda-forge", "django", "5.0.0",
@@ -528,12 +595,15 @@ class TestS3ParquetWave2Metrics:
         # Dirty values dropped
         assert "7.3" not in requests_pythons
         assert "2.30" not in requests_pythons
+        # DW-W2-1 (v8.21.0): regex tightened to upper-bound `3.20` so
+        # '3.81' is now dropped (previously matched `3.[0-9]{1,2}`).
+        assert "3.81" not in requests_pythons
         assert "" not in requests_pythons
         # L2 (b): no cross-contamination — verify django rows only ever
         # carry pkg_python values from django fixture rows ('3.11'), and
         # none of the 'requests' dirty values leak across.
         django_pythons = {p for (n, p) in rows_out if n == "django"}
-        for forbidden in ("7.3", "2.30", "3.12", "2.7", ""):
+        for forbidden in ("7.3", "2.30", "3.12", "2.7", "3.81", ""):
             assert forbidden not in django_pythons, (
                 f"cross-contamination: django row carries pkg_python={forbidden!r}"
             )
