@@ -24,7 +24,7 @@ nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
 bmad-method = ">=6.8.0"           # BMAD agent-driven dev framework (planning + dev skills)
 spec-kit = ">=0.10.2"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
-# pixi upgrade --pinning-strategy latest-up --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck
+# pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
 
 [feature.build.dependencies]
 conda = ">=26.5.0"                # conda package manager
@@ -555,7 +555,7 @@ kedro-viz = ">=12.3.0"            # Visualize your Kedro pipelines in the browse
 panel = ">=1.9.3"                 # The powerful data exploration & web app framework for Python.
 panel-graphic-walker = ">=0.6.5"  # A project providing a Graphic Walker Pane for use with HoloViz Panel. Graphic Walker is an open-source alternative to Tableau.
 vizro = ">=0.1.58"                # Vizro is a package to facilitate visual analytics.
-#vizro-ai = ">=0.4.0"              # Vizro-AI is a tool for generating data visualizations # TODO PY314 conda-forge compat check; depends on vizro and python-quickjs which is not available on conda-forge for osx-arm64
+vizro-ai = ">=0.4.0"              # Vizro-AI is a tool for generating data visualizations.
 vizro-mcp = ">=0.1.4"             # MCP server to help create Vizro dashboards and charts
 #streamlit = ">=1.52.2"            # Needs Notebook and Jupyterlab A faster way to build and share data apps
 #perspective = ">=4.5.0"           # Streaming pivot visualization via WebAssembly, No Windows
@@ -598,7 +598,7 @@ speechrecognition = ">=3.10.4"    # Speech recognition library for Python (suppo
 tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pytesseract)
 transformers = ">=5.12.0"         # Hugging Face transformers (model hub + pipelines)
 xlrd = ">=2.0.2"                  # Excel .xls reader (used in markitdown's Excel loader)
-#cocoindex = "*"                   # Incremental engine for long horizon agents
+cocoindex = ">=1.0.10"             # Incremental engine for long horizon agents
 #graphify = "*"                    # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ## Data processing & conversion (ibis + adjacent ecosystem)
 google-cloud-bigquery = ">=3.41.0" # BigQuery client — cf_atlas Phase P (opt-in via PHASE_P_ENABLED=1; needs ADC creds via the `gcloud` env)
@@ -634,7 +634,7 @@ lumen-ai-anthropic = ">=1.0.0"    # Lumen AI's Anthropic backend integration
 mcp = ">=1.27.2"                  # Official Model Context Protocol Python SDK
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=1.107.0"          # Pydantic-AI agent framework
-"llama.cpp" = ">=9596"            # llama.cpp local LLM inference engine
+"llama.cpp" = ">=9631"            # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
 #litellm = ">=1.83.14"             # NOT ADDED - Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
