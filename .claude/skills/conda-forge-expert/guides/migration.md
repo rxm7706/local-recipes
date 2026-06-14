@@ -578,6 +578,117 @@ diff <(conda-render recipes/my-package-legacy) \
 
 Not recommended. Choose one format per feedstock.
 
+## Migration Discipline
+
+Five points learned the hard way from feedstock v0→v1 migrations. Each one carries an empirical case to show why the discipline is required, not optional.
+
+### 1. `package.name:` MUST match the feedstock identity, not the local folder name
+
+When migrating an existing feedstock, the conda-forge package on the channel is the canonical name. The local-recipes folder often mirrors the upstream GitHub repo (because that's where you first scaffolded the recipe) — those two names can differ:
+
+| Local folder | Upstream GitHub repo | conda-forge feedstock | conda-forge package |
+|---|---|---|---|
+| `recipes/confluent-kafka-python/` | `confluentinc/confluent-kafka-python` | `python-confluent-kafka-feedstock` | `python-confluent-kafka` |
+
+The v1 `package.name:` MUST match the **package name conda-forge already ships**, not the folder name or the GitHub repo name. Changing it during the migration would:
+- Mint a parallel package on conda-forge (e.g. `confluent-kafka-python` *and* `python-confluent-kafka`)
+- Orphan existing users on the old name (their `conda install python-confluent-kafka` continues to resolve to the legacy v0 build; the new v1 build only ships under the new name)
+- Fail review on staged-recipes / feedstock review because the rename isn't deliberate
+
+**Verify before pushing**:
+
+```bash
+# Confirm what conda-forge currently ships
+pixi run -e local-recipes lookup_feedstock <expected-conda-name>
+```
+
+`exists=True` with the right feedstock URL confirms the canonical name. The hand-written `recipe.yaml` carrying a different `package.name:` is a recipe-audit failure, even if `validate_recipe` and `optimize_recipe` are both clean — neither tool knows the canonical conda-forge name; only the maintainer does.
+
+### 2. Bump `build.number` on same-version v0→v1 swap
+
+When the migration ships against the same upstream version that's currently shipping on conda-forge (no version bump in the same PR), `build.number` MUST increment (typically `0 → 1`).
+
+| Scenario | `build.number` |
+|---|---|
+| v0→v1 migration, same upstream version | `0 → 1` (increment) |
+| v0→v1 migration, bundled with upstream version bump | `0` (reset; version bump provides hash separation) |
+| Pure version bump, no format change | reset to `0` |
+
+The reasoning: conda-forge's solver chooses among build variants of the same `<name>-<version>` by build number (higher wins). Existing users on `<pkg>-<version>-*_0` need to be able to upgrade cleanly to the v1-built `<pkg>-<version>-*_1`. Reusing `_0` would either fail the channel upload (immutability — same `<name>-<version>-<build_hash>_<build_num>` already exists) or mint a colliding hash that nobody can sort out.
+
+This isn't documented in any conda-forge schema or tool; reviewers will ask for it on the PR if you forget.
+
+### 3. Stash `meta.yaml` aside during local validation — don't pre-delete
+
+The CRITICAL CONSTRAINT in SKILL.md is "Never Mix Formats in a Build Run" — `meta.yaml` and `recipe.yaml` cannot coexist for an active build. But the Migration Protocol also says "Remove `meta.yaml` only after step 4 succeeds — never before." How do you run steps 2-4 without both files being present and triggering `STD-002`?
+
+The practical pattern:
+
+```bash
+# Before running validate / optimize / build:
+mv recipes/<name>/meta.yaml recipes/<name>/meta.yaml.bak
+
+# Now optimize_recipe stops emitting STD-002, build sees only recipe.yaml.
+pixi run -e local-recipes validate recipes/<name>
+pixi run -e local-recipes optimize recipes/<name>
+pixi run -e local-recipes recipe-build recipes/<name>
+
+# After the green build, restore meta.yaml in the local mirror as the
+# pre-migration reference; only the feedstock fork drops it.
+mv recipes/<name>/meta.yaml.bak recipes/<name>/meta.yaml
+```
+
+Keep the v0 copy in the local mirror until the feedstock PR merges — it's a useful before/after reference during PR review. When the PR merges and the migration is done, `git rm recipes/<name>/meta.yaml` in the local-recipes repo too.
+
+The fork branch is where `meta.yaml` actually disappears (`git rm recipe/meta.yaml` + commit). Two different deletes: the fork branch deletes it on the migration PR; the local mirror deletes it at PR-merge time.
+
+### 4. `conda_build_tool: rattler-build` MUST ship paired with `conda_install_tool: pixi`
+
+Adding `conda_build_tool: rattler-build` to `conda-forge.yml` is required for CI to use the v1 parser. But the modern 2026 canonical pattern pairs it with `conda_install_tool: pixi`:
+
+```yaml
+conda_build:
+  pkg_format: '2'
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+conda_forge_output_validation: true
+```
+
+`conda_install_tool: pixi` tells the CI to use pixi for environment installs (faster than micromamba and matches conda-forge's 2026 standardization on pixi). Without it, you get the older micromamba-driven CI install path; functional, but slower and a step behind the ecosystem standard.
+
+Both keys land in the **same** PR that drops `meta.yaml` and adds `recipe.yaml`. They're not separate concerns — they're the canonical "this feedstock uses v1 + rattler-build + pixi" declaration.
+
+After pushing the migration commit to the fork branch, **always request rerender** with `@conda-forge-admin, please rerender` on the PR comment thread. The CI scripts (Azure YAML, build-locally helpers, conda-forge-ci-setup invocations) need regenerating to invoke rattler-build instead of conda-build. Without the rerender, CI may still try the conda-build path and produce confusing errors.
+
+### 5. `pip_check: true` on first-time enablement may surface "new" runtime deps
+
+Many older meta.yaml v0 recipes don't have `pip check` in `test:` — it was opt-in for years. CFEP-25's v1 canonical noarch:python test block turns it on by default (`pip_check: true`), and best practice on v1 compiled recipes is to enable it too.
+
+When migrating an old recipe, expect `pip_check` to find runtime deps that upstream's PEP-508 markers introduced post-original-feedstock-creation. The original v0 recipe shipped without them because the v0 test was just `imports:` (no pip-check), so the missing dep was never caught.
+
+**Fix pattern**: add the missing dep to `requirements.run:`. Prefer unconditional listing over PEP-508-marker-gated conda-forge selectors for single transitive deps:
+
+```yaml
+# Upstream's requirements.txt:
+#   typing-extensions ; python_version < "3.11"
+#
+# Conda-forge recipe — ship unconditionally instead of gating the marker:
+requirements:
+  run:
+    - python
+    - librdkafka >=${{ version }}
+    # Upstream requires typing-extensions on Python <3.11. We ship it
+    # unconditionally; the runtime overhead on 3.11+ is negligible and
+    # the recipe stays simpler than gating the marker into a v1 selector.
+    - typing_extensions
+```
+
+The trade-off: the v1 selector form (`if: match(python, "<3.11") then: typing_extensions`) is more precise but adds recipe complexity for a tiny pure-Python dep. For single transitive deps, the unconditional pattern is canonical; for many marker-gated deps or large native deps, the selector form pays back its complexity.
+
+**Case**: python-confluent-kafka v0→v1 migration (Jun 14, 2026). Original v0 meta.yaml had `test.imports: [confluent_kafka]` only — no `pip check`. v1 migration added `pip_check: true` per CFEP-25 canonical pattern; local rattler-build immediately failed on `confluent-kafka 2.14.2 requires typing-extensions, which is not installed`. Upstream's `requirements/requirements.txt` had been declaring `typing-extensions ; python_version < "3.11"` since v2.x.x; the v0 recipe had simply never caught it because pip-check was off. Added `typing_extensions` to `run:` unconditionally; subsequent build green across py310/311/312/313.
+
+This is *expected* during v0→v1 migrations of older feedstocks. Plan for it; don't be surprised by it.
+
 ## Resources
 
 - [Recipe Format Schema](https://github.com/prefix-dev/recipe-format)
