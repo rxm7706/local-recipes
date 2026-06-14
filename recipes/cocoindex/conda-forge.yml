@@ -1,0 +1,32 @@
+github:
+  branch_name: main
+  tooling_branch_name: main
+conda_build:
+  error_overlinking: true
+conda_forge_output_validation: true
+workflow_settings:
+  # Scoped to non-Windows: the Azure win artifact-prep task runs `7z a`
+  # on the entire D:\bld work dir, which Rust/tree-sitter builds populate
+  # with Windows winhttp INetCache entries under
+  # AppData\Local\Microsoft\Windows\INetCache\Content.IE5 — restricted
+  # ACLs there cause 7z to exit 1 and the prepare task to fail even
+  # though the .conda artifact was produced. Keep the v8.14.0
+  # pr-artifacts smoke-test workflow on linux + osx where the build
+  # tree is clean.
+  store_build_artifacts:
+    - platform:
+        - linux_64
+        - linux_aarch64
+        - osx_64
+        - osx_arm64
+      value: true
+provider:
+  linux_aarch64: default
+  osx_arm64: default
+bot:
+  automerge: true
+  inspection: update-grayskull
+  check_solvable: true
+  run_deps_from_wheel: true
+conda_install_tool: pixi
+conda_build_tool: rattler-build

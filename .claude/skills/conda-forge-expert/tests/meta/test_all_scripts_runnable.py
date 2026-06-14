@@ -31,6 +31,7 @@ SCRIPTS = [
     "feedstock_lookup.py",
     "feedstock-migrator.py",
     "find_alternative.py",
+    "gen_yml_reference.py",
     "github_updater.py",
     "github_version_checker.py",
     "health_check.py",

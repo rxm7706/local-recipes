@@ -145,6 +145,7 @@ CI/issues/PRs).
 | MCP tool catalog | reference `reference/mcp-tools.md` |
 | Get started with conda-forge | guide `guides/getting-started.md` |
 | Maintain a feedstock | guide `guides/feedstock-maintenance.md` |
+| Refresh a feedstock + add platforms (e.g. osx-arm64, linux-aarch64) | guide `guides/feedstock-platform-expansion.md` |
 | Cross-compile / non-host platforms | guide `guides/cross-compilation.md` |
 | Test recipes | guide `guides/testing-recipes.md` |
 | CI failures | guide `guides/ci-troubleshooting.md` |

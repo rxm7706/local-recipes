@@ -7,6 +7,8 @@ conda_build_tool: rattler-build
 conda_build:
   pkg_format: '2'
 conda_forge_output_validation: true
+workflow_settings:
+  store_build_artifacts: true
 noarch_platforms:
   - linux_64
   - win_64
@@ -24,8 +26,8 @@ provider:
 test: native_and_emulated
 bot:
   automerge: true
-  inspection: hint-all
+  inspection: update-grayskull
   #inspection: update-all
-  #inspection: update-grayskull
+  #inspection: hint-all
   check_solvable: true
   run_deps_from_wheel: true

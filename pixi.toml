@@ -232,6 +232,10 @@ cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not sl
 description = "Validate a recipe against conda-forge schema and best practices"
 cmd = "python .claude/scripts/conda-forge-expert/validate_recipe.py"
 
+[feature.local-recipes.tasks.gen-yml-reference]
+description = "Regenerate exhaustive *-reference-full.md docs from upstream conda-smithy + rattler-build JSON schemas"
+cmd = "python .claude/scripts/conda-forge-expert/gen_yml_reference.py"
+
 [feature.local-recipes.tasks.check-deps]
 description = "Check that all recipe dependencies resolve on conda-forge"
 cmd = "python .claude/scripts/conda-forge-expert/dependency-checker.py"
