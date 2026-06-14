@@ -696,6 +696,66 @@ first non-match". If the investigation finds the same data verifiably
 present in a different shape, document the deviation and proceed.
 The fail-safe is the documentation + the CHANGELOG, not the HALT.
 
+**(l) Environment-variable boolean parses use strict `== "1"`, not
+`bool(os.environ.get(...))`.** A common Python gotcha that v8.20.0's
+Phase K implementation surfaced: the first sub-agent wrote
+`aggressive_mode = bool(os.environ.get("PHASE_K_AGGRESSIVE"))`.
+`bool()` of any non-empty string is True — so `PHASE_K_AGGRESSIVE=0`,
+`PHASE_K_AGGRESSIVE=false`, `PHASE_K_AGGRESSIVE=no`, even
+`PHASE_K_AGGRESSIVE=` *(with trailing space)* would silently re-arm
+the 8-worker burst pattern that the rest of the ship was designed to
+escape. The blind hunter caught the bug; the patch was
+`aggressive_mode = os.environ.get("PHASE_K_AGGRESSIVE") == "1"` —
+strict equality on the literal `"1"`. **Discipline rule**: any phase
+env-var that gates "opt-in to behavior X" uses **strict `== "1"`**
+not `bool(...)`. Document the convention in the env-var docstring
+("set =1 to opt in; anything else is treated as unset"). Apply
+uniformly across all `PHASE_*_AGGRESSIVE`, `PHASE_*_DEBUG_*`,
+`PHASE_*_ENABLED`, `PHASE_*_DISABLED` etc. flag variables. Numeric
+or string-value env vars (`PHASE_*_TTL_DAYS`, `PHASE_*_CONCURRENCY`)
+naturally use `int()`/`float()` parses and aren't affected. The
+v8.20.0 H4/EC-#7 patch added a sibling rule for numeric envs:
+**always validate finite-and-positive on `float()` parses** — wrap
+in try/except + `math.isfinite()` + fallback with stderr advisory;
+don't let an env-var typo (`nan`, `inf`, empty string) crash a phase
+with an unhelpful traceback.
+
+**(m) Spec I/O matrix consistency between "Expected Output" and
+"Error Handling" columns.** v8.20.0's Phase K spec I/O matrix row 3
+said both "DELETE FROM meta WHERE key='phase_k_403_backfill_pending'
+after eligibility-set built but before fanout starts" (Expected
+Output) AND "sentinel survives Phase K crash mid-run; next run re-
+applies (idempotent)" (Error Handling). These are contradictory: if
+the DELETE fires before fanout, a mid-fanout crash leaves the
+sentinel already deleted — recovery via sentinel re-application is
+impossible. The implementer picked the literal Expected-Output
+reading; the edge case hunter caught the contradiction
+post-implementation; the patch moved the DELETE to post-fanout-
+success (with a second DELETE at the empty-work success early-
+return) so mid-crashes correctly preserve the sentinel.
+**Discipline rule**: when authoring an I/O matrix row whose
+Error-Handling column describes a sentinel-based or marker-based
+recovery, the Expected-Output column MUST describe sentinel
+persistence consistent with the recovery contract. Don't write
+"DELETE before X" alongside "survives mid-X crash" — pick the
+recovery you actually want and write both columns to match. If the
+two columns describe legitimately different control paths (success
+vs. failure), separate them into two matrix rows. A spec contradiction
+costs an extra step-04 review cycle to catch; a clean I/O matrix
+costs nothing.
+
+**Note on rule (j) scope.** v8.19.1's rule (j) was titled
+"population-distribution claims need empirical-verification
+discipline". v8.20.0's AC-1 timing band (9.5–12 s vs. the actual
+5.5–12 s bucket-math floor) demonstrated the rule applies to
+**all quantitative claims**, not just population distributions —
+cost, coverage, distribution, timing, performance, throughput. The
+implementer caught the spec's math error and amended the AC; rule
+(j) is hereby clarified to cover any quantitative claim that can be
+derived or measured. The discipline is the same: write the claim
+empirically grounded (cite the source, do the math), or ship-first-
+measure-then-write-the-claim.
+
 ---
 
 ## 11. Per-day local cache for rolling-window queries
