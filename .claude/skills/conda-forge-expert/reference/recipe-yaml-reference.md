@@ -1,6 +1,14 @@
 # recipe.yaml Reference (v1 Format)
 
-Complete reference for the modern rattler-build recipe format.
+Curated reference for the modern rattler-build recipe format — the
+opinionated subset with rationale and worked examples.
+
+> **For exhaustive coverage** of every schema key (top-level + `$defs`),
+> see [`recipe-yaml-reference-full.md`](recipe-yaml-reference-full.md).
+> That file is auto-generated from
+> <https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json>
+> by `pixi run -e local-recipes gen-yml-reference`; re-run after the
+> upstream schema changes.
 
 ## Overview
 

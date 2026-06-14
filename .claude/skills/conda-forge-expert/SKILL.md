@@ -1511,6 +1511,114 @@ Keep the `--ignore-scripts` flag — it still does useful work on dependency-sid
 
 **Case study**: `recipes/open-design/build.sh` (Jun 11, 2026). The recipe was authored at v0.2.0 with `--ignore-scripts` and a comment ("`--ignore-scripts` skips the root package's postinstall") that was empirically false — the recipe had never actually been built. Bumping to v0.9.0 surfaced the bug when upstream's `scripts/postinstall.mjs` `buildTargets` list grew from 4 to 13 (adding `packages/download`, `packages/host`, `packages/registry-protocol`, `packages/agui-adapter`, `packages/plugin-runtime`, `packages/diagnostics`, `tools/dev`, `tools/pack`, `tools/serve`). The newly-added `packages/download` workspace's build script needed `esbuild` which the `@open-design/daemon...` filter didn't fetch. Fix shipped as the Python-pop snippet above; build green at `open-design-0.9.0-h07aa61f_0.conda` (9.51 MiB).
 
+### G18. `workflow_settings.store_build_artifacts: true` (unscoped) crashes Windows Azure builds via 7z + INetCache ACLs
+
+**Symptom**: feedstock CI shows `Run Windows build: succeeded` (the recipe's actual rattler-build phase finishes cleanly and the `.conda` artifact is produced — visible in the archive listing) but the very next Azure task `Prepare conda build artifacts: failed` with:
+
+```
+D:\bld\bld\rattler-build_<pkg>_<id>\.work.pending-rm-<id>\AppData\Local\Microsoft\Windows\INetCache\Content.IE5 : Access is denied.
+...
+##[error]Cmd.exe exited with code '1'.
+##[section]Finishing: Prepare conda build artifacts
+```
+
+The two follow-on Azure tasks `Store conda build artifacts` and `Store conda build environment artifacts` are reported `skipped` (gated on the prior task's success). The Azure leg is therefore marked `result=failed` on the timeline, the umbrella aggregator `<feedstock-name>` check goes red, and the PR can't advance to ready-for-review even though the build itself succeeded on every Python variant.
+
+**Why**: when `workflow_settings.store_build_artifacts` is `true` (or the legacy `azure.store_build_artifacts: true`), conda-smithy rerender stamps `store_build_artifacts: true` per win matrix entry in `.azure-pipelines/azure-pipelines-win.yml`, which the `Prepare conda build artifacts` step's `condition: eq(variables.store_build_artifacts, true)` then activates. That step calls `conda-forge-ci-setup`'s `.scripts/create_conda_build_artifacts.bat`, whose 7z invocation is:
+
+```bat
+7z a "<archive>" "%CONDA_BLD_PATH%" -xr^^!.git/ -xr^^!_*_env*/ -xr^^!*_cache/ -bb
+```
+
+It archives the entire `D:\bld\` work directory with only `.git/`, `_*_env*/`, and `*_cache/` excluded. Rust-heavy builds — anything that compiles tree-sitter, hyper, tower, reqwest, rustls/webpki, etc. — invoke Windows winhttp/wininet during fetch and write entries to `AppData\Local\Microsoft\Windows\INetCache\Content.IE5` inside the build sandbox's redirected user profile. That directory has restricted Windows ACLs (only the SYSTEM account or owner can enumerate the contents); 7z fails with errorlevel 1, the bat exits 1, and the entire post-build archive task fails. Linux and macOS legs are unaffected — the AppData/INetCache hierarchy is Windows-specific.
+
+**Fix**: scope `workflow_settings.store_build_artifacts` to non-Windows platforms via the conditional list form (per the v8.6+ conda-smithy schema — `ConditionalValue` supports `os` / `platform` / `provider` filters):
+
+```yaml
+workflow_settings:
+  store_build_artifacts:
+    - platform:
+        - linux_64
+        - linux_aarch64
+        - osx_64
+        - osx_arm64
+      value: true
+```
+
+After rerender, the win Azure variants stamp `store_build_artifacts: false`, the `condition:` on the prepare task evaluates false, the entire failing task is skipped, and the leg goes green. Linux + osx still publish their `.conda` files as downloadable Azure artifacts — the v8.14.0 `pixi run -e local-recipes pr-artifacts <pr>` smoke-test workflow keeps working there.
+
+**Upstream fix (out of feedstock scope)**: the durable fix is in `conda-forge-ci-setup`'s `.scripts/create_conda_build_artifacts.bat` — add `-xr^^!*INetCache*` and `-xr^^!AppData/` to the 7z exclude list. File a separate issue against `conda-forge/conda-forge-ci-setup` rather than ship the workaround in every Rust-heavy Windows feedstock.
+
+**When this comes up in practice**: any recipe that fetches over HTTPS during the build phase on Windows can in principle hit this. Rust+PyO3 / tree-sitter recipes are the most common trigger because their crate dependency trees include many HTTPS-fetching crates (reqwest, hyper, tower, webpki, rustls). Pure-Python recipes don't typically trigger it (pip uses its own cache, not winhttp).
+
+**Detection at scale**: search the Azure build timeline for the failure signature — a `Job` with `result=failed` whose `Run Windows build` sub-task is `result=succeeded` but `Prepare conda build artifacts` is `result=failed`. The timeline JSON is at `dev.azure.com/conda-forge/feedstock-builds/_apis/build/builds/<buildId>/timeline?api-version=7.0`.
+
+**Case study**: cocoindex feedstock PR #9 (Jun 14, 2026; conda-forge/cocoindex-feedstock). Initial commit enabled unscoped `workflow_settings.store_build_artifacts: true` to enable the v8.14.0 PR-artifacts workflow. After rerender + first CI run: all 4 linux_64 + 4 linux_aarch64 + 4 osx_64 + 4 osx_arm64 + linter checks green; all 4 win_64 variants `result=failed` at the prepare step with the INetCache ACL error. Build phase (`Run Windows build`) succeeded on every win variant, `.conda` file produced (e.g. `win-64\cocoindex-1.0.10-py313hfbe8231_0.conda` visible in the 7z listing before the error). Fix: scope to `[linux_64, linux_aarch64, osx_64, osx_arm64]`. Subsequent rerender pushed `store_build_artifacts: false` to all win variants; next CI run all-green.
+
+### G19. Windows pip-install fails `Error reading output: stream did not contain valid UTF-8` — set `PYTHONUTF8: "1"` (+ canonical Rust env block while you're there)
+
+**Symptom**: Rust+PyO3 (or any cargo+pip) recipe's Windows Azure CI fails inside the `Run Windows build` task at the `pip install . -vv --no-deps --no-build-isolation` step with:
+
+```
+[2026-06-14T17:58:27Z WARN  bundle_licenses_lib::found_license] ...
+Using pip 26.1.2 from %PREFIX%\Lib\site-packages\pip (python 3.12)
+...
+Processing .\.
+  Added file:///%SRC_DIR% to build tracker '...'
+  Preparing metadata (pyproject.toml): started
+  Running command Preparing metadata (pyproject.toml)
+⚠ warning Error reading output: Custom { kind: InvalidData, error: "stream did not contain valid UTF-8" }
+```
+
+The build appears to abort mid-`pip install`; rattler-build emits the misleading warning and Windows variants fail. Linux + macOS unaffected (their console default is UTF-8). The recipe builds clean on every non-Windows platform.
+
+**Why**: rattler-build captures the subprocess (cargo / maturin / pip) stdout+stderr and decodes them as UTF-8. Windows CI agents (`vmImage: windows-2022`) default to **cp1252** for the console codepage, NOT UTF-8. Modern Python's `sys.stdout` honors `sys.stdout.encoding` which respects locale; on Windows that resolves to `cp1252` unless explicitly overridden. When cargo/maturin/pip emit non-ASCII bytes — license filenames with accents (`LICENSE-ÉLECTRON-MIT`), package descriptions with em-dashes, paths with localized Windows component names, etc. — the resulting cp1252-encoded bytes can't be decoded as UTF-8 by rattler-build's reader. The reader gives up reading the stream, rattler-build flags the build as broken, and the Windows leg fails.
+
+**Fix**: set `PYTHONUTF8: "1"` in `build.script.env` (PEP 540 — Python UTF-8 mode). This forces Python to use UTF-8 for `sys.stdout`/`sys.stderr` regardless of system locale. Pip then writes UTF-8, rattler-build decodes cleanly, the build completes.
+
+**Apply the canonical Rust env block, not just the one-line PYTHONUTF8 fix.** When you're already editing `build.script.env`, also add the conda-forge canonical Rust optimization env vars per CFE skill v8.9.1 retro + [conda-forge.org/docs/maintainer/example_recipes/rust](https://conda-forge.org/docs/maintainer/example_recipes/rust/) — these are the default for every Rust feedstock, NOT optional:
+
+```yaml
+build:
+  script:
+    env:
+      # Strip debug symbols from the produced .so / .pyd / .dll.
+      # Conda-forge default for all Rust builds; reduces final binary
+      # by 30–50%.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      # CARGO_PROFILE_RELEASE_LTO: fat is intentionally NOT set — fat
+      # LTO can blow past Azure's 6-hour timeout on Windows for Rust
+      # packages with deep dep graphs (~600 crates is typical for
+      # tree-sitter / hyper / tower / rustls / heed combos). Re-enable
+      # only when the recipe's actual Windows build time stays well
+      # under ~3h. The `# note time out issues` comment is institutional
+      # knowledge from xorq-datafusion — leave it for the next maintainer.
+      #CARGO_PROFILE_RELEASE_LTO: fat
+      # PEP 540 — Python UTF-8 mode. THE Windows fix for this gotcha.
+      PYTHONUTF8: "1"
+    content:
+      - if: unix
+        then: |
+          export CFLAGS="${CFLAGS:-} -D_BSD_SOURCE -D_DEFAULT_SOURCE"   # iff the recipe needs it
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+        else: |
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+```
+
+This is **the canonical Rust+PyO3 conda-forge env block**. Any new Rust+PyO3 recipe should start here. `recipes/cocoindex/recipe.yaml` and `conda-forge/xorq-datafusion-feedstock` both ship this shape.
+
+**Why include STRIP even when only PYTHONUTF8 is the apparent fix**: a single-line PYTHONUTF8 patch is a scope mistake. STRIP is the conda-forge default for all Rust builds (CFE v8.9.1 retro shipped it into the maturin template; the canonical doc lists it as the first env var); commenting out LTO with the `# note time out issues` rationale preserves the institutional knowledge for the next maintainer (otherwise they'll re-enable LTO speculatively and discover the timeout the hard way). Matching the cited reference pattern fully is canonical-pattern application, not scope creep.
+
+**When you'd opt INTO `CARGO_PROFILE_RELEASE_LTO: fat`**: only when (a) the recipe is a small-graph Rust binary (~100 crates or fewer), (b) Azure CI history shows <90 min Windows build time at the current STRIP-only shape, and (c) the binary-size win from LTO is meaningfully worth the extra build time. For 95% of Rust+PyO3 recipes, leave it commented.
+
+**Edge case — the env block changes the `script:` shape from list to env+content**: if the recipe's current `build.script:` is a YAML list of strings, switching to `env:` + `content:` is a structural change (not just an env-var addition). Validate locally with `pixi run -e local-recipes validate recipes/<feedstock>` after the edit — schema parser is strict about this.
+
+**Case study**: cocoindex 1.0.10 + xorq-datafusion 0.2.9 (both `rxm7706`-maintained). xorq-datafusion's recipe carries the canonical env block — `CARGO_PROFILE_RELEASE_STRIP: symbols` + `#CARGO_PROFILE_RELEASE_LTO: fat # note time out issues` + `PYTHONUTF8: "1"` — and ships clean on every platform. cocoindex 1.0.10's upstream recipe had been bot-automerged at v1.0.10 without the env block; Windows CI passed at the time but broke later when a rattler-build / pip / cargo update tightened UTF-8 decoding. PR #9 (Jun 14, 2026) added the full canonical env block — `STRIP` + commented `LTO` + `PYTHONUTF8` — bumping `build.number: 0 → 1`. Subsequent CI run: all Windows variants green.
+
+**Detection at scale**: grep Azure win build logs for `Error reading output: ... stream did not contain valid UTF-8`. Affected recipes typically also have `Recovery (errors)` lines around the failure point indicating pip's metadata-preparation phase couldn't complete cleanly.
+
 ---
 
 ## Skill Automation

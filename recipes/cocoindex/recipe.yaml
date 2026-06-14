@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.5"
+  version: "1.0.10"
 
 package:
   name: cocoindex
@@ -10,19 +10,36 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/cocoindex/cocoindex-${{ version }}.tar.gz
-  sha256: f46434482584f16ab977af8274943b75a9ad58c29b54f5f36ab7f90a61559fdd
+  sha256: d2d04f6fc7f3894c3f5b92ff03ae3d6bd410aeb893048ba633c5b5eee9e14f3d
 
 build:
-  number: 0
+  number: 1
   script:
-    - if: unix
-      then: |
-        export CFLAGS="${CFLAGS:-} -D_BSD_SOURCE -D_DEFAULT_SOURCE"
-        cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-      else: |
-        cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    env:
+      # PEP 540 UTF-8 mode — forces Python to use UTF-8 for all I/O
+      # regardless of Windows codepage. Without this the win Azure leg
+      # fails inside `pip install` with
+      # `Error reading output: ... stream did not contain valid UTF-8`
+      # because rattler-build captures pip's stdout and tries to UTF-8
+      # decode it; Windows console codepage (cp1252) breaks the decode
+      # when cargo/maturin/pip emit non-ASCII characters (license names,
+      # package descriptions, paths with accents). See xorq-datafusion
+      # for the canonical fix pattern.
+      PYTHONUTF8: "1"
+      # CARGO_PROFILE_RELEASE_LTO: fat is intentionally NOT set — fat
+      # LTO blows past Azure's 6-hour timeout on Windows for Rust+PyO3
+      # packages with deep dep graphs (~600 crates incl. tree-sitter ×
+      # ~70 grammars + hyper + tower + rustls + heed). STRIP: symbols
+      # also skipped to minimize matrix complexity.
+    content:
+      - if: unix
+        then: |
+          export CFLAGS="${CFLAGS:-} -D_BSD_SOURCE -D_DEFAULT_SOURCE"
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+        else: |
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   skip:
     - match(python, "<3.11")
 
