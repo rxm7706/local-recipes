@@ -17,7 +17,7 @@ platforms = [
 ]
 
 [feature.python.dependencies]
-python = ">=3.12.13,3.12.*"       # Python language interpreter
+python = ">=3.14.6,3.14.*"        # Python language interpreter
 pixi = ">=0.70.2"                 # Pixi package & environment manager
 gh = ">=2.94.0"                   # GitHub CLI for PR / issue / repo automation
 nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
@@ -404,7 +404,7 @@ cmd = "python .claude/scripts/conda-forge-expert/release_cadence.py"
 platforms = ["linux-64", "osx-arm64", "win-64"]
 
 [feature.vuln-db.dependencies]
-python = "3.12.*"                 # Python language interpreter
+python = "3.14.*"                 # Python language interpreter
 conda-forge-metadata = ">=0.16.1"  # so --deep also works in this env
 apsw = ">=3.53.2.0"               # SQLite bindings for Python (vdb backend)
 #oras-py = ">=0.2.42"              # OCI registry client for Python (vdb backend) — ORAS-hosted CVE DB snapshots blocked by conda-forge-metadata -> conda-oci-mirror -> oras-py ==0.1.14 i
@@ -448,7 +448,7 @@ cmd = "python .claude/scripts/conda-forge-expert/atlas_phase.py"
 
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
-python = "3.12.*"                 # Python language interpreter
+python = "3.14.*"                 # Python language interpreter
 ##[feature.build.dependencies]
 conda = ">=26.5.0"                # conda package manager
 conda-libmamba-solver = ">=24.9.0"  # fast libmamba-backed solver for conda
@@ -530,13 +530,13 @@ dask-core = ">=2026.6.0"           # Parallel computing with task scheduling (pa
 #dbt-core = ">=1.11.11"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
 #dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
 #dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
-dlt = ">=1.27.2"                  # dlt requires dlt-pendulum which is only available on conda-forge for linux-64 dlt is an open-source python-first scalable data loading library that does not require any backend to run.
+#dlt = ">=1.27.2"                  # dlt requires dlt-pendulum which is only available on conda-forge for linux-64 dlt is an open-source python-first scalable data loading library that does not require any backend to run. # TODO PY314 conda-forge compat check;
 duckdb = ">=1.5.3"                # Embedded analytical SQL database
 getdaft = ">=0.6.13"              # Distributed Dataframes for Multimodal Data
 gql = ">=4.0.0"                   # GraphQL client (v4.0.0+ has no websockets dependency)
 ibis-framework = ">=12.0.0"        # The portable Python dataframe library
 kedro = ">=1.3.1"                 # Kedro helps you build production-ready data and analytics pipelines.
-kedro-dagster = ">=0.7.0"         # Kedro-Dagster makes it easy to deploy Kedro projects to Dagster
+#kedro-dagster = ">=0.7.0"         # Kedro-Dagster makes it easy to deploy Kedro projects to Dagster # TODO PY314 conda-forge compat check;
 kedro-datasets = ">=9.4.0"        # Kedro-Datasets is where you can find all of Kedro's data connectors.
 numpy = ">=2.4.6"                 # Numerical computing
 pandas = ">=3.0.3"                # DataFrame library for tabular data
@@ -551,7 +551,7 @@ kedro-viz = ">=12.3.0"            # Visualize your Kedro pipelines in the browse
 panel = ">=1.9.3"                 # The powerful data exploration & web app framework for Python.
 panel-graphic-walker = ">=0.6.5"  # A project providing a Graphic Walker Pane for use with HoloViz Panel. Graphic Walker is an open-source alternative to Tableau.
 vizro = ">=0.1.58"                # Vizro is a package to facilitate visual analytics.
-vizro-ai = ">=0.4.0"              # Vizro-AI is a tool for generating data visualizations
+#vizro-ai = ">=0.4.0"              # Vizro-AI is a tool for generating data visualizations # TODO PY314 conda-forge compat check; depends on vizro and python-quickjs which is not available on conda-forge for osx-arm64
 vizro-mcp = ">=0.1.4"             # MCP server to help create Vizro dashboards and charts
 #streamlit = ">=1.52.2"            # Needs Notebook and Jupyterlab A faster way to build and share data apps
 #perspective = ">=4.5.0"           # Streaming pivot visualization via WebAssembly, No Windows
@@ -590,10 +590,12 @@ python-pptx = ">=1.0.2"           # Read / write Microsoft PowerPoint .pptx file
 qpdf = ">=12.3.2"                 # PDF transformation, linearization, and compression CLI
 sentence-transformers = ">=5.5.1" # Dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
 sentencepiece = ">=0.2.1"         # Tokenizer lib (transitive on linux+osx via mlx-lm; explicit for win-64 parity); needed by SD3+/T5/MarianMT
-speechrecognition = ">=3.16.1"    # Speech recognition library for Python (supports multiple engines)
+speechrecognition = ">=3.10.4"    # Speech recognition library for Python (supports multiple engines)
 tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pytesseract)
-transformers = ">=5.12.0"          # Hugging Face transformers (model hub + pipelines)
+transformers = ">=5.12.0"         # Hugging Face transformers (model hub + pipelines)
 xlrd = ">=2.0.2"                  # Excel .xls reader (used in markitdown's Excel loader)
+#cocoindex = "*"                   # Incremental engine for long horizon agents
+#graphify = "*"                    # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ## Data processing & conversion (ibis + adjacent ecosystem)
 google-cloud-bigquery = ">=3.41.0" # BigQuery client — cf_atlas Phase P (opt-in via PHASE_P_ENABLED=1; needs ADC creds via the `gcloud` env)
 ibis-duckdb = ">=12.0.0"          # Ibis backend for DuckDB
@@ -680,7 +682,7 @@ mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers t
 
 [dependencies]
 #[feature.python.dependencies]
-python = "3.12.*"                 # Python language interpreter
+python = "3.14.*"                 # Python language interpreter
 pixi = ">=0.70.2"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
 pip = ">=26.1.2"                  # Python package installer
