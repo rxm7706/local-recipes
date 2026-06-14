@@ -653,6 +653,20 @@ Do **not** migrate if:
 
 **Churn Rule**: You own verifying the migration is complete. A `meta.yaml` left alongside a `recipe.yaml` after a successful build is a bug — clean it up.
 
+### Migration Discipline
+
+Five points learned the hard way from feedstock v0→v1 migrations. Full expansion in [`guides/migration.md`](guides/migration.md) § "Migration Discipline".
+
+- **`package.name:` MUST match the feedstock identity, not the local folder name.** When migrating an existing feedstock, the conda-forge package on the channel is the canonical name (e.g. feedstock `python-confluent-kafka-feedstock` ships package `python-confluent-kafka`). The local-recipes folder often mirrors the upstream GitHub repo name (e.g. `recipes/confluent-kafka-python/` after the GitHub repo). The v1 `package.name:` MUST match the feedstock's existing package name — changing it during migration creates a parallel package and orphans existing users. Verify via `lookup_feedstock(pkg_name=<conda-forge-name>)` before pushing the fork branch.
+
+- **Bump `build.number` on same-version v0→v1 swap.** When the migration ships against the same upstream version that's currently shipping (no version bump), `build.number` MUST increment (typically `0 → 1`). This keeps existing `<pkg> <ver> *_0` artifacts on a distinct hash from the v1-built `<pkg> <ver> *_1` and lets the conda solver pick the newer build. If the migration is bundled with an upstream version bump, the build number resets to 0 — the version bump itself provides the hash separation.
+
+- **Stash `meta.yaml` aside during local validation, don't pre-delete.** `optimize_recipe` fires `STD-002` "Both meta.yaml and recipe.yaml exist in the same directory" while both files coexist, and some local-recipes pixi tasks get confused by mixed format. The practical pattern: `mv meta.yaml meta.yaml.bak` for the validate + build pass, then restore. Drop `meta.yaml` only when committing to the feedstock fork (where v0 is genuinely retired). Keeping the v0 copy locally is a useful pre-migration reference until the feedstock PR merges; delete from the local mirror at PR-merge time, not earlier.
+
+- **`conda_build_tool: rattler-build` MUST ship paired with `conda_install_tool: pixi`.** Adding `conda_build_tool: rattler-build` to `conda-forge.yml` is required for CI to use the v1 parser; pair it with `conda_install_tool: pixi` (the canonical 2026 companion that tells CI to use pixi for env installs, faster than micromamba and matches conda-forge's 2026 standardization). Both keys land in the same PR that drops `meta.yaml`. The v0→v1 PR also requires `@conda-forge-admin, please rerender` — the CI scripts need regenerating to invoke rattler-build instead of conda-build.
+
+- **`pip_check: true` on first-time enablement may surface "new" runtime deps.** Many older meta.yaml v0 recipes don't have `pip check` in `test:`; CFEP-25's v1 triad (and the canonical noarch:python test block) turns it on by default. When migrating, expect to discover transitive deps that upstream's PEP-508 markers introduced post-original-feedstock-creation. Fix by adding the missing deps to `requirements.run:` (preferring unconditional listing over PEP-508-marker-gated conda-forge selectors for single transitive deps — minor runtime overhead, simpler recipe). Case: python-confluent-kafka v0→v1 surfaced upstream's `typing-extensions ; python_version < "3.11"` marker; shipped `typing_extensions` unconditionally in `run:`.
+
 ---
 
 ## Python Version Policy
@@ -1618,6 +1632,49 @@ This is **the canonical Rust+PyO3 conda-forge env block**. Any new Rust+PyO3 rec
 **Case study**: cocoindex 1.0.10 + xorq-datafusion 0.2.9 (both `rxm7706`-maintained). xorq-datafusion's recipe carries the canonical env block — `CARGO_PROFILE_RELEASE_STRIP: symbols` + `#CARGO_PROFILE_RELEASE_LTO: fat # note time out issues` + `PYTHONUTF8: "1"` — and ships clean on every platform. cocoindex 1.0.10's upstream recipe had been bot-automerged at v1.0.10 without the env block; Windows CI passed at the time but broke later when a rattler-build / pip / cargo update tightened UTF-8 decoding. PR #9 (Jun 14, 2026) added the full canonical env block — `STRIP` + commented `LTO` + `PYTHONUTF8` — bumping `build.number: 0 → 1`. Subsequent CI run: all Windows variants green.
 
 **Detection at scale**: grep Azure win build logs for `Error reading output: ... stream did not contain valid UTF-8`. Affected recipes typically also have `Recovery (errors)` lines around the failure point indicating pip's metadata-preparation phase couldn't complete cleanly.
+
+### G20. v0 jinja `{{ X }}` syntax in v1 recipe.yaml is silently rendered as literal text
+
+**Symptom**: a v1 recipe (declares `schema_version: 1`) passes `validate_recipe` and `conda-smithy lint` cleanly, but the build fails with errors that look unrelated to syntax:
+
+- `build.script:` containing `{{ PYTHON }} -m pip install . -vv …` → cmd.exe / bash treats `{{` as a literal command and emits `command not found: {{` or `'{{' is not recognized as an internal or external command`.
+- `requirements.host:` / `requirements.run:` carrying `librdkafka >={{ version }}` → the conda solver parses `>={{ version }}` as a literal version constraint and aborts with `cannot parse spec '>={{ version }}'`.
+- A patches list entry like `- 0001-Fix-setup-for-windows.patch  # [win]` — applies the patch on every platform because the comment selector is silently ignored (this is the cousin trap; see G3 for `py < N` and the `# [win]` selector both being silently ignored by v1).
+
+**Why**: in v1 recipe.yaml, the substitution prefix is `${{ … }}` (minijinja); the bare `{{ … }}` form is the v0 conda-build jinja prefix. The v1 parser treats bare `{{ … }}` as a plain YAML scalar — well-formed YAML, so validators don't object — and emits it verbatim to the shell, the dep spec, or whatever consumer reads the rendered value. `validate_recipe`, `rattler-build lint`, and `conda-smithy lint` all pass; the failure surfaces at build / install time.
+
+This is the third entry in a class of silent v0→v1 substitution traps:
+- **G2** — v0 about-field names (`home`, `dev_url`, `doc_url`, `license_family`) silently discarded.
+- **G3** — v0 `py < N` skip selectors and v0 `# [unix]` / `# [win]` comment selectors silently ignored.
+- **G20** — bare `{{ X }}` substitutions silently emitted as literal text.
+
+**Fix**: in every v1 recipe.yaml, use `${{ X }}` for every substitution. Common sites where the bare form sneaks in when a recipe is hand-edited (or migrated from v0 without a full sweep):
+
+- `build.script:` — `{{ PYTHON }}`, `{{ CFLAGS }}`, `{{ SRC_DIR }}`
+- `requirements.host:` / `requirements.run:` / `requirements.build:` — `<pkg> >={{ version }}`, `<pkg> {{ version }}.*`
+- `source.url:` — `https://…/{{ version }}/…`, `…/{{ name }}-{{ version }}.tar.gz`
+- `package.name:` / `package.version:` — should be `${{ version }}` literals
+- `about.*` scalars when templated (rare but possible)
+
+**Detection — one-line grep**:
+
+```bash
+grep -nE '(^|[^$])\{\{[^}]+\}\}' recipes/<name>/recipe.yaml
+```
+
+Matches any `{{ X }}` not preceded by `$`. Any hit on a v1 recipe (`schema_version: 1`) is a silent-failure candidate. Run as a pre-submission check; zero matches is the canonical state.
+
+A follow-up optimizer check **`JIN-001`** ("v0-style `{{ X }}` substitution in v1 recipe — silently emitted as literal text") would catch this at gate-time alongside SEL-003 (v0 selector) and ABT-002 (v0 about-field). Tracked as skill TODO; not yet shipped.
+
+**Case study**: python-confluent-kafka v0→v1 migration (Jun 14, 2026; PR conda-forge/python-confluent-kafka-feedstock#127). Hand-rolled `recipes/confluent-kafka-python/recipe.yaml` (an in-flight v1 draft predating this gotcha) carried three distinct v0-jinja bugs that `validate_recipe` + `optimize_recipe` both passed cleanly:
+
+1. `build.script:` last entry — `{{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation`. Would have failed at install with shell "command not found: `{{`".
+2. `requirements.host:` `librdkafka >={{ version }}` and `requirements.run:` `librdkafka >={{ version }}`. Would have failed the solver with an unparseable spec.
+3. `source.patches:` `- 0001-Fix-setup-for-windows.patch  # [win]`. The v0 comment selector would have been silently ignored; the Windows-only patch would have applied on every platform and broken the Linux/macOS build at `pip install` time.
+
+All three were caught by manual SKILL.md-driven audit before the local build ran. Conversion to `${{ X }}` and `if: win / then:` produced a clean recipe; subsequent CI on PR #127 went 39/39 green across linux_64 / linux_aarch64 / linux_ppc64le / osx_64 / osx_arm64 / win_64 × 6 Python variants each + linter + aggregator.
+
+The cost of the audit was ~5 minutes; the cost of *not* doing it would have been one CI iteration per bug (3 × ~20 min on the slowest emulated platform) plus reviewer churn.
 
 ---
 
