@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.2.8"
+  version: "0.2.9"
 
 package:
   name: xorq-datafusion
@@ -10,21 +10,38 @@ package:
 
 source:
   url: https://pypi.org/packages/source/x/xorq-datafusion/xorq_datafusion-${{ version }}.tar.gz
-  sha256: 531ad0c0fb2fc8e547a11d6716d6739b8df352edec0dfa9e409f703cbae36693
+  sha256: 77e47ef4614544eb6ffc75629b2940da0a446ddf7afece7354b9a40232e35304
   patches:
+    # Upstream caps pyarrow at <22 defensively; conda-forge's global pyarrow
+    # pin already constrains the ABI, and pyarrow 22/23/24 are out and
+    # compatible with the arrow-rs 58 bindings xorq-datafusion uses. Drop
+    # the upper bound so users on current pyarrow can install.
     - patches/0001-drop-pyarrow-upper-bound.patch
 
 build:
-  number: 0
+  number: 1
   script:
     env:
-      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
-      # for any Rust build. maturin invokes cargo build and inherits these.
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — STRIP +
+      # fat LTO are the recommended defaults for Rust builds. The abi3
+      # matrix collapse below (skip + version_independent on is_abi3) means
+      # we pay this LTO cost ONCE per platform, not once per Python version,
+      # so the historical "time out issues" comment no longer applies — see
+      # conda-forge-expert v8.25.0 ci-troubleshooting.md "Fat-LTO on Windows".
       CARGO_PROFILE_RELEASE_STRIP: symbols
-      #CARGO_PROFILE_RELEASE_LTO: fat # note time out issues
+      # Fat LTO only on platforms where the rustc bitcode merge is
+      # empirically stable for this dep graph (datafusion v53 + arrow v58 +
+      # aws-sdk + tokio + heed + ring + ~600 transitive crates):
+      #   linux-64 (12m wall), osx-arm64, win-64 — green in PR #4 first run.
+      # Skipped on:
+      #   linux-aarch64 — qemu-emulated; rustc OOM-killed during bitcode merge.
+      #   osx-64 — rustc ICE (SIGSEGV) on the macOS 13.4 SDK + current LLVM
+      #            combo during fat-LTO bitcode merge.
+      # Cargo.toml's `[profile.release] lto = "thin"` is the fallback default.
+      CARGO_PROFILE_RELEASE_LTO: ${{ "fat" if target_platform in ["linux-64", "osx-arm64", "win-64"] else "thin" }}
       PYTHONUTF8: "1"
     content:
-      # Multi-line `then: |` so OPENSSL_DIR export persists into pip install
+      # Multi-line `then: |` so env exports persist into pip install
       # (per SKILL.md G1: separate `- ` list entries run in independent shells).
       - if: unix
         then: |
@@ -33,8 +50,15 @@ build:
         else: |
           cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
           %PYTHON% -m pip install . -vv --no-deps --no-build-isolation
+  # abi3 matrix collapse — canonical conda-forge tree-sitter-pattern.
+  # Cargo.toml declares pyo3 abi3-py38, which is at or below conda-forge-pinning's
+  # python_min default (3.10) — Variant A (is_abi3 and not is_python_min) applies.
+  # Single CPython-stable-ABI wheel works across Python ≥ python_min.
+  # Build once at python_min, ship one artifact per platform.
+  # See reference/abi3-matrix-collapse.md.
+  skip: is_abi3 and not is_python_min
   python:
-    version_independent: true
+    version_independent: ${{ is_abi3 }}
 
 requirements:
   build:
@@ -43,7 +67,6 @@ requirements:
         - python
         - cross-python_${{ target_platform }}
         - maturin >=1,<2
-
     - ${{ compiler("c") }}
     - ${{ stdlib("c") }}
     - ${{ compiler("rust") }}
@@ -52,9 +75,11 @@ requirements:
     - python
     - maturin >=1.7,<2.0
     - pip
+    - if: is_abi3
+      then: python-abi3
   run:
     - python
-    - pyarrow >=18.0.0 #,<22.0.0
+    - pyarrow >=18.0.0
 
 tests:
   - python:
@@ -62,8 +87,18 @@ tests:
         - xorq_datafusion
       pip_check: true
       python_version:
-        - ${{ python_min }}.*
+        - if: is_abi3
+          then: ${{ python_min }}.*
         - "*"
+  - if: is_abi3
+    then:
+      requirements:
+        run:
+          - abi3audit
+      script:
+        - if: unix
+          then: abi3audit $SP_DIR/xorq_datafusion/_internal.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%\xorq_datafusion\_internal.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
 
 about:
   summary: xorq Python DataFusion Bindings.
