@@ -3,6 +3,7 @@ schema_version: 1
 
 context:
   version: "1.0.10"
+  python_min: "3.11"
 
 package:
   name: cocoindex
@@ -13,7 +14,7 @@ source:
   sha256: d2d04f6fc7f3894c3f5b92ff03ae3d6bd410aeb893048ba633c5b5eee9e14f3d
 
 build:
-  number: 1
+  number: 2
   script:
     env:
       # PEP 540 UTF-8 mode — forces Python to use UTF-8 for all I/O
@@ -23,29 +24,15 @@ build:
       # because rattler-build captures pip's stdout and tries to UTF-8
       # decode it; Windows console codepage (cp1252) breaks the decode
       # when cargo/maturin/pip emit non-ASCII characters (license names,
-      # package descriptions, paths with accents). See xorq-datafusion
-      # for the canonical fix pattern.
+      # package descriptions, paths with accents).
       PYTHONUTF8: "1"
-      # CARGO_PROFILE_RELEASE_LTO: fat is intentionally NOT set — fat
-      # LTO blows past Azure's 6-hour timeout on Windows for Rust+PyO3
-      # packages with deep dep graphs (~600 crates incl. tree-sitter ×
-      # ~70 grammars + hyper + tower + rustls + heed). STRIP: symbols
-      # also skipped to minimize matrix complexity.
-      # EXPERIMENT (Option A): redirect Windows wininet INetCache out
-      # of the rattler-build work directory so the post-build Azure 7z
-      # archive step can enumerate the work tree cleanly. Under strict
-      # env-isolation (rattler-build v0.62+), %LOCALAPPDATA% resolves
-      # inside the sandboxed CONDA_BLD_PATH; wininet then writes its IE
-      # cache there, and the Content.IE5 subtree gets restricted Windows
-      # ACLs that 7z cannot enumerate (CFE skill G18). Pointing
-      # LOCALAPPDATA at C:\Temp keeps the cache on the C: drive (Azure
-      # agents have it writable) and OUTSIDE the work tree. If this
-      # redirect works on Azure win CI, the conda-forge.yml in this
-      # branch unscopes `workflow_settings.store_build_artifacts: true`
-      # back to all platforms — restoring Windows artifact archival for
-      # the v8.14.0 pr-artifacts smoke-test workflow. LOCALAPPDATA is
-      # Windows-only — Linux + macOS ignore it.
-      #LOCALAPPDATA: 'C:\Temp\cocoindex_appdata'
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — STRIP +
+      # fat LTO are the recommended defaults for Rust builds. The abi3
+      # matrix collapse below (skip + version_independent on is_abi3) means
+      # we pay this LTO cost ONCE per platform, not once per Python version,
+      # which keeps the Windows Azure leg inside the 6h timeout.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
     content:
       - if: unix
         then: |
@@ -55,8 +42,16 @@ build:
         else: |
           cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
           ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  skip:
-    - match(python, "<3.11")
+  # abi3 matrix collapse — rustworkx-feedstock pattern (chosen over the
+  # `is_abi3 and not is_python_min` form used by tree-sitter feedstocks
+  # because conda-smithy mis-aligns the zip-keyed is_python_min flag when
+  # python_min is overridden upward from the pinning's default 3.10).
+  # Cargo.toml declares pyo3 abi3-py311 so a single CPython-stable-ABI wheel
+  # works across Python ≥3.11. Build once at python_min, ship one artifact
+  # per platform.
+  skip: not (match(python, python_min ~ ".*") and is_abi3)
+  python:
+    version_independent: ${{ is_abi3 }}
 
 requirements:
   build:
@@ -74,6 +69,8 @@ requirements:
     - python
     - pip
     - maturin >=1.10.0,<2.0
+    - if: is_abi3
+      then: python-abi3
   run:
     - python
     - typing_extensions >=4.12
@@ -90,10 +87,23 @@ tests:
       imports:
         - cocoindex
       pip_check: true
+      python_version:
+        - if: is_abi3
+          then: ${{ python_min }}.*
+        - "*"
   - if: not win
     then:
       - script:
           - cocoindex --help
+  - if: is_abi3
+    then:
+      requirements:
+        run:
+          - abi3audit
+      script:
+        - if: unix
+          then: abi3audit $SP_DIR/cocoindex/_internal/core.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%\cocoindex\_internal\core.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
 
 about:
   homepage: https://cocoindex.io/
