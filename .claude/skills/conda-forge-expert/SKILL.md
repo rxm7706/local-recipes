@@ -1676,6 +1676,123 @@ All three were caught by manual SKILL.md-driven audit before the local build ran
 
 The cost of the audit was ~5 minutes; the cost of *not* doing it would have been one CI iteration per bug (3 × ~20 min on the slowest emulated platform) plus reviewer churn.
 
+### G21. conda-smithy mis-aligns the zip-keyed `is_python_min` flag when `python_min` is overridden upward
+
+**Symptom**: a Rust+PyO3 (or other abi3-binary) recipe uses the canonical `skip: is_abi3 and not is_python_min` matrix-collapse rule + a recipe-local `conda_build_config.yaml` that overrides `python_min` above the conda-forge-pinning default (e.g. `python_min: "3.11"` for a `pyo3/abi3-py311` package while pinning's default is `'3.10'`). After conda-smithy rerender, the regenerated `.ci_support/<platform>_is_python_mintruepython3.10.____cpython.yaml` shows:
+
+```yaml
+is_abi3: [true]
+is_python_min: [true]      # zip-keyed with python
+python: [3.10.* *_cpython] # ← still py3.10 from pinning's first entry
+python_min: ['3.11']       # ← honors the override
+```
+
+The build then runs against py3.10 (because variant `python` is `3.10.*`) and pip-install fails: `cocoindex requires Python >=3.11`. The `python` axis and `python_min` are now contradictory in the same `.ci_support` file.
+
+**Why**: conda-smithy's `variant_algebra.variant_add` performs a UNION merge between pinning's `python` axis and the recipe-local CBC `python_min`. The override of `python_min` is honored, but `python`'s first entry is preserved unchanged (smithy doesn't infer that the new min should shift the zip-key's `true` position). The zip-key `is_python_min: [true, false, false, false]` remains aligned with pinning's `python: [3.10.*, 3.11.*, ...]`, so position 0 (py3.10) keeps `is_python_min=true` even though `python_min` now says `'3.11'`.
+
+Attempts to also override `python:` in the recipe-local CBC hit G22 (wrong suffix syntax) or local-build `Zip key elements do not all have same length: is_python_min` errors.
+
+**Fix**: use the rustworkx-pattern skip rule instead — it sidesteps the zip-key entirely:
+
+```yaml
+build:
+  skip: not (match(python, python_min ~ ".*") and is_abi3)
+  python:
+    version_independent: ${{ is_abi3 }}
+```
+
+```yaml
+# recipe/conda_build_config.yaml
+python_min:
+  - "3.11"
+```
+
+`match(python, python_min ~ ".*")` compares the variant's `python` value against `python_min ~ ".*"` (jinja string-concat, NOT regex — renders `"3.11" + ".*"` → `"3.11.*"`). For variants where `python` is `3.10.*`, the match fails and the variant is skipped. Only the variant whose `python` matches `python_min` survives. With `python_min: "3.11"`, the one surviving variant builds against py3.11 correctly.
+
+Used by: `rustworkx-feedstock`, `cocoindex-feedstock`. The Variant A skip (`is_abi3 and not is_python_min`) used by tree-sitter-typescript etc. still works fine for recipes whose abi3 minimum matches pinning's default (currently 3.10); only switch to Variant B when overriding upward.
+
+**Case study**: cocoindex PR #11 (https://github.com/conda-forge/cocoindex-feedstock/pull/11). Three iterations needed: (a) initial `is_abi3 and not is_python_min` + 4-entry CBC `python:` override crashed smithy rerender with G22; (b) simplified to CBC `python_min: "3.11"` only — smithy collapsed the matrix but mis-aligned `python: [3.10.*]`, builds failed with `requires Python >=3.11`; (c) switched to `not (match(python, python_min ~ ".*") and is_abi3)` — single py3.11 variant per platform, abi3audit clean (0 ABI version mismatches), all 8 CI legs green including win_64 fat-LTO in 9 min 45 s.
+
+Full pattern + companion configs (`version_independent`, `python-abi3`, cross-Python test, `abi3audit` step) in [`reference/abi3-matrix-collapse.md`](reference/abi3-matrix-collapse.md).
+
+### G22. Recipe-local CBC `python:` override using `*_cpython` suffix crashes smithy on py3.13+
+
+**Symptom**: a recipe-local `conda_build_config.yaml` overrides the variant `python` axis with what looks like uniform syntax:
+
+```yaml
+python:
+  - 3.11.* *_cpython
+  - 3.12.* *_cpython
+  - 3.13.* *_cpython    # ← wrong suffix
+  - 3.14.* *_cpython    # ← wrong suffix
+```
+
+conda-smithy rerender crashes with:
+
+```
+File "conda_smithy/variant_algebra.py", line 63, in _version_order
+    return ordering.index(v)
+ValueError: '3.13.* *_cpython' is not in list
+```
+
+The rerender service marks itself failed; the regenerated `.ci_support/*.yaml` files don't update; subsequent CI runs against the OLD configs fail with whatever cascade follows.
+
+**Why**: conda-forge-pinning's python axis uses **different suffix tags per Python version**:
+
+| Python | Pinning suffix | Source |
+|---|---|---|
+| 3.10, 3.11, 3.12 | `*_cpython` | `conda_build_config.yaml` (base pinning) |
+| 3.13 | `*_cp313` | `migrations/python313.yaml` |
+| 3.13 freethreading | `*_cp313t` | `migrations/python313t.yaml` |
+| 3.14 | `*_cp314` | `migrations/python314.yaml` |
+| 3.14 freethreading | `*_cp314t` | `migrations/python314t.yaml` |
+
+The `_version_order` helper builds an ordering list from these exact strings. An entry that doesn't match (`3.13.* *_cpython` is wrong; the pinning has `3.13.* *_cp313`) is rejected by `ordering.index(v)`.
+
+**Fix — don't override `python:` axis**: for the abi3 matrix-collapse pattern, override **only** `python_min` and pick the right skip rule (G21):
+
+```yaml
+# recipe/conda_build_config.yaml — minimal override
+python_min:
+  - "3.11"
+```
+
+```yaml
+# recipe.yaml — Variant B skip rule
+build:
+  skip: not (match(python, python_min ~ ".*") and is_abi3)
+```
+
+This delegates all python-axis bookkeeping to smithy + pinning. The match() rule filters at recipe-render time without requiring the recipe to know suffix syntax.
+
+**Fix — if you must override `python:` axis**: use the canonical suffix per version:
+
+```yaml
+python:
+  - 3.11.* *_cpython
+  - 3.12.* *_cpython
+  - 3.13.* *_cp313
+  - 3.14.* *_cp314
+is_python_min:
+  - true
+  - false
+  - false
+  - false
+```
+
+This works but is rarely needed — the abi3 collapse pattern doesn't require it. Live reference for the suffix-per-version convention: `conda-forge-pinning-feedstock`'s `recipe/migrations/python3{13,14}.yaml`.
+
+**Detection**: any recipe-local `conda_build_config.yaml` that lists multiple python entries with uniform `*_cpython` is suspect when the list includes 3.13 or 3.14. One-line grep:
+
+```bash
+grep -nE '3\.(13|14)\..* \*_cpython' recipes/*/conda_build_config.yaml
+```
+
+A non-empty result is a smithy-rerender-crash candidate.
+
+**Case study**: cocoindex PR #11 first push (https://github.com/conda-forge/cocoindex-feedstock/pull/11). The recipe-local CBC carried the wrong-suffix block above. Smithy rerender's run-task job crashed with the ValueError; all 20 build jobs (4 py × 5 platforms) ran against the stale `.ci_support/*.yaml` and failed cascade-style with `Jinja template error: undefined variable in condition 'is_abi3'`. Resolution: dropped the `python:` axis override entirely, kept only `python_min: "3.11"`, switched skip rule per G21. Rerender succeeded on the next push.
+
 ---
 
 ## Skill Automation

@@ -41,7 +41,28 @@ Procedural rules for setting `python_min` in conda-forge recipes. The current fl
 
 6. **When reviewing existing recipes with `python_min: '3.9'`** — run `optimize_recipe` (SEL-002 will flag it) and update to `'3.10'` unless the upstream package's own `python_requires` is `>=3.9,<3.10` (i.e., genuinely 3.9-only).
 
+7. **Overriding `python_min` upward on an abi3 binary recipe** — when the upstream Cargo.toml declares `pyo3 abi3-py3XX` with `XX > 10` (e.g. `abi3-py311`), set `python_min` in both `context:` AND a recipe-local `recipe/conda_build_config.yaml`:
+
+   ```yaml
+   # recipe.yaml
+   context:
+     python_min: "3.11"
+   build:
+     skip: not (match(python, python_min ~ ".*") and is_abi3)
+     python:
+       version_independent: ${{ is_abi3 }}
+   ```
+
+   ```yaml
+   # recipe/conda_build_config.yaml
+   python_min:
+     - "3.11"
+   ```
+
+   Use the rustworkx-pattern skip rule (`not (match(python, python_min ~ ".*") and is_abi3)`), NOT the tree-sitter-pattern (`is_abi3 and not is_python_min`). The latter mis-aligns when `python_min` exceeds the pinning default — see SKILL.md G21. Full pattern documentation in [`abi3-matrix-collapse.md`](abi3-matrix-collapse.md).
+
 ## References
 
 - [CFEP-25: python_min](https://github.com/conda-forge/cfep/blob/main/cfep-25.md)
 - `recipe-yaml-reference.md` § "Python Build Matrix" — current matrix and floor history
+- `abi3-matrix-collapse.md` — abi3 binary recipe matrix-collapse pattern
