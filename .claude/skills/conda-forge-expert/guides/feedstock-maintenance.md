@@ -53,6 +53,38 @@ The bot and CI form an automated pipeline. Understand what each component checks
 - **Edit recipe**: when changing package content, version, or requirements.
 - **Never mix**: a rerender PR and a recipe change PR should be separate.
 
+### Merging Rerender PRs — gh CLI Needs `workflow` OAuth Scope
+
+Any feedstock PR that touches `.github/workflows/conda-build.yml` (and every rerender does — the bot regenerates that file) cannot be merged via `gh pr merge` unless the active gh OAuth token carries the `workflow` scope. The error signature is unambiguous:
+
+```
+GraphQL: refusing to allow an OAuth App to create or update workflow
+`.github/workflows/conda-build.yml` without `workflow` scope (mergePullRequest)
+```
+
+The web-UI merge button works without this scope (browser session uses a different auth path). For `gh pr merge` to work:
+
+1. **Inspect current scopes**:
+   ```bash
+   gh auth status
+   # ✓ Logged in to github.com account <user> (GH_TOKEN)
+   #   Token scopes: 'gist', 'read:org', 'repo'    ← workflow missing
+   ```
+
+2. **Two ways to fix**:
+   - **Refresh interactively** (browser flow): `gh auth refresh -s workflow`
+   - **Generate a new PAT** with `workflow` scope at https://github.com/settings/tokens and update wherever `GH_TOKEN` / `GITHUB_TOKEN` env vars are sourced from (typically a project `.env`, `~/.bashrc`, or `~/.config/gh/`).
+
+3. **`GH_TOKEN` env var silently overrides the keyring token** — even if `gh auth login` stored a scope-rich token in the keyring, the env var (often loaded from a project `.env`) takes precedence and may lack the needed scope. `gh auth status` shows both: the active one is marked `Active account: true`. If the keyring token has `workflow` and the env-var one doesn't, the simplest fix is to comment the `GH_TOKEN=...` (and `GITHUB_TOKEN=...`) line in the `.env` so gh falls back to the keyring.
+
+4. **The PR may also be in draft state** even after rerender — the bot sometimes leaves PRs draft after a recipe push that contained the original recipe changes plus an automatic rerender follow-up. Mark ready before merging:
+   ```bash
+   gh pr ready <PR#> --repo conda-forge/<feedstock>
+   gh pr merge <PR#> --repo conda-forge/<feedstock> --merge --admin
+   ```
+
+5. **Token-rotation hygiene**: if a token value was exposed in any session log (chat, terminal recording, shared SSH session), rotate it at https://github.com/settings/tokens regardless of whether it had elevated scope. The fingerprint `gho_...` (24+ chars) identifies it in transcripts.
+
 ---
 
 ## Maintainer Responsibilities

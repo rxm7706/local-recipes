@@ -256,6 +256,14 @@ build:
 dos2unix build.sh
 ```
 
+#### Fat-LTO on Windows for large Rust+PyO3 packages
+
+A widespread piece of recipe folklore says `CARGO_PROFILE_RELEASE_LTO: fat` on Windows Azure runners "blows past the 6-hour build timeout" for Rust+PyO3 packages with deep dependency graphs (e.g. ~600 crates including tree-sitter × ~70 grammars + hyper + tower + rustls + heed). This warning has appeared as a recipe-comment "do not enable" guard on several feedstocks.
+
+**Empirically it is false** — when paired with the abi3 matrix-collapse pattern (one variant per platform instead of four). Live measurement: cocoindex 1.0.10 win_64 leg in https://github.com/conda-forge/cocoindex-feedstock/pull/11 finished in **9 minutes 45 seconds** with fat LTO + STRIP + 600+ transitive crates. The original concern is the **4× multiplier** of building py3.11 / py3.12 / py3.13 / py3.14 as separate variants — not fat LTO itself. With the abi3 collapse one win_64 variant pays the LTO cost once.
+
+**Action**: if you find a `# CARGO_PROFILE_RELEASE_LTO: fat is intentionally NOT set` comment on a Rust+PyO3 recipe, that recipe is a candidate for the abi3 collapse pattern (see `reference/abi3-matrix-collapse.md`). Enable fat LTO + STRIP per the conda-forge.org Rust recipe template, apply the collapse, and watch the matrix shrink 4× along with the per-platform cost. **Do not** enable fat LTO without the matrix collapse if you can't measure the per-variant Windows cost — the 4× multiplier may be real for your dep graph even if the per-variant cost isn't.
+
 #### Silent `build.bat` Termination After Calling a `.cmd` Shim (pnpm/npm/yarn)
 
 **Symptom:** `build.bat` prints output up to a `pnpm`/`npm`/`yarn` invocation, then **silently terminates with no error**. Rattler-build proceeds to packaging and may fail later with a misleading error like `× No license files were copied` (because subsequent build steps that generate THIRDPARTY-* files never ran).
