@@ -19,6 +19,7 @@ workflow_settings:
         - linux_aarch64
         - osx_64
         - osx_arm64
+        #- win_64
       value: true
 provider:
   linux_aarch64: default
