@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.7"
+
+package:
+  name: lyric-py
+  version: ${{ version }}
+
+source:
+  # lyric-py ships wheels-only on PyPI (no buildable sdist), and its crate
+  # lives inside the lyric-project/lyric-runtime Cargo workspace. Source the
+  # GitHub tag archive: it carries the full workspace AND the root MIT
+  # LICENSE (the PyPI sdist omits LICENSE). Tag scheme is plain vX.Y.Z.
+  url: https://github.com/lyric-project/lyric-runtime/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 0e63a7e00a1f7108d4fa406511c779bed9c1eca7ded688a9af01706f33878a95
+
+build:
+  number: 0
+  script:
+    env:
+      # PEP 540 UTF-8 mode — forces Python UTF-8 I/O regardless of the
+      # Windows console codepage. Without it the win Azure leg fails inside
+      # pip install with "stream did not contain valid UTF-8" (CFE G19).
+      PYTHONUTF8: "1"
+      # Strip debug symbols — conda-forge default for Rust builds.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      # CARGO_PROFILE_RELEASE_LTO: fat is intentionally NOT set — the
+      # wasmtime v26 + tonic + tokio dep graph is large and fat LTO risks
+      # the Azure 6h Windows timeout. Re-enable only if the win build stays
+      # well under ~3h.  # note time out issues
+    content:
+      # The maturin project is the workspace member bindings/python/lyric-py;
+      # cd there so cargo resolves the workspace root and maturin finds the
+      # crate's pyproject.toml. CWD persists within this single shell entry.
+      - if: unix
+        then: |
+          cd bindings/python/lyric-py
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+        else: |
+          cd bindings/python/lyric-py
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+    # protoc for tonic-build (crates/lyric-rpc/build.rs compiles
+    # proto/task.proto, a transitive build-dep of lyric-py).
+    - protobuf
+    - pkg-config
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1.7,<2.0
+  host:
+    - python
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    # Compiled per-Python-version extension (NOT abi3) — the python_abi
+    # run-export from host pins the run python to the build's minor version.
+    - python
+    - msgpack-python
+    - cloudpickle
+    # lyric-task releases in lockstep with lyric-py (same upstream tag);
+    # upstream pyproject declares it unconstrained.
+    - lyric-task >=0.1.7
+
+tests:
+  - python:
+      imports:
+        - lyric
+      pip_check: true
+
+about:
+  homepage: https://github.com/lyric-project/lyric-runtime
+  repository: https://github.com/lyric-project/lyric-runtime
+  license: MIT
+  license_file:
+    - LICENSE
+    - bindings/python/lyric-py/THIRDPARTY.yml
+  summary: Python bindings for Lyric — a Rust-powered secure WebAssembly sandbox for multi-language code execution.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
