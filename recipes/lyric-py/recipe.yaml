@@ -51,8 +51,10 @@ requirements:
     - ${{ compiler("rust") }}
     - cargo-bundle-licenses
     # protoc for tonic-build (crates/lyric-rpc/build.rs compiles
-    # proto/task.proto, a transitive build-dep of lyric-py).
-    - protobuf
+    # proto/task.proto, a transitive build-dep of lyric-py). conda-forge's
+    # `protobuf` is the Python bindings and ships NO protoc binary — use
+    # `libprotobuf`, which provides bin/protoc on the build PATH.
+    - libprotobuf
     - pkg-config
     - if: build_platform != target_platform
       then:
