@@ -1,4 +1,4 @@
-# alTech Spec: graphifyy installable on osx-arm64 (15-feedstock fanout)
+# Tech Spec: graphifyy installable on osx-arm64 (15-feedstock fanout)
 
 > Fanout effort: open **15 net-new platform-expansion PRs** across the
 > tree-sitter language-binding feedstocks so that `graphifyy` (which is
@@ -28,17 +28,17 @@
 
 ## Status
 
-| Field        | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status       | **🎉 CLOSED 2026-06-17 03:25Z**. 22 platform-expansion PRs + 8 canonical-conda-forge.yml sweep + tree-sitter-swift dist-info fix + graphifyy v0.8.40 PR #8 (merged `fa094fa`) all shipped in a single ~16h session. Wave D smoke-test PASS: dry-run solve of graphifyy on osx-arm64 returned a complete plan (62 pkgs / 71 MB, all 22 tree-sitter-* deps at osx-arm64 builds). Closeout retro shipped as CFE v8.26.0 (G23 + G24 + DEP-002 sub-rule). Open follow-ups: ctranslate2 + faster-whisper PRs (deferred — local drafts validated, gated on review). |
-| Owner        | rxm7706                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Track        | BMAD Quick Flow (fanout — 15 single-feedstock cycles + orchestration)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Surface area | 15 conda-forge tree-sitter-* feedstocks; 15 maintainer-add issues + 15 platform-expansion PRs; watch policy on 7 in-flight PRs by `sumanth-manchala`; **no** code changes to `.claude/skills/conda-forge-expert/` (skill-internal work limited to closeout retro per Rule 2)                                                                                                                                                                                                                                                                                                             |
-| Scope        | (1) Open a `@conda-forge-admin, please add user @rxm7706` issue on each of 22 affected feedstocks (15 Cat-3 + 7 Cat-2; see audit table). (2) Per Cat-3 feedstock, sync local mirror → edit `conda-forge.yml` → rerender → open DRAFT PR adding `osx_arm64` + `linux_aarch64` provider blocks. (3) Watch the 7 Cat-2 PRs by `sumanth-manchala`; after 14 days idle, open a competing PR with the same scope. (4) After all 22 PRs merge, verify `mamba install graphifyy` resolves on osx-arm64 via repodata grep. (5) One consolidated CFE-skill retro at closeout.                 |
+| Field        | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status       | **🎉 CLOSED 2026-06-17 03:25Z**. 22 platform-expansion PRs + 8 canonical-conda-forge.yml sweep + tree-sitter-swift dist-info fix + graphifyy v0.8.40 PR #8 (merged `fa094fa`) all shipped in a single ~16h session. Wave D smoke-test PASS: dry-run solve of graphifyy on osx-arm64 returned a complete plan (62 pkgs / 71 MB, all 22 tree-sitter-* deps at osx-arm64 builds). Closeout retro shipped as CFE v8.26.0 (G23 + G24 + DEP-002 sub-rule). S-F4 follow-ups: 3 draft PRs OPEN on staged-recipes (2026-06-17) — [#33752 falkordb](https://github.com/conda-forge/staged-recipes/pull/33752) (win_64 ❌), [#33753 ctranslate2-suite](https://github.com/conda-forge/staged-recipes/pull/33753), [#33754 faster-whisper](https://github.com/conda-forge/staged-recipes/pull/33754) (gated on #33753).                                                                                                                                                                                                                              |
+| Owner        | rxm7706                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Track        | BMAD Quick Flow (fanout — 15 single-feedstock cycles + orchestration)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Surface area | 15 conda-forge tree-sitter-* feedstocks; 15 maintainer-add issues + 15 platform-expansion PRs; watch policy on 7 in-flight PRs by `sumanth-manchala`; **no** code changes to `.claude/skills/conda-forge-expert/` (skill-internal work limited to closeout retro per Rule 2)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Scope        | (1) Open a `@conda-forge-admin, please add user @rxm7706` issue on each of 22 affected feedstocks (15 Cat-3 + 7 Cat-2; see audit table). (2) Per Cat-3 feedstock, sync local mirror → edit `conda-forge.yml` → rerender → open DRAFT PR adding `osx_arm64` + `linux_aarch64` provider blocks. (3) Watch the 7 Cat-2 PRs by `sumanth-manchala`; after 14 days idle, open a competing PR with the same scope. (4) After all 22 PRs merge, verify `mamba install graphifyy` resolves on osx-arm64 via repodata grep. (5) One consolidated CFE-skill retro at closeout.                                                                                                                                                                                                                 |
 | Out of scope | Adding `win-arm64`. **Scope update 2026-06-16**: touching `conda-forge/graphifyy-feedstock` was originally out-of-scope ("already noarch and needs no change — the fix is in its deps") but is now in scope per Wave F § S-F1–S-F4 — driven by mid-session v0.8.10 → v0.8.40 upstream advance + 19 optional-extras enablement. Version bumps on any of the 15 feedstocks. Recipe-code changes beyond a `conda-forge.yml` block + rerender artifacts. Auto-merging any PR. **Scope update 2026-06-16**: `linux-ppc64le` was originally ruled out but has been brought back in scope after Cat-2 validated the hybrid native (linux_aarch64 + osx_arm64) + cross-compile (linux_ppc64le: linux_64) pattern. Cat-3 PRs now target osx-arm64 + linux-aarch64 + linux-ppc64le. |
-| Created      | 2026-06-15                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Driven by    | `graphifyy` not installable on osx-arm64. Confirmed empirically 2026-06-15: of 26 tree-sitter-* run-deps + 3 transitive Python deps, only 4 tree-sitter-* + all 3 Python deps ship osx-arm64; 7 are in-flight via `sumanth-manchala`, 15 have no PR yet.                                                                                                                                                                                                                                                                                                                                       |
-| Predecessor  | `docs/specs/feedstock-platform-expansion.md` (the per-feedstock workflow this spec invokes 15×); `conda-forge/tree-sitter-javascript-feedstock#1` (the canonical PR diff to copy)                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Created      | 2026-06-15                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Driven by    | `graphifyy` not installable on osx-arm64. Confirmed empirically 2026-06-15: of 26 tree-sitter-* run-deps + 3 transitive Python deps, only 4 tree-sitter-* + all 3 Python deps ship osx-arm64; 7 are in-flight via `sumanth-manchala`, 15 have no PR yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Predecessor  | `docs/specs/feedstock-platform-expansion.md` (the per-feedstock workflow this spec invokes 15×); `conda-forge/tree-sitter-javascript-feedstock#1` (the canonical PR diff to copy)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 ---
 
@@ -769,25 +769,25 @@ Upstream defines 19 `[project.optional-dependencies]` groups. **17 of the 19 gro
 
 Verified extras availability (2026-06-16):
 
-| Extra | Upstream deps | conda-forge status |
-|---|---|---|
-| sql | tree-sitter-sql | ✅ (0.3.11) |
-| mcp | mcp | ✅ (1.27.2) |
-| neo4j | neo4j (PyPI) → neo4j-python-driver (conda-forge) | ✅ (6.2.0) |
-| pdf | pypdf, markdownify | ✅ |
-| watch | watchdog | ✅ |
-| svg | matplotlib, numpy>=2.0 (py>=3.13) | ✅ |
-| leiden | graspologic (py<3.13) | ✅ |
-| office | python-docx, openpyxl | ✅ |
-| google | openpyxl | ✅ |
-| postgres | psycopg[binary] → psycopg | ✅ |
-| video (yt-dlp only) | yt-dlp | ✅ |
-| kimi / ollama / gemini / openai | openai, tiktoken | ✅ |
-| bedrock | boto3 | ✅ |
-| anthropic | anthropic | ✅ |
-| chinese | jieba | ✅ |
-| **falkordb** | **falkordb** | **❌ NOT ON CONDA-FORGE — see S-F4** |
-| **video (faster-whisper part)** | **faster-whisper** (py>=3.11) | **❌ NOT ON CONDA-FORGE — see S-F4** |
+| Extra                                 | Upstream deps                                     | conda-forge status                          |
+| ------------------------------------- | ------------------------------------------------- | ------------------------------------------- |
+| sql                                   | tree-sitter-sql                                   | ✅ (0.3.11)                                 |
+| mcp                                   | mcp                                               | ✅ (1.27.2)                                 |
+| neo4j                                 | neo4j (PyPI) → neo4j-python-driver (conda-forge) | ✅ (6.2.0)                                  |
+| pdf                                   | pypdf, markdownify                                | ✅                                          |
+| watch                                 | watchdog                                          | ✅                                          |
+| svg                                   | matplotlib, numpy>=2.0 (py>=3.13)                 | ✅                                          |
+| leiden                                | graspologic (py<3.13)                             | ✅                                          |
+| office                                | python-docx, openpyxl                             | ✅                                          |
+| google                                | openpyxl                                          | ✅                                          |
+| postgres                              | psycopg[binary] → psycopg                        | ✅                                          |
+| video (yt-dlp only)                   | yt-dlp                                            | ✅                                          |
+| kimi / ollama / gemini / openai       | openai, tiktoken                                  | ✅                                          |
+| bedrock                               | boto3                                             | ✅                                          |
+| anthropic                             | anthropic                                         | ✅                                          |
+| chinese                               | jieba                                             | ✅                                          |
+| **falkordb**                    | **falkordb**                                | **❌ NOT ON CONDA-FORGE — see S-F4** |
+| **video (faster-whisper part)** | **faster-whisper** (py>=3.11)               | **❌ NOT ON CONDA-FORGE — see S-F4** |
 
 **Acceptance**: PR commit `e2a999a` ships the 17-entry `run_constrained` block; check-deps passes; `mamba install graphifyy openai tiktoken mcp` on any subdir resolves cleanly post-merge.
 
@@ -801,32 +801,35 @@ Two extras blocked on conda-forge availability, drafted locally 2026-06-16:
 **Dependency chain**: graphifyy[video] → faster-whisper → ctranslate2 (C++ library, multi-platform native build, optional CUDA support, substantial recipe complexity)
 
 **Recommended path forward**:
-1. **`recipes/falkordb/` submitted to staged-recipes 2026-06-16 as conda-forge/staged-recipes#33752.**
-2. **`ctranslate2` packaging** drafted at `recipes/ctranslate2/recipe.yaml` (2026-06-16, 224 lines, multi-output `libctranslate2` + `ctranslate2`). **Adapted from `AnacondaRecipes/ctranslate2-feedstock@main`** (Anaconda's main-channel recipe, v4.7.1, recipe by `xkong-anaconda`) with these deltas for conda-forge:
+
+1. **`recipes/falkordb/` submitted to staged-recipes 2026-06-17 00:11:50Z as DRAFT [conda-forge/staged-recipes#33752](https://github.com/conda-forge/staged-recipes/pull/33752)** ("Create recipe.yaml for FalkorDB", head `falkordb`). Status: linter ✅ · linux_64 ✅ · osx_64 ✅ · win_64 ❌ — win_64 failure pending diagnosis.
+2. **`recipes/ctranslate2/` submitted to staged-recipes 2026-06-17 00:34:29Z as DRAFT [conda-forge/staged-recipes#33753](https://github.com/conda-forge/staged-recipes/pull/33753)** ("Ctranslate2 suite", head `ctranslate2-suite`, sha `4cbc0189`).
+3. **`recipes/faster-whisper/` submitted to staged-recipes 2026-06-17 00:44:14Z as DRAFT [conda-forge/staged-recipes#33754](https://github.com/conda-forge/staged-recipes/pull/33754)** ("Faster whisper", head `faster-whisper`, sha `9e13e5ac`). Sequencing note: gated on #33753 landing first (deps `ctranslate2` is not yet on conda-forge); kept as draft until then.
+4. **`ctranslate2` packaging detail**: multi-output (`libctranslate2` + `ctranslate2`), 224 lines, adapted from `AnacondaRecipes/ctranslate2-feedstock@main` (Anaconda main channel recipe v4.7.1 by `xkong-anaconda`) with these deltas for conda-forge:
+
    - Main source bumped v4.7.1 → v4.8.0 (latest PyPI).
    - Converted v0 meta.yaml → v1 recipe.yaml.
    - Dropped MKL variant (Intel MKL is proprietary; conda-forge prefers OpenBLAS/Accelerate by default).
    - Dropped CUDA variants (cuda-12, cuda-13); ships as a separate `ctranslate2-cuda` recipe via conda-forge's CUDA-matrix variant pattern in a follow-up.
    - Dropped all 4 of Anaconda's patches (mkl-shared-libs, mkl-dll-libs-win, use-system-thrust, cuda13-compat) — none apply to the CPU-only OpenBLAS/Accelerate build.
    - Uses the same 3-submodule parallel-source pattern (`spdlog` 1.14.1 + `cxxopts` 3.1.1 + `cpu_features` 0.9.0) at their Anaconda-vetted SHAs.
-   
+
    **Build-verified locally on linux-64 (2026-06-16)**: `libctranslate2-4.8.0-hbfe361e_0.conda` (1.2 MiB) + `ctranslate2-4.8.0-np2py310h81cc0b8_0.conda` (544 KiB) produced clean; `import ctranslate2; ctranslate2.__version__ == '4.8.0'` works; `from ctranslate2.converters import opennmt_py` succeeds. One non-blocking issue caught and fixed during verification: needed `openblas` (not `libopenblas`) in `host:` requirements — `libopenblas` is the runtime-only conda-forge package; `openblas` is the one that ships the headers + CMake config needed for `find_package(OpenBLAS)` to succeed. The Anaconda-adapted recipe + 3 submodule sources work as designed. **Pre-submission TODOs remaining** (4 items):
+
    - Verify submodule versions still satisfy v4.8.0's CMake checks (Anaconda's were against v4.7.1) — implicitly verified by the successful linux-64 build, but spot-check on other platforms once CI runs.
    - CUDA variants follow up as a separate `ctranslate2-cuda` recipe.
    - Spot-check `ENABLE_CPU_DISPATCH=ON` on `linux-ppc64le` (VSX) / `linux-aarch64` (NEON) once CI runs (Anaconda's recipe didn't target ARM).
    - Consider bumping spdlog → 1.15.x and cxxopts → 3.2.x once verified compatible.
-3. Submit `recipes/ctranslate2/` to staged-recipes after the TODOs are addressed.
-4. Once `ctranslate2` ships, submit `recipes/faster-whisper/` (which is unblocked at that point — its other 5 deps are all on conda-forge).
-5. Final follow-up PR on graphifyy-feedstock: add `ctranslate2`, `faster-whisper`, `falkordb` to `run_constrained:` and update S-F3's omission note.
+5. After #33753 merges, mark #33754 ready-for-review (currently draft).
+6. Final follow-up PR on graphifyy-feedstock: add `ctranslate2`, `faster-whisper`, `falkordb` to `run_constraints:` and update S-F3's omission note.
 
 **Backend choices in the ctranslate2 draft** (CPU-only):
+
 - Linux + Windows: WITH_OPENBLAS=ON + WITH_RUY=ON; WITH_MKL=OFF (Intel MKL is proprietary, doesn't ship as default on conda-forge).
 - macOS: WITH_ACCELERATE=ON + WITH_RUY=ON (Apple's framework + ARM-friendly Ruy).
 - All platforms: CUDA / cuDNN / Flash Attention / TensorParallel deferred to a future `ctranslate2-cuda` variant.
 
-**Acceptance**: `recipes/falkordb/recipe.yaml` validates clean (DONE 2026-06-16); `recipes/faster-whisper/recipe.yaml` validates structurally but `check-deps` flags `ctranslate2 missing` (expected; documented blocker); `recipes/ctranslate2/recipe.yaml` validates structurally with documented pre-submission TODO list (DONE 2026-06-16; not yet build-verified).
-
-**Acceptance**: both `recipes/falkordb/recipe.yaml` and `recipes/faster-whisper/recipe.yaml` exist, pass `validate` + `check-deps` + `lint-optimize`, and build green locally. Submission to staged-recipes deferred to operator.
+**Acceptance**: all three drafts submitted as staged-recipes DRAFT PRs (2026-06-17): #33752 (falkordb, CI partial green — win_64 ❌ outstanding), #33753 (ctranslate2-suite), #33754 (faster-whisper, sequencing on #33753).
 
 ### S-F5. tree-sitter-swift dist-info version-metadata fix (2026-06-16)
 
@@ -837,11 +840,13 @@ Caught during graphifyy PR #8's first CI run: `pip check` rejected the build bec
 **Root cause**: upstream `alex-pinkus/tree-sitter-swift` has never bumped its `pyproject.toml [project].version` field from the placeholder `"0.0.1"` despite tagging releases up through v0.7.3. PyPI's `tree-sitter-swift` is stuck at v0.0.1 for the same reason.
 
 **Downstream fix** (`conda-forge/tree-sitter-swift-feedstock#5`, opened 2026-06-16 by rxm7706):
+
 1. Bump `tag` context-var template to `${{ version }}-with-generated-files` (was hardcoded `0.7.2-with-generated-files`; autotick-friendly now).
 2. Replace static `patches/0001-...patch` (hardcoded destination `0.7.3`) with a `build.script` that rewrites `pyproject.toml`'s `version = ".*"` line in-place using `${{ version }}`. Works for any future version bump without recipe edits.
 3. Bump `build.number` 1 → 2 to supersede currently-shipping `*_1` artifacts (same upstream-version recipe-shape change rule).
 
 **Follow-up TODOs** (post Wave F closeout):
+
 - **File upstream issue** at `alex-pinkus/tree-sitter-swift` requesting they bump `pyproject.toml [project].version` to track tag releases. Once they do, our `build.script` rewrite becomes a no-op (sed/python find-replace does nothing if source already matches). The fix is forward-compatible and self-healing.
 - Confirm `tree-sitter-powershell`'s 0.26.5/0.26.4 minor mismatch doesn't surface elsewhere (it doesn't break graphifyy, but might break tighter downstream pins).
 - Verify the `${{ version }}-with-generated-files` tag pattern works for autotick by spot-checking the bot's next bump attempt on this feedstock.
@@ -859,26 +864,26 @@ Caught during graphifyy PR #8's first CI run: `pip check` rejected the build bec
 
 Discovered while monitoring S-F5: of the 23 `tree-sitter-*` feedstocks shipped in Wave C + Wave B + tree-sitter-markdown out-of-band, **8 do not match the 2026-canonical `conda-forge.yml` block** that Wave B Batch 1+2+3 adopted. The gap is two missing keys (`conda_install_tool: pixi` + the entire `bot:` block); the rest of the block already matches.
 
-| Subset | Count | Feedstocks |
-|---|---|---|
-| ✅ Match canonical | 15 | typescript, rust, java, ruby, kotlin, scala, php, swift, lua, zig, powershell, objc, julia, verilog, json (all Wave B Cat-3 PRs) |
-| ❌ Differ | 8 | javascript, go, groovy, c, cpp, elixir, fortran (Cat-2), markdown (Cat-3 out-of-band) |
-| ➖ Not a maintainer | 4 | tree-sitter (core), python, c-sharp, bash (Cat-1) |
+| Subset              | Count | Feedstocks                                                                                                                       |
+| ------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------- |
+| ✅ Match canonical  | 15    | typescript, rust, java, ruby, kotlin, scala, php, swift, lua, zig, powershell, objc, julia, verilog, json (all Wave B Cat-3 PRs) |
+| ❌ Differ           | 8     | javascript, go, groovy, c, cpp, elixir, fortran (Cat-2), markdown (Cat-3 out-of-band)                                            |
+| ➖ Not a maintainer | 4     | tree-sitter (core), python, c-sharp, bash (Cat-1)                                                                                |
 
 **Why the gap**: the 7 Cat-2 PRs shipped during Wave C (uplift of sumanth-manchala's PRs) before the richer 2026-canonical conda-forge.yml was adopted. tree-sitter-markdown was the user's out-of-band v0.5.3 + platform-expansion PR which only added platform-expansion keys, not the `bot:` block. The 15 Cat-3 PRs in Wave B Batches 1-3 shipped after the canonical was adopted and are already aligned.
 
 **Sweep PRs opened 2026-06-17** (all DRAFT, build.number bumped on each):
 
-| Feedstock | PR | New build.number |
-|---|---|---|
-| tree-sitter-javascript | #4 | 1 → 2 |
-| tree-sitter-go | #4 | 1 → 2 |
-| tree-sitter-groovy | #5 | 2 → 3 |
-| tree-sitter-c | #4 | 1 → 2 |
-| tree-sitter-cpp | #4 | 1 → 2 |
-| tree-sitter-elixir | #4 | 1 → 2 |
-| tree-sitter-fortran | #5 | 2 → 3 |
-| tree-sitter-markdown | #6 | 0 → 1 |
+| Feedstock              | PR | New build.number |
+| ---------------------- | -- | ---------------- |
+| tree-sitter-javascript | #4 | 1 → 2           |
+| tree-sitter-go         | #4 | 1 → 2           |
+| tree-sitter-groovy     | #5 | 2 → 3           |
+| tree-sitter-c          | #4 | 1 → 2           |
+| tree-sitter-cpp        | #4 | 1 → 2           |
+| tree-sitter-elixir     | #4 | 1 → 2           |
+| tree-sitter-fortran    | #5 | 2 → 3           |
+| tree-sitter-markdown   | #6 | 0 → 1           |
 
 Each PR is `+1 commit`, touching only `conda-forge.yml` (adds 5 lines) + `recipe.yaml` (1-line build.number bump). No platform-expansion or recipe-code change. Rerender requested on each.
 
@@ -886,16 +891,16 @@ Each PR is `+1 commit`, touching only `conda-forge.yml` (adds 5 lines) + `recipe
 
 **Status update 2026-06-17 01:55-01:56Z**: ALL 8 PRs MERGED within ~85 seconds:
 
-| Feedstock | PR | Merge SHA |
-|---|---|---|
-| tree-sitter-elixir | #4 | `98e676f` (01:55:19Z) |
+| Feedstock              | PR | Merge SHA               |
+| ---------------------- | -- | ----------------------- |
+| tree-sitter-elixir     | #4 | `98e676f` (01:55:19Z) |
 | tree-sitter-javascript | #4 | `e1fb790` (01:55:23Z) |
-| tree-sitter-go | #4 | `f9b8380` (01:55:30Z) |
-| tree-sitter-groovy | #5 | `84df721` (01:55:40Z) |
-| tree-sitter-c | #4 | `519eca5` (01:55:50Z) |
-| tree-sitter-fortran | #5 | `ae7bcba` (01:56:01Z) |
-| tree-sitter-cpp | #4 | `0cc295e` (01:56:18Z) |
-| tree-sitter-markdown | #6 | `517d8cd` (01:56:40Z) |
+| tree-sitter-go         | #4 | `f9b8380` (01:55:30Z) |
+| tree-sitter-groovy     | #5 | `84df721` (01:55:40Z) |
+| tree-sitter-c          | #4 | `519eca5` (01:55:50Z) |
+| tree-sitter-fortran    | #5 | `ae7bcba` (01:56:01Z) |
+| tree-sitter-cpp        | #4 | `0cc295e` (01:56:18Z) |
+| tree-sitter-markdown   | #6 | `517d8cd` (01:56:40Z) |
 
 Post-merge canonical-match verification: **all 23 maintainer-owned `tree-sitter-*` feedstocks** (15 Wave B + 7 Cat-2 + tree-sitter-markdown) now match the 2026 canonical `conda-forge.yml` byte-for-byte. Cat-1 feedstocks (tree-sitter core, python, c-sharp, bash) are not in scope (rxm7706 isn't on those teams).
 
@@ -918,13 +923,13 @@ Invoke `bmad-retrospective` (or follow its protocol manually). Survey:
 
 **Retro executed 2026-06-17 (post-PR #8 merge)** — landed as CFE skill v8.26.0 (MINOR bump). Findings:
 
-| Bucket | Finding | Skill landing |
-|---|---|---|
-| Addition | **G23** — Inline `sed`/`powershell` in `build.script` hits cmd.exe escape hell. Canonical fix: `sed` with `m2-sed` on Win | SKILL.md new gotcha section |
-| Addition | **G24** — Conda label ≠ wheel `dist-info` version when upstream's `pyproject.toml` hardcodes a placeholder. Detection helper + canonical fix via G23 pattern | SKILL.md new gotcha section |
-| Refinement | Sub-workflow "Special-case categorizations" gains a 4th bullet making upstream-declared upper bounds' `pip_check`-enforcement mechanism explicit (the existing DEP-002 note was easy to skip past — empirically confirmed) | SKILL.md sub-workflow categorizations table |
-| Audit outcome (no skill delta) | Maintainer-add bot: processed all 22 same-day (no 48h fallback). Takeover policy never fired — all 7 Cat-2 PRs merged via rxm7706 follow-up commits (`maintainerCanModify: true`). ppc64le reviewer pushback DID trigger (mgorny clarified ppc64le is cross-compile, not native), corrected spec mid-session. conda-forge.yml drift discovered post-merge → spawned § S-F6 sweep. | None — process worked |
-| Audit outcome (skill memory) | "Drop upper bounds" without checking `pip_check` impact almost merged broken graphifyy. Empirical confirmation that the existing DEP-002 sub-rule about upstream-declared bounds is load-bearing. | Already captured in feedback memory + now in new sub-rule. |
+| Bucket                         | Finding                                                                                                                                                                                                                                                                                                                                                                                | Skill landing                                              |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Addition                       | **G23** — Inline `sed`/`powershell` in `build.script` hits cmd.exe escape hell. Canonical fix: `sed` with `m2-sed` on Win                                                                                                                                                                                                                                             | SKILL.md new gotcha section                                |
+| Addition                       | **G24** — Conda label ≠ wheel `dist-info` version when upstream's `pyproject.toml` hardcodes a placeholder. Detection helper + canonical fix via G23 pattern                                                                                                                                                                                                               | SKILL.md new gotcha section                                |
+| Refinement                     | Sub-workflow "Special-case categorizations" gains a 4th bullet making upstream-declared upper bounds'`pip_check`-enforcement mechanism explicit (the existing DEP-002 note was easy to skip past — empirically confirmed)                                                                                                                                                           | SKILL.md sub-workflow categorizations table                |
+| Audit outcome (no skill delta) | Maintainer-add bot: processed all 22 same-day (no 48h fallback). Takeover policy never fired — all 7 Cat-2 PRs merged via rxm7706 follow-up commits (`maintainerCanModify: true`). ppc64le reviewer pushback DID trigger (mgorny clarified ppc64le is cross-compile, not native), corrected spec mid-session. conda-forge.yml drift discovered post-merge → spawned § S-F6 sweep. | None — process worked                                     |
+| Audit outcome (skill memory)   | "Drop upper bounds" without checking `pip_check` impact almost merged broken graphifyy. Empirical confirmation that the existing DEP-002 sub-rule about upstream-declared bounds is load-bearing.                                                                                                                                                                                    | Already captured in feedback memory + now in new sub-rule. |
 
 **Counter-factual estimate**: had G23+G24+the upper-bounds sub-rule been in the skill at intake, graphifyy PR #8 would have shipped with the right shape on commit 1 (skipping iterations 1+2 — drop-upper-bounds revert + pip_check debugging). Iteration 3 (tree-sitter-swift dist-info fix) was unavoidable but would have surfaced at PR-author time, not CI-debug time. Per-future-analogous-fanout savings: ~1-2 PR-iteration cycles + ~30-60 min CI-burn.
 
@@ -1125,5 +1130,9 @@ Populated as the fanout executes. One row per affected feedstock.
   - tree-sitter-zig PR #3 (`a15d42d`, 23:23Z)
   - **🎉 Wave B closed. All 22 platform-expansion PRs merged. 16 Cat-3 (incl. markdown) + 7 Cat-2 platform expansions = 23 feedstocks now ship osx-arm64.** Next: Wave D smoke-test after CDN propagation.
 - Wave D smoke-test result (2026-06-17 03:25Z): **✅ PASS**. `CONDA_OVERRIDE_OSX=11.0 mamba create -n test-graphifyy-osx-arm64 -c conda-forge --platform osx-arm64 --dry-run graphifyy` resolved cleanly — 62 packages / 71 MB. All 22 tree-sitter-* deps pulled from conda-forge osx-arm64 builds; many at `*_2` builds (Wave B platform-expansion rebuilds); `tree-sitter-swift 0.7.3 py310h28d811c_2` is the dist-info-fixed build from S-F5 PR #5. Solver picked graphifyy 0.8.10 (still-published version at smoke-test time; 0.8.40 uploaded to anaconda.org at 03:01:42Z but conda-forge repodata had not yet refreshed — typical 30-60 min lag). Dep set is identical between 0.8.10 and 0.8.40 base requirements so 0.8.40 resolves the same way once propagated. **Goal 1 (graphifyy installable on osx-arm64) empirically met.** S-D1 ✅ (all 22 names searchable). S-D2 ✅ (dry-run solve complete). S-D3 deferred (no osx-arm64 host on hand).
-- Closeout retro CHANGELOG entry: **✅ landed** as CFE v8.26.0 (commit `f9ed72127f`, 2026-06-17). Three deltas: G23 (cmd.exe escape trap with sed+m2-sed canonical fix), G24 (wheel dist-info Version mismatch detection + dynamic-tag remedy), DEP-002 sub-rule (load-bearing upstream-declared upper bounds — do NOT drop). 59 files changed; 3,202 insertions; 23 tree-sitter-* feedstock mirrors synced; 3 staged-recipes drafts (falkordb merged, ctranslate2 + faster-whisper local). Skill bump 8.25.0 → 8.26.0 (MINOR; additive).
+- Closeout retro CHANGELOG entry: **✅ landed** as CFE v8.26.0 (commit `f9ed72127f`, 2026-06-17). Three deltas: G23 (cmd.exe escape trap with sed+m2-sed canonical fix), G24 (wheel dist-info Version mismatch detection + dynamic-tag remedy), DEP-002 sub-rule (load-bearing upstream-declared upper bounds — do NOT drop). 59 files changed; 3,202 insertions; 23 tree-sitter-* feedstock mirrors synced; 3 staged-recipes drafts (now all OPEN on staged-recipes — see S-F4 follow-ups below). Skill bump 8.25.0 → 8.26.0 (MINOR; additive).
+- S-F4 staged-recipes draft PRs (all OPEN 2026-06-17):
+  - [#33752](https://github.com/conda-forge/staged-recipes/pull/33752) — Create recipe.yaml for FalkorDB (head `falkordb`, opened 00:11:50Z). CI: linter ✅ · linux_64 ✅ · osx_64 ✅ · win_64 ❌ outstanding.
+  - [#33753](https://github.com/conda-forge/staged-recipes/pull/33753) — Ctranslate2 suite (head `ctranslate2-suite` sha `4cbc0189`, opened 00:34:29Z). Multi-output libctranslate2 + ctranslate2 (CPU-only, OpenBLAS/Accelerate, no CUDA/MKL).
+  - [#33754](https://github.com/conda-forge/staged-recipes/pull/33754) — Faster whisper (head `faster-whisper` sha `9e13e5ac`, opened 00:44:14Z). Sequencing: gated on #33753 landing first; remains draft until then.
 - Effort complete: **2026-06-17 03:25Z** (Wave D smoke-test pass + retro shipped + commit pushed).
