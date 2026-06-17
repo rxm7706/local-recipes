@@ -1,15 +1,15 @@
 schema_version: 1
 
 context:
-  version: "0.23.1"
+  version: "0.26.5"
 
 package:
-  name: tree-sitter-ruby
+  name: tree-sitter-powershell
   version: ${{ version }}
 
 source:
-  url: https://github.com/tree-sitter/tree-sitter-ruby/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: e7e49577ddc1f2de8e42d42353b477e338c15bbb95b2558e123ddc13d88789f0
+  url: https://github.com/airbus-cert/tree-sitter-powershell/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a949ac2bccd74b94b6199702c8b119cb353785e8a8828150a763b202ae8d4534
 
 build:
   number: 1
@@ -35,7 +35,7 @@ requirements:
 tests:
   - python:
       imports:
-        - tree_sitter_ruby
+        - tree_sitter_powershell
       # Verify the abi3 wheel works on the build-time Python AND the latest.
       python_version:
         - if: is_abi3
@@ -48,15 +48,15 @@ tests:
           - abi3audit
       script:
         - if: unix
-          then: abi3audit $SP_DIR/tree_sitter_ruby/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
-          else: abi3audit %SP_DIR%/tree_sitter_ruby/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+          then: abi3audit $SP_DIR/tree_sitter_powershell/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%/tree_sitter_powershell/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
 
 about:
-  homepage: https://github.com/tree-sitter/tree-sitter-ruby
-  summary: Ruby grammar for tree-sitter
+  homepage: https://github.com/airbus-cert/tree-sitter-powershell
+  summary: PowerShell grammar for tree-sitter
   license: MIT
   license_file: LICENSE
-  repository: https://github.com/tree-sitter/tree-sitter-ruby
+  repository: https://github.com/airbus-cert/tree-sitter-powershell
 
 extra:
   recipe-maintainers:

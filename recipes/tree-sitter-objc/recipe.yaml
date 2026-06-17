@@ -1,15 +1,15 @@
 schema_version: 1
 
 context:
-  version: "0.23.1"
+  version: "3.0.2"
 
 package:
-  name: tree-sitter-ruby
+  name: tree-sitter-objc
   version: ${{ version }}
 
 source:
-  url: https://github.com/tree-sitter/tree-sitter-ruby/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: e7e49577ddc1f2de8e42d42353b477e338c15bbb95b2558e123ddc13d88789f0
+  url: https://pypi.org/packages/source/t/tree_sitter_objc/tree_sitter_objc-${{ version }}.tar.gz
+  sha256: ac55aefe8a4f3ea6f1da2a2e05372a4f37100001934e36a81e0f96c4c6252809
 
 build:
   number: 1
@@ -35,7 +35,7 @@ requirements:
 tests:
   - python:
       imports:
-        - tree_sitter_ruby
+        - tree_sitter_objc
       # Verify the abi3 wheel works on the build-time Python AND the latest.
       python_version:
         - if: is_abi3
@@ -48,15 +48,15 @@ tests:
           - abi3audit
       script:
         - if: unix
-          then: abi3audit $SP_DIR/tree_sitter_ruby/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
-          else: abi3audit %SP_DIR%/tree_sitter_ruby/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+          then: abi3audit $SP_DIR/tree_sitter_objc/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%/tree_sitter_objc/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
 
 about:
-  homepage: https://github.com/tree-sitter/tree-sitter-ruby
-  summary: Ruby grammar for tree-sitter
+  homepage: https://github.com/tree-sitter-grammars/tree-sitter-objc
+  summary: Objective-C grammar for tree-sitter
   license: MIT
   license_file: LICENSE
-  repository: https://github.com/tree-sitter/tree-sitter-ruby
+  repository: https://github.com/tree-sitter-grammars/tree-sitter-objc
 
 extra:
   recipe-maintainers:

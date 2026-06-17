@@ -1,18 +1,18 @@
 schema_version: 1
 
 context:
-  version: "0.23.1"
+  version: "0.3.5"
 
 package:
-  name: tree-sitter-ruby
+  name: tree-sitter-elixir
   version: ${{ version }}
 
 source:
-  url: https://github.com/tree-sitter/tree-sitter-ruby/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: e7e49577ddc1f2de8e42d42353b477e338c15bbb95b2558e123ddc13d88789f0
+  url: https://github.com/elixir-lang/tree-sitter-elixir/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 7d8bf37949e2bea75a19d38491d7680ed1c9f0f5a41a5235832d718ec174c7c4
 
 build:
-  number: 1
+  number: 2
   # abi3 packages build once at python_min and ship one artifact per platform.
   skip: is_abi3 and not is_python_min
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
@@ -35,7 +35,7 @@ requirements:
 tests:
   - python:
       imports:
-        - tree_sitter_ruby
+        - tree_sitter_elixir
       # Verify the abi3 wheel works on the build-time Python AND the latest.
       python_version:
         - if: is_abi3
@@ -48,15 +48,15 @@ tests:
           - abi3audit
       script:
         - if: unix
-          then: abi3audit $SP_DIR/tree_sitter_ruby/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
-          else: abi3audit %SP_DIR%/tree_sitter_ruby/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+          then: abi3audit $SP_DIR/tree_sitter_elixir/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%/tree_sitter_elixir/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
 
 about:
-  homepage: https://github.com/tree-sitter/tree-sitter-ruby
-  summary: Ruby grammar for tree-sitter
+  homepage: https://github.com/elixir-lang/tree-sitter-elixir
+  summary: Elixir grammar for tree-sitter
   license: MIT
   license_file: LICENSE
-  repository: https://github.com/tree-sitter/tree-sitter-ruby
+  repository: https://github.com/elixir-lang/tree-sitter-elixir
 
 extra:
   recipe-maintainers:

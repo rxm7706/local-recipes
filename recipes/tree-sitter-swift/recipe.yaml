@@ -1,35 +1,60 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
-  name: tree-sitter-swift
-  version: "0.7.2"
+  version: "0.7.3"
+  # Upstream alex-pinkus/tree-sitter-swift ships TWO parallel tag schemes:
+  # `vX.Y.Z` (clean source, no src/parser.c — would require tree-sitter CLI
+  # + nodejs to run `tree-sitter generate`) and `X.Y.Z-with-generated-files`
+  # (same tree with the generated parser.c committed). We use the latter to
+  # avoid a node toolchain in build deps. The tag template tracks `version`
+  # so autotick bumps work without recipe-level edits.
+  tag: ${{ version }}-with-generated-files
 
 package:
-  name: ${{ name }}
+  name: tree-sitter-swift
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/${{ name }}/tree_sitter_swift-${{ version }}.tar.gz
-  sha256: 67b9a3ba5ab8fff2c082a2c0c33c8b5a66539f8bfa5058385688b1aefc11cead
+  url: https://github.com/alex-pinkus/tree-sitter-swift/archive/refs/tags/${{ tag }}.tar.gz
+  sha256: e2e84d3b97cf6a0afbcab793c4910123da92a34c395b09cc8d0880562a21e956
 
 build:
-  number: 0
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 2
+  # abi3 packages build once at python_min and ship one artifact per platform.
+  skip: is_abi3 and not is_python_min
+  # Upstream's pyproject.toml carries a placeholder `version = "0.0.1"` that
+  # has never been bumped despite tagged releases. Without this rewrite the
+  # produced wheel ships `tree_sitter_swift-0.0.1.dist-info`, which breaks
+  # `pip check` for any downstream with an upper-bounded constraint like
+  # `tree-sitter-swift<0.9,>=0.7` (e.g. graphifyy 0.8.40). The Python helper
+  # (recipe/fix_pyproject_version.py) reads $PKG_VERSION and rewrites the
+  # first `version = "..."` line in pyproject.toml — works cross-platform
+  # without sed/powershell quoting hell, and is idempotent (no-op once
+  # upstream resumes proper version bumping).
+  script:
+    - if: unix
+      then: |
+        ${{ PYTHON }} ${RECIPE_DIR}/fix_pyproject_version.py
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - if: win
+      then: |
+        "%PYTHON%" "%RECIPE_DIR%\fix_pyproject_version.py"
+        if errorlevel 1 exit 1
+        "%PYTHON%" -m pip install . -vv --no-deps --no-build-isolation
+        if errorlevel 1 exit 1
+  python:
+    version_independent: ${{ is_abi3 }}
 
 requirements:
   build:
-    - if: build_platform != host_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
   host:
+    - if: is_abi3
+      then: python-abi3
     - python
-    - setuptools >=42
-    - wheel
     - pip
+    - setuptools >=42
   run:
     - python
 
@@ -37,14 +62,30 @@ tests:
   - python:
       imports:
         - tree_sitter_swift
-      pip_check: true
+      # Verify the abi3 wheel works on the build-time Python AND the latest.
+      python_version:
+        - if: is_abi3
+          then: ${{ python_min }}.*
+        - "*"
+  - if: is_abi3
+    then:
+      requirements:
+        run:
+          - abi3audit
+      script:
+        - if: unix
+          then: abi3audit $SP_DIR/tree_sitter_swift/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%/tree_sitter_swift/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
 
 about:
+  homepage: https://github.com/alex-pinkus/tree-sitter-swift
   summary: Swift grammar for tree-sitter
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/alex-pinkus/tree-sitter-swift
+  repository: https://github.com/alex-pinkus/tree-sitter-swift
 
 extra:
   recipe-maintainers:
+    - killua156
+    - mgorny
     - rxm7706

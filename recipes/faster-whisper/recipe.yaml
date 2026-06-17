@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: faster-whisper
-  version: 1.1.1
+  version: "1.2.1"
 
 package:
-  name: ${{ name|lower }}
+  name: faster-whisper
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/faster-whisper-${{ version }}.tar.gz
-  sha256: 50d27571970c1be0c2b2680a2593d5d12f9f5d2f10484f242a1afbe7cb946604
+  url: https://github.com/SYSTRAN/faster-whisper/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ff0b5428b3a074cd63f580ae73fa21f7d9fd3bba28e0e2e097868d78d5b06f2f
 
 build:
   number: 0
@@ -20,14 +19,15 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.9
-    - ctranslate2 >=4.0,<5
-    - huggingface_hub >=0.13
-    - tokenizers >=0.13,<1
-    - onnxruntime >=1.14,<2
+    - python >=${{ python_min }}
+    - ctranslate2 <5,>=4.0
+    - huggingface_hub >=0.21
+    - tokenizers <1,>=0.13
+    - onnxruntime <2,>=1.14
     - av >=11
     - tqdm
 
@@ -36,12 +36,22 @@ tests:
       imports:
         - faster_whisper
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+    script:
+      - python -c "from faster_whisper import WhisperModel, BatchedInferencePipeline"
 
 about:
-  summary: Faster Whisper transcription with CTranslate2
+  homepage: https://github.com/SYSTRAN/faster-whisper
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/SYSTRAN/faster-whisper
+  summary: Faster Whisper transcription with CTranslate2
+  description: |
+    Faster Whisper transcription with CTranslate2
 
 extra:
   recipe-maintainers:
