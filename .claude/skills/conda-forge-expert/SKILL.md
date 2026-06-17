@@ -1922,6 +1922,121 @@ curl -s https://pypi.org/pypi/httpx/json | python -c "import sys,json; print([r 
 
 A follow-up optimizer check **`DEP-006`** ("upstream dep uses `pkg[extra]` — verify the extra's deps are flattened into `run:`, and that any sibling-output extra is expanded past its `pin_subpackage`") would catch this at gate-time alongside G10's proposed `DEP-005`. Tracked as a skill TODO; not yet shipped.
 
+### G26. Loosening upstream `==` pins to `>=` requires patching the source pyproject when `pip_check: true` — the wheel METADATA bakes in the `==`
+
+**Symptom**: a recipe follows the project's pin-loosening convention (rewrite every upstream `pkg==X` run-dep to `pkg >=X`); `validate_recipe` + `optimize_recipe` + `check_dependencies` are all clean and the package builds — then the test phase fails at `pip check`:
+
+```
+dbgpt 0.8.0 has requirement aiohttp==3.8.4, but you have aiohttp 3.14.1.
+```
+
+**Why**: loosening the *recipe's* `requirements.run` only changes what conda installs. It does NOT change the built wheel's `dist-info/METADATA`, which still carries upstream's `Requires-Dist: aiohttp==3.8.4` verbatim from `pyproject.toml`. `pip_check: true` reads that METADATA and enforces the `==`, so the loosened conda install (aiohttp 3.14.1) violates it. Worse, the pinned version usually isn't even on conda-forge (the reason you loosened), so there is no way to satisfy the `==`.
+
+This is the **mirror image of G24 / the graphifyy upper-bound rule**: G24 says *mirror* upstream's load-bearing upper bounds in `run:`; G26 says when you *loosen* an upstream `==`, you must also loosen it in the wheel METADATA — i.e. patch the source — or `pip_check` rejects the build.
+
+**Fix**: rewrite the `==` pins to `>=` in the source `pyproject.toml` at build time, before `pip install`, so the wheel METADATA matches the loosened conda deps. A targeted regex that touches only PEP 508 version pins (`name==N`), leaving `<`/`<=` caps and `extra == "..."` / `python_version == "..."` markers untouched:
+
+```yaml
+build:
+  script: |
+    sed -i -E 's/([A-Za-z0-9])==([0-9])/\1>=\2/g' pyproject.toml
+    ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+```
+
+The `([A-Za-z0-9])==([0-9])` guard is load-bearing: it matches `aiohttp==3.8.4` (alnum before `==`, digit after) but NOT `extra == "cli"` (space + quote) or `python_version=='3.9'` (quote after `==`). Verify on the real file (`grep -nE '[A-Za-z0-9]==[0-9]'` should be empty after; the file must still parse as TOML). For multi-line/structural rewrites use a checked-in Python helper instead (per G23). noarch:python builds run on one platform (linux), so a plain `sed` needs no `m2-sed`/Windows handling.
+
+In a **multi-output** recipe, patch the pyproject of whichever output *originates* the pin, not just the one that fails: `pip_check` on output B (which requires `A[extra]`) reads A's wheel METADATA for the extra's deps, so loosening A's `pyproject.toml` (base + every extra) fixes both A's own test and B's.
+
+**Case study**: DB-GPT v0.8.0 (Jun 17, 2026). The 7-output recipe loosened 13 `==` pins per the project convention, but the first build failed at the `dbgpt` (core) test with `pip check`: `aiohttp==3.8.4, but you have aiohttp 3.14.1` (+ chardet, importlib-resources). Fix: the `sed` above in the `dbgpt-core` + `dbgpt-ext` output build scripts (the only two carrying `==` pins; `dbgpt-app`/`dbgpt-client` read their loosened extras transitively via `pip check`). After the patch the wheel METADATA read `aiohttp>=3.8.4` / `psutil>=5.9.4; extra=='cli'` and pip_check passed. The spec's pin-loosening story (FR-2/S10) had assumed loosening the conda run-deps was sufficient — it wasn't.
+
+### G27. A top-level `import` in a split package can eagerly pull a sibling's submodule whose deps are only declared under an extra
+
+**Symptom**: a `noarch: python` recipe for one member of an upstream monorepo/workspace builds cleanly and `pip check` passes, but the import test fails — `ModuleNotFoundError: No module named 'bs4'` — with a traceback that walks *through a sibling package's submodule*:
+
+```
+import dbgpt_client → dbgpt_client.schema
+  → from dbgpt_ext.rag.chunk_manager import ChunkParameters
+  → from dbgpt.rag.knowledge.base import ...
+  → from bs4 import BeautifulSoup        # ModuleNotFoundError
+```
+
+**Why**: `dbgpt-client`'s `__init__` eagerly imports a submodule that reaches into a sibling (`dbgpt_ext.rag`) which reaches into the core (`dbgpt.rag.knowledge`) which imports `bs4`. Upstream declares `bs4` only under `dbgpt-ext[rag]` (an optional extra `dbgpt-client` does not activate). The dep is a *hard* import for anything that touches that code path, but upstream's `[project.dependencies]` under-declares it. `import <bare core>` doesn't trip it (the bare `__init__` doesn't load the rag submodule), so only the *consumer's* import surfaces the gap — and only the import test catches it (`pip check` is happy because the wheel doesn't declare bs4).
+
+**Fix**: find the exact import closure empirically, then add the missing dep(s) to the *importing* output's `run:`. Probe in the failed output's surviving `test_env` (rattler-build leaves it under `build_artifacts/<cfg>/test/test_<name>*/test_env`):
+
+```python
+# $TE/bin/python — iteratively import, install each missing module, repeat
+import importlib, subprocess, sys
+seen = set()
+while True:
+    try:
+        importlib.import_module('dbgpt_client'); print('OK', sorted(seen)); break
+    except ModuleNotFoundError as e:
+        m = e.name.split('.')[0]
+        if m in seen: print('STUCK on', m); break
+        seen.add(m)
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '-q',
+                        {'bs4': 'beautifulsoup4', 'docx': 'python-docx'}.get(m, m)])
+```
+
+Add only what the closure actually needs (the DB-GPT case needed exactly `beautifulsoup4`, nothing more) — don't blanket-add the whole extra. Map import names to conda names (G7/G10). Put the dep on the output whose import fails; if several outputs import the same sibling submodule, the dep can go on the shared sibling's `run:` instead. Cheap pre-check: `grep '^\(from\|import\) ' <pkg>/src/<mod>/__init__.py` — a trivial `__init__` (only `from ._version import ...`) means the import test won't trip deep chains.
+
+**Case study**: DB-GPT `dbgpt-client` (Jun 17, 2026). `import dbgpt_client` failed on `bs4`; the closure probe showed `beautifulsoup4` was the *only* missing module. Added it to `dbgpt-client`'s `run:` with a comment noting the under-declared transitive import. `dbgpt-app` already carried it via the `[rag]` flatten; the bare `dbgpt`/`dbgpt-ext`/`dbgpt-sandbox`/`dbgpt-app` import tests never tripped it (their `__init__` files import only `._version`).
+
+### G28. An external dep's broken `dist-info` version (e.g. conda-forge `pdfminer.six` → 0.0.0) breaks `pip_check` for any dependent that pins it exactly
+
+**Symptom**: `pip check` on an output fails with a mismatch you didn't introduce and can't fix by editing your recipe:
+
+```
+pdfplumber 0.11.9 has requirement pdfminer.six==20251230, but you have pdfminer-six 0.0.0.
+```
+
+The conda package's *own* version is correct (`conda-meta/*.json` shows `pdfminer.six 20251230`), but its bundled wheel `dist-info/METADATA` reports `Version: 0.0.0`. A *different* package (pdfplumber) pins `pdfminer.six==20251230` exactly, and `pip check` compares that against the bogus `0.0.0` string.
+
+**Why**: a setuptools_scm-style fallback bug in the *external* feedstock (it built from a tarball without the git tag, so the wheel version resolved to `0.0.0`) — the same class as G24, but in a dependency you don't own. It is systemic across that package's builds, so no version pin of yours satisfies the exact-pinning dependent. The conda package functions correctly; only the metadata string is wrong, so the failure is a true false positive.
+
+**Fix** (in priority order): (1) verify it's genuinely external and a false positive — compare the conda version (`conda-meta`) against the dist-info `Version:`, and confirm the dependent's exact pin is what trips it; (2) file an issue against the broken `<dep>-feedstock` (the durable fix is theirs — `sed` the real version into the wheel, per G24); (3) for *your* recipe, since there is no in-recipe fix, **disable `pip_check` on the single affected output** (not the whole recipe), with an inline comment citing the external bug, keeping `pip_check: true` everywhere else. Before disabling, run `pip check` manually in the test_env and confirm the broken-metadata line is the *only* failure — if the rest of the graph is consistent you lose almost nothing:
+
+```yaml
+tests:
+  # pip_check disabled for THIS output only: conda-forge <dep> ships dist-info
+  # Version 0.0.0 (feedstock metadata bug, issue #NNN) while the conda version
+  # is correct; <other-dep> pins it exactly so pip check false-fails. Verified
+  # the rest of the graph consistent. The other outputs keep pip_check.
+  - python:
+      imports: [<module>]
+      pip_check: false
+```
+
+Dropping the offending dependent is the alternative, but if it's pulled via an activated extra you must *also* remove it from that extra's declaration (else `pip check` flags it as *missing*), and you lose functionality.
+
+**Case study**: DB-GPT `dbgpt-app` (Jun 17, 2026). After fixing G26 + G27, the only remaining `pip_check` failure across the 78-package `dbgpt-app` graph was `pdfplumber … pdfminer.six==20251230, but you have pdfminer-six 0.0.0`. The conda `pdfminer.six` was correctly `20251230`; its dist-info said `0.0.0` across every build on the channel. With the rest of the graph manually verified consistent (a strong signal the G25 flatten + Q2 caps were right), `pip_check: false` was set on the `dbgpt-app` output only, documented inline; the other six outputs kept `pip_check: true`.
+
+### G29. Multi-output recipe checkers are top-level-only — `optimize_recipe` TEST-001 and `check_dependencies` silently ignore `outputs[]`
+
+**Symptom**: on a multi-output (`recipe:` + `outputs:`) recipe where every output has its own `tests:` and `requirements:`:
+- `optimize_recipe` fires **TEST-001** ("Recipe has no tests section") and `validate_recipe` warns "No tests section defined", even though all outputs carry proper CFEP-25 test blocks.
+- `check_dependencies` returns `{"found": [], "missing": []}` — it verified *nothing*.
+
+**Why**: both checks read the *top-level* recipe keys (`tests:`, `requirements:`), which a multi-output recipe legitimately lacks (they live under each `outputs[i]`). The checkers don't traverse `outputs[]`. So TEST-001 is a **false positive** and `check_dependencies` is a **silent false-negative** — the dangerous kind, because "0 missing" reads as "all deps verified" when nothing was checked.
+
+**Fix**: (1) **Trust conda-smithy + rattler lint** for multi-output structure — `validate_recipe`'s `conda-smithy lint: passed` + `rattler_lint_ran: true` are the real gates; the TEST-001 warning is noise when each output has tests. (2) To verify deps, **flatten every output's `run:` into a throwaway single-output recipe** and run `check_dependencies` on that:
+
+```yaml
+# /tmp/depcheck/recipe.yaml
+schema_version: 1
+package: { name: depcheck, version: "0.0.0" }
+build: { noarch: python }
+requirements:
+  run: [ <every external dep from every output, version-stripped> ]
+```
+
+`check_dependencies` then resolves them via its batch-repodata path and suggests conda names for misses. In-flight prerequisite recipes from the same effort show as "missing" (not yet on conda-forge) — expected; the local channel covers them at build time. (3) The build's per-output test phase is the ultimate dep check (each test-env solve must succeed).
+
+A follow-up: teach `optimize_recipe`/`check_dependencies` to walk `outputs[]` (tracked as a skill TODO alongside the proposed DEP-005/DEP-006).
+
+**Case study**: DB-GPT 7-output recipe (Jun 17, 2026). `optimize_recipe` flagged TEST-001 despite all 7 outputs having CFEP-25 test blocks; `check_dependencies` returned empty/empty. Verified the 68 external deps by flattening them into `/tmp/dep-check/recipe.yaml` — all 67 conda-forge deps resolved (incl. renames `graphviz`→`python-graphviz`, `docker`→`docker-py`, `httpx[socks]`→`socksio`), and the 5 "missing" were exactly the in-flight prerequisites (auto-gpt-plugin-template + the 4 lyric-* recipes) the local channel supplied.
+
 ---
 
 ## Skill Automation
