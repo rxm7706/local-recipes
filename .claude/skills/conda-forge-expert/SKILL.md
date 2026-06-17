@@ -405,6 +405,7 @@ Use the **move-aside + fresh-generate + diff + selective-apply** pattern:
 
 - **Test `requirements.run:` missing a `python` pin → ALWAYS a correction to apply**. When a test environment doesn't pin `python`, the solver resolves to the newest available cpython (the conda-forge default), bypassing `python_min` verification on the lowest-supported version. Symptom in CI logs: the resolution table shows `python 3.14.5 ... cp314` for a recipe whose `python_min` is `3.10`. Add `python ${{ python_min }}.*` to the script-test's `requirements.run:` (or use the CFEP-25 triad's `python_version: [${{ python_min }}.*, "*"]` for python-test-blocks). The optimizer's `SEL-002` only fires on the python-test-block form; it doesn't flag the missing `python` pin in a script-test's `requirements.run:` — this categorization must be done by hand during the diff walk.
 - **Upstream's explicit `requires-python = "<X,>=Y"` upper bound → a correction to apply** when migrating from a speculative `<4.0`. Tightening to upstream's declared maximum (`<3.15` for `requires-python = "<3.15,>=3.10"`) matches what the wheel build matrix actually supports. The optimizer's `DEP-002` flags this as a hard upper bound in `run:` — acknowledge the trade-off in the categorization (upstream-explicit upper bounds are widely accepted by reviewers; the `DEP-002` suggestion to move it to `run_constrained` is for **speculative** upper bounds, not upstream-declared ones).
+- **Upstream-declared upper bounds on `run:` deps are LOAD-BEARING when `pip_check: true` is in the test block.** `pip_check` reads each installed package's wheel-bundled `dist-info/METADATA` and enforces every dep's declared constraint per upstream's `pyproject.toml`. If the recipe's `run:` declares only lower bounds (`tree-sitter-julia >=0.23`), the conda solver picks the newest-compatible version (`0.25.0`), and `pip check` then sees upstream's `tree-sitter-julia<0.25,>=0.23` constraint inside the installed graphifyy wheel, compares against installed `0.25.0`, and **fails the test**. The CI failure is loud; the silent failure is worse — a maintainer who disables `pip_check` to "fix" it ships an install where pip-level deps disagree, and users hit ABI / API break at runtime instead. **Decision rule**: when dropping upper bounds, drop them only if they were speculative (added by an over-cautious generator). If they came from upstream's `pyproject.toml [project.dependencies]`, MIRROR them in the recipe's `run:`. `bot.run_deps_from_wheel: true` keeps these synced on autotick bumps with near-zero maintenance cost. Caught empirically on `conda-forge/graphifyy-feedstock#8` Wave F (Jun 2026) — lower-bound-only recipe shipped, `pip_check` failed in CI, restored upper bounds across all 26 tree-sitter-* run-deps.
 - **Run dep lower-bound bumps where upstream's `pyproject.toml` advanced → a correction to apply, but check the dep's feedstock state first**. When upstream has bumped a transitive dep's lower bound (e.g. `ag-ui-a2ui-toolkit>=0.0.2` → `>=0.0.3`) and the new version isn't on conda-forge yet, the fix becomes 2-step: bump the prerequisite feedstock first, then the consumer. For local verification, build the prerequisite locally so v8.2.0's local-channel auto-inject can resolve it. See [G15](#g15-rebuilding-the-same-recipe-re-hashes-the-conda-artifact-but-leaves-repodatajson-stale) for the rebuild-hash-mismatch trap that surfaces during cross-package local fixes.
 
 > *Skills: [`code-review-and-quality`] — categorize each hunk by axis (correctness/standards/style); [`source-driven-development`] — PyPI's `project_urls` is authoritative for `about.*`, the existing recipe is authoritative for system-lib deps grayskull can't see; [`incremental-implementation`] — restore-then-apply, not generate-then-merge.*
@@ -1792,6 +1793,99 @@ grep -nE '3\.(13|14)\..* \*_cpython' recipes/*/conda_build_config.yaml
 A non-empty result is a smithy-rerender-crash candidate.
 
 **Case study**: cocoindex PR #11 first push (https://github.com/conda-forge/cocoindex-feedstock/pull/11). The recipe-local CBC carried the wrong-suffix block above. Smithy rerender's run-task job crashed with the ValueError; all 20 build jobs (4 py × 5 platforms) ran against the stale `.ci_support/*.yaml` and failed cascade-style with `Jinja template error: undefined variable in condition 'is_abi3'`. Resolution: dropped the `python:` axis override entirely, kept only `python_min: "3.11"`, switched skip rule per G21. Rerender succeeded on the next push.
+
+### G23. Inline `sed` + `powershell` in `build.script` hits cmd.exe escape hell — use `sed` (with `m2-sed` on Windows) for a single cross-platform line
+
+**Symptom**: a recipe needs to rewrite something in upstream's source tree at build time (typically a pyproject.toml version field, a hardcoded path, or a build-system requires line). The author writes platform-conditional script entries — `sed -i ...` on Unix, `powershell -Command "(Get-Content X) -replace ..." | Set-Content X` on Windows. Unix passes; Windows fails with the regex either silently producing the wrong result OR crashing rattler-build's script runner with exit 255.
+
+Inspecting the actual command cmd.exe ran reveals the mangle: a regex written as `^version = "[^\"]*"$` was passed to powershell as `^version = "[^"]*"$` (note the `^` from the character class is gone). The replacement string and outer pattern survived; only the `^` from `[^...]` was eaten.
+
+**Why**: cmd.exe treats `^` as its **line-continuation / escape character** outside of double-quoted strings. The YAML literal-block `|` → cmd.exe `"..."` argument → PowerShell `-Command` body → PowerShell single-quoted regex string has FOUR layers of quoting/escaping. cmd's `^`-stripping happens during the cmd-to-powershell hand-off, BEFORE powershell sees the regex. The first `^version` (line-anchor at the start of the regex) survives because it's inside cmd's `"..."`. The second `^` (inside `[^"]`) is in a structurally-identical position but cmd interprets the surrounding `\"` escape differently and ends up outside its own quoted region for a moment — long enough to eat the `^`.
+
+This isn't unique to powershell: any cmd command that passes a regex with `^` in a char class hits the same trap. Adding more backslashes to escape (`\\^`, `^^`) makes it worse on Unix.
+
+**Fix — single cross-platform line via `sed`**:
+
+```yaml
+requirements:
+  build:
+    - if: win
+      then: m2-sed   # conda-forge ships GNU sed on Windows as `m2-sed`
+                    # (provides `sed.exe` in $PREFIX). On Unix the system sed
+                    # is in the build container natively; no dep needed.
+
+build:
+  script:
+    - sed -i 's/^version = .*/version = "${{ version }}"/' pyproject.toml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+```
+
+`sed -i` works identically on Linux, macOS, and Windows (with `m2-sed`). The `${{ version }}` is rendered by jinja before the shell ever sees it, so there's no shell-level templating to break.
+
+`sed`'s `-i` flag is `-i` on GNU sed everywhere conda-forge ships it — including `m2-sed` on Windows. BSD sed (macOS system sed) requires `-i ''` or `-i.bak`, but the conda-forge build container uses GNU `sed` via the `sed` build dep on Unix too. If your recipe doesn't already pull a build-prefix sed, add `sed` (Unix) + `m2-sed` (Win) to be explicit.
+
+**Fix — when sed isn't enough (multi-line, TOML structure, jinja loops)**: check a small Python helper file into the recipe directory and invoke it via `${{ PYTHON }} ${RECIPE_DIR}/helper.py` (Unix) + `"%PYTHON%" "%RECIPE_DIR%\helper.py"` (Win). $PKG_VERSION and $RECIPE_DIR are set on both platforms. The helper avoids inline-string quoting entirely. This is what `conda-forge/tree-sitter-swift-feedstock#5` ended up shipping after the inline powershell escape hell — a `recipe/fix_pyproject_version.py` with `os.environ["PKG_VERSION"]` + `re.sub`. Works but is more code than a single inline `sed` line.
+
+**Anti-pattern — `powershell -Command "(...)-replace...regex with ^..."`**: avoid entirely. The cmd-to-powershell quoting boundary breaks in non-obvious ways. If you find yourself reaching for it, switch to `sed` + `m2-sed` build dep instead.
+
+**Case study**: tree-sitter-swift-feedstock #5 (Jun 2026). Upstream `alex-pinkus/tree-sitter-swift` hardcodes `pyproject.toml [project].version = "0.0.1"` across all tagged releases, so the conda-built wheel ships `tree_sitter_swift-0.0.1.dist-info` which then breaks `pip check` for any downstream with an upper-bounded constraint like `tree-sitter-swift<0.9,>=0.7` (caught on `conda-forge/graphifyy-feedstock#8`). First-pass fix used inline `sed` (Unix) + `powershell` (Win) for the version rewrite; Azure buildId 1539671 win_64 failed with the cmd-ate-the-caret regex mangle. Second-pass used a checked-in Python helper which worked but bloated the recipe. Canonical pattern for next time: `sed` with `m2-sed` build dep, single inline line, no Python helper.
+
+### G24. Conda label ≠ wheel `dist-info` version — when upstream's `pyproject.toml` hardcodes a placeholder, `pip check` fails downstream
+
+**Symptom**: a recipe's `validate_recipe` + `build` + own `pip_check: true` test all pass locally. The conda artifact ships with the right version label (`<pkg>-<X.Y.Z>-*.conda`). **A downstream feedstock that pins this package** with an upper bound — e.g. `<pkg> >=0.7,<0.9` — then fails its own `pip check` test on conda-forge CI with:
+
+```
+<downstream-pkg> X.Y.Z has requirement <pkg><0.9,>=0.7, but you have <pkg> 0.0.1.
+```
+
+Even though `mamba list` in the downstream test env shows `<pkg> 0.7.3` per the conda metadata. The discrepancy is real, not a display bug: `pip check` reads each installed package's wheel-bundled `dist-info/METADATA` `Version:` line, NOT the conda repodata version. If the upstream `pyproject.toml`'s `[project].version` is a placeholder (commonly `"0.0.1"`) that was never bumped to match the tag scheme, the wheel ends up with `<pkg>-0.0.1.dist-info/` even though the conda package label is correctly `0.7.3`.
+
+**Why**: many tree-sitter-grammars-style projects (alex-pinkus/tree-sitter-swift was the case-study example) maintain their version through Git tags + a release script that updates language-specific bindings (cargo, npm, gem) but doesn't touch `pyproject.toml`. PyPI is also stuck at the placeholder for the same reason. Anaconda's main channel + conda-forge's feedstock both ship the conda-label-correct package; only the bundled wheel metadata is stale.
+
+**Detection**: after building (locally or on CI), extract `info/recipe/recipe.yaml` from any same-package downstream's failed-CI artifact and look at the actual error. Or proactively scan a built `.conda`:
+
+```bash
+python3 -c "
+import zipfile, zstandard, tarfile, io, sys
+with zipfile.ZipFile(sys.argv[1]) as z:
+    data = z.read([n for n in z.namelist() if n.startswith('pkg-')][0])
+    with zstandard.ZstdDecompressor().stream_reader(io.BytesIO(data)) as r:
+        with tarfile.open(fileobj=r, mode='r|') as tar:
+            for m in tar:
+                if 'dist-info/METADATA' in m.name:
+                    f = tar.extractfile(m)
+                    print(m.name.split('/')[-2])  # dist-info dir name
+                    for line in f.read().decode().split('\n')[:5]:
+                        print(' ', line)
+                    break
+" <pkg>-<X.Y.Z>-*.conda
+```
+
+Compare the printed `dist-info` dir name (e.g. `tree_sitter_swift-0.0.1.dist-info`) against the conda filename version (`tree-sitter-swift-0.7.3-...`). If they differ — even by one PATCH number — the package is poisoned for downstream `pip check`.
+
+**Fix — downstream patch at the feedstock**: rewrite the `[project].version` field in upstream's `pyproject.toml` at build time using a `sed` substitution driven by `$PKG_VERSION` (per G23's canonical pattern):
+
+```yaml
+requirements:
+  build:
+    - if: win
+      then: m2-sed
+
+build:
+  script:
+    - sed -i 's/^version = .*/version = "${{ version }}"/' pyproject.toml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+```
+
+This is idempotent — if upstream ever resumes proper version bumping, the sed runs against the correct value and is a no-op. The fix is forward-compatible and self-healing.
+
+**Also file an upstream issue** asking maintainers to bump `pyproject.toml [project].version` to track tag releases. Even if they fix it for the next release, the wheel-bundled metadata for already-tagged versions on PyPI stays broken, so the downstream patch stays relevant for any feedstock that pins to an existing version range.
+
+**Scope**: this trap is most common in **tree-sitter language grammars** (parser.c is auto-generated from grammar.js; the Python binding is an afterthought to the C work and gets version-neglected), but applies to ANY conda recipe building a Python wheel from a source that has placeholder version metadata. Other ecosystems with the same risk profile: language-server-protocol implementations, generated-binding wrappers around C libraries, monorepo subpackages where only the parent is version-tracked.
+
+**Survey approach for new tree-sitter-style recipes**: before submitting a recipe whose downstreams may pin upper bounds, scan ALL platforms' built artifacts' dist-info to confirm the version inside matches the conda label. The CFE skill's `tests/` could add a regression-test helper for this; today it's a manual check.
+
+**Case study**: graphifyy 0.8.40 → `pip check` rejected `tree-sitter-swift 0.0.1 < 0.7` on `conda-forge/graphifyy-feedstock#8` even though conda-forge had shipped `tree-sitter-swift-0.7.3-*.conda` for weeks. Surveyed all 22 tree-sitter-* feedstocks rxm7706 maintains; **only `tree-sitter-swift` had the major mismatch** (one minor mismatch in `tree-sitter-powershell` 0.26.5/0.26.4 was within graphifyy's `>=0.26,<0.28` range so harmless). Fix shipped as `conda-forge/tree-sitter-swift-feedstock#5` (merged 2026-06-17) with the canonical pattern above + dynamic `tag: ${{ version }}-with-generated-files`. The dist-info trap had been latent on conda-forge for the entire `tree-sitter-swift 0.7.x` lifetime — only surfaced when a downstream with `pip_check: true` pinned to a version range upstream's placeholder excluded.
 
 ---
 

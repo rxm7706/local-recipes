@@ -2,20 +2,19 @@
 schema_version: 1
 
 context:
-  name: graphify
-  version: "0.4.9"
+  version: "0.8.40"
 
 package:
-  name: ${{ name|lower }}
+  name: graphifyy
   version: ${{ version }}
 
 source:
-  url: https://github.com/safishamsi/graphify/archive/v${{ version }}.tar.gz
-  sha256: 1d1262f01ff54ac8c2b588e8b885bc062011fcaa25758ad9cf6bb5daa5a09b77
+  url: https://pypi.org/packages/source/g/graphifyy/graphifyy-${{ version }}.tar.gz
+  sha256: 29929283a07b687a4a7f84fac0e38fcfa11cbe46b3adde2bfccf6a9cb61413e1
 
 build:
-  number: 0
   noarch: python
+  number: 0
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
@@ -24,41 +23,68 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=68
     - pip
+    - setuptools >=68
   run:
-    - python >=${{ python_min }},<4.0
-    - networkx
-    - tree-sitter >=0.23.0
-    - tree-sitter-python
-    - tree-sitter-javascript
-    - tree-sitter-typescript
-    - tree-sitter-go
-    - tree-sitter-rust
-    - tree-sitter-java
-    - tree-sitter-c
-    - tree-sitter-cpp
-    - tree-sitter-ruby
-    - tree-sitter-c-sharp
-    - tree-sitter-kotlin
-    - tree-sitter-scala
-    - tree-sitter-php
-    - tree-sitter-swift
-    - tree-sitter-lua
-    - tree-sitter-zig
-    - tree-sitter-powershell
-    - tree-sitter-elixir
-    - tree-sitter-objc
-    - tree-sitter-julia
+    - python >=${{ python_min }}
+    - networkx >=3.4
+    - numpy >=1.21
+    - rapidfuzz >=3.0
+    - tree_sitter >=0.23.0,<0.26
+    - tree-sitter-python >=0.23,<0.26
+    - tree-sitter-javascript >=0.23,<0.26
+    - tree-sitter-typescript >=0.23,<0.25
+    - tree-sitter-go >=0.23,<0.26
+    - tree-sitter-rust >=0.23,<0.25
+    - tree-sitter-java >=0.23,<0.25
+    - tree-sitter-groovy >=0.1,<0.3
+    - tree-sitter-c >=0.23,<0.25
+    - tree-sitter-cpp >=0.23,<0.25
+    - tree-sitter-ruby >=0.23,<0.25
+    - tree-sitter-c-sharp >=0.23,<0.25
+    - tree-sitter-kotlin >=1.0,<2.0
+    - tree-sitter-scala >=0.23,<0.27
+    - tree-sitter-php >=0.23,<0.25
+    - tree-sitter-swift >=0.7,<0.9
+    - tree-sitter-lua >=0.2,<0.6
+    - tree-sitter-zig >=1.0,<2.0
+    - tree-sitter-powershell >=0.26,<0.28
+    - tree-sitter-elixir >=0.3,<0.5
+    - tree-sitter-objc >=3.0,<4.0
+    - tree-sitter-julia >=0.23,<0.25
+    - tree-sitter-verilog >=1.0,<2.0
+    - tree-sitter-fortran >=0.6,<0.8
+    - tree-sitter-bash >=0.23,<0.27
+    - tree-sitter-json >=0.23,<0.26
+  run_constraints:
+    - anthropic
+    - boto3
+    - graspologic
+    - jieba
+    - markdownify
+    - matplotlib
+    - mcp
+    - neo4j-python-driver
+    - openai
+    - openpyxl
+    - psycopg
+    - pypdf
+    - python-docx
+    - tiktoken
+    - tree-sitter-sql >=0.3
+    - watchdog
+    - yt-dlp
+    #- falkordb # TODO: add falkordb to conda-forge
+    #- faster-whisper # TODO: add faster-whisper to conda-forge, requires add CTranslate2 to conda-forge
 
 tests:
   - python:
       imports:
-        - graphifyy
+        - graphify
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -66,13 +92,16 @@ tests:
       - graphify --help
 
 about:
-  summary: AI coding assistant skill (Claude Code, Codex, OpenCode, Cursor, OpenClaw, Factory Droid, Trae) - turn any folder of code, docs, papers, images, or videos into a queryable knowledge graph
+  summary: |
+    AI coding assistant skill that turns any folder of code, docs, papers,
+    images, or videos into a queryable knowledge graph.
+  homepage: https://github.com/safishamsi/graphify
+  repository: https://github.com/safishamsi/graphify
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/graphifyy/
-  repository: https://github.com/safishamsi/graphify
-
 
 extra:
   recipe-maintainers:
+    - killua156
+    - mgorny
     - rxm7706
