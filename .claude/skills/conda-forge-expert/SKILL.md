@@ -1887,6 +1887,41 @@ This is idempotent — if upstream ever resumes proper version bumping, the sed 
 
 **Case study**: graphifyy 0.8.40 → `pip check` rejected `tree-sitter-swift 0.0.1 < 0.7` on `conda-forge/graphifyy-feedstock#8` even though conda-forge had shipped `tree-sitter-swift-0.7.3-*.conda` for weeks. Surveyed all 22 tree-sitter-* feedstocks rxm7706 maintains; **only `tree-sitter-swift` had the major mismatch** (one minor mismatch in `tree-sitter-powershell` 0.26.5/0.26.4 was within graphifyy's `>=0.26,<0.28` range so harmless). Fix shipped as `conda-forge/tree-sitter-swift-feedstock#5` (merged 2026-06-17) with the canonical pattern above + dynamic `tag: ${{ version }}-with-generated-files`. The dist-info trap had been latent on conda-forge for the entire `tree-sitter-swift 0.7.x` lifetime — only surfaced when a downstream with `pip_check: true` pinned to a version range upstream's placeholder excluded.
 
+### G25. Conda has no "extras" — flatten every `pkg[extra]` upstream dep into `run:`, and resolve each extra to its *actual* conda packages (which may be renamed)
+
+**Symptom**: a recipe whose upstream `pyproject.toml` declares a dependency with an extras marker — `dbgpt[client,cli,agent,code,...]`, `httpx[socks]`, `uvicorn[standard]`, `celery[redis]` — installs and its **own** `pip_check` passes locally, but imports fail at runtime with `ModuleNotFoundError` for something the extra was supposed to pull, or a **downstream** feedstock's `pip_check` fails with `<pkg> X has requirement <extra-dep>...; not satisfied`. The recipe's `run:` listed only the base package, or a guessed `<pkg>-<extra>` name that isn't on conda-forge.
+
+**Why** (two interlocking facts):
+
+1. **Conda has no extras mechanism.** PEP 508 extras (`pkg[extra]`) are pip-only: installing `pkg[extra]` pulls `pkg` *plus* the deps under `pkg`'s `[project.optional-dependencies].extra`. A conda `pkg` is built **once, without extras**, and the solver cannot activate an extra at install time. So every `pkg[extra]` in an upstream dep list must be **flattened** — the recipe carries `pkg` AND the union of that extra's deps directly in `requirements.run`. This bites hardest in **multi-output** recipes: output B may depend on `A[extra]` where A is a *sibling output in the same recipe*; A is built without extras, so **`${{ pin_subpackage('A', exact=True) }}` does NOT pull A's extra-deps** — B must list them itself.
+
+2. **An extra's marker name ≠ the conda package it resolves to.** `httpx[socks]` does **not** pull a package called `httpx-socks` — it pulls whatever `httpx`'s `pyproject.toml` lists under `[project.optional-dependencies].socks`, which is `socksio`. The conda dep is `socksio`. Guessing `<pkg>-<extra>` is wrong twice: that's usually a *different* PyPI project, and it often isn't on conda-forge at all. Read the extra's actual contents, then map each dep to its conda name (G10's four-spelling rule applies).
+
+`pip_check: true` is the enforcement mechanism: `pip check` reads the installed wheel's `METADATA` and sees `Requires-Dist: <dep>; extra == "socks"` for every extra the *consumer* requested, then fails if those deps aren't installed. A recipe that activates `pkg[extra]` but omits the flattened deps fails `pip check` — loudly in the building feedstock, or (worse) only in a **downstream** feedstock's CI, because the builder's own `pip_check` covers just the package being built, not its dependents (see G24 for the same downstream-only failure mode).
+
+**Fix**:
+
+1. For each `pkg[extra1,extra2,...]`, fetch upstream's `pyproject.toml` and read `[project.optional-dependencies]`. Union the base `[project.dependencies]` with every **activated** extra's list.
+2. Map each resulting dep to its conda-forge name (G10 four-spelling check; watch for the extra→renamed-package trap like `httpx[socks]`→`socksio`).
+3. Put the flattened union in `requirements.run`. In a multi-output recipe, expand each sibling's activated extras past the `pin_subpackage` — the pin alone is not enough.
+4. **Drop any extra the recipe does not activate.** Don't ship deps for `pkg[gpu]` / `pkg[proxy_qianfan]` if no output requests them — over-listing bloats the run env and can pull packages that aren't on conda-forge for no reason.
+
+**Detection** — before trusting a generated (especially multi-output) recipe, grep upstream's dep declarations for the extras-bracket and reconcile each against `run:`:
+
+```bash
+# Every pkg[extra] in the upstream pyproject(s)
+grep -rEo '[A-Za-z0-9_.-]+\[[A-Za-z0-9_,-]+\]' packages/*/pyproject.toml
+# What a given extra actually pulls:
+python -c "import tomllib,sys,json; d=tomllib.load(open(sys.argv[1],'rb')); print(json.dumps(d['project'].get('optional-dependencies',{}),indent=2))" packages/<pkg>/pyproject.toml
+# What an extra on an external dep resolves to (the httpx[socks]→socksio class):
+curl -s https://pypi.org/pypi/httpx/json | python -c "import sys,json; print([r for r in json.load(sys.stdin)['info']['requires_dist'] if 'extra' in r and 'socks' in r])"
+# → ['socksio==1.*; extra == \"socks\"']  (conda dep is socksio, NOT httpx-socks)
+```
+
+**Case study**: DB-GPT v0.8.0 multi-output spec audit (Jun 17, 2026; `docs/specs/db-gpt-conda-forge.md`). The `dbgpt-app` output depends on `dbgpt[client,cli,agent,simple_framework,framework,code,proxy_openai,proxy_tongyi,proxy_zhipuai]` + `dbgpt-ext[rag,storage_chromadb]`, where `dbgpt`/`dbgpt-ext` are *sibling outputs in the same recipe*, built without extras. The first-draft spec listed only `pin_subpackage` on the siblings + a handful of direct deps, missing ~50 of the flattened **68** external run-deps; `pip_check` would have failed at CI. Two extras-resolution traps surfaced: (a) `httpx[socks]` → the spec guessed `httpx-socks` (absent from conda-forge) when the real dep is `socksio` (present); (b) `qianfan` was listed as required but lives only in the **non-activated** `proxy_qianfan` extra — dropped. Reading every activated extra from the `dbgpt-core`/`dbgpt-ext` pyproject, deduping, and mapping to conda names produced the correct 68-dep set and caught both.
+
+A follow-up optimizer check **`DEP-006`** ("upstream dep uses `pkg[extra]` — verify the extra's deps are flattened into `run:`, and that any sibling-output extra is expanded past its `pin_subpackage`") would catch this at gate-time alongside G10's proposed `DEP-005`. Tracked as a skill TODO; not yet shipped.
+
 ---
 
 ## Skill Automation
