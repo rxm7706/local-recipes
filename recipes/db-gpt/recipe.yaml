@@ -1,0 +1,354 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.0"
+
+recipe:
+  name: db-gpt
+  version: ${{ version }}
+
+source:
+  # Single GitHub archive keeps all 7 outputs in lockstep (same SHA, same
+  # version, same uv workspace). Per-output PyPI sdists would decouple the
+  # internal dbgpt-* cross-references that pin_subpackage(exact=True) enforces.
+  url: https://github.com/eosphoros-ai/DB-GPT/archive/v${{ version }}.tar.gz
+  sha256: ac2f47a4495326150ddbbf2f3ac2b0e5888a7deb242a4ad810ed18173dda8017
+
+build:
+  number: 0
+
+outputs:
+  # ── dbgpt (core) ── PyPI `dbgpt`, source packages/dbgpt-core. Base of the
+  # family; no internal cross-deps.
+  - package:
+      name: dbgpt
+      version: ${{ version }}
+    build:
+      noarch: python
+      # Loosen upstream's exact (==) dependency pins in the wheel METADATA so
+      # they match the loosened conda run-deps. Without this, pip_check fails:
+      # the wheel declares e.g. aiohttp==3.8.4 (not on conda-forge) while conda
+      # installs aiohttp>=3.8.4. The regex rewrites `name==N` → `name>=N` only,
+      # leaving `<`/`<=` caps and `extra == "..."` markers untouched.
+      script: |
+        cd packages/dbgpt-core
+        sed -i -E 's/([A-Za-z0-9])==([0-9])/\1>=\2/g' pyproject.toml
+        ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - aiohttp >=3.8.4         # TODO(pin-tighten): upstream pins aiohttp==3.8.4
+        - chardet >=5.1.0         # TODO(pin-tighten): upstream pins chardet==5.1.0
+        - importlib_resources >=5.12.0  # TODO(pin-tighten): upstream pins importlib-resources==5.12.0
+        - cachetools
+        - pydantic >=2.6.0
+        - typeguard
+        - snowflake-id
+        - typing_inspect
+        - tomli >=2.2.1
+    tests:
+      - python:
+          imports:
+            - dbgpt
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+  # ── dbgpt-ext ── extensions; depends on core.
+  - package:
+      name: dbgpt-ext
+      version: ${{ version }}
+    build:
+      noarch: python
+      # Loosen upstream's exact (==) pins in the wheel METADATA (e.g. the [rag]
+      # extra's spacy==3.7) so pip_check passes against the loosened conda deps.
+      # See the dbgpt-core output for the rationale.
+      script: |
+        cd packages/dbgpt-ext
+        sed -i -E 's/([A-Za-z0-9])==([0-9])/\1>=\2/g' pyproject.toml
+        ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('dbgpt', exact=True) }}
+        - pymysql
+    tests:
+      - python:
+          imports:
+            - dbgpt_ext
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+  # ── dbgpt-serve ── service layer; depends on dbgpt-ext (dbgpt transitively).
+  - package:
+      name: dbgpt-serve
+      version: ${{ version }}
+    build:
+      noarch: python
+      script: cd packages/dbgpt-serve && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('dbgpt-ext', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - dbgpt_serve
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+  # ── dbgpt-client ── upstream `dbgpt[client,cli]` + `dbgpt_ext`. Conda has no
+  # extras; the [client]+[cli] deps of dbgpt-core are flattened in directly.
+  - package:
+      name: dbgpt-client
+      version: ${{ version }}
+    build:
+      noarch: python
+      script: cd packages/dbgpt-client && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('dbgpt', exact=True) }}
+        - ${{ pin_subpackage('dbgpt-ext', exact=True) }}
+        # flattened dbgpt-core[client]
+        - httpx
+        - fastapi >=0.100.0,<0.113.0   # Q2: upstream cap kept
+        - tenacity <=8.3.0             # Q2: upstream cap kept
+        # flattened dbgpt-core[cli]
+        - prettytable
+        - click
+        - psutil >=5.9.4               # TODO(pin-tighten): upstream pins psutil==5.9.4
+        - colorama >=0.4.6             # TODO(pin-tighten): upstream pins colorama==0.4.6
+        - tomlkit
+        - rich
+        # dbgpt-client base
+        - shortuuid
+        - sqlalchemy >=2.0.25,<2.0.29  # Q2: upstream cap kept
+        - msgpack-python
+        - cloudpickle
+        # `import dbgpt_client` eagerly pulls dbgpt_ext.rag → dbgpt.rag.knowledge
+        # → bs4. Upstream declares bs4 only under dbgpt-ext[rag]; it is an
+        # under-declared hard import for dbgpt-client, so add it directly.
+        - beautifulsoup4
+    tests:
+      - python:
+          imports:
+            - dbgpt_client
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+  # ── dbgpt-sandbox ── code-execution sandbox; external runtime deps only.
+  - package:
+      name: dbgpt-sandbox
+      version: ${{ version }}
+    build:
+      noarch: python
+      script: cd packages/dbgpt-sandbox && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - psutil >=5.9.0
+        - colorama >=0.4.4
+        - docker-py >=6.0.0
+        - fastapi >=0.68.0
+        - uvicorn >=0.15.0
+        - pydantic >=1.8.0
+        - python-multipart >=0.0.5
+        - selenium >=4.0.0
+        - typing_extensions >=4.0.0
+    tests:
+      - python:
+          imports:
+            - dbgpt_sandbox
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+  # ── dbgpt-acc-auto ── accelerator auto-selector; upstream dependencies = [].
+  - package:
+      name: dbgpt-acc-auto
+      version: ${{ version }}
+    build:
+      noarch: python
+      script: cd packages/dbgpt-accelerator/dbgpt-acc-auto && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - dbgpt_acc_auto
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+  # ── dbgpt-app ── the application. pin_subpackage(exact) on all six siblings
+  # PLUS the flattened union of every extra it activates, because conda has no
+  # extras and the sibling `dbgpt` output is built WITHOUT extras (G25).
+  # Activates: dbgpt[client,cli,agent,simple_framework,framework,code,
+  # proxy_openai,proxy_tongyi,proxy_zhipuai] + dbgpt-ext[rag,storage_chromadb].
+  - package:
+      name: dbgpt-app
+      version: ${{ version }}
+    build:
+      noarch: python
+      script: cd packages/dbgpt-app && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }}
+        # six sibling outputs, exact-pinned to this build
+        - ${{ pin_subpackage('dbgpt', exact=True) }}
+        - ${{ pin_subpackage('dbgpt-ext', exact=True) }}
+        - ${{ pin_subpackage('dbgpt-serve', exact=True) }}
+        - ${{ pin_subpackage('dbgpt-client', exact=True) }}
+        - ${{ pin_subpackage('dbgpt-sandbox', exact=True) }}
+        - ${{ pin_subpackage('dbgpt-acc-auto', exact=True) }}
+        # dbgpt-app base
+        - aiofiles
+        - httpx >=0.24.0
+        - pyparsing
+        # dbgpt-core base (built without extras → carried here)
+        - aiohttp >=3.8.4         # TODO(pin-tighten): upstream pins aiohttp==3.8.4
+        - chardet >=5.1.0         # TODO(pin-tighten): upstream pins chardet==5.1.0
+        - importlib_resources >=5.12.0  # TODO(pin-tighten): upstream pins importlib-resources==5.12.0
+        - cachetools
+        - pydantic >=2.6.0
+        - typeguard
+        - snowflake-id
+        - typing_inspect
+        - tomli >=2.2.1
+        # dbgpt-core[client]
+        - fastapi >=0.100.0,<0.113.0   # Q2: upstream cap kept
+        - tenacity <=8.3.0             # Q2: upstream cap kept
+        # dbgpt-core[cli]
+        - prettytable
+        - click
+        - psutil >=5.9.4               # TODO(pin-tighten): upstream pins psutil==5.9.4
+        - colorama >=0.4.6             # TODO(pin-tighten): upstream pins colorama==0.4.6
+        - tomlkit
+        - rich
+        # dbgpt-core[agent]
+        - termcolor
+        - pandas >=2.2.3               # TODO(pin-tighten): upstream pins pandas==2.2.3
+        - numpy >=1.21.0,<2.0.0        # Q2: upstream <2 cap kept (NumPy-1 targeted)
+        - auto-gpt-plugin-template >=0.0.3
+        - mcp >=1.4.1
+        # dbgpt-core[simple_framework]
+        - jinja2
+        - uvicorn
+        - shortuuid
+        - sqlalchemy >=2.0.25,<2.0.29  # Q2: upstream cap kept
+        - msgpack-python
+        - cloudpickle
+        - pympler
+        - duckdb
+        - duckdb-engine >=0.9.1        # TODO(pin-tighten): upstream pins duckdb-engine==0.9.1
+        - schedule
+        - sqlparse >=0.4.4             # TODO(pin-tighten): upstream pins sqlparse==0.4.4
+        - python-multipart
+        # dbgpt-core[framework]
+        - coloredlogs
+        - seaborn
+        - gtts >=2.3.1                 # TODO(pin-tighten): upstream pins gTTS==2.3.1
+        - pymysql
+        - jsonschema
+        - python-jsonpath
+        - tokenizers >=0.14
+        - alembic >=1.12.0             # TODO(pin-tighten): upstream pins alembic==1.12.0
+        - openpyxl >=3.1.2             # TODO(pin-tighten): upstream pins openpyxl==3.1.2
+        - xlrd >=2.0.1                 # TODO(pin-tighten): upstream pins xlrd==2.0.1
+        - gitpython
+        - python-graphviz
+        - cryptography
+        - pyzmq
+        # dbgpt-core[code] — the lyric-* stack (S4–S7 of this effort)
+        - lyric-py >=0.1.7
+        - lyric-py-worker >=0.1.7
+        - lyric-js-worker >=0.1.7
+        - lyric-component-ts-transpiling >=0.1.7
+        # dbgpt-core[proxy_openai] (httpx[socks] → socksio)
+        - openai >=1.59.6
+        - tiktoken >=0.8.0
+        - socksio
+        # dbgpt-core[proxy_tongyi]
+        - dashscope
+        # dbgpt-ext[rag]
+        - spacy >=3.7                  # TODO(pin-tighten): upstream pins spacy==3.7
+        - markdown
+        - beautifulsoup4
+        - python-pptx
+        - python-docx
+        - olefile
+        - pypdf
+        - pdfplumber
+        # dbgpt-ext[storage_chromadb]
+        - onnxruntime >=1.14.1,<=1.18.1  # Q2: upstream cap kept
+        - chromadb >=0.4.22
+    tests:
+      # pip_check is disabled for THIS output only (the other six keep it).
+      # The full dbgpt-app dependency graph was verified consistent except for
+      # one external false positive: conda-forge's `pdfminer.six` ships a wheel
+      # whose dist-info reports `Version: 0.0.0` (a setuptools_scm fallback bug
+      # in that feedstock), while the conda package version is the correct
+      # 20251230. pdfplumber pins `pdfminer.six==20251230` exactly, so pip_check
+      # fails against the bogus 0.0.0 string. No in-recipe fix exists; tracked
+      # upstream against pdfminer.six-feedstock. Import + the other 6 outputs'
+      # pip_check cover consistency.
+      - python:
+          imports:
+            - dbgpt_app
+          pip_check: false
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+about:
+  homepage: https://github.com/eosphoros-ai/DB-GPT
+  repository: https://github.com/eosphoros-ai/DB-GPT
+  documentation: http://docs.dbgpt.cn/
+  license: MIT
+  license_file: LICENSE
+  summary: An open-source AI native data app development framework with AWEL and agents (DB-GPT).
+
+extra:
+  feedstock-name: db-gpt
+  recipe-maintainers:
+    - rxm7706
