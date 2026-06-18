@@ -2037,6 +2037,48 @@ A follow-up: teach `optimize_recipe`/`check_dependencies` to walk `outputs[]` (t
 
 **Case study**: DB-GPT 7-output recipe (Jun 17, 2026). `optimize_recipe` flagged TEST-001 despite all 7 outputs having CFEP-25 test blocks; `check_dependencies` returned empty/empty. Verified the 68 external deps by flattening them into `/tmp/dep-check/recipe.yaml` — all 67 conda-forge deps resolved (incl. renames `graphviz`→`python-graphviz`, `docker`→`docker-py`, `httpx[socks]`→`socksio`), and the 5 "missing" were exactly the in-flight prerequisites (auto-gpt-plugin-template + the 4 lyric-* recipes) the local channel supplied.
 
+### G30. conda-forge `protobuf` is the Python bindings (no `protoc`) — Rust prost/tonic builds need `libprotobuf`; a stray host `protoc` masks it locally
+
+**Symptom**: a Rust recipe whose build invokes `protoc` (a crate with a `build.rs` calling `tonic_build::compile_protos(...)` or `prost_build::compile_protos(...)`) builds **green locally** but fails on conda-forge CI — on every platform — at the cargo/wheel build:
+
+```
+error: failed to run custom build command for `<crate> (.../build.rs)`
+Error: Could not find `protoc`. If `protoc` is installed, try setting the
+`PROTOC` environment variable to the path of the `protoc` binary. ...
+💥 maturin failed  /  × Building wheel for <pkg> did not run successfully.
+```
+
+**Why** (two interlocking facts):
+
+1. **conda-forge's `protobuf` package is the Python bindings (`google.protobuf`) and ships NO `protoc` binary.** The `protoc` compiler lives in **`libprotobuf`** (`bin/protoc`). So `requirements.build: [protobuf]` does not put `protoc` on the build PATH — `prost-build`/`tonic-build` search PATH for `protoc` and find nothing. (`protobuf` as a *runtime* `run:` dep is correct and unrelated — the trap is only `protobuf`-as-a-build-dep-expecting-the-compiler.)
+2. **Local builds mask it because a stray `protoc` leaks from the dev environment.** If a `libprotobuf` is installed in the developer's pixi/conda env, its `bin/protoc` is on PATH and leaks into the local `rattler-build` build, so the broken recipe builds green. conda-forge CI is hermetic — only the recipe's declared build deps are on PATH — so the gap surfaces only on CI. Classic "works locally, fails on hermetic CI."
+
+**Fix**: use **`libprotobuf`** (not `protobuf`) in `requirements.build`. It provides `bin/protoc` on the build PATH on all platforms (`$BUILD_PREFIX/bin/protoc` on unix, `%BUILD_PREFIX%\Library\bin\protoc.exe` on win). `protoc` is a *build-platform* tool (it runs during the build to generate Rust), so it belongs in `build:` (not `host:`) — also correct for cross-compilation, where the protoc that *runs* must be the build platform's.
+
+```yaml
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - libprotobuf        # provides bin/protoc for prost-build / tonic-build
+```
+
+If `protoc`-on-PATH still isn't found (rare), additionally `export PROTOC="$BUILD_PREFIX/bin/protoc"` inside the build script — not via `script.env:`, which does not shell-expand (G1).
+
+**Hermetic local verification** — the general technique for any "works locally, fails on hermetic CI" tool gap is to hide the suspected stray host tool, then rebuild. The dev-env `protoc` is usually a *relative* symlink (`protoc -> protoc-NN.N.N`), so move the symlink aside (the real binary stays), confirm `command -v protoc` is empty, rebuild, then restore:
+
+```bash
+mv .pixi/envs/<env>/bin/protoc /tmp/protoc.bak     # the symlink; target binary remains
+command -v protoc            # must print nothing
+pixi run -e local-recipes recipe-build recipes/<name>   # must now build via the libprotobuf build dep
+ln -sf protoc-NN.N.N .pixi/envs/<env>/bin/protoc   # restore (recreate the relative symlink)
+```
+
+If it builds green with the stray hidden, the build dep genuinely provides the tool. Watch the relative-symlink trap: `[ -e <moved-symlink> ]` reports it "missing" because its relative target no longer resolves from the new location — the binary itself never moved.
+
+**Case study**: `lyric-py` / staged-recipes #33764 (Jun 17, 2026). `crates/lyric-rpc/build.rs` runs `tonic_build::compile_protos("proto/task.proto")`. The recipe listed `protobuf` in `build:`; CI failed on `linux_64` *and* `osx_64` with `Could not find protoc`. The local build had passed only because `.pixi/envs/local-recipes/bin/protoc` (a relative symlink → `protoc-33.5.0`, owned by `libprotobuf 6.33.5`) leaked onto the build PATH. Fix: `protobuf`→`libprotobuf`. Verified by hiding the stray protoc (`command -v protoc` → none) and rebuilding — all 4 py-variants built green sourcing `protoc` from the `libprotobuf` build dep.
+
 ---
 
 ## Skill Automation
