@@ -1,6 +1,5 @@
 {% set name = "pdfplumber" %}
-{% set version = "0.11.9" %}
-{% set python_min = "3.10" %}
+{% set version = "0.11.10" %}
 
 package:
   name: {{ name|lower }}
@@ -8,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pdfplumber-{{ version }}.tar.gz
-  sha256: 481224b678b2bbdbf376e2c39bf914144eef7c3d301b4a28eebf0f7f6109d6dc
+  sha256: b95b2d28c66efb0a794a83b88c6c6aea5987532a445d20a1cbcfa657022e6e57
 
 build:
   entry_points:
@@ -21,12 +20,11 @@ requirements:
   host:
     - python {{ python_min }}
     - pip
-    - setuptools >=61.0,<81.0
-    - setuptools_scm >=8
-    #- setuptools-git-versioning <2
+    - setuptools <81.0
+    - setuptools-scm
   run:
     - python >={{ python_min }}
-    - pdfminer-six ==20251230
+    - pdfminer.six ==20251230
     - pillow >=9.1
     - pypdfium2 >=4.18.0
 
@@ -34,11 +32,8 @@ test:
   imports:
     - pdfplumber
   commands:
-    - pip check
     - pdfplumber --help
     - python -c "from importlib.metadata import version; v = version('pdfplumber'); print(v); assert v == '{{ version }}'"
-    - python -c "from importlib.metadata import version; print(version('{{ name }}'))"
-    #- python -c "from importlib.metadata import version; assert '{{ version }}' == version('{{ name }}')"
   requires:
     - pip
     - setuptools
@@ -52,4 +47,5 @@ about:
 
 extra:
   recipe-maintainers:
+    - kellend-git
     - rxm7706

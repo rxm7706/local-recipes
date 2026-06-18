@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.10"
+
+package:
+  name: pdfplumber
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pdfplumber/pdfplumber-${{ version }}.tar.gz
+  sha256: b95b2d28c66efb0a794a83b88c6c6aea5987532a445d20a1cbcfa657022e6e57
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pdfplumber = pdfplumber.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - pdfminer.six ==20260107
+    - pillow >=12.2.0
+    - pypdfium2 >=5.9.0
+
+tests:
+  - python:
+      imports:
+        - pdfplumber
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pdfplumber --help
+      - python -c "from importlib.metadata import version; v = version('pdfplumber'); print(v); assert v == '${{ version }}'"
+
+
+about:
+  summary: Plumb a PDF for detailed information about each char, rectangle, and line.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/jsvine/pdfplumber
+
+extra:
+  recipe-maintainers:
+    - kellend-git
+    - rxm7706

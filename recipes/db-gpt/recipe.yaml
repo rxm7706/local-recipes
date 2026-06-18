@@ -335,7 +335,7 @@ outputs:
       - python:
           imports:
             - dbgpt_app
-          pip_check: false
+          pip_check: true
           python_version:
             - ${{ python_min }}.*
             - "*"

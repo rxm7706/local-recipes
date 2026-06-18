@@ -26,7 +26,7 @@ build:
       PYTHONUTF8: "1"
       # Strip debug symbols — conda-forge default for Rust builds.
       CARGO_PROFILE_RELEASE_STRIP: symbols
-      # CARGO_PROFILE_RELEASE_LTO: fat
+      CARGO_PROFILE_RELEASE_LTO: fat
       # fat is intentionally NOT set yet — while it can yield significant runtime performance improvements,
       # the wasmtime v26 + tonic + tokio dep graph is large and fat LTO risks
       # the Azure 6h Windows timeout. Re-enable only if the win build stays
