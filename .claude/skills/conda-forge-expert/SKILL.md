@@ -2079,6 +2079,80 @@ If it builds green with the stray hidden, the build dep genuinely provides the t
 
 **Case study**: `lyric-py` / staged-recipes #33764 (Jun 17, 2026). `crates/lyric-rpc/build.rs` runs `tonic_build::compile_protos("proto/task.proto")`. The recipe listed `protobuf` in `build:`; CI failed on `linux_64` *and* `osx_64` with `Could not find protoc`. The local build had passed only because `.pixi/envs/local-recipes/bin/protoc` (a relative symlink → `protoc-33.5.0`, owned by `libprotobuf 6.33.5`) leaked onto the build PATH. Fix: `protobuf`→`libprotobuf`. Verified by hiding the stray protoc (`command -v protoc` → none) and rebuilding — all 4 py-variants built green sourcing `protoc` from the `libprotobuf` build dep.
 
+### G31. Overriding `python_min` upward on an existing feedstock — v1 needs a recipe-local `conda_build_config.yaml` (+ rerender); v0 needs `{% set python_min %}`; `context.python_min` is silently ignored in v1
+
+**Symptom**: an upstream version bump starts requiring a newer Python (e.g. `datetime.UTC` → 3.11+, `tomllib` → 3.11+, or an explicit `requires-python >=3.12`), so the `noarch: python` import/build test fails on the feedstock's default 3.10 floor. You raise `python_min` — and CI *still* builds and tests on 3.10.
+
+**Why**: on an existing feedstock the build's Python floor comes from the **variant** `python_min` baked into `.ci_support/<cfg>.yaml` (default `3.10` from conda-forge-pinning), NOT from the recipe's `context:`.
+- **v1 (`recipe.yaml`)**: adding `python_min: "3.11"` to `context:` does **not** propagate to `.ci_support` on rerender (verified: `conda-smithy rerender` leaves `.ci_support/*.yaml` `python_min` at `3.10`, empty diff). A local `rattler-build` that bypasses `.ci_support` *does* honor `context.python_min`, which masks the bug — the feedstock CI does not. You must add a recipe-local **`recipe/conda_build_config.yaml`** with `python_min: ["3.11"]`; conda-smithy reads the CBC and writes `3.11` into `.ci_support` on rerender.
+- **v0 (`meta.yaml`)**: the jinja `{% set python_min = "3.11" %}` at the top of the recipe shadows the `.ci_support` variant at render time, so it overrides **directly** — no CBC, no rerender needed (`.ci_support` stays `3.10` but the build/test use 3.11).
+
+**Fix**:
+```yaml
+# v1: recipe/conda_build_config.yaml  (then `@conda-forge-admin, please rerender`)
+python_min:
+  - "3.11"
+```
+```jinja
+{# v0: top of recipe/meta.yaml #}
+{% set python_min = "3.11" %}
+```
+Keep the `${{ python_min }}` / `{{ python_min }}` references in host/run/test; the override supplies the value. This is the existing-feedstock counterpart to the "declare `python_min` in `context:`" guidance in [Python Version Policy](#python-version-policy) — that context form is for fresh staged-recipes submissions; on a rendered feedstock the variant wins.
+
+**Case study**: llms-py-feedstock #39 (Jun 2026) — `llms/main.py` imports `datetime.UTC` (3.11+); the 3.10 floor failed the import test. `context.python_min: "3.11"` left `.ci_support` at 3.10 after rerender; a recipe-local `conda_build_config.yaml` flipped it to 3.11 (built + tested green on 3.11). wagtail-sharing-feedstock #5 (v0) used `{% set python_min = "3.12" %}` for upstream's `requires-python >=3.12` and built on 3.12 with `.ci_support` still at 3.10.
+
+### G32. Triaging autotick-bot version-bump PRs (flake vs. real fix) — and pushing the fix to the bot's branch
+
+**Symptom**: a `[bot-automerge]` autotick PR has a red CI leg. Roughly half are transient infrastructure flakes (restart → green); half are real recipe defects (a restart reproduces them). And once you have a fix, a plain `git push` from a `gh pr checkout` clone lands a **stray branch on the canonical feedstock** instead of updating the PR.
+
+**Transient FLAKE → `@conda-forge-admin, please restart ci`** (recipe is correct; no edit): the failure is *pre-build* (env-provisioning / source fetch) and other platforms/Pythons of the same run pass. Signatures:
+- `failed to fetch <pkg>.conda … dispatch task is gone … runtime dropped the dispatch task` — pixi/CDN connection drop.
+- `Fatal Python error: _Py_HashRandomization_Init: failed to get random numbers` — Windows agent entropy glitch.
+- `Connection broken: IncompleteRead(... bytes read, ... more expected)` / `CondaMultiError` mid-download.
+- `HTTP 503` / `error sending request for url` during base-env provisioning or source download.
+
+**Real FIX (deterministic; a restart reproduces it)**: `ImportError: cannot import name 'X'` on a stdlib name → python floor (G31); `pip check` `<pkg> A has requirement B==X, but you have Y` → dep pin (mirror upstream, G24/G26); `BackendUnavailable: Cannot import 'hatchling.build'` → host build-backend dep wrong (upstream switched backend, e.g. poetry-core→hatchling under `--no-build-isolation`); `<pkg> does not exist` / `no candidates were found` → a dependency feedstock is behind/absent (blocked on *that* feedstock — see kiota/sqlglot below); linter `package.version … interpreted as a floating-point number` → quote `version:` (G14).
+
+**Pushing the fix to the PR**: a `gh pr checkout <n>` clone's `origin` is the **upstream feedstock**, not the bot fork, so `git push` creates a stray branch on the canonical repo (delete it with `git push origin --delete <branch>`). Update the PR via a maintainer-edit push to the bot fork:
+```bash
+git push https://github.com/regro-cf-autotick-bot/<feedstock>.git HEAD:<pr-head-branch>
+```
+("Allow edits from maintainers" is on by default for bot PRs, so a base-repo maintainer can push.) Then `@conda-forge-admin, please rerender` per [the rerender-after-push rule](../../memory/feedback_always_request_rerender_after_feedstock_push.md), and always [build + test the fix locally first](../../memory/feedback_test_locally_before_push.md). When a fix is blocked on a prerequisite dependency feedstock (the dep version upstream pins isn't on conda-forge yet), don't loosen blindly — the clean path is to land the dep first; G26's source-patch loosen is the fallback when waiting isn't viable.
+
+**Case study**: the 2026-06-17 batch — 12 autotick PRs triaged: 4 pure flakes (cocoindex/html-to-markdown/dlt/selectolax → restart), 6 real fixes pushed via maintainer-edit (python floor, dep bumps, backend swap, setuptools cap), 2 blocked on prerequisite dep feedstocks (microsoft-kiota-bundle on 5 sibling 1.10.3 bumps; collate-sqllineage on `sqlglot 29.0.1`).
+
+### G33. Local rattler-build of a v1 feedstock recipe — don't pass `.ci_support` as a variant config; its strict `channel_sources` excludes the just-built package from its own test
+
+**Symptom**: `rattler-build build --recipe recipe.yaml --variant-config .ci_support/linux_64_.yaml …` builds the package, then the **test** env solve fails with `<pkg> ==<ver> … excluded because due to strict channel priority not using this option from: 'file:///…/<out>/'` and/or `<dep> ==<X>, for which no candidates were found` — even when the dep is on conda-forge.
+
+**Why**: `.ci_support/<cfg>.yaml` carries `channel_sources: [conda-forge]` (strict priority). rattler-build applies it to the *test* solve too, so the local output-dir channel (where the just-built package lives) is excluded by strict priority and the solve can't see the new package. On real CI, `build_steps.sh` wires the local channel correctly; the bare local invocation does not.
+
+**Fix**: build with the conda-forge-pinning CBC (for `${{ python_min }}` resolution) and let rattler-build use its default channel + auto-added output-dir — do **not** pass `.ci_support` for a local test:
+```bash
+pixi run -e local-recipes rattler-build build --recipe recipe/recipe.yaml \
+  --variant-config .pixi/envs/local-recipes/conda_build_config.yaml \
+  --output-dir <out>
+```
+Distinguish this (a channel artifact of *your* invocation) from a genuine `no candidates` caused by a dependency feedstock being behind: re-check the dep's max version with `conda search -c conda-forge "<dep>==<X>"`. **Beware the misread**: conda search prints `  - <dep>==<X>` for a *not-found* spec (a `PackagesNotFoundError` listing) — easy to mistake for a match; a real hit prints a full `<name> <version> <build> <channel>` row.
+
+**Case study**: collate-sqllineage-feedstock #33 (Jun 2026) — first local rattler-build with `.ci_support` failed with "strict channel priority" excluding the just-built package; re-running with only the pinning CBC removed that error and surfaced the *real* blocker — `sqlglot ==29.0.1` genuinely absent from conda-forge (max 28.10.1), initially misread as available from a not-found `  - sqlglot=29.0.1` listing.
+
+### G34. `pkg_resources.declare_namespace` packages (e.g. `fs` / Pyfilesystem2) break under setuptools 81+ → `ModuleNotFoundError: No module named 'pkg_resources'`
+
+**Symptom**: a recipe's import test fails at `import <X>` with `ModuleNotFoundError: No module named 'pkg_resources'`, and the traceback originates in a **dependency's** `__init__.py`, not the package being built. The dep imported fine until recently.
+
+**Why**: setuptools 81 stopped vendoring `pkg_resources` by default and 82 removed it. Any installed dependency that runs `__import__("pkg_resources").declare_namespace(__name__)` at import time (legacy namespace packages — `fs` 2.4.16 / Pyfilesystem2 is the canonical case) then fails once the solver pulls setuptools ≥81, which it does by default because the dep declares only a bare, un-ceilinged `setuptools`.
+
+**Fix**: the durable fix is in the *provider* feedstock (cap `setuptools <81` in its run deps, or drop `declare_namespace`). For the consumer recipe whose test is failing, cap it in `requirements.run` with a TODO:
+```yaml
+run:
+  - <X>
+  # <dep> calls pkg_resources.declare_namespace at import; setuptools 81+
+  # removed pkg_resources. TODO: drop once <dep>-feedstock caps setuptools.
+  - setuptools <81
+```
+**Case study**: fs.googledrivefs-feedstock #7 (Jun 2026) — `import fs` failed (`fs` 2.4.16 declares its namespace via pkg_resources) because the test env resolved setuptools 82.0.1. Capped `setuptools <81` in run; import + pip check passed.
+
 ---
 
 ## Skill Automation
