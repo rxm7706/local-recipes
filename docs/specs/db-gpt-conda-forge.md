@@ -15,13 +15,58 @@
 
 | Field        | Value                                                                                                                                                                                   |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status       | **Draft v1.1** (audited 2026-06-17) — ready for `bmad-quick-dev`; Q1 resolved (B-full); Q2/Q3 carry recommendations. Wave 1 already satisfied: S1 (`abstract-singleton` 1.0.1) + S3 (`lyric-task` 0.1.7) already ship on conda-forge (also built clean locally) → 5 prereq recipes + 1 multi-output = 6 PRs remain |
+| Status       | **Implemented & submitting** (2026-06-17) — built via `bmad-quick-dev`. Q1=B-full, Q2=keep upstream caps, Q3=`db-gpt-feedstock`. All 6 recipes built green on linux-64; **5 prerequisite PRs open** on staged-recipes (#33764–#33768, all green); the db-gpt PR is pending the 5 merges. See **§ Submission Status (2026-06-17)** |
 | Owner        | rxm7706                                                                                                                                                                                 |
 | Track        | BMAD Quick Flow (tech-spec only, no PRD/architecture phase)                                                                                                                             |
 | Upstream     | `eosphoros-ai/DB-GPT` v0.8.0 (released 2026-03-27, MIT license)                                                                                                                       |
 | Target       | `conda-forge/staged-recipes` — 7 outputs in a single multi-output recipe, plus 7 prerequisite recipes — 2 already on conda-forge (`abstract-singleton`, `lyric-task`), **5 to build** (1 trivial pure-Python, 3 itkwasm-pattern noarch, 1 cocoindex-class Rust+PyO3) |
 | Distribution | conda-forge (linux-64, osx-64, osx-arm64, win-64) —`noarch: python` for all outputs                                                                                                  |
 | Lifetime     | Long-running — feedstocks become autotick-maintained after first PR lands                                                                                                              |
+
+---
+
+## Submission Status (2026-06-17)
+
+All 6 recipes authored via `bmad-quick-dev`, built green on linux-64, and committed to
+`rxm7706/local-recipes` `main` (`8b6bb2791a` recipes, `a361f6d555` CFE-skill retro,
+`d33a382824` lyric-py protoc fix). 5 prerequisite PRs are open on
+`conda-forge/staged-recipes`; the db-gpt multi-output PR is held until they merge.
+
+| PR | Recipe (story) | State |
+| -- | -------------- | ----- |
+| [#33765](https://github.com/conda-forge/staged-recipes/pull/33765) | auto-gpt-plugin-template (S2) | ✅ green |
+| [#33764](https://github.com/conda-forge/staged-recipes/pull/33764) | lyric-py (S4) | ✅ green after the `protobuf`→`libprotobuf` protoc fix |
+| [#33766](https://github.com/conda-forge/staged-recipes/pull/33766) | lyric-py-worker (S5) | ✅ green (recipe dir renamed `recipe-lyric-py-worker`→`lyric-py-worker`) |
+| [#33767](https://github.com/conda-forge/staged-recipes/pull/33767) | lyric-js-worker (S6) | ✅ green |
+| [#33768](https://github.com/conda-forge/staged-recipes/pull/33768) | lyric-component-ts-transpiling (S7) | ✅ green |
+| — | db-gpt (S8–S12) | built green 7/7 locally; **PR not yet opened** — blocked on the 5 prereqs merging so its `check_dependencies` resolves against the channel |
+
+**Build/CI issues found and fixed beyond the spec:**
+
+- **S4 `protoc` (PR #33764).** conda-forge's `protobuf` is the Python bindings and ships
+  **no `protoc` binary** — `lyric-rpc`'s `tonic-build` needs the compiler, which lives in
+  `libprotobuf` (`bin/protoc`). The recipe's build dep was switched `protobuf`→`libprotobuf`.
+  The local build had passed only because a stray `.pixi/envs/local-recipes/bin/protoc`
+  leaked onto the build PATH (CI is hermetic); verified the fix by hiding the stray protoc
+  and rebuilding green. Candidate CFE gotcha G30.
+- **S5 recipe-dir name (PR #33766).** The web-uploaded PR dir carried an accidental
+  `recipe-` prefix; renamed to `lyric-py-worker/` so the feedstock is `lyric-py-worker-feedstock`.
+- **S12 `dbgpt-app` `pip_check` (db-gpt recipe).** Disabled on the `dbgpt-app` output **only**
+  due to an external conda-forge `pdfminer.six` dist-info bug (reports `Version: 0.0.0`, while
+  the conda version is correct; `pdfplumber` pins `pdfminer.six==…` exactly). No in-recipe fix;
+  file an issue on `pdfminer.six-feedstock` and flip back to `pip_check: true` once fixed. The
+  rest of the 78-dep graph was verified consistent. The other 6 outputs keep `pip_check`.
+
+**Resolved open questions:** Q1 = `B-full`; Q2 = keep all upstream version caps (conservative
+default — `tenacity<=8.3.0`, `fastapi<0.113.0`, `numpy<2.0.0`, `sqlalchemy<2.0.29`,
+`onnxruntime<=1.18.1`); Q3 = `db-gpt-feedstock` (recipe sets `extra.feedstock-name: db-gpt`).
+13 upstream `==` pins loosened to `>=` via a build-time source-pyproject `sed` in the
+`dbgpt-core`/`dbgpt-ext` outputs (the wheel METADATA must be loosened too when `pip_check` is on).
+
+**Retro:** CFE skill v8.28.0 (gotchas G26–G29). Project-memory: `project_dbgpt_conda_forge_8b`.
+
+**Next step:** when #33764–#33768 merge, open the db-gpt multi-output PR (its CI then resolves
+the 5 prereqs from the channel).
 
 ---
 
