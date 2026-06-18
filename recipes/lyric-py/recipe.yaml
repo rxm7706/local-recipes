@@ -26,23 +26,21 @@ build:
       PYTHONUTF8: "1"
       # Strip debug symbols — conda-forge default for Rust builds.
       CARGO_PROFILE_RELEASE_STRIP: symbols
-      # CARGO_PROFILE_RELEASE_LTO: fat is intentionally NOT set — the
-      # wasmtime v26 + tonic + tokio dep graph is large and fat LTO risks
+      # CARGO_PROFILE_RELEASE_LTO: fat
+      # fat is intentionally NOT set yet — while it can yield significant runtime performance improvements,
+      # the wasmtime v26 + tonic + tokio dep graph is large and fat LTO risks
       # the Azure 6h Windows timeout. Re-enable only if the win build stays
       # well under ~3h.  # note time out issues
     content:
-      # The maturin project is the workspace member bindings/python/lyric-py;
-      # cd there so cargo resolves the workspace root and maturin finds the
-      # crate's pyproject.toml. CWD persists within this single shell entry.
-      - if: unix
-        then: |
-          cd bindings/python/lyric-py
-          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-        else: |
-          cd bindings/python/lyric-py
-          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      # maturin/PyO3 build — pip drives maturin → cargo build. `cargo install`
+      # (and cargo-auditable, which is the CLI-binary pattern) does NOT apply to
+      # a cdylib extension; see CFE SKILL.md Rust Recipe Standards exception.
+      # cd into the workspace-member crate so cargo/maturin resolve it; CWD
+      # persists within this single shell entry.
+      - |
+        cd bindings/python/lyric-py
+        cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
