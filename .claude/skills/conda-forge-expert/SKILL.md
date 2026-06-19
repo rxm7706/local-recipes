@@ -180,6 +180,61 @@ The comment drives editor schema validation (VS Code, Helix, Zed, IntelliJ); `sc
 
 `meta.yaml` (v0 format) does **not** use the schema header — it predates the prefix-dev schema. Only apply this rule to `recipe.yaml`.
 
+### Never Add AI Comments Inline — Park Them in the Bottom `# CFE comments` Block
+
+**The recipe body must stay free of CFE/Claude/agent-authored comments.** Do not scatter rationale, gotcha tags, or explanatory notes (`# G25 flatten`, `# load-bearing under pip_check`, `# license pattern 2`, `# python_min override because…`, `# BFP fix:…`, build-env explanations, etc.) inline through `requirements:`, `build:`, `tests:`, `about:`, or any other body section. This keeps the local `recipe.yaml` a clean copy-paste source into a feedstock / staged-recipes PR, and keeps submitted conda-forge recipes free of AI comment noise.
+
+Two distinct comment classes — handle them differently:
+
+1. **Existing human / upstream-feedstock comments** (already in the source recipe or on the conda-forge feedstock — e.g. `# Node.js build environment`, `# pnpm package manager`) → **LEAVE in the body verbatim.** Never remove or relocate them; the local recipe must stay a faithful mirror of the feedstock. Removing them is a defect.
+
+2. **New comments the agent wants to add** (any rationale the agent generates) → **never inline.** Write them ONLY in the bottom `# CFE comments` block, organized by the recipe location they refer to. A **human** later curates — copying *up* into the body only the notes worth keeping in the submitted recipe.
+
+The only comment that stays at the top of the body is the functional schema-header line (`# yaml-language-server: $schema=…`) — it's a directive, not an annotation.
+
+**Canonical layout** (see `recipes/ironcalc/recipe.yaml` — the reference exemplar). In `extra:`, after `recipe-maintainers:` + a blank line. The `####` / `# CFE …` lines are YAML comments at column 0; the `cfe-*` keys are real YAML indented 2 spaces under `extra:`:
+
+```yaml
+extra:
+  recipe-maintainers:
+    - <handle>
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: <name>
+  cfe-upstream-registry: <pypi|npm|cargo|maven|cran|cpan|luarocks|golang|github>
+  cfe-upstream-name: <name in that registry>
+  cfe-purls:
+    - pkg:conda/<name>@${{ version }}
+    - pkg:<registry>/<upstream>@${{ version }}
+  cfe-upstream-repo: <url>
+  cfe-upstream-homepage: <url>
+  cfe-on-conda-forge-status: <confirmed-on-conda-forge | pending-submission-to-conda-forge | pending-approval-on-conda-forge | blocked-pending-prerequisites | pypi-only | archived-on-conda-forge>
+  cfe-on-conda-forge-feedstock: <feedstock-url | none>
+  cfe-forge-recipe-updates-needed: <none | list>
+  cfe-forge-blocker-list: []   # or a YAML list of blockers
+  cfe-last-checked: <ISO-8601 UTC>
+  cfe-generated-by-version: <ver>
+  cfe-generated-at-datetime: <ISO-8601 UTC>
+####
+# CFE comments
+# Header:
+#    # <general / provenance notes the agent would have put at the top>
+# build:
+#  script:
+#    env:
+#      # <the note that would have been inline in build.script.env>
+# context:
+#    # <…>
+#  host:
+#    # <…>
+#  run:
+#    # <…>
+####
+```
+
+The `# CFE comments` block mirrors the recipe's structure (location keys `build` / `context` / `host` / `run` / `requirements` / `about` / `tests`) so each parked note shows where it would belong if promoted. Both the `# CFE metadata` and `# CFE comments` sections are CFE-local-only and are **stripped before any push** (along with `extra.cfe-*` keys). `recipe-generator.py` must emit new rationale into this block, never inline.
+
 ### Canonical Test Block for `noarch: python` Recipes
 
 The canonical test for a `noarch: python` library recipe is the CFEP-25 triad:
@@ -1046,7 +1101,7 @@ build:
 
 ### G2. v0/meta.yaml field names in v1 recipe.yaml are silently ignored
 
-**Symptom**: rattler-build builds the package without warning, but `about.dev_url`, `about.doc_url`, `about.home`, or `about.license_family` is missing from the resulting metadata. Users see incomplete project links on conda-forge.org.
+**Symptom**: rattler-build builds the package without warning, but `about.dev_url`, `about.doc_url`, or `about.home` is missing from the resulting metadata. Users see incomplete project links on conda-forge.org.
 
 **Why**: rattler-build's recipe-format schema only recognizes the v1 names (`repository`, `documentation`, `homepage`). Unknown keys under `about:` are accepted but discarded — no schema-validation error.
 
@@ -1057,7 +1112,21 @@ build:
 | `home` | `homepage` |
 | `dev_url` | `repository` |
 | `doc_url` | `documentation` |
-| `license_family` | *(removed; no replacement)* |
+
+**`license_family` is NOT removed and NOT a rename.** It is a valid v1 `about:`
+field — the `prefix-dev/recipe-format` schema lists it (description: *"deprecated,
+but still used in some recipes"*) and it keeps the same name in v0 and v1. It
+passes both rattler-build schema validation **and** conda-smithy lint as long as
+its value is a recognized family: `conda_build.license_family.ensure_valid_license_family`
+raises only on an *unrecognized* value (allowed: AGPL, LGPL, GPL, GPL2, GPL3,
+BSD, MIT, APACHE, PSF, CC, MOZILLA, PUBLIC-DOMAIN, PROPRIETARY, OTHER, NONE), and
+conda-smithy's `lint_license_family_should_be_valid` fires only when `license_file`
+is *absent* — never on the field's presence. **For modernization, omit it**: it's
+deprecated, and neither the CFE generator (`recipe-generator.py`) nor current
+grayskull emits it; dropping a valid one is safe and more modern, keeping a valid
+one won't fail lint. The complete v1 `about:` set is the 9 fields in
+[`reference/recipe-yaml-reference.md`](reference/recipe-yaml-reference.md). (Earlier
+versions of this gotcha wrongly listed `license_family` as "removed.")
 
 ### G3. `py < N` skip selectors do nothing in v1 recipe.yaml
 
@@ -1645,7 +1714,7 @@ This is **the canonical Rust+PyO3 conda-forge env block**. Any new Rust+PyO3 rec
 **Why**: in v1 recipe.yaml, the substitution prefix is `${{ … }}` (minijinja); the bare `{{ … }}` form is the v0 conda-build jinja prefix. The v1 parser treats bare `{{ … }}` as a plain YAML scalar — well-formed YAML, so validators don't object — and emits it verbatim to the shell, the dep spec, or whatever consumer reads the rendered value. `validate_recipe`, `rattler-build lint`, and `conda-smithy lint` all pass; the failure surfaces at build / install time.
 
 This is the third entry in a class of silent v0→v1 substitution traps:
-- **G2** — v0 about-field names (`home`, `dev_url`, `doc_url`, `license_family`) silently discarded.
+- **G2** — v0-only about-field names (`home`, `dev_url`, `doc_url`) silently discarded (`license_family` is NOT one of these — it is a valid, if deprecated, v1 field).
 - **G3** — v0 `py < N` skip selectors and v0 `# [unix]` / `# [win]` comment selectors silently ignored.
 - **G20** — bare `{{ X }}` substitutions silently emitted as literal text.
 
