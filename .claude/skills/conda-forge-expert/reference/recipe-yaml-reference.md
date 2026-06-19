@@ -535,9 +535,9 @@ outputs:
 ```yaml
 about:
   homepage: https://github.com/org/mypackage
-  license: MIT
+  license: MIT                     # SPDX expression
   license_file: LICENSE
-  license_family: MIT              # Optional: MIT, BSD, Apache, GPL, etc.
+  license_family: MIT              # DEPRECATED but still accepted; omit in new recipes
 
   summary: Short one-line description
   description: |
@@ -547,10 +547,20 @@ about:
   documentation: https://mypackage.readthedocs.io
   repository: https://github.com/org/mypackage
 
-  # Optional identifiers
-  identifiers:
-    - doi:10.1234/example
+  prelink_message: Shown to the user at prelink time   # rarely used
 ```
+
+> **Complete field set.** The 9 fields above are the *entire* `about:` schema for
+> v1 `recipe.yaml` (`prefix-dev/recipe-format`, `additionalProperties: false`):
+> `homepage`, `repository`, `documentation`, `license`, `license_file`,
+> `license_family`, `summary`, `description`, `prelink_message`. Anything else —
+> the v0 names `home`/`dev_url`/`doc_url`, **and `identifiers`** — is schema-invalid
+> under `about:` in v1 and silently dropped by rattler-build (see SKILL.md G2).
+> `license_family` is deprecated (omit in new recipes) but still accepted; **if
+> present** its value must be a recognized family (`AGPL`, `LGPL`, `GPL`, `GPL2`,
+> `GPL3`, `BSD`, `MIT`, `APACHE`, `PSF`, `CC`, `MOZILLA`, `PUBLIC-DOMAIN`,
+> `PROPRIETARY`, `OTHER`, `NONE`) or `conda-build` errors — conda-smithy never
+> lints the field's *presence*.
 
 ### License File Options
 
@@ -569,16 +579,33 @@ about:
 
 ```yaml
 extra:
-  recipe-maintainers:
+  recipe-maintainers:              # REQUIRED — non-empty list of GitHub handles
     - github-username-1
     - github-username-2
 
-  feedstock-name: mypackage        # If different from package name
+  recipe-maintainers-emeritus:     # Optional — former maintainers
+    - retired-username
 
-  # Custom data (not processed)
+  feedstock-name: mypackage        # Optional — only if feedstock name != package
+                                   # name; must NOT end with "-feedstock"
+
+  # Arbitrary custom data — free-form, passed through into the package manifest
   custom:
     key: value
 ```
+
+> **`extra:` is a free-form object** in the v1 schema (`prefix-dev/recipe-format`:
+> *"a set of arbitrary values that are included in the package manifest"* — no
+> fixed key set, no `additionalProperties: false`). The only lint-enforced rules:
+> `recipe-maintainers` is **required** and must be a non-empty list (conda-smithy
+> `NoMaintainers` / `MaintainersMustBeList`, on both v0 and v1); and
+> `feedstock-name`, if present, must not end with `-feedstock`. **v0 and v1
+> differ on every other key:** on **v1** any other key is accepted and un-linted
+> (the unexpected-subsection check is gated `if recipe_version == 0`); on **v0
+> `meta.yaml`** conda-smithy knows only `recipe-maintainers` + `feedstock-name`,
+> so any other key (including `recipe-maintainers-emeritus` and `custom:`) draws
+> an `UnexpectedSubsection` lint warning. Recognized conda-forge keys:
+> `recipe-maintainers`, `recipe-maintainers-emeritus`, `feedstock-name`.
 
 ## Built-in Variables
 
