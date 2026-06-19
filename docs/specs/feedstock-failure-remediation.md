@@ -6,10 +6,15 @@
 > or **explicitly deferred-as-blocked** (with the blocker named). Every
 > recipe edit is built + tested locally before it is pushed.
 >
-> This is a *timeless workflow* spec, parameterized per case. The procedural
-> detail lives in the `conda-forge-expert` skill (SKILL.md diagnostic chain +
-> gotchas G10/G14/G19/G24/G26/G31–G34); this spec is the orchestration layer
-> on top. New cases append to "Worked Examples"; the body stays stable.
+> This is a *timeless workflow* spec, parameterized per case. It rests on three
+> pillars: **BMAD** drives execution (`bmad-quick-dev` per run,
+> `bmad-retrospective` at closeout); the **`conda-forge-expert` skill** owns the
+> procedural detail (SKILL.md diagnostic chain + gotchas G10/G14/G19/G24/G26/
+> G31–G34) and is authoritative on any conflict; the **conda-forge-atlas**
+> intelligence layer (offline read-side CLIs / MCP tools the CFE skill exposes)
+> supplies the dependency/feedstock facts that drive BLOCKED triage and
+> prerequisite naming. This spec is the orchestration layer on top. New cases
+> append to "Worked Examples"; the body stays stable.
 >
 > Run via `bmad-quick-dev` with the failing PR(s) named in the prompt.
 
@@ -92,6 +97,13 @@ unverified recipe, and (c) surface blocked PRs rather than force a risky fix.
   failures, the flake-vs-fix taxonomy (G32), and the per-class fix gotchas
   (G10 name divergence, G14 version float-parse, G19 Windows UTF-8, G24/G26 pin
   mirroring, G31 python_min override, G34 setuptools/pkg_resources).
+- **conda-forge-atlas intelligence layer** (offline, part of the CFE skill's
+  surface) — `behind-upstream` / `query-atlas` give a dep's current conda-forge
+  max version without the `conda search` not-found-listing misread (G33);
+  `whodepends` names the sibling/prerequisite feedstocks for a BLOCKED PR;
+  `feedstock-health` flags chronic-vs-novel failure and existing stuck PRs;
+  `my_feedstocks` pre-confirms `<fork_owner>` maintainership (the maintainer-edit
+  push gate) across the whole batch up front. All read-side, air-gap-safe.
 - **`gh` CLI** — `pr view --json statusCheckRollup`, `run view --log-failed`,
   the Azure timeline REST API, and maintainer-edit push.
 - **Local build** — `rattler-build` (v1) / `conda-build` (v0) in the
@@ -103,7 +115,9 @@ unverified recipe, and (c) surface blocked PRs rather than force a risky fix.
 
 Record per case: how many PRs, the format split (v0 meta.yaml vs v1
 recipe.yaml), and any feedstocks where `<fork_owner>` is **not** a maintainer
-(blocks the maintainer-edit push). The 2026-06-17/18 worked example: 12 PRs,
+(blocks the maintainer-edit push) — read this column from `my_feedstocks`
+(atlas) in one shot rather than per-feedstock web checks. The 2026-06-17/18
+worked example: 12 PRs,
 mixed v0/v1, all `<fork_owner>`-maintained except the *prerequisite* feedstocks
 (sqlglot) that caused the two blocks.
 
@@ -113,8 +127,10 @@ mixed v0/v1, all `<fork_owner>`-maintained except the *prerequisite* feedstocks
 
 1. **Every targeted PR reaches a terminal state**: MERGED-green, fix-pushed-and-
    CI-pending, or deferred-as-blocked **with the named blocker**.
-2. **Zero unverified pushes** — every recipe edit is built + tested locally
-   (import + `pip check` green on the intended Python) before it is pushed.
+2. **Zero unverified pushes or PRs** — every recipe, new or existing, is built +
+   tested locally in `recipes/<name>/` (import + `pip check` green on the
+   intended Python) before it is pushed to a feedstock/fork **or** PR'd /
+   PR-updated on staged-recipes.
 3. **Flakes get a restart, not an edit** — classification precedes action.
 4. **Blocked PRs are surfaced, not force-fixed** — the prerequisite (dep
    feedstock / sibling) is identified and the operator decides land-vs-defer.
@@ -133,14 +149,28 @@ mixed v0/v1, all `<fork_owner>`-maintained except the *prerequisite* feedstocks
 
 ## Load-bearing workflow rules (apply to every story)
 
-1. **Invoke `conda-forge-expert` for all recipe triage/edit/build** (CLAUDE.md
-   BMAD↔CFE Rule 1). The skill's gotchas are authoritative over this spec's
-   prose when they conflict.
-2. **Test locally first** — never push a recipe edit that hasn't built + tested
-   green locally (`feedback_test_locally_before_push`). For a *structural no-op*
-   edit (e.g. collapsing identical script branches) a `rattler-build
-   --render-only` that proves the rendered script is unchanged is the
-   proportionate verification; a full rebuild is optional.
+1. **Route all conda-forge work through `conda-forge-expert`** (CLAUDE.md
+   BMAD↔CFE Rule 1). The skill is the authoritative interface for *every*
+   conda-forge interaction in this workflow — recipe creation/edit/validate/
+   build; all interaction with **conda-forge staged-recipes** (PRs and
+   review-comment remediation, incl. the adjacent case below); and all
+   interaction with **feedstocks and their forks** (CI-failure triage,
+   maintainer-edit pushes to the `<bot_fork>` branch, `@conda-forge-admin`
+   rerender/restart/bot commands, and PR status enumeration). The `gh` /
+   `conda` / `rattler-build` / `conda-build` commands in the stories below are
+   invoked **under the skill's direction**, not freelanced around it; the
+   skill's gotchas and diagnostic chain are authoritative over this spec's prose
+   when they conflict.
+2. **Execute every recipe locally before it leaves the machine** — every
+   recipe, whether **new** (a staged-recipes submission) or **existing** (a
+   feedstock edit), must be built + tested green in the local mirror
+   `recipes/<name>/` before *any* push to a feedstock/fork branch **or** any
+   PR / PR-update to conda-forge staged-recipes
+   (`feedback_test_locally_before_push`). "Tested green" = build EXIT=0 + import
+   test + `pip check` pass on the intended Python (S6). The only carve-out is a
+   *structural no-op* edit (e.g. collapsing identical script branches): a
+   `rattler-build --render-only` proving the rendered build script is unchanged
+   is the proportionate verification; a full rebuild is optional.
 3. **Local mirror is the source of truth** — apply fixes to
    `recipes/<feedstock>/` first, then mirror to the fork checkout
    (`feedback_local_mirror_first_then_verify_then_push`).
@@ -175,8 +205,12 @@ head-ref branch, and every check with conclusion `FAILURE`/`ERROR` + its
 ### S3. Classify each PR — FLAKE | REAL_FIX | BLOCKED
 Apply the **triage taxonomy** (below). For dep / python-floor cases, cross-check
 upstream's `pyproject.toml` (`curl pypi.org/pypi/<pkg>/<ver>/json` →
-`requires_python`, `requires_dist`) per the skill's diagnostic chain. **AC**:
-each PR labelled, with the minimal proposed action.
+`requires_python`, `requires_dist`) per the skill's diagnostic chain. For a
+**BLOCKED candidate** (a `no candidates were found` leg), confirm the dep's
+current conda-forge max version with the atlas (`behind-upstream <dep>` /
+`query-atlas`) — an offline check that sidesteps the G33 `conda search`
+not-found-listing misread. **AC**: each PR labelled, with the minimal proposed
+action.
 
 #### Triage taxonomy (CFE skill G32)
 
@@ -184,7 +218,7 @@ each PR labelled, with the minimal proposed action.
 |---|---|---|
 | **FLAKE** | `dispatch task is gone` / `runtime dropped the dispatch task` (pixi/CDN); `_Py_HashRandomization_Init: failed to get random numbers` (Win entropy); `IncompleteRead`/`Connection broken` mid-download; `HTTP 503`/`error sending request` during provisioning/fetch — **and other platforms/Pythons of the same run pass** | Wave B: restart ci |
 | **REAL_FIX** | `ImportError: cannot import name 'X'` on a stdlib name → python floor (G31); `pip check` `<pkg> requires B==X, but you have Y` → pin (G24/G26); `BackendUnavailable: Cannot import 'hatchling.build'` → host build-backend; linter `interpreted as a floating-point number` → quote version (G14); `ModuleNotFoundError: No module named 'pkg_resources'` → setuptools cap (G34); dep absent under expected name → name swap (G10) | Wave C |
-| **BLOCKED** | `<pkg> does not exist` / `<dep> ==<X>, for which no candidates were found` where `<dep>` is genuinely behind/absent on conda-forge (re-verify max version; beware the `conda search` not-found-listing misread, G33) | Wave D |
+| **BLOCKED** | `<pkg> does not exist` / `<dep> ==<X>, for which no candidates were found` where `<dep>` is genuinely behind/absent on conda-forge (re-verify max version via the atlas `behind-upstream`/`query-atlas` — offline, no G33 `conda search` not-found-listing misread) | Wave D |
 
 ---
 
@@ -242,9 +276,13 @@ rerender`. **AC**: the PR shows the fix commit; rerender requested.
 
 ### S8. Identify the prerequisite and decide land-vs-defer
 For each BLOCKED PR: name the missing prerequisite (a dep feedstock behind the
-pinned version, or N sibling feedstocks). Check the prerequisite's state
-(`conda search -c conda-forge "<dep>==<X>"`; `gh pr list` on its feedstock; is
-`<fork_owner>` a maintainer there?). Present to the operator:
+pinned version, or N sibling feedstocks). Use the atlas to do this offline:
+`behind-upstream <dep>` confirms the dep is behind and gives its current packaged
+version; `whodepends <dep>` enumerates the sibling/prerequisite feedstocks (the
+"N siblings" of the microsoft-kiota-bundle case); `feedstock-health <dep>` flags
+an existing stuck bump PR and whether `<fork_owner>` maintains it. Fall back to
+`conda search -c conda-forge "<dep>==<X>"` / `gh pr list` only to confirm.
+Present to the operator:
 - **(a)** land the prerequisite first (bump the dep/sibling feedstocks), then
   return to Wave C for the blocked PR;
 - **(b)** defer (park the PR; the fix edit stays staged locally);
@@ -299,7 +337,7 @@ v8.30.0 + `feedback_test_locally_before_push`.*
 |---|---|
 | Unverified push → red CI churn / bad automerge | Rule 2 (test locally first); S6 gate. |
 | Plain `git push` lands a stray branch on the canonical repo | Rule 4 maintainer-edit push (G32); delete stray branch. |
-| `conda search` not-found listing misread as available → wrong "fix" | G33 — a real hit prints a full `<name> <ver> <build> <channel>` row; `  - <dep>==<X>` is a `PackagesNotFoundError` line. |
+| `conda search` not-found listing misread as available → wrong "fix" | G33 — a real hit prints a full `<name> <ver> <build> <channel>` row; `  - <dep>==<X>` is a `PackagesNotFoundError` line. Prefer the atlas (`behind-upstream`/`query-atlas`) for the max-version check — offline, no listing to misread. |
 | `<fork_owner>` not a maintainer of the prerequisite feedstock | Surface in S8; the maintainer-edit push won't work there — defer or escalate. |
 | Disproportionate full rebuild for a one-line no-op | Q6 — render-validate instead. |
 | python_min "fixed" in `context:` on v1 but CI still 3.10 | G31 — must use the recipe CBC + rerender. |
@@ -309,8 +347,9 @@ v8.30.0 + `feedback_test_locally_before_push`.*
 ## Acceptance criteria (whole effort)
 
 - [ ] Every `<pr_refs>` PR is classified (Wave A) and reaches a terminal state.
-- [ ] No recipe edit was pushed without a green local build/test (or a
-      render-validate for a structural no-op).
+- [ ] No recipe (new or existing) was pushed or PR'd without a green local
+      build/test in `recipes/<name>/` (or a render-validate for a structural
+      no-op).
 - [ ] Every FLAKE got a restart; no FLAKE got a needless edit.
 - [ ] Every BLOCKED PR names its prerequisite and has an operator disposition.
 - [ ] A final per-PR status table is produced (Wave E S9).
@@ -337,6 +376,12 @@ handled the PR push.*
 - **`conda-forge-expert` SKILL.md** — "Diagnostic chain for feedstock CI test
   failures"; gotchas G10, G14, G19, G24, G26, **G31–G34** (this spec's first
   worked example authored G31–G34).
+- **conda-forge-atlas** — `reference/atlas-actionable-intelligence.md` (persona-
+  mapped catalog of every actionable signal) and
+  `reference/atlas-phases-overview.md`; daily read-side CLIs `behind-upstream`,
+  `whodepends`, `feedstock-health`, `detail-cf-atlas`, `staleness-report` (all
+  offline-safe). The CFE skill's "Atlas Intelligence Layer" section is the
+  persona-mapped guide.
 - **Auto-memories** — `feedback_test_locally_before_push`,
   `feedback_local_mirror_first_then_verify_then_push`,
   `feedback_always_request_rerender_after_feedstock_push`,
