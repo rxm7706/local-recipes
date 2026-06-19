@@ -698,6 +698,8 @@ Do **not** migrate if:
 - The recipe is in a stable feedstock not being actively maintained
 - The migration would be a pure churn commit unrelated to any other change
 
+**Local-mirror fidelity — keep the feedstock's `meta.yaml` until the feedstock itself migrates.** For a `recipes/<name>/` that mirrors an existing conda-forge feedstock still on v0: **pull the latest `meta.yaml` from the feedstock and KEEP it**, AND **author the v1 `recipe.yaml`** alongside it (our local v1 — built/tested locally, and the proposed migration). **Both files coexist** in `recipes/<name>/`: `meta.yaml` faithfully mirrors what's actually deployed; `recipe.yaml` is the v1 we maintain. **Delete `meta.yaml` only after the feedstock itself completes the v0→v1 switch** (its migration PR merges) — NOT when the local build succeeds. (Leave `meta.yaml` in place — build / test / lint / optimize by pointing explicitly at `recipe.yaml` (`rattler-build --recipe recipes/<name>/recipe.yaml`), which reads only that file and ignores `meta.yaml`. No stashing. `optimize_recipe`'s STD-002 "both meta.yaml and recipe.yaml present" is an expected, harmless warning for a v0-mirror — not a defect; don't delete `meta.yaml` to silence it.) The CFE metadata lives in the `recipe.yaml` (the `meta.yaml` stays a faithful, un-annotated upstream copy): for a still-v0 feedstock mirror the `recipe.yaml` carries `cfe-on-conda-forge-status: confirmed-on-conda-forge` (it IS published, just on v0), `cfe-forge-recipe-updates-needed:` including **`meta-yaml-to-recipe-yaml`** (the feedstock owes the migration), and a correct `cfe-forge-blocker-list:`. New recipes with no feedstock yet are v1 `recipe.yaml` only — nothing to mirror.
+
 ### Migration Steps (Strangler Pattern)
 
 1. Run `migrate_to_v1(recipe_path="recipes/<name>")` — creates `recipe.yaml`, preserves `meta.yaml`
@@ -707,7 +709,7 @@ Do **not** migrate if:
 5. Remove `meta.yaml` only after step 4 succeeds — never before
 6. Confirm `check_dependencies` still resolves all deps
 
-**Churn Rule**: You own verifying the migration is complete. A `meta.yaml` left alongside a `recipe.yaml` after a successful build is a bug — clean it up.
+**Churn Rule**: You own verifying the migration is complete. A `meta.yaml` left alongside a `recipe.yaml` after a successful build is a bug — clean it up. **Exception**: a local mirror of a feedstock still on v0 deliberately keeps BOTH (`meta.yaml` = deployed state, `recipe.yaml` = our v1) until the feedstock migrates — see § When to Migrate's local-mirror fidelity rule.
 
 ### Migration Discipline
 
