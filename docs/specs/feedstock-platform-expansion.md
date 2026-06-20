@@ -1,3 +1,7 @@
+---
+status: workflow
+spec_updated: 2026-06-20
+---
 # Tech Spec: Feedstock Refresh + Platform Expansion (parameterized)
 
 > Dual-goal effort: (1) refresh the local `recipes/<feedstock>/` mirror

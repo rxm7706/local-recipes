@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "v8.20.0"
+spec_updated: 2026-06-20
+---
 # Tech Spec: Atlas Phase K — sustained-rate cron runner (secondary rate-limit fix)
 
 > **BMAD intake document.** Focused execution scope for `bmad-quick-dev`

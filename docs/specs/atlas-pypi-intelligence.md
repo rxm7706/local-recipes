@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "v8.1.0"
+spec_updated: 2026-06-20
+---
 # Tech Spec: PyPI Intelligence — `pypi_intelligence` side table + 5-phase enrichment pipeline
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —

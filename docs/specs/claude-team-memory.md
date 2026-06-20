@@ -1,3 +1,7 @@
+---
+status: ready
+spec_updated: 2026-06-20
+---
 # Tech Spec: `claude-team-memory`
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —

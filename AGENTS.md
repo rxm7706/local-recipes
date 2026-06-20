@@ -11,6 +11,28 @@ interchangeable.**
 implementing anything, read the relevant spec there. Specs are the durable source of truth; they
 do **not** live inside any framework's working tree.
 
+## Spec-first workflow (MANDATORY — every agent, every framework)
+
+1. **No non-trivial work without a spec.** Before implementing a feature, migration, packaging
+   effort, or refactor, a spec MUST exist in `docs/specs/<name>.md`. If none exists, **create it
+   first** (use the `spec-driven-development` skill, `bmad-create-*`, or hand-author one matching the
+   existing specs) and get it to `status: ready` before writing code.
+2. **Keep the spec's `status:` current** — it is the framework-neutral source of truth for whether
+   work is a draft or implemented. Transition it as you go:
+   `draft → ready → in-progress → shipped` (set `implemented_by:` + `shipped_ref:` when shipped).
+   This applies **no matter who does the work** — Claude, Cursor, Gemini, Devin, Copilot, a human,
+   or any agentic framework (BMAD, Agno, CrewAI…). Don't leave a shipped feature marked `draft`, or
+   a draft marked `shipped`.
+3. **Frontmatter contract** for every `docs/specs/*.md`:
+   ```yaml
+   status: draft | ready | in-progress | shipped | workflow | superseded | abandoned
+   implemented_by: bmad-quick-dev | human | cursor | devin | …   # who did it (when in-progress/shipped)
+   shipped_ref: "conda-forge-expert v8.6.0" | "PR #33764" | "<commit>"   # evidence (when shipped)
+   spec_updated: YYYY-MM-DD
+   ```
+4. **Verify:** `pixi run -e local-recipes bmad-drift-check --specs` lists every spec's status +
+   whether it's indexed; `bmad-drift-check` HARD-fails on misfiled specs and flags un-indexed ones.
+
 ## The three tiers (do not cross them)
 
 | Tier | Location | Purpose | Git |

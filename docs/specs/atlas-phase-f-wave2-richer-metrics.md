@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "v8.18.0"
+spec_updated: 2026-06-20
+---
 # Tech Spec: Atlas Phase F+ Wave 2 — richer metrics from the existing parquet sweep
 
 > **BMAD intake document.** Focused execution scope for `bmad-quick-dev`

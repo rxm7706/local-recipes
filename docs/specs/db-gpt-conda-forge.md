@@ -1,3 +1,9 @@
+---
+status: in-progress
+implemented_by: bmad-quick-dev
+shipped_ref: "staged-recipes PRs #33764-#33768 open; db-gpt PR pending"
+spec_updated: 2026-06-20
+---
 # Tech Spec: DB-GPT on conda-forge
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —

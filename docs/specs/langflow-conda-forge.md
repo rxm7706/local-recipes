@@ -1,3 +1,9 @@
+---
+status: in-progress
+implemented_by: bmad-quick-dev
+shipped_ref: "closure built locally GREEN; blocked on 2 external cf pin-skews (Wave A/B remain)"
+spec_updated: 2026-06-20
+---
 # Tech Spec: langflow on conda-forge
 
 > **BMAD intake document.** Written for `bmad-quick-dev` / `bmad-dev` (Quick Flow

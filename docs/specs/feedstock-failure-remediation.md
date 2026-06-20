@@ -1,3 +1,7 @@
+---
+status: workflow
+spec_updated: 2026-06-20
+---
 # Tech Spec: Feedstock Failure Remediation (parameterized)
 
 > BMAD-consumable tech-spec for taking one or more **failing conda-forge
