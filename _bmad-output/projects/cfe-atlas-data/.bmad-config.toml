@@ -1,0 +1,16 @@
+# Project-scoped BMAD config for `cfe-atlas-data` (the cf_atlas data-platform migration).
+# Loaded as resolver layer 5 (team, committed) when this project is active.
+# Active project resolution order:
+#   1. resolve_config.py --project <slug>      (per-call override)
+#   2. BMAD_ACTIVE_PROJECT env var
+#   3. _bmad/custom/.active-project marker file
+#   4. (none — only global layers resolved)
+
+# Override the global output_folder so this project's artifacts land under its own subdir.
+output_folder = "_bmad-output/projects/cfe-atlas-data"
+
+# Project metadata (informational; not consumed by skills today, but useful for tooling).
+[project]
+slug = "cfe-atlas-data"
+description = "Migration of the hand-rolled cf_atlas orchestrator (conda_forge_atlas.py + bootstrap_data.py, ~4,300 LOC, 22 phases) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. Code stays in-tree under .claude/skills/conda-forge-expert/; this slug namespaces BMAD planning + implementation artifacts only. Full BMAD method (not Quick Flow). Intake spec: docs/specs/kedro-cf-atlas-migration.md."
+status = "active"
