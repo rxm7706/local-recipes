@@ -388,6 +388,8 @@ def check_phase_lists() -> list[Finding]:
             continue
         for m in re.finditer(r"\bB(?:/[A-Z](?:\.\d)?'?){4,}", _read(PROJ / rel)):
             seg = m.group(0)
+            if "/C/" not in seg or "/D" not in seg:
+                continue  # illustrative subset (e.g. "B/F/H/K/N/..."), not the full enumeration
             if f"/{hi}" not in seg and not seg.endswith(hi):
                 out.append(Finding(DRIFT, "phase-list-stale", rel,
                                    f"atlas-phase list '{seg[:32]}…' omits phases through {hi}"))
