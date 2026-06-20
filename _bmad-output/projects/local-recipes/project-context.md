@@ -1,17 +1,16 @@
 ---
 project_name: 'local-recipes'
 user_name: 'rxm7706'
-date: '2026-05-12'
+date: '2026-06-20'
 sections_completed: ['default_conventions', 'tech_stack', 'recipe_format', 'compiler_stdlib', 'python_policy', 'dependency_resolution', 'mcp_lifecycle', 'sha256', 'build_test', 'anti_patterns', 'canonical_patterns', 'air_gapped', 'submission_workflow', 'repository_conventions', 'planner_constraints']
 existing_patterns_found: 1392
 status: 'complete'
 rule_count: 63
 optimized_for_llm: true
 sync_sources: ['CLAUDE.md', '.claude/skills/conda-forge-expert/SKILL.md', '.claude/skills/conda-forge-expert/reference/', '.claude/skills/conda-forge-expert/guides/', '.claude/skills/conda-forge-expert/quickref/', '.claude/skills/conda-forge-expert/CHANGELOG.md', 'docs/enterprise-deployment.md']
-    last_synced_skill_version: 'conda-forge-expert v8.11.1'
+last_synced_skill_version: 'conda-forge-expert v8.39.0'
 maintenance_model: 'hand-edited rulebook; per-section (Sync: ...) tags name the upstream source. Re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns) on each CHANGELOG MINOR bump'
 ---
-
 # Project Context for AI Agents
 
 _Foundational rules every BMAD agent reads on spawn. This file is a **rulebook**, not a primer — full mechanics live in the cited upstream sources. Mirrors `CLAUDE.md` (repo-wide guidance) and the `conda-forge-expert` skill (conda-forge specifics)._
@@ -33,7 +32,8 @@ _Foundational rules every BMAD agent reads on spawn. This file is a **rulebook**
 (Sync: `pixi.toml`; `.claude/tools/conda_forge_server.py`)
 
 Versions live in `pixi.toml` — read it, do not duplicate version numbers in prose. Non-obvious:
-- 8 pixi envs (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`); `local-recipes` is the default (set via `# default-env:` directive at the top of `[environments]`).
+
+- 9 pixi envs (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`); `local-recipes` is the default (set via `# default-env:` directive at the top of `[environments]`).
 - FastMCP server at `.claude/tools/conda_forge_server.py` exposes the recipe lifecycle as MCP tools; Claude Code auto-starts it at session boot.
 
 ## Recipe Format Rules
@@ -75,7 +75,7 @@ Versions live in `pixi.toml` — read it, do not duplicate version numbers in pr
 
 The skill's autonomous loop runs 10 ordered steps from `generate_recipe_from_pypi` through `submit_pr`. SKILL.md is authoritative for the pipeline; the invariants below override the pipeline narrative when they conflict.
 
-- **Step 8b (`prepare_submission_branch`) is the only human-gated checkpoint.** It pushes to your `<user>/staged-recipes` fork and returns `fork_branch_url` but does NOT open the PR. `submit_pr` is ungated and will proceed unprompted, so the gate is the human inspecting the branch URL in a browser between 8b and `submit_pr`. **Inspection checklist:** (a) `recipe.yaml` renders correctly post-jinja; (b) branch name matches `<recipe-name>-<version>`; (c) no `.claude/data/` or local caches leaked into the diff; (d) commit message matches `Add recipe for <name>`.
+- **Step 8b (`prepare_submission_branch`) is the only human-gated checkpoint.** It pushes to your `<user>/staged-recipes` fork and returns `fork_branch_url` but does NOT open the PR. `submit_pr` is ungated and will proceed unprompted, so the gate is the human inspecting the branch URL in a browser between 8b and `submit_pr`. **Inspection checklist:** (a) `recipe.yaml` renders correctly post-jinja; (b) branch name matches `add-recipe-<name>` (CFE convention); (c) no `.claude/data/` or local caches leaked into the diff; (d) commit message matches `Add recipe for <name>`.
 - **Force pushes default to `--force-with-lease`** — errors on divergent remote instead of overwriting silently. Pass `force=False` (CLI: `--no-force`) for plain push.
 - **Build-failure loop has no hard cap.** If `analyze_build_failure` → `edit_recipe` → `trigger_build` cycles 3 times without progress, escalate to the user. Repeated identical failures indicate the diagnosis is wrong; new evidence is required, not another iteration.
 - **MCP server precondition**: Claude Code auto-starts the FastMCP server at session boot. If MCP calls fail with "server not running," restart Claude Code rather than working around it.
@@ -104,9 +104,10 @@ Use `edit_recipe` with structured actions for routine version/SHA/maintainer cha
 
 (Sync: `.claude/skills/conda-forge-expert/scripts/recipe_optimizer.py` for lint codes; `SKILL.md` § Recipe Authoring Gotchas for G-codes)
 
-Run `optimize_recipe` and fix what it flags — 17 lint codes spanning **DEP, PIN, ABT, SCRIPT, SEL, STD, TEST, MAINT, SEC, OPT** prefixes. **STD-001** (missing stdlib) is the most common auto-rejection trigger; **TEST-002** (single-string noarch:python test matrix) is the most common reviewer comment.
+Run `optimize_recipe` and fix what it flags — 20 lint codes spanning **DEP, PIN, ABT, SCRIPT, SEL, STD, TEST, MAINT, SEC, OPT** prefixes. **STD-001** (missing stdlib) is the most common auto-rejection trigger; **TEST-002** (single-string noarch:python test matrix) is the most common reviewer comment.
 
 Project-specific gotchas the linter doesn't catch:
+
 - `build.bat` bare `pnpm --version` / `npm --version` silently terminates the parent script. Prefix with `call`: `call pnpm --version`.
 - Skill tests in `.claude/skills/conda-forge-expert/tests/` use real fixtures + `network` / `slow` markers — do not mock the network. Offline subset: `pixi run -e local-recipes test`.
 - `submit_pr` without `dry_run=True` first — always dry-run; see § Submission Workflow.
@@ -118,6 +119,7 @@ Project-specific gotchas the linter doesn't catch:
 (Sync: `.claude/skills/conda-forge-expert/SKILL.md` § Canonical Patterns; `.claude/skills/conda-forge-expert/templates/`)
 
 The skill encodes canonical patterns for npm-ecosystem recipes, GitHub-only sources, v0→v1 migration, and upstream-bug patch shims — read SKILL.md and the matching template. Invariants enforced here:
+
 - npm recipes: `license_file` is a list; no `__unix` / `__win` selectors.
 - GitHub-only sources (no PyPI): `update_recipe_from_github` for autotick — always `dry_run=True` first.
 - v0 → v1 migration: migrate in the same PR that touches the recipe (see § Recipe Format Rules).
@@ -159,7 +161,7 @@ The skill encodes canonical patterns for npm-ecosystem recipes, GitHub-only sour
 - Skill data (mutable, gitignored): `.claude/data/conda-forge-expert/` — `cf_atlas.db` (+ `-shm`/`-wal`), `cf_atlas_meta.json`, `cf-graph-countyfair.tar.gz` (cf-graph snapshot for Phase E/H/M), `vdb/`, `vdb-cache/`, `cve/`, `pypi_conda_map.json`. Directories created on demand: `cache/parquet/` (Phase F S3 backend), `inventory_cache/` (scan_project).
 - Skill reference / guides (read-only): `.claude/skills/conda-forge-expert/{reference/,guides/,quickref/}`. `INDEX.md` is the task→tool navigator; `guides/atlas-operations.md` covers cron schedules / hard reset / air-gapped use.
 - Build artifacts: outputs at `build_artifacts/<config>/<subdir>/<name>-<version>-*.conda`; diagnostic logs at `build_artifacts/<config>/bld/rattler-build_<name>_<id>/work/conda_build.log`. Resolve the latest log: `ls -t build_artifacts/*/bld/rattler-build_<name>_*/work/conda_build.log | head -1`.
-- Pass extra args to pixi tasks after `--`: `pixi run -e local-recipes validate -- recipes/numpy`. Single-phase atlas refresh: `pixi run -e local-recipes atlas-phase <ID>` (B/B.5/C/D/E/F/G/H/J/K/L/M/N) — avoids the 30-45 min full rebuild.
+- Pass extra args to pixi tasks after `--`: `pixi run -e local-recipes validate -- recipes/numpy`. Single-phase atlas refresh: `pixi run -e local-recipes atlas-phase <ID>` (B/B.5/B.6/C/C.5/D/O/P/Q/R/S/E/E.5/F/G/G'/H/J/K/L/M/N) — avoids the 30-45 min full rebuild.
 - Project docs: `docs/`. BMAD multi-project artifacts: `_bmad-output/projects/<slug>/{planning-artifacts,implementation-artifacts}/`.
 
 ## Planner Constraints

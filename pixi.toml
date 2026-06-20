@@ -148,6 +148,14 @@ cmd = "python .claude/scripts/conda-forge-expert/my_feedstocks.py"
 description = "Verify local-recipes env, BMAD installation, and active project before BMAD workflows"
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
+[feature.local-recipes.tasks.bmad-drift-check]
+description = "Detector: report drift between the _bmad-output/local-recipes artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Flags: -- --fix (archive moves), -- --integrity-only, -- --write-baseline (stamp after a reconciliation). See _bmad-output/projects/local-recipes/SYNC-RUNBOOK.md."
+cmd = "python scripts/bmad_drift_check.py"
+
+[feature.local-recipes.tasks.bmad-groundtruth]
+description = "Print the live ground-truth factory facts (skill version, schema, MCP tools, atlas phases, pixi envs, gotchas) as JSON — the source of truth the BMAD docs must portray."
+cmd = "python scripts/bmad_drift_check.py --json"
+
 
 [feature.local-recipes.tasks.submit-pr]
 description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first). Runs prepare-pr internally then opens the PR."

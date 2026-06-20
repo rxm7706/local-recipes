@@ -1,10 +1,10 @@
 ---
 doc_type: architecture
 project_name: local-recipes
-date: 2026-05-12
+date: 2026-06-20
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v8.11.1'
+source_pin: 'conda-forge-expert v8.39.0'
 consolidates:
   - architecture-conda-forge-expert.md
   - architecture-cf-atlas.md
@@ -31,18 +31,18 @@ This document is the **executive architecture** for the rebuild. It consolidates
               ▼ (BMAD-driven planning)                                          ▼ (direct conda-forge work)
    ┌─────────────────────┐                                          ┌────────────────────────┐
    │  Part 4: BMAD       │                                          │  Part 3: MCP Server    │
-   │  - 65 skills        │── Rule 1: invoke ────────────┐           │  - 35 tools            │
+   │  - 65 skills        │── Rule 1: invoke ────────────┐           │  - 42 tools            │
    │  - 6-layer config   │                              │           │  - thin subprocess     │
    │  - 3 projects       │                              │           │    wrappers            │
    │  - active-project   │   ┌──────────────────────────▼──────────────────────┐
    │    resolution       │   │   Part 1: conda-forge-expert skill              │
    │                     │◀──│   - SKILL.md (10-step loop, 5 critical          │
-   │                     │   │     constraints, G1-G6 gotchas)                 │
-   │                     │   │   - 42 Tier 1 canonical scripts                 │
-   └─────────────────────┘   │   - 34 Tier 2 CLI wrappers                      │
+   │                     │   │     constraints, G1-G45 gotchas)                │
+   │                     │   │   - 54 Tier 1 canonical scripts                 │
+   └─────────────────────┘   │   - 46 Tier 2 CLI wrappers                      │
               │              │   - 41 templates / 13 ecosystems (12 language + conda-forge-yml)                │
-              │ Rule 2:      │   - 41 tests (unit + integration + meta)        │
-              │ retro on     │   - 11 reference + 8 guides + 2 quickrefs       │
+              │ Rule 2:      │   - 82 tests (unit + integration + meta)        │
+              │ retro on     │   - 17 reference + 9 guides + 2 quickrefs       │
               │ closeout     │   - MANIFEST.yaml + install.py (portable)       │
               ▼              └────────────────────────┬─────────────────────────┘
                                                       │ Tier 1 scripts host:
@@ -50,7 +50,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
                                      ┌──────────────────────────────────────┐
                                      │  Part 2: cf_atlas data pipeline      │
                                      │  - 22 phases (B → N + O/P/Q/R/S)     │
-                                     │  - SQLite schema v22 (13 tables/views)│
+                                     │  - SQLite schema v28 (21 tables/4 views)│
                                      │  - TTL gates on F, G, H, K           │
                                      │  - phase_state checkpoint (B, D, N)  │
                                      │  - S3-parquet + cf-graph offline     │
@@ -107,17 +107,17 @@ This document is the **executive architecture** for the rebuild. It consolidates
 **Role**: encodes every conda-forge packaging decision so AI agents author conda-forge-acceptable recipes on first pass.
 
 **Components**:
-- **Documentation**: `SKILL.md` (914 lines, primary spine) + `INDEX.md` + `CHANGELOG.md` + 11 reference files + 8 guides + 2 quickrefs
-- **Scripts (Tier 1 canonical)**: 42 Python modules in `.claude/skills/conda-forge-expert/scripts/`
-- **CLI wrappers (Tier 2)**: 34 thin subprocess wrappers in `.claude/scripts/conda-forge-expert/`
+- **Documentation**: `SKILL.md` (2,569 lines, primary spine) + `INDEX.md` + `CHANGELOG.md` + 17 reference files + 9 guides + 2 quickrefs
+- **Scripts (Tier 1 canonical)**: 54 Python modules in `.claude/skills/conda-forge-expert/scripts/`
+- **CLI wrappers (Tier 2)**: 46 thin subprocess wrappers in `.claude/scripts/conda-forge-expert/`
 - **Templates**: 41 recipe templates across 13 ecosystems (12 language: python, rust, go, c-cpp, r, java, ruby, dotnet, fortran, multi-output, nodejs, perl + conda-forge-yml config-template starter)
-- **Tests**: 41 files in `tests/{unit,integration,meta}/` with real fixtures
+- **Tests**: 82 files in `tests/{unit,integration,meta}/` with real fixtures
 - **Portability**: `MANIFEST.yaml` + `install.py` for installing into other repos
 
 **Key invariants**:
 1. 10-step autonomous loop with one human gate at step 8b
 2. 5 critical constraints (no-mix-formats, stdlib-required, python-floor, pypi-url-pattern, build.bat-call-prefix)
-3. 6 Recipe Authoring Gotchas (G1-G6)
+3. 45 Recipe Authoring Gotchas (G1-G45)
 4. Three-place rule for new scripts (canonical + wrapper + pixi task + meta-test)
 
 **Detail**: see [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md)
@@ -129,7 +129,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
 **Components**:
 - **Orchestrator**: `conda_forge_atlas.py` (~4,300 lines) with the PHASES registry
 - **Phases**: 22 ordered functions (B, B.5, B.6, C, C.5, D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N) — v8.1.0 added O/P/Q/R/S for the PyPI intelligence layer
-- **Schema**: 11 tables, version 19, idempotent additive migrations
+- **Schema**: 21 tables + 4 views, version 28, idempotent additive migrations
 - **TTL gates**: 4 phases (F, G, H, K) with `*_fetched_at` timestamps
 - **Checkpointing**: 3 phases (B, D, N) with `phase_state` cursor
 - **Backends**: Phase F (S3 parquet / anaconda-api / auto) + Phase H (pypi-json / cf-graph)
@@ -145,12 +145,12 @@ This document is the **executive architecture** for the rebuild. It consolidates
 
 ### Part 3: FastMCP server
 
-**Role**: exposes Parts 1+2 as 35 MCP tools for Claude Code / BMAD agents.
+**Role**: exposes Parts 1+2 as 42 MCP tools for Claude Code / BMAD agents.
 
 **Components**:
-- **Server**: `conda_forge_server.py` (1,199 lines, FastMCP)
+- **Server**: `conda_forge_server.py` (2,084 lines, FastMCP)
 - **Auxiliary**: `gemini_server.py` (Gemini bridge), `mcp_call.py` (JSON-RPC shell client)
-- **Tools**: 35 `@mcp.tool()` registrations, 33 sync + 2 async
+- **Tools**: 42 `@mcp.tool()` registrations, 40 sync + 2 async
 - **Helper**: `_run_script(script_path, args, input_text=None, timeout=120)` with 3-tier error handling
 - **Out-of-band state**: `build_summary.json` + `build.pid` at repo root
 
@@ -207,7 +207,7 @@ Full table with use sites + JFrog mirror patterns in [deployment-guide.md § 2b]
 
 ### 4.2 Pixi env contract
 
-8 envs declared in `pixi.toml`:
+9 envs declared in `pixi.toml`:
 
 | Env | Used by | Purpose |
 |---|---|---|
@@ -216,6 +216,7 @@ Full table with use sites + JFrog mirror patterns in [deployment-guide.md § 2b]
 | `grayskull` | Part 1 (`generate_recipe_from_pypi`) | PyPI→conda recipe scaffolding |
 | `conda-smithy` | Part 1 (lint) | `conda-smithy recipe-lint` |
 | `build` | Part 1 (cross-platform features) | rattler-build features |
+| `gcloud` | Part 2 (Phase P) | gcloud-sdk for BigQuery PyPI download counts |
 | `linux`, `osx`, `win` | Part 1 (per-platform builds) | Platform-specific configurations |
 
 **Why `vuln-db` separate**: AppThreat pulls ~500MB of CVE feeds; keeping default env lean.
@@ -252,7 +253,7 @@ Default deny: `Bash(git push --force *)` and variants (`-f`, etc.).
 |---|---|---|
 | Skill release | `.claude/skills/conda-forge-expert/CHANGELOG.md` TL;DR | PATCH (fixes), MINOR (gotchas/sections), MAJOR (breaking) |
 | Skill portability | `.claude/skills/conda-forge-expert/MANIFEST.yaml: version` | Install protocol changes (currently v7.0.0) |
-| cf_atlas schema | `SCHEMA_VERSION` in `conda_forge_atlas.py:113` | Every additive migration (currently v19) |
+| cf_atlas schema | `SCHEMA_VERSION` in `conda_forge_atlas.py:138` | Every additive migration (currently v28) |
 | BMAD installer | `_bmad/bmm/config.yaml` header (currently v6.6.0) | `bmad-method` package upgrade |
 | Project-context pin | `_bmad-output/projects/local-recipes/project-context.md:last_synced_skill_version` | Triggers re-sync when skill MINOR exceeds pin |
 
@@ -262,7 +263,7 @@ Default deny: `Bash(git push --force *)` and variants (`-f`, etc.).
 
 ### 5.1 cf_atlas.db (primary data store)
 
-11 tables:
+21 tables + 4 views (schema v28):
 
 ```
 packages                       — 60+ columns; row per conda package
@@ -273,9 +274,19 @@ phase_state                    — checkpoint cursors per phase (v7.7+)
 dependencies                   — Phase J output (source → target deps)
 vuln_history                   — Phase G' snapshots over time
 package_version_downloads      — Phase F per-version downloads
+package_platform_downloads     — Phase F+ per-platform downloads (v8.18.0)
+package_python_downloads       — Phase F+ per-Python downloads (v8.18.0)
+package_channel_downloads      — Phase F+ per-channel downloads (v8.19.0)
 upstream_versions              — Phase H + K + L (multi-source)
 upstream_versions_history      — audit trail of upstream_versions writes
 package_version_vulns          — Phase G' per-version CVE scoring
+pypi_universe                  — Phase D PyPI reference set (v7.9.0)
+pypi_universe_serial_snapshots — Phase O serial deltas (v8.1.0)
+pypi_intelligence              — Phase O/P/Q/R/S enrichment (v8.1.0)
+pypi_downloads_daily           — Phase P incremental download counts (v8.15.0)
+cisa_kev / cwe_categories / epss_scores — CVE-scoring reference feeds
+# views: v_actionable_packages, v_pypi_candidates, v_packages_enriched,
+#        v_current_version_vulns, + 3 more
 ```
 
 WAL mode for concurrent reads. Indexes on `packages.{relationship, match_source, pypi_name, conda_name, feedstock_name, license}` + per-table dimensions.
@@ -352,7 +363,7 @@ Key technical decisions, captured in ADR-lite format. Each is a candidate for `b
 
 - **Context**: previously the repo used conda environments; transition was already underway
 - **Decision**: standardize on Pixi; no conda env, no venv, no manual env setup
-- **Consequence**: 8 declared pixi envs; activation via pixi shell hooks; CI uses pixi too
+- **Consequence**: 9 declared pixi envs; activation via pixi shell hooks; CI uses pixi too
 
 ### ADR-003: SQLite (single file) for cf_atlas
 
@@ -360,10 +371,10 @@ Key technical decisions, captured in ADR-lite format. Each is a candidate for `b
 - **Decision**: SQLite WAL mode for atlas storage
 - **Consequence**: single-file portability; no DB server; reads concurrent; writes serialize; fine for offline-tolerant model where atlas refresh is batch
 
-### ADR-004: 17-phase atlas pipeline (not monolithic)
+### ADR-004: multi-phase atlas pipeline (not monolithic)
 
 - **Context**: atlas refresh could be one monolithic script or split into stages
-- **Decision**: 17 named phases (B → N) with explicit dependency order, independently re-runnable
+- **Decision**: named phases with explicit dependency order, independently re-runnable (founded as 17 phases B → N; grown to 22 with O/P/Q/R/S for the PyPI intelligence layer)
 - **Consequence**: mid-run kill is cheap (TTL gates + checkpoint); operators can refresh single phase via `atlas-phase <ID>`; pipeline is auditable
 
 ### ADR-005: `current_repodata.json` over py-rattler sharded
@@ -438,7 +449,7 @@ Key technical decisions, captured in ADR-lite format. Each is a candidate for `b
 
 ### 7.3 Reliability
 
-- All 41 tests pass on `pixi run test`
+- All 82 tests pass on `pixi run test`
 - Meta-tests enforce structural invariants (`test_recipe_yaml_schema_header.py`, `test_all_scripts_runnable.py`)
 - Schema migrations are additive and idempotent
 - TTL gates prevent re-fetch of fresh data
@@ -489,7 +500,7 @@ Key technical decisions, captured in ADR-lite format. Each is a candidate for `b
 Rebuild MUST follow this order:
 
 ```
-1. Bootstrap → pixi.toml + 8 envs + Python 3.12 + pyproject.toml
+1. Bootstrap → pixi.toml + 9 envs + Python 3.12 + pyproject.toml
                 ↓
 2. Part 4: BMAD installer → _bmad/ + _bmad/scripts/ + 65 skills + scripts/bmad-switch
                 ↓
@@ -499,12 +510,12 @@ Rebuild MUST follow this order:
    3c. Recipe lifecycle scripts (recipe-generator, validate, edit, etc.)
    3d. SKILL.md + reference/ + guides/ + quickref/ + INDEX.md
    3e. Templates (41 files / 13 ecosystems)
-   3f. Tier 2 wrappers (34 files)
+   3f. Tier 2 wrappers (46 files)
    3g. Pixi tasks (~30 entries)
    3h. Meta-test (test_all_scripts_runnable.py)
                 ↓
 4. Part 2: cf_atlas (within Part 1's scripts/)
-   4a. Schema (init_schema, 11 tables, SCHEMA_VERSION=19)
+   4a. Schema (init_schema, 21 tables + 4 views, SCHEMA_VERSION=28)
    4b. Phase B (foundational; every other phase depends on it)
    4c. Phase D (PyPI enumeration; Phase C/C.5 join B and D)
    4d. Phase E + E.5 (cf-graph tarball; M depends on this)
@@ -514,7 +525,7 @@ Rebuild MUST follow this order:
                 ↓
 5. Part 3: MCP server
    5a. conda_forge_server.py with FastMCP("conda-forge-expert")
-   5b. 35 @mcp.tool() registrations
+   5b. 42 @mcp.tool() registrations
    5c. _run_script helper
    5d. Out-of-band state file paths
    5e. (Optional) gemini_server.py + mcp_call.py

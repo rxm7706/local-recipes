@@ -57,6 +57,15 @@ Layers 5 and 6 only load when an active project resolves. To set the active proj
 
 **Adding a new project:** see `_bmad-output/PROJECTS.md` § "Adding a new project."
 
+### Keeping BMAD artifacts in sync with the live repo (always-on)
+
+The `_bmad-output/projects/local-recipes/` artifacts (PRD, architecture set, epics, project-context, overview, specs) hard-code volatile facts about the factory (skill version, cf_atlas schema, MCP tool / atlas-phase / pixi-env counts, gotcha range) and drift behind the fast-moving `conda-forge-expert` skill. A **two-layer sync loop** keeps them accurate and able to catch up after *any* out-of-band change (BMAD or not):
+
+- **Detector** (cheap, deterministic): `pixi run -e local-recipes bmad-drift-check` (and `bmad-groundtruth` for live facts as JSON). Reports pin drift, count/phase-list staleness, stale rules, archive-hygiene + stray files (auto-fix with `-- --fix`), coverage completeness (every project file must be classified), and baseline-vs-live surface change. Enforced in the test suite by `.claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py` (integrity only).
+- **Reconciler** (correctness): the **BMAD skills themselves** — `bmad-document-project` re-grounds the living architecture/overview/source-tree/parts docs; `bmad-generate-project-context` the rulebook; `bmad-correct-course` + `bmad-create-epics-and-stories` the PRD/epics; `bmad-validate-prd` + `bmad-check-implementation-readiness` the gate reports; `bmad-index-docs` the index. Then re-stamp the baseline (`bmad-drift-check -- --write-baseline`).
+
+**When to run:** after every CFE retro / skill MINOR bump, and whenever the detector reports `surface-changed` (an out-of-band edit to `recipes/`, `.claude/`, `pixi.toml`, or `docs/specs/`). Full procedure + finding→remedy mapping: **`_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md`**. The detector is `scripts/bmad_drift_check.py`.
+
 ## Skill Reference
 
 | Skill | Purpose | When to invoke |

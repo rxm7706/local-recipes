@@ -3,8 +3,8 @@ doc_type: architecture
 part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
-date: 2026-05-12
-source_pin: 'conda-forge-expert v8.11.1'
+date: 2026-06-20
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -55,12 +55,12 @@ The `JFROG_API_KEY` cross-host leak (per `docs/enterprise-deployment.md` § 2 �
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
 │  Tier 1: CANONICAL IMPLEMENTATION  (.claude/skills/conda-forge-expert/scripts/)
-│  → Single source of truth for behavior. 42 Python modules.
-│  → Tested by 41-file pytest suite. Imported by Tier 2 wrappers + Tier 3 MCP server.
+│  → Single source of truth for behavior. 54 Python modules.
+│  → Tested by 82-file pytest suite. Imported by Tier 2 wrappers + Tier 3 MCP server.
 │
 ├────────────────────────────────────────────────────────────────────────────┤
 │  Tier 2: CLI WRAPPER LAYER  (.claude/scripts/conda-forge-expert/)
-│  → 36 thin (~10-30 line) subprocess wrappers.
+│  → 46 thin (~10-30 line) subprocess wrappers.
 │  → Pixi tasks (~30 in pixi.toml) invoke these, NOT the Tier 1 modules directly.
 │  → Some Tier 1 modules are internal-only and have no wrapper (`_http.py`,
 │    `_cf_graph_versions.py`, `_parquet_cache.py`, `_sbom.py`, `mapping_manager.py`).
@@ -117,7 +117,7 @@ Missing any one breaks the meta-test.
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Step 8b is the only human-gated checkpoint.** It pushes the recipe to `<your-user>/staged-recipes` fork and returns `fork_branch_url` but does NOT open the PR. `submit_pr` is ungated and will proceed unprompted — the gate is the human inspecting the branch URL between 8b and 9. Inspection checklist: (a) `recipe.yaml` renders correctly post-jinja, (b) branch name matches `<recipe-name>-<version>`, (c) no `.claude/data/` leaked into the diff, (d) commit message matches `Add recipe for <name>`.
+**Step 8b is the only human-gated checkpoint.** It pushes the recipe to `<your-user>/staged-recipes` fork and returns `fork_branch_url` but does NOT open the PR. `submit_pr` is ungated and will proceed unprompted — the gate is the human inspecting the branch URL between 8b and 9. Inspection checklist: (a) `recipe.yaml` renders correctly post-jinja, (b) branch name matches `add-recipe-<name>` (CFE convention), (c) no `.claude/data/` leaked into the diff, (d) commit message matches `Add recipe for <name>`.
 
 **Force pushes default to `--force-with-lease`** (errors on divergent remote instead of overwriting). Pass `force=False` for plain push.
 
@@ -125,11 +125,11 @@ Missing any one breaks the meta-test.
 
 ---
 
-## Tier 1: The 44 Canonical Scripts
+## Tier 1: The 54 Canonical Scripts
 
 Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/scripts/<name>.py`):
 
-### Recipe lifecycle (18 modules — the core of Part 1)
+### Recipe lifecycle (19 modules — the core of Part 1)
 
 | Module | Role | MCP tool counterpart |
 |---|---|---|
@@ -151,6 +151,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 | `license-checker.py` | Validate `license_file` + SPDX identifier | (internal validation step) |
 | `dependency-checker.py` | PyPI→conda dep resolution + availability check | `check_dependencies` |
 | `name_resolver.py` | PyPI→conda name resolution engine (backs `get_conda_name` MCP tool) | `get_conda_name` |
+| `pr_artifacts.py` | Download a staged-recipes / feedstock PR's build artifacts into a local channel (v8.14.0) | `download_pr_artifacts` |
 
 ### cf_atlas pipeline orchestration (7 modules — Part 2 core, hosted in Part 1)
 
@@ -164,7 +165,7 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 | `detail_cf_atlas.py` | Query helpers (`detail-cf-atlas` CLI) |
 | `inventory_channel.py` | Channel inventory cache for `scan_project` |
 
-### Atlas-intelligence query CLIs (13 modules — Part 2 read side)
+### Atlas-intelligence query CLIs (19 modules — Part 2 read side)
 
 | Module | CLI command | Reads from |
 |---|---|---|
@@ -179,9 +180,15 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 | `pypi_only_candidates.py` | `pypi-only-candidates` | cf_atlas.db `pypi_universe` LEFT JOIN `packages` (Phase D, v7.9.0+) — admin candidate-list of unmatched PyPI projects ordered by `last_serial DESC` |
 | `pypi_intelligence.py` | `pypi-intelligence` | cf_atlas.db `pypi_intelligence` side table (v8.1.0; activity_band / download counts / cross-channel BOOLs / packaging shape / conda-forge readiness score) |
 | `my_feedstocks.py` | `my-feedstocks` (default = portfolio; `--triage` = ranked punch list) | cf_atlas.db `package_maintainers` JOIN + composite urgency score across Phase G/H/M/N (v8.5.0) |
+| `platform_breakdown.py` | `platform-breakdown` | cf_atlas.db `package_platform_downloads` (Phase F+, v8.19.0; ARM/win/EOL share) |
+| `pyver_breakdown.py` | `pyver-breakdown` | cf_atlas.db `package_python_downloads` (Phase F+, v8.19.0; `--policy-check` python_min bump-safe flags) |
+| `channel_split.py` | `channel-split` | cf_atlas.db `package_channel_downloads` (Phase F+, v8.19.0; defaults-channel migration opportunities) |
 | `cve_watcher.py` | `cve-watcher` | vdb/ + cf_atlas.db (Phase G/G' CVE surface) |
 | `cve_manager.py` | (no public CLI; backs `update_cve_database`) | cve/ feed cache |
 | `vulnerability_scanner.py` | (no public CLI; backs `scan_for_vulnerabilities` MCP tool) | vdb/ + recipe |
+| `cisa_kev_fetcher.py` | (no public CLI; CVE-scoring feed) | CISA KEV → `cisa_kev` table |
+| `cwe_catalog_fetcher.py` | (no public CLI; CVE-scoring feed) | MITRE CWE → `cwe_categories` table |
+| `epss_fetcher.py` | (no public CLI; CVE-scoring feed) | FIRST EPSS → `epss_scores` table |
 
 ### Project-scanning + env-inspection + health (4 modules)
 
@@ -192,17 +199,18 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 | `health_check.py` | System health check | `run_system_health_check` |
 | `_sbom.py` | SBOM parsing helpers (CycloneDX / SPDX / Syft) — internal helper for scan_project + env_inspect SBOM mode | (internal) |
 
-### Shared infrastructure (3 modules — used by all 4 parts)
+### Shared infrastructure (4 modules — used by all 4 parts)
 
 | Module | Role |
 |---|---|
 | `_http.py` | ★ The canonical shared-utility module. Surfaces (v7.8.1): (1) truststore + JFrog/GitHub/.netrc auth chain — `auth_headers_for(url)` extracted in v7.8.0 so `requests`-based callers share the same auth resolution as urllib callers; (2) 14 `resolve_<host>_urls` resolvers — every external host the atlas + skill talks to is redirectable via a `<HOST>_BASE_URL` env var; (3) `atomic_writer` / `atomic_write_bytes` / `atomic_write_text` — `.tmp` + fsync + `os.replace` pattern; (4) `fetch_to_file_resumable(target, urls, ...)` — streaming Range/resume download with atomic finalize. **Contains the JFROG_API_KEY cross-host leak** (mitigated via env-var hygiene; see `deployment-guide.md`). Every outbound HTTP request from Parts 1+2+3 routes through here. |
 | `mapping_manager.py` | PyPI→conda mapping refresh (`update_mapping_cache` MCP tool) |
+| `gen_yml_reference.py` | Generates the `conda-forge.yml` reference docs from the live schema |
 | `test-skill.py` | Skill-internal smoke test runner |
 
 ---
 
-## Tier 2: The 36 CLI Wrappers
+## Tier 2: The 46 CLI Wrappers
 
 `.claude/scripts/conda-forge-expert/*.py` — each is a ~10-30 line subprocess wrapper. Most names mirror Tier 1 scripts. One additional wrapper:
 
@@ -238,7 +246,7 @@ Templates ship **both v0 (meta.yaml) and v1 (recipe.yaml)** variants for most ec
 
 ---
 
-## Testing Layer (41 test files)
+## Testing Layer (82 test files)
 
 ```
 tests/
@@ -266,7 +274,7 @@ Three doc layers, each loaded by the agent under different conditions:
 
 ### `SKILL.md` (always loaded on activation)
 
-914-line primary spine. Sections (in source order):
+2,569-line primary spine. Sections (in source order):
 - Operating Principles (6)
 - Critical Constraints (5 + cross-cutting JFROG note)
 - Primary Workflow: The Autonomous Loop (10 steps + step 8b detail)
@@ -281,7 +289,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Complementary Skills (which BMAD/practice skills compose with this one)
 - CI Infrastructure Reference (platform assignments, OS versions, compiler pins, bot commands)
 - Ecosystem Updates (May 2026)
-- Recipe Authoring Gotchas (G1-G5 in SKILL.md; G6 still in CHANGELOG v7.7.1, not yet promoted to SKILL.md "Gotchas" section)
+- Recipe Authoring Gotchas (G1-G45, all in SKILL.md; latest G44/G45 added v8.38.0/v8.39.0)
 
 ### `INDEX.md` (task→tool navigator)
 
@@ -291,7 +299,7 @@ Three doc layers, each loaded by the agent under different conditions:
 
 Release history with a TL;DR section at the top. Every MINOR-version bump triggers a project-context.md re-sync (per the drift contract in `_bmad-output/projects/local-recipes/project-context.md` frontmatter `last_synced_skill_version`).
 
-### `reference/` (12 deep-reference files — loaded on demand)
+### `reference/` (17 deep-reference files — loaded on demand)
 
 | File | When loaded |
 |---|---|
@@ -308,10 +316,14 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 | `atlas-phases-overview.md` | Phase-indexed companion to the persona catalog: per pipeline stage (B → N), data source, purpose, what gets written, and the actionable intelligence (CLIs / MCP tools / SQL) it unlocks. |
 | `conda-forge-ecosystem.md` | Ecosystem overview (bot, smithy, repodata-patches) |
 | `atlas-phase-engineering.md` | **Added in v7.8.0.** Rule book for authoring or refactoring `conda_forge_atlas.py` pipeline phases. 9 patterns: per-host rate limits, GraphQL batching, Retry-After + jitter, per-registry concurrency, atomic writes, incremental commits + idempotent SQL, streaming tarfiles, page-level checkpoints, `<HOST>_BASE_URL` routing convention. |
+| `atlas-phase-p-cost-model.md` | Phase P BigQuery cost model + caps (v8.15.0 incremental refactor) |
+| `recipe-yaml-reference-full.md` | Full v1 `recipe.yaml` schema reference (long-form companion to `recipe-yaml-reference.md`) |
+| `conda-forge-yml-reference-full.md` | Full `conda-forge.yml` key reference (long-form companion) |
+| `abi3-matrix-collapse.md` | abi3 / limited-API wheel build-matrix collapse pattern |
 
-### `guides/` (8 workflow guides — loaded on demand)
+### `guides/` (9 workflow guides — loaded on demand)
 
-- `getting-started.md`, `migration.md`, `ci-troubleshooting.md`, `cross-compilation.md`, `feedstock-maintenance.md`, `testing-recipes.md`, `sdist-missing-license.md`, `atlas-operations.md`
+- `getting-started.md`, `migration.md`, `ci-troubleshooting.md`, `cross-compilation.md`, `feedstock-maintenance.md`, `testing-recipes.md`, `sdist-missing-license.md`, `atlas-operations.md`, `feedstock-platform-expansion.md`
 
 ### `quickref/` (2 quick-reference files — loaded on demand)
 
@@ -322,7 +334,7 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 
 ## Recipe Authoring Gotchas (SKILL.md § Recipe Authoring Gotchas)
 
-Non-obvious failures that have bitten enough times to be enumerated:
+Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G45**, all promoted into SKILL.md (the table below shows the founding six; G7–G45 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
 
 | Code | Description | Lives where |
 |---|---|---|
@@ -330,8 +342,11 @@ Non-obvious failures that have bitten enough times to be enumerated:
 | **G2** | v0/meta.yaml field names in v1 recipe.yaml are silently ignored | SKILL.md |
 | **G3** | `py < N` skip selectors do nothing in v1 recipe.yaml | SKILL.md |
 | **G4** | Sdist may omit LICENSE — `pip install` succeeds, build fails with "No license files were copied" | SKILL.md + `guides/sdist-missing-license.md` |
-| **G5** | tree-sitter PyPI sdists inconsistently strip parser headers — default to GitHub source for `tree-sitter-<lang>` (narrowed from initial framing in v7.7.1 retro) | SKILL.md |
-| **G6** | `get_build_summary` false negatives — read `conda_build.log` directly | CHANGELOG v7.7.1 (not yet promoted to SKILL.md "Gotchas" section — known doc drift) |
+| **G5** | tree-sitter PyPI sdists inconsistently strip `src/tree_sitter/*.h` headers — default to GitHub source for `tree-sitter-<lang>` | SKILL.md |
+| **G6** | npm packages with rich transitive deps ship `node_modules/.bin/` symlinks that fail noarch builds | SKILL.md |
+
+**G7–G45** (all in SKILL.md; titles only — see SKILL.md for symptom + fix):
+G7 grayskull import-name guess can be wrong · G8 redundant wheel/setuptools host deps for poetry-core · G9 monorepo with no per-language tag → pin LICENSE to a commit · G10 PyPI→conda name divergence (check four spellings) · G11 sdist symlinks fail hatchling on Windows · G12 platform-conditional noarch run deps need `noarch_platforms` · G13 CWD persists across `script:` entries / `(cmd)` not a subshell on cmd.exe · G14 autotick v0 bump trips linter float-parse · G15 same-version rebuild leaves repodata stale · G16 PyPI Varnish CDN degradation on source route · G17 pnpm `--ignore-scripts` doesn't suppress root lifecycle scripts · G18 unscoped `store_build_artifacts` crashes Windows Azure · G19 Windows pip UTF-8 stream error → `PYTHONUTF8: "1"` · G20 v0 jinja `{{ X }}` renders as literal text in v1 · G21 smithy mis-aligns `is_python_min` on upward override · G22 recipe-local CBC `*_cpython` crashes smithy py3.13+ · G23 inline sed+powershell escape hell · G24 conda label ≠ wheel dist-info version · G25 conda has no extras — flatten `pkg[extra]` into run · G26 loosening `==`→`>=` needs source patch under `pip_check` · G27 top-level import eagerly pulls a sibling's extra-only dep · G28 external dep's broken dist-info version breaks dependent `pip check` · G29 multi-output checkers are top-level-only · G30 cf `protobuf` ≠ `protoc` → Rust needs `libprotobuf` · G31 upward python_min override needs recipe-local CBC (v1) / `{% set %}` (v0) · G32 triaging autotick flake-vs-fix + push to bot branch · G33 don't pass `.ci_support` as variant config on local v1 feedstock build · G34 `pkg_resources.declare_namespace` breaks under setuptools 81+ · G35 noarch numpy env-marker selector collapse (refines G12) · G36 stale build wheel METADATA caps tighter than conda run dep · G37 `[tool.uv]` flags are NOT runtime deps · G38 single-Python compiled prereq blocks other-Python consumers · G39 setuptools_scm private-API `_version_helper` import break · G40 dep drops a Python version in a newer release (refines G38) · G41 hidden py3.11 floor via unconditional PEP-655 import · G42 verify CURRENT version's artifact shape before assuming compiled · G43 v1 inline list-item `# comment` trips comment-selector lint · G44 .NET/C# CLI tools have no source-build path — repackage release binaries · G45 browser SPA usually not cf-submittable — viability gate + local-only static-site fallback
 
 ---
 
@@ -347,7 +362,7 @@ Three-tier permission model:
 
 ## Build Failure Protocol (SKILL.md § Build Failure Protocol)
 
-When `get_build_summary` reports failure (or false negative — see G6):
+When `get_build_summary` reports failure (read `conda_build.log` directly to confirm — `get_build_summary` can report a false negative):
 
 1. **STOP** the autonomous loop. Do not retry without diagnosis.
 2. **Preserve the log**: `build_artifacts/<config>/bld/rattler-build_<name>_<id>/work/conda_build.log` (resolve `<id>` with `ls -t build_artifacts/*/bld/rattler-build_<name>_*/work/conda_build.log | head -1`).
@@ -373,7 +388,7 @@ When `get_build_summary` reports failure (or false negative — see G6):
 4. Build green on linux-64.
 5. **Then** `git rm meta.yaml` and commit both in one PR.
 
-The Critical Constraint ("never mix formats in a build run") means `meta.yaml` must be deleted before commit; the strangler pattern ensures the migration is atomic with the value-adding change so reviewers see one coherent diff. *Note: As of v1.5.1, an active mass migration from `meta.yaml` to `recipe.yaml` is underway across the 1,415 output recipes.*
+The Critical Constraint ("never mix formats in a build run") means `meta.yaml` must be deleted before commit; the strangler pattern ensures the migration is atomic with the value-adding change so reviewers see one coherent diff. *Note: As of v1.5.1, an active mass migration from `meta.yaml` to `recipe.yaml` is underway across the 1,602 output recipes (718 `recipe.yaml` + 1,054 `meta.yaml`).*
 
 ---
 
@@ -428,7 +443,7 @@ This subsystem feeds:
 
 ## Activation Lifecycle (how Claude Code loads this skill)
 
-1. **Session boot**: Claude Code starts the FastMCP server at `.claude/tools/conda_forge_server.py` (Part 3); the 35 MCP tools become available.
+1. **Session boot**: Claude Code starts the FastMCP server at `.claude/tools/conda_forge_server.py` (Part 3); the 42 MCP tools become available.
 2. **Task entry**: when the user prompt or BMAD agent mentions "conda recipe / conda-forge / packaging / build failure," Claude Code activates this skill.
 3. **Skill load order** (frontmatter says `allowed-tools: [conda_forge_server]`):
    - Load `SKILL.md` fully (always)
@@ -446,9 +461,9 @@ This subsystem feeds:
 The skill version is the **source of truth** for what rules apply. Two version surfaces:
 
 - `MANIFEST.yaml: version: 7.0.0` — the "schema/portability version" (rarely changes; bumps only when the install protocol changes)
-- `CHANGELOG.md` TL;DR — the **release version** (v8.1.0 as of 2026-05-15)
+- `CHANGELOG.md` TL;DR — the **release version** (v8.39.0 as of 2026-06-20)
 
-Project-context.md pins to MINOR (`last_synced_skill_version: 'conda-forge-expert v8.10.0'` as of 2026-05-26). When CHANGELOG's MINOR exceeds the pin, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
+Project-context.md re-syncs on MINOR bumps (current skill release v8.39.0). When CHANGELOG's MINOR exceeds the last-synced version, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
 
 The pin discipline is the rebuild target's drift-control mechanism. A rebuilt repo without this pin will silently diverge.
 
@@ -472,12 +487,12 @@ To rebuild this part faithfully on a clean repo:
 
 1. **Bootstrap**: install pixi; create `pixi.toml` with `python`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db` features and envs.
 2. **Skill scaffolding**: copy `.claude/skills/conda-forge-expert/` from this repo OR generate fresh from SKILL.md template.
-3. **Tier 1 scripts** (42 modules): authored in dependency order — `_http.py` first (every other module imports it), then `name_resolver.py` + `mapping_manager.py` (foundational helpers), then recipe-lifecycle, then atlas-pipeline.
-4. **Tier 2 wrappers** (34 modules): thin subprocess wrappers; auto-generatable from a manifest if all Tier 1 modules expose a `main()`.
+3. **Tier 1 scripts** (54 modules): authored in dependency order — `_http.py` first (every other module imports it), then `name_resolver.py` + `mapping_manager.py` (foundational helpers), then recipe-lifecycle, then atlas-pipeline.
+4. **Tier 2 wrappers** (46 modules): thin subprocess wrappers; auto-generatable from a manifest if all Tier 1 modules expose a `main()`.
 5. **Pixi tasks**: ~30 entries under `[feature.local-recipes.tasks.*]` matching the Tier 2 wrapper names.
 6. **Meta-test**: `tests/meta/test_all_scripts_runnable.py` with SCRIPTS list + no_task_allowlist enforcing the three-place rule.
 7. **Templates**: 41 starter recipes across 13 ecosystems (12 language + 1 conda-forge.yml config-template subdir with 2 starter files).
-8. **Documentation**: SKILL.md + INDEX.md + CHANGELOG.md + reference/* (12 files, incl. `atlas-phase-engineering.md` since v7.8.0) + guides/* (8 files) + quickref/* (2 files).
+8. **Documentation**: SKILL.md + INDEX.md + CHANGELOG.md + reference/* (17 files, incl. `atlas-phase-engineering.md` since v7.8.0) + guides/* (9 files) + quickref/* (2 files).
 9. **MANIFEST.yaml + install.py** for portability (skill should be installable into other repos).
 10. **Mapping subsystem**: seed `pypi_conda_mappings/different_names.json` from public data; `custom.yaml` starts empty.
 
