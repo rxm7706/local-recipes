@@ -1,12 +1,12 @@
 ---
 doc_type: epics-and-stories
 project_name: local-recipes
-date: 2026-05-12
-version: '1.0.0'
+date: 2026-06-20
+version: '1.1.0'
 status: draft
-source_pin: 'conda-forge-expert v8.11.1'
-total_epics: 13
-total_stories: 195
+source_pin: 'conda-forge-expert v8.39.0'
+total_epics: 14
+total_stories: 232
 waves: 5
 xl_stories_remaining: 0
 tentative_decisions_applied: 7
@@ -23,11 +23,12 @@ sync_lineage:
   - { date: '2026-05-23', via: 'bmad-correct-course', from: 'v8.5.2', to: 'v8.5.3', proposal: 'planning-artifacts/sprint-change-proposal-2026-05-23-v8.5.3.md', spec: null, retro: 'implementation-artifacts/retro-dw12-dw13-2026-05-23.md', note: 'Same-day emergent bundle (code shipped commit 3823d8dc02 hours before this BMAD sync; no pre-spec because the work was incident-driven). DW12 (rollup-staleness drift fix surfaced by the channel-wide CVE audit — 6 false positives) + DW13 (CISA KEV via Path C — original `vdb --cache-os` plan abandoned after 33 GB partial-pull crash exposed the `kevc` ignore-list trap in appthreat-vulnerability-db/lib/aqua.py:30). Schema v22 → v23: new `cisa_kev` side table + `v_current_version_vulns` view. New `cisa_kev_fetcher.py` + `fetch-cisa-kev` pixi task + `_load_kev_cves` helper + Phase G/G overlay loop modification + `_phase_g_sync_current_rollup` pure-SQL tail step on Phase G''. E8.S11 (Phase G) gains DW12+DW13 scope on existing acceptance criteria; no new stories required for the rollup-sync or KEV overlay (both are extensions of the existing `phase_g_vdb_summary` and `phase_g_prime_per_version_vulns` functions). Live verification: 1,602 CVEs loaded in 0.74 s; channel-wide PHASE_G_TTL_DAYS=0 Phase G re-run completed in 23.3 s; 1 actionable KEV-affected feedstock surfaced (salt-2016.3.0, 3 KEV CVEs). PRD §9 DW12 + DW13 marked ✅ SHIPPED inline (audit trail preserved via strikethrough); new DW17 row for cdxgen scan_project --pixi-lock follow-up (separately specced after v8.6.0). Suite 1094 → 1099 passing (+24 new tests). PATCH bump (no FR/NFR scope shift; new CLI is opt-in surface; existing CLIs unchanged). **Forward reference: v8.6.0 spec at docs/specs/atlas-appthreat-deep-signals.md (mirrored as implementation-artifacts/spec-appthreat-deep-signals.md) is intake-ready** — adds schema v24 with epss_scores + cwe_categories + package_hardening side tables, Phase T (blint hardening) + Phase U (EPSS overlay), and Phase G/G overlay extensions (withdrawn filter + CWE rollup + EPSS-max). ~18 stories in 4 waves; two-PR ship strategy. Future epic candidate: NEW Epic 14 (AppThreat Deep Signals) — pending the actual implementation sprint.' }
   - { date: '2026-05-24', via: 'bmad-correct-course', from: 'v8.5.3', to: 'v8.6.0', proposal: 'planning-artifacts/sprint-change-proposal-2026-05-24-v8.6.0.md', spec: 'docs/specs/atlas-appthreat-deep-signals.md', retro: 'implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md', note: 'AppThreat Deep Signals — 3 waves shipped + Wave C cancelled pre-implementation. Wave A (commit e4ba891cd2 2026-05-23): schema v23 → v24 foundation + EPSS pipeline (new epss_scores side table + 6 packages columns + 3 package_version_vulns columns + new epss_fetcher.py + fetch-epss pixi task + _load_epss_scores helper + 13 unit tests). Wave B (commit e22c531ac2 2026-05-23): CWE catalog + Phase G/G overlay wiring (new cwe_catalog_fetcher.py + committed data/cwe_categories_seed.json 67-entry mapping + _load_cwe_categories helper + shared _aggregate_v8_6_0_overlays pure function + Phase G/G overlay loops modified to populate the 4 new packages columns + _phase_g_sync_current_rollup extended with COALESCE-to-existing review-fix + 14 unit tests). Wave C (Phase T blint hardening + Phase U EPSS overlay phase) CANCELLED pre-implementation at verify-don''t-assume verification — Phase T low-signal in conda-forge''s hermetic compile env (~0 variance / ~150 GB cost), Phase U redundant with Wave B''s _phase_g_sync_current_rollup extension. Wave D (commit 592b18089a 2026-05-24): schema v24 → v25 cleanup migration (drop package_hardening table + 2 indexes + packages.vuln_total_active + packages.vuln_withdrawn_count + package_version_vulns.vuln_total_active) + 4 new CLI flags (staleness-report --by-epss / --has-cwe; my-feedstocks --epss --cwe; cve-watcher --epss-threshold; detail-cf-atlas auto-renders Max-EPSS + Top-CWE when populated) + persona-profile auto-runs (maintainer + admin set BOOTSTRAP_FETCH_{CISA_KEV,EPSS,CWE_CATALOG}=1; consumer skips for air-gap preservation) + skill version 8.5.3 → 8.6.0 + closeout. E8.S11 + E8.S12 gain v8.6.0 EPSS + CWE overlay scope on existing acceptance criteria; no new stories required (same Path C pattern from v8.5.3, generalised). Future-Epic-14-candidate flagged in v8.5.3 sync RETIRED — work absorbed by Epic 8 extensions. 5 parent-spec errors caught pre-implementation: MITRE CWE URL (2000 vs 1000), EPSS URL (Cyentia rebrand → empiricalsecurity.com), blint PyPI name (owasp-blint 404 → blint), withdrawn-filter assumption (vdb pre-filters at ingest per osv.py:91 + gha.py:184-185), Phase U redundancy. Combined saved ~10-15 stories. Live verification: 334,683 EPSS rows + 944 CWEs (67 seeded + 877 → Other) + channel-wide Phase G re-scan populated 213 EPSS-scored + 216 CWE-classified actionable packages. CWE distribution: Info-Disclosure 133 / DoS 24 / RCE 21 / Other 18 / Injection 9 / Traversal 5 / Auth-Bypass 4 / Memory-Safety 2. Test suite 1,099 → 1,137 passing (+38). 0 regressions. MINOR bump on the skill (semver convention — new public CLIs); PATCH bump on the PRD (no FR/NFR scope shift; additive opt-in surfaces only). 3 new DW rows: DW18 (defensive hardening pass for the 3 external-catalog fetchers), DW19 (per-package CVE list / new package_cves table for a real standalone Phase U), DW20 (extend CWE seed mapping beyond the current 67). DW17 cdxgen --pixi-lock follow-up remains open (deliberately not bundled to preserve atlas-side-signals-only narrative). No epic scope change; recorded as a between-epic audit.' }
   - { date: '2026-05-26', via: 'bmad-document-project audit', from: 'v8.6.0', to: 'v8.10.0', proposal: null, spec: null, retro: 'implementation-artifacts/retro-conda-forge-expert-v8.10-2026-05-26.md', note: 'Bundled source_pin re-sync covering 4 MINOR + 1 PATCH skill release (v8.7.0 Rust template refresh + SCHEMA-001 + 8-recipe schema-header backfill; v8.8.0 Python generator + template alignment + CFEP-25 dual-version test matrix in generated recipes; v8.9.0 maturin/PyO3 routing + sdist-driven import-name extraction + abi3-gated version_independent; v8.9.1 interpolated source URLs + CARGO_PROFILE_RELEASE env vars; v8.10.0 drop context.name + literal package.name + literal source.url with only ${{ version }} interpolated). All five releases are skill-internal generator/template/SKILL.md changes; no epic scope change. Atlas surface unchanged (still 22 phases / schema v25 / 19 CLIs). No new stories required. Retro: implementation-artifacts/retro-conda-forge-expert-v8.10-2026-05-26.md + retro-conda-forge-expert-v8.7-v8.8-2026-05-25.md.' }
+  - { date: '2026-06-20', via: 'structural re-sync (bmad-correct-course)', from: 'v8.11.1', to: 'v8.39.0', proposal: null, spec: null, retro: null, note: 'Structural re-sync of the whole epics doc from its v8.11.1 pin to the live v8.39.0 system. Whole capability clusters that shipped after the pin had no epics/stories; this pass closes the gap WITHOUT changing the rebuild''s intent. Changes: (1) Count-drift reconciliation — the doc was internally inconsistent (frontmatter said 195, the Wave Summary summed to 173, the epic bodies summed to 201); all three are now reconciled against the per-epic body totals. (2) NEW Epic 14 "cf_atlas PyPI-Intelligence + Security-Signals Layer" added in Wave 3 (schema migration chain v20→v28 + new tables pypi_universe / pypi_intelligence / pypi_universe_serial_snapshots / pypi_downloads_daily / package_platform_downloads / package_python_downloads / package_channel_downloads / cisa_kev / epss_scores / cwe_categories; v24→v25 cleanup round-trip dropping vuln_total_active / vuln_withdrawn_count / package_hardening; Phases O/P/Q/R/S; the v8.5.3 CISA-KEV + v8.6.0 EPSS/CWE security-signals cluster). (3) Retrofits: Epic 1 +1 (9th pixi env `gcloud` for Phase P BigQuery ADC auth → 8 envs become 9); Epic 6 +stories for Recipe-Authoring Gotchas G7–G45 + the now-17 reference/ + now-9 guides/ files; Epic 9 +stories for the new public CLIs (pypi-intelligence, platform-breakdown, pyver-breakdown, channel-split, pypi-only-candidates); Epic 10 35→42 MCP tools (+7: pypi_intelligence, pypi_only_candidates, platform_breakdown, pyver_breakdown, channel_split, download_pr_artifacts, env_inspect). (4) Re-pin: source_pin v8.11.1 → v8.39.0, version 1.0.0 → 1.1.0, date → 2026-06-20. Live ground truth (verified 2026-06-20 against .claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py + reference/ + pixi.toml + conda_forge_server.py): skill v8.39.0; cf_atlas schema v28 (21 tables + 4 views); 42 MCP tools; 22 atlas phases (B→N + O/P/Q/R/S, sub-phases B.5/B.6/C.5/E.5/G''); 9 pixi envs; Recipe-Authoring Gotchas G1–G45; 54 scripts / 46 wrappers / 82 tests / 17 reference / 9 guides. Count drift 173/195/201 reconciled to a single internally-consistent total (232 = sum of actual per-epic story rows; total_epics=14).' }
 ---
 
 # Epics & Stories: `local-recipes` Rebuild
 
-This document breaks the rebuild into **13 epics organized into 5 dependency-ordered waves**, with story-level detail under each epic. Stories include: title, scope, acceptance criteria, complexity (S/M/L/XL), and dependencies on prior stories.
+This document breaks the rebuild into **14 epics organized into 5 dependency-ordered waves**, with story-level detail under each epic. Stories include: title, scope, acceptance criteria, complexity (S/M/L/XL), and dependencies on prior stories.
 
 Build order follows `architecture.md` § 9 (Build Order). Wave 1 is foundational; later waves depend on earlier ones.
 
@@ -37,13 +38,13 @@ Build order follows `architecture.md` § 9 (Build Order). Wave 1 is foundational
 
 | Wave | Theme | Epics | Stories | Estimated complexity |
 |---|---|---|---|---|
-| **Wave 1** | Foundation: pixi monorepo + BMAD installer + auth chain | 3 epics | 30 stories | Foundational, must-be-correct |
-| **Wave 2** | Part 1 core: conda-forge-expert skill (Tier 1 + 2 + docs) | 3 epics | 66 stories | Largest wave; the heart of the system |
-| **Wave 3** | Part 2: cf_atlas data pipeline (17 phases + schema + CLIs) | 3 epics | 40 stories | Most complex single component |
-| **Wave 4** | Parts 3+4 surfaces: MCP server + multi-project + integration | 2 epics | 21 stories | Smaller code but high-coupling |
-| **Wave 5** | Hardening: tests + docs + air-gap validation + deployment | 2 epics | 16 stories | Validation + readiness |
+| **Wave 1** | Foundation: pixi monorepo + BMAD installer + auth chain | 3 epics | 31 stories | Foundational, must-be-correct |
+| **Wave 2** | Part 1 core: conda-forge-expert skill (Tier 1 + 2 + docs) | 3 epics | 71 stories | Largest wave; the heart of the system |
+| **Wave 3** | Part 2: cf_atlas data pipeline (22 phases + schema + CLIs) | 4 epics | 76 stories | Most complex single component |
+| **Wave 4** | Parts 3+4 surfaces: MCP server + multi-project + integration | 2 epics | 28 stories | Smaller code but high-coupling |
+| **Wave 5** | Hardening: tests + docs + air-gap validation + deployment | 2 epics | 26 stories | Validation + readiness |
 
-**Total: 13 epics, 195 stories.** Estimates assume an experienced operator with Claude Code assistance.
+**Total: 14 epics, 232 stories.** Estimates assume an experienced operator with Claude Code assistance.
 
 ---
 
@@ -55,7 +56,7 @@ Stories in Wave 1 establish the substrate every other Wave depends on. Until Wav
 
 ## Epic 1: Pixi Monorepo Bootstrap
 
-**Goal**: Establish the pixi-managed Python 3.12 monorepo with 8 envs and core dependencies. No code yet — just the substrate.
+**Goal**: Establish the pixi-managed Python 3.12 monorepo with 9 envs and core dependencies. No code yet — just the substrate.
 
 **Owner part**: cross-cutting (`pixi.toml`, `pyproject.toml`)
 
@@ -66,7 +67,7 @@ Stories in Wave 1 establish the substrate every other Wave depends on. Until Wav
 | ID | Title | Scope | AC | Complexity |
 |---|---|---|---|---|
 | E1.S1 | Initialize repo + LICENSE + README | git init; BSD-3-Clause LICENSE; minimal README pointing at PRD; root `.gitignore` covering pixi/rattler/output dirs | LICENSE valid; README exists; root `.gitignore` covers `.pixi/`, `build_artifacts/`, `output/`, `.claude/data/`, plus `_bmad-output/projects/<slug>/implementation-artifacts/` content (gitignored) and per-project gitignored config files (`.bmad-config.user.toml`, `.active-project`) | S |
-| E1.S2 | Author `pixi.toml` core | requires-pixi >=0.67.2; declare 8 envs (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`); set `# default-env: local-recipes` directive | `pixi info` shows 8 envs; default-env resolves correctly | M |
+| E1.S2 | Author `pixi.toml` core | requires-pixi >=0.67.2; declare 8 of the 9 envs (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`; the 9th `gcloud` env is added in E1.S11); set `# default-env: local-recipes` directive | `pixi info` shows the declared envs; default-env resolves correctly | M |
 | E1.S3 | Add Python + build feature deps | `[feature.python]` with Python 3.12, conda, conda-libmamba-solver; `[feature.build]` with rattler-build, conda-build, conda-index, conda-forge-pinning, etc. | `pixi install -e python` resolves; `rattler-build --version` runs | M |
 | E1.S4 | Add grayskull + conda-smithy + shellcheck features | Per-feature deps; matches existing pixi.toml | `pixi run -e grayskull pypi --help` works; `pixi run -e conda-smithy lint --help` works | S |
 | E1.S5 | Add local-recipes feature (default env composite) | Composite env: `["python", "build", "grayskull", "conda-smithy", "local-recipes"]`; activation hooks. **Depends on E1.S3 (python+build features), E1.S4 (grayskull+conda-smithy features), AND E1.S2 (`[environments]` table exists).** Cannot start until all three are merged. | Default `pixi run` activates the right env; `pixi install -e local-recipes` resolves without error; activation hooks execute | M |
@@ -74,9 +75,10 @@ Stories in Wave 1 establish the substrate every other Wave depends on. Until Wav
 | E1.S7 | Add cross-platform features (linux, osx, win) | Per-platform feature dependencies; activation hooks for cross-compile env vars | `pixi install -e <platform>` works for each | M |
 | E1.S8 | Add `scripts/load-env.sh` + `scripts/bmad-switch` STUB (real impl in E2.S5) | (a) `scripts/load-env.sh`: real impl — parses `# default-env:` directive from pixi.toml top of `[environments]` and activates that env. (b) `scripts/bmad-switch`: **stub only** — a 5-line Python script with `print('bmad-switch stub; full impl in E2.S5')` for `--list`/`--current`/`--clear`/`<slug>` that returns exit 2. **Contract with E2.S5**: same file path, same CLI subcommand surface; E2.S5 replaces the stub body with the real implementation. Reason for the stub: E1.S10 verify-env task needs `bmad-switch` to exist as a file even before E2.S5 lands. | `scripts/load-env.sh` activates correct env (real impl); `scripts/bmad-switch --list` returns exit code 2 with stub message (stub impl); file exists and is executable | S |
 | E1.S9 | Create empty directory scaffolding | `.claude/{skills,scripts,tools,data,docs}/`; `recipes/`; `docs/`; `_bmad-output/projects/`; `build_artifacts/` (gitignored) | `find -type d` shows expected structure | S |
-| E1.S10 | Verify-env pixi task (LAST in Epic 1) | `pixi run verify-env` validates pixi.toml integrity + env count + default-env directive presence + `scripts/bmad-switch` exists (even as stub) + `scripts/load-env.sh` activates default env. **Depends on E1.S2 (pixi.toml `[environments]` table) + E1.S5 (composite env) + E1.S8 (bmad-switch stub + load-env.sh).** Run this story LAST in Epic 1 ordering. | Task runs without error; reports 8 envs (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`); default-env resolves to `local-recipes`; bmad-switch present (stub or real) | S |
+| E1.S10 | Verify-env pixi task (LAST in Epic 1) | `pixi run verify-env` validates pixi.toml integrity + env count + default-env directive presence + `scripts/bmad-switch` exists (even as stub) + `scripts/load-env.sh` activates default env. **Depends on E1.S2 (pixi.toml `[environments]` table) + E1.S5 (composite env) + E1.S8 (bmad-switch stub + load-env.sh) + E1.S11 (gcloud env).** Run this story LAST in Epic 1 ordering. | Task runs without error; reports 9 envs (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`); default-env resolves to `local-recipes`; bmad-switch present (stub or real) | S |
+| E1.S11 | Add `gcloud` env with `gcloud-sdk` feature (9th env — Phase P BigQuery ADC auth) | `[feature.gcloud-sdk]` carrying the heavy (~91 MB) opt-in `gcloud` CLI; `gcloud = ["python", "gcloud-sdk"]` composite env. Purpose: one-time interactive `gcloud auth application-default login` to write Application Default Credentials at `~/.config/gcloud/application_default_credentials.json`; cf_atlas Phase P (BigQuery `pypi.file_downloads`, opt-in via `PHASE_P_ENABLED=1`) reads ADC automatically afterward and never needs the `gcloud` env again. The `local-recipes` env carries `google-cloud-bigquery` (the client), NOT `gcloud-sdk` (the auth CLI) — they're deliberately separate so the heavy auth tool is opt-in. | `pixi install -e gcloud` resolves; `pixi run -e gcloud gcloud --version` works; `google-cloud-bigquery` is in the `local-recipes` env (not `gcloud`); `pixi info` shows 9 envs total | M |
 
-**Epic 1 total: 10 stories, complexity ~M average.**
+**Epic 1 total: 11 stories** (was 10; +1 E1.S11 for the 9th `gcloud` env), complexity ~M average.
 
 ---
 
@@ -132,7 +134,7 @@ Stories in Wave 1 establish the substrate every other Wave depends on. Until Wav
 
 **Epic 3 total: 9 stories, complexity ~M-L average.**
 
-**Wave 1 totals: 3 epics, 30 stories.**
+**Wave 1 totals: 3 epics, 31 stories.** (E1=11, E2=11, E3=9)
 
 ---
 
@@ -209,7 +211,7 @@ Wave 2 builds the heart of the system. Tier 1 canonical scripts, then Tier 2 wra
 
 ## Epic 6: Part 1 Documentation + Templates + Tests
 
-**Goal**: Author SKILL.md, INDEX.md, CHANGELOG.md, 11 reference docs, 8 guides, 2 quickrefs, 41 templates (13 ecosystems), and the test suite.
+**Goal**: Author SKILL.md (incl. Recipe-Authoring Gotchas G1–G45), INDEX.md, CHANGELOG.md, 17 reference docs, 9 guides, 2 quickrefs, 41 templates (13 ecosystems), and the test suite.
 
 **Owner part**: Part 1 (documentation + templates + tests)
 
@@ -224,22 +226,26 @@ Wave 2 builds the heart of the system. Tier 1 canonical scripts, then Tier 2 wra
 | E6.S1c | Author SKILL.md Part C: atlas + security | Atlas Intelligence Layer + Recipe Security Boundaries (Always Do / Ask First / Never Do) | Sections 4-5 present (~150 lines) | M |
 | E6.S1d | Author SKILL.md Part D: protocols | Build Failure Protocol + Pre-PR Quality Gate + Migration Protocol | Sections 6-8 present (~150 lines) | M |
 | E6.S1e | Author SKILL.md Part E: policy + reference | Python Version Policy + Recipe Format Quick Ref + Core Tools Reference + Complementary Skills + CI Infrastructure Reference | Sections 9-13 present (~200 lines) | M |
-| E6.S1f | Author SKILL.md Part F: gotchas + ecosystem | Recipe Authoring Gotchas G1-G6 (note: G6 promotion is Q-PRD-03 dependent) + Ecosystem Updates + Skill Automation + Manual CLI Commands + Version History pointer | Sections 14-16 present (~140 lines); SKILL.md total ~910 lines | M |
+| E6.S1f | Author SKILL.md Part F: gotchas (G1-G6) + ecosystem | Recipe Authoring Gotchas G1-G6 (note: G6 promotion is Q-PRD-03 dependent) + Ecosystem Updates + Skill Automation + Manual CLI Commands + Version History pointer | Sections 14-16 present (~140 lines) | M |
+| E6.S1g | Author SKILL.md Part G: gotchas G7-G45 (the full accumulated catalog) | Extend the Recipe Authoring Gotchas section with G7 through G45 — every gotcha accumulated across the v8.x release line, e.g. G7/G10 (distribution-vs-import-name divergence), G16/G24/G26/G28/G31-G34 (feedstock-PR remediation), G38/G40/G42 (per-Python prereq fan-out + noarch flip), G39-G43 (langflow-closure external-cf-skew), G44 (.NET binary-repackage), G45 (browser-SPA viability gate + local-only fallback). Each gotcha = a 1-paragraph pattern + case study, matching the SKILL.md gotcha style. **Depends on E6.S1f (G1-G6 section established).** | Gotchas G7-G45 all present in SKILL.md; each has a pattern statement + a concrete case study; numbering contiguous G1-G45 | L |
 | E6.S2 | Author `INDEX.md` task→tool navigator | Maps "I want to do X" → "use tool Y, see reference Z" for ~50 common tasks | INDEX.md ~180 lines; all tools indexed | M |
 | E6.S3 | Initialize `CHANGELOG.md` with TL;DR section | TL;DR section at top with v7.7.2 entry; chronological older entries (synthetic for v7.0.0 baseline + v7.7.0-7.7.2 detail) | CHANGELOG present; TL;DR matches current state | M |
 | E6.S4 | Author `MANIFEST.yaml` + `install.py` | MANIFEST declares portability metadata; install.py bootstraps wrappers + MCP + pixi tasks into new repo | `python install.py` runs on a fresh repo and bootstraps correctly | L |
 | E6.S5 | Author `reference/recipe-yaml-reference.md` | v1 schema deep-reference; field-by-field with examples | Reference complete; cross-checked vs. prefix-dev/recipe-format | L |
+| E6.S5b | Author `reference/recipe-yaml-reference-full.md` | Exhaustive companion to E6.S5: full v1 schema dump (every key the recipe-format schema defines), used as the authoritative lookup when the curated high-signal reference omits an edge field | Full reference present; superset of E6.S5; cross-checked vs. prefix-dev/recipe-format | M |
 | E6.S6 | Author `reference/meta-yaml-reference.md` | v0 schema (legacy); migration source material | Reference present | M |
-| E6.S7 | Author `reference/mcp-tools.md` | All 35 MCP tools enumerated with signature + use case + script counterpart | All 35 covered | M |
+| E6.S7 | Author `reference/mcp-tools.md` | All 42 MCP tools enumerated with signature + use case + script counterpart | All 42 covered | M |
 | E6.S8 | Author `reference/python-min-policy.md` | CFEP-25 + python_min triad + current floor + lint codes | Reference complete | S |
 | E6.S9 | Author `reference/conda-forge-yml-reference.md` | Practical subset of conda-forge.yml keys | Reference complete | M |
+| E6.S9b | Author `reference/conda-forge-yml-reference-full.md` | Exhaustive companion to E6.S9: full conda-forge.yml key catalog (staged-recipes per-recipe override + feedstock-level) for the deep-lookup case where the high-signal subset doesn't cover a key | Full reference present; superset of E6.S9 | M |
 | E6.S10 | Author `reference/pinning-reference.md` | Global pin rules + override patterns | Reference complete | S |
 | E6.S11 | Author `reference/selectors-reference.md` | rattler-build selector syntax + common patterns | Reference complete | S |
 | E6.S12 | Author `reference/jinja-functions.md` | `${{ compiler() / stdlib() / pin_subpackage() / cdt() }}` etc. | Reference complete | S |
 | E6.S13 | Author `reference/dependency-input-formats.md` | scan_project's ~28 input formats matrix | Reference complete | M |
 | E6.S14 | Author `reference/atlas-actionable-intelligence.md` | Persona-mapped atlas signal index (formerly `actionable-intelligence-catalog.md`); paired with phase-indexed `reference/atlas-phases-overview.md` | Reference complete | M |
 | E6.S15 | Author `reference/conda-forge-ecosystem.md` | Ecosystem overview (bot, smithy, repodata-patches) | Reference complete | M |
-| E6.S16 | Author all 8 `guides/*.md` | getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, testing-recipes, sdist-missing-license, atlas-operations | Each guide ~100-300 lines; complete | L |
+| E6.S15b | Author atlas-engineering + edge-case references (3 files) | `reference/atlas-phase-engineering.md` (engineering patterns for writing/refactoring phases — rate limits, GraphQL batching, atomic writes, enterprise routing, the § 10 sub-rules), `reference/atlas-phase-p-cost-model.md` (the Phase P BigQuery cost model + caps), `reference/abi3-matrix-collapse.md` (abi3 build-matrix collapse pattern). **These three accumulated alongside the atlas + generator work and complete the 17-file reference set.** | All 3 references present; atlas-phase-engineering covers the § 10 dispatcher-write sub-rules | M |
+| E6.S16 | Author all 9 `guides/*.md` | getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, testing-recipes, sdist-missing-license, atlas-operations, **feedstock-platform-expansion** (decision matrix, Wave A/B/C procedural detail, risk catalog, Stop-the-Line conditions for the dual-goal refresh+platform-widen workflow) | Each guide ~100-300 lines; complete; all 9 present | L |
 | E6.S17 | Author `quickref/commands-cheatsheet.md` | All pixi tasks + raw CLIs + arg conventions | Cheatsheet complete | M |
 | E6.S18 | Author `quickref/bot-commands.md` | `@conda-forge-admin` slash commands | Cheatsheet complete | S |
 | E6.S19 | Author 41 recipe templates (13 ecosystems) | **12 language ecosystems**: python (noarch + compiled + maturin), rust (library + cli), go (pure + cgo), c-cpp (header-only + autotools + cmake + meson), r (cran + bioconductor), java (maven + gradle + cli), ruby (gem), dotnet (nuget), fortran (f90), **multi-output** (multi-output recipe patterns), **nodejs** (npm-ecosystem templates), **perl** (CPAN recipes); plus **1 config-template ecosystem**: conda-forge-yml (staged-recipes + feedstock `.yml` starters). Both v0 + v1 where applicable. | All 41 templates present across 13 ecosystem subdirs: 39 `.yaml` files (verified: `find templates -maxdepth 2 -name "*.yaml" \| wc -l`) + 2 `.yml` files in `conda-forge-yml/{staged-recipes,feedstock}/` | L |
@@ -256,9 +262,9 @@ Wave 2 builds the heart of the system. Tier 1 canonical scripts, then Tier 2 wra
 | E6.S26 | Author integration tests | Cross-module flows: generate→validate→optimize; build→failure-analyze; submit dry-run | Integration tests pass with `@pytest.mark.network` where appropriate | L |
 | E6.S27 | Author Feature G45 Local-Only SPA Template | Covers **F1.16** and **JTBD-1.7**. Add a new ecosystem template for local-only SPA web-apps utilizing `noarch:generic`, Vite for bundling, and `http.server` for local serving (not submittable to upstream conda-forge). | Template is generated; produces valid local-only recipe; serves correctly on local port. | M |
 
-**Epic 6 total: 35 stories** (was 26; +5 from E6.S1 split into S1a-f, +4 from E6.S25 split into S25a-e, +1 for G45 template), complexity ~M-L average; **no XL stories remaining**.
+**Epic 6 total: 40 stories** (was 36 actual rows — the prior "35" total line undercounted by 1, a pre-existing drift now corrected; +4 this re-sync: E6.S1g gotchas G7-G45, E6.S5b recipe-yaml-reference-full, E6.S9b conda-forge-yml-reference-full, E6.S15b atlas-engineering+edge-case references; the 9th guide feedstock-platform-expansion folded into E6.S16; structural history: +5 from E6.S1 split into S1a-f, +4 from E6.S25 split into S25a-e, +1 for G45 template), complexity ~M-L average; **no XL stories remaining**.
 
-**Wave 2 totals: 3 epics, 66 stories.**
+**Wave 2 totals: 3 epics, 71 stories.** (E4=23, E5=8, E6=40)
 
 ---
 
@@ -308,7 +314,7 @@ Wave 3 builds the offline-tolerant package-intelligence layer. Atlas phases + sc
 
 **Owner part**: Part 2 (data pipeline operational)
 
-**Acceptance**: All 17 phases run; `PHASE_F_SOURCE` + `PHASE_H_SOURCE` backends work; TTL gates scope correctly; mid-run kill is cheap.
+**Acceptance**: All B-N phases run; `PHASE_F_SOURCE` + `PHASE_H_SOURCE` backends work; TTL gates scope correctly; mid-run kill is cheap. (Phases O/P/Q/R/S — the PyPI-intelligence + security-signals layer — are owned by Epic 14, bringing the live total to 22 phases.)
 
 ### Stories
 
@@ -338,17 +344,17 @@ Wave 3 builds the offline-tolerant package-intelligence layer. Atlas phases + sc
 
 ## Epic 9: cf_atlas Public CLIs + bootstrap-data + Performance
 
-**Goal**: Implement the orchestrator + 15 query CLIs + performance tuning.
+**Goal**: Implement the orchestrator + query CLIs (the core 15 here; the 5 PyPI-intelligence/breakdown CLIs are added in E9.S21-S25 once Epic 14's phases exist) + performance tuning.
 
 **Owner part**: Part 2 (CLI surface)
 
-**Acceptance**: All 17 atlas CLIs work; `bootstrap-data --fresh` runs end-to-end in ≤90 min; `--status` and `--resume` operational.
+**Acceptance**: All atlas CLIs work; `bootstrap-data --fresh` runs end-to-end in ≤90 min; `--status` and `--resume` operational.
 
 ### Stories
 
 | ID | Title | Scope | AC | Complexity |
 |---|---|---|---|---|
-| E9.S1 | Implement `atlas_phase.py` Tier 1 + Tier 2 wrapper | Single-phase invocation; `--reset-ttl` (uses `_TTL_GATED`); `--list` enumerates phases; case-insensitive ID | All 17 phases invocable; `--list` works | S |
+| E9.S1 | Implement `atlas_phase.py` Tier 1 + Tier 2 wrapper | Single-phase invocation; `--reset-ttl` (uses `_TTL_GATED`); `--list` enumerates phases; case-insensitive ID | All B-N phases invocable (Epic 14 adds O-S → 22 phases total); `--list` works | S |
 | E9.S2 | Implement `bootstrap_data.py` orchestrator | `--fresh` (with 5-sec countdown + `--yes` skip + `--reset-cache`), `--resume`, `--status`; per-step timeouts via `BOOTSTRAP_<STEP>_TIMEOUT`; chain: mapping → CVE → vdb → cf_atlas (B-N) → optional Phase N | Full bootstrap runs; mid-run kill resumes cleanly; status command works | L |
 | E9.S3 | Implement `detail_cf_atlas.py` | "Show me everything about package X"; multi-table join; pretty-print | `detail-cf-atlas numpy` returns comprehensive view | M |
 | E9.S4 | Implement `staleness_report.py` | Behind-upstream + unmaintained feedstocks filter; JSON + table output | `staleness-report` returns list with filters | M |
@@ -372,10 +378,47 @@ Wave 3 builds the offline-tolerant package-intelligence layer. Atlas phases + sc
 | E9.S18 | Implement `package_health` composite | Combines feedstock_health + atlas state + CVE surface into a single score | `package-health numpy` returns composite | M |
 | E9.S19 | Implement `my_feedstocks` | Filter by GitHub maintainer login | `my-feedstocks rxm7706` returns list | S |
 | E9.S20 | Author atlas operations guide (`guides/atlas-operations.md`) | Cron schedules + hard reset + air-gap operations | Guide complete | M |
+| E9.S21 | Implement `pypi-intelligence` CLI (`pypi_intelligence.py`) | Surface the `pypi_intelligence` side table: activity_band, cross-channel BOOLs, download counts, license/requires_python/packaging-shape, `conda_forge_readiness` score + `recommended_template`; filter + sort flags; JSON + table. **Depends on Epic 14 (Phases O/P/Q/R/S populate the table).** | `pypi-intelligence --top 50` returns ranked candidates; `--json` works | M |
+| E9.S22 | Implement `pypi-only-candidates` CLI (`pypi_only_candidates.py`) | Surface the `pypi_universe` rows with no conda-forge feedstock (the ~660k pypi_only namespace), joined to `pypi_intelligence` for readiness; the "what's not yet packaged" query | `pypi-only-candidates --min-downloads N` returns the gap list | M |
+| E9.S23 | Implement `platform-breakdown` CLI (`platform_breakdown.py`) | Read `package_platform_downloads`; per-package ARM / win / EOL-platform download share; flag platform-expansion opportunities | `platform-breakdown numpy` returns per-platform share | M |
+| E9.S24 | Implement `pyver-breakdown` CLI (`pyver_breakdown.py`) | Read `package_python_downloads`; per-Python-version download share; `--policy-check` flags python_min bump-safe candidates from real download data | `pyver-breakdown numpy --policy-check` flags bump-safe rows | M |
+| E9.S25 | Implement `channel-split` CLI (`channel_split.py`) | Read `package_channel_downloads`; surface defaults-channel-vs-conda-forge migration opportunities | `channel-split` returns defaults-still-dominant packages | M |
 
-**Epic 9 total: 24 stories** (was 20; +4 from E9.S14 split into S14a-e), complexity ~M-L average; **no XL stories remaining**.
+**Epic 9 total: 29 stories** (was 24; +5 E9.S21-S25 for the PyPI-intelligence/breakdown CLIs — `pypi-intelligence`, `pypi-only-candidates`, `platform-breakdown`, `pyver-breakdown`, `channel-split`; prior: +4 from E9.S14 split into S14a-e), complexity ~M-L average; **no XL stories remaining**.
 
-**Wave 3 totals: 3 epics, 50 stories.**
+*(Epic 14 below is also part of Wave 3 — cf_atlas work. Wave 3 totals are stated after Epic 14.)*
+
+---
+
+## Epic 14: cf_atlas PyPI-Intelligence + Security-Signals Layer
+
+**Goal**: Implement the post-v8.6 cf_atlas layers that the v8.6-era epics never covered: the schema migration chain v20 → v28, the PyPI-intelligence pipeline (Phases O/P/Q/R/S) with its side tables + computed readiness score, and the security-signals cluster (CISA KEV + EPSS + CWE overlays on Phases G/G').
+
+**Owner part**: Part 2 (data pipeline — PyPI intelligence + security signals)
+
+**Acceptance**: Schema migrates additively v20 → v28 (with the v24 → v25 cleanup round-trip); Phases O-S run and populate `pypi_intelligence`; `conda_forge_readiness` + `recommended_template` computed; KEV/EPSS/CWE overlays populate the actionable security columns; all phases respect TTL gates + air-gap profiles + the Phase P cost cap.
+
+### Stories
+
+| ID | Title | Scope | AC | Complexity |
+|---|---|---|---|---|
+| E14.S1 | Schema migration v20 → v22: pypi_universe + pypi_intelligence + snapshots | Additive migrations creating `pypi_universe` (reference-data-only, 3 cols, locked), `pypi_intelligence` (side table joined on `pypi_name`, ~35 cols across 5 tiers + operator notes), `pypi_universe_serial_snapshots` (history), and the `v_pypi_candidates` view. **Depends on Epic 7 (`init_schema()` + the additive-only migration invariant).** | All 3 tables + `v_pypi_candidates` view created on migrate from v20; additive-only invariant holds; `v_pypi_candidates` queryable | M |
+| E14.S2 | Schema migration v22 → v23: cisa_kev table + v_current_version_vulns view | Add the `cisa_kev` side table + the `v_current_version_vulns` view (Path C KEV overlay foundation) | `cisa_kev` + view created; migrate from v22 preserves data | S |
+| E14.S3 | Schema migration v23 → v24 → v25: EPSS + CWE tables, then cleanup round-trip | v23 → v24 adds `epss_scores` + `cwe_categories` side tables + the v8.6.0 packages/package_version_vulns overlay columns. v24 → v25 is the cleanup round-trip dropping `package_hardening` (+ its 2 indexes) + `packages.vuln_total_active` + `packages.vuln_withdrawn_count` + `package_version_vulns.vuln_total_active` (Wave C of AppThreat Deep Signals was cancelled pre-implementation; the cleanup removes its half-built scaffolding). **The v24 → v25 drop is the documented exception to the additive-only invariant — gated + tested.** | `epss_scores` + `cwe_categories` created at v24; the 4 columns + `package_hardening` table gone at v25; round-trip migration test passes; no data loss on retained columns | M |
+| E14.S4 | Schema migration v25 → v28: download-breakdown tables | Additive migrations creating `pypi_downloads_daily` (per-day per-package BigQuery counts, the incremental Phase P store), `package_platform_downloads`, `package_python_downloads`, `package_channel_downloads` (the per-platform / per-Python / per-channel breakdown tables) | All 4 tables created on migrate to v28; additive-only; schema_version meta == 28 | M |
+| E14.S5 | Implement Phase O: serial-snapshot activity_band | `phase_o_serial_snapshots()`; daily PyPI serial deltas (no HTTP — reads `pypi_universe_serial_snapshots`); classify each project into an `activity_band`; write to `pypi_intelligence` | `atlas-phase O` populates `activity_band`; no network call | M |
+| E14.S6 | Implement Phase P: BigQuery downloads (incremental, cost-capped) | `phase_p_pypi_downloads()` + `_phase_p_bigquery()`; partition-by-partition incremental refresh of `pypi.file_downloads` into `pypi_downloads_daily`; recompute `pypi_intelligence.downloads_30d/90d` from local SQL aggregation; dry-run preflight aborting above the operator USD cap; `maximum_bytes_billed` server-side cap + `job_timeout_ms` wall-clock cap; opt-in via `PHASE_P_ENABLED=1`; reads ADC creds from the `gcloud` env (E1.S11). | `PHASE_P_ENABLED=1 atlas-phase P` runs incrementally; preflight aborts above cap; `downloads_30d/90d` recomputed from local SQL; ≤$10/refresh in the common case | L |
+| E14.S7 | Implement Phase Q: cross-channel BOOLs | `phase_q_cross_channel()` + `_phase_q_fetch_channel_pypi_names()`; bulk-repodata-derived `in_bioconda|pytorch|nvidia|robostack|homebrew|nixpkgs|spack|debian|fedora` BOOLs onto `pypi_intelligence`; robostack linux-64 + repodata.json fallback (the DW11/v8.5.2 fix) | `atlas-phase Q` populates the cross-channel BOOLs; 4/4 conda channels report; robostack 404 path handled | M |
+| E14.S8 | Implement Phase R: per-project pypi.org/json enrichment | `phase_r_pypi_json_enrich()` + `_phase_r_fetch_one()`; per-project `pypi.org/pypi/<name>/json` enrichment bounded to a top-N candidate slice; populate license / requires_python / classifiers / repo_url / packaging-shape classifier on `pypi_intelligence`; TTL-gated | `atlas-phase R` enriches the top-N slice; TTL gate scopes refetch; respects the slice bound | M |
+| E14.S9 | Implement Phase S: conda_forge_readiness score + recommended_template | `phase_s_computed_scores()`; compute the 0-100 `conda_forge_readiness` score + `recommended_template` from the O/P/Q/R signals (pure SQL/Python, no network) | `atlas-phase S` populates `conda_forge_readiness` + `recommended_template`; deterministic on fixed inputs | M |
+| E14.S10 | Implement CISA KEV overlay (Path C, v8.5.3) | `cisa_kev_fetcher.py` + `fetch-cisa-kev` pixi task + `_load_kev_cves()` helper; direct <1 MB fetch from cisa.gov (NOT vdb `--cache-os`, which hits the `kevc` ignore-list trap + 33 GB pull); Phase G/G' overlay loop marks KEV-affected current versions; `_phase_g_sync_current_rollup()` pure-SQL tail step on Phase G' | `fetch-cisa-kev` loads ~1,600 CVEs in <1 s; Phase G re-run surfaces KEV-affected feedstocks; rollup-sync tail step runs | M |
+| E14.S11 | Implement EPSS overlay (v8.6.0 Wave A) | `epss_fetcher.py` + `fetch-epss` pixi task + `_load_epss_scores()` helper; populate `epss_scores` + the 6 packages columns + 3 package_version_vulns columns; Phase G/G' overlay computes per-package Max-EPSS via the shared `_aggregate_v8_6_0_overlays()` pure function; correct EPSS URL (empiricalsecurity.com post-Cyentia-rebrand) | `fetch-epss` loads ~334k EPSS rows; Phase G re-scan populates EPSS-scored actionable packages; Max-EPSS rendered in detail-cf-atlas | M |
+| E14.S12 | Implement CWE catalog overlay (v8.6.0 Wave B) | `cwe_catalog_fetcher.py` + `fetch-cwe-catalog` pixi task + committed `data/cwe_categories_seed.json` (67-entry mapping) + `_load_cwe_categories()` helper; populate `cwe_categories` + the 4 v8.6.0 packages columns via `_aggregate_v8_6_0_overlays()`; correct MITRE CWE URL (CWE-1000, not 2000); Phase G' Top-CWE rollup with COALESCE-to-existing review-fix | `fetch-cwe-catalog` loads CWEs (67 seeded + remainder → Other); Phase G re-scan populates CWE-classified actionable packages; Top-CWE rendered in detail-cf-atlas | M |
+| E14.S13 | Wire phases O-S + security overlays into the orchestrator + profiles + tests | Register O/P/Q/R/S in `run_single_phase()` + `--list`; bootstrap-data chain ordering after Phase N; persona-profile auto-runs (`admin` enables all 5 + all 3 security fetchers; `maintainer` enables O+Q + KEV/EPSS/CWE; `consumer` enables O only — air-gap preservation); migration round-trip + overlay aggregation unit tests; the `package_channel_downloads` DELETE+INSERT pattern (§ 10 (g)) for partial-rerun safety | All 5 phases invocable via `atlas-phase`; profiles gate correctly; `consumer` makes zero new network calls; migration v20 → v28 + overlay tests pass | L |
+
+**Epic 14 total: 13 stories**, complexity ~M-L average; **no XL stories**.
+
+**Wave 3 totals (with Epic 14): 4 epics, 76 stories.** (E7=17, E8=17, E9=29, E14=13)
 
 ---
 
@@ -385,13 +428,13 @@ Wave 4 brings the MCP wire format online and finalizes BMAD integration.
 
 ---
 
-## Epic 10: Part 3 MCP Server + 35 Tools
+## Epic 10: Part 3 MCP Server + 42 Tools
 
-**Goal**: Author the FastMCP server with all 35 tool registrations; auxiliary servers; auto-discovery.
+**Goal**: Author the FastMCP server with all 42 tool registrations; auxiliary servers; auto-discovery.
 
 **Owner part**: Part 3 (FastMCP server)
 
-**Acceptance**: All 35 MCP tools callable via `mcp_call.py`; Claude Code auto-discovers the server; integration tests pass.
+**Acceptance**: All 42 MCP tools callable via `mcp_call.py`; Claude Code auto-discovers the server; integration tests pass.
 
 ### Stories
 
@@ -402,6 +445,13 @@ Wave 4 brings the MCP wire format online and finalizes BMAD integration.
 | E10.S3 | Register recipe-authoring tools (17 tools) | `@mcp.tool()` decorators for: validate_recipe, check_dependencies, generate_recipe_from_pypi, scan_for_vulnerabilities, trigger_build (async), get_build_summary, lookup_feedstock, enrich_from_feedstock, get_feedstock_context, edit_recipe, analyze_build_failure, optimize_recipe, update_recipe, prepare_submission_branch, submit_pr, update_recipe_from_github, check_github_version, migrate_to_v1 | All 17 tools registered; each callable | L |
 | E10.S4 | Register atlas-intelligence tools (16 tools) | staleness_report, feedstock_health, whodepends, behind_upstream, version_downloads, release_cadence, find_alternative, adoption_stage, cve_watcher, package_health, query_atlas, my_feedstocks, scan_project, update_cve_database (async), update_mapping_cache, get_conda_name | All 16 tools registered; each callable | L |
 | E10.S5 | Register infrastructure tools (2 tools) | run_system_health_check, get_build_summary | Both registered; each callable | S |
+| E10.S5b | Register `pypi_intelligence` MCP tool | `@mcp.tool()` wrapping `pypi_intelligence.py` (E9.S21) — readiness-ranked PyPI candidate surface. **Depends on Epic 14 (Phases O-S populate the table) + E9.S21.** | Registered; callable; output matches the CLI JSON | S |
+| E10.S5c | Register `pypi_only_candidates` MCP tool | `@mcp.tool()` wrapping `pypi_only_candidates.py` (E9.S22) — the not-yet-packaged PyPI gap list. **Depends on Epic 14 + E9.S22.** | Registered; callable | S |
+| E10.S5d | Register `platform_breakdown` MCP tool | `@mcp.tool()` wrapping `platform_breakdown.py` (E9.S23) — per-platform download share. **Depends on E9.S23.** | Registered; callable | S |
+| E10.S5e | Register `pyver_breakdown` MCP tool | `@mcp.tool()` wrapping `pyver_breakdown.py` (E9.S24) — per-Python-version share + `--policy-check`. **Depends on E9.S24.** | Registered; callable | S |
+| E10.S5f | Register `channel_split` MCP tool | `@mcp.tool()` wrapping `channel_split.py` (E9.S25) — defaults-vs-conda-forge migration opportunities. **Depends on E9.S25.** | Registered; callable | S |
+| E10.S5g | Register `download_pr_artifacts` MCP tool | `@mcp.tool()` wrapping `pr_artifacts.py` — resolve Azure DevOps buildId via `gh pr checks` → list + download `conda_pkgs_*` ZIPs → optional local-channel extract; anonymous Azure auth, idempotent caching | Registered; resolves a PR's artifacts; cache idempotent | M |
+| E10.S5h | Register `env_inspect` MCP tool | `@mcp.tool()` wrapping `env_inspect.py` — 8-mode pixi/conda env audit dispatcher (default root list / --audit / --freshness / --security / --bus-factor / --licenses / --sbom / --diff) | Registered; returns the default + each flagged mode | M |
 | E10.S6 | Implement out-of-band state handlers | `build_summary.json` + `build.pid` at repo root; trigger_build writes them; get_build_summary reads them | Async build flow tested end-to-end | M |
 | E10.S7 | Implement `mcp_call.py` JSON-RPC client | Initialize + tools/call messages; parse stdout response; 300-sec timeout | `mcp_call.py validate_recipe '{"recipe_path": "..."}'` works | M |
 | E10.S8 | Implement `gemini_server.py` (optional aux) | FastMCP("gemini"); gemini_chat + gemini_list_models tools; uses GEMINI_API_KEY | Server starts if GEMINI_API_KEY set; tools functional | M |
@@ -409,7 +459,7 @@ Wave 4 brings the MCP wire format online and finalizes BMAD integration.
 | E10.S10 | Author `tests/integration/test_mcp_call.py` | Integration tests exercising MCP via mcp_call.py for ~5 representative tools | Tests pass; document false-negative gotchas | M |
 | E10.S11 | Author `tests/meta/test_mcp_tool_coverage.py` | Meta-test: every Tier 1 script with a `main()` AND a public CLI must have an MCP tool wrapper OR be in `mcp_no_wrap_allowlist` | Test passes; catches drift if a script lacks a wrapper | M |
 
-**Epic 10 total: 11 stories, complexity ~M-L average.**
+**Epic 10 total: 18 stories** (was 11; +7 E10.S5b-S5h for the net-new MCP tools — `pypi_intelligence`, `pypi_only_candidates`, `platform_breakdown`, `pyver_breakdown`, `channel_split`, `download_pr_artifacts`, `env_inspect` — bringing the tool surface 35 → 42), complexity ~M-L average.
 
 ---
 
@@ -438,7 +488,7 @@ Wave 4 brings the MCP wire format online and finalizes BMAD integration.
 
 **Epic 11 total: 10 stories, complexity ~S-M average.**
 
-**Wave 4 totals: 2 epics, 21 stories.**
+**Wave 4 totals: 2 epics, 28 stories.** (E10=18, E11=10)
 
 ---
 
@@ -462,7 +512,7 @@ Wave 5 brings tests + docs + deployment validation. After Wave 5, the rebuild is
 |---|---|---|---|---|
 | E12.S1 | Complete unit test coverage to ≥80% | Author missing unit tests for any Tier 1 module < 80% | Coverage report shows ≥80% per module | L |
 | E12.S2 | Author integration tests for atlas pipeline | Per-phase fixtures; multi-phase chained tests; resume tests | All integration tests pass | L |
-| E12.S3 | Author meta-test: schema migration roundtrip | Migrate v1 → v2 → ... → v19; verify each intermediate is queryable | Test passes | M |
+| E12.S3 | Author meta-test: schema migration roundtrip | Migrate v1 → v2 → ... → v19 (Epic 7 baseline) → ... → v28 (Epic 14 PyPI-intelligence + security-signals chain, incl. the v24 → v25 cleanup drop); verify each intermediate is queryable | Test passes | M |
 | E12.S4 | Author meta-test: drift-contract enforcement | Compare `project-context.md:last_synced_skill_version` to skill CHANGELOG MINOR; alert if drift > 0 MINOR | Test passes (initially); alerts trigger correctly | M |
 | E12.S5 | Author meta-test: TTL-gate scoping | Per-phase `_TTL_GATED` scope predicate correctness | Test passes; matches Phase F/G/H/K eligibility SQL | M |
 | E12.S6 | Author meta-test: MCP-tool coverage | Already in Epic 10 (`test_mcp_tool_coverage.py`) — verify it catches gaps | Test catches deliberate omission | S |
@@ -506,7 +556,7 @@ Wave 5 brings tests + docs + deployment validation. After Wave 5, the rebuild is
 
 **Epic 13 total: 16 stories** (was 13; +3 from E13.S8 split into S8a/b/c/d), complexity ~M-L average; **no XL stories remaining**.
 
-**Wave 5 totals: 2 epics, 22 stories.**
+**Wave 5 totals: 2 epics, 26 stories.** (E12=10, E13=16)
 
 ---
 
@@ -514,14 +564,14 @@ Wave 5 brings tests + docs + deployment validation. After Wave 5, the rebuild is
 
 | Wave | Epics | Stories | Complexity skew |
 |---|---|---|---|
-| Wave 1 (Foundation) | 3 | 30 | Mostly S-M; some L (resolvers, _http.py) |
-| Wave 2 (Part 1 skill) | 3 | 66 | Mostly M-L (was 2 XL: SKILL.md split into 6, unit tests split into 5) |
-| Wave 3 (cf_atlas) | 3 | 58 | Mostly M-L (was 1 XL: scan_project split into 5; +1 from Q-PRD-04 Phase K backoff) |
-| Wave 4 (Parts 3+4) | 2 | 21 | Mostly S-M; some L (MCP tool registrations, CLAUDE.md) |
+| Wave 1 (Foundation) | 3 | 31 | Mostly S-M; some L (resolvers, _http.py); +1 gcloud env |
+| Wave 2 (Part 1 skill) | 3 | 71 | Mostly M-L (was 2 XL: SKILL.md split into 6, unit tests split into 5); +G7-G45 + full-reference/guide retrofits |
+| Wave 3 (cf_atlas) | 4 | 76 | Mostly M-L (was 1 XL: scan_project split into 5; +1 from Q-PRD-04 Phase K backoff); +Epic 14 (Phases O-S + security signals) + 5 new CLIs |
+| Wave 4 (Parts 3+4) | 2 | 28 | Mostly S-M; some L (MCP tool registrations, CLAUDE.md); +7 net-new MCP tools |
 | Wave 5 (Hardening) | 2 | 26 | Mostly M-L (was 1 XL: air-gap deployment validation split into 4) |
-| **Total** | **13** | **195** | **Mixed; weighted toward M-L; zero XL stories remaining** |
+| **Total** | **14** | **232** | **Mixed; weighted toward M-L; zero XL stories remaining** |
 
-*(Story count expanded from 176 → 192 (XL splits + test-skill.py) → 193 (Q-PRD-04 Phase K backoff) → 195 (Features F1.16/FX.8). Original 142 estimate → 195 post-validation + tentative-decisions revision.)*
+*(Story count expanded from 176 → 192 (XL splits + test-skill.py) → 193 (Q-PRD-04 Phase K backoff) → 195 (Features F1.16/FX.8). The 2026-06-20 v8.11.1 → v8.39.0 structural re-sync reconciled the count drift (frontmatter 195 / Wave Summary 173 / epic bodies 201 → a single consistent 232 counted from the actual story rows) and added Epic 14 + retrofit stories (Epic 1 gcloud env; Epic 6 gotchas G7-G45 + full-reference/guide files + a pre-existing E6 undercount fix; Epic 9 +5 PyPI-intelligence CLIs; Epic 10 +7 MCP tools 35→42). Original 142 estimate → 232 post-re-sync.)*
 
 ---
 
@@ -561,7 +611,7 @@ Stories with the highest risk-to-effort ratio:
 2. **E7.S2** (schema v1-v19 migrations) — bug here corrupts the atlas
 3. **E8.S2** (Phase F S3 parquet path) — bug here breaks air-gap operation
 4. **E8.S8** (Phase H cf-graph offline path) — bug here means `--fresh` hangs again
-5. **E10.S3+S4** (35 MCP tool registrations) — partial coverage breaks specific workflows silently
+5. **E10.S3+S4+S5b-S5h** (42 MCP tool registrations) — partial coverage breaks specific workflows silently
 6. **E11.S1+S2** (CLAUDE.md + project-context.md) — wrong rules here cascade across every BMAD effort
 7. **E13.S8** (air-gap deployment validation) — failure here means rebuild ships with broken enterprise support
 
@@ -573,7 +623,7 @@ These should get extra review (`bmad-code-review`, `bmad-review-adversarial-gene
 
 All of:
 
-- [ ] All 13 epics' acceptance criteria met
+- [ ] All 14 epics' acceptance criteria met
 - [ ] PRD § 6 success metrics measured and within target
 - [ ] PRD § 8 open questions resolved (or explicitly deferred to v2)
 - [ ] All meta-tests passing
