@@ -2,17 +2,16 @@
 schema_version: 1
 
 context:
-  name: django-o11y
-  version: "0.7.0"
+  version: "0.8.0"
   python_min: "3.12"
 
 package:
-  name: ${{ name|lower }}
+  name: django-o11y
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_o11y-${{ version }}.tar.gz
-  sha256: 374c11f7e5cccaaf1bde5524cc278dfd2b0edbc9a05c6ce96d19e3a24c278412
+  url: https://pypi.org/packages/source/d/django-o11y/django_o11y-${{ version }}.tar.gz
+  sha256: 92e0389023022e55f2bce7a76b2d1a3ce5ba2074c7eb4bc7ae35d971c3174dfe
 
 build:
   number: 0
@@ -23,11 +22,9 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - hatchling
-    - prometheus_client
-    - celery
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - django >=5.2
     - opentelemetry-api >=1.39.1
     - opentelemetry-sdk >=1.39.1
@@ -40,20 +37,71 @@ requirements:
     - prometheus_client >=0.24.1
 
 tests:
-  - python:
-      imports:
+  # CFEP-25-justified: Django app backend — `import django_o11y` raises
+  # ImproperlyConfigured without DJANGO_SETTINGS_MODULE configured; the test
+  # env cannot exercise python.imports standalone.
+  - package_contents:
+      site_packages:
         - django_o11y
-      pip_check: true
-      python_version:
-      - ${{ python_min }}.*
-      - "*"
 
 about:
-  summary: Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/adinhodovic/django-o11y
+  summary: Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling
+  description: |
+    Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-o11y
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-o11y
+  cfe-purls:
+    - pkg:conda/django-o11y@${{ version }}
+    - pkg:pypi/django-o11y@${{ version }}
+  cfe-upstream-repo: https://github.com/adinhodovic/django-o11y
+  cfe-upstream-homepage: https://github.com/adinhodovic/django-o11y
+  cfe-import-names: [django_o11y]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-o11y-feedstock
+  cfe-forge-recipe-updates-needed:
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T06:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 0.7.0 -> 0.8.0 v1-refresh (deployed feedstock is at 0.8.0 via an autotick
+#    # version+sha-only bump that kept pre-modernization shape). Run-deps match
+#    # upstream pyproject [project.dependencies] exactly (the celery / channels /
+#    # otel-instrumentation-* entries are extras-only [all]/[dev]/etc., NOT base).
+# requirements:
+#  host:
+#    # Dropped `celery` + `prometheus_client` from host (autotick-era defect):
+#    # neither is a build-system requirement. hatchling is the sole build backend
+#    # ([build-system] requires = ["hatchling"]). prometheus_client is a runtime
+#    # dep (kept in run:); celery is not even a base dep (extra == "all"/"celery"
+#    # only) — removed entirely. Feedstock owes this host cleanup:
+#    # cfe-forge-recipe-updates-needed: recipe-modernization.
+#  run:
+#    # Dropped the speculative `<4.0` cap on python (upstream declares only
+#    # requires-python >=3.12); python_min "3.12" is a genuine override above the
+#    # 3.10 floor (upstream requires-python >=3.12) — kept declared in context.
+# tests:
+#    # CFEP-25 escape hatch: Django app — import django_o11y fails standalone
+#    # (ImproperlyConfigured w/o DJANGO_SETTINGS_MODULE). package_contents used.
+####

@@ -3,8 +3,7 @@ schema_version: 1
 
 context:
   name: llms-py
-  version: "2.0.32"
-  python_check_max: "3.14"
+  version: "3.0.47"
 
 package:
   name: ${{ name|lower }}
@@ -12,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llms_py-${{ version }}.tar.gz
-  sha256: 241d95534094b7c6666de94e43b5dbcb792edb654f4d6c9809b905c33adfd5f6
+  sha256: f6201299e94d03f28618af6df59bf420850bd0d156131af1bec210cc99630a9f
 
 build:
   number: 0
@@ -29,7 +28,7 @@ requirements:
     - wheel
     - pip
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - aiohttp
     - pillow
 
@@ -40,7 +39,7 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
+        - "*"
   - requirements:
       run:
         - python ${{ python_min }}.*
@@ -57,3 +56,40 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llms-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llms-py
+  cfe-purls:
+    - pkg:conda/llms-py@${{ version }}
+    - pkg:pypi/llms-py@${{ version }}
+  cfe-upstream-repo: https://github.com/ServiceStack/llms
+  cfe-upstream-homepage: https://github.com/ServiceStack/llms
+  cfe-import-names: [llms]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llms-py-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T12:39:12Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T12:39:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T12:41:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# context:
+#    # python_min override (3.11) lives in recipe-local conda_build_config.yaml
+#    # per G31: llms/main.py imports `datetime.UTC` (PEP 615, Python 3.11+).
+#    # Upstream requires-python is a stale ">=3.7"; the cf default floor 3.10
+#    # would build + test on 3.10 and the import test would fail.
+#  run:
+#    # pillow is a genuine runtime import (from PIL import Image in main.py and
+#    # extensions/app), though upstream pyproject only declares aiohttp.
+####

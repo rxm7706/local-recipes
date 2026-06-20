@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: confluence-markdown-exporter
-  version: "3.0.3"
+  version: "4.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: confluence-markdown-exporter
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/confluence_markdown_exporter-${{ version }}.tar.gz
-  sha256: c850dce2b55121d85ddd1387c790d0a3a79197f9cf7ee2db8bae4370419a8998
+  url: https://pypi.org/packages/source/c/confluence-markdown-exporter/confluence_markdown_exporter-${{ version }}.tar.gz
+  sha256: 858b2bd5d77762908de3611c79a085dda4256ee650d3326b97a295683c5500c3
 
 build:
   number: 0
@@ -20,7 +19,7 @@ build:
   python:
     entry_points:
       - confluence-markdown-exporter = confluence_markdown_exporter.main:app
-      - cf-export = confluence_markdown_exporter.main:app
+      - cme = confluence_markdown_exporter.main:app
 
 requirements:
   host:
@@ -28,45 +27,93 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - atlassian-python-api
     - jmespath
     - markdownify
-    - pandas
     - pydantic-settings
     - pyyaml
     - questionary
+    - rich
     - tabulate
-    - tqdm
     - typer
     - python-dateutil
+    - lxml >=6.0.2
+    - pydantic
+    - beautifulsoup4
+    - requests
 
 tests:
   - python:
       imports:
         - confluence_markdown_exporter
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
         - python ${{ python_min }}.*
     script:
       - confluence-markdown-exporter --help
-      - cf-export --help
+      - cme --help
 
 about:
-  summary: A tool to export Confluence pages to Markdown
-  homepage: https://pypi.org/project/confluence-markdown-exporter
-  repository: https://github.com/Spenhouet/confluence-markdown-exporter
-  description: |
-    The confluence-markdown-exporter exports Confluence pages in Markdown format. 
-    This exporter helps in migrating content from Confluence to platforms that support Markdown. 
-    e.g. Obsidian, Gollum, Azure DevOps (ADO), Foam, Dendron and more.
-  documentation: https://github.com/Spenhouet/confluence-markdown-exporter/blob/main/README.md
   license: MIT
   license_file: LICENSE
+  homepage: https://pypi.org/project/confluence-markdown-exporter
+  repository: https://github.com/Spenhouet/confluence-markdown-exporter
+  documentation: https://github.com/Spenhouet/confluence-markdown-exporter/blob/main/README.md
+  summary: A tool to export Confluence pages to Markdown
+  description: |
+    The confluence-markdown-exporter exports Confluence pages in Markdown format.
+    This exporter helps in migrating content from Confluence to platforms that support Markdown.
+    e.g. Obsidian, Gollum, Azure DevOps (ADO), Foam, Dendron and more.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: confluence-markdown-exporter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: confluence-markdown-exporter
+  cfe-purls:
+    - pkg:conda/confluence-markdown-exporter@${{ version }}
+    - pkg:pypi/confluence-markdown-exporter@${{ version }}
+  cfe-upstream-repo: https://github.com/Spenhouet/confluence-markdown-exporter
+  cfe-upstream-homepage: https://pypi.org/project/confluence-markdown-exporter
+  cfe-import-names: [confluence_markdown_exporter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/confluence-markdown-exporter-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:35:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# build:
+#  python:
+#    entry_points:
+#      # Upstream 4.1.x [project.scripts] defines `confluence-markdown-exporter`
+#      # and `cme`. The 3.x `cf-export` alias was removed in the 4.0 major bump;
+#      # the deployed feedstock at 4.1.1 still carries the stale `cf-export`,
+#      # which no longer exists in source and would fail the `cf-export --help`
+#      # test. Followed upstream [project.scripts] here.
+# requirements:
+#  run:
+#    # upstream [project.dependencies] (4.1.1): the 11 deps above lxml.
+#    # 3.x carried pandas + tqdm; both dropped in 4.x.
+#    # pydantic / beautifulsoup4 / requests are transitive imports the deployed
+#    # feedstock lists explicitly (pip_check-surfaced); mirrored here.
+####

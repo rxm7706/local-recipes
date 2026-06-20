@@ -2,17 +2,16 @@
 schema_version: 1
 
 context:
-  name: dremio-cli
-  version: 2.0.0
-  python_min: '3.11'
+  version: "2.1.2"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: dremio-cli
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dremio_cli-${{ version }}.tar.gz
-  sha256: c78082a222ee1081a72c76a0900c8c4066bf79120e67a9c6f169731afffe2bce
+  url: https://pypi.org/packages/source/d/dremio-cli/dremio_cli-${{ version }}.tar.gz
+  sha256: 44595ce1c28c7ea1a68528ff74c16bc35ceb2f71db100504d129e65b1fae2887
 
 build:
   number: 0
@@ -29,11 +28,13 @@ requirements:
     - hatch-vcs
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - typer >=0.9
     - httpx >=0.27
     - pyyaml >=6
     - pydantic >=2
+    - rich >=13
+    - prompt-toolkit >=3.0
 
 tests:
   - python:
@@ -43,6 +44,7 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -51,14 +53,52 @@ tests:
       - dremio --help
 
 about:
-  summary: A comprehensive command-line interface for Dremio Cloud.
-  description: Dremio developer CLI, and AI agent skills — query, catalog, schema, reflections, jobs, and access for Dremio Cloud
-  license: MIT
+  license: Apache-2.0
   license_file: LICENSE
-  repository: https://github.com/dremio/cli
   homepage: https://pypi.org/project/dremio-cli/
+  repository: https://github.com/dremio/cli
   documentation: https://docs.dremio.com/dremio-cloud/api/
+  summary: A comprehensive command-line interface for Dremio Cloud.
+  description: Dremio developer CLI, and AI agent skills — query, catalog, schema, reflections, jobs, and access for Dremio Cloud.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dremio-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dremio-cli
+  cfe-purls:
+    - pkg:conda/dremio-cli@${{ version }}
+    - pkg:pypi/dremio-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/dremio/cli
+  cfe-upstream-homepage: https://pypi.org/project/dremio-cli/
+  cfe-import-names: [drs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dremio-cli-feedstock
+  cfe-forge-recipe-updates-needed: recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# about:
+#    # Upstream license drifted: recipe 2.0.0 and the deployed feedstock 2.1.2
+#    # both say MIT, but 2.1.2's pyproject.toml + LICENSE file + every source
+#    # header are Apache-2.0. Corrected here; feedstock needs the same fix.
+# requirements:
+#  run:
+#    # rich + prompt-toolkit added in 2.1.x (match upstream pyproject deps).
+#    # Dropped the speculative python <4.0 upper bound — upstream requires-python
+#    # is only >=3.11.
+####

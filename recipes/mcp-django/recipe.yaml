@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  name: mcp-django
-  version: "0.12.0"
-  python_check_max: "3.14"
+  version: "0.13.0"
 
 package:
-  name: ${{ name|lower }}
+  name: mcp-django
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mcp_django-${{ version }}.tar.gz
-  sha256: 98eeab5a0518cea917c7dd1040449078ad39d4a533f47c6fa008100ae55382c4
+  url: https://pypi.org/packages/source/m/mcp-django/mcp_django-${{ version }}.tar.gz
+  sha256: 7b1f6d9ce9f7993a81254fe32868bccf1828f70ce8a55ebfaadd2947216da54a
 
 build:
   number: 0
@@ -25,8 +23,9 @@ requirements:
     - uv-build >=0.7.21,<0.8
     - pip
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - django >4.2
+    - email-validator >=2.0.0
     - fastmcp >=2.11.3
     - httpx >=0.28.1
     - platformdirs >=4.5.0
@@ -39,14 +38,61 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
+        - "*"
 
 about:
-  summary: A Model Context Protocol (MCP) server for Django integration with LLM assistants.
+  homepage: https://github.com/joshuadavidthomas/mcp-django
+  repository: https://github.com/joshuadavidthomas/mcp-django
+  documentation: https://github.com/joshuadavidthomas/mcp-django
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/joshuadavidthomas/mcp-django
+  summary: A Model Context Protocol (MCP) server for Django integration with LLM assistants.
+  description: |
+    A Model Context Protocol (MCP) server for Django integration with LLM
+    assistants.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-django
+  cfe-purls:
+    - pkg:conda/mcp-django@${{ version }}
+    - pkg:pypi/mcp-django@${{ version }}
+  cfe-upstream-repo: https://github.com/joshuadavidthomas/mcp-django
+  cfe-upstream-homepage: https://github.com/joshuadavidthomas/mcp-django
+  cfe-import-names: [mcp_django]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mcp-django-feedstock
+  cfe-forge-recipe-updates-needed: recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T07:10:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # email-validator added: upstream declares pydantic[email]>=2.11.7
+#    # ([project.dependencies]); the [email] extra pulls
+#    # email-validator>=2.0.0. Conda has no extras (G25) so it is flattened
+#    # into run:. The deployed conda-forge feedstock 0.13.0 omits it — a
+#    # latent G25 gap; pip_check enforces it via the wheel METADATA.
+# about:
+#    # Modernized to canonical 2026 shape vs the deployed v1 feedstock:
+#    # dropped context.name + python_check_max, fully-literal source URL,
+#    # python_min omitted at the 3.10 floor, about description LAST, second
+#    # CFEP-25 python_version entry is "*". cfe-forge-recipe-updates-needed:
+#    # recipe-regenerate (feedstock owes this modernization).
+####

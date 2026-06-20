@@ -2,17 +2,16 @@
 schema_version: 1
 
 context:
-  name: alt-profanity-check
-  version: "1.8.0"
-  python_min: '3.11'
+  version: "1.9.0"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: alt-profanity-check
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/alt_profanity_check-${{ version }}.tar.gz
-  sha256: bdfcd0f9ca205065b2dcf05b5cfb5f4fe2528ebe4b0b4d3c6649334ab8159c82
+  url: https://pypi.org/packages/source/a/alt-profanity-check/alt_profanity_check-${{ version }}.tar.gz
+  sha256: b84e66e672f0d851eee96ce4ba1be50730431de6daac5ccd26e3096765e171f0
 
 build:
   number: 0
@@ -28,16 +27,19 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - scikit-learn ==1.8.0
+    - python >=${{ python_min }}
+    - scikit-learn ==1.9.0
     - joblib ==1.5.3
+    - numpy
 
 tests:
   - python:
       imports:
         - profanity_check
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -46,11 +48,48 @@ tests:
       - profanity_check --help
 
 about:
-  summary: A fast, robust library to check for offensive language in strings. Dropdown replacement of "profanity-check".
+  homepage: https://github.com/dimitrismistriotis/alt-profanity-check
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/dimitrismistriotis/alt-profanity-check
+  summary: A fast, robust library to check for offensive language in strings. Dropdown replacement of "profanity-check".
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: alt-profanity-check
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: alt-profanity-check
+  cfe-purls:
+    - pkg:conda/alt-profanity-check@${{ version }}
+    - pkg:pypi/alt-profanity-check@${{ version }}
+  cfe-upstream-repo: https://github.com/dimitrismistriotis/alt-profanity-check
+  cfe-upstream-homepage: https://github.com/dimitrismistriotis/alt-profanity-check
+  cfe-import-names: [profanity_check]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/alt-profanity-check-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  host:
+#    # setuptools restored — upstream is setup.py-based (no pyproject.toml);
+#    # grayskull dropped it but pip install needs setuptools at build.
+#  run:
+#    # numpy added to match feedstock — profanity_check.py does
+#    # `import numpy as np` directly (under-declared in upstream
+#    # install_requires, which lists only scikit-learn + joblib).
+####

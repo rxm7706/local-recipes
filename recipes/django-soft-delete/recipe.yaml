@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: django-soft-delete
-  version: "1.0.22"
+  version: "1.0.23"
 
 package:
-  name: ${{ name|lower }}
+  name: django-soft-delete
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_soft_delete-${{ version }}.tar.gz
-  sha256: 32d0bb95f180c28a40163e78a558acc18901fd56011f91f8ee735c171a6d4244
+  url: https://pypi.org/packages/source/d/django-soft-delete/django_soft_delete-${{ version }}.tar.gz
+  sha256: 814659f0d19d4f2afc58b31ff73f88f0af66715ccef3b4fcd8f6b3a011d59b2a
 
 build:
   number: 0
@@ -24,22 +23,63 @@ requirements:
     - hatchling >=1.24.0
     - pip
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - django
 
 tests:
   - python:
       imports:
-        - django_soft_delete
+        - django_softdelete
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Soft delete models, managers, queryset for Django
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/san4ezy/django_softdelete
+  repository: https://github.com/san4ezy/django_softdelete
+  summary: Soft delete models, managers, queryset for Django
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-soft-delete
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-soft-delete
+  cfe-purls:
+    - pkg:conda/django-soft-delete@${{ version }}
+    - pkg:pypi/django-soft-delete@${{ version }}
+  cfe-upstream-repo: https://github.com/san4ezy/django_softdelete
+  cfe-upstream-homepage: https://github.com/san4ezy/django_softdelete
+  cfe-import-names: [django_softdelete]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-soft-delete-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:59:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# tests:
+#   imports:
+#     # Distribution name is django-soft-delete but the top-level import is
+#     # django_softdelete (no underscore between soft and delete) — verified
+#     # against the 1.0.23 sdist (django_softdelete/__init__.py). G7.
+# requirements:
+#   run:
+#     # Upstream requires-python is >=3.6; dropped the speculative <4 upper
+#     # bound (not declared upstream). python_min clamps to the cf 3.10 floor.
+####

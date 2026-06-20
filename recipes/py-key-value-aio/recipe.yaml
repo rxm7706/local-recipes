@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: py-key-value-aio
-  version: "0.2.8"
+  version: "0.4.5"
 
 package:
-  name: ${{ name|lower }}
+  name: py-key-value-aio
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/py_key_value_aio-${{ version }}.tar.gz
-  sha256: c0cfbb0bd4e962a3fa1a9fa6db9ba9df812899bd9312fa6368aaea7b26008b36
+  url: https://pypi.org/packages/source/p/py-key-value-aio/py_key_value_aio-${{ version }}.tar.gz
+  sha256: c6563a2c6abe5da5e20f4f9e875c2a9b425a2244a54fadbf46cf140a9eea45d7
 
 build:
   number: 0
@@ -25,17 +24,27 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4
-    - beartype >=0.22.2
-    - py-key-value-shared ==0.2.8
-    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L36
-    - diskcache >=5.6.0
+    - beartype >=0.20.0
+    - typing-extensions >=4.15.0
+  run_constraints:
+    - cachetools >=5.0.0
+    - diskcache >=5.0.0
     - pathvalidate >=3.3.1
-    # py-key-value-aio[memory]
-    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L35
-    - cachetools >=6.0.0
-    # py-key-value-aio[keyring]
-    # https://github.com/strawgate/py-key-value/blob/main/key-value/key-value-aio/pyproject.toml#L44
+    - redis-py >=4.3.0
+    - pymongo >=4.0.0
+    - valkey-glide >=2.1.0
+    - hvac >=2.3.0
+    - types-hvac >=2.3.0
+    - aiomcache >=0.8.0
+    - elasticsearch >=8.0.0
+    - aiohttp >=3.12
+    - aioboto3 >=13.3.0
+    - types-aiobotocore-dynamodb >=2.16.0
     - keyring >=25.6.0
+    - dbus-python >=1.4.0
+    - pydantic >=2.11.9
+    - rocksdict >=0.3.2
+    - cryptography >=45.0.0
 
 tests:
   - python:
@@ -44,18 +53,70 @@ tests:
         - key_value.shared
         - key_value.aio
         - key_value.aio.stores.base
-        - key_value.aio.stores.disk
-        - key_value.aio.stores.memory
-        - key_value.aio.stores.keyring.store
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - python -c "from importlib.metadata import version; v = version('py-key-value-aio'); print(v); assert v == '${{ version }}'"
+      - pip check
 
 about:
   homepage: https://github.com/strawgate/py-key-value
-  summary: Async Key-Value, A pluggable interface for KV Stores
+  repository: https://github.com/strawgate/py-key-value/tree/main/key-value/key-value-aio
+  documentation: https://github.com/strawgate/py-key-value/blob/main/README.md
   license: Apache-2.0
   license_file: LICENSE
+  summary: Async Key-Value, A pluggable interface for KV Stores
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py-key-value-aio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py-key-value-aio
+  cfe-purls:
+    - pkg:conda/py-key-value-aio@${{ version }}
+    - pkg:pypi/py-key-value-aio@${{ version }}
+  cfe-upstream-repo: https://github.com/strawgate/py-key-value
+  cfe-upstream-homepage: https://pypi.org/project/py-key-value-aio/
+  cfe-import-names: [key_value, key_value.shared, key_value.aio, key_value.aio.stores.base]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/py-key-value-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # py-key-value-aio is published on conda-forge as an OUTPUT of the
+#    # multi-output py-key-value-feedstock (a standalone
+#    # py-key-value-aio-feedstock 404s — name-collapse caution confirmed).
+#    # The feedstock's current main has collapsed to a single
+#    # py-key-value-aio output at 0.4.5; this recipe mirrors that shipped
+#    # output adapted to the local single-output shape.
+# requirements:
+#  run:
+#    # beartype >=0.20.0 + typing-extensions >=4.15.0 are the upstream
+#    # [project.dependencies]; mirrors the deployed feedstock output's run:
+#    # (NOT tightened to 0.22.2 — the aio output ships the looser pin).
+#  run_constraints:
+#    # the [project.optional-dependencies] extras' backends, mirroring the
+#    # deployed feedstock output's run_constraints (memory/disk/redis/...).
+####

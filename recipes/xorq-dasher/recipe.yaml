@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.1.0"
+  version: "0.1.1"
 
 package:
   name: xorq-dasher
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/x/xorq-dasher/xorq_dasher-${{ version }}.tar.gz
-  sha256: a581a64257fca51cffc27899b46fdec01e2b7ea820f92e029e9b602331f9735c
+  sha256: 377a590f3c491e9b8dc2599e7869eb8f8c0a3d56e38965073afb284fa5942fef
 
 build:
   number: 0
@@ -44,7 +44,33 @@ about:
   repository: https://github.com/xorq-labs/dasher
   summary: xorq-labs dasher
 
-
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xorq-dasher
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xorq-dasher
+  cfe-purls:
+    - pkg:conda/xorq-dasher@${{ version }}
+    - pkg:pypi/xorq-dasher@${{ version }}
+  cfe-upstream-repo: https://github.com/xorq-labs/dasher
+  cfe-upstream-homepage: https://pypi.org/project/xorq-dasher/
+  cfe-import-names: [xorq_dasher]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/xorq-dasher-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

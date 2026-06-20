@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: ydata-profiling
-  version: "4.18.0"
+  version: "4.18.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ydata_profiling-${{ version }}.tar.gz
-  sha256: c3a0afd82e605c6903dd140b5fc41dabad8ee690601ad3d6c27da28e80b07cc6
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 6dc529893c84abecda2e6038564cabcd69a6b801a730e077b61b6d500a98f30c
 
 build:
   number: 0
@@ -20,7 +20,6 @@ build:
   python:
     entry_points:
       - ydata_profiling = ydata_profiling.controller.console:main
-      - pandas_profiling = ydata_profiling.controller.console:main
 
 requirements:
   host:
@@ -54,15 +53,14 @@ requirements:
     - numba >=0.60,<0.63
     #- ipython <9.0
   run_constraints:
-    - jupyter >=1.0.0
+    - jupyter-client >=5.3.4
+    - jupyter-core >=4.6.3
     - ipywidgets >=7.5.1
     - tangled-up-in-unicode ==0.2.0
-    - visions >=0.7.5,<0.7.7
 
 tests:
   - python:
       imports:
-        #- pandas_profiling
         - ydata_profiling
       pip_check: true
       python_version: ${{ python_min }}.*
@@ -73,17 +71,42 @@ tests:
     script:
       - pip check
       - ydata_profiling --help
-      #- pandas_profiling --help
-      # make sure the version reported by pip is correct
-      #- "pip show ${{ name }} | grep -Fx 'Version: ${{ version }}'"
 
 about:
-  homepage : https://github.com/ydataai/ydata-profiling
   summary: Generate profile report for pandas DataFrame
   license: MIT
   license_file: LICENSE
+  homepage: https://github.com/ydataai/ydata-profiling
   documentation: https://ydata-profiling.ydata.ai
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ydata-profiling
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ydata-profiling
+  cfe-purls:
+    - pkg:conda/ydata-profiling@${{ version }}
+    - pkg:pypi/ydata-profiling@${{ version }}
+  cfe-upstream-repo: https://github.com/ydataai/ydata-profiling
+  cfe-upstream-homepage: https://github.com/ydataai/ydata-profiling
+  cfe-import-names: [ydata_profiling]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ydata-profiling-feedstock
+  cfe-forge-recipe-updates-needed:
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

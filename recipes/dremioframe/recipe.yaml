@@ -2,19 +2,18 @@
 schema_version: 1
 
 context:
-  name: dremioframe
-  version: "0.25.1"
+  version: "0.25.2"
 
 package:
-  name: ${{ name|lower }}
+  name: dremioframe
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dremioframe-${{ version }}.tar.gz
-  sha256: 30078c3814e45cfd6af57ed0f721b907418691062881287f7444fcf7d7bd0ad8
+  url: https://pypi.org/packages/source/d/dremioframe/dremioframe-${{ version }}.tar.gz
+  sha256: d136ce0b923ef69fa64d40d82a749805f26fe377c7cc6ec48543a390bc387ecb
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -49,6 +48,7 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -57,13 +57,40 @@ tests:
       - dremio-cli --help
 
 about:
-  summary: A dataframe-like library for Dremio Cloud & Dremio Software
-  license: MIT
-  license_file: LICENSE
   homepage: https://github.com/developer-advocacy-dremio/dremio-cloud-dremioframe
   repository: https://github.com/developer-advocacy-dremio/dremio-cloud-dremioframe
   documentation: https://github.com/developer-advocacy-dremio/dremio-cloud-dremioframe/blob/main/docs/getting_started/dependencies.md
+  license: MIT
+  license_file: LICENSE
+  summary: A dataframe-like library for Dremio Cloud & Dremio Software
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dremioframe
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dremioframe
+  cfe-purls:
+    - pkg:conda/dremioframe@${{ version }}
+    - pkg:pypi/dremioframe@${{ version }}
+  cfe-upstream-repo: https://github.com/developer-advocacy-dremio/dremio-cloud-dremioframe
+  cfe-upstream-homepage: https://github.com/developer-advocacy-dremio/dremio-cloud-dremioframe
+  cfe-import-names: [dremioframe]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dremioframe-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

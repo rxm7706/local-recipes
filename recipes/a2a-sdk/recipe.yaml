@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: a2a-sdk
-  version: "1.0.0"
+  version: "1.1.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/a2a_sdk-${{ version }}.tar.gz
-  sha256: bd28fb7c3f2601045fade74c9872e10828e91db1fd63c6320b0e57a692621be0
+  sha256: e8102dad1b36709dbdc3d19319e38e6dfa3b3a79c30416030eb2d482576be204
 
 build:
   number: 0
@@ -29,7 +29,7 @@ requirements:
     - httpx >=0.28.1
     - httpx-sse >=0.4.0
     - pydantic >=2.11.3
-    - protobuf >=5.29.5
+    - protobuf >=5.29.5,<7
     - google-api-core >=1.26.0
     - json-rpc >=1.15.0
     - culsans >=0.11.0
@@ -41,16 +41,58 @@ tests:
         - a2a
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A2A Python SDK
-  description: Official Python SDK for the Agent2Agent (A2A) Protocol
+  homepage: https://github.com/a2aproject/a2a-python
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/a2aproject/a2a-python
+  summary: A2A Python SDK
+  description: Official Python SDK for the Agent2Agent (A2A) Protocol
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: a2a-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: a2a-sdk
+  cfe-purls:
+    - pkg:conda/a2a-sdk@${{ version }}
+    - pkg:pypi/a2a-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/a2aproject/a2a-python
+  cfe-upstream-homepage: https://github.com/a2aproject/a2a-python
+  cfe-import-names: [a2a]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/a2a-sdk-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T10:21:36Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T10:21:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:22:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# build:
+#  python:
+#    entry_points:
+#      # Upstream 1.1.0 newly declares [project.scripts] a2a-db =
+#      # a2a.a2a_db_cli:run_migrations (module src/a2a/a2a_db_cli.py exists).
+#      # pip install creates the console script from wheel metadata; the
+#      # deployed conda-forge feedstock at 1.1.0 does NOT declare an explicit
+#      # entry_points block or an `a2a-db --help` smoke-test, so this mirror
+#      # follows the feedstock and omits both. Promote if the feedstock adds them.
+# run:
+#    # culsans is upstream-marked `; python_full_version < "3.13"`; grayskull
+#    # and the feedstock both flatten it to an unconditional run dep. Kept
+#    # unconditional to match the deployed feedstock (one noarch artifact).
+####

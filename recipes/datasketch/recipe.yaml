@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: datasketch
-  version: "1.8.0"
+  version: "1.10.0"
 
 package:
-  name: ${{ name|lower }}
+  name: datasketch
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datasketch-${{ version }}.tar.gz
-  sha256: 1cb7af36d57d3d22382bdb52629ff44e6708d147dcbfbf70e6b66d8944b14b77
+  url: https://pypi.org/packages/source/d/datasketch/datasketch-${{ version }}.tar.gz
+  sha256: d23aea80ce4c40790ca7a40795659848be92ecc43db80942be26f21e81d24714
 
 build:
   number: 0
@@ -21,10 +20,10 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pip
     - hatchling
+    - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - numpy >=1.11
     - scipy >=1.0.0
 
@@ -32,8 +31,10 @@ tests:
   - python:
       imports:
         - datasketch
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Probabilistic data structures for processing and searching very large datasets
@@ -41,7 +42,38 @@ about:
   license_file: LICENSE
   homepage: https://ekzhu.github.io/datasketch
   repository: https://github.com/ekzhu/datasketch
+  documentation: https://ekzhu.github.io/datasketch
+  description: |
+    datasketch gives you probabilistic data structures that can process and
+    search very large amount of data super fast, with little loss of accuracy.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datasketch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datasketch
+  cfe-purls:
+    - pkg:conda/datasketch@${{ version }}
+    - pkg:pypi/datasketch@${{ version }}
+  cfe-upstream-repo: https://github.com/ekzhu/datasketch
+  cfe-upstream-homepage: https://ekzhu.github.io/datasketch
+  cfe-import-names: [datasketch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datasketch-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

@@ -2,22 +2,21 @@
 schema_version: 1
 
 context:
-  name: djc-core-html-parser
-  version: "1.0.2"
+  version: "1.0.3"
 
 package:
-  name: ${{ name|lower }}
+  name: djc-core-html-parser
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djc_core_html_parser-${{ version }}.tar.gz
-  sha256: 8e98741832b1c0c36348022107d9536c466a952c8f07343f3632165db6f393c2
+  url: https://pypi.org/packages/source/d/djc-core-html-parser/djc_core_html_parser-${{ version }}.tar.gz
+  sha256: 735c556440d029739d82b6f69a4c152a2a352c9355166dd5778cc42e664d715f
 
 build:
-  number: 1
+  number: 0
   script:
     - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-    - ${{ PYTHON }}  -m pip install . -vv --no-deps --no-build-isolation
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
@@ -25,12 +24,11 @@ requirements:
       then:
         - python
         - cross-python_${{ target_platform }}
-        #- crossenv
+        - crossenv
         - maturin >=1,<2
-
     - ${{ compiler("c") }}
-    #- ${{ stdlib('c') }}
-    - ${{ compiler('rust') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
     - cargo-bundle-licenses
   host:
     - python
@@ -47,16 +45,40 @@ tests:
 
 about:
   summary: HTML parser used by django-components written in Rust.
-  homepage: https://github.com/django-components/djc-core-html-parser
-  description: |
-    HTML parser used by django-components written in Rust.
-  repository: https://github.com/django-components/djc-core-html-parser
-  documentation: https://github.com/django-components/djc-core-html-parser/blob/main/README.md
   license: MIT
   license_file:
     - LICENSE
     - THIRDPARTY.yml
+  homepage: https://github.com/django-components/djc-core-html-parser
+  repository: https://github.com/django-components/djc-core-html-parser
+  documentation: https://github.com/django-components/djc-core-html-parser/blob/main/README.md
+  description: |
+    HTML parser used by django-components written in Rust.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+  cfe-conda-name: djc-core-html-parser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djc-core-html-parser
+  cfe-purls:
+    - pkg:conda/djc-core-html-parser@${{ version }}
+    - pkg:pypi/djc-core-html-parser@${{ version }}
+  cfe-upstream-repo: https://github.com/django-components/djc-core-html-parser
+  cfe-upstream-homepage: https://github.com/django-components/djc-core-html-parser
+  cfe-import-names: [djc_core_html_parser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djc-core-html-parser-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build

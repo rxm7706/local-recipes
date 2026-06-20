@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: robotframework-databaselibrary
-  version: "2.3.1"
+  version: "2.4.1"
 
 package:
-  name: ${{ name|lower }}
+  name: robotframework-databaselibrary
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_databaselibrary-${{ version }}.tar.gz
-  sha256: a1a81dccf477627ebff5efc399f6a2cc3b1092ad40a0b7074afa0102a39a7cf5
+  url: https://pypi.org/packages/source/r/robotframework-databaselibrary/robotframework_databaselibrary-${{ version }}.tar.gz
+  sha256: b43c9ea82b3221c26bda02fe6936c873fe010c7a8600ef28546b6a9b141b5c98
 
 build:
   number: 0
@@ -27,7 +26,7 @@ requirements:
     - sqlparse
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - robotframework >=5.0.1
     - robotframework-assertion-engine
     - sqlparse
@@ -37,15 +36,44 @@ tests:
       imports:
         - DatabaseLibrary
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Database Library for Robot Framework
   license: Apache-2.0
   license_file: LICENSE
+  homepage: https://github.com/MarketSquare/Robotframework-Database-Library
   documentation: https://pythonhosted.org/robotframework-databaselibrary/
-  homepage: https://github.com/franz-see/Robotframework-Database-Library
+  summary: Database Library for Robot Framework
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: robotframework-databaselibrary
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: robotframework-databaselibrary
+  cfe-purls:
+    - pkg:conda/robotframework-databaselibrary@${{ version }}
+    - pkg:pypi/robotframework-databaselibrary@${{ version }}
+  cfe-upstream-repo: https://github.com/MarketSquare/Robotframework-Database-Library
+  cfe-upstream-homepage: https://github.com/MarketSquare/Robotframework-Database-Library
+  cfe-import-names: [DatabaseLibrary]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/robotframework-databaselibrary-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

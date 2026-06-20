@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: django-markdownify
-  version: "0.9.5"
+  version: "0.9.7"
 
 package:
-  name: ${{ name|lower }}
+  name: django-markdownify
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_markdownify-${{ version }}.tar.gz
-  sha256: 34c34eba4a797282a5c5bd97b13cec84d6a4c0673ad47ce1c1d000d74dd8d4ab
+  url: https://pypi.org/packages/source/d/django-markdownify/django_markdownify-${{ version }}.tar.gz
+  sha256: 2e59dfd445ad6362288f7bc1574e45d8356848463e261b878fd70df6a272c47f
 
 build:
   number: 0
@@ -24,24 +23,74 @@ requirements:
     - setuptools >=42
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - django
     - markdown
-    - bleach >=5.0.0
+    - bleach >=6.0.0
+    - tinycss2 >=1.1.0
 
 tests:
   - python:
       imports:
         - markdownify
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Markdown template filter for Django.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/erwinmatijsen/django-markdownify
+  description: |
+    Django Markdownify is a template filter to convert Markdown to HTML in
+    Django templates. Markdown is converted to HTML and sanitized with bleach.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-markdownify
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-markdownify
+  cfe-purls:
+    - pkg:conda/django-markdownify@${{ version }}
+    - pkg:pypi/django-markdownify@${{ version }}
+  cfe-upstream-repo: https://github.com/erwinmatijsen/django-markdownify
+  cfe-upstream-homepage: https://github.com/erwinmatijsen/django-markdownify
+  cfe-import-names: [markdownify]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-markdownify-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T10:45:36Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T10:45:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:46:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # bleach[css]>=6.0.0 in upstream pyproject activates the `css` extra,
+#    # which resolves to tinycss2>=1.1.0. Conda has no extras (G25), so the
+#    # extra is flattened: bleach >=6.0.0 + tinycss2 >=1.1.0. The deployed
+#    # 0.9.7 feedstock omits tinycss2 (grayskull dropped the extra) — a latent
+#    # gap; this local recipe carries the flatten. Verify via pip_check at build.
+# context:
+#    # python_min omitted at the conda-forge default floor (3.10); upstream
+#    # requires-python is >=3.7, well under the floor. Deployed feedstock still
+#    # declares python_min: "3.10" in context — modernized here to omit-at-floor.
+# requirements:
+#  run:
+#    # Speculative python <4.0 upper bound (in the prior 0.9.5 local recipe)
+#    # dropped — upstream requires-python carries no upper bound.
+####

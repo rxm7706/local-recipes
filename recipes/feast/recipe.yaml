@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: feast
-  version: "0.59.0"
+  version: "0.62.0"
 
 package:
-  name: ${{ name|lower }}
+  name: feast
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/feast-${{ version }}.tar.gz
-  sha256: f4a09733ca8a2967495d95230d0e433ff8c9b1181ef0bf9a92729f69f74ac606
+  url: https://pypi.org/packages/source/f/feast/feast-${{ version }}.tar.gz
+  sha256: 1896bec798c7b81c6e4afb3ba429facfa8a1d67c1fad6adf300dd9a40cca490e
 
 build:
   number: 0
@@ -77,11 +76,54 @@ tests:
       - feast --help
 
 about:
-  summary: Python SDK for Feast
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/feast-dev/feast
+  repository: https://github.com/feast-dev/feast
+  summary: Python SDK for Feast
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: feast
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: feast
+  cfe-purls:
+    - pkg:conda/feast@${{ version }}
+    - pkg:pypi/feast@${{ version }}
+  cfe-upstream-repo: https://github.com/feast-dev/feast
+  cfe-upstream-homepage: https://github.com/feast-dev/feast
+  cfe-import-names: [feast]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/feast-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T06:33:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # feast is a heavy ML feature store with a large run-dep tree; local
+#    # build is best-effort. Deployed feedstock at 0.62.0 is authoritative
+#    # for deps — the local recipe already matched it byte-for-byte; this
+#    # refresh bumps version 0.59.0 -> 0.62.0 + sha256 and modernizes
+#    # identity/URL to the v8.10.0 canonical shape.
+# requirements:
+#  run:
+#    # Base install_requires verified from feast-0.62.0 egg-info/requires.txt.
+#    # Extras flattened/renamed (G25): uvicorn[standard]->uvicorn,
+#    # dask[dataframe]->dask-core, SQLAlchemy[mypy]->sqlalchemy. gunicorn is
+#    # gated platform_system != "Windows" upstream but shipped unconditionally
+#    # to match the deployed feedstock.
+####

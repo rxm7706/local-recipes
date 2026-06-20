@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: collate-sqlfluff
-  version: "3.3.5"
+  version: "3.5.3"
 
 package:
-  name: ${{ name|lower }}
+  name: collate-sqlfluff
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/collate_sqlfluff-${{ version }}.tar.gz
-  sha256: 3b58bb14b98c72e84321f43de0356de746d27512c62d7a26ad3d8f5f5add1d3c
+  url: https://pypi.org/packages/source/c/collate-sqlfluff/collate_sqlfluff-${{ version }}.tar.gz
+  sha256: feed770a232250b66f77d34aa1c1471a09e4f77b78f1824aca6d2400a06ec9ca
 
 build:
   number: 0
@@ -31,7 +30,7 @@ requirements:
     - python >=${{ python_min }},<4.0
     - platformdirs
     - chardet
-    - click
+    - click <=8.3.0
     - colorama >=0.3
     - diff-cover >=2.5.0
     - jinja2
@@ -48,15 +47,65 @@ tests:
       imports:
         - sqlfluff
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/sqlfluff/sqlfluff
-  summary: The SQL Linter for Humans
   license: MIT
   license_file: LICENSE.md
+  summary: The SQL Linter for Humans
   repository: https://github.com/sqlfluff/sqlfluff
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: collate-sqlfluff
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: collate-sqlfluff
+  cfe-purls:
+    - pkg:conda/collate-sqlfluff@${{ version }}
+    - pkg:pypi/collate-sqlfluff@${{ version }}
+  cfe-upstream-repo: https://github.com/open-metadata/collate-sqlfluff
+  cfe-upstream-homepage: https://github.com/sqlfluff/sqlfluff
+  cfe-import-names: [sqlfluff]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/collate-sqlfluff-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T10:29:30Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T10:29:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:30:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # cfe-import-names is [sqlfluff], NOT collate_sqlfluff: the
+#    # collate-sqlfluff distribution is a fork of sqlfluff and ships the
+#    # top-level `sqlfluff` package (verified from the 3.5.3 sdist
+#    # src/sqlfluff/__init__.py). grayskull would guess collate_sqlfluff
+#    # (G7) — the import test + cfe-import-names cache the correct name.
+#    # tomli intentionally OMITTED: upstream pyproject declares
+#    # `tomli; python_version < '3.11'` and src/sqlfluff/core/config/toml.py
+#    # does `import tomllib` (3.11+) / `import tomli` (<3.11). The deployed
+#    # conda-forge feedstock at 3.5.3 omits tomli and is GREEN, so this
+#    # recipe matches the deployed shape. Adding a per-Python
+#    # `if: match(python,"<3.11") then: tomli` selector on a noarch:python
+#    # recipe would also require noarch_platforms in conda-forge.yml (G12).
+#    # If the feedstock ever needs py3.10 pyproject-parsing, add tomli +
+#    # the noarch_platforms gate together.
+#    # click <=8.3.0 mirrors the deployed feedstock pin. Upstream pyproject
+#    # caps `click<8.4.0` (click ships breaking changes in minor releases);
+#    # the feedstock's <=8.3.0 is the equivalent deployed cap.
+####

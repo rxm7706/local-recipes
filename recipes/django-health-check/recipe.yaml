@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  name: django-health-check
-  version: "3.22.0"
-
+  version: "4.4.2"
 
 package:
-  name: ${{ name|lower }}
+  name: django-health-check
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_health_check-${{ version }}.tar.gz
-  sha256: b93897c09d47fcc990fff480f28e72e676aee331808c14f0bdcfb8d64de623b1
+  url: https://pypi.org/packages/source/d/django-health-check/django_health_check-${{ version }}.tar.gz
+  sha256: ad6669bab773ef74714bb45b9cea692da2054dd68c197282db56709afd6d55bf
 
 build:
   number: 0
@@ -28,10 +26,13 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - django >=4.2
+    - django >=5.2
+    - dnspython >=2.0.0
     - psutil
 
 tests:
+  # CFEP-25-justified: Django web-app backend — `import health_check` raises
+  # ImproperlyConfigured without DJANGO_SETTINGS_MODULE configured.
   - requirements:
       run:
         - pip
@@ -41,11 +42,49 @@ tests:
       - pip check
 
 about:
-  summary: Monitor the health of your Django app and its connected services.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/codingjoe/django-health-check
+  summary: Monitor the health of your Django app and its connected services.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-health-check
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-health-check
+  cfe-purls:
+    - pkg:conda/django-health-check@${{ version }}
+    - pkg:pypi/django-health-check@${{ version }}
+  cfe-upstream-repo: https://github.com/codingjoe/django-health-check
+  cfe-upstream-homepage: https://github.com/codingjoe/django-health-check
+  cfe-import-names: [health_check]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-health-check-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # Major bump 3.22.0 -> 4.4.2: django floor 4.2 -> 5.2; dnspython >=2.0.0
+#    # added (new core dep). Upstream moved psutil to an optional extra in 4.x,
+#    # but the deployed conda-forge feedstock 4.4.2 still ships psutil in run:,
+#    # so it is preserved here to mirror the feedstock (source of truth).
+# tests:
+#    # import name is health_check (G7 divergence from dist name
+#    # django-health-check); Django settings-configure escape hatch needed.
+####

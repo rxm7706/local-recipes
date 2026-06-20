@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: py-key-value-shared
-  version: "0.2.8"
+  version: "0.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: py-key-value-shared
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/py_key_value_shared-${{ version }}.tar.gz
-  sha256: 703b4d3c61af124f0d528ba85995c3c8d78f8bd3d2b217377bd3278598070cc1
+  url: https://pypi.org/packages/source/p/py-key-value-shared/py_key_value_shared-${{ version }}.tar.gz
+  sha256: 8fdd786cf96c3e900102945f92aa1473138ebe960ef49da1c833790160c28a4b
 
 build:
   number: 0
@@ -34,14 +33,60 @@ tests:
         - key_value
         - key_value.shared
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/strawgate/py-key-value
-  summary: Shared Key-Value, A pluggable interface for KV Stores
+  repository: https://github.com/strawgate/py-key-value/tree/main/key-value/key-value-shared
+  documentation: https://github.com/strawgate/py-key-value/blob/main/README.md
   license: Apache-2.0
   license_file: LICENSE
+  summary: Shared Key-Value, A pluggable interface for KV Stores
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py-key-value-shared
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py-key-value-shared
+  cfe-purls:
+    - pkg:conda/py-key-value-shared@${{ version }}
+    - pkg:pypi/py-key-value-shared@${{ version }}
+  cfe-upstream-repo: https://github.com/strawgate/py-key-value
+  cfe-upstream-homepage: https://pypi.org/project/py-key-value-shared/
+  cfe-import-names: [key_value, key_value.shared]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/py-key-value-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # py-key-value-shared is published on conda-forge as an OUTPUT of the
+#    # multi-output py-key-value-feedstock (remote_url confirmed in the
+#    # shipped 0.3.0 .conda about.json), NOT a standalone
+#    # py-key-value-shared-feedstock (which 404s). The feedstock's current
+#    # main has collapsed to a single py-key-value-aio output at 0.4.5; the
+#    # py-key-value-shared package itself tops out at 0.3.0 on the channel
+#    # (matches PyPI latest). This recipe mirrors that shipped 0.3.0 output.
+# requirements:
+#  run:
+#    # beartype >=0.22.2 matches the deployed feedstock output's pin
+#    # (tightened above PyPI's declared beartype>=0.20.0); kept faithful to
+#    # what conda-forge actually shipped.
+####

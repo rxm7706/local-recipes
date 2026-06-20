@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: langchain-mcp-adapters
-  version: "0.2.1"
+  version: "0.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: langchain-mcp-adapters
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_mcp_adapters-${{ version }}.tar.gz
-  sha256: 58e64c44e8df29ca7eb3b656cf8c9931ef64386534d7ca261982e3bdc63f3176
+  url: https://pypi.org/packages/source/l/langchain-mcp-adapters/langchain_mcp_adapters-${{ version }}.tar.gz
+  sha256: fa6c9497015eb2807de5d0c341a36e1d2445cecbae1f4a24e922fc5b94f1a36c
 
 build:
   number: 0
@@ -28,21 +27,51 @@ requirements:
     - langchain-core >=1.0.0,<2.0.0
     - mcp >=1.9.2
     - typing_extensions >=4.14.0
+    - httpx
 
 tests:
   - python:
       imports:
         - langchain_mcp_adapters
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Make Anthropic Model Context Protocol (MCP) tools compatible with LangChain and LangGraph agents.
   license: MIT
   license_file: LICENSE
   homepage: https://pypi.org/project/langchain-mcp-adapters/
   repository: https://github.com/langchain-ai/langchain-mcp-adapters
+  summary: Make Anthropic Model Context Protocol (MCP) tools compatible with LangChain and LangGraph agents.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-mcp-adapters
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-mcp-adapters
+  cfe-purls:
+    - pkg:conda/langchain-mcp-adapters@${{ version }}
+    - pkg:pypi/langchain-mcp-adapters@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain-mcp-adapters
+  cfe-upstream-homepage: https://github.com/langchain-ai/langchain-mcp-adapters
+  cfe-import-names: [langchain_mcp_adapters]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-mcp-adapters-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T12:39:54Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T12:39:54Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T12:41:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
