@@ -71,6 +71,15 @@ DuckDB/Ibis as the semantic query engine, and an **agentic maintenance loop** wh
 5-persona workforce reads Parquet, builds relationships, indexes documents, and writes
 Markdown pages / Marp decks / charts back into the CMS.
 
+The platform is also the engine for the **Enterprise Python Manifest** (intake §4.11):
+a programmatically-generated, 5,000-package curated set with an Assured-OSS +
+Anaconda-Defaults immutable base, its remaining quota SLSA/vulnerability-score-filled
+from conda-forge, resolved deterministically via `pixi.lock` and mirrorable via JFrog.
+The manifest depends on a **net-new Universal SBOM (CycloneDX) capability** — the legacy
+atlas only tracks `meta.yaml` dependencies, so cross-manifest SBOM ingestion
+(`pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, `meta.yaml` → CycloneDX) is
+new ground for `cf_atlas`, not a port.
+
 Every component is conda-forge-sourced and pixi-managed, scaffolded by `nebi`. No
 standalone binaries, no JVM. The migration preserves the existing GitHub/PyPI/Anaconda
 source set and the existing air-gapped/enterprise routing contract.
@@ -127,6 +136,7 @@ to make a full refresh a routine operation rather than an overnight job.
 | G7 | Materially reduce cold-start time below the 3–4 h baseline. |
 | G8 | Preserve offline/air-gap operation and the conda-forge-only constraint. |
 | G9 | Stand up the AI Software Factory: a Wagtail/django-lasuite knowledge base, the Karpathy Wiki memory tier, and an agentic maintenance loop that compiles atlas intelligence into a living, queryable corporate brain. |
+| G10 | Build a net-new Universal SBOM (CycloneDX) capability and use it — together with the PyPI/vulnerability intelligence — to programmatically generate the Enterprise Python Manifest (5k curated packages, SLSA-prioritized, deterministically resolved + mirrorable). |
 
 ### 3.2 Measurable success criteria
 
@@ -142,6 +152,7 @@ to make a full refresh a routine operation rather than an overnight job.
 | SC8 | Air-gap preserved. | Full pipeline runs against `<HOST>_BASE_URL`-redirected mirrors with no public-host dependency. |
 | SC9 | Toolchain purity. | `pixi.lock` resolves entirely from conda-forge; no standalone binary / JVM dependency. |
 | SC10 | AI Software Factory operational. | The Wagtail KB renders ≥1 agent-generated intelligence report; the Karpathy Wiki `raw→compiled→outputs` flow round-trips end-to-end; an agent writes a Markdown page + a Marp deck + a chart into the CMS via the output channels. |
+| SC11 | SBOM graph + Enterprise Python Manifest. | The SBOM pipeline parses all five manifest formats and writes a CycloneDX-normalized graph to DuckDB; the manifest generator emits a deterministic 5k-package set (Assured OSS + Anaconda Defaults immutable base, remainder SLSA/vuln-score-filled from conda-forge) resolvable via `pixi.lock` and mirrorable via JFrog. |
 
 ---
 
@@ -196,14 +207,15 @@ SC1; AC-1.)*
 
 ### 6.1 In scope — phased delivery (Waves A–G)
 
-Delivery follows the intake spec's waves A–G, plus **Wave H (AI Software Factory)**
-folded in per your Q5 decision; each wave depends on the prior wave's deliverables.
-Epics/stories are derived in the downstream `epics.md`.
+Delivery follows the intake spec's waves A–G, plus **Wave H (AI Software Factory)** and
+**Wave I (Enterprise Python Manifest)** folded in per your Q5/Q5b decisions; each wave
+depends on the prior wave's deliverables. Epics/stories are derived in the downstream
+`epics.md`.
 
 | Wave | Theme | Headline deliverables |
 |---|---|---|
 | **A** | Scaffold & Catalog | `nebi`-scaffolded Kedro+pixi project; `catalog.yml` for all sources/outputs; `IncrementalParquetDataset` (TTL gating). |
-| **B** | Node porting & MCP | Core pipeline (B–M) + PyPI/Vulnerability pipelines as nodes; `kedro-mcp` re-exposure; **parity check (B4 — gates legacy retirement)**. |
+| **B** | Node porting & MCP | Core pipeline (B–M) + PyPI/Vulnerability pipelines as nodes; **net-new Universal SBOM pipeline (B5 — FR-13, not a port)**; `kedro-mcp` re-exposure; **parity check (B4 — gates legacy retirement)**. |
 | **C** | Orchestration & Viz | `kedro-dagster` schedules/retries; `kedro-viz` via a pixi task. |
 | **D** | Semantic layer & dashboards | BSL models; Vizro dashboard (16 CLIs → pages); Vizro-AI NL field + `query_vizro_ai` MCP tool. |
 | **E** | A2A & observability | A2A interface; OpenLineage + OpenTelemetry. |
@@ -220,11 +232,20 @@ Epics/stories are derived in the downstream `epics.md`.
 > Markdown pages, Marp decks, matplotlib charts). H depends on Waves D (BSL), E (A2A), and
 > F (DuckDB) being complete.
 
+| **I** | **Enterprise Python Manifest** (intake §4.11) | Programmatic generation of the 5,000-package curated manifest from the SBOM (B5) + PyPI/vulnerability intelligence graph. |
+
+> **Wave I detail.** I decomposes into: **I1** SLSA-prioritized base assembly (Google
+> Assured OSS + Anaconda Defaults as an immutable base layer); **I2** quota fill — rank the
+> remaining slots from conda-forge using the PyPI/vuln intelligence scores, capped at 5,000;
+> **I3** deterministic resolution + mirroring — emit the manifest resolved via `prefix.dev`,
+> mirrored via JFrog Artifactory, actuated by `pixi.lock` for devcontainers + Docker CI/CD.
+> I depends on **B5 (SBOM/CycloneDX graph — net-new)** and the PyPI-intelligence +
+> vulnerability pipelines (B2).
+
 ### 6.2 Out of scope (with reason)
 
 | Item | Reason |
 |---|---|
-| §4.11 **Enterprise Python Manifest (5k)** generation | Downstream target state the graph *enables*; a distinct deliverable, not part of the factory build-out. **Flag:** if you want this folded in too, say so — it's adjacent to Wave H but currently held out. |
 | Neo4j / Kùzu / LanceDB / Polars as separate engines | Superseded by the DuckDB singularity (§4.8). |
 | Continued SQLite + `phase_state` orchestration | Replaced by Kedro + Dagster + DuckDB. |
 | `spec-kit` as agent framework | Explicitly rejected; `bmad-method` governs. |
@@ -298,6 +319,22 @@ Formalized from intake-spec FR-1…FR-15 (1:1 mapping preserved for traceability
   pages, Marp slide decks, and matplotlib charts written back into the CMS, creating a
   compounding centralized knowledge base.
 
+### Enterprise Python Manifest (Wave I — intake §4.11)
+
+> Note: FR-13 (Universal SBOM → CycloneDX) is the prerequisite capability for this group
+> and is **net-new** for `cf_atlas` (the legacy pipeline tracks only `meta.yaml` deps).
+> It is delivered as Story B5 and consumed here.
+
+- **FR-20 — Manifest generation.** A generator consumes the SBOM/CycloneDX graph (FR-13)
+  plus the PyPI + vulnerability intelligence to programmatically produce the Enterprise
+  Python Manifest, capped at **5,000** curated packages.
+- **FR-21 — SLSA prioritization.** The manifest uses Google Assured OSS + Anaconda
+  Defaults as an **immutable base layer**, then fills the remaining quota from conda-forge
+  ranked by the PyPI/vulnerability intelligence scores (safety-first selection).
+- **FR-22 — Deterministic resolution + mirroring.** The manifest is resolved via
+  `prefix.dev`, mirrored via JFrog Artifactory, and actuated by `pixi.lock` for local
+  environments (devcontainers) and Docker CI/CD deployments.
+
 ---
 
 ## 8. Non-Functional Requirements
@@ -358,6 +395,10 @@ Carried 1:1 from intake-spec §10 (the definition of done for the migration):
   agent-writable via REST; the Karpathy Wiki `raw→compiled→outputs` flow round-trips on
   Minio + PostgreSQL; and the agentic maintenance loop emits ≥1 Markdown page, Marp deck,
   and chart into the CMS from atlas intelligence.
+- **AC-11.** The net-new SBOM pipeline parses all five manifest formats into a
+  CycloneDX-normalized DuckDB graph (FR-13/B5), and the Enterprise Python Manifest
+  generator emits a deterministic ≤5,000-package set (Assured-OSS + Anaconda-Defaults base
+  + SLSA/vuln-ranked conda-forge fill) resolvable via `pixi.lock` and mirrorable via JFrog.
 
 ---
 
@@ -370,6 +411,7 @@ Carried 1:1 from intake-spec §10 (the definition of done for the migration):
 | Q3 | Vizro-AI LLM backend + enterprise routing. | **Default:** route through the repo's existing model-backend config + `_http.py` enterprise routing; no hardcoded public endpoint. Confirm at Wave D. |
 | Q4 | WASM artifact-store hosting. | **Default:** GitHub Pages for the public path; keep the emitter host-agnostic for an enterprise/JFrog-mirrored static store. Confirm at Wave G. |
 | Q5 | Scope of the §7 AI Software Factory layer. | **Resolved (you decided 2026-06-20):** **in scope** — folded in as Wave H (FR-16…FR-19, AC-10, SC10). |
+| Q5b | Scope of the §4.11 Enterprise Python Manifest. | **Resolved (you decided 2026-06-20):** **in scope** — folded in as Wave I (FR-20…FR-22, AC-11, SC11), gated on net-new SBOM (B5/FR-13). |
 
 > Q1 and Q5 are resolved and binding. Q2/Q3/Q4 carry defaults and are confirmed at the
 > start of their gating wave (full-BMAD per-wave gate).
@@ -380,6 +422,13 @@ Carried 1:1 from intake-spec §10 (the definition of done for the migration):
 > verified in architecture, and any gap becomes a prerequisite recipe-authoring task
 > routed through `conda-forge-expert` (CLAUDE.md Rule 1). This materially enlarges the
 > effort and is the top Wave-H feasibility risk (R7).
+>
+> **New question opened by folding in Wave I — Q7 (gates Wave I):** (a) how is **Google
+> Assured OSS** accessed, and does that path work air-gapped (it may require a GCP-auth'd
+> source that an enterprise mirror must proxy)? (b) is **`prefix.dev`** resolution
+> available/redirectable in the target deployment, or does JFrog become the sole resolver?
+> Defaults: treat Assured OSS + Anaconda Defaults as mirror-fed immutable inputs; keep the
+> resolver host-configurable (prefix.dev public path, JFrog for air-gap). Tracked as R8.
 
 ---
 
@@ -413,6 +462,8 @@ constraints); `docs/specs/atlas-phase-f-s3-backend.md` (S3/Parquet datasets → 
 | R5 | Wave H materially enlarges effort / timeline. | Sequenced last (depends on D+E+F); can be gated/deferred independently without blocking Waves A–G value. |
 | R6 | Credential cross-host leak during node ports. | NFR-3; preserve documented `JFROG_API_KEY` mitigation. |
 | R7 | Wagtail / django-lasuite / Minio not on conda-forge at usable versions (Q6). | Verify in architecture; author missing recipes via CFE skill before Wave H depends on them; this is the top Wave-H feasibility risk. |
+| R8 | Enterprise Manifest external inputs (Assured OSS, prefix.dev) incompatible with air-gap (Q7). | Treat Assured OSS + Anaconda Defaults as mirror-fed inputs; keep resolver host-configurable; verify in architecture before Wave I. |
+| R9 | Net-new SBOM pipeline (B5) is genuinely new capability, not a port — higher implementation + parity-validation cost. | Scope B5 as net-new with its own acceptance criteria + GE contracts; it is a prerequisite for Wave I, sequence accordingly. |
 
 ---
 
