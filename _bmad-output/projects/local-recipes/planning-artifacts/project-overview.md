@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-06-20
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v8.11.1'
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # Project Overview: local-recipes
@@ -22,12 +22,12 @@ source_pin: 'conda-forge-expert v8.11.1'
 | Build engine | Pixi + rattler-build (NOT conda-build, except for legacy v0 maintenance) |
 | Target platforms | linux-64, linux-aarch64, osx-64, osx-arm64, win-64 |
 | Default pixi env | `local-recipes` (declared via `# default-env:` directive in `pixi.toml`) |
-| Total pixi envs | 8 (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`) |
+| Total pixi envs | 9 (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`) |
 | Default channel | conda-forge |
 | License | BSD-3-Clause (LICENSE.txt) |
 | Maintainer of new recipes | `rxm7706` (in `extra.recipe-maintainers`) |
-| Recipe corpus | 1,415 v1 `recipe.yaml` files under `recipes/` + 1 at `wagtail/` (NOT part of the rebuild target) |
-| Source pin (for this doc set) | conda-forge-expert skill v8.10.0 |
+| Recipe corpus | 1,602 recipe dirs under `recipes/` = 718 v1 `recipe.yaml` + 1,054 v0 `meta.yaml` (active v0→v1 migration in progress) |
+| Source pin (for this doc set) | conda-forge-expert skill v8.39.0 |
 
 ---
 
@@ -36,8 +36,8 @@ source_pin: 'conda-forge-expert v8.11.1'
 `local-recipes` is **not a conda recipe project** — it's the **infrastructure that produces** conda-forge recipes, plus the offline intelligence and air-gap-tolerant tooling to maintain them at scale. A new contributor inheriting this repository would receive four conceptually-separable systems wrapped into one pixi monorepo:
 
 1. **conda-forge-expert** — a Claude Code skill that encodes the full conda-forge packaging lifecycle (generate → validate → build → submit). 10-step autonomous loop with one human-gated checkpoint at step 8b. Versions, schemas, and policies are pinned in code so the skill produces conda-forge-acceptable recipes on first authoring.
-2. **cf_atlas** — a 22-phase offline package-intelligence pipeline (`bootstrap-data`, `atlas-phase`) that builds and maintains a SQLite database (`cf_atlas.db`, schema v25 as of v8.6.0) inventorying ~33k conda-actionable + ~806k PyPI directory packages with metadata, version skew, vulnerability surface, dependency graphs, staleness signals, and (v8.1.0+) per-PyPI-project enrichment scores plus (v8.5.3 / v8.6.0) CISA KEV / EPSS / CWE overlays on the vulnerability columns. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph (Phase H) offline backends. Three side tables: `packages` (working set, ~33k conda-actionable), `pypi_universe` (reference data, ~806k PyPI directory), `pypi_intelligence` (35-column enrichment side table joined on `pypi_name`, populated by the v8.1.0 Phase O/P/Q/R/S chain).
-3. **FastMCP server** — `.claude/tools/conda_forge_server.py` exposing 35 MCP tools that surface the skill's lifecycle, the atlas's intelligence, and project-scanning capabilities to Claude Code's MCP runtime. Auto-started at session boot.
+2. **cf_atlas** — a 22-phase offline package-intelligence pipeline (`bootstrap-data`, `atlas-phase`) that builds and maintains a SQLite database (`cf_atlas.db`, schema v28) inventorying ~33k conda-actionable + ~806k PyPI directory packages with metadata, version skew, vulnerability surface, dependency graphs, staleness signals, and (v8.1.0+) per-PyPI-project enrichment scores plus (v8.5.3 / v8.6.0) CISA KEV / EPSS / CWE overlays on the vulnerability columns. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph (Phase H) offline backends. Three side tables: `packages` (working set, ~33k conda-actionable), `pypi_universe` (reference data, ~806k PyPI directory), `pypi_intelligence` (49-column enrichment side table joined on `pypi_name`, populated by the v8.1.0 Phase O/P/Q/R/S chain).
+3. **FastMCP server** — `.claude/tools/conda_forge_server.py` exposing 42 MCP tools that surface the skill's lifecycle, the atlas's intelligence, and project-scanning capabilities to Claude Code's MCP runtime. Auto-started at session boot.
 4. **BMAD infrastructure** — the BMAD-METHOD installer (`_bmad/`) plus a multi-project planning layout (`_bmad-output/projects/<slug>/`) with six-layer config merge, 65 installed skills, and `scripts/bmad-switch` for active-project resolution. Drives planning + dev + review + retro workflows for any project hosted in this repo.
 
 These four parts share a single pixi monorepo, a single skill data directory (`.claude/data/conda-forge-expert/`), and a single enterprise-deployment layer (`_http.py` + `*_BASE_URL` env-var resolution + JFrog integration).
@@ -54,7 +54,7 @@ These four parts share a single pixi monorepo, a single skill data directory (`.
 
 ```
 local-recipes/                                  # pixi monorepo root
-├── pixi.toml                                   # 8 envs, ~30 tasks, build features per platform
+├── pixi.toml                                   # 9 envs, ~80 tasks, build features per platform
 ├── pyproject.toml                              # Python package metadata
 ├── pixi.lock                                   # locked deps
 ├── CLAUDE.md                                   # repo-wide AI agent guidance
@@ -80,11 +80,11 @@ local-recipes/                                  # pixi monorepo root
 │   ├── skills/                                 # 65 skills total (incl. BMAD installer skills)
 │   ├── scripts/conda-forge-expert/             # CLI wrapper layer (~30 thin subprocess wrappers)
 │   ├── tools/                                  # Part 3: FastMCP server lives here
-│   │   ├── conda_forge_server.py               # 35 MCP tools across 3 surfaces
+│   │   ├── conda_forge_server.py               # 42 MCP tools across 3 surfaces
 │   │   ├── gemini_server.py                    # auxiliary MCP server
 │   │   └── mcp_call.py                         # MCP helper utilities
 │   └── data/conda-forge-expert/                # mutable runtime state (gitignored)
-│       ├── cf_atlas.db                         # Part 2's primary artifact (SQLite, 19 schema versions)
+│       ├── cf_atlas.db                         # Part 2's primary artifact (SQLite, 28 schema versions)
 │       ├── cf_atlas_meta.json                  # atlas run metadata
 │       ├── cf-graph-countyfair.tar.gz          # cf-graph offline snapshot (Phase E/H/M)
 │       ├── pypi_conda_map.json                 # PyPI→conda name mapping cache
@@ -104,9 +104,9 @@ local-recipes/                                  # pixi monorepo root
 │       ├── local-recipes/                      # this project's planning lives here
 │       └── presenton-pixi-image/
 │
-├── recipes/                                    # OUTPUT artifacts (1,415 v1 recipe.yaml + patches)
+├── recipes/                                    # OUTPUT artifacts (1,602 dirs: 718 v1 recipe.yaml + 1,054 v0 meta.yaml + patches)
 │   └── <package-name>/
-│       ├── recipe.yaml                         # v1 format, schema_version: 1
+│       ├── recipe.yaml                         # v1 format, schema_version: 1 (or meta.yaml for v0, mid-migration)
 │       ├── patches/                            # optional upstream-bug shims
 │       └── (license files, scripts)
 │
@@ -169,7 +169,7 @@ See: `architecture-conda-forge-expert.md`
 - **M** — license enrichment
 - **N** — additional batch enrichment (checkpoint-aware)
 
-19 schema versions (additive migrations). TTL-gated phases (F/G/H/K) only re-fetch stale rows. `phase_state` checkpoint table makes interrupts cheap.
+28 schema versions (additive migrations). TTL-gated phases (F/G/H/K) only re-fetch stale rows. `phase_state` checkpoint table makes interrupts cheap.
 
 18 atlas CLIs: `bootstrap-data` (full run), `atlas-phase <ID>` (single phase), plus 16 read-side query CLIs (`staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`, `cve-watcher`, `version-downloads`, `release-cadence`, `find-alternative`, `adoption-stage`, `scan-project`, `pypi-only-candidates`, `pypi-intelligence` (v8.1.0+), `detail-cf-atlas`, …).
 
@@ -182,7 +182,7 @@ See: `architecture-cf-atlas.md`
 **Pixi envs used:** depends on tool — most run in `local-recipes`
 **Purpose:** Expose Part 1 (recipe lifecycle) + Part 2 (atlas intelligence) + project-scanning capabilities as MCP tools that Claude Code can invoke directly. Auto-started by Claude Code at session boot.
 
-35 tools (verified by `grep -c @mcp.tool conda_forge_server.py`) across three surfaces:
+42 tools (verified by `grep -c @mcp.tool conda_forge_server.py`) across three surfaces:
 - **Recipe-authoring surface** (~15 tools): `generate_recipe_from_pypi`, `validate_recipe`, `edit_recipe`, `optimize_recipe`, `scan_for_vulnerabilities`, `trigger_build`, `get_build_summary`, `analyze_build_failure`, `prepare_submission_branch`, `submit_pr`, `migrate_to_v1`, `update_recipe_from_github`, etc.
 - **Atlas-intelligence surface** (~12 tools): `query_atlas`, `package_health`, `staleness_report`, `cve_watcher`, `behind_upstream`, `feedstock_health`, `whodepends`, `release_cadence`, `version_downloads`, `find_alternative`, `adoption_stage`, `my_feedstocks`, etc.
 - **Project-scanning surface** (~5 tools): `scan_project` (~28 input formats — manifests, lock files, SBOMs, container images, GitOps CRs with auto git-clone, K8s manifests, OCI archives, OCI registry probes).
@@ -257,7 +257,7 @@ Plus structured metadata: **[project-parts.json](./project-parts.json)** — mac
 This document set synthesizes the following existing sources. To rebuild faithfully, an agent should treat these as authoritative for the items they cover and supplement with this set's overlays:
 
 - `CLAUDE.md` — repo-wide AI agent guidance, BMAD↔CFE integration rules, skill index
-- `_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn (v8.10.0-pinned)
+- `_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn (v8.39.0-pinned)
 - `.claude/skills/conda-forge-expert/SKILL.md` — primary skill spine
 - `.claude/skills/conda-forge-expert/INDEX.md` — task→tool navigator
 - `.claude/skills/conda-forge-expert/CHANGELOG.md` — release history with TL;DR

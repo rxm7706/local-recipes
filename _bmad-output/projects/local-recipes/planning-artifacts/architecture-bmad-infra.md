@@ -3,8 +3,8 @@ doc_type: architecture
 part_id: bmad-infra
 display_name: BMAD infrastructure
 project_type_id: infra
-date: 2026-05-12
-source_pin: 'conda-forge-expert v8.11.1'
+date: 2026-06-20
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # Architecture: BMAD Infrastructure (Part 4)
@@ -328,15 +328,18 @@ When a BMAD effort that did conda-forge work reaches closeout (final story compl
 
 ### Project-context.md
 
-`_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn. Hand-maintained; pinned to skill version (currently `v8.10.0`, re-synced 2026-05-26; owner: rxm7706). Drift contract: MINOR bump triggers re-sync; PATCH does not.
+`_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn. Hand-maintained; pinned to skill version (currently `v8.39.0`, re-synced 2026-06-20; owner: rxm7706). Drift contract: MINOR bump triggers re-sync; PATCH does not — detected by `scripts/bmad_drift_check.py`, reconciled per `SYNC-RUNBOOK.md`.
 
 ### Implementation artifacts
 
-`_bmad-output/projects/local-recipes/implementation-artifacts/`:
-- `deferred-work.md` — cross-spec deferred items (per-spec sections)
-- `spec-cursor-sdk-local-recipe.md` — feature spec (BMAD-consumable)
-- `spec-atlas-phase-f-s3-air-gap.md` — feature spec
-- `review-diff.patch` — captured review-feedback diff
+`_bmad-output/projects/local-recipes/implementation-artifacts/` (gitignored):
+- `deferred-work.md` — cross-spec deferred items (per-spec sections); carries a `Last reconciled:` stamp
+- `spec-*.md` — per-effort implementation tech-specs (BMAD-consumable; one `status:` each)
+- `retros/` — archived per-effort retrospectives (frozen historical records)
+
+> Canonical BMAD-consumable **intake** specs live separately under repo-root `docs/specs/*.md` (the `bmad-quick-dev` entry points; see CLAUDE.md). The `implementation-artifacts/spec-*.md` files are the derived per-effort records, not the intake specs.
+
+Planning-artifact change history (sprint-change-proposals from `bmad-correct-course`) is archived under `planning-artifacts/change-history/`.
 
 ### Auto-memory
 

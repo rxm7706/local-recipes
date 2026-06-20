@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-guide
 project_name: local-recipes
-date: 2026-05-12
-source_pin: 'conda-forge-expert v8.11.1'
+date: 2026-06-20
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # Deployment Guide

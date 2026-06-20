@@ -1,8 +1,8 @@
 ---
 doc_type: development-guide
 project_name: local-recipes
-date: 2026-05-12
-source_pin: 'conda-forge-expert v8.11.1'
+date: 2026-06-20
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # Development Guide
@@ -15,11 +15,11 @@ How to set up, build, test, debug, and contribute to `local-recipes` locally. Th
 
 | Tool | Minimum version | Why |
 |---|---|---|
-| Pixi | 0.67.2 (pinned in `pixi.toml: requires-pixi`) | Sole environment manager. No conda, no venv. |
-| Python | 3.11+ | Pixi-managed. `_bmad/scripts/*.py` require 3.11 for stdlib `tomllib`. |
+| Pixi | 0.70.1 (pinned in `pixi.toml: requires-pixi`; dep pin `>=0.70.2`) | Sole environment manager. No conda, no venv. |
+| Python | 3.14.* (pixi-managed) | `_bmad/scripts/*.py` require 3.11+ for stdlib `tomllib`; the repo env now pins 3.14. |
 | Git | any modern | Repo operations. |
 | Docker | any modern | Linux builds run inside Docker via `build-locally.py`. Not required for osx/win native. |
-| GitHub CLI (`gh`) | 2.92+ | PR submission (`submit_pr`, `prepare_pr`). Pixi-managed. |
+| GitHub CLI (`gh`) | 2.94+ | PR submission (`submit_pr`, `prepare_pr`). Pixi-managed. |
 | Claude Code (CLI) | latest | Driving the system interactively. Optional for cron / scripted use. |
 
 Don't install pixi globally with a manager that conflicts with the repo's pin. Use the official installer or your distro's pixi package.
@@ -59,9 +59,9 @@ scripts/bmad-switch --current          # should print: local-recipes
 
 See `source-tree-analysis.md` for the full tree. Quick map:
 
-- **`recipes/`** — 1,415 v1 recipes (outputs of the system)
+- **`recipes/`** — 718 v1 `recipe.yaml` recipes (1,601 recipe dirs total, incl. in-flight v0 `meta.yaml`)
 - **`.claude/skills/conda-forge-expert/`** — Part 1: canonical scripts, references, guides, templates
-- **`.claude/scripts/conda-forge-expert/`** — Part 1 Tier 2: 34 CLI wrappers
+- **`.claude/scripts/conda-forge-expert/`** — Part 1 Tier 2: 46 CLI wrappers
 - **`.claude/tools/`** — Part 3: MCP server
 - **`.claude/data/conda-forge-expert/`** — runtime state (gitignored)
 - **`_bmad/`** — Part 4: BMAD installer
@@ -88,7 +88,7 @@ All tasks under `[feature.local-recipes.tasks.*]` run in the `local-recipes` env
 | `pixi run check-deps -- recipes/<pkg>` | PyPI→conda dep resolution |
 | `pixi run resolve-name -- <pypi-name>` | PyPI→conda name lookup |
 | `pixi run scan-vulnerabilities -- recipes/<pkg>` | OSV-based vulnerability scan (use `-e vuln-db` for full AppThreat) |
-| `pixi run lint-optimize -- recipes/<pkg>` | Run 17 optimizer lint codes |
+| `pixi run lint-optimize -- recipes/<pkg>` | Run the optimizer lint codes (DEP/PIN/ABT/SCRIPT/SEL/STD/TEST/MAINT/SEC/OPT/SCHEMA/LIC/FMT) |
 | `pixi run lint -- recipes/<pkg>` | conda-smithy recipe-lint (CI fidelity) |
 | `pixi run license-check -- recipes/<pkg>` | Validate `license_file` + SPDX identifier |
 | `pixi run version-check -- recipes/<pkg>` | Check upstream GitHub for newer tag |
@@ -112,10 +112,10 @@ All tasks under `[feature.local-recipes.tasks.*]` run in the `local-recipes` env
 | `pixi run bootstrap-data` | Full atlas refresh + mapping + CVE + vdb |
 | `pixi run bootstrap-data -- --fresh` | Hard reset (preserves `cache/parquet/` by default) |
 | `pixi run bootstrap-data -- --status` | Print phase_state + TTL eligibility |
-| `pixi run atlas-phase -- <ID>` | Run single phase (B, B.5, B.6, C, …, N) |
+| `pixi run atlas-phase -- <ID>` | Run single phase (B, B.5, B.6, C, …, N, O–S) |
 | `pixi run atlas-phase -- --list` | Enumerate known phases |
 | `pixi run atlas-phase -- F --reset-ttl` | NULL TTL column, then run Phase F |
-| `pixi run build-cf-atlas` | Phase B-N only (skips mapping + CVE + vdb) |
+| `pixi run build-cf-atlas` | Phase B–S only (skips mapping + CVE + vdb) |
 | `pixi run query-cf-atlas -- <sql>` | Direct SQL query against cf_atlas.db |
 | `pixi run stats-cf-atlas` | High-level atlas statistics summary |
 | `pixi run detail-cf-atlas -- <conda-name>` | All atlas data for one package |
@@ -129,12 +129,19 @@ All tasks under `[feature.local-recipes.tasks.*]` run in the `local-recipes` env
 | `pixi run staleness-report -- [filters]` | Behind-upstream + unmaintained feedstocks |
 | `pixi run feedstock-health -- <name>` | Health summary for one feedstock |
 | `pixi run behind-upstream -- [filters]` | Packages with newer upstream versions |
+| `pixi run whodepends -- <name>` | Reverse-dependency lookup |
 | `pixi run cve-watcher -- [filters]` | New CVEs in your packages |
 | `pixi run release-cadence -- <name>` | Release cadence for one package |
 | `pixi run version-downloads -- <name>` | Download trend by version |
 | `pixi run find-alternative -- <name>` | Similar packages |
 | `pixi run adoption-stage -- <name>` | Maturity / popularity tier |
+| `pixi run my-feedstocks -- [--triage]` | Per-maintainer feedstock portfolio + triage punch list |
 | `pixi run scan-project -- <path>` | Scan manifest / lock file / SBOM / container |
+| `pixi run platform-breakdown` | ARM / win / EOL download-share breakdown (Phase F+ data) |
+| `pixi run pyver-breakdown -- [--policy-check]` | Per-Python download breakdown; flags python_min bump-safe candidates |
+| `pixi run channel-split` | Defaults-channel migration opportunities |
+| `pixi run pypi-intelligence -- [filters]` | PyPI-intelligence layer (Phase O–S scores) |
+| `pixi run pypi-only-candidates -- [filters]` | PyPI packages with no conda-forge feedstock |
 
 ### Submission
 
@@ -154,6 +161,7 @@ All tasks under `[feature.local-recipes.tasks.*]` run in the `local-recipes` env
 | `pixi run test` | Offline subset (no `network` / `slow` markers) |
 | `pixi run test-all` | Full suite (includes network + slow) |
 | `pixi run test-coverage` | Coverage report |
+| `pixi run test-skill -- [--unit/--integration/--meta]` | Scoped skill-suite runner (unit + integration + meta) |
 | `pixi run test-recipes` | Test all recipes via rattler-build test |
 
 ### Repo maintenance
@@ -164,6 +172,7 @@ All tasks under `[feature.local-recipes.tasks.*]` run in the `local-recipes` env
 | `pixi run sync-upstream-public-fork` | Pull from user fork |
 | `pixi run update-mapping-cache` | Refresh PyPI→conda mapping |
 | `pixi run update-cve-db` | Refresh CVE database (use `-e vuln-db` for AppThreat) |
+| `pixi run -e vuln-db vdb-refresh` | Build/refresh the AppThreat vdb (~600MB, OSV + GHSA) |
 | `pixi run health-check` | System-level health |
 | `pixi run analyze-failure -- <log-file>` | Pattern-match a build failure |
 
@@ -400,7 +409,7 @@ GitHub Actions (`.github/workflows/`) handles:
 | Cross-compile question | `.claude/skills/conda-forge-expert/guides/cross-compilation.md` |
 | Atlas operations | `.claude/skills/conda-forge-expert/guides/atlas-operations.md` |
 | Air-gap setup | `docs/enterprise-deployment.md` (or `deployment-guide.md` in this set) |
-| Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1-G6) |
+| Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1–G45) |
 | BMAD multi-project | `_bmad-output/PROJECTS.md` |
 | Project-specific rules | `_bmad-output/projects/local-recipes/project-context.md` |
 | Recent changes | `.claude/skills/conda-forge-expert/CHANGELOG.md` TL;DR |

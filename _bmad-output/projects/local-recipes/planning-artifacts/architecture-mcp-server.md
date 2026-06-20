@@ -3,15 +3,15 @@ doc_type: architecture
 part_id: mcp-server
 display_name: FastMCP server
 project_type_id: backend
-date: 2026-05-12
-source_pin: 'conda-forge-expert v8.11.1'
+date: 2026-06-20
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # Architecture: MCP Server (Part 3)
 
-The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 37 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
+The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 42 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
 
-**v8.1.0 surface deltas:** added `pypi_intelligence` MCP tool (atlas-intelligence surface; wraps the new `pypi-intelligence` CLI) bringing the total to 37. New tool exposes the v8.1.0 PyPI intelligence layer's rich filter chain (`--score-min`, `--activity`, `--license-ok`, `--noarch-python-candidate`, `--min-downloads`, per-channel `--in-*`, `--sort-by score|downloads|serial|name`) directly to MCP callers.
+**Surface deltas (v8.11.1 → v8.39.0):** the atlas-intelligence surface added `pypi_intelligence` (v8.1.0; the rich filter chain `--score-min`, `--activity`, `--license-ok`, `--noarch-python-candidate`, `--min-downloads`, per-channel `--in-*`, `--sort-by score|downloads|serial|name`) and the Phase F+ Wave-3 reads `platform_breakdown` / `pyver_breakdown` / `channel_split` (v8.19.0); the recipe-authoring surface added `download_pr_artifacts` (v8.14.0 PR-artifact downloader). Total: **42**.
 
 Without Part 3, every BMAD agent would have to invoke pixi tasks directly (slow, bash-shaped, lossy round-tripping through stdout JSON). With Part 3, BMAD agents and Claude Code call `mcp__conda_forge_server__<tool>` natively with structured arguments and typed responses.
 
@@ -22,7 +22,7 @@ Without Part 3, every BMAD agent would have to invoke pixi tasks directly (slow,
 > **Expose Parts 1 + 2 as MCP tools so Claude Code and BMAD agents can invoke them with structured args + JSON responses without shell round-tripping.**
 
 Operationalized:
-- 37 tools registered via `@mcp.tool()` decorators on a single `FastMCP("conda-forge-expert")` instance.
+- 42 tools registered via `@mcp.tool()` decorators on a single `FastMCP("conda-forge-expert")` instance.
 - Each tool's body is a thin `_run_script(SCRIPT_PATH, args, ...)` invocation that subprocess-executes a Tier 1 script and parses JSON stdout.
 - Auto-discovered by Claude Code by path convention (`.claude/tools/*.py`); no `.mcp.json` registration currently (known gap, see Deferred Work below).
 
@@ -36,10 +36,10 @@ Operationalized:
 | Auxiliary servers | `gemini_server.py` (Gemini API bridge), `mcp_call.py` (JSON-RPC shell client) |
 | Framework | FastMCP (`from fastmcp import FastMCP, Context`) |
 | MCP instance name | `conda-forge-expert` (declared at module level: `mcp = FastMCP("conda-forge-expert")`) |
-| Total `@mcp.tool` registrations | **37** (verified via `grep -c "@mcp.tool" conda_forge_server.py`; v8.5.0 added `env_inspect` 8-mode dispatcher; v8.5.0 also extended `my_feedstocks` with `triage`/`limit`/`include_archived` params — same tool, enriched interface) |
-| Sync tools | 35 |
+| Total `@mcp.tool` registrations | **42** (verified via `grep -c "@mcp.tool" conda_forge_server.py`, 2026-06-20; v8.5.0 added `env_inspect` 8-mode dispatcher + enriched `my_feedstocks`; v8.14.0 added `download_pr_artifacts`; v8.19.0 added `platform_breakdown` / `pyver_breakdown` / `channel_split`) |
+| Sync tools | 40 |
 | Async tools | 2 (`update_cve_database`, `trigger_build` — long-running) |
-| Lines of code | 1,199 (`conda_forge_server.py`) + 143 (`gemini_server.py`) + 42 (`mcp_call.py`) |
+| Lines of code | 2,084 (`conda_forge_server.py`) + 178 (`gemini_server.py`) + 42 (`mcp_call.py`) |
 | Auto-start mechanism | Claude Code path-convention discovery of `.claude/tools/*.py` |
 | Tool namespace (from caller's side) | `mcp__conda_forge_server__<tool_name>` |
 | Pixi env for execution | `local-recipes` (server runs in the env where Claude Code was launched) |
@@ -86,11 +86,11 @@ Operationalized:
 
 ---
 
-## The 36 Tools by Surface
+## The 42 Tools by Surface
 
-### Recipe-authoring surface (17 tools)
+### Recipe-authoring surface (18 tools)
 
-The 10-step autonomous loop (Part 1) calls these tools in order. All are sync except `trigger_build` (async).
+The 10-step autonomous loop (Part 1) calls these tools in order. All are sync except `trigger_build` (async). (`get_build_summary` is listed here as step 7 and again under the infrastructure surface; it is counted once — in infrastructure — toward the 42 total. Likewise `scan_project` and `env_inspect` appear under the atlas-intelligence table but are project-scanning by function.)
 
 | Tool | Tier 1 script | Used by step |
 |---|---|---|
@@ -112,8 +112,9 @@ The 10-step autonomous loop (Part 1) calls these tools in order. All are sync ex
 | `update_recipe_from_github(...)` | `github_updater.py` | (GitHub-only sources) |
 | `check_github_version(recipe_path=None, github_repo=None)` | `github_version_checker.py` | (autotick check) |
 | `migrate_to_v1(recipe_path)` | `feedstock-migrator.py` | (v0→v1 migration) |
+| `download_pr_artifacts(...)` | `pr_artifacts.py` | (v8.14.0; fetch PR build artifacts into a local channel) |
 
-### Atlas-intelligence surface (16 tools)
+### Atlas-intelligence surface (22 tools)
 
 All read against `cf_atlas.db` (Part 2). All sync. `update_cve_database` is async because it can take 5-10 minutes.
 
@@ -128,6 +129,10 @@ All read against `cf_atlas.db` (Part 2). All sync. `update_cve_database` is asyn
 | `find_alternative(name, limit=10)` | `find_alternative.py` | packages similarity |
 | `adoption_stage(...)` | `adoption_stage.py` | packages (Phase B + Phase F) |
 | `pypi_only_candidates(limit=100, min_serial=0)` | `pypi_only_candidates.py` | pypi_universe LEFT JOIN packages (Phase D, v7.9.0+) |
+| `pypi_intelligence(...)` | `pypi_intelligence.py` | pypi_intelligence side table (v8.1.0; score / activity / cross-channel BOOLs / packaging shape) |
+| `platform_breakdown(...)` | `platform_breakdown.py` | package_platform_downloads (Phase F+, v8.19.0; ARM/win/EOL share) |
+| `pyver_breakdown(...)` | `pyver_breakdown.py` | package_pyver_downloads (Phase F+, v8.19.0; `--policy-check` python_min bump-safe flags) |
+| `channel_split(...)` | `channel_split.py` | package_channel_downloads (Phase F+, v8.19.0; defaults-channel migration opportunities) |
 | `cve_watcher(...)` | `cve_watcher.py` | package_version_vulns (Phase G') + vdb/ |
 | `package_health(name)` | composite of Part 1 scripts | packages + feedstock_health join |
 | `query_atlas(...)` | `detail_cf_atlas.py` / direct DB | packages (generic) |
@@ -149,7 +154,7 @@ All read against `cf_atlas.db` (Part 2). All sync. `update_cve_database` is asyn
 
 ## Tool Implementation Pattern
 
-Every tool follows the same skeleton (~90% of the 37 tools are 5-10 lines of body code; the `env_inspect` dispatcher is ~30 lines because of the 8-mode flag mapping):
+Every tool follows the same skeleton (~90% of the 42 tools are 5-10 lines of body code; the `env_inspect` dispatcher is ~30 lines because of the 8-mode flag mapping):
 
 ```python
 @mcp.tool()
@@ -219,7 +224,7 @@ These are gitignored. The server tolerates their absence (returns `{"status": "n
 
 ## Auxiliary Servers
 
-### `gemini_server.py` (143 lines)
+### `gemini_server.py` (178 lines)
 
 A second FastMCP server exposing Google Gemini as MCP tools. Used as a fallback / alternative model backend when Claude Code's primary inference is unavailable or rate-limited. Requires `GEMINI_API_KEY` env var. Two tools:
 - `gemini_chat(model, messages, ...)` — chat completion
@@ -319,7 +324,7 @@ When Claude Code loads the MCP server:
 1. Server starts: `python .claude/tools/conda_forge_server.py` (stdio transport).
 2. `mcp = FastMCP("conda-forge-expert")` registers the server.
 3. All `@mcp.tool()` decorators register their wrapped function's name, docstring, and type-hints into the tool schema.
-4. Claude Code sends `tools/list` MCP request; server responds with all 36 tool schemas.
+4. Claude Code sends `tools/list` MCP request; server responds with all 42 tool schemas.
 5. **Tool schemas surface at call time**: Claude Code includes them in the model's context only when the model is about to call a tool, not on every turn. Reduces token cost.
 
 This is why CLAUDE.md says "tool schemas surface at call time" — Claude Code's MCP runtime lazy-fetches them.
@@ -366,7 +371,7 @@ Captured from `docs/specs/claude-team-memory.md` Q13 and surfaced here so the re
 See `integration-architecture.md` for full cross-part contracts. Summary:
 
 - **← Part 1 (skill)**: every MCP tool wraps a Tier 1 canonical script. Part 1's `scripts/` is the implementation; Part 3 is the wire format.
-- **← Part 2 (cf_atlas)**: 17 of the 37 tools query `cf_atlas.db` directly (via Tier 1 scripts; v8.5.0's `env_inspect` adds atlas joins for the freshness/security/bus-factor/licenses modes). Part 3 doesn't talk to the DB itself — it shells out.
+- **← Part 2 (cf_atlas)**: 22 of the 42 tools query `cf_atlas.db` directly (via Tier 1 scripts; v8.5.0's `env_inspect` adds atlas joins for the freshness/security/bus-factor/licenses modes; v8.19.0's `platform_breakdown` / `pyver_breakdown` / `channel_split` read the Phase F+ breakdown tables). Part 3 doesn't talk to the DB itself — it shells out.
 - **→ Part 4 (BMAD)**: every BMAD agent doing conda-forge work invokes tools via `mcp__conda_forge_server__*` per CLAUDE.md integration rules.
 - **→ Enterprise layer**: each tool's subprocess inherits the env (including `JFROG_API_KEY`); the leak mitigation lives at the launch-shell layer.
 
@@ -381,7 +386,7 @@ See `integration-architecture.md` for full cross-part contracts. Summary:
    - SCRIPT_DIR constants pointing at Part 1's `scripts/`.
    - `_PYTHON = sys.executable` for subprocess.
    - `_run_script(script_path, args, input_text=None, timeout=120)` helper.
-   - 35 `@mcp.tool()` decorated functions, one per Part 1 / Part 2 capability.
+   - 42 `@mcp.tool()` decorated functions, one per Part 1 / Part 2 capability.
 4. **Out-of-band state files**: ensure `build_summary.json` + `build.pid` paths are agreed with Part 1's `local_builder.py`.
 5. **Auxiliary servers** (optional): `gemini_server.py` for Gemini bridge; `mcp_call.py` for shell-side JSON-RPC.
 6. **Register with Claude Code**: write `.mcp.json` (recommended for portability); or rely on path-convention auto-discovery (current state).

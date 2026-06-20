@@ -1,9 +1,9 @@
 ---
 doc_type: integration-architecture
 project_name: local-recipes
-date: 2026-05-12
+date: 2026-06-20
 parts_integrated: 4
-source_pin: 'conda-forge-expert v8.11.1'
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # Integration Architecture: How the Four Parts Connect
@@ -30,9 +30,9 @@ A rebuild that gets the parts right individually but misses these contracts will
               │  - 6-layer config      │ ◀── Rule 2: retro ────│  - 5 critical       │
               │  - 3 active projects   │    closeout updates   │    constraints      │
               │  - active-project      │    SKILL.md +         │  - SKILL.md         │
-              │    resolution          │    CHANGELOG          │  - 11 reference     │
-              └────────────────────────┘                       │  - 8 guides         │
-                                                                │  - 42 Tier 1 scripts│
+              │    resolution          │    CHANGELOG          │  - 17 reference     │
+              └────────────────────────┘                       │  - 9 guides         │
+                                                                │  - 54 Tier 1 scripts│
                                                                 └─────────┬───────────┘
                                                                           │ Tier 1 scripts
                                                                           │ are imported by
@@ -42,9 +42,9 @@ A rebuild that gets the parts right individually but misses these contracts will
                                               ▼ (atlas pipeline)          ▼ (MCP wire format)     │
                                 ┌──────────────────────────┐   ┌────────────────────────┐         │
                                 │   Part 2: cf_atlas        │   │  Part 3: MCP server     │         │
-                                │   - 17 phases (B → N)     │   │  - 35 tools             │         │
-                                │   - schema v19            │◀──│  - thin subprocess      │         │
-                                │   - 17 CLIs               │   │    wrappers over Tier 1 │         │
+                                │   - 22 phases (B → S)     │   │  - 42 tools             │         │
+                                │   - schema v28            │◀──│  - thin subprocess      │         │
+                                │   - 19 CLIs               │   │    wrappers over Tier 1 │         │
                                 │   - S3/cf-graph offline   │   │  - auto-started by      │         │
                                 │     backends              │   │    Claude Code          │         │
                                 └────────┬─────────────────┘   └──────────┬─────────────┘         │
@@ -81,7 +81,7 @@ Each contract is a relationship between two parts (or a part and a shared resour
 
 ### Contract 1: Part 1 ↔ Part 2 — Shared `scripts/` directory
 
-**Description**: cf_atlas lives **inside** Part 1's `.claude/skills/conda-forge-expert/scripts/` directory. The orchestrator (`conda_forge_atlas.py`), the 17 phase functions, the 15 query CLIs, and the support modules (`_cf_graph_versions.py`, `_parquet_cache.py`, `_sbom.py`) are all in this directory alongside Part 1's recipe-lifecycle scripts.
+**Description**: cf_atlas lives **inside** Part 1's `.claude/skills/conda-forge-expert/scripts/` directory. The orchestrator (`conda_forge_atlas.py`), the 22 phase functions, the query CLIs, and the support modules (`_cf_graph_versions.py`, `_parquet_cache.py`, `_sbom.py`) are all in this directory alongside Part 1's recipe-lifecycle scripts.
 
 **Why this coupling exists**: the atlas serves Part 1's recipe-authoring queries (`scan_for_vulnerabilities`, `check_dependencies`, `behind-upstream`, etc.). Moving the atlas to a separate directory would force Part 1's scripts to import across a module boundary that doesn't exist today.
 
@@ -209,7 +209,7 @@ Both gitignored. Tolerated when absent.
 
 ### Pixi env contract
 
-8 envs, each with a specific role:
+9 envs, each with a specific role:
 
 | Env | Used by | Purpose |
 |---|---|---|
@@ -219,6 +219,7 @@ Both gitignored. Tolerated when absent.
 | `conda-smithy` | Part 1 (lint + CI fidelity) | `conda-smithy recipe-lint` |
 | `build` | Parts (build operations) | rattler-build via cross-platform features |
 | `linux`, `osx`, `win` | Parts (per-platform builds) | Platform-specific build configurations |
+| `gcloud` | Part 2 (Phase P BigQuery downloads) | gcloud SDK for `pypi.file_downloads` queries |
 
 **Default env directive**: `# default-env: local-recipes` at the top of `[environments]` in `pixi.toml`. `scripts/load-env.sh` parses this and activates the named env.
 
@@ -283,7 +284,7 @@ Every arrow is a cross-part contract.
 3. Subprocess: Tier 1 .claude/skills/conda-forge-expert/scripts/atlas_phase.py
 4. atlas_phase.py imports conda_forge_atlas as cfa.
 5. cfa.open_db() opens .claude/data/conda-forge-expert/cf_atlas.db (WAL mode).
-6. cfa.init_schema(conn) — idempotent migration to v19.
+6. cfa.init_schema(conn) — idempotent migration to v28.
 7. cfa.run_single_phase("F", conn) →
        phase_f_downloads() reads PHASE_F_SOURCE env var →
        branches to _phase_f_via_api / _phase_f_via_s3 / _phase_f_via_auto →
@@ -292,7 +293,7 @@ Every arrow is a cross-part contract.
 8. JSON result returned to subprocess; stdout printed to cron log.
 ```
 
-Phase F doesn't touch BMAD, Part 1's recipe-lifecycle, or Part 3's MCP server. Same for the other 16 phases when run via `atlas-phase`.
+Phase F doesn't touch BMAD, Part 1's recipe-lifecycle, or Part 3's MCP server. Same for the other 21 phases when run via `atlas-phase`.
 
 ### Air-gapped recipe authoring (JFrog-routed)
 
@@ -318,7 +319,7 @@ Phase F doesn't touch BMAD, Part 1's recipe-lifecycle, or Part 3's MCP server. S
 | Tier 1 script doesn't emit JSON | Part 3 ↔ Part 1 | `_run_script` falls back to `{"error": "Failed to parse JSON output", stdout, stderr, exit_code}` — caller sees the error |
 | `JFROG_API_KEY` set in shell that calls external hosts | All parts → enterprise | Documented in 3 places (CLAUDE.md, project-context.md, enterprise-deployment.md); no automated detection |
 | MCP server not auto-discovered by Claude Code | Part 3 | Currently relies on path-convention; missing `.mcp.json` registration (deferred work) |
-| `cf_atlas.db` schema older than v19 | Parts reading the DB | `init_schema()` runs on every connection open and migrates additively; safe to call on stale DBs |
+| `cf_atlas.db` schema older than v28 | Parts reading the DB | `init_schema()` runs on every connection open and migrates additively; safe to call on stale DBs |
 | `pypi_conda_map.json` stale (>7d) | Part 1 name resolution | `update_mapping_cache` MCP tool refreshes; TTL is informational, not enforced |
 | Multiple BMAD projects writing to same artifacts | Part 4 multi-project | Active-project marker resolves before writes; no enforcement if marker not set (silently writes to global `_bmad-output/`) |
 | Build's `build.pid` leaks (orphan process) | Part 3 trigger_build | Manual cleanup; `_active_build` reference is per-server-process only |
@@ -329,12 +330,12 @@ Phase F doesn't touch BMAD, Part 1's recipe-lifecycle, or Part 3's MCP server. S
 
 | Part | Version source | Bump trigger |
 |---|---|---|
-| Part 1 (skill) | `CHANGELOG.md` TL;DR + `MANIFEST.yaml: version` (separate surfaces) | Semver: PATCH for fixes, MINOR for new gotchas/sections, MAJOR for breaking workflow changes. CHANGELOG bumps on every release; MANIFEST bumps only on portability protocol changes (currently v7.0.0; release is v7.7.2). |
-| Part 2 (cf_atlas) | `SCHEMA_VERSION` constant in `conda_forge_atlas.py:113` + CHANGELOG of skill | Schema version increments on every additive migration. Currently v19. |
+| Part 1 (skill) | `CHANGELOG.md` TL;DR + `MANIFEST.yaml: version` (separate surfaces) | Semver: PATCH for fixes, MINOR for new gotchas/sections, MAJOR for breaking workflow changes. CHANGELOG bumps on every release; MANIFEST bumps only on portability protocol changes (currently v7.0.0; release is v8.39.0). |
+| Part 2 (cf_atlas) | `SCHEMA_VERSION` constant in `conda_forge_atlas.py` + CHANGELOG of skill | Schema version increments on every additive migration. Currently v28. |
 | Part 3 (MCP server) | No explicit version — implied by Part 1's CHANGELOG | If MCP tool signature changes, treat as Part 1 MINOR bump. |
 | Part 4 (BMAD) | `_bmad/bmm/config.yaml` header (Generated by BMAD installer Version: 6.6.0) | Set by BMAD installer; bump via `bmad-method` package upgrade. |
 
-**Project-context drift pin**: `_bmad-output/projects/local-recipes/project-context.md` frontmatter `last_synced_skill_version` pins to a MINOR (currently `v7.8`). When Part 1's CHANGELOG ships a new MINOR, the pin signals re-sync needed.
+**Project-context drift contract**: `_bmad-output/projects/local-recipes/project-context.md` carries a drift-detection rule (its "Humans" sync note) keyed to a `last_synced_skill_version` MINOR pin. When Part 1's CHANGELOG ships a new MINOR (latest is v8.39.0), the contract signals re-sync of the volatile sections is needed.
 
 ---
 

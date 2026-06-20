@@ -3,13 +3,13 @@ doc_type: architecture
 part_id: cf-atlas
 display_name: cf_atlas data pipeline
 project_type_id: data
-date: 2026-05-12
-source_pin: 'conda-forge-expert v8.11.1'
+date: 2026-06-20
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # Architecture: cf_atlas (Part 2)
 
-`cf_atlas` is the **offline-tolerant package-intelligence layer** for the system. It builds and maintains `cf_atlas.db` (SQLite, schema v25) — an inventory of every conda-forge package with metadata, dependencies, version skew, vulnerability surface, downloads, and staleness signals, plus a separate `pypi_universe` side table holding the PyPI directory (~800k projects) for the admin-persona "what's on PyPI but not on conda-forge" candidate-list query, plus a `pypi_intelligence` enrichment side table (v8.1.0+), a `cisa_kev` overlay table (v8.5.3+), and `epss_scores` + `cwe_categories` overlay tables (v8.6.0+). The atlas is what makes Part 1's `scan_for_vulnerabilities` / `behind-upstream` / `feedstock-health` / `whodepends` queries fast and offline.
+`cf_atlas` is the **offline-tolerant package-intelligence layer** for the system. It builds and maintains `cf_atlas.db` (SQLite, schema v28) — an inventory of every conda-forge package with metadata, dependencies, version skew, vulnerability surface, downloads, and staleness signals, plus a separate `pypi_universe` side table holding the PyPI directory (~800k projects) for the admin-persona "what's on PyPI but not on conda-forge" candidate-list query, plus a `pypi_intelligence` enrichment side table (v8.1.0+), `pypi_universe_serial_snapshots` (v8.1.0+), the Phase P/F+ download tables `pypi_downloads_daily` / `package_platform_downloads` / `package_python_downloads` / `package_channel_downloads` (v8.15.0/v8.18.0/v8.19.0), a `cisa_kev` overlay table (v8.5.3+), and `epss_scores` + `cwe_categories` overlay tables (v8.6.0+). The atlas is what makes Part 1's `scan_for_vulnerabilities` / `behind-upstream` / `feedstock-health` / `whodepends` queries fast and offline.
 
 Part 2's scripts live inside Part 1's `scripts/` directory by design — the pipeline is the skill's data layer, not a separate codebase. This document focuses on **what** the pipeline does and **why** its structure looks the way it does; Part 1's architecture covers the script-level tier discipline.
 
@@ -21,7 +21,7 @@ Part 2's scripts live inside Part 1's `scripts/` directory by design — the pip
 
 Operationalized:
 - One SQLite file (`cf_atlas.db`) is the answer to every question.
-- 17 pipeline phases run in dependency order; each phase is independently re-runnable via `atlas-phase <ID>`.
+- 22 pipeline phases run in dependency order; each phase is independently re-runnable via `atlas-phase <ID>`.
 - TTL-gated columns mean stale-row re-fetch is cheap; full rebuild is expensive but rare.
 - Two air-gap backends (S3 parquet for Phase F, cf-graph offline for Phase H) close the last hard external-host dependencies.
 
@@ -32,15 +32,15 @@ Operationalized:
 | Field | Value |
 |---|---|
 | Primary artifact | `.claude/data/conda-forge-expert/cf_atlas.db` (SQLite, WAL mode) |
-| Schema version | **25** (additive migrations only; idempotent on every open) |
-| Schema constant | `SCHEMA_VERSION = 25` in `conda_forge_atlas.py:137` |
-| Tables | 11 (packages + 10 supporting) — plus `pypi_universe`, `pypi_intelligence`, `cisa_kev`, `epss_scores`, `cwe_categories` side tables (v7.9.0/v8.1.0/v8.5.3/v8.6.0) |
+| Schema version | **28** (additive migrations only; idempotent on every open) |
+| Schema constant | `SCHEMA_VERSION = 28` in `conda_forge_atlas.py:138` |
+| Tables | **21** (packages + 20 supporting/side) — incl. `pypi_universe`, `pypi_intelligence`, `pypi_universe_serial_snapshots`, `pypi_downloads_daily`, `package_platform_downloads`, `package_python_downloads`, `package_channel_downloads`, `cisa_kev`, `epss_scores`, `cwe_categories` (v7.9.0/v8.1.0/v8.15.0/v8.18.0/v8.19.0/v8.5.3/v8.6.0) + 4 views |
 | Pipeline phases | **22** (B, B.5, B.6, C, C.5, D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N) — Phases O–S added in v8.1.0 as the PyPI intelligence layer |
 | TTL-gated phases | 4 (F, G, H, K) — re-fetch only stale rows |
 | Checkpoint-aware phases | B, D, N (via `phase_state` table) |
 | Air-gap backends | Phase F: S3 parquet; Phase H: cf-graph offline |
-| Public CLIs | 19 (1 orchestrator + 1 single-phase + 17 query CLIs — `pypi-only-candidates` added v7.9.0; `pypi-intelligence` added v8.1.0) |
-| MCP exposure | All 19 CLIs have an MCP tool counterpart in `conda_forge_server.py` |
+| Public CLIs | 22 (1 orchestrator + 1 single-phase + 20 query CLIs — `pypi-only-candidates` added v7.9.0; `pypi-intelligence` added v8.1.0; `platform-breakdown` / `pyver-breakdown` / `channel-split` added v8.19.0) |
+| MCP exposure | Every query CLI has an MCP tool counterpart in `conda_forge_server.py` (~42 atlas + recipe-authoring tools total) |
 | Pixi envs used | `local-recipes` (primary), `vuln-db` (Phase G/G' require AppThreat vdb importable) |
 | Lines of orchestrator code | ~4,300 (`conda_forge_atlas.py`) |
 | Approximate package count tracked | ~800k conda-forge packages |
@@ -82,16 +82,17 @@ Operationalized:
                         └────────┴───────┴──────┼──────┴──────┴──────┴──────┘
                                                 ▼
                                      ┌──────────────────────┐
-                                     │  cf_atlas.db (v25)   │
+                                     │  cf_atlas.db (v28)   │
                                      │   packages           │
-                                     │   + 10 supporting    │
-                                     │   + 5 side tables    │
+                                     │   + 20 supporting/   │
+                                     │     side tables      │
+                                     │   + 4 views          │
                                      └──────────┬───────────┘
                                                 │
                   ┌──────────────────────────────┼───────────────────────────────────┐
                   ▼                              ▼                                   ▼
-            19 query CLIs                Part 3 (MCP)                       Part 1 (skill)
-            (atlas-phase,                35 MCP tools                       recipe-lifecycle
+            20 query CLIs                Part 3 (MCP)                       Part 1 (skill)
+            (atlas-phase,                ~42 MCP tools                      recipe-lifecycle
              staleness-report,           expose every CLI                   consumes atlas
              behind-upstream,                                               for validation +
              feedstock-health, etc.)                                        intelligence
@@ -145,14 +146,20 @@ Phases run in dependency order. Each phase populates specific columns on the `pa
 
 ---
 
-## Schema (cf_atlas.db, version 25)
+## Schema (cf_atlas.db, version 28)
 
-15 tables + 3 views. The `packages` table is primary (conda-actionable
+21 tables + 4 views. The `packages` table is primary (conda-actionable
 working set); the rest are supporting. `pypi_universe` (added v7.9.0 /
 schema v20) is the **directory** of every PyPI project — separated from
 `packages` so the working set stays conda-actionable and the universe
 upsert can TTL on its own cadence (default 7 d via
 `PHASE_D_UNIVERSE_TTL_DAYS`).
+
+**v8.15.0 → v8.19.0 additions (schema v25 → v26 → v27 → v28, the Phase P/F+ download-intelligence band):**
+
+- **v25 → v26 (v8.15.0, Phase P incremental refactor):** new `pypi_downloads_daily` side table holds per-day per-package BigQuery download counts so `pypi_intelligence.downloads_30d/90d` are recomputed from local SQL aggregation (no single-shot 90-day query). Cost-cap + dry-run preflight env vars added; no consumer-surface change.
+- **v26 → v27 (v8.18.0, Phase F+ Wave 2 richer metrics):** five new `packages` columns (rolling 30/90-day downloads, 90-day trend slope, lifetime totals) plus per-platform + per-Python breakdown tables `package_platform_downloads` + `package_python_downloads`, all computed in one extended parquet sweep (zero new network). Migration writes a `phase_f_force_refresh_pending` sentinel.
+- **v27 → v28 (v8.19.0, Phase F+ Wave 3 CLI surface):** new `package_channel_downloads` side table + `packages.python_min` (declared `python_min` parsed from `raw_meta_yaml` during Phase E). Surfaces the `platform-breakdown` / `pyver-breakdown` (with `--policy-check`) / `channel-split` operator CLIs + MCP tools. Migration writes BOTH force-refresh meta sentinels under `BEGIN IMMEDIATE`.
 
 **v8.6.0 additions (schema v25, via v24 → v25 cleanup):**
 
@@ -340,7 +347,7 @@ CREATE TABLE pypi_universe (                -- Phase D side table (v7.9.0 / sche
 -- via INSERT OR IGNORE + DELETE in one transaction (idempotent on re-runs).
 ```
 
-**Schema migrations**: idempotent on every connection open via `init_schema()`. Migrations are **additive only** — new columns / tables; never DROP or rename. v19 history (chronological): schema started at v1; major additions tracked in CHANGELOG entries v6.0 → v7.7.
+**Schema migrations**: idempotent on every connection open via `init_schema()`. Migrations are **predominantly additive** — new columns / tables; the only DROP is the v24 → v25 cleanup of Wave-A-provisioned-but-cancelled columns (native `ALTER TABLE … DROP COLUMN`, guarded). History (chronological): schema started at v1 and runs to the current **v28**; major additions tracked in CHANGELOG entries v6.0 → v8.19.0 (Phase F+ Wave 3).
 
 ---
 
@@ -408,7 +415,7 @@ Two modes via `PHASE_H_SOURCE` env var (default `pypi-json`):
 
 ---
 
-## The 17 Public CLIs
+## The 22 Public CLIs
 
 All have a Tier 2 wrapper in `.claude/scripts/conda-forge-expert/` and a pixi task in `pixi.toml`. All are offline-safe (read-only against the DB except `bootstrap-data` and `atlas-phase`).
 
@@ -419,7 +426,7 @@ All have a Tier 2 wrapper in `.claude/scripts/conda-forge-expert/` and a pixi ta
 | `bootstrap-data` | `pixi run -e local-recipes bootstrap-data` | Full data refresh: mapping cache + CVE DB + vdb + cf_atlas (B-N) + optional Phase N. `--fresh` for hard reset; `--status` for state; `--resume`; `--no-vdb` / `--no-cf-atlas` to skip heavy steps. Per-step timeouts via `BOOTSTRAP_<STEP>_TIMEOUT` env vars. |
 | `atlas-phase` | `pixi run -e local-recipes atlas-phase <ID>` | Single-phase invocation against the existing DB. `--reset-ttl` for TTL-gated phases (F, G, H, K). `--list` enumerates phases. **Avoids the 30-45 min full rebuild.** |
 
-### Atlas-intelligence query CLIs (16)
+### Atlas-intelligence query CLIs (20)
 
 | CLI | Reads from | Use case |
 |---|---|---|
@@ -438,13 +445,17 @@ All have a Tier 2 wrapper in `.claude/scripts/conda-forge-expert/` and a pixi ta
 | `scan-project` | `packages` + `inventory_cache/` | "Scan this manifest / SBOM / container for conda-forge intelligence" |
 | `my-feedstocks` | `package_maintainers` + GitHub user | "What feedstocks does user X maintain?" |
 | `pypi-only-candidates` | `pypi_universe LEFT JOIN packages` (Phase D, v7.9.0+) | "Which PyPI projects have no conda-forge equivalent yet?" (admin candidate-list, ordered by `last_serial DESC`; flags `--limit N --min-serial M --json`) |
+| `pypi-intelligence` | `pypi_intelligence` + `v_pypi_candidates` (Phases O/P/Q/R/S, v8.1.0+) | "What's the conda-forge readiness, activity band, cross-channel presence, and download trend for PyPI project X?" |
+| `platform-breakdown` | `package_platform_downloads` (Phase F+, v8.19.0+) | "ARM / Windows / EOL-Python download share for package X (or channel-wide)" |
+| `pyver-breakdown` | `package_python_downloads` + `packages.python_min` (Phase F+, v8.19.0+) | "Per-Python download distribution; `--policy-check` flags python_min bump-safe candidates from real download data" |
+| `channel-split` | `package_channel_downloads` (Phase F+, v8.19.0+) | "Defaults-channel vs conda-forge download split — surfaces migration opportunities" |
 | `health-check` | various | System-level pipeline health |
 
 ---
 
 ## MCP Exposure
 
-All 18 CLIs have an MCP-tool counterpart in `.claude/tools/conda_forge_server.py` (Part 3). MCP-only tools (no public CLI): `update_cve_database`, `update_mapping_cache`, `lookup_feedstock`, `get_feedstock_context`, `enrich_from_feedstock`, `check_dependencies`, `check_github_version`, `get_conda_name`. The MCP server is the wire format; the canonical implementation is Part 1's `scripts/`.
+Every query CLI has an MCP-tool counterpart in `.claude/tools/conda_forge_server.py` (Part 3) — ~42 `@mcp.tool` tools across the atlas-intelligence + recipe-authoring + project-scanning surfaces. MCP-only tools (no public CLI): `update_cve_database`, `update_mapping_cache`, `lookup_feedstock`, `get_feedstock_context`, `enrich_from_feedstock`, `check_dependencies`, `check_github_version`, `get_conda_name`. The MCP server is the wire format; the canonical implementation is Part 1's `scripts/`.
 
 ---
 
@@ -565,7 +576,7 @@ Cron schedules + sample crontab entries: `guides/atlas-operations.md`.
 See `integration-architecture.md` for full cross-part contracts. Summary:
 
 - **← Part 1 (skill)**: cf_atlas is implemented inside Part 1's `scripts/`. The `conda-forge-expert` skill exposes the atlas as MCP tools and CLIs.
-- **→ Part 3 (MCP server)**: all 17 CLIs surface as MCP tools in `conda_forge_server.py`.
+- **→ Part 3 (MCP server)**: every query CLI surfaces as an MCP tool in `conda_forge_server.py` (~42 tools total).
 - **→ vuln-db env**: Phase G + G' require `pixi run -e vuln-db ...` because they import AppThreat vdb's Python library.
 - **→ Enterprise layer**: all outbound HTTP from atlas phases routes through `_http.py` (truststore + JFrog/GitHub/.netrc auth). Per-host env-var overrides (`CONDA_FORGE_BASE_URL`, `PYPI_BASE_URL`, `ANACONDA_API_BASE`, `S3_PARQUET_BASE_URL`, `GITHUB_API_BASE_URL`) supported across all phases.
 
@@ -574,13 +585,13 @@ See `integration-architecture.md` for full cross-part contracts. Summary:
 ## Rebuild checklist for Part 2
 
 1. **Prerequisites**: Part 1 must exist (cf_atlas lives inside Part 1's `scripts/`).
-2. **Schema bootstrap**: implement `init_schema()` with all 11 tables + indexes. Start at SCHEMA_VERSION=1; add migrations additively as the build progresses.
+2. **Schema bootstrap**: implement `init_schema()` with all 21 tables + 4 views + indexes. Start at SCHEMA_VERSION=1; add migrations additively as the build progresses (current head: v28).
 3. **Phase B first** (every other phase depends on Phase B's `packages` rows). Use `current_repodata.json` direct fetch via `_http.py`, NOT py-rattler.
 4. **Phase D second** (PyPI enumeration; Phase C/C.5 link Phase B and Phase D).
 5. **Phase E** (cf-graph tarball download — one-time ~5 min) — must exist before E.5, M (which read the tarball).
 6. **Phases F, G, G', H, K, L, M, N**: in any order. Each is independently re-runnable. Implement TTL gates from the start, not as a retrofit.
 7. **Phase J** (dependency graph): after Phase D (PyPI deps) and Phase E (recipe deps from cf-graph).
-8. **CLI wrappers** (17 in Tier 2): one per phase + 2 orchestration entries (`bootstrap-data`, `atlas-phase`) + 13 query CLIs.
+8. **CLI wrappers** (22 in Tier 2): 2 orchestration entries (`bootstrap-data`, `atlas-phase`) + 20 query CLIs.
 9. **MCP tool wrappers** in Part 3: one per CLI + the MCP-only tools listed above.
 10. **Tests**: per-phase unit tests with fixtures; meta-tests for schema migration idempotency, TTL gate scoping (`test_atlas_phase_reset_ttl.py`), checkpoint resumability.
 11. **Documentation**: `guides/atlas-operations.md` for cron schedules + hard reset + air-gap; `reference/atlas-actionable-intelligence.md` for persona-mapped signal index; `reference/atlas-phases-overview.md` for phase-indexed companion (data source + purpose + intelligence per stage).

@@ -4,15 +4,15 @@ project_name: local-recipes
 date: 2026-06-20
 repository_type: monorepo
 parts: 4
-docs_generated: 10
-source_pin: 'conda-forge-expert v8.11.1'
+docs_generated: 13
+source_pin: 'conda-forge-expert v8.39.0'
 ---
 
 # `local-recipes` — Master Documentation Index
 
 This index is your **primary entry point** for AI-assisted development on `local-recipes`. When a Brownfield PRD, story breakdown, or BMAD planning workflow needs the architecture and feature inventory of this repo, point them at this file.
 
-The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v8.11.1** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `sprint-change-proposal-2026-05-15-v8.1.md`; v8.1.0 → v8.5.1 on 2026-05-23 after the env-inspect suite — see `retro-env-inspect-suite-2026-05-23.md`; v8.5.1 → v8.5.2 on 2026-05-23 after the admin-refresh audit close-out — see `sprint-change-proposal-2026-05-23-v8.5.2.md`; v8.5.2 → v8.5.3 on 2026-05-23 after the same-day emergent DW12+DW13 bundle close-out — see `sprint-change-proposal-2026-05-23-v8.5.3.md` + `implementation-artifacts/retro-dw12-dw13-2026-05-23.md`; v8.5.3 → v8.6.0 on 2026-05-24 after the AppThreat Deep Signals release (Waves A + B + D shipped + Wave C cancelled pre-implementation) — see `sprint-change-proposal-2026-05-24-v8.6.0.md` + `implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md`; **v8.6.0 → v8.11.1** PRD synced to v1.5.1 on 2026-06-20 to document active v1 migration, Feature G45 local-only SPA, AI provenance hook, and architectural gaps).
+The document set was originally produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template); **last reconciled 2026-06-20**. Source pin: **conda-forge-expert v8.39.0** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `change-history/sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `change-history/sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `change-history/sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `change-history/sprint-change-proposal-2026-05-15-v8.1.md`; v8.1.0 → v8.5.1 on 2026-05-23 after the env-inspect suite — see `../implementation-artifacts/retros/retro-env-inspect-suite-2026-05-23.md`; v8.5.1 → v8.5.2 on 2026-05-23 after the admin-refresh audit close-out — see `change-history/sprint-change-proposal-2026-05-23-v8.5.2.md`; v8.5.2 → v8.5.3 on 2026-05-23 after the same-day emergent DW12+DW13 bundle close-out — see `change-history/sprint-change-proposal-2026-05-23-v8.5.3.md` + `../implementation-artifacts/retros/retro-dw12-dw13-2026-05-23.md`; v8.5.3 → v8.6.0 on 2026-05-24 after the AppThreat Deep Signals release (Waves A + B + D shipped + Wave C cancelled pre-implementation) — see `change-history/sprint-change-proposal-2026-05-24-v8.6.0.md` + `../implementation-artifacts/retros/retro-appthreat-deep-signals-2026-05-24.md`; v8.6.0 → v8.11.1 on 2026-06-07, PRD synced to v1.5.1 to document active v1 migration, Feature G45 local-only SPA, AI provenance hook, and architectural gaps — see `change-history/sprint-change-proposal-2026-06-07-v8.11.1.md`; **v8.11.1 → v8.39.0** on 2026-06-20 — the skill advanced through the Phase F+ PyPI-intelligence waves, the PR-artifact downloader, the Phase P cost refactor, and gotchas through G45; this index reconciled to the live skill at the v8.39.0 pin).
 
 ---
 
@@ -21,9 +21,9 @@ The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: han
 - **Type:** monorepo with **4 logical parts**
 - **Primary language:** Python 3.12
 - **Build engine:** Pixi + rattler-build
-- **Default pixi env:** `local-recipes` (8 envs total)
-- **Recipe corpus:** 1,415 v1 recipes (outputs; NOT part of the rebuild target)
-- **Skill version:** v8.10.0 (re-synced 2026-05-26)
+- **Default pixi env:** `local-recipes` (9 envs total)
+- **Recipe corpus:** 1,602 recipe dirs (718 v1 `recipe.yaml` + 1,054 v0 `meta.yaml`, mid-migration; outputs, NOT part of the rebuild target)
+- **Skill version:** v8.39.0 (re-synced 2026-06-20)
 
 > See **[project-overview.md](./project-overview.md)** for the full executive summary, technology stack, and four-part decomposition.
 
@@ -46,9 +46,9 @@ The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: han
 |---|---|---|
 | 1 | [project-overview.md](./project-overview.md) | System framing, monorepo structure, four-part decomposition, cross-cutting concerns, getting-started orientation |
 | 2 | [source-tree-analysis.md](./source-tree-analysis.md) | Annotated directory tree at 5 levels, entry-points table, critical files |
-| 3 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier scripts/wrappers/data architecture, 10-step autonomous loop, 42 Tier 1 scripts, 41 templates / 13 ecosystems, build failure protocol, Recipe Authoring Gotchas G1-G6 |
-| 4 | [architecture-cf-atlas.md](./architecture-cf-atlas.md) | Part 2: 17 pipeline phases, schema v19 (11 tables), TTL gates, S3+cf-graph offline backends, performance characteristics, failure modes |
-| 5 | [architecture-mcp-server.md](./architecture-mcp-server.md) | Part 3: 35 MCP tools, thin-subprocess-wrapper pattern, auto-discovery + deferred `.mcp.json`, BMAD-agent invocation flow |
+| 3 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier scripts/wrappers/data architecture, 10-step autonomous loop, 42 Tier 1 scripts, 41 templates / 13 ecosystems, build failure protocol, Recipe Authoring Gotchas G1–G45 |
+| 4 | [architecture-cf-atlas.md](./architecture-cf-atlas.md) | Part 2: phase pipeline B → T (incl. the O/P/Q/R/S PyPI-intelligence layer), schema v28, TTL gates, S3+cf-graph offline backends, performance characteristics, failure modes |
+| 5 | [architecture-mcp-server.md](./architecture-mcp-server.md) | Part 3: 42 MCP tools, thin-subprocess-wrapper pattern, auto-discovery + deferred `.mcp.json`, BMAD-agent invocation flow |
 | 6 | [architecture-bmad-infra.md](./architecture-bmad-infra.md) | Part 4: 6-layer config merge, active-project resolution, 65 installed skills, BMAD↔CFE integration rules |
 | 7 | [integration-architecture.md](./integration-architecture.md) | 7 integration contracts, cross-cutting `_http.py` auth chain, JFROG leak, vuln-db env separation, end-to-end recipe-authoring flow |
 | 8 | [development-guide.md](./development-guide.md) | Pixi tasks cheatsheet (~50 tasks), manual recipe workflow, MCP server invocation, testing, debugging |
@@ -63,9 +63,19 @@ The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: han
 | [validation-report-PRD.md](./validation-report-PRD.md) | `bmad-validate-prd` | 13-dimension PRD validation. Verdict history: REVISE (initial) → APPROVED (post tentative-decisions) → APPROVED (re-validated 2026-05-12 post v7.8.1 sync). |
 | [implementation-readiness-report.md](./implementation-readiness-report.md) | `bmad-check-implementation-readiness` | Cross-artifact alignment check across PRD + architecture + epics + project-context. Verdict: READY. |
 | [epics.md](./epics.md) | `bmad-create-epics-and-stories` | 13 epics, ~193 stories, 5 waves. |
-| [sprint-change-proposal-2026-05-12.md](./sprint-change-proposal-2026-05-12.md) | `bmad-correct-course` (2026-05-12) | Documents the v7.7.2 → v7.8.1 sync — env-var additions, phase architecture changes, `_http.py` surface expansion. Records why this doc set's `source_pin` was bumped and which artifacts received substantive vs pin-only updates. |
-| [sprint-change-proposal-2026-05-23-v8.5.3.md](./sprint-change-proposal-2026-05-23-v8.5.3.md) | `bmad-correct-course` (2026-05-23) | Documents the v8.5.2 → v8.5.3 sync — DW12 rollup-staleness fix + DW13 CISA KEV via Path C (after `vdb --cache-os` crashed at 33 GB pre-DW13-overlay). Also acknowledges the v8.6.0 spec at `docs/specs/atlas-appthreat-deep-signals.md` as intake-ready. |
-| [sprint-change-proposal-2026-05-24-v8.6.0.md](./sprint-change-proposal-2026-05-24-v8.6.0.md) | `bmad-correct-course` (2026-05-24) | Documents the v8.5.3 → v8.6.0 sync — AppThreat Deep Signals release: Waves A + B + D shipped (schema v23 → v24 → v25 round-trip; +2 side tables `epss_scores` + `cwe_categories`; +4 packages columns; 2 new fetcher CLIs `fetch-epss` + `fetch-cwe-catalog`; 4 new flags across existing CLIs; persona-profile auto-runs). Wave C (Phase T blint + Phase U EPSS overlay phase) cancelled pre-implementation; 5 parent-spec errors caught by verify-don't-assume. 3 new DW rows (DW18/DW19/DW20). PATCH PRD bump; MINOR skill bump. |
+
+The 8 `bmad-correct-course` proposals now live under **[`change-history/`](./change-history/)** (the doc-set's chronological change log); retrospectives now live under **[`../implementation-artifacts/retros/`](../implementation-artifacts/retros/)** (22 retro-*.md files).
+
+| Document | When written | What it captures |
+|---|---|---|
+| [sprint-change-proposal-2026-05-12.md](./change-history/sprint-change-proposal-2026-05-12.md) | `bmad-correct-course` (2026-05-12) | v7.7.2 → v7.8.1 sync — env-var additions, phase architecture changes, `_http.py` surface expansion. Records why this doc set's `source_pin` was bumped and which artifacts received substantive vs pin-only updates. |
+| [sprint-change-proposal-2026-05-13.md](./change-history/sprint-change-proposal-2026-05-13.md) | `bmad-correct-course` (2026-05-13) | v7.8.1 → v7.9.0 sync — actionable-scope audit (`pypi_universe` split, Phase H denominator fix). Minor. |
+| [sprint-change-proposal-2026-05-13-v8.0.md](./change-history/sprint-change-proposal-2026-05-13-v8.0.md) | `bmad-correct-course` (2026-05-13) | v7.9.0 → v8.0.0 sync — structural-enforcement view + persona-profile bundle (Waves A+B+D shipped; Wave C `vuln_total` drop deferred). |
+| [sprint-change-proposal-2026-05-15-v8.1.md](./change-history/sprint-change-proposal-2026-05-15-v8.1.md) | `bmad-correct-course` (2026-05-15) | v8.0.x → v8.1.0 sync — PyPI intelligence layer (phases O/P/Q/R/S, `pypi_intelligence` side table). Additive Minor. |
+| [sprint-change-proposal-2026-05-23-v8.5.2.md](./change-history/sprint-change-proposal-2026-05-23-v8.5.2.md) | `bmad-correct-course` (2026-05-23) | v8.5.1 → v8.5.2 sync — admin-refresh audit close-out + observability primitives (Phase K hang fix). Patch. |
+| [sprint-change-proposal-2026-05-23-v8.5.3.md](./change-history/sprint-change-proposal-2026-05-23-v8.5.3.md) | `bmad-correct-course` (2026-05-23) | v8.5.2 → v8.5.3 sync — DW12 rollup-staleness fix + DW13 CISA KEV via Path C (after `vdb --cache-os` crashed at 33 GB pre-DW13-overlay). Also acknowledges the v8.6.0 spec as intake-ready. |
+| [sprint-change-proposal-2026-05-24-v8.6.0.md](./change-history/sprint-change-proposal-2026-05-24-v8.6.0.md) | `bmad-correct-course` (2026-05-24) | v8.5.3 → v8.6.0 sync — AppThreat Deep Signals release: Waves A + B + D shipped (schema v23 → v24 → v25 round-trip; +2 side tables `epss_scores` + `cwe_categories`; +4 packages columns; 2 new fetcher CLIs; persona-profile auto-runs). Wave C cancelled pre-implementation; 5 parent-spec errors caught by verify-don't-assume. 3 new DW rows. |
+| [sprint-change-proposal-2026-06-07-v8.11.1.md](./change-history/sprint-change-proposal-2026-06-07-v8.11.1.md) | `bmad-correct-course` (2026-06-07) | v8.10.0 → v8.11.1 sync (three releases bundled: v8.10.1 PATCH + v8.11.0 MINOR + v8.11.1 PATCH) — npm-generator default flipped to per-platform inline build; PRD `edit_history` bump + planning-artifact `source_pin` re-sync. Minor. |
 
 ---
 
@@ -76,7 +86,7 @@ The above documents are syntheses of these primary sources. A rebuild should tre
 ### Repo-wide
 - [`CLAUDE.md`](../../../../CLAUDE.md) — repo-wide AI agent guidance, BMAD↔CFE integration rules
 - [`README.md`](../../../../README.md) — human-facing intro
-- [`pixi.toml`](../../../../pixi.toml) — 8 envs, ~50 pixi tasks, build features
+- [`pixi.toml`](../../../../pixi.toml) — 9 envs, ~80 pixi tasks, build features
 
 ### Project-scoped (this project)
 - [`project-context.md`](../project-context.md) — foundational rules every BMAD agent reads on spawn (v7.8.1-pinned, 63 rules)
@@ -85,11 +95,11 @@ The above documents are syntheses of these primary sources. A rebuild should tre
 - [`implementation-artifacts/spec-atlas-phase-f-s3-air-gap.md`](../implementation-artifacts/spec-atlas-phase-f-s3-air-gap.md) — Phase F S3 backend spec
 
 ### Part 1 (skill)
-- [`.claude/skills/conda-forge-expert/SKILL.md`](../../../../.claude/skills/conda-forge-expert/SKILL.md) — primary spine (914 lines)
+- [`.claude/skills/conda-forge-expert/SKILL.md`](../../../../.claude/skills/conda-forge-expert/SKILL.md) — primary spine (~2,570 lines)
 - [`.claude/skills/conda-forge-expert/INDEX.md`](../../../../.claude/skills/conda-forge-expert/INDEX.md) — task→tool navigator
 - [`.claude/skills/conda-forge-expert/CHANGELOG.md`](../../../../.claude/skills/conda-forge-expert/CHANGELOG.md) — release history (canonical drift-detection source)
-- [`.claude/skills/conda-forge-expert/reference/`](../../../../.claude/skills/conda-forge-expert/reference/) — 11 deep-reference files
-- [`.claude/skills/conda-forge-expert/guides/`](../../../../.claude/skills/conda-forge-expert/guides/) — 8 workflow guides
+- [`.claude/skills/conda-forge-expert/reference/`](../../../../.claude/skills/conda-forge-expert/reference/) — 17 deep-reference files
+- [`.claude/skills/conda-forge-expert/guides/`](../../../../.claude/skills/conda-forge-expert/guides/) — 9 workflow guides
 - [`.claude/skills/conda-forge-expert/quickref/`](../../../../.claude/skills/conda-forge-expert/quickref/) — 2 quick-reference files
 
 ### Architecture (existing docs)
@@ -130,8 +140,8 @@ Recommended build order from `project-parts.json`:
 
 1. **First: Part 4 (BMAD infrastructure)** — install BMAD-METHOD, set up 6-layer config, create multi-project layout. See [architecture-bmad-infra.md](./architecture-bmad-infra.md) § Rebuild checklist.
 2. **Second: Part 1 (conda-forge-expert skill)** — author the 42 Tier 1 scripts, 34 wrappers, SKILL.md, reference/, guides/, templates/, tests/. See [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) § Rebuild checklist.
-3. **Third: Part 2 (cf_atlas)** — implement the 17 phases inside Part 1's `scripts/`. Schema v19 from the start. See [architecture-cf-atlas.md](./architecture-cf-atlas.md) § Rebuild checklist.
-4. **Fourth: Part 3 (MCP server)** — author `conda_forge_server.py` with 35 `@mcp.tool()` thin wrappers over Tier 1. See [architecture-mcp-server.md](./architecture-mcp-server.md) § Rebuild checklist.
+3. **Third: Part 2 (cf_atlas)** — implement the phase pipeline (B → T) inside Part 1's `scripts/`. Schema v28 from the start. See [architecture-cf-atlas.md](./architecture-cf-atlas.md) § Rebuild checklist.
+4. **Fourth: Part 3 (MCP server)** — author `conda_forge_server.py` with 42 `@mcp.tool()` thin wrappers over Tier 1. See [architecture-mcp-server.md](./architecture-mcp-server.md) § Rebuild checklist.
 5. **Throughout: enforce the integration contracts** — see [integration-architecture.md](./integration-architecture.md) § The 7 Integration Contracts.
 6. **Plan with `bmad-create-epics-and-stories`** once oriented — point the skill at this index file. Expect ~10-15 epics and 100-150+ stories.
 
@@ -171,7 +181,7 @@ Recommended build order from `project-parts.json`:
 
 These are surprising or non-obvious facts that AI agents and humans both get wrong. They appear in multiple documents but are consolidated here.
 
-1. **`recipes/` contains 1,415 recipes — they are OUTPUTS, not part of the rebuild target.** The factory rebuilds the factory; recipes are re-authored using the rebuilt factory.
+1. **`recipes/` contains 1,602 recipe dirs (718 v1 `recipe.yaml` + 1,054 v0 `meta.yaml`, mid-migration) — they are OUTPUTS, not part of the rebuild target.** The factory rebuilds the factory; recipes are re-authored using the rebuilt factory.
 
 2. **Always use v1 `recipe.yaml`, NEVER `meta.yaml` in new recipes.** Mixing the two formats in a build run is automatically rejected. v0 is only for migration source material.
 
@@ -185,9 +195,9 @@ These are surprising or non-obvious facts that AI agents and humans both get wro
 
 7. **The MCP server is auto-discovered by path convention.** `.mcp.json` registration is deferred work; not currently present.
 
-8. **17 phases (B through N), not 15.** The atlas pipeline has 17 distinct phase IDs once you count B.5, B.6, C.5, E.5, G'.
+8. **The atlas pipeline now spans phases B → T**, including the PyPI-intelligence layer O/P/Q/R/S (v8.1.0) and trending-discovery Phase T (in flight). The earlier "17 phases (B–N)" framing is superseded; count the live phase inventory from `conda_forge_atlas.py` (top-level letters B–T plus sub-phases like B.5, B.6, C.5, E.5, G').
 
-9. **8 pixi envs** — `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes` (default), `vuln-db`.
+9. **9 pixi envs** — `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes` (default), `vuln-db`, `gcloud`.
 
 10. **Every conda-forge BMAD effort runs a `bmad-retrospective` at closeout.** Updates SKILL.md / reference/ / guides / CHANGELOG. Not optional.
 
@@ -203,16 +213,16 @@ These are surprising or non-obvious facts that AI agents and humans both get wro
 
 ---
 
-## Drift Status (as of 2026-05-12)
+## Drift Status (last reconciled 2026-06-20)
 
 | Asset | Pinned to | Current | Drift action |
 |---|---|---|---|
-| project-context.md | v7.7 (MINOR) | v7.7.2 (PATCH) | None needed — PATCH bumps don't trigger re-sync |
-| This doc set | v7.7 (MINOR) | v7.7.2 (PATCH) | None needed |
+| This doc set | v8.39.0 | conda-forge-expert v8.39.0 | None needed — reconciled this session |
+| project-context.md | v8.11.1 | v8.39.0 (skill) | Re-verify on next MINOR-bump sweep: § Recipe Format / MCP Lifecycle / Anti-Patterns / Gotchas (G1–G45) |
 | MANIFEST.yaml (Part 1 portability) | v7.0.0 | v7.0.0 | None |
-| Schema (Part 2 cf_atlas) | v19 | v19 | None |
+| Schema (Part 2 cf_atlas) | v28 | v28 | None |
 
-When the skill ships v7.8.0+: re-verify project-context.md § Recipe Format / MCP Lifecycle / Anti-Patterns, then this doc set.
+When the skill ships its next MINOR bump: re-verify project-context.md § Recipe Format / MCP Lifecycle / Anti-Patterns, then this doc set.
 
 ---
 
@@ -222,7 +232,7 @@ This index and its 9 companion documents were produced via the hybrid Path 3 of 
 
 - Live filesystem (`find` / `ls` / `wc -l`)
 - Source code (`grep` for `@mcp.tool`, `PHASES`, `SCHEMA_VERSION`, etc.)
-- Skill CHANGELOG TL;DR (v7.7.2)
+- Skill CHANGELOG TL;DR (v8.39.0, re-verified 2026-06-20)
 - Existing repo docs (`CLAUDE.md`, `project-context.md`, `docs/`)
 
 **Outstanding risks / follow-ups**:
@@ -257,9 +267,11 @@ When ready to plan new features against the rebuilt system, run the PRD workflow
 
 | Metric | Value |
 |---|---|
-| Total documents | 10 (9 markdown + 1 JSON) |
-| Total markdown lines | ~3,000 |
-| Generated | 2026-05-12 |
+| Core document-project set | 13 markdown + 1 JSON in `planning-artifacts/` (this set's 9 synthesis docs + index + the BMAD planning outputs PRD.md / architecture.md / epics.md; project-parts.json) |
+| Change history | 8 sprint-change-proposals under `change-history/` |
+| Retrospectives | 22 retro-*.md under `../implementation-artifacts/retros/` |
+| Originally generated | 2026-05-12 |
+| Last reconciled | 2026-06-20 |
 | Generator | `bmad-document-project` (Path 3 hybrid) |
-| Source pin | conda-forge-expert v8.6.0 |
+| Source pin | conda-forge-expert v8.39.0 |
 | Verification | live filesystem + source code grep + CHANGELOG cross-reference |
