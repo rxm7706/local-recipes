@@ -209,6 +209,10 @@ extra:
     - pkg:<registry>/<upstream>@${{ version }}
   cfe-upstream-repo: <url>
   cfe-upstream-homepage: <url>
+  cfe-import-names: [<top-level python import(s)>]
+  cfe-source-kind: <pypi-sdist | pypi-wheel | github-tag | github-commit>
+  cfe-noarch: <python | generic | compiled>
+  cfe-pip-check: <true | false:<reason-code>>
   cfe-on-conda-forge-status: <confirmed-on-conda-forge | pending-submission-to-conda-forge | pending-approval-on-conda-forge | blocked-pending-prerequisites | pypi-only | archived-on-conda-forge>
   cfe-on-conda-forge-feedstock: <feedstock-url | none>
   cfe-forge-recipe-updates-needed: <none | list>
@@ -239,6 +243,13 @@ extra:
 
 The `# CFE comments` block mirrors the recipe's structure (location keys `build` / `context` / `host` / `run` / `requirements` / `about` / `tests`) so each parked note shows where it would belong if promoted. Both the `# CFE metadata` and `# CFE comments` sections are CFE-local-only and are **stripped before any push** (along with `extra.cfe-*` keys). `recipe-generator.py` must emit new rationale into this block, never inline.
 
+**The 4 identity/decision fields are the cached "hard-won" answers** (added v8.37.0; from the 4-analyst deep-analysis synthesis, 2026-06-19). They sit at the end of the identity/upstream block (after `cfe-upstream-homepage`, before `cfe-on-conda-forge-status`). Each caches a value that authoring would otherwise have to recompute — and that a **regen** (`grayskull` / `recipe-generator.py` re-running over a version bump) would re-guess, possibly *wrong*. Value semantics:
+
+- **`cfe-import-names`** — the **verified** top-level Python import name(s) — the names the CFEP-25 test `imports:` use. This **caches the G7/G10 divergence**: when the import name does NOT match the distribution name (`altk`, `OpenDsStar`, `pymilvus.model`, `ibm_boto3`, `baidubce`, `data_diff`), grayskull re-guesses it wrong on every regen and the import test breaks. With the verified value cached, a regen **restores** the correct import instead of re-deriving it from the sdist. This is the **single highest-frequency authoring recompute**, and is especially load-bearing for the feedstock-refresh effort (256 regens). Non-Python recipes: `[]`.
+- **`cfe-source-kind`** — which artifact the recipe actually sources: `pypi-sdist`, `pypi-wheel`, `github-tag`, or `github-commit`. When a **non-PyPI** source was chosen *deliberately* (because the PyPI sdist re-trips a known gotcha), append the reason: `github-tag:pypi-sdist-strips-headers-G5`. This prevents a version bump from silently reverting to a PyPI sdist that re-trips G4 / G5 / G9 / G16.
+- **`cfe-noarch`** — the build shape: `python` (noarch:python), `generic` (noarch:generic), or `compiled` (a per-arch / per-Python compiled build). Drives the build matrix and the per-Python prerequisite fan-out (G38 / G40). Per G42 it can **flip across versions** — verify the *current* version's artifact shape (e.g. milvus-lite 3.0 went C++-compiled → pure-Python), don't trust the older version's reputation.
+- **`cfe-pip-check`** — whether `pip_check: true` is in effect. When it is intentionally **off**, record `false:<reason-code>` so the temporary external-bug waiver and its **revert obligation** (G24 / G26 / G28 / G36 — e.g. an upstream dep's poisoned wheel METADATA / `dist-info` version) is not silently lost on strip-before-push. The reason code names the blocking package so the waiver can be re-checked and revoked when the upstream is fixed.
+
 **The `cfe-local-build-*` fields are the LOCAL-BUILD verification record** (added v8.36.0). They capture "does this recipe build locally?" — a **verified fact** — and are deliberately **separate** from `cfe-on-conda-forge-status`, which tracks "is it on / submittable to conda-forge?". The two are orthogonal: a recipe with `cfe-on-conda-forge-status: blocked-pending-prerequisites` may have built **perfectly** locally (green against the local channel) and is "blocked" only because a prerequisite isn't on conda-forge yet — `cfe-local-build-status: success` records that the recipe itself is sound. Always set `cfe-local-build-status` from the **actual** outcome of the last local build, never inferred from the cf-submission status.
 
 `cfe-local-build-status` value semantics:
@@ -249,6 +260,20 @@ The `# CFE comments` block mirrors the recipe's structure (location keys `build`
 - **`not-attempted`** — recipe authored but not built yet. This is the **default** the recipe-generator emits.
 
 The companion fields are `none` until a build runs: `cfe-local-build-datetime` (ISO-8601 UTC of the build, else `none`), `cfe-local-build-platform` (the **host subdir** the build ran on, e.g. `linux-64`, `osx-arm64`, else `none`), and `cfe-local-build-tool` (`rattler-build` for v1 / `conda-build` for v0, else `none`). Like every `cfe-*` key, all four are **stripped before any push**.
+
+**cfe-* schema design principle** (from the 4-analyst deep-analysis synthesis, 2026-06-19). What earns a `cfe-*` field is governed by three rules:
+
+1. **CACHE identity and hard-won decisions; READ volatile metrics live from the atlas.** A `cfe-*` field is justified only when it stores something **stable** that authoring would otherwise have to recompute — an identity fact (`cfe-conda-name`, `cfe-import-names`, `cfe-upstream-name`) or a hard-won decision (`cfe-source-kind`, `cfe-pip-check`, `cfe-on-conda-forge-status`). Volatile signals — CVE counts, download numbers, feedstock-health, adoption-stage, who-depends — are **NEVER cached**: read them live from the atlas at the moment they're needed. Caching a volatile metric **manufactures staleness** — the recipe ships a number that was true once and is wrong now.
+2. **STAMP any cacheable-but-volatile field with `cfe-last-checked` as a hint, never ground truth.** A few fields (e.g. `cfe-on-conda-forge-status`) are stable enough to cache but can still drift. They carry `cfe-last-checked` so a reader knows the value is a **hint** with an age, not an authoritative fact — re-verify before relying on it for a decision.
+3. **All `cfe-*` are stripped before any push.** Every `cfe-*` key (and both `# CFE …` comment blocks) is local-recipes-only and removed before the recipe is copied into a feedstock / staged-recipes PR. They exist to drive CFE/admin/maintainer tooling, never to ship.
+
+The 2026-06-19 deep-analysis **disqualified** three previously-floated SBOM/security placeholders — none was ever encoded, and none should be: **`cfe-cpe`** (the CPE is syft-derived from the package name — recompute, don't cache), **`cfe-sbom-hash`** (the SBOM's home is `conda-meta/` per unratified CEP #127, not recipe `extra:`), and **`cfe-syft-ref`** (attestation lives in an external Sigstore bundle). None of the three reaches a tool from recipe `extra:`, so none earns a `cfe-*` field.
+
+**Tier-2 orchestration fields are PLANNED** — they land *with* the feedstock-refresh effort (where they get populated), not before:
+
+- **`cfe-feedstock-version`** + **`cfe-upstream-latest-version`** — the two cached legs of the `behind-upstream` triple (the third, the live-deployed feedstock version, is read live). Stamped-hint fields (carry `cfe-last-checked`).
+- **`cfe-platforms-shipping`** / **`cfe-platforms-target`** — the feedstock's current vs. desired platform coverage (drives platform-expansion PRs).
+- **`cfe-submission-pr-state`** — the open/merged/closed state of the PR named by the existing `cfe-submission-pr`, completing that field.
 
 ### Canonical Test Block for `noarch: python` Recipes
 
