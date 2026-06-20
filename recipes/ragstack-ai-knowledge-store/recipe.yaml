@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.1"
+
+package:
+  name: ragstack-ai-knowledge-store
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/ragstack-ai-knowledge-store/ragstack_ai_knowledge_store-${{ version }}.tar.gz
+  sha256: 20424d42978be228feb887a71d76228638765446d1a37a1f6faef109e448fe06
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<3.13
+    - cassio >=0.1.7,<0.2.0
+    - numpy >=1.26
+
+tests:
+  - python:
+      imports:
+        - ragstack_knowledge_store
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/datastax/ragstack-ai
+  license: BUSL-1.1
+  license_file: LICENSE
+  summary: DataStax RAGStack Graph Store
+  repository: https://github.com/datastax/ragstack-ai
+  documentation: https://docs.datastax.com/en/ragstack
+  description: |
+    RAGStack Knowledge Store provides a graph-based store for RAG
+    (Retrieval-Augmented Generation) content backed by Apache Cassandra /
+    DataStax Astra DB via the cassio integration layer. It supports linked
+    content, MMR retrieval, and embedding-model-driven knowledge graphs.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ragstack-ai-knowledge-store
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ragstack-ai-knowledge-store
+  cfe-name-aliases:
+    - ragstack_knowledge_store
+  cfe-purls:
+    - pkg:conda/ragstack-ai-knowledge-store@${{ version }}
+    - pkg:pypi/ragstack-ai-knowledge-store@${{ version }}
+  cfe-upstream-repo: https://github.com/datastax/ragstack-ai
+  cfe-upstream-homepage: https://github.com/datastax/ragstack-ai
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - cassio not yet on conda-forge
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.33.0
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# Header:
+#    # langflow Wave-2 prerequisite. Original build died on a PyPI rate-limit;
+#    # re-authored from the canonical staged-recipes v1 shape.
+# requirements:
+#  run:
+#    # numpy is a REAL runtime import (ragstack_knowledge_store/math.py:
+#    # `import numpy` + `from numpy.typing import ...`) but upstream mis-places
+#    # it in poetry's [group.dev.dependencies], so it is absent from the wheel
+#    # Requires-Dist. It is therefore required in run: for the import test to
+#    # pass, and it does NOT trip pip_check (wheel METADATA declares only
+#    # cassio). Upstream's dev-group numpy cap is `<2`; not mirrored because it
+#    # is dev-group-only (not wheel-enforced) and numpy 2.x is the conda-forge
+#    # default. langchain-core is NOT a dependency (no import; only a
+#    # [group.test] path-develop dep) — excluded.
+#    # `<3.13` upper bound on python is upstream-declared (Requires-Python
+#    # >=3.9,<3.13) and load-bearing under pip_check.
+# about:
+#    # license is BUSL-1.1 (Business Source License 1.1, source-available /
+#    # non-OSI). sdist ships no LICENSE; vendored from upstream monorepo root
+#    # LICENSE.md per SKILL.md canonical license-placement pattern (2).
+####

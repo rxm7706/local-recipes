@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.2"
+
+package:
+  name: pymilvus-model
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pymilvus-model/pymilvus_model-${{ version }}.tar.gz
+  sha256: 10ab49a989396943e08555b971f85182ddb50da47076e699a157c9a5ff542872
+
+build:
+  noarch: python
+  number: 0
+  script:
+    - ${{ PYTHON }} ${{ RECIPE_DIR }}/pin_version.py
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=75
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - transformers >=4.36.0
+    - onnxruntime
+    - scipy >=1.10.0
+    - protobuf
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - pymilvus.model
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/milvus-io/milvus-model
+  repository: https://github.com/milvus-io/milvus-model
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Model components for PyMilvus, the Python SDK for Milvus
+  description: |
+    pymilvus-model (the `pymilvus[model]` subpackage) provides model
+    components for PyMilvus, including dense, sparse (BM25), hybrid, and
+    reranker embedding utilities used with Milvus.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pymilvus-model
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pymilvus-model
+  cfe-name-aliases:
+    - pymilvus.model
+  cfe-purls:
+    - pkg:conda/pymilvus-model@${{ version }}
+    - pkg:pypi/pymilvus-model@${{ version }}
+  cfe-upstream-repo: https://github.com/milvus-io/milvus-model
+  cfe-upstream-homepage: https://github.com/milvus-io/milvus-model
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T20:40:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:40:00Z
+####
+# CFE comments
+# Header:
+#    # PyPI distribution `pymilvus-model` (canonical/normalized name on PyPI:
+#    # `pymilvus.model`). The `model` subpackage published for
+#    # `pymilvus[model]`; transitive langflow blocker via opendsstar (needs
+#    # >=0.3.0; this ships 0.3.2). Import name is the dotted namespace package
+#    # `pymilvus.model` (src/pymilvus/model/__init__.py) — NOT pymilvus_model
+#    # (G7). cfe-name-aliases records the import-vs-distribution divergence.
+# build:
+#  script:
+#    # pin_version.py rewrites pyproject.toml to a STATIC version before the
+#    # pip install. Upstream's dynamic-version backend (_version_helper.py,
+#    # wired via [tool.setuptools.dynamic] + [tool.setuptools_scm]) imports
+#    # private setuptools_scm internals (setuptools_scm._types, Configuration,
+#    # fallbacks, version.*) that were removed in setuptools_scm 8.x; the conda-
+#    # forge setuptools_scm (vcs_versioning 1.1.1) lacks them, so loading the
+#    # helper raises `ImportError: cannot import name '_types'` and metadata
+#    # generation fails. Dropping the dynamic machinery and hardcoding
+#    # ${{ version }} (== $PKG_VERSION) sidesteps the helper entirely — the
+#    # root-cause fix, not a workaround. setuptools itself warns the dynamic
+#    # attr is invalid alongside setuptools_scm. Idempotent. Upstream issue
+#    # worth filing: _version_helper.py pins to removed private API.
+#  host:
+#    # setuptools >=75 + wheel mirror upstream [build-system].requires minus
+#    # setuptools_scm + gitpython, which pin_version.py makes unnecessary (the
+#    # dynamic-version path that needed them is removed at build time).
+#  run:
+#    # Five base mandatory deps only (upstream [project.dependencies]); the
+#    # package declares no [project.optional-dependencies], so there are no
+#    # heavy extras to flatten (G25 / Simplicity First). protobuf here is the
+#    # runtime google.protobuf bindings (correct as run:), not protoc (G30).
+####

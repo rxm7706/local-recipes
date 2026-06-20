@@ -1,0 +1,140 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.1"
+
+package:
+  name: agent-lifecycle-toolkit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agent-lifecycle-toolkit/agent_lifecycle_toolkit-${{ version }}.tar.gz
+  sha256: 940920d84b844616b33baedaf4bbed34b9e678142f4a4f8a012e588aaa8a20b4
+
+build:
+  noarch: python
+  number: 0
+  script: |
+    sed -i -E 's/([A-Za-z0-9_])==([0-9])/\1>=\2/g' pyproject.toml
+    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ibm-watsonx-ai >=1.0.0
+    - jinja2 >=3.1.6
+    - jsonschema >=4.0.0
+    - langchain-core >=0.3.72
+    - litellm <2.0.0
+    - openai >=1.0.0
+    - pydantic >=2.0.0
+    - smolagents >=1.21.3
+    - typing_extensions >=4.0.0
+    - tomli >=2.2.1
+    - aiofiles >=24.1.0
+    - black >=25.1.0
+    - docstring_parser >=0.16
+    - numpy >=2.2.6
+    - genson >=1.3.0
+    - langchain-chroma >=0.1.4
+    - langchain-community >=0.3.21
+    - langchain-huggingface >=0.3.0
+    - llm-sandbox >=0.2.5
+    - docker-py >=7.1.0
+    - podman >=5.4.0.1
+    - langchain-text-splitters >=1.0.0
+    - nltk >=3.9.1
+    - scipy >=1.15.3
+
+tests:
+  - python:
+      imports:
+        - altk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://altk.ai/
+  repository: https://github.com/AgentToolkit/agent-lifecycle-toolkit
+  documentation: https://agenttoolkit.github.io/agent-lifecycle-toolkit/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The Agent Lifecycle Toolkit (ALTK) is a library of components to help agent builders improve their agent with minimal integration effort and setup.
+  description: |
+    The Agent Lifecycle Toolkit (ALTK) is a library of components to help
+    agent builders improve their agent with minimal integration effort and
+    setup.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agent-lifecycle-toolkit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agent-lifecycle-toolkit
+  cfe-purls:
+    - pkg:conda/agent-lifecycle-toolkit@${{ version }}
+    - pkg:pypi/agent-lifecycle-toolkit@${{ version }}
+  cfe-upstream-repo: https://github.com/AgentToolkit/agent-lifecycle-toolkit
+  cfe-upstream-homepage: https://altk.ai/
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - ibm-watsonx-ai
+  cfe-last-checked: 2026-06-19T20:30:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:30:00Z
+####
+# CFE comments
+# Header:
+#    # Resolved PyPI name agent-lifecycle-toolkit v0.10.1; license Apache-2.0
+#    # (OSI-approved, conda-forge-eligible) read from the sdist LICENSE +
+#    # pyproject [project] (PyPI JSON had license: None). Build backend
+#    # hatchling -> host is hatchling + pip only (G8).
+# build:
+#  script:
+#    # G26: upstream pins aiofiles==24.1.0, tomli==2.2.1 (+ onnxruntime==1.23.2
+#    # on py3.10) via `==`. The project pin-loosening convention rewrites them
+#    # to `>=`. Because pip_check: true reads the wheel's dist-info METADATA
+#    # (which bakes in the `==` from pyproject), the recipe MUST also loosen the
+#    # `==` in pyproject.toml at build time (sed) or pip check rejects the build.
+#    # The ([A-Za-z0-9_])==([0-9]) guard touches only PEP 508 pins, never
+#    # `extra == "..."` / `python_version == "..."` markers. noarch:python builds
+#    # on linux only, so no m2-sed/Windows handling is needed.
+#    # TODO: tighten the `>=` floors back toward upstream once the pinned
+#    # versions are reliably available on conda-forge.
+#  tests:
+#    # G7: top-level import is `altk` (altk/__init__.py in the sdist), NOT the
+#    # distribution name agent_lifecycle_toolkit. Verified via tar tzf | grep __init__.py.
+#  run:
+#    # G25: upstream declares llm-sandbox[docker,podman]. Conda has no extras, so
+#    # the activated extras are flattened: docker extra -> docker (conda: docker-py,
+#    # G10 rename) ; podman extra -> docker + podman. Both on conda-forge.
+#    # onnxruntime: upstream's `onnxruntime==1.23.2 ; python_version == "3.10"` is
+#    # a py3.10 wheel-availability ceiling (G35-class), not an altk feature — altk
+#    # imports it nowhere. A per-Python run selector is invalid on a single noarch
+#    # artifact (G12/G35), so it is dropped; the solver resolves a compatible
+#    # onnxruntime transitively on py3.10 when an embedding stack pulls it.
+#  about:
+#    # PyPI JSON home_page was None; grayskull defaulted homepage to the PyPI
+#    # project page. Real homepage is https://altk.ai/ (from pyproject
+#    # [project.urls].homepage). repository + documentation also from there.
+#  status:
+#    # BLOCKED: ibm-watsonx-ai is missing from BOTH conda-forge (all 4 G10
+#    # spellings: ibm-watsonx-ai / ibm_watsonx_ai / -py / -python) AND the local
+#    # channel — needs authoring before this recipe can build/submit. llm-sandbox
+#    # (v0.3.39) and smolagents (v1.26.0) are in the local channel only
+#    # (pending-submission-to-conda-forge); the local build resolves them from
+#    # build_artifacts but the conda-forge submission of altk is gated on all
+#    # three landing on conda-forge.
+####

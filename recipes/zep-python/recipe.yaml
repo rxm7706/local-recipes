@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.2"
+
+package:
+  name: zep-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zep-python/zep_python-${{ version }}.tar.gz
+  sha256: 919fd635ad5801f30d9ef6da0bb99e854ed4c3cd1357dc8ada4a39b8171a41bc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core <2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.21.2
+    - pydantic >=1.9.2
+    - typing_extensions >=4.0.0
+
+tests:
+  - python:
+      imports:
+        - zep_python
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/zep-python/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Zep Python client — long-term memory store for AI assistant apps
+  repository: https://github.com/getzep/zep-python
+  documentation: https://help.getzep.com
+  description: |
+    zep-python is the official Python client for Zep, a long-term memory
+    store for conversational AI and LLM assistant applications. It provides
+    APIs for persisting, recalling, and searching chat history, user
+    memory, and document collections.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zep-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zep-python
+  cfe-name-aliases:
+    - zep_python
+  cfe-purls:
+    - pkg:conda/zep-python@${{ version }}
+    - pkg:pypi/zep-python@${{ version }}
+  cfe-upstream-repo: https://github.com/getzep/zep-python
+  cfe-upstream-homepage: https://www.getzep.com
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# requirements:
+#  host:
+#    # Upstream pyproject.toml uses the legacy poetry 1.x layout (metadata
+#    # under [tool.poetry] + a stray [project.urls] but no [project].name);
+#    # poetry-core 2.x enforces PEP 621 and rejects it. Pin to 1.x.
+#    # TODO: drop the cap once upstream migrates to PEP 621 [project].
+# about:
+#    # Upstream PyPI sdist ships no license file; vendored from the GitHub
+#    # repo root per SKILL.md license-file pattern (2).
+####

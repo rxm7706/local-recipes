@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: lfx-ibm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/l/lfx-ibm/lfx_ibm-${{ version }}-py3-none-any.whl
+  sha256: 79ee445781536f450d6a0684e426314fd41da7b6f926b85c3056d50c0271bff6
+
+build:
+  noarch: python
+  number: 0
+  script: pip install lfx_ibm-${{ version }}-py3-none-any.whl --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ibm_db >=3.2.9,<4.0.0
+    - ibm-watsonx-ai >=1.3.1,<2.0.0
+    - langchain-community >=0.4.1,<1.0.0
+    - langchain-ibm >=1.1.0,<1.2.0
+    - lfx >=1.10.0
+
+tests:
+  - python:
+      imports:
+        - lfx_ibm
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/langflow-ai/langflow
+  repository: https://github.com/langflow-ai/langflow
+  documentation: https://docs.langflow.org/extensions
+  license: MIT
+  license_file: LICENSE
+  summary: IBM components (Db2 Vector Store + watsonx.ai LLM and embeddings) as a standalone Langflow Extension Bundle
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lfx-ibm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lfx-ibm
+  cfe-purls:
+    - pkg:conda/lfx-ibm@${{ version }}
+    - pkg:pypi/lfx-ibm@${{ version }}
+  cfe-upstream-repo: https://github.com/langflow-ai/langflow
+  cfe-upstream-homepage: https://github.com/langflow-ai/langflow
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - langchain-ibm        # not on conda-forge AND not in local channel (third-party blocker; needs authoring)
+    - ibm-watsonx-ai       # not on conda-forge AND not in local channel (third-party blocker; needs authoring)
+  cfe-last-checked: 2026-06-19T20:15:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:15:00Z
+####
+# CFE comments
+# Header:
+#    # lfx-ibm is a langflow Extension Bundle (langflow-ai/langflow monorepo,
+#    # src/bundles/) shipping the IBM components: Db2 Vector Store + watsonx.ai
+#    # LLM + watsonx embeddings. The entry point is a `langflow.extensions`
+#    # plugin entry (lfx-ibm = lfx_ibm), NOT a console script, so no
+#    # build.python.entry_points block is needed.
+#    # grayskull cannot generate this recipe: PyPI ships a wheel only (no
+#    # sdist), so the recipe is hand-authored from the canonical wheel URL.
+# source:
+#    # Wheel-only upstream (no sdist on PyPI). Path-2 segment is hyphenated
+#    # (lfx-ibm); filename stem is underscored (lfx_ibm). py-tag is "py3" and
+#    # may change on a version bump — re-check the wheel filename when bumping.
+# about:
+#    # No LICENSE in the wheel and the metadata License field is just "MIT"
+#    # (no bundled file); the langflow-ai/langflow monorepo LICENSE is MIT
+#    # (Copyright 2024 Langflow). LICENSE shipped in-recipe (canonical pattern
+#    # 2) because the wheel omits it.
+# requirements:
+#  run:
+#    # Import name is lfx_ibm (verified from the wheel's lfx_ibm/__init__.py),
+#    #   G7-checked.
+#    # ibm_db (underscore) is the conda-forge feedstock spelling (G10): PyPI
+#    #   ships `ibm-db` (hyphen) but conda-forge ships `ibm_db`. It is a
+#    #   compiled C-extension shipping linux-64 only (no noarch); upstream's
+#    #   marker gates it to NOT-(linux aarch64), consistent with that. For a
+#    #   noarch artifact a per-platform run-dep marker would need
+#    #   noarch_platforms and risks G12/G35; listed unconditionally. ibm_db IS
+#    #   on conda-forge, so NOT a blocker.
+#    # langchain-ibm and ibm-watsonx-ai are KNOWN third-party blockers: absent
+#    #   from conda-forge (all four G10 spellings checked) AND the local
+#    #   channel; each needs authoring before lfx-ibm can be submitted (see
+#    #   cfe-forge-blocker-list).
+#    # langchain-community resolves on conda-forge (langchain-community
+#    #   feedstock). lfx resolves from the local channel (lfx 1.10.0).
+####

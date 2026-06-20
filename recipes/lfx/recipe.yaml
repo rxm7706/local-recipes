@@ -1,0 +1,152 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.10.0"
+
+package:
+  name: lfx
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/l/lfx/lfx-${{ version }}-py3-none-any.whl
+  sha256: c52e801a107da96b1828a8cfa93002ded0cbcd8b12c82d0401c32bb81599c383
+
+build:
+  noarch: python
+  number: 0
+  script: pip install lfx-${{ version }}-py3-none-any.whl --no-deps --no-build-isolation -vv
+  python:
+    entry_points:
+      - lfx = lfx.__main__:main
+      - lfx-mcp = lfx.mcp.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ag-ui-protocol >=0.1.10
+    - aiofile >=3.8.0,<4.0.0
+    - aiofiles >=24.1.0,<25.0.0
+    - asyncer >=0.0.8,<1.0.0
+    - cachetools >=6.0.0
+    - chardet >=7.3.0
+    - cryptography >=46.0.7
+    - defusedxml >=0.7.1,<1.0.0
+    - docstring_parser >=0.16,<1.0.0
+    - emoji >=2.14.1,<3.0.0
+    - fastapi >=0.135.0,<1.0.0
+    - filelock >=3.20.1,<4.0.0
+    - httpx >=0.24.0,<1.0.0
+    - h2 >=3,<5
+    - json-repair >=0.30.3,<1.0.0
+    - langchain-classic >=1.0.7,<1.1.0
+    - langchain-core >=1.2.28,<2.0.0
+    - langchain >=1.2.0,<1.3.0
+    - langflow-sdk >=0.1.0
+    - loguru >=0.7.3,<1.0.0
+    - markitdown >=0.1.4,<2.0.0
+    - mcp >=1.17.0,<2.0.0
+    - nanoid >=2.0.0,<3.0.0
+    - networkx >=3.4.2,<4.0.0
+    - opendsstar ==1.0.26
+    - orjson >=3.11.6,<4.0.0
+    - pandas >=2.0.0,<3.0.0
+    - passlib >=1.7.4,<2.0.0
+    - pillow >=11.1.0,<13.0.0
+    - platformdirs >=4.3.8,<5.0.0
+    - pydantic-settings >=2.10.1,<3.0.0
+    - pydantic >=2.0.0,<3.0.0
+    - pypdf >=6.10.0,<7.0.0
+    - python-dotenv >=1.0.0,<2.0.0
+    - pyyaml >=6.0.0,<7.0.0
+    - rich >=13.0.0,<14.0.0
+    - setuptools >=80.0.0,<81.0.0
+    - structlog >=25.4.0,<26.0.0
+    - tomli >=2.2.1,<3.0.0
+    - typer >=0.16.0,<1.0.0
+    - typing_extensions >=4.14.0,<5.0.0
+    - uvicorn >=0.34.3,<1.0.0
+    - validators >=0.34.0,<1.0.0
+    - wheel >=0.46.2,<1.0.0
+
+tests:
+  - python:
+      imports:
+        - lfx
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - lfx --help
+      - lfx-mcp --help
+
+about:
+  homepage: https://github.com/langflow-ai/langflow
+  repository: https://github.com/langflow-ai/langflow
+  documentation: https://docs.langflow.org
+  license: MIT
+  license_file: LICENSE
+  summary: Langflow Executor - A lightweight CLI tool for executing and serving Langflow AI flows
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lfx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lfx
+  cfe-purls:
+    - pkg:conda/lfx@${{ version }}
+    - pkg:pypi/lfx@${{ version }}
+  cfe-upstream-repo: https://github.com/langflow-ai/langflow
+  cfe-upstream-homepage: https://github.com/langflow-ai/langflow
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - opendsstar          # not on conda-forge AND not in local channel (third-party blocker)
+    - langflow-sdk        # langflow-family; built in local channel, not yet on conda-forge
+  cfe-last-checked: 2026-06-19T20:00:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:00:00Z
+####
+# CFE comments
+# Header:
+#    # lfx = "Langflow eXecutor", langflow's core runtime; a langflow-family
+#    # split living in the langflow-ai/langflow monorepo at src/lfx/.
+#    # grayskull cannot generate this recipe: PyPI ships a wheel only (no
+#    # sdist), so the recipe is hand-authored from the canonical wheel URL.
+# source:
+#    # Wheel-only upstream (no sdist on PyPI). py-tag segment is "py3" and
+#    # may change on a version bump — re-check the wheel filename when bumping.
+# about:
+#    # No LICENSE in the wheel and pyproject declares no license field; the
+#    # langflow-ai/langflow monorepo LICENSE is MIT (Copyright 2024 Langflow).
+#    # LICENSE shipped in-recipe (canonical pattern 2) because the wheel omits it.
+# build:
+#  python:
+#    entry_points:
+#      # lfx + lfx-mcp console scripts from the wheel's entry_points.txt.
+# requirements:
+#  run:
+#    # httpx[http2] extra flattened (G25): the http2 extra pulls h2 -> added
+#    #   `h2` alongside `httpx`.
+#    # docstring_parser (underscore) is the conda-forge feedstock spelling
+#    #   (G10): PyPI ships `docstring-parser` (hyphen) but conda-forge ships
+#    #   `docstring_parser`; the hyphen form fails the solve.
+#    # opendsstar ==1.0.26 is a known third-party blocker, NOT on conda-forge.
+#    #   Upstream marker gates it to py3.11-3.13 on non-(darwin x86_64); for a
+#    #   noarch artifact the per-(py,platform) marker can't be expressed in run:
+#    #   without violating G12/G35, so it is listed unconditionally. It is a
+#    #   prerequisite blocker either way (see cfe-forge-blocker-list).
+#    # langflow-sdk is another langflow-family package — likely not yet on
+#    #   conda-forge; prerequisite blocker.
+#    # setuptools <81 mirrors upstream's explicit cap (related to G34's
+#    #   pkg_resources/setuptools-81 class); load-bearing under pip_check.
+####

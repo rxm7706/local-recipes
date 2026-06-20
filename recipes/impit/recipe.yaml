@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.13.0"
+
+package:
+  name: impit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/impit/impit-${{ version }}.tar.gz
+  sha256: ec5ff2932c6ccdd3004b0f5e0d0d9bce5c8a6f48df4f226e5ee172bc79952df8
+
+build:
+  number: 0
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      # CARGO_PROFILE_RELEASE_LTO: fat is intentionally NOT set — upstream's
+      # [profile.release] already enables fat LTO + opt-level z; the dep graph
+      # (reqwest/hyper/rustls/tokio/h2) is large, so leaving it to upstream
+      # avoids piling on extra build time on emulated CI platforms.
+      # PEP 540 — Python UTF-8 mode (Windows console codepage fix, CFE G19).
+      PYTHONUTF8: "1"
+    content:
+      - if: unix
+        then: |
+          # reqwest's HTTP/3 support (enabled by impit-python) is gated behind
+          # the documented `--cfg reqwest_unstable` opt-in. Append it to conda's
+          # CARGO_BUILD_RUSTFLAGS (which carries the prefix rpath link flags)
+          # rather than to plain RUSTFLAGS, which would override those flags.
+          export CARGO_BUILD_RUSTFLAGS="${CARGO_BUILD_RUSTFLAGS:-} --cfg reqwest_unstable"
+          # Bundle third-party licenses from the Cargo workspace dependency graph.
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+        else: |
+          set "CARGO_BUILD_RUSTFLAGS=%CARGO_BUILD_RUSTFLAGS% --cfg reqwest_unstable"
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          %PYTHON% -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1,<2
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - impit
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/impit/
+  license: Apache-2.0
+  license_file:
+    - LICENSE.md
+    - THIRDPARTY.yml
+  summary: A library for making HTTP requests through browser impersonation
+  repository: https://github.com/apify/impit
+  documentation: https://apify.github.io/impit/python
+  description: |
+    impit is a Python package that provides bindings for the Rust impit
+    library. It allows you to switch the TLS fingerprints and the HTTP
+    headers of your requests (browser impersonation), while still using
+    the same API as httpx or requests.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: impit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: impit
+  cfe-purls:
+    - pkg:conda/impit@${{ version }}
+    - pkg:pypi/impit@${{ version }}
+  cfe-upstream-repo: https://github.com/apify/impit
+  cfe-upstream-homepage: https://apify.github.io/impit/python
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# build:
+#  script:
+#    env:
+#      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
+#      # for any Rust build. maturin invokes cargo build internally and inherits
+#      # these; the cdylib in the wheel is stripped.
+####

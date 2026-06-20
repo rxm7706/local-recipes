@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.8"
+
+package:
+  name: twelvelabs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/twelvelabs/twelvelabs-${{ version }}.tar.gz
+  sha256: bb0846cc839845c800de8061bb7b99212a472e24bf20770d569f6f620b845e3c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.21.2
+    - pydantic >=1.9.2
+    - pydantic-core >=2.18.2
+    - typing_extensions >=4.0.0
+
+tests:
+  - python:
+      imports:
+        - twelvelabs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/twelvelabs/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Official TwelveLabs SDK for Python
+  repository: https://github.com/twelvelabs-io/twelvelabs-python
+  documentation: https://docs.twelvelabs.io
+  description: |
+    The TwelveLabs Python SDK provides a set of intuitive classes and
+    methods that streamline interaction with the TwelveLabs
+    video-understanding platform, minimizing the need for boilerplate
+    code. It exposes the search, analyze, embed, indexes, and tasks
+    APIs for building video-understanding applications.
+
+    The current PyPI sdist (Fern-generated, v1.x) ships no LICENSE file;
+    the project is Apache-2.0 (the LICENSE shipped on the upstream
+    v0.4.x tags) and is vendored into the recipe per conda-forge
+    license-file placement guidance.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: twelvelabs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: twelvelabs
+  cfe-purls:
+    - pkg:conda/twelvelabs@${{ version }}
+    - pkg:pypi/twelvelabs@${{ version }}
+  cfe-upstream-repo: https://github.com/twelvelabs-io/twelvelabs-python
+  cfe-upstream-homepage: https://www.twelvelabs.io
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

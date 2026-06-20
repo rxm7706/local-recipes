@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.88"
+
+package:
+  name: spider-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/spider-client/spider_client-${{ version }}.tar.gz
+  sha256: bd3246b6e4f68631936d15da997a479cd9a58f0503a35e6565b4c2e2b6d5bad0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - ijson
+    - tenacity
+    - aiohttp
+
+tests:
+  - python:
+      imports:
+        - spider
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/spider-client/
+  license: MIT
+  license_file: LICENSE
+  summary: Python SDK for Spider Cloud API
+  repository: https://github.com/spider-rs/spider-clients
+  documentation: https://spider.cloud/docs/quickstart
+  description: |
+    The Spider Cloud Python SDK offers a toolkit for straightforward website
+    scraping, crawling at scale, and other utilities like extracting links and
+    taking screenshots, enabling you to collect data formatted for compatibility
+    with language models (LLMs). It features a user-friendly interface for
+    seamless integration with the Spider Cloud API.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spider-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spider-client
+  cfe-name-aliases:
+    - spider
+  cfe-purls:
+    - pkg:conda/spider-client@${{ version }}
+    - pkg:pypi/spider-client@${{ version }}
+  cfe-upstream-repo: https://github.com/spider-rs/spider-clients
+  cfe-upstream-homepage: https://spider.cloud
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# tests:
+#  imports:
+#    # PyPI distribution is `spider-client`; the top-level import is
+#    # `spider` (verified against the sdist top_level.txt — G7).
+####

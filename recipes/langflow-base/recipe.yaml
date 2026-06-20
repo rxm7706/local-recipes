@@ -1,0 +1,193 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.0"
+  python_min: "3.11"
+
+package:
+  name: langflow-base
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/l/langflow-base/langflow_base-${{ version }}-py3-none-any.whl
+  sha256: 216cbf16be5f16bc08d9193ed447757833d4fe089519813afae23a60aa88ae7d
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install langflow_base-${{ version }}-py3-none-any.whl --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }},<3.15
+    - aiofile
+    - aiofiles
+    - aiosqlite
+    - alembic
+    - assemblyai
+    - asyncer
+    - bcrypt
+    - cachetools
+    - chardet
+    - clickhouse-connect
+    - cryptography
+    - defusedxml
+    - docstring_parser
+    - python-duckdb
+    - dynaconf
+    - elevenlabs
+    - email-validator
+    - emoji
+    - fastapi-pagination
+    - fastapi
+    - filelock
+    - firecrawl-py
+    - grandalf
+    - greenlet
+    - gunicorn
+    - httpx
+    - h2
+    - ibm-watsonx-ai
+    - jaraco.context
+    - jq
+    - json-repair
+    - jsonquerylang >=1.1.1,<2.0.0
+    - langchain-chroma
+    - langchain-community
+    - langchain-core
+    - langchain-experimental
+    - langchain-ibm
+    - langchain-mongodb
+    - langchain-perplexity
+    - langchain-qdrant
+    - langchain-weaviate
+    - langchainhub
+    - langchain
+    - langgraph-checkpoint
+    - lfx
+    - loguru
+    - mcp
+    - multiprocess
+    - nanoid
+    - nest-asyncio
+    - networkx
+    - onnxruntime
+    - opendsstar
+    - opentelemetry-api
+    - opentelemetry-exporter-otlp
+    - opentelemetry-exporter-prometheus
+    - opentelemetry-instrumentation-fastapi
+    - opentelemetry-instrumentation-requests
+    - opentelemetry-instrumentation-urllib3
+    - opentelemetry-sdk
+    - orjson
+    - pandas
+    - passlib
+    - pillow
+    - pip
+    - platformdirs
+    - prometheus_client
+    - pyasn1
+    - pydantic-settings
+    - pydantic
+    - pyjwt
+    - pypdf
+    - pyperclip
+    - python-docx
+    - python-multipart
+    - rich
+    - scipy
+    - sentry-sdk
+    - setuptools
+    - slowapi
+    - spider-client
+    - sqlalchemy
+    - sqlmodel
+    - structlog
+    - transformers
+    - trustcall
+    - typer
+    - uncurl
+    - uvicorn
+    - validators
+    - wheel
+
+tests:
+  - python:
+      imports:
+        - langflow
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langflow-base/
+  license: MIT
+  license_file: LICENSE
+  summary: A Python package with a built-in web application
+  repository: https://github.com/langflow-ai/langflow
+  documentation: https://docs.langflow.org
+  description: |
+    langflow-base is the heavy base package of the Langflow family — a low-code
+    app builder for RAG and multi-agent AI applications. It is Python-based and
+    agnostic to any model, API, or database. This is the core distribution that
+    the langflow umbrella meta-package and lfx-* component packages depend on.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langflow-base
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langflow-base
+  cfe-purls:
+    - pkg:conda/langflow-base@${{ version }}
+    - pkg:pypi/langflow-base@${{ version }}
+  cfe-upstream-repo: https://github.com/langflow-ai/langflow
+  cfe-upstream-homepage: https://pypi.org/project/langflow-base/
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - lfx
+    - ibm-watsonx-ai
+    - langchain-ibm
+    - opendsstar
+  cfe-last-checked: 2026-06-19T20:00:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:00:00Z
+####
+# CFE comments
+# source:
+#    # langflow-base ships a wheel only (no sdist) on PyPI for 0.10.0. The
+#    # py-tag "py3" is upstream-specific and may change on a version bump —
+#    # re-verify the wheel tag when bumping.
+# build:
+#    # wheel-only upstream (no sdist); install the wheel directly with --no-deps.
+# requirements:
+#  host:
+#    # LICENSE not bundled in the wheel; shipped in-recipe (canonical pattern 2),
+#    # reused from the sibling langflow recipe (same langflow-ai/langflow repo).
+#  run:
+#    # Run-deps are the 92 base (non-extra) requires_dist entries from the wheel
+#    # METADATA, mapped to conda-forge names. G10 four-spelling renames applied:
+#    #   duckdb -> python-duckdb; jaraco-context -> jaraco.context;
+#    #   prometheus-client -> prometheus_client. httpx[http2] flattened to
+#    #   httpx + h2 (G25: conda has no extras; the [http2] extra pulls h2).
+#    #   sqlalchemy[aiosqlite] -> sqlalchemy + aiosqlite (already listed).
+#    #   sentry-sdk[fastapi,loguru] -> sentry-sdk + fastapi + loguru (listed).
+#    # Exact "==" pins loosened per project convention (bcrypt==4.0.1,
+#    #   clickhouse-connect==0.7.19) — G26 note: if pip_check fails on the
+#    #   baked-in "==" in the wheel METADATA, source-patch the wheel METADATA
+#    #   or keep the cap. Wheel install can't be sed-patched, so the cap may
+#    #   need to be honored if pip_check enforces it.
+#    # Blockers (absent from conda-forge + local channel): lfx (langflow-family),
+#    #   ibm-watsonx-ai, langchain-ibm, opendsstar (third-party).
+####

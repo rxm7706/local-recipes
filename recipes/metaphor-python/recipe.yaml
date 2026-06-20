@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.23"
+
+package:
+  name: metaphor-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/metaphor-python/metaphor-python-${{ version }}.tar.gz
+  sha256: ce3a8f9d81b2ee7201dac225095cdf2da34b003fe889c5b4629a8b480e8de7ba
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests
+
+tests:
+  - python:
+      imports:
+        - metaphor_python
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/metaphor-python/
+  license: MIT
+  license_file: LICENSE
+  summary: A Python package for the Metaphor API.
+  repository: https://github.com/metaphorsystems/metaphor-python
+  description: |
+    metaphor-python is the official Python client SDK for the Metaphor
+    (now Exa) search API. It provides a thin wrapper over the REST API
+    for neural search, retrieving document contents, and finding similar
+    pages.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: metaphor-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: metaphor-python
+  cfe-purls:
+    - pkg:conda/metaphor-python@${{ version }}
+    - pkg:pypi/metaphor-python@${{ version }}
+  cfe-upstream-repo: https://github.com/metaphorsystems/metaphor-python
+  cfe-upstream-homepage: https://pypi.org/project/metaphor-python/
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# about:
+#    # Upstream PyPI sdist ships no LICENSE; vendored from the GitHub repo per
+#    # conda-forge canonical License-File Placement pattern (2).
+####

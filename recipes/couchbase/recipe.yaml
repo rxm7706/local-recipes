@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# COMPILED C++ recipe. The couchbase Python SDK bundles the couchbase-cxx-client
+# (and its C++ deps via a vendored CPM cache under deps/couchbase-cxx-cache/) and
+# COMPILES it via CMake at install time, driven by setup.py's CMakeBuildExt.
+#   - NOT noarch: the `couchbase.logic.pycbc_core._core` extension is platform-specific.
+#   - TLS: upstream defaults to PYCBC_USE_OPENSSL=true -> the C++ client DYNAMICALLY
+#     links OpenSSL (USE_STATIC_BORINGSSL=OFF). We pin `openssl` in host and set
+#     PYCBC_OPENSSL_DIR=$PREFIX so CMake's -DOPENSSL_ROOT_DIR resolves the conda
+#     OpenSSL instead of FetchContent-ing OpenSSL 3.5.2 from GitHub (which would
+#     fail in an isolated build). The bundled BoringSSL is therefore NOT linked.
+#   - The C++ deps (snappy, json, llhttp, gsl, hdr_histogram, spdlog, jsonsl,
+#     expected) ship in the sdist's CPM cache and are compiled statically into
+#     _core; their licenses are shipped via about.license_file. PYCBC_USE_CPM_CACHE
+#     defaults true -> no network for those.
+
+context:
+  version: "4.6.2"
+
+package:
+  name: couchbase
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/couchbase/couchbase-${{ version }}.tar.gz
+  sha256: c660549f8c87354837364aa48b84268a4778fd4a0c0a9db41cbf5eab1b11d70c
+
+build:
+  number: 0
+  script:
+    env:
+      # Use the bundled CPM cache for the C++ deps (default true); be explicit so
+      # no C++ dep is fetched over the network at build time.
+      PYCBC_USE_CPM_CACHE: "true"
+    content:
+      # PYCBC_OPENSSL_DIR must point at the conda PREFIX so CMake's
+      # -DOPENSSL_ROOT_DIR resolves the conda OpenSSL (PYCBC_USE_OPENSSL defaults
+      # true -> dynamic-link OpenSSL); without it CMake FetchContents OpenSSL
+      # 3.5.2 from GitHub. PYCBC_CMAKE_PARALLEL_THREADS controls build parallelism
+      # (upstream default 4). Both $PREFIX and $CPU_COUNT are shell vars available
+      # only at run time, not jinja (script.env values do not shell-expand — G1),
+      # so set them in the script body.
+      - |
+        export PYCBC_OPENSSL_DIR="${PREFIX}"
+        export PYCBC_CMAKE_PARALLEL_THREADS="${CPU_COUNT}"
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - make
+  host:
+    # Compiled (non-noarch) recipe: python is supplied unconstrained by the
+    # build matrix; no python_min pin (conda-smithy rejects a version
+    # constraint on python for non-noarch packages).
+    - python
+    - pip
+    - setuptools >=42
+    - openssl
+  run:
+    - python
+    - typing_extensions >=4.14
+
+tests:
+  - python:
+      imports:
+        # `txcouchbase` (the Twisted async API) is intentionally NOT imported:
+        # it eagerly `from twisted.internet import asyncioreactor` at import
+        # time, but `twisted` is an OPTIONAL framework dep upstream (the only
+        # required run dep is typing-extensions). `couchbase` (sync) +
+        # `acouchbase` (asyncio) exercise the compiled _core extension and need
+        # no extra deps.
+        - couchbase
+        - acouchbase
+      pip_check: true
+
+about:
+  homepage: https://pypi.org/project/couchbase/
+  # The package itself is Apache-2.0; the bundled C++ deps compiled statically
+  # into the _core extension contribute the other SPDX terms (their license
+  # files are shipped via license_file below). BoringSSL is NOT linked in the
+  # OpenSSL-default build, so it is omitted.
+  license: Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND CC0-1.0
+  license_file:
+    - LICENSE
+    - deps/couchbase-cxx-client/LICENSE.txt
+    - deps/couchbase-cxx-client/third_party/jsonsl/LICENSE
+    - deps/couchbase-cxx-client/third_party/expected/COPYING
+    - deps/couchbase-cxx-cache/gsl/c569/gsl/LICENSE
+    - deps/couchbase-cxx-cache/llhttp/f0e6/llhttp/LICENSE-MIT
+    - deps/couchbase-cxx-cache/llhttp/f0e6/llhttp/LICENSE
+    - deps/couchbase-cxx-cache/spdlog/7251/spdlog/LICENSE
+    - deps/couchbase-cxx-cache/json/4c7c/json/LICENSE
+    - deps/couchbase-cxx-cache/json/4c7c/json/LICENSE.double-conversion
+    - deps/couchbase-cxx-cache/json/4c7c/json/LICENSE.ryu
+    - deps/couchbase-cxx-cache/json/4c7c/json/LICENSE.itoa
+    - deps/couchbase-cxx-cache/json/4c7c/json/external/PEGTL/LICENSE
+    - deps/couchbase-cxx-cache/hdr_histogram/8aac/hdr_histogram/LICENSE.txt
+    - deps/couchbase-cxx-cache/hdr_histogram/8aac/hdr_histogram/COPYING.txt
+    - deps/couchbase-cxx-cache/snappy/3cde/snappy/COPYING
+  summary: Python Client for Couchbase
+  repository: https://github.com/couchbase/couchbase-python-client
+  documentation: https://docs.couchbase.com/python-sdk/current/hello-world/start-using-sdk.html
+  description: |
+    The Couchbase Python SDK allows Python applications to access a Couchbase
+    cluster. It bundles and compiles the couchbase-cxx-client C++ core via CMake
+    at install time. It offers synchronous (couchbase), asyncio (acouchbase),
+    and Twisted (txcouchbase) APIs for key-value, query, search, analytics, and
+    cluster/bucket management operations.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: couchbase
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: couchbase
+  cfe-purls:
+    - pkg:conda/couchbase@${{ version }}
+    - pkg:pypi/couchbase@${{ version }}
+  cfe-upstream-repo: https://github.com/couchbase/couchbase-python-client
+  cfe-upstream-homepage: https://pypi.org/project/couchbase/
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

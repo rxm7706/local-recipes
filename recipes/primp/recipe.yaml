@@ -2,41 +2,130 @@
 schema_version: 1
 
 context:
-  name: primp
-  version: 0.15.0
+  version: "1.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: primp
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/primp-${{ version }}.tar.gz
-  sha256: 1af8ea4b15f57571ff7fc5e282a82c5eb69bc695e19b8ddeeda324397965b30a
+  url: https://pypi.org/packages/source/p/primp/primp-${{ version }}.tar.gz
+  sha256: b04a5941bf9c876d011c5defaf5a25be093d56e7270b8da52c9788b9df2a829a
 
 build:
   number: 0
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    env:
+      PYTHONUTF8: "1"
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+      OPENSSL_NO_VENDOR: "1"
+    content:
+      - if: unix
+        then: |
+          export OPENSSL_DIR="$PREFIX"
+          pushd crates/primp-python
+          cargo-bundle-licenses --format yaml --output ../../THIRDPARTY.yml
+          popd
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+        else: |
+          set "OPENSSL_DIR=%LIBRARY_PREFIX%"
+          pushd crates\primp-python
+          cargo-bundle-licenses --format yaml --output ../../THIRDPARTY.yml
+          popd
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip: is_abi3 and not is_python_min
+  python:
+    version_independent: ${{ is_abi3 }}
 
 requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1.5,<2.0
   host:
-    - python >=3.8
-    - maturin >=1.5,<2.0
+    - python
     - pip
+    - maturin >=1.5,<2.0
+    - openssl
+    - if: is_abi3
+      then: python-abi3
   run:
-    - python >=3.8
+    - python
 
 tests:
   - python:
       imports:
         - primp
       pip_check: true
+      python_version:
+        - if: is_abi3
+          then: ${{ python_min }}.*
+        - "*"
+  - if: is_abi3
+    then:
+      requirements:
+        run:
+          - abi3audit
+      script:
+        - if: unix
+          then: abi3audit $SP_DIR/primp/primp.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%\primp\primp.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
 
 about:
-  summary: HTTP client that can impersonate web browsers, mimicking their headers and `TLS/JA3/JA4/HTTP2` fingerprints
+  homepage: https://github.com/deedy5/primp
+  repository: https://github.com/deedy5/primp
   license: MIT
-  license_file: LICENSE
+  license_file:
+    - crates/primp/LICENSE-MIT
+    - THIRDPARTY.yml
+  summary: HTTP client that can impersonate web browsers, mimicking their headers and `TLS/JA3/JA4/HTTP2` fingerprints
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: primp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: primp
+  cfe-purls:
+    - pkg:conda/primp@${{ version }}
+    - pkg:pypi/primp@${{ version }}
+  cfe-upstream-repo: https://github.com/deedy5/primp
+  cfe-upstream-homepage: https://github.com/deedy5/primp
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T20:40:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:40:00Z
+####
+# CFE comments
+# build:
+#  script:
+#    env:
+#      # OPENSSL_NO_VENDOR + OPENSSL_DIR: primp's dep tree pulls openssl-sys
+#      # with the vendored (openssl-src) feature; force it to use the conda
+#      # openssl in host instead of compiling OpenSSL from source.
+#      # PYTHONUTF8 + CARGO_PROFILE_RELEASE_{STRIP,LTO}: canonical Rust+PyO3
+#      # conda-forge env block (G19).
+#    content:
+#      # cargo-bundle-licenses has no --manifest-path flag; [tool.maturin]
+#      # manifest-path points at crates/primp-python/Cargo.toml, so pushd into
+#      # that dir, write THIRDPARTY.yml back to the source root, popd (G13).
+#  skip:
+#    # abi3 matrix collapse, Variant A (tree-sitter-typescript pattern):
+#    # Cargo.toml declares pyo3 abi3-py310 which matches conda-forge-pinning's
+#    # python_min default (3.10), so build once at python_min and ship one
+#    # version_independent artifact per platform.
+####
