@@ -232,7 +232,7 @@ fortran/   f90-recipe.yaml, f90-meta.yaml
 conda-forge-yml/  staged-recipes/conda-forge.yml, feedstock/conda-forge.yml  (v7.3.0)
 ```
 
-Templates ship **both v0 (meta.yaml) and v1 (recipe.yaml)** variants for most ecosystems — v1 is canonical for new recipes, v0 stays only for migration source material.
+Templates ship **both v0 (meta.yaml) and v1 (recipe.yaml)** variants for most ecosystems — v1 is canonical for new recipes, v0 stays only for migration source material. Note: **Feature G45 Local-Only SPA packaging** is supported as a local-only workflow (`noarch:generic` + `nodejs` + python `http.server`), which is explicitly not submittable to upstream conda-forge.
 
 `recipe-generator.py` reads from these when a `--template <ecosystem>` flag is passed; otherwise grayskull auto-generates from PyPI metadata.
 
@@ -373,7 +373,7 @@ When `get_build_summary` reports failure (or false negative — see G6):
 4. Build green on linux-64.
 5. **Then** `git rm meta.yaml` and commit both in one PR.
 
-The Critical Constraint ("never mix formats in a build run") means `meta.yaml` must be deleted before commit; the strangler pattern ensures the migration is atomic with the value-adding change so reviewers see one coherent diff.
+The Critical Constraint ("never mix formats in a build run") means `meta.yaml` must be deleted before commit; the strangler pattern ensures the migration is atomic with the value-adding change so reviewers see one coherent diff. *Note: As of v1.5.1, an active mass migration from `meta.yaml` to `recipe.yaml` is underway across the 1,415 output recipes.*
 
 ---
 

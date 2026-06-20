@@ -1,7 +1,7 @@
 ---
 doc_type: project-overview
 project_name: local-recipes
-date: 2026-05-12
+date: 2026-06-20
 repository_type: monorepo
 parts: 4
 source_pin: 'conda-forge-expert v8.11.1'

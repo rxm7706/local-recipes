@@ -127,7 +127,7 @@ All required BMAD PRD sections are present (see D2). The PRD also adds appropria
 ### Other measurability strengths
 
 - All 7 G* goals have measurable outcomes in §4
-- All 52 features have AC descriptions in §5
+- All 54 features have AC descriptions in §5
 - Air-gap metrics (§6) are concretely auditable (zero JFrog headers in non-JFrog logs)
 
 **Severity: MINOR.** 3 of 27 metrics under-specified; 24 are sound.
@@ -142,7 +142,7 @@ The traceability chain is **Vision → Goals → JTBDs → Features → Acceptan
 
 #### Missing: JTBD-to-Feature trace matrix
 
-§3 lists 11 JTBDs across 5 user personas. §5 lists 52 features across 4 parts + cross-cutting. **There is no explicit mapping** showing which JTBD each feature serves.
+§3 lists 12 JTBDs across 5 user personas. §5 lists 54 features across 4 parts + cross-cutting. **There is no explicit mapping** showing which JTBD each feature serves.
 
 Some features have obvious JTBD parents (F1.2 "10-step autonomous loop" → JTBD-3.1). Others are ambiguous:
 
@@ -404,7 +404,7 @@ The next validation report (`implementation-readiness-report.md`) covers PRD↔a
 
 2. **Deferred Work unchanged.** DW1-DW20 still apply as written. No new DW row added; no DW row closed.
 
-3. **JTBD coverage matrix unchanged.** Appendix C lists 11 JTBDs × 52 features; none are affected by the npm-generator subsurface change. JTBD-1.1 (author recipe with confidence) is incidentally **improved** by v8.11.0 — the per-platform inline pattern is empirically more reliable on staged-recipes CI than noarch:generic (bmalph PR #33557 attempt 2 verified linux_64 3m17s / osx_64 6m14s / win_64 3m20s green), but no feature ID changes coverage. F1.8 still primary-serves JTBD-1.1.
+3. **JTBD coverage matrix unchanged.** Appendix C lists 12 JTBDs × 54 features; none are affected by the npm-generator subsurface change. JTBD-1.1 (author recipe with confidence) is incidentally **improved** by v8.11.0 — the per-platform inline pattern is empirically more reliable on staged-recipes CI than noarch:generic (bmalph PR #33557 attempt 2 verified linux_64 3m17s / osx_64 6m14s / win_64 3m20s green), but no feature ID changes coverage. F1.8 still primary-serves JTBD-1.1.
 
 4. **Risks unchanged.** R1 (skill version drift between rebuild start and finish) is the active risk addressed by this proposal's source_pin sync; the prior risk text (last edit `2026-05-13`) is non-blocking because the rebuild has not commenced. R2-R7 untouched by the npm-generator changes.
 
@@ -429,7 +429,7 @@ Frontmatter-only. PRD body content holds.
 ### Outcome
 
 - PRD `re_validated` field bumped to `2026-06-07` ✓
-- PRD `version` PATCH-bumped v1.4.4 → v1.4.5 ✓
+- PRD `version` PATCH-bumped v1.5.0 → v1.5.1 ✓
 - PRD `source_pin` bumped v8.10.0 → v8.11.1 ✓
 - PRD `status` remains `approved` (no scope shift triggered re-approval cycle)
 

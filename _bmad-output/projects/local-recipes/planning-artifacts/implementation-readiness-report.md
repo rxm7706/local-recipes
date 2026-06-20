@@ -81,7 +81,7 @@ The companion `validation-report-PRD.md` covers PRD-internal quality. **Implemen
 
 | Finding | Severity |
 |---|---|
-| PRD §5 has **52 features** with priority + AC. Epics need to cover all 52. | (verified in Step 3) |
+| PRD §5 has **54 features** with priority + AC. Epics need to cover all 54. | (verified in Step 3) |
 | PRD §6 Success Metrics has **27 measures**. Each should map to a verification story in Epic 12 or Epic 13. | (gap — see below) |
 | PRD §8 Open Questions has **7 items**. Of these, Q-PRD-01, Q-PRD-03, Q-PRD-04, Q-PRD-05, Q-PRD-07 may **block specific stories**. | (gap — see below) |
 | PRD §10 has **7 risks** with mitigations. Mitigations should map to specific stories or be documented in architecture. | (verified — most map; one gap) |
@@ -120,9 +120,9 @@ PRD §10 R7: "New conda-forge lint code added post-rebuild" — mitigation says 
 
 ## Step 3: Epic Coverage Validation ❌ MUST FIX
 
-**The big question**: do the 13 epics cover all 52 PRD features?
+**The big question**: do the 13 epics cover all 54 PRD features?
 
-### Coverage matrix (52 features → 13 epics)
+### Coverage matrix (54 features → 13 epics)
 
 | PRD Feature | Priority | Covered by epic(s) | Verdict |
 |---|---|---|---|
@@ -186,7 +186,7 @@ PRD §10 R7: "New conda-forge lint code added post-rebuild" — mitigation says 
 
 ### Coverage summary
 
-- **51 of 52 features ✅ covered** with explicit story(ies)
+- **51 of 54 features ✅ covered** with explicit story(ies) (pending epic updates for new features)
 - **1 feature ⚠️ with verification gap** (F1.4 — verify 42 scripts split across Epic 4 + Epic 7-9)
 - **2 features ⚠️ blocked by open questions** (F1.7 G6 promotion blocked by Q-PRD-03; F3.7 P1 priority depends on Q-PRD-01)
 
