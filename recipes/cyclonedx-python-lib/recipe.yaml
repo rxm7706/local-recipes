@@ -1,0 +1,163 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "11.11.0"
+  python_check_max: "3.14"
+
+recipe:
+  name: cyclonedx-python-lib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cyclonedx-python-lib/cyclonedx_python_lib-${{ version }}.tar.gz
+  sha256: 4b3194db72b613717f2912447e67ab618c75ff7dcac6c4af3c0e9e1ac617c102
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: cyclonedx-python-lib
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+        # avoid regressing on https://github.com/CycloneDX/cyclonedx-python-lib/issues/435
+        - |-
+          ${{ PYTHON }} -c "assert not (__import__('pathlib').Path(__import__('site').getsitepackages()[0]) / 'LICENSE').exists()"
+    requirements:
+      host:
+        - pip
+        - poetry-core
+        - python ${{ python_min }}.*
+      run:
+        # from poetry-generated setup.py
+        - license-expression >=30.0.0,<31.0.0
+        - packageurl-python >=0.11,<2
+        - py-serializable >=2.1.0,<3.0.0
+        - python >=${{ python_min }}
+        - sortedcontainers >=2.4.0,<3.0.0
+        - typing_extensions >=4.6.0,<5.0.0
+    tests:
+      - python:
+          imports: cyclonedx
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: cyclonedx-python-lib-with-json-validation
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("cyclonedx-python-lib", exact=True) }}
+        - jsonschema-with-format-nongpl >=4.25,<5.0
+        - referencing >=0.28.4
+    tests:
+      - python:
+          imports: cyclonedx
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: cyclonedx-python-lib-with-xml-validation
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("cyclonedx-python-lib", exact=True) }}
+        - lxml >=4,<7
+    tests:
+      - python:
+          imports: cyclonedx
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: cyclonedx-python-lib-with-validation
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("cyclonedx-python-lib", exact=True) }}
+        - ${{ pin_subpackage("cyclonedx-python-lib-with-json-validation", exact=True) }}
+        - ${{ pin_subpackage("cyclonedx-python-lib-with-xml-validation", exact=True) }}
+    tests:
+      - python:
+          imports: cyclonedx
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - files:
+          source:
+            - pyproject.toml
+            - tests/
+        requirements:
+          run:
+            - ddt >=1.7.1,<2.0.0
+            - python ${{ python_min }}.*
+            - pytest-cov
+            - tox
+            - xmldiff
+        script:
+          - pytest -vv --color=yes --tb=long --cov=cyclonedx --cov-branch --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=90
+
+about:
+  homepage: https://github.com/CycloneDX/cyclonedx-python-lib
+  summary: Python library for CycloneDX
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+
+extra:
+  feedstock-name: cyclonedx-python-lib
+  recipe-maintainers:
+    - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cyclonedx-python-lib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cyclonedx-python-lib
+  cfe-purls:
+    - pkg:conda/cyclonedx-python-lib@${{ version }}
+    - pkg:pypi/cyclonedx-python-lib@${{ version }}
+  cfe-upstream-repo: https://github.com/CycloneDX/cyclonedx-python-lib
+  cfe-upstream-homepage: https://github.com/CycloneDX/cyclonedx-python-lib
+  cfe-import-names: [cyclonedx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cyclonedx-python-lib-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T11:16:00Z
+  cfe-generated-by-version: 8.38.0
+  cfe-generated-at-datetime: 2026-06-20T11:16:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T11:16:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Faithful mirror of conda-forge/cyclonedx-python-lib-feedstock at the
+#    # current published version (v11.11.0). Maintained upstream by bollwyvl;
+#    # mirrored here only to build/verify locally. Multi-output: the base
+#    # noarch:python lib + 3 noarch:generic validation metapackages
+#    # (-with-json-validation / -with-xml-validation / -with-validation).
+# build-coverage:
+#    # All 4 outputs built GREEN locally on linux-64 (noarch — one build
+#    # covers all platforms); none quarantined to broken/.
+####
