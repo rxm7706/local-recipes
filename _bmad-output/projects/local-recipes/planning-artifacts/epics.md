@@ -6,7 +6,7 @@ version: '1.0.0'
 status: draft
 source_pin: 'conda-forge-expert v8.11.1'
 total_epics: 13
-total_stories: 193
+total_stories: 195
 waves: 5
 xl_stories_remaining: 0
 tentative_decisions_applied: 7
@@ -37,13 +37,13 @@ Build order follows `architecture.md` § 9 (Build Order). Wave 1 is foundational
 
 | Wave | Theme | Epics | Stories | Estimated complexity |
 |---|---|---|---|---|
-| **Wave 1** | Foundation: pixi monorepo + BMAD installer + auth chain | 3 epics | 27 stories | Foundational, must-be-correct |
-| **Wave 2** | Part 1 core: conda-forge-expert skill (Tier 1 + 2 + docs) | 3 epics | 38 stories | Largest wave; the heart of the system |
+| **Wave 1** | Foundation: pixi monorepo + BMAD installer + auth chain | 3 epics | 30 stories | Foundational, must-be-correct |
+| **Wave 2** | Part 1 core: conda-forge-expert skill (Tier 1 + 2 + docs) | 3 epics | 66 stories | Largest wave; the heart of the system |
 | **Wave 3** | Part 2: cf_atlas data pipeline (17 phases + schema + CLIs) | 3 epics | 40 stories | Most complex single component |
 | **Wave 4** | Parts 3+4 surfaces: MCP server + multi-project + integration | 2 epics | 21 stories | Smaller code but high-coupling |
 | **Wave 5** | Hardening: tests + docs + air-gap validation + deployment | 2 epics | 16 stories | Validation + readiness |
 
-**Total: 13 epics, 142 stories.** Estimates assume an experienced operator with Claude Code assistance.
+**Total: 13 epics, 195 stories.** Estimates assume an experienced operator with Claude Code assistance.
 
 ---
 
@@ -128,10 +128,11 @@ Stories in Wave 1 establish the substrate every other Wave depends on. Until Wav
 | E3.S6 | Document JFROG leak (docs/enterprise-deployment.md § 2) | Operational reference with subshell pattern + enumerated commands + per-shell discipline + direnv option | docs/enterprise-deployment.md has comprehensive coverage | M |
 | E3.S7 | Author `.claude/settings.json` default permissions | Allow `Bash(rattler-build *)`, `Bash(pixi run *)`, `Bash(gh *)`, etc.; deny `Bash(git push --force *)` and variants; allow Skill(conda-forge-expert) | settings.json present with sensible defaults; `--force` push denied at permission layer | M |
 | E3.S8 | Add `tests/meta/test_http_jfrog_scoping.py` (the v1→v2 trip-wire) | Meta-test verifying `_http.py` injects JFROG_API_KEY header unconditionally on every host (locks in the E3.S1 documented-constraint stance per ADR-010). **The test exists to BREAK when a future v2 refactor adds host-aware scoping — that's the refactor signal.** Until then, this test passes; after v2 refactor lands, this test is updated/replaced as part of the v2 effort (DW2). | Test runs and passes against E3.S1's `_http.py`; documents the v1 stance with a code-level assertion; test docstring cites ADR-010 + DW2 | S |
+| E3.S9 | Implement AI Provenance Tracking Hook (`post-tool-call.py`) | Covers **FX.8**. Implement `.claude/hooks/post-tool-call.py` to intercept Claude Code tool calls, log file modifications, and transmit provenance payloads securely to a local webserver. | Hook script exists; intercepts tool executions; transmits JSON provenance payloads correctly. | M |
 
-**Epic 3 total: 8 stories, complexity ~M-L average.**
+**Epic 3 total: 9 stories, complexity ~M-L average.**
 
-**Wave 1 totals: 3 epics, 29 stories.**
+**Wave 1 totals: 3 epics, 30 stories.**
 
 ---
 
@@ -253,10 +254,11 @@ Wave 2 builds the heart of the system. Tier 1 canonical scripts, then Tier 2 wra
 | E6.S25d | Unit tests: atlas query CLIs | Test files for: staleness_report, feedstock_health, whodepends, behind_upstream, version_downloads, release_cadence, find_alternative, adoption_stage, cve_watcher, cve_manager, vulnerability_scanner (~11 modules from Epic 9) | All query-CLI unit tests pass | L |
 | E6.S25e | Unit tests: scan + shared infrastructure | Test files for: scan_project (per format-family fixtures from Epic 9 split), _sbom, health_check, _http.py (E3.S3 already covers main paths), mapping_manager, name_resolver, npm_updater (~7 modules) | All scan + infrastructure unit tests pass | M |
 | E6.S26 | Author integration tests | Cross-module flows: generate→validate→optimize; build→failure-analyze; submit dry-run | Integration tests pass with `@pytest.mark.network` where appropriate | L |
+| E6.S27 | Author Feature G45 Local-Only SPA Template | Covers **F1.16** and **JTBD-1.7**. Add a new ecosystem template for local-only SPA web-apps utilizing `noarch:generic`, Vite for bundling, and `http.server` for local serving (not submittable to upstream conda-forge). | Template is generated; produces valid local-only recipe; serves correctly on local port. | M |
 
-**Epic 6 total: 34 stories** (was 26; +5 from E6.S1 split into S1a-f, +4 from E6.S25 split into S25a-e), complexity ~M-L average; **no XL stories remaining**.
+**Epic 6 total: 35 stories** (was 26; +5 from E6.S1 split into S1a-f, +4 from E6.S25 split into S25a-e, +1 for G45 template), complexity ~M-L average; **no XL stories remaining**.
 
-**Wave 2 totals: 3 epics, 54 stories.**
+**Wave 2 totals: 3 epics, 66 stories.**
 
 ---
 
@@ -512,14 +514,14 @@ Wave 5 brings tests + docs + deployment validation. After Wave 5, the rebuild is
 
 | Wave | Epics | Stories | Complexity skew |
 |---|---|---|---|
-| Wave 1 (Foundation) | 3 | 29 | Mostly S-M; some L (resolvers, _http.py) |
-| Wave 2 (Part 1 skill) | 3 | 65 | Mostly M-L (was 2 XL: SKILL.md split into 6, unit tests split into 5) |
+| Wave 1 (Foundation) | 3 | 30 | Mostly S-M; some L (resolvers, _http.py) |
+| Wave 2 (Part 1 skill) | 3 | 66 | Mostly M-L (was 2 XL: SKILL.md split into 6, unit tests split into 5) |
 | Wave 3 (cf_atlas) | 3 | 58 | Mostly M-L (was 1 XL: scan_project split into 5; +1 from Q-PRD-04 Phase K backoff) |
 | Wave 4 (Parts 3+4) | 2 | 21 | Mostly S-M; some L (MCP tool registrations, CLAUDE.md) |
 | Wave 5 (Hardening) | 2 | 26 | Mostly M-L (was 1 XL: air-gap deployment validation split into 4) |
-| **Total** | **13** | **193** | **Mixed; weighted toward M-L; zero XL stories remaining** |
+| **Total** | **13** | **195** | **Mixed; weighted toward M-L; zero XL stories remaining** |
 
-*(Story count expanded from 176 → 192 (XL splits + test-skill.py) → 193 (Q-PRD-04 Phase K backoff). Original 142 estimate → 193 post-validation + tentative-decisions revision.)*
+*(Story count expanded from 176 → 192 (XL splits + test-skill.py) → 193 (Q-PRD-04 Phase K backoff) → 195 (Features F1.16/FX.8). Original 142 estimate → 195 post-validation + tentative-decisions revision.)*
 
 ---
 

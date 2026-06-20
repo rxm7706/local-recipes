@@ -1,7 +1,7 @@
 ---
 doc_type: master-index
 project_name: local-recipes
-date: 2026-05-12
+date: 2026-06-20
 repository_type: monorepo
 parts: 4
 docs_generated: 10
@@ -12,7 +12,7 @@ source_pin: 'conda-forge-expert v8.11.1'
 
 This index is your **primary entry point** for AI-assisted development on `local-recipes`. When a Brownfield PRD, story breakdown, or BMAD planning workflow needs the architecture and feature inventory of this repo, point them at this file.
 
-The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v8.6.0** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `sprint-change-proposal-2026-05-15-v8.1.md`; v8.1.0 → v8.5.1 on 2026-05-23 after the env-inspect suite — see `retro-env-inspect-suite-2026-05-23.md`; v8.5.1 → v8.5.2 on 2026-05-23 after the admin-refresh audit close-out — see `sprint-change-proposal-2026-05-23-v8.5.2.md`; v8.5.2 → v8.5.3 on 2026-05-23 after the same-day emergent DW12+DW13 bundle close-out — see `sprint-change-proposal-2026-05-23-v8.5.3.md` + `implementation-artifacts/retro-dw12-dw13-2026-05-23.md`; **v8.5.3 → v8.6.0 on 2026-05-24** after the AppThreat Deep Signals release (Waves A + B + D shipped + Wave C cancelled pre-implementation) — see `sprint-change-proposal-2026-05-24-v8.6.0.md` + `implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md`).
+The document set was produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template). Source pin: **conda-forge-expert v8.11.1** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `sprint-change-proposal-2026-05-15-v8.1.md`; v8.1.0 → v8.5.1 on 2026-05-23 after the env-inspect suite — see `retro-env-inspect-suite-2026-05-23.md`; v8.5.1 → v8.5.2 on 2026-05-23 after the admin-refresh audit close-out — see `sprint-change-proposal-2026-05-23-v8.5.2.md`; v8.5.2 → v8.5.3 on 2026-05-23 after the same-day emergent DW12+DW13 bundle close-out — see `sprint-change-proposal-2026-05-23-v8.5.3.md` + `implementation-artifacts/retro-dw12-dw13-2026-05-23.md`; v8.5.3 → v8.6.0 on 2026-05-24 after the AppThreat Deep Signals release (Waves A + B + D shipped + Wave C cancelled pre-implementation) — see `sprint-change-proposal-2026-05-24-v8.6.0.md` + `implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md`; **v8.6.0 → v8.11.1** PRD synced to v1.5.1 on 2026-06-20 to document active v1 migration, Feature G45 local-only SPA, AI provenance hook, and architectural gaps).
 
 ---
 

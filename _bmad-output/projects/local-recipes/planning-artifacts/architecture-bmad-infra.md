@@ -24,6 +24,7 @@ Operationalized:
 - Active-project resolution via CLI flag → env var → marker file → none, in priority order.
 - Per-project artifacts under `_bmad-output/projects/<slug>/{planning-artifacts,implementation-artifacts}/`.
 - BMAD↔CFE integration rules in `CLAUDE.md` make every conda-forge-touching BMAD agent invoke the skill and run a retro on closeout.
+- Strict AI provenance tracking (FX.8) via Claude Code hooks to audit agentic interactions.
 
 ---
 
@@ -347,6 +348,12 @@ When a BMAD effort that did conda-forge work reaches closeout (final story compl
 - `canonical_*.md` — canonical patterns
 
 Auto-memory crosses sessions and projects; it's the long-term knowledge bank. Skill files (Part 1) cross projects but are CFE-specific; project-context cross sessions but is project-specific; auto-memory is the user's durable scratchpad.
+
+---
+
+## AI Provenance Tracking (FX.8)
+
+As of v1.5.1, the repository implements strict AI provenance tracking via a `.claude/hooks/post-tool-call.py` hook. This hook intercepts all Claude Code tool executions (including MCP calls, bash commands, and file edits), logs the file modifications, and transmits a JSON provenance payload to a local webserver. This guarantees an auditable trail of all agentic interactions within the multi-project installation.
 
 ---
 
