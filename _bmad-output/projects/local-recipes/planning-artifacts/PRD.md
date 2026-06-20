@@ -1,13 +1,13 @@
 ---
 doc_type: prd
 project_name: local-recipes
-date: 2026-05-12
-version: '1.4.5'
+date: 2026-06-20
+version: '1.5.0'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
 source_pin: 'conda-forge-expert v8.11.1'
-re_validated: 2026-06-07
+re_validated: 2026-06-20
 input_docs:
   - planning-artifacts/index.md
   - planning-artifacts/project-overview.md
@@ -23,6 +23,7 @@ edit_history:
   - { date: '2026-05-24', via: 'bmad-correct-course', delta: 'v8.5.3 → v8.6.0 sync after the AppThreat Deep Signals release shipped across three commits (Wave A e4ba891cd2 2026-05-23: schema v23 → v24 foundation + EPSS pipeline; Wave B e22c531ac2 2026-05-23: CWE catalog + Phase G/G overlay wiring; Wave D 592b18089a 2026-05-24: schema v24 → v25 cleanup migration + CLI flags + persona profiles + closeout). Wave C (Phase T blint hardening + Phase U EPSS overlay phase) CANCELLED pre-implementation at verify-don’t-assume verification: Phase T low-signal (conda-forge’s hermetic compile environment produces ~0 hardening variance across ~32k packages, ~150 GB download cost in admin top-N mode); Phase U redundant with Wave B’s `_phase_g_sync_current_rollup` extension (a real standalone Phase U requires a per-package CVE list / new `package_cves` table — separate spec, filed as DW19). Schema journey v23 → v24 → v25 (round-trip cleanup): net delta +2 side tables (epss_scores, cwe_categories) + 4 packages columns surviving v25 (vuln_max_epss_score, vuln_max_epss_percentile, vuln_cwe_top, vuln_cwe_categories_json) + 3 package_version_vulns columns. The `package_hardening` table + `vuln_total_active` / `vuln_withdrawn_count` columns existed transiently in v24 then dropped in v25 after Wave C cancellation + Wave B withdrawn-filter verification (vdb’s OSV + GHSA sources skip withdrawn at ingest per `appthreat-vulnerability-db/lib/osv.py:91` + `gha.py:184-185` — proposed filter would be dead code). 2 new fetcher CLIs (`fetch-epss`, `fetch-cwe-catalog`) + 4 new flags across existing query CLIs (`staleness-report --by-epss / --has-cwe`; `my-feedstocks --epss --cwe`; `cve-watcher --epss-threshold`; `detail-cf-atlas` auto-renders Max-EPSS + Top-CWE rows when populated). Persona profiles maintainer + admin set 3 new env vars (`BOOTSTRAP_FETCH_CISA_KEV`, `BOOTSTRAP_FETCH_EPSS`, `BOOTSTRAP_FETCH_CWE_CATALOG`) so `bootstrap-data` auto-pulls the three catalogs between Step 2 (CVE DB) and Step 3 (vdb); consumer profile skips all three (air-gap preserving). 5 parent-spec errors caught pre-implementation by verify-don’t-assume: MITRE CWE URL (spec said 2000.csv.zip Architectural; correct 1000.csv.zip Research); EPSS URL (spec said cyentia.com; correct empiricalsecurity.com — Cyentia rebranded); blint PyPI name (spec said `owasp-blint` 404; correct `blint`); withdrawn-filter assumption (vdb pre-filters at ingest, columns would be NULL channel-wide); Phase U redundancy (equivalent to already-shipped `_phase_g_sync_current_rollup` extension). Combined saved ~10-15 stories. Live verification: 334,683 EPSS rows ingested in 5.1 s; 944 CWEs ingested in 1.03 s; channel-wide Phase G re-scan populated 213 actionable packages with EPSS + 216 with CWE classifications. CWE distribution realistic for Python ecosystem: Info-Disclosure 133 / DoS 24 / RCE 21 / Other 18 / Injection 9 / Traversal 5 / Auth-Bypass 4 / Memory-Safety 2. Test suite 1,099 → 1,137 passing (+38). 0 regressions. PATCH bump on the PRD itself (v1.4.2 → v1.4.3; additive opt-in surfaces — no FR/NFR scope shift); skill MINOR-bumped per semver convention (v8.5.3 → v8.6.0). §9 updates: DW14 partial-status flipped to mostly-addressed (EPSS + CWE + withdrawn done; Medium/Low + yanked-flag channel-wide remain open for v8.7.x); DW15 placeholder flipped to ✅ SHIPPED via Waves A+B; 3 new DW rows (DW18 defensive hardening pass for the three external-catalog fetchers — gzip-size cap, magic-bytes validation, NaN/inf/range guards, BOM+CRLF handling, empty-feed sanity; DW19 per-package CVE list / new `package_cves` table for a real Phase U; DW20 extend CWE seed mapping beyond the current 67 well-known CWEs). DW17 cdxgen `scan_project --pixi-lock` follow-up remains open (deliberately not bundled to preserve v8.6.0’s atlas-side-signals-only narrative). Sprint change proposal: planning-artifacts/sprint-change-proposal-2026-05-24-v8.6.0.md. Retro: implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md. Per-wave intake docs: implementation-artifacts/spec-appthreat-deep-signals-wave-{a,b,d}.md. Future-Epic-14-candidate flagged in v8.5.3 sync retired — v8.6.0 work layered cleanly onto Epic 8 acceptance criteria (extensions of existing `phase_g_vdb_summary` / `phase_g_prime_per_version_vulns` + Path C pattern from v8.5.3 generalised without modification).' }
   - { date: '2026-05-26', via: 'bmad-document-project audit', delta: 'v8.6.0 → v8.10.0 bundled sync covering 4 MINOR + 1 PATCH skill release (v8.7.0 Rust template refresh + SCHEMA-001 + 8-recipe header backfill 2026-05-25; v8.8.0 Python generator + template alignment + CFEP-25 dual-version test matrix in generated recipes 2026-05-25; v8.9.0 maturin/PyO3 routing + sdist-driven import-name extraction + abi3-gated version_independent 2026-05-25; v8.9.1 interpolated source URLs + CARGO_PROFILE_RELEASE env vars 2026-05-25; v8.10.0 drop context.name + literal package.name + literal source.url with only ${{ version }} interpolated, matching current grayskull / conda-forge convention 2026-05-26). All five releases are additive + corrective (no FR/NFR scope shift; no breaking CLI or MCP changes). Skill atlas surface (phase count 22, schema version v25, CLI count 19) unchanged in this range — those land in v8.0/v8.1/v8.5/v8.6. PRD PATCH bump only (v1.4.3 → v1.4.4). project-context.md re-synced separately (last_synced_skill_version: v8.10.0 as of 2026-05-26). 9 planning-artifact source_pins re-synced from v7.8.1 / v8.1.0 / v8.6.0 to v8.10.0 in this audit (architecture-{cf-atlas, conda-forge-expert, mcp-server, bmad-infra}.md + integration-architecture.md + project-overview.md + development-guide.md + deployment-guide.md + source-tree-analysis.md + index.md + architecture.md + epics.md + PRD.md). architecture-cf-atlas.md at-a-glance table corrected: schema v19 → v25, SCHEMA_VERSION = 20 → 25, 17 phases → 22 phases (O+P+Q+R+S phase rows added between D and E to match conda_forge_atlas.py PHASES registry). source-tree-analysis.md script counts refreshed (50 canonical modules / 41 wrappers; was 42 / 34). architecture-bmad-infra.md body line 330 v7.8.1-pending → v8.10.0 re-synced. index.md body line 26 v7.7.2 → v8.10.0. Retro: implementation-artifacts/retro-conda-forge-expert-v8.10-2026-05-26.md + retro-conda-forge-expert-v8.7-v8.8-2026-05-25.md.' }
   - { date: '2026-06-07', via: 'bmad-correct-course', delta: 'v8.10.0 → v8.11.1 bundled sync covering 2 PATCH + 1 MINOR npm-generator releases (v8.10.1 source.url ${{ version }} templating + ${PKG_VERSION} build.sh + quoted ${PREFIX} in tee — three coupled correctness fixes surfaced by staged-recipes#33358 reviewer feedback on recipes/bmalph 2026-06-02; v8.11.0 npm generator default flipped from noarch:generic + standalone build.sh to per-platform inline build using build.script: + if: unix / then / else branches matching openspec PR #32368 + bmalph PR #33557 attempt-2 pattern — six concrete recipe-generator.py changes + test suite reauthored 2026-06-02; v8.11.1 legacy --no-inline-build path + dead code + 2 tests deleted + recipe_editor.py yaml.width = 4096 line-fold fix 2026-06-02). All three releases are corrective/additive (no FR/NFR scope shift; no breaking CLI changes — v8.11.1 deletion of --no-inline-build was the only CLI removal, justified by zero real users on a known-broken path). bmalph PR #33557 attempt 2 verified the new per-platform pattern on all three platforms: linux_64 3m17s / osx_64 6m14s / win_64 3m20s green CI. Skill atlas surface (22 phases, schema v25, 19 query CLIs, 37 MCP tools) unchanged in this range — npm-generator subsurface only. Recipe template count unchanged at 41 (nodejs/npm-recipe.yaml rewritten in place, not added/removed); ecosystem count unchanged at 13. PRD PATCH bump only (v1.4.4 → v1.4.5). project-context.md re-synced separately (last_synced_skill_version: v8.11.1 as of 2026-06-07; § Recipe Format Rules unchanged — the literal-URL convention applies to PyPI Python recipes and is orthogonal to the npm-recipe shape flip). 12 planning-artifact source_pins re-synced from v8.10.0 to v8.11.1 in this audit (architecture-{cf-atlas, conda-forge-expert, mcp-server, bmad-infra}.md + integration-architecture.md + project-overview.md + development-guide.md + deployment-guide.md + source-tree-analysis.md + index.md + architecture.md + epics.md + PRD.md). Auto-memory canonical_npm_recipe_pattern.md was already updated to the v8.11.0 pattern in an independent session — no cross-skill memory delta required, and the entry was re-verified during this audit. Driver: bmalph PR #33557 CI feedback (first attempt failed both legs of the noarch:generic flaw — symlink portability + missing build.bat — confirming openspec PR #32368\'s per-platform inline pattern is the canonical 2026 npm shape). Forcing function: a single concrete recipe submission, not a planned spec wave. Companion v8.10.0 retro at implementation-artifacts/retro-conda-forge-expert-v8.10-2026-05-26.md; v8.11.x retro flagged as outstanding follow-up under CLAUDE.md Rule 2 — the npm-pattern flip warrants its own CFE-skill retro covering "when to retire a canonical recipe pattern" as a process question (recommended filename: implementation-artifacts/retro-conda-forge-expert-v8.11-2026-06-07.md). Sprint change proposal: planning-artifacts/sprint-change-proposal-2026-06-07-v8.11.1.md.' }
+  - { date: '2026-06-20', via: 'bmad-document-project audit', delta: 'v1.4.5 → v1.5.0 sync to include the massive active v0-to-v1 migration, the new Feature G45 local-only SPA packaging workflow, AI provenance tracking via `.claude/hooks/post-tool-call.py`, and Gemini server `urllib` fallback. Added new JTBD-1.7, F1.16, FX.8 and updated Traceability Matrix.' }
 ---
 
 # Product Requirements Document: `local-recipes` Rebuild
@@ -95,6 +96,10 @@ This PRD does not assume a destruction event. The rebuild target supports:
 - Today: `env-inspect` (added v8.3.1, renamed at v8.5.1 — was `env-roots`). Eight modes share one `--scope roots|explicits|all` filter: default (graph roots), `--audit` (manifest hygiene: pure-intent / transitively-covered / drifted), `--freshness` (env vs conda-forge vs PyPI lag, live PyPI fetch by default), `--security` (CVE rollup), `--bus-factor` (single-maintainer SPoF list), `--licenses` (SPDX rollup + non-permissive flag), `--sbom {cyclonedx,spdx}` (standard SBOM emission), `--diff OTHER_ENV` (cross-env set+version delta).
 - Success: env-side question answered in one command without ad-hoc SQL against `cf_atlas.db`; partial-results-with-stale-warning when atlas is older than 7 days; live PyPI fetch (default-on, 6 h disk cache) keeps `--freshness` accurate even on stale atlas data.
 
+**JTBD-1.7**: "Package an internal, non-conda-forge submittable web application for local use."
+- Today: Feature G45 local-only SPA packaging pattern (`noarch:generic`, nodejs build, static site to `share/`, python `http.server` launcher in `bin/`).
+- Success: A frontend SPA is packaged and runnable locally without adhering to upstream conda-forge submission constraints.
+
 #### U2: Enterprise operator (air-gap / JFrog admin)
 
 **JTBD-2.1**: "Stand up `local-recipes` inside an air-gapped enterprise without modifying the codebase."
@@ -159,7 +164,7 @@ JTBD-5.1: Add a new MCP tool / pipeline phase / skill reference without breaking
 
 Features are organized by Part. Each feature has an ID, priority (P0 = must-ship, P1 = should-ship, P2 = nice-to-have), and a one-line acceptance description.
 
-### Part 1: conda-forge-expert skill (15 features)
+### Part 1: conda-forge-expert skill (16 features)
 
 | ID | Feature | Priority | Acceptance |
 |---|---|---|---|
@@ -174,10 +179,11 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F1.9 | 11 reference docs + 8 guides + 2 quickrefs | P0 | All documentation files exist with content; `INDEX.md` task→tool navigator points correctly |
 | F1.10 | `MANIFEST.yaml` + `install.py` portability | P1 | The skill can be moved to another repo and `install.py` bootstraps the wrappers + pixi tasks |
 | F1.11 | Build failure protocol | P0 | SKILL.md § "Build Failure Protocol" enumerates stop/preserve/analyze/root-cause/apply/retry with 3-cycle escalation |
-| F1.12 | Migration protocol (v0 → v1) | P0 | `migrate_to_v1` uses feedrattler; "strangler pattern" — migrate-in-same-PR-as-touch |
+| F1.12 | Migration protocol (v0 → v1) | P0 | `migrate_to_v1` uses feedrattler; "strangler pattern" — migrate-in-same-PR-as-touch. Emphasizes the massive active migration effort to replace legacy `meta.yaml` files. |
 | F1.13 | Mapping subsystem (PyPI ↔ conda) | P0 | `pypi_conda_mappings/` (current) + `mappings/` (legacy) coexist; `name_resolver.py` uses both |
 | F1.14 | 41 tests (unit + integration + meta) | P0 | `pixi run test` passes offline subset; `pixi run test-all` passes full suite (meta-tests enforce three-place rule + schema-header invariant) |
 | F1.15 | CHANGELOG.md with TL;DR | P0 | TL;DR section reflects the current MINOR/PATCH version; older entries chronological |
+| F1.16 | Local-Only SPA Packaging (Feature G45) | P1 | Support for `noarch:generic` packages that build via `nodejs` (`npm ci` + `npx vite build`) and provide a Python `http.server` launcher, bypassing upstream submission rules. |
 
 ### Part 2: cf_atlas data pipeline (12 features)
 
@@ -207,7 +213,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F3.5 | 2 async tools (`trigger_build`, `update_cve_database`) | P0 | Async tools use `Context` for progress reporting; fire-and-forget pattern for builds |
 | F3.6 | Out-of-band state files (`build_summary.json`, `build.pid`) | P0 | Files at repo root; tolerated when absent |
 | F3.7 | `mcp_call.py` JSON-RPC client | P1 | Allows shell-side tool invocation outside Claude Code; 300s timeout |
-| F3.8 | `gemini_server.py` auxiliary | P2 | Gemini API bridge; requires `GEMINI_API_KEY`; not required for primary flow |
+| F3.8 | `gemini_server.py` auxiliary | P2 | Gemini API bridge; requires `GEMINI_API_KEY`; not required for primary flow; includes `urllib` fallback if `requests` is unavailable |
 
 ### Part 4: BMAD infrastructure (10 features)
 
@@ -224,7 +230,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F4.9 | CLAUDE.md BMAD↔CFE integration rules | P0 | Rule 1 (mandate skill invocation) + Rule 2 (mandate retro closeout) codified verbatim |
 | F4.10 | `project-context.md` with drift-detection contract | P0 | Foundational rules + `last_synced_skill_version` MINOR pin + `(Sync: ...)` tags per section |
 
-### Cross-cutting features (7 features)
+### Cross-cutting features (8 features)
 
 | ID | Feature | Priority | Acceptance |
 |---|---|---|---|
@@ -235,8 +241,9 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | FX.5 | `docs/pixi-config-jfrog.example.toml` starter | P1 | Drop-in `.pixi/config.toml` template for JFrog deployments |
 | FX.6 | Permission gate config (`.claude/settings.json`) | P0 | Sensible default allow-list; per-namespace MCP tool permissions; `--force` push denied |
 | FX.7 | `build-locally.py` Docker wrapper | P0 | Linux builds run in Docker; osx/win run on host; cross-compile via SDKs/ |
+| FX.8 | AI Provenance Tracking Hook | P1 | `.claude/hooks/post-tool-call.py` tracks file writes and edits from Claude Code, sending real-time provenance payloads over HTTP to a webserver |
 
-**Total features: 52** across the 4 parts + cross-cutting.
+**Total features: 54** across the 4 parts + cross-cutting.
 
 ---
 
@@ -579,9 +586,9 @@ This is a **personal-time rebuild effort with no firm calendar deadline**. The o
 
 ## Appendix C: JTBD ↔ Feature Traceability Matrix
 
-Maps each of the 52 features in §5 to its **primary JTBD** (the user job it most directly serves) and optional **secondary JTBD(s)** (additional jobs it supports). Resolves Step D6 finding in `validation-report-PRD.md`.
+Maps each of the 54 features in §5 to its **primary JTBD** (the user job it most directly serves) and optional **secondary JTBD(s)** (additional jobs it supports). Resolves Step D6 finding in `validation-report-PRD.md`.
 
-### Part 1: conda-forge-expert skill (15 features)
+### Part 1: conda-forge-expert skill (16 features)
 
 | Feature | Primary JTBD | Secondary | Why this serves the JTBD |
 |---|---|---|---|
@@ -600,6 +607,7 @@ Maps each of the 52 features in §5 to its **primary JTBD** (the user job it mos
 | F1.13 (Mapping subsystem) | JTBD-1.1 | — | PyPI→conda name resolution |
 | F1.14 (41 tests) | JTBD-5.1 | JTBD-1.1 | Regression protection during rebuild + future work |
 | F1.15 (CHANGELOG with TL;DR) | JTBD-3.2 | JTBD-5.1 | Drift-detection source for project-context re-sync |
+| F1.16 (Local-Only SPA Packaging) | JTBD-1.7 | — | Bypasses submission constraints for internal use |
 
 ### Part 2: cf_atlas data pipeline (12 features)
 
@@ -657,10 +665,11 @@ Maps each of the 52 features in §5 to its **primary JTBD** (the user job it mos
 | FX.5 (`docs/pixi-config-jfrog.example.toml`) | JTBD-2.1 | — | Copy-pasteable starter for JFrog deployments |
 | FX.6 (`.claude/settings.json` permission gates) | JTBD-1.1 | JTBD-2.2 | Defaults safe; `--force` push denied |
 | FX.7 (`build-locally.py` Docker wrapper) | JTBD-1.1 | — | Linux builds don't pollute host env |
+| FX.8 (AI Provenance Tracking Hook) | JTBD-5.1 | — | Real-time audit of AI agent actions |
 
 ### JTBD coverage check
 
-11 JTBDs × 52 features cross-checked: **every JTBD has ≥1 primary feature serving it**.
+12 JTBDs × 54 features cross-checked: **every JTBD has ≥1 primary feature serving it**.
 
 | JTBD | Count of primary features | Lowest-coverage JTBD |
 |---|---|---|
@@ -668,12 +677,15 @@ Maps each of the 52 features in §5 to its **primary JTBD** (the user job it mos
 | JTBD-1.2 (diagnose build failure) | 2 | — |
 | JTBD-1.3 (find feedstocks with new upstream) | 6 | — |
 | JTBD-1.4 (plan multi-recipe feature) | 7 | — |
+| JTBD-1.5 (get daily punch list) | 1 | — |
+| JTBD-1.6 (audit pixi env) | 1 | — |
+| JTBD-1.7 (package local-only web app) | 1 | — |
 | JTBD-2.1 (air-gap deployment) | 5 | — |
 | JTBD-2.2 (no credential leak) | 1 | ⚠️ Single feature serves this JTBD; consider whether FX.3 alone is sufficient |
 | JTBD-3.1 (agent on first activation) | 7 | — |
 | JTBD-3.2 (retro updates skill) | 1 | ⚠️ Single feature (F1.15 CHANGELOG) serves this; the retro contract itself is in F4.9 |
 | JTBD-4.1 (reviewer experience) | 0 → secondary on F1.3, F1.6 | ⚠️ No primary feature for JTBD-4.1 — reviewer experience comes from upstream side-effects of F1.3 + F1.6 |
-| JTBD-5.1 (future contributor) | 7 | — |
+| JTBD-5.1 (future contributor) | 8 | — |
 | (operator-without-Claude-Code, implicit in F3.7) | 1 | ⚠️ Not a formally-defined JTBD; consider adding to §3 |
 
 ### Findings from the matrix
