@@ -48,6 +48,8 @@ PROJ = REPO_ROOT / "_bmad-output" / "projects" / "local-recipes"
 PLAN = PROJ / "planning-artifacts"
 IMPL = PROJ / "implementation-artifacts"
 BASELINE = PROJ / ".sync-baseline.json"  # records the repo state artifacts were last reconciled against
+DOCS_SPECS = REPO_ROOT / "docs" / "specs"  # Tier-1: BMAD-consumable intake specs (bmad-quick-dev entry points)
+IMPL_REL = "_bmad-output/projects/local-recipes/implementation-artifacts"
 
 Ver = tuple[int, int, int]
 
@@ -214,6 +216,16 @@ def git_head() -> str | None:
         return r.stdout.strip() or None
     except Exception:
         return None
+
+
+def git_tracked(relpath: str) -> list[str]:
+    """Files git is tracking under relpath (repo-relative). Empty on error."""
+    try:
+        r = subprocess.run(["git", "-C", str(REPO_ROOT), "ls-files", "--", relpath],
+                           capture_output=True, text=True, timeout=15)
+        return [ln for ln in r.stdout.splitlines() if ln.strip()]
+    except Exception:
+        return []
 
 
 def fingerprint() -> dict:
@@ -438,7 +450,31 @@ def check_coverage() -> tuple[list[Finding], dict[str, int]]:
         if cls == "UNKNOWN" and path.suffix not in STRAY_SUFFIXES:  # strays handled elsewhere
             findings.append(Finding(HARD, "uncovered", _rel(path),
                                    "not covered by drift-check — add a classification rule"))
+    if DOCS_SPECS.is_dir():  # Tier-1 intake specs (repo-root, outside the project tree)
+        summary["intake:docs-specs"] = len(list(DOCS_SPECS.glob("*.md")))
     return findings, summary
+
+
+def check_tier_alignment() -> list[Finding]:
+    """Enforce the BMAD-method tier model:
+      Tier-1 intake specs -> docs/specs/ (neutral, tracked)
+      Tier-3 execution    -> implementation-artifacts/ (gitignored, local-only)
+    So a git-tracked file under implementation-artifacts/ is misfiled (an intake spec that
+    belongs in docs/specs/, or a Tier-3 output that should not be committed)."""
+    out = []
+    for f in git_tracked(IMPL_REL):
+        name = f.rsplit("/", 1)[-1]
+        remedy = ("intake spec -> git mv to docs/specs/" if name.startswith("spec-")
+                  else "Tier-3 output -> keep local (git rm --cached)")
+        out.append(Finding(HARD, "tracked-impl-artifact", f,
+                           f"implementation-artifacts is gitignored/local-only; this file is "
+                           f"git-tracked ({remedy})"))
+    if DOCS_SPECS.is_dir():
+        for p in sorted(DOCS_SPECS.iterdir()):
+            if p.is_file() and p.suffix != ".md":
+                out.append(Finding(DRIFT, "docs-specs-nonmd", f"docs/specs/{p.name}",
+                                   "docs/specs holds BMAD intake specs (markdown) — non-.md is misfiled"))
+    return out
 
 
 def run_checks() -> tuple[list[Finding], dict, dict[str, int]]:
@@ -447,7 +483,7 @@ def run_checks() -> tuple[list[Finding], dict, dict[str, int]]:
     cov_findings, coverage = check_coverage()
     findings = (check_pins(live) + check_archive_hygiene() + check_spec_status()
                 + check_deferred_work(live) + check_counts(gt) + check_stale_rules()
-                + check_phase_lists() + check_baseline() + cov_findings)
+                + check_phase_lists() + check_baseline() + check_tier_alignment() + cov_findings)
     return findings, gt, coverage
 
 

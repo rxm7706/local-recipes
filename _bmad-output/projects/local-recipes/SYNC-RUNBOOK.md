@@ -59,6 +59,8 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml docs/specs
 | Detector finding | Doc(s) | Reconciler |
 |---|---|---|
 | `archive-misplaced`, `stray-file` | planning / impl | `bmad-drift-check -- --fix` (auto: moves SCPs→`change-history/`, retros→`retros/`, deletes stray `.patch`) |
+| `tracked-impl-artifact` | impl-artifacts | A git-tracked file under `implementation-artifacts/` (gitignored/local-only) is misfiled. If it's an **intake spec**, `git mv` it to `docs/specs/` (Tier 1); if it's a Tier-3 output, `git rm --cached` it. (This is the tier model — see CLAUDE.md "three tiers" + `AGENTS.md`.) |
+| `docs-specs-nonmd` | docs/specs | `docs/specs/` holds Tier-1 markdown intake specs only — move the non-`.md` file out. |
 | `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`; for `project-context.md` regenerate with **`bmad-generate-project-context`** |
 | `pin-behind` / `count-stale` / `phase-list-stale` (living: `architecture-*`, `source-tree-analysis`, `project-overview`, `integration-architecture`, `*-guide`, `project-parts.json`) | living | **`bmad-document-project`** — re-grounds these from the live repo; then bump each `source_pin` |
 | `pin-behind` (context) | `project-context.md` | **`bmad-generate-project-context`** |

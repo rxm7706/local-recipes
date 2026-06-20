@@ -1,0 +1,12 @@
+---
+description: Spec-driven workflow + repo tier model for this repo
+alwaysApply: true
+---
+
+Read `AGENTS.md` at the repo root first.
+
+- **Specs live in `docs/specs/*.md`** — read the relevant spec before implementing.
+- Three tiers, do not cross them: Tier-1 intake = `docs/specs/`; Tier-2 planning =
+  `_bmad-output/projects/<slug>/planning-artifacts/`; Tier-3 execution output =
+  `_bmad-output/projects/<slug>/implementation-artifacts/` (gitignored/local-only).
+- Never put an intake spec into a Tier-3 output dir. Write your own working output under `.cursor/`.
