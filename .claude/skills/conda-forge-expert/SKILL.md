@@ -216,6 +216,10 @@ extra:
   cfe-last-checked: <ISO-8601 UTC>
   cfe-generated-by-version: <ver>
   cfe-generated-at-datetime: <ISO-8601 UTC>
+  cfe-local-build-status: <success | build-clean-test-blocked | failed | not-attempted>
+  cfe-local-build-datetime: <ISO-8601 UTC | none>
+  cfe-local-build-platform: <host subdir the build ran on, e.g. linux-64 | none>
+  cfe-local-build-tool: <rattler-build | conda-build | none>
 ####
 # CFE comments
 # Header:
@@ -234,6 +238,17 @@ extra:
 ```
 
 The `# CFE comments` block mirrors the recipe's structure (location keys `build` / `context` / `host` / `run` / `requirements` / `about` / `tests`) so each parked note shows where it would belong if promoted. Both the `# CFE metadata` and `# CFE comments` sections are CFE-local-only and are **stripped before any push** (along with `extra.cfe-*` keys). `recipe-generator.py` must emit new rationale into this block, never inline.
+
+**The `cfe-local-build-*` fields are the LOCAL-BUILD verification record** (added v8.36.0). They capture "does this recipe build locally?" — a **verified fact** — and are deliberately **separate** from `cfe-on-conda-forge-status`, which tracks "is it on / submittable to conda-forge?". The two are orthogonal: a recipe with `cfe-on-conda-forge-status: blocked-pending-prerequisites` may have built **perfectly** locally (green against the local channel) and is "blocked" only because a prerequisite isn't on conda-forge yet — `cfe-local-build-status: success` records that the recipe itself is sound. Always set `cfe-local-build-status` from the **actual** outcome of the last local build, never inferred from the cf-submission status.
+
+`cfe-local-build-status` value semantics:
+
+- **`success`** — build EXIT=0 **and** the import test **and** `pip_check` all pass; the artifact landed in `noarch/` (or `linux-64/` for arch builds). The recipe is fully verified locally.
+- **`build-clean-test-blocked`** — the **build phase was clean** (the `.conda` was written) but the **test-env solve failed** on a missing / local-only / not-yet-on-conda-forge dependency (rattler-build quarantines the artifact to `broken/`). The recipe itself built fine; the block is a **prerequisite gap**, not a recipe defect. (Common in the langflow-closure class of multi-layer recursion.)
+- **`failed`** — the **build phase itself** failed (compile / packaging error). The recipe is not yet sound.
+- **`not-attempted`** — recipe authored but not built yet. This is the **default** the recipe-generator emits.
+
+The companion fields are `none` until a build runs: `cfe-local-build-datetime` (ISO-8601 UTC of the build, else `none`), `cfe-local-build-platform` (the **host subdir** the build ran on, e.g. `linux-64`, `osx-arm64`, else `none`), and `cfe-local-build-tool` (`rattler-build` for v1 / `conda-build` for v0, else `none`). Like every `cfe-*` key, all four are **stripped before any push**.
 
 ### Canonical Test Block for `noarch: python` Recipes
 
