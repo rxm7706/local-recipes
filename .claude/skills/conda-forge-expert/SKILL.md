@@ -647,6 +647,23 @@ When an existing feedstock's CI fails on a **test phase** (build passed, package
 
 Most "ImportError on CI" failures resolve at step 2 once the upstream pyproject is consulted. The chain failed on `conda-forge/ag-ui-langgraph-feedstock` PR #22 because the recipe pinned `ag-ui-a2ui-toolkit >=0.0.2` but upstream's `pyproject.toml` had been bumped to `>=0.0.3` (where the `A2UIGuidelines` symbol was added) — a one-line recipe edit, but the diagnosis needed the full chain.
 
+### External conda-forge ecosystem version-skew (not a recipe defect)
+
+When a **full-dependency-graph** test-env solve fails but **each conflicting sub-cluster solves in isolation on conda-forge**, the cause is **cross-feedstock pin skew**, not a defect in the consumer recipe. Do NOT churn trying to fix it in the consumer.
+
+**Signature**: the consumer builds GREEN, but the test-env solve reports a version conflict that traces to **two or more already-published conda-forge feedstocks with mutually-incompatible pins** that neither the consumer nor you can reconcile. Examples:
+- a cf `litellm` build baking `fastapi==0.124.4` while a consumer needs `fastapi>=0.135`;
+- an observability cluster (`otel` / `traceloop-sdk` / `openinference-*` / `langchain`) with mutually-incompatible pins across its feedstocks.
+
+**Diagnosis test**: drop the full env and solve each conflicting sub-cluster on conda-forge alone (`fastapi` + `litellm`; the otel/traceloop/openinference set; etc.). If each sub-cluster solves fine in isolation but the union does not, and the conflicting constraints come from **published feedstock pins you don't control**, it's external skew — resolution requires **feedstock-level pin convergence upstream**, which is out of scope for the consumer recipe.
+
+**Action**: do NOT loosen, force, or work around the pins in the consumer recipe (that hides the skew and ships a recipe that can't actually install). Instead:
+1. Record the conflicting packages **and their exact pins** in the recipe's `cfe-forge-blocker-list`.
+2. Set `cfe-on-conda-forge-status: blocked-pending-prerequisites`.
+3. **STOP** — report the blocker; the fix is an upstream feedstock pin bump, not a consumer edit.
+
+**Case study**: langflow (Jun 19, 2026) — reached build-GREEN locally, but its full test-env solve was blocked by irreducible cf ecosystem skew across `lfx` / `litellm` / `traceloop` (fastapi + observability-cluster pin conflicts). Each sub-cluster solved in isolation; the union did not. Documented in `cfe-forge-blocker-list` and stopped — no consumer churn.
+
 ---
 
 ## Pre-PR Quality Gate Checklist
@@ -2283,6 +2300,60 @@ This is a strict subset of upstream's intent (you're only excluding builds known
 **Fix**: when a consumer's test-env solve fails on a compiled local-only dep, check the channel artifact's `py3XX` build-string segment against the consumer's `python_min` / required Python floor. Build the compiled prereq for **every** Python in the consumer's matrix (or at least the one the consumer's env will resolve) before building the consumer. Contrast with noarch local-only deps, where one build is enough.
 
 **Case study**: apify-client (Jun 19, 2026, `python >=3.11`) — its test env couldn't resolve the channel's `impit-0.13.0-py310...` build (impit is a Rust/PyO3 compiled package, py310-only in the local channel). Rebuilding impit for py311 unblocked the apify-client solve.
+
+### G39. setuptools_scm private-API `_version_helper` import breaks at metadata generation (cf ships setuptools_scm 8.x)
+
+**Symptom**: the conda-forge build fails during metadata generation with `ImportError: cannot import name '_types'` (or `Configuration`, `fallbacks`, or anything under `version.*`) from `setuptools_scm`. The sdist wires its version via `[tool.setuptools.dynamic] version = {attr = ...}` pointing at a `_version_helper.py` / `_version.py` that imports **private** setuptools_scm internals.
+
+**Why**: conda-forge ships `setuptools_scm` / `vcs_versioning` 8.x+, which **removed** the private internals (`_types`, `Configuration`, `fallbacks`, `version.*`) that older sdists reach into. The helper module was written against a pre-8.x private API that no longer exists, so importing it during `attr`-resolution explodes before any dependency even loads.
+
+**Fix**: ship a checked-in, idempotent helper (e.g. `pin_version.py`) **in the recipe dir** that rewrites `pyproject.toml` to a **static** version (`$PKG_VERSION`) and strips the dynamic-version machinery (the `[tool.setuptools.dynamic]` block and the `_version_helper` reference). Run it as the **FIRST** build step. Then drop `setuptools-scm` / `gitpython` from `host` (no longer needed once the version is static). This sidesteps the broken private-API import entirely.
+
+**Case study**: pymilvus-model 0.3.2 (Jun 19, 2026) — its `_version_helper.py` imported `_types` from `setuptools_scm`, which cf's 8.x lacks; a `pin_version.py` first-build-step rewrite to a static `$PKG_VERSION` + dropping `setuptools-scm`/`gitpython` from host fixed it.
+
+### G40. A dependency can DROP a Python version in a newer release — a noarch consumer's declared floor then can't resolve the dep's latest build (refines G38)
+
+**Symptom**: a `noarch: python` consumer with `python_min: "3.10"` fails its **py3.10 test leg** to resolve a dependency's latest build, even though the dep is on conda-forge — the dep's newest version raised its own Python floor and no py3.10 build exists for it.
+
+**Why**: dependencies raise their Python floor between releases. ibm-watsonx-ai 1.5.x needs `python >=3.11`; 1.3.37 was the **last** py3.10-compatible line. A noarch consumer declaring `python_min 3.10` must resolve *every* hard dep on its py3.10 test env — if the only available build of a dep is py3.11+, the py3.10 leg has no candidate. This is G38's per-Python-build problem seen from the *version* axis rather than the *compile* axis: even a noarch dep can be effectively py3.11-only if its py3.10-compatible versions are all older than what the solver wants.
+
+**Fix** — two correct responses:
+- **(a)** ALSO build the dep's **last py3.10-compatible version** into the channel (e.g. ibm-watsonx-ai 1.3.37), so the consumer's py3.10 leg has a candidate; OR
+- **(b)** recognize the consumer's **REAL floor is higher** and raise its `python_min` to match the dep's floor.
+
+Always collapse the dep's per-Python env markers to the broadest floor (G35) so the consumer's *declared* floor stays valid — don't leave a per-Python selector that silently narrows resolution.
+
+**Case study**: ibm-watsonx-ai / langchain-ibm / langflow (Jun 19, 2026) — langchain-ibm (noarch, py3.10) needed ibm-watsonx-ai, whose 1.5.x line dropped py3.10; resolved by building 1.3.37 (last py3.10 line) into the channel.
+
+### G41. A hidden py3.11 floor via an unconditional PEP-655 / new-stdlib import overrides the consumer's declared `requires-python`
+
+**Symptom**: a recipe declares `requires-python >=3.10` (and you set `python_min: "3.10"`), but the package genuinely cannot run on 3.10 — an `ImportError` for a stdlib symbol surfaces at import time on the py3.10 leg.
+
+**Why**: a transitive hard dep imports a Python-version-gated stdlib symbol **unconditionally, with no fallback**. jsonquerylang imports `typing.NotRequired` (PEP 655, py3.11+) in **every** version, with no `try/except ImportError` or `typing_extensions` shim. That forces the *real* `python_min` of any consumer to 3.11+, regardless of the consumer's declared `requires-python >=3.10` — which is then aspirational / broken on 3.10. The upstream's stated lower bound is **not trustworthy** as the effective floor.
+
+**Fix**: when a recipe's hard deps include a package with such an unconditional new-stdlib / PEP-655 import, set `python_min` to the **MAX of all transitive hard Python floors** — don't trust the upstream `requires-python` lower bound alone. Inspect the actual imports of hard deps when a declared floor looks suspiciously low.
+
+**Case study**: langflow / langflow-base (Jun 19, 2026) — declared `>=3.10`, but its dep jsonquerylang unconditionally imports `typing.NotRequired` (py3.11+), making the genuine floor 3.11.
+
+### G42. Verify the CURRENT version's artifact shape before assuming compiled — build shape can change across versions
+
+**Symptom**: you reach for a compiled-package recipe template (stdlib, compiler, per-Python builds) based on a package's reputation as a binary wheel, but the latest version is actually pure-Python — or vice versa.
+
+**Why**: a package's build shape can change across versions. milvus-lite was a C++ binary-wheel through 2.4 / 2.5, but **3.0 is a complete pure-Python rewrite** (faiss-cpu / pyarrow backend, `py3-none-any` wheel, `Root-Is-Purelib: true`, zero `.so`). Inferring "compiled" from an older version's reputation produces an over-complex recipe and may even make it look cf-unsubmittable when it isn't.
+
+**Fix**: always inspect the **LATEST** version's actual sdist/wheel before choosing a template — check for `.so` / `.pyd` presence and `Root-Is-Purelib` in the wheel `WHEEL`/`RECORD`. The pure-Python path is simpler AND cf-submittable; don't pay the compiled-recipe complexity tax (or write off the package) based on a stale shape.
+
+**Case study**: milvus-lite 3.0 (Jun 19, 2026) — assumed compiled (true for 2.4/2.5), but 3.0 ships a `py3-none-any` `Root-Is-Purelib: true` wheel with no `.so`; a noarch:python recipe is correct and cf-submittable.
+
+### G43. v1 inline `# comment` on a list item trips conda-smithy's comment-selector lint — use a full-line comment ABOVE instead
+
+**Symptom**: conda-smithy lint flags a comment-selector lint error on a `recipe.yaml` (v1) list item that carries a trailing `# comment` — even when the comment is plain prose inside the `extra:` block, not an actual selector.
+
+**Why**: in recipe.yaml v1, conda-smithy parses a trailing `# comment` on a YAML **list item** as a potential selector and flags it. The selector heuristic doesn't distinguish "real selector" from "trailing prose", so any inline trailing comment on a list entry is a lint risk.
+
+**Fix**: use a **FULL-LINE comment ABOVE** the item instead of a trailing one. This reinforces the comments-at-bottom convention (v8.31.0 / G31-equivalent): cfe rationale belongs in the bottom `# CFE comments` block, and any necessary list-item annotation that must stay in the body has to be a full line above the item, never trailing.
+
+**Case study**: langflow recipe `cfe-*` block (Jun 19, 2026) — a trailing `# comment` on an `extra:` list item lint-failed under conda-smithy; relocating it to a full line above cleared the lint.
 
 ---
 
