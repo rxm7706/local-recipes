@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.64.21"
+
+package:
+  name: assemblyai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/assemblyai/assemblyai-${{ version }}.tar.gz
+  sha256: 51c650c601c8be4bad8a20f3bbc3619f6f914fb6bc66ed6b867eb7c80b341873
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.19.0
+    - pydantic >=2.0
+    - pydantic-settings >=2.0
+    - typing_extensions >=3.7
+    - websockets >=11.0
+
+tests:
+  - python:
+      imports:
+        - assemblyai
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/assemblyai/
+  license: MIT
+  license_file: LICENSE
+  summary: AssemblyAI Python SDK
+  repository: https://github.com/AssemblyAI/assemblyai-python-sdk
+  documentation: https://github.com/AssemblyAI/assemblyai-python-sdk/blob/master/README.md
+  description: |
+    AssemblyAI's Python SDK provides access to speech-to-text,
+    audio intelligence, and LeMUR models for transcribing and
+    analyzing audio.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: assemblyai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: assemblyai
+  cfe-purls:
+    - pkg:conda/assemblyai@${{ version }}
+    - pkg:pypi/assemblyai@${{ version }}
+  cfe-upstream-repo: https://github.com/AssemblyAI/assemblyai-python-sdk
+  cfe-upstream-homepage: https://www.assemblyai.com/
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# requirements:
+#  run:
+#    # noarch single-build must satisfy the union of upstream's python-gated
+#    # pins: pydantic>=1.10.17 (<3.14) and pydantic>=2.0 + pydantic-settings>=2.0
+#    # (>=3.14). pydantic>=2.0 covers both; pydantic-settings is harmless on 3.10-3.13.
+####

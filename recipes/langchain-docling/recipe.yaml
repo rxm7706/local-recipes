@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: langchain-docling
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langchain-docling/langchain_docling-${{ version }}.tar.gz
+  sha256: 7bc7c93a6272114b6dd307c6033e2a62e843906afdd691a0d87246f1a1a154dd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - langchain-core >=1.0,<2
+    - docling >=2.26,<3
+
+tests:
+  - python:
+      imports:
+        - langchain_docling
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langchain-docling/
+  license: MIT
+  license_file: LICENSE
+  summary: Docling LangChain integration
+  repository: https://github.com/docling-project/docling-langchain
+  description: |
+    LangChain Docling integration. Provides a LangChain document loader
+    backed by Docling, enabling parsing and chunking of rich document
+    formats (PDF, DOCX, PPTX, HTML, images, and more) into LangChain
+    documents for downstream retrieval and LLM pipelines.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-docling
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-docling
+  cfe-name-aliases:
+    - langchain_docling
+  cfe-purls:
+    - pkg:conda/langchain-docling@${{ version }}
+    - pkg:pypi/langchain-docling@${{ version }}
+  cfe-upstream-repo: https://github.com/docling-project/docling-langchain
+  cfe-upstream-homepage: https://github.com/docling-project
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - conda-forge docling-core under-declares tree-sitter (imports tree_sitter unconditionally but lists it only under its `chunking` extra); fix = PR docling-core-feedstock to declare tree-sitter unconditionally
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# requirements:
+#  run:
+#    # Upstream pins langchain-core~=1.0 and docling~=2.26; the upper bounds are
+#    # load-bearing because pip_check enforces the wheel's declared constraints.
+####

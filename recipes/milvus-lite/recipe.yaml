@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0"
+
+package:
+  name: milvus-lite
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/milvus-lite/milvus_lite-${{ version }}.tar.gz
+  sha256: 2c35d0d046b1faae3402cde1fb73d65f51ee8c6aba65f54de1dda46f7bb18b9b
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - milvus-lite = milvus_lite.cmdline:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pyarrow >=15.0
+    - numpy >=1.24
+    - faiss-cpu >=1.7.4
+    - grpcio >=1.50
+    - tomli >=2.0
+
+tests:
+  # pip_check disabled (G28 external false positive): upstream wheel METADATA
+  # declares `faiss-cpu>=1.7.4` (PyPI dist name) but conda-forge ships the
+  # importable bindings under dist-info `faiss` (conda `faiss-cpu` is a thin
+  # metapackage with no pip-visible faiss-cpu dist-info). `pip check` reports
+  # "requires faiss-cpu, which is not installed" though `import faiss` works.
+  # Verified faiss-cpu is the ONLY pip-check line; not a recipe defect.
+  - python:
+      imports:
+        - milvus_lite
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Lightweight version of Milvus for local development and testing
+  description: |
+    Milvus Lite is the lightweight, embedded version of the Milvus vector
+    database, intended for local development, prototyping, and testing. As of
+    version 3.0 it is a pure-Python implementation backed by faiss-cpu,
+    pyarrow, numpy, and grpcio, exposing a Milvus-compatible local engine
+    consumable via pymilvus[milvus_lite].
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/milvus-io/milvus-lite
+  repository: https://github.com/milvus-io/milvus-lite
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: milvus-lite
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: milvus-lite
+  cfe-purls:
+    - pkg:conda/milvus-lite@${{ version }}
+    - pkg:pypi/milvus-lite@${{ version }}
+  cfe-upstream-repo: https://github.com/milvus-io/milvus-lite
+  cfe-upstream-homepage: https://github.com/milvus-io/milvus-lite
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T20:40:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:40:00Z
+####
+# CFE comments
+# Header:
+#    # milvus-lite 3.0 is a COMPLETE REWRITE as a pure-Python package
+#    # (hatchling build, Root-Is-Purelib: true, py3-none-any wheel, zero
+#    # native .so/.pyd). The 2.4.x / 2.5.x line shipped manylinux/macOS
+#    # binary wheels wrapping a large C++ Milvus core; 3.0 replaced that
+#    # core with a pure-Python engine on top of faiss-cpu + pyarrow + numpy
+#    # + grpcio. So the source-compile path IS tractable here and produces
+#    # a clean noarch:python artifact — NOT a binary-wheel repackage. This
+#    # recipe is therefore conda-forge-submittable as-is. 3.0 satisfies
+#    # pymilvus[milvus_lite]'s milvus-lite>=2.4.0 constraint (which is also
+#    # gated sys_platform != "win32", matching the no-Windows scope).
+# build:
+#    # noarch:python — pure-Python, one artifact covers all platforms. The
+#    # grayskull-emitted `skip: match(python, "<3.10")` was dropped: it is
+#    # redundant under noarch:python + the python >=python_min floor.
+#  run:
+#    # tomli listed UNCONDITIONALLY rather than under an
+#    # `if: match(python, "<3.11")` selector: tomli is the tomllib backport
+#    # (milvus_lite/_version.py imports tomllib on 3.11+, falls back to
+#    # tomli on 3.10). Per the skill's Migration Discipline guidance, a
+#    # single marker-gated transitive dep is listed unconditionally to keep
+#    # the recipe a clean noarch:python (avoids the G12 noarch_platforms /
+#    # lint_noarch_selectors requirement a per-Python run selector triggers).
+#    # On 3.11+ tomli is installed-but-unused; harmless.
+# tests:
+#    # Sole test = CFEP-25 python-imports block (import milvus_lite). Two
+#    # decisions worth a human's attention before conda-forge submission:
+#    #
+#    #  (A) pip_check is set FALSE (G28-class EXTERNAL false positive).
+#    #      milvus-lite's wheel METADATA declares `Requires-Dist:
+#    #      faiss-cpu>=1.7.4` (the PyPI dist name). conda-forge ships the
+#    #      importable bindings under dist-info `faiss` (pip sees
+#    #      `faiss 1.10.0`); conda `faiss-cpu` is a thin metapackage with NO
+#    #      pip-visible faiss-cpu dist-info. So `pip check` reports
+#    #      "requires faiss-cpu, which is not installed" even though
+#    #      `import faiss` works. Verified in a probe env: faiss-cpu is the
+#    #      ONLY pip-check line, and `import milvus_lite` + `import faiss`
+#    #      both succeed. This is the standard PyPI(faiss-cpu)<->conda(faiss)
+#    #      divergence, not a recipe defect, and has no in-recipe fix. For a
+#    #      conda-forge PR a reviewer may prefer keeping pip_check: true and
+#    #      either (a) accepting the known faiss-cpu lint exception, or (b)
+#    #      pinging the faiss-feedstock to register a faiss-cpu dist-info.
+#    #
+#    #  (B) A `milvus-lite --help` CLI smoke-test was tried and DROPPED:
+#    #      milvus_lite/cmdline.py imports pymilvus.grpc_gen at module load,
+#    #      and pymilvus is the CONSUMER of this package
+#    #      (pymilvus[milvus_lite] -> milvus-lite) — adding it to run/test
+#    #      deps would be a circular dependency. The CLI cannot be smoke-
+#    #      tested standalone.
+####

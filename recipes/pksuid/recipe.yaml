@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.2"
+
+package:
+  name: pksuid
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pksuid/pksuid-${{ version }}.tar.gz
+  sha256: dc08ed7924a8affea5f36af4b6af345b126f521c9165b95e91ca1a2acef99e49
+
+build:
+  number: 0
+  noarch: python
+  script: |
+    # Upstream poetry pins pybase62 = "0.4.3" (== in the wheel METADATA).
+    # We loosen the conda run-dep to >=0.4.3, so the source pin must be
+    # loosened too or pip_check fails when a newer pybase62 is installed
+    # (CFE gotcha G26). noarch:python builds on linux only — plain sed.
+    sed -i -E 's/^pybase62 *= *"0\.4\.3"/pybase62 = ">=0.4.3"/' pyproject.toml
+    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pybase62 >=0.4.3
+
+tests:
+  - python:
+      imports:
+        - pksuid
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/sashahilton00/python-pksuid
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Python package for generating prefixed ksuids.
+  repository: https://github.com/sashahilton00/python-pksuid
+  description: |
+    Python-PKSUID (Prefixed K-Sortable Unique IDentifier).
+
+    This library extends the KSUID identifier (first proposed and used by
+    Segment.io) with a prefix, inspired by Stripe-style prefixed IDs such as
+    `txn_1032HU2eZvKYlo2CEPtcnUvl`. The prefix makes it easy to see at a
+    glance the underlying type of the resource an identifier refers to, and
+    makes for easier reading and tracing of resources in log files and other
+    locations.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pksuid
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pksuid
+  cfe-purls:
+    - pkg:conda/pksuid@${{ version }}
+    - pkg:pypi/pksuid@${{ version }}
+  cfe-upstream-repo: https://github.com/sashahilton00/python-pksuid
+  cfe-upstream-homepage: https://github.com/sashahilton00/python-pksuid
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - pybase62 not yet on conda-forge
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# requirements:
+#  run:
+#    # upstream pins pybase62 ==0.4.3; loosened to >= per repo convention.
+#    # TODO: tighten if a future pybase62 breaks compatibility.
+####

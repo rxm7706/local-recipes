@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.13"
+
+package:
+  name: langchain-pinecone
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langchain-pinecone/langchain_pinecone-${{ version }}.tar.gz
+  sha256: 294a6da7e1a81d5805060e37639d3e4fb72cb239d651a34a4d1f81ba096f473a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - langchain-core <2.0.0,>=0.3.34
+    - pinecone >=6.0.0,<8.0.0
+    - numpy >=1.26.4,!=2.0.2
+    - langchain-openai >=0.3.11
+    - httpx >=0.28.0
+    - simsimd >=5.9.11,<7
+    - pydantic >=2.11.1
+
+tests:
+  - python:
+      imports:
+        - langchain_pinecone
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langchain-pinecone/
+  license: MIT
+  license_file: LICENSE
+  summary: An integration package connecting Pinecone and LangChain
+  repository: https://github.com/langchain-ai/langchain-pinecone
+  documentation: https://python.langchain.com/docs/integrations/providers/pinecone/
+  description: |
+    langchain-pinecone is the LangChain partner package that connects
+    Pinecone vector databases to the LangChain ecosystem. It provides
+    PineconeVectorStore, PineconeSparseVectorStore, PineconeEmbeddings,
+    PineconeSparseEmbeddings, and PineconeRerank for building
+    retrieval-augmented generation (RAG) and semantic-search applications.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-pinecone
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-pinecone
+  cfe-name-aliases:
+    - langchain_pinecone
+  cfe-purls:
+    - pkg:conda/langchain-pinecone@${{ version }}
+    - pkg:pypi/langchain-pinecone@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain-pinecone
+  cfe-upstream-homepage: https://pypi.org/project/langchain-pinecone/
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# requirements:
+#  run:
+#    # conda-forge simsimd >=7.0 was renamed upstream to `numkong` and ships
+#    # only a `numkong` dist-info (no `simsimd` module), so `pip check` fails
+#    # ("requires simsimd, which is not installed") and `import simsimd` breaks.
+#    # Versions <=6.5.0 still ship the real `simsimd` module and satisfy
+#    # upstream's >=5.9.11 floor. TODO: drop the <7 cap once simsimd-feedstock
+#    # restores a `simsimd`-providing package (or upstream langchain-pinecone
+#    # migrates to numkong).
+####

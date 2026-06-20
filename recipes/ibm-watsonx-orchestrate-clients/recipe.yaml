@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.11.0"
+  python_min: "3.11"
+
+package:
+  name: ibm-watsonx-orchestrate-clients
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/i/ibm-watsonx-orchestrate-clients/ibm_watsonx_orchestrate_clients-${{ version }}-py3-none-any.whl
+  sha256: 8de53f530615d92d4b83417176afc37be144a867c2207c76b87354b41b592ba7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install ibm_watsonx_orchestrate_clients-${{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }},<3.15
+    - ibm-cloud-sdk-core >=3.24.2
+    - ibm-watsonx-orchestrate-core ==2.11.0
+    - websocket-client >=1.8.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - ibm_watsonx_orchestrate_clients
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/ibm-watsonx-orchestrate-clients/
+  license: MIT
+  license_file: LICENSE
+  summary: IBM watsonx Orchestrate ADK API Client Library
+  repository: https://github.com/IBM/ibm-watsonx-orchestrate-adk
+  documentation: https://developer.watson-orchestrate.ibm.com/
+  description: |
+    API client library for the IBM watsonx Orchestrate Agent Development
+    Kit (ADK). Provides typed HTTP and WebSocket clients for the watsonx
+    Orchestrate platform — agents, channels, connections, knowledge bases,
+    tools, threads, models and model policies, voice configurations, and
+    chat/run orchestration — built on the shared types in
+    ibm-watsonx-orchestrate-core.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ibm-watsonx-orchestrate-clients
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ibm-watsonx-orchestrate-clients
+  cfe-name-aliases:
+    - ibm_watsonx_orchestrate_clients
+  cfe-purls:
+    - pkg:conda/ibm-watsonx-orchestrate-clients@${{ version }}
+    - pkg:pypi/ibm-watsonx-orchestrate-clients@${{ version }}
+  cfe-upstream-repo: https://github.com/IBM/ibm-watsonx-orchestrate-adk
+  cfe-upstream-homepage: https://pypi.org/project/ibm-watsonx-orchestrate-clients/
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - ibm-watsonx-orchestrate-core not yet on conda-forge
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# context:
+#    # Upstream requires-python is ">=3.11,<3.15"; override the conda-forge
+#    # default floor (3.10) upward to 3.11.
+# source:
+#    # Build from the wheel: the PyPI sdist ships no Python source (only
+#    # .gitignore + hatch_build.py + pyproject.toml + PKG-INFO), so
+#    # `pip install .` from the sdist would produce an empty package. The
+#    # wheel is pure-Python (py3-none-any), so noarch:python is still correct.
+# requirements:
+#  run:
+#    # Sibling ADK package; upstream pins ==2.11.0. Kept exact so the
+#    # installed graph matches the wheel-bundled METADATA (pip_check: true).
+# about:
+#    # Upstream declares license-files = ["LICENSE"] but ships no LICENSE in
+#    # either the sdist or the wheel; vendored from the ADK repo (SKILL.md
+#    # license-file placement pattern 2).
+####

@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: lfx-arxiv
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/l/lfx-arxiv/lfx_arxiv-${{ version }}-py3-none-any.whl
+  sha256: 6edabda351beccee9b47ecd811e4f103183258e87ded11b2946b37637ca9e70c
+
+build:
+  noarch: python
+  number: 0
+  script: pip install lfx_arxiv-${{ version }}-py3-none-any.whl --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - defusedxml >=0.7.1,<1.0.0
+    - lfx >=1.10.0.rc0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - lfx_arxiv
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/langflow-ai/langflow
+  repository: https://github.com/langflow-ai/langflow
+  documentation: https://docs.langflow.org/extensions
+  license: MIT
+  license_file: LICENSE
+  summary: arXiv search component as a standalone Langflow Extension Bundle.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lfx-arxiv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lfx-arxiv
+  cfe-purls:
+    - pkg:conda/lfx-arxiv@${{ version }}
+    - pkg:pypi/lfx-arxiv@${{ version }}
+  cfe-upstream-repo: https://github.com/langflow-ai/langflow
+  cfe-upstream-homepage: https://github.com/langflow-ai/langflow
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - lfx                 # langflow-family core dep; built in local channel, not yet on conda-forge
+  cfe-last-checked: 2026-06-19T20:15:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:15:00Z
+####
+# CFE comments
+# Header:
+#    # lfx-arxiv = a Langflow Extension Bundle (langflow-family plugin) that
+#    # ships an arXiv search component for langflow. Part of getting langflow
+#    # buildable locally; `lfx` (core dep) is now in the local channel.
+#    # grayskull cannot generate this recipe: PyPI ships a wheel only (no
+#    # sdist), so the recipe is hand-authored from the canonical wheel URL.
+# source:
+#    # Wheel-only upstream (no sdist on PyPI). py-tag segment is "py3" and
+#    # may change on a version bump — re-check the wheel filename when bumping.
+# build:
+#    # entry_points.txt declares a `[langflow.extensions]` plugin entry
+#    # (lfx-arxiv = lfx_arxiv), NOT a console_script — so no build.python
+#    # .entry_points and no CLI --help test; langflow discovers the plugin
+#    # at runtime via the extension group.
+# about:
+#    # No LICENSE in the wheel and METADATA declares only `License: MIT`
+#    # (no license file); the langflow-ai/langflow monorepo LICENSE is MIT
+#    # (Copyright 2024 Langflow). LICENSE shipped in-recipe (canonical
+#    # pattern 2) because the wheel omits it.
+# requirements:
+#  run:
+#    # Two deps only (upstream Requires-Dist): defusedxml + lfx, both with
+#    # upstream's declared upper bounds mirrored (load-bearing under
+#    # pip_check). `lfx` is a langflow-family prerequisite — built in the
+#    # local channel (lfx 1.10.0), not yet on conda-forge (blocker).
+####

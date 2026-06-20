@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.11"
+  version: "3.0.3"
+
+package:
+  name: apify-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/apify-client/apify_client-${{ version }}.tar.gz
+  sha256: 22f8cf8cd613b1a31c164cbcca3c17938900653fe2bb0be5da1337d59a6b1915
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - colorama >=0.4.0
+    - impit >=0.12.0
+    - more-itertools >=10.0.0
+    - pydantic >=2.11.0
+    - email-validator >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - apify_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Apify API client for Python
+  description: |
+    <h1 align="center">Apify API client for Python</h1>
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://docs.apify.com/api/client/python/
+  repository: https://github.com/apify/apify-client-python
+  documentation: https://docs.apify.com/api/client/python/docs/overview/introduction
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apify-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apify-client
+  cfe-purls:
+    - pkg:conda/apify-client@${{ version }}
+    - pkg:pypi/apify-client@${{ version }}
+  cfe-upstream-repo: https://github.com/apify/apify-client-python
+  cfe-upstream-homepage: https://docs.apify.com/api/client/python/
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - impit not yet on conda-forge
+  cfe-last-checked: 2026-06-19T19:30:00Z
+  cfe-generated-by-version: 8.33.0
+  cfe-generated-at-datetime: 2026-06-19T19:30:00Z
+####
+# CFE comments
+# requirements:
+#  run:
+#    # impit~=0.12.0 upstream, but the only conda build available (local
+#    # channel) is impit 0.13.0; pin loosened to >=0.12.0 so it resolves.
+#    # TODO: tighten to >=0.12.0,<0.13 once impit 0.12.x ships on conda-forge.
+#    # pydantic[email] extra flattened (conda has no extras, G25): added
+#    # email-validator >=2.0.0.
+#    # apify-shared is NOT a runtime dependency of apify-client 3.0.3 (verified
+#    # against upstream pyproject.toml [project.dependencies]); not listed.
+# about:
+#    # python_min raised to 3.11 because upstream requires-python = ">=3.11".
+####

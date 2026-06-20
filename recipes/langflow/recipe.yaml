@@ -1,0 +1,306 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.10.0"
+  python_min: "3.11"
+
+package:
+  name: langflow
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/l/langflow/langflow-${{ version }}-py3-none-any.whl
+  sha256: 86576b62093f34fcfd86e42dd1bd28f4ec5f42c531b5c76790262120f2833c1e
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install langflow-${{ version }}-py3-none-any.whl --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }},<3.15
+    - langflow-base
+    - lfx-arxiv
+    - lfx-docling
+    - lfx-duckduckgo
+    - lfx-ibm
+    - ag2
+    - agent-lifecycle-toolkit
+    - aioboto3
+    - aiofile
+    - aiofiles
+    - aiosqlite
+    - alembic
+    - apify-client
+    - apscheduler
+    - arize-phoenix-otel
+    - assemblyai
+    - astrapy
+    - asyncer
+    - atlassian-python-api
+    - bcrypt
+    - beautifulsoup4
+    - boto3
+    - cachetools
+    - cassio
+    - chardet
+    - chromadb
+    - cleanlab-tlm
+    - clickhouse-connect
+    - composio
+    - composio-langchain
+    - couchbase
+    - cryptography
+    - datasets
+    - defusedxml
+    - docling-core
+    - docling-slim
+    - docstring_parser
+    - duckdb
+    - dynaconf
+    - easyocr
+    - elasticsearch
+    - elevenlabs
+    - email-validator
+    - emoji
+    - faiss-cpu
+    - fake-useragent
+    - fastapi
+    - fastapi-pagination
+    - fastavro
+    - fastmcp
+    - fastparquet
+    - filelock
+    - firecrawl-py
+    - gitpython
+    - google-api-python-client
+    - google-search-results
+    - grandalf
+    - graph-retriever
+    - greenlet
+    - gunicorn
+    - h2
+    - httpx
+    - huggingface-hub
+    - ibm-cloud-sdk-core
+    - ibm-watsonx-ai
+    - ibm-watsonx-orchestrate-clients
+    - ibm-watsonx-orchestrate-core
+    - jaraco.context
+    - jigsawstack
+    - jq
+    - json-repair
+    - jsonquerylang >=1.1.1,<2.0.0
+    - kubernetes
+    - langchain
+    - langchain-anthropic
+    - langchain-astradb
+    - langchain-aws
+    - langchain-chroma
+    - langchain-cohere
+    - langchain-community
+    - langchain-core
+    - langchain-elasticsearch
+    - langchain-experimental
+    - langchain-google-calendar-tools
+    - langchain-google-community
+    - langchain-google-genai
+    - langchain-google-vertexai
+    - langchain-graph-retriever
+    - langchain-groq
+    - langchain-huggingface
+    - langchain-ibm
+    - langchain-mcp-adapters
+    - langchain-milvus
+    - langchain-mistralai
+    - langchain-mongodb
+    - langchain-nvidia-ai-endpoints
+    - langchain-ollama
+    - langchain-openai
+    - langchain-perplexity
+    - langchain-pinecone
+    - langchain-qdrant
+    - langchain-sambanova
+    - langchain-unstructured
+    - langchain-weaviate
+    - langchainhub
+    - langfuse
+    - langgraph-checkpoint
+    - langsmith
+    - langwatch
+    - lark
+    - lfx
+    - litellm
+    - loguru
+    - markdown
+    - markupsafe
+    - mcp
+    - mem0ai
+    - metal-sdk
+    - metaphor-python
+    - multiprocess
+    - nanoid
+    - needle-python
+    - nest-asyncio
+    - networkx
+    - nltk
+    - numexpr
+    - onnxruntime
+    - openai
+    - opendsstar
+    - openinference-instrumentation-langchain
+    - openlayer
+    - opensearch-py
+    - opentelemetry-api
+    - opentelemetry-exporter-otlp
+    - opentelemetry-exporter-prometheus
+    - opentelemetry-instrumentation-fastapi
+    - opentelemetry-instrumentation-requests
+    - opentelemetry-instrumentation-urllib3
+    - opentelemetry-sdk
+    - opik
+    - orjson
+    - pandas
+    - passlib
+    - pgvector
+    - pillow
+    - pip
+    - platformdirs
+    - prometheus-client
+    - pyarrow
+    - pyasn1
+    - pydantic
+    - pydantic-settings
+    - pyjwt
+    - pymongo
+    - pypdf
+    - pyperclip
+    - python-docx
+    - python-multipart
+    - pytube
+    - qdrant-client
+    - qianfan
+    - ragstack-ai-knowledge-store
+    - redis
+    - rich
+    - scipy
+    - scrapegraph-py
+    - sentry-sdk
+    - setuptools
+    - slowapi
+    - smolagents
+    - spider-client
+    - sqlalchemy
+    - sqlmodel
+    - sseclient-py
+    - structlog
+    - supabase
+    - toolguard
+    - traceloop-sdk
+    - transformers
+    - trustcall
+    - twelvelabs
+    - typer
+    - uncurl
+    - upstash-vector
+    - uvicorn
+    - validators
+    - vlmrun
+    - weaviate-client
+    - wikipedia
+    - wolframalpha
+    - yfinance
+    - youtube-transcript-api
+    - zep-python
+
+tests:
+  - python:
+      imports:
+        - langflow
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langflow/
+  license: MIT
+  license_file: LICENSE
+  summary: A Python package with a built-in web application
+  repository: https://github.com/langflow-ai/langflow
+  documentation: https://docs.langflow.org
+  description: |
+    Langflow is a low-code app builder for RAG and multi-agent AI applications.
+    It is Python-based and agnostic to any model, API, or database. This
+    distribution is a thin umbrella meta-package that pulls in langflow-base
+    (with its [complete] extra) plus the lfx-arxiv, lfx-docling, lfx-duckduckgo,
+    and lfx-ibm component packages.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langflow
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langflow
+  cfe-purls:
+    - pkg:conda/langflow@${{ version }}
+    - pkg:pypi/langflow@${{ version }}
+  cfe-upstream-repo: https://github.com/langflow-ai/langflow
+  cfe-upstream-homepage: https://pypi.org/project/langflow/
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    # 2026-06-19 re-build: ALL previously-named missing third-party deps now
+    # RESOLVE (authored + in local channel). The recipe BUILDS; both legs are
+    # TEST-solve-blocked by TWO external conda-forge ecosystem version-skew
+    # conflicts (NOT locally fixable — require upstream feedstock pin
+    # convergence or upstream langflow-base constraint relaxation):
+    #
+    # 1. litellm <-> lfx fastapi/cryptography/langchain-text-splitters skew:
+    #    lfx requires fastapi>=0.135.0,<1.0 + cryptography>=46.0.7, but every
+    #    conda-forge litellm build (pulled via opendsstar>=1.83.0) bakes in
+    #    fastapi==0.124.4 (1.83-1.87) or otlp/langchain-text-splitters pins
+    #    that conflict with lfx's langchain stack. The pins live in the cf
+    #    litellm / langchain-text-splitters feedstock wheel METADATA.
+    # 2. observability-cluster opentelemetry-semantic-conventions / -api skew:
+    #    traceloop-sdk needs otel-instrumentation-logging>=0.57b0 (forcing
+    #    semantic-conventions==0.57b0..0.62b0) + langchain>=0.3.15,<0.4.0,
+    #    which conflict with arize-phoenix-otel / opik / openinference-* and
+    #    with lfx's newer langchain. All on conda-forge.
+    #
+    # LOCAL FIXES APPLIED THIS SESSION (recipe corrections, all built green):
+    #  - docstring-parser -> docstring_parser (G10 underscore feedstock name;
+    #    fixed here AND in langflow-base, whose artifact baked the bad hyphen).
+    #  - python_min raised to 3.11: jsonquerylang (every version) imports
+    #    typing.NotRequired unconditionally (PEP 655, py3.11+), and
+    #    ibm-watsonx-orchestrate-* are py3.11-gated -> 3.11 is the honest floor
+    #    despite upstream's aspirational requires-python >=3.10.
+    #  - jsonquerylang pinned >=1.1.1,<2.0.0 (mirror upstream langflow-base
+    #    pin; load-bearing under pip_check, G24/G26). jsonquerylang 1.1.1
+    #    built into the local channel (channel had only 2.1.0, which violates
+    #    the <2.0.0 upstream cap).
+    - litellm/fastapi/cryptography ecosystem skew (external cf)
+    - opentelemetry-semantic-conventions/api observability skew (external cf)
+  cfe-last-checked: 2026-06-19T21:05:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# source:
+#    # langflow ships a wheel only (no sdist) on PyPI. py-tag "py3" is upstream-
+#    # specific and may change on a version bump — re-verify the wheel tag when bumping.
+# build:
+#    # langflow is wheel-only upstream (no sdist); install the wheel directly.
+# requirements:
+#  run:
+#    # --- flattened from langflow-base[complete] (G25: conda has no extras) ---
+####

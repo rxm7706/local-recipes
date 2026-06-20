@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.14.3"
+
+package:
+  name: ibm-cos-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/ibm-cos-sdk/ibm_cos_sdk-${{ version }}.tar.gz
+  sha256: 643b6f2aa1683adad7f432df23407d11ae5adb9d9ad01214115bee77dc64364a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ibm-cos-sdk-core ==${{ version }}
+    - ibm-cos-sdk-s3transfer ==${{ version }}
+    - jmespath >=0.10.0,<=1.0.1
+
+tests:
+  - python:
+      imports:
+        - ibm_boto3
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/ibm-cos-sdk/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: IBM SDK for Python
+  repository: https://github.com/ibm/ibm-cos-sdk-python
+  documentation: https://ibm.github.io/ibm-cos-sdk-python/
+  description: |
+    The IBM Cloud Object Storage SDK for Python (``ibm-cos-sdk``) is a
+    thin meta-package over ``ibm-cos-sdk-core`` (the ``ibm_botocore``
+    botocore fork) and ``ibm-cos-sdk-s3transfer``. It provides the
+    high-level, resource-style client for IBM Cloud Object Storage and
+    is a fork of boto3. The top-level import name is ``ibm_boto3``.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ibm-cos-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ibm-cos-sdk
+  cfe-name-aliases:
+    - ibm_boto3
+  cfe-purls:
+    - pkg:conda/ibm-cos-sdk@${{ version }}
+    - pkg:pypi/ibm-cos-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/ibm/ibm-cos-sdk-python
+  cfe-upstream-homepage: https://www.ibm.com/cloud/object-storage
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - ibm-cos-sdk-core not yet on conda-forge
+    - ibm-cos-sdk-s3transfer not yet on conda-forge
+  cfe-last-checked: 2026-06-19T20:45:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:45:00Z
+####
+# CFE comments
+# Header:
+#    # Thin meta-package: upstream setup.py declares
+#    # ibm-cos-sdk-core==2.14.3 + ibm-cos-sdk-s3transfer==2.14.3 +
+#    # jmespath. The == triad is mirrored as ==${{ version }} so the meta
+#    # always pulls the version-aligned core/s3transfer; this is the
+#    # version ibm-watsonx-ai pins (>=2.12.0,<2.15.0).
+# requirements:
+#  run:
+#    # ibm-cos-sdk-core / ibm-cos-sdk-s3transfer pinned == version to keep
+#    # the three-package set lockstep (upstream's == intent). jmespath
+#    # carried directly per setup.py (>=0.10.0,<=1.0.1; loosened to bare
+#    # jmespath since the cf feedstock satisfies the lower bound).
+# tests:
+#    # G7 divergence: the PyPI distribution is `ibm-cos-sdk` but the
+#    # top-level import is `ibm_boto3` (a boto3 fork). Verified against
+#    # the sdist egg-info/top_level.txt.
+####
