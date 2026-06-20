@@ -1,0 +1,138 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.32.0"
+
+package:
+  name: cyclonedx-cli
+  version: ${{ version }}
+
+source:
+  - if: linux and x86_64
+    then:
+      url: https://github.com/CycloneDX/cyclonedx-cli/releases/download/v${{ version }}/cyclonedx-linux-x64
+      sha256: 454879e6a4a405c8a13bff49b8982adcb0596f3019b26b0811c66e4d7f0783e1
+      file_name: cyclonedx
+  - if: linux and aarch64
+    then:
+      url: https://github.com/CycloneDX/cyclonedx-cli/releases/download/v${{ version }}/cyclonedx-linux-arm64
+      sha256: abf0b7c5648a5b127791d691cad41f004aceea27c75bb42c9572fdc9694770cf
+      file_name: cyclonedx
+  - if: osx and x86_64
+    then:
+      url: https://github.com/CycloneDX/cyclonedx-cli/releases/download/v${{ version }}/cyclonedx-osx-x64
+      sha256: a13a5de12d10cfccf8f222614b99af243fee5491b0ec73850b1d6fa050d4ad4a
+      file_name: cyclonedx
+  - if: osx and arm64
+    then:
+      url: https://github.com/CycloneDX/cyclonedx-cli/releases/download/v${{ version }}/cyclonedx-osx-arm64
+      sha256: 83be8a9599f1dce1252208bd4d0bb15308eca0546814fb72b48b7246d35e832e
+      file_name: cyclonedx
+  - if: win
+    then:
+      url: https://github.com/CycloneDX/cyclonedx-cli/releases/download/v${{ version }}/cyclonedx-win-x64.exe
+      sha256: b1c00dbb40e628ec8c1252771871341ac4d4aaf032f832d83bd22cb2b1d258ae
+      file_name: cyclonedx.exe
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${PREFIX}/bin"
+        - cp cyclonedx "${PREFIX}/bin/cyclonedx"
+        - chmod +x "${PREFIX}/bin/cyclonedx"
+    - if: win
+      then:
+        - if not exist "%LIBRARY_BIN%" mkdir "%LIBRARY_BIN%"
+        - copy /Y cyclonedx.exe "%LIBRARY_BIN%\cyclonedx.exe"
+
+tests:
+  - script:
+      - cyclonedx --version
+
+about:
+  homepage: https://cyclonedx.org/
+  repository: https://github.com/CycloneDX/cyclonedx-cli
+  documentation: https://github.com/CycloneDX/cyclonedx-cli/blob/main/README.md
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: CycloneDX CLI tool for SBOM analysis, merging, diffs and format conversions
+  description: |
+    The CycloneDX CLI tool can be used for SBOM (Software Bill of Materials)
+    analysis, merging SBOMs, generating diffs, validation, signing, and format
+    conversions between supported SBOM formats. It is distributed by upstream as
+    self-contained .NET binaries (the .NET runtime is bundled into each
+    single-file executable), so no separate runtime dependency is required.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cyclonedx-cli
+  cfe-upstream-registry: github
+  cfe-upstream-name: CycloneDX/cyclonedx-cli
+  cfe-purls:
+    - pkg:conda/cyclonedx-cli@${{ version }}
+    - pkg:github/cyclonedx/cyclonedx-cli@v${{ version }}
+  cfe-upstream-repo: https://github.com/CycloneDX/cyclonedx-cli
+  cfe-upstream-homepage: https://cyclonedx.org/
+  cfe-import-names: []
+  cfe-source-kind: github-release-binary
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "binary-repackage-policy-risk: conda-forge prefers source builds. .NET source build is infeasible (no dotnet-sdk/dotnet-runtime feedstock on conda-forge + offline-CI NuGet-restore wall), so this recipe repackages upstream's self-contained release binaries (same as Homebrew). Reviewers may push back on binary-only repackaging; user elected local-only pending that decision."
+  cfe-last-checked: 2026-06-20T10:31:44Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T10:31:44Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:33:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Binary-repackage recipe: upstream ships self-contained, single-file
+#    # .NET 8 executables (~76-86 MB each) on GitHub Releases, one per
+#    # platform/arch. The .NET runtime is bundled, so there is no run-dep on
+#    # a dotnet runtime. Source-build on conda-forge is not possible (no
+#    # dotnet SDK feedstock; conda-forge CI forbids the NuGet network restore).
+# source:
+#    # Per-platform single-file sources, gated by target-platform selectors.
+#    # Standard-5 platform -> upstream asset map:
+#    #   linux-64      -> cyclonedx-linux-x64
+#    #   linux-aarch64 -> cyclonedx-linux-arm64
+#    #   osx-64        -> cyclonedx-osx-x64
+#    #   osx-arm64     -> cyclonedx-osx-arm64
+#    #   win-64        -> cyclonedx-win-x64.exe
+#    # Upstream also ships musl / linux-arm(v7) / win-x86 / win-arm64 assets;
+#    # those have no standard conda-forge subdir, so they are intentionally
+#    # out of scope. No upstream checksums file is published, so sha256 values
+#    # were computed by streaming each asset through sha256sum (2026-06-20).
+# build:
+#    # No compiler/stdlib (nothing is compiled from source). The binary is
+#    # copied verbatim to bin/ (unix) or Library\bin (win) and marked +x.
+# requirements:
+#    # Intentionally empty. Self-contained .NET deployment bundles the runtime.
+#    # FOLLOW-UP: .NET globalization may need system ICU and TLS may need
+#    # OpenSSL on some hosts. The linux-64 build host has system libicu/openssl,
+#    # so the local --version test passes. If a clean conda env fails at startup
+#    # with "Couldn't find a valid ICU package", add `icu` (and possibly
+#    # `openssl`) to run:, or document DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1.
+#    # Left minimal pending real-world verification beyond linux-64.
+# tests:
+#    # `cyclonedx --version` resolves the binary on PATH on all platforms
+#    # (bin/ on unix, Library\bin on win).
+# build-coverage:
+#    # LOCAL BUILD COVERAGE: only the linux-64 leg is buildable/testable on
+#    # this linux-64 host. The other 4 legs' sha256 are verified but their
+#    # binaries were not executed locally (cross-platform) -- they would be
+#    # exercised by conda-forge CI if/when submitted.
+####

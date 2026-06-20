@@ -210,7 +210,7 @@ extra:
   cfe-upstream-repo: <url>
   cfe-upstream-homepage: <url>
   cfe-import-names: [<top-level python import(s)>]
-  cfe-source-kind: <pypi-sdist | pypi-wheel | github-tag | github-commit>
+  cfe-source-kind: <pypi-sdist | pypi-wheel | github-tag | github-commit | github-release-binary>
   cfe-noarch: <python | generic | compiled>
   cfe-pip-check: <true | false:<reason-code>>
   cfe-on-conda-forge-status: <confirmed-on-conda-forge | pending-submission-to-conda-forge | pending-approval-on-conda-forge | blocked-pending-prerequisites | pypi-only | archived-on-conda-forge>
@@ -246,7 +246,7 @@ The `# CFE comments` block mirrors the recipe's structure (location keys `build`
 **The 4 identity/decision fields are the cached "hard-won" answers** (added v8.37.0; from the 4-analyst deep-analysis synthesis, 2026-06-19). They sit at the end of the identity/upstream block (after `cfe-upstream-homepage`, before `cfe-on-conda-forge-status`). Each caches a value that authoring would otherwise have to recompute — and that a **regen** (`grayskull` / `recipe-generator.py` re-running over a version bump) would re-guess, possibly *wrong*. Value semantics:
 
 - **`cfe-import-names`** — the **verified** top-level Python import name(s) — the names the CFEP-25 test `imports:` use. This **caches the G7/G10 divergence**: when the import name does NOT match the distribution name (`altk`, `OpenDsStar`, `pymilvus.model`, `ibm_boto3`, `baidubce`, `data_diff`), grayskull re-guesses it wrong on every regen and the import test breaks. With the verified value cached, a regen **restores** the correct import instead of re-deriving it from the sdist. This is the **single highest-frequency authoring recompute**, and is especially load-bearing for the feedstock-refresh effort (256 regens). Non-Python recipes: `[]`.
-- **`cfe-source-kind`** — which artifact the recipe actually sources: `pypi-sdist`, `pypi-wheel`, `github-tag`, or `github-commit`. When a **non-PyPI** source was chosen *deliberately* (because the PyPI sdist re-trips a known gotcha), append the reason: `github-tag:pypi-sdist-strips-headers-G5`. This prevents a version bump from silently reverting to a PyPI sdist that re-trips G4 / G5 / G9 / G16.
+- **`cfe-source-kind`** — which artifact the recipe actually sources: `pypi-sdist`, `pypi-wheel`, `github-tag`, `github-commit`, or `github-release-binary` (a prebuilt single-file release binary that is repackaged rather than built — e.g. a self-contained .NET CLI, see [G44](#g44-net--c-cli-tools-have-no-source-build-path-on-conda-forge--repackage-the-self-contained-release-binaries-per-platform)). When a **non-PyPI** source was chosen *deliberately* (because the PyPI sdist re-trips a known gotcha), append the reason: `github-tag:pypi-sdist-strips-headers-G5`. This prevents a version bump from silently reverting to a PyPI sdist that re-trips G4 / G5 / G9 / G16.
 - **`cfe-noarch`** — the build shape: `python` (noarch:python), `generic` (noarch:generic), or `compiled` (a per-arch / per-Python compiled build). Drives the build matrix and the per-Python prerequisite fan-out (G38 / G40). Per G42 it can **flip across versions** — verify the *current* version's artifact shape (e.g. milvus-lite 3.0 went C++-compiled → pure-Python), don't trust the older version's reputation.
 - **`cfe-pip-check`** — whether `pip_check: true` is in effect. When it is intentionally **off**, record `false:<reason-code>` so the temporary external-bug waiver and its **revert obligation** (G24 / G26 / G28 / G36 — e.g. an upstream dep's poisoned wheel METADATA / `dist-info` version) is not silently lost on strip-before-push. The reason code names the blocking package so the waiver can be re-checked and revoked when the upstream is fixed.
 
@@ -2394,6 +2394,52 @@ Always collapse the dep's per-Python env markers to the broadest floor (G35) so 
 **Fix**: use a **FULL-LINE comment ABOVE** the item instead of a trailing one. This reinforces the comments-at-bottom convention (v8.31.0 / G31-equivalent): cfe rationale belongs in the bottom `# CFE comments` block, and any necessary list-item annotation that must stay in the body has to be a full line above the item, never trailing.
 
 **Case study**: langflow recipe `cfe-*` block (Jun 19, 2026) — a trailing `# comment` on an `extra:` list item lint-failed under conda-smithy; relocating it to a full line above cleared the lint.
+
+### G44. .NET / C# CLI tools have NO source-build path on conda-forge — repackage the self-contained release binaries per-platform
+
+**Symptom**: asked to package a .NET (C#) CLI for conda-forge. None of the generators apply (it isn't PyPI / npm / CRAN / CPAN / LuaRocks), so `generate_recipe_from_pypi` & friends are useless. Attempting a from-source build is a dead end: there's no dotnet SDK to invoke, and even if there were, `dotnet restore` is a network operation that conda-forge's hermetic CI forbids.
+
+**Why**: conda-forge has **no `dotnet-sdk` and no `dotnet-runtime` feedstock** (verified 2026-06-20 via `lookup_feedstock` — both `exists=False`), and the NuGet restore step is banned in the offline build sandbox. So a from-source .NET build cannot work on conda-forge today — fundamentally unlike **Rust** / **Go**, which DO have conda-forge toolchains plus a vendored-dependency story. Don't burn cycles trying to make `dotnet build` work; there is no toolchain to drive it.
+
+**Fix**: repackage upstream's **self-contained, single-file release binaries** (one per platform/arch). .NET "self-contained" deployment **bundles the runtime into the executable**, so there is **NO run-dep on a dotnet runtime** — the binary runs standalone. This is also how Homebrew distributes these tools. Recipe shape (binary-repackage, NOT noarch):
+
+```yaml
+source:
+  # One single-file source per conda subdir, gated by target-platform
+  # selectors. file_name gives the download a stable name; no archive
+  # extraction happens (the asset has no archive extension). sha256 per asset.
+  - if: linux and x86_64
+    then:
+      url: https://github.com/<org>/<repo>/releases/download/v${{ version }}/<tool>-linux-x64
+      sha256: <...>
+      file_name: <tool>
+  # ... linux/aarch64, osx/x86_64, osx/arm64, win ...
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${PREFIX}/bin"
+        - cp <tool> "${PREFIX}/bin/<tool>"
+        - chmod +x "${PREFIX}/bin/<tool>"
+    - if: win
+      then:
+        - copy /Y <tool>.exe "%LIBRARY_BIN%\<tool>.exe"
+tests:
+  - script:
+      - <tool> --version
+```
+
+Key points: **no `compiler()` / `stdlib()`** (nothing is compiled from source — STD-001 does not apply); **no `requirements`** in the simple case (runtime is bundled); **NOT `noarch`** (each artifact is a per-platform binary → `cfe-noarch: compiled`); **ship LICENSE in-recipe** (the bare binaries carry none — canonical License-File pattern (2)); set `cfe-source-kind: github-release-binary`.
+
+**Caveats**:
+- **Binary repackaging draws conda-forge reviewer scrutiny** (source-build is the standing preference). The "no .NET toolchain on conda-forge" justification is legitimate, but reviewers may still push back — decide **submit vs. local-only up front** with the user (per the "Ask First" boundary), and record the call in `cfe-on-conda-forge-status` + `cfe-forge-blocker-list`.
+- **Upstream ships more arches than conda-forge has subdirs for** — `musl`, `linux-arm` (armv7), `win-x86`, `win-arm64` have no standard conda-forge subdir; the matchable set is the **standard 5** (linux-64, linux-aarch64, osx-64, osx-arm64, win-64). State the dropped arches explicitly.
+- **.NET globalization may need system ICU and TLS may need OpenSSL at runtime.** The build host usually has system libs, so `<tool> --version` passes locally, but a clean conda env can fail at startup with `Couldn't find a valid ICU package installed on the system`. If that surfaces, add `icu` (and possibly `openssl`) to `run:`, or document `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`. Leave `run:` minimal until real-world verification beyond the build host demands otherwise.
+- **No upstream checksums file** is typical — compute each sha256 by streaming the asset (`curl -sSL <url> | sha256sum`), don't download-then-hash 5 × ~80 MB to disk.
+- The same approach applies to any **prebuilt-single-binary** upstream where source-build is genuinely unavailable on conda-forge (some Go/Rust releases too) — but for Go/Rust prefer the real source build (toolchains + vendoring exist); reach for binary-repackage only when there's truly no toolchain, which is the *default* state for .NET.
+
+**Case study**: cyclonedx-cli 0.32.0 (Jun 20, 2026) — `CycloneDX/cyclonedx-cli`, an Apache-2.0 **.NET 8** SBOM CLI. `dotnet-sdk` + `dotnet-runtime` both absent from conda-forge → no source path. Repackaged the 5 self-contained release binaries (linux-x64/arm64, osx-x64/arm64, win-x64) as a per-platform recipe with **zero run-deps**; dropped the upstream musl / linux-arm / win-x86 / win-arm64 assets (no cf subdir). linux-64 leg built GREEN and the packaged binary ran `cyclonedx --version` → `0.32.0` (exit 0); the other 4 legs were sha256-verified but not executed locally (cross-platform on a linux-64 host). Kept **local-only** (`cfe-on-conda-forge-status: pending-submission-to-conda-forge`) pending the binary-repackage submission decision.
 
 ---
 
