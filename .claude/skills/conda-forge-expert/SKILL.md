@@ -1049,6 +1049,7 @@ Recent conda-forge changes that affect recipe authoring. Cite the relevant entry
 - **CFEP-25** — `python_min` floor for `noarch: python` recipes; conda-forge floor is `"3.10"` since Aug 2025 (Python 3.9 dropped).
 - **CFEP-26** — Guidelines for (re)naming packages (newly accepted). Consult before renaming a package or filing a name dispute.
 - **License identifiers must be SPDX** — case-sensitive (e.g., `Apache-2.0`, not `APACHE 2.0`); compound licenses use SPDX expressions (`Apache-2.0 WITH LLVM-exception`).
+- **A valid SPDX identifier is NOT the same as conda-forge eligibility.** Source-available / non-OSI licenses — **BUSL-1.1** (Business Source License), **SSPL**, **Elastic-2.0** (Elastic License 2.0), and **Commons-Clause**-encumbered licenses — are valid SPDX strings but are **not conda-forge-distributable** (they're not OSI-approved open-source licenses). A clean *local* build does **not** imply cf-eligibility. Flag these at recipe-authoring time as a **submission blocker**: record the reasoning in the `cfe-on-conda-forge-status` field and the bottom `# CFE comments` block (e.g. `cfe-status: local-only-pending-submission-conda-forge` with a note that the license bars submission), and do not open a staged-recipes PR. Real case: ragstack-ai-knowledge-store (BUSL-1.1, Jun 19, 2026) — built clean locally but is not cf-eligible.
 - **Bundled-language licensing** (Rust, Go) — use `cargo-bundle-licenses` / `go-licenses` and ship a `THIRDPARTY.yml` alongside `LICENSE` (already encoded in the maturin and Go templates).
 
 ---
@@ -2223,6 +2224,65 @@ run:
   - setuptools <81
 ```
 **Case study**: fs.googledrivefs-feedstock #7 (Jun 2026) — `import fs` failed (`fs` 2.4.16 declares its namespace via pkg_resources) because the test env resolved setuptools 82.0.1. Capped `setuptools <81` in run; import + pip check passed.
+
+### G35. noarch numpy env-marker selector collapse (a G12 refinement) — per-Python numpy run-dep selectors track numpy's *own* wheel-availability floor, not a package feature
+
+**Symptom**: grayskull / AI emits a per-Python `numpy` run-dep selector on a `noarch: python` recipe, e.g.:
+```yaml
+run:
+  - if: match(python, "<3.13")
+    then: numpy >=1.26.4
+    else: numpy >=2.1.0
+```
+This is a [G12](#g12-platform-conditional-run-deps-in-noarchpython-recipes-need-noarch_platforms-in-conda-forgeyml) violation — a noarch:python recipe carries **one** artifact, so per-Python `run:` selectors are invalid (the conda-smithy lint rejects them, and there is no single artifact for which a per-Python branch makes sense).
+
+**Why**: the upstream PEP 508 markers `numpy>=1.26.4; python_version<"3.13"` / `numpy>=2.1.0; python_version>="3.13"` encode **numpy's own cp313 wheel-availability floor** — numpy 2.1.0 was the first release to ship cp313 wheels, so a project that wants to be installable on Python 3.13 has to floor numpy at 2.1.0 *there*. This is a property of numpy's release history, **not** a feature of the package that branches per Python version. There is no code path in the package that behaves differently on 3.12 vs 3.13.
+
+**Fix**: collapse to the broadest floor — a single un-selectored `run:` dep:
+```yaml
+run:
+  - numpy >=1.26.4
+```
+The install-time conda solver picks a numpy build compatible with the *installed* Python (on Python 3.13 it can only choose numpy ≥2.1, because that's the first cp313 numpy on conda-forge anyway), so the broad floor is correct on every Python. The noarch artifact stays valid; no `noarch_platforms`, no per-Python branch.
+
+**Case study**: langchain-google-community 5.0.0 (Jun 19, 2026) — grayskull emitted the `match(python, "<3.13")` numpy split verbatim from upstream markers; collapsed to `numpy >=1.26.4` and the noarch recipe linted + built clean.
+
+### G36. Stale conda-forge build whose wheel METADATA caps a dep tighter than its conda `run:` dep → `pip check` fails even though the conda solve succeeds
+
+**Symptom**: a build's import test passes the conda solve, then `pip check` fails with `<outer-pkg> A has requirement <dep> !=…,<X,>=…, but you have <dep> Y` — for a dep whose conda `run:` constraint the solver *did* satisfy. The conda metadata and the wheel METADATA disagree.
+
+**Why**: a single version of a package can have **two builds** on conda-forge — an older build whose conda `run:` dep was loosened (e.g. `mcp <2.0.0`) but whose **embedded wheel METADATA still bakes in the tighter upstream cap** (`mcp !=1.21.1,<1.23,>=1.19.0`), and a newer **metadata-patched** build whose conda dep was corrected to match. `pip check` reads the wheel METADATA, not the conda repodata. The solver, seeing only the loose conda `run:` dep on the stale build, is free to pick that stale build alongside a transitive dep that's too new for the wheel's *real* cap — so the conda solve succeeds but `pip check` fails.
+
+**Fix**: raise the **outer** package's lower bound in *your* recipe so the solver is forced past the stale build to one whose wheel METADATA and conda dep agree:
+```yaml
+run:
+  # >=2.14 forces past fastmcp's stale 2.13.3 build (loose conda dep,
+  # tight wheel METADATA cap on mcp); 2.14's metadata-patched build agrees.
+  - fastmcp >=2.14
+```
+This is a strict subset of upstream's intent (you're only excluding builds known to mis-declare), not a loosening. Distinguish from G24 (label≠dist-info on the *built* package) — G36 is a *transitive* dep's stale build poisoning *your* test.
+
+**Case study**: toolguard (Jun 19, 2026) — `pip check` failed on `mcp` because the solver picked fastmcp's stale 2.13.3 build (conda `run: mcp <2.0.0`, wheel METADATA `mcp !=1.21.1,<1.23,>=1.19.0`). Floored `fastmcp >=2.14` to land on the metadata-patched build; pip check passed.
+
+### G37. `[tool.uv]` no-build / source flags in an sdist are NOT runtime dependencies — read deps only from `[project.dependencies]`
+
+**Symptom**: a recipe gains a phantom dependency (or a real dep gets misidentified) after reading a line like `apify-shared = false` from an sdist's `pyproject.toml` and treating it as a constraint.
+
+**Why**: `[tool.uv]` (and `[tool.uv.sources]`, `[tool.uv.*]`) is **uv-tool-specific configuration**, not PEP 621 metadata. A line such as `apify-shared = false` under `[tool.uv]` is a uv no-build / source flag (e.g. "don't build this from source"), **not** a dependency declaration. The authoritative runtime dep list is PEP 621 `[project.dependencies]` (and `[project.optional-dependencies]`). Mistaking a uv flag for a dep both adds a non-existent blocker and **hides the real one**, because attention goes to the wrong line.
+
+**Fix**: read deps exclusively from `[project.dependencies]` / `[project.optional-dependencies]`. Never source a dependency name or constraint from `[tool.uv.*]`, `[tool.hatch.*]`, `[tool.poetry.group.*.dependencies]` build-tool sections, or similar tool tables. When a dep looks odd, cross-check it against `[project.dependencies]` before adding it to the recipe.
+
+**Case study**: apify-client 3.0.3 (Jun 19, 2026) — `apify-shared = false` under `[tool.uv]` was misread as a dependency constraint; the **real** blocker was `impit` (a genuine `[project.dependencies]` entry not yet on conda-forge). Ignoring the uv flag and re-reading `[project.dependencies]` surfaced `impit` as the actual prerequisite.
+
+### G38. A compiled local-only prereq built for only ONE Python blocks consumers on other Python versions (compiled ≠ noarch)
+
+**Symptom**: a consumer recipe's test-env solve fails to find a local-only dependency that you *did* build into the local channel — e.g. `impit ==0.13.0, for which no candidates were found`, even though `impit-0.13.0-py310...conda` is sitting in the output dir.
+
+**Why**: a **compiled** prereq (Rust/PyO3, C-extension, anything not `noarch`) produces **one build per Python version** (`py310`, `py311`, …). A noarch dep ships a single artifact that satisfies every Python, but a compiled one does not — if you built `impit` only for `py310`, a consumer whose recipe requires `python >=3.11` (and whose test env therefore resolves 3.11+) cannot use the `py310` build. The solver correctly reports "no candidates" because there is no `py311` build of that compiled dep in the channel.
+
+**Fix**: when a consumer's test-env solve fails on a compiled local-only dep, check the channel artifact's `py3XX` build-string segment against the consumer's `python_min` / required Python floor. Build the compiled prereq for **every** Python in the consumer's matrix (or at least the one the consumer's env will resolve) before building the consumer. Contrast with noarch local-only deps, where one build is enough.
+
+**Case study**: apify-client (Jun 19, 2026, `python >=3.11`) — its test env couldn't resolve the channel's `impit-0.13.0-py310...` build (impit is a Rust/PyO3 compiled package, py310-only in the local channel). Rebuilding impit for py311 unblocked the apify-client solve.
 
 ---
 
