@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: dbt-protos
-  version: "1.0.317"
+  version: "1.0.474"
 
 package:
-  name: ${{ name|lower }}
+  name: dbt-protos
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dbt_protos-${{ version }}.tar.gz
-  sha256: 52fcc17859b2b190d7a0a62b7c84b19c34ab108bfcf8caa5fb0f137fd76b8c0a
+  url: https://pypi.org/packages/source/d/dbt-protos/dbt_protos-${{ version }}.tar.gz
+  sha256: 03e036eb93537d3055cfb0dd8c7d2c61991ee1c2c2f30d3c143d6bb91faf796b
 
 build:
   number: 0
@@ -24,7 +23,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - protobuf >=3.17.1
 
 tests:
@@ -34,17 +33,59 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Public proto bindings for dbt
   homepage: https://github.com/dbt-labs/proto-python-public
-  description: |
-       Public proto bindings for dbt.
   repository: https://github.com/dbt-labs/proto-python-public
   documentation: https://github.com/dbt-labs/proto-python-public/blob/main/README.md
   license: Apache-2.0
   license_file: LICENSE
+  summary: Public proto bindings for dbt
+  description: |
+    Public proto bindings for dbt.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dbt-protos
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dbt-protos
+  cfe-purls:
+    - pkg:conda/dbt-protos@${{ version }}
+    - pkg:pypi/dbt-protos@${{ version }}
+  cfe-upstream-repo: https://github.com/dbt-labs/proto-python-public
+  cfe-upstream-homepage: https://github.com/dbt-labs/proto-python-public
+  cfe-import-names: [dbtlabs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-protos-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T10:33:34Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T10:33:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:34:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  host:
+#    # setuptools retained in host: upstream is a setup.py/egg-info project
+#    # (no pyproject.toml), built under --no-build-isolation; grayskull
+#    # dropped it but the deployed feedstock keeps it.
+#  run:
+#    # protobuf is the lone runtime dep (PKG-INFO Requires-Dist:
+#    # protobuf>=3.17.1). The package ships pre-generated *_pb2.py bindings,
+#    # so no build-time protoc / libprotobuf is needed (G30 N/A).
+# tests:
+#    # import name is dbtlabs (top-level namespace package, no __init__.py;
+#    # verified from the 1.0.474 sdist) — not dbt_protos (G7).
+####

@@ -1,0 +1,11 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -22,7 +22,4 @@
+ build-backend = "hatchling.build"
+
+ [tool.hatch.build.targets.wheel]
+-packages = ["src/excel_mcp"]
+-
+-[tool.hatch.build]
+-packages = ["src/excel_mcp"]
++packages = ["excel_mcp"]

@@ -2,17 +2,16 @@
 schema_version: 1
 
 context:
-  name: django-ai-core
-  version: "0.1.4"
-  python_min: '3.11'
+  version: "0.1.5"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: django-ai-core
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_ai_core-${{ version }}.tar.gz
-  sha256: 3e8ced754bd24428322584769584198d0877bce232d65cac3b0788aef47d82ca
+  url: https://pypi.org/packages/source/d/django-ai-core/django_ai_core-${{ version }}.tar.gz
+  sha256: a6c20b1fc29c7bed8fd3639a0898cbc91eb67da5f5762882d9b0880b6ab8678a
 
 build:
   number: 0
@@ -25,16 +24,18 @@ requirements:
     - uv-build >=0.8.22,<0.9.0
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - any-llm-sdk ==0.20.3
-    - queryish >=0.2.0
+    - queryish >=0.3.0
 
 tests:
   - python:
       imports:
         - django_ai_core
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Django AI Core provides developer-focused AI features for implementing AI tooling in to Django sites.
@@ -45,3 +46,50 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-ai-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-ai-core
+  cfe-purls:
+    - pkg:conda/django-ai-core@${{ version }}
+    - pkg:pypi/django-ai-core@${{ version }}
+  cfe-upstream-repo: https://github.com/wagtail/django-ai-core
+  cfe-upstream-homepage: https://github.com/wagtail/django-ai-core
+  cfe-import-names: [django_ai_core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-ai-core-feedstock
+  cfe-forge-recipe-updates-needed:
+    - dependency-fix
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T10:42:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T10:42:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:43:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# context:
+#    # python_min overridden to 3.11 because upstream pyproject.toml
+#    # requires-python = ">=3.11" (above the conda-forge 3.10 floor).
+# source:
+#    # uv_build backend (pyproject [build-system]); conda feedstock name
+#    # is uv-build (hyphen) per get_conda_name.
+#  run:
+#    # queryish floored at >=0.3.0 to match upstream [project.dependencies]
+#    # (0.1.4 carried >=0.2.0; the deployed 0.1.5 feedstock still has the
+#    # stale >=0.2.0 -> recorded in cfe-forge-recipe-updates-needed).
+#    # Dropped the speculative python <4.0 upper bound: upstream
+#    # requires-python has no upper bound. Deployed feedstock still carries
+#    # <4.0 -> recorded in cfe-forge-recipe-updates-needed.
+#  about:
+#    # description omitted: upstream README stub ("# Django AI Core") is
+#    # noise; the deployed feedstock also omits description. summary covers it.
+####

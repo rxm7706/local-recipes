@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "3.5.2"
+  version: "3.6.18"
 
 package:
   name: html-to-markdown
@@ -14,7 +14,7 @@ source:
   # `cargo metadata` fails before the maturin build can start. The GitHub
   # tag tarball ships the full workspace. Same class as SKILL.md G5.
   url: https://github.com/kreuzberg-dev/html-to-markdown/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 8d977a7d763b0ea0c987483a1dd49a67b3513fd73ad17d0939759377c3bce1db
+  sha256: afcf77e49012ff2ac7af344c88f387821d8a9967af2b71652e23d379ef8b5f55
 
 build:
   number: 0
@@ -84,3 +84,47 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: html-to-markdown
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: html-to-markdown
+  cfe-purls:
+    - pkg:conda/html-to-markdown@${{ version }}
+    - pkg:pypi/html-to-markdown@${{ version }}
+  cfe-upstream-repo: https://github.com/kreuzberg-dev/html-to-markdown
+  cfe-upstream-homepage: https://pypi.org/project/html-to-markdown/
+  cfe-import-names: [html_to_markdown]
+  cfe-source-kind: github-tag:pypi-sdist-broken-workspace-path-dep-G5
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/html-to-markdown-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# source:
+#    # Sourced from the GitHub tag, not the PyPI sdist: the 3.5.x+ PyPI sdist
+#    # declares a workspace path dep on crates/html-to-markdown/ that the
+#    # tarball omits, so cargo metadata fails before maturin starts (G5 class).
+#    # The GH tag ships the full workspace. cfe-source-kind records this so a
+#    # regen does not silently revert to the broken PyPI sdist.
+# context:
+#    # python_min omitted: requires-python is >=3.10 (the conda-forge default
+#    # floor) and ${{ python_min }} is not referenced anywhere in the recipe
+#    # body (version_independent abi3 build uses bare `python`). The deployed
+#    # feedstock carries an unused python_min: '3.10' in context; dropped here
+#    # per the omit-at-floor modernization convention.
+# build:
+#    # version_independent: true — upstream builds a single cp310-abi3 wheel per
+#    # platform (pyo3/abi3-py310), so one build covers Python 3.10+.
+####

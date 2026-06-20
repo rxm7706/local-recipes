@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-http-compression
-  version: "1.1.0"
+  version: "1.4.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_http_compression-${{ version }}.tar.gz
-  sha256: c146f3c3c6bb122f03914f2c4d3f6cd5db0b452c13f0d7314afc72a821b59d5b
+  sha256: 6201c8908917b5ccbd4eb46a0f12840413e869c66ba9a7a38988b99ad9854ba0
 
 build:
   number: 0
@@ -35,7 +35,9 @@ tests:
       imports:
         - django_http_compression
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/adamchainz/django-http-compression
@@ -46,3 +48,38 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-http-compression
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-http-compression
+  cfe-purls:
+    - pkg:conda/django-http-compression@${{ version }}
+    - pkg:pypi/django-http-compression@${{ version }}
+  cfe-upstream-repo: https://github.com/adamchainz/django-http-compression
+  cfe-upstream-homepage: https://github.com/adamchainz/django-http-compression
+  cfe-import-names: [django_http_compression]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-http-compression-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # backports.zstd: upstream marker is `backports-zstd>=1; python_version<'3.14'`
+#    #   (3.14 has compression.zstd in stdlib). Collapsed to the broadest plain
+#    #   form per G35 — per-Python run selectors are invalid in noarch:python and
+#    #   the dep is harmless on 3.14. Matches the deployed feedstock.
+####

@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: markdown-to-confluence
-  version: "0.4.6"
+  version: "0.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: markdown-to-confluence
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markdown_to_confluence-${{ version }}.tar.gz
-  sha256: 532d0a8dcc52b0238e2420b2434e9136cd3fcd2c82840184b08d97d9eee7a68f
+  url: https://pypi.org/packages/source/m/markdown-to-confluence/markdown_to_confluence-${{ version }}.tar.gz
+  sha256: f821a4315769c6152b0a80988f4997c81dabb213da830e6a210b5acbaa428225
 
 build:
   number: 0
@@ -24,29 +23,33 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=42
+    - setuptools >=80.0
     - pip
   run:
     - python >=${{ python_min }},<4
-    - certifi >=2025.8.3
-    - json-strong-typing >=0.3.9
-    - lxml >=6.0
-    - markdown >=3.8
-    - pymdown-extensions >=10.16
+    - cattrs >=26.1
+    - lxml >=6.1
+    - markdown >=3.10
+    - orjson >=3.11
+    - pymdown-extensions >=10.21
     - pyyaml >=6.0
-    - requests >=2.32
+    - requests >=2.33
     - truststore >=0.10
-    - typing_extensions >=4.14
+    - typing_extensions >=4.15
+  run_constraints:
+    - matplotlib >=3.10
 
 tests:
   - python:
       imports:
         - md2conf
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
-        - pip
+        - python ${{ python_min }}.*
     script:
       - md2conf --help
 
@@ -57,7 +60,33 @@ about:
   license: MIT
   license_file: LICENSE
 
-
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: markdown-to-confluence
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: markdown-to-confluence
+  cfe-purls:
+    - pkg:conda/markdown-to-confluence@${{ version }}
+    - pkg:pypi/markdown-to-confluence@${{ version }}
+  cfe-upstream-repo: https://github.com/hunyadi/md2conf
+  cfe-upstream-homepage: https://github.com/hunyadi/md2conf
+  cfe-import-names: [md2conf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/markdown-to-confluence-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

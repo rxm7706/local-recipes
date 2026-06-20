@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: django-components
-  version: "0.146.0"
+  version: "0.150.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-components
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_components-${{ version }}.tar.gz
-  sha256: 8906d5adeb7ea87371a852989228ed309f10261afa2d4e6ce750c9d00af73d3e
+  url: https://pypi.org/packages/source/d/django-components/django_components-${{ version }}.tar.gz
+  sha256: 84a021246f228a113e8c97332c8b2d55340cb2d435374ffd894c83d94a6a6214
 
 build:
   number: 0
@@ -25,8 +24,8 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - django >=4.2
-    - djc-core >=1.2.2
+    - django >=5.2
+    - djc-core >=1.3.0
     - typing_extensions >=4.12.2
 
 tests:
@@ -34,18 +33,59 @@ tests:
       imports:
         - django_components
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: A way to create simple reusable template components in Django.
   homepage: https://django-components.github.io/django-components/latest/overview/welcome/
-  description: |
-       Create simple reusable template components in Django.
   repository: https://github.com/django-components/django-components
   documentation: https://django-components.github.io/django-components/latest/reference/api/
   license: MIT
   license_file: LICENSE
+  description: |
+    Create simple reusable template components in Django.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-components
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-components
+  cfe-purls:
+    - pkg:conda/django-components@${{ version }}
+    - pkg:pypi/django-components@${{ version }}
+  cfe-upstream-repo: https://github.com/django-components/django-components
+  cfe-upstream-homepage: https://django-components.github.io/django-components/latest/overview/welcome/
+  cfe-import-names: [django_components]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-components-feedstock
+  cfe-forge-recipe-updates-needed:
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # 0.150.0 [project.dependencies] raised django >=4.2 -> >=5.2 and
+#    # djc-core >=1.2.2 -> >=1.3.0; the deployed feedstock at 0.150.0 still
+#    # carries the stale 0.146.x lower bounds (autotick bumps version+sha
+#    # only). These corrected bounds come from upstream pyproject
+#    # [project.dependencies]; dev/docs/ci dependency-groups
+#    # (django-template-partials, pytest-django, ...) are intentionally
+#    # excluded. -> cfe-forge-recipe-updates-needed: run-deps-stale-on-feedstock
+####

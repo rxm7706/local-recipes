@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: drf-to-mkdoc
-  version: "0.1.9"
+  version: "0.4.3"
 
 package:
-  name: ${{ name|lower }}
+  name: drf-to-mkdoc
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/drf_to_mkdoc-${{ version }}.tar.gz
-  sha256: 87c00a636b641cb8297489a4649f7455efff307f1c34219c234ee0123d956021
+  url: https://pypi.org/packages/source/d/drf-to-mkdoc/drf_to_mkdoc-${{ version }}.tar.gz
+  sha256: e1a8340d6c7d45358b1857f755afef48f10255316c5b2bde298cec6da567e85f
 
 build:
   number: 0
@@ -26,13 +25,14 @@ requirements:
     - setuptools-scm >=8.0
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - django >=3.2,<6.0
     - djangorestframework >=3.12,<4.0
     - pyyaml >=6.0
     - drf-spectacular >=0.26.0
     - mkdocs >=1.4.0
     - mkdocs-material >=9.0.0
+    - click <8.2.2
     - python-coreapi >=2.3.0
 
 tests:
@@ -40,14 +40,45 @@ tests:
       imports:
         - drf_to_mkdoc
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Generate Markdown API docs from Django/DRF OpenAPI schema for MkDocs
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/shayestehhs/drf-to-mkdoc
+  repository: https://github.com/shayestehhs/drf-to-mkdoc
+  documentation: https://github.com/shayestehhs/drf-to-mkdoc
+  summary: Generate Markdown API docs from Django/DRF OpenAPI schema for MkDocs
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: drf-to-mkdoc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: drf-to-mkdoc
+  cfe-purls:
+    - pkg:conda/drf-to-mkdoc@${{ version }}
+    - pkg:pypi/drf-to-mkdoc@${{ version }}
+  cfe-upstream-repo: https://github.com/shayestehhs/drf-to-mkdoc
+  cfe-upstream-homepage: https://github.com/shayestehhs/drf-to-mkdoc
+  cfe-import-names: [drf_to_mkdoc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/drf-to-mkdoc-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T11:32:48Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T11:32:48Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T11:34:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

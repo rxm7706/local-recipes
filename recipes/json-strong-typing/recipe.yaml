@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: json-strong-typing
-  version: "0.3.9"
+  version: "0.4.3"
 
 package:
-  name: ${{ name|lower }}
+  name: json-strong-typing
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json_strong_typing-${{ version }}.tar.gz
-  sha256: b9912587505553b0d52a81ce65123b6c87306ba28199d3c33a018a0365e968dd
+  url: https://pypi.org/packages/source/j/json-strong-typing/json_strong_typing-${{ version }}.tar.gz
+  sha256: eda43764914141d609be5cdb020c01c6fb5ee2f533382707fd382bd302b2a496
 
 build:
   number: 0
@@ -21,27 +20,68 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=51
-    - wheel
     - pip
+    - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - jsonschema >=4.23
-    - typing_extensions >=4.12
+    - python >=${{ python_min }}
+    - jsonschema >=4.25
+    - typing_extensions >=4.15
 
 tests:
   - python:
       imports:
         - strong_typing
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Type-safe data interchange for Python data classes
+  homepage: https://github.com/hunyadi/strong_typing
+  repository: https://github.com/hunyadi/strong_typing
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/hunyadi/strong_typing
+  summary: Type-safe data interchange for Python data classes
+  description: |
+    Type-safe data interchange for Python data classes
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json-strong-typing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-strong-typing
+  cfe-purls:
+    - pkg:conda/json-strong-typing@${{ version }}
+    - pkg:pypi/json-strong-typing@${{ version }}
+  cfe-upstream-repo: https://github.com/hunyadi/strong_typing
+  cfe-upstream-homepage: https://github.com/hunyadi/strong_typing
+  cfe-import-names: [strong_typing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json-strong-typing-feedstock
+  cfe-forge-recipe-updates-needed:
+    - recipe-regenerate
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # upstream marks typing_extensions >=4.15 with python_version < "3.11";
+#    # listed unconditionally per migration discipline (single transitive dep).
+# about:
+#    # description duplicates summary upstream (no long-form README blurb).
+####

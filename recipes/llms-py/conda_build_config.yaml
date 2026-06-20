@@ -1,0 +1,6 @@
+# llms/main.py imports `datetime.UTC`, which is Python 3.11+ only. Upstream's
+# requires-python is a stale ">=3.7" (classifiers still list 3.7-3.9), so the
+# conda-forge default floor (python_min 3.10) builds + tests on 3.10 and the
+# import test fails. Override python_min to 3.11.
+python_min:
+  - "3.11"

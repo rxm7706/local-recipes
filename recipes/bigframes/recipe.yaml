@@ -3,17 +3,17 @@ schema_version: 1
 
 context:
   name: bigframes
-  version: "2.29.1"
-  python_max: '4.0'
-  python_test_max: '3.15'
+  version: "2.43.0"
+  python_max: "4.0"
+  python_test_max: "3.14"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bigframes-${{ version }}.tar.gz
-  sha256: 2d0eb520fc969f47dd66f4ffa2f27e5120d5832743fd1c35b09eb8962a419bb8
+  url: https://pypi.org/packages/source/b/bigframes/bigframes-${{ version }}.tar.gz
+  sha256: da7c234b46f3e22f5327b5b8bae809fa740bc79ceef15cf7a8213578bb03a5f5
 
 build:
   number: 0
@@ -29,7 +29,7 @@ requirements:
     - python >=${{ python_min }},<${{ python_max }}
     - cloudpickle >=2.0.0
     - fsspec >=2023.3.0
-    - gcsfs >=2023.3.0,!=2025.5.0
+    - gcsfs >=2023.3.0,!=2025.5.0,!=2026.2.0,!=2026.3.0
     - geopandas >=0.12.2
     - google-auth >=2.15.0,<3.0
     - google-cloud-bigquery-core >=3.36.0
@@ -38,20 +38,20 @@ requirements:
     - google-cloud-bigquery-connection >=1.12.0
     - google-cloud-resource-manager >=1.10.3
     - google-cloud-storage >=2.0.0
+    - google-crc32c >=1.0.0,<2.0.0
     - grpc-google-iam-v1 >=0.14.2
     - numpy >=1.24.0
     - pandas >=1.5.3
     - pandas-gbq >=0.26.1
-    - pyarrow >=15.0.2
+    - pyarrow >=23.0.1
     - pydata-google-auth >=1.8.2
     - requests >=2.27.1
     - shapely >=1.8.5
-    - sqlglot >=25.20.0,<28.0.0
     - tabulate >=0.9
-    - ipywidgets >=7.7.1
     - humanize >=4.6.0
     - matplotlib-base >=3.7.1
     - db-dtypes >=1.4.2
+    - pyiceberg >=0.7.1
     - atpublic >=2.3,<6
     - python-dateutil >=2.8.2,<3
     - pytz >=2022.7
@@ -76,12 +76,8 @@ tests:
 
 about:
   summary: BigQuery DataFrames -- scalable analytics and machine learning with BigQuery
-  repository: https://github.com/googleapis/python-bigquery-dataframes
-  homepage: https://github.com/googleapis/python-bigquery-dataframes
-  description: |
-    BigQuery DataFrames provides a Pythonic DataFrame and machine learning (ML) API powered by the BigQuery engine.
-      bigframes.pandas provides a pandas-compatible API for analytics.
-      bigframes.ml provides a scikit-learn-like API for ML.
+  homepage: https://dataframes.bigquery.dev
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/bigframes
   license: MIT AND BSD-4-Clause AND MPL-2.0 AND Apache-2.0 AND BSD-3-Clause
   license_file:
     - LICENSE
@@ -91,10 +87,42 @@ about:
     - third_party/bigframes_vendored/geopandas/LICENSE.txt
     - third_party/bigframes_vendored/tpch/LICENSE
     - third_party/bigframes_vendored/google_cloud_bigquery/LICENSE
+    - third_party/bigframes_vendored/sqlglot/LICENSE
     - third_party/bigframes_vendored/xgboost/LICENSE
     - third_party/bigframes_vendored/ibis/LICENSE.txt
     - third_party/bigframes_vendored/sklearn/COPYING
+  description: |
+    BigQuery DataFrames provides a Pythonic DataFrame and machine learning (ML) API powered by the BigQuery engine.
+      bigframes.pandas provides a pandas-compatible API for analytics.
+      bigframes.ml provides a scikit-learn-like API for ML.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bigframes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bigframes
+  cfe-purls:
+    - pkg:conda/bigframes@${{ version }}
+    - pkg:pypi/bigframes@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/bigframes
+  cfe-upstream-homepage: https://dataframes.bigquery.dev
+  cfe-import-names: [bigframes, bigframes_vendored]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bigframes-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

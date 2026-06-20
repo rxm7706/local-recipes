@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: gotenberg-client
-  version: "0.12.0"
+  version: "0.13.1"
 
 package:
-  name: ${{ name|lower }}
+  name: gotenberg-client
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gotenberg_client-${{ version }}.tar.gz
-  sha256: 1ab50878024469fc003c414ee9810ceeb00d4d7d7c36bd2fb75318fbff139e9b
+  url: https://pypi.org/packages/source/g/gotenberg-client/gotenberg_client-${{ version }}.tar.gz
+  sha256: cdd6bbb535cd739b87446cd1b4f6347ed7f9af6a0d4b19baf7c064b75528ee54
 
 build:
   number: 0
@@ -21,10 +20,10 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling >=1.27.0,<1.28.dev0
+    - hatchling >=1.27,<2
     - pip
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - httpx >=0.27
     - typing_extensions
 
@@ -33,14 +32,68 @@ tests:
       imports:
         - gotenberg_client
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: A Python client for interfacing with the Gotenberg API
   license: MPL-2.0
   license_file: LICENSE
   homepage: https://github.com/stumpylog/gotenberg-client/
+  repository: https://github.com/stumpylog/gotenberg-client/
+  documentation: https://stumpylog.github.io/gotenberg-client/
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gotenberg-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gotenberg-client
+  cfe-purls:
+    - pkg:conda/gotenberg-client@${{ version }}
+    - pkg:pypi/gotenberg-client@${{ version }}
+  cfe-upstream-repo: https://github.com/stumpylog/gotenberg-client/
+  cfe-upstream-homepage: https://github.com/stumpylog/gotenberg-client/
+  cfe-import-names: [gotenberg_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gotenberg-client-feedstock
+  cfe-forge-recipe-updates-needed:
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# context:
+#    # version bumped 0.12.0 -> 0.13.1 (feedstock-refresh Wave B). Full CFE
+#    # regenerate diff-applied onto the local mirror; sha256 from PyPI sdist.
+# requirements:
+#  host:
+#    # hatchling pin modernized >=1.27.0,<1.28.dev0 -> >=1.27,<2 to match
+#    # upstream pyproject [build-system].requires = "hatchling>=1.27,<2".
+#    # The deployed feedstock still carries the stale grayskull <1.28.dev0
+#    # pin -> recipe-regenerate owed.
+#  run:
+#    # dropped speculative python ,<4 upper bound (upstream requires-python
+#    # is bare >=3.9; no upper bound). httpx[http2] extra in upstream
+#    # pyproject pulls only optional h2; pip_check does NOT enforce an
+#    # unrequested extra, so plain httpx >=0.27 is correct (matches the
+#    # deployed feedstock run block). No G25 flatten needed.
+# about:
+#    # dropped grayskull's bogus `description: | # Gotenberg API Client`
+#    # README-header stub; added repository + documentation from PyPI
+#    # project_urls (CFEP-25 about triad). homepage kept as the GitHub repo
+#    # (matches deployed feedstock) rather than grayskull's pypi.org/project.
+####

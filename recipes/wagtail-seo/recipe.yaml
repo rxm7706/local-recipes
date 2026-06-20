@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: wagtail-seo
-  version: "3.1.0"
+  version: "3.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: wagtail-seo
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_seo-${{ version }}.tar.gz
-  sha256: 039371e5c69b8a59ba82baab24585034fbc8c230ad1ad0703896db381c14c20c
+  url: https://pypi.org/packages/source/w/wagtail-seo/wagtail_seo-${{ version }}.tar.gz
+  sha256: 8dbd2648f9c5c1a6c185a2253bd505bc50242867b0a3eacfa938332444b80923
 
 build:
   number: 0
@@ -24,7 +23,7 @@ requirements:
     - setuptools >=65.0
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - wagtail >=4.0,<8.0
 
 tests:
@@ -32,7 +31,9 @@ tests:
       imports:
         - wagtailseo
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Search engine and social media optimization for Wagtail.
@@ -44,3 +45,30 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-seo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-seo
+  cfe-purls:
+    - pkg:conda/wagtail-seo@${{ version }}
+    - pkg:pypi/wagtail-seo@${{ version }}
+  cfe-upstream-repo: https://github.com/coderedcorp/wagtail-seo
+  cfe-upstream-homepage: https://github.com/coderedcorp/wagtail-seo
+  cfe-import-names: [wagtailseo]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-seo-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

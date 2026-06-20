@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: ovld
-  version: "0.5.12"
+  version: "0.5.15"
 
 package:
-  name: ${{ name|lower }}
+  name: ovld
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ovld-${{ version }}.tar.gz
-  sha256: 60cdc9a73fe149d658231afe7db58d666bffb4e2d923598ffeebcd3b0ee35bee
+  url: https://pypi.org/packages/source/o/ovld/ovld-${{ version }}.tar.gz
+  sha256: 36c445196c3017ad4de1d790d6b37804f11570533e567c268740aeb02dcf29a5
 
 build:
   number: 0
@@ -24,21 +23,52 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - ovld
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Overloading Python functions
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/breuleux/ovld
+  summary: Overloading Python functions
+  homepage: https://ovld.readthedocs.io/en/latest/
+  repository: https://github.com/breuleux/ovld
+  documentation: https://ovld.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ovld
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ovld
+  cfe-purls:
+    - pkg:conda/ovld@${{ version }}
+    - pkg:pypi/ovld@${{ version }}
+  cfe-upstream-repo: https://github.com/breuleux/ovld
+  cfe-upstream-homepage: https://ovld.readthedocs.io/en/latest/
+  cfe-import-names: [ovld]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ovld-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: django-flags
-  version: 5.1.0
+  version: "5.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-flags
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_flags-${{ version }}.tar.gz
-  sha256: 47f33efba238fe83a2c1f6f5764147fe62d770039f64b3a039e0e461bbc36e79
+  url: https://pypi.org/packages/source/d/django-flags/django_flags-${{ version }}.tar.gz
+  sha256: a3aee5e0d11e24e35f5ae4a423d52cad721f639181c1b1251e0148d8530a3f81
 
 build:
   number: 0
@@ -20,26 +19,61 @@ build:
 
 requirements:
   host:
-    - python >=3.10
+    - python ${{ python_min }}.*
     - setuptools >=63
     - setuptools-scm >=8
     - pip
   run:
-    - python >=3.10
+    - python >=${{ python_min }}
     - django >=4.2
+    - jinja2
+    - django-debug-toolbar
 
 tests:
   - python:
       imports:
         - flags
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Feature flags for Django projects
   license: CC0-1.0
   license_file: LICENSE
+  homepage: https://cfpb.github.io/django-flags/
   repository: https://github.com/cfpb/django-flags
+  summary: Feature flags for Django projects
+  description: |
+    Feature flags for Django projects.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-flags
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-flags
+  cfe-purls:
+    - pkg:conda/django-flags@${{ version }}
+    - pkg:pypi/django-flags@${{ version }}
+  cfe-upstream-repo: https://github.com/cfpb/django-flags
+  cfe-upstream-homepage: https://cfpb.github.io/django-flags/
+  cfe-import-names: [flags]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-flags-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T10:41:56Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T10:41:56Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T10:43:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

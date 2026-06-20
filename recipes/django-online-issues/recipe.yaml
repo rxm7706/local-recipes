@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: django-online-issues
-  version: "0.2"
+  version: "0.6"
 
 package:
-  name: ${{ name|lower }}
+  name: django-online-issues
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_online_issues-${{ version }}.tar.gz
-  sha256: fe468c006d84e3af772e9a370dd217ca783f268436228ab0f3ba5d5d85503f76
+  url: https://pypi.org/packages/source/d/django-online-issues/django_online_issues-${{ version }}.tar.gz
+  sha256: 7fe5c184f1aeca97d37cd86aa0801d35abe46522db8c4ce20153fd2b1fd6421b
 
 build:
   number: 0
@@ -25,7 +24,7 @@ requirements:
     - hatchling >=1.25
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - django >=4
     - django-stubs-ext
     - markdown >=3.8.2
@@ -36,14 +35,56 @@ tests:
       imports:
         - issues
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A reusable Django app for collecting and reporting user-submitted issues (tickets). It provides a view and a form to submit tickets and forwards them to configurable backends like GitLab, GitHub, email, or simply the development console.
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/saxix/django-online-issues
+  homepage: https://github.com/saxix/django-issues
+  repository: https://github.com/saxix/django-issues
+  documentation: https://github.com/saxix/django-issues
+  summary: A reusable Django app for collecting and reporting user-submitted issues (tickets). It provides a view and a form to submit tickets and forwards them to configurable backends like GitLab, GitHub, email, or simply the development console.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-online-issues
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-online-issues
+  cfe-purls:
+    - pkg:conda/django-online-issues@${{ version }}
+    - pkg:pypi/django-online-issues@${{ version }}
+  cfe-upstream-repo: https://github.com/saxix/django-issues
+  cfe-upstream-homepage: https://github.com/saxix/django-issues
+  cfe-import-names: [issues]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-online-issues-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# tests:
+#  python:
+#    imports:
+#      # G7: distribution name is django-online-issues but the top-level
+#      # import is `issues` (src/issues/__init__.py). grayskull re-guesses
+#      # `django_online_issues` on every regen — restore `issues`.
+# about:
+#    # upstream pyproject [project.urls] points to saxix/django-issues
+#    # (repo renamed from django-online-issues); both URLs 200.
+####

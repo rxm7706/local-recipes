@@ -2,53 +2,100 @@
 schema_version: 1
 
 context:
-  name: wagtail-draftail-plugins
-  version: 0.3.0
+  version: "0.4.0"
+  python_min: "3.11"
 
 package:
   name: wagtail-draftail-plugins
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/w/wagtail-draftail-plugins/wagtail-draftail-plugins-${{ version }}.tar.gz
-  sha256: 45804fc6de65d92d908c4a801440eece87a084a74913c1675d151e3628d9e45b
+  url: https://pypi.org/packages/source/w/wagtail-draftail-plugins/wagtail_draftail_plugins-${{ version }}.tar.gz
+  sha256: bea3fb4b05d4a09899ac01ced5723d63260005d5843298bac770500efaa869f8
 
 build:
-  noarch: python 
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python >=3.8
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - versiontag >=1.2.0
+    - poetry-core
   run:
-    - python >=3.8
-    - wagtail >=4.0
+    - python >=${{ python_min }}
+    - wagtail >=6.3
 
 tests:
   - python:
       imports:
-        - wagtail_draftail_plugins 
+        - wagtail_draftail_plugins
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script: pip check
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
-  license: MIT
+  license: ISC
   license_file: LICENSE
   summary: Commonly used extensions to Wagtail's Draftail editor.
+  repository: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
+  documentation: https://gitlab.com/thelabnyc/wagtail-draftail-plugins/-/blob/master/README.rst
   description: |
     This library includes some commonly used extensions for the Wagtail Draftail editor.
-  documentation: https://gitlab.com/thelabnyc/wagtail-draftail-plugins/-/blob/master/README.rst
-  repository: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-draftail-plugins
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-draftail-plugins
+  cfe-purls:
+    - pkg:conda/wagtail-draftail-plugins@${{ version }}
+    - pkg:pypi/wagtail-draftail-plugins@${{ version }}
+  cfe-upstream-repo: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
+  cfe-upstream-homepage: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
+  cfe-import-names: [wagtail_draftail_plugins]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-draftail-plugins-feedstock
+  cfe-forge-recipe-updates-needed:
+    - recipe-regenerate
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # v1 feedstock refresh 0.3.0 -> 0.4.0. The deployed feedstock is already
+#    # at 0.4.0 but carries two stale fields a bot bump missed:
+#    #   - about.license: MIT  (upstream RELICENSED to ISC at 0.4.0 — pyproject
+#    #     [tool.poetry].license="ISC" AND the LICENSE file text are both ISC)
+#    #   - run: wagtail >=5.2  (upstream requires_dist is wagtail>=6.3)
+#    # This recipe ships the CORRECT ISC license and the >=6.3 pin.
+# context:
+#    # python_min 3.11 — upstream requires-python is ^3.11 (>=3.11,<4.0). On a
+#    # v1 feedstock, context.python_min is NOT propagated to .ci_support on
+#    # rerender (G31): the deployed feedstock's .ci_support/linux_64_.yaml still
+#    # carries python_min '3.9'. The feedstock owes a recipe-local
+#    # conda_build_config.yaml (python_min: ["3.11"]) — shipped here next to
+#    # recipe.yaml — so a rerender writes 3.11 into .ci_support. Hence
+#    # cfe-forge-recipe-updates-needed: recipe-regenerate + dependency-fix.
+#  host:
+#    # build backend switched setuptools+versiontag -> poetry-core (0.4.0
+#    # pyproject [build-system] requires poetry-core>=2.1.2). G8: poetry-core +
+#    # pip only; no redundant wheel/setuptools.
+####

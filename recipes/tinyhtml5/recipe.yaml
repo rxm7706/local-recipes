@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: tinyhtml5
-  version: "2.0.0"
+  version: "2.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: tinyhtml5
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tinyhtml5-${{ version }}.tar.gz
-  sha256: 086f998833da24c300c414d9fe81d9b368fd04cb9d2596a008421cbc705fcfcc
+  url: https://pypi.org/packages/source/t/tinyhtml5/tinyhtml5-${{ version }}.tar.gz
+  sha256: 60a50ec3d938a37e491efa01af895853060943dcebb5627de5b10d188b338a67
 
 build:
   number: 0
@@ -24,7 +23,7 @@ requirements:
     - flit-core >=3.2,<4
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - webencodings >=0.5.1
 
 tests:
@@ -32,23 +31,48 @@ tests:
       imports:
         - tinyhtml5
       pip_check: true
-      python_version: ${{ python_min }}.*
-#  - requirements:
-#      run:
-#        - python ${{ python_min }}.*
-#    script:
-#      - pip check
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: HTML parser based on the WHATWG HTML specification
-  homepage: https://pypi.org/project/tinyhtml5/
-  description: |
-       tinyhtml5 is a HTML5 parser that transforms a possibly malformed HTML document into an ElementTree tree.
-  repository: https://github.com/CourtBouillon/tinyhtml5
-  documentation: https://doc.courtbouillon.org/tinyhtml5/stable/
   license: MIT
   license_file: LICENSE
+  summary: HTML parser based on the WHATWG HTML specification
+  homepage: https://github.com/CourtBouillon/tinyhtml5
+  repository: https://github.com/CourtBouillon/tinyhtml5
+  documentation: https://doc.courtbouillon.org/tinyhtml5/stable/
+  description: |
+    tinyhtml5 is a HTML5 parser that transforms a possibly malformed HTML
+    document into an ElementTree tree.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tinyhtml5
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tinyhtml5
+  cfe-purls:
+    - pkg:conda/tinyhtml5@${{ version }}
+    - pkg:pypi/tinyhtml5@${{ version }}
+  cfe-upstream-repo: https://github.com/CourtBouillon/tinyhtml5
+  cfe-upstream-homepage: https://github.com/CourtBouillon/tinyhtml5
+  cfe-import-names: [tinyhtml5]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tinyhtml5-feedstock
+  cfe-forge-recipe-updates-needed: recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

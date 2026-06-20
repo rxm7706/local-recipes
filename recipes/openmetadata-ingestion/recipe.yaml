@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: openmetadata-ingestion
-  version: "1.11.5.0"
+  version: "1.11.6.1"
 
 package:
-  name: ${{ name|lower }}
+  name: openmetadata-ingestion
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openmetadata_ingestion-${{ version }}.tar.gz
-  sha256: 58d3d0bd0a6894ed0277a4cff121eb9f87adaf3629859c839fbb7f71b9e868a0
+  url: https://pypi.org/packages/source/o/openmetadata-ingestion/openmetadata_ingestion-${{ version }}.tar.gz
+  sha256: cd3e8caf084c95cd0fb08800491cb202fde864483f40e0e528815acbfc77d04a
 
 build:
   number: 0
@@ -78,7 +77,9 @@ tests:
         - airflow_provider_openmetadata
         - metadata
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -89,11 +90,50 @@ tests:
 
 about:
   homepage: https://open-metadata.org/
-  summary: Ingestion Framework for OpenMetadata
   license: CC0-1.0
   license_file: LICENSE
+  summary: Ingestion Framework for OpenMetadata
   repository: https://github.com/open-metadata/OpenMetadata
+  documentation: https://docs.open-metadata.org/
+  description: |
+    Ingestion Framework for OpenMetadata
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openmetadata-ingestion
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openmetadata-ingestion
+  cfe-purls:
+    - pkg:conda/openmetadata-ingestion@${{ version }}
+    - pkg:pypi/openmetadata-ingestion@${{ version }}
+  cfe-upstream-repo: https://github.com/open-metadata/OpenMetadata
+  cfe-upstream-homepage: https://open-metadata.org/
+  cfe-import-names: [airflow_provider_openmetadata, metadata]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openmetadata-ingestion-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T13:00:21Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T13:00:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# run:
+#    # The run-dep base set is the DEPLOYED v1 feedstock's authoritative set
+#    # (openmetadata-ingestion has a large optional-extras matrix; the feedstock
+#    # decides the base). Local recipe was byte-identical to feedstock at
+#    # 1.11.5.0; refresh to 1.11.6.1 changed only version + sha256.
+# tests:
+#    # python_version modernized to the CFEP-25 dual-version list form.
+####

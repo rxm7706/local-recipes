@@ -2,17 +2,17 @@
 schema_version: 1
 
 context:
-  name: excel-mcp-server
-  version: "0.1.6"
+  version: "0.1.8"
 
 package:
-  name: ${{ name|lower }}
+  name: excel-mcp-server
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/excel_mcp_server-${{ version }}.tar.gz
-  sha256: c0c3a11238822e2b93f07e9fd3cdebd1fd7fec2ab60b34424a788bc597d534b2
-  target_directory: src/
+  url: https://pypi.org/packages/source/e/excel-mcp-server/excel_mcp_server-${{ version }}.tar.gz
+  sha256: 98f6b25957cc105a0d68d9a98a5830204ab3f3f7a79de27a91ae8d1a9291fdcd
+  patches:
+    - patches/fix-package-location.patch
 
 build:
   number: 0
@@ -28,7 +28,7 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - mcp >=1.10.1
     - fastmcp >=2.0.0,<3.0.0
     - openpyxl >=3.1.5
@@ -38,9 +38,11 @@ requirements:
 tests:
   - python:
       imports:
-        - src/excel_mcp.__main__
+        - excel_mcp
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - python ${{ python_min }}.*
@@ -49,12 +51,56 @@ tests:
       - excel-mcp-server --help
 
 about:
-  homepage: https://excelmcpserver.com
-  repository: https://github.com/haris-musa/excel-mcp-server
-  summary: Excel MCP Server for manipulating Excel files
   license: MIT
   license_file: LICENSE
+  summary: Excel MCP Server for manipulating Excel files
+  homepage: https://excelmcpserver.com
+  repository: https://github.com/haris-musa/excel-mcp-server
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: excel-mcp-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: excel-mcp-server
+  cfe-purls:
+    - pkg:conda/excel-mcp-server@${{ version }}
+    - pkg:pypi/excel-mcp-server@${{ version }}
+  cfe-upstream-repo: https://github.com/haris-musa/excel-mcp-server
+  cfe-upstream-homepage: https://excelmcpserver.com
+  cfe-import-names: [excel_mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/excel-mcp-server-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# source:
+#    # sdist pyproject.toml declares packages = ["src/excel_mcp"] but the sdist
+#    # unpacks excel_mcp/ at the root; patches/fix-package-location.patch
+#    # rewrites it to ["excel_mcp"] so hatchling finds the package. Matches
+#    # the deployed feedstock's patch.
+# requirements:
+#  run:
+#    # mcp[cli] extra (G25) flattens to mcp + python-dotenv>=1.0.0 + typer;
+#    # grayskull emits the bare deps so python-dotenv is added by hand.
+#    # fastmcp <3.0.0 upper bound is upstream-declared (load-bearing under
+#    # pip_check: true).
+# tests:
+#  imports:
+#    # import name is excel_mcp (G7) — NOT excel_mcp_server (grayskull guess)
+#    # and NOT the old src/excel_mcp.__main__ hack.
+####
