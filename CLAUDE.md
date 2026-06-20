@@ -57,6 +57,18 @@ Layers 5 and 6 only load when an active project resolves. To set the active proj
 
 **Adding a new project:** see `_bmad-output/PROJECTS.md` § "Adding a new project."
 
+### Spec-driven, framework-neutral layout (the three tiers)
+
+This repo is spec-driven and tool-agnostic — the spec is the contract; the agent/framework is interchangeable. **`AGENTS.md`** (repo root) is the cross-tool entry point (thin per-tool pointers: `CLAUDE.md`, `.cursor/rules/specs.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`). Three tiers, never crossed:
+
+| Tier | Location | Purpose | Git |
+|---|---|---|---|
+| **1 — Intake spec** | `docs/specs/*.md` | The "what to build" contract every tool/framework reads (the `bmad-quick-dev` entry point) | tracked, permanent |
+| **2 — Planning** | `_bmad-output/projects/<slug>/planning-artifacts/` | PRD, architecture/API specs, epics+stories list, gate reports | tracked, permanent |
+| **3 — Execution output** | `_bmad-output/projects/<slug>/implementation-artifacts/` | story files, sprint YAMLs, test outputs, retros, derived per-effort specs | **gitignored / local-only** |
+
+Rules: an **intake spec belongs in Tier 1 (`docs/specs/`)** — never a Tier-3 output dir; `implementation-artifacts/` is gitignored, so **nothing there may be git-tracked**. `bmad-drift-check` enforces both (HARD `tracked-impl-artifact` finding).
+
 ### Keeping BMAD artifacts in sync with the live repo (always-on)
 
 The `_bmad-output/projects/local-recipes/` artifacts (PRD, architecture set, epics, project-context, overview, specs) hard-code volatile facts about the factory (skill version, cf_atlas schema, MCP tool / atlas-phase / pixi-env counts, gotcha range) and drift behind the fast-moving `conda-forge-expert` skill. A **two-layer sync loop** keeps them accurate and able to catch up after *any* out-of-band change (BMAD or not):
