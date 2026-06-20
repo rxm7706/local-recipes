@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.2"
+  # Upstream publishes no releases/tags (private SPA) — pin to a main commit.
+  commit: f2a6d30b8836a79083ab8776b5b5d91fb7b949fc
+
+package:
+  name: cyclonedx-bom-studio
+  version: ${{ version }}
+
+source:
+  url: https://github.com/CycloneDX/cyclonedx-bom-studio/archive/${{ commit }}.tar.gz
+  sha256: 505eb2f419e9de1b72d7e610c10935688a9be9b8a60db319c937b740fa8a3f7c
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    file: build.sh
+
+requirements:
+  build:
+    - nodejs >=20
+  run:
+    - python >=3.7
+
+tests:
+  - script:
+      - test -f "${PREFIX}/share/cyclonedx-bom-studio/index.html"
+      - test -x "${PREFIX}/bin/cyclonedx-bom-studio"
+  - package_contents:
+      files:
+        - share/cyclonedx-bom-studio/index.html
+        - bin/cyclonedx-bom-studio
+
+about:
+  homepage: https://cyclonedx.studio/
+  repository: https://github.com/CycloneDX/cyclonedx-bom-studio
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: CycloneDX BOM Studio — browser-based visual editor for CycloneDX BOMs
+  description: |
+    CycloneDX BOM Studio is a Vue 3 single-page web application for creating,
+    editing, validating, and exporting CycloneDX Bills of Materials (BOMs).
+    This package builds the static site with Vite and ships a launcher
+    (`cyclonedx-bom-studio`) that serves the bundled SPA on a local port.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cyclonedx-bom-studio
+  cfe-upstream-registry: github
+  cfe-upstream-name: CycloneDX/cyclonedx-bom-studio
+  cfe-purls:
+    - pkg:conda/cyclonedx-bom-studio@${{ version }}
+    - pkg:github/cyclonedx/cyclonedx-bom-studio@${{ commit }}
+  cfe-upstream-repo: https://github.com/CycloneDX/cyclonedx-bom-studio
+  cfe-upstream-homepage: https://cyclonedx.studio/
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "upstream-not-submittable: package.json declares \"private\": true; upstream publishes NO GitHub releases/tags and is NOT on the npm registry; it is a browser SPA served at cyclonedx.studio / via Docker. Not a conda-forge candidate. Built local-only at the user's request, pinned to main HEAD commit f2a6d30b (2026-05-18). Revisit only if upstream cuts releases + publishes to npm AND a real local-use case exists."
+  cfe-last-checked: 2026-06-20T11:05:00Z
+  cfe-generated-by-version: 8.38.0
+  cfe-generated-at-datetime: 2026-06-20T11:05:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T11:52:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # LOCAL-ONLY build of a private, unreleased Vue 3 + Vite browser SPA.
+#    # NOT conda-forge-submittable (private, no release/tag, not on npm); the
+#    # source is pinned to a main-branch commit because no tag exists.
+# source:
+#    # GitHub archive of commit f2a6d30b (package.json version 0.9.2). On any
+#    # "update", bump BOTH context.commit AND the sha256 together — there is no
+#    # tag to autotick, and context.version tracks package.json's version field.
+# build:
+#    # noarch:generic: the built static site + launcher are arch-independent.
+#    # The build runs `npm ci` + `npx vite build` (NETWORK during build — fine
+#    # for a local build; conda-forge CI forbids it, another reason this is
+#    # local-only). vue-tsc type-check is intentionally skipped (dev-only; does
+#    # not change dist/). BASE_URL=./ makes asset paths relative so the site
+#    # serves from any directory.
+# requirements:
+#    # build: nodejs (Node 20+) for Vite. run: python for the http.server
+#    # launcher. The unix launcher script is bash; Windows is NOT covered
+#    # (acceptable for a local-only linux/mac package).
+# tests:
+#    # Confirms the bundled index.html and the bin/ launcher are present +
+#    # executable. The SPA itself can't be exercised headless in the test env.
+####
