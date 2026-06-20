@@ -2441,6 +2441,46 @@ Key points: **no `compiler()` / `stdlib()`** (nothing is compiled from source �
 
 **Case study**: cyclonedx-cli 0.32.0 (Jun 20, 2026) — `CycloneDX/cyclonedx-cli`, an Apache-2.0 **.NET 8** SBOM CLI. `dotnet-sdk` + `dotnet-runtime` both absent from conda-forge → no source path. Repackaged the 5 self-contained release binaries (linux-x64/arm64, osx-x64/arm64, win-x64) as a per-platform recipe with **zero run-deps**; dropped the upstream musl / linux-arm / win-x86 / win-arm64 assets (no cf subdir). linux-64 leg built GREEN and the packaged binary ran `cyclonedx --version` → `0.32.0` (exit 0); the other 4 legs were sha256-verified but not executed locally (cross-platform on a linux-64 host). Kept **local-only** (`cfe-on-conda-forge-status: pending-submission-to-conda-forge`) pending the binary-repackage submission decision.
 
+### G45. A browser SPA (Vue/React/Svelte + Vite) is usually NOT conda-forge-submittable — run the viability gate first, then build local-only as a static-site + launcher
+
+**Symptom**: asked to "package <web app> for conda-forge". The repo is a front-end single-page application — Vite/webpack + Vue/React/Svelte — that runs in a browser. None of the generators apply, and unlike a CLI/library there is nothing to `import` or run from a conda env. Forcing it onto staged-recipes is the wrong move; reviewers will (correctly) reject it.
+
+**Why**: conda-forge packages **locally-runnable** CLIs, libraries, and apps built from a **published, versioned, downloadable** source. A browser SPA frequently fails several of those bars at once, and the failures are upstream facts you can't fix:
+
+- **`"private": true`** in `package.json` — upstream explicitly forbids npm publication.
+- **Not on the npm registry** (and no PyPI dist) — so the canonical npm recipe pattern (`npm pack` from the registry) has nothing to pull.
+- **No GitHub releases/tags** — only a moving `main`; nothing stable to pin (conda-forge discourages commit-pinned sources for new submissions).
+- **No `bin`** — it's a web SPA served by a web server, not a command. The right distribution is exactly what such projects already offer: a **hosted site** and/or a **Docker image**.
+
+**Viability gate — run this BEFORE writing any recipe** (cheap, decisive):
+
+```bash
+PKG=$(curl -s "https://raw.githubusercontent.com/<org>/<repo>/main/package.json")
+echo "$PKG" | python3 -c "import sys,json; d=json.load(sys.stdin); print('name',d.get('name'),'private',d.get('private'),'bin',d.get('bin'))"
+NM=$(echo "$PKG" | python3 -c "import sys,json;print(json.load(sys.stdin).get('name',''))")
+curl -s "https://registry.npmjs.org/${NM}" | python3 -c "import sys,json;d=json.load(sys.stdin);print('npm:', d.get('error','PUBLISHED'))"
+curl -s "https://api.github.com/repos/<org>/<repo>/releases" | python3 -c "import sys,json;print('releases:',[r['tag_name'] for r in json.load(sys.stdin)])"
+curl -s "https://api.github.com/repos/<org>/<repo>/tags"     | python3 -c "import sys,json;print('tags:',[t['name'] for t in json.load(sys.stdin)])"
+```
+
+If it's `private` / unpublished / untagged → **not conda-forge-submittable**. Tell the user, recommend the hosted site or Docker, and only build **local-only** if they still want it installable in their own channel.
+
+**Local-only build pattern** (when the user opts in despite the above): build the static site and ship it + a launcher as a `noarch: generic` package.
+
+- **`source`** — GitHub archive pinned to a `main` commit (no tag exists); `context.version` tracks `package.json`'s `version`, `context.commit` the SHA. On any "update", bump **both** together (no autotick path).
+- **`build: noarch: generic`** + `script: { file: build.sh }`; **build dep `nodejs >=20`**.
+- **build.sh**: `export BASE_URL=./` (relative asset paths so the site serves from any directory — most Vite configs read base from an env var), `npm ci` (lockfile present), then **`npx vite build`** — skip the upstream `vue-tsc -b` / `tsc` type-check step (dev-only; it doesn't change `dist/` and can break on a `main`-HEAD checkout). Copy `dist/.` to `$PREFIX/share/<name>/`, write a `$PREFIX/bin/<name>` launcher that serves it: `exec python -m http.server "${PORT}" --directory "$PREFIX/share/<name>"`. **run dep `python`** for the launcher.
+- **`license_file: LICENSE`** resolves from the extracted GitHub archive (pattern 1).
+- **`tests`**: `test -f .../index.html` + `test -x bin/<name>` + a `package_contents.files` check (the SPA itself can't be exercised headless).
+- **cfe fields**: `cfe-source-kind: github-commit`, `cfe-noarch: generic`, `cfe-on-conda-forge-status: blocked-pending-prerequisites`, and a `cfe-forge-blocker-list` entry naming the upstream blockers (private / unreleased / not-on-npm / SPA).
+
+**Caveats**:
+- **The build runs `npm ci` (NETWORK).** Fine for a local build; conda-forge CI forbids it — another reason this is local-only, not submittable.
+- The unix launcher is bash → **Windows not covered**; acceptable for a local-only linux/mac package. Verify the produced `index.html` references **relative** `./assets/...` paths (proves `BASE_URL=./` took effect) so the static server resolves them.
+- Distinguish from **G6** (an npm *CLI* with a real `bin`, published to the registry — that uses the canonical `npm pack` pattern and can go to conda-forge). G45 is specifically the *private/unreleased browser-SPA* case with no CLI surface.
+
+**Case study**: cyclonedx-bom-studio 0.9.2 (Jun 20, 2026) — `CycloneDX/cyclonedx-bom-studio`, an Apache-2.0 Vue 3 + Vite SBOM editor. `package.json` is `"private": true`, **not on npm**, **no releases/tags**, **no `bin`** — confirmed not submittable. Built **local-only**: pinned to `main` commit `f2a6d30b`, `npm ci` + `npx vite build` (`BASE_URL=./`) into a `noarch:generic` package shipping the 56-file static site under `share/cyclonedx-bom-studio/` + a `cyclonedx-bom-studio` launcher (`python -m http.server`). Built GREEN on linux-64; verified the packaged `index.html` used relative `./assets/` refs. `cfe-on-conda-forge-status: blocked-pending-prerequisites` with the upstream blockers recorded. Same session also mirrored + locally built the two *submittable* siblings already on conda-forge — `cyclonedx-python-lib` (multi-output) and `cyclonedx-bom` (PyPI `cyclonedx-bom`) — the contrast is the point: the Python lib/CLI belong on conda-forge; the browser SPA does not.
+
 ---
 
 ## Skill Automation
