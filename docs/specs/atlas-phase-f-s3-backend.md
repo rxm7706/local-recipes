@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "v7.6.0 + v8.17.0 (Wave 1; Waves 2-3 split to wave2/wave3 specs)"
+spec_updated: 2026-06-20
+---
 # Tech Spec: Atlas Phase F — S3 / condastats backend + Phase F+ metrics
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —

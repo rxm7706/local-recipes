@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "v8.19.0"
+spec_updated: 2026-06-20
+---
 # Tech Spec: Atlas Phase F+ Wave 3 — `platform_breakdown` / `pyver_breakdown` / `channel_split` CLIs + MCP
 
 > **BMAD intake document.** Focused execution scope for `bmad-quick-dev`

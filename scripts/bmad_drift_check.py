@@ -276,6 +276,15 @@ def _spec_status(text: str) -> str | None:
     return m.group(1).strip() if m else None
 
 
+def frontmatter_status(path: Path) -> str | None:
+    """The neutral `status:` from a spec's YAML frontmatter (framework-agnostic source of truth)."""
+    text = _read(path)
+    parts = text.split("---", 2)
+    fm = parts[1] if len(parts) >= 3 and text.lstrip().startswith("---") else text[:600]
+    m = re.search(r"^\s*status\s*:\s*([A-Za-z-]+)", fm, re.M)
+    return m.group(1).lower() if m else None
+
+
 def _slug(name: str) -> str:
     s = re.sub(r"\.md$", "", name)
     s = re.sub(r"^(spec|retro)-", "", s)
@@ -477,13 +486,25 @@ def check_tier_alignment() -> list[Finding]:
     return out
 
 
+def check_spec_indexed() -> list[Finding]:
+    """Every Tier-1 intake spec must be referenced in CLAUDE.md's Project Documentation Reference,
+    so the human/agent index stays complete as specs are added."""
+    if not DOCS_SPECS.is_dir():
+        return []
+    claude = _read(REPO_ROOT / "CLAUDE.md")
+    return [Finding(DRIFT, "spec-unindexed", f"docs/specs/{p.name}",
+                    "not referenced in CLAUDE.md Project Documentation Reference")
+            for p in sorted(DOCS_SPECS.glob("*.md")) if p.name not in claude]
+
+
 def run_checks() -> tuple[list[Finding], dict, dict[str, int]]:
     gt = ground_truth()
     live = _parse_ver(gt["skill_version"])
     cov_findings, coverage = check_coverage()
     findings = (check_pins(live) + check_archive_hygiene() + check_spec_status()
                 + check_deferred_work(live) + check_counts(gt) + check_stale_rules()
-                + check_phase_lists() + check_baseline() + check_tier_alignment() + cov_findings)
+                + check_phase_lists() + check_baseline() + check_tier_alignment()
+                + check_spec_indexed() + cov_findings)
     return findings, gt, coverage
 
 
@@ -514,6 +535,26 @@ def do_fix() -> list[str]:
 # --------------------------------------------------------------------- output
 def cmd_json() -> int:
     print(json.dumps(ground_truth(), indent=2))
+    return 0
+
+
+def cmd_specs() -> int:
+    """Report each Tier-1 intake spec's neutral status + whether it's indexed in CLAUDE.md."""
+    if not DOCS_SPECS.is_dir():
+        print(f"no docs/specs/ at {DOCS_SPECS}", file=sys.stderr)
+        return 0
+    claude = _read(REPO_ROOT / "CLAUDE.md")
+    specs = sorted(DOCS_SPECS.glob("*.md"))
+    w = max((len(p.name) for p in specs), default=4)
+    print(f"docs/specs intake specs ({len(specs)}) — status is the framework-neutral source of truth\n")
+    print(f"  {'SPEC'.ljust(w)}  {'STATUS':<12} INDEXED")
+    print(f"  {'-' * w}  {'-' * 12} -------")
+    by_status: dict[str, int] = {}
+    for p in specs:
+        st = frontmatter_status(p) or "(none)"
+        by_status[st] = by_status.get(st, 0) + 1
+        print(f"  {p.name.ljust(w)}  {st:<12} {'yes' if p.name in claude else 'NO'}")
+    print("\n  totals: " + "  ".join(f"{k}={v}" for k, v in sorted(by_status.items())))
     return 0
 
 
@@ -577,6 +618,8 @@ def main(argv: list[str] | None = None) -> int:
                    help="print live ground-truth facts as JSON")
     g.add_argument("--integrity-only", action="store_true",
                    help="fail only on HARD findings (for the meta-test)")
+    g.add_argument("--specs", action="store_true",
+                   help="report each docs/specs intake spec's status + CLAUDE.md index state")
     ap.add_argument("--fix", action="store_true",
                     help="apply safe mechanical remediations (archive moves, stray-file removal)")
     ap.add_argument("--write-baseline", action="store_true",
@@ -587,6 +630,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.json:
         return cmd_json()
+    if args.specs:
+        return cmd_specs()
     if args.write_baseline:
         BASELINE.write_text(json.dumps(fingerprint(), indent=2) + "\n", encoding="utf-8")
         fp = fingerprint()

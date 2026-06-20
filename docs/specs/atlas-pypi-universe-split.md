@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "v7.9.0"
+spec_updated: 2026-06-20
+---
 # Tech Spec: Atlas Actionable-Scope Audit — Phase D / H / J / M
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —

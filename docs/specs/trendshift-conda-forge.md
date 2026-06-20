@@ -1,3 +1,7 @@
+---
+status: ready
+spec_updated: 2026-06-20
+---
 # Tech Spec: Trendshift — Top GitHub-Trending Python Repos → conda-forge
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track).

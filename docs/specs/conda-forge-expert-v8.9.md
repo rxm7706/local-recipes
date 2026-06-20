@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "v8.9.0"
+spec_updated: 2026-06-20
+---
 # conda-forge-expert v8.9.0 — maturin/PyO3 generator path + template hardening
 
 **Status:** intake-ready (not yet implemented).

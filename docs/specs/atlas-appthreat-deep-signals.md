@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "conda-forge-expert v8.6.0"
+spec_updated: 2026-06-20
+---
 # Tech Spec: AppThreat Deep Signals — blint hardening + EPSS + CWE rollup + withdrawn filter
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —

@@ -1,3 +1,9 @@
+---
+status: in-progress
+implemented_by: bmad-quick-dev
+shipped_ref: "Wave B done; Wave C paused 18/184"
+spec_updated: 2026-06-20
+---
 # Tech Spec: Sole-Maintainer Feedstock Refresh (bulk local-recipe ↔ feedstock version sync)
 
 > **BMAD intake document.** Parameterized, BMAD-consumable. Written for

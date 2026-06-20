@@ -1,3 +1,9 @@
+---
+status: shipped
+implemented_by: bmad-quick-dev
+shipped_ref: "v8.0.0"
+spec_updated: 2026-06-20
+---
 # Tech Spec: conda-forge-expert v8.0.0 — Structural Enforcement + Persona Profiles
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —
