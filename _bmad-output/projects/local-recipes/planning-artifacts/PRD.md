@@ -6,7 +6,7 @@ version: '1.6.0'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
-source_pin: 'conda-forge-expert v8.39.0'
+source_pin: 'conda-forge-expert v8.40.0'
 re_validated: 2026-06-20
 input_docs:
   - planning-artifacts/index.md
