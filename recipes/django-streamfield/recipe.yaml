@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.4.0"
+
+package:
+  name: django-streamfield
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-streamfield/django_streamfield-${{ version }}.tar.gz
+  sha256: f561b7048055d748b3697fdc15721ba0dbdc9b7b437f884cc8e4ed11bcbffba7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - streamfield
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: StreamField for native Django Admin or with Grappelli
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/raagin/django-streamfield
+  repository: https://github.com/raagin/django-streamfield
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-streamfield
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-streamfield
+  cfe-purls:
+    - pkg:conda/django-streamfield@${{ version }}
+    - pkg:pypi/django-streamfield@${{ version }}
+  cfe-upstream-repo: https://github.com/raagin/django-streamfield
+  cfe-upstream-homepage: https://github.com/raagin/django-streamfield
+  cfe-import-names: [streamfield]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-streamfield-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 2.4.0; authored modern recipe.yaml
+#    # and deleted stale local meta.yaml (was 2.1.2). Modernized the deployed
+#    # feedstock's older grayskull shape: literal package.name + literal
+#    # pypi.org source.url (dropped the context.name / name-replace chain).
+# context:
+#    # python_min omitted — upstream setup.py declares python_requires >=3.10,
+#    # the conda-forge default floor; let conda-forge-pinning supply it.
+# requirements:
+#  host:
+#    # setuptools kept in host — setuptools project (setup.py, no
+#    # pyproject.toml); matches deployed feedstock host block.
+#  run:
+#    # dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared); broad >=python_min floor is correct. django >=4.2
+#    # mirrors the upstream Django 4.2/5.0/5.1/5.2 classifiers. setuptools kept
+#    # in run to match the deployed feedstock (pkg_resources-style runtime use).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. The streamfield top-level __init__.py is
+#    # trivial (name/VERSION only, no Django import), so import streamfield does
+#    # not raise ImproperlyConfigured/AppRegistryNotReady — the standard
+#    # python.imports test holds (no package_contents escape hatch needed).
+####

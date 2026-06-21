@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.39.2"
+
+package:
+  name: djlint
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/djlint/djlint-${{ version }}.tar.gz
+  sha256: dd27ef03bd26d1e0a167da26ec2a6fcb511dddd032b2553abf71a5c31eaa8b34
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - djlint = djlint:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0.1
+    - colorama >=0.4.4
+    - cssbeautifier >=1.14.4
+    - jsbeautifier >=1.14.4
+    - json5 >=0.9.11
+    - pathspec >=0.12
+    - pyyaml >=6
+    - regex >=2023
+    - tomli >=2.0.1
+    - tqdm >=4.62.2
+    - typing_extensions >=3.7.4
+
+tests:
+  - python:
+      imports:
+        - djlint
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - djlint --help
+
+about:
+  summary: HTML Template Linter and Formatter
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  homepage: https://github.com/djlint/djLint
+  repository: https://github.com/djlint/djLint
+  documentation: https://djlint.com
+  description: |
+    djLint is an HTML template linter and formatter. It supports a range of
+    template languages (Django, Jinja, Nunjucks, Handlebars, GoLang, Angular)
+    and can lint for common formatting issues and reformat templates in place.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djlint
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djlint
+  cfe-purls:
+    - pkg:conda/djlint@${{ version }}
+    - pkg:pypi/djlint@${{ version }}
+  cfe-upstream-repo: https://github.com/djlint/djLint
+  cfe-upstream-homepage: https://github.com/djlint/djLint
+  cfe-import-names: [djlint]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djlint-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml.
+#    # meta.yaml refreshed to faithfully mirror the deployed v0 feedstock at
+#    # 1.39.2; recipe.yaml authored alongside as the proposed v1 migration.
+#    # Delete meta.yaml only after the feedstock completes its v0 to v1 switch.
+# requirements:
+#  host:
+#    # hatchling-only build-system (pyproject [build-system].requires =
+#    # ["hatchling"]); no setuptools/wheel needed.
+#  run:
+#    # Reconciled against the 1.39.2 sdist [project.dependencies]: upstream
+#    # DROPPED html-tag-names and html-void-elements (still present in the
+#    # deployed meta.yaml; kept there for mirror fidelity, dropped here to
+#    # match the actual 1.39.2 deps). tomli and typing_extensions carry
+#    # python_version < 3.11 markers upstream; listed unconditionally here
+#    # (matches the deployed feedstock and the migration-discipline single-
+#    # transitive-dep convention). Floors mirror upstream; no speculative
+#    # upper pins added.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] plus a djlint --help script test
+#    # covering the entry point. requires-python is >=3.10 (default floor), so
+#    # python_min is omitted from context.
+####

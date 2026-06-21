@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.0"
+
+package:
+  name: djangorestframework-dataclasses
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/djangorestframework-dataclasses/djangorestframework_dataclasses-${{ version }}.tar.gz
+  sha256: fffa19b6f650b2c4c346b3cadf42dd9aa5a265a34f0827608953910d01919039
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=2.0
+    - djangorestframework >=3.9
+
+tests:
+  - python:
+      imports:
+        - rest_framework_dataclasses
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A dataclasses serializer for Django REST Framework
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/oxan/djangorestframework-dataclasses
+  repository: https://github.com/oxan/djangorestframework-dataclasses
+  documentation: https://github.com/oxan/djangorestframework-dataclasses/blob/master/README.rst
+  description: |
+    A dataclasses serializer for the Django REST Framework. Maps Python
+    dataclasses to DRF serializer fields, generating serializers from
+    dataclass type annotations.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangorestframework-dataclasses
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangorestframework-dataclasses
+  cfe-purls:
+    - pkg:conda/djangorestframework-dataclasses@${{ version }}
+    - pkg:pypi/djangorestframework-dataclasses@${{ version }}
+  cfe-upstream-repo: https://github.com/oxan/djangorestframework-dataclasses
+  cfe-upstream-homepage: https://github.com/oxan/djangorestframework-dataclasses
+  cfe-import-names: [rest_framework_dataclasses]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangorestframework-dataclasses-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock is still v0/meta.yaml at 1.4.0.
+#    # Refreshed local meta.yaml to faithfully mirror the deployed v0 feedstock
+#    # (1.3.0 -> 1.4.0); authored this v1 recipe.yaml at 1.4.0 alongside. Both
+#    # coexist until the feedstock completes its v0->v1 switch. The feedstock
+#    # owes the migration -> cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml.
+# source:
+#    # sdist filename uses underscores (djangorestframework_dataclasses-);
+#    # distribution name in the path segment stays hyphenated.
+# requirements:
+#  host:
+#    # setuptools >=61 + wheel are upstream-declared in [build-system].requires
+#    # (build-backend = setuptools.build_meta); mirrors the deployed feedstock host.
+#  run:
+#    # G7: import name is rest_framework_dataclasses, NOT the distribution name
+#    # (verified against sdist top_level.txt + empty __init__.py).
+#    # Dropped the feedstock's unconditional typing-extensions >=3.7.4 run dep:
+#    # upstream gates it behind python_version < "3.8" (PEP 508 marker), so it is
+#    # never needed at the conda-forge >=3.10 floor.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. The package __init__.py is empty,
+#    # so the bare import rest_framework_dataclasses is a no-op and does NOT pull
+#    # the Django chain (which lives in .serializers). The standard python.imports
+#    # test holds standalone -- no DJANGO_SETTINGS_MODULE / package_contents escape
+#    # hatch needed. (The v0 feedstock test imports .serializers, which is why it
+#    # needs settings.configure(); the bare-package import test sidesteps that.)
+####

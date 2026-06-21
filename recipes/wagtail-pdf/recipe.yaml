@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: wagtail-pdf
+  version: ${{ version }}
+
+source:
+  url: https://github.com/donhauser/wagtail-pdf/archive/${{ version }}.tar.gz
+  sha256: 54ad1d87ae6795e4572bb7b98cc072f07aa26517ac94e99f09a740733e61d760
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail
+    - django-weasyprint
+
+tests:
+  - python:
+      imports:
+        - wagtail_pdf_view
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: PDF rendering views for the Wagtail CMS
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/donhauser/wagtail-pdf
+  repository: https://github.com/donhauser/wagtail-pdf
+  description: |
+    PDF rendering views for the Wagtail CMS. Provides view mixins to render
+    Wagtail pages and Django views as PDF documents via WeasyPrint
+    (django-weasyprint), with optional LaTeX rendering via django-tex.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-pdf
+  cfe-upstream-registry: github
+  cfe-upstream-name: donhauser/wagtail-pdf
+  cfe-purls:
+    - pkg:conda/wagtail-pdf@${{ version }}
+    - pkg:github/donhauser/wagtail-pdf@${{ version }}
+    - pkg:pypi/wagtail-pdf-view@${{ version }}
+  cfe-upstream-repo: https://github.com/donhauser/wagtail-pdf
+  cfe-upstream-homepage: https://github.com/donhauser/wagtail-pdf
+  cfe-import-names: [wagtail_pdf_view]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-pdf-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering verify: flagged because PyPI dist name is
+#    # wagtail-pdf-view while the conda package + GitHub repo are named
+#    # wagtail-pdf. Verified GENUINELY BEHIND: local was 0.2.1, deployed
+#    # feedstock is 2.0.0 (MAJOR bump). Refreshed to 2.0.0.
+# source:
+#    # github-tag source mirrors the deployed feedstock (NOT the PyPI sdist).
+#    # The donhauser/wagtail-pdf archive ships the LICENSE + static/templates
+#    # package_data the PyPI dist (wagtail-pdf-view) also carries; the
+#    # feedstock has always sourced from the GitHub tag. sha256 matches the
+#    # deployed feedstock byte-for-byte.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py-only project (no pyproject.toml);
+#    # matches the deployed feedstock 2.0.0 host block.
+#  run:
+#    # MAJOR 2.0.0 changed the PDF backend deps: install_requires is now
+#    # ["wagtail", "django-weasyprint"] (0.2.1 had only wagtail). django-tex
+#    # is an extras_require ('django-tex') — NOT activated, so omitted (G25).
+#    # Dropped the upstream python_requires >=3.8 floor in favor of the
+#    # conda-forge 3.10 default (python_min omitted from context).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtail_pdf_view/__init__.py is
+#    # empty, so the bare import does not trigger Django app-loading
+#    # (no AppRegistryNotReady / ImproperlyConfigured) — standard python.imports
+#    # holds, no CFEP-25 escape hatch needed.
+####

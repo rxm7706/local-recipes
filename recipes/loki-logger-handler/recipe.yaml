@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.2"
+
+package:
+  name: loki-logger-handler
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/loki-logger-handler/loki_logger_handler-${{ version }}.tar.gz
+  sha256: b3b588903420197ac9bb477f9c8fd6c18edf3e475b94f3d27d2aeed3930eb5d1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - loki_logger_handler
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Handler designed for transmitting logs to Grafana Loki in JSON format.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/xente/loki-logger-handler
+  repository: https://github.com/xente/loki-logger-handler
+  description: |
+    A logging handler that sends Python log records to Grafana Loki in JSON
+    format, with support for structured fields, labels, and asynchronous
+    buffered transmission.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: loki-logger-handler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: loki-logger-handler
+  cfe-purls:
+    - pkg:conda/loki-logger-handler@${{ version }}
+    - pkg:pypi/loki-logger-handler@${{ version }}
+  cfe-upstream-repo: https://github.com/xente/loki-logger-handler
+  cfe-upstream-homepage: https://github.com/xente/loki-logger-handler
+  cfe-import-names: [loki_logger_handler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/loki-logger-handler-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0/meta.yaml at 1.1.2. Kept meta.yaml as the
+#    # faithful deployed-feedstock mirror; authored this v1 recipe.yaml
+#    # alongside it (the proposed migration). Bumped local 1.0.0 to 1.1.2 to
+#    # match the deployed feedstock version. The feedstock owes the
+#    # meta-yaml-to-recipe-yaml migration (recorded in
+#    # cfe-forge-recipe-updates-needed).
+# context:
+#    # python_min omitted from context: PyPI requires-python is >=2.7, well
+#    # below the conda-forge 3.10 floor, so the default floor applies and
+#    # conda-forge-pinning supplies python_min. The deployed feedstock also
+#    # carries no set-python_min line.
+# requirements:
+#  host:
+#    # setuptools kept in host: setup.py + setup.cfg project (no pyproject.toml
+#    # build-system table); matches the deployed feedstock host block.
+#  run:
+#    # No runtime deps: PyPI requires_dist is null for 1.1.2; broad
+#    # python >=python_min floor is the only run requirement, matching the
+#    # deployed feedstock.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the deployed
+#    # feedstock's single-version python_version test. loki_logger_handler
+#    # imports cleanly standalone, so the standard python.imports test holds
+#    # (no package_contents escape hatch needed).
+####

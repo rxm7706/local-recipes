@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/conda-forge/conda-smithy/main/conda_smithy/data/conda-forge.json
+github:
+  branch_name: main
+  tooling_branch_name: main
+conda_install_tool: pixi
+conda_build_tool: rattler-build
+conda_build:
+  error_overlinking: true
+conda_forge_output_validation: true
+provider:
+  linux_aarch64: default
+  osx_arm64: default
+bot:
+  automerge: true
+  check_solvable: true

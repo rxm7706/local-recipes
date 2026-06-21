@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.5"
+
+package:
+  name: wagtail-dynamic-dropdown
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-dynamic-dropdown/wagtail-dynamic-dropdown-${{ version }}.tar.gz
+  sha256: 3d18e405afeefacc9b9b908ad72919c8482a8973ebc6c8243bcdb786888d4c0a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - wagtail_dynamic_dropdown
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A Django application which allow to use dynamically defined choices that will be updated every time the user opens edit/create page. Moreover, the choices are not migrated to the database.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/LilJack118/wagtail-dynamic-dropdown
+  repository: https://github.com/LilJack118/wagtail-dynamic-dropdown
+  description: |
+    A Wagtail/Django application which allows the use of dynamically defined
+    choices that are updated every time the user opens an edit/create page.
+    The choices are not migrated to the database.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-dynamic-dropdown
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-dynamic-dropdown
+  cfe-purls:
+    - pkg:conda/wagtail-dynamic-dropdown@${{ version }}
+    - pkg:pypi/wagtail-dynamic-dropdown@${{ version }}
+  cfe-upstream-repo: https://github.com/LilJack118/wagtail-dynamic-dropdown
+  cfe-upstream-homepage: https://github.com/LilJack118/wagtail-dynamic-dropdown
+  cfe-import-names: [wagtail_dynamic_dropdown]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-dynamic-dropdown-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (meta.yaml live, recipe.yaml 404).
+#    # Local meta.yaml kept as a clean un-annotated mirror at the deployed
+#    # version (0.0.5, build number 1). This recipe.yaml is the proposed v1
+#    # migration. STD-002 (both meta.yaml + recipe.yaml present) is expected.
+# requirements:
+#  host:
+#    # setuptools kept in host — bare setup.py + setup.cfg project (no
+#    # pyproject.toml, packages = find:); matches deployed feedstock host block.
+#  run:
+#    # No run deps declared upstream (setup.cfg has no install_requires; PyPI
+#    # requires_dist is null). Despite being a Wagtail/Django plugin, upstream
+#    # does not declare wagtail/django; mirror upstream — no speculative pins.
+# tests:
+#    # Standard CFEP-25 python.imports triad — no escape hatch needed.
+#    # wagtail_dynamic_dropdown/__init__.py is EMPTY, so a bare import does not
+#    # trigger Django app registration (apps.py AppConfig is only loaded by the
+#    # app registry, not by module import); no ImproperlyConfigured/
+#    # AppRegistryNotReady. python_min omitted from context (requires_python is
+#    # unset upstream → default 3.10 floor).
+####

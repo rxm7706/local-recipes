@@ -1,0 +1,128 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.1"
+
+package:
+  name: pyobjc-framework-systemconfiguration
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyobjc-framework-systemconfiguration/pyobjc_framework_systemconfiguration-${{ version }}.tar.gz
+  sha256: 90fe04aa059876a21626931c71eaff742a27c79798a46347fd053d7008ec496e
+
+build:
+  number: 0
+  skip: not osx
+  script:
+    # force pyobjc to use conda-forge's chosen SDK
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python
+    - pyobjc-core >=${{ version }}
+    - pyobjc-framework-cocoa >=${{ version }}
+
+tests:
+  - python:
+      imports:
+        - PyObjCTools
+        - SystemConfiguration
+      pip_check: true
+
+about:
+  summary: Wrappers for the framework SystemConfiguration on macOS
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  repository: https://github.com/ronaldoussoren/pyobjc
+  documentation: https://pyobjc.readthedocs.io/en/latest/
+  description: |
+    Wrappers for the SystemConfiguration framework on macOS. Part of the
+    PyObjC bridge, this package lets Python code call the Objective-C
+    SystemConfiguration APIs (network reachability, dynamic store, captive
+    network, and related configuration services).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyobjc-framework-systemconfiguration
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyobjc-framework-SystemConfiguration
+  cfe-purls:
+    - pkg:conda/pyobjc-framework-systemconfiguration@${{ version }}
+    - pkg:pypi/pyobjc-framework-systemconfiguration@${{ version }}
+  cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
+  cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc
+  cfe-import-names: [SystemConfiguration, PyObjCTools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-systemconfiguration-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - platform-expansion
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # WAVE-D C1: feedstock still v0 (meta.yaml, build.number 2). Refreshed the
+#    # local meta.yaml mirror to deployed 12.1 (was 9.2) and authored this v1
+#    # recipe.yaml alongside. Both coexist until the feedstock migrates v0 -> v1.
+#    # OSX-ONLY: Objective-C framework binding; CANNOT build on a linux-64 host
+#    # (needs the macOS SDK + SystemConfiguration.framework). Local build was
+#    # not attempted by design — a linux-64 failure here is a host limitation,
+#    # not a recipe defect. Verify on an osx host before feedstock submission.
+# build:
+#  number:
+#    # v1 starts at 0 on the v0 -> v1 migration because it ships with a fresh
+#    # build; the deployed v0 carries build.number 2 (its own bump history).
+#  script:
+#    # CFLAGS -isysroot kept verbatim from the deployed feedstock: pyobjc must
+#    # compile against conda-forge's chosen SDK, not the host SDK. Load-bearing.
+#    # Dropped the v0 py37/py38 -Wno-unused-command-line-argument line (floor is
+#    # 3.10) and the never-needed cross-build comment guards.
+# requirements:
+#  host:
+#    # setuptools + wheel + pip kept: setup.py / pyproject build-system requires
+#    # = ["setuptools", "wheel"] (setuptools.build_meta). Matches feedstock host.
+#  run:
+#    # pyobjc-core >=12.1 + pyobjc-framework-cocoa >=12.1 verified against the
+#    # sdist PKG-INFO Requires-Dist; conda name for Cocoa is lowercase
+#    # pyobjc-framework-cocoa (the parent framework binding).
+# tests:
+#    # Compiled recipe (per-arch, not noarch) so the CFEP-25 [python_min.*, "*"]
+#    # python_version triad does NOT apply. python.imports of both top-level
+#    # modules (SystemConfiguration, PyObjCTools) + pip_check, mirroring the v0
+#    # test block. The C-extension imports cleanly on an osx host.
+# extra:
+#    # platform-expansion in updates-needed: the deployed feedstock builds
+#    # osx-64 ONLY (.ci_support has osx_64_* but no osx_arm64_*). This binding
+#    # runs on Apple Silicon; add osx-arm64 at feedstock submission.
+####

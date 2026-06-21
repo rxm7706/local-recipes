@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.2.1"
+
+package:
+  name: django-registration
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-registration/django_registration-${{ version }}.tar.gz
+  sha256: 06864f9da0bc4d7b073fb2da98d95d12428357ab0bc46e33f79c26707ec06bbe
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2,!=5.0.*
+    - confusable-homoglyphs >=3.0
+
+tests:
+  - python:
+      imports:
+        - django_registration
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: An extensible user-registration application for Django.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/ubernostrum/django-registration
+  repository: https://github.com/ubernostrum/django-registration
+  documentation: https://django-registration.readthedocs.io/
+  description: |
+    An extensible user-registration application for Django, providing
+    workflows for registration and account activation backed by Django's
+    auth system.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-registration
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-registration
+  cfe-purls:
+    - pkg:conda/django-registration@${{ version }}
+    - pkg:pypi/django-registration@${{ version }}
+  cfe-upstream-repo: https://github.com/ubernostrum/django-registration
+  cfe-upstream-homepage: https://github.com/ubernostrum/django-registration
+  cfe-import-names: [django_registration]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-registration-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 5.2.1; authored modern recipe.yaml at
+#    # 5.2.1, deleted stale local meta.yaml (was 5.1.0).
+# package:
+#    # Modernized off the deployed feedstock's context.name + name[0]/name URL
+#    # chain to the v8.10.0 fully-literal package.name + source.url form.
+# requirements:
+#  host:
+#    # pdm.backend build-backend (pyproject) -> pdm-backend + pip only (no
+#    # setuptools/wheel per G8).
+#  run:
+#    # django >=4.2,!=5.0.* mirrors upstream pyproject dependencies verbatim
+#    # (load-bearing under pip_check, G24/G26). Dropped the feedstock's
+#    # speculative python ...<4.0 upper bound: upstream requires-python is
+#    # bare >=3.9 (no upper cap), so the cap is speculative; broad
+#    # >=python_min floor is correct. requires-python >=3.9 clamps to the
+#    # conda-forge 3.10 floor, so python_min stays at the default (omitted
+#    # from context).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. django_registration is a Django app
+#    # whose top-level package import does not configure settings, so the
+#    # standard python.imports test holds standalone -- no AppRegistryNotReady,
+#    # no package_contents escape hatch needed.
+####

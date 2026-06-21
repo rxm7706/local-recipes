@@ -65,6 +65,10 @@ extra:
     - pkg:pypi/ragstack-ai-knowledge-store@${{ version }}
   cfe-upstream-repo: https://github.com/datastax/ragstack-ai
   cfe-upstream-homepage: https://github.com/datastax/ragstack-ai
+  cfe-import-names: [ragstack_knowledge_store]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: blocked-pending-prerequisites
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -73,6 +77,10 @@ extra:
   cfe-last-checked: 2026-06-19T13:36:19Z
   cfe-generated-by-version: 8.33.0
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:01:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:

@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.0"
+
+package:
+  name: wagtail-headless-preview
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-headless-preview/wagtail_headless_preview-${{ version }}.tar.gz
+  sha256: dbabbb614bd1689f048738c46034c557a3ee426e0ef80feb4831bcfc93a24e15
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=7.0
+
+tests:
+  - python:
+      imports:
+        - wagtail_headless_preview
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/torchbox/wagtail-headless-preview
+  repository: https://github.com/torchbox/wagtail-headless-preview
+  summary: Enhance Wagtail previews in headless setups.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-headless-preview
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-headless-preview
+  cfe-purls:
+    - pkg:conda/wagtail-headless-preview@${{ version }}
+    - pkg:pypi/wagtail-headless-preview@${{ version }}
+  cfe-upstream-repo: https://github.com/torchbox/wagtail-headless-preview
+  cfe-upstream-homepage: https://github.com/torchbox/wagtail-headless-preview
+  cfe-import-names: [wagtail_headless_preview]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-headless-preview-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml -> 404). Pulled +
+#    # kept the deployed 0.9.0 meta.yaml as the clean upstream mirror; authored
+#    # this v1 recipe.yaml alongside. updates-needed carries meta-yaml-to-recipe-yaml
+#    # (the feedstock owes the migration). STD-002 (both files present) is expected.
+# context:
+#    # python_min omitted: upstream requires-python is >=3.10, the conda-forge
+#    # default floor; let conda-forge-pinning supply python_min.
+# requirements:
+#  run:
+#    # upstream [project.dependencies] is exactly ["Wagtail>=7.0"] -> run carries
+#    # only wagtail >=7.0. The deployed meta.yaml also lists `django`, but django
+#    # is NOT an upstream-declared dependency (it arrives transitively via wagtail,
+#    # which hard-deps Django). Dropped here per Simplicity First / drop-speculative.
+# tests:
+#    # Standard CFEP-25 triad. wagtail_headless_preview/__init__.py is lightweight
+#    # (only imports a local .deprecation module; no django/apps/models at import
+#    # time), so `import wagtail_headless_preview` succeeds without a configured
+#    # DJANGO_SETTINGS_MODULE -> no package_contents escape hatch needed.
+####

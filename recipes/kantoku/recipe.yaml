@@ -1,0 +1,134 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.18.3"
+
+package:
+  name: kantoku
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kantoku/kantoku-${{ version }}.tar.gz
+  sha256: 751882b2bde074cd8d65f8f9f62606a805b7aa9ea956ba452d13fab0352b5163
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - circusd = circus.circusd:main
+      - circusd-stats = circus.stats:main
+      - circusctl = circus.circusctl:main
+      - circus-top = circus.stats.client:main
+      - circus-plugin = circus.plugins:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.4,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - psutil
+    - pyzmq >=17.0
+    - tornado >=5.0.2
+    - if: unix
+      then:
+        - ncurses
+
+tests:
+  - python:
+      imports:
+        - circus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - if: unix
+        then:
+          - circusd --help
+          - circusd-stats --help
+          - circusctl --help
+          - circus-top --help
+          - circus-plugin --help
+
+about:
+  summary: Circus is a program that will let you run and watch multiple processes and sockets.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://circus.readthedocs.io/en/latest/
+  repository: https://github.com/bentoml/kantoku
+  documentation: https://circus.readthedocs.io
+  description: |
+    Circus is a Python program which can be used to monitor and control
+    processes and sockets. kantoku is the BentoML-maintained distribution of
+    the circus process and socket manager.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kantoku
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kantoku
+  cfe-purls:
+    - pkg:conda/kantoku@${{ version }}
+    - pkg:pypi/kantoku@${{ version }}
+  cfe-upstream-repo: https://github.com/bentoml/kantoku
+  cfe-upstream-homepage: https://circus.readthedocs.io/en/latest/
+  cfe-import-names: [circus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kantoku-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock is STILL v0 (meta.yaml). meta.yaml kept as a faithful
+#    # mirror of the deployed feedstock at 0.18.3; recipe.yaml authored alongside
+#    # as the proposed v1. cfe-forge-recipe-updates-needed carries
+#    # meta-yaml-to-recipe-yaml — the feedstock owes the migration.
+#    # NOTE: kantoku is the BentoML rename/fork of circus; it distributes the
+#    # circus Python package (flit [tool.flit.module] name = 'circus'). G7
+#    # divergence: import name is circus, NOT kantoku.
+# build:
+#  python:
+#    entry_points:
+#      # five circus.* console scripts, mirroring upstream pyproject
+#      # [project.scripts] and the deployed feedstock.
+# requirements:
+#  run:
+#    # ncurses gated to unix: circus.stats.client hard-imports curses at module
+#    # top-level (the circus-top entry point). Windows has no curses stdlib, so
+#    # the feedstock uses __unix/__win virtual packages + ncurses on unix. The
+#    # if: unix run-dep selector + the conda-forge.yml noarch_platforms list
+#    # (G12) keep the conda-smithy noarch-selector lint happy.
+# tests:
+#    # primary CFEP-25 triad imports circus (cross-platform; circus/__init__.py
+#    # does not import curses). The entry-point --help script test is gated to
+#    # unix because circus-top imports curses; on Windows those CLIs cannot run.
+#    # Modernizes the feedstock single-version python_version to [python_min.*, "*"].
+# about:
+#    # dropped the test extra (G25: coverage/flake8/gevent/mock/pytest/pytest-cov/
+#    # pyyaml/tox are not activated). homepage/repository/documentation are the v1
+#    # forms of the feedstock home/dev_url/doc_url.
+####

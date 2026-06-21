@@ -1,0 +1,123 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.0"
+
+package:
+  name: skranger
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/skranger/skranger-${{ version }}.tar.gz
+  sha256: c97530f66a0f30b36d8e65b816932e79bda7ed09f7dd0db0694ba4c042e7724d
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - poetry-core
+    - setuptools
+    - numpy
+    - cython
+  run:
+    - python
+    - scikit-learn >=1.0
+
+tests:
+  - python:
+      imports:
+        - skranger
+      pip_check: true
+
+about:
+  summary: Python bindings for C++ ranger random forests
+  license: GPL-3.0-or-later
+  license_file:
+    - LICENSE.txt
+    - skranger/ranger/COPYING
+  homepage: https://github.com/crflynn/skranger
+  repository: https://github.com/crflynn/skranger
+  documentation: https://github.com/crflynn/skranger
+  description: |
+    Python bindings for C++ ranger random forests. skranger provides
+    scikit-learn compatible estimators (classification, regression,
+    survival, probability) wrapping the ranger C++ random-forest library
+    via a Cython extension.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: skranger
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: skranger
+  cfe-purls:
+    - pkg:conda/skranger@${{ version }}
+    - pkg:pypi/skranger@${{ version }}
+  cfe-upstream-repo: https://github.com/crflynn/skranger
+  cfe-upstream-homepage: https://github.com/crflynn/skranger
+  cfe-import-names: [skranger]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/skranger-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - platform-expansion
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-D C1: feedstock still v0 (meta.yaml, 404 on recipe/recipe.yaml).
+#    # Kept the deployed v0 0.8.0 meta.yaml mirror (faithful, un-annotated)
+#    # and authored this v1 recipe.yaml alongside it. Deployed feedstock
+#    # build.number is 5; this v1 resets to 0 (version-bump-equivalent: the
+#    # v0 mirror still carries 5). meta.yaml-to-recipe-yaml is owed to the
+#    # feedstock.
+# build:
+#    # COMPILED (Cython ranger.pyx -> C++ via -std=c++11, build.py). The local
+#    # 0.7.0 meta.yaml was WRONGLY noarch:python; fixed. compiler('cxx') +
+#    # compiler('c') + stdlib('c') mirror the deployed feedstock build block.
+#    # Dropped the feedstock's v0 `skip: true # [py>=400 or py2k]` guard:
+#    # py2k is irrelevant on the 3.10+ conda-forge matrix and `py>=400` is a
+#    # far-future no-op; the build matrix already bounds the Python range.
+# requirements:
+#  host:
+#    # poetry-core + setuptools + numpy + cython mirror upstream
+#    # [build-system].requires (poetry-core, setuptools, cython,
+#    # oldest-supported-numpy) and the deployed feedstock host block. numpy
+#    # headers (np.get_include()) are needed at build_ext time.
+#  run:
+#    # scikit-learn >=1.0 matches upstream requires_dist exactly. The local
+#    # 0.7.0 recipe had a stale `scikit-learn <1` UPPER CAP — removed; upstream
+#    # 0.8.0 declares only a >=1.0 floor, and the deployed feedstock uses
+#    # `scikit-learn >=1.0`. No upper bound is upstream-declared, so none is
+#    # mirrored (dependency-fix on the stale cap).
+# about:
+#    # DUAL license: LICENSE.txt (skranger GPL-3.0-or-later) + ranger/COPYING
+#    # (bundled ranger lib, MIT). Both ship in the sdist; license_file is a
+#    # YAML list of both paths. Primary license id is GPL-3.0-or-later.
+# tests:
+#    # Compiled package -> standard python.imports + pip_check (no CFEP-25
+#    # python_min triad; that's a noarch:python pattern). Import name skranger
+#    # G7-verified against the sdist top-level skranger/__init__.py.
+####

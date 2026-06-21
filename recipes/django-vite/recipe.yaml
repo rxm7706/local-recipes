@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.1.0"
+
+package:
+  name: django-vite
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-vite/django_vite-${{ version }}.tar.gz
+  sha256: 8b4ffe4a9fa81ff568bfb195e74dde8694aaf13fd4b656ae60bf59cce08b85e8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+
+tests:
+  - python:
+      imports:
+        - django_vite
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Integration of Vite in a Django project.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/MrBin99/django-vite
+  repository: https://github.com/MrBin99/django-vite
+  description: |
+    django-vite integrates the Vite frontend build tool into a Django
+    project, providing template tags that emit the correct asset links
+    in both Vite dev-server mode and production (manifest) mode.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-vite
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-vite
+  cfe-purls:
+    - pkg:conda/django-vite@${{ version }}
+    - pkg:pypi/django-vite@${{ version }}
+  cfe-upstream-repo: https://github.com/MrBin99/django-vite
+  cfe-upstream-homepage: https://github.com/MrBin99/django-vite
+  cfe-import-names: [django_vite]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-vite-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock is still v0 (recipe/meta.yaml=200,
+#    # recipe/recipe.yaml=404). Local meta.yaml kept as a faithful mirror of
+#    # the deployed v0 at 3.1.0 (no cfe annotations); this recipe.yaml is the
+#    # proposed v1 migration. updates-needed carries meta-yaml-to-recipe-yaml
+#    # (the feedstock still owes the v0->v1 switch).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no [build-system]
+#    # table in pyproject.toml); matches deployed feedstock host block.
+#  run:
+#    # only runtime dep is Django>=3.2 (install_requires); `black` is a dev-only
+#    # extra (excluded). No upstream python_requires -> default 3.10 floor;
+#    # python_min omitted from context.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. django_vite imports cleanly standalone
+#    # (django.conf.settings is imported lazily, not accessed at module scope),
+#    # so the standard python.imports test holds — no package_contents escape
+#    # hatch needed.
+####

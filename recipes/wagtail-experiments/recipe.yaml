@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4"
+
+package:
+  name: wagtail-experiments
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-experiments/wagtail-experiments-${{ version }}.tar.gz
+  sha256: 32adc3e85685ef44e1760806208b426bcc722646f3624ff72cf81c662f78f93a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - experiments
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A/B testing for Wagtail
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/torchbox/wagtail-experiments
+  repository: https://github.com/torchbox/wagtail-experiments
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-experiments
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-experiments
+  cfe-purls:
+    - pkg:conda/wagtail-experiments@${{ version }}
+    - pkg:pypi/wagtail-experiments@${{ version }}
+  cfe-upstream-repo: https://github.com/torchbox/wagtail-experiments
+  cfe-upstream-homepage: https://github.com/torchbox/wagtail-experiments
+  cfe-import-names: [experiments]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-experiments-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml 404, meta.yaml 200).
+#    # Authored recipe.yaml at 0.4; KEPT local meta.yaml as a clean un-annotated
+#    # mirror of the deployed feedstock (build.number 1, python_min host pin).
+#    # cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml — the
+#    # feedstock still owes the v0 to v1 migration.
+# build:
+#    # build.number reset to 0 in the v1 recipe (canonical local shape); the
+#    # deployed v0 feedstock is at number 1 — that is the v0 mirror's state, not
+#    # ours to carry into the v1 authoring.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py project (no pyproject.toml); mirrors
+#    # the deployed feedstock host block.
+#  run:
+#    # 0.4 sdist declares NO install_requires (no Requires-Dist beyond
+#    # Requires-Python); run carries only python >=python_min. The package is a
+#    # Wagtail plugin but does not pin wagtail itself.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; modernizes the feedstock's
+#    # single-version python_version. experiments/__init__.py is EMPTY, so
+#    # import experiments does not load Django settings — standard python.imports
+#    # holds; no package_contents / CFEP-25 escape hatch needed.
+# context:
+#    # python_min omitted from context: upstream requires-python >=3.8 is below
+#    # the conda-forge 3.10 floor, so the default floor applies (no override).
+####

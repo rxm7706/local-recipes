@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.9.0"
+
+package:
+  name: flake8-no-pep420
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flake8-no-pep420/flake8_no_pep420-${{ version }}.tar.gz
+  sha256: 5dcd9e23bdd545cb957dd23987d9d227e733d1610717b0e13591262df1a33413
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flake8 >=3,!=3.2
+
+tests:
+  - python:
+      imports:
+        - flake8_no_pep420
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A flake8 plugin to ban PEP-420 implicit namespace packages.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/adamchainz/flake8-no-pep420
+  repository: https://github.com/adamchainz/flake8-no-pep420
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8-no-pep420
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-no-pep420
+  cfe-purls:
+    - pkg:conda/flake8-no-pep420@${{ version }}
+    - pkg:pypi/flake8-no-pep420@${{ version }}
+  cfe-upstream-repo: https://github.com/adamchainz/flake8-no-pep420
+  cfe-upstream-homepage: https://github.com/adamchainz/flake8-no-pep420
+  cfe-import-names: [flake8_no_pep420]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flake8-no-pep420-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 KEEP-meta: conda-forge feedstock is still v0/meta.yaml at 2.9.0.
+#    # meta.yaml kept as a faithful mirror of the deployed feedstock; this
+#    # recipe.yaml is the proposed v1 migration at the same version. Both coexist
+#    # until the feedstock completes its v0-to-v1 switch.
+# context:
+#    # python_min omitted from context: upstream requires-python is >=3.9, below
+#    # the conda-forge 3.10 floor, so the default floor applies. python_min comes
+#    # from conda-forge-pinning.
+# requirements:
+#  host:
+#    # setuptools kept in host: setuptools-based project (egg-info in sdist, no
+#    # pyproject build-system table); matches the deployed feedstock host block.
+#  run:
+#    # flake8 >=3,!=3.2 mirrors upstream requires-dist (flake8!=3.2,>=3) and the
+#    # deployed feedstock; no speculative upper bound added.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test. flake8_no_pep420 imports cleanly standalone.
+####

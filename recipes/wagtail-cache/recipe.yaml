@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.0"
+
+package:
+  name: wagtail-cache
+  version: ${{ version }}
+
+source:
+  url: https://github.com/coderedcorp/wagtail-cache/archive/v${{ version }}.tar.gz
+  sha256: 3265216885459445531806d37fd6eadc899c56742cb3924094efbd037df37311
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=3.0,<8.0
+
+tests:
+  - python:
+      imports:
+        - wagtailcache
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A simple page cache for Wagtail based on the Django cache middleware.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/coderedcorp/wagtail-cache
+  repository: https://github.com/coderedcorp/wagtail-cache
+  description: |
+    wagtail-cache is a simple page cache for Wagtail based on the Django
+    cache middleware. It provides an efficient, automatic cache for serving
+    Wagtail pages, with cache invalidation on page publish.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-cache
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-cache
+  cfe-purls:
+    - pkg:conda/wagtail-cache@${{ version }}
+    - pkg:pypi/wagtail-cache@${{ version }}
+  cfe-upstream-repo: https://github.com/coderedcorp/wagtail-cache
+  cfe-upstream-homepage: https://github.com/coderedcorp/wagtail-cache
+  cfe-import-names: [wagtailcache]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-cache-feedstock
+  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering: GENUINELY BEHIND (true positive). Local was 2.4.0;
+#    # deployed feedstock + PyPI both at 3.0.0 (MAJOR bump). GitHub-tag version
+#    # vX matches PyPI version exactly — congruent numbering, no copilotkit-style
+#    # divergence. C1: feedstock still v0 (meta.yaml), so meta.yaml mirror kept.
+# source:
+#    # github-tag (vX archive), mirroring the deployed feedstock's source-kind;
+#    # the upstream tag scheme matches the PyPI release exactly.
+# requirements:
+#  host:
+#    # setuptools kept in host — setuptools.build_meta backend (requires
+#    # setuptools >=65.0); matches deployed feedstock host block. No wheel (G8).
+#  run:
+#    # wagtail >=3.0,<8.0 mirrors the deployed feedstock AND upstream's
+#    # pyproject (wagtail>=3.0,<8.0) — the cap was raised <7 -> <8.0 in 3.0.0,
+#    # and is upstream-declared, so it is load-bearing under pip_check (G24).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. wagtailcache imports cleanly standalone
+#    # (the app is a Wagtail/Django plugin loaded at app-config, not at import),
+#    # so the standard python.imports test holds — no CFEP-25 escape hatch.
+####

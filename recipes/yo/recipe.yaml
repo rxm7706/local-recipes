@@ -61,3 +61,22 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: yo
+  cfe-upstream-registry: npm
+  cfe-upstream-name: yo
+  cfe-purls:
+    - pkg:conda/yo@${{ version }}
+    - pkg:npm/yo@${{ version }}
+  cfe-upstream-repo: https://github.com/yeoman/yo
+  cfe-upstream-homepage: http://yeoman.io
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/yo-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

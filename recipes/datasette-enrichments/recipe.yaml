@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: datasette-enrichments
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datasette-enrichments/datasette_enrichments-${{ version }}.tar.gz
+  sha256: e3c578a924b7cd9b9e099bef47d4d636df377a58449068741be50ddf365754a1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - datasette
+    - wtforms
+    - datasette-secrets >=0.2
+
+tests:
+  - python:
+      imports:
+        - datasette_enrichments
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Tools for running enrichments against data stored in Datasette
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/datasette-enrichments
+  repository: https://github.com/simonw/datasette-enrichments
+  documentation: https://enrichments.datasette.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datasette-enrichments
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datasette-enrichments
+  cfe-purls:
+    - pkg:conda/datasette-enrichments@${{ version }}
+    - pkg:pypi/datasette-enrichments@${{ version }}
+  cfe-upstream-repo: https://github.com/simonw/datasette-enrichments
+  cfe-upstream-homepage: https://github.com/simonw/datasette-enrichments
+  cfe-import-names: [datasette_enrichments]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datasette-enrichments-feedstock
+  cfe-forge-recipe-updates-needed: [recipe-regenerate]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2 (catch-up): feedstock already v1; bumped local mirror 0.4 -> 0.5.1
+#    # and authored modern v1 recipe.yaml, deleted stale local meta.yaml (was 0.4).
+# source:
+#    # Modernized to literal source.url segments (feedstock still carries the older
+#    # name / name[0] / name|replace('-','_') interpolation chain).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches deployed feedstock host block.
+#  run:
+#    # dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared; upstream requires-python is >=3.7, clamped to the cf
+#    # 3.10 floor). broad >=python_min floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. datasette_enrichments imports cleanly
+#    # standalone (plugin loads at app-instantiation, not import), so the
+#    # standard python.imports test holds — no package_contents escape hatch.
+# extra:
+#    # cfe-forge-recipe-updates-needed: recipe-regenerate — the deployed feedstock
+#    # still owes the literal-URL + CFEP-25-triad modernization carried here.
+####

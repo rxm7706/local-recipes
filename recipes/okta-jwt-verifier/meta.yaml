@@ -1,6 +1,5 @@
 {% set name = "okta-jwt-verifier" %}
-{% set version = "0.3.0" %}
-{% set python_min = "3.10" %}
+{% set version = "0.5.0" %}
 
 package:
   name: {{ name|lower }}
@@ -8,14 +7,14 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/okta_jwt_verifier-{{ version }}.tar.gz
-  sha256: 1bf7c0d8100af5933b746ed4c5a7cd3d07463c9fa72b4cb7c55e215acb05abc1
+  sha256: 4fe6e4f4ffff6c03b6b63a7709b879bdaf57025ae1dcc06ea2f32dd4a07963df
 
 build:
   noarch: python
   script:
-   - cp -R {{ RECIPE_DIR }}/LONG_DESCRIPTION.md {{ SRC_DIR }}/LONG_DESCRIPTION.md  # [unix]
-   - echo f | xcopy /f /y /S %RECIPE_DIR%\LONG_DESCRIPTION.md %SRC_DIR%\LONG_DESCRIPTION.md  # [win]
-   - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - cp -R {{ RECIPE_DIR }}/LONG_DESCRIPTION.md {{ SRC_DIR }}/LONG_DESCRIPTION.md  # [unix]
+    - echo f | xcopy /f /y /S %RECIPE_DIR%\LONG_DESCRIPTION.md %SRC_DIR%\LONG_DESCRIPTION.md  # [win]
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
@@ -24,17 +23,17 @@ requirements:
     - pip
     - poetry-core
   run:
+    - requests
     - python >={{ python_min }}
     - pyjwt >=2.8.0,<3.0.0
     - acachecontrol >=0.3.6,<0.4.0
-    - retry  #2 >=0.9.5,<0.10.0
+    - retry  # upstream wants retry2 (a fork, not on conda-forge); retry is the original w/ the same `retry` import. TODO: switch to retry2 once packaged
 
 test:
   imports:
     - okta_jwt_verifier
   commands:
-    #- pip check
-    #- python -c "from importlib.metadata import version; print(version('{{ name }}'))"
+    #- pip check fails for retry2 dependency
     - python -c "assert __import__('okta_jwt_verifier').__version__ == '{{ version }}'"
   requires:
     - pip

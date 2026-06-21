@@ -1,13 +1,13 @@
 {% set name = "djangocms-frontend" %}
-{% set version = "2.0.0" %}
+{% set version = "2.3.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/djangocms_frontend-{{ version }}.tar.gz
-  sha256: 08079d28d978bf0af48f0fb611d4a9381a870eaab83f2ce4f7fbe96a7642132e
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 85c4c85cd8c464a6f943d011a1c4aab6902829fd2aad36b9268b151fdb499f6b
 
 build:
   noarch: python
@@ -16,23 +16,26 @@ build:
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - djangocms-link >=5
+    - python >={{ python_min }}
+    - django >=2.2
     - django-cms >=3.7
     - django-filer >=1.7
     - easy-thumbnails
     - djangocms-attributes-field >=4
-    - djangocms-link >=5
+    - djangocms-text-ckeditor >=3.1.0
     - django-entangled >=0.6
-
 test:
   imports:
     - djangocms_frontend
   commands:
     - pip check
   requires:
+    - python {{ python_min }}
     - pip
 
 about:

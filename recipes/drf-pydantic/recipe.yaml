@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.9.1"
+
+package:
+  name: drf-pydantic
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/drf-pydantic/drf_pydantic-${{ version }}.tar.gz
+  sha256: 76070a9abb132395eb4d2ebe65abb2e842d0efa0cc967c9fa19ef14491dc0f39
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - djangorestframework >=3.13.0
+    - pydantic >=2.0.0
+    - email-validator >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - drf_pydantic
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Use pydantic with the Django REST framework
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/georgebv/drf-pydantic
+  repository: https://github.com/georgebv/drf-pydantic
+  description: |
+    drf-pydantic lets you use pydantic models with the Django REST
+    framework, generating DRF serializers automatically from pydantic
+    model definitions.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: drf-pydantic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: drf-pydantic
+  cfe-purls:
+    - pkg:conda/drf-pydantic@${{ version }}
+    - pkg:pypi/drf-pydantic@${{ version }}
+  cfe-upstream-repo: https://github.com/georgebv/drf-pydantic
+  cfe-upstream-homepage: https://github.com/georgebv/drf-pydantic
+  cfe-import-names: [drf_pydantic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/drf-pydantic-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0/meta.yaml at 2.9.1. meta.yaml refreshed to
+#    # faithfully mirror the deployed feedstock; this recipe.yaml is the proposed
+#    # v0-to-v1 migration. Both files coexist until the feedstock migrates.
+# requirements:
+#  host:
+#    # hatchling only (build-system.requires = ["hatchling"]); dropped the
+#    # speculative wheel/setuptools pair grayskull tends to add (G8). Matches the
+#    # deployed feedstock host block.
+#  run:
+#    # upstream pyproject declares pydantic[email]>=2.0.0; conda has no extras
+#    # (G25), so the email extra is flattened to email-validator >=2.0.0.
+#    # The deployed feedstock meta.yaml omits email-validator (latent gap) — this
+#    # is the dependency-fix recorded in cfe-forge-recipe-updates-needed.
+#    # Dropped the feedstock's speculative python <4.0.0 upper bound (not
+#    # upstream-declared); broad >=python_min floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. drf_pydantic imports cleanly
+#    # standalone (no DJANGO_SETTINGS_MODULE needed — it only defines serializer
+#    # helpers, no app registry), so the standard python.imports test holds — no
+#    # package_contents escape hatch.
+####

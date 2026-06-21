@@ -1,0 +1,126 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.5.1"
+
+package:
+  name: amundsen-databuilder
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/amundsen-databuilder/amundsen-databuilder-${{ version }}.tar.gz
+  sha256: 8ec6949aee68ac943d7a6dc0a460603cdab430d0631fb210c1c5a082b84246f3
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - elasticsearch >=6.2.0,<8.0
+    - elasticsearch-dsl >=7.4.0
+    - neo4j-python-driver >=4.4.5,<5.0
+    - requests >=2.25.0,<3.0
+    - freezegun >=1.1.0
+    - atomicwrites >=1.1.5
+    - more-itertools >=4.2.0
+    - pluggy >=0.6.0
+    - py >=1.10.0
+    - pyhocon >=0.3.42
+    - pyparsing >=2.2.0,<3.0
+    - sqlalchemy >=1.3.6
+    - wheel >=0.31.1
+    - pytz >=2018.4
+    - statsd >=3.2.1
+    - retrying >=1.3.3
+    - unicodecsv >=0.14.1,<1.0
+    - httplib2 >=0.18.0
+    - unidecode
+    - jinja2 >=2.10.0,<4
+    - pandas >=0.21.0,<1.5.0
+    - responses >=0.10.6
+    - jsonref ==0.2
+    - amundsen-common >=0.16.0
+    - amundsen-rds ==0.0.7
+
+tests:
+  - python:
+      imports:
+        - databuilder
+        - example
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Amundsen Data builder
+  homepage: https://www.github.com/amundsen-io/amundsen/tree/main/databuilder
+  repository: https://github.com/amundsen-io/amundsen
+  documentation: https://www.amundsen.io/amundsen/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amundsen-databuilder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: amundsen-databuilder
+  cfe-purls:
+    - pkg:conda/amundsen-databuilder@${{ version }}
+    - pkg:pypi/amundsen-databuilder@${{ version }}
+  cfe-upstream-repo: https://github.com/amundsen-io/amundsen
+  cfe-upstream-homepage: https://www.amundsen.io/amundsen/
+  cfe-import-names: [databuilder, example]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: false:upstream-omits-neo4j-driver-mirror-feedstock-disable
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/amundsen-databuilder-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list:
+    - "external-cf-skew: channel pyhocon 0.3.63 requires pyparsing>=3.0.0 while this recipe (mirroring the feedstock) caps pyparsing<3.0; databuilder->pyhocon import test false-fails on pyparsing 2.4.7 lacking replace_with. Resolution is upstream feedstock pin convergence, not a consumer edit."
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-06-20T08:34:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Wave-C v0-migration CLASS C1: feedstock is still v0 (meta.yaml) at 7.5.1.
+#    # meta.yaml is kept alongside as a faithful mirror of the deployed v0 recipe;
+#    # this recipe.yaml is the proposed v0->v1 migration. Both coexist until the
+#    # feedstock itself migrates.
+# build:
+#    # build.number kept at 1 to match the deployed feedstock's same-version build.
+# requirements:
+#  run:
+#    # Run deps mirror the deployed feedstock 7.5.1 meta.yaml verbatim. pyparsing
+#    # capped <3.0 per upstream pyhocon 0.3.59 requirement (pyparsing~=2.0).
+# tests:
+#    # pip_check disabled to mirror the feedstock: upstream installs neo4j-driver
+#    # under the alias neo4j-python-driver; pip check false-fails on the missing
+#    # neo4j-driver dist name. databuilder + example are the two verified top-level
+#    # imports (G7, confirmed from the 7.5.1 sdist __init__.py listing).
+#    # LOCAL BUILD 2026-06-20 (rattler-build, linux-64): build phase CLEAN, .conda
+#    # written then quarantined to broken/ on the test-env import. External cf skew:
+#    # channel pyhocon 0.3.63 needs pyparsing>=3.0.0, but this recipe (= feedstock)
+#    # caps pyparsing<3.0; solver picks pyparsing 2.4.7 which lacks replace_with, so
+#    # databuilder->pyhocon import fails. Same skew would hit the deployed feedstock's
+#    # import test on the current channel; fix is upstream feedstock pin convergence
+#    # (loosen pyparsing cap once pyhocon/pyparsing reconcile), NOT a consumer edit.
+####

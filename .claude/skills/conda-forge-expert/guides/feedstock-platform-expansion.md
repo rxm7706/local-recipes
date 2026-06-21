@@ -215,6 +215,68 @@ either applies them or builds on them.
    subsequent waves edit `conda-forge.yml`, and per the load-bearing
    "local mirror = source of truth" rule, the edit lands locally first.
 
+   **Verify the feedstock's actual SOURCE-KIND — never assume PyPI
+   sdist (strong default).** Across a large bulk refresh, deployed
+   feedstocks source from a **GitHub-tag archive** far more often than
+   the grayskull regenerate path assumes — empirically the whole
+   `wagtail-*` / `django-*` / `h2o-*` / `kedro` / `copilotkit` / `pypac`
+   / `acachecontrol` / `collectfasta` / `spec-kit` batch sourced from a
+   GitHub tag, not the PyPI sdist. Read the **deployed** `recipe.yaml`'s
+   `source.url:` and mirror its kind; don't let grayskull's PyPI-sdist
+   default silently change the source. Set the cached
+   `cfe-source-kind` (`pypi-sdist | pypi-wheel | github-tag |
+   github-commit`) to the **verified** value so a future regen can't
+   revert it. (Also watch [SKILL.md G51] — a GitHub-source package may
+   ship none of the release-time-generated assets; source the wheel
+   instead.)
+
+   **gh-tag-vs-PyPI numbering: a "behind" flag from version-number
+   mismatch is usually REAL, not a false-positive — verify, don't
+   assume parity.** When a recipe is flagged behind on a GitHub-tag
+   numbering mismatch, the overwhelmingly common case is that it is
+   *genuinely* behind with **aligned** numbering (the only delta is a
+   `v` prefix on the tag). A true numbering false-positive (the GitHub
+   tag and the PyPI version are different numbers for the **same code**)
+   is rare and almost always an **npm-monorepo** package whose GitHub
+   monorepo tag (`vX.Y.Z`) differs from the Python sub-package's PyPI
+   version. Method to distinguish, in order:
+   1. Read the **deployed feedstock's** actual `version:` + `source.url`
+      (what's really shipping).
+   2. Compare the **PyPI version history** vs the **GitHub tag history**
+      — if they track each other (modulo `v` prefix), the recipe is
+      genuinely behind; bump it.
+   3. For a **monorepo** suspected false-positive: check the
+      sub-package's declared `version` in its `pyproject.toml` **at the
+      GitHub tag**, and confirm sha256 identity between the GitHub-tag
+      artifact and the PyPI artifact. Same code under two numbers →
+      true false-positive (leave as-is). Different code → genuinely
+      behind.
+   Empirically (Jun 2026 batch of 13 numbering-risk recipes): only
+   **copilotkit** was a true false-positive (npm-monorepo GH tag
+   `v1.57.2` == PyPI `copilotkit` `0.1.88`, same code, sha256-verified
+   via the sub-package's `pyproject` `version` at the tag); the other
+   12 were genuinely behind with aligned numbering.
+
+   **A baseline "behind" list can misclassify a LOCAL-ONLY recipe as
+   on-conda-forge — always `lookup_feedstock` to confirm existence
+   before any C2 (rm-meta.yaml) transition.** A recipe flagged
+   on-conda-forge may have **no feedstock at all**. Run
+   `lookup_feedstock(pkg_name=<name>)`; if it returns `exists:false`,
+   the recipe is local-only — set
+   `cfe-on-conda-forge-status: pending-submission-to-conda-forge` and
+   **do NOT `rm meta.yaml`** (there is no v0→v1 feedstock transition to
+   complete; the keep-meta.yaml rule doesn't apply because there's no
+   deployed v0 to mirror — but neither does the C2 delete). Also watch
+   for **two-feedstock collisions**: the same upstream may be served by
+   two different feedstocks sourcing differently (e.g. a `<name>-feedstock`
+   github-tag vs a competing `<altname>-feedstock` pypi-sdist) — pick
+   the one the local recipe actually mirrors and note the collision.
+   Examples (Jun 2026): **cookiecutter-django** was flagged on-cf but
+   has no feedstock (`exists:false`; PyPI abandoned at 1.11.9; sources a
+   GitHub CalVer tag) → kept local-only, meta.yaml retained;
+   **spec-kit** has our `spec-kit-feedstock` (github-tag) competing with
+   a `specify-cli-feedstock` (pypi-sdist) for the same upstream.
+
 3. **Validate + optimize + check-deps**:
    ```
    pixi run -e local-recipes validate recipes/<feedstock>
@@ -474,6 +536,11 @@ of these surface during the workflow:
   false-negative workaround
 - CFE `SKILL.md` § G12 — `noarch_platforms` escape hatch (noarch:python
   only)
+- CFE `SKILL.md` § G46–G51 — feedstock-refresh build-shape gotchas:
+  stale-meta noarch-for-compiled (G46), stale recipe-dir CBC cruft (G47),
+  Rust/Go ≠ heavy compile (G48), per-Python-compiled ≠ abi3 (G49),
+  cap-the-python-matrix for dropped C-API / numpy floors (G50),
+  github-source-ships-no-generated-assets → wheel (G51)
 - CFE `reference/conda-forge-yml-reference.md` — `provider:`,
   `workflow_settings.store_build_artifacts:` (replaces deprecated
   `azure.store_build_artifacts`), bot config keys, `noarch_platforms`,

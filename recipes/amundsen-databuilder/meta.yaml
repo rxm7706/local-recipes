@@ -1,28 +1,29 @@
 {% set name = "amundsen-databuilder" %}
-{% set version = "7.4.3" %}
+{% set version = "7.5.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/amundsen-databuilder-{{ version }}.tar.gz
-  sha256: d0e99edc42c70c14d5a0ed7ccdb40c81c44680267676e85c1fc4f0f11096972d
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/amundsen-databuilder-{{ version }}.tar.gz
+  sha256: 8ec6949aee68ac943d7a6dc0a460603cdab430d0631fb210c1c5a082b84246f3
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7
+    - python >={{ python_min }}
     - elasticsearch >=6.2.0,<8.0
-    - elasticsearch-dsl ==7.4.0
-    - neo4j-python-driver >=4.4.5,<5.0
+    - elasticsearch-dsl >=7.4.0
+    - neo4j-python-driver >=4.4.5,<5.0 # neo4j-driver same as neo4j-python-driver
     - requests >=2.25.0,<3.0
     - freezegun >=1.1.0
     - atomicwrites >=1.1.5
@@ -30,7 +31,8 @@ requirements:
     - pluggy >=0.6.0
     - py >=1.10.0
     - pyhocon >=0.3.42
-    - pyparsing >=2.2.0
+    # pyhocon 0.3.59 has requirement pyparsing~=2.0
+    - pyparsing >=2.2.0,<3.0
     - sqlalchemy >=1.3.6
     - wheel >=0.31.1
     - pytz >=2018.4
@@ -47,19 +49,24 @@ requirements:
     - amundsen-rds ==0.0.7
 
 test:
+  requires:
+    - python {{ python_min }}
   imports:
     - databuilder
     - example
-  commands:
-    - pip check
-  requires:
-    - pip
+    # Pip check disabled
+    # amundsen-databuilder 7.4.3 requires neo4j-driver, which is not installed.
+  #commands:
+    #- pip check
+  #requires:
+    #- pip
 
 about:
   home: https://www.github.com/amundsen-io/amundsen/tree/main/databuilder
   summary: Amundsen Data builder
-  license: ''
-  license_file: LICENSE
+  license: Apache-2.0
+  license_file:
+    - LICENSE
 
 extra:
   recipe-maintainers:

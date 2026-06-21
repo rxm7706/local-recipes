@@ -1,13 +1,13 @@
 {% set name = "django-sesame" %}
-{% set version = "3.2.2" %}
+{% set version = "3.2.3" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_sesame-{{ version }}.tar.gz
-  sha256: 5d753a309166356b6a0d7fc047690943b9e80b4aa7952f1a6400fe6ce60d573c
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_sesame-{{ version }}.tar.gz
+  sha256: 09977a1c55bdbcce0a024c712c4d683e1a69543a217626ffa1d5f7ef7ebffc58
 
 build:
   noarch: python
@@ -16,11 +16,11 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - poetry-core >=1.0.0
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=3.2
   run_constrained:
     - ua-parser >=0.15
@@ -29,10 +29,10 @@ test:
   imports:
     - sesame
   commands:
-    - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,INSTALLED_APPS=['django.contrib','sesame']); django.setup(); import sesame;"
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/aaugustin/django-sesame

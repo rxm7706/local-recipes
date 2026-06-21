@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.1"
+
+package:
+  name: natural-keys
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/natural-keys/natural-keys-${{ version }}.tar.gz
+  sha256: 67dbfdfd975fe19256c7385aae56b6c7d65d9f595523d1c75703ef91e292da16
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2,<5.0
+    - html-json-forms >=1.0.0
+
+# CFEP-25-justified: Django app — `import natural_keys` raises
+# ImproperlyConfigured without DJANGO_SETTINGS_MODULE / settings.configure().
+tests:
+  - package_contents:
+      site_packages:
+        - natural_keys
+  - python:
+      pip_check: true
+
+about:
+  summary: Enhanced support for natural keys in Django and Django REST Framework.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/wq/django-natural-keys
+  repository: https://github.com/wq/django-natural-keys
+  documentation: https://wq.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: natural-keys
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: natural-keys
+  cfe-purls:
+    - pkg:conda/natural-keys@${{ version }}
+    - pkg:pypi/natural-keys@${{ version }}
+  cfe-upstream-repo: https://github.com/wq/django-natural-keys
+  cfe-upstream-homepage: https://github.com/wq/django-natural-keys
+  cfe-import-names: [natural_keys]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/natural-keys-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: KEEP-meta — feedstock is still v0/meta.yaml at 2.1.1.
+#    # Refreshed local meta.yaml to mirror the deployed v0 feedstock (build
+#    # number 1) and authored this v1 recipe.yaml at 2.1.1 alongside it.
+#    # meta.yaml stays until the feedstock completes its v0-to-v1 migration.
+# requirements:
+#  host:
+#    # setuptools + setuptools-scm kept in host — pyproject build-system
+#    # requires both (dynamic version via tool.setuptools_scm); matches the
+#    # deployed feedstock host block.
+#  run:
+#    # django is a hard runtime requirement (Django app) but is NOT declared
+#    # in pyproject [project.dependencies] (only html-json-forms is). Mirrored
+#    # the deployed feedstock's django >=3.2,<5.0 to reconcile against 2.1.1.
+#    # Upper bound is feedstock-aligned, not loosened.
+# tests:
+#    # CFEP-25 escape hatch (package_contents.site_packages) used because the
+#    # bare python.imports test fails: import natural_keys triggers
+#    # from django.db import models at class-body level, which raises
+#    # ImproperlyConfigured without DJANGO_SETTINGS_MODULE. Verified empirically
+#    # (bare import raises; settings.configure() + django.setup() succeeds).
+#    # pip_check kept in a separate python test block.
+####

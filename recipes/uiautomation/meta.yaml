@@ -1,5 +1,5 @@
 {% set name = "uiautomation" %}
-{% set version = "2.0.24" %}
+{% set version = "2.0.29" %}
 
 package:
   name: {{ name|lower }}
@@ -7,19 +7,24 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/uiautomation-{{ version }}.tar.gz
-  sha256: 0058d6b71ff1b56e688dcc4113bbc380c02e3e277e95a8bca845d3a29bfdd606
+  sha256: 3c169112043ce21065aead1d79c3baebdafc9cf03bd24ded02b2db11d423d88d
 
 build:
+  noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
-  run:
-    - python
     - comtypes >=1.2.1
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - typing
+    - comtypes >=1.2.1
+    - __win
 
 test:
   imports:
@@ -28,6 +33,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows

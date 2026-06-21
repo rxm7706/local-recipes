@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.0"
+
+package:
+  name: django-extra-views
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-extra-views/django_extra_views-${{ version }}.tar.gz
+  sha256: 7f8e07bd6c9388816a7c08d752661172d4078758c2079fc0cadddfcf5cd38ae3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=2.1
+
+tests:
+  - python:
+      imports:
+        - extra_views
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Extra class-based views for Django
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/AndrewIngram/django-extra-views
+  repository: https://github.com/AndrewIngram/django-extra-views
+  description: |
+    django-extra-views provides a number of additional class-based generic
+    views to complement those bundled with Django, including formset and
+    inline-formset views, multiple-object/object-with-inlines create and
+    update views, searchable and sortable list views, and a calendar
+    month view.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-extra-views
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-extra-views
+  cfe-purls:
+    - pkg:conda/django-extra-views@${{ version }}
+    - pkg:pypi/django-extra-views@${{ version }}
+  cfe-upstream-repo: https://github.com/AndrewIngram/django-extra-views
+  cfe-upstream-homepage: https://github.com/AndrewIngram/django-extra-views
+  cfe-import-names: [extra_views]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-extra-views-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is still v0/meta.yaml and is deployed at
+#    # 0.16.0; refreshed the local meta.yaml mirror to match the deployed v0
+#    # state (was 0.14.0) and authored this v1 recipe.yaml alongside it. Both
+#    # coexist until the feedstock completes its own v0 to v1 migration. The
+#    # feedstock owes the meta-yaml-to-recipe-yaml update.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches the deployed feedstock host block.
+#  run:
+#    # single upstream dep Django >=2.1 (setup.py install_requires, verified
+#    # against the 0.16.0 sdist); no speculative upper pin added.
+# context:
+#    # python_min omitted — upstream python_requires is >=3.5; clamped to the
+#    # conda-forge default floor (3.10), so it comes from conda-forge-pinning.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python test. extra_views imports cleanly standalone
+#    # (module-level Django class-based-view imports do not require
+#    # DJANGO_SETTINGS_MODULE), so the standard python.imports test holds —
+#    # no package_contents escape hatch needed. Verified by local build.
+####

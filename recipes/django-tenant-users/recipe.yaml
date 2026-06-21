@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.2.1"
+
+package:
+  name: django-tenant-users
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-tenant-users/django_tenant_users-${{ version }}.tar.gz
+  sha256: 1fac19d52625aaa250681a1d7a052eac1d4bbe876d79963c3e7d3dd67f7e712d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.2.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - django-tenants >=3.6,<4.0
+
+tests:
+  - python:
+      imports:
+        - tenant_users
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A Django app to extend django-tenants to incorporate global multi-tenant users
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Corvia/django-tenant-users
+  repository: https://github.com/Corvia/django-tenant-users
+  documentation: https://django-tenant-users.readthedocs.io/
+  description: |
+    django-tenant-users extends django-tenants to incorporate global
+    multi-tenant users, providing a permissions framework for managing
+    user access across multiple tenants in a Django SaaS application.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-tenant-users
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-tenant-users
+  cfe-purls:
+    - pkg:conda/django-tenant-users@${{ version }}
+    - pkg:pypi/django-tenant-users@${{ version }}
+  cfe-upstream-repo: https://github.com/Corvia/django-tenant-users
+  cfe-upstream-homepage: https://github.com/Corvia/django-tenant-users
+  cfe-import-names: [tenant_users]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-tenant-users-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock is STILL v0/meta.yaml at 2.2.1; meta.yaml kept as a
+#    # faithful clean mirror of the deployed v0 recipe. recipe.yaml is the
+#    # proposed v1 migration, also at 2.2.1. Both coexist until the feedstock
+#    # completes its v0 to v1 switch (cfe-forge-recipe-updates-needed carries
+#    # meta-yaml-to-recipe-yaml).
+# context:
+#    # python_min omitted at the conda-forge 3.10 default floor. Upstream
+#    # requires-python is >=3.9 (below the conda-forge floor), so no override
+#    # is warranted; let conda-forge-pinning supply python_min.
+# requirements:
+#  host:
+#    # poetry-core only (build-backend = poetry.core.masonry.api; sdist
+#    # pyproject requires poetry-core >=2.0.0,<3.0.0). No wheel/setuptools
+#    # belt-and-suspenders (G8). Kept the feedstock's >=1.2.0 lower bound.
+#  run:
+#    # MAJOR bump 1.2.0 to 2.2.1 reconciled against the 2.2.1 sdist
+#    # [project.dependencies]: django >=4.2 (was >=3.2) and
+#    # django-tenants >=3.6,<4.0 (was >=3.4.5,<4.0.0). The django-tenants
+#    # <4.0 upper bound is upstream-declared and load-bearing under
+#    # pip_check (G24) so it is mirrored. Dropped the feedstock's
+#    # speculative python <4.0.0 upper bound; broad >=python_min is correct.
+#    # No optional extras activated (test/docs are poetry groups, not run
+#    # deps) so nothing flattened (G25).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. tenant_users/__init__.py is
+#    # empty (no eager Django app-registry load), so the standard
+#    # python.imports test holds without DJANGO_SETTINGS_MODULE; no
+#    # package_contents escape hatch needed.
+####

@@ -1,13 +1,13 @@
 {% set name = "verlib2" %}
-{% set version = "0.1.0" %}
+{% set version = "0.3.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/verlib2-{{ version }}.tar.gz
-  sha256: ecc1489412c26013006f0873130a4b6d73b3ed475c76eec2a99eff3caf04e37c
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/verlib2-{{ version }}.tar.gz
+  sha256: a0a6af9838d8d26c18225a30c8d57fb70714462e3cd29f2451e7982d5a51e21e
 
 build:
   noarch: python
@@ -33,6 +33,7 @@ test:
 
 about:
   summary: A standalone variant of packaging.version, without anything else.
+  home: https://github.com/panodata/verlib2
   license: BSD-2-Clause
   license_file: LICENSE
 

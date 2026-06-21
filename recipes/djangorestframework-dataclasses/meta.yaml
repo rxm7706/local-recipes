@@ -1,13 +1,13 @@
 {% set name = "djangorestframework-dataclasses" %}
-{% set version = "1.3.0" %}
+{% set version = "1.4.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/djangorestframework-dataclasses-{{ version }}.tar.gz
-  sha256: b061ef12f23394e91107f9b915dec38fb0a69d97a0ac9e62207aa90908375211
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: fffa19b6f650b2c4c346b3cadf42dd9aa5a265a34f0827608953910d01919039
 
 build:
   noarch: python
@@ -16,24 +16,26 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools >=61
     - wheel
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=2.0
     - djangorestframework >=3.9
+    - typing-extensions >=3.7.4
 
 test:
-  imports:
-    - djangorestframework_dataclasses
   commands:
+    - python -c "from django.conf import settings; settings.configure(DEBUG=True); from rest_framework_dataclasses.serializers import DataclassSerializer"
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://github.com/oxan/djangorestframework-dataclasses
   summary: A dataclasses serializer for Django REST Framework
   license: BSD-3-Clause
   license_file: LICENSE

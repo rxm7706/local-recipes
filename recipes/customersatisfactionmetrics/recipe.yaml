@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.9"
+
+package:
+  name: customersatisfactionmetrics
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/customersatisfactionmetrics/customersatisfactionmetrics-${{ version }}.tar.gz
+  sha256: 3074b61bee2775b3221c5b0dbfc759a955e983e8c7c47e923d9843477bc3c66e
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=3.0
+
+tests:
+  - python:
+      imports:
+        - customersatisfactionmetrics
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  homepage: http://github.com/pescheckit/customersatisfactionmetrics
+  repository: http://github.com/pescheckit/customersatisfactionmetrics
+  summary: This Django package allows you to create and manage surveys including CSAT, NPS, CES, and Generic Surveys. It supports both anonymous and logged-in user responses with user metadata tracking.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: customersatisfactionmetrics
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: customersatisfactionmetrics
+  cfe-purls:
+    - pkg:conda/customersatisfactionmetrics@${{ version }}
+    - pkg:pypi/customersatisfactionmetrics@${{ version }}
+  cfe-upstream-repo: http://github.com/pescheckit/customersatisfactionmetrics
+  cfe-upstream-homepage: http://github.com/pescheckit/customersatisfactionmetrics
+  cfe-import-names: [customersatisfactionmetrics]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/customersatisfactionmetrics-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Django app; __init__.py is empty so `import customersatisfactionmetrics`
+#    # does NOT trigger DJANGO_SETTINGS_MODULE — plain CFEP-25 python.imports
+#    # triad is correct (no escape hatch needed). Matches deployed feedstock.
+# requirements:
+#  run:
+#    # Feedstock pins `python >=${{ python_min }},<4.0`; upstream declares no
+#    # requires-python, so the <4.0 cap is speculative (DEP-002). Used the clean
+#    # `python >=${{ python_min }}` form here. django >=3.0 mirrors upstream
+#    # setup.py install_requires=['Django>=3.0'].
+####

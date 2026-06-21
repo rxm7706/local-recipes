@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.12"
+
+package:
+  name: django-tex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-tex/django_tex-${{ version }}.tar.gz
+  sha256: e9075209847d629f956b4ba2645a99146aa4e35527b188cce0e47532ea88a170
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-scm
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=2.2
+    - jinja2 >=2.9
+
+tests:
+  - python:
+      imports:
+        - django_tex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A simple Django app to render Latex templates and compile them into PDF files.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/weinbusch/django-tex
+  repository: https://github.com/weinbusch/django-tex
+  description: |
+    A simple Django app to render LaTeX templates and compile them into PDF
+    files. Provides a template engine that renders Jinja2-based LaTeX
+    templates and a helper to build PDFs from the rendered output.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-tex
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-tex
+  cfe-purls:
+    - pkg:conda/django-tex@${{ version }}
+    - pkg:pypi/django-tex@${{ version }}
+  cfe-upstream-repo: https://github.com/weinbusch/django-tex
+  cfe-upstream-homepage: https://github.com/weinbusch/django-tex
+  cfe-import-names: [django_tex]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-tex-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0 (meta.yaml); local meta.yaml refreshed to
+#    # mirror the deployed feedstock at 1.1.12 and KEPT. This recipe.yaml is the
+#    # proposed v1 migration, authored alongside meta.yaml (both coexist until
+#    # the feedstock completes its v0 to v1 switch). cfe-forge-recipe-updates-needed
+#    # carries meta-yaml-to-recipe-yaml.
+# requirements:
+#  host:
+#    # setuptools-scm + setuptools kept in host: upstream setup.py uses
+#    # use_scm_version=True + setup_requires=["setuptools_scm"] (setup.py/setup.cfg
+#    # project, no pyproject build-system). Matches deployed feedstock host block.
+#  run:
+#    # django + jinja2 from upstream install_requires. LaTeX is an external system
+#    # tool (the app shells out to a latex binary at runtime), not a conda dep, so
+#    # it is correctly absent. No speculative upper pins (none upstream-declared).
+# context:
+#    # python_min omitted: upstream python_requires is >=3.6.2, well below the
+#    # conda-forge 3.10 floor, so the default floor is correct (no context override).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. django_tex imports cleanly standalone
+#    # (no DJANGO_SETTINGS_MODULE needed at import; the app config loads at
+#    # Django app-registry time, not module import), so the standard python.imports
+#    # test holds: no package_contents escape hatch needed.
+####

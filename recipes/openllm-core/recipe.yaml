@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.7"
+
+package:
+  name: openllm-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openllm-core/openllm_core-${{ version }}.tar.gz
+  sha256: e48fa13e1172b859cba0288cdba23c90a6423e3a04d2b4e157221005b9a76308
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling ==1.18.0
+    - hatch-vcs ==0.3.0
+    - hatch-fancy-pypi-readme ==23.1.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - attrs >=23.2.0
+    - pydantic >2
+    - orjson
+    - inflection
+    - typing-extensions
+    - mypy_extensions
+    - packaging
+    - deepmerge
+
+tests:
+  - python:
+      imports:
+        - openllm_core
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: "OpenLLM Core: Core components for OpenLLM."
+  homepage: https://github.com/bentoml/OpenLLM
+  license: Apache-2.0
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openllm-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openllm-core
+  cfe-purls:
+    - pkg:conda/openllm-core@${{ version }}
+    - pkg:pypi/openllm-core@${{ version }}
+  cfe-upstream-repo: https://github.com/bentoml/OpenLLM
+  cfe-upstream-homepage: https://github.com/bentoml/OpenLLM
+  cfe-import-names: [openllm_core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openllm-core-feedstock
+  cfe-forge-recipe-updates-needed:
+    - recipe-regenerate
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # C1 (KEEP-meta): deployed conda-forge/openllm-core-feedstock is still
+#    # v0/meta.yaml at 0.5.7 build 1. This recipe.yaml is the proposed v1
+#    # migration (kept alongside the faithful meta.yaml mirror); the feedstock
+#    # owes the meta-yaml-to-recipe-yaml switch.
+# context:
+#    # requires-python is >=3.8 upstream; clamped to the conda-forge 3.10 floor.
+#    # python_min omitted from context (default floor) per policy.
+# host:
+#    # hatchling/hatch-vcs/hatch-fancy-pypi-readme exact pins mirror the deployed
+#    # feedstock's working host set. The sdist pyproject [build-system].requires
+#    # actually declares hatch-vcs==0.4.0; the feedstock ships ==0.3.0 and builds
+#    # clean, so the mirror keeps ==0.3.0 to match deployed reality.
+# run:
+#    # Reconciled against sdist [project.dependencies]: attrs deepmerge inflection
+#    # mypy-extensions orjson packaging pydantic typing-extensions. The bentoml /
+#    # full extras are NOT activated (G25) — bentoml + transformers dropped.
+#    # Upstream cattrs / packaging>=20 / click-option-group commented entries from
+#    # the v0 mirror are not in [project.dependencies], so they stay dropped.
+####

@@ -1,13 +1,13 @@
 {% set name = "wagtail-headless-preview" %}
-{% set version = "0.7.0" %}
+{% set version = "0.9.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_headless_preview-{{ version }}.tar.gz
-  sha256: 730e86ea2de91602b64cc2412b5ff3e0b3f3679e3767eb417c109c9110209c07
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_headless_preview-{{ version }}.tar.gz
+  sha256: dbabbb614bd1689f048738c46034c557a3ee426e0ef80feb4831bcfc93a24e15
 
 build:
   noarch: python
@@ -16,12 +16,13 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
-    - python >=3.8
-    - wagtail >=4.1
+    - django
+    - python >={{ python_min }}
+    - wagtail >=7.0
 
 test:
   imports:
@@ -30,6 +31,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/torchbox/wagtail-headless-preview

@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.13"
+
+package:
+  name: jh2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jh2/jh2-${{ version }}.tar.gz
+  sha256: f8c78cffb3a35c4410513c3eb7989de36028c84277c04f07c97909dd94c23a75
+
+build:
+  number: 0
+  script:
+    env:
+      PYTHONUTF8: "1"
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+    content:
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler("rust") }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - maturin
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.7,<2.0
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - jh2
+      pip_check: true
+
+about:
+  summary: HTTP/2 State-Machine based protocol implementation
+  license: MIT
+  license_file:
+    - LICENSE
+    - tests/http2-frame-test-case/LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/jawah/h2
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jh2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jh2
+  cfe-purls:
+    - pkg:conda/jh2@${{ version }}
+    - pkg:pypi/jh2@${{ version }}
+  cfe-upstream-repo: https://github.com/jawah/h2
+  cfe-upstream-homepage: https://github.com/jawah/h2
+  cfe-import-names: [jh2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jh2-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+    - platform-expansion
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-D C1: feedstock still v0 (recipe/meta.yaml=200, recipe/recipe.yaml=404).
+#    # Kept the local meta.yaml as a faithful 5.0.13 mirror of the deployed
+#    # feedstock; authored this recipe.yaml as the proposed v1 migration.
+#    # Both coexist until the feedstock completes its v0 to v1 switch.
+# build:
+#  script:
+#    env:
+#      # PYTHONUTF8 (PEP 540) guards the Windows pip-install stdout-decode
+#      # trap (G19) for Rust+PyO3 builds; CARGO_PROFILE_RELEASE_STRIP is the
+#      # conda-forge canonical default for all Rust builds. LTO=fat is
+#      # deliberately omitted: this is a per-Python compiled build (the
+#      # deployed feedstock ships one artifact per Python via abi3-py37 in
+#      # Cargo.toml but does NOT use the abi3 matrix-collapse), so the LTO
+#      # cost would be paid once per Python per platform, risking the Azure
+#      # 6h Windows timeout. The deployed v0 has no env block; these were
+#      # added as the canonical Rust+PyO3 hardening for the v1 migration.
+#    content:
+#      # Mirrors the deployed v0 two-entry script (pip install, then
+#      # cargo-bundle-licenses). Collapsed the v0 list into env+content per
+#      # the canonical maturin shape; order preserved.
+# requirements:
+#  build:
+#    # cross-python guard mirrors the deployed feedstock's
+#    # python + cross-python_<target_platform> cross-compile deps.
+#  host:
+#    # maturin bumped >=1.2,<2.0 (deployed) to >=1.7,<2.0 to match the
+#    # 5.0.13 sdist pyproject [build-system] requires "maturin>=1.7,<2.0"
+#    # (dependency-fix). Cargo.toml deps are pure-Rust (pyo3 + httlib-hpack),
+#    # no system libs (no openssl/ring/zlib), so host needs no extra libs.
+#  run:
+#    # python only — matches the deployed feedstock; abi3 extension has no
+#    # runtime deps.
+# tests:
+#    # CFEP-25-style python.imports + pip_check (modernizes the v0 imports +
+#    # `pip check` command test). python_min omitted: requires-python is
+#    # >=3.7, below the conda-forge 3.10 floor, so the default floor applies
+#    # and no python_version pin is needed on a per-Python compiled build.
+# extra:
+#    # platform-expansion flagged: the deployed feedstock ships only
+#    # linux_64 / osx_64 / win_64 (.ci_support). As a pure-Rust+PyO3 package
+#    # with no system-lib deps, it is a clean candidate to widen to
+#    # linux_aarch64 + osx_arm64 at submission. Do NOT edit conda-forge.yml
+#    # here; the token records the intent.
+####

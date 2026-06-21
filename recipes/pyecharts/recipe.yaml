@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: pyecharts
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyecharts/pyecharts-${{ version }}.tar.gz
+  sha256: 077f8205390aea705b8cc0be9d0c09916a2c060e9e5c8d9c9d11b7d8f4bdc1da
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jinja2 >=2.11.3
+    - prettytable
+    - simplejson
+
+tests:
+  - python:
+      imports:
+        - pyecharts
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Python options, make charting easier
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pyecharts.org/
+  repository: https://github.com/pyecharts/pyecharts
+  documentation: https://pyecharts.org/#/en-us/
+  description: |
+    Apache Echarts is easy-to-use, highly interactive and highly performant
+    javascript visualization library under Apache license. Since its first
+    public release in 2013, it now dominates over 74% of Chinese web
+    front-end market. Yet Python is an expressive language and is loved by
+    data science community. Combining the strength of both technologies,
+    pyecharts is born.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyecharts
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyecharts
+  cfe-purls:
+    - pkg:conda/pyecharts@${{ version }}
+    - pkg:pypi/pyecharts@${{ version }}
+  cfe-upstream-repo: https://github.com/pyecharts/pyecharts
+  cfe-upstream-homepage: https://pyecharts.org/
+  cfe-import-names: [pyecharts]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyecharts-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (keep-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 2.1.0; local meta.yaml refreshed to mirror the deployed feedstock and
+#    # KEPT. This recipe.yaml is the proposed v0-to-v1 migration, built/tested
+#    # locally. cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml.
+# requirements:
+#  host:
+#    # setuptools kept in host: pyproject build-backend is setuptools.build_meta
+#    # (setup.py reads a static pyecharts/_version.py, NOT setuptools_scm at
+#    # build time, so no setuptools-scm host dep needed; matches the deployed
+#    # feedstock host block). G39 does not apply (no private _version_helper
+#    # import; _version.py is a plain static module).
+#  run:
+#    # core deps only: jinja2 / prettytable / simplejson. The PyPI extras
+#    # (images/PIL, phantomjs, pyppeteer, selenium) are optional and excluded
+#    # per Simplicity First / G25 (none activated).
+# context:
+#    # python_min omitted: PyPI requires_python is null and pyproject declares
+#    # requires-python >=3.7, both below the conda-forge 3.10 floor; let
+#    # conda-forge-pinning supply python_min at the default floor.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test. import name verified against the sdist
+#    # top-level __init__.py (G7): pyecharts.
+####

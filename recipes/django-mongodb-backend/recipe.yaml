@@ -2,16 +2,16 @@
 schema_version: 1
 
 context:
-  name: django-mongodb-backend
-  version: "5.2.2"
+  version: "6.0.3"
+  python_min: "3.12"
 
 package:
-  name: ${{ name|lower }}
+  name: django-mongodb-backend
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_mongodb_backend-${{ version }}.tar.gz
-  sha256: 2ab1e892fbd936a194c5881aa2a4dce3707ece3c4b2f9744233b8ff785263d46
+  url: https://pypi.org/packages/source/d/django-mongodb-backend/django_mongodb_backend-${{ version }}.tar.gz
+  sha256: d5bbe460c4f1d6366242993c8894d03752a789737ef9dcd09b496bb9135d360f
 
 build:
   number: 0
@@ -25,8 +25,8 @@ requirements:
     - hatch-requirements-txt >=0.4.1
     - pip
   run:
-    - python >=${{ python_min }},<4.0
-    - django >=5.2,<6.0
+    - python >=${{ python_min }}
+    - django >=6.0,<6.1
     - pymongo >=4.7,<5.0
 
 tests:
@@ -34,15 +34,78 @@ tests:
       imports:
         - django_mongodb_backend
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Django MongoDB Backend
-  homepage: https://www.mongodb.com/docs/languages/python/django-mongodb/current/
   license: Apache-2.0
   license_file: LICENSE
+  homepage: https://www.mongodb.com/docs/languages/python/django-mongodb/current/
   repository: https://github.com/mongodb/django-mongodb-backend
+  documentation: https://django-mongodb-backend.readthedocs.io
+  description: |
+    Django MongoDB Backend is a database backend that lets you use MongoDB
+    as the data store for Django applications, providing a Django ORM
+    interface backed by MongoDB collections.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-mongodb-backend
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-mongodb-backend
+  cfe-purls:
+    - pkg:conda/django-mongodb-backend@${{ version }}
+    - pkg:pypi/django-mongodb-backend@${{ version }}
+  cfe-upstream-repo: https://github.com/mongodb/django-mongodb-backend
+  cfe-upstream-homepage: https://www.mongodb.com/docs/languages/python/django-mongodb/current/
+  cfe-import-names: [django_mongodb_backend]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-mongodb-backend-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock is STILL v0/meta.yaml (deployed at 6.0.3). Local
+#    # meta.yaml refreshed to faithfully mirror the deployed feedstock; this
+#    # recipe.yaml is the proposed v0 to v1 migration at the same version.
+#    # MAJOR bump 5.2.2 to 6.0.3 reconciled deps + requires-python against the
+#    # 6.0.3 sdist (django jumped to 6.0; pymongo floor unchanged at 4.7).
+# context:
+#    # python_min raised 3.10 to 3.12 (upstream requires-python >=3.12 for
+#    # 6.x; classifiers list only 3.12/3.13). Declared in context because this
+#    # is a fresh-shape recipe and the floor is strictly above the cf default.
+#  host:
+#    # hatchling + hatch-requirements-txt >=0.4.1 (deps are dynamic via
+#    # hatch-requirements-txt reading requirements.txt). No setuptools — pure
+#    # hatchling pyproject. Mirrors the deployed feedstock host block.
+#  run:
+#    # django >=6.0,<6.1 and pymongo >=4.7,<5.0 are BOTH upstream-declared in
+#    # the 6.0.3 requires_dist (django<6.1,>=6.0 / pymongo<5.0,>=4.7) — the
+#    # upper bounds are load-bearing under pip_check (G24), so mirrored.
+#    # Dropped the feedstock's noisy commented-out docs-extra lines
+#    # (sphinx/furo/sphinx-copybutton) — they are the [docs] optional extra,
+#    # not runtime deps; conda has no extras (G25).
+# tests:
+#    # Standard CFEP-25 python.imports triad. django_mongodb_backend's
+#    # __init__ runs check_django_compatability() + register_*() at import;
+#    # these register lookups/fields against Django machinery but do not need
+#    # DJANGO_SETTINGS_MODULE, so the plain imports test holds (feedstock CI
+#    # uses the same import). No package_contents escape hatch needed.
+####

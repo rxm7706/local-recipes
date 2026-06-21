@@ -1,0 +1,121 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.25"
+
+package:
+  name: validate-pyproject
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/validate-pyproject/validate_pyproject-${{ version }}.tar.gz
+  sha256: e68c12d1cb0d8ddc269ffc42875a81727ddb7865000aa6d2f77d833b55c53f0b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - validate-pyproject = validate_pyproject.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.2.0
+    - setuptools-scm >=7.1
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - python-fastjsonschema >=2.16.2,<=3
+
+tests:
+  - python:
+      imports:
+        - validate_pyproject
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - validate-pyproject --help
+
+about:
+  summary: Validation library and CLI tool for checking on pyproject.toml files using JSON Schema
+  license: BSD-3-Clause AND MIT AND MPL-2.0
+  license_file:
+    - NOTICE.txt
+    - LICENSE.txt
+    - src/validate_pyproject/pre_compile/NOTICE.template
+    - tests/invalid-examples/pdm/LICENSE
+    - tests/examples/flit/LICENSE
+    - tests/examples/atoml/LICENSE
+    - tests/examples/trampolim/LICENSE
+    - tests/examples/pdm/LICENSE
+  homepage: https://github.com/abravalheri/validate-pyproject
+  repository: https://github.com/abravalheri/validate-pyproject
+  documentation: https://validate-pyproject.readthedocs.io
+  description: |
+    validate-pyproject is a validation library and CLI tool for checking on
+    pyproject.toml files using JSON Schema. It validates the standardized
+    [build-system] and [project] tables, as well as the [tool.setuptools]
+    table, and is extensible via plugins for other tool tables.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: validate-pyproject
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: validate-pyproject
+  cfe-purls:
+    - pkg:conda/validate-pyproject@${{ version }}
+    - pkg:pypi/validate-pyproject@${{ version }}
+  cfe-upstream-repo: https://github.com/abravalheri/validate-pyproject
+  cfe-upstream-homepage: https://github.com/abravalheri/validate-pyproject
+  cfe-import-names: [validate_pyproject]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/validate-pyproject-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 KEEP-meta: conda-forge feedstock is STILL v0/meta.yaml. meta.yaml
+#    # kept as faithful clean mirror of the deployed feedstock at 0.25; this
+#    # recipe.yaml is the proposed v1 migration (built+tested locally). Delete
+#    # meta.yaml only after the feedstock completes its own v0-to-v1 switch.
+# requirements:
+#  host:
+#    # setuptools + setuptools-scm kept in host: build-backend is
+#    # setuptools.build_meta with setuptools_scm[toml] for versioning. Matches
+#    # deployed feedstock host block.
+#  run:
+#    # base [project.dependencies] is ONLY fastjsonschema (conda:
+#    # python-fastjsonschema). packaging / trove-classifiers / tomli live under
+#    # the all extra; validate-pyproject-schema-store under the store extra. Both
+#    # extras un-activated -> dropped per G25. tomli is therefore NOT listed (its
+#    # python_version<3.11 marker is on the all extra, not a base dep). Matches
+#    # the deployed feedstock, which comments these out.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; added a script test for the CLI
+#    # entry point (validate-pyproject --help) mirroring the original local
+#    # meta.yaml command.
+# context:
+#    # python_min omitted: upstream requires-python is >=3.8, below the
+#    # conda-forge 3.10 floor, so the default python_min applies. No override.
+####

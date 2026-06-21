@@ -1,6 +1,5 @@
 {% set name = "peewee-migrate" %}
 {% set version = "1.15.0" %}
-{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -21,8 +20,8 @@ build:
 requirements:
   host:
     - python {{ python_min }}
-    - uv-build >=0.10.2,<0.11.0
     - pip
+    - uv-build >=0.10.2,<0.11.0
   run:
     - python >={{ python_min }},<4.0
     - peewee
@@ -37,6 +36,7 @@ test:
     - pw-migrate --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/klen/peewee_migrate

@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.18.3"
+
+package:
+  name: pypac
+  version: ${{ version }}
+
+source:
+  url: https://github.com/carsonyl/pypac/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 878c1374dc872dba81914f13e154de9d091e283527259eae9db72daf2d734d4c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.0.0
+    - tldextract >=2.2.3
+    - dukpy >=0.2.2
+    - if: osx
+      then:
+        - pyobjc-framework-SystemConfiguration >=3.2.1
+
+tests:
+  - python:
+      imports:
+        - pypac
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Proxy auto-config and auto-discovery for Python.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/carsonyl/pypac
+  repository: https://github.com/carsonyl/pypac
+  documentation: https://pypac.readthedocs.io
+  description: |
+    PyPAC is a library for finding and using proxy auto-config (PAC) files in
+    Python. It can find PAC files via the operating system's auto-discovery
+    settings and via DNS, parse them, and select the appropriate proxy for a
+    given URL. It also provides a requests Session subclass that handles PAC
+    proxy resolution transparently.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pypac
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pypac
+  cfe-purls:
+    - pkg:conda/pypac@${{ version }}
+    - pkg:pypi/pypac@${{ version }}
+  cfe-upstream-repo: https://github.com/carsonyl/pypac
+  cfe-upstream-homepage: https://github.com/carsonyl/pypac
+  cfe-import-names: [pypac]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pypac-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering re-verify: GENUINELY BEHIND. Local 0.16.4 -> deployed
+#    # feedstock 0.18.3 (== PyPI latest). GitHub-tag and PyPI numbering agree
+#    # (no copilotkit-style divergence). Full refresh applied.
+#    # C1 path: feedstock is still v0 (recipe/meta.yaml present, recipe.yaml
+#    # 404). meta.yaml kept as a faithful, un-annotated mirror of the deployed
+#    # feedstock; this recipe.yaml is the proposed v1.
+# source:
+#    # cfe-source-kind is github-tag, NOT pypi-sdist: the deployed feedstock
+#    # sources github.com/carsonyl/pypac/archive/refs/tags/v<ver>.tar.gz.
+#    # Mirrored that source-kind. sha256 verified against the GitHub tarball
+#    # AND matches the deployed feedstock sha256 byte-for-byte.
+# requirements:
+#  host:
+#    # setuptools kept in host: setuptools.build_meta backend (setup.cfg /
+#    # setup.py project, no pyproject project table). wheel dropped (G8
+#    # redundant pair); matches deployed feedstock host block.
+#  run:
+#    # pyobjc-framework-SystemConfiguration is osx-only (upstream marker
+#    # sys_platform=="darwin"). v1 if: osx / then: selector replaces the v0
+#    # "# [osx]" comment selector + the __linux/__osx/__win virtual-package
+#    # trick the deployed feedstock used to stay noarch. The selector requires
+#    # noarch_platforms in conda-forge.yml (G12) to clear the conda-smithy
+#    # noarch-selectors lint.
+#    # python_min floor: upstream requires-python is >=2.7 (excluding 3.0-3.4);
+#    # conda-forge floor is 3.10, so python_min omitted from context.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"], modernizing the feedstock's
+#    # single python_min test pin. pypac imports cleanly standalone.
+####

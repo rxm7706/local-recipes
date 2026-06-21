@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.2"
+
+package:
+  name: antlr4-tools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/antlr4-tools/antlr4_tools-${{ version }}.tar.gz
+  sha256: 8af6fba512fc168e48eb93690ed21bdbe8848ed812d12b365d9d259a26ad6ba3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - antlr4=antlr4_tool_runner:tool
+      - antlr4-parse=antlr4_tool_runner:interp
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - install-jdk
+    - openjdk
+
+tests:
+  - python:
+      imports:
+        - antlr4_tool_runner
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - antlr4-parse --help
+
+about:
+  homepage: https://pypi.org/project/antlr4-tools/
+  license: MIT
+  license_file: LICENSE
+  summary: Tools to run ANTLR4 tool and grammar interpreter/profiler
+  repository: https://github.com/antlr/antlr4-tools
+  documentation: https://github.com/antlr/antlr4-tools/blob/master/README.md
+  description: |
+    antlr4-tools provides the antlr4 and antlr4-parse command-line tools that
+    let you run the ANTLR4 parser generator and grammar interpreter/profiler
+    without installing Java or ANTLR yourself. It only requires Python 3; the
+    underlying JDK and ANTLR jar are provisioned automatically at runtime.
+    Homepage: http://www.antlr.org
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: antlr4-tools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: antlr4-tools
+  cfe-purls:
+    - pkg:conda/antlr4-tools@${{ version }}
+    - pkg:pypi/antlr4-tools@${{ version }}
+  cfe-upstream-repo: https://github.com/antlr/antlr4-tools
+  cfe-upstream-homepage: http://www.antlr.org
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/antlr4-tools-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# requirements:
+#  run:
+#    # setup.py requires install-jdk to pass pip check; openjdk provides a JDK
+#    # at runtime for the wrapped ANTLR jar. Neither is removable.
+# tests:
+#  script:
+#    # antlr4 --help is omitted: it triggers install-jdk to fetch a JRE at
+#    # runtime, unreliable in the test sandbox. antlr4-parse --help runs
+#    # without provisioning a JDK.
+####

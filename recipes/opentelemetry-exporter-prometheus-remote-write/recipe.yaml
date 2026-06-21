@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.63b1"
+
+package:
+  name: opentelemetry-exporter-prometheus-remote-write
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-prometheus-remote-write/opentelemetry_exporter_prometheus_remote_write-${{ version }}.tar.gz
+  sha256: 19b7f49d18b2bb75df77d781c4629800315dcc0b21e4e6d821156b3db5f19ece
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - protobuf >=5.26,<7.0
+    - requests >=2.28,<3.dev0
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-sdk >=1.12,<2.dev0
+    - python-snappy ~=0.6
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.exporter.prometheus_remote_write
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Prometheus Remote Write Metrics Exporter for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/exporter/opentelemetry-exporter-prometheus-remote-write
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
+  documentation: https://opentelemetry-python-contrib.readthedocs.io/
+  description: |
+    This library allows exporting metrics to Prometheus-compatible
+    backends that support the Prometheus Remote Write protocol, as part
+    of the OpenTelemetry Python instrumentation ecosystem.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-exporter-prometheus-remote-write
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-exporter-prometheus-remote-write
+  cfe-purls:
+    - pkg:conda/opentelemetry-exporter-prometheus-remote-write@${{ version }}
+    - pkg:pypi/opentelemetry-exporter-prometheus-remote-write@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/exporter/opentelemetry-exporter-prometheus-remote-write
+  cfe-import-names: [opentelemetry.exporter.prometheus_remote_write]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-prometheus-remote-write-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 0.63b1 (a pre-release version string). Local meta.yaml refreshed to
+#    # faithfully mirror the deployed feedstock; this recipe.yaml is the
+#    # proposed v1 migration, built/tested locally alongside it. Both files
+#    # coexist until the feedstock completes its own v0 to v1 switch.
+# source:
+#    # G4: the PyPI sdist ships NO LICENSE file (verified via tar listing);
+#    # the deployed feedstock ships LICENSE directly in recipe/ (canonical
+#    # license-file pattern 2). LICENSE pulled into this recipe dir; rattler
+#    # resolves license_file: LICENSE relative to the recipe directory.
+# requirements:
+#  host:
+#    # hatchling is the sole build backend (pyproject [build-system].requires
+#    # = ["hatchling"]); no redundant wheel/setuptools (G8 clean).
+#  run:
+#    # protobuf/requests/opentelemetry-api/opentelemetry-sdk/python-snappy
+#    # ranges mirror the deployed feedstock (upstream declares ~= markers in
+#    # [project.dependencies]; the feedstock expanded them to load-bearing
+#    # ranges, kept verbatim for pip_check fidelity).
+# context:
+#    # python_min omitted: upstream requires-python is >=3.10 (the conda-forge
+#    # default floor); conda-forge-pinning supplies python_min.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; import name is the dotted
+#    # namespace opentelemetry.exporter.prometheus_remote_write (G7-verified
+#    # against the sdist top-level __init__.py at src/opentelemetry/exporter/
+#    # prometheus_remote_write/__init__.py).
+####

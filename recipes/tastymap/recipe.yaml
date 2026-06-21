@@ -1,0 +1,143 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.1"
+
+package:
+  name: tastymap
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tastymap/tastymap-${{ version }}.tar.gz
+  sha256: c1ca63c4a0ac93147db8fde11d7aee79a4d4aa14dbe15287482bdf67dd63a76c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - tastymap = tastymap.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-regex-commit
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - matplotlib-base
+  run_constraints:
+    - panel
+    - param
+    - requests
+    - xarray
+    - netcdf4
+    - pooch
+
+tests:
+  - python:
+      imports:
+        - tastymap
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+        - panel
+        - param
+        - requests
+        - xarray
+        - netcdf4
+        - pooch
+    script:
+      - pip check
+      - tastymap --help
+
+about:
+  summary: Color palettes for your palate
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ahuang11/tastymap
+  repository: https://github.com/ahuang11/tastymap
+  documentation: https://ahuang11.github.io/tastymap/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tastymap
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tastymap
+  cfe-purls:
+    - pkg:conda/tastymap@${{ version }}
+    - pkg:pypi/tastymap@${{ version }}
+  cfe-upstream-repo: https://github.com/ahuang11/tastymap
+  cfe-upstream-homepage: https://github.com/ahuang11/tastymap
+  cfe-import-names: [tastymap]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tastymap-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 0.4.1 build 1. meta.yaml refreshed to mirror the deployed feedstock
+#    # exactly; this recipe.yaml is the proposed v0-to-v1 migration at the same
+#    # version. Both files coexist until the feedstock migrates.
+# build:
+#  python:
+#    entry_points:
+#      # tastymap.cli:main confirmed in sdist (tastymap/cli.py +
+#      # [project.scripts] in pyproject.toml). Mirrors the deployed feedstock.
+# requirements:
+#  host:
+#    # hatchling + hatch-regex-commit are upstream's [build-system].requires;
+#    # both load-bearing (hatch-regex-commit drives version), kept verbatim.
+#  run:
+#    # matplotlib mapped to matplotlib-base (conda-forge convention); numpy
+#    # unconditional. The ai (marvin, pydantic) and ui (netcdf4, panel, param,
+#    # pooch, requests, xarray) extras are NOT activated by the base install,
+#    # so per G25 they are NOT flattened into run; the ui set stays in
+#    # run_constraints, mirroring the feedstock's run_constrained block. ai
+#    # extra deps omitted entirely (feedstock never listed them).
+#  run_constraints:
+#    # ui-extra deps, soft-pinned only (run_constrained -> run_constraints in v1).
+# tests:
+#    # CFEP-25 triad [python_min.*, "*"] modernizes the feedstock's single
+#    # python_min test pin; second test block keeps the feedstock's
+#    # `tastymap --help` CLI smoke-test + pip check.
+#    # The CLI smoke-test requires the ui-extra deps in the TEST env only:
+#    # cli.py does `from .ui import TastyKitchen`, and ui.py hard-imports
+#    # panel/param/requests/xarray at module load (raises ImportError without
+#    # them). `import tastymap` itself only needs numpy+matplotlib (core/models),
+#    # so the ui extras stay OUT of run: (G25 — extra not activated by base
+#    # install) and live ONLY in the second test block's requirements.run,
+#    # mirroring the deployed feedstock's test.requires. Verified empirically:
+#    # base-install `tastymap --help` fails on missing panel.
+# about:
+#    # v1 field names: home -> homepage, dev_url -> repository; added
+#    # documentation from PyPI project_urls. upstream requires-python >=3.9
+#    # clamps to the conda-forge 3.10 floor, so python_min is omitted from
+#    # context (default floor applies).
+####

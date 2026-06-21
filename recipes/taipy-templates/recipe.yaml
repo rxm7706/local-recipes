@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1.1"
+
+package:
+  name: taipy-templates
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/taipy-templates/taipy_templates-${{ version }}.tar.gz
+  sha256: 762e972160ef601a78be08737fcaf6adbf8657d0ac1952431df3cf57e6ba1e13
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<3.13
+
+tests:
+  - python:
+      imports:
+        - taipy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: An open-source package holding Taipy application templates.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/avaiga/taipy-templates
+  repository: https://github.com/Avaiga/taipy
+  description: |
+    An open-source package holding Taipy application templates. Provides
+    cookiecutter-based scaffolding (default and scenario-data-management
+    templates) for bootstrapping new Taipy applications.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: taipy-templates
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: taipy-templates
+  cfe-purls:
+    - pkg:conda/taipy-templates@${{ version }}
+    - pkg:pypi/taipy-templates@${{ version }}
+  cfe-upstream-repo: https://github.com/avaiga/taipy-templates
+  cfe-upstream-homepage: https://github.com/Avaiga/taipy
+  cfe-import-names: [taipy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/taipy-templates-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml; local
+#    # meta.yaml refreshed to faithfully mirror the deployed feedstock at 4.1.1
+#    # (was a stale 3.0.0 mirror). recipe.yaml is the proposed v1 migration,
+#    # bumped 3.0.0 -> 4.1.1 (MAJOR). Both files coexist until the feedstock
+#    # completes its own v0->v1 switch.
+# context:
+#    # python_min omitted: upstream requires-python is ">=3.9,<3.13"; 3.9 is
+#    # below the conda-forge 3.10 floor, so the effective floor is the default
+#    # 3.10 supplied by conda-forge-pinning. No context override needed.
+# requirements:
+#  host:
+#    # setuptools kept in host: pyproject [build-system].requires =
+#    # ["setuptools>=76", "wheel"], backend setuptools.build_meta. wheel dropped
+#    # (G8) - pip provides the wheel build under PEP 517. Matches feedstock host.
+#  run:
+#    # zero runtime deps: PyPI requires_dist is None and setup.requirements.txt
+#    # is empty (templates-only / cookiecutter scaffolding package). Only python.
+#    # Upper bound <3.13 is upstream-declared (requires-python ">=3.9,<3.13") and
+#    # load-bearing (install-time gate, not just classifiers); mirrored here, not
+#    # speculative. optimize_recipe DEP-002 (move to run_constrained) is for
+#    # SPECULATIVE caps; upstream-explicit caps stay in run and are accepted by
+#    # reviewers (per CFE skill Sub-workflow rule). Deliberately kept.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"], modernizing the feedstock's
+#    # single-version python_version. G7 verified: top_level.txt = taipy and
+#    # taipy/__init__.py guards every sub-import with find_spec, so bare
+#    # "import taipy" succeeds standalone with no taipy-core/gui/etc installed.
+#    # Standard python.imports test holds - no package_contents escape hatch.
+####

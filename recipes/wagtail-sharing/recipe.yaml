@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.16"
+  python_min: "3.12"
+
+package:
+  name: wagtail-sharing
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-sharing/wagtail_sharing-${{ version }}.tar.gz
+  sha256: bfe1b1dc76b468cbd88a55c650bdd39c946c70a0754dd6736d171145c2e80b4e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64
+    - setuptools-scm >=8
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=6.2
+
+tests:
+  - python:
+      imports:
+        - wagtailsharing
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Easier sharing of Wagtail drafts
+  license: CC0-1.0
+  license_file: LICENSE
+  homepage: https://github.com/cfpb/wagtail-sharing
+  repository: https://github.com/cfpb/wagtail-sharing
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-sharing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-sharing
+  cfe-purls:
+    - pkg:conda/wagtail-sharing@${{ version }}
+    - pkg:pypi/wagtail-sharing@${{ version }}
+  cfe-upstream-repo: https://github.com/cfpb/wagtail-sharing
+  cfe-upstream-homepage: https://github.com/cfpb/wagtail-sharing
+  cfe-import-names: [wagtailsharing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-sharing-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock recipe/recipe.yaml is still 404 on main
+#    # (deployed state is recipe/meta.yaml at 2.16). Kept the local meta.yaml as
+#    # a faithful mirror of the deployed v0; authored this recipe.yaml as the
+#    # proposed v1. cfe-forge-recipe-updates-needed includes meta-yaml-to-recipe-yaml.
+# context:
+#    # python_min: "3.12" is REQUIRED, not omitted — upstream pyproject declares
+#    # requires-python = ">=3.12". G31 upward-floor-override case.
+# requirements:
+#  host:
+#    # setuptools-scm >=8 + setuptools >=64 + wheel kept: pyproject build-system
+#    # requires = ["setuptools>=64", "setuptools_scm[toml]>=8", "wheel"]; version
+#    # is dynamic (setuptools_scm). Matches the deployed feedstock host intent.
+#  run:
+#    # dropped the feedstock's bare `django` run dep: it is NOT upstream-declared
+#    # (pyproject [project.dependencies] is only `wagtail>=6.2`); wagtail pulls
+#    # Django transitively. wagtail >=6.2 mirrors the sole upstream-declared dep.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtailsharing/__init__.py is EMPTY,
+#    # so `import wagtailsharing` does not trigger Django app-registry load
+#    # (AppConfig.ready() lives in apps.py, loaded by Django at app-init, not on
+#    # bare import) — standard python.imports holds; no package_contents escape hatch.
+####

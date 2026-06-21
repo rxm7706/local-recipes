@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.2"
+
+package:
+  name: laces
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/laces/laces-${{ version }}.tar.gz
+  sha256: 3218e09c1889ae5cf3fc7a82f5bb63ec0c7879889b6a9760bfc42323c694b84d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+
+tests:
+  - python:
+      imports:
+        - laces
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Django components that know how to render themselves.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/tbrlpld/laces
+  repository: https://github.com/tbrlpld/laces
+  documentation: https://github.com/tbrlpld/laces/blob/main/README.md
+  description: |
+    Laces provides a way to define Django components that know how to render
+    themselves, encapsulating template and context logic into reusable objects.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: laces
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: laces
+  cfe-purls:
+    - pkg:conda/laces@${{ version }}
+    - pkg:pypi/laces@${{ version }}
+  cfe-upstream-repo: https://github.com/tbrlpld/laces
+  cfe-upstream-homepage: https://github.com/tbrlpld/laces
+  cfe-import-names: [laces]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/laces-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock STILL v0/meta.yaml at 0.1.2; meta.yaml kept as a
+#    # faithful un-annotated mirror of the deployed feedstock; recipe.yaml is
+#    # the proposed v1 migration. Local bump 0.1.0 to 0.1.2 (matches feedstock).
+# requirements:
+#  host:
+#    # flit-core project (build-backend = flit_core.buildapi); only flit-core
+#    # + pip in host. No setuptools/wheel (G8 — flit needs neither).
+#  run:
+#    # only Django>=3.2 from upstream [project.dependencies]; dev/testing
+#    # extras not activated. requires-python >=3.8 is below the cf 3.10 floor,
+#    # so python_min stays at the default (omitted from context).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"], modernizing the feedstock's
+#    # single-version python_version. laces/__init__.py is trivial (version
+#    # constants only, no Django imports at module load), so import laces works
+#    # standalone without DJANGO_SETTINGS_MODULE — standard python.imports test
+#    # holds; no package_contents escape hatch needed.
+####

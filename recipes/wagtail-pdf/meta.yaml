@@ -1,5 +1,5 @@
 {% set name = "wagtail-pdf" %}
-{% set version = "0.2.1" %}
+{% set version = "2.0.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://github.com/donhauser/wagtail-pdf/archive/{{ version }}.tar.gz
-  sha256: ed1e04e004c39d9cddd9d2b6205231bb99d6902324aa34581766890bff520c5e
+  sha256: 54ad1d87ae6795e4572bb7b98cc072f07aa26517ac94e99f09a740733e61d760
 
 build:
   noarch: python
@@ -16,11 +16,13 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - wagtail
+    - django-weasyprint
 
 test:
   imports:
@@ -29,10 +31,11 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/donhauser/wagtail-pdf
-  summary: PDF rendering views for the Wagtail CMS 
+  summary: PDF rendering views for the Wagtail CMS
   license: Apache-2.0
   license_file:
     - LICENSE

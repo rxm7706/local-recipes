@@ -1,30 +1,31 @@
 {% set name = "tabpy" %}
-{% set version = "2.10.0" %}
+{% set version = "2.14.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/tabpy-{{ version }}.tar.gz
-  sha256: b96510d4b1d5f00dc10b643bc0e15612fcc646a917d5aea3ec261708097b02cb
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tabpy-{{ version }}.tar.gz
+  sha256: 4cf07d46879026dffac1e39ed50e26f434f4cf73e630a47615af3a61d43a3d11
 
 build:
   entry_points:
     - tabpy=tabpy.tabpy:main
-    - tabpy-deploy-models=tabpy.models.deploy_models:main
     - tabpy-user=tabpy.utils.tabpy_user:main
+    - tabpy-deploy-models=tabpy.models.deploy_models:main
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - pytest-runner
     - pip
+    - setuptools
   run:
-    - python >=3.7
+    - python >={{ python_min }}
     - cloudpickle
     - configparser
     - coverage
@@ -50,6 +51,7 @@ requirements:
     - twisted
     - urllib3
     - pyarrow
+    - libarrow-flight
 
 test:
   imports:
@@ -57,10 +59,10 @@ test:
   commands:
     - pip check
     - tabpy --help
-    - tabpy-deploy-models --help
     - tabpy-user --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/tableau/TabPy

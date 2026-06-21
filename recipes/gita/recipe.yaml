@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.8.2"
+
+package:
+  name: gita
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/gita/gita-${{ version }}.tar.gz
+  sha256: 064e5cbcfa5df76409cfd8e70142f8153f6ecc40fb35d3a28a0a04054d5fb3fd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - argcomplete
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - gita
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - gita --help
+
+about:
+  summary: Manage multiple git repos with sanity
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/nosarthur/gita
+  repository: https://github.com/nosarthur/gita
+  description: |
+    gita is a command-line tool to manage multiple git repositories side by
+    side. It displays the status of each repo, runs delegated git/shell
+    commands across groups of repos, and provides shell auto-completion.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gita
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gita
+  cfe-purls:
+    - pkg:conda/gita@${{ version }}
+    - pkg:pypi/gita@${{ version }}
+  cfe-upstream-repo: https://github.com/nosarthur/gita
+  cfe-upstream-homepage: https://github.com/nosarthur/gita
+  cfe-import-names: [gita]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gita-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge gita-feedstock is still v0/meta.yaml at
+#    # 0.16.8.2. meta.yaml kept as a faithful mirror of the deployed feedstock;
+#    # this recipe.yaml is our proposed v1 migration at the same version.
+# context:
+#    # python_min omitted — upstream requires-python is >=3.8, below the
+#    # conda-forge 3.10 floor, so the default floor applies (let pinning supply it).
+# requirements:
+#  host:
+#    # setuptools kept in host — legacy setup.py/setup.cfg project (no
+#    # pyproject.toml); matches the deployed feedstock host block (G8: setuptools
+#    # is genuinely required here, not a redundant grayskull addition).
+#  run:
+#    # argcomplete + packaging mirror upstream setup.py install_requires; no
+#    # speculative upper bounds (none declared upstream).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test pin. Added a script test for the `gita` console
+#    # script (entry point gita.__main__:main); v1 derives the entry point from
+#    # the wheel, so no explicit build.entry_points block is needed.
+####

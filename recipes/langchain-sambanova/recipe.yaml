@@ -65,6 +65,10 @@ extra:
     - pkg:pypi/langchain-sambanova@${{ version }}
   cfe-upstream-repo: https://github.com/sambanova/langchain-sambanova
   cfe-upstream-homepage: https://github.com/sambanova/langchain-sambanova
+  cfe-import-names: [langchain_sambanova]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: blocked-pending-prerequisites
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -73,4 +77,8 @@ extra:
   cfe-last-checked: 2026-06-19T13:36:19Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:28:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####

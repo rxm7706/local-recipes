@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.7"
+
+package:
+  name: wagtailmenus
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jazzband/wagtailmenus/archive/v${{ version }}.tar.gz
+  sha256: 9d14c5835bd0b0f1829ed9f8a3fb4931753f818dd27b522319546b9c65bdc9f1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - django
+    - django-modelcluster
+    - wagtail >=6.3
+    - django-cogwheels ==0.3
+
+tests:
+  - python:
+      imports:
+        - wagtailmenus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: An app to help you manage menus in your Wagtail projects more consistently.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/jazzband/wagtailmenus
+  repository: https://github.com/jazzband/wagtailmenus
+  description: |
+    wagtailmenus is an extension for the Wagtail CMS that helps you define,
+    manage, and render menus (main menus and flat menus) in your Wagtail
+    projects more consistently and flexibly.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtailmenus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtailmenus
+  cfe-purls:
+    - pkg:conda/wagtailmenus@${{ version }}
+    - pkg:pypi/wagtailmenus@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/wagtailmenus
+  cfe-upstream-homepage: https://github.com/jazzband/wagtailmenus
+  cfe-import-names: [wagtailmenus]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtailmenus-feedstock
+  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering re-verify: flag was a FALSE POSITIVE for numbering
+#    # divergence but local IS genuinely behind. GitHub tags (v4.0.1 .. v4.0.7)
+#    # match PyPI versions exactly with only a v-prefix; no copilotkit-style
+#    # divergence. Local 4.0.1 -> deployed 4.0.7 are distinct real releases, so
+#    # a full refresh to 4.0.7 is warranted.
+#    # C1: feedstock still v0 (recipe/meta.yaml 200, recipe/recipe.yaml 404).
+#    # meta.yaml kept as faithful un-annotated mirror of deployed 4.0.7;
+#    # recipe.yaml is the proposed v1 we maintain.
+# source:
+#    # SOURCE-KIND: deployed feedstock uses the GitHub TAG tarball
+#    # (archive/v${version}.tar.gz), NOT a PyPI sdist (a PyPI sdist DOES exist
+#    # for 4.0.7 but the feedstock has always sourced from GitHub). Mirrored the
+#    # feedstock's actual source-kind per the don't-assume rule. sha256 verified
+#    # against the downloaded GitHub tarball AND the deployed feedstock value.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py project (no pyproject.toml); matches
+#    # deployed feedstock host block.
+#  run:
+#    # upstream 4.0.7 setup.py install_requires is only wagtail>=6.3 +
+#    # django-cogwheels==0.3. requests / django / django-modelcluster are
+#    # transitive (wagtail pulls them) but the deployed feedstock lists them
+#    # explicitly and is pip_check-green; mirrored the deployed run block.
+#    # django-cogwheels ==0.3 is an upstream exact pin (load-bearing under
+#    # pip_check); NOT loosened.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version test python pin. wagtailmenus/__init__.py imports only
+#    # utils.version at top level (Django conf import is deferred inside
+#    # functions; apps.WagtailMenusConfig is referenced by string), so
+#    # `import wagtailmenus` is registry-safe — standard python.imports holds,
+#    # no CFEP-25 escape hatch needed (matches the deployed feedstock test).
+# context:
+#    # python_min omitted from context — upstream requires-python is >=3.10
+#    # (the conda-forge default floor); let conda-forge-pinning supply it.
+####

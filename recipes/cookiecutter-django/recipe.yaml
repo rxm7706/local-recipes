@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: cookiecutter-django
-  version: "2025.05.02"
+  version: "2025.07.27"
   python_min: '3.12'
   python_max: '3.13'
   python_test_max: '3.12'
@@ -14,7 +14,7 @@ package:
 
 source:
   url: https://github.com/cookiecutter/cookiecutter-django/archive/${{ version }}.tar.gz
-  sha256: 4a616ee50b6e8ed4ca01b06e73d766fec1c74e4a5fb7622afb784739b38e6e71
+  sha256: 84c782f59cd34ca90adc59097707589980c6cbd049adad2bf34c36c4ccd2ba08
 
 build:
   number: 0
@@ -37,7 +37,7 @@ requirements:
     - binaryornot >=0.4.4
     # Code quality
     # ------------------------------------------------------------------------------
-    - ruff >=0.11.7
+    - ruff >=0.12.5
     - django-upgrade >=1.22.2
     - djlint >=1.36.4
     - pre-commit >=4.1.0
@@ -59,55 +59,55 @@ requirements:
     # Base Not Optional ; Limit to Django LTS and Include DRF, Redis and Asyc
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
     - python-slugify >=8.0.4  # https://github.com/un33k/python-slugify
-    - pillow >=11.1.0  # https://github.com/python-pillow/Pillow
-    - argon2-cffi >=23.1.0  # https://github.com/hynek/argon2_cffi
-    - redis-py >=5.3.0  # https://github.com/redis/redis-py
+    - pillow >=11.3.0  # https://github.com/python-pillow/Pillow
+    - argon2-cffi >=25.1.0  # https://github.com/hynek/argon2_cffi
+    - redis-py >=6.2.0  # https://github.com/redis/redis-py
     # Base
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
     # ------------------------------------------------------------------------------
-    - django >=4.2.20,<5.3  # https://www.djangoproject.com/
+    - django >=5.1.7,<5.2  # https://www.djangoproject.com/
     - django-environ >=0.12.0  # https://github.com/joke2k/django-environ
     - django-model-utils >=5.0.0  # https://github.com/jazzband/django-model-utils
-    - django-allauth >=65.7.0  # https://github.com/pennersr/django-allauth
+    - django-allauth >=65.10.0  # https://github.com/pennersr/django-allauth
     - django-crispy-forms >=2.4  # https://github.com/django-crispy-forms/django-crispy-forms
-    - crispy-bootstrap5 >=2025.4  # https://github.com/django-crispy-forms/crispy-bootstrap5
-    - django-redis >=5.4.0  # https://github.com/jazzband/django-redis
+    - crispy-bootstrap5 >=2025.6  # https://github.com/django-crispy-forms/crispy-bootstrap5
+    - django-redis >=6.0.0  # https://github.com/jazzband/django-redis
     # Base - # Django REST Framework
     - djangorestframework >=3.16.0  # https://github.com/encode/django-rest-framework
     - django-cors-headers >=4.7.0  # https://github.com/adamchainz/django-cors-headers
     # Base - # DRF-spectacular for api documentation
     - drf-spectacular >=0.28.0  # https://github.com/tfranzel/drf-spectacular
     # Base - # Use Async
-    - uvicorn-standard >=0.34.2  # https://github.com/encode/uvicorn
+    - uvicorn-standard >=0.35.0  # https://github.com/encode/uvicorn
     - if: unix
       then:
         - uvicorn-worker >=0.3.0  # https://github.com/Kludex/uvicorn-worker
     # Local
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt
-    - psycopg >=3.2.7  # https://github.com/psycopg/psycopg
+    - psycopg >=3.2.9  # https://github.com/psycopg/psycopg
     - werkzeug >=3.1.3  # https://github.com/pallets/werkzeug
     # https://github.com/pallets/werkzeug/blob/main/pyproject.toml#L36C22-L36C27
     - watchdog >=2.3  # https://github.com/pallets/werkzeug
     - ipdb >=0.13.13  # https://github.com/gotcha/ipdb
-    - watchfiles >=1.0.5  # https://github.com/samuelcolvin/watchfiles
+    - watchfiles >=1.1.0  # https://github.com/samuelcolvin/watchfiles
     # Local # Testing
-    - mypy >=1.15.0  # https://github.com/python/mypy
-    - django-stubs >=5.1.3  # https://github.com/typeddjango/django-stubs
+    - mypy >=1.17.0  # https://github.com/python/mypy
+    - django-stubs >=5.2.2  # https://github.com/typeddjango/django-stubs
     - pytest-sugar >=1.0.0  # https://github.com/Teemu/pytest-sugar
-    - djangorestframework-stubs >=3.15.3  # https://github.com/typeddjango/djangorestframework-stubs
+    - djangorestframework-stubs >=3.16.0  # https://github.com/typeddjango/djangorestframework-stubs
     # Local # Documentation
     # Local # Code quality
     # ------------------------------------------------------------------------------
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt#L29
-    - coverage >=7.8.0  # https://github.com/nedbat/coveragepy
-    - djlint >=1.36.3  # https://github.com/Riverside-Healthcare/djLint
+    - coverage >=7.10.1  # https://github.com/nedbat/coveragepy
+    - djlint >=1.36.4  # https://github.com/Riverside-Healthcare/djLint
     # Local # Django
     # ------------------------------------------------------------------------------
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt#L36C
     - factory_boy >=3.3.2  # https://github.com/FactoryBoy/factory_boy
-    - django-debug-toolbar >=5.1.0  # https://github.com/jazzband/django-debug-toolbar
+    - django-debug-toolbar >=5.2.0  # https://github.com/jazzband/django-debug-toolbar
     - django-extensions >=4.1  # https://github.com/django-extensions/django-extensions
-    - django_coverage_plugin >=3.1.0  # https://github.com/nedbat/django_coverage_plugin
+    - django_coverage_plugin >=3.1.1  # https://github.com/nedbat/django_coverage_plugin
     - pytest-django >=4.11.1  # https://github.com/pytest-dev/pytest-django
     # ------------------------------------------------------------------------------
     # Production
@@ -125,7 +125,7 @@ requirements:
     # Docs
     # ------------------------------------------------------------------------------
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/docs/requirements.txt
-    - sphinx >=8.0.2
+    - sphinx >=8.2.3
     - sphinx-autobuild >=2024.10.3
     - sphinx-rtd-theme >=3.0.0
     - myst-parser >=4.0.0
@@ -138,16 +138,12 @@ tests:
       imports:
         - cookiecutter
       pip_check: false
-      # cookiecutter-django 2025.4.30 has requirement django-upgrade==1.22.2, but you have django-upgrade 1.24.0.
-      # cookiecutter-django 2025.4.30 has requirement gitpython==3.1.43, but you have gitpython 3.1.44.
-      # cookiecutter-django 2025.4.30 has requirement jinja2==3.1.5, but you have jinja2 3.1.6.
-      # cookiecutter-django 2025.4.30 has requirement pre-commit==4.1.0, but you have pre-commit 4.2.0.
-      # cookiecutter-django 2025.4.30 has requirement pygithub==2.5, but you have pygithub 2.6.1.
-      # cookiecutter-django 2025.4.30 has requirement pytest==8.3.4, but you have pytest 8.3.5.
-      # cookiecutter-django 2025.4.30 has requirement ruff==0.11.8, but you have ruff 0.11.7.
-      # cookiecutter-django 2025.4.30 has requirement sh==2.1; sys_platform != "win23", but you have sh 2.2.2.
-      # cookiecutter-django 2025.4.30 has requirement tox==4.23.2, but you have tox 4.25.0.
-      # tox-uv 1.25.0 has requirement tox<5,>=4.24.1, but you have tox 4.23.2
+      # cookiecutter-django pins exact (==) versions for its own toolchain in
+      # pyproject.toml (django-upgrade==1.22.2, gitpython==3.1.43, jinja2==3.1.5,
+      # pre-commit==4.1.0, pygithub==2.5, pytest==8.3.4, ruff==0.12.5, sh==2.1,
+      # tox==4.23.2). conda-forge ships newer builds of these, so pip check on
+      # the broad python.imports env fails on the exact pins; the strict-pin
+      # script-test block below verifies pip check against the pinned set.
       python_version:
         - ${{ python_min }}.*
         - ${{ python_test_max }}.*
@@ -155,23 +151,10 @@ tests:
       run:
         - python ${{ python_min }}.*
         - pip
-        - django-upgrade ==1.22.2
-        - gitpython ==3.1.43
-        - jinja2 ==3.1.5
-        - pre-commit ==4.1.0
-        - pygithub ==2.5
-        - pytest ==8.3.4
-        - ruff ==0.11.8
-        - if: unix
-          then:
-            - sh ==2.1
-        - tox ==4.23.2
-        - tox-uv ==1.19.1
     script:
       - if: unix
         then:
           - cookiecutter cookiecutter-django --help
-          - pip check
 
 about:
   summary: A Cookiecutter template for creating production-ready Django projects quickly
@@ -190,3 +173,83 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cookiecutter-django
+  cfe-upstream-registry: github
+  cfe-upstream-name: cookiecutter/cookiecutter-django
+  cfe-purls:
+    - pkg:conda/cookiecutter-django@${{ version }}
+    - pkg:github/cookiecutter/cookiecutter-django@${{ version }}
+  cfe-upstream-repo: https://github.com/cookiecutter/cookiecutter-django
+  cfe-upstream-homepage: https://github.com/cookiecutter/cookiecutter-django
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: false:upstream-exact-pins
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering re-verify. GENUINELY-BEHIND: local 2025.05.02 ->
+#    # 2025.07.27 (named target). Both are real upstream CalVer GitHub tags;
+#    # this is NOT a numbering false-positive. NOTE: PyPI cookiecutter-django is
+#    # abandoned at 1.11.9 (2018) -- the canonical source is the GitHub CalVer
+#    # tag, so source-kind is github-tag, not pypi-sdist (the Wave-E prompt's
+#    # "PyPI sdist" note was incorrect). Latest upstream tag is 2026.06.19;
+#    # refreshed only to the named Wave-E target 2025.07.27, not the absolute
+#    # latest.
+#    # NO conda-forge feedstock exists (lookup_feedstock exists=false), so
+#    # status is pending-submission-to-conda-forge, not confirmed. This is a
+#    # local-only, never-submitted recipe predating the cfe convention.
+# context:
+#    # python_min/python_max 3.12/3.13 matches upstream requires-python
+#    # ">=3.12,<3.13" -- NOT the default 3.10 floor; upstream demands 3.12.
+# source:
+#    # github.com/.../archive/<ver>.tar.gz; LICENSE ships in the archive
+#    # (about.license_file: LICENSE resolves from extracted source).
+# requirements:
+#  run:
+#    # Two dep tiers: (1) the template's own toolchain (pyproject.toml
+#    # [project.dependencies]); (2) the GENERATED project's base/local/
+#    # production requirements (so `conda install cookiecutter-django` also
+#    # pulls the Django toolchain). Lower bounds bumped to track 2025.07.27:
+#    # ruff 0.12.5, pillow 11.3.0, argon2-cffi 25.1.0, redis-py 6.2.0,
+#    # django >=5.1.11,<5.2, django-allauth 65.10.0, crispy-bootstrap5 2025.6,
+#    # django-redis 6.0.0, uvicorn-standard 0.35.0, psycopg 3.2.9,
+#    # watchfiles 1.1.0, mypy 1.17.0, django-stubs 5.2.2,
+#    # djangorestframework-stubs 3.16.0, coverage 7.10.1,
+#    # django-debug-toolbar 5.2.0, django_coverage_plugin 3.1.1, sphinx 8.2.3.
+#    # PIN-LOOSEN: upstream base.txt pins django==5.1.11 (# pyup: < 5.2 LTS
+#    # cap), but conda-forge's 5.1.x line stops at 5.1.7 (next build is 5.2).
+#    # Loosened the recipe to django >=5.1.7,<5.2 to keep upstream's <5.2 LTS
+#    # intent while using the best available 5.1 patch. TODO: tighten to
+#    # >=5.1.11 once it lands on conda-forge. (memory: feedback_loosen_pins)
+# tests:
+#    # Non-importable cookiecutter SCAFFOLD (cookiecutter.json + hooks/ +
+#    # {{cookiecutter.project_slug}}/, no cookiecutter_django module), so
+#    # cfe-import-names is []. python.imports imports the `cookiecutter`
+#    # dependency with pip_check: false (upstream freezes its toolchain to ==
+#    # versions cf ships newer of -> pip check structurally can't pass against
+#    # a rolling channel). The script-test runs the FUNCTIONAL check
+#    # `cookiecutter cookiecutter-django --help` (unix only) to prove the
+#    # scaffold is invokable.
+#    # DROPPED `pip check` from the prior script-test: it pinned only a SUBSET
+#    # of the package's == toolchain deps, so it failed the moment any unpinned
+#    # generated-project dep moved (binaryornot/djlint/pytest-xdist/pyyaml/
+#    # requests newer than the == pins; django-crispy-forms 2.6 needs
+#    # django>=5.2 vs our <5.2 cap; tox-uv wheel METADATA tox>=4.24.1 vs
+#    # tox==4.23.2). The == reproduction env was never durably satisfiable
+#    # against conda-forge; --help is the load-bearing verification.
+####

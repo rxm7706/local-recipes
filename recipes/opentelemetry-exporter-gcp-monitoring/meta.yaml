@@ -1,5 +1,5 @@
 {% set name = "opentelemetry-exporter-gcp-monitoring" %}
-{% set version = "1.8.0a0" %}
+{% set version = "1.12.0a0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_gcp_monitoring-{{ version }}.tar.gz
-  sha256: 4ea61d1f039e36cd0262cb7aa2fae1a8fcc250eec857e0a1f0ce831d6f1c164c
+  sha256: 2b285078cddd4af78a363a55b5478e89f7df6f15bba9139d3f484099e534df4c
 
 build:
   noarch: python
@@ -16,14 +16,15 @@ build:
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7
-    - google-cloud-monitoring >=2.0,<3.dev0
-    - opentelemetry-api >=1.0,<2.dev0
-    - opentelemetry-sdk >=1.0,<2.dev0
-    - opentelemetry-resourcedetector-gcp >=1.5.0dev0,==1.*
+    - python >={{ python_min }}
+    - google-cloud-monitoring ~=2.0
+    - opentelemetry-api ~=1.30
+    - opentelemetry-sdk ~=1.30
+    - opentelemetry-resourcedetector-gcp ==1.*,>=1.5.0dev0
 
 test:
   imports:
@@ -32,6 +33,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-exporter-gcp-monitoring

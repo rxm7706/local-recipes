@@ -1,29 +1,38 @@
 {% set name = "hll" %}
-{% set version = "2.1.7" %}
+{% set version = "3.0.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/HLL-{{ version }}.tar.gz
-  sha256: 619597887caa3bafe26134d2777a61947a804970eaf181fc8f430b835a2764eb
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 9f17e21f1d41c5c6e50990b730e28a6baa9d06e6c62bb320c8e8d2a4f17634b9
 
 build:
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    - cross-python_{{ target_platform }}    # [build_platform != target_platform]
   host:
     - python
+    - wheel
+    - setuptools >=30.3.0
+    - cmake >=3.16
+    - make
     - pip
   run:
     - python
 
 test:
   imports:
-    - hll
+    - HLL
   commands:
     - pip check
   requires:
@@ -31,9 +40,9 @@ test:
 
 about:
   home: https://github.com/ascv/HyperLogLog
-  summary: Fast HyperLogLog for Python
+  summary: HyperLogLog implementation in C for python.
   license: MIT
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:

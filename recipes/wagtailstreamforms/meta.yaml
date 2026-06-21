@@ -1,5 +1,5 @@
 {% set name = "wagtailstreamforms" %}
-{% set version = "4.1.0" %}
+{% set version = "5.2.6" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtailstreamforms-{{ version }}.tar.gz
-  sha256: 411b8deedd161f25fc0f028053b4ea64f24b2e083fbb537477a4dd7c2778f7e7
+  sha256: 2b8d8215a49f4e593d3ffc2465ca197d8d4818a4bdd05a65a44b9a7aae1679f6
 
 build:
   noarch: python
@@ -16,13 +16,19 @@ build:
 
 requirements:
   host:
-    - python >=3.10
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.10
-    - wagtail >=4.1,<5.3
+    - django
+    - django-recaptcha >=4.0.0
+    - psycopg >=3.2.9
+    - tox >=4.26.0
+    - wagtail-modeladmin >=2.2.0
+    - python >={{ python_min }}
+    - wagtail >=6.0,<8.0
     - unidecode >=0.04.14,<2.0
-    - wagtail-generic-chooser >=0.5.0,<0.7
+    - wagtail-generic-chooser >=0.7.0
 
 test:
   imports:
@@ -31,6 +37,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/AccentDesign/wagtailstreamforms/

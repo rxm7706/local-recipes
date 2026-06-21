@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.15.4"
+
+package:
+  name: cssbeautifier
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cssbeautifier/cssbeautifier-${{ version }}.tar.gz
+  sha256: 9bb08dc3f64c101a01677f128acf01905914cf406baf87434dcde05b74c0acf5
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  number: 0
+  python:
+    entry_points:
+      - css-beautify = cssbeautifier:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jsbeautifier
+    - six >=1.13.0
+    - editorconfig >=0.12.2
+
+tests:
+  - python:
+      imports:
+        - cssbeautifier
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - css-beautify --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  homepage: https://beautifier.io
+  repository: https://github.com/beautify-web/js-beautify
+  summary: CSS unobfuscator and beautifier.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cssbeautifier
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cssbeautifier
+  cfe-purls:
+    - pkg:conda/cssbeautifier@${{ version }}
+    - pkg:pypi/cssbeautifier@${{ version }}
+  cfe-upstream-repo: https://github.com/beautify-web/js-beautify
+  cfe-upstream-homepage: https://beautifier.io
+  cfe-import-names: [cssbeautifier]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cssbeautifier-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# source:
+#    # Upstream PyPI sdist ships no LICENSE file (verified via tar listing of
+#    # cssbeautifier-1.15.4.tar.gz); LICENSE shipped in-recipe per canonical
+#    # License-File Placement pattern (2). license_file: LICENSE resolves it
+#    # from the recipe directory.
+# requirements:
+#  host:
+#    # Legacy setuptools backend (setup.py, no [build-system] table) -> pip +
+#    # setuptools in host. Deployed feedstock carried `pytest` in host (a test
+#    # dep) and a speculative `python ...,<4.0` upper bound on run; both dropped
+#    # for the canonical shape. requires_python is None upstream, so the
+#    # conda-forge 3.10 floor applies and python_min is omitted from context.
+####

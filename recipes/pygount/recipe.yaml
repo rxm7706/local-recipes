@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.2.0"
+
+package:
+  name: pygount
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pygount/pygount-${{ version }}.tar.gz
+  sha256: 27b03a6c6d791c4920003eec361a3c38ccd815637c51f5536efb9e47db1d452a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pygount = pygount.command:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - chardet >=5,<6
+    - gitpython >=3.1,<4.0
+    - pygments >=2,<3
+    - rich >=14
+
+tests:
+  - python:
+      imports:
+        - pygount
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - git
+    script:
+      - pygount --help
+
+about:
+  summary: count source lines of code (SLOC) using pygments
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/roskakori/pygount
+  repository: https://github.com/roskakori/pygount
+  documentation: https://pygount.readthedocs.io
+  description: |
+    pygount counts lines of source code (SLOC) using pygments lexers to
+    distinguish code, comments, and empty lines across many programming
+    languages.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pygount
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pygount
+  cfe-purls:
+    - pkg:conda/pygount@${{ version }}
+    - pkg:pypi/pygount@${{ version }}
+  cfe-upstream-repo: https://github.com/roskakori/pygount
+  cfe-upstream-homepage: https://github.com/roskakori/pygount
+  cfe-import-names: [pygount]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pygount-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml.
+#    # meta.yaml refreshed to faithfully mirror deployed feedstock at 3.2.0;
+#    # this recipe.yaml is the proposed v1 migration, built/tested locally.
+#    # cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml — the
+#    # feedstock owes the v0 to v1 switch.
+# requirements:
+#  host:
+#    # hatchling-only backend (verified against sdist pyproject.toml
+#    # [build-system].requires); no redundant setuptools/wheel pair (G8 clean).
+#  run:
+#    # rich reconciled to the sdist's declared floor: 3.2.0 PKG-INFO declares
+#    # rich>=14, but the deployed feedstock meta.yaml still carries rich>=9 (a
+#    # stale lower bound from an older version). The v1 recipe tracks the
+#    # sdist-correct rich>=14. gitpython~=3.1 expressed as >=3.1,<4.0.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test. Second test block exercises the pygount
+#    # CLI entry point (--help) with git available in the run env, mirroring
+#    # the feedstock's test.commands + test.requires git.
+# context:
+#    # python_min omitted: requires-python is <4,>=3.10, so the default
+#    # conda-forge 3.10 floor applies; conda-forge-pinning supplies python_min.
+####

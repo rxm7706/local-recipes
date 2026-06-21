@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: django-tenant-schemas
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-tenant-schemas/django_tenant_schemas-${{ version }}.tar.gz
+  sha256: 5696fab7090b00e6b4935cd37f4581ee9d3914f0d838306149c84fd4cf6624cc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+    - setuptools-scm >=6.2
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - ordered-set
+
+tests:
+  - python:
+      imports:
+        - tenant_schemas
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Tenant support for Django using PostgreSQL schemas.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/bcarneiro/django-tenant-schemas
+  repository: https://github.com/bcarneiro/django-tenant-schemas
+  description: |
+    A Django app that adds multitenancy support to Django projects using
+    PostgreSQL schemas. Each tenant gets its own PostgreSQL schema, providing
+    data isolation while sharing a single database.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-tenant-schemas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-tenant-schemas
+  cfe-purls:
+    - pkg:conda/django-tenant-schemas@${{ version }}
+    - pkg:pypi/django-tenant-schemas@${{ version }}
+  cfe-upstream-repo: https://github.com/bcarneiro/django-tenant-schemas
+  cfe-upstream-homepage: https://github.com/bcarneiro/django-tenant-schemas
+  cfe-import-names: [tenant_schemas]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-tenant-schemas-feedstock
+  cfe-forge-recipe-updates-needed: [dependency-fix]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 2.0.0; authored a fresh modern v1
+#    # recipe.yaml here at 2.0.0 reconciled against the 2.0.0 sdist, deleted the
+#    # stale local v0 meta.yaml (was 1.12.0). MAJOR bump 1.12.0 -> 2.0.0.
+# requirements:
+#  host:
+#    # setuptools build_meta backend + setuptools-scm for dynamic version
+#    # (pyproject [tool.setuptools_scm]); build-system requires =
+#    # setuptools>=45, setuptools-scm[toml]>=6.2, wheel. setuptools_scm reads
+#    # PKG-INFO Version 2.0.0 from the sdist, so no git checkout is needed.
+#  run:
+#    # 2.0.0 [project.dependencies] are ONLY Django>=4.2 + ordered-set.
+#    # Dropped six (gone in 2.0.0) and psycopg2-binary (now an UN-activated
+#    # optional extra: [project.optional-dependencies].psycopg2 ->
+#    # psycopg2-binary; .psycopg -> psycopg[binary]>=3.0). Conda has no extras
+#    # (G25); neither psycopg extra is activated, so neither belongs in run.
+#    # Django floor raised 2.2 -> 4.2 to match the 2.0.0 sdist.
+#    # NOTE: the deployed feedstock at 2.0.0 still carries the stale 1.x deps
+#    # (psycopg2-binary, six) un-reconciled -> cfe-forge-recipe-updates-needed:
+#    # [dependency-fix].
+# context:
+#    # requires-python is >=3.8 upstream; clamped to the conda-forge floor 3.10
+#    # so python_min is omitted from context (default floor).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. tenant_schemas/__init__.py only
+#    # sets default_app_config (a string) with no top-level Django import, so
+#    # import tenant_schemas does NOT raise ImproperlyConfigured/
+#    # AppRegistryNotReady -> standard python.imports test holds; no
+#    # package_contents escape hatch needed.
+####

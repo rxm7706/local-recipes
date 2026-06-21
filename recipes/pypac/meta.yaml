@@ -1,29 +1,33 @@
 {% set name = "pypac" %}
-{% set version = "0.16.4" %}
+{% set version = "0.18.3" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://github.com/carsonyl/pypac/archive/refs/tags/v0.16.4.tar.gz
-  sha256: f6eee4f3764568a3c0c401edf60a70485e370dcff4e35d1da503454eb1989e72
+  url: https://github.com/carsonyl/pypac/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 878c1374dc872dba81914f13e154de9d091e283527259eae9db72daf2d734d4c
 
 build:
-  #noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
-  skip: true  # [py<37]
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
     - requests >=2.0.0
     - tldextract >=2.2.3
     - dukpy >=0.2.2
     - pyobjc-framework-SystemConfiguration >=3.2.1  # [osx]
+    # Keep the package noarch but allow for the osx only dep
+    - __linux  # [linux]
+    - __osx    # [osx]
+    - __win    # [win]
 
 test:
   imports:
@@ -32,6 +36,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/carsonyl/pypac

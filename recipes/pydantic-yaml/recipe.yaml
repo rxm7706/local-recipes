@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.0"
+
+package:
+  name: pydantic-yaml
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pydantic-yaml/pydantic_yaml-${{ version }}.tar.gz
+  sha256: ce5f10b65d95ca45846a36ea8dae54e550fa3058e7d6218e0179184d9bf6f660
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0.0
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pydantic >=1.8
+    - ruamel.yaml >=0.17.0,<0.19.0
+    - typing-extensions >=4.5.0
+
+tests:
+  - python:
+      imports:
+        - pydantic_yaml
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Adds some YAML functionality to the excellent `pydantic` library.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/NowanIlfideme/pydantic-yaml
+  repository: https://github.com/NowanIlfideme/pydantic-yaml
+  documentation: https://pydantic-yaml.readthedocs.io/en/latest/
+  description: |
+    pydantic-yaml adds YAML serialization and deserialization support to the
+    pydantic library, including support for versioned models.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydantic-yaml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydantic-yaml
+  cfe-purls:
+    - pkg:conda/pydantic-yaml@${{ version }}
+    - pkg:pypi/pydantic-yaml@${{ version }}
+  cfe-upstream-repo: https://github.com/NowanIlfideme/pydantic-yaml
+  cfe-upstream-homepage: https://github.com/NowanIlfideme/pydantic-yaml
+  cfe-import-names: [pydantic_yaml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydantic-yaml-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 1.6.0. Local meta.yaml refreshed to faithfully mirror the deployed v0
+#    # feedstock; this recipe.yaml is the proposed v1 migration (built/tested
+#    # locally). meta.yaml kept until the feedstock itself migrates.
+# requirements:
+#  host:
+#    # setuptools + setuptools-scm match the sdist [build-system] requires
+#    # (setuptools.build_meta backend with setuptools-scm version). Dropped the
+#    # deployed feedstock's importlib-metadata host dep — it is not a build dep.
+#  run:
+#    # Reconciled against sdist requires_dist: pydantic, ruamel.yaml,
+#    # typing-extensions. Dropped grayskull regressions present in the deployed
+#    # feedstock: bare "ruamel" (wrong package; the real dep is ruamel.yaml),
+#    # the duplicate typing_extensions/typing-extensions pair, and
+#    # importlib-metadata (NOT in upstream requires_dist; not needed on
+#    # python >=3.10 where importlib.metadata is stdlib).
+#    # ruamel.yaml upper bound <0.19.0 is upstream-declared (load-bearing under
+#    # pip_check), not speculative — retained.
+# context:
+#    # python_min omitted: upstream requires-python is >=3.10 (the conda-forge
+#    # default floor), so the pinning supplies python_min.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; modernizes the feedstock's
+#    # single-version python_version test. Import name pydantic_yaml verified
+#    # against the sdist src/pydantic_yaml/__init__.py (no G7 divergence).
+####

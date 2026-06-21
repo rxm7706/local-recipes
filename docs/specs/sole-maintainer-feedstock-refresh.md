@@ -1,8 +1,8 @@
 ---
 status: in-progress
 implemented_by: bmad-quick-dev
-shipped_ref: "Wave B done; Wave C paused 18/184"
-spec_updated: 2026-06-20
+shipped_ref: "Waves B–F locally complete (197 recipes: C 174 v0-migration, D 10 compiled/host-blocked, E 13 gh-numbering) — UNCOMMITTED for review, nothing pushed/submitted; CFE skill retro shipped v8.40.0 (G46–G51)"
+spec_updated: 2026-06-21
 ---
 # Tech Spec: Sole-Maintainer Feedstock Refresh (bulk local-recipe ↔ feedstock version sync)
 
@@ -168,3 +168,240 @@ Batch-1 (`a2wsgi`, `condense-json`, `collate-data-diff`, `antlr4-tools`,
   - **High-value feedstock-defect catches:** `wagtail-draftail-plugins` deployed feedstock ships the **WRONG license** (`MIT`; upstream relicensed `ISC`) + stale `wagtail` pin + G31 ci_support skew; `gibr`/`ydata-profiling` caught **impending feedstock rebuild breakages** (G26 exact-pin drift; G34 setuptools-81); `mcp-django`/`django-components` found latent missing deps live feedstocks carry.
   - **Process retro:** landmines 5–9 above (rate-limit zombies, `'releases'` KeyError, jinja-in-comments, last-wins CBC, token drift) all surfaced here.
 - **Wave C (v0-migration, 184): IN PROGRESS — paused 60min at 18/184** (2026-06-20). Split into C1 keep-meta (141) + C2 catch-up-delete-meta (43). Pilot (4) validated both classes; **18 done** (C1=5, C2=13; 17 build-green, 1 build-clean-test-blocked). Progress + done-list persisted at `wave_c_progress.md`; resume from `v0_queue.txt` at strict ≤4 concurrent. Wave-C catches so far: dataprofiler G34(setuptools-82)+G26(requests-metadata); basedtyping py3.14-incompat → drop `"*"` test leg; cucumber-expressions uv-build drift; ag-ui-protocol G7 `ag_ui`.
+
+
+---
+
+## Review Digest — Waves C/D/E (2026-06-21)
+
+> Per-recipe summary of the 197 local refreshes produced this effort. All UNCOMMITTED at generation time. Columns: version (old→new), class (C1 keep-meta / C2 no-meta), cfe-source-kind, cfe-noarch, local build status, updates-needed.
+
+
+### Wave C — v0-migration (noarch), 174
+
+| recipe | version | class | source-kind | noarch | build | updates-needed |
+|---|---|---|---|---|---|---|
+| `ag-ui-protocol` | 0.1.13 → 0.1.19 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `airfly` | 1.0.0 → 1.1.0 | C2 | pypi-sdist | python | success | none |
+| `amundsen-databuilder` | 7.4.3 → 7.5.1 | C1 | pypi-sdist | python | build-clean-test-blocked | meta-yaml-to-recipe-yaml |
+| `asttrs` | 1.0.0 → 1.3.0 | C2 | pypi-sdist | python | success | none |
+| `basedtyping` | 0.0.3 → 0.1.10 | C2 | pypi-sdist | python | success | none |
+| `behave-django` | 1.5.0 → 2.0.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `burr` | 0.37.0 → 0.40.2 | C2 | pypi-sdist | python | success | none |
+| `bynder-sdk` | 1.1.5 → 2.0.2 | C2 | pypi-sdist | python | success | - test-python_version-to-canonical-two-entry-list |
+| `cmudict` | 1.0.32 → 1.1.3 | C2 | pypi-sdist | python | success | none |
+| `crispy-bootstrap4` | 2022.1 → 2026.2 | C2 | pypi-sdist | python | success | none |
+| `crispy-bootstrap5` | 2024.10 → 2026.3 | C2 | pypi-sdist | python | success | none |
+| `cssbeautifier` | 1.15.0 → 1.15.4 | C2 | pypi-sdist | python | success | none |
+| `cucumber-expressions` | 18.1.0 → 20.0.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `customersatisfactionmetrics` | 1.0.8 → 1.0.9 | C2 | pypi-sdist | python | success | none |
+| `daff` | 1.3.46 → 1.4.2 | C2 | pypi-sdist | python | success | none |
+| `dagster-async-executor` | 0.0.1 → 0.0.3 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `dataprofiler` | 0.10.7 → 0.13.4 | C2 | pypi-sdist | python | success | - setuptools-lt-81-cap-G34 |
+| `datasette-configure-fts` | 1.1.2 → 1.1.4 | C2 | pypi-sdist | python | success | none |
+| `datasette-enrichments` | 0.4 → 0.5.1 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `datasette-search-all` | 1.1.2 → 1.1.4 | C2 | pypi-sdist | python | success | none |
+| `datastar-py` | 0.4.3 → 1.0.2 | C2 | pypi-sdist | python | success | dependency-fix |
+| `dbt-dremio` | 1.7.0 → 1.10.1 | C1 | pypi-sdist | python | build-clean-test-blocked | meta-yaml-to-recipe-yaml, dependency-fix |
+| `detect-test-pollution` | 1.1.1 → 1.2.0 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `diazo` | 2.0.0 → 2.0.6 | C2 | pypi-sdist | python | success | none |
+| `django-admin-rangefilter` | 0.13.2 → 0.13.5 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `django-approval` | 0.11.4 → 0.15.1 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml, dependency-fix |
+| `django-auditlog` | 2.3.0 → 3.4.1 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml, dependency-fix |
+| `django-celery-beat` | 2.5.0 → 2.9.0 | C2 | pypi-sdist | python | success | none |
+| `django-cms` | 4.1.4 → 5.0.5 | C2 | pypi-sdist | python | success | none |
+| `django-colorful` | 1.3 → 1.4.0 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `django-comments-xtd` | 2.10.6 → 2.10.11 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `django-data-browser` | 4.2.5 → 4.2.14 | C2 | pypi-sdist | python | success | none |
+| `django-dbbackup` | 4.0.2 → 5.3.0 | C2 | pypi-sdist | python | success | none |
+| `django-entangled` | 0.6.2 → 0.7 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `django-excel-tools` | 1.1.0 → 1.1.1 | C2 | pypi-sdist | python | success | none |
+| `django-extra-views` | 0.14.0 → 0.16.0 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `django-formtools` | 2.5.1 → 2.6.1 | C2 | pypi-sdist | python | success | none |
+| `django-hosts` | 5.2 → 7.0.0 | C2 | pypi-sdist | python | success | dependency-fix |
+| `django-linear-migrations` | 2.11.0 → 2.19.0 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml, dependency-fix |
+| `django-log-request-id` | 2.1.0 → 2.1.2 | C2 | pypi-sdist | python | success | none |
+| `django-log-viewer` | 1.1.7 → 1.1.8 | C2 | pypi-sdist | python | success | none |
+| `django-mongodb-backend` | 5.2.2 → 6.0.3 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `django-mptt2` | 0.2.0 → 0.2.1 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `django-nyt` | 1.3 → 1.5.0 | C2 | pypi-sdist | python | success | none |
+| `django-orghierarchy` | 0.3.0 → 0.6.2 | C2 | pypi-sdist | python | success | none |
+| `django-registration` | 5.1.0 → 5.2.1 | C2 | pypi-sdist | python | success | none |
+| `django-schema-viewer` | 0.4.1 → 0.5.3 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `django-sesame` | 3.2.2 → 3.2.3 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `django-socio-grpc` | 0.20.3 → 0.24.1 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml, dependency-fix |
+| `django-solo` | 2.2.0 → 2.5.1 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `django-sql-explorer` | 5.0.2 → 5.3 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `django-streamfield` | 2.1.2 → 2.4.0 | C2 | pypi-sdist | python | success | none |
+| `django-structlog` | 8.0.0 → 10.1.0 | C2 | pypi-sdist | python | success | none |
+| `django-survey-and-report` | 1.4.10 → 1.4.12 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml, dependency-fix |
+| `django-tastypie` | 0.15.0 → 0.15.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `django-tenant-schemas` | 1.12.0 → 2.0.0 | C2 | pypi-sdist | python | success | dependency-fix |
+| `django-tenant-users` | 1.2.0 → 2.2.1 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `django-tenants` | 3.7.0 → 3.10.1 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `django-tex` | 1.1.10 → 1.1.12 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `django-timezone-field` | 6.0 → 7.2.2 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml, dependency-fix |
+| `django-todo` | 2.5.0 → 2.5.6 | C1 | pypi-sdist | python | build-clean-test-blocked | meta-yaml-to-recipe-yaml |
+| `django-tree-queries` | 0.15.0 → 0.24.0 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `django-vite` | 3.0.6 → 3.1.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `django-vite-plugin` | 3.0.0 → 4.1.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `django-wildewidgets` | 0.16.13 → 1.6.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `django-yugabytedb` | 4.0.0.post1 → 4.2.0.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `djangocms-attributes-field` | 4.0.0 → 4.1.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `djangocms-frontend` | 2.0.0 → 2.3.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `djangocms-icon` | 2.1.0 → 2.1.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `djangocms-link` | 5.0.0 → 5.1.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `djangocms-text-ckeditor` | 5.1.5 → 5.1.7 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `djangorestframework-dataclasses` | 1.3.0 → 1.4.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `djlint` | 1.35.3 → 1.39.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `docstring_parser_fork` | 0.0.5 → 0.0.14 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `drf-pydantic` | 2.7.0 → 2.9.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `drf-standardized-errors` | 0.12.5 → 0.16.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `duckdb-server` | 0.12.0 → 0.27.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `fixedint` | 0.1.6 → 0.2.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `flake8-logging` | 1.2.0 → 1.8.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `flake8-no-pep420` | 2.7.0 → 2.9.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `flake8-pylint` | 0.2.0 → 0.2.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `flake8-tidy-imports` | 4.10.0 → 4.12.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `fs.googledrivefs` | 2.5.0 → 2.6.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `gekko` | 1.0.6 → 1.3.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `gita` | 0.16.6.6 → 0.16.8.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `google-cloud-bigquery-connection` | 1.16.0 → 1.22.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `google-cloud-functions` | 1.18.0 → 1.23.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `google-cloud-ndb` | 2.4.2 → 2.5.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `google-cloud-scheduler` | 2.17.0 → 2.20.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `grunnur` | 0.5.0 → 0.6.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `hatch-build-scripts` | 0.0.4 → 1.0.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `heroicons` | 2.6.0 → 2.14.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `hubspot-api-client` | 4.0.6 → 12.0.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `inertia-django` | 0.6.0 → 1.2.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `install-jdk` | 1.0.2 → 1.1.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `intake-dataframe-catalog` | 0.2.4 → 0.5.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `jinja2-simple-tags` | 0.5.0 → 0.6.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `json_stream` | 2.3.2 → 2.5.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `kantoku` | 0.18.1 → 0.18.3 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `kedro-datasets` | 9.0.0 → 9.4.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `kedro-pandera` | 0.1.0 → 0.2.3 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `laces` | 0.1.0 → 0.1.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `lazy-imports` | 0.3.1 → 1.2.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `lm-format-enforcer` | 0.11.2 → 0.11.3 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `loki-logger-handler` | 1.0.0 → 1.1.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `natural-keys` | 2.1.0 → 2.1.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `okta-jwt-verifier` | 0.3.0 → 0.5.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `openllm-core` | 0.5.2 → 0.5.7 | C1 | pypi-sdist | python | success | - recipe-regenerate |
+| `openmetadata-managed-apis` | 1.9.9.0 → 1.13.0.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `opentelemetry-exporter-gcp-monitoring` | 1.8.0a0 → 1.12.0a0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `opentelemetry-exporter-gcp-trace` | 1.6.0 → 1.12.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `opentelemetry-exporter-prometheus-remote-write` | 0.44b0 → 0.63b1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `opentelemetry-propagator-gcp` | 1.6.0 → 1.12.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `opentelemetry-resourcedetector-gcp` | 1.6.0a0 → 1.12.0a0 | C1 | pypi-sdist | python | success | - recipe-regenerate |
+| `peewee-migrate` | 1.12.2 → 1.15.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `propelauth_py` | 4.2.4 → 4.3.2 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `prophecy-build-tool` | 1.3.0 → 1.3.4 | C1 | pypi-sdist | python | build-clean-test-blocked | - meta-yaml-to-recipe-yaml |
+| `pss` | 1.44 → 1.45 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `pydantic-yaml` | 1.1.1 → 1.6.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `pyecharts` | 2.0.4 → 2.1.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `pygount` | 3.1.0 → 3.2.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `pytest-deadfixtures` | 2.2.1 → 3.1.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `pytest-excel` | 1.6.0 → 1.8.1 | C2 | pypi-sdist | python | success | none |
+| `pytest-playwright` | 0.5.2 → 0.8.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `pytest-pythonpath` | 0.7.3 → 0.7.4 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `robocorp-http` | 0.4.0 → 0.4.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `robocorp-log` | 3.1.0 → 3.1.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `robotframework-assertion-engine` | 3.0.3 → 5.0.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `seedir` | 0.5.0 → 0.5.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `shillelagh` | 1.2.24 → 1.4.4 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `sketch` | 0.5.0 → 0.5.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `smartsheet-python-sdk` | 3.0.2 → 3.5.3 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `tabcmd` | 2.0.12 → 2.0.18 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `tableauscraper` | 0.1.2 → 0.1.29 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `tabpy` | 2.10.0 → 2.14.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `taipy-config` | 3.0.0 → 3.1.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `taipy-templates` | 3.0.0 → 4.1.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `tastymap` | 0.4.0 → 0.4.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `tox-uv` | 1.15.0 → 1.35.2 | C2 | pypi-sdist | python | success | none |
+| `uvicorn-worker` | 0.2.0 → 0.4.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `validate-pyproject` | 0.23 → 0.25 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `verlib2` | 0.1.0 → 0.3.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `vizro` | 0.1.54 → 0.1.59 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `vizro-mcp` | 0.1.1 → 0.1.4 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-ab-testing` | 0.9 → 0.14 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `wagtail-ai` | 3.0.0 → 3.1.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-color-panel` | 1.5.0 → 1.8.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-dynamic-dropdown` | 0.0.4 → 0.0.5 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-experiments` | 0.3.1 → 0.4 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-feedback` | 1.1.6 → 1.3.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-flexible-forms` | 2.0.0 → 2.1.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-font-awesome-svg` | 1.0.1 → 2.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-footnotes` | 0.10.0 → 0.15.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-grapple` | 0.25.0 → 0.31.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-headless-preview` | 0.7.0 → 0.9.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-markdown` | 0.12.1 → 0.14.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-meta-preview` | 4.0.0 → 4.2.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-metadata` | 4.0.3 → 5.0.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-modeladmin` | 1.0.0 → 2.4.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-nav-menus` | 3.13.1 → 3.14.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-periodic-review` | 0.2.0 → 0.5.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-plotly` | 0.0.3 → 0.0.4 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-rangefilter` | 0.2.0 → 0.2.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-review` | 0.4 → 0.5 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-sharing` | 2.12.1 → 2.16 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-storages` | 1.0.0 → 2.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-surveyjs` | 0.1.0 → 0.3.0 | C1 | pypi-sdist | python | success | meta-yaml-to-recipe-yaml |
+| `wagtail-transfer` | 0.9.3 → 0.11 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-trash` | 3.0.0 → 3.2.0 | C2 | pypi-sdist | python | success | recipe-regenerate |
+| `wagtailcharts` | 0.6.2 → 0.6.3 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtailgridder` | 1.0.4 → 2.0.0 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtailmath` | 1.3.0 → 1.3.1 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtailmedia` | 0.14.5 → 0.17.2 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtailstreamforms` | 4.1.0 → 5.2.6 | C1 | pypi-sdist | python | success | - meta-yaml-to-recipe-yaml |
+
+### Wave D — compiled / host-blocked, 10
+
+| recipe | version | class | source-kind | noarch | build | updates-needed |
+|---|---|---|---|---|---|---|
+| `datasketches` | 5.0.2 → 5.2.0 | C1 | pypi-sdist | compiled | success | meta-yaml-to-recipe-yaml |
+| `hll` | 2.1.7 → 3.0.0 | C1 | pypi-sdist | compiled | success | - meta-yaml-to-recipe-yaml |
+| `jh2` | 5.0.3 → 5.0.13 | C1 | pypi-sdist | compiled | success | - meta-yaml-to-recipe-yaml |
+| `json-stream-rs-tokenizer` | 0.4.29 → 0.5.1 | C1 | pypi-sdist | compiled | success | - meta-yaml-to-recipe-yaml |
+| `psycopg2-yugabytedb` | 2.9.3.post0 → 2.9.3.5 | C1 | pypi-sdist | compiled | success | - meta-yaml-to-recipe-yaml |
+| `pyobjc-framework-applicationservices` | 9.2 → 10.1 | C1 | pypi-sdist | compiled | not-attempted | meta-yaml-to-recipe-yaml |
+| `pyobjc-framework-systemconfiguration` | 9.2 → 12.1 | C1 | pypi-sdist | compiled | not-attempted | - meta-yaml-to-recipe-yaml |
+| `skranger` | 0.7.0 → 0.8.0 | C1 | pypi-sdist | compiled | success | - meta-yaml-to-recipe-yaml |
+| `uiautomation` | 2.0.24 → 2.0.29 | C1 | pypi-sdist | python | not-attempted | - meta-yaml-to-recipe-yaml |
+| `wasmtime-py` | 40.0.0 → 45.0.0 | C1 | pypi-sdist | compiled | success | meta-yaml-to-recipe-yaml |
+
+### Wave E — gh-numbering re-verify, 13
+
+| recipe | version | class | source-kind | noarch | build | updates-needed |
+|---|---|---|---|---|---|---|
+| `acachecontrol` | 0.3.5 → 0.3.7 | C2 | github-tag | python | success | none |
+| `collectfasta` | 3.2.0 → 3.3.3 | C2 | github-tag | python | success | none |
+| `cookiecutter-django` | 2025.05.02 → 2025.07.27 | C1 | github-tag | python | success | none |
+| `copilotkit` | 0.1.88 → 1.57.2 | C1 | github-tag | python | success | - meta-yaml-to-recipe-yaml |
+| `h2o-lightwave-web` | 1.0.0 → 1.8.9 | C1 | pypi-wheel:github-source-ships-no-www-assets | python | success | - meta-yaml-to-recipe-yaml |
+| `h2o-wave` | 1.0.0 → 1.8.9 | C1 | github-tag | python | success | - meta-yaml-to-recipe-yaml |
+| `kedro-boot` | 0.2.0 → 0.3.0 | C1 | github-tag | python | success | meta-yaml-to-recipe-yaml |
+| `mailpit` | 1.28.0 → 1.30.2 | C1 | github-tag | compiled | success | - meta-yaml-to-recipe-yaml |
+| `pypac` | 0.16.4 → 0.18.3 | C1 | github-tag | python | success | - meta-yaml-to-recipe-yaml |
+| `spec-kit` | 0.1.4 → 0.11.3 | C1 | github-tag | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtail-cache` | 2.4.0 → 3.0.0 | C1 | github-tag | python | success | meta-yaml-to-recipe-yaml |
+| `wagtail-pdf` | 0.2.1 → 2.0.0 | C1 | github-tag | python | success | - meta-yaml-to-recipe-yaml |
+| `wagtailmenus` | 4.0.1 → 4.0.7 | C1 | github-tag | python | success | meta-yaml-to-recipe-yaml |
+
+---
+
+## Follow-ups discovered (for human triage — flagged, not auto-fixed)
+
+These surfaced during Waves C/D/E and are recorded here so they aren't lost. None were acted on beyond flagging (locked no-git policy / out of per-recipe scope).
+
+1. **h2o-lightwave-web: deployed feedstock likely ships a BROKEN empty package.** The GitHub monorepo subdir has zero `www/` web assets (generated at release time, present only in the PyPI wheel) → from-source build = empty ~15 KiB shell. Local v1 now sources the PyPI wheel (423 assets); the feedstock needs the same fix. Tracked via `cfe-forge-recipe-updates-needed: recipe-regenerate`. (CFE gotcha **G51**.)
+2. **Stale git-tracked recipe-dir `conda_build_config.yaml` cruft** in `recipes/hll/` + `recipes/jh2/` — verbatim copies of the global pinning CBC (zero recipe-specific keys) that trigger conda-smithy lint errors + a hard `duplicate entry "libitk_devel"` build collision. Not present in the deployed feedstocks. Should be `git rm`'d in a follow-up (agents couldn't remove tracked files under the no-git policy). Check other compiled dirs too. (CFE gotcha **G47**.)
+3. **cookiecutter-django has NO conda-forge feedstock** (the behind-list misclassified it as on-cf). It is local-only `pending-submission-to-conda-forge`; PyPI is abandoned at 1.11.9; sources the GitHub CalVer tag. Stray files in the dir (`meta-2024.yaml`, `README.rst`, `{{cookiecutter.project_slug}}/`) for triage. (CFE refinement, guide Wave A.)
+4. **spec-kit two-feedstock collision:** our `spec-kit-feedstock` (github-tag, sole-maintainer) vs a competing `conda-forge/specify-cli-feedstock` (pypi-sdist, maintainer xhochy) for the same upstream. Decide consolidation. Also: spec-kit's vestigial deps (`httpx`/`socksio`/`truststore`, not imported in 0.11.3) mirrored faithfully, flagged for a maintenance PR.
+5. **pypac:** the redundant recipe-dir `LICENSE` was removed (the source archive ships it; matches the feedstock) — a reviewable deletion slightly beyond the meta.yaml-only rm rule.
+6. **django-yugabytedb:** hard-imports `psycopg2` at module load but the feedstock omits it from `run:` — parked in CFE comments, not silently added.
+7. **Platform-expansion candidates** (recorded as `cfe-forge-recipe-updates-needed: platform-expansion`) — compiled feedstocks shipping only linux-64/osx-64/win-64 (no aarch64/arm64): `hll`, `jh2`, `json-stream-rs-tokenizer`, `psycopg2-yugabytedb`, `skranger`, `pyobjc-framework-systemconfiguration`. `mailpit` noted (own effort). `datasketches`/`wasmtime-py`/`pyobjc-framework-applicationservices` already ship the wider matrix.
+8. **Pre-existing failing meta-test** `test_skill_md_lists_existing_scripts_only` — flags 7 scripts cited by *existing* gotchas G21/G23/G24/G39; git-stash-verified as predating this effort (not introduced by the v8.40.0 retro). Worth a separate look.
+
+> **`cfe-generated-by-version` cosmetic note:** the 197 recipes carry `cfe-generated-by-version: 8.37.0` (the value in effect when authoring began); the skill subsequently advanced to 8.40.0. This is a strip-before-push local field — not re-stamped across 197 files unless normalization is desired.

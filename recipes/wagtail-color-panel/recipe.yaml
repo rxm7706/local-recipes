@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.8.1"
+
+package:
+  name: wagtail-color-panel
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-color-panel/wagtail_color_panel-${{ version }}.tar.gz
+  sha256: aca26f8b7178ff596aa2eac8982167396bbbc222fadbae4b6b1f18291b33473a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=6.3
+
+tests:
+  - python:
+      imports:
+        - wagtail_color_panel
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A package that adds new panels for selecting colors, works both on regular page fields and stream field.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/marteinn/wagtail-color-panel
+  repository: https://github.com/marteinn/wagtail-color-panel
+  description: |
+    Wagtail-Color-Panel introduces panels for selecting colors in Wagtail.
+    It provides a NativeColorPanel for edit handlers, a NativeColorBlock for
+    StreamFields, a custom DB field with improved validation, and a
+    PolyfillColorPanel for environments that require IE11 support.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-color-panel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-color-panel
+  cfe-purls:
+    - pkg:conda/wagtail-color-panel@${{ version }}
+    - pkg:pypi/wagtail-color-panel@${{ version }}
+  cfe-upstream-repo: https://github.com/marteinn/wagtail-color-panel
+  cfe-upstream-homepage: https://github.com/marteinn/wagtail-color-panel
+  cfe-import-names: [wagtail_color_panel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-color-panel-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml 404, meta.yaml 200).
+#    # Kept the un-annotated meta.yaml mirror at the deployed 1.8.1; authored
+#    # this v1 recipe.yaml alongside. updates-needed = meta-yaml-to-recipe-yaml
+#    # (the feedstock owes the v0 to v1 migration).
+# requirements:
+#  host:
+#    # setuptools kept, setuptools-scm + pytest-runner dropped: classic setup.py
+#    # reads __version__ via regex from __init__.py (no scm); pytest-runner is a
+#    # test-alias artifact, not a build requirement.
+#  run:
+#    # Reconciled against the 1.8.1 sdist setup.py install_requires, which is
+#    # exactly wagtail>=6.3. Dropped the deployed feedstock's python-dotenv and
+#    # django run-deps: neither is upstream-declared. Django arrives transitively
+#    # via wagtail; python-dotenv is not a runtime dependency at all.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. Top-level wagtail_color_panel
+#    # __init__ is metadata-only (no Django app imports), so the standard
+#    # python.imports test holds, no package_contents escape hatch needed.
+####

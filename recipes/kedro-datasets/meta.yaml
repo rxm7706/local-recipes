@@ -1,14 +1,13 @@
 {% set name = "kedro-datasets" %}
-{% set version = "9.0.0" %}
-{% set python_min = "3.10" %}
+{% set version = "9.4.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/kedro_datasets-{{ version }}.tar.gz
-  sha256: eb2b03a63b16d4dd5b23ecda3d192e55e3608e168c1706141fe4e05f094e8b68
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 46b2e20e6b1d81914d44eab83f6d911da1191b79ce3d43eb07bc49ceea3f7cc8
 
 build:
   noarch: python
@@ -23,7 +22,7 @@ requirements:
     - setuptools >=61.2
     - pip
   run:
-    - python >={{ python_min }},<4.0
+    - python >={{ python_min }}
     - backports.strenum
     - kedro >=1.0.0rc1,<2.0.0
     - lazy_loader
@@ -33,9 +32,10 @@ test:
     - kedro_datasets
     - kedro_datasets_experimental
   commands:
-    - pip check
+    - pip check # kedro 0.18.11 has requirement pip-tools~=6.5, but you have pip-tools 7.1.0
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets

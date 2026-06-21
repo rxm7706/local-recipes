@@ -61,6 +61,10 @@ extra:
     - pkg:pypi/jigsawstack@${{ version }}
   cfe-upstream-repo: https://github.com/jigsawstack/jigsawstack-python
   cfe-upstream-homepage: https://github.com/jigsawstack/jigsawstack-python
+  cfe-import-names: [jigsawstack]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -68,6 +72,10 @@ extra:
   cfe-last-checked: 2026-06-19T20:30:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:30:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T01:27:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:

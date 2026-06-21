@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: ag-ui-protocol
-  version: "0.1.13"
+  version: "0.1.19"
 
 package:
-  name: ${{ name|lower }}
+  name: ag-ui-protocol
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ag_ui_protocol-${{ version }}.tar.gz
-  sha256: 811d7d7dcce4783dec252918f40b717ebfa559399bf6b071c4ba47c0c1e21bcb
+  url: https://pypi.org/packages/source/a/ag-ui-protocol/ag_ui_protocol-${{ version }}.tar.gz
+  sha256: 43c27f60d41712dcad0e9e0a203cbdf1c8e248b22417374c5c68321c448af4ea
 
 build:
   number: 0
@@ -24,7 +23,7 @@ requirements:
     - uv-build >=0.8.0,<0.9
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - pydantic >=2.11.2
 
 tests:
@@ -32,14 +31,67 @@ tests:
       imports:
         - ag_ui.core
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: 'AG-UI: the Agent-User Interaction Protocol. Bring Agents into Frontend Applications.'
   license: MIT
-  homepage: https://github.com/ag-ui-protocol/ag-ui
   license_file: LICENSE
+  homepage: https://github.com/ag-ui-protocol/ag-ui
+  summary: 'AG-UI: the Agent-User Interaction Protocol. Bring Agents into Frontend Applications.'
+  description: |
+    AG-UI: the Agent-User Interaction Protocol. Bring Agents into Frontend
+    Applications.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ag-ui-protocol
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ag-ui-protocol
+  cfe-purls:
+    - pkg:conda/ag-ui-protocol@${{ version }}
+    - pkg:pypi/ag-ui-protocol@${{ version }}
+  cfe-upstream-repo: https://github.com/ag-ui-protocol/ag-ui
+  cfe-upstream-homepage: https://github.com/ag-ui-protocol/ag-ui
+  cfe-import-names: [ag_ui]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ag-ui-protocol-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # CLASS C1 v0-migration mirror: conda-forge/ag-ui-protocol-feedstock is
+#    # still v0 (meta.yaml). meta.yaml here faithfully mirrors the deployed
+#    # 0.1.19; this recipe.yaml is the proposed v1 migration, built/tested
+#    # locally. Delete meta.yaml only after the feedstock's own v0->v1 PR merges.
+# source:
+#    # Upstream sdist ships no LICENSE; LICENSE is shipped in-recipe
+#    # (canonical license-file placement pattern 2). MIT.
+# requirements:
+#  host:
+#    # uv_build backend (pyproject.toml build-system); host needs uv-build.
+#  run:
+#    # Sole upstream run-dep is pydantic>=2.11.2 (pyproject [project.dependencies]).
+# context:
+#    # python_min omitted: upstream requires-python >=3.9 clamps to the
+#    # conda-forge default floor (3.10); conda-forge-pinning supplies it.
+# tests:
+#    # Import name is ag_ui (pyproject [tool.uv.build-backend] module-name);
+#    # distribution name ag-ui-protocol diverges (G7/G10). Test imports ag_ui.core.
+####

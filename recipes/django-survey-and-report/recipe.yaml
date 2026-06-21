@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.12"
+
+package:
+  name: django-survey-and-report
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-survey-and-report/django_survey_and_report-${{ version }}.tar.gz
+  sha256: 516f861fff3c7fa602a72a54d855500d9e35664cd9b06008fdc5b652106871bc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=67.5.1
+  run:
+    - python >=${{ python_min }}
+    - django >=2.2,<7
+    - pytz >=2018.9
+    - pyyaml >=4.2b1
+
+# CFEP-25-justified: Django web-app backend — `import survey` raises
+# ImproperlyConfigured without DJANGO_SETTINGS_MODULE configured.
+tests:
+  - package_contents:
+      site_packages:
+        - survey
+
+about:
+  summary: A django survey app that can export results as CSV or PDF using your native language.
+  license: AGPL-3.0-only
+  license_file: LICENSE.txt
+  homepage: https://github.com/Pierre-Sassoulas/django-survey
+  repository: https://github.com/Pierre-Sassoulas/django-survey
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-survey-and-report
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-survey-and-report
+  cfe-purls:
+    - pkg:conda/django-survey-and-report@${{ version }}
+    - pkg:pypi/django-survey-and-report@${{ version }}
+  cfe-upstream-repo: https://github.com/Pierre-Sassoulas/django-survey
+  cfe-upstream-homepage: https://github.com/Pierre-Sassoulas/django-survey
+  cfe-import-names: [survey]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: false:django-import-needs-settings
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-survey-and-report-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml, dependency-fix]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 1.4.12. meta.yaml refreshed to faithfully mirror the deployed v0
+#    # feedstock; this recipe.yaml is the proposed v1 migration. Both coexist
+#    # until the feedstock migrates (meta-yaml-to-recipe-yaml).
+# requirements:
+#  host:
+#    # setuptools kept (upstream build-system requires setuptools>=67.5.1 +
+#    # wheel; pip provides wheel so it is dropped per G8). pyproject.toml uses
+#    # setuptools.build_meta backend.
+#  run:
+#    # dependency-fix: reconciled against the 1.4.12 sdist
+#    # [project].dependencies — only django/pytz/pyyaml are real runtime deps.
+#    # The deployed feedstock still carries stale deps from an older setup.py
+#    # (django-bootstrap-form, django-registration, django-tastypie, and the
+#    # python-2.6-only ordereddict) plus a bogus `- survey` self-import line;
+#    # none appear in 1.4.12's pyproject. Verified pip check passes in a clean
+#    # env with only the 3 real deps. The stale ordereddict is exactly why the
+#    # feedstock disabled pip_check.
+# tests:
+#    # CFEP-25-justified package_contents escape hatch: `import survey` runs
+#    # set_default_settings() at module load, which reads
+#    # ROSETTA_MESSAGES_PER_PAGE off django.conf.settings and raises
+#    # ImproperlyConfigured without DJANGO_SETTINGS_MODULE (verified
+#    # empirically). The standard CFEP-25 python.imports test genuinely fails;
+#    # site_packages presence-check is the correct substitute. The feedstock v0
+#    # works around this with settings.configure()+django.setup() in a
+#    # command-test; the v1 site_packages form is the canonical equivalent.
+####

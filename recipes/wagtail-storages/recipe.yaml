@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0"
+
+package:
+  name: wagtail-storages
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-storages/wagtail_storages-${{ version }}.tar.gz
+  sha256: ba3da585d4ffeb8acd828adbed905cbe3db1e799d41318afbd953a472afd1b38
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - wagtail >=5.2
+    - django-storages <2
+    - boto3 >=1.4.4
+
+tests:
+  - python:
+      imports:
+        - wagtail_storages
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Use AWS S3 with private documents in Wagtail.
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/torchbox/wagtail-storages
+  repository: https://github.com/torchbox/wagtail-storages
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-storages
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-storages
+  cfe-purls:
+    - pkg:conda/wagtail-storages@${{ version }}
+    - pkg:pypi/wagtail-storages@${{ version }}
+  cfe-upstream-repo: https://github.com/torchbox/wagtail-storages
+  cfe-upstream-homepage: https://github.com/torchbox/wagtail-storages
+  cfe-import-names: [wagtail_storages]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-storages-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml 404, meta.yaml 200);
+#    # local meta.yaml KEPT as a faithful mirror of the deployed feedstock 2.0
+#    # state (build.number 1). This recipe.yaml is the proposed v0->v1 migration
+#    # plus the django-storages[boto3] flatten. MAJOR bump 1.0.0 -> 2.0.
+# context:
+#    # python_min omitted from context — upstream requires-python >=3.10 equals
+#    # the conda-forge default floor; conda-forge-pinning supplies python_min.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml
+#    # build-system table); matches the deployed feedstock host block.
+#  run:
+#    # G25 extras flatten: upstream 2.0 declares django-storages[boto3]<2; conda
+#    # has no extras, so the boto3 extra (boto3>=1.4.4 per django-storages
+#    # optional-dependencies) is added to run alongside django-storages <2.
+#    # The deployed feedstock meta.yaml omits boto3 (carries only
+#    # django-storages <2) and django/wagtail floors bumped to >=4.2 / >=5.2 in
+#    # 2.0 from the local 1.0.0 recipe's wagtail >=4.1.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtail_storages/__init__.py is
+#    # trivial (only __version__); the Django AppConfig.ready() machinery is not
+#    # imported at module-import time, so the standard python.imports test holds
+#    # without DJANGO_SETTINGS_MODULE — no package_contents escape hatch needed.
+####

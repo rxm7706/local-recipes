@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.4"
+
+package:
+  name: wagtail-plotly
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-plotly/wagtail_plotly-${{ version }}.tar.gz
+  sha256: be6b866941ca9024749243028231238de3e2a0dab5fc6fa825452b2c2adbefd2
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - plotly >=4.14.3
+    - wagtail >=3.0
+    - wagtail-json-widget >=0.0.1
+
+tests:
+  - python:
+      imports:
+        - wagtail_plotly
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Plotly for Wagtail CMS
+  description: |
+    Provides tabular data input for interactive visualisations in Wagtail.
+    Developers manage plot availability and styling in code with an option to
+    allow users to apply further styling via JSON in the admin. It uses
+    Plotly.py, so any of Plotly's supported visualisations can be hoisted into
+    Wagtail easily.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/cursive-works/wagtail-plotly
+  repository: https://github.com/cursive-works/wagtail-plotly
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-plotly
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-plotly
+  cfe-purls:
+    - pkg:conda/wagtail-plotly@${{ version }}
+    - pkg:pypi/wagtail-plotly@${{ version }}
+  cfe-upstream-repo: https://github.com/cursive-works/wagtail-plotly
+  cfe-upstream-homepage: https://github.com/cursive-works/wagtail-plotly
+  cfe-import-names: [wagtail_plotly]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-plotly-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml 404, meta.yaml 200).
+#    # meta.yaml kept as the deployed-state mirror at 0.0.4 build 1; this
+#    # recipe.yaml is the proposed v1 migration. STD-002 (both files present)
+#    # is expected and harmless for a v0-mirror. The feedstock owes the
+#    # meta-yaml-to-recipe-yaml migration (see cfe-forge-recipe-updates-needed).
+# build:
+#    # number: 1 matches the deployed feedstock (0.0.4 was bot-bumped to *_1).
+# requirements:
+#  host:
+#    # setuptools kept in host — legacy setup.py project (no pyproject.toml,
+#    # grayskull reported "Build requirements: <none>"); matches the deployed
+#    # feedstock host block.
+#  run:
+#    # wagtail >=3.0 — upstream 0.0.4 setup.py bumped the floor from >=2.13 (the
+#    # value still in the deployed meta.yaml) to >=3.0. The v1 tracks upstream's
+#    # current declared minimum. All three run deps are on conda-forge
+#    # (plotly 6.8.0, wagtail 7.4.2, wagtail-json-widget 0.0.7). No speculative
+#    # upper pins (upstream declares none).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python test pin. wagtail_plotly imports cleanly standalone
+#    # (top-level __init__.py only sets __version__ + default_app_config string;
+#    # no Django import at module load), so the standard python.imports test
+#    # holds — no package_contents / DJANGO_SETTINGS_MODULE escape hatch needed.
+####

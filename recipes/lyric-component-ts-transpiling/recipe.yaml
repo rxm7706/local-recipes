@@ -23,9 +23,6 @@ build:
 
 requirements:
   host:
-    # Upstream requires-python is >= 3.10 (a higher floor than the other
-    # lyric-* members), which equals the conda-forge floor — no python_min
-    # context override needed.
     - python ${{ python_min }}.*
     - hatchling
     - pip
@@ -58,3 +55,29 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lyric-component-ts-transpiling
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lyric-component-ts-transpiling
+  cfe-purls:
+    - pkg:conda/lyric-component-ts-transpiling@${{ version }}
+    - pkg:pypi/lyric-component-ts-transpiling@${{ version }}
+  cfe-upstream-repo: https://github.com/fangyinc/lyric
+  cfe-upstream-homepage: https://github.com/fangyinc/lyric
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lyric-component-ts-transpiling-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# requirements:
+#  host:
+#    # Upstream requires-python is >= 3.10 (a higher floor than the other
+#    # lyric-* members), which equals the conda-forge floor — no python_min
+#    # context override needed.
+####

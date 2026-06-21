@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.3.3"
+
+package:
+  name: collectfasta
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jasongi/collectfasta/archive/${{ version }}.tar.gz
+  sha256: 7e5a5e76a274c19f7d5e118726dc5e251b7da57ab3e0a64e32f8e229efa6199c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - django-storages >=1.13.2
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - collectfasta
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A fasta collectstatic command.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jasongi/collectfasta/
+  repository: https://github.com/jasongi/collectfasta
+  description: |
+    Collectfasta is a Django collectstatic command accelerator. It speeds up
+    the collectstatic management command by only copying files that have
+    changed, using remote storage backends (S3, Google Cloud Storage, etc.)
+    via django-storages.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: collectfasta
+  cfe-upstream-registry: github
+  cfe-upstream-name: jasongi/collectfasta
+  cfe-purls:
+    - pkg:conda/collectfasta@${{ version }}
+    - pkg:pypi/collectfasta@${{ version }}
+  cfe-upstream-repo: https://github.com/jasongi/collectfasta
+  cfe-upstream-homepage: https://github.com/jasongi/collectfasta/
+  cfe-import-names: [collectfasta]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/collectfasta-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering re-verify: flagged for GitHub-tag-vs-PyPI numbering
+#    # divergence, but PyPI 3.3.3 == GitHub tag 3.3.3 == conda-forge 3.3.3 (no
+#    # divergence). Local recipe was GENUINELY BEHIND (was 3.2.0); refreshed to
+#    # the deployed feedstock version 3.3.3. Source is the GitHub archive (not
+#    # PyPI sdist) matching the deployed feedstock; sha256 verified against the
+#    # feedstock and a fresh download. C2: feedstock already v1; authored
+#    # recipe.yaml at 3.3.3, deleted the stale local meta.yaml (was 3.2.0).
+# source:
+#    # GitHub-tag source (cfe-source-kind: github-tag), mirroring the deployed
+#    # feedstock. No PyPI sdist used. archive tarball ships LICENSE (pattern 1).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py + setup.cfg project (no pyproject.toml,
+#    # version via attr: collectfasta.__version__); matches deployed feedstock.
+#  run:
+#    # django-storages bumped >=1.6 -> >=1.13.2 (upstream setup.cfg install_requires
+#    # advanced; 1.14.6 on conda-forge). django >=4.2,<5.1 -> >=4.2: upstream 3.3.3
+#    # dropped the upper bound and now declares Django>=4.2 with classifiers for
+#    # Django 4.2/5.2/6.0; the stale <5.1 cap would wrongly exclude 5.2/6.0.
+#    # dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared); broad >=python_min floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. collectfasta/__init__.py only sets
+#    # __version__ (no Django settings loading at import), so the standard
+#    # python.imports test holds — no CFEP-25 escape hatch needed.
+####

@@ -1,0 +1,125 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.12.0a0"
+
+package:
+  name: opentelemetry-resourcedetector-gcp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-resourcedetector-gcp/opentelemetry_resourcedetector_gcp-${{ version }}.tar.gz
+  sha256: d5e3f78283a272eb92547e00bbeff45b7332a34ae791a70ab4eba81af9bc3baf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api >=1.30,<2
+    - opentelemetry-sdk >=1.30,<2
+    - requests >=2.24,<3
+    - typing_extensions >=4.0,<5
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.resourcedetector.gcp_resource_detector
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Google Cloud resource detector for OpenTelemetry
+  description: |
+    Google Cloud resource detector for OpenTelemetry. Detects resource
+    attributes for Google Cloud Platform environments (GCE, GKE, Cloud Run,
+    Cloud Functions, App Engine) and populates them onto OpenTelemetry
+    resources.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-resourcedetector-gcp
+  repository: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-resourcedetector-gcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-resourcedetector-gcp
+  cfe-purls:
+    - pkg:conda/opentelemetry-resourcedetector-gcp@${{ version }}
+    - pkg:pypi/opentelemetry-resourcedetector-gcp@${{ version }}
+  cfe-upstream-repo: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
+  cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-resourcedetector-gcp
+  cfe-import-names: [opentelemetry.resourcedetector.gcp_resource_detector]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-resourcedetector-gcp-feedstock
+  cfe-forge-recipe-updates-needed:
+    - recipe-regenerate
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    C1 keep-meta refresh. The conda-forge feedstock is still v0/meta.yaml at
+#    the same deployed version (1.12.0a0); meta.yaml mirrors it verbatim and
+#    recipe.yaml is the proposed v1 migration. cfe-forge-recipe-updates-needed
+#    carries meta-yaml-to-recipe-yaml because the feedstock owes the v0->v1
+#    switch.
+# context:
+#    version is the EXACT deployed/PyPI pre-release string "1.12.0a0", quoted
+#    so YAML keeps it a string (an unquoted pre-release can mis-type).
+#    python_min is omitted from context: upstream requires-python is >=3.9,
+#    below the conda-forge default floor of 3.10, so the default floor applies
+#    and conda-forge-pinning supplies python_min.
+# source:
+#    sdist ships LICENSE at the archive root, so license_file: LICENSE resolves
+#    from the extracted tarball (canonical pattern 1); no secondary source.
+# requirements:
+#  host:
+#    setuptools is required: the project builds from setup.py + setup.cfg (no
+#    pyproject.toml / PEP 517 backend), so the legacy setuptools backend must
+#    be present in host. Matches the deployed feedstock meta.yaml.
+#  run:
+#    Dependency translations from setup.cfg install_requires (the authoritative
+#    source) - all use PEP 440 compatible-release (~=) which grayskull/the
+#    feedstock emit as the verbose "<N.dev0" glob form:
+#      opentelemetry-api ~= 1.30  ->  >=1.30,<2
+#      opentelemetry-sdk ~= 1.30  ->  >=1.30,<2
+#      requests          ~= 2.24  ->  >=2.24,<3
+#      typing_extensions ~= 4.0   ->  >=4.0,<5
+#    Translated to the clean semantically-equivalent ">=floor,<next_major" form
+#    (the deployed feedstock meta.yaml keeps the verbose "<N.dev0" form verbatim).
+#    No "==N.*,>=floor" conda-build glob deps were present, so no incompatible
+#    "'*' with '=='" translation was needed in this recipe.
+#    conda-forge dep name: typing_extensions uses the underscore spelling on
+#    conda-forge (the feedstock lists both spellings; the underscore one is
+#    canonical).
+# tests:
+#    import name is the verified dotted namespace path from the sdist
+#    (src/opentelemetry/resourcedetector/gcp_resource_detector/__init__.py),
+#    not the hyphen->underscore distribution name (G7).
+####

@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.14.3"
+
+package:
+  name: browsergym-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/browsergym-core/browsergym_core-${{ version }}.tar.gz
+  sha256: 3a2e0e095445df2ff5093307a7a8bd2e978a5f912613f38479de9cebbd9b7568
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-requirements-txt
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4 >=4.12
+    - gymnasium >=0.27
+    - lxml <6.0.0,>=4.9
+    - mcp >=1.6.0
+    - python-dotenv >=1.0.0
+    - typer >=0.16.0
+    - numpy >=1.14
+    - pillow >=10.1
+    - playwright-python ==1.44
+    - pyparsing >=3
+
+tests:
+  - python:
+      imports:
+        - browsergym.core
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/browsergym-core/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "BrowserGym: a gym environment for web task automation in the Chromium browser"
+  repository: https://github.com/ServiceNow/BrowserGym
+  documentation: https://github.com/ServiceNow/BrowserGym
+  description: |
+    BrowserGym is a gym environment for web task automation in the Chromium
+    browser. browsergym-core provides the core gym environment, action and
+    observation spaces, and the Playwright-driven browser backend on which
+    the BrowserGym task suites build.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: browsergym-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: browsergym-core
+  cfe-name-aliases:
+    - browsergym.core
+  cfe-purls:
+    - pkg:conda/browsergym-core@${{ version }}
+    - pkg:pypi/browsergym-core@${{ version }}
+  cfe-upstream-repo: https://github.com/ServiceNow/BrowserGym
+  cfe-upstream-homepage: https://github.com/ServiceNow/BrowserGym
+  cfe-import-names: [browsergym.core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-19T17:41:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # mcp[cli] extra flattened (conda has no extras): mcp + python-dotenv + typer
+#    # PyPI 'playwright' (the Python binding) is 'playwright-python' on
+#    # conda-forge; bare 'playwright' there is the Node/Chromium driver
+#    # (no Python module). Mirror upstream's ==1.44 (satisfied by 1.44.0).
+####

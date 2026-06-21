@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.2"
+
+package:
+  name: django-orghierarchy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-orghierarchy/django_orghierarchy-${{ version }}.tar.gz
+  sha256: 2038480d29d95864973f1d5488fef72c54ba7eb183cb7f0c54408742ccb24578
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - django-mptt
+    - djangorestframework
+    - requests
+    - swapper
+
+tests:
+  - python:
+      imports:
+        - django_orghierarchy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Reusable Django application for hierarchical organizations.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/City-of-Helsinki/django-orghierarchy
+  repository: https://github.com/City-of-Helsinki/django-orghierarchy
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-orghierarchy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-orghierarchy
+  cfe-purls:
+    - pkg:conda/django-orghierarchy@${{ version }}
+    - pkg:pypi/django-orghierarchy@${{ version }}
+  cfe-upstream-repo: https://github.com/City-of-Helsinki/django-orghierarchy
+  cfe-upstream-homepage: https://github.com/City-of-Helsinki/django-orghierarchy
+  cfe-import-names: [django_orghierarchy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-orghierarchy-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 0.6.2; authored fresh recipe.yaml and
+#    # deleted stale local meta.yaml (was 0.3.0). Bumped 0.3.0 -> 0.6.2.
+# context:
+#    # python_min omitted — upstream setup.py declares python_requires >=3.10,
+#    # the conda-forge default floor; let conda-forge-pinning supply it.
+# requirements:
+#  host:
+#    # setuptools kept in host — legacy setup.py project (pyproject.toml has no
+#    # [build-system] table), so the build falls back to setuptools. Matches the
+#    # deployed feedstock host block.
+#  run:
+#    # dropped the feedstock's speculative python <4.0 upper bound — upstream
+#    # setup.py declares only python_requires >=3.10 (no upper cap). Broad
+#    # >=python_min floor is correct.
+#    # django >=4.2 mirrors upstream install_requires Django>=4.2.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. django_orghierarchy imports cleanly
+#    # standalone (the package __init__ does not eagerly load Django apps /
+#    # configure settings), so the standard python.imports test holds — no
+#    # package_contents escape hatch needed.
+####

@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.1"
+
+package:
+  name: django-excel-tools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-excel-tools/django_excel_tools-${{ version }}.tar.gz
+  sha256: 9695cc25f0582256ff83434b18864823ca526423c44fa6009353eb6e35fdb6b0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-git-version
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=3.1
+    - openpyxl >=3.0.4
+
+tests:
+  - python:
+      imports:
+        - django_excel_tools
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Common function when working with excel.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/NorakGithub/django-excel-tools
+  repository: https://github.com/NorakGithub/django-excel-tools
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-excel-tools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-excel-tools
+  cfe-purls:
+    - pkg:conda/django-excel-tools@${{ version }}
+    - pkg:pypi/django-excel-tools@${{ version }}
+  cfe-upstream-repo: https://github.com/NorakGithub/django-excel-tools
+  cfe-upstream-homepage: https://github.com/NorakGithub/django-excel-tools
+  cfe-import-names: [django_excel_tools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-excel-tools-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock is ALREADY v1 (and already at 1.1.1, build 2);
+#    # authored a fresh modern recipe.yaml at 1.1.1, deleted the stale local
+#    # meta.yaml (was 1.1.0).
+# context:
+#    # python_min omitted — setup.py declares no python_requires, so the
+#    # default conda-forge 3.10 floor applies.
+# package:
+#    # literal package.name + literal pypi.org source.url (sdist stem is
+#    # underscored: django_excel_tools-VERSION.tar.gz). Modernizes the
+#    # feedstock's context.name + name[0] chain.
+# requirements:
+#  host:
+#    # setuptools-git-version kept — setup.py declares setup_requires=
+#    # ['setuptools-git-version']. setuptools + pip standard for a setup.py
+#    # project (no pyproject.toml). Matches deployed feedstock host block.
+#  run:
+#    # django >=3.1 (package imports django.db / django.utils.translation) +
+#    # openpyxl >=3.0.4 (README "## Requirements - OpenPYXL"; used by the
+#    # serializer fields and exercised in tests). setup.py declares NO
+#    # install_requires, so these are recipe-curated runtime deps, retained
+#    # from the deployed feedstock. Dropped the feedstock's speculative
+#    # python <4.0 upper bound (not upstream-declared); broad >=python_min
+#    # floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. The top-level __init__.py is trivial
+#    # (only __author__/__version__, no eager django import), so the standard
+#    # python.imports test holds — no package_contents escape hatch needed.
+####

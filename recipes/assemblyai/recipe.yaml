@@ -64,6 +64,10 @@ extra:
     - pkg:pypi/assemblyai@${{ version }}
   cfe-upstream-repo: https://github.com/AssemblyAI/assemblyai-python-sdk
   cfe-upstream-homepage: https://www.assemblyai.com/
+  cfe-import-names: [assemblyai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -71,6 +75,10 @@ extra:
   cfe-last-checked: 2026-06-19T13:36:19Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-19T16:40:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # requirements:

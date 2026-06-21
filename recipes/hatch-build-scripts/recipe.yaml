@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: hatch-build-scripts
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hatch-build-scripts/hatch_build_scripts-${{ version }}.tar.gz
+  sha256: 563735e2f265c9e1b92dece6f762309114505ffaf6e5d51d462eb6a3b4f14640
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pathspec
+    - hatchling
+
+tests:
+  - python:
+      imports:
+        - hatch_build_scripts
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A plugin for Hatch for writing build scripts
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/rmorshea/hatch-build-scripts
+  repository: https://github.com/rmorshea/hatch-build-scripts
+  description: |
+    A plugin for Hatch that runs user-defined build scripts and copies the
+    resulting artifacts into the built package, configured via the
+    [[tool.hatch.build.hooks.build-scripts]] table in pyproject.toml.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hatch-build-scripts
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hatch-build-scripts
+  cfe-purls:
+    - pkg:conda/hatch-build-scripts@${{ version }}
+    - pkg:pypi/hatch-build-scripts@${{ version }}
+  cfe-upstream-repo: https://github.com/rmorshea/hatch-build-scripts
+  cfe-upstream-homepage: https://github.com/rmorshea/hatch-build-scripts
+  cfe-import-names: [hatch_build_scripts]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/hatch-build-scripts-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock is STILL v0/meta.yaml. meta.yaml refreshed
+#    # 0.0.4 -> 1.0.0 to faithfully mirror the deployed v0 feedstock; this
+#    # recipe.yaml is the proposed v1 migration, authored alongside. Both coexist
+#    # until the feedstock completes its v0->v1 switch (meta-yaml-to-recipe-yaml).
+# context:
+#    # python_min omitted from context: requires-python is >=3.10,<4; the 3.10
+#    # floor is the conda-forge default, so let conda-forge-pinning supply it.
+# requirements:
+#  host:
+#    # build backend is hatchling only (pyproject [build-system] requires =
+#    # ["hatchling"]); no setuptools/wheel needed (G8 clean). hatchling also in
+#    # run: per upstream [project.dependencies] (the plugin imports hatchling).
+#  run:
+#    # deps from upstream [project.dependencies]: pathspec, hatchling. The
+#    # requires-python <4 upper bound is NOT mirrored as a run: python cap
+#    # (speculative ceiling; broad >=python_min floor is canonical). Matches the
+#    # deployed feedstock run block.
+# about:
+#    # license_file: LICENSE.txt (sdist ships LICENSE.txt at root; pattern 1).
+#    # summary kept as the human-curated feedstock text; the PyPI 1.0.0 summary
+#    # ("Dependency injection without the boilerplate.") is a stale template
+#    # leftover and does not describe this package.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; hatch_build_scripts import verified
+#    # against the 1.0.0 sdist (src/hatch_build_scripts/__init__.py).
+####

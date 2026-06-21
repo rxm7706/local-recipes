@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.14.0"
+
+package:
+  name: tabpy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tabpy/tabpy-${{ version }}.tar.gz
+  sha256: 4cf07d46879026dffac1e39ed50e26f434f4cf73e630a47615af3a61d43a3d11
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - tabpy=tabpy.tabpy:main
+      - tabpy-user=tabpy.utils.tabpy_user:main
+      - tabpy-deploy-models=tabpy.models.deploy_models:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pytest-runner
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cloudpickle
+    - configparser
+    - coverage
+    - coveralls
+    - docopt
+    - future
+    - genson
+    - hypothesis
+    - jsonschema
+    - mock
+    - nltk
+    - numpy
+    - pandas
+    - pyopenssl
+    - pytest
+    - pytest-cov
+    - requests
+    - scipy
+    - simplejson
+    - scikit-learn
+    - textblob
+    - tornado
+    - twisted
+    - urllib3
+    - pyarrow
+    - libarrow-flight
+
+tests:
+  - python:
+      imports:
+        - tabpy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - tabpy --help
+      - tabpy-user --help
+
+about:
+  summary: Web server Tableau uses to run Python scripts.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tableau/TabPy
+  repository: https://github.com/tableau/TabPy
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tabpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tabpy
+  cfe-purls:
+    - pkg:conda/tabpy@${{ version }}
+    - pkg:pypi/tabpy@${{ version }}
+  cfe-upstream-repo: https://github.com/tableau/TabPy
+  cfe-upstream-homepage: https://github.com/tableau/TabPy
+  cfe-import-names: [tabpy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tabpy-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is still v0/meta.yaml and already
+#    # deployed at 2.14.0. Kept the deployed meta.yaml verbatim as the v0
+#    # mirror; authored this v1 recipe.yaml alongside it. Delete meta.yaml
+#    # only after the feedstock completes its v0 to v1 switch.
+# build:
+#  python:
+#    # entry_points moved under build.python.entry_points (v1 shape); the
+#    # v0 mirror keeps them under build.entry_points.
+# requirements:
+#  host:
+#    # setuptools + pytest-runner kept in host — setup.py/setup.cfg project
+#    # (no pyproject.toml / PEP-517 backend), so G8 does not apply. Matches
+#    # the deployed feedstock host block.
+#  run:
+#    # libarrow-flight is a feedstock-curated addition (not in PyPI
+#    # requires_dist) — pyarrow's flight component; mirrored faithfully
+#    # from the deployed feedstock run list.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. Added a script test for the
+#    # tabpy / tabpy-user entry points (mirrors the feedstock's tabpy --help
+#    # / tabpy-user --help test commands). tabpy imports cleanly standalone.
+# context:
+#    # python_min omitted from context — upstream requires-python is >=3.10,
+#    # the conda-forge default floor; let conda-forge-pinning supply it.
+####

@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.29"
+
+package:
+  name: uiautomation
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uiautomation/uiautomation-${{ version }}.tar.gz
+  sha256: 3c169112043ce21065aead1d79c3baebdafc9cf03bd24ded02b2db11d423d88d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - comtypes >=1.2.1
+  run:
+    - python >=${{ python_min }}
+    - comtypes >=1.2.1
+    - if: win
+      then: __win
+
+tests:
+  - python:
+      imports:
+        - uiautomation
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Python UIAutomation for Windows
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
+  repository: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
+  description: |
+    Python UIAutomation for Windows. A wrapper around the Windows
+    UIAutomation COM API (via comtypes) for inspecting and driving the
+    UI of Windows desktop applications. Windows-only at runtime.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: uiautomation
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: uiautomation
+  cfe-purls:
+    - pkg:conda/uiautomation@${{ version }}
+    - pkg:pypi/uiautomation@${{ version }}
+  cfe-upstream-repo: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
+  cfe-upstream-homepage: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
+  cfe-import-names: [uiautomation]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/uiautomation-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # WAVE-D Windows-only recipe. C1: feedstock still v0 (recipe/meta.yaml,
+#    # deployed 2.0.29). Kept the v0 meta.yaml mirror refreshed to 2.0.29
+#    # (faithful, un-annotated) AND authored this v1 recipe.yaml. The
+#    # feedstock owes the v0->v1 migration (updates-needed: meta-yaml-to-recipe-yaml).
+# build:
+#    # noarch:python confirmed — pure-Python; the win-only constraint is a
+#    # RUNTIME constraint (comtypes + ctypes against the Windows UIAutomation
+#    # COM API and the bundled bin/UIAutomationClient_VC140_*.dll), not a
+#    # compiled build. No compiler/stdlib.
+#    # cfe-local-build-status: not-attempted. A linux-64 build is NOT
+#    # meaningful here: setup.py does `from uiautomation.version import VERSION`,
+#    # which runs uiautomation/__init__.py -> `from .uiautomation import *`
+#    # -> `import comtypes` at metadata-generation time. conda-forge ships
+#    # comtypes ONLY on win-64 (0 noarch / 0 linux builds, 143 win-64), so the
+#    # comtypes host dep cannot even be installed on linux-64 and pip's
+#    # metadata generation fails with ModuleNotFoundError: No module named
+#    # 'comtypes' (verified: attempted linux-64 build, exit 1 at pip install).
+#    # The deployed feedstock builds only on Windows CI for the same reason.
+#    # A faithful build requires a Windows host (rattler-build / conda-build).
+# requirements:
+#  host:
+#    # comtypes >=1.2.1 in host MIRRORS the deployed feedstock: setup.py
+#    # imports the package (hence comtypes) at metadata-generation time, so
+#    # comtypes is a genuine BUILD-time requirement, not just runtime. Because
+#    # comtypes is win-only on conda-forge, this is also why the build only
+#    # works on a Windows host. setuptools kept in host — setup.py/setup.cfg
+#    # project (no pyproject.toml); matches the deployed feedstock host block.
+#  run:
+#    # __win mirrors the deployed feedstock's Windows-only constraint (the
+#    # package imports comtypes + Windows COM at import time and ships
+#    # win-only DLLs). Gated if: win / then: __win so it only attaches on
+#    # the win subdir; needs noarch_platforms in conda-forge.yml (G12).
+#    # Dropped the feedstock's `typing` run-dep: setup.py only appends
+#    # `typing` for sys.version_info < (3, 5); for the >=3.10 floor it is
+#    # the stdlib module, never a separate dependency. egg-info/requires.txt
+#    # declares only comtypes>=1.2.1.
+# tests:
+#    # CFEP-25 triad with imports: [uiautomation] + pip_check. The import
+#    # REQUIRES Windows (comtypes + UIAutomation COM API + bundled DLLs), so
+#    # the test can only PASS on Windows CI. The Windows CI leg is where the
+#    # import test is actually verified. python_min omitted from context:
+#    # PyPI requires_python is None and the conda-forge 3.10 floor is correct.
+####

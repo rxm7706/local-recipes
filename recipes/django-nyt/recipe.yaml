@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.0"
+
+package:
+  name: django-nyt
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-nyt/django_nyt-${{ version }}.tar.gz
+  sha256: 4b35117b65219dafa849b0b994118f65590b3f6340ede573cdbf51dcd6a59f74
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=2.2,<5.3
+
+tests:
+  - python:
+      imports:
+        - django_nyt
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A pluggable notification system written for the Django framework.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/django-wiki/django-nyt
+  repository: https://github.com/django-wiki/django-nyt
+  documentation: https://django-nyt.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-nyt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-nyt
+  cfe-purls:
+    - pkg:conda/django-nyt@${{ version }}
+    - pkg:pypi/django-nyt@${{ version }}
+  cfe-upstream-repo: https://github.com/django-wiki/django-nyt
+  cfe-upstream-homepage: https://github.com/django-wiki/django-nyt
+  cfe-import-names: [django_nyt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-nyt-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock is already v1; authored fresh recipe.yaml at 1.5.0,
+#    # deleted stale local meta.yaml (was bare "1.3"). Matches the deployed v1
+#    # django-nyt-feedstock shape, modernized.
+# context:
+#    # python_min omitted from context: upstream requires-python is >=3.8, below
+#    # the conda-forge 3.10 floor, so let conda-forge-pinning supply python_min.
+# package:
+#    # literal package.name (django-nyt) + literal pypi.org source.url path,
+#    # replacing the feedstock's name-interpolation chain.
+# requirements:
+#  run:
+#    # dropped the feedstock's speculative python <4.0 upper bound (upstream only
+#    # declares requires-python >=3.8, no maximum); broad >=python_min is correct.
+#    # django >=2.2,<5.3 mirrors upstream pyproject [project.dependencies]; the
+#    # <5.3 upper bound is upstream-declared, load-bearing under pip_check.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. django_nyt imports cleanly standalone (the
+#    # bare package __init__ does not require DJANGO_SETTINGS_MODULE), so the
+#    # standard python.imports test holds — no package_contents escape hatch.
+####

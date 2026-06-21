@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.8.0"
+
+package:
+  name: flake8-logging
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flake8-logging/flake8_logging-${{ version }}.tar.gz
+  sha256: 765046763d44d1dc051071c047fe0fa056d71a524505207c3fbdc47532e7d8af
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flake8 >=3,!=3.2
+
+tests:
+  - python:
+      imports:
+        - flake8_logging
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A Flake8 plugin that checks for issues using the standard library logging module.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/adamchainz/flake8-logging
+  repository: https://github.com/adamchainz/flake8-logging
+  description: |
+    A Flake8 plugin that checks for issues using the standard library
+    logging module.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8-logging
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-logging
+  cfe-purls:
+    - pkg:conda/flake8-logging@${{ version }}
+    - pkg:pypi/flake8-logging@${{ version }}
+  cfe-upstream-repo: https://github.com/adamchainz/flake8-logging
+  cfe-upstream-homepage: https://github.com/adamchainz/flake8-logging
+  cfe-import-names: [flake8_logging]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flake8-logging-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is still v0/meta.yaml (deployed at
+#    # 1.8.0). Refreshed local meta.yaml to mirror the deployed v0 feedstock
+#    # and authored this v1 recipe.yaml alongside it; both coexist until the
+#    # feedstock completes its v0 to v1 migration (see
+#    # cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml).
+# context:
+#    # python_min omitted at the conda-forge default floor (3.10);
+#    # upstream requires-python is >=3.9, below the floor, so the default
+#    # supplied by conda-forge-pinning is correct.
+# requirements:
+#  host:
+#    # setuptools kept in host per pyproject build-system requires
+#    # (setuptools.build_meta, setuptools>=77); no wheel needed (G8).
+#  run:
+#    # flake8 >=3,!=3.2 mirrors upstream requires-dist (flake8!=3.2,>=3);
+#    # no speculative upper pin to drop.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test pin. flake8_logging imports cleanly
+#    # standalone, so the standard python.imports test holds.
+####

@@ -1,13 +1,13 @@
 {% set name = "flake8-tidy-imports" %}
-{% set version = "4.10.0" %}
+{% set version = "4.12.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/flake8_tidy_imports-{{ version }}.tar.gz
-  sha256: bd6cf86465402d2b86903009b748d85a628e599e17b76e810c9857e3a2815173
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flake8_tidy_imports-{{ version }}.tar.gz
+  sha256: 9254788c3b6862c2fcec0250d2dc9af089afebff9c5b8a8ac8b9525b059b06db
 
 build:
   noarch: python
@@ -16,12 +16,12 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools
     - pip
   run:
-    - python >=3.8
-    - flake8 >=3.8.0
+    - python >={{ python_min }}
+    - flake8 >=3.8
 
 test:
   imports:
@@ -30,6 +30,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/adamchainz/flake8-tidy-imports

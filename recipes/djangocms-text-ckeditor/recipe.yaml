@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.1.7"
+
+package:
+  name: djangocms-text-ckeditor
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/djangocms-text-ckeditor/djangocms_text_ckeditor-${{ version }}.tar.gz
+  sha256: c729764cc5f3c856911b204392ef1fbbef831341bbd9c62ff00b2d3f07159c83
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django-cms >=3.6
+    - html5lib >=1
+    - pillow
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - djangocms_text_ckeditor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Text Plugin for django CMS with CKEditor support
+  license: BSD-3-Clause AND GPL-2.0-or-later AND MIT
+  license_file:
+    - LICENSE
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/LICENSE.md
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/plugins/wsc/LICENSE.md
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/plugins/exportpdf/LICENSE.md
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/plugins/scayt/LICENSE.md
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/samples/toolbarconfigurator/font/LICENSE.txt
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/samples/toolbarconfigurator/lib/codemirror/LICENSE
+  homepage: https://github.com/django-cms/djangocms-text-ckeditor
+  repository: https://github.com/django-cms/djangocms-text-ckeditor
+  description: |
+    Text Plugin for django CMS providing rich-text editing with CKEditor
+    support, including HTML cleanup via html5lib and inline plugin embedding.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangocms-text-ckeditor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangocms-text-ckeditor
+  cfe-purls:
+    - pkg:conda/djangocms-text-ckeditor@${{ version }}
+    - pkg:pypi/djangocms-text-ckeditor@${{ version }}
+  cfe-upstream-repo: https://github.com/django-cms/djangocms-text-ckeditor
+  cfe-upstream-homepage: https://github.com/django-cms/djangocms-text-ckeditor
+  cfe-import-names: [djangocms_text_ckeditor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangocms-text-ckeditor-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 KEEP-meta: conda-forge feedstock is STILL v0/meta.yaml. The
+#    # meta.yaml mirrors the deployed feedstock (5.1.7); this recipe.yaml is
+#    # the proposed v1 migration, refreshed to the deployed 5.1.7. Both coexist
+#    # until the feedstock completes its v0-to-v1 switch
+#    # (cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml).
+# context:
+#    # python_min omitted — upstream requires-python is >=3.7, below the
+#    # conda-forge 3.10 floor; let conda-forge-pinning supply the default.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches the deployed feedstock host block.
+#  run:
+#    # django-cms, html5lib, pillow, packaging are the full requires_dist of the
+#    # 5.1.6 sdist (no extras to flatten). pillow is the conda-forge feedstock
+#    # spelling of PyPI Pillow.
+# about:
+#    # license is the curated multi-license SPDX expression for the bundled
+#    # CKEditor + plugins (BSD-3-Clause AND GPL-2.0-or-later AND MIT); PKG-INFO
+#    # only declares BSD-3-Clause for the Python package itself. Mirrors the
+#    # deployed feedstock value.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version test. djangocms_text_ckeditor imports cleanly standalone
+#    # (the Django plugin registers at app-load, not at module import), so the
+#    # standard python.imports test holds — no package_contents escape hatch.
+####

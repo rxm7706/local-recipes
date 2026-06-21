@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.14"
+
+package:
+  name: django-data-browser
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-data-browser/django_data_browser-${{ version }}.tar.gz
+  sha256: 3bdb85b6d453da0d7b8880ec531bd9c26f6bdb90002e37bede677f29488acb55
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - hyperlink
+    - python-dateutil
+    - sqlparse
+
+tests:
+  - python:
+      imports:
+        - data_browser
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Interactive user-friendly database explorer.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/tolomea/django-data-browser
+  repository: https://github.com/tolomea/django-data-browser
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-data-browser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-data-browser
+  cfe-purls:
+    - pkg:conda/django-data-browser@${{ version }}
+    - pkg:pypi/django-data-browser@${{ version }}
+  cfe-upstream-repo: https://github.com/tolomea/django-data-browser
+  cfe-upstream-homepage: https://github.com/tolomea/django-data-browser
+  cfe-import-names: [data_browser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-data-browser-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock is already v1 at 4.2.14; authored this recipe.yaml to
+#    # match the deployed feedstock and bumped the stale local v0 meta.yaml (was
+#    # 4.2.5), then deleted the meta.yaml.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches the deployed feedstock host block.
+#  run:
+#    # G7 import divergence: distribution name is django-data-browser but the
+#    # top-level import is data_browser (cached in cfe-import-names).
+#    # Dropped the feedstock's speculative python upper bound (was python >=
+#    # python_min,<4.0); upstream requires-python is just >=3.10, so the broad
+#    # >=python_min floor is correct.
+# tests:
+#    # Modernized the feedstock's single-version python_version to the CFEP-25
+#    # triad [python_min.*, "*"]. data_browser imports cleanly standalone
+#    # (Django plugin code loads at app-instantiation, not import time), so the
+#    # standard python.imports test holds — no package_contents escape hatch.
+#    # The prebuilt frontend ships as static assets under data_browser/fe_build/
+#    # in the sdist; no build-time JS toolchain needed.
+####

@@ -1,13 +1,13 @@
 {% set name = "opentelemetry-exporter-prometheus-remote-write" %}
-{% set version = "0.44b0" %}
+{% set version = "0.63b1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_prometheus_remote_write-{{ version }}.tar.gz
-  sha256: 974a60774605500c45b4010c92a131161d9a859290d691e30c5418e539912f49
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_prometheus_remote_write-{{ version }}.tar.gz
+  sha256: 19b7f49d18b2bb75df77d781c4629800315dcc0b21e4e6d821156b3db5f19ece
 
 build:
   noarch: python
@@ -16,16 +16,16 @@ build:
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=3.7
-    - protobuf >=4.21,<5.0
-    - requests >=2.28,<3.0
-    - opentelemetry-api >=1.12,<2.0
-    - opentelemetry-sdk >=1.12,<2.0
-    - python-snappy >=0.6,<1.dev0
+    - python >={{ python_min }}
+    - protobuf >=5.26,<7.0
+    - requests >=2.28,<3.dev0
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-sdk >=1.12,<2.dev0
+    - python-snappy ~=0.6
 
 test:
   imports:
@@ -34,6 +34,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: Prometheus Remote Write Metrics Exporter for OpenTelemetry
@@ -44,5 +45,3 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
-    - conda-forge/opentelemetry-api
-    - conda-forge/opentelemetry-sdk

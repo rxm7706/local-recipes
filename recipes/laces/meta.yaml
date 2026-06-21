@@ -1,13 +1,13 @@
 {% set name = "laces" %}
-{% set version = "0.1.0" %}
+{% set version = "0.1.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/laces-{{ version }}.tar.gz
-  sha256: 1ea9980a040efb7299084bb8bf829088575cb0cccbf91987bbf9f195a81787b1
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/laces-{{ version }}.tar.gz
+  sha256: 3218e09c1889ae5cf3fc7a82f5bb63ec0c7879889b6a9760bfc42323c694b84d
 
 build:
   noarch: python
@@ -16,11 +16,11 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=3.2
 
 test:
@@ -30,9 +30,11 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: Django components that know how to render themselves.
+  home: https://github.com/tbrlpld/laces
   license: BSD-3-Clause
   license_file: LICENSE
 

@@ -1,25 +1,26 @@
 {% set name = "django-yugabytedb" %}
-{% set version = "4.0.0.post1" %}
+{% set version = "4.2.0.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-yugabytedb-{{ version }}.tar.gz
-  sha256: bb70bd2fae4e3ad84148a322ad857169ac3d506cdd639f5abc539d0577d7244c
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 2c03362c54b190ec935ee6d057ed39ba7db90c02b6e773698ba1d5248f8a4c94
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=4.2
 
 test:
@@ -29,6 +30,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://www.yugabyte.com/

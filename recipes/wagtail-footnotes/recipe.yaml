@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.15.0"
+
+package:
+  name: wagtail-footnotes
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-footnotes/wagtail_footnotes-${{ version }}.tar.gz
+  sha256: be37c78598d3a40f6f2b5a6b291c2733e41441d9fceb24f1c5ddf1f481a7847e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=6.3
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - wagtail_footnotes
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Add footnotes to rich text in your Wagtail pages
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/torchbox/wagtail-footnotes
+  repository: https://github.com/torchbox/wagtail-footnotes
+  description: |
+    Wagtail Footnotes adds the ability to insert footnotes into rich text
+    fields in your Wagtail pages, rendering a numbered reference inline and a
+    collected list of footnotes for the page.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-footnotes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-footnotes
+  cfe-purls:
+    - pkg:conda/wagtail-footnotes@${{ version }}
+    - pkg:pypi/wagtail-footnotes@${{ version }}
+  cfe-upstream-repo: https://github.com/torchbox/wagtail-footnotes
+  cfe-upstream-homepage: https://github.com/torchbox/wagtail-footnotes
+  cfe-import-names: [wagtail_footnotes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-footnotes-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0 (meta.yaml). Kept the local meta.yaml as a
+#    # faithful mirror of the deployed feedstock (refreshed 0.10.0 -> 0.15.0);
+#    # authored this v1 recipe.yaml alongside as the proposed migration.
+#    # updates-needed carries meta-yaml-to-recipe-yaml (feedstock owes the
+#    # v0 -> v1 switch).
+# requirements:
+#  host:
+#    # flit-core >=3.2,<4 is the sole build backend (pyproject [build-system]);
+#    # no redundant wheel/setuptools (G8).
+#  run:
+#    # wagtail >=6.3 + django >=4.2 are the only [project.dependencies]; the
+#    # testing extra (pre-commit/tox/coverage/wagtail-modeladmin) stays out of
+#    # run. No speculative upper pins (upstream declares none).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtail_footnotes/__init__.py is
+#    # trivial (only VERSION/__version__, no Django app eager imports), so the
+#    # standard python.imports test holds -- no package_contents escape hatch.
+# context:
+#    # python_min omitted: upstream requires-python >=3.10 == conda-forge floor.
+####

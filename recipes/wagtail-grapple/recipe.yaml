@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.31.0"
+
+package:
+  name: wagtail-grapple
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-grapple/wagtail_grapple-${{ version }}.tar.gz
+  sha256: 5a70e88dca5188181e42306b207b1e38cf5df4452aa62e764b9e997e2ea19797
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=6.3
+    - graphene-django >=3,<4
+    - wagtail-headless-preview
+
+tests:
+  - python:
+      imports:
+        - grapple
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A Wagtail package that speeds up and simplifies implementing a GraphQL endpoint!
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/torchbox/wagtail-grapple
+  repository: https://github.com/torchbox/wagtail-grapple
+  description: |
+    Grapple is a Wagtail app that speeds up and simplifies implementing a
+    GraphQL endpoint for your Wagtail site. It builds on top of
+    graphene-django to expose your Wagtail pages, models, snippets, images,
+    documents and settings through a configurable GraphQL API.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-grapple
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-grapple
+  cfe-purls:
+    - pkg:conda/wagtail-grapple@${{ version }}
+    - pkg:pypi/wagtail-grapple@${{ version }}
+  cfe-upstream-repo: https://github.com/torchbox/wagtail-grapple
+  cfe-upstream-homepage: https://github.com/torchbox/wagtail-grapple
+  cfe-import-names: [grapple]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-grapple-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (meta.yaml present, recipe.yaml
+#    # 404 as of 2026-06-20). Local meta.yaml KEPT as a faithful mirror of the
+#    # deployed feedstock at 0.31.0; this recipe.yaml is the proposed v1
+#    # migration. cfe-forge-recipe-updates-needed names meta-yaml-to-recipe-yaml
+#    # (the feedstock owes the v0 to v1 switch). STD-002 (both files present) is
+#    # an expected, harmless warning for a v0-mirror.
+# context:
+#    # python_min omitted from context: upstream requires-python >=3.9 clamps to
+#    # the conda-forge default floor 3.10; no higher override needed.
+# requirements:
+#  host:
+#    # flit-core build backend per pyproject [build-system]
+#    # (flit_core >=3.2,<4 + flit_core.buildapi).
+#  run:
+#    # graphene-django >=3,<4 upper bound is upstream-declared
+#    # (graphene-django<4,>=3 in pyproject); load-bearing under pip_check.
+#    # Dropped all extra == "docs" / "testing" optional deps (Sphinx, coverage,
+#    # flit, factory-boy, wagtail-factories, psycopg2-binary, etc.) per G25 —
+#    # neither extra is activated.
+# tests:
+#    # G7: top-level import is `grapple`, NOT wagtail_grapple (sdist
+#    # grapple/__init__.py confirmed). grapple/__init__.py is just
+#    # `__version__ = "0.31.0"` — no Django app-registry import at module load,
+#    # so the standard CFEP-25 python.imports test holds; no package_contents
+#    # escape hatch needed.
+####

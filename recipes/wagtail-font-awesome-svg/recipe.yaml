@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0"
+
+package:
+  name: wagtail-font-awesome-svg
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-font-awesome-svg/wagtail_font_awesome_svg-${{ version }}.tar.gz
+  sha256: aac01b5ea8b0c3de3e363a91aa5067f514b9cd385224d6ba7153d9de47120493
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail
+
+tests:
+  - python:
+      imports:
+        - wagtailfontawesomesvg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Font Awesome icons as SVG for Wagtail
+  license: MIT AND CC-BY-4.0
+  license_file:
+    - LICENSE
+    - wagtailfontawesomesvg/templates/wagtailfontawesomesvg/regular/copyright.svg
+    - wagtailfontawesomesvg/templates/wagtailfontawesomesvg/solid/copyright.svg
+  homepage: https://github.com/wagtail-nest/wagtail-font-awesome-svg
+  repository: https://github.com/wagtail-nest/wagtail-font-awesome-svg
+  documentation: https://github.com/wagtail-nest/wagtail-font-awesome-svg/blob/main/CHANGELOG.md
+  description: |
+    Font Awesome 7 icons as SVG for Wagtail. Provides the Font Awesome Free
+    icon set packaged as SVG templates for use in Wagtail CMS projects.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-font-awesome-svg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-font-awesome-svg
+  cfe-purls:
+    - pkg:conda/wagtail-font-awesome-svg@${{ version }}
+    - pkg:pypi/wagtail-font-awesome-svg@${{ version }}
+  cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-font-awesome-svg
+  cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-font-awesome-svg
+  cfe-import-names: [wagtailfontawesomesvg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-font-awesome-svg-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml -> 404); local
+#    # meta.yaml KEPT as the un-annotated deployed-state mirror at 2.0; this
+#    # recipe.yaml is the proposed v1 migration. STD-002 (both files present)
+#    # is expected for a v0-mirror, not a defect.
+# about:
+#    # license set to upstream-authoritative MIT AND CC-BY-4.0 (pyproject.toml
+#    # 2.0 [project].license). The deployed feedstock meta.yaml still carries
+#    # the stale "Unlicense AND MIT" from pre-2.0; recipe.yaml modernizes to
+#    # match what upstream actually declares. The LICENSE archive is the Font
+#    # Awesome Free license (CC-BY-4.0 icons + OFL fonts) plus the project MIT.
+#    # license_file keeps all 3 entries (LICENSE + 2 copyright.svg) — all
+#    # present in the sdist and shipped by the deployed feedstock.
+# requirements:
+#  host:
+#    # setuptools kept in host — upstream build-backend is setuptools.build_meta
+#    # (requires setuptools>=77); matches deployed feedstock host block.
+#  run:
+#    # wagtail added — new at 2.0 (upstream [project].dependencies = ["wagtail"]).
+#    # No upper bound: upstream declares a bare "wagtail", so broad floor only.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test. wagtailfontawesomesvg/__init__.py is EMPTY,
+#    # so import is a trivial no-side-effect top-level import (no Django
+#    # app-registry load) -> standard python.imports holds, no CFEP-25 escape
+#    # hatch needed (DJANGO/WAGTAIL gotcha checked, does not apply).
+# context:
+#    # python_min OMITTED from context: upstream requires-python >=3.8, below
+#    # the conda-forge 3.10 floor, so the default floor applies. Let
+#    # conda-forge-pinning supply python_min.
+####

@@ -1,26 +1,28 @@
 {% set name = "django-tree-queries" %}
-{% set version = "0.15.0" %}
+{% set version = "0.24.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_tree_queries-{{ version }}.tar.gz
-  sha256: 0e994c2a4601c021a115a397ec8d0ff7d5e614fae95947f72126e6a419c60f08
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_tree_queries-{{ version }}.tar.gz
+  sha256: 8971da3fd15a1e6a52a5a2af76c086aa460e6974a130d9ec90ca0d0588baf848
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=3.8
+    - django-js-asset
+    - django
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -29,6 +31,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: Tree queries with explicit opt-in, without configurability

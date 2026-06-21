@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.0.0"
+
+package:
+  name: django-hosts
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-hosts/django_hosts-${{ version }}.tar.gz
+  sha256: 08006bc09f5af69638721ced0657f24044835a22a608732ee1004adc9c95fb7c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-scm
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - django_hosts
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Dynamic and static host resolving for Django. Maps hostnames to URLconfs.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://django-hosts.readthedocs.io/
+  repository: https://github.com/jazzband/django-hosts
+  documentation: https://django-hosts.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-hosts
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-hosts
+  cfe-purls:
+    - pkg:conda/django-hosts@${{ version }}
+    - pkg:pypi/django-hosts@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-hosts
+  cfe-upstream-homepage: https://django-hosts.readthedocs.io/
+  cfe-import-names: [django_hosts]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-hosts-feedstock
+  cfe-forge-recipe-updates-needed: [dependency-fix]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 7.0.0; authored fresh recipe.yaml at
+#    # 7.0.0, deleted stale local meta.yaml (was bare "5.2"). MAJOR bump.
+# requirements:
+#  host:
+#    # pure setup.py project (no pyproject.toml); use_scm_version=True +
+#    # setup_requires=['setuptools_scm']. Kept setuptools-scm + setuptools +
+#    # pip; matches deployed feedstock host block.
+#  run:
+#    # django >=4.2 is a CORRECTION, not a copy of the feedstock. Upstream
+#    # 7.0 changelog: BACKWARD-INCOMPATIBLE "Dropped support for Django < 4.2
+#    # and Django 5.0". The deployed feedstock still carries django >=3.2
+#    # (stale — never updated for the 7.0 floor jump). 7.0.0 declares NO
+#    # install_requires in setup.py/PKG-INFO/egg-info, but django is a hard
+#    # import; floor set from the documented BACKWARD-INCOMPATIBLE drop.
+#    # Also dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared; broad >=python_min floor is correct).
+#    # python_min stays at the conda-forge default 3.10 (omitted from context);
+#    # upstream requires-python is >=3.9, below the floor, so no override.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. django_hosts/__init__.py guards its
+#    # submodule imports with try/except ImportError, so import django_hosts
+#    # does NOT raise without DJANGO_SETTINGS_MODULE — the standard
+#    # python.imports test holds; no package_contents escape hatch needed.
+####

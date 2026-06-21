@@ -1,13 +1,14 @@
 {% set name = "wagtail-sharing" %}
-{% set version = "2.12.1" %}
+{% set version = "2.16" %}
+{% set python_min = "3.12" %}
 
 package:
   name: {{ name|lower }}
-  version: {{ version }}
+  version: "{{ version }}"
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-sharing-{{ version }}.tar.gz
-  sha256: 5b3e5dae312b2c35916dabc8afc21884582cfe5407b279944435efbba266eba1
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: bfe1b1dc76b468cbd88a55c650bdd39c946c70a0754dd6736d171145c2e80b4e
 
 build:
   noarch: python
@@ -16,13 +17,14 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools >=43.0.0
     - wheel
     - pip
   run:
-    - python >=3.8
-    - wagtail >=5.1
+    - django
+    - python >={{ python_min }}
+    - wagtail >=6.2
 
 test:
   imports:
@@ -31,10 +33,11 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: Easier sharing of Wagtail drafts
-  dev_url: https://github.com/cfpb/wagtail-sharing
+  home: https://github.com/cfpb/wagtail-sharing
   license: CC0-1.0
   license_file: LICENSE
 

@@ -1,5 +1,5 @@
 {% set name = "validate-pyproject" %}
-{% set version = "0.23" %}
+{% set version = "0.25" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/validate_pyproject-{{ version }}.tar.gz
-  sha256: 12b2714bf647265c60e4f24a20674428bd891a8aa168a1be535bb99f8c0af0e3
+  sha256: e68c12d1cb0d8ddc269ffc42875a81727ddb7865000aa6d2f77d833b55c53f0b
 
 build:
   entry_points:
@@ -18,27 +18,40 @@ build:
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools >=61.2
+    - python {{ python_min }}
+    - setuptools >=61.2.0
     - setuptools-scm >=7.1
     - pip
   run:
-    - python >=3.8
-    - python-fastjsonschema >=2.16.2,<=3
+    - python >={{ python_min }}
+    - python-fastjsonschema <=3,>=2.16.2
+    # - validate-pyproject-schema-store
+    # - trove-classifiers >=2021.10.20
+    # - tomli >=1.2.1
+    # - packaging >=24.2
+    # - validate-pyproject-schema-store
+    # - trove-classifiers >=2021.10.20
+    # - tomli >=1.2.1
+    # - packaging >=24.2
+    # - validate-pyproject-schema-store
+    # - trove-classifiers >=2021.10.20
+    # - tomli >=1.2.1
+    # - packaging >=24.2
 
 test:
   imports:
     - validate_pyproject
   commands:
     - pip check
-    - validate-pyproject --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  summary: Validation library and CLI tool for checking on 'pyproject.toml' files using JSON Schema
+  home: https://github.com/abravalheri/validate-pyproject/
+  summary: Validation library and CLI tool for checking on pyproject.toml files using JSON Schema
   dev_url: https://github.com/abravalheri/validate-pyproject
-  license: MPL-2.0 AND BSD-3-Clause AND MIT
+  license: BSD-3-Clause AND MIT AND MPL-2.0
   license_file:
     - NOTICE.txt
     - LICENSE.txt

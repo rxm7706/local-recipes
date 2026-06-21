@@ -1,0 +1,134 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.18"
+
+package:
+  name: tabcmd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tabcmd/tabcmd-${{ version }}.tar.gz
+  sha256: 7ab1a7809dc25be7373ee56ae014eb3c6499d8bfccd04ca44a8668724bb494e1
+
+build:
+  number: 0
+  noarch: python
+  python:
+    entry_points:
+      - tabcmd = tabcmd.tabcmd:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - python-build
+    - setuptools >=62
+    - wheel
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }},<3.12
+    - appdirs
+    - doit
+    - ftfy
+    - pyinstaller-versionfile
+    - pytest-order
+    - requests >=2.25,<3.0
+    - setuptools <81
+    - setuptools-scm
+    - types-appdirs
+    - types-mock
+    - types-requests
+    - types-setuptools
+    - tableauserverclient ==0.37
+    - urllib3
+
+tests:
+  - python:
+      imports:
+        - tabcmd
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - tabcmd --help
+
+about:
+  summary: A command line client for working with Tableau Server.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tableau/tabcmd
+  repository: https://github.com/tableau/tabcmd
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tabcmd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tabcmd
+  cfe-purls:
+    - pkg:conda/tabcmd@${{ version }}
+    - pkg:pypi/tabcmd@${{ version }}
+  cfe-upstream-repo: https://github.com/tableau/tabcmd
+  cfe-upstream-homepage: https://github.com/tableau/tabcmd
+  cfe-import-names: [tabcmd]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tabcmd-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 KEEP-meta: conda-forge tabcmd-feedstock is still v0/meta.yaml
+#    # (deployed 2.0.18). meta.yaml kept as a faithful clean mirror of the
+#    # deployed feedstock; this recipe.yaml is our v1 at the same version 2.0.18.
+#    # Refreshed 2.0.17 -> 2.0.18 to match the live feedstock (and PyPI latest).
+#    # sha256 verified against the deployed feedstock meta.yaml.
+# requirements:
+#  host:
+#    # setuptools-scm (>=6.2) + build + wheel + setuptools (>=62) kept in host —
+#    # setuptools.build_meta backend with dynamic setuptools_scm version
+#    # (pyproject [build-system]); mirrors the deployed feedstock host block.
+#  run:
+#    # python <3.12 cap mirrors the deployed feedstock (upstream classifiers stop
+#    # at 3.11; the feedstock has long carried this). requires-python is >=3.7,
+#    # below the conda-forge 3.10 floor, so python_min is omitted from context
+#    # and the default 3.10 floor applies.
+#    # pytest-order + setuptools-scm are RUNTIME deps per upstream
+#    # [project.dependencies] (not test/build-only) — flattened from the sdist.
+#    # setuptools <81 added (G34): tabcmd/version.py STILL does
+#    # `from pkg_resources import get_distribution` at runtime in 2.0.18
+#    # (re-verified against the 2.0.18 sdist this refresh — upstream did NOT
+#    # switch to importlib.metadata; the file still only comments the planned
+#    # change). version.py is reached on `tabcmd --help` via
+#    # parent_parser/session/controller, so setuptools 81+ (which removed
+#    # pkg_resources) breaks the import + script test without this cap. NOT in
+#    # the deployed feedstock run list (it predates setuptools 81). TODO: drop
+#    # once upstream switches version.py to importlib.metadata.
+#    # tableauserverclient ==0.37 is the 2.0.18-pinned version (matches the
+#    # deployed feedstock); exact pin is upstream-declared in
+#    # [project.dependencies].
+#    # types-* are upstream runtime deps (upstream ships type stubs at runtime).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version test. tabcmd imports cleanly standalone (G7 verified:
+#    # sdist top-level package is `tabcmd`). Retained the feedstock's
+#    # `tabcmd --help` smoke command as a script test.
+####

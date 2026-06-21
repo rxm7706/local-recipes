@@ -1,26 +1,27 @@
 {% set name = "pytest-pythonpath" %}
-{% set version = "0.7.3" %}
+{% set version = "0.7.4" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pytest-pythonpath-{{ version }}.tar.gz
-  sha256: 63fc546ace7d2c845c1ee289e8f7a6362c2b6bae497d10c716e58e253e801d62
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pytest-pythonpath-{{ version }}.tar.gz
+  sha256: 64e195b23a8f8c0c631fb16882d9ad6fa4137ed1f2961ddd15d52065cd435db6
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python <4.0
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python <4.0
-    - pytest >=2.5.2
+    - python >={{ python_min }},<4.0
+    - pytest >=2.5.2,<7
 
 test:
   imports:
@@ -29,6 +30,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/bigsassy/pytest-pythonpath

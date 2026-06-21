@@ -1,13 +1,13 @@
 {% set name = "wagtail-color-panel" %}
-{% set version = "1.5.0" %}
+{% set version = "1.8.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-color-panel-{{ version }}.tar.gz
-  sha256: 93823850e6afbcd364d9e02e2feb952fcebaeda03fa45053a47546a067eb852d
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: aca26f8b7178ff596aa2eac8982167396bbbc222fadbae4b6b1f18291b33473a
 
 build:
   noarch: python
@@ -16,13 +16,16 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools-scm
     - pytest-runner
     - pip
+    - setuptools
   run:
-    - python >=3.8
-    - wagtail >=4.1
+    - python-dotenv
+    - django
+    - python >={{ python_min }}
+    - wagtail >=6.3
 
 test:
   imports:
@@ -31,6 +34,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/marteinn/wagtail-color-panel

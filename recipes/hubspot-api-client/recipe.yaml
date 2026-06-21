@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.0.0"
+
+package:
+  name: hubspot-api-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hubspot-api-client/hubspot_api_client-${{ version }}.tar.gz
+  sha256: ddfc60f3a80565dd5bf7fc7554d0d2dabad37926f547436158258772f1a04e69
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - if: unix
+      then: echo "${{ version }}" > "${SRC_DIR}/VERSION"
+      else: echo ${{ version }}> "%SRC_DIR%\VERSION"
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.31.0
+    - urllib3 >=1.15,<3.0
+    - six >=1.10,<2.0
+    - certifi >=2023.1.1
+    - python-dateutil >=2.8.2
+
+tests:
+  - python:
+      imports:
+        - hubspot
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: HubSpot API client
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/HubSpot/hubspot-api-python
+  repository: https://github.com/HubSpot/hubspot-api-python
+  description: |
+    Python client library for the HubSpot CRM, CMS, marketing, and other
+    HubSpot APIs. Generated from HubSpot's public OpenAPI specifications.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hubspot-api-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hubspot-api-client
+  cfe-purls:
+    - pkg:conda/hubspot-api-client@${{ version }}
+    - pkg:pypi/hubspot-api-client@${{ version }}
+  cfe-upstream-repo: https://github.com/HubSpot/hubspot-api-python
+  cfe-upstream-homepage: https://github.com/HubSpot/hubspot-api-python
+  cfe-import-names: [hubspot]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/hubspot-api-client-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # C1 keep-meta: conda-forge feedstock is still v0/meta.yaml at 12.0.0.
+#    # meta.yaml refreshed to mirror the deployed feedstock; this recipe.yaml is
+#    # the proposed v1 migration, bumped local 4.0.6 to upstream 12.0.0.
+# build:
+#  script:
+#    # setup.py reads a VERSION file at build time (DIR_PATH + "/VERSION"); the
+#    # echo step writes it from context.version. Load-bearing — pip install
+#    # raises FileNotFoundError without it. Mirrors the deployed meta.yaml.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml).
+#    # Dropped the feedstock's host six (it is a runtime-only dep; six >=1.9 in
+#    # the feedstock host block is spurious and unneeded for the setuptools build).
+#  run:
+#    # Deps reconciled against the 12.0.0 sdist setup.py REQUIRES (not stale 4.x):
+#    # added requests (new since 4.x); restored upstream upper bounds
+#    # urllib3 <3.0 and six <2.0 (load-bearing under pip_check, G24); pinned
+#    # certifi >=2023.1.1 and python-dateutil >=2.8.2 to upstream-declared floors.
+#    # importlib-metadata<5 marker is python_version<3.8 only, irrelevant at the
+#    # 3.10 floor, so omitted.
+# context:
+#    # python_min omitted from context: upstream requires-python is >=3.7, below
+#    # the conda-forge 3.10 floor, so the default floor applies (no override).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. Import name is hubspot (G7
+#    # verified against the sdist top-level __init__.py — diverges from the
+#    # distribution name hubspot-api-client).
+####

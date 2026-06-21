@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.3"
+
+package:
+  name: lm-format-enforcer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lm-format-enforcer/lm_format_enforcer-${{ version }}.tar.gz
+  sha256: e68081c108719cce284a9bcc889709b26ffb085a1945b5eba3a12cfa96d528da
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pydantic >=1.10.8
+    - interegular >=0.3.2
+    - packaging
+    - pyyaml
+
+tests:
+  - python:
+      imports:
+        - lmformatenforcer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Enforce the output format (JSON Schema, Regex etc) of a language model
+  description: |
+    Enforce the output format (JSON Schema, Regex etc) of a language model.
+    lm-format-enforcer combines a character-level parser with a tokenizer
+    prefix tree to allow only sequences of tokens that conform to the
+    required format, while still allowing the language model to control the
+    fields' content.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/noamgat/lm-format-enforcer
+  repository: https://github.com/noamgat/lm-format-enforcer
+  documentation: https://github.com/noamgat/lm-format-enforcer
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lm-format-enforcer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lm-format-enforcer
+  cfe-purls:
+    - pkg:conda/lm-format-enforcer@${{ version }}
+    - pkg:pypi/lm-format-enforcer@${{ version }}
+  cfe-upstream-repo: https://github.com/noamgat/lm-format-enforcer
+  cfe-upstream-homepage: https://github.com/noamgat/lm-format-enforcer
+  cfe-import-names: [lmformatenforcer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lm-format-enforcer-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Pure-Python noarch:python recipe. Constrains LLM output formats.
+#    Class C1 (KEEP-meta): the conda-forge feedstock is still v0/meta.yaml;
+#    meta.yaml is kept alongside as a faithful mirror of the deployed
+#    feedstock (0.11.3). recipe.yaml is the proposed v1 migration at 0.11.3.
+#    Delete meta.yaml only after the feedstock completes its v0-to-v1 switch.
+# tests:
+#    imports uses lmformatenforcer (G7) — the top-level import name differs
+#    from the distribution name lm-format-enforcer / sdist dir
+#    lm_format_enforcer. Verified against the 0.11.3 sdist __init__.py.
+# requirements:
+#  host:
+#    poetry-core build backend (pyproject [build-system] declares only
+#    poetry-core>=1.1.0; no redundant wheel/setuptools per G8).
+#  run:
+#    Runtime deps mirror upstream pyproject [tool.poetry.dependencies]:
+#    pydantic >=1.10.8, interegular >=0.3.2, packaging, pyyaml. The dev /
+#    format / types / tests / samples poetry groups (numpy, torch,
+#    transformers, pytest, ...) are NOT activated extras and are dropped
+#    (G25). numpy is not a runtime import — the analyzer submodule that
+#    would use it is ImportError-guarded in __init__.py.
+#    Upstream declares python ">=3.8,<4.0"; clamped to the conda-forge 3.10
+#    floor and the speculative <4.0 upper bound dropped (DEP-002).
+####

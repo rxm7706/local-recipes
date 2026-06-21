@@ -1,13 +1,13 @@
 {% set name = "wagtail-font-awesome-svg" %}
-{% set version = "1.0.1" %}
+{% set version = "2.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-font-awesome-svg-{{ version }}.tar.gz
-  sha256: 108f831dd4529e6214b5aed04bf6deb4b8344460783fbdbef5dc7a4d7fa8374c
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: aac01b5ea8b0c3de3e363a91aa5067f514b9cd385224d6ba7153d9de47120493
 
 build:
   noarch: python
@@ -16,10 +16,12 @@ build:
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7
+    - wagtail
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -28,6 +30,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/wagtail-nest/wagtail-font-awesome-svg

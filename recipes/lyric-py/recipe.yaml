@@ -9,10 +9,6 @@ package:
   version: ${{ version }}
 
 source:
-  # lyric-py ships wheels-only on PyPI (no buildable sdist), and its crate
-  # lives inside the lyric-project/lyric-runtime Cargo workspace. Source the
-  # GitHub tag archive: it carries the full workspace AND the root MIT
-  # LICENSE (the PyPI sdist omits LICENSE). Tag scheme is plain vX.Y.Z.
   url: https://github.com/lyric-project/lyric-runtime/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 0e63a7e00a1f7108d4fa406511c779bed9c1eca7ded688a9af01706f33878a95
 
@@ -20,23 +16,10 @@ build:
   number: 0
   script:
     env:
-      # PEP 540 UTF-8 mode — forces Python UTF-8 I/O regardless of the
-      # Windows console codepage. Without it the win Azure leg fails inside
-      # pip install with "stream did not contain valid UTF-8" (CFE G19).
       PYTHONUTF8: "1"
-      # Strip debug symbols — conda-forge default for Rust builds.
       CARGO_PROFILE_RELEASE_STRIP: symbols
       CARGO_PROFILE_RELEASE_LTO: fat
-      # fat is intentionally NOT set yet — while it can yield significant runtime performance improvements,
-      # the wasmtime v26 + tonic + tokio dep graph is large and fat LTO risks
-      # the Azure 6h Windows timeout. Re-enable only if the win build stays
-      # well under ~3h.  # note time out issues
     content:
-      # maturin/PyO3 build — pip drives maturin → cargo build. `cargo install`
-      # (and cargo-auditable, which is the CLI-binary pattern) does NOT apply to
-      # a cdylib extension; see CFE SKILL.md Rust Recipe Standards exception.
-      # cd into the workspace-member crate so cargo/maturin resolve it; CWD
-      # persists within this single shell entry.
       - |
         cd bindings/python/lyric-py
         cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
@@ -48,10 +31,6 @@ requirements:
     - ${{ stdlib("c") }}
     - ${{ compiler("rust") }}
     - cargo-bundle-licenses
-    # protoc for tonic-build (crates/lyric-rpc/build.rs compiles
-    # proto/task.proto, a transitive build-dep of lyric-py). conda-forge's
-    # `protobuf` is the Python bindings and ships NO protoc binary — use
-    # `libprotobuf`, which provides bin/protoc on the build PATH.
     - libprotobuf
     - pkg-config
     - if: build_platform != target_platform
@@ -65,13 +44,9 @@ requirements:
     - pip
     - maturin >=1.7,<2.0
   run:
-    # Compiled per-Python-version extension (NOT abi3) — the python_abi
-    # run-export from host pins the run python to the build's minor version.
     - python
     - msgpack-python
     - cloudpickle
-    # lyric-task releases in lockstep with lyric-py (same upstream tag);
-    # upstream pyproject declares it unconstrained.
     - lyric-task >=0.1.7
 
 tests:
@@ -92,3 +67,60 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lyric-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lyric-py
+  cfe-purls:
+    - pkg:conda/lyric-py@${{ version }}
+    - pkg:pypi/lyric-py@${{ version }}
+  cfe-upstream-repo: https://github.com/fangyinc/lyric
+  cfe-upstream-homepage: https://github.com/fangyinc/lyric
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33764
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# source:
+#    # lyric-py ships wheels-only on PyPI (no buildable sdist), and its crate
+#    # lives inside the lyric-project/lyric-runtime Cargo workspace. Source the
+#    # GitHub tag archive: it carries the full workspace AND the root MIT
+#    # LICENSE (the PyPI sdist omits LICENSE). Tag scheme is plain vX.Y.Z.
+# build:
+#  script:
+#    env:
+#      # PEP 540 UTF-8 mode — forces Python UTF-8 I/O regardless of the
+#      # Windows console codepage. Without it the win Azure leg fails inside
+#      # pip install with "stream did not contain valid UTF-8" (CFE G19).
+#      # (PYTHONUTF8)
+#      # Strip debug symbols — conda-forge default for Rust builds.
+#      # (CARGO_PROFILE_RELEASE_STRIP)
+#      # fat is intentionally NOT set yet — while it can yield significant runtime performance improvements,
+#      # the wasmtime v26 + tonic + tokio dep graph is large and fat LTO risks
+#      # the Azure 6h Windows timeout. Re-enable only if the win build stays
+#      # well under ~3h.  # note time out issues
+#    content:
+#      # maturin/PyO3 build — pip drives maturin → cargo build. `cargo install`
+#      # (and cargo-auditable, which is the CLI-binary pattern) does NOT apply to
+#      # a cdylib extension; see CFE SKILL.md Rust Recipe Standards exception.
+#      # cd into the workspace-member crate so cargo/maturin resolve it; CWD
+#      # persists within this single shell entry.
+# requirements:
+#  build:
+#    # protoc for tonic-build (crates/lyric-rpc/build.rs compiles
+#    # proto/task.proto, a transitive build-dep of lyric-py). conda-forge's
+#    # `protobuf` is the Python bindings and ships NO protoc binary — use
+#    # `libprotobuf`, which provides bin/protoc on the build PATH.
+#  run:
+#    # Compiled per-Python-version extension (NOT abi3) — the python_abi
+#    # run-export from host pins the run python to the build's minor version.
+#    # lyric-task releases in lockstep with lyric-py (same upstream tag);
+#    # upstream pyproject declares it unconstrained.
+####

@@ -67,6 +67,10 @@ extra:
     - pkg:pypi/langflow-sdk@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://pypi.org/project/langflow-sdk/
+  cfe-import-names: [langflow_sdk]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -74,6 +78,10 @@ extra:
   cfe-last-checked: 2026-06-19T13:36:19Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-19T17:36:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # source:

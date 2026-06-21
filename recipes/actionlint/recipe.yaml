@@ -43,6 +43,10 @@ outputs:
             - if: win
               then: m2-grep
         script: ${{ basic_test }}
+    about:
+      license_file:
+        - src/github.com/rhysd/actionlint/LICENSE.txt
+        - license-files/
 
   - package:
       name: actionlint-with-shellcheck
@@ -99,7 +103,6 @@ about:
   license: MIT
   license_file:
     - src/github.com/rhysd/actionlint/LICENSE.txt
-    - license-files/
   summary: Static checker for GitHub Actions workflow files
   documentation: https://rhysd.github.io/actionlint
 
@@ -107,3 +110,22 @@ extra:
   feedstock-name: actionlint
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: actionlint
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/rhysd/actionlint
+  cfe-purls:
+    - pkg:conda/actionlint@${{ version }}
+    - pkg:golang/github.com/rhysd/actionlint@${{ version }}
+  cfe-upstream-repo: https://github.com/rhysd/actionlint
+  cfe-upstream-homepage: https://rhysd.github.io/actionlint/
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/actionlint-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.12.0a0"
+
+package:
+  name: opentelemetry-exporter-gcp-monitoring
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-gcp-monitoring/opentelemetry_exporter_gcp_monitoring-${{ version }}.tar.gz
+  sha256: 2b285078cddd4af78a363a55b5478e89f7df6f15bba9139d3f484099e534df4c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-cloud-monitoring ~=2.0
+    - opentelemetry-api ~=1.30
+    - opentelemetry-sdk ~=1.30
+    - opentelemetry-resourcedetector-gcp >=1.5.0dev0,<2
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.exporter.cloud_monitoring
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Google Cloud Monitoring exporter for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-exporter-gcp-monitoring
+  repository: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-exporter-gcp-monitoring
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-exporter-gcp-monitoring
+  cfe-purls:
+    - pkg:conda/opentelemetry-exporter-gcp-monitoring@${{ version }}
+    - pkg:pypi/opentelemetry-exporter-gcp-monitoring@${{ version }}
+  cfe-upstream-repo: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
+  cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-exporter-gcp-monitoring
+  cfe-import-names: [opentelemetry.exporter.cloud_monitoring]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-gcp-monitoring-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0/meta.yaml; meta.yaml mirrors deployed
+#    # feedstock at 1.12.0a0 (KEEP), recipe.yaml is the proposed v1 migration.
+#    # cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml.
+# package:
+#    # pre-release version string 1.12.0a0 used verbatim, matching the
+#    # deployed feedstock and PyPI sdist.
+# context:
+#    # python_min omitted from context at the default 3.10 floor; upstream
+#    # Requires-Python is >=3.9, clamped to the conda-forge floor 3.10.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.cfg/setup.py project (no pyproject.toml),
+#    # matches the deployed feedstock host block.
+#  run:
+#    # all four run deps are upstream-declared compatible-release (~=) /
+#    # ==1.* constraints from setup.cfg install_requires; mirrored
+#    # (not speculative). resourcedetector-gcp pre-release floor 1.5.0dev0.
+#    # the meta.yaml v0 form ==1.*,>=1.5.0dev0 is rejected by the v1 parser
+#    # (== with .* glob is conda-build-v0 syntax); translated to the
+#    # semantically-equivalent valid v1 spec >=1.5.0dev0,<2.
+# tests:
+#    # import name is the dotted namespace opentelemetry.exporter.cloud_monitoring
+#    # (verified against the sdist src/opentelemetry/exporter/cloud_monitoring/
+#    # __init__.py), NOT the distribution name. The feedstock's bare
+#    # imports: opentelemetry test was weak; the dotted import is the real
+#    # surface. CFEP-25 triad with [python_min.*, "*"].
+####

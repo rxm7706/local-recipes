@@ -1,5 +1,5 @@
 {% set name = "kantoku" %}
-{% set version = "0.18.1" %}
+{% set version = "0.18.3" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/kantoku-{{ version }}.tar.gz
-  sha256: 6d25065f9da68949aa8181c59151a4670230720ac2b054059fcf6daf1f618740
+  sha256: 751882b2bde074cd8d65f8f9f62606a805b7aa9ea956ba452d13fab0352b5163
 
 build:
   entry_points:
@@ -30,17 +30,20 @@ requirements:
     - psutil
     - pyzmq >=17.0
     - tornado >=5.0.2
+    - __unix  # [unix]
+    - __win   # [win]
+    - ncurses  # [unix]
 
 test:
   imports:
     - circus
   commands:
     - pip check
-    - circusd --help
-    - circusd-stats --help
-    - circusctl --help
-    - circus-top --help
-    - circus-plugin --help
+    - circusd --help  # [unix]
+    - circusd-stats --help  # [unix]
+    - circusctl --help  # [unix]
+    - circus-top --help  # [unix]
+    - circus-plugin --help  # [unix]
   requires:
     - pip
     - python {{ python_min }}

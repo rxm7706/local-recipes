@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.14.0"
+  python_min: "3.11"
+
+package:
+  name: wagtail-nav-menus
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-nav-menus/wagtail_nav_menus-${{ version }}.tar.gz
+  sha256: bd6754b3f46852beae3f4680b37dc4ae9f545beeeeaa594a0756d31a548af9b2
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=7.0
+    - wagtail-modeladmin >=2.3.0,<3
+
+tests:
+  - python:
+      imports:
+        - wagtail_nav_menus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Wagtail Nav Menus is a app to provide highly customizable menus in wagtail by leveraging StreamFields.
+  license: ISC
+  license_file: LICENSE
+  homepage: https://gitlab.com/thelabnyc/wagtail-nav-menus
+  repository: https://gitlab.com/thelabnyc/wagtail-nav-menus
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-nav-menus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-nav-menus
+  cfe-purls:
+    - pkg:conda/wagtail-nav-menus@${{ version }}
+    - pkg:pypi/wagtail-nav-menus@${{ version }}
+  cfe-upstream-repo: https://gitlab.com/thelabnyc/wagtail-nav-menus
+  cfe-upstream-homepage: https://gitlab.com/thelabnyc/wagtail-nav-menus
+  cfe-import-names: [wagtail_nav_menus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-nav-menus-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # C1 keep-meta: feedstock is still v0 (recipe.yaml 404 on main, meta.yaml 200
+#    # as of 2026-06-20). meta.yaml retained as a faithful mirror of the deployed
+#    # feedstock state at 3.14.0; this recipe.yaml is the proposed v0->v1 migration.
+# about:
+#    # license: upstream pyproject [project.license].text = "ISC" and the LICENSE
+#    # file is the ISC License (Copyright thelab). The deployed feedstock meta.yaml
+#    # records "MIT" (legacy grayskull misread); corrected to ISC (valid SPDX) here.
+# context:
+#    # python_min override to "3.11": upstream pyproject requires-python = ">=3.11"
+#    # (above the conda-forge default 3.10 floor), so declared in context.
+#  run:
+#    # wagtail >=7.0 and wagtail-modeladmin >=2.3.0,<3 mirror upstream
+#    # [project.dependencies] verbatim. The <3 modeladmin cap is upstream-declared
+#    # (load-bearing under pip_check: true). [tool.uv.index] in pyproject is uv
+#    # config, NOT a dependency (G37) -- ignored.
+####

@@ -68,6 +68,10 @@ extra:
     - pkg:pypi/ibm-cos-sdk-s3transfer@${{ version }}
   cfe-upstream-repo: https://github.com/ibm/ibm-cos-sdk-python-s3transfer
   cfe-upstream-homepage: https://www.ibm.com/cloud/object-storage
+  cfe-import-names: [ibm_s3transfer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: blocked-pending-prerequisites
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -76,6 +80,10 @@ extra:
   cfe-last-checked: 2026-06-19T20:45:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:45:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-19T18:26:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # requirements:

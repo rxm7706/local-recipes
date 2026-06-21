@@ -69,6 +69,10 @@ extra:
     - pkg:pypi/pymilvus-model@${{ version }}
   cfe-upstream-repo: https://github.com/milvus-io/milvus-model
   cfe-upstream-homepage: https://github.com/milvus-io/milvus-model
+  cfe-import-names: [pymilvus.model]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -76,6 +80,10 @@ extra:
   cfe-last-checked: 2026-06-19T20:40:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:40:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T01:36:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:

@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.14.1"
+
+package:
+  name: wagtail-markdown
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-markdown/wagtail_markdown-${{ version }}.tar.gz
+  sha256: f8685ca937b15c662be9eb972a477aebdbdd4a9aad60716b2a59f7bed898b165
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=7.0
+    - markdown >=3.3,<4
+    - nh3 >=0.3.4
+
+tests:
+  - python:
+      imports:
+        - wagtailmarkdown
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Markdown support for Wagtail
+  description: |
+    Markdown support for Wagtail. Provides Markdown fields and StreamField
+    blocks for the Wagtail CMS.
+  license: Zlib
+  license_file: LICENSE
+  homepage: https://github.com/torchbox/wagtail-markdown
+  repository: https://github.com/torchbox/wagtail-markdown
+  documentation: https://github.com/torchbox/wagtail-markdown/blob/main/README.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-markdown
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-markdown
+  cfe-purls:
+    - pkg:conda/wagtail-markdown@${{ version }}
+    - pkg:pypi/wagtail-markdown@${{ version }}
+  cfe-upstream-repo: https://github.com/torchbox/wagtail-markdown
+  cfe-upstream-homepage: https://github.com/torchbox/wagtail-markdown
+  cfe-import-names: [wagtailmarkdown]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-markdown-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml 404, meta.yaml 200).
+#    # Local meta.yaml refreshed to the deployed 0.14.1 as a faithful mirror;
+#    # this recipe.yaml is the proposed v1 migration, maintained alongside.
+#    # Delete meta.yaml only after the feedstock completes its v0->v1 switch.
+# about:
+#    # license corrected Unlicense -> Zlib. The LICENSE text is the zlib/libpng
+#    # license (verified against the sdist LICENSE + the pyproject classifier
+#    # "License :: OSI Approved :: zlib/libpng License"); grayskull guessed
+#    # Unlicense at a low 44% match and the deployed v0 feedstock carries the
+#    # same stale Unlicense value. The feedstock owes this license fix too.
+# requirements:
+#  run:
+#    # bleach dropped: upstream 0.14.1 migrated sanitization to nh3
+#    # (src/wagtailmarkdown/utils.py imports nh3, not bleach). The deployed v0
+#    # feedstock still carries a stale bleach >=3.3,<5 leftover; nh3 >=0.3.4 is
+#    # the correct current dep per pyproject [project.dependencies].
+# tests:
+#    # import name is wagtailmarkdown (flit [tool.flit.module] name), NOT the
+#    # distribution name wagtail_markdown (G7). CFEP-25 triad [python_min.*, "*"].
+#    # Plain python.imports holds — module imports without Django settings.
+####

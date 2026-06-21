@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.0"
+
+package:
+  name: hll
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hll/hll-${{ version }}.tar.gz
+  sha256: 9f17e21f1d41c5c6e50990b730e28a6baa9d06e6c62bb320c8e8d2a4f17634b9
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools >=64,<77
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - HLL
+      pip_check: true
+
+about:
+  summary: Fast HyperLogLog for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ascv/HyperLogLog
+  repository: https://github.com/ascv/HyperLogLog
+  description: |
+    HyperLogLog implementation in C for Python. The HyperLogLog algorithm is a
+    space efficient method to estimate the cardinality of extraordinarily large
+    datasets. This module implements a 64 bit version of HyperLogLog using a
+    Murmur64A hash.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hll
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: HLL
+  cfe-purls:
+    - pkg:conda/hll@${{ version }}
+    - pkg:pypi/hll@${{ version }}
+  cfe-upstream-repo: https://github.com/ascv/HyperLogLog
+  cfe-upstream-homepage: https://github.com/ascv/HyperLogLog
+  cfe-import-names: [HLL]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/hll-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+    - platform-expansion
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-D C1: feedstock still v0 (meta.yaml). Kept the faithful deployed
+#    # meta.yaml mirror at 3.0.0 (un-annotated) AND authored this v1 recipe.yaml.
+#    # MAJOR bump 2.1.7 -> 3.0.0; the OLD local meta.yaml was WRONGLY noarch:python
+#    # -- hll is a COMPILED C extension (src/hll.c + lib/murmur2.c, setuptools
+#    # Extension, top_level.txt = HLL). Fixed: compiler(c) + stdlib(c), per-platform.
+# requirements:
+#  build:
+#    # Pure C (Programming Language :: C; no .cpp, no C++ markers in sources), so
+#    # compiler('c') + stdlib('c') ONLY. The deployed feedstock meta.yaml carries
+#    # compiler('cxx') + cmake + make -- STALE: the 3.0.0 sdist build-system is
+#    # setuptools.build_meta (no CMake), and the sources are pure C. The recipe.yaml
+#    # drops cxx/cmake/make (dependency-fix). meta.yaml mirror keeps them as deployed.
+#  host:
+#    # setuptools >=64,<77 mirrors upstream pyproject build-system requires.
+#    # No wheel (modern setuptools); no cython/numpy (not used by this extension).
+#  run:
+#    # python only -- no runtime deps (pure C extension, stdlib hashing).
+# tests:
+#    # Import name is HLL (uppercase) -- G7/G10 divergence from dist name 'hll',
+#    # verified via sdist top_level.txt. pip_check: true.
+# platform-expansion:
+#    # Feedstock .ci_support ships linux-64, osx-64, win-64 only (py3.10-3.14).
+#    # No linux-aarch64 / osx-arm64. Pure-C extension with no platform-conditional
+#    # code -> safe to widen. platform-expansion token recorded for submission.
+#    # Cross-python block added for the aarch64/arm64 emulated/native legs.
+####

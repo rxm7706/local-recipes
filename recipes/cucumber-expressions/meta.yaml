@@ -1,5 +1,5 @@
 {% set name = "cucumber-expressions" %}
-{% set version = "18.0.0" %}
+{% set version = "20.0.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/cucumber_expressions-{{ version }}.tar.gz
-  sha256: 7a484b6dfa293f0b2114dcd28b8b1c56895e3174e5519e3ae7fccb42c2ce625e
+  sha256: 5cbd4012c66584aa82ada990a6e7cb131274796e132e905d27d95ae9a2ca0f48
 
 build:
   noarch: python
@@ -16,11 +16,11 @@ build:
 
 requirements:
   host:
-    - python >=3.10,<4.0
-    - poetry-core >=1.0.0
+    - python {{ python_min }}
+    - uv-build >=0.9.0,<0.10.0
     - pip
   run:
-    - python >=3.10,<4.0
+    - python >={{ python_min }},<4.0
 
 test:
   imports:
@@ -29,6 +29,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/cucumber/cucumber-expressions

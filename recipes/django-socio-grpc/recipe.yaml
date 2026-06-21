@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.24.1"
+
+package:
+  name: django-socio-grpc
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-socio-grpc/django_socio_grpc-${{ version }}.tar.gz
+  sha256: 6706ed6667341a1c962ff9a03a23638d00c28d1bf862be59330397a0d2da3265
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.0,<2.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - djangorestframework
+    - grpcio-tools >=1.50.0,<2.0.0
+    - lark >=1.0.0,<2.0.0
+    - grpcio-health-checking
+
+tests:
+  - python:
+      imports:
+        - django_socio_grpc
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Fork of django-grpc-framework with more feature maintained by the socio team. Make GRPC with django easy.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/socotecio/django-socio-grpc
+  repository: https://github.com/socotecio/django-socio-grpc
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-socio-grpc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-socio-grpc
+  cfe-purls:
+    - pkg:conda/django-socio-grpc@${{ version }}
+    - pkg:pypi/django-socio-grpc@${{ version }}
+  cfe-upstream-repo: https://github.com/socotecio/django-socio-grpc
+  cfe-upstream-homepage: https://github.com/socotecio/django-socio-grpc
+  cfe-import-names: [django_socio_grpc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-socio-grpc-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml, dependency-fix]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock is still v0/meta.yaml at 0.24.1; meta.yaml kept as a
+#    # clean mirror of the deployed feedstock; this recipe.yaml is the proposed
+#    # v1 migration at 0.24.1 (meta-yaml-to-recipe-yaml owed by the feedstock).
+# requirements:
+#  host:
+#    # G8: poetry-core project — only poetry-core + pip in host (dropped the
+#    # redundant wheel/setuptools grayskull would add; build-system requires is
+#    # exactly poetry-core>=1.0.0).
+#  run:
+#    # dependency-fix: dropped the feedstock's stale lark-parser >=0.12.0,<0.13.0
+#    # — 0.24.1's [tool.poetry.dependencies] declares lark ^1.0.0 only (lark-parser
+#    # was the pre-1.0 PyPI name; no longer a dependency). Kept lark >=1.0.0,<2.0.0.
+#    # Dropped the speculative python <4.0 upper bound (poetry-auto-added); broad
+#    # >=python_min floor is correct. djangorestframework / grpcio-health-checking
+#    # unpinned per upstream (no declared bounds).
+# context:
+#    # python_min omitted from context — requires-python is >=3.10 (default
+#    # conda-forge floor); let conda-forge-pinning supply python_min.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. django_socio_grpc top-level import
+#    # does not require DJANGO_SETTINGS_MODULE (the package __init__ does not load
+#    # the app registry), so the standard python.imports test holds — no
+#    # package_contents escape hatch needed.
+####

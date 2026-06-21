@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.0"
+
+package:
+  name: wagtail-metadata
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-metadata/wagtail-metadata-${{ version }}.tar.gz
+  sha256: 3b9109928bad53306b21b64cf9205d84cbb88fc625bac0a38305bebb9c26e64a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=5.0
+
+tests:
+  - python:
+      imports:
+        - wagtailmetadata
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A tool to assist with metadata for social media.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/neon-jungle/wagtail-metadata
+  repository: https://github.com/neon-jungle/wagtail-metadata
+  description: |
+    Wagtail Metadata is a tool to assist with metadata for social media,
+    providing a model mixin and template tags for adding Open Graph and
+    Twitter Card metadata to Wagtail pages.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-metadata
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-metadata
+  cfe-purls:
+    - pkg:conda/wagtail-metadata@${{ version }}
+    - pkg:pypi/wagtail-metadata@${{ version }}
+  cfe-upstream-repo: https://github.com/neon-jungle/wagtail-metadata
+  cfe-upstream-homepage: https://github.com/neon-jungle/wagtail-metadata
+  cfe-import-names: [wagtailmetadata]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-metadata-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml -> 404); meta.yaml
+#    # kept as the deployed-state mirror at 5.0.0. recipe.yaml is the v1 we
+#    # maintain; cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml.
+#    # MAJOR bump 4.0.3 -> 5.0.0 (wagtail floor 3.0 -> 5.0).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py + setup.cfg project (no pyproject.toml);
+#    # matches deployed feedstock host block.
+#  run:
+#    # wagtail >=5.0 is the only upstream install_requires (setup.py); MAJOR-bumped
+#    # from the stale 4.x wagtail >=3.0. python_requires is >=3, so the default
+#    # conda-forge 3.10 floor applies — python_min omitted from context.
+# tests:
+#    # G7: import name wagtailmetadata diverges from distribution wagtail-metadata.
+#    # root __init__.py is empty (no eager Django model load), so the standard
+#    # CFEP-25 python.imports test holds standalone — no package_contents escape
+#    # hatch needed. Modernizes the feedstock's single-version python_version to
+#    # the [python_min.*, "*"] triad.
+####

@@ -1,0 +1,11 @@
+# noarch:python recipe with platform-conditional run deps (sh / uvicorn-worker
+# / gunicorn are unix-only); noarch_platforms with >=2 entries flips the
+# conda-smithy lint_noarch_selectors gate so the `if: unix` run selectors are
+# allowed (see conda-forge-expert SKILL.md G12). On Windows the unix-gated deps
+# are simply not installed; the noarch artifact stays valid on every listed
+# platform.
+noarch_platforms:
+  - linux_64
+  - osx_64
+  - osx_arm64
+  - win_64

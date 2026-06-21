@@ -1,13 +1,13 @@
 {% set name = "flake8-no-pep420" %}
-{% set version = "2.7.0" %}
+{% set version = "2.9.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/flake8_no_pep420-{{ version }}.tar.gz
-  sha256: a1b6db4de355b87f8189714e68785a7c6a2d61d94f3e937b6cee336953f7d703
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flake8_no_pep420-{{ version }}.tar.gz
+  sha256: 5dcd9e23bdd545cb957dd23987d9d227e733d1610717b0e13591262df1a33413
 
 build:
   noarch: python
@@ -16,12 +16,12 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools
     - pip
   run:
-    - python >=3.8
-    - flake8 !=3.2.0,>=3.0
+    - python >={{ python_min }}
+    - flake8 >=3,!=3.2
 
 test:
   imports:
@@ -30,6 +30,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/adamchainz/flake8-no-pep420

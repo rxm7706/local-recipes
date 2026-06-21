@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.10"
+
+package:
+  name: selectolax
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/selectolax/selectolax-${{ version }}.tar.gz
+  sha256: 89764b4d1e32d38e635dfb270a639fc707af4315b863fd161357a517321e5046
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - cython
+    - setuptools
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - selectolax
+      pip_check: true
+
+about:
+  homepage: https://github.com/rushter/selectolax
+  summary: Fast HTML5 parser with CSS selectors.
+  license: Apache-2.0 AND LGPL-2.1-only AND MIT
+  license_file:
+    - LICENSE
+    - lexbor/LICENSE
+    - lexbor/NOTICE
+    - modest/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: selectolax
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: selectolax
+  cfe-purls:
+    - pkg:conda/selectolax@${{ version }}
+    - pkg:pypi/selectolax@${{ version }}
+  cfe-upstream-repo: https://github.com/rushter/selectolax
+  cfe-upstream-homepage: https://github.com/rushter/selectolax
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/selectolax-feedstock
+  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

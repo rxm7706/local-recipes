@@ -1,13 +1,13 @@
 {% set name = "django-timezone-field" %}
-{% set version = "6.0" %}
+{% set version = "7.2.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_timezone_field-{{ version }}.tar.gz
-  sha256: b0c6faf495cc22b5a8367250b9a13929c9149273e42ae8ae04e5f6e4245d488f
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_timezone_field-{{ version }}.tar.gz
+  sha256: a004d0b19fe10bf5964cb21a65b36324b16a61879e4711c0dafdf8d6253e8ebc
 
 build:
   noarch: python
@@ -16,14 +16,17 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<4.0
+    - python {{ python_min }}
     - poetry-core >=1.0.0
     - pip
   run:
-    - python >=3.8.0,<4.0.0
-    - django >=3.2,<5.0
+    - python >={{ python_min }},<4.0.0
+    - django >=4.2,<6.2
+    - backports.zoneinfo <0.3.0,>=0.2.1
     - pytz
-    - backports.zoneinfo >=0.2.1,<0.3.0
+    # - Django <6.0,>=3.2
+    # - Django <6.1,>=3.2
+    # - Django <6.2,>=4.2
 
 test:
   commands:
@@ -31,6 +34,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/mfogel/django-timezone-field/

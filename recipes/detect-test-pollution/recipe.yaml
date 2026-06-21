@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: detect-test-pollution
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/detect-test-pollution/detect_test_pollution-${{ version }}.tar.gz
+  sha256: 94f383759bbab309771ceedb8dd526a62fa59607e5f7e41f5b33bbc656bfcea9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - detect-test-pollution = detect_test_pollution:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytest
+
+tests:
+  - python:
+      imports:
+        - detect_test_pollution
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - detect-test-pollution --help
+
+about:
+  summary: a tool to detect test pollution
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/asottile/detect-test-pollution
+  repository: https://github.com/asottile/detect-test-pollution
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: detect-test-pollution
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: detect-test-pollution
+  cfe-purls:
+    - pkg:conda/detect-test-pollution@${{ version }}
+    - pkg:pypi/detect-test-pollution@${{ version }}
+  cfe-upstream-repo: https://github.com/asottile/detect-test-pollution
+  cfe-upstream-homepage: https://github.com/asottile/detect-test-pollution
+  cfe-import-names: [detect_test_pollution]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/detect-test-pollution-feedstock
+  cfe-forge-recipe-updates-needed: [recipe-regenerate]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 @ 1.2.0; authored fresh modern v1
+#    # recipe.yaml, bumped local 1.1.1 -> 1.2.0, deleted stale local meta.yaml.
+# build:
+#  python:
+#    # detect_test_pollution.py exposes a single console_script
+#    # (detect-test-pollution = detect_test_pollution:main); no `dtp` alias
+#    # exists upstream (setup.cfg [options.entry_points] confirms one script).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (py_modules,
+#    # no pyproject.toml); matches deployed feedstock host block.
+#  run:
+#    # dropped the feedstock's speculative `python <4.0` upper bound (not
+#    # upstream-declared; requires-python is only `>=3.8`); broad
+#    # >=python_min floor is correct. python_min omitted from context —
+#    # requires-python 3.8 is below the conda-forge 3.10 floor.
+#    # pytest is a HARD RUNTIME dep: detect_test_pollution.py does a
+#    # top-level `import pytest` (line 15) — the tool wraps pytest to
+#    # bisect test pollution. Verified: `import detect_test_pollution`
+#    # fails with ModuleNotFoundError: pytest without it. The deployed
+#    # feedstock only lists pytest under tests[].requirements.run, which
+#    # masks the gap (a clean install would fail the import) — recipe-
+#    # regenerate owed to push pytest into run:. NOT a DEP-001 dev-dep.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # script-only test. detect_test_pollution is a clean single-module
+#    # import (no plugin/app instantiation), so python.imports holds.
+#    # Kept the `detect-test-pollution --help` script smoke-test to
+#    # exercise the console_script (entry-point wiring).
+####

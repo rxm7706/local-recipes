@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: airfly
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/airfly/airfly-${{ version }}.tar.gz
+  sha256: ac8ee0fa19003b141c536969479915609dc560c5b61c02ef8dda5d15ad08109d
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - airfly = airfly.cli.main:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - attrs
+    - cattrs
+    - regex
+    - networkx
+    - black
+    - isort
+    - click
+    - libcst
+    - asttrs
+    - loguru
+
+tests:
+  - python:
+      imports:
+        - airfly
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - airfly --help
+
+about:
+  summary: Auto generate Airflow's dag.py on the fly
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ryanchao2012/airfly
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: airfly
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: airfly
+  cfe-purls:
+    - pkg:conda/airfly@${{ version }}
+    - pkg:pypi/airfly@${{ version }}
+  cfe-upstream-repo: https://github.com/ryanchao2012/airfly
+  cfe-upstream-homepage: https://github.com/ryanchao2012/airfly
+  cfe-import-names: [airfly]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/airfly-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # C2 refresh: deployed feedstock already migrated v0->v1 at 1.1.0.
+#    # Local mirror was stale v0 (meta.yaml 1.0.0); authored this recipe.yaml
+#    # diff-applied against the deployed v1 feedstock (authoritative) and
+#    # deleted the local meta.yaml so the mirror tracks the deployed v1.
+# build:
+#    # number: 1 mirrors the deployed feedstock's *_1 build.
+# requirements:
+#  run:
+#    # python <4.0 upper bound mirrors the deployed feedstock; upstream
+#    # requires-python is ">=3.8" with no upper bound, so <4.0 is the
+#    # feedstock's speculative cap (kept to match deployed authoritative).
+####

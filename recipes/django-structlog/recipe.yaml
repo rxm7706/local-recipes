@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "10.1.0"
+
+package:
+  name: django-structlog
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-structlog/django_structlog-${{ version }}.tar.gz
+  sha256: 812f61dea873e559511f42c0f3a7cdc36d4472f6cc15460565a97e5cbe06a76d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - structlog >=21.4.0
+    - asgiref >=3.6.0
+    - django-ipware >=6.0.2
+    - django-extensions
+    - celery
+
+tests:
+  - python:
+      imports:
+        - django_structlog
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Structured Logging for Django
+  license: MIT
+  license_file: LICENSE.rst
+  homepage: https://github.com/jrobichaud/django-structlog
+  repository: https://github.com/jrobichaud/django-structlog
+  description: |
+    django-structlog provides structured logging for Django using structlog.
+    It binds request/response metadata (request_id, user_id) into log events
+    and offers optional Celery task logging integration.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-structlog
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-structlog
+  cfe-purls:
+    - pkg:conda/django-structlog@${{ version }}
+    - pkg:pypi/django-structlog@${{ version }}
+  cfe-upstream-repo: https://github.com/jrobichaud/django-structlog
+  cfe-upstream-homepage: https://github.com/jrobichaud/django-structlog
+  cfe-import-names: [django_structlog]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-structlog-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1; bumped local v0 meta.yaml (8.0.0) ->
+#    # fresh v1 recipe.yaml at 10.1.0 (MAJOR bump). Deleted stale local
+#    # meta.yaml. sha256 + import name verified against the 10.1.0 sdist.
+# requirements:
+#  host:
+#    # setuptools >=61.0 retained — setup.cfg + pyproject hybrid with
+#    # build-backend = setuptools.build_meta; matches upstream build-system.
+#  run:
+#    # MAJOR-bump dep reconcile vs 10.1.0 [project.dependencies]: django
+#    # floor moved 3.2 -> 4.2 (the 8.x->10.x break); structlog/asgiref/
+#    # django-ipware floors unchanged. celery + django-extensions are the
+#    # [celery] / [commands] extras flattened in to MATCH the deployed v1
+#    # feedstock (which ships both). Dropped the feedstock's speculative
+#    # python ...,<4.0 upper bound: upstream requires-python is >=3.10 with
+#    # no upper bound, so <4.0 is speculative; broad >=python_min is correct.
+# context:
+#    # python_min omitted from context: upstream requires-python >=3.10 sits
+#    # at the conda-forge default floor; let conda-forge-pinning supply it.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; modernizes the feedstock's
+#    # single-version python_version. django_structlog imports cleanly
+#    # standalone (no DJANGO_SETTINGS_MODULE needed at top-level import), so
+#    # the standard python.imports test holds -- no package_contents escape
+#    # hatch required.
+####

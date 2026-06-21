@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.9.0"
+
+package:
+  name: django-celery-beat
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-celery-beat/django_celery_beat-${{ version }}.tar.gz
+  sha256: 92404650f52fcb44cf08e2b09635cb1558327c54b1a5d570f0e2d3a22130934c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - celery >=5.2.3,<6.0
+    - django-timezone-field >=5.0
+    - tzdata
+    - python-crontab >=2.3.4
+    - cron-descriptor >=1.2.32,<2.0.0
+    - django >=2.2,<6.1
+
+tests:
+  - python:
+      imports:
+        - django_celery_beat
+        - django_celery_beat.migrations
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Database-backed Periodic Tasks.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/celery/django-celery-beat
+  repository: https://github.com/celery/django-celery-beat
+
+extra:
+  recipe-maintainers:
+    - hadim
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-celery-beat
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-celery-beat
+  cfe-purls:
+    - pkg:conda/django-celery-beat@${{ version }}
+    - pkg:pypi/django-celery-beat@${{ version }}
+  cfe-upstream-repo: https://github.com/celery/django-celery-beat
+  cfe-upstream-homepage: https://github.com/celery/django-celery-beat
+  cfe-import-names: [django_celery_beat]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-celery-beat-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1; local mirror lagged at v0 meta.yaml
+#    # (was 2.5.0). Authored fresh recipe.yaml at 2.9.0 matching the deployed
+#    # v1 feedstock, then deleted the stale meta.yaml.
+# package:
+#    # Modernized to literal package.name + literal pypi.org source.url
+#    # (v8.10.0 canonical), replacing the feedstock's context.name jinja chain
+#    # ${{ name|lower }} / ${{ name | replace('-', '_') }}. sdist filename uses
+#    # underscores (django_celery_beat-2.9.0.tar.gz) while the distribution
+#    # name is hyphenated; the path-2 segment stays hyphenated.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches deployed feedstock host block.
+#  run:
+#    # Dropped the feedstock's speculative python <4.0 upper bound (upstream
+#    # requires-python is only >=3.8; not an upstream-declared ceiling).
+#    # Dropped importlib-metadata <5.0 and backports.zoneinfo — upstream gates
+#    # both to python_version < 3.8 / < 3.9, which never apply at the 3.10 floor.
+#    # Dropped the feedstock's pytest (dev dep, DEP-001) and kombu (celery
+#    # transitive dep, not in upstream install_requires) from run.
+#    # Kept upstream-declared bounds celery >=5.2.3,<6.0 / cron-descriptor
+#    # >=1.2.32,<2.0.0 / django >=2.2,<6.1 — load-bearing under pip_check.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. Django import test: django_celery_beat
+#    # imports cleanly standalone (no app-registry access at import), so the
+#    # standard python.imports test holds — no package_contents escape hatch.
+####

@@ -1,5 +1,5 @@
 {% set name = "drf-pydantic" %}
-{% set version = "2.7.0" %}
+{% set version = "2.9.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/drf_pydantic-{{ version }}.tar.gz
-  sha256: 12298fa827246a3ea3d5371f4903874b333edd8b459605198d65f637cfe7081f
+  sha256: 76070a9abb132395eb4d2ebe65abb2e842d0efa0cc967c9fa19ef14491dc0f39
 
 build:
   noarch: python
@@ -16,13 +16,13 @@ build:
 
 requirements:
   host:
-    - python >=3.9
+    - python {{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=3.9
-    - djangorestframework >=3.13.0
+    - python >={{ python_min }},<4.0.0
     - pydantic >=2.0.0
+    - djangorestframework >=3.13.0
 
 test:
   imports:
@@ -31,8 +31,10 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://github.com/georgebv/drf-pydantic
   summary: Use pydantic with the Django REST framework
   license: MIT
   license_file: LICENSE

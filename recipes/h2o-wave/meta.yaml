@@ -1,5 +1,5 @@
 {% set name = "h2o-wave" %}
-{% set version = "1.0.0" %}
+{% set version = "1.8.9" %}
 
 package:
   name: {{ name|lower }}
@@ -7,22 +7,22 @@ package:
 
 source:
   url: https://github.com/h2oai/wave/archive/v{{ version }}.tar.gz
-  sha256: c7bf9bb5220c39fd4b6f78144ac8394921d59ae94f6921d2f4285f83757c18a5
+  sha256: e6acc1c4f146ef623216c0611c7cae32911df1cf3727e4cfcf8d862beb80270f
 
 build:
   entry_points:
     - wave = h2o_wave.cli:main
   noarch: python
   script: {{ PYTHON }} -m pip install ./py/h2o_wave -vv --no-deps --no-build-isolation
-  number: 1
+  number: 0
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - click
     - httpx >=0.16.1
     - inquirer
@@ -36,6 +36,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   description: H2O Wave is a lightweight software stack for programming interactive web applications entirely in Python (no HTML/Javascript/CSS required).

@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.2"
+
+package:
+  name: django-log-request-id
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-log-request-id/django_log_request_id-${{ version }}.tar.gz
+  sha256: 4fe8e0702b09e8b08676f237d94063e0d54fc4d8867570bea6719ceba0a32486
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=1.8
+
+tests:
+  - python:
+      imports:
+        - log_request_id
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Django middleware and log filter to attach a unique ID to every log message generated as part of a request
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/dabapps/django-log-request-id/
+  repository: https://github.com/dabapps/django-log-request-id/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-log-request-id
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-log-request-id
+  cfe-purls:
+    - pkg:conda/django-log-request-id@${{ version }}
+    - pkg:pypi/django-log-request-id@${{ version }}
+  cfe-upstream-repo: https://github.com/dabapps/django-log-request-id
+  cfe-upstream-homepage: https://github.com/dabapps/django-log-request-id
+  cfe-import-names: [log_request_id]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-log-request-id-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 2.1.2; authored modern v1 recipe.yaml
+#    # and deleted stale local meta.yaml (was 2.1.0).
+# requirements:
+#  host:
+#    # setuptools kept in host — legacy setup.py/setup.cfg project (no
+#    # pyproject.toml); matches deployed feedstock host block.
+#  run:
+#    # dropped the deployed feedstock's speculative python <4.0 upper bound;
+#    # upstream requires-python is only >=3.10, so the broad >=python_min floor
+#    # is correct. django >=1.8 is the sole upstream run dep.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. Import name log_request_id (verified
+#    # against the sdist top-level package, diverges from the dist name; G7).
+#    # Django top-level import succeeds without DJANGO_SETTINGS_MODULE (the
+#    # middleware/log-filter classes import lazily), so the standard
+#    # python.imports test holds; no package_contents escape hatch needed.
+####

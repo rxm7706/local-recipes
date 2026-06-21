@@ -1,13 +1,13 @@
 {% set name = "django-survey-and-report" %}
-{% set version = "1.4.10" %}
+{% set version = "1.4.12" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_survey_and_report-{{ version }}.tar.gz
-  sha256: 21c1f9312760d43544ef8454d07b6d222d0245f097078ef7160eb353c802ac00
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 516f861fff3c7fa602a72a54d855500d9e35664cd9b06008fdc5b652106871bc
 
 build:
   noarch: python
@@ -16,32 +16,58 @@ build:
 
 requirements:
   host:
-    - python >=3.10
+    - python {{ python_min }}
     - setuptools >=67.5.1
     - wheel
     - pip
   run:
-    - python >=3.10
-    - django >=2.2,<6
+    - survey
+    - python >={{ python_min }}
+    - django >=2.2,<7
     - django-bootstrap-form >=3.4
-    - django-registration >=3
+    - django-registration >=3.0
     - django-tastypie >=0.14.2
-    - ordereddict >=1.1
+    #- ordereddict >=1.1 requires python 2.6
     - pytz >=2018.9
     - pyyaml >=4.2b1
+    # - setuptools
+    # - python-coveralls
+    # - pytest-django
+    # - pytest
+    # - pysankeybeta <1.5,>=1.3
+    # - pylint-django
+    # - pylint >=3.3.5
+    # - pre-commit
+    # - django-rosetta
+    # - coveralls
+    # - coverage
+    # - colorama
+    # - setuptools
+    # - python-coveralls
+    # - pytest-django
+    # - pytest
+    # - pysankeybeta <1.5,>=1.3
+    # - pylint-django
+    # - pylint >=3.3.5
+    # - pre-commit
+    # - django-rosetta
+    # - coveralls
+    # - coverage
+    # - colorama
 
 test:
-  imports:
-    - survey
   commands:
-    - pip check
+    - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,ROSETTA_MESSAGES_PER_PAGE=5); django.setup(); import survey"
+    #- pip check skipped because ordereddict requires python 2.6
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: A django survey app that can export results as CSV or PDF using your native language.
   license: AGPL-3.0-only
   license_file: LICENSE.txt
+  home: https://github.com/Pierre-Sassoulas/django-survey
 
 extra:
   recipe-maintainers:

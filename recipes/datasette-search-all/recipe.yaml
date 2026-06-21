@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.4"
+
+package:
+  name: datasette-search-all
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datasette-search-all/datasette_search_all-${{ version }}.tar.gz
+  sha256: 371de80eff4f2f0e5ba70cc8efcdd68c1089ebf03d743febced250012d678911
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - datasette >=0.63.1
+
+tests:
+  - python:
+      imports:
+        - datasette_search_all
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Datasette plugin for searching all searchable tables at once
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/datasette-search-all
+  repository: https://github.com/simonw/datasette-search-all
+  description: |
+    Datasette plugin that adds a search interface for querying all
+    searchable (full-text-indexed) tables across a Datasette instance
+    from a single search box.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datasette-search-all
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datasette-search-all
+  cfe-purls:
+    - pkg:conda/datasette-search-all@${{ version }}
+    - pkg:pypi/datasette-search-all@${{ version }}
+  cfe-upstream-repo: https://github.com/simonw/datasette-search-all
+  cfe-upstream-homepage: https://github.com/simonw/datasette-search-all
+  cfe-import-names: [datasette_search_all]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datasette-search-all-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 (recipe.yaml, build.number 2);
+#    # authored fresh local recipe.yaml at 1.1.4, deleted stale local
+#    # meta.yaml (was 1.1.2). Local build.number reset to 0 (fresh local
+#    # mirror; not a feedstock-PR same-version edit).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no
+#    # pyproject.toml); matches deployed feedstock host block.
+#  run:
+#    # dropped the feedstock's speculative `python <4.0` upper bound —
+#    # upstream requires-python is `>=3.7` with no upper bound, so the cap
+#    # is not upstream-declared. Broad `>=python_min` floor is correct.
+#    # datasette floor `>=0.63.1` mirrors upstream requires-dist exactly.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version `python_version: ${{ python_min }}.*`.
+#    # datasette_search_all imports cleanly standalone (plugin registers
+#    # via hookimpl at app-instantiation, not at import), so the standard
+#    # python.imports test holds — no package_contents escape hatch.
+####

@@ -1,13 +1,13 @@
 {% set name = "taipy-templates" %}
-{% set version = "3.0.0" %}
+{% set version = "4.1.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/taipy-templates-{{ version }}.tar.gz
-  sha256: 4dc52394b3782ce3717f2bea17d0aecd48a218f3dda1915411f36ead1c1ad504
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 762e972160ef601a78be08737fcaf6adbf8657d0ac1952431df3cf57e6ba1e13
 
 build:
   noarch: python
@@ -16,14 +16,20 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
 
 test:
   imports:
     - taipy
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/avaiga/taipy-templates

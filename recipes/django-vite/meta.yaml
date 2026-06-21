@@ -1,5 +1,5 @@
 {% set name = "django-vite" %}
-{% set version = "3.0.6" %}
+{% set version = "3.1.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_vite-{{ version }}.tar.gz
-  sha256: 363ca9fd774eb228b27f710a9179c68f61e27bb95b41b1f790ee5a0a0e215b14
+  sha256: 8b4ffe4a9fa81ff568bfb195e74dde8694aaf13fd4b656ae60bf59cce08b85e8
 
 build:
   noarch: python
@@ -16,11 +16,14 @@ build:
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
     - django >=3.2
+    # - black
+    # - Django >=3.2
 
 test:
   imports:
@@ -29,6 +32,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/MrBin99/django-vite

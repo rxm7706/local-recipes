@@ -1,0 +1,124 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.5"
+
+package:
+  name: django-cms
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-cms/django_cms-${{ version }}.tar.gz
+  sha256: 56f33fed820acfc326bf08d9a4a75e6ad3a1c1e027a0352c5444fe124e1d6bfd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=2.2
+    - django-classy-tags >=0.7.2
+    - django-formtools >=2.1
+    - django-treebeard >=4.3
+    - django-sekizai >=0.7
+    - djangocms-admin-style >=1.2
+    - packaging
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - cms
+        - menus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - pip check
+      - djangocms --help
+
+about:
+  summary: Lean enterprise content management powered by Django.
+  license: Apache-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - cms/static/cms/js/select2/LICENSE
+  homepage: https://www.django-cms.org/
+  repository: https://github.com/django-cms/django-cms
+  documentation: https://docs.django-cms.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-cms
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-cms
+  cfe-purls:
+    - pkg:conda/django-cms@${{ version }}
+    - pkg:pypi/django-cms@${{ version }}
+  cfe-upstream-repo: https://github.com/django-cms/django-cms
+  cfe-upstream-homepage: https://www.django-cms.org/
+  cfe-import-names: [cms, menus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-cms-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 5.0.5; authored modern recipe.yaml at
+#    # 5.0.5 (MAJOR bump from stale local meta.yaml 4.1.4), deleted the v0
+#    # meta.yaml. Despite the 5.x MAJOR framework bump, the 5.0.5 sdist
+#    # setup.cfg [options].install_requires is byte-identical to 4.1.x core
+#    # deps (Django/classy-tags/formtools/treebeard/sekizai/admin-style/
+#    # packaging/setuptools). The 5.x deps did NOT change vs 4.1.x. Two new
+#    # extras (argon2, bcrypt) are optional and NOT activated.
+# source:
+#    # build backend is setuptools via setup.py + setup.cfg (no pyproject
+#    # [project]/[build-system] table; pyproject.toml is ruff/flake8 config
+#    # only). version = attr: cms.__version__, so setuptools is required in host.
+# requirements:
+#  run:
+#    # dropped the deployed feedstock's speculative python <4.0 upper bound —
+#    # upstream requires-python is just >=3.8 (no upper cap). broad
+#    # >=python_min floor is correct. requires-python >=3.8 < cf floor 3.10,
+#    # so python_min is omitted from context (default 3.10 floor applies).
+# about:
+#    # license is compound Apache-2.0 AND BSD-3-Clause: root LICENSE is
+#    # BSD-3-Clause (Batiste Bieler), bundled cms/.../select2/LICENSE is
+#    # Apache-2.0 (or GPL dual). Both license_files shipped from the sdist.
+# tests:
+#    # CFEP-25 triad [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. cms/__init__.py is trivial (__version__
+#    # only) and menus/__init__.py only sets a default_app_config string, so
+#    # import cms / import menus do NOT trigger AppRegistryNotReady — standard
+#    # python.imports test holds, no package_contents escape hatch needed.
+#    # Kept the feedstock's second script test (pip check + djangocms --help)
+#    # which exercises the console_scripts entry point.
+####

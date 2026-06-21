@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.10"
+
+package:
+  name: basedtyping
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/basedtyping/basedtyping-${{ version }}.tar.gz
+  sha256: d7600917ec9f232c9eb4266916c2ea5a4719ffca59fb7902fc96fd59a4678110
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.8
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - typing-extensions >=4.12.2,<5.0.0
+
+tests:
+  - python:
+      imports:
+        - basedtyping
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/KotlinIsland/basedtyping
+  repository: https://github.com/KotlinIsland/basedtyping
+  summary: Utilities for basedmypy
+  description: |
+    It's recommended to use basedmypy when using basedtyping, as there are
+    specialised adaptations made to basedmypy to support some functionality of
+    this package.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: basedtyping
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: basedtyping
+  cfe-purls:
+    - pkg:conda/basedtyping@${{ version }}
+    - pkg:pypi/basedtyping@${{ version }}
+  cfe-upstream-repo: https://github.com/KotlinIsland/basedtyping
+  cfe-upstream-homepage: https://github.com/KotlinIsland/basedtyping
+  cfe-import-names: [basedtyping]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/basedtyping-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Wave-C v0-migration CLASS C2 refresh of recipes/basedtyping/ from
+#    # the local meta.yaml v0 (0.0.3) to v1 recipe.yaml at the published
+#    # feedstock version 0.1.10. Feedstock is already on recipe.yaml (v1);
+#    # local meta.yaml deleted in this same change.
+# requirements:
+#  run:
+#    # 0.1.10's pyproject [tool.poetry.dependencies] declares only
+#    # python ^3.9 + typing_extensions ^4.12.2. The mypy_extensions and
+#    # tomli run-deps carried in the deployed feedstock recipe are stale
+#    # holdovers from the 0.0.3 era and are NOT present in 0.1.10's
+#    # pyproject; dropped here per full CFE regenerate. typing-extensions
+#    # upper bound (<5.0.0) mirrors upstream ^4.12.2 and is load-bearing
+#    # under pip_check: true.
+# about:
+#    # requires_python is <4.0,>=3.9; 3.9 < conda-forge floor 3.10, so
+#    # python_min is omitted from context (default floor applies).
+# tests:
+#    # The test uses the single python_min leg (matching the deployed
+#    # feedstock) instead of the canonical CFEP-25 [python_min, "*"] triad.
+#    # basedtyping 0.1.10 imports the private typing._remove_dups_flatten,
+#    # which Python 3.14 removed, so the "*" (latest-cpython) leg fails the
+#    # import test. The single-leg form verifies the supported floor without
+#    # tripping the upstream 3.14 incompatibility. Revisit once upstream
+#    # supports 3.14 (then restore the dual-version triad).
+####

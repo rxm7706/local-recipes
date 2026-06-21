@@ -1,0 +1,126 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.9.3.5"
+
+package:
+  name: psycopg2-yugabytedb
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/psycopg2-yugabytedb/psycopg2_yugabytedb-${{ version }}.tar.gz
+  sha256: af41d31a910435377483b0034eba6e0da1f2f8b2b5171e78e9439f8fdd66fdbc
+
+build:
+  number: 0
+  skip:
+    - match(python, ">=3.13")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - libpq
+  run:
+    - python
+  run_constraints:
+    - psycopg2 <0a0
+
+tests:
+  - python:
+      # https://github.com/yugabyte/yugabyte-db/issues/12283
+      # For now, psycopg2-yugabytedb has the same underlying library (psycopg2)
+      # as the upstream driver which when installed together override one
+      # another based on the sequence of installation.
+      imports:
+        - psycopg2
+      pip_check: true
+
+about:
+  summary: Yugabyte Psycopg2 driver is a distributed python driver for YugabyteDB built on the PostgreSQL psycopg2 driver.
+  license: MPL-2.0-no-copyleft-exception
+  license_file: LICENSE
+  homepage: https://github.com/yugabyte/psycopg2
+  repository: https://github.com/yugabyte/psycopg2
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: psycopg2-yugabytedb
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: psycopg2-yugabytedb
+  cfe-purls:
+    - pkg:conda/psycopg2-yugabytedb@${{ version }}
+    - pkg:pypi/psycopg2-yugabytedb@${{ version }}
+  cfe-upstream-repo: https://github.com/yugabyte/psycopg2
+  cfe-upstream-homepage: https://github.com/yugabyte/psycopg2
+  cfe-import-names: [psycopg2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/psycopg2-yugabytedb-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - platform-expansion
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-D C1: feedstock still v0 (meta.yaml). Refreshed the local meta.yaml
+#    # mirror faithfully to the deployed 2.9.3.5 (no cfe annotations) AND
+#    # authored this v1 recipe.yaml alongside it. Both coexist until the
+#    # feedstock completes its v0->v1 switch. updates-needed records the owed
+#    # migration + platform-expansion.
+# build:
+#    # C extension building psycopg2._psycopg via setup.py; links libpq.
+#    # skip match(python, ">=3.13"): psycopg/utils.c uses the private CPython
+#    # API _PyInterpreterState_Get(), removed in Python 3.13 -> implicit-decl
+#    # compile error on py3.13. Upstream classifiers cap support at 3.10
+#    # (requires-python >=3.6); the deployed feedstock builds py3.9-3.12 only
+#    # (NO 3.13). The skip aligns the recipe to the genuinely-supported range,
+#    # not a workaround. Built+tested GREEN locally on py3.10/3.11/3.12.
+#    # Drop the skip if/when upstream ports utils.c to PyInterpreterState_Get.
+# requirements:
+#  build:
+#    # cross-python block mirrors the deployed feedstock's
+#    # [build_platform != target_platform] selector for emulated subdirs.
+#  host:
+#    # setuptools added (setup.py project, no pyproject.toml). libpq provides
+#    # pg_config + the postgres client lib the C extension links against; its
+#    # run_exports carry the runtime dep into run: (so run: needs only python).
+#  run:
+#    # run_constraints: psycopg2 <0a0 preserved verbatim from the deployed
+#    # feedstock — mutual exclusion with mainline psycopg2 (shared underlying
+#    # library, see yugabyte issue #12283).
+# tests:
+#    # G7/G10 divergence: distribution name psycopg2-yugabytedb installs as
+#    # import name `psycopg2` (setup.py package_dir={'psycopg2': 'lib'}).
+#    # Compiled recipe -> import block + pip_check, no python_version matrix
+#    # (the build matrix supplies per-Python coverage).
+# platform-expansion:
+#    # feedstock .ci_support ships linux_64 + osx_64 + win_64 only (py3.9-3.12).
+#    # Candidate to widen to osx-arm64 + linux-aarch64 at submission (libpq is
+#    # available on those subdirs). Recorded in updates-needed; conda-forge.yml
+#    # not edited here.
+####

@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.3"
+  python_min: "3.11"
+
+package:
+  name: spec-kit
+  version: ${{ version }}
+
+source:
+  url: https://github.com/github/spec-kit/archive/v${{ version }}.tar.gz
+  sha256: 78b37dbcda69648ab648f82b6af83da4b56e34b2a6c9b2027c0152819d6e0646
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - specify = specify_cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - json5 >=0.13.0
+    - pathspec >=0.12.0
+    - click >=8.2.1
+    - typer >=0.24.0
+    - rich
+    - httpx
+    - socksio ==1
+    - platformdirs
+    - readchar
+    - truststore >=0.10.4
+    - pyyaml >=6.0
+    - packaging >=23.0
+
+tests:
+  - python:
+      imports:
+        - specify_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - specify --help
+
+about:
+  summary: Specify CLI, part of GitHub Spec Kit. A tool to bootstrap your projects for Spec-Driven Development (SDD).
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/github/spec-kit
+  repository: https://github.com/github/spec-kit
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spec-kit
+  cfe-upstream-registry: github
+  cfe-upstream-name: github/spec-kit
+  cfe-purls:
+    - pkg:conda/spec-kit@${{ version }}
+    - pkg:pypi/specify-cli@${{ version }}
+    - pkg:github/github/spec-kit@v${{ version }}
+  cfe-upstream-repo: https://github.com/github/spec-kit
+  cfe-upstream-homepage: https://github.com/github/spec-kit
+  cfe-import-names: [specify_cli]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spec-kit-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering re-verify. Flagged because local was 0.1.4 vs
+#    # target 0.11.2 (large jump). Verified GENUINE: github/spec-kit ships
+#    # real vN.M.K releases 0.1.4 -> 0.11.3 (latest 2026-06-19); NOT a
+#    # numbering artifact. PyPI has NO spec-kit dist; the upstream PyPI
+#    # distribution is specify-cli (== GitHub tag scheme, both at 0.11.3).
+#    # OUR feedstock spec-kit-feedstock is v0/C1 (sole-maintainer rxm7706,
+#    # GitHub-tag source) -> KEEP meta.yaml mirror + author this v1;
+#    # updates-needed = meta-yaml-to-recipe-yaml. A SEPARATE competing v1
+#    # feedstock specify-cli-feedstock (maintainer xhochy, PyPI sdist source)
+#    # also exists for the same upstream; out of scope for this refresh.
+# package:
+#    # name kept as spec-kit (feedstock identity), NOT specify-cli (the
+#    # upstream PyPI dist name) — Migration Discipline: package.name must
+#    # match the existing feedstock package or it orphans users.
+# context:
+#    # python_min override to 3.11 is justified — upstream requires-python
+#    # >=3.11.
+# source:
+#    # github-tag (not PyPI sdist): the deployed feedstock sources the
+#    # GitHub archive; mirror that source-kind. LICENSE ships in the GitHub
+#    # archive (license-file pattern 1).
+#  run:
+#    # Faithful mirror of the deployed v0.11.3 feedstock run deps. NOTE for
+#    # human triage: httpx / socksio==1 / truststore are VESTIGIAL in 0.11.3
+#    # — none is imported anywhere in src/ (verified via grep); upstream's
+#    # 0.11.3 pyproject [project.dependencies] no longer declares them. They
+#    # are carried over from older releases. Kept here so the v1 is a true
+#    # migration of what's deployed; a follow-up maintenance PR could drop
+#    # all three. Dropped the meta.yaml's speculative python <4.0 upper
+#    # bound (not upstream-declared); broad >=python_min floor is correct.
+# tests:
+#    # CFEP-25 triad (python.imports specify_cli + pip_check) — the package
+#    # IS importable as a library (def main in specify_cli/__init__.py) — plus
+#    # a `specify --help` CLI script test mirroring the deployed feedstock.
+####

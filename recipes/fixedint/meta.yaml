@@ -1,5 +1,5 @@
 {% set name = "fixedint" %}
-{% set version = "0.1.6" %}
+{% set version = "0.2.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fixedint-{{ version }}.tar.gz
-  sha256: 703005d090499d41ce7ce2ee7eae8f7a5589a81acdc6b79f1728a56495f2c799
+  sha256: aeea0c7a3a54e5371ed632f9a97719316699f64f863ffce4414ef0f925255d17
 
 build:
   noarch: python

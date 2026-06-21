@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "10.1"
+
+package:
+  name: pyobjc-framework-applicationservices
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyobjc-framework-applicationservices/pyobjc-framework-ApplicationServices-${{ version }}.tar.gz
+  sha256: bb780eabadad0fbf36a128041dccfd71e30bbeb6b110852d37fd5c98f4a2ec04
+
+build:
+  number: 0
+  skip: not osx
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python
+    - pyobjc-core >=${{ version }}
+    - pyobjc-framework-cocoa >=${{ version }}
+    - pyobjc-framework-quartz >=${{ version }}
+    - pyobjc-framework-coretext >=${{ version }}
+
+tests:
+  - python:
+      imports:
+        - ApplicationServices
+        - PyObjCTools
+      pip_check: true
+
+about:
+  summary: Wrappers for the framework ApplicationServices on macOS
+  license: MIT
+  license_file: License.txt
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  repository: https://github.com/ronaldoussoren/pyobjc
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyobjc-framework-applicationservices
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyobjc-framework-ApplicationServices
+  cfe-purls:
+    - pkg:conda/pyobjc-framework-applicationservices@${{ version }}
+    - pkg:pypi/pyobjc-framework-applicationservices@${{ version }}
+  cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
+  cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc
+  cfe-import-names: [ApplicationServices, HIServices, PrintCore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-applicationservices-feedstock
+  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # WAVE-D osx-only C1: feedstock is still v0 (recipe/meta.yaml = 200,
+#    # recipe/recipe.yaml = 404). Deployed feedstock version is 10.1 (build 3);
+#    # PyPI latest is 12.2.1 but we author/mirror at the DEPLOYED version per
+#    # the refresh contract. KEPT meta.yaml as a faithful un-annotated v0
+#    # mirror (refreshed 9.2 -> 10.1); this recipe.yaml is the proposed v1
+#    # migration. Both coexist until the feedstock completes its v0->v1 switch.
+#    # cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml (feedstock
+#    # owes the migration).
+# build:
+#    # skip: not osx — legit osx-only skip (Objective-C framework binding;
+#    # compiler('c') against macOS frameworks). Deployed feedstock already
+#    # ships BOTH osx-64 AND osx-arm64 (.ci_support has osx_64_* and
+#    # osx_arm64_* configs; conda-forge.yml: build_platform osx_arm64: osx_64).
+#    # No platform-expansion needed.
+#    # build.number reset to 0 at the v1 migration's authoring baseline. On the
+#    # ACTUAL feedstock v0->v1 migration PR (same version 10.1) the build.number
+#    # MUST be bumped ABOVE the live build (currently 3, so -> 4) so the v1
+#    # build supersedes the v0 *_3 artifact. The v1 migration PR also needs
+#    # conda_build_tool: rattler-build + conda_install_tool: pixi in
+#    # conda-forge.yml and `@conda-forge-admin, please rerender`.
+#    # CANNOT build locally: requires a macOS host with the macOS SDK/frameworks
+#    # (ApplicationServices, HIServices, PrintCore Objective-C frameworks). On
+#    # this linux-64 host rattler-build would fail for lack of the SDK — that is
+#    # a host constraint, NOT a recipe defect. cfe-local-build-status:
+#    # not-attempted.
+# requirements:
+#  build:
+#    # added stdlib('c') paired with compiler('c') (the local v0 meta.yaml at
+#    # 9.2 lacked it; the deployed 10.1 feedstock already has it). Required for
+#    # all compiled recipes.
+#  host:
+#    # setuptools + wheel kept — sdist pyproject.toml build-system requires
+#    # ["setuptools", "wheel"] (genuine setuptools project, no G8 redundancy
+#    # to trim). Matches deployed feedstock host block.
+#  run:
+#    # 4 pyobjc deps all >=${{ version }}, matching upstream requires_dist for
+#    # 10.1 (pyobjc-core, pyobjc-framework-Cocoa/Quartz/CoreText). conda-forge
+#    # feedstock spellings are lowercase (pyobjc-framework-coretext).
+# tests:
+#    # compiled per-Python builds (not noarch), so the CFEP-25
+#    # [python_min.*, "*"] dual-version python_version pin does NOT apply — the
+#    # build matrix already exercises every Python. Import test mirrors the
+#    # deployed feedstock: ApplicationServices (primary import, ships in sdist
+#    # Lib/) + PyObjCTools (provided by the pyobjc-core run-dep). G7-verified
+#    # against the 10.1 sdist: Lib/{ApplicationServices,HIServices,PrintCore}/.
+# about:
+#    # requires_python on PyPI is >=3.8 for 10.1, but conda-forge floor is 3.10
+#    # so no python_min override; compiled recipe uses bare `python` (build
+#    # matrix supplies the version). v1 about fields: home -> homepage,
+#    # added repository (dev_url-equivalent for the pyobjc monorepo).
+####

@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.3"
+
+package:
+  name: dagster-async-executor
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dagster-async-executor/dagster_async_executor-${{ version }}.tar.gz
+  sha256: 6991133945ff20f41614d40938af5d72f8610279fbb0e5a7ead6b6900aad0690
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=42
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - anyio >=4.12.0
+    - dagster >=1.12.2
+
+tests:
+  - python:
+      imports:
+        - dagster_async_executor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Async Support for Dagster
+  homepage: https://github.com/dagster-io/community-integrations
+  repository: https://github.com/dagster-io/community-integrations
+  description: Async Support for Dagster.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dagster-async-executor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dagster-async-executor
+  cfe-purls:
+    - pkg:conda/dagster-async-executor@${{ version }}
+    - pkg:pypi/dagster-async-executor@${{ version }}
+  cfe-upstream-repo: https://github.com/dagster-io/community-integrations
+  cfe-upstream-homepage: https://github.com/dagster-io/community-integrations
+  cfe-import-names: [dagster_async_executor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dagster-async-executor-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Feedstock is still v0 (meta.yaml). meta.yaml mirror kept alongside
+#    # this v1 recipe.yaml per CLASS C1; delete meta.yaml only after the
+#    # feedstock completes its own v0 -> v1 migration.
+# requirements:
+#  run:
+#    # Dropped the deployed feedstock's speculative `python <4.0` upper
+#    # bound: upstream pyproject declares only `requires-python >= 3.10`
+#    # with no upper bound, so the cap was generator-added, not upstream.
+# about:
+#    # Upstream sdist ships no LICENSE; LICENSE shipped in-recipe
+#    # (canonical License-File pattern 2). Apache-2.0 per PKG-INFO/feedstock.
+####

@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.1"
+
+package:
+  name: json_stream
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/json-stream/json_stream-${{ version }}.tar.gz
+  sha256: f7a2c72f208544276c0ee3f58c11eb635f2d3c1d37c7237cac2cf6681b67f655
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - json-stream-rs-tokenizer >=0.4.17
+
+tests:
+  - python:
+      imports:
+        - json_stream
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Streaming JSON encoder and decoder
+  description: |
+    json-stream is a streaming JSON parser and encoder for Python. It reads and
+    writes JSON data incrementally, allowing very large documents to be processed
+    without loading the entire structure into memory at once.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/daggaz/json-stream
+  repository: https://github.com/daggaz/json-stream
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json_stream
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-stream
+  cfe-purls:
+    - pkg:conda/json_stream@${{ version }}
+    - pkg:pypi/json-stream@${{ version }}
+  cfe-upstream-repo: https://github.com/daggaz/json-stream
+  cfe-upstream-homepage: https://github.com/daggaz/json-stream
+  cfe-import-names: [json_stream]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json_stream-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    json_stream is a still-v0 (meta.yaml) conda-forge feedstock. The local
+#    meta.yaml mirrors the deployed feedstock at 2.5.1 verbatim; this
+#    recipe.yaml is the proposed v1 migration (built/tested locally).
+#    Both files coexist until the feedstock completes its v0-to-v1 switch.
+# context:
+#    python_min is omitted: upstream requires-python is <4,>=3.5, well below
+#    the conda-forge 3.10 default floor, so the default supplies python_min.
+# requirements:
+#  run:
+#    json-stream-rs-tokenizer is the only base [project.dependencies] entry.
+#    The requests/httpx deps are optional extras (extra == "requests" /
+#    "httpx") and are dropped per G25 (un-activated extras not flattened).
+#    Matches the deployed feedstock run-dep set.
+#  host:
+#    setuptools + wheel + pip kept: upstream build-backend is
+#    setuptools.build_meta (legacy setuptools project, not a single PEP-517
+#    backend), so G8 belt-and-suspenders stripping does not apply.
+####

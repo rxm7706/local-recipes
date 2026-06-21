@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: vizro
-  version: "0.1.54"
+  version: "0.1.59"
 
 package:
-  name: ${{ name|lower }}
+  name: vizro
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/vizro-${{ version }}.tar.gz
-  sha256: 0f670437084c5a8b30d4dfbab175da3f888973a754a903e2d944d1c46a1500b3
+  url: https://pypi.org/packages/source/v/vizro/vizro-${{ version }}.tar.gz
+  sha256: 043186ac698cd55f9f56ab965b408bf82ede3a9db87d7ac76b9c65ccd375c975
 
 build:
   number: 0
@@ -24,12 +23,12 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - dash >=4,<5
     - dash-bootstrap-components >=2
     - dash-ag-grid ==33.3.3
     - dash-mantine-components >=2.0.0
-    - vizro-dash-components
+    - vizro-dash-components >=0.1.1
     - pandas >=2
     - plotly >=5.24.0
     - pydantic >=2.7.0
@@ -46,19 +45,70 @@ tests:
         - vizro
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Vizro is a low-code framework for building high-quality data visualization apps.
-  homepage: https://vizro.mckinsey.com/
-  repository: https://github.com/mckinsey/vizro
-  documentation: https://vizro.readthedocs.io/en/stable/
   license: MIT AND Apache-2.0
   license_file:
     - LICENSE.txt
     - examples/visual-vocabulary/LICENSE.txt
+  homepage: https://vizro.mckinsey.com/
+  repository: https://github.com/mckinsey/vizro
+  documentation: https://vizro.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vizro
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vizro
+  cfe-purls:
+    - pkg:conda/vizro@${{ version }}
+    - pkg:pypi/vizro@${{ version }}
+  cfe-upstream-repo: https://github.com/mckinsey/vizro
+  cfe-upstream-homepage: https://vizro.mckinsey.com/
+  cfe-import-names: [vizro]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/vizro-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 KEEP-meta: conda-forge vizro-feedstock is STILL v0 (meta.yaml);
+#    # meta.yaml kept alongside this recipe.yaml as a faithful mirror of the
+#    # deployed v0.1.59 feedstock. This recipe.yaml is the proposed v1 migration.
+#    # cfe-forge-recipe-updates-needed includes meta-yaml-to-recipe-yaml.
+# context:
+#    # python_min omitted at the default conda-forge 3.10 floor (upstream
+#    # requires-python is >=3.10); conda-forge-pinning supplies the value.
+# requirements:
+#  host:
+#    # hatchling build backend per the root pyproject [build-system]
+#    # (the setuptools entries in the sdist belong to example subprojects).
+#  run:
+#    # 14 run deps reconciled against the 0.1.59 sdist [project.dependencies];
+#    # the kedro / kedro-datasets extra is NOT activated (G25 — dropped).
+#    # vizro-dash-components >=0.1.1 is new at 0.1.59 (present on conda-forge).
+#    # dropped the prior local recipe's speculative python <4.0 upper bound;
+#    # broad >=python_min floor is correct (not upstream-declared).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; import name is vizro
+#    # (verified src/vizro/__init__.py in the sdist).
+####
