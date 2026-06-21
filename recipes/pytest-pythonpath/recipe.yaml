@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.4"
+
+package:
+  name: pytest-pythonpath
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-pythonpath/pytest-pythonpath-${{ version }}.tar.gz
+  sha256: 64e195b23a8f8c0c631fb16882d9ad6fa4137ed1f2961ddd15d52065cd435db6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - pytest >=2.5.2,<7
+
+tests:
+  - python:
+      imports:
+        - pytest_pythonpath
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: pytest plugin for adding to the PYTHONPATH from command line or configs.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/bigsassy/pytest-pythonpath
+  repository: https://github.com/bigsassy/pytest-pythonpath
+  description: |
+    pytest plugin for adding to the PYTHONPATH from command line or configs.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-pythonpath
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-pythonpath
+  cfe-purls:
+    - pkg:conda/pytest-pythonpath@${{ version }}
+    - pkg:pypi/pytest-pythonpath@${{ version }}
+  cfe-upstream-repo: https://github.com/bigsassy/pytest-pythonpath
+  cfe-upstream-homepage: https://github.com/bigsassy/pytest-pythonpath
+  cfe-import-names: [pytest_pythonpath]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-pythonpath-feedstock
+  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0/meta.yaml at 0.7.4 (build 1); kept the
+#    # local meta.yaml as a faithful deployed mirror and authored this v1
+#    # recipe.yaml alongside. meta-yaml-to-recipe-yaml is owed by the feedstock.
+# requirements:
+#  host:
+#    # setuptools kept in host — legacy setup.py project (no pyproject.toml,
+#    # py_modules=['pytest_pythonpath']); matches deployed feedstock host block.
+#  run:
+#    # python <4.0 upper bound is upstream-declared (setup.py
+#    # python_requires='>=2.6, <4'), not speculative — kept.
+#    # pytest >=2.5.2,<7 is upstream-declared (install_requires) and
+#    # load-bearing under pip_check — kept the upper bound verbatim.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. Single-module pytest plugin imports
+#    # cleanly standalone — standard python.imports test holds.
+# notes:
+#    # DEP-001 (pytest-in-run) is a known false positive for a pytest plugin
+#    # whose runtime IS pytest — pytest stays in run.
+####

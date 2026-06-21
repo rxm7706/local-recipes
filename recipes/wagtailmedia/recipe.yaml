@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.17.2"
+
+package:
+  name: wagtailmedia
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtailmedia/wagtailmedia-${{ version }}.tar.gz
+  sha256: 4457e267fc53d8db4c9eb9a48d27f4b47b0823a9f7d0820f2dd98f1ba5d58600
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.11,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=6.3
+    - django >=4.2
+    - django-taggit
+    - djangorestframework
+
+tests:
+  - python:
+      imports:
+        - wagtailmedia
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A Wagtail module for audio and video files.
+  description: |
+    wagtailmedia is a Wagtail module for managing audio and video files.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/torchbox/wagtailmedia
+  repository: https://github.com/torchbox/wagtailmedia
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtailmedia
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtailmedia
+  cfe-purls:
+    - pkg:conda/wagtailmedia@${{ version }}
+    - pkg:pypi/wagtailmedia@${{ version }}
+  cfe-upstream-repo: https://github.com/torchbox/wagtailmedia
+  cfe-upstream-homepage: https://github.com/torchbox/wagtailmedia
+  cfe-import-names: [wagtailmedia]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtailmedia-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (meta.yaml). Kept the local
+#    # meta.yaml as a faithful mirror of the deployed v0 0.17.2 (refreshed
+#    # from 0.14.5); authored this v1 recipe.yaml alongside as the proposed
+#    # migration. updates-needed carries meta-yaml-to-recipe-yaml (the
+#    # feedstock owes the v0->v1 switch).
+# requirements:
+#  run:
+#    # django-taggit + djangorestframework are load-bearing transitive deps:
+#    # src/wagtailmedia/models.py imports taggit.managers and
+#    # api/serializers.py imports rest_framework.fields, but upstream's
+#    # pyproject [project.dependencies] under-declares them (they arrive via
+#    # Wagtail, which depends on both). G27 pattern. Matches the deployed
+#    # feedstock run: list. Kept the wagtail/django lower bounds from upstream
+#    # (>=6.3 / >=4.2); no speculative upper bounds added.
+# tests:
+#    # CFEP-25 triad [python_min.*, "*"]; modernizes the feedstock's
+#    # single-version python pin. wagtailmedia imports cleanly standalone
+#    # (Django app config loads at app-registry time, not at import), so the
+#    # standard python.imports test holds — no package_contents escape hatch.
+####

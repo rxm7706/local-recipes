@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.10.1"
+
+package:
+  name: django-tenants
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-tenants/django_tenants-${{ version }}.tar.gz
+  sha256: cf3ea79a23a6df8db3ed24d4220a1c037749e6070a36864f5f9d50550c2a4fa7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=2.1,<6.1
+
+tests:
+  - python:
+      imports:
+        - django_tenants
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Tenant support for Django using PostgreSQL schemas.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/django-tenants/django-tenants
+  repository: https://github.com/django-tenants/django-tenants
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-tenants
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-tenants
+  cfe-purls:
+    - pkg:conda/django-tenants@${{ version }}
+    - pkg:pypi/django-tenants@${{ version }}
+  cfe-upstream-repo: https://github.com/django-tenants/django-tenants
+  cfe-upstream-homepage: https://github.com/django-tenants/django-tenants
+  cfe-import-names: [django_tenants]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-tenants-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is STILL v0/meta.yaml (recipe.yaml 404).
+#    # Local meta.yaml refreshed to mirror the deployed feedstock at 3.10.1
+#    # (clean, un-annotated); this recipe.yaml is the proposed v1 migration
+#    # (cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml). Both coexist.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.cfg project (no pyproject.toml build-system
+#    # table); matches the deployed feedstock host block.
+#  run:
+#    # Only runtime dep is django (upstream requires-dist django<6.1,>=2.1). The
+#    # coverage / gunicorn / psycopg deps are all extra == "dev" -> dropped per
+#    # G25 (not activated). The feedstock carries them commented-out; we omit.
+#    # python_min OMITTED from context: upstream requires-python is >=3.10, the
+#    # conda-forge default floor, so conda-forge-pinning supplies python_min.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. The top-level __init__.py is a bare
+#    # comment (no import-time Django access), so import django_tenants does NOT
+#    # raise ImproperlyConfigured/AppRegistryNotReady -> standard python.imports
+#    # test holds; no package_contents escape hatch needed.
+####

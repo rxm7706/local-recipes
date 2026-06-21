@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.6"
+
+package:
+  name: django-todo
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-todo/django_todo-${{ version }}.tar.gz
+  sha256: 6dc00b23dc976c3136b5254ce046932adc692ba0d6403e66beafd882f60405ce
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.0
+    - factory_boy
+    - titlecase
+    - bleach
+    - django-autocomplete-light
+    - html2text
+
+tests:
+  - python:
+      imports:
+        - todo
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A multi-user, multi-group task management and assignment system for Django.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: http://django-todo.org
+  repository: https://github.com/shacker/django-todo
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-todo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-todo
+  cfe-purls:
+    - pkg:conda/django-todo@${{ version }}
+    - pkg:pypi/django-todo@${{ version }}
+  cfe-upstream-repo: https://github.com/shacker/django-todo
+  cfe-upstream-homepage: http://django-todo.org
+  cfe-import-names: [todo]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-todo-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock is still v0/meta.yaml at 2.5.6. Local
+#    # meta.yaml refreshed to mirror the deployed feedstock (clean, 2.5.6);
+#    # this recipe.yaml is the proposed v1 migration, authored alongside.
+#    # Both coexist until the feedstock completes its v0 to v1 switch.
+# package:
+#    # Distribution name is django-todo; sdist filename uses an underscore
+#    # (django_todo-2.5.6.tar.gz) per the hyphen-to-underscore convention.
+# requirements:
+#  host:
+#    # setuptools >=61 + wheel kept in host: pyproject [build-system] declares
+#    # requires = ["setuptools>=61", "wheel"], backend setuptools.build_meta.
+#    # Tightened the feedstock's setuptools >=40.8.0 to match upstream pyproject.
+#  run:
+#    # Reconciled against the 2.5.6 sdist [project.dependencies]: Django>=4.0,
+#    # factory-boy, titlecase, bleach, django-autocomplete-light, html2text.
+#    # Dropped the deployed feedstock run dep faker: it is NOT an upstream-
+#    # declared direct dependency (it is pulled transitively by factory_boy).
+#    # requires-python >=3.9 clamps to the conda-forge 3.10 floor, so python_min
+#    # is omitted from context (default floor).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's single-
+#    # version python test. import todo verified clean with django installed and
+#    # no DJANGO_SETTINGS_MODULE: todo/__init__.py guards on ModuleNotFoundError
+#    # and todo/check.py only registers a lazy check (no settings access at
+#    # import) so the standard python.imports test holds: no package_contents
+#    # escape hatch needed.
+#    # Local build: build phase CLEAN (artifact written to noarch/), but the
+#    # python_min.* (3.10) test leg solve is BLOCKED (G40): conda-forge
+#    # django-autocomplete-light latest builds (4.0.1, 5.0.0) require
+#    # python >=3.11; last py3.10-compatible build is 3.12.1. The full run-dep
+#    # set + django-todo resolve cleanly on python 3.11 (verified). This is a
+#    # pre-existing external ecosystem skew that affects the DEPLOYED feedstock
+#    # identically (its v0 test pins python {python_min} = 3.10 with unbounded
+#    # django-autocomplete-light). Recipe is sound; not loosened/refloored.
+####

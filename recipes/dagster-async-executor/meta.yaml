@@ -1,6 +1,5 @@
 {% set name = "dagster-async-executor" %}
-{% set version = "0.0.1" %}
-{% set python_min = "3.10" %}
+{% set version = "0.0.3" %}
 
 package:
   name: {{ name|lower }}
@@ -8,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dagster_async_executor-{{ version }}.tar.gz
-  sha256: f702e2719b5dff1a1aa1d03a1548cafd0ccb32623b6c278e0fecbdc44a49de70
+  sha256: 6991133945ff20f41614d40938af5d72f8610279fbb0e5a7ead6b6900aad0690
 
 build:
   noarch: python

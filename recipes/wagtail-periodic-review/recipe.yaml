@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+
+package:
+  name: wagtail-periodic-review
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-periodic-review/wagtail_periodic_review-${{ version }}.tar.gz
+  sha256: c56e89abcb475e30255510e0be30228761e5ea6c3d6cbad3916637ff44607164
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=6.3
+    - python-dateutil >=2.8,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - wagtail_periodic_review
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A Wagtail package for periodic page content reviews
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/torchbox/wagtail-periodic-review
+  repository: https://github.com/torchbox/wagtail-periodic-review
+  documentation: https://github.com/torchbox/wagtail-periodic-review/blob/main/CHANGELOG.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-periodic-review
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-periodic-review
+  cfe-purls:
+    - pkg:conda/wagtail-periodic-review@${{ version }}
+    - pkg:pypi/wagtail-periodic-review@${{ version }}
+  cfe-upstream-repo: https://github.com/torchbox/wagtail-periodic-review
+  cfe-upstream-homepage: https://github.com/torchbox/wagtail-periodic-review
+  cfe-import-names: [wagtail_periodic_review]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-periodic-review-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml -> 404). meta.yaml
+#    # kept as the deployed-state mirror at 0.5.0; this recipe.yaml is the v1 we
+#    # maintain locally and the proposed migration. cfe-forge-recipe-updates-
+#    # needed carries meta-yaml-to-recipe-yaml (the feedstock owes the migration).
+# context:
+#    # python_min omitted from context -- upstream pyproject requires-python
+#    # ">=3.9" is below the conda-forge 3.10 floor, so the default floor wins;
+#    # let conda-forge-pinning supply it. (classifiers list 3.9-3.13.)
+# source:
+#    # sdist filename uses the underscore form (wagtail_periodic_review-0.5.0.tar.gz);
+#    # path-2 segment stays hyphenated (distribution name).
+# about:
+#    # upstream repo moved zerolab -> torchbox (pyproject [project.urls] Source);
+#    # about.* uses the authoritative torchbox URLs. The deployed feedstock
+#    # meta.yaml still points at zerolab (kept verbatim in the mirror).
+# requirements:
+#  host:
+#    # flit-core >=3.2,<4 + pip -- flit_core backend (pyproject [build-system]);
+#    # no setuptools/wheel needed (G8). Mirrors the deployed feedstock host block.
+#  run:
+#    # wagtail >=6.3 and python-dateutil >=2.8,<3.0.0 are upstream-declared
+#    # (pyproject [project.dependencies]). The dateutil <3.0.0 upper bound is
+#    # load-bearing under pip_check: true -- kept, not dropped. Bumped from the
+#    # stale local 0.2.0 recipe's wagtail >=4.1.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtail_periodic_review/__init__.py
+#    # contains only VERSION/__version__ (no app-registry import at top level), so
+#    # the standard python.imports test holds standalone -- no package_contents
+#    # Django escape hatch needed.
+####

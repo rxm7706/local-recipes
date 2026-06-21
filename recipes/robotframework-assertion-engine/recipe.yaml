@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: robotframework-assertion-engine
-  version: "3.0.3"
+  version: "5.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: robotframework-assertion-engine
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_assertion_engine-${{ version }}.tar.gz
-  sha256: 1c608d4c69d96520986a1ddc6def0fc7f7e849520f1e6882a633b51dbb98fd88
+  url: https://pypi.org/packages/source/r/robotframework-assertion-engine/robotframework_assertion_engine-${{ version }}.tar.gz
+  sha256: f8c1dd2757064808a432558f46a395da942f223d74a110419fc689992f9d600e
 
 build:
   number: 0
@@ -21,26 +20,80 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core
     - pip
+    - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - robotframework >=5.0.1
-    - robotframework-pythonlibcore >=3.0.0,<5.0.0
+    - python >=${{ python_min }}
+    - robotframework >=6.1.1
+    - robotframework-pythonlibcore >=3.0.0
 
 tests:
   - python:
       imports:
         - assertionengine
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Generic way to create meaningful and easy to use assertions for the Robot Framework libraries.
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/MarketSquare/AssertionEngine
+  repository: https://github.com/MarketSquare/AssertionEngine
+  documentation: https://github.com/MarketSquare/AssertionEngine
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: robotframework-assertion-engine
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: robotframework-assertion-engine
+  cfe-purls:
+    - pkg:conda/robotframework-assertion-engine@${{ version }}
+    - pkg:pypi/robotframework-assertion-engine@${{ version }}
+  cfe-upstream-repo: https://github.com/MarketSquare/AssertionEngine
+  cfe-upstream-homepage: https://github.com/MarketSquare/AssertionEngine
+  cfe-import-names: [assertionengine]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/robotframework-assertion-engine-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock still v0/meta.yaml at 5.0.1. meta.yaml
+#    # kept as faithful deployed-state mirror; this recipe.yaml is the proposed
+#    # v1 migration at the same version. Local 2.0.0 -> 5.0.1 MAJOR bump.
+# requirements:
+#  host:
+#    # poetry-core REPLACED with setuptools: upstream 5.0.1 pyproject.toml has
+#    # NO build-system table, so pip uses the legacy setuptools backend driven
+#    # by setup.cfg / PKG-INFO in the sdist. The deployed feedstock still lists
+#    # poetry-core but it is inert (no build-system means setuptools). This is
+#    # the dependency-fix the feedstock owes (see cfe-forge-recipe-updates-needed).
+#  run:
+#    # robotframework bumped >=5.0.1 -> >=6.1.1 to match upstream 5.0.1
+#    # project.dependencies; dropped the feedstock's speculative python <4.0
+#    # upper bound (not upstream-declared) -- broad >=python_min floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; import name is assertionengine
+#    # (G7/G10 divergence: distribution robotframework-assertion-engine ->
+#    # import assertionengine), cached in cfe-import-names.
+####

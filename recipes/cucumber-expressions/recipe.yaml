@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  name: cucumber-expressions
-  version: "18.1.0"
-
+  version: "20.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: cucumber-expressions
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cucumber_expressions-${{ version }}.tar.gz
-  sha256: b6f31c15def3821ed8313d7c59c3ccd6e5b607ee65b86ad33140a43e8858d1f2
+  url: https://pypi.org/packages/source/c/cucumber-expressions/cucumber_expressions-${{ version }}.tar.gz
+  sha256: 5cbd4012c66584aa82ada990a6e7cb131274796e132e905d27d95ae9a2ca0f48
 
 build:
   number: 0
@@ -22,7 +20,7 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - uv-build >=0.9.0,<0.10.0
+    - uv-build >=0.11.0,<0.12.0
     - pip
   run:
     - python >=${{ python_min }},<4.0
@@ -32,14 +30,69 @@ tests:
       imports:
         - cucumber_expressions
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Cucumber Expressions - a simpler alternative to Regular Expressions
-  homepage: https://github.com/cucumber/cucumber-expressions
   license: MIT
   license_file: LICENSE
+  homepage: https://github.com/cucumber/cucumber-expressions
+  repository: https://github.com/cucumber/cucumber-expressions
+  summary: Cucumber Expressions - a simpler alternative to Regular Expressions
+  description: |
+    Cucumber Expressions is a simpler alternative to Regular Expressions
+    with a syntax that is easy to read, even for people who are not
+    programmers.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cucumber-expressions
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cucumber-expressions
+  cfe-purls:
+    - pkg:conda/cucumber-expressions@${{ version }}
+    - pkg:pypi/cucumber-expressions@${{ version }}
+  cfe-upstream-repo: https://github.com/cucumber/cucumber-expressions
+  cfe-upstream-homepage: https://github.com/cucumber/cucumber-expressions
+  cfe-import-names: [cucumber_expressions]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cucumber-expressions-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Feedstock is still v0 (meta.yaml); local recipe.yaml is the proposed
+#    # v0->v1 migration. meta.yaml mirror coexists until the feedstock migrates.
+# context:
+#    # python_min omitted — upstream requires-python is >=3.10 (the conda-forge
+#    # default floor), so no override is needed.
+# requirements:
+#  host:
+#    # uv-build is the conda-forge package for upstream's uv_build backend.
+#    # Range >=0.11.0,<0.12.0 mirrors the current sdist pyproject.toml
+#    # [build-system] requires. The deployed feedstock (mirrored in meta.yaml)
+#    # still carries the older >=0.9.0,<0.10.0 range; recipe-regenerate +
+#    # dependency-fix updates land it in the migration PR.
+#  run:
+#    # No runtime deps — pure-stdlib package; upstream declares no
+#    # [project.dependencies].
+####

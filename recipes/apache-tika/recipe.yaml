@@ -1,0 +1,208 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.2.3"
+
+recipe:
+  name: apache-tika-split
+  version: ${{ version }}
+
+source:
+  - url: https://repo1.maven.org/maven2/org/apache/tika/tika-core/${{ version }}/tika-core-${{ version }}.jar
+    sha256: 4b697ae09a76b50102750816e9bd3ad26d89161ba65ddabdeee7ef3830428fd1
+    target_directory: tika-core
+  - url: https://repo1.maven.org/maven2/org/apache/tika/tika-app/${{ version }}/tika-app-${{ version }}.jar
+    sha256: 80c20c085e2c0976bbd55969e5bf90dda2b7155db31068639fbc871d0369e7e7
+    target_directory: tika-app
+  - url: https://repo1.maven.org/maven2/org/apache/tika/tika-parsers-standard-package/${{ version }}/tika-parsers-standard-package-${{ version }}.jar
+    sha256: 6c780c1bd3ef42d7df386a2587a71c7f92e8cc84c3f18d3548b049352dd04851
+    target_directory: tika-parsers
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: apache-tika-core
+      version: ${{ version }}
+    build:
+      noarch: generic
+      script:
+        - if: unix
+          then:
+            - mkdir -p ${PREFIX}/share/java/apache-tika
+            - cp ${SRC_DIR}/tika-core/tika-core-${{ version }}.jar ${PREFIX}/share/java/apache-tika/
+          else:
+            - mkdir %PREFIX%\share\java\apache-tika
+            - copy %SRC_DIR%\tika-core\tika-core-${{ version }}.jar %PREFIX%\share\java\apache-tika\
+    requirements:
+      run:
+        - openjdk >=17
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f ${PREFIX}/share/java/apache-tika/tika-core-${{ version }}.jar
+            else:
+              - if not exist %PREFIX%\share\java\apache-tika\tika-core-${{ version }}.jar exit 1
+    about:
+      homepage: https://tika.apache.org/
+      license: Apache-2.0
+      summary: Apache Tika core library for content detection and analysis
+      description: |
+        The Apache Tika™ toolkit detects and extracts metadata and text
+        from over a thousand different file types (such as PPT, XLS, and PDF).
+        This package contains the core API library.
+      repository: https://github.com/apache/tika
+
+  - package:
+      name: apache-tika-parsers
+      version: ${{ version }}
+    build:
+      noarch: generic
+      script:
+        - if: unix
+          then:
+            - mkdir -p ${PREFIX}/share/java/apache-tika
+            - cp ${SRC_DIR}/tika-parsers/tika-parsers-standard-package-${{ version }}.jar ${PREFIX}/share/java/apache-tika/
+          else:
+            - mkdir %PREFIX%\share\java\apache-tika
+            - copy %SRC_DIR%\tika-parsers\tika-parsers-standard-package-${{ version }}.jar %PREFIX%\share\java\apache-tika\
+    requirements:
+      run:
+        - ${{ pin_subpackage('apache-tika-core', exact=True) }}
+        - openjdk >=17
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f ${PREFIX}/share/java/apache-tika/tika-parsers-standard-package-${{ version }}.jar
+            else:
+              - if not exist %PREFIX%\share\java\apache-tika\tika-parsers-standard-package-${{ version }}.jar exit 1
+    about:
+      homepage: https://tika.apache.org/
+      license: Apache-2.0
+      summary: Apache Tika standard parsers package
+      description: |
+        The Apache Tika™ toolkit detects and extracts metadata and text
+        from over a thousand different file types (such as PPT, XLS, and PDF).
+        This package contains the standard parsers service configuration.
+        Note: For standalone use, consider apache-tika-app which bundles all dependencies.
+      repository: https://github.com/apache/tika
+
+  - package:
+      name: apache-tika-app
+      version: ${{ version }}
+    build:
+      noarch: generic
+      script:
+        - if: unix
+          then:
+            - mkdir -p ${PREFIX}/share/java/apache-tika
+            - mkdir -p ${PREFIX}/bin
+            - cp ${SRC_DIR}/tika-app/tika-app-${{ version }}.jar ${PREFIX}/share/java/apache-tika/
+            - sed "s/@VERSION@/${{ version }}/g" ${RECIPE_DIR}/tika.sh > ${PREFIX}/bin/tika
+            - chmod +x ${PREFIX}/bin/tika
+          else:
+            - mkdir %PREFIX%\share\java\apache-tika
+            - mkdir %PREFIX%\Scripts
+            - copy %SRC_DIR%\tika-app\tika-app-${{ version }}.jar %PREFIX%\share\java\apache-tika\
+            - powershell -Command "(Get-Content %RECIPE_DIR%\tika.bat) -replace '@VERSION@', '${{ version }}' | Set-Content %PREFIX%\Scripts\tika.bat"
+    requirements:
+      run:
+        - openjdk >=17
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f ${PREFIX}/share/java/apache-tika/tika-app-${{ version }}.jar
+              - test -f ${PREFIX}/bin/tika
+              - tika --help
+            else:
+              - if not exist %PREFIX%\share\java\apache-tika\tika-app-${{ version }}.jar exit 1
+              - if not exist %PREFIX%\Scripts\tika.bat exit 1
+    about:
+      homepage: https://tika.apache.org/
+      license: Apache-2.0
+      summary: Apache Tika application - complete bundled toolkit
+      description: |
+        The Apache Tika™ toolkit detects and extracts metadata and text
+        from over a thousand different file types (such as PPT, XLS, and PDF).
+        This package contains the complete bundled application with all parsers
+        including PDF support. Run with: tika --help (or java -jar
+        $CONDA_PREFIX/share/java/apache-tika/tika-app-${{ version }}.jar)
+      repository: https://github.com/apache/tika
+
+  - package:
+      name: apache-tika
+      version: ${{ version }}
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('apache-tika-app', exact=True) }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - tika --help
+              - test -f ${PREFIX}/share/java/apache-tika/tika-app-${{ version }}.jar
+            else:
+              - if not exist %PREFIX%\share\java\apache-tika\tika-app-${{ version }}.jar exit 1
+    about:
+      homepage: https://tika.apache.org/
+      license: Apache-2.0
+      summary: Apache Tika - content detection and analysis toolkit (metapackage)
+      description: |
+        The Apache Tika™ toolkit detects and extracts metadata and text
+        from over a thousand different file types (such as PPT, XLS, and PDF).
+        This is a metapackage that installs the complete Apache Tika toolkit.
+      repository: https://github.com/apache/tika
+
+about:
+  homepage: https://tika.apache.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Apache Tika - content detection and analysis toolkit
+  description: |
+    The Apache Tika™ toolkit detects and extracts metadata and text
+    from over a thousand different file types (such as PPT, XLS, and PDF).
+    All of these file formats can be parsed through a single interface,
+    making Tika useful for search engine indexing, content analysis,
+    translation, and much more.
+  repository: https://github.com/apache/tika
+  documentation: https://tika.apache.org/documentation.html
+
+extra:
+  feedstock-name: apache-tika
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apache-tika
+  cfe-upstream-registry: maven
+  cfe-upstream-name: org.apache.tika:tika-app
+  cfe-purls:
+    - pkg:conda/apache-tika@${{ version }}
+    - pkg:maven/org.apache.tika/tika-app@${{ version }}
+  cfe-upstream-repo: https://github.com/apache/tika
+  cfe-upstream-homepage: https://tika.apache.org/
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# outputs (apache-tika-core):
+#  requirements:
+#    run:
+#        # NOTE: tika-core's Maven deps slf4j-api and commons-io are not packaged
+#        # on conda-forge. SLF4J is a logging facade; consumers supply a binding
+#        # on their own classpath at runtime (standard JVM practice).
+#        # TODO: add `slf4j-api >=2.0` and `commons-io >=2.18` once they exist on conda-forge.
+####

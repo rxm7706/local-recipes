@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: install-jdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/install-jdk/install_jdk-${{ version }}.tar.gz
+  sha256: 2bfd53caf660e4916df0215a5715519dcb9547fa2a5f07421fd97a8046851eaa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: install-jdk allows you to easily install the latest Java OpenJDK version
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/jyksnw/install-jdk
+  repository: https://github.com/jyksnw/install-jdk
+  documentation: https://github.com/jyksnw/install-jdk
+  description: |
+    install-jdk allows you to easily install the latest Java OpenJDK
+    version. Supports OpenJDK builds from Adoptium (previously
+    AdoptOpenJDK), Corretto, and Zulu.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: install-jdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: install-jdk
+  cfe-purls:
+    - pkg:conda/install-jdk@${{ version }}
+    - pkg:pypi/install-jdk@${{ version }}
+  cfe-upstream-repo: https://github.com/jyksnw/install-jdk
+  cfe-upstream-homepage: https://github.com/jyksnw/install-jdk
+  cfe-import-names: [jdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/install-jdk-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml;
+#    # meta.yaml kept as a faithful mirror of the deployed feedstock (1.1.0,
+#    # build.number 1). This recipe.yaml is the proposed v0-to-v1 migration,
+#    # built/tested locally. cfe-forge-recipe-updates-needed carries
+#    # meta-yaml-to-recipe-yaml so the feedstock owes the migration.
+# context:
+#    # python_min omitted: upstream requires-python is >=3.6,<4.0, below the
+#    # conda-forge 3.10 floor, so the default floor applies. Let pinning supply it.
+# requirements:
+#  host:
+#    # poetry-core only (build-backend = poetry.core.masonry.api). No redundant
+#    # wheel/setuptools (G8) — upstream declares a single PEP 517 backend.
+#  run:
+#    # python-only: pyproject [tool.poetry.dependencies] declares just python
+#    # and PKG-INFO carries no Requires-Dist. Dropped the deployed feedstock's
+#    # speculative python <4.0 upper bound (poetry ^3.6 expansion, not a real
+#    # upstream cap); broad >=python_min floor is correct.
+# tests:
+#    # import name is jdk (verified jdk/__init__.py in the sdist), NOT
+#    # install_jdk — the local meta.yaml had the wrong import before; the
+#    # deployed feedstock and this recipe both use jdk (G7).
+# about:
+#    # license_file: LICENSE.md ships at the sdist root (pattern 1, resolves
+#    # from the extracted archive).
+####

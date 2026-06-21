@@ -1,0 +1,141 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.3"
+
+package:
+  name: django-sql-explorer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-sql-explorer/django_sql_explorer-${{ version }}.tar.gz
+  sha256: ce2da0e8c67eab0b22e0fa7dfc0caf189735029bdc83e33dceef009be787a08a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+    - sqlparse >=0.4.0
+    - requests >=2.2
+    - django-cryptography-django5 ==2.2
+    - cryptography >=42.0
+  run_constraints:
+    - matplotlib-base >=3.9
+    - boto3 >=1.30.0
+    - celery >=4.0
+    - xlsxwriter >=1.3.6
+    - openai >=1.6.1
+    - python-dateutil >=2.9
+    - pandas >=2.2
+
+tests:
+  - python:
+      imports:
+        - explorer
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A pluggable Django app that allows users (admins) to execute SQL, view, and export the results.
+  license: MIT
+  license_file:
+    - LICENSE
+    - explorer/ee/LICENSE
+  homepage: https://www.sqlexplorer.io
+  repository: https://github.com/chrisclark/django-sql-explorer
+  documentation: https://django-sql-explorer.readthedocs.io/en/latest/
+  description: |
+    Django SQL Explorer is a pluggable Django app that allows users
+    (typically admins) to execute SQL queries directly from the browser,
+    view and download the results, share queries, and explore the data
+    with an optional AI-assisted SQL editor.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-sql-explorer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-sql-explorer
+  cfe-purls:
+    - pkg:conda/django-sql-explorer@${{ version }}
+    - pkg:pypi/django-sql-explorer@${{ version }}
+  cfe-upstream-repo: https://github.com/chrisclark/django-sql-explorer
+  cfe-upstream-homepage: https://www.sqlexplorer.io
+  cfe-import-names: [explorer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: false:django-cryptography-django5-poisoned-dist-info-G28
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-sql-explorer-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock is STILL v0/meta.yaml. meta.yaml mirrors
+#    # the deployed feedstock at 5.3 (build.number 1); this recipe.yaml is the
+#    # proposed v1 migration at the same 5.3 version. Both coexist until the
+#    # feedstock migrates. Import name is "explorer", NOT django_sql_explorer
+#    # (G7/G10 divergence — cached in cfe-import-names).
+# requirements:
+#  host:
+#    # No pyproject.toml; setup.py + setup.cfg project, so setuptools is the
+#    # build backend (kept in host, matches the deployed feedstock host block).
+#    # Dropped the feedstock's "sphinx" host entry — it is a docs-only dep, not
+#    # a wheel-build requirement; not needed for pip install . under
+#    # --no-build-isolation.
+#  run:
+#    # Base run deps mirror upstream setup.py requirements/base.txt exactly:
+#    # Django>=3.2, sqlparse>=0.4.0, requests>=2.2,
+#    # django-cryptography-django5==2.2 (upstream-declared exact pin, on
+#    # conda-forge at 2.2; load-bearing under pip_check), cryptography>=42.0.
+#  run_constraints:
+#    # Upstream's five optional extras flattened into run_constraints (conda has
+#    # no extras): charts (matplotlib>=3.9 -> matplotlib-base), snapshots
+#    # (boto3>=1.30.0 + celery>=4.0), xls (xlsxwriter>=1.3.6), assistant
+#    # (openai>=1.6.1), uploads (python-dateutil>=2.9 + pandas>=2.2; boto3
+#    # already listed). Not installed by default; only constrained when present.
+# about:
+#    # Shipping both LICENSE and explorer/ee/LICENSE — the explorer/ee/ dir
+#    # carries an additional MIT-with-reserved-rights notice that the upstream
+#    # sdist packages. More complete than the deployed feedstock (LICENSE only);
+#    # the EE notice should be packaged.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. explorer/__init__.py is
+#    # lightweight (version info only; no module-level Django imports), so
+#    # "import explorer" does NOT trip AppRegistryNotReady — standard
+#    # python.imports test holds, no package_contents escape hatch needed.
+#    # pip_check DISABLED (G28): conda-forge django-cryptography-django5 is
+#    # conda-labeled 2.2 but its bundled wheel dist-info reports Version
+#    # 2.2.dev20251005171540 (setuptools_scm dev-version leak, systemic across
+#    # all 5 channel builds _0.._4). Upstream django-sql-explorer pins
+#    # django-cryptography-django5==2.2 exactly, so pip check compares ==2.2
+#    # against the poisoned 2.2.dev... dist-info and false-fails. Verified the
+#    # full installed graph is otherwise consistent (the dev-version line is the
+#    # ONLY pip check failure). The deployed v0 feedstock independently disabled
+#    # pip check for the same reason (commands: #- pip check is commented out).
+#    # Durable fix is in django-cryptography-django5-feedstock (sed the real
+#    # version into the wheel METADATA, per G24); no in-recipe fix possible.
+####

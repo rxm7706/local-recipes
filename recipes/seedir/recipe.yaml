@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: seedir
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/seedir/seedir-${{ version }}.tar.gz
+  sha256: 9fb82a6133f92a711bb2d46b2a142f56712e242a4fc03fef2fea9418d307efe2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - seedir = seedir.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - natsort
+
+tests:
+  - python:
+      imports:
+        - seedir
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - seedir --help
+
+about:
+  summary: Package for creating, editing, and reading folder tree diagrams.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/earnestt1234/seedir
+  repository: https://github.com/earnestt1234/seedir
+  description: |
+    Package for creating, editing, and reading folder tree diagrams.
+    seedir produces ASCII-art style folder tree diagrams from a directory
+    on disk, and can also parse such diagrams back into folder structures.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: seedir
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: seedir
+  cfe-purls:
+    - pkg:conda/seedir@${{ version }}
+    - pkg:pypi/seedir@${{ version }}
+  cfe-upstream-repo: https://github.com/earnestt1234/seedir
+  cfe-upstream-homepage: https://github.com/earnestt1234/seedir
+  cfe-import-names: [seedir]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/seedir-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml.
+#    # meta.yaml refreshed to faithfully mirror the deployed feedstock at 0.5.1;
+#    # recipe.yaml is the proposed v0-to-v1 migration. cfe-forge-recipe-updates-needed
+#    # carries meta-yaml-to-recipe-yaml — the feedstock owes the migration.
+# build:
+#  python:
+#    entry_points:
+#      # seedir console script (seedir.__main__:main) — mirrors the deployed
+#      # feedstock's build.entry_points; verified seedir/__main__.py ships in sdist.
+# requirements:
+#  host:
+#    # setuptools.build_meta backend (pyproject build-system requires=["setuptools"]);
+#    # host carries setuptools + pip. No redundant wheel (G8).
+#  run:
+#    # natsort is the only hard dep ([project.dependencies]); the emoji extra is
+#    # an optional-dependency, intentionally dropped (G25 — only flatten activated
+#    # extras). No upstream upper bound to mirror.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; plus a script test exercising the
+#    # seedir CLI entry point (pinned to python_min so the lowest floor is verified).
+# context:
+#    # python_min omitted from context — upstream declares no requires-python, so
+#    # the conda-forge default 3.10 floor applies; let pinning supply python_min.
+####

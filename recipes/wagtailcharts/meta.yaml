@@ -1,5 +1,5 @@
 {% set name = "wagtailcharts" %}
-{% set version = "0.6.2" %}
+{% set version = "0.6.3" %}
 
 package:
   name: {{ name|lower }}
@@ -7,19 +7,20 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtailcharts-{{ version }}.tar.gz
-  sha256: 841c54bda4eb6170414f3baf2aa183db0062aba0366a8453efe0d5b407a01204
+  sha256: 9ceb7deb7af7fba851bcb1092ca4915343715615060f713c4a937d352a269a80
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
     - wagtail >=3.0
 
 test:
@@ -29,6 +30,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/overcastsoftware/wagtailcharts/

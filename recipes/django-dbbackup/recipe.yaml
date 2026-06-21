@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.3.0"
+
+package:
+  name: django-dbbackup
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-dbbackup/django_dbbackup-${{ version }}.tar.gz
+  sha256: 2c880dba7650539e8a724174fedb5213062c4fcda3aa09e1c5f3f573192106cb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - django >=5.0
+
+tests:
+  - python:
+      imports:
+        - dbbackup
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Management commands to help backup and restore a project database and media.
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  homepage: https://github.com/Archmonger/django-dbbackup
+  repository: https://github.com/Archmonger/django-dbbackup
+  documentation: https://archmonger.github.io/django-dbbackup
+  description: |
+    django-dbbackup provides Django management commands to help back up and
+    restore a project's database and media files, with support for compression,
+    encryption, and multiple storage backends.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-dbbackup
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-dbbackup
+  cfe-purls:
+    - pkg:conda/django-dbbackup@${{ version }}
+    - pkg:pypi/django-dbbackup@${{ version }}
+  cfe-upstream-repo: https://github.com/Archmonger/django-dbbackup
+  cfe-upstream-homepage: https://github.com/Archmonger/django-dbbackup
+  cfe-import-names: [dbbackup]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-dbbackup-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1; bumped local stale v0 meta.yaml (4.0.2)
+#    # to a fresh modern v1 recipe.yaml at 5.3.0 and deleted the stale meta.yaml.
+#    # MAJOR bump 4.0.2 to 5.3.0: upstream moved jazzband to Archmonger; Django
+#    # floor jumped 2.2 to 5.0; the old pytz run-dep was dropped upstream;
+#    # sdist filename now uses underscores (django_dbbackup-VER.tar.gz).
+# requirements:
+#  host:
+#    # hatchling-only build backend (pyproject [build-system].requires =
+#    # ["hatchling"]); dropped the deployed feedstock's redundant setuptools
+#    # host dep (G8 — only the declared backend plus pip belongs in host).
+#  run:
+#    # deps reconciled against the 5.3.0 sdist [project.dependencies]: just
+#    # django >=5.0. pytz removed (gone upstream). Dropped the feedstock's
+#    # speculative python <4.0 upper bound (not upstream-declared; upstream
+#    # only declares requires-python >=3.10).
+# about:
+#    # license renamed LICENSE.txt to LICENSE.md upstream; SPDX BSD-3-Clause
+#    # confirmed from pyproject license field. homepage/repository updated to
+#    # the new Archmonger org.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. dbbackup/__init__.py is trivial
+#    # (docstring plus __version__, no eager Django imports), so the standard
+#    # python.imports test holds standalone — no package_contents escape hatch.
+# context:
+#    # python_min OMITTED — upstream requires-python >=3.10 is the conda-forge
+#    # default floor; let conda-forge-pinning supply python_min.
+####

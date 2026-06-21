@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.2"
+
+package:
+  name: datastar-py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datastar-py/datastar_py-${{ version }}.tar.gz
+  sha256: c6f86e2b48c3a5ea08570a4e958267307a5ffc0253c259f054dc3bb6de8a2c0e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - datastar_py
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Helper functions and classes for the Datastar library
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://data-star.dev/
+  repository: https://github.com/starfederation/datastar-python
+  documentation: https://github.com/starfederation/datastar-python/blob/develop/README.md
+  description: |
+    Helper functions and classes for the Datastar hypermedia framework. Provides
+    Server-Sent Event generators plus optional integration shims for FastAPI,
+    Starlette, Sanic, Quart, Django, Litestar, and FastHTML (each loaded only
+    when its framework is present).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datastar-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datastar-py
+  cfe-purls:
+    - pkg:conda/datastar-py@${{ version }}
+    - pkg:pypi/datastar-py@${{ version }}
+  cfe-upstream-repo: https://github.com/starfederation/datastar-python
+  cfe-upstream-homepage: https://data-star.dev/
+  cfe-import-names: [datastar_py]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datastar-py-feedstock
+  cfe-forge-recipe-updates-needed: [dependency-fix]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1; authored recipe.yaml at 1.0.2 (MAJOR bump
+#    # 0.4.3 -> 1.0.2), deleted stale local meta.yaml (was 0.4.3 v0).
+# context:
+#    # python_min OMITTED: upstream 1.0.2 requires-python is ">=3.10" (relaxed from
+#    # the 0.4.x ">=3.11"). The deployed feedstock still carries a stale
+#    # python_min '3.11' from the 0.4.x era -> a feedstock regression (see
+#    # cfe-forge-recipe-updates-needed: dependency-fix). Default 3.10 floor is correct.
+# requirements:
+#  run:
+#    # ZERO hard run deps: 1.0.2 pyproject [project.dependencies] is [] (empty).
+#    # The deployed feedstock over-lists fastapi/sanic/starlette/quart/django in
+#    # run: -- those are framework-integration SHIMS (src/datastar_py/<fw>.py,
+#    # lazily imported only when that fw is present) and live in upstream's
+#    # [dependency-groups].dev, NOT [project.dependencies] or optional-deps. They
+#    # are NOT hard runtime deps; dropping them is the dependency-fix the feedstock
+#    # needs. Also dropped the speculative "python <4.0" upper bound (not
+#    # upstream-declared).
+# about:
+#    # license_file: LICENSE.md -- upstream sdist ships LICENSE.md (license-files =
+#    # ["LICENSE.md"] in pyproject), not LICENSE; resolved from the archive
+#    # (canonical pattern 1). The recipe-dir LICENSE (v0 leftover) is unused.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; top-level import datastar_py pulls
+#    # only stdlib-backed .attributes + .sse (no framework imports, G27 clear), so
+#    # the standard python.imports test holds with zero run deps.
+####

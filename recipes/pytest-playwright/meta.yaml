@@ -1,5 +1,5 @@
 {% set name = "pytest-playwright" %}
-{% set version = "0.5.2" %}
+{% set version = "0.8.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pytest_playwright-{{ version }}.tar.gz
-  sha256: c6d603df9e6c50b35f057b0528e11d41c0963283e98c257267117f5ed6ba1924
+  sha256: 7888d4a2443160c82e0c506c437076679f86b36d1910427250d90fbf1843a981
 
 build:
   noarch: python
@@ -16,13 +16,14 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools-scm
+    - setuptools
     - pip
   run:
-    - python >=3.8
-    - playwright >=1.18
-    - pytest >=6.2.4,<9.0.0
+    - python >={{ python_min }}
+    - playwright-python >=1.18
+    - pytest >=6.2.4,<10.0.0
     - pytest-base-url >=1.0.0,<3.0.0
     - python-slugify >=6.0.0,<9.0.0
 
@@ -32,6 +33,7 @@ test:
   commands:
     - pip check
   requires:
+    - python {{ python_min }}
     - pip
 
 about:

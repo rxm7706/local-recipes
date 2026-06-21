@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.4"
+
+package:
+  name: vizro-mcp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/vizro-mcp/vizro_mcp-${{ version }}.tar.gz
+  sha256: b5f819c6c97cb73a7c3ec237d5bb7d5a042371d5e6a013025523834ea8d9b765
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+  python:
+    entry_points:
+      - vizro-mcp = vizro_mcp:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pydantic
+    - httpx >=0.28.1
+    - mcp >=1.6.0
+    - vizro >=0.1.46
+    - click >=8.1.7
+    # Refer to https://github.com/mckinsey/vizro/blob/main/vizro-mcp/pyproject.toml#L21
+    # "pandas[html,parquet,excel]"
+    - pandas
+    # Refer to https://github.com/pandas-dev/pandas/blob/main/pyproject.toml#L68
+    # html = ['beautifulsoup4>=4.12.3', 'html5lib>=1.1', 'lxml>=4.9.2']
+    - beautifulsoup4 >=4.12.3
+    - html5lib >=1.1
+    - lxml >=4.9.2
+    # excel = ['odfpy>=1.4.1', 'openpyxl>=3.1.2', 'python-calamine>=0.1.7', 'pyxlsb>=1.0.10', 'xlrd>=2.0.1', 'xlsxwriter>=3.2.0']
+    - odfpy >=1.4.1
+    - openpyxl >=3.1.2
+    - python-calamine >=0.1.7
+    - pyxlsb >=1.0.10
+    - xlrd >=2.0.1
+    - xlsxwriter >=3.2.0
+    # parquet = ['pyarrow>=10.0.1']
+    - pyarrow >=10.0.1
+
+tests:
+  - python:
+      imports:
+        - vizro_mcp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: MCP server to help create Vizro dashboards and charts
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://vizro.mckinsey.com/
+  repository: https://github.com/mckinsey/vizro
+  documentation: https://vizro.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vizro-mcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vizro-mcp
+  cfe-purls:
+    - pkg:conda/vizro-mcp@${{ version }}
+    - pkg:pypi/vizro-mcp@${{ version }}
+  cfe-upstream-repo: https://github.com/mckinsey/vizro
+  cfe-upstream-homepage: https://vizro.mckinsey.com/
+  cfe-import-names: [vizro_mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/vizro-mcp-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    vizro-mcp is published on conda-forge but the feedstock is still v0/meta.yaml.
+#    This recipe.yaml is the proposed v1 migration; meta.yaml is kept alongside as a
+#    faithful mirror of the deployed v0 feedstock until that feedstock migrates.
+# context:
+#    python_min omitted from context: upstream requires-python is >=3.10, the
+#    conda-forge default floor; conda-forge-pinning supplies python_min.
+# requirements:
+#  run:
+#    upstream pyproject declares mcp[cli]>=1.6.0 and pandas[html,parquet,excel].
+#    The [cli] extra (python-dotenv, typer) is NOT imported by vizro_mcp at runtime
+#    and is not flattened here, matching the CI-green deployed feedstock. The pandas
+#    extras ARE flattened (beautifulsoup4 / html5lib / lxml / odfpy / openpyxl /
+#    python-calamine / pyxlsb / xlrd / xlsxwriter / pyarrow) because conda has no
+#    extras mechanism; the per-extra comments above each group mirror the feedstock.
+#  about:
+#    license_file LICENSE.txt ships in the sdist (canonical license-file pattern 1).
+####

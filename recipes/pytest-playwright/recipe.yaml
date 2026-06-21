@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.0"
+
+package:
+  name: pytest-playwright
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-playwright/pytest_playwright-${{ version }}.tar.gz
+  sha256: 7888d4a2443160c82e0c506c437076679f86b36d1910427250d90fbf1843a981
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - playwright-python >=1.18
+    - pytest >=6.2.4,<10.0.0
+    - pytest-base-url >=1.0.0,<3.0.0
+    - python-slugify >=6.0.0,<9.0.0
+
+tests:
+  - python:
+      imports:
+        - pytest_playwright
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A pytest wrapper with fixtures for Playwright to automate web browsers
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/playwright-pytest
+  repository: https://github.com/microsoft/playwright-pytest
+  description: |
+    A pytest wrapper with fixtures for Playwright to automate web browsers.
+    Provides context-managed Playwright fixtures (page, browser, context)
+    so end-to-end browser tests can be written as ordinary pytest functions.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-playwright
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-playwright
+  cfe-purls:
+    - pkg:conda/pytest-playwright@${{ version }}
+    - pkg:pypi/pytest-playwright@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/playwright-pytest
+  cfe-upstream-homepage: https://github.com/microsoft/playwright-pytest
+  cfe-import-names: [pytest_playwright]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-playwright-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is still v0/meta.yaml at 0.8.0. Kept the
+#    # deployed meta.yaml (clean upstream mirror) and authored this v1 recipe.yaml
+#    # alongside at the same version. Feedstock owes the v0-to-v1 migration
+#    # (cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml).
+# context:
+#    # python_min omitted: upstream requires-python is >=3.10, the conda-forge
+#    # default floor, so conda-forge-pinning supplies python_min. No override needed.
+# requirements:
+#  host:
+#    # setuptools + setuptools-scm kept: pyproject build-system requires
+#    # setuptools==75.4.0 + setuptools_scm==8.1.0 (version derived via scm).
+#  run:
+#    # playwright-python used (not the PyPI name playwright) to match the deployed
+#    # feedstock's existing run dep. Both playwright and playwright-python exist on
+#    # conda-forge for the same Microsoft/playwright-python upstream; matching the
+#    # feedstock preserves continuity for the future v0-to-v1 migration PR.
+#    # pytest kept in run: this IS a pytest plugin, so pytest is a genuine runtime
+#    # dependency (optimize_recipe DEP-001 is a false positive here).
+#    # Upstream-declared upper bounds (pytest <10.0.0, pytest-base-url <3.0.0,
+#    # python-slugify <9.0.0) kept verbatim: load-bearing under pip_check (G24).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version test python pin.
+####

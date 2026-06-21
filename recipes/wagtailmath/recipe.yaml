@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.1"
+
+package:
+  name: wagtailmath
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtailmath/wagtailmath-${{ version }}.tar.gz
+  sha256: a4bc2bb3dd9ca0069b439a7315fd18685ccdffc38044f8027950b6fd42adecd3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - wagtail >=5.2
+
+tests:
+  - python:
+      imports:
+        - wagtailmath
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Wagtail StreamField block for rendering mathematical equations
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/wagtail-nest/wagtail-polymath
+  repository: https://github.com/wagtail-nest/wagtail-polymath
+  documentation: https://github.com/wagtail-nest/wagtail-polymath/blob/main/docs/
+  description: |
+    Wagtail StreamField block for rendering mathematical equations in the
+    Wagtail CMS via MathJax.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtailmath
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtailmath
+  cfe-purls:
+    - pkg:conda/wagtailmath@${{ version }}
+    - pkg:pypi/wagtailmath@${{ version }}
+  cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-polymath
+  cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-polymath
+  cfe-import-names: [wagtailmath]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtailmath-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (meta.yaml). meta.yaml kept as a
+#    # faithful mirror of the deployed v0 (1.3.1, build 1, license MIT per the
+#    # feedstock's own buggy record); this recipe.yaml is the maintained v1 the
+#    # feedstock owes (cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml).
+# about:
+#    # license corrected to BSD-3-Clause here (the LICENSE text is "BSD 3-Clause
+#    # License" and the PyPI classifier is "OSI Approved :: BSD License"). The
+#    # deployed feedstock meta.yaml records MIT, which is wrong; the meta.yaml
+#    # mirror keeps MIT to stay faithful to what is actually deployed.
+#    # homepage/repository point at wagtail-nest/wagtail-polymath (PyPI-
+#    # authoritative project.urls; JamesRamm/wagtailmath now 301-redirects).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. wagtailmath imports cleanly standalone
+#    # (Wagtail block registers at app-load, not import), so the standard
+#    # python.imports test holds — no package_contents escape hatch needed.
+####

@@ -1,5 +1,5 @@
 {% set name = "wagtail-ai" %}
-{% set version = "2.1.2" %}
+{% set version = "3.1.0" %}
 {% set python_min = "3.11" %}
 
 package:
@@ -8,12 +8,12 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_ai-{{ version }}.tar.gz
-  sha256: 0ef4300790f30fd4bf3c7bc958d991554e88ea2cfa92b53d381dbeb76e122fc5
+  sha256: 377a8a179c5272a31b8b9ea26a2b5c792a3a5ffecc4b364b5df2ea472582958d
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
+  number: 0
 
 requirements:
   host:
@@ -23,7 +23,8 @@ requirements:
   run:
     - python >={{ python_min }}
     - django >=4.2
-    - wagtail >=5.2
+    - wagtail >=7.1
+    - django-ai-core
     - llm >=0.12
 
 test:

@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.1"
+
+package:
+  name: django-solo
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-solo/django_solo-${{ version }}.tar.gz
+  sha256: ca3b2e44dbb4726446941ca8d765c247123f709f051d07e62eacf97330ffde01
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - typing_extensions >=4.0.1
+
+tests:
+  - python:
+      imports:
+        - solo
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Django Solo helps working with singletons
+  license: CC-BY-3.0
+  license_file: LICENSE
+  homepage: https://github.com/lazybird/django-solo/
+  repository: https://github.com/lazybird/django-solo/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-solo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-solo
+  cfe-purls:
+    - pkg:conda/django-solo@${{ version }}
+    - pkg:pypi/django-solo@${{ version }}
+  cfe-upstream-repo: https://github.com/lazybird/django-solo
+  cfe-upstream-homepage: https://github.com/lazybird/django-solo
+  cfe-import-names: [solo]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-solo-feedstock
+  cfe-forge-recipe-updates-needed: [recipe-regenerate]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1; authored fresh recipe.yaml at 2.5.1,
+#    # deleted stale local meta.yaml (was 2.2.0). cfe-forge-recipe-updates-needed
+#    # is recipe-regenerate: the deployed feedstock lags at 2.2.0-era deps and
+#    # carries grayskull regressions this recipe corrects (see notes below).
+# package:
+#    # literal package.name and literal pypi.org source.url (CFEP-25 modern
+#    # shape); feedstock still uses the older context.name + name[0] chain.
+# context:
+#    # python_min OMITTED — upstream requires-python is >=3.10 (the conda-forge
+#    # default floor), so let conda-forge-pinning supply python_min.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.cfg project, no pyproject.toml; matches
+#    # the deployed feedstock host block.
+#  run:
+#    # django floor bumped 3.2 to 4.2 to match the 2.5.1 sdist requires-dist
+#    # (the feedstock still pins the stale >=3.2). Dropped the feedstock's
+#    # speculative python <4.0 upper bound (not upstream-declared); broad
+#    # >=python_min floor is correct. Added typing_extensions >=4.0.1: upstream
+#    # markers it under python_version < 3.11; listed unconditionally to avoid a
+#    # per-Python selector in a noarch recipe (Migration Protocol guidance, G35).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's single
+#    # python_version. Import name is solo (G7 divergence from dist name
+#    # django-solo), verified against the 2.5.1 sdist top-level __init__.py.
+#    # solo imports cleanly standalone (no DJANGO_SETTINGS_MODULE needed at
+#    # top-level import), so the standard python.imports test holds — no
+#    # package_contents escape hatch.
+####

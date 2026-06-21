@@ -1,0 +1,137 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.40.2"
+
+package:
+  name: burr
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/burr/burr-${{ version }}.tar.gz
+  sha256: 275f3e26a3deede8126c57f78e1e6a0d9940b0c89c0b8ae78ce97a3ae1e2c2a6
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - burr = burr.cli.__main__:cli_run_server
+      - burr-demo = burr.cli.__main__:cli_demo_server
+      - burr-admin-server = burr.cli.__main__:cli_run_server
+      - burr-admin-publish = burr.cli.__main__:cli_build_and_publish
+      - burr-admin-build-ui = burr.cli.__main__:cli_build_ui
+      - burr-admin-generate-demo-data = burr.cli.__main__:cli_generate_demo_data
+      - burr-test-case = burr.cli.__main__:cli_test_case
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - burr
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+        - aiofiles
+        - click
+        - fastapi
+        - fastapi-pagination
+        - fastapi_utils
+        - graphviz
+        - jinja2
+        - loguru
+        - matplotlib
+        - openai
+        - pydantic
+        - pydantic-settings
+        - requests
+        - sf-hamilton
+        - streamlit
+        - uvicorn
+        - aiosqlite
+    script:
+      - pip check
+      - burr --help
+      - burr-demo --help
+      - burr-admin-server --help
+      - burr-admin-publish --help
+      - burr-admin-build-ui --help
+      - burr-admin-generate-demo-data --help
+      - burr-test-case --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/dagworks-inc/burr
+  repository: https://github.com/dagworks-inc/burr
+  documentation: https://burr.dagworks.io/
+  summary: A state machine for data projects
+  description: |
+    Burr makes it easy to develop applications that make decisions
+    (chatbots, agents, simulations, etc...) from simple Python building
+    blocks. Burr works well for any application that uses LLMs, and can
+    integrate with any of your favorite frameworks. Burr includes a UI
+    that can track/monitor/trace your system in real time.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: burr
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: burr
+  cfe-purls:
+    - pkg:conda/burr@${{ version }}
+    - pkg:pypi/burr@${{ version }}
+  cfe-upstream-repo: https://github.com/dagworks-inc/burr
+  cfe-upstream-homepage: https://github.com/dagworks-inc/burr
+  cfe-import-names: [burr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/burr-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T13:40:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # CLASS C2 refresh 0.37.0 -> 0.40.2. Feedstock conda-forge/burr-feedstock
+#    # is already v1 (recipe.yaml, schema_version 1) at 0.40.2; this local
+#    # recipe.yaml mirrors the deployed feedstock and the local meta.yaml was
+#    # deleted (C2: feedstock-already-v1 path). Base pkg has zero runtime deps
+#    # (pyproject [project].dependencies = []); all deps live behind extras.
+# build:
+#    # number: 1 mirrors the deployed feedstock's same-version build.number.
+# requirements:
+#  run:
+#    # Dropped the feedstock's speculative `,<4.0` upper bound; upstream
+#    # requires-python is bare ">=3.9" (clamped to the 3.10 conda-forge floor
+#    # via the default python_min).
+# tests:
+#    # Second test mirrors the feedstock's tracking-server/streamlit extra deps
+#    # so the 7 CLI `--help` entry points are exercised under pip_check.
+####

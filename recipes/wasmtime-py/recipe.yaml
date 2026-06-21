@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: wasmtime
-  version: "40.0.0"
+  version: "45.0.0"
 
 package:
-  name: ${{ name }}-py
+  name: wasmtime-py
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 48417c59f13be145184cff61fef61bb52556ea0e7417c25bec09af2d859745ab
+  url: https://pypi.org/packages/source/w/wasmtime/wasmtime-${{ version }}.tar.gz
+  sha256: 2ad4bf7ca286ceea35c1e420d10b368d7f83faf9a5ffde87b4ee334a9b7f55f3
 
 build:
   number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
     - ${{ compiler('c') }}
-    #- ${{ stdlib('c') }}
-    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
     - ${{ compiler('rust') }}
     - cargo-bundle-licenses
     - if: build_platform != target_platform
@@ -31,6 +30,7 @@ requirements:
     - python
     - pip
     - setuptools
+    - setuptools-git-versioning >=2.0,<3
     - wheel
   run:
     - python
@@ -40,7 +40,6 @@ tests:
       imports:
         - wasmtime
       pip_check: true
-      python_version: ${{ python_min }}.*
 
 about:
   homepage: https://github.com/bytecodealliance/wasmtime-py
@@ -58,3 +57,54 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wasmtime-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wasmtime
+  cfe-purls:
+    - pkg:conda/wasmtime-py@${{ version }}
+    - pkg:pypi/wasmtime@${{ version }}
+  cfe-upstream-repo: https://github.com/bytecodealliance/wasmtime-py
+  cfe-upstream-homepage: https://github.com/bytecodealliance/wasmtime-py
+  cfe-import-names: [wasmtime]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wasmtime-py-feedstock
+  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T09:14:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # PyPI distribution name is `wasmtime`; the conda-forge package is
+#    # `wasmtime-py` (disambiguates the pyo3 Python binding from the
+#    # underlying Rust runtime). Import name is `wasmtime` (G7/G10).
+# build:
+#    # The PyPI sdist uses an in-tree PEP-517 build backend
+#    # (ci/_custom_build/backend.py) that runs ci/download-wasmtime.py to
+#    # fetch a precompiled wasmtime C-API binary (.so/.dll/.dylib) from
+#    # github.com/bytecodealliance/wasmtime/releases for the target platform,
+#    # then setuptools packages it. This is a network fetch during build, not
+#    # a from-source Rust compile — there is no Cargo.toml / .rs / .cpp in the
+#    # sdist. The build is fast (download, not compile). The compiler('rust')
+#    # + cargo-bundle-licenses build deps mirror the upstream feedstock recipe.
+# requirements:
+#  build:
+#    # No compiler('cxx') — feedstock omits it and the sdist ships no C++
+#    # source (.ci_support carries no cxx_compiler variant). The prior local
+#    # recipe's cxx compiler was speculative; dropped to match the feedstock.
+# tests:
+#    # Compiled recipe (per-Python builds bundling a native lib) — not
+#    # noarch:python — so the import test uses the plain compiled-test form,
+#    # not the CFEP-25 [python_min, "*"] cross-version matrix.
+####

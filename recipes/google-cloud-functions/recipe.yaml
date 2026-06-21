@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.23.0"
+
+package:
+  name: google-cloud-functions
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google-cloud-functions/google_cloud_functions-${{ version }}.tar.gz
+  sha256: 09ab9d9f6dd231b0ca91800be54c366aadd06900de890f2689f8f303684f9639
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.11.0,<3.0.0
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    - grpcio >=1.33.2,<2.0.0
+    - proto-plus >=1.22.3,<2.0.0
+    - protobuf >=4.25.8,<8.0.0
+    - grpc-google-iam-v1 >=0.14.0,<1.0.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.functions_v1
+        - google.cloud.functions_v2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Google Cloud Functions API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/googleapis/google-cloud-python
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-functions
+  documentation: https://cloud.google.com/functions/docs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-functions
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-functions
+  cfe-purls:
+    - pkg:conda/google-cloud-functions@${{ version }}
+    - pkg:pypi/google-cloud-functions@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python
+  cfe-import-names: [google.cloud.functions, google.cloud.functions_v1, google.cloud.functions_v2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-functions-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 1.23.0. Local meta.yaml refreshed to faithfully mirror the deployed
+#    # still-v0 feedstock (clean); this recipe.yaml is the proposed v1
+#    # migration, authored alongside. Both coexist until the feedstock migrates.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml,
+#    # G8); matches the deployed feedstock host block.
+#  run:
+#    # google-cloud-python is a monorepo; this is the google-cloud-functions
+#    # GAPIC client (pure-Python). Deps mirror upstream setup.py install_requires
+#    # and the deployed feedstock run block. Per-Python upper-floor markers in
+#    # the sdist (grpcio >=1.75.1 for py3.14, proto-plus >=1.25.0 for py3.13)
+#    # are collapsed to the broadest lower bound (G35): a single noarch artifact
+#    # cannot carry per-Python run selectors, and the install-time solver picks
+#    # a compatible build per Python. The google-api-core[grpc] extra pulls
+#    # grpcio + grpcio-status transitively; grpcio is listed directly (gcf
+#    # declares it), grpcio-status arrives via google-api-core (mirrors the
+#    # working deployed feedstock set, verified by pip check on conda-forge).
+# tests:
+#    # CFEP-25 triad. Import the functions_v1/functions_v2 GAPIC namespaces
+#    # (the meaningful importable top-levels) rather than the bare google
+#    # namespace the v0 meta.yaml tests, to actually exercise the client.
+####

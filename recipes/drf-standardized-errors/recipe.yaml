@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.0"
+
+package:
+  name: drf-standardized-errors
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/drf-standardized-errors/drf_standardized_errors-${{ version }}.tar.gz
+  sha256: 77b367955af7ed246db12d299a5a75a71eccef54dae4ef69ead29f5fb01be192
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+    - djangorestframework >=3.12
+
+tests:
+  - python:
+      imports:
+        - drf_standardized_errors
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Standardize your API error responses.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ghazi-git/drf-standardized-errors
+  repository: https://github.com/ghazi-git/drf-standardized-errors
+  documentation: https://drf-standardized-errors.readthedocs.io/en/latest/
+  description: |
+    drf-standardized-errors transforms Django REST Framework error responses
+    into a single, predictable, standardized format, with support for
+    customizing error codes and generating OpenAPI schema for the error
+    responses.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: drf-standardized-errors
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: drf-standardized-errors
+  cfe-purls:
+    - pkg:conda/drf-standardized-errors@${{ version }}
+    - pkg:pypi/drf-standardized-errors@${{ version }}
+  cfe-upstream-repo: https://github.com/ghazi-git/drf-standardized-errors
+  cfe-upstream-homepage: https://github.com/ghazi-git/drf-standardized-errors
+  cfe-import-names: [drf_standardized_errors]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/drf-standardized-errors-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is STILL v0 (meta.yaml) at 0.16.0; local
+#    # meta.yaml refreshed to mirror the deployed v0 feedstock (bumped 0.12.5 ->
+#    # 0.16.0), and this v1 recipe.yaml authored alongside it. Both coexist;
+#    # meta.yaml stays until the feedstock completes its v0->v1 migration.
+# requirements:
+#  host:
+#    # flit-core build backend (pyproject [build-system] requires flit_core
+#    # >=3.2,<4); no setuptools needed (G8).
+#  run:
+#    # Dropped drf-spectacular + inflection that the deployed v0 feedstock
+#    # carries in run: -- PyPI 0.16.0 [project.dependencies] is ONLY
+#    # django + djangorestframework; drf-spectacular>=0.29.0 and inflection
+#    # live under the non-activated [openapi] extra (G25). pip_check confirms
+#    # the base-only run set is correct.
+#    # Dropped the deployed feedstock's speculative absence of an upper bound is
+#    # fine; broad >=python_min floor is correct (requires-python >=3.8 is below
+#    # the conda-forge 3.10 floor, so python_min stays at the default -- omitted
+#    # from context).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. drf_standardized_errors imports
+#    # cleanly standalone (it is a DRF exception-handler library; importing the
+#    # top-level package does not require DJANGO_SETTINGS_MODULE), so the
+#    # standard python.imports test holds -- no package_contents escape hatch.
+####

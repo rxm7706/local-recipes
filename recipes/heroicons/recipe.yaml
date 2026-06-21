@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.14.0"
+
+package:
+  name: heroicons
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/heroicons/heroicons-${{ version }}.tar.gz
+  sha256: e55ecc0a839cf872f55977d2dd04a1855bfdf080bed1d13db5264b0060e65a96
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - heroicons
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Use heroicons in your Django and Jinja templates.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/adamchainz/heroicons
+  repository: https://github.com/adamchainz/heroicons
+  documentation: https://github.com/adamchainz/heroicons#readme
+  description: |
+    heroicons provides a set of free MIT-licensed high-quality SVG icons
+    for use in your web projects, wired up for use in Django and Jinja
+    templates via template tags.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: heroicons
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: heroicons
+  cfe-purls:
+    - pkg:conda/heroicons@${{ version }}
+    - pkg:pypi/heroicons@${{ version }}
+  cfe-upstream-repo: https://github.com/adamchainz/heroicons
+  cfe-upstream-homepage: https://github.com/adamchainz/heroicons
+  cfe-import-names: [heroicons]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/heroicons-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock is still v0/meta.yaml at 2.14.0;
+#    # meta.yaml kept as a faithful mirror of the deployed feedstock,
+#    # recipe.yaml authored alongside as the proposed v1 migration. Local
+#    # 2.6.0 bumped to 2.14.0 to match the deployed feedstock version.
+# requirements:
+#  host:
+#    # setuptools kept in host alongside pip — pyproject.toml declares
+#    # build-backend setuptools.build_meta (requires setuptools>=77); matches
+#    # the deployed feedstock host block.
+#  run:
+#    # No base runtime deps. Upstream declares only EXTRAS (django>=2.2 under
+#    # [django], jinja2>=2.8 under [jinja]); neither extra is activated, so per
+#    # the conda no-extras rule they are dropped from run:. Floor is the
+#    # default conda-forge 3.10 (requires-python >=3.10), so python_min is
+#    # omitted from context.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. The top-level heroicons
+#    # package imports only stdlib (functools/contextlib/copy/
+#    # importlib.resources/xml.etree/zipfile) — the Django/Jinja code lives in
+#    # heroicons.templatetags and heroicons.jinja, NOT the top-level __init__.
+#    # So bare `import heroicons` succeeds without DJANGO_SETTINGS_MODULE; the
+#    # standard python.imports test holds, no package_contents escape hatch.
+####

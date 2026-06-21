@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.1"
+
+package:
+  name: djangocms-frontend
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/djangocms-frontend/djangocms_frontend-${{ version }}.tar.gz
+  sha256: 85c4c85cd8c464a6f943d011a1c4aab6902829fd2aad36b9268b151fdb499f6b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django-cms >=3.7
+    - django-entangled >=0.6
+    - django-filer >=1.7
+    - djangocms-attributes-field >=4
+    - djangocms-link >=5
+    - easy-thumbnails
+
+tests:
+  - python:
+      imports:
+        - djangocms_frontend
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Adds abstract User Interface items as plugins to django CMS.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-cms/djangocms-frontend
+  repository: https://github.com/django-cms/djangocms-frontend
+  documentation: https://djangocms-frontend.readthedocs.io
+  description: |
+    djangocms-frontend is a plugin bundle for django CMS that provides
+    abstract user-interface items (rows, columns, cards, links, alerts,
+    carousels, and more) as CMS plugins, with Bootstrap 5 support by
+    default.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangocms-frontend
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangocms-frontend
+  cfe-purls:
+    - pkg:conda/djangocms-frontend@${{ version }}
+    - pkg:pypi/djangocms-frontend@${{ version }}
+  cfe-upstream-repo: https://github.com/django-cms/djangocms-frontend
+  cfe-upstream-homepage: https://github.com/django-cms/djangocms-frontend
+  cfe-import-names: [djangocms_frontend]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangocms-frontend-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: conda-forge feedstock is still v0/meta.yaml at
+#    # 2.3.1; meta.yaml mirrors the deployed feedstock verbatim, recipe.yaml
+#    # is the proposed v1 migration (cfe-forge-recipe-updates-needed names
+#    # meta-yaml-to-recipe-yaml).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py-based project (no pyproject.toml,
+#    # no [project] table); matches the deployed feedstock host block.
+#  run:
+#    # reconciled against the 2.3.1 wheel METADATA base dependencies:
+#    # django-cms / django-entangled / django-filer / djangocms-attributes-field
+#    # / djangocms-link / easy-thumbnails. The cms-3 / cms-4 / djangocms-icon /
+#    # static-ace extras are NOT activated, so per G25 their deps are dropped.
+#    # django is pulled transitively via django-cms; the feedstock's vestigial
+#    # django >=2.2 and djangocms-text-ckeditor >=3.1.0 (not in the 2.3.1 base
+#    # requires_dist) are dropped from the v1 run block.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. The standard python.imports test
+#    # holds for djangocms_frontend (plugins register lazily via apphooks; the
+#    # top-level package import does not require DJANGO_SETTINGS_MODULE), so no
+#    # package_contents escape hatch is needed.
+####

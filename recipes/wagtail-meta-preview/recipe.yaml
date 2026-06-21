@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.1"
+
+package:
+  name: wagtail-meta-preview
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-meta-preview/wagtail_meta_preview-${{ version }}.tar.gz
+  sha256: 327ac63c8f7ff19e53ed5bd7f68d46406d6442f3ad85dd76bb77a1b404e9fcfe
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=5.2
+
+tests:
+  - python:
+      imports:
+        - wagtail_meta_preview
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Add preview panels for meta data to wagtail
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Frojd/wagtail-meta-preview
+  repository: https://github.com/Frojd/wagtail-meta-preview
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-meta-preview
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-meta-preview
+  cfe-purls:
+    - pkg:conda/wagtail-meta-preview@${{ version }}
+    - pkg:pypi/wagtail-meta-preview@${{ version }}
+  cfe-upstream-repo: https://github.com/Frojd/wagtail-meta-preview
+  cfe-upstream-homepage: https://github.com/Frojd/wagtail-meta-preview
+  cfe-import-names: [wagtail_meta_preview]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-meta-preview-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml -> 404). meta.yaml
+#    # kept as the deployed-state mirror at 4.2.1; this recipe.yaml is the v1 we
+#    # maintain locally and the proposed migration. cfe-forge-recipe-updates-
+#    # needed carries meta-yaml-to-recipe-yaml (the feedstock owes the migration).
+# context:
+#    # python_min omitted from context — upstream setup.py declares no
+#    # python_requires (classifiers list 3.9-3.13); default conda-forge 3.10
+#    # floor is correct, let conda-forge-pinning supply it.
+# source:
+#    # sdist filename uses the underscore form (wagtail_meta_preview-4.2.1.tar.gz);
+#    # path-2 segment stays hyphenated (distribution name).
+# requirements:
+#  host:
+#    # setuptools + wheel kept in host — setup.py/setup.cfg project (no
+#    # pyproject.toml); mirrors the deployed feedstock host block.
+#  run:
+#    # wagtail >=5.2 is upstream-declared (setup.py install_requires, no upper
+#    # bound); bumped from the stale local 4.0.0 recipe's wagtail >=4.1.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtail_meta_preview/__init__.py is
+#    # empty (no app-registry import at top level), so the standard python.imports
+#    # test holds standalone -- no package_contents Django escape hatch needed.
+####

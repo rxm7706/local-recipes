@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.1"
+
+package:
+  name: flake8-pylint
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flake8-pylint/flake8_pylint-${{ version }}.tar.gz
+  sha256: 7741f9a63b05768fc4c641c7f6389bc33c91f9ed9bfd59c01540bbb7acc180e3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - flake8
+    - pylint
+
+tests:
+  - python:
+      imports:
+        - flake8_pylint
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Flake8 plugin that runs PyLint.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/orsinium-labs/flake8-pylint
+  repository: https://github.com/orsinium-labs/flake8-pylint
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8-pylint
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-pylint
+  cfe-purls:
+    - pkg:conda/flake8-pylint@${{ version }}
+    - pkg:pypi/flake8-pylint@${{ version }}
+  cfe-upstream-repo: https://github.com/orsinium-labs/flake8-pylint
+  cfe-upstream-homepage: https://github.com/orsinium-labs/flake8-pylint
+  cfe-import-names: [flake8_pylint]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flake8-pylint-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock is STILL v0/meta.yaml at 0.2.1; meta.yaml kept as a
+#    # faithful mirror of the deployed feedstock, recipe.yaml is the proposed v1.
+#    # cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml (the
+#    # feedstock owes the v0-to-v1 migration).
+# source:
+#    # literal pypi.org URL; sdist filename uses underscores
+#    # (flake8_pylint-) while the path-2 distribution segment stays hyphenated.
+# requirements:
+#  host:
+#    # flit-core >=2,<4 is the declared build backend (pyproject [build-system]);
+#    # no setuptools/wheel needed (G8). Matches the deployed feedstock host block.
+#  run:
+#    # flake8 + pylint are the only [project.dependencies]; lint/test extras not
+#    # activated. requires-python >=3.6 floors to conda-forge default 3.10, so
+#    # python_min is omitted from context.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version test. flake8_pylint imports cleanly standalone.
+####

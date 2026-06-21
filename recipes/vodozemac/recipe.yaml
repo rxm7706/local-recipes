@@ -1,10 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Generated from python-maturin path; PyO3/maturin detected via sdist
-# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
-# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
-# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
-# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
 schema_version: 1
+# PyO3/maturin recipe (build driven by maturin via pip; not the cargo-install CLI pattern).
 
 context:
   version: "0.9.0.post2"

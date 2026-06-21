@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.2"
+
+package:
+  name: wagtail-feedback
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-feedback/wagtail_feedback-${{ version }}.tar.gz
+  sha256: b040de020f32dbee548a8abb289eeecc217a93f8ed3d567d6584e5b2fa8d6961
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=40.8.0
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - wagtail >=4.2
+    - django-filter >=23.2
+
+tests:
+  # CFEP-25-justified: Django/Wagtail app — `import feedback` accesses
+  # django.conf.settings at module import (feedback/options.py reads
+  # getattr(settings, ...)), raising ImproperlyConfigured without
+  # DJANGO_SETTINGS_MODULE configured. The test env can't resolve a
+  # configured Django project, so the standard python.imports test fails.
+  - package_contents:
+      site_packages:
+        - feedback
+
+about:
+  summary: A Django/Wagtail app to easily ask users for feedback.
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  homepage: https://pypi.org/project/wagtail-feedback/
+  repository: https://github.com/Nigel2392/wagtail_feedback
+  description: |
+    A Django/Wagtail app to easily ask users for feedback. Provides
+    pluggable feedback models, forms, filters, and backends for
+    collecting and managing user feedback within a Wagtail site.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-feedback
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-feedback
+  cfe-purls:
+    - pkg:conda/wagtail-feedback@${{ version }}
+    - pkg:pypi/wagtail-feedback@${{ version }}
+  cfe-upstream-repo: https://github.com/Nigel2392/wagtail_feedback
+  cfe-upstream-homepage: https://pypi.org/project/wagtail-feedback/
+  cfe-import-names: [feedback]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: false:django-app-import-needs-settings
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-feedback-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml->404). meta.yaml
+#    # kept as the clean un-annotated mirror at deployed version 1.3.2; this
+#    # recipe.yaml is the proposed v1. updates-needed carries
+#    # meta-yaml-to-recipe-yaml (the feedstock owes the migration).
+# context:
+#    # python_min omitted from context — upstream Requires-Python >=3.8 is
+#    # below the conda-forge 3.10 floor, so the default floor applies.
+# requirements:
+#  host:
+#    # setuptools >=40.8.0 kept in host (setup.py/setup.cfg + setuptools
+#    # build-backend, NOT poetry-core/hatchling); mirrors deployed feedstock.
+#  run:
+#    # django-filter >=23.2 added (new upstream dep at 1.3.2; matches the
+#    # deployed feedstock). All three run deps are upstream-declared
+#    # (Requires-Dist Django>=4.2 / Wagtail>=4.2 / django-filter>=23.2);
+#    # no speculative upper pins.
+# tests:
+#    # package_contents.site_packages escape hatch (CFEP-25-justified above)
+#    # because `import feedback` requires configured Django settings. pip_check
+#    # is therefore off in this block (cfe-pip-check reflects this). The
+#    # feedstock's meta.yaml uses a settings.configure() shim + pip check;
+#    # the v1 escape hatch is the CFEP-25-sanctioned equivalent.
+# about:
+#    # license is GPL-2.0-or-later — the in-archive LICENSE file is GPLv2
+#    # (verified); PKG-INFO's "GPL-3.0-only" is a setuptools metadata
+#    # mismatch, so the LICENSE-file value wins (matches the feedstock).
+####

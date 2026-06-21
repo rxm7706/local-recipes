@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.10.10"
+
+package:
+  name: a2wsgi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/a2wsgi/a2wsgi-${{ version }}.tar.gz
+  sha256: a5bcffb52081ba39df0d5e9a884fc6f819d92e3a42389343ba77cbf809fe1f45
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - a2wsgi
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/a2wsgi/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Convert WSGI app to ASGI app or ASGI app to WSGI app.
+  repository: https://github.com/abersheeran/a2wsgi
+  documentation: https://github.com/abersheeran/a2wsgi#readme
+  description: |
+    a2wsgi converts a WSGI application to an ASGI application (via
+    WSGIMiddleware) or an ASGI application to a WSGI application (via
+    ASGIMiddleware). It is pure Python and depends only on the standard
+    library. Unlike converters built on uvicorn/starlette or hypercorn,
+    a2wsgi streams request and response bodies rather than buffering them
+    in memory, avoiding memory-limit problems on large payloads.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: a2wsgi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: a2wsgi
+  cfe-purls:
+    - pkg:conda/a2wsgi@${{ version }}
+    - pkg:pypi/a2wsgi@${{ version }}
+  cfe-upstream-repo: https://github.com/abersheeran/a2wsgi
+  cfe-upstream-homepage: https://github.com/abersheeran/a2wsgi
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/a2wsgi-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

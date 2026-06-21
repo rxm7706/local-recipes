@@ -2,17 +2,16 @@
 schema_version: 1
 
 context:
-  name: podman-desktop
-  version: "1.24.2"
-  nodejs_min: "24"
+  version: "1.28.2"
+  nodejs_min: "26"
 
 package:
-  name: ${{ name|lower }}
+  name: podman-desktop
   version: ${{ version }}
 
 source:
   url: https://github.com/podman-desktop/podman-desktop/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: b14e5a46e348996387e6cced27789f10c95a0791c9a1cadb2c60382e9e1ed2fd
+  sha256: 2e0505600cd0e2dce655f70737f7aa5a18dbdbf78ed34a7eda6041c79e4dd24c
 
 build:
   number: 0
@@ -20,11 +19,6 @@ build:
   skip:
     - not (linux or win or osx)
     - not (x86_64 or arm64)
-  script:
-    - if: unix
-      then: bash $RECIPE_DIR/build.sh
-    - if: win
-      then: call %RECIPE_DIR%\build.bat
   # Disable binary relocation - Electron apps are self-contained and pre-built binaries
   # don't have header padding for install_name_tool on macOS
   dynamic_linking:
@@ -34,34 +28,34 @@ requirements:
   build:
     # Node.js build environment
     - nodejs ${{ nodejs_min }}.*
+    # pnpm package manager (used by Podman Desktop)
+    - pnpm
     # Python for node-gyp (required for native module compilation)
     - python 3.12.*
+    # Compilers and standard library (all platforms)
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    # make (Linux and macOS)
+    - if: not win
+      then:
+        - make
     # Linux-specific build requirements
     - if: linux
       then:
-        - ${{ compiler('c') }}        # C compiler for native modules
-        - ${{ compiler('cxx') }}      # C++ compiler for native modules
-        - sysroot_linux-64            # C standard library
-        - make                        # Build tool
         - pkg-config                  # Package configuration
-        - libgl-devel                 # OpenGL for GPU rendering
-        - libxkbfile                  # Keyboard mapping
-        - libsecret                   # Keychain integration
     # Windows-specific build requirements
     - if: win
       then:
-        - ${{ compiler('c') }}        # MSVC C compiler
-        - ${{ compiler('cxx') }}      # MSVC C++ compiler
         - m2-base                     # MSYS2 utilities
-    # macOS-specific build requirements
-    - if: osx
-      then:
-        - ${{ compiler('c') }}        # Clang C compiler
-        - ${{ compiler('cxx') }}      # Clang C++ compiler
-        - make                        # Build tool
 
   host:
     - nodejs ${{ nodejs_min }}.*
+    - if: linux
+      then:
+        - libgl-devel                 # OpenGL for GPU rendering
+        - libxkbfile                  # Keyboard mapping
+        - libsecret                   # Keychain integration
 
   run:
     - nodejs ${{ nodejs_min }}.*
@@ -72,27 +66,10 @@ requirements:
         - kubernetes-client    # kubectl and Kubernetes client tools
 
 tests:
-  - script:
-      # Podman Desktop is a GUI Electron app - don't run it in headless tests
-      # Just verify the launcher exists and is executable
-      - if: linux
-        then:
-          - test -x $PREFIX/bin/podman-desktop
-          - test -f $PREFIX/lib/podman-desktop/podman-desktop
-      - if: osx
-        then:
-          - test -x $PREFIX/bin/podman-desktop
-          - test -d "$PREFIX/lib/Podman Desktop.app"
-      - if: win
-        then:
-          - if exist "%SCRIPTS%\podman-desktop.bat" (exit 0) else (exit 1)
-
   - package_contents:
       bin:
         - if: unix
           then: podman-desktop
-        - if: win
-          then: podman-desktop.bat
       files:
         - if: linux
           then: lib/podman-desktop/podman-desktop
@@ -100,6 +77,11 @@ tests:
           then: lib/Podman Desktop.app/Contents/MacOS/Podman Desktop
         - if: win
           then: "Library/lib/podman-desktop/Podman Desktop.exe"
+        - Menu/podman-desktop.json
+        - if: linux
+          then: Menu/podman-desktop.png
+        - if: osx
+          then: Menu/podman-desktop.icns
 
 about:
   homepage: https://podman-desktop.io
@@ -124,4 +106,56 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - pb01ka
+    - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: podman-desktop
+  cfe-upstream-registry: github
+  cfe-upstream-name: podman-desktop/podman-desktop
+  cfe-purls:
+    - pkg:conda/podman-desktop@${{ version }}
+    - pkg:github/podman-desktop/podman-desktop@v${{ version }}
+  cfe-upstream-repo: https://github.com/podman-desktop/podman-desktop
+  cfe-upstream-homepage: https://podman-desktop.io/
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/podman-desktop-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - Podman requires either Admin privileges, WSL2 or Hyper-V enabled with the user added to Hyper-V Administrators group function on windows.
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# Header:
+#    # Windows users at Institute have no way to run containers locally. WSL2 is not authorized, and while Podman is approved software, it requires admin privilege escalation to install — which developers do not have. Podman requires either WSL2 or Hyper-V to function.
+#    # Without local container testing, developers must push through the entire (slow) CI pipeline to a dev server just to verify their containerized Java/JavaScript apps work.;
+#     # Current State
+#     #
+#     #    Institute Windows 10 Enterprise laptops report "Hyper-V enabled"
+#     #    Institute Windows 11 laptops report "Hypervisor detected"
+#     #    Jean should be receiving a Windows 11 laptop soon for further testing
+#     #    Podman is available on conda-forge but cannot be used without a working hypervisor backend
+#     #
+#     # Proposed Options
+#     # Option 1: Add developers to Hyper-V Administrators group (Recommended starting point)
+#     #
+#     #     Institute IT adds developers to the Hyper-V Administrators group (MS docs)
+#     #     Developers install Podman via conda-forge
+#     #     podman machine init works without admin escalation
+#     #
+#     # Trade-off: Grants developers broad VM management access, which may be a security concern for a financial institution.
+#     # Option 2: IT pre-provisions a Podman VM (More secure, more complex)
+#     #
+#     #     Hyper-V already enabled (done)
+#     #     IT runs a script to create a pre-configured Linux VM for Podman
+#     #     IT grants individual developer access to that specific VM:
+#     #
+#     #     Grant-VMConnectAccess -VMName "podman-machine" -UserName "Institute \jane.developer"
+#     #
+#     #     (MS docs)
+#     #     Developers install Podman via conda-forge
+#     #
+#     # Trade-off: More secure but requires IT scripting, maintenance, and buy-in from Institute.

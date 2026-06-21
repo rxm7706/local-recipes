@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.13.5"
+
+package:
+  name: django-admin-rangefilter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-admin-rangefilter/django_admin_rangefilter-${{ version }}.tar.gz
+  sha256: 3134e9e877f59ccad5949cd25cd2db9bf20d170fd8070be584875fdca96d3a14
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - rangefilter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: django-admin-rangefilter app, add the filter by a custom date range on the admin UI.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/silentsokolov/django-admin-rangefilter
+  repository: https://github.com/silentsokolov/django-admin-rangefilter
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-admin-rangefilter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-admin-rangefilter
+  cfe-purls:
+    - pkg:conda/django-admin-rangefilter@${{ version }}
+    - pkg:pypi/django-admin-rangefilter@${{ version }}
+  cfe-upstream-repo: https://github.com/silentsokolov/django-admin-rangefilter
+  cfe-upstream-homepage: https://github.com/silentsokolov/django-admin-rangefilter
+  cfe-import-names: [rangefilter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-admin-rangefilter-feedstock
+  cfe-forge-recipe-updates-needed: [recipe-regenerate]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock is already v1; authored fresh recipe.yaml at 0.13.5,
+#    # deleted stale local meta.yaml (was 0.13.2). Modernized the deployed
+#    # feedstock's grayskull-era shape (context.name + name|lower + name[0])
+#    # to literal package.name + literal pypi.org source.url.
+# context:
+#    # python_min omitted — upstream requires-python only excludes 3.0-3.4
+#    # (>=2.7); the conda-forge default 3.10 floor applies. No override needed.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg/pyproject project with no
+#    # build-backend declared (legacy setuptools); matches deployed feedstock.
+#  run:
+#    # django >=4.2 is maintainer-curated: upstream install_requires is EMPTY
+#    # (a Django admin app expects the host app to provide Django), but a conda
+#    # package needs the runtime dep declared. Preserved from deployed feedstock.
+#    # Dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared); broad >=python_min floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. Import name is rangefilter (G7: diverges
+#    # from distribution name django_admin_rangefilter; verified in sdist).
+#    # Django admin filter module imports cleanly standalone (no app-registry
+#    # access at import), so the standard python.imports test holds — no
+#    # package_contents escape hatch needed.
+####

@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.2"
+
+package:
+  name: verlib2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/verlib2/verlib2-${{ version }}.tar.gz
+  sha256: a0a6af9838d8d26c18225a30c8d57fb70714462e3cd29f2451e7982d5a51e21e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=42
+    - versioningit
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - verlib2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A standalone variant of packaging.version, without anything else.
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/pyveci/verlib2
+  repository: https://github.com/pyveci/verlib2
+  description: |
+    A standalone bundle of "distutils.version" and "packaging.version",
+    without anything else. verlib2 vendors the version-handling code from
+    setuptools/packaging so projects can depend on a stable version parser
+    without pulling in the full packaging library.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: verlib2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: verlib2
+  cfe-purls:
+    - pkg:conda/verlib2@${{ version }}
+    - pkg:pypi/verlib2@${{ version }}
+  cfe-upstream-repo: https://github.com/pyveci/verlib2
+  cfe-upstream-homepage: https://github.com/pyveci/verlib2
+  cfe-import-names: [verlib2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/verlib2-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (keep-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 0.3.2. meta.yaml refreshed to faithfully mirror the deployed feedstock;
+#    # this recipe.yaml is the proposed v1 migration (built/tested locally).
+#    # Both files coexist until the feedstock completes its v0 to v1 switch.
+# context:
+#    # python_min omitted from context: upstream requires-python is >=3.6,
+#    # at/below the conda-forge 3.10 floor, so the pinning default applies.
+# requirements:
+#  host:
+#    # setuptools >=42 + versioningit kept in host per upstream pyproject
+#    # build-system requires (setuptools.build_meta backend with versioningit
+#    # for dynamic git-archive versioning); mirrors the deployed feedstock.
+#  run:
+#    # run deps = python only. Upstream's lone dependency
+#    # (importlib-metadata; python_version < "3.8") is gated below the 3.10
+#    # floor so it never applies; the deployed feedstock omits it too.
+# about:
+#    # repository/homepage point at pyveci/verlib2 (current PyPI project_url);
+#    # the v0 feedstock about.home still says panodata/verlib2 (the project
+#    # migrated GitHub orgs). license BSD-2-Clause from the feedstock (PyPI
+#    # license field is null); LICENSE ships in the sdist root (pattern 1).
+####

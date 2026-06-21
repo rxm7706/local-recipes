@@ -96,6 +96,10 @@ extra:
     - pkg:pypi/impit@${{ version }}
   cfe-upstream-repo: https://github.com/apify/impit
   cfe-upstream-homepage: https://apify.github.io/impit/python
+  cfe-import-names: [impit]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -103,6 +107,10 @@ extra:
   cfe-last-checked: 2026-06-19T13:36:19Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-19T17:35:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # build:

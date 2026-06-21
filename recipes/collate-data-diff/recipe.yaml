@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: collate-data-diff
-  version: "0.11.5"
+  version: "0.11.10"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/collate_data_diff-${{ version }}.tar.gz
-  sha256: 98675d8439f7a09f841bcf8fe73f37f764b4c208b148467cb2455c612dbf7562
+  sha256: f13879e644edf4caaa51a0483cb51ab4290a2dfff9a3f4ae10492dc9e72a46b5
 
 build:
   number: 0
@@ -35,6 +35,7 @@ requirements:
     - toml >=0.10.2
     - mysql-connector-python >=9.1
     - dbt-core >=1.0.0,<2.0.0
+    - deepdiff >=8.6.1,<9.0
     - keyring
     - tabulate >=0.9.0
     - urllib3 <2
@@ -43,7 +44,7 @@ requirements:
     - mashumaro >=2.9,<3.11.0
   run_constraints:
     - psycopg2 *
-    - snowflake-connector-python >=3.13.1,<4.0.0
+    - snowflake-connector-python >=3.15.0,<4.0.0
     - cryptography *
     - trino-python-client >=0.314.0
     - presto-python-client *
@@ -67,11 +68,41 @@ tests:
 #      - data-diff --help
 
 about:
-  summary: Command-line tool and Python library to efficiently diff rows across two different databases.
+  homepage: https://pypi.org/project/collate-data-diff/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/datafold/data-diff
+  summary: Command-line tool and Python library to efficiently diff rows across two different databases.
+  repository: https://github.com/datafold/data-diff
+  documentation: https://docs.datafold.com
+  description: |
+    collate-data-diff compares rows across two different databases efficiently,
+    as both a command-line tool and a Python library. It supports cross-database
+    diffing for engines such as PostgreSQL, MySQL, Snowflake, BigQuery, Redshift,
+    Presto/Trino, Oracle, and DuckDB, and integrates with dbt.
+
+    This is Collate's (OpenMetadata) maintained fork of the now-archived
+    datafold/data-diff project; the published distribution declares
+    github.com/datafold/data-diff as its repository of record.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: collate-data-diff
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: collate-data-diff
+  cfe-purls:
+    - pkg:conda/collate-data-diff@${{ version }}
+    - pkg:pypi/collate-data-diff@${{ version }}
+  cfe-upstream-repo: https://github.com/datafold/data-diff
+  cfe-upstream-homepage: https://datafold.com
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/collate-data-diff-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

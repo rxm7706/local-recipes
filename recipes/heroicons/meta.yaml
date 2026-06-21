@@ -1,13 +1,13 @@
 {% set name = "heroicons" %}
-{% set version = "2.6.0" %}
+{% set version = "2.14.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/heroicons-{{ version }}.tar.gz
-  sha256: fd2408c7fa058b35eb1f821aab485ecd0261d7f5ec6544f1dddcb7cb591427bd
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/heroicons-{{ version }}.tar.gz
+  sha256: e55ecc0a839cf872f55977d2dd04a1855bfdf080bed1d13db5264b0060e65a96
 
 build:
   noarch: python
@@ -16,11 +16,11 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -29,6 +29,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/adamchainz/heroicons

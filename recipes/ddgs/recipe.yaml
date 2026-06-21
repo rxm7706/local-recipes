@@ -76,6 +76,10 @@ extra:
     - pkg:pypi/ddgs@${{ version }}
   cfe-upstream-repo: https://github.com/deedy5/ddgs
   cfe-upstream-homepage: https://github.com/deedy5/ddgs
+  cfe-import-names: [ddgs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: blocked-pending-prerequisites
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -84,6 +88,10 @@ extra:
   cfe-last-checked: 2026-06-19T20:25:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:25:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-06-20T01:20:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # requirements:

@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.2"
+
+package:
+  name: daff
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/daff/daff-${{ version }}.tar.gz
+  sha256: 47f0391eda7e2b5011f7ccac006b9178accb465bcb94a2c9f284257fff5d2686
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - daff=daff:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - daff
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/paulfitz/daff
+  summary: Diff and patch tables
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: daff
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: daff
+  cfe-purls:
+    - pkg:conda/daff@${{ version }}
+    - pkg:pypi/daff@${{ version }}
+  cfe-upstream-repo: https://github.com/paulfitz/daff
+  cfe-upstream-homepage: https://github.com/paulfitz/daff
+  cfe-import-names: [daff]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/daff-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    daff is a data-diff / patch CLI for tabular data (paulfitz/daff).
+#    setup.py-based (no pyproject.toml); grayskull flagged "scripts
+#    detected -> not eligible for noarch", but the deployed feedstock
+#    ships noarch:python using build.python.entry_points (daff=daff:main)
+#    instead of a setup.py console_scripts entry — noarch-compatible and
+#    canonical. Matched the feedstock here.
+# build:
+#    number bumped to 1 to match the deployed feedstock's *_1 build for
+#    this version (1.4.2). Entry point preserved.
+# requirements:
+#  host:
+#    setuptools retained (setup.py build backend; matches feedstock host).
+#  run:
+#    python upper bound <4.0 mirrors the deployed feedstock run dep.
+# about:
+#    Dropped grayskull's badge-only description (NPM/PyPI/PHP/Gem badges,
+#    no real prose); feedstock omits description entirely. LICENSE.md
+#    ships in the sdist (canonical license pattern 1).
+####

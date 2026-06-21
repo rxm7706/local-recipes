@@ -1,13 +1,13 @@
 {% set name = "inertia-django" %}
-{% set version = "0.6.0" %}
+{% set version = "1.2.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/inertia_django-{{ version }}.tar.gz
-  sha256: fdaf2557d357b755d7762b3fc0f39864b59071326f6524487ad0af173b4f8ec6
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/inertia_django-{{ version }}.tar.gz
+  sha256: 36511038caf2cbb6f54a08f17dc18fe1dd1b30c712a616672704e395b984f250
 
 build:
   noarch: python
@@ -16,21 +16,22 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<4.0
+    - python {{ python_min }}
     - poetry-core >=1.0.0
     - pip
   run:
-    - python >=3.8.0,<4.0.0
+    - python >={{ python_min }},<4.0.0
     - django >=4
     - requests >=2.0.0,<3.0.0
 
 test:
   imports:
-    - inertia_django
+    - inertia
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/inertiajs/inertia-django

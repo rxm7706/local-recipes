@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.35.2"
+
+package:
+  name: tox-uv
+  version: ${{ version }}
+
+source:
+  # tox-uv-bare provides the actual package code; the tox-uv PyPI dist is a
+  # thin meta wheel (tox_uv_bare + uv). Build the bare sdist under the tox-uv
+  # package name, matching the deployed conda-forge feedstock.
+  url: https://pypi.org/packages/source/t/tox-uv-bare/tox_uv_bare-${{ version }}.tar.gz
+  sha256: 49e28a804c97f23ea17e25859960c0fa78f35bccb7e14344cfd840e89a9aade9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatch-vcs >=0.5
+    - hatchling >=1.28
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - packaging >=26
+    - tox <5,>=4.52.1
+    - typing_extensions >=4.15
+    - uv
+    - tomli >=2.4
+
+tests:
+  - python:
+      imports:
+        - tox_uv
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Integration of uv with tox.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tox-dev/tox-uv
+  repository: https://github.com/tox-dev/tox-uv
+  description: |
+    tox-uv is a tox plugin replacing virtualenv and pip with uv in your tox
+    environments, leveraging uv's speed for environment creation and package
+    installation.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tox-uv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tox-uv-bare
+  cfe-purls:
+    - pkg:conda/tox-uv@${{ version }}
+    - pkg:pypi/tox-uv-bare@${{ version }}
+  cfe-upstream-repo: https://github.com/tox-dev/tox-uv
+  cfe-upstream-homepage: https://github.com/tox-dev/tox-uv
+  cfe-import-names: [tox_uv]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tox-uv-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C: local mirror was meta.yaml v0 at 1.15.0, but the conda-forge
+#    # tox-uv-feedstock has ALREADY migrated to v1 (recipe/recipe.yaml at
+#    # 1.35.2). So this is effectively a C2 case: authored recipe.yaml,
+#    # deleted the stale local meta.yaml, and set
+#    # cfe-forge-recipe-updates-needed: none (the v0-to-v1 owe is already paid
+#    # upstream). The C1 spec premise (feedstock still v0) was stale.
+# source:
+#    # tox-uv was split upstream into a thin meta dist (tox-uv: deps only,
+#    # imports tox_uv_meta) + tox-uv-bare (the real code, imports tox_uv).
+#    # tox-uv 1.35.2 has NO sdist on PyPI (wheel-only). The deployed feedstock
+#    # sources tox-uv-bare's sdist and ships it as the tox-uv package; mirrored
+#    # here using the canonical pypi.org URL (sha256 verified against it).
+#    # The old 1.15 meta.yaml's sed -i '/uv/d' hack is gone: tox-uv-bare is
+#    # bring-your-own-uv and does not declare uv as a dependency.
+# requirements:
+#  run:
+#    # Reconciled against the tox-uv-bare 1.35.2 sdist (authoritative under
+#    # pip_check): packaging>=26, tox<5,>=4.52.1, tomli>=2.4 (py<3.11),
+#    # typing-extensions>=4.15 (sdist marks it py<3.10, but the feedstock
+#    # carries it unconditionally; kept to mirror the deployed feedstock).
+#    # uv added to match the tox-uv meta package intent (feedstock parity).
+#    # tomli listed unconditionally (NOT a noarch run selector): the upstream
+#    # marker is tomli>=2.4; python_version<3.11, but a per-Python if/then in a
+#    # noarch:python run block trips conda-smithy's noarch-selector lint (G12 /
+#    # G35), so it is flattened. Harmless extra pure-Python dep on py3.11+;
+#    # satisfies pip_check on the 3.10 leg.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version: ${{ python_min }}.
+####

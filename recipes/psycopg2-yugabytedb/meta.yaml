@@ -1,13 +1,13 @@
 {% set name = "psycopg2-yugabytedb" %}
-{% set version = "2.9.3.post0" %}
+{% set version = "2.9.3.5" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/psycopg2-yugabytedb-{{ version }}.tar.gz
-  sha256: e77d230f8e754c8d0940834314d49af80ae6a801560deb52eae5f3fa4155c7ba
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: af41d31a910435377483b0034eba6e0da1f2f8b2b5171e78e9439f8fdd66fdbc
 
 build:
   skip: true  # [py2k]
@@ -17,20 +17,22 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ stdlib("c") }}
     - python                                 # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
-    # libpq is a repackaging of only the library to connect to postgres
-    - libpq >=14.0,<17.0
   host:
     - python
     - pip
-    - libpq >=14.0,<17.0
+    - libpq
   run:
     - python
-    - libpq >=14.0,<17.0
+  run_constrained:
+    - psycopg2 <0a0
 
 test:
   imports:
+  # https://github.com/yugabyte/yugabyte-db/issues/12283
+  # For now, psycopg2-yugabytedb has the same underlying library (psycopg2) as the upstream driver which when installed together override one another based on the sequence of installation.
     - psycopg2
   commands:
     - pip check
@@ -38,8 +40,8 @@ test:
     - pip
 
 about:
-  home: https://psycopg.org/
-  summary: psycopg2 - Python-PostgreSQL Database Adapter
+  home: https://github.com/yugabyte/psycopg2
+  summary: Yugabyte Psycopg2 driver is a distributed python driver for YugabyteDB built on the PostgreSQL psycopg2 driver.
   license: MPL-2.0-no-copyleft-exception
   license_file: LICENSE
 

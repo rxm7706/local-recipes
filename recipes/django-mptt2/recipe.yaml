@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.1"
+
+package:
+  name: django-mptt2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-mptt2/django_mptt2-${{ version }}.tar.gz
+  sha256: 54c3d829ec961d4c40bf2d2094225ac49cd22d1b1e52a28ada1492015b05b47b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+
+tests:
+  - python:
+      imports:
+        - mptt2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Utilities for implementing Modified Preorder Tree Traversal with your Django Models and working with trees of Model instances.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jokiefer/django-mptt2/
+  repository: https://github.com/jokiefer/django-mptt2/
+  description: |
+    Utilities for implementing Modified Preorder Tree Traversal with your
+    Django Models and working with trees of Model instances.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-mptt2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-mptt2
+  cfe-purls:
+    - pkg:conda/django-mptt2@${{ version }}
+    - pkg:pypi/django-mptt2@${{ version }}
+  cfe-upstream-repo: https://github.com/jokiefer/django-mptt2
+  cfe-upstream-homepage: https://github.com/jokiefer/django-mptt2
+  cfe-import-names: [mptt2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-mptt2-feedstock
+  cfe-forge-recipe-updates-needed: [recipe-regenerate]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock is already v1 (at 0.2.1, build 1); local mirror
+#    # lagged at v0 0.2.0. Authored fresh modern recipe.yaml at 0.2.1, deleted
+#    # the stale local meta.yaml.
+# package:
+#    # literal package.name + literal pypi.org source.url (v8.10.0). Sdist
+#    # filename uses the underscore form (django_mptt2-) while the path-2
+#    # segment stays hyphenated (distribution name).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.cfg + setup.py project (no
+#    # pyproject.toml); matches deployed feedstock host block.
+#  run:
+#    # django is a genuine runtime dep (package code imports django.* heavily:
+#    # AppConfig, ModelAdmin, db.models, ...), even though setup.cfg under-
+#    # declares it (no install_requires; only extras_require.tests = coverage).
+#    # Kept django per the deployed feedstock. Dropped the feedstock's
+#    # speculative python <4.0 upper bound (not upstream-declared); upstream
+#    # requires-python is >=3.8, clamped to the default 3.10 floor.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. import mptt2 loads only __init__.py
+#    # (__version__), no Django app-registry interaction, so the standard
+#    # python.imports test holds — no package_contents escape hatch needed.
+# Modernizations vs deployed feedstock (cfe-forge-recipe-updates-needed:
+#    # recipe-regenerate): drop context.name + name|lower; literal source.url;
+#    # CFEP-25 [python_min.*, "*"] test triad; drop python <4.0 upper bound;
+#    # add v1 repository + description about fields. Feedstock build was 1
+#    # (v0->v1 same-version); this local mirror resets number to 0 against the
+#    # 0.2.0 -> 0.2.1 version bump (hash separation comes from the bump).
+####

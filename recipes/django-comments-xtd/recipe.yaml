@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.10.11"
+
+package:
+  name: django-comments-xtd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-comments-xtd/django_comments_xtd-${{ version }}.tar.gz
+  sha256: 4a37cb28adae793ea3d98bbccff49544a8a430da0ab0826c29bbe99cb579601c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.0,<7
+    - django-contrib-comments >=2.2,<2.3
+    - djangorestframework >=3.12,<3.17
+    - docutils
+    - pytz
+    - six
+
+tests:
+  - python:
+      imports:
+        - django_comments_xtd
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Django Comments Framework extension app with thread support, follow up notifications and email confirmations.
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/danirus/django-comments-xtd
+  repository: https://github.com/danirus/django-comments-xtd
+  documentation: https://django-comments-xtd.readthedocs.io
+  description: |
+    A Django Comments Framework extension app with thread support, follow-up
+    notifications, mail confirmation before posting, like/dislike flags,
+    moderation, comment-removal requests and a REST API.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-comments-xtd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-comments-xtd
+  cfe-purls:
+    - pkg:conda/django-comments-xtd@${{ version }}
+    - pkg:pypi/django-comments-xtd@${{ version }}
+  cfe-upstream-repo: https://github.com/danirus/django-comments-xtd
+  cfe-upstream-homepage: https://github.com/danirus/django-comments-xtd
+  cfe-import-names: [django_comments_xtd]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-comments-xtd-feedstock
+  cfe-forge-recipe-updates-needed: [recipe-regenerate]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock is ALREADY v1 (deployed at 2.10.11). Authored a
+#    # MODERNIZED recipe.yaml at 2.10.11, deleted the stale local v0 meta.yaml
+#    # (was 2.10.6). Modernizations vs the deployed feedstock recipe.yaml:
+#    # literal package.name + literal pypi.org source.url (dropped the
+#    # context.name + name-zero / name interpolation chain); CFEP-25 triad
+#    # python_version [python_min.*, "*"]; v1 about repository/documentation;
+#    # reconciled run-dep pins to the 2.10.11 sdist; dropped the feedstock's
+#    # speculative python upper bound. cfe-forge-recipe-updates-needed:
+#    # recipe-regenerate names these as the modernizations the feedstock owes.
+# source:
+#    # sha256 verified against PyPI + sdist stream (4a37cb28...). LICENSE ships
+#    # in the sdist (BSD-2-Clause), so license_file: LICENSE resolves from the
+#    # extracted archive (canonical License-File pattern 1).
+# requirements:
+#  host:
+#    # setuptools kept in host: pyproject [build-system] requires = setuptools,
+#    # build-backend setuptools.build_meta. Deps are dynamic-version only.
+#  run:
+#    # Upper bounds (django less-than 7, django-contrib-comments less-than 2.3,
+#    # djangorestframework less-than 3.17) are upstream-declared in pyproject
+#    # [project.dependencies] and load-bearing under pip_check: true, so they
+#    # are MIRRORED, not dropped. The deployed feedstock pins were stale
+#    # (django less-than 6, drf less-than 3.16) vs the 2.10.11 sdist.
+#    # Dropped the feedstock's python upper bound (less-than 4.0) — not
+#    # upstream-declared; broad >=python_min floor is correct.
+# tests:
+#    # Standard CFEP-25 python.imports test holds: import django_comments_xtd
+#    # does NOT require DJANGO_SETTINGS_MODULE (the app's models/config load
+#    # lazily at Django app-registry time, not at module import), matching the
+#    # deployed feedstock which also uses python.imports + pip_check. No
+#    # package_contents escape hatch needed.
+####

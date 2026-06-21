@@ -1,13 +1,13 @@
 {% set name = "tabcmd" %}
-{% set version = "2.0.12" %}
+{% set version = "2.0.18" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/tabcmd-{{ version }}.tar.gz
-  sha256: 9ec409583cd2cd27355919394c197f13b3297e4f30183d42b044c05882cac423
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tabcmd-{{ version }}.tar.gz
+  sha256: 7ab1a7809dc25be7373ee56ae014eb3c6499d8bfccd04ca44a8668724bb494e1
 
 build:
   entry_points:
@@ -18,14 +18,16 @@ build:
 
 requirements:
   host:
-    - python >=3.7,<3.12
+    - python {{ python_min }}
     - python-build
     - setuptools >=62
     - wheel
     - setuptools-scm >=6.2
     - pip
   run:
-    - python >=3.7,<3.12
+    - click
+    - pytest-order
+    - python >={{ python_min }},<3.12
     - appdirs
     - doit
     - ftfy
@@ -36,10 +38,12 @@ requirements:
     - types-mock
     - types-requests
     - types-setuptools
-    - tableauserverclient ==0.25
-    - urllib3 >=1.24.3,<2.0
+    - tableauserverclient ==0.37
+    - urllib3
 
 test:
+  requires:
+    - python {{ python_min }}
   imports:
     - tabcmd
   commands:
@@ -49,8 +53,7 @@ about:
   summary: A command line client for working with Tableau Server.
   home: https://github.com/tableau/tabcmd
   license: MIT
-  license_file:
-    - LICENSE
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:

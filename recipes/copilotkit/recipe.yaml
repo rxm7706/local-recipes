@@ -2,20 +2,20 @@
 schema_version: 1
 
 context:
-  version: "0.1.88"
+  version: "1.57.2"
 
 package:
   name: copilotkit
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/c/copilotkit/copilotkit-${{ version }}.tar.gz
-  sha256: 4e5e8cfb8833940b61684f73baacab2e0c11d72258fa5c6d01f5e8b87b3ebab5
+  url: https://github.com/CopilotKit/CopilotKit/archive/v${{ version }}.tar.gz
+  sha256: e308fb515e9116d26b0d3beb40be25dae2cad569d9cafc619b76690aa2d26837
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install sdk-python/ -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -32,9 +32,6 @@ requirements:
     - partialjson >=0.0.8,<0.0.9
     - toml >=0.10.2,<0.11.0
     - pydantic-core >=2.35.0
-#  run_constraints:
-#    - if: match(python, ">=3.10") and match(python, "<3.14")
-#      then: crewai >=0.118.0
 
 tests:
   - python:
@@ -42,11 +39,12 @@ tests:
         - copilotkit
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/CopilotKit/CopilotKit
+  repository: https://github.com/CopilotKit/CopilotKit
   summary: "CopilotKit is an open-source framework for building AI copilots that assist users in various tasks by leveraging large language models and other AI technologies."
   license: MIT
   license_file:
@@ -55,3 +53,62 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: copilotkit
+  cfe-upstream-registry: github
+  cfe-upstream-name: CopilotKit/CopilotKit
+  cfe-purls:
+    - pkg:conda/copilotkit@${{ version }}
+    - pkg:pypi/copilotkit@0.1.88
+    - pkg:github/copilotkit/copilotkit@${{ version }}
+  cfe-upstream-repo: https://github.com/CopilotKit/CopilotKit
+  cfe-upstream-homepage: https://github.com/CopilotKit/CopilotKit
+  cfe-import-names: [copilotkit]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/copilotkit-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering archetype. The GitHub monorepo tag vX.Y.Z numbers
+#    # the JS/npm release; the Python package on PyPI is versioned 0.1.x for
+#    # the SAME code. GitHub tag v1.57.2 == sdk-python pyproject version 0.1.88
+#    # == PyPI copilotkit 0.1.88 (sha256 4e5e...bab5 matches the PyPI sdist).
+#    # A 0.1.88 -> 1.57.2 "bump" is a numbering FALSE POSITIVE / NO-OP, not a
+#    # real advance. Verified 2026-06-21: PyPI latest stable is 0.1.94, but the
+#    # deployed feedstock is at v1.57.2 (= 0.1.88), so local already matches the
+#    # deployed code; no version change made.
+# context:
+#    # version tracks the GitHub TAG (1.57.2), matching the deployed feedstock,
+#    # NOT the PyPI 0.1.88 numbering. python_min omitted: upstream
+#    # requires-python ">=3.10,<3.15" floors at the conda-forge default 3.10.
+# source:
+#    # github-tag (NOT pypi-sdist): the feedstock sources the monorepo archive
+#    # and builds the Python SDK from the sdk-python/ subdir. A
+#    # generate_recipe_from_pypi(version="1.57.2") would 404 (no PyPI 1.57.2).
+#    # The top-level LICENSE ships in the GitHub archive; license_file: LICENSE
+#    # resolves from the extracted tree (the in-recipe LICENSE is a fallback).
+#  run:
+#    # pydantic-core >=2.35.0 mirrors sdk-python pyproject (transitive cp314
+#    # pin upstream added post-feedstock); the deployed v0 meta.yaml predates it.
+# extra:
+#    # C1 keep-meta: feedstock is still v0 (recipe/meta.yaml 200, recipe.yaml
+#    # 404 on 2026-06-21). meta.yaml is kept as a faithful, un-annotated mirror
+#    # of the deployed v0; this recipe.yaml is the proposed v0->v1 migration.
+#    # cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml (feedstock owes
+#    # the v0->v1 switch).
+####

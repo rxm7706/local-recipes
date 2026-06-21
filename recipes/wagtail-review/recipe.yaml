@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5"
+
+package:
+  name: wagtail-review
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-review/wagtail-review-${{ version }}.tar.gz
+  sha256: 989638729af00abff0308c8f9410bc607fd64e5574da8dd907c064a25e13aab0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - swapper >=1.1,<1.2
+
+tests:
+  - python:
+      imports:
+        - wagtail_review
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Review workflow for Wagtail
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/wagtail-nest/wagtail-review
+  repository: https://github.com/wagtail-nest/wagtail-review
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-review
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-review
+  cfe-purls:
+    - pkg:conda/wagtail-review@${{ version }}
+    - pkg:pypi/wagtail-review@${{ version }}
+  cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-review
+  cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-review
+  cfe-import-names: [wagtail_review]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-review-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0 (meta.yaml-only). Kept clean meta.yaml
+#    # mirror at deployed 0.5; authored this v1 recipe.yaml alongside as the
+#    # proposed migration. meta-yaml-to-recipe-yaml owed by the feedstock.
+# context:
+#    # python_min omitted — upstream requires-python is >=3.8, below the
+#    # conda-forge 3.10 floor; default floor applies, declare nothing.
+# requirements:
+#  host:
+#    # setuptools kept — setup.py project (no pyproject.toml); matches the
+#    # deployed feedstock 0.5 host block.
+#  run:
+#    # swapper >=1.1,<1.2 upper bound is upstream-declared
+#    # (requires_dist: swapper<1.2,>=1.1) and load-bearing under pip_check;
+#    # mirrored verbatim, not loosened.
+# about:
+#    # homepage/repository point at wagtail-nest/wagtail-review (the current
+#    # authoritative org per PyPI project_urls); the deployed meta.yaml still
+#    # uses the older wagtail/ org. PyPI is authoritative for about.*.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtail_review/__init__.py is
+#    # empty (0 bytes) so import does not trigger Django AppRegistry init;
+#    # standard python.imports holds, no package_contents escape hatch needed.
+####

@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: wagtailgridder
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtailgridder/wagtailgridder-${{ version }}.tar.gz
+  sha256: e50cfb74de403560848140c422311aa8b36ef728aae68c8be5a55b8cfc2c9c24
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=67
+    - setuptools-scm >=7
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=4.1
+    - wagtail-modeladmin
+
+tests:
+  - python:
+      imports:
+        - wagtailgridder
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Dynamic, interactive grid layout for the Django CMS Wagtail.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/wharton/wagtailgridder
+  repository: https://github.com/wharton/wagtailgridder
+  documentation: https://github.com/wharton/wagtailgridder
+  description: |
+    wagtailgridder provides a dynamic, interactive grid layout for the
+    Django CMS Wagtail, allowing content editors to arrange blocks in a
+    responsive grid.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtailgridder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtailgridder
+  cfe-purls:
+    - pkg:conda/wagtailgridder@${{ version }}
+    - pkg:pypi/wagtailgridder@${{ version }}
+  cfe-upstream-repo: https://github.com/wharton/wagtailgridder
+  cfe-upstream-homepage: https://github.com/wharton/wagtailgridder
+  cfe-import-names: [wagtailgridder]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtailgridder-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock is still v0 (recipe/recipe.yaml is 404,
+#    # recipe/meta.yaml present) and is already deployed at 2.0.0. Local
+#    # meta.yaml refreshed to faithfully mirror the deployed v0; this
+#    # recipe.yaml is the proposed v0->v1 migration. Both coexist until the
+#    # feedstock migrates. updates-needed carries meta-yaml-to-recipe-yaml.
+# requirements:
+#  host:
+#    # setuptools + setuptools-scm + wheel kept in host: pyproject.toml declares
+#    # build-system requires = [setuptools>=67, setuptools_scm>=7, wheel] with
+#    # dynamic = [version]; setuptools_scm falls back to PKG-INFO in the sdist.
+#    # Matches deployed feedstock host block.
+#  run:
+#    # 2.0.0 is a MAJOR bump from local 1.0.4: run deps reconciled against the
+#    # 2.0.0 sdist [project.dependencies] = wagtail>=4.1, wagtail-modeladmin
+#    # (was wagtail>=3 with no wagtail-modeladmin at 1.0.4). Both are
+#    # upstream-declared; no speculative upper bounds added.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. wagtailgridder/__init__.py is EMPTY, so
+#    # import wagtailgridder is a bare namespace import with no Django app-registry
+#    # side effects -- standard python.imports test holds (no Django escape hatch).
+# about:
+#    # requires-python >=3.7 (upstream) is below the conda-forge 3.10 floor, so
+#    # python_min is omitted from context (default floor applies).
+####

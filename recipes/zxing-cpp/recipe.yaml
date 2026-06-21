@@ -30,7 +30,7 @@ requirements:
         - pybind11-global <3.0.0
     - ${{ compiler("c") }}
     - ${{ compiler("cxx") }}
-    #- ${{ stdlib('c') }}
+    - ${{ stdlib('c') }}
     - cmake >=3.15,<4.0.0
     - if: unix
       then:
@@ -61,3 +61,22 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zxing-cpp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zxing-cpp
+  cfe-purls:
+    - pkg:conda/zxing-cpp@${{ version }}
+    - pkg:pypi/zxing-cpp@${{ version }}
+  cfe-upstream-repo: https://github.com/zxing-cpp/zxing-cpp
+  cfe-upstream-homepage: https://github.com/zxing-cpp/zxing-cpp
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/zxing-cpp-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.13.0.0"
+
+package:
+  name: openmetadata-managed-apis
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openmetadata-managed-apis/openmetadata_managed_apis-${{ version }}.tar.gz
+  sha256: b7046eceddf1f02387de5fb0a04f3a2aeaaf215b930bc2a5aff4bb03211ff188
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=70.3.0,<70.4.dev0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pendulum >=3.0,<4.dev0
+    - apache-airflow >=2.2.2
+    - apache-airflow-providers-fab >=1.0.0
+    - apache-airflow-core >=3.0.2,<3.1.0
+    - flask ==3.1.3
+    - flask-admin ==1.6.0
+    - packaging >=20.0
+
+tests:
+  - python:
+      imports:
+        - openmetadata_managed_apis
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Airflow REST APIs to create and manage DAGS
+  homepage: https://open-metadata.org/
+  repository: https://github.com/open-metadata/OpenMetadata
+  documentation: https://docs.open-metadata.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openmetadata-managed-apis
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openmetadata-managed-apis
+  cfe-purls:
+    - pkg:conda/openmetadata-managed-apis@${{ version }}
+    - pkg:pypi/openmetadata-managed-apis@${{ version }}
+  cfe-upstream-repo: https://github.com/open-metadata/OpenMetadata
+  cfe-upstream-homepage: https://open-metadata.org/
+  cfe-import-names: [openmetadata_managed_apis]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openmetadata-managed-apis-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    C1 keep-meta refresh. The conda-forge feedstock is still v0 (meta.yaml);
+#    meta.yaml in this dir faithfully mirrors the deployed v1.13.0.0 recipe.
+#    This recipe.yaml is the proposed v0-to-v1 migration at the same version.
+# context:
+#    python_min omitted: upstream requires-python is >=3.9, which clamps to the
+#    conda-forge 3.10 floor; let conda-forge-pinning supply python_min.
+# source:
+#    sdist filename uses underscores (openmetadata_managed_apis-) while the
+#    distribution / path segment uses hyphens (openmetadata-managed-apis).
+#    Verified import name from the sdist top-level __init__.py: openmetadata_managed_apis (G7).
+#    sha256 matches the deployed feedstock and the PyPI v1.13.0.0 sdist.
+#  host:
+#    setuptools >=70.3.0,<70.4.dev0 mirrors upstream's [build-system]
+#    requires = ["setuptools~=70.3.0"].
+#  run:
+#    pendulum, apache-airflow, apache-airflow-providers-fab, Flask==3.1.3,
+#    packaging are the sdist [project.dependencies] (PKG-INFO Requires-Dist).
+#    flask-admin ==1.6.0 and apache-airflow-core >=3.0.2,<3.1.0 are NOT in the
+#    sdist metadata; they were hand-added on the conda-forge feedstock to satisfy
+#    runtime/pip-check needs and are mirrored here. Flask==3.1.3 and
+#    flask-admin==1.6.0 keep upstream's exact pins (no G26 loosen/source-patch).
+#    All 7 run deps resolve on conda-forge (check_dependencies: 0 missing).
+#  tests:
+#    The deployed feedstock notes an upstream pip_check error (cryptography 46.0.1
+#    requires cffi>=2.0.0 vs installed cffi 1.17.1). If the local pip_check trips
+#    on this transitive cffi skew, it is an external conda-forge ecosystem issue,
+#    not a recipe defect. Set cfe-pip-check accordingly from the actual build.
+####

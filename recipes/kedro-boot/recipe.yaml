@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.0"
+
+package:
+  name: kedro-boot
+  version: ${{ version }}
+
+source:
+  url: https://github.com/takikadiri/kedro-boot/archive/${{ version }}.tar.gz
+  sha256: 5e33351b7aae360ca446a241c99fd2553ae8627dc575ffde23979e857c501704
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - kedro >=1.0.0,<2.0
+
+tests:
+  - python:
+      imports:
+        - kedro_boot
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+
+about:
+  summary: A kedro plugin that streamlines the integration between Kedro projects and external applications, making it easier for you to develop production-ready data science applications.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/takikadiri/kedro-boot
+  repository: https://github.com/takikadiri/kedro-boot
+  description: |
+    A kedro plugin that streamlines the integration between Kedro projects
+    and external applications, making it easier for you to develop
+    production-ready data science applications.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kedro-boot
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kedro-boot
+  cfe-purls:
+    - pkg:conda/kedro-boot@${{ version }}
+    - pkg:pypi/kedro-boot@${{ version }}
+  cfe-upstream-repo: https://github.com/takikadiri/kedro-boot
+  cfe-upstream-homepage: https://github.com/takikadiri/kedro-boot
+  cfe-import-names: [kedro_boot]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kedro-boot-feedstock
+  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering re-verify: flagged because the deployed feedstock
+#    # sources from a GitHub tag archive, not the PyPI sdist. Verified GENUINELY
+#    # BEHIND — local was 0.2.0; deployed feedstock and PyPI both at 0.3.0
+#    # (sha matches the github-tag archive). Full refresh applied.
+# source:
+#    # github-tag source mirrors the deployed feedstock's actual source-kind
+#    # (github.com/takikadiri/kedro-boot/archive/<ver>.tar.gz). Both the
+#    # github-tag archive and the PyPI sdist ship LICENSE + kedro_boot/; the
+#    # feedstock chose github-tag so the v1 recipe mirrors it.
+# requirements:
+#  host:
+#    # setuptools kept in host — legacy setup.py project, pyproject.toml has no
+#    # [build-system] table; matches the deployed feedstock host block.
+#  run:
+#    # kedro >=1.0.0,<2.0 is upstream's own requirements.txt floor (kedro 1.x
+#    # major bump vs the local 0.2.0's kedro <0.20,>=0.19.1); load-bearing
+#    # upper bound under pip_check. conda-forge has kedro 1.0.0-1.3.1.
+# tests:
+#    # CFEP-25 python_version pinned to ${{ python_min }}.* only (no "*" newest
+#    # leg) — mirrors the deployed feedstock, which pins test to
+#    # python {{ python_min }}. kedro 1.x can raise a Python-version warning
+#    # as an error on py3.14, so the newest-Python test leg is intentionally
+#    # omitted.
+####

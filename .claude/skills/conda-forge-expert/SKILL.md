@@ -2481,6 +2481,135 @@ If it's `private` / unpublished / untagged → **not conda-forge-submittable**. 
 
 **Case study**: cyclonedx-bom-studio 0.9.2 (Jun 20, 2026) — `CycloneDX/cyclonedx-bom-studio`, an Apache-2.0 Vue 3 + Vite SBOM editor. `package.json` is `"private": true`, **not on npm**, **no releases/tags**, **no `bin`** — confirmed not submittable. Built **local-only**: pinned to `main` commit `f2a6d30b`, `npm ci` + `npx vite build` (`BASE_URL=./`) into a `noarch:generic` package shipping the 56-file static site under `share/cyclonedx-bom-studio/` + a `cyclonedx-bom-studio` launcher (`python -m http.server`). Built GREEN on linux-64; verified the packaged `index.html` used relative `./assets/` refs. `cfe-on-conda-forge-status: blocked-pending-prerequisites` with the upstream blockers recorded. Same session also mirrored + locally built the two *submittable* siblings already on conda-forge — `cyclonedx-python-lib` (multi-output) and `cyclonedx-bom` (PyPI `cyclonedx-bom`) — the contrast is the point: the Python lib/CLI belong on conda-forge; the browser SPA does not.
 
+### G46. A stale local `meta.yaml`'s `noarch: python` flag can be WRONG for a genuinely-compiled package — the CURRENT sdist is the source of truth (the "local-meta-is-wrong" sibling of G42)
+
+**Symptom**: a feedstock-refresh / regenerate pass copies the local mirror's old `meta.yaml` shape forward and emits a `noarch: python` recipe — but the package is actually a **compiled** C / Cython / C++ extension. The build then either fails (no compiler/`stdlib` declared) or, worse, "succeeds" as a noarch artifact that ships no native `.so` and is broken at import on every platform.
+
+**Why**: an older `meta.yaml` in `recipes/<name>/` is a *historical* artifact — it may predate the package gaining a C extension, may have been authored noarch by mistake, or may reflect a different upstream era. Trusting its `noarch:` flag (or its absence of `compiler()`/`stdlib()`) when choosing the regenerated recipe's shape carries the stale mistake forward. This is the *complement* of [G42](#g42-verify-the-current-versions-artifact-shape-before-assuming-compiled--build-shape-can-change-across-versions): G42 warns against trusting a package's *reputation* (it was compiled once, assume it still is); G46 warns against trusting the *stale local meta.yaml* (it was authored noarch once, assume it still should be). Both resolve the same way — inspect the **current** version's actual artifact.
+
+**Fix**: before fixing the build shape on a refresh, verify compiler / native-extension presence in the **current** sdist (don't trust the local meta's `noarch` flag):
+
+```bash
+curl -sL "https://pypi.org/packages/source/<x>/<name>/<name>-<version>.tar.gz" -o /tmp/s.tgz
+tar tzf /tmp/s.tgz | grep -E '\.(c|cpp|cc|pyx|pxd|h|hpp|rs)$' | head   # any → compiled
+tar -xzOf /tmp/s.tgz '*/setup.py' 2>/dev/null | grep -E 'Extension|cythonize|build_ext'  # setuptools C-extension markers
+tar -xzOf /tmp/s.tgz '*/pyproject.toml' 2>/dev/null | grep -E 'cython|maturin|scikit-build|setuptools.*ext'  # build-backend markers
+```
+
+If the sdist carries `.c`/`.pyx`/`.cpp`/`.rs` sources or `setup.py` builds an `Extension`, the recipe is **compiled** (`cfe-noarch: compiled`) — drop `noarch: python`, add `compiler()` + `stdlib()`, and let the per-Python build matrix run. Update the cached `cfe-noarch` field to the verified shape so future regens don't relapse.
+
+**Case study**: bulk sole-maintainer feedstock refresh (Jun 20, 2026) — the local `meta.yaml` for **hll** (a C extension whose import is `HLL`) and **skranger** (Cython/C++ wrapping the ranger random-forest library) both carried a stale `noarch: python` flag. The current sdists clearly ship native sources; both are genuinely compiled. The regenerated recipes were corrected to compiled (compiler + stdlib + per-Python matrix), not noarch.
+
+### G47. A stale git-tracked recipe-dir `conda_build_config.yaml` (a verbatim copy of the global pinning CBC) breaks the build — lint errors + a variant `duplicate entry` collision; rattler-build auto-discovers it
+
+**Symptom**: a compiled recipe in `recipes/<name>/` carries a **git-tracked** `conda_build_config.yaml` next to `recipe.yaml`, and:
+- (a) `conda-smithy lint` fails with baseline-violation errors — `MACOSX_DEPLOYMENT_TARGET` / `c_stdlib_version` below the current conda-forge baseline (because the file is a *frozen* copy of an old global pinning CBC), and/or
+- (b) the **build** hard-fails at variant rendering with `duplicate entry "<key>"` (e.g. `duplicate entry "libitk_devel"`) — the recipe-local CBC's keys collide with the pinning CBC that the local-build harness layers in.
+
+**Why**: rattler-build (and conda-smithy) **auto-discover a `conda_build_config.yaml` adjacent to the recipe** and merge it into the variant config. A recipe-local CBC is meant to carry **recipe-specific** overrides only (e.g. `python_min`, a single pinned dep). When the file is instead a stale verbatim copy of the *global* `conda-forge-pinning` CBC (zero recipe-specific keys), every one of its hundreds of keys is re-declared on top of the real pinning the harness already supplies — producing duplicate-key collisions at build time — and its frozen baseline values (MACOSX_DEPLOYMENT_TARGET, c_stdlib_version) lint as below-baseline. The deployed conda-forge feedstocks carry **no** such recipe-dir CBC (the pinning comes from the rerender service), so the file is pure local cruft.
+
+**Fix** (sanctioned): move it aside for the build, restore after, and flag the tracked file for deletion:
+
+```bash
+mv recipes/<name>/conda_build_config.yaml recipes/<name>/conda_build_config.yaml.bak
+pixi run -e local-recipes recipe-build recipes/<name>     # builds clean against the real pinning
+mv recipes/<name>/conda_build_config.yaml.bak recipes/<name>/conda_build_config.yaml   # restore for review
+```
+
+Then **flag the tracked CBC for deletion** in the refresh diff — it should not be committed (the deployed feedstock has none). Keep a recipe-local CBC **only** when it carries genuine recipe-specific keys (e.g. an upward `python_min` override per [G21](#g21-conda-smithy-mis-aligns-the-zip-keyed-is_python_min-flag-when-python_min-is-overridden-upward) / [G31](#g31-overriding-python_min-upward-on-an-existing-feedstock--v1-needs-a-recipe-local-conda_build_configyaml--rerender-v0-needs--set-python_min--contextpython_min-is-silently-ignored-in-v1)); a zero-override copy of the global CBC is always cruft.
+
+**Detection**: a recipe-dir `conda_build_config.yaml` whose key set is a superset of (or identical to) the global pinning CBC, with no recipe-unique keys, is the signature. `diff <(sort recipes/<name>/conda_build_config.yaml) <(sort .pixi/envs/local-recipes/conda_build_config.yaml)` near-empty → cruft.
+
+**Case study**: bulk sole-maintainer feedstock refresh (Jun 20, 2026) — **hll** and **jh2** both carried git-tracked recipe-dir `conda_build_config.yaml` files that were stale copies of the global pinning CBC. They triggered conda-smithy lint baseline errors (MACOSX_DEPLOYMENT_TARGET / c_stdlib_version) and a hard `duplicate entry "libitk_devel"` collision at build time. `mv …bak` for the build (clean), restored for review, flagged the tracked files for deletion (the deployed feedstocks have no such CBC).
+
+### G48. "Rust / Go upstream" does NOT imply a heavy from-source compile — verify the actual PEP-517 build backend before sizing the build or adding `compiler('cxx')`
+
+**Symptom**: a package's GitHub repo is dominated by Rust (or Go) code, so you reach for the full compiled-recipe apparatus — `compiler('rust')` / `compiler('cxx')`, `stdlib('c')`, a long build-time budget, maybe `cargo-bundle-licenses`. But the actual conda build is tiny and needs none of it; a speculative `compiler('cxx')` is dead weight.
+
+**Why**: the language a project is *written in* on GitHub is not the same as what the **PyPI sdist's build backend does at install time**. Some "Rust" or "Go" Python packages ship a PEP-517 backend that **downloads a precompiled native artifact** at build time rather than compiling from source. The sdist has **no `Cargo.toml` / `.rs` / `.go`** — the backend fetches a prebuilt binary (e.g. a C-API shared lib) and wraps it. The build is fast (tens of seconds), needs no Rust/C++ toolchain in the recipe, and a `compiler('cxx')` you added "because it's Rust" never gets used.
+
+**Fix**: inspect the **sdist's actual contents and build backend** before sizing the build or adding compilers:
+
+```bash
+tar tzf /tmp/sdist.tgz | grep -E 'Cargo\.toml|\.rs$|\.go$|go\.mod' | head   # empty → no from-source Rust/Go compile
+tar -xzOf /tmp/sdist.tgz '*/pyproject.toml' | grep -A3 '\[build-system\]'    # what backend actually runs
+```
+
+No `Cargo.toml`/`.rs` in the sdist + a backend that fetches a binary → it's a **download-and-wrap** build: no `compiler('rust')`/`compiler('cxx')`, no `stdlib`, a short build. Add a compiler macro only when the sdist genuinely compiles native sources (G46's check). Drop any speculative `compiler('cxx')`. This pairs with [G42](#g42-verify-the-current-versions-artifact-shape-before-assuming-compiled--build-shape-can-change-across-versions)/[G46](#g46-a-stale-local-metayamls-noarch-python-flag-can-be-wrong-for-a-genuinely-compiled-package--the-current-sdist-is-the-source-of-truth-the-local-meta-is-wrong-sibling-of-g42) — always size the build from the sdist, never from reputation or the GitHub language bar.
+
+**Case study**: wasmtime-py (Jun 20, 2026) — the repo is a Rust project, but the PyPI sdist ships **no `Cargo.toml` / `.rs`**: its PEP-517 backend **downloads a precompiled wasmtime C-API binary at build time** (build wall-clock ~46 s). A speculative `compiler('cxx')` was correctly dropped — the recipe needs no Rust/C++ toolchain at all.
+
+### G49. Per-Python compiled ≠ abi3 — verify against `Cargo.toml` / setup.py before adding `version_independent` + `python-abi3`; a per-Python artifact needs a SIMPLE imports+pip_check test, not the CFEP-25 cross-version triad
+
+**Symptom**: a stale Rust/PyO3 recipe carries `version_independent: ${{ is_abi3 }}` + a `python-abi3` host dep + matrix-collapse skip rule (and sometimes an `OPENSSL_DIR` hack), but the package's Cargo PyO3 features declare **no abi3** (`py_limited_api = false`). The recipe is treated as a single abi3 artifact when it's really a **per-Python** compiled build — so the CFEP-25 cross-version test triad (`python_version: [${{ python_min }}.*, "*"]`) is applied to it and the `"*"` (latest-Python) test leg can't load a `.so` built for a different Python.
+
+**Why**: `version_independent` + `python-abi3` are correct **only** when upstream actually builds abi3 (`py_limited_api=True` / `pyo3/abi3-py3XX` Cargo feature) — one wheel covers all Pythons. When the Cargo PyO3 features carry **no abi3**, every Python gets its **own** compiled artifact, and there is no single artifact testable across Pythons. Applying the CFEP-25 triad to a per-Python artifact is a category error (a `py311` `.so` cannot be imported by the `"*"`-resolved newest Python). This is the build-shape sibling of [G38](#g38-a-compiled-local-only-prereq-built-for-only-one-python-blocks-consumers-on-other-python-versions-compiled--noarch): G38 is about *consumers* of a per-Python artifact; G49 is about *authoring* the per-Python recipe's test correctly.
+
+**Fix**: verify abi3 vs per-Python from `Cargo.toml` / `setup.py`, mirror the deployed feedstock, and pick the matching test shape.
+
+```bash
+tar -xzOf /tmp/sdist.tgz '*/Cargo.toml' | grep -iE 'abi3|py_limited_api|pyo3.*features'   # abi3-* / py_limited_api=true → abi3
+```
+
+- **abi3 confirmed** (`pyo3/abi3-py3XX` or `py_limited_api=True`): keep `version_independent` + `python-abi3` + the matrix-collapse skip ([G21](#g21-conda-smithy-mis-aligns-the-zip-keyed-is_python_min-flag-when-python_min-is-overridden-upward) Variant B). One artifact → the CFEP-25 cross-version triad is appropriate.
+- **No abi3 → per-Python build**: DROP `version_independent`, `python-abi3`, and any speculative `OPENSSL_DIR` hack. Use a **simple per-Python test** — `imports:` + `pip_check: true` with **no** `python_version` triad (or `python_version: ${{ python_min }}.*` only):
+
+```yaml
+tests:
+  - python:
+      imports: [<module>]
+      pip_check: true
+      # per-Python compiled artifact: no cross-version triad — a single
+      # per-Python .so cannot be tested against a different Python.
+```
+
+**Case study**: json-stream-rs-tokenizer (Jun 20, 2026) — the stale recipe wrongly carried `version_independent` + `python-abi3` + an `OPENSSL_DIR` hack, but the Cargo PyO3 features declare **no abi3** (`py_limited_api=False`) → it's a per-Python compiled build. Fix: dropped all three, mirrored the deployed feedstock's per-Python shape, and used a simple imports+pip_check test (no CFEP-25 triad).
+
+### G50. A newer CPython that drops a private C-API symbol breaks a compiled build / a host pin — cap the python matrix to upstream's supported range with `match(python, ">=N")` (NOT `py<N`, per G3)
+
+**Symptom**: a compiled recipe builds fine on py3.10–3.12 but fails on **py3.13** (or whatever the newest matrix entry is) — either a C compile error (`error: '_PyInterpreterState_Get' undeclared` / a removed private C-API symbol) or a host-solve failure (a pinned dep has no wheel/build for the newest cpython, e.g. `numpy<2.0` with no cp313 build).
+
+**Why**: each CPython release removes private/unstable C-API symbols and bumps the supported-numpy floor. A compiled extension (or a host `numpy<2.0` pin) that was valid through 3.12 can hard-fail on 3.13+ because the symbol is gone (C compile) or no compatible dependency build exists (host solve). conda-forge keeps adding newer Pythons to the matrix faster than every upstream supports them; the recipe must **mirror upstream's actually-published range**, not the full conda-forge matrix.
+
+**Fix**: skip the unsupported Pythons with the **v1 `match()` form** — `build.skip: match(python, ">=N")` — never the v0 `py<N` form, which is silently ignored in v1 (see [G3](#g3-py--n-skip-selectors-do-nothing-in-v1-recipeyaml)):
+
+```yaml
+build:
+  skip:
+    - match(python, ">=3.13")   # upstream's private C-API / numpy<2.0 floor — drops cp313
+```
+
+Set the ceiling to match upstream's **published** wheel/Python range (check the latest sdist's `requires-python` upper bound and the actual PyPI wheel tags). When the cap is forced by a *host* dep (e.g. `numpy<2.0` with no cp313 wheel), document that in the cfe-comments block so a future numpy-2 migration can lift the skip.
+
+**Case study**: bulk feedstock refresh (Jun 20, 2026) — **psycopg2-yugabytedb** failed the py3.13 C compile (`_PyInterpreterState_Get` removed in 3.13), and **datasketches** failed the py3.13 host solve (its `numpy<2.0` host pin has no numpy-1.x cp313 wheel). Both got `build.skip: match(python, ">=3.13")` mirroring upstream's supported range — not `py<313`, which v1 ignores.
+
+### G51. A GitHub monorepo subdir may ship NONE of the release-time-generated assets — source the PyPI wheel instead, or you ship a broken empty package (a possibly-already-deployed REAL BUG)
+
+**Symptom**: a recipe sourced from a GitHub tag/archive (per the usual G5/G16 "prefer GitHub source" instinct) builds to a tiny `.conda` (~15 KiB) that is **missing its runtime assets** — a web app's `www/` bundle, generated parsers, compiled protobufs, minified JS/CSS, etc. — and is broken at runtime, even though the build EXIT=0 and the import test (if shallow) passes.
+
+**Why**: many monorepo Python packages **generate web/static assets at release time** (a build step that runs `npm run build` / `webpack` / a codegen pass) and ship the generated output **only in the published PyPI wheel**, never committing it to the GitHub repo. A from-source build of the GitHub subdir therefore packages an empty shell — the `www/` (or equivalent) directory simply isn't in the repo. This is the inverse of [G5](#g5-tree-sitter-pypi-sdists-inconsistently-strip-srctree_sitterh-headers--default-to-github-source) (where the *GitHub* source is the complete one and the *PyPI sdist* is stripped); here the **PyPI wheel** is the complete artifact and the GitHub source is incomplete. **Critically: the deployed conda-forge feedstock may already ship this broken empty package** — flag it prominently as a real bug, not just a local-refresh concern.
+
+**Fix**: source the **PyPI wheel** (the artifact that actually contains the generated assets):
+
+```yaml
+source:
+  # GitHub source ships none of the release-time-generated www/ assets;
+  # they exist only in the published wheel. Source the wheel.
+  url: https://pypi.org/packages/<py-tag>/<x>/<name>/<name>-${{ version }}-<py-tag>-none-any.whl
+  sha256: <wheel sha256>
+```
+
+Verify before choosing the source — compare the GitHub archive's contents against the wheel's:
+
+```bash
+unzip -l <name>-<version>-*.whl | grep -iE 'www/|static/|dist/|\.min\.(js|css)$|assets/'   # generated assets present in wheel?
+tar tzf <github-archive>.tar.gz | grep -iE 'www/|static/|assets/'                          # …absent from GitHub source?
+```
+
+Asset-bearing wheel + asset-free GitHub source → use the wheel. Set `cfe-source-kind: pypi-wheel`. If the deployed feedstock is sourcing GitHub and ships the empty package, that's a REAL BUG to fix at the feedstock.
+
+**Case study**: h2o-lightwave-web (Jun 20, 2026) — the GitHub monorepo subdir ships **zero** `www/` web assets (generated at release time, present only in the PyPI wheel). A from-source GitHub build produced a broken empty ~15 KiB package; the **deployed feedstock likely ships this broken empty package** (flagged as a real bug to fix). Fix: source the PyPI wheel (1.8.9 is wheel-only). Adjacent to [G5](#g5-tree-sitter-pypi-sdists-inconsistently-strip-srctree_sitterh-headers--default-to-github-source)/[G16](#g16-pypi-varnish-cdn-degradation-on-packagessourceletter-route).
+
 ---
 
 ## Skill Automation

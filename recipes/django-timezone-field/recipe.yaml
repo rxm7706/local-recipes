@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.2.2"
+
+package:
+  name: django-timezone-field
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-timezone-field/django_timezone_field-${{ version }}.tar.gz
+  sha256: a004d0b19fe10bf5964cb21a65b36324b16a61879e4711c0dafdf8d6253e8ebc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2,<6.2
+
+# CFEP-25-justified: Django app — `import timezone_field` imports
+# django.db.models at module level, which raises ImproperlyConfigured
+# without DJANGO_SETTINGS_MODULE / settings.configure() in the test env.
+tests:
+  - package_contents:
+      site_packages:
+        - timezone_field
+
+about:
+  summary: A Django app providing DB, form, and REST framework fields for zoneinfo and pytz timezone objects.
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/mfogel/django-timezone-field/
+  repository: https://github.com/mfogel/django-timezone-field/
+  description: |
+    A Django app providing database, form, and REST framework fields for
+    zoneinfo and pytz timezone objects.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-timezone-field
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-timezone-field
+  cfe-purls:
+    - pkg:conda/django-timezone-field@${{ version }}
+    - pkg:pypi/django-timezone-field@${{ version }}
+  cfe-upstream-repo: https://github.com/mfogel/django-timezone-field
+  cfe-upstream-homepage: https://github.com/mfogel/django-timezone-field
+  cfe-import-names: [timezone_field]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-timezone-field-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml, dependency-fix]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock is still v0/meta.yaml at 7.2.2;
+#    # meta.yaml kept alongside as a faithful mirror of the deployed v0
+#    # feedstock. This recipe.yaml is our proposed v1 + the modernized
+#    # 7.2.2 dependency set. MAJOR bump from local 6.0.
+# requirements:
+#  run:
+#    # Reconciled against the 7.2.2 sdist [project.dependencies]:
+#    #   - dropped backports.zoneinfo (gated python_version < "3.9", below the
+#    #     conda-forge 3.10 floor — never installs; G35-class).
+#    #   - dropped pytz: it is a [tool.poetry.dev-dependencies] entry in 7.2.2,
+#    #     NOT a hard runtime dep. pytz support is optional (backends/pytz.py is
+#    #     imported lazily only when USE_DEPRECATED_PYTZ is set).
+#    #   - kept django >=4.2,<6.2 — upstream-declared upper bound (load-bearing
+#    #     under pip_check); matches the deployed feedstock run dep.
+#    #   - dropped the feedstock's speculative python <4.0.0 upper bound (the
+#    #     requires-python <4.0 cap is not a conda upper-bound convention);
+#    #     broad >=python_min floor is correct.
+#  host:
+#    # poetry-core kept (pyproject [build-system] uses poetry-core); dropped
+#    # grayskull's belt-and-suspenders wheel/setuptools (G8).
+# tests:
+#    # package_contents escape hatch (CFEP-25-justified) instead of
+#    # python.imports: timezone_field/__init__.py eagerly imports
+#    # django.db.models, which raises ImproperlyConfigured without
+#    # DJANGO_SETTINGS_MODULE. The deployed feedstock works around this with
+#    # settings.configure()+django.setup() before import; the v1 canonical
+#    # python.imports test cannot replicate that, so site_packages is used.
+# context:
+#    # python_min omitted — requires-python is <4.0,>=3.8; the 3.8 floor is
+#    # below the conda-forge default 3.10, so let conda-forge-pinning supply
+#    # python_min (no override needed).
+####

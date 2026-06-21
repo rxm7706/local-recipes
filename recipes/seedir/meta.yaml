@@ -1,5 +1,5 @@
 {% set name = "seedir" %}
-{% set version = "0.5.0" %}
+{% set version = "0.5.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/seedir-{{ version }}.tar.gz
-  sha256: e6f80f9535b57413100f04933fd269f856aca1d067bccadf3ea3ca98a2fc6fc5
+  sha256: 9fb82a6133f92a711bb2d46b2a142f56712e242a4fc03fef2fea9418d307efe2
 
 build:
   entry_points:
@@ -18,10 +18,11 @@ build:
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
     - natsort
 
 test:
@@ -32,6 +33,7 @@ test:
     - seedir --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/earnestt1234/seedir

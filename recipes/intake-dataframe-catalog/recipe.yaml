@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: intake-dataframe-catalog
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/intake-dataframe-catalog/intake_dataframe_catalog-${{ version }}.tar.gz
+  sha256: 4e4d6d542cf8c9afc88bf480ffc685826541b2d94d8c1a6c91427afc1920f980
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0.0
+    - versioneer
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - intake >=0.7.0
+    - itables
+    - pandas
+    - polars >=1.12,<1.33
+    - fsspec
+    - numpy
+    - pyyaml
+    - toolz
+
+tests:
+  - python:
+      imports:
+        - intake_dataframe_catalog
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: An intake driver for a searchable table of intake sources and associated metadata
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/ACCESS-NRI/intake-dataframe-catalog
+  repository: https://github.com/ACCESS-NRI/intake-dataframe-catalog
+  description: |
+    An intake driver for a searchable table of intake sources and associated
+    metadata.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: intake-dataframe-catalog
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: intake-dataframe-catalog
+  cfe-purls:
+    - pkg:conda/intake-dataframe-catalog@${{ version }}
+    - pkg:pypi/intake-dataframe-catalog@${{ version }}
+  cfe-upstream-repo: https://github.com/ACCESS-NRI/intake-dataframe-catalog
+  cfe-upstream-homepage: https://github.com/ACCESS-NRI/intake-dataframe-catalog
+  cfe-import-names: [intake_dataframe_catalog]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/intake-dataframe-catalog-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 0.5.1. meta.yaml refreshed to faithfully mirror the deployed feedstock;
+#    # this recipe.yaml is the proposed v1 migration. cfe-forge-recipe-updates-
+#    # needed carries meta-yaml-to-recipe-yaml (the feedstock owes the v0 to v1
+#    # switch). Do NOT delete meta.yaml until the feedstock migrates.
+# build:
+#    # switched feedstock's bare pip install . -vv to the canonical
+#    # --no-deps --no-build-isolation form. versioneer in host resolves the
+#    # version from the sdist-bundled _version.py (no git/network needed).
+# requirements:
+#  host:
+#    # setuptools.build_meta + versioneer[toml] backend (pyproject build-system);
+#    # host keeps setuptools >=61.0.0 + versioneer + pip, matching upstream.
+#  run:
+#    # upstream pyproject [project.dependencies] declares only intake/itables/
+#    # pandas/polars. fsspec, numpy, pyyaml (yaml), toolz (tlz) are real
+#    # transitive imports under-declared upstream (G27 class) and verified
+#    # present across src/ imports; kept (matches deployed feedstock run block).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"], modernizing the feedstock's
+#    # single-version python test. requires-python >=3.10 = default floor, so
+#    # python_min is omitted from context.
+####

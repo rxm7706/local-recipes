@@ -1,13 +1,13 @@
 {% set name = "gita" %}
-{% set version = "0.16.6.6" %}
+{% set version = "0.16.8.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/gita-{{ version }}.tar.gz
-  sha256: fe8d5f8cc71e5c11f59dae30df49936830f0fb0b51becfe2c02775e044739b37
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/gita-{{ version }}.tar.gz
+  sha256: 064e5cbcfa5df76409cfd8e70142f8153f6ecc40fb35d3a28a0a04054d5fb3fd
 
 build:
   entry_points:
@@ -18,10 +18,12 @@ build:
 
 requirements:
   host:
-    - python >=3.6
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - packaging
+    - python >={{ python_min }}
     - argcomplete
 
 test:
@@ -32,6 +34,7 @@ test:
     - gita --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/nosarthur/gita

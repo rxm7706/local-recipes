@@ -1,6 +1,5 @@
 {% set name = "pygount" %}
-{% set version = "3.1.0" %}
-{% set python_min = "3.10" %}
+{% set version = "3.2.0" %}
 
 package:
   name: {{ name|lower }}
@@ -8,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pygount-{{ version }}.tar.gz
-  sha256: 2f4b064ac1689ba43bdf84bef244e7a45f27e315feae6fb19d1209c56a580361
+  sha256: 27b03a6c6d791c4920003eec361a3c38ccd815637c51f5536efb9e47db1d452a
 
 build:
   entry_points:
@@ -25,7 +24,7 @@ requirements:
   run:
     - python >={{ python_min }}
     - chardet >=5,<6
-    - gitpython >=3.1,<4.dev0
+    - gitpython >=3.1,<4.0
     - pygments >=2,<3
     - rich >=9
 

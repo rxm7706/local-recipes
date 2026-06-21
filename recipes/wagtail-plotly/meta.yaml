@@ -1,25 +1,26 @@
 {% set name = "wagtail-plotly" %}
-{% set version = "0.0.3" %}
+{% set version = "0.0.4" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_plotly-{{ version }}.tar.gz
-  sha256: aa0320bd77acb9c9aeb9e107f2910a64b4c74e53aae28f10456317a2e7d8b688
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_plotly-{{ version }}.tar.gz
+  sha256: be6b866941ca9024749243028231238de3e2a0dab5fc6fa825452b2c2adbefd2
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - plotly >=4.14.3
     - wagtail >=2.13
     - wagtail-json-widget >=0.0.1
@@ -31,6 +32,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/cursive-works/wagtail-plotly

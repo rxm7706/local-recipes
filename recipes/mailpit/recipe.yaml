@@ -1,0 +1,121 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.30.2"
+
+package:
+  name: mailpit
+  version: ${{ version }}
+
+source:
+  url: https://github.com/axllent/mailpit/archive/v${{ version }}.tar.gz
+  sha256: 239f044997dcb6ec27ed1b85b5ca3bba9d5996d66dad67014c3f4aa75549269b
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: build.sh
+    - if: win
+      then: bld.bat
+
+requirements:
+  build:
+    - ${{ compiler('go-cgo') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - go-licenses
+    - nodejs >=18
+
+tests:
+  - script:
+      - mailpit --help
+
+about:
+  summary: A small, fast, low memory, zero-dependency, multi-platform email testing tool & API for developers
+  description: |
+    Mailpit is an email testing tool for developers. It acts as an SMTP server,
+    captures all sent emails, and displays them in a modern web interface.
+    It also provides a REST API for integration testing.
+
+    Key features:
+    - Fast, lightweight, and low memory usage
+    - Multi-platform support (Linux, macOS, Windows)
+    - Modern web UI for viewing emails
+    - REST API for automated testing
+    - Support for SMTP relay
+    - Message tagging and search
+    - Real-time web UI updates
+  license: MIT
+  license_file:
+    - LICENSE
+    - library_licenses/
+  homepage: https://github.com/axllent/mailpit
+  repository: https://github.com/axllent/mailpit
+  documentation: https://mailpit.axllent.org/docs/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mailpit
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/axllent/mailpit
+  cfe-purls:
+    - pkg:conda/mailpit@${{ version }}
+    - pkg:golang/github.com/axllent/mailpit@${{ version }}
+  cfe-upstream-repo: https://github.com/axllent/mailpit
+  cfe-upstream-homepage: https://github.com/axllent/mailpit
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: false:not-a-python-package
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mailpit-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E C1: feedstock is v0 (meta.yaml). Kept the deployed meta.yaml
+#    # mirror at 1.30.2 (faithful, un-annotated) AND authored this v1
+#    # recipe.yaml; both coexist until the feedstock completes its v0->v1
+#    # switch. updates-needed carries meta-yaml-to-recipe-yaml.
+#    # mailpit = axllent/mailpit, a Go-source email/SMTP testing tool (NOT
+#    # Python). Builds from the GitHub tag: web UI via npm, two Go binaries
+#    # (mailpit + mailpit-sendmail) via build.sh/bld.bat.
+# source:
+#    # github-tag source (vX.Y.Z); upstream tag scheme matches the release
+#    # version exactly -- no gh-numbering anomaly. sha256 verified against the
+#    # GitHub archive tarball.
+# build:
+#  script:
+#    # go-cgo (NOT go-nocgo): mailpit stores messages in sqlite via
+#    # mattn/go-sqlite3, which requires CGO -> compiler('c') + stdlib('c')
+#    # are load-bearing, not boilerplate. build.sh/bld.bat are byte-identical
+#    # to the deployed feedstock scripts.
+# requirements:
+#  build:
+#    # nodejs >=18 builds the embedded web UI; go-licenses vendors third-party
+#    # license texts into library_licenses/ (shipped via about.license_file).
+# tests:
+#    # command test mirroring the feedstock (`mailpit --help`); not a Python
+#    # import. cfe-import-names: [] (compiled binary, no Python module).
+# about:
+#    # platform-skip review: feedstock ships linux_64 / osx_64 / win_64 only
+#    # (no osx-arm64, no linux-aarch64). platform-expansion to osx-arm64 +
+#    # linux-aarch64 is a reasonable future PR for this compiled package but
+#    # is NOT recorded in updates-needed -- out of scope for this refresh;
+#    # would need its own platform-expansion effort + conda-forge.yml edit.
+####

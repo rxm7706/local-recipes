@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.19.0"
+
+package:
+  name: django-linear-migrations
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-linear-migrations/django_linear_migrations-${{ version }}.tar.gz
+  sha256: 5436a7d980ceb65b936a87bac5461bcce68ea24e03cd804f284ea91565589e1b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - django_linear_migrations
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Ensure your migrations are linear.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/adamchainz/django-linear-migrations
+  repository: https://github.com/adamchainz/django-linear-migrations
+  documentation: https://github.com/adamchainz/django-linear-migrations/blob/main/CHANGELOG.rst
+  description: |
+    Ensure your Django migrations are linear. Provides a max_migration.txt
+    file per app that records the latest migration, plus management commands
+    and a system check that detect and help resolve migration conflicts.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-linear-migrations
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-linear-migrations
+  cfe-purls:
+    - pkg:conda/django-linear-migrations@${{ version }}
+    - pkg:pypi/django-linear-migrations@${{ version }}
+  cfe-upstream-repo: https://github.com/adamchainz/django-linear-migrations
+  cfe-upstream-homepage: https://github.com/adamchainz/django-linear-migrations
+  cfe-import-names: [django_linear_migrations]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-linear-migrations-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml, dependency-fix]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0/meta.yaml at 2.19.0. meta.yaml refreshed to
+#    # faithfully mirror the deployed feedstock (clean, build number 1). This
+#    # recipe.yaml is the proposed v1 migration; both coexist until the
+#    # feedstock completes its v0 to v1 switch.
+# requirements:
+#  host:
+#    # setuptools kept in host — pyproject build-system requires setuptools>=77
+#    # (build-backend setuptools.build_meta); residual setup.cfg also present.
+#    # matches deployed feedstock host block.
+#  run:
+#    # dependency-fix: upstream pyproject 2.19.0 declares django>=4.2; the
+#    # deployed feedstock meta.yaml still carries the stale django>=3.2. The v1
+#    # recipe reconciles to the upstream-declared django>=4.2.
+#    # requires-python is >=3.9 (below the conda-forge 3.10 floor); python_min
+#    # omitted from context so conda-forge-pinning supplies the default 3.10.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. Top-level __init__.py is empty,
+#    # so import django_linear_migrations does not touch the app registry — the
+#    # standard python.imports test holds (no AppRegistryNotReady), no
+#    # package_contents escape hatch needed.
+####

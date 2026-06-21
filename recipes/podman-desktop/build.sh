@@ -1,29 +1,12 @@
 #!/bin/bash
 set -euxo pipefail
 
-# Remember source directory (handle both conda-build and rattler-build)
-if [ -n "${SRC_DIR}" ]; then
-    SRC_ROOT="${SRC_DIR}"
-else
-    SRC_ROOT="$(pwd)"
-fi
-
 echo "=== Build environment ==="
-echo "SRC_ROOT: ${SRC_ROOT}"
 echo "PREFIX: ${PREFIX}"
 echo "PWD: $(pwd)"
 echo "Node version: $(node --version)"
 
-# Navigate to source directory
-cd "${SRC_ROOT}"
-
-echo "=== Setting up pnpm via corepack ==="
-# Enable corepack (bundled with Node.js 24+)
-corepack enable
-# Prepare specific pnpm version used by Podman Desktop
-corepack prepare pnpm@10.20.0 --activate
-
-# Verify pnpm is available
+# Verify pnpm is available (provided as a build dependency via conda-forge)
 pnpm --version
 
 echo "=== Configuring build environment ==="
@@ -55,6 +38,17 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Building for macOS..."
     pnpm electron-builder build --config .electron-builder.config.cjs --mac --dir --publish never --config.npmRebuild=false
+
+    echo "=== Code signing the app bundle ==="
+    # Ad-hoc signature (--sign -) lets macOS run the app without Gatekeeper blocking it
+    if [[ -d "dist/mac/Podman Desktop.app" ]]; then
+        codesign --force --deep --sign - "dist/mac/Podman Desktop.app"
+    elif [[ -d "dist/mac-arm64/Podman Desktop.app" ]]; then
+        codesign --force --deep --sign - "dist/mac-arm64/Podman Desktop.app"
+    else
+        echo "ERROR: No .app bundle found to sign"
+        exit 1
+    fi
 else
     echo "ERROR: Unsupported platform: $OSTYPE"
     exit 1
@@ -68,8 +62,8 @@ pnpm licenses generate-disclaimer --prod > ThirdPartyNotices.txt || {
 }
 
 # Verify license files exist
-ls -la "${SRC_ROOT}/LICENSE"
-ls -la "${SRC_ROOT}/ThirdPartyNotices.txt"
+[[ -f LICENSE ]]
+[[ -f ThirdPartyNotices.txt ]]
 
 echo "=== Installing Podman Desktop to PREFIX ==="
 # Install Electron app bundle (platform-specific)
@@ -90,38 +84,23 @@ EOF
     chmod +x "${PREFIX}/bin/podman-desktop"
 
     echo "=== Installing desktop integration files ==="
-    # Install .desktop file for Linux application menu
-    mkdir -p "${PREFIX}/share/applications"
-    cat > "${PREFIX}/share/applications/podman-desktop.desktop" << 'EOF'
-[Desktop Entry]
-Name=Podman Desktop
-Comment=Containers and Kubernetes for application developers
-Exec=podman-desktop %U
-Terminal=false
-Type=Application
-Icon=podman-desktop
-Categories=Development;ContainerApplication;
-Keywords=podman;docker;container;kubernetes;
-StartupNotify=true
-StartupWMClass=Podman Desktop
-EOF
-
     # Install application icon
     mkdir -p "${PREFIX}/share/icons/hicolor/512x512/apps"
-    if [ -f "buildResources/icon.png" ]; then
+    if [[ -f "buildResources/icon.png" ]]; then
         cp "buildResources/icon.png" "${PREFIX}/share/icons/hicolor/512x512/apps/podman-desktop.png"
-    elif [ -f "buildResources/512x512.png" ]; then
+    elif [[ -f "buildResources/512x512.png" ]]; then
         cp "buildResources/512x512.png" "${PREFIX}/share/icons/hicolor/512x512/apps/podman-desktop.png"
     else
-        echo "WARNING: Icon file not found in buildResources/"
+        echo "ERROR: Icon file not found in buildResources/"
+        exit 1
     fi
 
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS: Install .app bundle
     mkdir -p "${PREFIX}/lib"
-    if [ -d "dist/mac/Podman Desktop.app" ]; then
+    if [[ -d "dist/mac/Podman Desktop.app" ]]; then
         cp -r "dist/mac/Podman Desktop.app" "${PREFIX}/lib/Podman Desktop.app"
-    elif [ -d "dist/mac-arm64/Podman Desktop.app" ]; then
+    elif [[ -d "dist/mac-arm64/Podman Desktop.app" ]]; then
         cp -r "dist/mac-arm64/Podman Desktop.app" "${PREFIX}/lib/Podman Desktop.app"
     else
         echo "ERROR: macOS .app bundle not found in dist/"
@@ -140,6 +119,50 @@ EOF
     chmod +x "${PREFIX}/bin/podman-desktop"
 fi
 
+echo "=== Installing menuinst menu item ==="
+# Copy the menuinst JSON and platform-specific icon to $PREFIX/Menu so conda
+# registers a Start Menu / Applications / XDG entry when the package is installed.
+mkdir -p "${PREFIX}/Menu"
+cp "${RECIPE_DIR}/podman-desktop.json" "${PREFIX}/Menu/podman-desktop.json"
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if [[ -f "buildResources/icon.png" ]]; then
+        cp "buildResources/icon.png" "${PREFIX}/Menu/podman-desktop.png"
+    elif [[ -f "buildResources/512x512.png" ]]; then
+        cp "buildResources/512x512.png" "${PREFIX}/Menu/podman-desktop.png"
+    else
+        echo "ERROR: Linux icon file not found in buildResources/"
+        exit 1
+    fi
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    if [[ -f "buildResources/icon.icns" ]]; then
+        cp "buildResources/icon.icns" "${PREFIX}/Menu/podman-desktop.icns"
+    else
+        echo "ERROR: macOS icon (icon.icns) not found in buildResources/"
+        exit 1
+    fi
+fi
+
+echo "=== Installing conda activation scripts ==="
+# Activation script: prepend $CONDA_PREFIX/bin so podman (installed in the
+# same environment) is discoverable by Podman Desktop at runtime, including
+# when the app is launched outside of a shell (e.g., macOS .app bundles).
+mkdir -p "${PREFIX}/etc/conda/activate.d"
+cat > "${PREFIX}/etc/conda/activate.d/podman-desktop.sh" << 'EOF'
+#!/bin/bash
+# Ensure the conda environment's bin directory is on PATH so that podman,
+# installed in the same environment, can be found by Podman Desktop.
+export PATH="${CONDA_PREFIX}/bin:${PATH}"
+EOF
+
+# Deactivation script: remove the prepended entry when the environment is
+# deactivated to restore the original PATH.
+mkdir -p "${PREFIX}/etc/conda/deactivate.d"
+cat > "${PREFIX}/etc/conda/deactivate.d/podman-desktop.sh" << 'EOF'
+#!/bin/bash
+# Remove the conda environment's bin directory from PATH on deactivation.
+export PATH="${PATH//${CONDA_PREFIX}\/bin:/}"
+EOF
+
 echo "=== Build completed successfully! ==="
 echo "Installed files:"
 ls -la "${PREFIX}/bin/podman-desktop"
@@ -147,8 +170,8 @@ ls -la "${PREFIX}/bin/podman-desktop"
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo "Application directory:"
     ls -la "${PREFIX}/lib/podman-desktop/" | head -20
-    echo "Desktop file:"
-    cat "${PREFIX}/share/applications/podman-desktop.desktop"
+    echo "menuinst JSON:"
+    cat "${PREFIX}/Menu/podman-desktop.json"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Application bundle:"
     ls -la "${PREFIX}/lib/Podman Desktop.app/"

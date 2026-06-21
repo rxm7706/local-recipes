@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: okta-jwt-verifier
-  version: 0.3.0
+  version: "0.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: okta-jwt-verifier
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/okta_jwt_verifier-${{ version }}.tar.gz
-  sha256: 1bf7c0d8100af5933b746ed4c5a7cd3d07463c9fa72b4cb7c55e215acb05abc1
+  url: https://pypi.org/packages/source/o/okta-jwt-verifier/okta_jwt_verifier-${{ version }}.tar.gz
+  sha256: 4fe6e4f4ffff6c03b6b63a7709b879bdaf57025ae1dcc06ea2f32dd4a07963df
 
 build:
   number: 0
@@ -20,26 +19,93 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<4.0
-    - poetry-core
+    - python ${{ python_min }}.*
     - pip
+    - poetry-core
   run:
-    - python >=3.8.0,<4.0.0
+    - python >=${{ python_min }}
     - pyjwt >=2.8.0,<3.0.0
     - acachecontrol >=0.3.6,<0.4.0
-    - retry2 >=0.9.5,<0.10.0
+    - retry
+    - requests
 
 tests:
   - python:
       imports:
         - okta_jwt_verifier
-      pip_check: true
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - python -c "assert __import__('okta_jwt_verifier').__version__ == '${{ version }}'"
+    requirements:
+      run:
+        - python ${{ python_min }}.*
 
 about:
   summary: A Python library for OKTA JWT tokens validation
   license: Apache-2.0
   license_file: LICENSE.md
+  homepage: https://github.com/okta/okta-jwt-verifier-python
+  repository: https://github.com/okta/okta-jwt-verifier-python
+  description: |
+    Okta JWT Verifier for Python — verifies Okta-issued JWT access and ID
+    tokens locally (signature, claims, and expiry) without a network
+    round-trip per request.
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: okta-jwt-verifier
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: okta-jwt-verifier
+  cfe-purls:
+    - pkg:conda/okta-jwt-verifier@${{ version }}
+    - pkg:pypi/okta-jwt-verifier@${{ version }}
+  cfe-upstream-repo: https://github.com/okta/okta-jwt-verifier-python
+  cfe-upstream-homepage: https://github.com/okta/okta-jwt-verifier-python
+  cfe-import-names: [okta_jwt_verifier]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: false:retry2-not-on-conda-forge
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/okta-jwt-verifier-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock is STILL v0/meta.yaml at 0.5.0 (kept verbatim as the
+#    # deployed mirror). This recipe.yaml is the proposed v1 migration; the
+#    # feedstock owes meta-yaml-to-recipe-yaml.
+# build:
+#    # v1 drops the v0 LONG_DESCRIPTION.md copy-from-RECIPE_DIR shim: poetry-core
+#    # reads README.md which IS shipped in the 0.5.0 sdist, so a plain
+#    # pip install . suffices. (The v0 meta.yaml keeps the shim verbatim.)
+# requirements:
+#  run:
+#    # retry (NOT retry2): upstream pyproject declares retry2 (a fork not on
+#    # conda-forge); retry is the original with the same top-level `retry`
+#    # import, which is what okta_jwt_verifier actually imports. Mirrors the
+#    # deployed feedstock. TODO: switch to retry2 once packaged on conda-forge.
+#    # requests carried as a transitive run dep (matches the deployed feedstock).
+# tests:
+#    # pip_check intentionally false: the wheel METADATA bakes in
+#    # retry2<0.10.0,>=0.9.5 but the installed conda dep is retry (different
+#    # distribution name, same import), so pip check false-fails. Re-enable once
+#    # retry2 is on conda-forge. The __version__ script test compensates for the
+#    # lost pip-check coverage. requires-python is <4.0,>=3.8 so the 3.10 default
+#    # floor holds — no python_min override in context.
+####

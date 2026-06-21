@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.6.1"
+
+package:
+  name: django-formtools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-formtools/django_formtools-${{ version }}.tar.gz
+  sha256: 603ebc69a4b76b9bf38534f6e0245face007c7ed31bdfa073f8bf45cff5d7122
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.2
+    - setuptools-scm
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - formtools
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A set of high-level abstractions for Django forms
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://django-formtools.readthedocs.io/en/latest/
+  repository: https://github.com/jazzband/django-formtools
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-formtools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-formtools
+  cfe-purls:
+    - pkg:conda/django-formtools@${{ version }}
+    - pkg:pypi/django-formtools@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-formtools
+  cfe-upstream-homepage: https://django-formtools.readthedocs.io/en/latest/
+  cfe-import-names: [formtools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-formtools-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock is ALREADY v1 at 2.6.1; authored fresh recipe.yaml
+#    # at 2.6.1, deleted stale local meta.yaml (was 2.5.1).
+# context:
+#    # python_min omitted — upstream requires-python is >=3.8, below the
+#    # conda-forge 3.10 floor; let conda-forge-pinning supply the default.
+# package:
+#    # literal package.name + literal pypi.org source.url (v8.10.0 canonical),
+#    # modernizing the deployed feedstock's name[0]/replace jinja chain.
+# requirements:
+#  host:
+#    # setuptools >=61.2 + setuptools-scm kept — pyproject build-backend is
+#    # setuptools.build_meta with dynamic version from setuptools_scm.
+#  run:
+#    # dropped the deployed feedstock's speculative python <4.0 upper bound
+#    # (not upstream-declared); broad >=python_min floor is correct. django
+#    # lower bound is >=4.2 per the 2.6.1 sdist [project.dependencies]
+#    # (was >=3.2 in the stale local meta.yaml).
+# tests:
+#    # G7: import name is formtools, NOT django_formtools (sdist top-level
+#    # package is formtools/). Stale local meta.yaml had the wrong import.
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. formtools imports cleanly standalone
+#    # (Django apps register at app-loading, not module import), so the
+#    # standard python.imports test holds — no package_contents escape hatch.
+####

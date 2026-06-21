@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: behave-django
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/behave-django/behave_django-${{ version }}.tar.gz
+  sha256: 194dfa3317ed47062d1e3da6c06060faadcf50ee985656e437f2e3b35854c807
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=77
+    - setuptools-scm >=8
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - behave >=1.3.3
+    - django >=5.2
+    - beautifulsoup4
+
+tests:
+  - python:
+      imports:
+        - behave_django
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Behave BDD integration for Django
+  homepage: https://github.com/behave/behave-django
+  repository: https://github.com/behave/behave-django
+  documentation: https://behave-django.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: behave-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: behave-django
+  cfe-purls:
+    - pkg:conda/behave-django@${{ version }}
+    - pkg:pypi/behave-django@${{ version }}
+  cfe-upstream-repo: https://github.com/behave/behave-django
+  cfe-upstream-homepage: https://github.com/behave/behave-django
+  cfe-import-names: [behave_django]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/behave-django-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # v0-feedstock mirror: feedstock still ships recipe/meta.yaml at 2.0.0.
+#    # meta.yaml is kept alongside this recipe.yaml as a faithful upstream
+#    # mirror (STD-002 both-present is expected for a v0 mirror); this
+#    # recipe.yaml is the proposed v0->v1 migration, built/tested locally.
+# context:
+#    # python_min omitted: upstream requires-python is >=3.10, the conda-forge
+#    # default floor, so pinning supplies python_min. Do not declare in context.
+# requirements:
+#  host:
+#    # setuptools-scm>=8 + setuptools>=77 match pyproject [build-system].requires;
+#    # the sdist ships a static version in PKG-INFO so setuptools_scm reads it
+#    # without git (G39 does not apply: no broken private-API _version_helper).
+#  run:
+#    # behave>=1.3.3, django>=5.2, beautifulsoup4 mirror pyproject
+#    # [project].dependencies (django bumped 4.2 -> 5.2 in upstream 2.0.0).
+# tests:
+#    # __init__.py is a trivial docstring + __version__ string with no Django
+#    # imports, so `import behave_django` works standalone WITHOUT
+#    # DJANGO_SETTINGS_MODULE -> canonical CFEP-25 python.imports triad is
+#    # correct; no package_contents escape hatch needed.
+####

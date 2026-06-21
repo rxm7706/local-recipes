@@ -55,3 +55,25 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-flanker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flanker
+  cfe-name-aliases:
+    - flanker
+    - flanker-python
+  cfe-purls:
+    - pkg:conda/python-flanker@${{ version }}
+    - pkg:pypi/flanker@${{ version }}
+  cfe-upstream-repo: https://github.com/mailgun/flanker
+  cfe-upstream-homepage: https://www.mailgun.com/
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-flanker-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

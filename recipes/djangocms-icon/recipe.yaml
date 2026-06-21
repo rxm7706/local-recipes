@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.1"
+
+package:
+  name: djangocms-icon
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/djangocms-icon/djangocms_icon-${{ version }}.tar.gz
+  sha256: 77f7b4c697d652077113203049b54c32c27cf2d05cc45e7275520d1762569ad3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+    - django-cms >=3.10
+    - djangocms-attributes-field >=1
+
+tests:
+  - python:
+      imports:
+        - djangocms_icon
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Adds icon plugin to django CMS.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-cms/djangocms-icon
+  repository: https://github.com/django-cms/djangocms-icon
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangocms-icon
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangocms-icon
+  cfe-purls:
+    - pkg:conda/djangocms-icon@${{ version }}
+    - pkg:pypi/djangocms-icon@${{ version }}
+  cfe-upstream-repo: https://github.com/django-cms/djangocms-icon
+  cfe-upstream-homepage: https://github.com/django-cms/djangocms-icon
+  cfe-import-names: [djangocms_icon]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangocms-icon-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml.
+#    # meta.yaml kept as a faithful mirror of the deployed feedstock (v2.1.1);
+#    # this recipe.yaml is the proposed v1 migration, authored alongside.
+#    # cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml — the
+#    # feedstock owes the v0 to v1 switch.
+# context:
+#    # python_min omitted from context — PyPI requires_python is unset, so the
+#    # conda-forge default 3.10 floor is correct. Let pinning supply python_min.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches the deployed feedstock host block.
+#  run:
+#    # django kept (transitive via django-cms, but the deployed feedstock lists
+#    # it explicitly; pip check covers correctness). django-cms and
+#    # djangocms-attributes-field mirror the 2.1.1 sdist requires_dist
+#    # (django-cms>=3.10, djangocms-attributes-field>=1). No speculative upper
+#    # pins present to drop.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version test python pin. djangocms_icon/__init__.py is trivial
+#    # (only __version__), so the top-level import does not touch the Django app
+#    # registry and the standard python.imports test holds — no
+#    # package_contents escape hatch needed.
+####

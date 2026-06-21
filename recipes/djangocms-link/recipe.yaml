@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.1.1"
+
+package:
+  name: djangocms-link
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/djangocms-link/djangocms_link-${{ version }}.tar.gz
+  sha256: 16c3026e795260e54c6305eb5cf0f1302fe3b1840ff4929d7e8336a455640519
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - django-cms >=3.7,!=4.1,!=4.1.1,!=4.1.2
+    - djangocms-attributes-field >=1
+
+tests:
+  - python:
+      imports:
+        - djangocms_link
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Adds a link plugin to django CMS
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-cms/djangocms-link
+  repository: https://github.com/django-cms/djangocms-link
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangocms-link
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangocms-link
+  cfe-purls:
+    - pkg:conda/djangocms-link@${{ version }}
+    - pkg:pypi/djangocms-link@${{ version }}
+  cfe-upstream-repo: https://github.com/django-cms/djangocms-link
+  cfe-upstream-homepage: https://github.com/django-cms/djangocms-link
+  cfe-import-names: [djangocms_link]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangocms-link-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 5.1.1. Local meta.yaml refreshed to mirror the deployed v0 feedstock
+#    # verbatim; this recipe.yaml is the proposed v1 migration, authored at
+#    # the same 5.1.1. Both coexist until the feedstock completes its v0 to v1
+#    # switch (meta-yaml-to-recipe-yaml owed by the feedstock).
+# requirements:
+#  host:
+#    # setuptools + setuptools-scm kept in host: pyproject build-system requires
+#    # both, dynamic version via attr = djangocms_link.__version__. Not the G8
+#    # redundant pair (both are upstream-declared in [build-system].requires).
+#  run:
+#    # django-cms / djangocms-attributes-field mirror upstream
+#    # [project.dependencies] exactly (no extras to flatten per G25; no
+#    # speculative upper bounds). requires-python >=3.9 is below the cf 3.10
+#    # floor, so python_min omitted from context and clamped to the 3.10 default.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version test. djangocms_link imports cleanly standalone (plugin
+#    # registers at app-config, not import), so the standard python.imports
+#    # test holds; no Django package_contents escape hatch needed.
+####

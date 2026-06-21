@@ -1,25 +1,26 @@
 {% set name = "wagtail-experiments" %}
-{% set version = "0.3.1" %}
+{% set version = "0.4" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-experiments-{{ version }}.tar.gz
-  sha256: bb8e6f3ed7919e5662c97cbbe3154e0269774a6c65b38087eb4d53069b45f1f7
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail-experiments-{{ version }}.tar.gz
+  sha256: 32adc3e85685ef44e1760806208b426bcc722646f3624ff72cf81c662f78f93a
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -28,6 +29,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/torchbox/wagtail-experiments

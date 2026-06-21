@@ -1,13 +1,13 @@
 {% set name = "drf-standardized-errors" %}
-{% set version = "0.12.5" %}
+{% set version = "0.16.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/drf-standardized-errors-{{ version }}.tar.gz
-  sha256: 20db40c4f4288c36046ee6e0e3727539fbe3306d60f6f1aa88326629022f69c4
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 77b367955af7ed246db12d299a5a75a71eccef54dae4ef69ead29f5fb01be192
 
 build:
   noarch: python
@@ -16,11 +16,13 @@ build:
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
-    - python >=3.7
+    - drf-spectacular
+    - inflection
+    - python >={{ python_min }}
     - django >=3.2
     - djangorestframework >=3.12
 
@@ -31,6 +33,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/ghazi-git/drf-standardized-errors

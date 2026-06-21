@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.2"
+
+package:
+  name: crispy-bootstrap4
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/crispy-bootstrap4/crispy_bootstrap4-${{ version }}.tar.gz
+  sha256: 66f8f14bf9c2c16ed94243236ed253a94e5a625afa1ee64022ce29db98c6cd85
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=77.0.3
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=5.2
+    - django-crispy-forms >=2.3
+
+tests:
+  - python:
+      imports:
+        - crispy_bootstrap4
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Bootstrap4 template pack for django-crispy-forms
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/django-crispy-forms/crispy-bootstrap4
+  repository: https://github.com/django-crispy-forms/crispy-bootstrap4
+  description: |
+    Bootstrap4 template pack for django-crispy-forms. This template pack was
+    included with the core django-crispy-forms package until version 2.0.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: crispy-bootstrap4
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: crispy-bootstrap4
+  cfe-purls:
+    - pkg:conda/crispy-bootstrap4@${{ version }}
+    - pkg:pypi/crispy-bootstrap4@${{ version }}
+  cfe-upstream-repo: https://github.com/django-crispy-forms/crispy-bootstrap4
+  cfe-upstream-homepage: https://github.com/django-crispy-forms/crispy-bootstrap4
+  cfe-import-names: [crispy_bootstrap4]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/crispy-bootstrap4-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # django >=5.2 + django-crispy-forms >=2.3 mirror upstream
+#    # pyproject.toml [project.dependencies] (verified 2026.2). The deployed
+#    # feedstock still carries django >=4.2 / python <4.0; this regenerate
+#    # advances to upstream's current floor (requires-python >=3.10, no
+#    # python_min override needed).
+# about:
+#    # LICENSE ships in the sdist (crispy_bootstrap4-2026.2/LICENSE, MIT) ->
+#    # canonical license pattern (1); no in-recipe LICENSE, no secondary source.
+####

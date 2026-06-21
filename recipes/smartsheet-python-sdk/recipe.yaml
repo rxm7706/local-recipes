@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.5.3"
+
+package:
+  name: smartsheet-python-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/smartsheet-python-sdk/smartsheet_python_sdk-${{ version }}.tar.gz
+  sha256: 2ce6ed7a2e69dc76273fb69ccacb8b6f2bd57aa0b5b72dbff9b8bbdc1e5303e8
+  patches:
+    - setup.py.patch
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-scm >=7.0,<8
+    - setuptools
+    - six >=1.9
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - requests-toolbelt
+    - six >=1.9
+    - certifi
+    - python-dateutil
+
+tests:
+  - python:
+      imports:
+        - smartsheet
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: Apache-2.0
+  license_file:
+    - NOTICE
+    - LICENSE.md
+  summary: Library that uses Python to connect to Smartsheet services (using API 2.0).
+  homepage: http://smartsheet-platform.github.io/api-docs/
+  repository: https://github.com/smartsheet/smartsheet-python-sdk
+  documentation: http://smartsheet-platform.github.io/api-docs/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: smartsheet-python-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: smartsheet-python-sdk
+  cfe-purls:
+    - pkg:conda/smartsheet-python-sdk@${{ version }}
+    - pkg:pypi/smartsheet-python-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/smartsheet/smartsheet-python-sdk
+  cfe-upstream-homepage: http://smartsheet-platform.github.io/api-docs/
+  cfe-import-names: [smartsheet]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/smartsheet-python-sdk-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Legacy setup.py package (no pyproject.toml). Distribution name is
+#    smartsheet-python-sdk; the importable top-level module is "smartsheet"
+#    (verified against the 3.5.3 sdist __init__.py per G7/G10 — cached in
+#    cfe-import-names).
+# source:
+#    The deployed conda-forge feedstock is still v0/meta.yaml at 3.5.3 with
+#    a setup.py.patch. This recipe.yaml is the proposed v0-to-v1 migration;
+#    meta.yaml is kept alongside as a faithful mirror of the deployed
+#    feedstock until that feedstock completes its own v0-to-v1 switch.
+#    setup.py.patch loosens upstream's exact setup_requires pin
+#    setuptools_scm==7.0.1 to setuptools_scm >=7.0,<8 so the build can use
+#    conda-forge's setuptools_scm; load-bearing for the build.
+# build:
+#    --no-deps --no-build-isolation requires setuptools, setuptools-scm and
+#    six in host (use_scm_version runs at build time via setup.py).
+# requirements:
+#  host:
+#    setuptools-scm pinned >=7.0,<8 to match the patched setup_requires.
+#  run:
+#    Run deps mirror upstream setup.py install_requires (requests,
+#    requests-toolbelt, six >=1.9, certifi, python-dateutil). enum34 in
+#    upstream setup.py is gated on python < 3.4 and never applies at the
+#    conda-forge floor.
+# context:
+#    python_min omitted: upstream declares no requires-python lower bound
+#    above the conda-forge default floor 3.10; let conda-forge-pinning
+#    supply python_min.
+####

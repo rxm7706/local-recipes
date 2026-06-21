@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.1"
+
+package:
+  name: wagtail-rangefilter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-rangefilter/wagtail-rangefilter-${{ version }}.tar.gz
+  sha256: 74fde188e13e44766f1e106c91be540ca1cdf032251f233d6b3e4ea7ecd57ace
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django-admin-rangefilter >=0.12
+    - django >=3.2
+    - wagtail >=4.1
+
+tests:
+  - python:
+      imports:
+        - wagtail_rangefilter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Integrates django-admin-rangefilter into Wagtail's ModelAdmin
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/wunderweiss/wagtail-rangefilter
+  repository: https://github.com/wunderweiss/wagtail-rangefilter
+  description: |
+    Integrates django-admin-rangefilter into Wagtail's ModelAdmin, providing
+    date and datetime range filters for the Wagtail admin interface.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-rangefilter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-rangefilter
+  cfe-purls:
+    - pkg:conda/wagtail-rangefilter@${{ version }}
+    - pkg:pypi/wagtail-rangefilter@${{ version }}
+  cfe-upstream-repo: https://github.com/wunderweiss/wagtail-rangefilter
+  cfe-upstream-homepage: https://github.com/wunderweiss/wagtail-rangefilter
+  cfe-import-names: [wagtail_rangefilter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-rangefilter-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0 (recipe.yaml 404 / meta.yaml 200). Kept the
+#    # local meta.yaml mirror at the deployed 0.2.1 version; authored this v1
+#    # recipe.yaml alongside it as the proposed migration. cfe-forge-recipe-
+#    # updates-needed carries meta-yaml-to-recipe-yaml (the feedstock owes the
+#    # v0->v1 switch) + dependency-fix (see run: note).
+# requirements:
+#  host:
+#    # flit-core backend (pyproject [build-system] requires flit_core >=3.2,<4);
+#    # no setuptools/wheel needed. Matches deployed feedstock host block.
+#  run:
+#    # django-admin-rangefilter tightened to >=0.12 to match upstream's declared
+#    # lower bound (pyproject [project.dependencies]); the deployed feedstock
+#    # ships it bare. This is the dependency-fix the feedstock owes.
+#    # django >=3.2 / wagtail >=4.1 mirror upstream; no speculative upper pins.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. import wagtail_rangefilter is
+#    # clean standalone: __init__.py only sets default_app_config (a string) +
+#    # version tuple; apps.py/filters.py load via Django's app registry, not on
+#    # bare import. No package_contents escape hatch needed.
+####

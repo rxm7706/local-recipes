@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.2.0"
+
+package:
+  name: wagtail-trash
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-trash/wagtail_trash-${{ version }}.tar.gz
+  sha256: 3644aa27ba905690d63972a6c7ddee2e363d535fdb723b6ca497918d68c9e733
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - django
+    - django-treebeard
+    - wagtail >=6.3
+    - wagtail-modeladmin
+
+tests:
+  - python:
+      imports:
+        - wagtail_trash
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Make deleted pages only temporarily deleted.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Frojd/wagtail-trash/
+  repository: https://github.com/Frojd/wagtail-trash
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-trash
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-trash
+  cfe-purls:
+    - pkg:conda/wagtail-trash@${{ version }}
+    - pkg:pypi/wagtail-trash@${{ version }}
+  cfe-upstream-repo: https://github.com/Frojd/wagtail-trash
+  cfe-upstream-homepage: https://github.com/Frojd/wagtail-trash
+  cfe-import-names: [wagtail_trash]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-trash-feedstock
+  cfe-forge-recipe-updates-needed: recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1; authored recipe.yaml at 3.2.0, deleted
+#    # stale local meta.yaml (was 3.0.0).
+# source:
+#    # sdist filename uses underscores (wagtail_trash-3.2.0.tar.gz); path-2
+#    # segment stays hyphenated (distribution name), filename stem underscored.
+# requirements:
+#  host:
+#    # setuptools + wheel kept in host — setup.py/setup.cfg project (no
+#    # pyproject.toml / no [build-system]); matches deployed feedstock host
+#    # block. Modernized the meta.yaml URL to the canonical pypi.org form.
+#  run:
+#    # upstream install_requires is only wagtail>=6.3 + wagtail-modeladmin;
+#    # django + django-treebeard arrive transitively via wagtail. Kept both
+#    # explicit to mirror the deployed feedstock (canonical for what works);
+#    # dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared) for the broad >=python_min floor. wagtail >=6.3 floor
+#    # bumped from the old meta.yaml's >=4.1 per upstream 3.2.0.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtail_trash/__init__.py is a
+#    # bare default_app_config string assignment (no Django imports at module
+#    # level), so import wagtail_trash does NOT trip AppRegistryNotReady — the
+#    # standard python.imports test holds; no package_contents escape hatch
+#    # needed.
+####

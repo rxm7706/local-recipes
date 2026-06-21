@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.8.9"
+
+package:
+  name: h2o-lightwave-web
+  version: ${{ version }}
+
+source:
+  # PyPI ships ONLY a py3-none-any wheel for 1.8.9 (no sdist); the wheel is the
+  # ONLY artifact that carries the 423 bundled www/ web assets. The GitHub
+  # monorepo archive's py/h2o_lightwave_web subdir ships NO www/ assets (they
+  # are generated from ui/ at release time), so a from-source build produces an
+  # empty shell. Install the prebuilt wheel.
+  url: https://pypi.org/packages/py3/h/h2o-lightwave-web/h2o_lightwave_web-${{ version }}-py3-none-any.whl
+  sha256: 8abc5e61f5df46e240d83d891d0d367c4b5a9e9f48ee9abaa5494f612d045241
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install h2o_lightwave_web-${{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - h2o_lightwave_web
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Web assets package for H2O Lightwave apps.
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://wave.h2o.ai/
+  repository: https://github.com/h2oai/wave
+  documentation: https://wave.h2o.ai/
+  description: |
+    Web assets (static JavaScript, CSS, fonts, and HTML) for H2O Lightwave
+    apps. Ships the bundled front-end of the H2O Wave realtime app framework
+    so Lightwave applications can serve their UI without a separate Wave
+    server install.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: h2o-lightwave-web
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: h2o-lightwave-web
+  cfe-purls:
+    - pkg:conda/h2o-lightwave-web@${{ version }}
+    - pkg:pypi/h2o-lightwave-web@${{ version }}
+  cfe-upstream-repo: https://github.com/h2oai/wave
+  cfe-upstream-homepage: https://wave.h2o.ai/
+  cfe-import-names: [h2o_lightwave_web]
+  cfe-source-kind: pypi-wheel:github-source-ships-no-www-assets
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/h2o-lightwave-web-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E C1: feedstock is v0 meta.yaml at 1.8.9 (already current); local
+#    # meta.yaml was stale at 1.0.0 and is refreshed to mirror the deployed v0.
+#    # This recipe.yaml is the proposed v0-to-v1 migration. Both files coexist
+#    # until the feedstock itself migrates. gh-numbering: NOT an artifact —
+#    # PyPI history is monotonic 0.24.2 to 1.8.9; local 1.0.0 genuinely behind.
+# source:
+#    # CORRECTION vs the deployed feedstock: the feedstock builds from the
+#    # h2oai/wave GitHub monorepo archive (./py/h2o_lightwave_web), but that
+#    # subdir ships NO www/ web assets in the source tree (they are generated
+#    # from ui/ at release time and copied into the wheel). A from-source build
+#    # therefore produces an EMPTY package — 2 .py files, none of the 423
+#    # bundled JS/CSS/font/HTML assets that ARE the package. Verified by
+#    # building the GitHub-source variant: 0 www/ files in the .conda. The PyPI
+#    # py3-none-any wheel (1.8.9 ships wheel-only, no sdist) is the only artifact
+#    # with the real content (423 www/ files). recipe-regenerate updates-needed
+#    # flags that the deployed feedstock likely ships the same empty shell and
+#    # should switch to the wheel source.
+# requirements:
+#  host:
+#    # wheel install — pip + python only in host (no build backend; the wheel
+#    # is prebuilt). The feedstock's hatchling host dep is from-source only.
+#  run:
+#    # zero runtime deps — pure web-asset/data package (wheel METADATA has no
+#    # Requires-Dist). python is the only run dep.
+# about:
+#    # upstream requires-python >=3.8 is below the conda-forge 3.10 floor, so
+#    # python_min is omitted from context (default floor applies). Classifiers
+#    # cap at 3.11 but that is stale upstream metadata, not a real ceiling.
+#    # License-File pattern 2 (ship in-recipe): the wheel's bundled dist-info
+#    # LICENSE is only a 53-byte copyright stub, not the full Apache-2.0 text,
+#    # and rattler-build does not extract the .whl into the work dir anyway. So
+#    # the full LICENSE + NOTICE are copied from the GitHub archive into the
+#    # recipe dir and referenced as bare paths.
+# tests:
+#    # h2o_lightwave_web is a genuinely importable module (__init__.py defines
+#    # get_web_files() over the bundled www/ tree), so the standard
+#    # python.imports CFEP-25 triad holds — no package_contents escape hatch.
+####

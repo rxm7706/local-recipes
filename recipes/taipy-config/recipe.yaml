@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.1.1"
+
+package:
+  name: taipy-config
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/taipy-config/taipy-config-${{ version }}.tar.gz
+  sha256: 2f01184c73b38413e7fc822cbc5803ca23313d0908775aee59794f709c3f4d92
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - toml >=0.10,<=0.10.2
+    - deepdiff >=6.2.2,<=6.7.1
+
+tests:
+  - python:
+      imports:
+        - taipy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A Taipy package dedicated to easily configure a Taipy application.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/avaiga/taipy-config
+  repository: https://github.com/avaiga/taipy-config
+  description: |
+    A Taipy package dedicated to easily configure a Taipy application.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: taipy-config
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: taipy-config
+  cfe-purls:
+    - pkg:conda/taipy-config@${{ version }}
+    - pkg:pypi/taipy-config@${{ version }}
+  cfe-upstream-repo: https://github.com/avaiga/taipy-config
+  cfe-upstream-homepage: https://github.com/avaiga/taipy-config
+  cfe-import-names: [taipy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/taipy-config-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock is STILL v0 (meta.yaml only); kept the deployed
+#    # meta.yaml mirror at 3.1.1 build 1 and authored this v1 recipe.yaml
+#    # alongside it. Delete meta.yaml only after the feedstock's v0-to-v1
+#    # migration PR merges. cfe-forge-recipe-updates-needed flags the owed
+#    # migration.
+# context:
+#    # python_min omitted from context — upstream requires-python is >=3.8,
+#    # below the conda-forge 3.10 floor, so the default floor applies and no
+#    # context override is needed.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches the deployed feedstock host block.
+#  run:
+#    # tightened to the upstream 3.1.1 requires-dist bounds (deepdiff
+#    # <=6.7.1,>=6.2.2 and toml <=0.10.2,>=0.10), reconciled against the sdist.
+#    # The deployed feedstock meta.yaml still carries the stale 3.0.0-era
+#    # caps (deepdiff >=6.2,<6.3 / toml >=0.10,<0.11); the upstream-declared
+#    # upper bounds are load-bearing under pip_check. Both resolve on
+#    # conda-forge (deepdiff to 9.1.0, toml to 0.10.2).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_min test. taipy is a namespace package; the root
+#    # taipy/__init__.py imports cleanly standalone, so the standard
+#    # python.imports test holds (no package_contents escape hatch needed).
+####

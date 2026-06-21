@@ -1,13 +1,13 @@
 {% set name = "robotframework-assertion-engine" %}
-{% set version = "2.0.0" %}
+{% set version = "5.0.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/robotframework_assertion_engine-{{ version }}.tar.gz
-  sha256: d22349784db8020786d2eb53512269dc757fb2398e36af644a5efa666794bbde
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/robotframework_assertion_engine-{{ version }}.tar.gz
+  sha256: f8c1dd2757064808a432558f46a395da942f223d74a110419fc689992f9d600e
 
 build:
   noarch: python
@@ -16,15 +16,17 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<4.0
+    - python {{ python_min }}
     - poetry-core >=1.0.0
     - pip
   run:
-    - python >=3.8.1,<4.0
+    - python >={{ python_min }},<4.0
     - robotframework >=5.0.1
     - robotframework-pythonlibcore >=3.0.0
 
 test:
+  requires:
+    - python {{ python_min }}
   imports:
     - assertionengine
 

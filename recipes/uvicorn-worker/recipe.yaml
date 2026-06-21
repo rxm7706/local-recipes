@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.0"
+
+package:
+  name: uvicorn-worker
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uvicorn-worker/uvicorn_worker-${{ version }}.tar.gz
+  sha256: 8ee5306070d8f38dce124adce488c3c0b50f20cf0c0222b12c66188da7214493
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - uvicorn >=0.36.0
+    - gunicorn >=21.0.0
+
+tests:
+  - python:
+      imports:
+        - uvicorn_worker
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Uvicorn worker for Gunicorn!
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  homepage: https://github.com/Kludex/uvicorn-worker
+  repository: https://github.com/Kludex/uvicorn-worker
+  description: |
+    An ASGI worker class for running Uvicorn under the Gunicorn process
+    manager, combining Gunicorn's process management with Uvicorn's
+    high-performance ASGI server.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: uvicorn-worker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: uvicorn-worker
+  cfe-purls:
+    - pkg:conda/uvicorn-worker@${{ version }}
+    - pkg:pypi/uvicorn-worker@${{ version }}
+  cfe-upstream-repo: https://github.com/Kludex/uvicorn-worker
+  cfe-upstream-homepage: https://github.com/Kludex/uvicorn-worker
+  cfe-import-names: [uvicorn_worker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/uvicorn-worker-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock is STILL v0/meta.yaml at 0.4.0. Kept the deployed
+#    # feedstock meta.yaml as-is (local mirror) and authored this v1 recipe.yaml
+#    # alongside it. meta-yaml-to-recipe-yaml is owed to the feedstock.
+# requirements:
+#  run:
+#    # Reconciled run deps against the 0.4.0 sdist project.dependencies
+#    # (uvicorn>=0.36.0, gunicorn>=21.0.0). Dropped the deployed feedstock's
+#    # stale "uvicorn-standard >=0.14.0" — it is NOT in upstream's declared
+#    # dependencies, and uvicorn >=0.36.0 supersedes that old standard-extra
+#    # floor. This is the dependency-fix the feedstock owes. The feedstock's
+#    # commented-out "# - uvicorn >=0.36.0" line confirms the migration was
+#    # half-done upstream.
+#    # gunicorn is noarch on conda-forge (no platform selector needed); the old
+#    # local "__linux/__osx/__win + [not win]" virtual-package dance is dropped
+#    # because gunicorn now ships for all noarch platforms.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single python_min pin. uvicorn_worker imports cleanly standalone.
+# context:
+#    # python_min omitted: upstream requires-python is >=3.9; conda-forge floor
+#    # 3.10 applies, so the default floor is correct (no context override).
+####

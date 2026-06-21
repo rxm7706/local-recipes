@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: inertia-django
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/inertia-django/inertia_django-${{ version }}.tar.gz
+  sha256: 36511038caf2cbb6f54a08f17dc18fe1dd1b30c712a616672704e395b984f250
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4
+    - requests >=2.0.0,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - inertia
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/inertiajs/inertia-django
+  repository: https://github.com/inertiajs/inertia-django
+  summary: Django adapter for the InertiaJS framework
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: inertia-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: inertia-django
+  cfe-purls:
+    - pkg:conda/inertia-django@${{ version }}
+    - pkg:pypi/inertia-django@${{ version }}
+  cfe-upstream-repo: https://github.com/inertiajs/inertia-django
+  cfe-upstream-homepage: https://github.com/inertiajs/inertia-django
+  cfe-import-names: [inertia]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/inertia-django-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (keep-meta): conda-forge feedstock is still v0/meta.yaml at
+#    # 1.2.0. meta.yaml kept as a faithful mirror of the deployed feedstock;
+#    # this recipe.yaml is the proposed v1 migration (cfe-forge-recipe-updates-
+#    # needed: meta-yaml-to-recipe-yaml). Local mirror bumped 0.6.0 to 1.2.0.
+# package:
+#    # PyPI distribution is "inertia-django"; top-level import is "inertia"
+#    # (G7). The pre-bump local meta.yaml mirror wrongly tested "inertia_django";
+#    # corrected here and in the refreshed meta.yaml to match the deployed
+#    # feedstock and the actual sdist package dir.
+# requirements:
+#  host:
+#    # poetry-core-only project (build-system requires = poetry-core>=1.0.0);
+#    # no wheel/setuptools needed (G8).
+#  run:
+#    # deps reconciled against 1.2.0 sdist [tool.poetry.dependencies]:
+#    # django >=4, requests ^2 (>=2,<3). Dropped the feedstock's speculative
+#    # python <4.0 run upper bound (upstream requires-python is ^3.8 = >=3.8,
+#    # <4.0, but the conda-forge convention is a broad >=python_min floor on
+#    # the run python; the <4.0 ceiling is not load-bearing under pip_check).
+# context:
+#    # python_min omitted from context: upstream requires-python ^3.8 floor is
+#    # below the conda-forge default 3.10, so the default floor applies; let
+#    # conda-forge-pinning supply python_min.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; verified import inertia succeeds
+#    # without DJANGO_SETTINGS_MODULE (submodules do not hard-import Django at
+#    # module load), so the standard python.imports test holds, no package_
+#    # contents escape hatch needed. Matches the deployed feedstock test shape.
+####

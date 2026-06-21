@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.4"
+
+package:
+  name: datasette-configure-fts
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datasette-configure-fts/datasette_configure_fts-${{ version }}.tar.gz
+  sha256: 097ac91f03dc516de882193924662b2f24297fc94175ad7a61be05ae9c7a77a7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - datasette >=0.51
+    - sqlite-utils >=2.10
+
+tests:
+  - python:
+      imports:
+        - datasette_configure_fts
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Datasette plugin for enabling full-text search against selected table columns
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/datasette-configure-fts
+  repository: https://github.com/simonw/datasette-configure-fts
+  description: |
+    Datasette plugin that provides a UI for configuring SQLite full-text
+    search (FTS) against selected columns of tables in a Datasette instance.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datasette-configure-fts
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datasette-configure-fts
+  cfe-purls:
+    - pkg:conda/datasette-configure-fts@${{ version }}
+    - pkg:pypi/datasette-configure-fts@${{ version }}
+  cfe-upstream-repo: https://github.com/simonw/datasette-configure-fts
+  cfe-upstream-homepage: https://github.com/simonw/datasette-configure-fts
+  cfe-import-names: [datasette_configure_fts]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datasette-configure-fts-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1; authored recipe.yaml at 1.1.4, deleted
+#    # stale local meta.yaml (was 1.1.2).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches deployed feedstock host block.
+#  run:
+#    # dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared); broad >=python_min floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. datasette_configure_fts imports cleanly
+#    # standalone (plugin loads at app-instantiation, not import), so the
+#    # standard python.imports test holds — no package_contents escape hatch.
+####

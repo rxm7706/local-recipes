@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11"
+
+package:
+  name: wagtail-transfer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-transfer/wagtail_transfer-${{ version }}.tar.gz
+  sha256: 02aea3460e0c536e9fc2159fb44f6e8562b9c5f5488496df74040c2b18cdd67a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+    - django-modelcluster
+    - django-taggit
+    - django-treebeard
+    - djangorestframework
+    - requests
+    - wagtail >=5.2
+
+tests:
+  - python:
+      imports:
+        - wagtail_transfer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Content transfer for Wagtail
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/wagtail/wagtail-transfer
+  repository: https://github.com/wagtail/wagtail-transfer
+  description: |
+    An extension for Wagtail allowing content to be transferred between
+    multiple instances of a Wagtail project.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-transfer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-transfer
+  cfe-purls:
+    - pkg:conda/wagtail-transfer@${{ version }}
+    - pkg:pypi/wagtail-transfer@${{ version }}
+  cfe-upstream-repo: https://github.com/wagtail/wagtail-transfer
+  cfe-upstream-homepage: https://github.com/wagtail/wagtail-transfer
+  cfe-import-names: [wagtail_transfer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-transfer-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml -> 404); refreshed
+#    # local meta.yaml mirror to the deployed feedstock version (0.11) and
+#    # authored this v1 recipe.yaml alongside. Both files coexist; meta.yaml is
+#    # deleted only after the feedstock completes its own v0 -> v1 migration.
+#    # Local recipe was stale at 0.9.3; feedstock already shipped 0.11.
+# context:
+#    # python_min omitted: upstream requires-python is >=3.9, BELOW the
+#    # conda-forge 3.10 floor, so no override is needed (default floor applies).
+# requirements:
+#  host:
+#    # setuptools kept in host -- setup.py project (no pyproject.toml), matches
+#    # the deployed feedstock host block.
+#  run:
+#    # django / django-modelcluster / django-taggit / django-treebeard /
+#    # djangorestframework / requests are DIRECT imports in the package
+#    # (verified against the 0.11 sdist), not transitive-via-wagtail. Upstream
+#    # under-declares them (install_requires lists only wagtail>=5.2), but they
+#    # are needed for the import test to pass. Mirrors the curated feedstock
+#    # run block. wagtail >=5.2 is the only upstream-declared bound; no
+#    # speculative upper pins added.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtail_transfer imports cleanly
+#    # standalone (Wagtail/Django apps register at app-load, not at module
+#    # import), so the standard python.imports test holds -- no
+#    # package_contents escape hatch needed.
+####

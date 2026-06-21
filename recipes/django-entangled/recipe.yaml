@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7"
+
+package:
+  name: django-entangled
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-entangled/django_entangled-${{ version }}.tar.gz
+  sha256: 40afbdcaf91ec061d5e5365eaf7b978a03879620ad68f97c0615daaa66843cc2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=2.1
+
+tests:
+  - python:
+      imports:
+        - entangled
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Edit JSON field using Django Model Form
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jrief/django-entangled
+  repository: https://github.com/jrief/django-entangled
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-entangled
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-entangled
+  cfe-purls:
+    - pkg:conda/django-entangled@${{ version }}
+    - pkg:pypi/django-entangled@${{ version }}
+  cfe-upstream-repo: https://github.com/jrief/django-entangled
+  cfe-upstream-homepage: https://github.com/jrief/django-entangled
+  cfe-import-names: [entangled]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-entangled-feedstock
+  cfe-forge-recipe-updates-needed: [recipe-regenerate]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 0.7; authored modern recipe.yaml at
+#    # 0.7 and deleted the stale local meta.yaml (was 0.6.2).
+# package:
+#    # modernized off the feedstock's context.name + name[0] chain to literal
+#    # package.name + literal pypi.org source.url (current grayskull/CFE shape).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches the deployed feedstock host block.
+#  run:
+#    # dropped the deployed feedstock's speculative python upper bound (the
+#    # less-than-4.0 cap is NOT upstream-declared; the sdist requires.txt is
+#    # only django>=2.1 and setup.cfg has no python_requires). Broad
+#    # greater-than-or-equal python_min floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. Import name is "entangled" (G7/G10:
+#    # distribution django-entangled maps to top-level module entangled,
+#    # verified against the sdist top_level.txt + entangled/__init__.py).
+#    # __init__.py only sets __version__ (no Django settings import at module
+#    # top), so the standard python.imports test holds — no package_contents
+#    # escape hatch / DJANGO_SETTINGS_MODULE needed.
+####

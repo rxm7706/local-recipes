@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: lazy-imports
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lazy-imports/lazy_imports-${{ version }}.tar.gz
+  sha256: 3c546b3c1e7c4bf62a07f897f6179d9feda6118e71ef6ecc47a339cab3d2e2d9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - lazy_imports
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Tool to support lazy imports
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/bachorp/lazy-imports
+  repository: https://github.com/bachorp/lazy-imports
+  description: |
+    Tool to support lazy imports. Provides helpers (try_import, LazyImporter,
+    LazyModule) to defer importing optional or heavy dependencies until they
+    are actually used, raising a helpful error only when the missing import
+    is accessed.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lazy-imports
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lazy-imports
+  cfe-purls:
+    - pkg:conda/lazy-imports@${{ version }}
+    - pkg:pypi/lazy-imports@${{ version }}
+  cfe-upstream-repo: https://github.com/bachorp/lazy-imports
+  cfe-upstream-homepage: https://github.com/bachorp/lazy-imports
+  cfe-import-names: [lazy_imports]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lazy-imports-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is STILL v0/meta.yaml at
+#    # 1.2.0 (no recipe.yaml on the feedstock). Kept local meta.yaml as a
+#    # faithful deployed-state mirror; authored this v1 recipe.yaml alongside
+#    # it (MAJOR bump from local 0.3.1). Delete meta.yaml only after the
+#    # feedstock completes its own v0-to-v1 switch.
+# context:
+#    # python_min omitted from context — upstream requires-python is >=3.10,
+#    # the conda-forge default floor; let conda-forge-pinning supply python_min.
+# source:
+#    # Upstream repo moved telekom/lazy-imports to bachorp/lazy-imports (the
+#    # deployed feedstock 1.2.0 already reflects this); PyPI sdist ships LICENSE
+#    # at the root, so license_file resolves from the extracted archive (no
+#    # secondary source needed).
+# requirements:
+#  host:
+#    # setuptools kept in host: legacy setup.py build with no pyproject
+#    # build-system table; needed under --no-build-isolation. Matches the
+#    # deployed feedstock host block.
+#  run:
+#    # No runtime deps: setup.py install_requires is empty; every declared
+#    # dependency lives in the checking/testing/all extras (dev-only), which
+#    # stay out of run.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test. Import name lazy_imports verified against
+#    # the sdist top_level.txt (G7).
+####

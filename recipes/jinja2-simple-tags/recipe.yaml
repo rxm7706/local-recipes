@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.1"
+
+package:
+  name: jinja2-simple-tags
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jinja2-simple-tags/jinja2-simple-tags-${{ version }}.tar.gz
+  sha256: 54abf83883dcd13f8fd2ea2c42feeea8418df3640907bd5251dec5e25a6af0e3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jinja2 >=2.10
+
+tests:
+  - python:
+      imports:
+        - jinja2_simple_tags
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Base classes for quick-and-easy template tag development
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/dldevinc/jinja2-simple-tags
+  repository: https://github.com/dldevinc/jinja2-simple-tags
+  description: |
+    Base classes for quick-and-easy Jinja2 template tag development,
+    providing StandaloneTag and ContainerTag helpers that simplify
+    writing custom Jinja2 extensions.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jinja2-simple-tags
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jinja2-simple-tags
+  cfe-purls:
+    - pkg:conda/jinja2-simple-tags@${{ version }}
+    - pkg:pypi/jinja2-simple-tags@${{ version }}
+  cfe-upstream-repo: https://github.com/dldevinc/jinja2-simple-tags
+  cfe-upstream-homepage: https://github.com/dldevinc/jinja2-simple-tags
+  cfe-import-names: [jinja2_simple_tags]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jinja2-simple-tags-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0/meta.yaml at 0.6.1; kept the deployed
+#    # meta.yaml as a faithful mirror and authored this v1 recipe.yaml
+#    # alongside. cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml
+#    # (the feedstock owes the v0 to v1 migration).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # version is attr: jinja2_simple_tags.__version__, py_modules single file.
+#    # Matches the deployed feedstock host block.
+#  run:
+#    # jinja2 >=2.10 mirrors setup.cfg install_requires (Jinja2 >= 2.10);
+#    # no upstream-declared upper bound, so the broad >=python_min floor holds.
+# context:
+#    # python_min omitted — setup.cfg python_requires is >= 3.6, below the
+#    # conda-forge 3.10 floor; let conda-forge-pinning supply the default.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version test. jinja2_simple_tags is a single-module import that
+#    # loads cleanly standalone, so python.imports holds (no package_contents).
+####

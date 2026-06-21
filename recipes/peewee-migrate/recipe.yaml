@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: peewee-migrate
-  version: 1.12.2
+  version: "1.15.0"
 
 package:
-  name: ${{ name|lower }}
+  name: peewee-migrate
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/peewee_migrate-${{ version }}.tar.gz
-  sha256: c8187c97b756909ea57e77cce06ae66395219e86764ef0b286a7bc72ff7405ad
+  url: https://pypi.org/packages/source/p/peewee-migrate/peewee_migrate-${{ version }}.tar.gz
+  sha256: 0fd9fbc5cb2e6749d88b38c48c4ca24fb4a25368751b9c7a76cc1c78c767cf83
 
 build:
   number: 0
@@ -24,12 +23,12 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<4.0
-    - poetry-core
+    - python ${{ python_min }}.*
+    - uv-build >=0.10.2,<0.11.0
     - pip
   run:
-    - python >=3.8.0,<4.0.0
-    - peewee >=3.0.0,<4.0.0
+    - python >=${{ python_min }}
+    - peewee
     - click
 
 tests:
@@ -37,9 +36,13 @@ tests:
       imports:
         - peewee_migrate
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
+        - python ${{ python_min }}.*
     script:
       - pw_migrate --help
       - pw-migrate --help
@@ -47,9 +50,67 @@ tests:
 about:
   summary: Support for migrations in Peewee ORM
   license: MIT
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_file: LICENSE
   homepage: https://github.com/klen/peewee_migrate
+  repository: https://github.com/klen/peewee_migrate
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: peewee-migrate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: peewee-migrate
+  cfe-purls:
+    - pkg:conda/peewee-migrate@${{ version }}
+    - pkg:pypi/peewee-migrate@${{ version }}
+  cfe-upstream-repo: https://github.com/klen/peewee_migrate
+  cfe-upstream-homepage: https://github.com/klen/peewee_migrate
+  cfe-import-names: [peewee_migrate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/peewee-migrate-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock still v0/meta.yaml. Kept the local meta.yaml mirror
+#    # (deployed feedstock state, 1.15.0) and authored this v1 recipe.yaml
+#    # alongside. Delete meta.yaml only after the feedstock completes v0 to v1.
+# context:
+#    # python_min omitted from context — upstream requires-python is >=3.10,<4,
+#    # and 3.10 is the conda-forge default floor; conda-forge-pinning supplies
+#    # python_min. Only declare in context when overriding above 3.10.
+# requirements:
+#  host:
+#    # uv-build is the real build backend (pyproject build-system =
+#    # uv_build>=0.10.2,<0.11.0). The previous stale local recipe.yaml wrongly
+#    # listed poetry-core; corrected to match the sdist + deployed meta.yaml.
+#  run:
+#    # peewee and click are upstream-declared with no version pins; left
+#    # unpinned (no speculative caps). The prior stale recipe's peewee
+#    # >=3.0.0,<4.0.0 was not upstream-declared and was dropped.
+#    # The feedstock's run-dep python upper bound >=python_min,<4.0 mirrors
+#    # upstream requires-python <4; dropped here as a speculative cap on the
+#    # conda side (broad >=python_min floor is correct for noarch:python).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]; second script-test block keeps
+#    # the two CLI entry-point smoke checks (pw_migrate / pw-migrate --help)
+#    # from the deployed meta.yaml, with python pinned to python_min.
+# about:
+#    # license_file: LICENSE resolves from the in-recipe LICENSE (canonical
+#    # License-File pattern 2) — the PyPI sdist ships no LICENSE (G4).
+####

@@ -60,6 +60,10 @@ extra:
     - pkg:pypi/lfx-ibm@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://github.com/langflow-ai/langflow
+  cfe-import-names: [lfx_ibm]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: blocked-pending-prerequisites
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -69,6 +73,10 @@ extra:
   cfe-last-checked: 2026-06-19T20:15:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:15:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T01:16:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:

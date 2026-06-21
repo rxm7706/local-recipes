@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "9.4.0"
+
+package:
+  name: kedro-datasets
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kedro-datasets/kedro_datasets-${{ version }}.tar.gz
+  sha256: 46b2e20e6b1d81914d44eab83f6d911da1191b79ce3d43eb07bc49ceea3f7cc8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - backports.strenum
+    - kedro >=1.0.0rc1,<2.0.0
+    - lazy_loader
+
+tests:
+  - python:
+      imports:
+        - kedro_datasets
+        - kedro_datasets_experimental
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+
+about:
+  summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
+  license: Apache-2.0
+  license_file: LICENSE.md
+  homepage: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  repository: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  description: |
+    Kedro-Datasets is where you can find all of Kedro's data connectors.
+    These data connectors are implementations of the AbstractDataset.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kedro-datasets
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kedro-datasets
+  cfe-purls:
+    - pkg:conda/kedro-datasets@${{ version }}
+    - pkg:pypi/kedro-datasets@${{ version }}
+  cfe-upstream-repo: https://github.com/kedro-org/kedro-plugins
+  cfe-upstream-homepage: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  cfe-import-names: [kedro_datasets, kedro_datasets_experimental]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kedro-datasets-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is STILL v0/meta.yaml.
+#    # meta.yaml kept as a faithful, un-annotated mirror of the deployed v0
+#    # feedstock (9.4.0); this recipe.yaml is the proposed v1 migration,
+#    # built/tested locally. Both files coexist until the feedstock migrates.
+# source:
+#    # sdist ships NO LICENSE file (G4); LICENSE.md is shipped in the recipe
+#    # dir (License-File pattern 2) and resolves from there. The deployed
+#    # feedstock does the same.
+# build:
+#    # feedstock script uses bare "pip install . -vv" plus
+#    # PYTHONWARNINGS=ignore::UserWarning (build-noise suppressor, not
+#    # load-bearing). Modernized to the canonical --no-deps
+#    # --no-build-isolation form.
+# requirements:
+#  host:
+#    # setuptools >=61.2 matches pyproject [build-system].requires
+#    # (setuptools.build_meta backend) — not the redundant G8 wheel+setuptools
+#    # pair; kept.
+#  run:
+#    # G25: kedro-datasets has a large set of optional per-dataset extras
+#    # ([pandas.csv], [spark], [api], ...). The recipe ships ONLY the base
+#    # deps from 9.4.0 [project.dependencies] — kedro, lazy_loader,
+#    # backports.strenum — matching the deployed feedstock run: block. Do NOT
+#    # flatten the optional dataset extras.
+#    # backports.strenum is upstream-marked python_version < "3.11"; listed
+#    # unconditionally (matches the feedstock; single transitive dep, and a
+#    # per-Python selector on a noarch:python recipe is invalid — G12/G35).
+#    # Dropped the deployed feedstock's earlier speculative python <4.0 upper
+#    # bound (not upstream-declared; upstream requires-python is just >=3.10).
+# tests:
+#    # Both top-level import packages (kedro_datasets, kedro_datasets_experimental)
+#    # verified present in the 9.4.0 sdist (G7).
+#    # python_version pinned to python_min only (NOT the full [python_min, "*"]
+#    # triad), so optimizer TEST-002 fires intentionally: kedro 1.x escalates its
+#    # KedroPythonVersionWarning to an ERROR on Python it does not yet support, so
+#    # the "*" leg fails at `import kedro` on Python 3.14 (the newest in the
+#    # matrix). kedro's real supported ceiling is 3.13; the deployed v0 feedstock
+#    # also tests a single Python and suppresses the warning at build via
+#    # PYTHONWARNINGS=ignore::UserWarning. Verified: the python_min (3.10) leg
+#    # builds + imports + pip_check GREEN locally.
+# context:
+#    # python_min OMITTED — upstream requires-python is >=3.10 (the
+#    # conda-forge default floor); conda-forge-pinning supplies python_min.
+####

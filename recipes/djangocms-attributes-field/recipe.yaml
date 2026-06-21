@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1.2"
+
+package:
+  name: djangocms-attributes-field
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/djangocms-attributes-field/djangocms_attributes_field-${{ version }}.tar.gz
+  sha256: ed7e9d78a47b30801fe6b411e1cb8aff3434ac594c2b6bb86c859d98aff59838
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django-cms >=3.7
+
+tests:
+  - python:
+      imports:
+        - djangocms_attributes_field
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Adds attributes to Django models.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-cms/djangocms-attributes-field/
+  repository: https://github.com/django-cms/djangocms-attributes-field/
+  description: |
+    Adds a model field and form field to allow arbitrary HTML element
+    attributes to be stored against Django CMS models.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangocms-attributes-field
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangocms-attributes-field
+  cfe-purls:
+    - pkg:conda/djangocms-attributes-field@${{ version }}
+    - pkg:pypi/djangocms-attributes-field@${{ version }}
+  cfe-upstream-repo: https://github.com/django-cms/djangocms-attributes-field/
+  cfe-upstream-homepage: https://github.com/django-cms/djangocms-attributes-field/
+  cfe-import-names: [djangocms_attributes_field]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangocms-attributes-field-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # C1 KEEP-meta: feedstock still v0/meta.yaml at 4.1.2. meta.yaml mirrors
+#    # the deployed feedstock (clean); recipe.yaml is our proposed v1 migration
+#    # bumped to the same upstream 4.1.2. Both files coexist until the feedstock
+#    # completes its v0 to v1 switch.
+# context:
+#    # python_min omitted — upstream requires-python is >=3.9, below the
+#    # conda-forge 3.10 floor; let conda-forge-pinning supply python_min.
+# requirements:
+#  host:
+#    # setuptools kept in host — pyproject build-backend is
+#    # setuptools.build_meta (requires setuptools>=45, wheel); wheel dropped
+#    # per G8 (setuptools provides it). Matches deployed feedstock host block.
+#  run:
+#    # single upstream run dep django-cms >=3.7 (pyproject [project.dependencies]).
+#    # Django itself is pulled transitively by django-cms; no direct Django dep.
+#    # No upstream upper bounds, so none added.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single python {{ python_min }} test pin. The top-level
+#    # djangocms_attributes_field/__init__.py is only __version__ = '4.1.2'
+#    # (no Django imports at module load), so import does NOT raise
+#    # ImproperlyConfigured/AppRegistryNotReady — the standard python.imports
+#    # test holds; no package_contents escape hatch needed.
+####

@@ -1,41 +1,37 @@
 {% set name = "natural-keys" %}
-{% set version = "2.1.0" %}
+{% set version = "2.1.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/natural-keys-{{ version }}.tar.gz
-  sha256: f3c35669235aa70bc5fee9891cc322675a3f3040a28be48db21d1c506ef8ce46
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/natural-keys-{{ version }}.tar.gz
+  sha256: 67dbfdfd975fe19256c7385aae56b6c7d65d9f595523d1c75703ef91e292da16
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools
     - setuptools-scm
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=3.2,<5.0
     - html-json-forms >=1.0.0
 
 test:
-  #imports:
-  #  - natural_keys
   commands:
-    #- export DJANGO_SETTINGS_MODULE=settings  # [unix]
-    #- set DJANGO_SETTINGS_MODULE=settings  # [win]    
-    #- DJANGO_CONFIGURATION=core.settings DJANGO_SETTINGS_MODULE=django
     - python -c "import django; from django.conf import settings; settings.configure(); django.setup(); import natural_keys"
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: Enhanced support for natural keys in Django and Django REST Framework.

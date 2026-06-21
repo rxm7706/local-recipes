@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.8"
+
+package:
+  name: django-log-viewer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-log-viewer/django_log_viewer-${{ version }}.tar.gz
+  sha256: 3b70837cc1877356831a5d4831d30426809ccd12a0705b7fb11512ee17f3b50a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+
+tests:
+  - python:
+      imports:
+        - log_viewer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Django log viewer
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/agusmakmun/django-log-viewer
+  repository: https://github.com/agusmakmun/django-log-viewer
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-log-viewer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-log-viewer
+  cfe-purls:
+    - pkg:conda/django-log-viewer@${{ version }}
+    - pkg:pypi/django-log-viewer@${{ version }}
+  cfe-upstream-repo: https://github.com/agusmakmun/django-log-viewer
+  cfe-upstream-homepage: https://github.com/agusmakmun/django-log-viewer
+  cfe-import-names: [log_viewer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-log-viewer-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 and already at 1.1.8 (build.number 1);
+#    # bumped local v0 meta.yaml (1.1.7) to a fresh v1 recipe.yaml at 1.1.8,
+#    # then deleted the stale meta.yaml.
+# package:
+#    # G7 import-name divergence: distribution django-log-viewer maps to the
+#    # top-level import log_viewer (verified against the sdist
+#    # log_viewer/__init__.py). cached in cfe-import-names.
+# source:
+#    # literal package name + literal pypi.org URL; sdist filename stem is
+#    # underscored (django_log_viewer) while the path-2 segment stays the
+#    # hyphenated distribution name (django-log-viewer).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches the deployed feedstock host block.
+#  run:
+#    # django retained to match the deployed feedstock (it is a Django app,
+#    # unusable without Django). setup.py declares no install_requires and the
+#    # wheel METADATA has no Requires-Dist, so pip check does not enforce it.
+#    # dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared; upstream sets no requires-python). broad
+#    # >=python_min floor is correct.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. log_viewer imports cleanly standalone
+#    # (the Django app registers at app-instantiation, not at import), so the
+#    # standard python.imports test holds with no package_contents escape hatch.
+####

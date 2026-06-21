@@ -2,37 +2,21 @@
 schema_version: 1
 
 context:
-  name: json-stream-rs-tokenizer
-  version: "0.4.29"
+  version: "0.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: json-stream-rs-tokenizer
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json_stream_rs_tokenizer-${{ version }}.tar.gz
-  sha256: cfb63413cd38cf887d374b7e8969ec635eeb0cbfd136be0ea0c5eae2bb6f6932
+  url: https://pypi.org/packages/source/j/json-stream-rs-tokenizer/json_stream_rs_tokenizer-${{ version }}.tar.gz
+  sha256: a07f1aae5915adc431e9dd61dd636a333c46b52f34ab6dccf98b2c65eae269f8
 
 build:
   number: 0
   script:
-    - if: unix
-      then:
-        # Unix recipe
-        - export OPENSSL_DIR="$PREFIX"
-      else:
-        # Win recipe  # work around long path problem,
-        # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
-        - set CARGO_HOME=C:\.cargo
-        - md %CARGO_HOME%
-        - if errorlevel 1 exit 1
     - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-#  skip:
-#    - match(python, "<3.9")
-  #skip: not (match(python, python_min ~ ".*") and is_abi3)
-  python:
-    version_independent: true
 
 requirements:
   build:
@@ -40,14 +24,12 @@ requirements:
       then:
         - python
         - cross-python_${{ target_platform }}
-        #- maturin >=1,<2
     - ${{ compiler("cxx") }}
-    #- ${{ stdlib("c") }}
+    - ${{ stdlib("c") }}
     - ${{ compiler("rust") }}
     - cargo-bundle-licenses
   host:
     - python
-    - python-abi3
     - setuptools
     - wheel
     - setuptools-rust >=1,<2
@@ -59,11 +41,7 @@ tests:
   - python:
       imports:
         - json_stream_rs_tokenizer
-  - requirements:
-      run:
-        - python
-    script:
-      - pip check
+      pip_check: true
 
 about:
   homepage: https://github.com/smheidrich/py-json-stream-rs-tokenizer
@@ -76,3 +54,64 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json-stream-rs-tokenizer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-stream-rs-tokenizer
+  cfe-purls:
+    - pkg:conda/json-stream-rs-tokenizer@${{ version }}
+    - pkg:pypi/json-stream-rs-tokenizer@${{ version }}
+  cfe-upstream-repo: https://github.com/smheidrich/py-json-stream-rs-tokenizer
+  cfe-upstream-homepage: https://github.com/smheidrich/py-json-stream-rs-tokenizer
+  cfe-import-names: [json_stream_rs_tokenizer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json-stream-rs-tokenizer-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - platform-expansion
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-D C1: feedstock still v0 (meta.yaml). Authored recipe.yaml at 0.5.1
+#    # alongside a faithful 0.5.1 meta.yaml mirror; both coexist until the
+#    # feedstock completes its v0 to v1 switch.
+# build:
+#    # setuptools-rust (PyO3) extension. NOT abi3 — setup.py sets
+#    # py_limited_api=False (required for num_bigint compat), so this is a
+#    # per-Python compiled build, NOT version_independent. The prior local
+#    # recipe carried python-abi3 + version_independent: true; removed as
+#    # incorrect for this package.
+# requirements:
+#  build:
+#    # cxx + rust compilers match the deployed feedstock; stdlib(c) per the
+#    # all-compiled-recipes rule (the feedstock carries it too).
+#    # cargo-bundle-licenses per conda-forge Rust policy; emits THIRDPARTY.yml.
+#  host:
+#    # setup.py / setup.cfg project (build-system requires setuptools, wheel,
+#    # setuptools-rust>=1,<2); host block mirrors the deployed feedstock.
+# tests:
+#    # Simple imports + pip_check (matches the deployed feedstock). The
+#    # CFEP-25 cross-Python [python_min.*, "*"] matrix is NOT used here: this
+#    # is a per-Python COMPILED build (one artifact per Python), so a python_min
+#    # test leg would try to install a Python the single artifact was not built
+#    # for (G38). rattler-build tests against the build's own Python.
+#    # python_min stays out of context: upstream python_requires is >=3.8,<3.15,
+#    # below the conda-forge 3.10 floor, so pinning supplies it.
+# extra:
+#    # platform-expansion noted: feedstock .ci_support ships only linux_64 /
+#    # osx_64 / win_64. As a compiled package it should widen to osx-arm64 +
+#    # linux-aarch64 at submission. meta-yaml-to-recipe-yaml: feedstock owes v1.
+####

@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.12.0"
+
+package:
+  name: flake8-tidy-imports
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flake8-tidy-imports/flake8_tidy_imports-${{ version }}.tar.gz
+  sha256: 9254788c3b6862c2fcec0250d2dc9af089afebff9c5b8a8ac8b9525b059b06db
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flake8 >=3.8
+
+tests:
+  - python:
+      imports:
+        - flake8_tidy_imports
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A flake8 plugin that helps you write tidier imports.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/adamchainz/flake8-tidy-imports
+  repository: https://github.com/adamchainz/flake8-tidy-imports
+  documentation: https://github.com/adamchainz/flake8-tidy-imports/blob/main/CHANGELOG.rst
+  description: |
+    A flake8 plugin that helps you write tidier imports. It bans relative
+    imports and the use of certain modules or imports, and can require
+    specific banned-API replacements.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8-tidy-imports
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-tidy-imports
+  cfe-purls:
+    - pkg:conda/flake8-tidy-imports@${{ version }}
+    - pkg:pypi/flake8-tidy-imports@${{ version }}
+  cfe-upstream-repo: https://github.com/adamchainz/flake8-tidy-imports
+  cfe-upstream-homepage: https://github.com/adamchainz/flake8-tidy-imports
+  cfe-import-names: [flake8_tidy_imports]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flake8-tidy-imports-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock is still v0/meta.yaml; meta.yaml kept as a
+#    # faithful mirror of the deployed feedstock at 4.12.0. This recipe.yaml is the
+#    # proposed v1 migration (built/tested locally). The feedstock owes the v0 to v1
+#    # switch -- see cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml.
+# context:
+#    # python_min omitted from context: PyPI requires-python is >=3.9, below the
+#    # conda-forge 3.10 floor, so the default floor applies. Let conda-forge-pinning
+#    # supply python_min.
+# requirements:
+#  host:
+#    # setuptools kept in host -- build-system requires setuptools>=77 (pyproject
+#    # build-backend setuptools.build_meta). pip + setuptools only; no wheel (G8).
+#  run:
+#    # single run dep flake8 >=3.8, mirroring upstream requires-dist flake8>=3.8.
+#    # No speculative upper pin added.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] -- modernizes the feedstock's
+#    # single-version python test pin. flake8_tidy_imports imports cleanly
+#    # standalone, so the standard python.imports test holds.
+####

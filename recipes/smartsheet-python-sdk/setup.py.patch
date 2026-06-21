@@ -1,0 +1,11 @@
+--- a/setup.py
++++ b/setup.py
+@@ -48,7 +48,7 @@
+     use_scm_version={
+         'write_to': 'smartsheet/version.py'
+     },
+-    setup_requires=['setuptools_scm==7.0.1'],
++    setup_requires=['setuptools_scm>=7.0,<8'],
+     install_requires=REQUIRES,
+     packages=find_packages(),
+     include_package_data=True,

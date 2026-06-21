@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.12.0"
+
+package:
+  name: opentelemetry-propagator-gcp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-propagator-gcp/opentelemetry_propagator_gcp-${{ version }}.tar.gz
+  sha256: 5495b891e7c816688d4e12fda7b365572dc8cb7ea8027a4390c5d2d868db1b98
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api >=1.0,<2.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.propagators.cloud_trace_propagator
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Google Cloud propagator for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-propagator-gcp
+  repository: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
+  description: |
+    Google Cloud propagator for OpenTelemetry. Provides the
+    CloudTraceFormatPropagator for propagating trace context using the
+    X-Cloud-Trace-Context header, enabling trace correlation with Google
+    Cloud Trace.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-propagator-gcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-propagator-gcp
+  cfe-purls:
+    - pkg:conda/opentelemetry-propagator-gcp@${{ version }}
+    - pkg:pypi/opentelemetry-propagator-gcp@${{ version }}
+  cfe-upstream-repo: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
+  cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-propagator-gcp
+  cfe-import-names: [opentelemetry.propagators.cloud_trace_propagator]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-propagator-gcp-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml AND is
+#    # already deployed at 1.12.0. Local mirror was behind at 1.6.0. Refreshed
+#    # meta.yaml to faithfully mirror the deployed still-v0 feedstock at 1.12.0;
+#    # authored this modern v1 recipe.yaml alongside as the proposed migration.
+#    # Delete meta.yaml only after the feedstock completes its v0-to-v1 switch.
+# source:
+#    # sdist filename uses underscores (opentelemetry_propagator_gcp-...), path-2
+#    # segment stays hyphenated (distribution name). sha256 verified against the
+#    # downloaded 1.12.0 sdist.
+# requirements:
+#  host:
+#    # setuptools kept in host: legacy setup.py + setup.cfg project (no
+#    # pyproject.toml / no PEP-517 backend); matches deployed feedstock host
+#    # block. python_requires = >=3.9 clamps to the 3.10 floor, so python_min is
+#    # omitted from context (let conda-forge-pinning supply it).
+#  run:
+#    # opentelemetry-api expressed as >=1.0,<2.0, the explicit form of upstream's
+#    # install_requires opentelemetry-api ~= 1.0 (setup.cfg). Upstream-declared
+#    # bound is load-bearing under pip_check: true. Deployed feedstock used ~=1.0.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. Import target is the actual dotted
+#    # module opentelemetry.propagators.cloud_trace_propagator (G7: verified
+#    # against the sdist top-level __init__.py at src/opentelemetry/propagators/
+#    # cloud_trace_propagator), not the bare opentelemetry namespace the deployed
+#    # meta.yaml tests. The dotted module imports cleanly from opentelemetry-api
+#    # (opentelemetry.trace / .context / .propagators.textmap).
+####

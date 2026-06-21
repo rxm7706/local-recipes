@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.0"
+
+package:
+  name: google-cloud-ndb
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google-cloud-ndb/google_cloud_ndb-${{ version }}.tar.gz
+  sha256: d7a9baa912a9d3c4d76d5084d1ef34dc91613beee1412d5ebdb688f9834d5b69
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - grpcio
+    - requests
+    - google-api-core >=2.11.0,<3.0.0
+    - google-cloud-datastore >=2.16.0,!=2.20.2,<3.0.0
+    - protobuf >=4.25.8,<8.0.0
+    - pymemcache >=2.1.0,<5.0.0
+    - pytz >=2022.1
+    - redis-py >=3.0.0,<8.0.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.ndb
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: NDB library for Google Cloud Datastore
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/google-cloud-ndb
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-ndb
+  documentation: https://googleapis.dev/python/python-ndb/latest/
+  description: |
+    This is an updated version of the ndb client library for use with Google Cloud Datastore.
+    Client Library Documentation - https://googleapis.dev/python/python-ndb/latest
+    Product Documentation - https://cloud.google.com/datastore/docs
+    The original Python 2 version of ndb was designed specifically for the Google App Engine python27 runtime and can be found at https://github.com/GoogleCloudPlatform/datastore-ndb-python.
+    This version of ndb is designed for the Google App Engine Python 3 runtime, and will run on other Python platforms as well.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-ndb
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-ndb
+  cfe-purls:
+    - pkg:conda/google-cloud-ndb@${{ version }}
+    - pkg:pypi/google-cloud-ndb@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-ndb
+  cfe-upstream-homepage: https://pypi.org/project/google-cloud-ndb
+  cfe-import-names: [google.cloud.ndb]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-ndb-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (KEEP-meta): feedstock is STILL v0/meta.yaml at 2.5.0 (recipe.yaml
+#    # 404 on the feedstock). meta.yaml refreshed to faithfully mirror the deployed
+#    # 2.5.0 feedstock; this recipe.yaml is the proposed v1 migration, built/tested
+#    # locally alongside it. Both files coexist until the feedstock migrates.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches deployed feedstock host block.
+#  run:
+#    # grpcio + requests carried over from the deployed feedstock: upstream's
+#    # google-api-core[grpc] extra flattens to grpcio (+grpcio-status) per the
+#    # conda no-extras rule; requests is a base google-api-core dep. Mirroring the
+#    # verified-working deployed feedstock run-set rather than re-deriving.
+#    # All version bounds are upstream-declared (requires-dist), load-bearing under
+#    # pip_check: true — kept, not loosened.
+#    # pytz bumped 2018.3 -> 2022.1 to match 2.5.0 upstream requires-dist.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. import verified against the sdist as
+#    # the dotted namespace google.cloud.ndb (sdist top-level __init__.py at
+#    # google/cloud/ndb/__init__.py) — narrower and more precise than the
+#    # feedstock's broad `google` import (G7).
+# context:
+#    # python_min omitted from context: upstream requires-python is >=3.10, the
+#    # conda-forge default floor.
+####

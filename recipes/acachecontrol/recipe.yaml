@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.7"
+
+package:
+  name: acachecontrol
+  version: ${{ version }}
+
+source:
+  url: https://github.com/MasterSergius/acachecontrol/archive/v${{ version }}.tar.gz
+  sha256: 186e85ddd0d1b374f4828883e0d13581c4162a07363172fb87b99bd456085ec6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - aiohttp >=3.10.2
+
+tests:
+  - python:
+      imports:
+        - acachecontrol
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Cache-Control for aiohttp
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/MasterSergius/acachecontrol
+  repository: https://github.com/MasterSergius/acachecontrol
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: acachecontrol
+  cfe-upstream-registry: github
+  cfe-upstream-name: MasterSergius/acachecontrol
+  cfe-purls:
+    - pkg:conda/acachecontrol@${{ version }}
+    - pkg:pypi/acachecontrol@${{ version }}
+  cfe-upstream-repo: https://github.com/MasterSergius/acachecontrol
+  cfe-upstream-homepage: https://github.com/MasterSergius/acachecontrol
+  cfe-import-names: [acachecontrol]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/acachecontrol-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering re-verify: GitHub tag v0.3.7 == PyPI 0.3.7 ==
+#    # deployed feedstock 0.3.7 (numbering FULLY ALIGNED, no copilotkit-style
+#    # divergence). Local was genuinely BEHIND at 0.3.5 -> refreshed to 0.3.7.
+#    # C2 (feedstock already v1): authored recipe.yaml, deleted stale local
+#    # meta.yaml (was 0.3.5).
+# source:
+#    # Mirrors the DEPLOYED feedstock source kind = github-tag (archive tarball),
+#    # NOT a PyPI sdist (the task brief said pypi-sdist; the live feedstock and
+#    # the prior local recipe both source the GitHub archive). sha256 verified
+#    # against both the downloaded tarball and the deployed feedstock value.
+# requirements:
+#  host:
+#    # setuptools kept in host: pyproject.toml build-system is
+#    # setuptools.build_meta (setup.py project, no wheel needed per G8);
+#    # matches deployed feedstock host block.
+#  run:
+#    # aiohttp >=3.10.2 from upstream requires_dist / requirements.txt (the old
+#    # local meta.yaml's >=3.7,<4.0 was stale; dropped the stale setuptools
+#    # run-dep). python <4.0 upper bound is upstream-DECLARED
+#    # (requires-python >=3.6,<4.0), not speculative -> kept.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] list form. acachecontrol top-level
+#    # import verified vs sdist (src/acachecontrol/__init__.py) -> import name ==
+#    # distribution name (no G7/G10 divergence).
+# context:
+#    # python_min omitted: upstream floor is 3.6 (< conda-forge 3.10 default);
+#    # let conda-forge-pinning supply python_min at the default floor.
+####

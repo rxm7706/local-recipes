@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.8.9"
+
+package:
+  name: h2o-wave
+  version: ${{ version }}
+
+source:
+  url: https://github.com/h2oai/wave/archive/v${{ version }}.tar.gz
+  sha256: e6acc1c4f146ef623216c0611c7cae32911df1cf3727e4cfcf8d862beb80270f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install ./py/h2o_wave -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - wave = h2o_wave.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click
+    - httpx >=0.16.1
+    - inquirer
+    - starlette >=0.16.0,<2
+    - uvicorn >=0.17.6
+
+tests:
+  - python:
+      imports:
+        - h2o_wave
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Python driver for H2O Wave Realtime Apps
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+    - py/h2o_wave/LICENSE
+  homepage: https://wave.h2o.ai/
+  repository: https://github.com/h2oai/wave
+  documentation: https://wave.h2o.ai/
+  description: |
+    H2O Wave is a lightweight software stack for programming interactive web
+    applications entirely in Python (no HTML/Javascript/CSS required).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: h2o-wave
+  cfe-upstream-registry: github
+  cfe-upstream-name: h2oai/wave
+  cfe-purls:
+    - pkg:conda/h2o-wave@${{ version }}
+    - pkg:pypi/h2o-wave@${{ version }}
+  cfe-upstream-repo: https://github.com/h2oai/wave
+  cfe-upstream-homepage: https://wave.h2o.ai/
+  cfe-import-names: [h2o_wave]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/h2o-wave-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-E gh-numbering re-verify (target 1.8.9). Local was genuinely behind
+#    # at 1.0.0 (real release, not a numbering artifact): PyPI + GitHub share one
+#    # monotonic scheme v1.0.0 (2023) ... v1.8.9 (latest), 80 PyPI releases.
+#    # Feedstock h2o-wave-feedstock is v0 (C1): meta.yaml mirror KEPT at 1.8.9;
+#    # this recipe.yaml is the proposed v0-to-v1 migration.
+# source:
+#    # github-tag, NOT the per-platform PyPI wheel. PyPI ships per-OS wheels that
+#    # bundle the prebuilt waved Go server binary, but the feedstock deliberately
+#    # packages ONLY the pure-Python driver from py/h2o_wave in the GitHub source
+#    # archive -- noarch:python, no native binary. Mirrored here.
+# requirements:
+#  host:
+#    # hatchling is the upstream build-backend (pyproject [build-system]); host =
+#    # hatchling + pip only (no redundant wheel/setuptools -- G8). Matches feedstock.
+#  run:
+#    # starlette bumped to upstream-declared >=0.16.0,<2 (py/h2o_wave/pyproject
+#    # [project.dependencies] at v1.8.9). The deployed feedstock still carries the
+#    # stale >=0.13.8; this is an upstream-explicit, load-bearing constraint under
+#    # pip_check (G24/G26), so applied as a correction. click/inquirer/httpx/uvicorn
+#    # unchanged.
+# context:
+#    # python_min omitted: upstream requires-python >=3.8 is below the conda-forge
+#    # 3.10 floor, so the pinning default applies.
+# tests:
+#    # CFEP-25 triad [python_min.*, "*"] modernizes the feedstock's single-version
+#    # python test; entry point `wave` not exercised (no test data / non-trivial
+#    # CLI invocation), matching the feedstock which tests imports + pip check only.
+####

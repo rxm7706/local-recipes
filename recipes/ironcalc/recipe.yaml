@@ -1,14 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Generated from python-maturin path; PyO3/maturin detected via sdist
-# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
-# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
-# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
-# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
 schema_version: 1
 
 context:
   version: "0.7.0"
-  # upstream pyproject.toml: requires-python = ">=3.10"
 
 package:
   name: ironcalc
@@ -22,9 +16,6 @@ build:
   number: 0
   script:
     env:
-      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
-      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
-      # cargo build internally and inherits these env vars.
       CARGO_PROFILE_RELEASE_STRIP: symbols
       CARGO_PROFILE_RELEASE_LTO: fat
     content:
@@ -44,17 +35,10 @@ requirements:
     - ${{ compiler("rust") }}
     - cargo-bundle-licenses
   host:
-    # Pin python to the variant version so rattler-build iterates the
-    # staged-recipes python matrix (py3.10 / 3.11 / 3.12 / 3.13) instead of
-    # producing a single artifact for whatever python is in the build env.
-    # (Without this pin, buildId 1534063 produced only a py3.11 artifact;
-    # the test stage then couldn't install across the matrix.)
     - python ${{ python_min }}.*
     - pip
     - maturin >=1.7,<2.0
   run:
-    # No version constraint — the conda-smithy lint requires bare `python` in
-    # run: for non-noarch packages; the variant config drives the matrix.
     - python
 
 tests:
@@ -82,3 +66,47 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ironcalc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ironcalc
+  cfe-purls:
+    - pkg:conda/ironcalc@${{ version }}
+    - pkg:pypi/ironcalc@${{ version }}
+  cfe-upstream-repo: https://github.com/ironcalc/ironcalc
+  cfe-upstream-homepage: https://www.ironcalc.com/
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ironcalc-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# Header:
+#    # Generated from python-maturin path; PyO3/maturin detected via sdist
+#    # pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+#    # (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+#    # 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+#    # ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
+# build:
+#  script:
+#    env:
+#      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+#      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+#      # cargo build internally and inherits these env vars.
+# context:
+#    # upstream pyproject.toml: requires-python = ">=3.10"
+#  host:
+#    # Pin python to the variant version so rattler-build iterates the
+#    # staged-recipes python matrix (py3.10 / 3.11 / 3.12 / 3.13) instead of
+#    # producing a single artifact for whatever python is in the build env.
+#    # (Without this pin, buildId 1534063 produced only a py3.11 artifact;
+#    # the test stage then couldn't install across the matrix.)
+#  run:
+#    # No version constraint — the conda-smithy lint requires bare `python` in
+#    # run: for non-noarch packages; the variant config drives the matrix.
+####

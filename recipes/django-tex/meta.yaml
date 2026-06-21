@@ -1,13 +1,13 @@
 {% set name = "django-tex" %}
-{% set version = "1.1.10" %}
+{% set version = "1.1.12" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-tex-{{ version }}.tar.gz
-  sha256: 0b763a3782fee20c85e2b564561f130af269f25b0499fdafd49e55befd6803f8
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: e9075209847d629f956b4ba2645a99146aa4e35527b188cce0e47532ea88a170
 
 build:
   noarch: python
@@ -16,11 +16,12 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools-scm
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=2.2
     - jinja2 >=2.9
 
@@ -31,6 +32,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/weinbusch/django-tex

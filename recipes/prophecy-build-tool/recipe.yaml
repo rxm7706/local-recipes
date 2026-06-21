@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: prophecy-build-tool
-  version: "1.3.0"
+  version: "1.3.4"
 
 package:
-  name: ${{ name|lower }}
+  name: prophecy-build-tool
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/prophecy_build_tool-${{ version }}.tar.gz
-  sha256: c7589cc9fd4d12f25a46168923f6f580188840bfe0e74c25de60e902e668dc61
+  url: https://pypi.org/packages/source/p/prophecy-build-tool/prophecy_build_tool-${{ version }}.tar.gz
+  sha256: 6d3692a3b7b59e4c0b0fd8685a8e293f0260234ffe3cff881fb4c4aee00604c3
 
 build:
   number: 0
@@ -41,22 +40,29 @@ requirements:
     - boto3 >=1.34.120,<1.35.0
     - tenacity ==8.2.3
     - gitpython
+    - git
     - semver
     - twine
     - jaraco.functools <=4.1.0
     - setuptools >=75.3.2,<81
 
+# CFEP-25-justified: bare `import pbt` runs upstream's click CLI at import time
+# (pbt/__init__.py ends with `if __name__ == "pbt": main()` — a long-standing
+# upstream bug), so the module exits with click status 2 on import and the
+# canonical python.imports test cannot pass under rattler-build. package_contents
+# verifies installation; the script test exercises the real CLI (pbt --help) and
+# pip check.
 tests:
-  - python:
-      imports:
+  - package_contents:
+      site_packages:
         - pbt
-      pip_check: true
-      python_version: ${{ python_min }}.*
   - requirements:
       run:
         - pip
+        - git
         - python ${{ python_min }}.*
     script:
+      - pip check
       - pbt --help
 
 about:
@@ -68,3 +74,66 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: prophecy-build-tool
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: prophecy-build-tool
+  cfe-purls:
+    - pkg:conda/prophecy-build-tool@${{ version }}
+    - pkg:pypi/prophecy-build-tool@${{ version }}
+  cfe-upstream-repo: https://github.com/SimpleDataLabsInc/prophecy-build-tool
+  cfe-upstream-homepage: https://github.com/SimpleDataLabsInc/prophecy-build-tool
+  cfe-import-names: [pbt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/prophecy-build-tool-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Local v1 recipe for the still-v0 conda-forge prophecy-build-tool-feedstock.
+#    meta.yaml is kept alongside as a faithful mirror of the deployed v0 feedstock
+#    (version 1.3.4); this recipe.yaml is the proposed v0-to-v1 migration at 1.3.4.
+#    Delete meta.yaml only after the feedstock completes its own v0-to-v1 switch.
+# context:
+#    python_min omitted at the default conda-forge 3.10 floor. Upstream
+#    requires-python is >=3.9,<3.13; the 3.9 lower bound is below the floor so
+#    3.10 is the effective floor and is supplied by conda-forge-pinning. The
+#    <3.13 upper bound is upstream-declared and mirrored in run python.
+#  run:
+#    Upstream pyproject/setup.py declares ~= and <= caps that are load-bearing
+#    under pip_check: true (the wheel METADATA enforces them). databricks-cli,
+#    wheel, google-cloud-secret-manager, pydantic, boto3, setuptools, and
+#    google-cloud-storage upper bounds are mirrored from upstream requires_dist.
+#    git is a runtime requirement for gitpython; mirrored from the deployed
+#    feedstock.
+#  tests:
+#    Upstream pbt/__init__.py ends with `if __name__ == "pbt": main()` (an
+#    upstream bug — should be `__main__`), so a bare `import pbt` executes the
+#    click CLI and exits with status 2. rattler-build's python.imports test
+#    therefore fails; the v0 conda-build feedstock tolerates it (conda-build's
+#    import test handles the SystemExit differently) which is why the deployed
+#    meta.yaml keeps `import pbt`. The v1 recipe uses package_contents +
+#    `pbt --help` (console-script path runs as __main__ → exit 0) + `pip check`.
+#    Local build (linux-64, rattler-build): build phase CLEAN, .conda written to
+#    noarch/, package_contents test PASSED. The script-test env-solve hit the G33
+#    local strict-channel-priority artifact (the just-built package + conda-forge
+#    cross-excluded when the output-dir is added as a channel) — NOT a recipe
+#    defect: all run deps solve cleanly on conda-forge (verified via a plain
+#    `conda create --dry-run -c conda-forge` of the full run set, EXIT 0), and the
+#    deployed feedstock has already published 1.3.4. Hence build-clean-test-blocked.
+####

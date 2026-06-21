@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.1"
+
+package:
+  name: robocorp-http
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/robocorp-http/robocorp_http-${{ version }}.tar.gz
+  sha256: c16ca123201d08cc7684b7f2e3dc6208505d2ae0ff240b285a07d37399daaa95
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.31.0,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - robocorp.http
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Robocorp HTTP library
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/robocorp/robocorp
+  repository: https://github.com/robocorp/robocorp
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: robocorp-http
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: robocorp-http
+  cfe-purls:
+    - pkg:conda/robocorp-http@${{ version }}
+    - pkg:pypi/robocorp-http@${{ version }}
+  cfe-upstream-repo: https://github.com/robocorp/robocorp
+  cfe-upstream-homepage: https://github.com/robocorp/robocorp
+  cfe-import-names: [robocorp.http]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/robocorp-http-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is still v0 (meta.yaml); local meta.yaml
+#    # refreshed to faithfully mirror the deployed feedstock at 0.4.1. This
+#    # recipe.yaml is the proposed v1 migration, authored alongside meta.yaml.
+#    # cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml.
+# package:
+#    # import name is the dotted namespace robocorp.http (src/robocorp/http);
+#    # G7-verified against the 0.4.1 sdist top-level layout.
+# build:
+#    # dropped the feedstock's README.md copy hack from RECIPE_DIR — the 0.4.1
+#    # sdist ships README.md, so poetry-core readme = "README.md" is satisfied
+#    # without it. build.number reset to 0 on the 0.4.0 to 0.4.1 version bump.
+# requirements:
+#  host:
+#    # poetry-core only (no redundant wheel/setuptools) — G8 clean; pyproject
+#    # build-system requires only poetry-core.
+#  run:
+#    # requests >=2.31.0,<3.0.0 mirrors upstream pyproject (poetry ^2.31.0);
+#    # the upper bound is upstream-declared and load-bearing under pip_check.
+#    # dropped the feedstock's speculative python <4.0 upper bound (poetry
+#    # caret expansion, not a real cap); broad >=python_min floor is correct.
+#    # python_min omitted from context: requires-python >=3.9 clamps to the
+#    # conda-forge 3.10 default floor.
+# about:
+#    # LICENSE not shipped in the sdist (G4); ship LICENSE in-recipe (canonical
+#    # license-file pattern 2). homepage/repository point at the robocorp
+#    # monorepo (pyproject repository = robocorp/robocorp).
+####

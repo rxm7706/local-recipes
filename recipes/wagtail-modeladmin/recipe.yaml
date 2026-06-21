@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.4.0"
+
+package:
+  name: wagtail-modeladmin
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-modeladmin/wagtail_modeladmin-${{ version }}.tar.gz
+  sha256: 11b051e4595242cec5f71b9e30acf1ca6b08809d27e3fa148d7f8e77cf60d9fe
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=7.0
+
+tests:
+  - python:
+      imports:
+        - wagtail_modeladmin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Add any model in your project to the Wagtail admin. Formerly wagtail.contrib.modeladmin.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/wagtail-nest/wagtail-modeladmin
+  repository: https://github.com/wagtail-nest/wagtail-modeladmin
+  description: |
+    Add any model in your project to the Wagtail admin. A reusable Django app
+    that re-packages the former wagtail.contrib.modeladmin module so models can
+    be administered through the Wagtail admin interface.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-modeladmin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-modeladmin
+  cfe-purls:
+    - pkg:conda/wagtail-modeladmin@${{ version }}
+    - pkg:pypi/wagtail-modeladmin@${{ version }}
+  cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-modeladmin
+  cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-modeladmin
+  cfe-import-names: [wagtail_modeladmin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-modeladmin-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml -> 404); kept the
+#    # local meta.yaml as a clean mirror of the deployed feedstock (2.4.0) and
+#    # authored this v1 recipe.yaml alongside it. STD-002 (both files present)
+#    # is expected and harmless for a v0 mirror.
+# requirements:
+#  host:
+#    # flit-core build backend per pyproject [build-system]; flit-core + pip
+#    # only (no setuptools/wheel) — no G8 redundancy.
+#  run:
+#    # wagtail >=7.0 mirrors upstream 2.4.0 pyproject [project.dependencies]
+#    # ("Wagtail>=7.0"). The deployed feedstock meta.yaml still carries the
+#    # stale >=5.0 (bot bumped version+sha only, not the dep) — the feedstock
+#    # owes this bump (see cfe-forge-recipe-updates-needed). cf has wagtail
+#    # 7.4.2, so >=7.0 resolves.
+# tests:
+#    # CFEP-25 triad. wagtail_modeladmin/__init__.py defines only VERSION/
+#    # __version__ (no Django models/apps imported at top level), so the bare
+#    # python.imports test succeeds without DJANGO_SETTINGS_MODULE — no
+#    # package_contents escape hatch needed.
+# context:
+#    # python_min omitted from context — upstream requires-python is >=3.10,
+#    # the conda-forge default floor; let conda-forge-pinning supply it.
+####

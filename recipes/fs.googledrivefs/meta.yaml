@@ -1,5 +1,5 @@
 {% set name = "fs.googledrivefs" %}
-{% set version = "2.5.0" %}
+{% set version = "2.6.2" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fs_googledrivefs-{{ version }}.tar.gz
-  sha256: e52381e7733080909c1b9bf484dffab8f1465d9f708e4fa6d9152309faeccdab
+  sha256: ea94d33930a6883d13f5eceebde10156333ea83e9417a30409d1a53ad44d46c4
 
 build:
   noarch: python
@@ -24,6 +24,10 @@ requirements:
     - fs >=2.4.13
     - google-api-python-client >=1.7.10
     - google-auth >=1.5.1
+    # fs (Pyfilesystem2) calls pkg_resources.declare_namespace at import time;
+    # setuptools 81+ removed pkg_resources, breaking `import fs`. TODO: drop
+    # once the fs feedstock caps setuptools or fs stops using pkg_resources.
+    - setuptools <81
 
 test:
   imports:

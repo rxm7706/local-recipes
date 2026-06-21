@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.24.0"
+
+package:
+  name: django-tree-queries
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-tree-queries/django_tree_queries-${{ version }}.tar.gz
+  sha256: 8971da3fd15a1e6a52a5a2af76c086aa460e6974a130d9ec90ca0d0588baf848
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django
+    - django-js-asset
+
+tests:
+  - python:
+      imports:
+        - tree_queries
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Tree queries with explicit opt-in, without configurability
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/feincms/django-tree-queries
+  repository: https://github.com/feincms/django-tree-queries
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-tree-queries
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-tree-queries
+  cfe-purls:
+    - pkg:conda/django-tree-queries@${{ version }}
+    - pkg:pypi/django-tree-queries@${{ version }}
+  cfe-upstream-repo: https://github.com/feincms/django-tree-queries
+  cfe-upstream-homepage: https://github.com/feincms/django-tree-queries
+  cfe-import-names: [tree_queries]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-tree-queries-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (keep-meta): conda-forge feedstock is STILL v0/meta.yaml at
+#    # 0.24.0; local meta.yaml refreshed to mirror the deployed feedstock and
+#    # KEPT alongside this authored v1 recipe.yaml. Delete meta.yaml only after
+#    # the feedstock completes its v0 to v1 migration.
+# context:
+#    # python_min omitted — upstream requires-python is >=3.8, below the
+#    # conda-forge 3.10 floor; pinning supplies the default 3.10.
+# requirements:
+#  host:
+#    # hatchling only (pyproject [build-system] requires = ["hatchling"]); no
+#    # setuptools/wheel needed (G8 clean).
+#  run:
+#    # upstream 0.24.0 [project].dependencies is empty; django-js-asset is only
+#    # an admin extra and django is not declared. Mirrors the deployed v0
+#    # feedstock run block (django + django-js-asset): every functional module
+#    # imports django, and admin.py lazily imports js_asset.js.JS. No
+#    # speculative upper pins.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. tree_queries/__init__.py is empty
+#    # (only __version__), so import tree_queries loads no Django submodule and
+#    # raises no ImproperlyConfigured/AppRegistryNotReady — standard
+#    # python.imports test holds, no package_contents escape hatch needed.
+####

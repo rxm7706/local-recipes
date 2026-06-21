@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.12.0"
+
+package:
+  name: opentelemetry-exporter-gcp-trace
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-gcp-trace/opentelemetry_exporter_gcp_trace-${{ version }}.tar.gz
+  sha256: 18c6e56fe123eed020d5005fdd819b196d64f651545bce1ca7e2e2cbaf9d343b
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-cloud-trace ~=1.1
+    - opentelemetry-api ~=1.30
+    - opentelemetry-sdk ~=1.30
+    - opentelemetry-resourcedetector-gcp >=1.5.0dev0,<2.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.exporter.cloud_trace
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-exporter-gcp-trace
+  summary: Google Cloud Trace exporter for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-exporter-gcp-trace
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-exporter-gcp-trace
+  cfe-purls:
+    - pkg:conda/opentelemetry-exporter-gcp-trace@${{ version }}
+    - pkg:pypi/opentelemetry-exporter-gcp-trace@${{ version }}
+  cfe-upstream-repo: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
+  cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-exporter-gcp-trace
+  cfe-import-names: [opentelemetry.exporter.cloud_trace]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-gcp-trace-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # C1 keep-meta: the conda-forge feedstock is still v0/meta.yaml and is
+#    # already deployed at 1.12.0 (sha256 18c6e56... matches PyPI 1.12.0
+#    # sdist). meta.yaml is kept alongside as a faithful, un-annotated mirror
+#    # of the deployed feedstock; this recipe.yaml is the proposed v1 migration.
+# source:
+#    # Distribution name hyphenated; sdist filename stem uses underscores
+#    # (opentelemetry_exporter_gcp_trace-<version>.tar.gz) per PyPI.
+# requirements:
+#  host:
+#      # No [build-system] table in the sdist pyproject; package is
+#      # setuptools/setup.py-based, so setuptools + pip are kept in host
+#      # (matches the deployed feedstock).
+#  run:
+#      # opentelemetry-resourcedetector-gcp: upstream requires-dist declares
+#      # ==1.*,>=1.5.0dev0 (the form the deployed v0 feedstock ships). The v1
+#      # rattler-build parser rejects == with a * wildcard, so this is the
+#      # semantically-equivalent v1 form (>=1.5.0dev0,<2.0): major series 1,
+#      # at least 1.5.0dev0. The <2.0 ceiling is upstream-explicit (== 1.*),
+#      # not speculative.
+# tests:
+#    # Import name is the dotted namespace opentelemetry.exporter.cloud_trace
+#    # (verified against the sdist top-level __init__.py at
+#    # src/opentelemetry/exporter/cloud_trace/) — NOT the distribution name.
+#    # The deployed feedstock tests the broad opentelemetry namespace; this v1
+#    # recipe tests the specific package's namespace for a tighter import check.
+####

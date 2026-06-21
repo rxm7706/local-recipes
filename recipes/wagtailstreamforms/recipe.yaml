@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.2.6"
+
+package:
+  name: wagtailstreamforms
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtailstreamforms/wagtailstreamforms-${{ version }}.tar.gz
+  sha256: 2b8d8215a49f4e593d3ffc2465ca197d8d4818a4bdd05a65a44b9a7aae1679f6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+    - django-recaptcha >=4.0.0
+    - psycopg >=3.2.9
+    - tox >=4.26.0
+    - wagtail >=6.0,<8.0
+    - wagtail-modeladmin >=2.2.0
+    - wagtail-generic-chooser >=0.7.0
+    - unidecode >=0.04.14,<2.0
+
+tests:
+  - python:
+      imports:
+        - wagtailstreamforms
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Wagtail forms in a streamfield
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/AccentDesign/wagtailstreamforms/
+  repository: https://github.com/AccentDesign/wagtailstreamforms/
+  description: |
+    A Wagtail CMS package providing a StreamField block to build and embed
+    user-submittable forms within page content, with field choosers and
+    submission handling.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtailstreamforms
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtailstreamforms
+  cfe-purls:
+    - pkg:conda/wagtailstreamforms@${{ version }}
+    - pkg:pypi/wagtailstreamforms@${{ version }}
+  cfe-upstream-repo: https://github.com/AccentDesign/wagtailstreamforms
+  cfe-upstream-homepage: https://github.com/AccentDesign/wagtailstreamforms
+  cfe-import-names: [wagtailstreamforms]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtailstreamforms-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (keep-meta): feedstock still v0 at 5.2.6. KEEP meta.yaml as the
+#    # faithful deployed mirror; this recipe.yaml is the proposed v0->v1
+#    # migration. Both coexist until the feedstock completes its v0->v1 switch.
+# about:
+#    # license MIT is authoritative from the shipped LICENSE file (standard MIT
+#    # text, Copyright Accent Design Group). Upstream pyproject.toml v5.2.6
+#    # mis-declares license = { text = "Proprietary" } + a Proprietary classifier
+#    # (new maintainer Lab Digital BV metadata error) — NOT a cf-eligibility
+#    # blocker; the LICENSE file governs. Deployed feedstock already ships MIT.
+# requirements:
+#  host:
+#    # setuptools kept in host — build-system requires = ["setuptools", "wheel"],
+#    # backend setuptools.build_meta. Matches deployed feedstock host block.
+#  run:
+#    # mirrors the deployed v0 run-deps. wagtail <8.0 and unidecode <2.0 upper
+#    # bounds are upstream-declared in [project.dependencies] (load-bearing under
+#    # pip_check) — kept, not dropped. django carries no pin (transitive via
+#    # wagtail) per the deployed recipe. No speculative upper pins added.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. wagtailstreamforms/__init__.py is
+#    # trivial (no Django settings import) so the standard python.imports test
+#    # holds standalone — no package_contents/Django escape hatch needed.
+# context:
+#    # python_min omitted from context: upstream requires-python >=3.9 is below
+#    # the conda-forge 3.10 floor, so the default floor from conda-forge-pinning
+#    # applies. Do not declare python_min unless overriding above 3.10.
+####

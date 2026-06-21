@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.0"
+
+package:
+  name: django-colorful
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-colorful/django_colorful-${{ version }}.tar.gz
+  sha256: f668374b20f6d8135a2de4534ca0d6d8bdb3d46235db8664a8d8532e5af0f66e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64
+    - setuptools-scm >=8
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - colorful
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: An extension to the Django web framework that provides database and form color fields
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/charettes/django-colorful
+  repository: https://github.com/charettes/django-colorful
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-colorful
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-colorful
+  cfe-purls:
+    - pkg:conda/django-colorful@${{ version }}
+    - pkg:pypi/django-colorful@${{ version }}
+  cfe-upstream-repo: https://github.com/charettes/django-colorful
+  cfe-upstream-homepage: https://github.com/charettes/django-colorful
+  cfe-import-names: [colorful]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-colorful-feedstock
+  cfe-forge-recipe-updates-needed: [recipe-regenerate]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1; bumped local 1.3 (stale v0 meta.yaml)
+#    # to 1.4.0 and authored a modernized recipe.yaml. Deleted stale meta.yaml.
+# package:
+#    # Modernized to literal package.name + literal pypi.org source.url
+#    # (v8.10.0 canonical), replacing the deployed feedstock's context.name +
+#    # name[0]/replace-interpolated URL form. sdist filename uses underscores
+#    # (django_colorful-1.4.0.tar.gz).
+# requirements:
+#  host:
+#    # Dropped the deployed feedstock's host colorful + django entries: both
+#    # are v0-meta.yaml regressions. colorful is the IMPORT name (G7), not a
+#    # PyPI/conda dep; django is a runtime dep, not a build dep. Build backend
+#    # is setuptools>=64 + setuptools_scm>=8 (pyproject [build-system]); the
+#    # baked PKG-INFO version lets setuptools_scm resolve without git in an
+#    # sdist build, so SETUPTOOLS_SCM_PRETEND_VERSION is not needed.
+#  run:
+#    # Dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared; requires-python is just >=3.10). Added django >=4.2
+#    # as a hard run dep: colorful/__init__.py does `from django.utils import
+#    # version` at import time and every module imports django.* — Django is
+#    # mandatory. Floor 4.2 from the upstream classifiers (Django 4.2/5.2/6.0).
+#    # requires_dist is None in PyPI metadata so the dep was read from code +
+#    # classifiers, not Requires-Dist.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. `import colorful` triggers
+#    # `from django.utils import version`, which is settings-free (no
+#    # DJANGO_SETTINGS_MODULE / app-registry needed), so the standard
+#    # python.imports test holds — no package_contents escape hatch required.
+####

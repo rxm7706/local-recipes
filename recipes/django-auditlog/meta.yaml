@@ -1,27 +1,29 @@
 {% set name = "django-auditlog" %}
-{% set version = "2.3.0" %}
+{% set version = "3.4.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-auditlog-{{ version }}.tar.gz
-  sha256: b9d3acebb64f3f2785157efe3f2f802e0929aafc579d85bbfb9827db4adab532
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: ad07b9db452d5fa8303822cccd78cd3fcb2c2863aeb6abe039ec45739b4d7e33
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools-scm
     - pip
+    - setuptools
   run:
-    - python >=3.8
-    - django >=3.2
+    - freezegun
+    - python >={{ python_min }}
+    - django >=4.2
     - python-dateutil >=2.7.0
 
 test:
@@ -31,6 +33,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/jazzband/django-auditlog

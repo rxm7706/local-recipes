@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.4.1"
+
+package:
+  name: django-auditlog
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-auditlog/django_auditlog-${{ version }}.tar.gz
+  sha256: ad07b9db452d5fa8303822cccd78cd3fcb2c2863aeb6abe039ec45739b4d7e33
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-scm
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - python-dateutil >=2.7.0
+
+tests:
+  - python:
+      imports:
+        - auditlog
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Audit log app for Django
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jazzband/django-auditlog
+  repository: https://github.com/jazzband/django-auditlog
+  documentation: https://django-auditlog.readthedocs.io
+  description: |
+    django-auditlog (Audit Log) is a reusable app for Django that makes
+    logging object changes a breeze. Changes of a model object are stored
+    and can be displayed and reverted from the admin or programmatically.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-auditlog
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-auditlog
+  cfe-purls:
+    - pkg:conda/django-auditlog@${{ version }}
+    - pkg:pypi/django-auditlog@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-auditlog
+  cfe-upstream-homepage: https://github.com/jazzband/django-auditlog
+  cfe-import-names: [auditlog]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-auditlog-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml, dependency-fix]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1 (keep-meta): conda-forge feedstock is STILL v0/meta.yaml at
+#    # 3.4.1. meta.yaml mirrors the deployed v0 feedstock verbatim; this
+#    # recipe.yaml is the proposed v1 migration at the same version (MAJOR
+#    # bump from the stale local 2.3.0 mirror). Both files coexist until the
+#    # feedstock completes its v0-to-v1 switch.
+# requirements:
+#  host:
+#    # setup.py project with setup_requires=["setuptools_scm"]; keep
+#    # setuptools-scm + setuptools + pip in host. No pyproject [build-system].
+#  run:
+#    # dependency-fix: dropped the deployed feedstock's run dep "freezegun".
+#    # freezegun is a TEST-only dep (tox/test extras), NOT in setup.py
+#    # install_requires=["Django>=4.2","python-dateutil>=2.7.0"]. The feedstock
+#    # owes this fix alongside the v0-to-v1 migration.
+#    # Django lower bound bumped 3.2 -> 4.2 to match 3.4.1 install_requires
+#    # (MAJOR bump; upstream requires-python >=3.10 / Django 4.2+).
+# context:
+#    # python_min OMITTED: requires-python is >=3.10 (the conda-forge default
+#    # floor); conda-forge-pinning supplies python_min.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. auditlog/__init__.py imports
+#    # django modules lazily (django.apps/django.conf) but does NOT trigger
+#    # app-registry population at import time, so the standard python.imports
+#    # test holds standalone (no DJANGO_SETTINGS_MODULE needed) -- no
+#    # package_contents escape hatch required.
+####

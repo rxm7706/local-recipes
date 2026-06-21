@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.8.1"
+  python_min: "3.11"
+
+package:
+  name: pytest-excel
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-excel/pytest_excel-${{ version }}.tar.gz
+  sha256: 39bc29161b1e49e64d9ad3f35ca74aac641c7afcd5d4a79cd264cbbb8b3d2bea
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - openpyxl
+    - pandas
+    - pytest
+
+tests:
+  - python:
+      imports:
+        - pytest_excel
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: pytest plugin for generating excel reports
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ssrikanta/pytest-excel
+  repository: https://github.com/ssrikanta/pytest-excel
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-excel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-excel
+  cfe-purls:
+    - pkg:conda/pytest-excel@${{ version }}
+    - pkg:pypi/pytest-excel@${{ version }}
+  cfe-upstream-repo: https://github.com/ssrikanta/pytest-excel
+  cfe-upstream-homepage: https://github.com/ssrikanta/pytest-excel
+  cfe-import-names: [pytest_excel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-excel-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C2: feedstock already v1 at 1.8.1; authored fresh recipe.yaml at
+#    # 1.8.1, deleted the stale local meta.yaml (was 1.6.0).
+# context:
+#    # python_min overridden to 3.11 — upstream requires-python is >=3.11
+#    # (NOT the conda-forge default 3.10 floor); matches the deployed feedstock.
+# requirements:
+#  host:
+#    # hatchling build backend (pyproject [build-system].requires = ["hatchling"]);
+#    # NOT setuptools. Matches the deployed v1 feedstock host block.
+#  run:
+#    # dropped the deployed feedstock's speculative python <4.0 upper bound
+#    # (upstream declares only requires-python >=3.11); broad >=python_min floor
+#    # is correct. openpyxl/pandas/pytest reconciled against the 1.8.1 sdist
+#    # [project.dependencies]. pytest kept in run (pytest plugin — DEP-001 is a
+#    # false positive here).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the feedstock's
+#    # single-version python_version. import name pytest_excel verified against
+#    # the sdist __init__.py (G7).
+####

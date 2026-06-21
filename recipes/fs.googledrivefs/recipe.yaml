@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: fs.googledrivefs
-  version: "2.5.0"
+  version: "2.6.2"
 
 package:
-  name: ${{ name|lower }}
+  name: fs.googledrivefs
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fs_googledrivefs-${{ version }}.tar.gz
-  sha256: e52381e7733080909c1b9bf484dffab8f1465d9f708e4fa6d9152309faeccdab
+  url: https://pypi.org/packages/source/f/fs.googledrivefs/fs_googledrivefs-${{ version }}.tar.gz
+  sha256: ea94d33930a6883d13f5eceebde10156333ea83e9417a30409d1a53ad44d46c4
 
 build:
   number: 0
@@ -24,24 +23,84 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - fs >=2.4.13
     - google-api-python-client >=1.7.10
     - google-auth >=1.5.1
+    - setuptools <81
 
 tests:
   - python:
       imports:
         - fs.googledrivefs
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Pyfilesystem2 implementation for Google Drive
-  homepage: https://github.com/rkhwaja/fs.googledrivefs
   license: MIT
   license_file: LICENSE
+  homepage: https://github.com/rkhwaja/fs.googledrivefs
+  repository: https://github.com/rkhwaja/fs.googledrivefs
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fs.googledrivefs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fs.googledrivefs
+  cfe-purls:
+    - pkg:conda/fs.googledrivefs@${{ version }}
+    - pkg:pypi/fs-googledrivefs@${{ version }}
+  cfe-upstream-repo: https://github.com/rkhwaja/fs.googledrivefs
+  cfe-upstream-homepage: https://github.com/rkhwaja/fs.googledrivefs
+  cfe-import-names: [fs.googledrivefs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fs.googledrivefs-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: feedstock STILL v0/meta.yaml; meta.yaml kept as a faithful
+#    # mirror of the deployed v0 feedstock (also at 2.6.2). recipe.yaml is the
+#    # proposed v1 migration at 2.6.2, modernized to the fully-literal
+#    # package.name + source.url form.
+# requirements:
+#  host:
+#    # hatchling-only build backend (pyproject [build-system] requires =
+#    # ["hatchling"]); no redundant wheel/setuptools host deps (G8).
+#  run:
+#    # setuptools <81 is a G34 workaround, NOT a build dep: fs (Pyfilesystem2)
+#    # 2.4.16 calls pkg_resources.declare_namespace at import; setuptools 81+
+#    # removed pkg_resources, so `import fs.googledrivefs` fails with
+#    # ModuleNotFoundError: pkg_resources. TODO (dependency-fix): drop once the
+#    # fs feedstock caps setuptools or fs stops using pkg_resources. The
+#    # deployed v0 feedstock already ships this same cap.
+#    # dropped any speculative python <4.0 upper bound — upstream
+#    # requires-python is ">=3.8" (clamped to the 3.10 conda-forge floor;
+#    # python_min omitted from context per default-floor policy). run deps
+#    # mirror the 2.6.2 sdist [project.dependencies] verbatim.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"]. Import name is the dotted
+#    # submodule fs.googledrivefs (verified: sdist ships
+#    # fs/googledrivefs/__init__.py) — more specific than the feedstock's bare
+#    # `fs` import, and exercises this package's own code.
+####

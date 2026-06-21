@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.45"
+
+package:
+  name: pss
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pss/pss-${{ version }}.tar.gz
+  sha256: 13b81a4a7a33a7d6c4de85b908911c48849050fbaab596aeeceac78eaf067149
+
+build:
+  number: 0
+  noarch: python
+  python:
+    entry_points:
+      - pss = psslib.pss:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - psslib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - pss --help
+
+about:
+  summary: Tool for grepping through source code
+  license: Unlicense
+  license_file: LICENSE
+  homepage: https://github.com/eliben/pss
+  repository: https://github.com/eliben/pss
+  description: |
+    pss is a power-tool for searching inside source code files. It searches
+    recursively within a directory tree, knows which extensions and file
+    names to search and which to ignore, automatically skips directories you
+    wouldn't want to search in (for example .svn or .git), colors its output
+    in a helpful way, and much more.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pss
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pss
+  cfe-purls:
+    - pkg:conda/pss@${{ version }}
+    - pkg:pypi/pss@${{ version }}
+  cfe-upstream-repo: https://github.com/eliben/pss
+  cfe-upstream-homepage: https://github.com/eliben/pss
+  cfe-import-names: [psslib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pss-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is STILL v0/meta.yaml (recipe.yaml 404).
+#    # meta.yaml kept as a faithful mirror of the deployed feedstock at 1.45
+#    # (the feedstock had already bumped to 1.45, build.number 1); recipe.yaml
+#    # is the proposed v1 migration at 1.45. cfe-forge-recipe-updates-needed
+#    # carries meta-yaml-to-recipe-yaml — the feedstock owes the v0 to v1 switch.
+# package:
+#    # import name is psslib (NOT pss): the distribution ships the psslib
+#    # package plus a vendored psslib.colorama (G7 verified against the 1.45
+#    # sdist top-level __init__.py).
+# requirements:
+#  host:
+#    # setuptools kept in host — legacy setup.py project (no pyproject.toml),
+#    # console_scripts entry point built by setuptools; matches the deployed
+#    # feedstock host block.
+#  run:
+#    # no runtime deps: upstream sdist declares none (requires_dist is None);
+#    # psslib.colorama is vendored.
+# context:
+#    # python_min omitted from context — upstream requires-python is empty, so
+#    # the default conda-forge floor (3.10) applies; let pinning supply it.
+# tests:
+#    # CFEP-25 triad for psslib import + pip_check, plus a second script test
+#    # mirroring the feedstock's CLI smoke test (pss --help). The script test
+#    # pins python to python_min so the entry-point exercise runs on the floor.
+####

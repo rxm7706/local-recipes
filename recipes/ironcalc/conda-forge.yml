@@ -1,0 +1,17 @@
+conda_install_tool: pixi
+conda_build_tool: rattler-build
+github:
+  branch_name: main
+  tooling_branch_name: main
+conda_build:
+  error_overlinking: true
+conda_forge_output_validation: true
+provider:
+  linux_aarch64: default
+  osx_arm64: default
+test: native_and_emulated
+bot:
+  automerge: true
+  inspection: update-grayskull
+  check_solvable: true
+  run_deps_from_wheel: true

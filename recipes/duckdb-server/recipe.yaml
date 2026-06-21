@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.27.0"
+
+package:
+  name: duckdb-server
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/duckdb-server/duckdb_server-${{ version }}.tar.gz
+  sha256: c99d715172846ac63449c44fed80e889f57102e833d75f61f06e88f7494cbe3e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - duckdb-server = pkg.__main__:serve
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - diskcache
+    - python-duckdb >=1.5.2
+    - pandas
+    - pyarrow
+    - socketify
+    - ujson
+
+tests:
+  - python:
+      imports:
+        - pkg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - duckdb-server --help
+
+about:
+  summary: A DuckDB server for Mosaic
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/uwdata/mosaic/tree/main/packages/duckdb-server
+  repository: https://github.com/uwdata/mosaic
+  description: |
+    A Python-based DuckDB server for the Mosaic data visualization
+    framework. Serves DuckDB query results over a socket/HTTP interface
+    with Arrow and JSON output, backed by a disk cache.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: duckdb-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: duckdb-server
+  cfe-purls:
+    - pkg:conda/duckdb-server@${{ version }}
+    - pkg:pypi/duckdb-server@${{ version }}
+  cfe-upstream-repo: https://github.com/uwdata/mosaic
+  cfe-upstream-homepage: https://github.com/uwdata/mosaic/tree/main/packages/duckdb-server
+  cfe-import-names: [pkg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/duckdb-server-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-C C1: conda-forge feedstock is still v0/meta.yaml (no recipe.yaml
+#    # on the feedstock as of this refresh). meta.yaml kept alongside as a
+#    # faithful mirror of the deployed v0 feedstock at 0.27.0; this recipe.yaml
+#    # is the proposed v1 migration. Local mirror bumped 0.12.0 -> 0.27.0 (the
+#    # feedstock's deployed version, matching PyPI latest).
+# package:
+#    # import name is "pkg", NOT "duckdb_server" (G7): the distribution
+#    # "duckdb-server" ships its code under the top-level package "pkg"
+#    # (pyproject [tool.hatch.build.targets.wheel] packages = ["pkg"]; the only
+#    # __init__.py is pkg/__init__.py, which is empty). The deployed feedstock's
+#    # test imported "duckdb" (the dependency, not this package) and the old
+#    # local meta.yaml imported "duckdb_server" (a module that does not exist) --
+#    # both incorrect. Verified against the 0.27.0 sdist.
+# requirements:
+#  run:
+#    # python-duckdb >=1.5.2 reconciles to upstream's 0.27.0 pyproject
+#    # [project.dependencies] "duckdb>=1.5.2" (PyPI "duckdb" -> conda-forge
+#    # "python-duckdb", G10). The old local floor >=1.1.3 was the 0.12.0 value;
+#    # the deployed feedstock still ships >=1.1.3. conda-forge has python-duckdb
+#    # up to 1.5.4, so >=1.5.2 resolves. No upstream upper bounds to mirror.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test. Added a script test for the duckdb-server
+#    # entry point (--help) since the import test on the empty "pkg" package is
+#    # shallow; the entry point exercises pkg.__main__:serve wiring.
+####
