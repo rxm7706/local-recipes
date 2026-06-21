@@ -1,12 +1,12 @@
 ---
 doc_type: prd-validation-report
 project_name: local-recipes
-date: 2026-05-12
+date: 2026-06-21
 prd_under_review: planning-artifacts/PRD.md
 validator: bmad-validate-prd (Path 3 hybrid)
-overall_verdict: APPROVED (re-validated 2026-05-26 post v8.10.0 sync; pin moved through v8.7.0 / v8.8.0 / v8.9.0 / v8.9.1 / v8.10.0 as 4 MINOR + 1 PATCH skill bumps with skill-internal scope only — no D-dimension re-score required — see verdict_history)
+overall_verdict: APPROVED (re-validated 2026-06-21 post-v8.40.0 sync; PRD v1.6.0 closed the v8.11.1 → v8.39.0 structural drift then pin-bumped to v8.40.0 — gotcha range grew G45 → G51 as a MINOR skill-internal bump. Spot-check per the pinned-resync convention surfaces ONE residual count-drift [F1.7 / glossary / matrix still read G1-G45; live skill ships G1-G51] — SHOULD-FIX, non-blocking; verdict holds. See verdict_history.)
 status: final
-source_pin: 'conda-forge-expert v8.11.1'
+source_pin: 'conda-forge-expert v8.40.0'
 verdict_history:
   - { date: '2026-05-12 (initial)', verdict: 'REVISE', notes: 'Material issues across D3 / D5 / D6 / D7 / D9 / D10 on the v7.7-pinned draft PRD.' }
   - { date: '2026-05-12 (post tentative-decisions)', verdict: 'APPROVED', notes: 'PRD updated with tentative_decisions_applied; REVISE-rated dimensions addressed; status moved draft → approved.' }
@@ -16,6 +16,7 @@ verdict_history:
   - { date: '2026-05-15 (re-validated post v8.1.0 sync)', verdict: 'APPROVED', notes: 'v8.1.0 PyPI intelligence layer (schema v22 + pypi_intelligence side table + 5 new phases O/P/Q/R/S + new pypi-intelligence CLI + new MCP tool + persona-profile integration). PRD MINOR-bumped 1.2.0 → 1.3.0 (fully additive — no FR/NFR scope shift; new CLI + MCP tool are opt-in surfaces; existing CLIs unchanged). All 8 spec open questions pre-resolved before BMAD intake; L1 + L2 live-DB verification complete (Phase O perf-fix shipped as 124c5a449d; Phase R 9× faster than estimate; score distribution well-discriminated across 5k enriched candidates). No new REVISE findings.' }
   - { date: '2026-05-23 (re-validated post v8.5.3 sync)', verdict: 'APPROVED', notes: 'PATCH bumps v8.1.0 → v8.5.1 (env-inspect suite — additive: 2 new Tier 1 scripts + 1 MCP tool + 1 extended MCP tool) → v8.5.2 (Phase K/N/P/Q reliability bundle — additive: Phase K daemon-thread hard-timeout watchdog + per-batch checkpoint, Phase P google-cloud-bigquery enabled in local-recipes env, Phase Q robostack 404 fix, Phase N partial-batch recovery) → v8.5.3 (DW12 rollup-staleness fix via v_current_version_vulns view + _phase_g_sync_current_rollup tail step + DW13 CISA KEV via Path C: new cisa_kev side table + cisa_kev_fetcher.py + fetch-cisa-kev pixi task + _load_kev_cves helper + Phase G/G overlay loop modification) do not require re-validation; FR/NFR set unchanged across all three PATCH bumps. PRD pin moved v8.1.0 → v8.5.3 retroactively via sequential bmad-correct-course passes; PRD body validated content unchanged. v8.6.0 spec at docs/specs/atlas-appthreat-deep-signals.md (mirrored at implementation-artifacts/spec-appthreat-deep-signals.md) is intake-ready — full re-validation will run when v8.6.0 ships (MINOR bump; new opt-in surfaces — epss_scores + cwe_categories + package_hardening tables, Phase T + U, new CLIs and pixi tasks — require dimension re-scoring on D2 [Specificity], D7 [Testability], D9 [Phasing], D10 [Risk Management]). No new REVISE findings.' }
   - { date: '2026-05-24 (re-validated post v8.6.0 sync)', verdict: 'APPROVED', notes: 'v8.6.0 AppThreat Deep Signals released across three commits — Wave A (e4ba891cd2 2026-05-23: schema v23 → v24 foundation + EPSS pipeline) + Wave B (e22c531ac2 2026-05-23: CWE catalog + Phase G/G overlay wiring) + Wave D (592b18089a 2026-05-24: schema v24 → v25 cleanup + CLI flags + persona profiles + closeout). Wave C (Phase T blint + Phase U EPSS overlay phase) cancelled pre-implementation at verify-don''t-assume verification. Net delta: +2 side tables (epss_scores, cwe_categories) + 4 packages columns surviving v25 + 3 package_version_vulns columns surviving v25 + 2 new fetcher CLIs (fetch-epss, fetch-cwe-catalog) + 4 new flags across existing query CLIs + persona-profile auto-runs. PRD MINOR-pin bump but PATCH PRD-version bump (v1.4.2 → v1.4.3) because the PRD feature catalogue gains opt-in additive surfaces only — no FR/NFR scope shift; new CLIs are opt-in operator-invoked maintenance like v8.5.3 fetch-cisa-kev; new flags preserve existing CLI defaults; persona-profile auto-runs are env-var gated. D2/D7/D9/D10 spot-checked instead of full re-validation: (D2 Specificity) the four new flag-additions are specific (`--by-epss`, `--has-cwe`, `--epss-threshold`, `--epss`, `--cwe`) and the two new fetcher CLIs follow the established `fetch-<source>` convention from v8.5.3 — PASS. (D7 Testability) test suite 1,099 → 1,137 passing (+38 net; 0 regressions); live-verified channel-wide on production cf_atlas.db (334,683 EPSS rows + 944 CWEs + 213 EPSS-scored + 216 CWE-classified actionable feedstocks) — PASS. (D9 Phasing) Wave A foundation + Wave B wiring + Wave C cancellation decision + Wave D cleanup are ordered by dependency; the v23 → v24 → v25 round-trip is rare but every migration is idempotent + self-healing + live-validated — PASS. (D10 Risk Management) Wave A schema columns provisioned for Wave B/C consumers (the recognized risk that they''d become dead surface materialized for Wave C, mitigated by Wave D''s v25 cleanup); review subagents caught a real Wave B bug (rollup-sync missing COALESCE-to-existing) before commit; verify-don''t-assume caught 5 parent-spec errors pre-implementation (saving ~10-15 stories) — PASS with the retro-recommended follow-up that future major-feature specs include a populated "Verified facts" section. No new REVISE findings. Future-Epic-14-candidate flagged in v8.5.3 sync retired — v8.6.0 work layered cleanly onto Epic 8 acceptance criteria.' }
+  - { date: '2026-06-21 (re-validated post v8.40.0 sync, PRD v1.6.0)', verdict: 'APPROVED', notes: 'First DEEP re-sync since the 2026-06-07 v8.11.1 frontmatter touch. The PRD had drifted to a v8.6-era pin (v8.11.1) while the skill advanced ~28 MINOR/PATCH releases. Closed in two PRD edits this cycle: (1) v1.5.1 → v1.6.0 STRUCTURAL re-sync v8.11.1 → v8.39.0 (bmad-edit-prd 2026-06-20) re-derived every drifted count against live code — F2.1 schema v25/16-tables → v28 (21 tables + 4 views; migration range v19→v28); F2.2 17 → 22 phases (B→N + PyPI-intelligence O/P/Q/R/S); F3.2/§6 37(35) → 42 MCP tools; FX.2 8 → 9 pixi envs (+gcloud); + 3 net-new feature-level FRs for capabilities that shipped after the old pin (F2.13 PyPI-intelligence layer, F2.14 security-signals overlays KEV/EPSS/CWE, F3.9 7 net-new MCP tools). MINOR PRD bump (additive FRs; none removed; no decision overridden). (2) source_pin v8.39.0 → v8.40.0 pin-bump (this cycle) — v8.40.0 is a skill-INTERNAL MINOR (SKILL.md gotchas G46–G51 + feedstock-platform-expansion guide refinements; CHANGELOG explicit "no code/test/CLI/build change"). Per the established pinned-resync convention (skill-internal release with no new public surface → 4-dimension spot-check, not full re-score) the gate runs as a documented spot-check below. Live ground truth verified 2026-06-21: skill v8.40.0 (config/skill-config.yaml + CHANGELOG top entry); SCHEMA_VERSION=28 / 21 tables + 4 views (v_actionable_packages, v_current_version_vulns, v_packages_enriched, v_pypi_candidates); PHASES 22-tuple (conda_forge_atlas.py:8504-8527); 42 @mcp.tool() (conda_forge_server.py); 9 environments (pixi.toml); gotchas G1–G51 (SKILL.md + CHANGELOG v8.40.0; G45 was v8.39.0, G46–G51 added v8.40.0). Spot-check: (D2 Specificity) the 3 new FRs name concrete, unambiguous surfaces (named tables, named phases O/P/Q/R/S, named fetcher CLIs, the 7 named MCP tools) — PASS. (D5 Measurability / D12 Completeness) ONE residual count-drift found: F1.7 acceptance + "45" count, Appendix A glossary line, and Appendix C matrix row F1.7 still read "G1-G45"; live skill ships G1-G51 (51 gotchas). The v8.40.0 pin-bump grew the range without re-syncing the body. SHOULD-FIX (cosmetic count drift, exactly the F1.4/F1.8-class numeric pin that this gate tracks) — does NOT shift the FR/NFR set, does not change a decision, does not break traceability; verdict holds. NOTE F1.16 "Feature G45" is a CORRECT reference (the SPA-packaging gotcha is still G45 in the live skill) — not part of the drift. (D7 Implementation Leakage) the 3 new FRs hold the rebuild-PRD framing already accepted in 2026-05-12 D7 (concrete artifacts are the rebuild target) — PASS. (D9 Phasing / D10 Risk) no new wave/epic introduced; the additive FRs map onto existing Epics 6/8; R1 (skill drift) is the active risk this very sync addresses — PASS. Co-audit: §7 architectural-gaps table uses a SEPARATE G1-G6 numbering (SYSTEM gaps, not recipe gotchas) — intentionally left untouched; §9 DW17 reconciled-SHIPPED preserved. No new REVISE findings. Carryover follow-ups still open: MCP-count audit note from 2026-06-07 is now RESOLVED (live count 42 matches PRD pin); the G1-G45 → G1-G51 body re-sync is the single new SHOULD-FIX; v8.11.x + v8.39/v8.40 CFE-skill retros remain outstanding per CLAUDE.md Rule 2.' }
   - { date: '2026-05-26 (re-validated post v8.10.0 sync)', verdict: 'APPROVED', notes: 'Bundled v8.6.0 → v8.10.0 sync covering 4 MINOR + 1 PATCH skill releases — v8.7.0 (Rust template refresh: cargo auditable install --locked --no-track --bins canonical pattern + SCHEMA-001 optimiser check + 8-recipe schema-header backfill; 21-PR sample), v8.8.0 (Python generator + template alignment: CFEP-25 dual-version test matrix in generated recipes + project_urls description/repository/documentation extraction + python_min clamp to conda-forge floor + pdm-backend/scikit-build-core detection; 30-PR sample), v8.9.0 (maturin/PyO3 routing + sdist-driven import-name + abi3-gated version_independent; 27-PR sample), v8.9.1 (interpolated source URLs + CARGO_PROFILE_RELEASE env vars in maturin template), v8.10.0 (drop context.name + literal package.name + literal source.url with only ${{ version }} interpolated, matching current grayskull / conda-forge convention; verified against recipes/xorq-datafusion + recipes/py-yaml12 reference recipes; v8.9.1 interpolated form retired five days after ship — caught the convention drift). All five releases are skill-internal generator + template + SKILL.md changes; **none touch the FR/NFR set**, no new CLIs / MCP tools / pixi tasks, no schema migration, no atlas-phase additions. Skill atlas surface (22 phases / schema v25 / 19 CLIs) **unchanged** in this range — last atlas surface change was v8.1.0 + v8.6.0. PRD PATCH bump v1.4.3 → v1.4.4 reflects bundled re-pin with no FR/NFR scope shift. **Full D-dimension re-score not required** under the established convention (skill-internal releases without new public surfaces); a 4-dimension spot-check confirms no degradation: (D2 Specificity) v8.10.0 SKILL.md "PyPI source.url" critical-constraint section rewritten to the literal pattern; concrete and unambiguous (literal-name, literal-stem, only ${{ version }} interpolates) — PASS. (D7 Testability) test suite 1,137 → 1,149 passing (+12 net; 0 regressions); generator regeneration of recipes/py-yaml12 byte-for-byte matches the user-curated recipe (deterministic verification anchor) — PASS. (D9 Phasing) five releases ordered v8.7 → v8.8 → v8.9 → v8.9.1 → v8.10.0; v8.9.1 → v8.10.0 corrects v8.9.1 within five days (retro-2026-05-26 documents the lesson) — PASS. (D10 Risk Management) v8.9.1 codified a grayskull-style URL pattern that was already obsolete on arrival; v8.10.0 caught + reverted at the next user signal. **Recommended follow-up captured in retro-conda-forge-expert-v8.10-2026-05-26.md**: any future generator change claiming to "match grayskull" must carry a live `grayskull pypi <name>` diff in the CHANGELOG. Net risk: low; mitigation actionable — PASS. Co-audit drift in BMAD planning artifacts caught + fixed in commit 461e32ddb3 (architecture-cf-atlas.md schema v19 → v25, 17 phases → 22 phases with O/P/Q/R/S table rows added; source-tree-analysis.md script counts refreshed; 14 source_pins re-synced to v8.10.0). No new REVISE findings. Audit retro: implementation-artifacts/retro-conda-forge-expert-v8.10-2026-05-26.md + retro-conda-forge-expert-v8.7-v8.8-2026-05-25.md.' }
 ---
 
@@ -23,7 +24,9 @@ verdict_history:
 
 This report applies the 13 BMAD PRD validation dimensions to `planning-artifacts/PRD.md`. It is **honest critique, not rubber-stamping** — the author of the PRD is the same agent producing this report, and the goal is to surface real issues before sprint planning begins.
 
-**Overall verdict: APPROVED (re-validated 2026-05-12).** Three rounds — see `verdict_history` in frontmatter:
+> **Latest run: 2026-06-21, post-v8.40.0 sync (PRD v1.6.0) → APPROVED.** This is a dated gate snapshot regenerated against the current artifacts (not a number-patch of the prior run; full `verdict_history` preserved). The 2026-05-12 deep validation below remains the authoritative full 13-dimension pass; everything after it is a sync-driven spot-check per the pinned-resync convention. The current run found ONE residual SHOULD-FIX (a `G1-G45` → `G1-G51` body count-drift the v8.40.0 pin-bump introduced) — non-blocking; the verdict holds. See the **"Re-validation Run — 2026-06-21"** section at the end of this report and the `verdict_history` frontmatter entry.
+
+**Original verdict: APPROVED (re-validated 2026-05-12).** Three rounds — see `verdict_history` in frontmatter:
 
 1. **Initial validation (REVISE)** — material issues in D3 / D5 / D6 / D7 / D9 / D10 on the v7.7-pinned draft PRD (findings preserved below for traceability).
 2. **Post-tentative-decisions (APPROVED)** — PRD's `tentative_decisions_applied: 2026-05-12` resolved each REVISE finding (JTBD↔feature mapping added in §3, implementation-leakage cleanup in §5, time-bound constraints in §7, etc.); PRD moved `draft` → `approved` (v1.1.0).
@@ -438,3 +441,76 @@ Frontmatter-only. PRD body content holds.
 - Full multi-step `bmad-validate-prd` 10-step interactive re-run (over-engineered for frontmatter-only sync; the prior 2026-05-12 run remains the authoritative deep validation).
 - MCP tool count drift (37 → 38) — surface for next audit pass; not introduced by this bundle.
 - v8.11.x CFE-skill retro (recommended filename: `implementation-artifacts/retro-conda-forge-expert-v8.11-2026-06-07.md`) — per CLAUDE.md Rule 2; tracked in the sprint change proposal's § "Out-of-scope follow-up".
+
+---
+
+## Re-validation Run — 2026-06-21 (post-v8.40.0 sync, PRD v1.6.0)
+
+**Verdict:** APPROVED — structure holds; ONE residual SHOULD-FIX (a body count-drift), non-blocking.
+
+**Driver:** the first DEEP re-sync since the 2026-06-07 v8.11.1 frontmatter touch. The PRD had been carrying a v8.6-era pin (v8.11.1) while the skill advanced ~28 MINOR/PATCH releases. The PRD was re-synced in two edits this cycle:
+
+1. **v1.5.1 → v1.6.0** (`bmad-edit-prd`, 2026-06-20) — STRUCTURAL re-sync v8.11.1 → v8.39.0. Re-derived every drifted count against live code and added 3 net-new feature-level FRs for capabilities that shipped after the old pin (F2.13, F2.14, F3.9).
+2. **source_pin v8.39.0 → v8.40.0** (this cycle) — a skill-INTERNAL MINOR (SKILL.md gotchas G46–G51 + `guides/feedstock-platform-expansion.md` refinements; CHANGELOG v8.40.0 explicit: "no code/test/CLI/build change").
+
+**Convention applied:** v8.39.0 → v8.40.0 is a MINOR bump but has **no new public surface** (no new CLI / MCP tool / pixi task / schema migration / atlas phase). Per the pinned-resync convention established across the 2026-05-26 / 2026-06-07 runs, a skill-internal release gets a documented **4-dimension spot-check (D2 / D5+D12 / D7 / D9+D10)**, not a full 13-dimension re-score. The 2026-05-12 run remains the authoritative deep validation; the v1.6.0 structural re-sync that preceded this pin-bump is the more substantive change and is covered in the same spot-check because the FRs it added are still live at v8.40.0.
+
+### Ground truth verified (2026-06-21, against live code)
+
+| Fact | PRD claims | Live | Source | Match |
+|---|---|---|---|---|
+| Skill version | v8.40.0 (pin) | 8.40.0 | `config/skill-config.yaml` + CHANGELOG top entry | ✓ |
+| Schema version | v28 | `SCHEMA_VERSION = 28` | `conda_forge_atlas.py:138` | ✓ |
+| Tables + views | 21 tables + 4 views | 4 views confirmed (`v_actionable_packages`, `v_current_version_vulns`, `v_packages_enriched`, `v_pypi_candidates`) | `conda_forge_atlas.py` SCHEMA_DDL | ✓ |
+| Atlas phases | 22 | 22-tuple (B/B.5/B.6/C/C.5/D/O/P/Q/R/S/E/E.5/F/G/G'/H/J/K/L/M/N) | `conda_forge_atlas.py:8504-8527` | ✓ |
+| MCP tools | 42 | 42 `@mcp.tool()` | `conda_forge_server.py` | ✓ |
+| Pixi envs | 9 | 9 (`linux, osx, win, build, grayskull, conda-smithy, local-recipes, vuln-db, gcloud`) | `pixi.toml:107-122` | ✓ |
+| Recipe Authoring Gotchas | **G1-G45** | **G1-G51** | `SKILL.md` + CHANGELOG v8.40.0 (G45 = v8.39.0; G46–G51 = v8.40.0) | ❌ **DRIFT** |
+
+The MCP-tool-count drift flagged for follow-up in the 2026-06-07 run (PRD 37 vs. live 38) is now **RESOLVED** — the v1.6.0 re-sync moved the PRD pin to 42 and live count is 42.
+
+### Spot-check by dimension
+
+**D2 — Specificity (of the 3 new FRs): PASS.** F2.13 (PyPI-intelligence layer), F2.14 (security-signals overlays), and F3.9 (7 net-new MCP tools) each name concrete, unambiguous surfaces: named side tables (`pypi_universe`, `pypi_intelligence`, `cisa_kev`, `epss_scores`, `cwe_categories`), named phases (O/P/Q/R/S), named fetcher CLIs (`fetch-cisa-kev`, `fetch-epss`, `fetch-cwe-catalog`), and the 7 named tools (`pypi_intelligence`, `pypi_only_candidates`, `platform_breakdown`, `pyver_breakdown`, `channel_split`, `download_pr_artifacts`, `env_inspect`). All present and registered live. The profile-gating clause (admin = all five phases, maintainer = O+Q, consumer = O only) is specific and matches the documented convention.
+
+**D5 + D12 — Measurability / Completeness: ⚠️ SHOULD-FIX (ONE residual count-drift).** The v8.40.0 pin-bump grew the gotcha range G45 → G51 (six new gotchas G46–G51) without re-syncing the PRD body. Three body locations still read the v8.39.0 range:
+
+| Location | Reads | Should read |
+|---|---|---|
+| F1.7 (Part 1 feature table) | "45 Recipe Authoring Gotchas (G1-G45)" + acceptance "enumerates G1-G45" | "51 Recipe Authoring Gotchas (G1-G51)" / "enumerates G1-G51" |
+| Appendix A glossary | "**G1-G45** — Recipe Authoring Gotchas in SKILL.md" | "**G1-G51** — …" |
+| Appendix C matrix (F1.7 row) | "F1.7 (G1-G45 gotchas)" | "F1.7 (G1-G51 gotchas)" |
+
+This is the same class of count-pin this gate has always tracked (cf. F1.4 script counts, F1.8 template counts in the 2026-06-07 run). It is cosmetic: it does **not** shift the FR/NFR set, change a confirmed decision, or break any traceability chain. **SHOULD-FIX, non-blocking** — fold into the next `bmad-edit-prd` pass. No template variables / placeholders remain; all other §6 / §5 counts re-verified above match live. **NOTE:** F1.16 "Local-Only SPA Packaging (Feature G45)" is a **CORRECT** reference — the SPA-packaging gotcha is still G45 in the live skill — and is **not** part of this drift.
+
+**D7 — Implementation Leakage: PASS.** The 3 new FRs name concrete artifacts (tables, phases, CLIs, tools), consistent with the rebuild-PRD framing accepted in the original 2026-05-12 D7 finding ("reproducing today's implementation IS the requirement"). No new leakage class introduced; the framing note recommended in 2026-05-12 still covers them.
+
+**D9 + D10 — Phasing / Risk Management: PASS.** No new wave or epic was introduced by the sync; the additive FRs map onto existing epics (F2.13/F2.14 onto Epic 8 atlas work, F3.9 onto Epic 10 MCP work) — the same clean-layering observed for v8.6.0. R1 ("skill version drift between rebuild start and finish") is the active risk this very sync addresses; the ~28-release drift it closed is the materialized form of R1, and the spot-check convention is the standing mitigation. Net risk: low.
+
+### Co-audit (planning-artifact coherence)
+
+- §7 "System Gaps & Limitations" table uses a **separate** G1-G6 numbering for SYSTEM gaps (NOT recipe gotchas). Intentionally left untouched — it does not collide with the SKILL.md G1-G51 gotcha namespace and was correctly preserved across the v1.6.0 edit.
+- §9 DW17 (reconciled-SHIPPED earlier this session via the native `parse_pixi_lock` parser) preserved as-is.
+- The 7 Deep-Analysis deferred-work rows (DW21–DW27) and the new JTBD-1.7 / F1.16 / FX.8 additions from the v1.5.0/v1.5.1 edits are internally consistent and reflected in Appendix C's coverage check (13 JTBDs × 57 features; every JTBD has ≥1 primary feature).
+
+### Net change
+
+PRD body content holds. One cosmetic count-drift (gotcha range) is the single new finding; one prior follow-up (MCP-count) is now resolved.
+
+### Outcome
+
+- PRD `re_validated` field is `2026-06-20` (set by the v1.6.0 edit); this gate snapshot is dated `2026-06-21`.
+- PRD `version` is `1.6.0` (MINOR bump for the additive FRs); `source_pin` is `conda-forge-expert v8.40.0`; `status` remains `approved` (no scope shift triggered a re-approval cycle).
+- Report frontmatter `date` → 2026-06-21, `source_pin` → `conda-forge-expert v8.40.0`, `overall_verdict` updated, new `verdict_history` entry appended.
+
+### Required action before next clean gate
+
+| Action | Severity | Effort | Source |
+|---|---|---|---|
+| Re-sync F1.7 + Appendix A glossary + Appendix C matrix row from `G1-G45` to `G1-G51` (and the F1.7 "45 …" count to "51 …") | SHOULD-FIX | S (~5 min, `bmad-edit-prd`) | D5/D12 spot-check, this run |
+
+### Out-of-scope, deferred
+
+- Full multi-step `bmad-validate-prd` 10-step interactive re-run (the 2026-05-12 run remains the authoritative deep validation; a skill-internal pin-bump does not warrant it under the convention).
+- v8.11.x CFE-skill retro (`implementation-artifacts/retro-conda-forge-expert-v8.11-2026-06-07.md`) — still outstanding per CLAUDE.md Rule 2.
+- v8.39.0 / v8.40.0 CFE-skill retro (the G45 + G46–G51 gotcha work) — outstanding per CLAUDE.md Rule 2; recommended filename `implementation-artifacts/retro-conda-forge-expert-v8.40-2026-06-21.md`.
