@@ -5,7 +5,7 @@ date: 2026-06-20
 repository_type: monorepo
 parts: 4
 docs_generated: 13
-source_pin: 'conda-forge-expert v8.39.0'
+source_pin: 'conda-forge-expert v8.40.0'
 ---
 
 # `local-recipes` — Master Documentation Index
@@ -46,7 +46,7 @@ The document set was originally produced 2026-05-12 by `bmad-document-project` (
 |---|---|---|
 | 1 | [project-overview.md](./project-overview.md) | System framing, monorepo structure, four-part decomposition, cross-cutting concerns, getting-started orientation |
 | 2 | [source-tree-analysis.md](./source-tree-analysis.md) | Annotated directory tree at 5 levels, entry-points table, critical files |
-| 3 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier scripts/wrappers/data architecture, 10-step autonomous loop, 42 Tier 1 scripts, 41 templates / 13 ecosystems, build failure protocol, Recipe Authoring Gotchas G1–G45 |
+| 3 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier scripts/wrappers/data architecture, 10-step autonomous loop, 42 Tier 1 scripts, 41 templates / 13 ecosystems, build failure protocol, Recipe Authoring Gotchas G1–G51 |
 | 4 | [architecture-cf-atlas.md](./architecture-cf-atlas.md) | Part 2: phase pipeline B → T (incl. the O/P/Q/R/S PyPI-intelligence layer), schema v28, TTL gates, S3+cf-graph offline backends, performance characteristics, failure modes |
 | 5 | [architecture-mcp-server.md](./architecture-mcp-server.md) | Part 3: 42 MCP tools, thin-subprocess-wrapper pattern, auto-discovery + deferred `.mcp.json`, BMAD-agent invocation flow |
 | 6 | [architecture-bmad-infra.md](./architecture-bmad-infra.md) | Part 4: 6-layer config merge, active-project resolution, 65 installed skills, BMAD↔CFE integration rules |
@@ -218,7 +218,7 @@ These are surprising or non-obvious facts that AI agents and humans both get wro
 | Asset | Pinned to | Current | Drift action |
 |---|---|---|---|
 | This doc set | v8.39.0 | conda-forge-expert v8.39.0 | None needed — reconciled this session |
-| project-context.md | v8.11.1 | v8.39.0 (skill) | Re-verify on next MINOR-bump sweep: § Recipe Format / MCP Lifecycle / Anti-Patterns / Gotchas (G1–G45) |
+| project-context.md | v8.11.1 | v8.40.0 (skill) | Re-verify on next MINOR-bump sweep: § Recipe Format / MCP Lifecycle / Anti-Patterns / Gotchas (G1–G51) |
 | MANIFEST.yaml (Part 1 portability) | v7.0.0 | v7.0.0 | None |
 | Schema (Part 2 cf_atlas) | v28 | v28 | None |
 

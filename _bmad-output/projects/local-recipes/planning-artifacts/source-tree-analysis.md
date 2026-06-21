@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-06-20
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v8.39.0'
+source_pin: 'conda-forge-expert v8.40.0'
 ---
 
 # Source Tree Analysis
@@ -88,7 +88,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 ├── skills/                                  # 65 skills total (mix of BMAD-installer + repo-specific + auxiliary)
 │   │
 │   ├── conda-forge-expert/                  # ★★ Part 1 canonical source
-│   │   ├── SKILL.md                         # ★ primary spine: critical constraints, 10-step loop, gotchas G1-G45
+│   │   ├── SKILL.md                         # ★ primary spine: critical constraints, 10-step loop, gotchas G1-G51
 │   │   ├── INDEX.md                         # task→tool navigator
 │   │   ├── CHANGELOG.md                     # ★ release history with TL;DR (canonical drift-detection source)
 │   │   ├── MANIFEST.yaml                    # declares "standalone-portable" deployment (host-repo install.py target)
@@ -508,7 +508,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | BMAD multi-projects | 3 (deckcraft, local-recipes, presenton-pixi-image) |
 | Atlas pipeline phases | 22 phase IDs (B, B.5, B.6, C, C.5, D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N) |
 | Atlas schema version | v28 (additive migrations only) |
-| Skill version (source_pin) | conda-forge-expert v8.39.0 |
+| Skill version (source_pin) | conda-forge-expert v8.40.0 |
 
 **Refresh notes (2026-06-20 vs. prior 2026-06-07 sync):**
 - Recipe corpus grew 1,415 → 1,602; CFE scripts 50 → 54, wrappers 41 → 46, tests 41 → 82.
