@@ -1,407 +1,268 @@
 ---
 doc_type: implementation-readiness-report
 project_name: local-recipes
-date: 2026-05-12
+date: 2026-06-21
+source_pin: 'conda-forge-expert v8.40.0'
+sync_note: 'Regenerated 2026-06-21 against current artifacts (PRD v1.6.0, epics v1.1.0, architecture set v1.0.0 — all pinned conda-forge-expert v8.40.0). Supersedes the 2026-05-12 v7.8.1-era gate. Fixed two stale internal defects carried from the prior report: the ~176/193-story baseline (now 232 stories / 14 epics) and the "12 XL remaining vs 0 XL remaining" contradiction (now 0 XL remaining, per epics.md frontmatter xl_stories_remaining: 0).'
 artifacts_under_review:
-  - planning-artifacts/PRD.md
-  - planning-artifacts/architecture.md
-  - planning-artifacts/epics.md
+  - planning-artifacts/PRD.md (v1.6.0, approved, pin v8.40.0)
+  - planning-artifacts/architecture.md (v1.0.0, draft, pin v8.40.0)
+  - planning-artifacts/architecture-conda-forge-expert.md (pin v8.40.0)
+  - planning-artifacts/architecture-cf-atlas.md (pin v8.40.0)
+  - planning-artifacts/architecture-mcp-server.md (pin v8.40.0)
+  - planning-artifacts/architecture-bmad-infra.md (pin v8.40.0)
+  - planning-artifacts/integration-architecture.md (pin v8.40.0)
+  - planning-artifacts/epics.md (v1.1.0, draft, pin v8.40.0 — 14 epics / 232 stories / 0 XL)
+  - project-context.md (last_synced_skill_version v8.40.0, 63 rules)
 validator: bmad-check-implementation-readiness (Path 3 hybrid)
-overall_verdict: READY — all 5 must-fix items resolved 2026-05-12
+overall_verdict: CONDITIONAL_READY — capabilities coherently covered; 3 should-fix traceability/sync nits, 0 blocking gaps
 status: final
 verdict_history:
-  - initial: 'CONDITIONAL_READY (2026-05-12)'
-  - after_must_fix: 'READY (2026-05-12 — MF1 confirmed, MF2-MF5 applied)'
+  - initial: 'CONDITIONAL_READY (2026-05-12, v7.8.1 pin)'
+  - after_must_fix: 'READY (2026-05-12 — MF1 confirmed, MF2-MF5 applied; 193 stories, 0 XL)'
+  - regenerated: 'CONDITIONAL_READY (2026-06-21, v8.40.0 pin — 232 stories / 14 epics; new Epic 14 + FRs F2.13/F2.14/F3.9 verified covered; 3 non-blocking should-fix nits)'
+ground_truth_2026_06_21:
+  skill_version: v8.40.0
+  schema: v28
+  mcp_tools: 42
+  atlas_phases: 22 (B→N + O/P/Q/R/S)
+  pixi_envs: 9
+  recipe_gotchas: G1-G51 (skill SKILL.md); G1-G45 pinned in PRD/architecture/epics as of v8.40.0 capture
 ---
 
 # Implementation Readiness Assessment
 
-This report validates that `PRD.md`, `architecture.md`, and `epics.md` form a **consistent, implementable triple**. The PRD says WHAT to build; the architecture says HOW; the epics break the HOW into actionable stories. Each must align with the others or sprint planning will plan against contradictions.
+This report validates that `PRD.md`, the **architecture set** (`architecture.md` + 4 part docs + `integration-architecture.md`), and `epics.md` form a **consistent, implementable triple** at the **current** artifact state. The PRD says WHAT to build; the architecture says HOW; the epics break the HOW into actionable stories. Each must align with the others or sprint planning will plan against contradictions.
 
-## VERDICT UPDATE (2026-05-12)
-
-**Initial verdict: CONDITIONAL_READY** — 5 must-fix items identified.
-
-**Updated verdict: READY** — all 5 must-fix items resolved on the same day:
-
-- ✅ **MF1**: All 7 open questions (Q-PRD-01 through Q-PRD-07) confirmed by operator — see PRD §8 Decision summary
-- ✅ **MF2**: JTBD↔Feature traceability matrix added to PRD as Appendix C
-- ✅ **MF3**: Timeline section added to PRD as §11.5 (with aspirational, no-deadline framing)
-- ✅ **MF4**: All 6 XL stories split into right-sized sub-stories (193 total stories, 0 XL remaining)
-- ✅ **MF5**: `test-skill.py` covered by new E12.S10
-
-**Sprint planning is unblocked across all 5 waves.** The original report body below is preserved as a historical record of the initial assessment.
+This is a **dated gate regenerated 2026-06-21** against the live artifacts. The verdict below follows from **current** evidence (v8.40.0-pinned artifacts, 14 epics / 232 stories), **not** the stale 2026-05-12 v7.8.1-era inventory. The prior report's two internal defects are fixed (see § "Defects Fixed From Prior Audit").
 
 ---
 
-## Original Report (2026-05-12 initial assessment)
+## VERDICT (2026-06-21)
 
-**Overall verdict: CONDITIONAL_READY.** The triple is largely consistent and implementable. **5 must-fix items** need resolution before sprint planning starts. **7 should-fix items** improve quality but don't block. **3 informational findings** flag structural patterns worth noting.
+**Overall verdict: CONDITIONAL_READY.**
+
+The triple is **consistent and implementable** at the current state. Every PRD feature — including the **new capabilities that shipped after the prior gate** (Epic 14's PyPI-intelligence + security-signals layer; FRs F2.13 / F2.14 / F3.9; atlas phases O–S; the 42-tool MCP surface; the 9th `gcloud` pixi env; gotchas G7–G45) — is **coherently covered across PRD + epics + architecture**. There are **0 blocking gaps**.
+
+Three **should-fix** items remain (traceability/sync hygiene, not coverage holes). None blocks sprint planning; they are recorded so the next planning pass closes them.
+
+- **Story/epic counts used:** **14 epics, 232 stories, 5 waves, 0 XL remaining** (epics.md v1.1.0 frontmatter `total_epics: 14`, `total_stories: 232`, `xl_stories_remaining: 0`; body line 47 "Total: 14 epics, 232 stories"; Wave Summary "Total | 14 | 232"; per-wave sum 31+71+76+28+26 = 232 — all four statements agree).
+- **Source pin:** **conda-forge-expert v8.40.0** (uniform across PRD, all 6 architecture docs, epics.md, project-context.md).
+
+> The earlier "READY" verdict (2026-05-12) was correct **for its inputs** (193 stories, v7.8.1 pin). Those inputs are now stale. This regeneration re-runs the gate against the v8.40.0 artifacts and lands at CONDITIONAL_READY only because of the three should-fix hygiene nits below — the system itself is more complete than at the prior gate, not less.
+
+---
+
+## Defects Fixed From Prior Audit
+
+The prior report (2026-05-12) carried two internal defects that this regeneration corrects against the current epics.md reality:
+
+| # | Prior defect | Prior text | Corrected (current truth) | Source of truth |
+|---|---|---|---|---|
+| D-FIX-1 | **Stale story/epic baseline** | "13 epics, ~176 stories" (Step 1/5) and "193 total stories" (§ VERDICT UPDATE / PRD §12) | **14 epics, 232 stories** | epics.md v1.1.0 frontmatter (`total_epics: 14`, `total_stories: 232`) + body line 47 + Wave Summary line 572 |
+| D-FIX-2 | **XL contradiction** | Step 5 table said "**~12 XL (7%)**" and listed 6 XL split candidates, while § VERDICT UPDATE / PRD §12 claimed "**0 XL remaining**" — a direct contradiction | **0 XL remaining** (all former XL stories split: SKILL.md → S1a–f; unit tests → S25a–e; `scan_project` → S14a–e; schema migrations → S2a–d; `recipe_optimizer` → S7a–d; air-gap validation → S8a–d) | epics.md frontmatter `xl_stories_remaining: 0` + six explicit "no XL stories remaining" closeouts (E6, E7, E9, E13, E14 + Wave Summary) |
+
+Both defects are reconciled to the **current** epics.md. The 232 figure is itself the product of a 2026-06-20 structural re-sync that reconciled an earlier internal drift (frontmatter 195 / Wave Summary 173 / epic bodies 201 → a single body-counted 232); the epics doc now states a single self-consistent total in all four places.
 
 ---
 
 ## Methodology
 
-This report applies the BMAD `bmad-check-implementation-readiness` 6-step framework:
+This report applies the BMAD `bmad-check-implementation-readiness` 6-step framework (Path 3 hybrid — where the skill would HALT for user input, this produces direct findings):
 
-1. **Document discovery** — all 3 artifacts present and frontmatter-aligned
-2. **PRD analysis** — PRD section coverage and quality
+1. **Document discovery** — all artifacts present and frontmatter-aligned
+2. **PRD analysis** — feature/FR extraction
 3. **Epic coverage validation** — every PRD feature maps to ≥1 story
-4. **UX alignment** — N/A for this rebuild (no UX design doc; infrastructure rebuild)
+4. **UX alignment** — N/A (infrastructure rebuild; no UX design doc)
 5. **Epic quality review** — story granularity, AC clarity, dependency soundness
-6. **Final assessment** — readiness verdict + must-fix list
-
-Where the BMAD skill would HALT for user input, this Path 3 hybrid produces direct findings.
+6. **Final assessment** — readiness verdict + should-fix list
 
 ---
 
 ## Step 1: Document Discovery ✅
 
-| Artifact | Path | Frontmatter | Size |
+| Artifact | Path | Frontmatter | Pin |
 |---|---|---|---|
-| PRD | `planning-artifacts/PRD.md` | ✅ aligned (v1.0.0, draft, v7.8.1 pin) | 472 lines |
-| Architecture | `planning-artifacts/architecture.md` | ✅ aligned (v1.0.0, draft, v7.8.1 pin) | 564 lines |
-| Epics & Stories | `planning-artifacts/epics.md` | ✅ aligned (v1.0.0, draft, v7.8.1 pin; 13 epics, ~176 stories) | 557 lines |
-| Project context | `_bmad-output/projects/local-recipes/project-context.md` | ✅ aligned (v7.8 pinned, 63 rules) | 176 lines |
+| PRD | `planning-artifacts/PRD.md` | ✅ v1.6.0, **approved**, re_validated 2026-06-20 | v8.40.0 |
+| Architecture (unified) | `planning-artifacts/architecture.md` | ✅ v1.0.0, draft, consolidates 5 docs | v8.40.0 |
+| Architecture (CFE / Part 1) | `planning-artifacts/architecture-conda-forge-expert.md` | ✅ | v8.40.0 |
+| Architecture (cf_atlas / Part 2) | `planning-artifacts/architecture-cf-atlas.md` | ✅ schema v28, 22 phases, 21 tables + 4 views | v8.40.0 |
+| Architecture (MCP / Part 3) | `planning-artifacts/architecture-mcp-server.md` | ✅ 42 tools across 3 surfaces | v8.40.0 |
+| Architecture (BMAD / Part 4) | `planning-artifacts/architecture-bmad-infra.md` | ✅ | v8.40.0 |
+| Integration architecture | `planning-artifacts/integration-architecture.md` | ✅ parts_integrated 4 | v8.40.0 |
+| Epics & Stories | `planning-artifacts/epics.md` | ✅ v1.1.0, draft, **14 epics / 232 stories / 0 XL** | v8.40.0 |
+| Project context | `_bmad-output/projects/local-recipes/project-context.md` | ✅ 63 rules, 9 envs documented | v8.40.0 |
 
-**Cross-references**:
-- PRD references architecture (§11 Dependencies, §1 Vision, glossary)
-- Architecture references PRD (§11 References) and consolidates 4 architecture-*.md files
-- Epics references PRD (§ each epic's "Source: PRD F#") and architecture (§ build order)
+**Pin uniformity:** all 9 artifacts carry `source_pin` / `last_synced_skill_version` = **conda-forge-expert v8.40.0**. ✅ No pin drift across the set.
 
-All three artifacts cite each other appropriately. ✅
+> **Sync note (informational, I1):** PRD and epics edit-history *narratives* describe the 2026-06-20 structural re-sync as "v8.11.1 → v8.39.0," but the actual `source_pin` **fields** in both files were subsequently bumped to **v8.40.0** (matching project-context.md and the architecture set). The pin fields — the load-bearing values — are uniform and correct. The narrative lag is cosmetic (see SF3).
+
+**Cross-references:** PRD §11 + Appendix B cite the architecture set; architecture.md consolidates the 4 part docs + integration doc; epics.md `input_docs` cite PRD + architecture and annotate each retrofit story with its driving feature. All artifacts cite each other appropriately. ✅
+
+**No duplicate-format issue** (no sharded-vs-whole collision; the architecture is intentionally a unified doc + 5 authoritative part docs, declared via `consolidates:`). ✅
 
 ---
 
-## Step 2: PRD Analysis ⚠️
+## Step 2: PRD Analysis ✅
 
-The companion `validation-report-PRD.md` covers PRD-internal quality. **Implementation-readiness adds these checks**:
+PRD v1.6.0 enumerates **57 features** (its own §5 total: 16 Part 1 + 14 Part 2 + 9 Part 3 + 10 Part 4 + 8 cross-cutting) across 4 parts + cross-cutting, each with ID + priority + acceptance line. Companion `validation-report-PRD.md` covers PRD-internal quality; this gate adds cross-artifact checks.
 
-### Findings
+### New capabilities since the prior gate (the focus of this regeneration)
 
-| Finding | Severity |
+The prior gate predated four capability clusters that have since shipped and been folded into the PRD as **net-new FRs**. Each is verified present in the PRD **and** traced to the architecture below (epic coverage in Step 3):
+
+| New FR | PRD §5 capability | Architecture corroboration |
+|---|---|---|
+| **F2.13** | PyPI-intelligence layer — phases O/P/Q/R/S + `pypi_universe` / `pypi_intelligence` side tables + `conda_forge_readiness` (0-100) + `recommended_template` | architecture-cf-atlas.md § "The 22 Phases" (O–S rows) + § schema (21 tables incl. `pypi_intelligence`, `pypi_universe`, snapshots) |
+| **F2.14** | Security-signals overlays — `cisa_kev` / `epss_scores` / `cwe_categories` + `fetch-cisa-kev` / `fetch-epss` / `fetch-cwe-catalog` CLIs; Phase G/G' rollup | architecture-cf-atlas.md Phase G/G' rows (KEV+EPSS+CWE overlay loops, `_aggregate_v8_6_0_overlays`) + schema overlay tables |
+| **F3.9** | 7 net-new MCP tools — `pypi_intelligence`, `pypi_only_candidates`, `platform_breakdown`, `pyver_breakdown`, `channel_split`, `download_pr_artifacts`, `env_inspect` | architecture-mcp-server.md § "The 42 Tools by Surface" (all 7 enumerated by surface; total verified 42 via `grep -c "@mcp.tool"`) |
+| **F1.16 / FX.8** (v1.5.0) | Local-Only SPA packaging (Feature G45) / AI Provenance Tracking Hook | architecture-conda-forge-expert.md (G45 template) / integration + bmad-infra hook surface |
+
+These align with the **ground-truth 2026-06-21 facts**: schema v28, 42 MCP tools, 22 atlas phases (B→N + O/P/Q/R/S), 9 pixi envs. ✅ Coherently represented in both PRD and architecture.
+
+### PRD-level checks
+
+| Check | Result |
 |---|---|
-| PRD §5 has **54 features** with priority + AC. Epics need to cover all 54. | (verified in Step 3) |
-| PRD §6 Success Metrics has **27 measures**. Each should map to a verification story in Epic 12 or Epic 13. | (gap — see below) |
-| PRD §8 Open Questions has **7 items**. Of these, Q-PRD-01, Q-PRD-03, Q-PRD-04, Q-PRD-05, Q-PRD-07 may **block specific stories**. | (gap — see below) |
-| PRD §10 has **7 risks** with mitigations. Mitigations should map to specific stories or be documented in architecture. | (verified — most map; one gap) |
+| §5 feature count internally consistent | ✅ §5 declares "Total features: 57"; sub-totals (16+14+9+10+8) sum to 57 |
+| §6 Success Metrics aligned to ground truth | ✅ "MCP tools 42/42", "Atlas phases 22/22", "Pixi envs 9/9" match v8.40.0 reality |
+| §8 Open Questions | ✅ All 7 (Q-PRD-01..07) **CONFIRMED** by operator 2026-05-12; §12 status `approved`; no open question blocks any story |
+| §9 Deferred Work | ✅ 27 DW rows (DW1–DW27); DW12/DW13/DW15/DW17 marked SHIPPED inline with audit trail; remainder are explicitly v2/out-of-scope |
+| §10 Risks | ✅ 7 risks with mitigations; R1 (skill drift) is the live one — addressed by the drift-detection contract (G6) + this regeneration |
 
-### Gap 1: Success metrics → verification stories
+### Minor finding (carried forward, non-blocking)
 
-PRD §6 has 27 measures. `epics.md` Epic 12 has 9 test stories and Epic 13 has 13 docs/validation stories — but **the mapping is not explicit**. For example:
-
-- PRD G2: "First-pass conda-forge PR acceptance ≥90%" — no specific story measures this post-rebuild
-- PRD G3: "Atlas refresh resilient to interrupts" — partly covered by E7.S14 (checkpoint resume test); but cross-phase resilience isn't a single story
-- PRD G4 air-gap metrics — covered by E13.S8 (air-gap deployment dry-run), but the specific measures (zero JFrog headers in non-JFrog logs) aren't explicit AC
-
-**Required**: Epic 13 should add a "Measure PRD success metrics" story (or augment E13.S10 with explicit per-metric AC).
-
-### Gap 2: Open questions blocking stories
-
-PRD §8 Q-PRD-01 ("Should the rebuild include `.mcp.json` registration?") — recommendation says "include in v1 rebuild." If accepted, story E10.S9 stands as written. If deferred, E10.S9 should be moved to deferred work.
-
-Similar:
-- Q-PRD-03 (G6 promotion) — if accepted, augments E6.S1's SKILL.md authoring scope; if deferred, no story
-- Q-PRD-04 (Phase K rate-limit backoff) — if accepted, adds a story to Epic 8; if deferred, captured in DW3
-- Q-PRD-05 (sibling project stubs) — affects E2.S7
-- Q-PRD-07 (macOS SDK inclusion) — affects deployment-guide.md content (E13.S2)
-
-**Required**: PRD owner (rxm7706) resolves Q-PRD-01, 03, 04, 05, 07 (and 02 already deferred per ADR-010). Each resolution either confirms an existing story OR adds/removes a story.
-
-### Gap 3: Risk mitigation traceability
-
-PRD §10 R6: "conda-forge changes Python floor before rebuild ships" — mitigation says "Floor is documented in SKILL.md + project-context.md + python-min-policy.md; update in same retro." This is documentation, not a story. ✅ acceptable.
-
-PRD §10 R7: "New conda-forge lint code added post-rebuild" — mitigation says "Run `optimize_recipe.py` against the upstream conda-forge linter periodically; add the code to the 17." This implies a periodic verification story that doesn't exist in epics. **Gap.**
-
-**Recommended**: add a Wave 5 story (Epic 12 or 13) that periodically diffs `recipe_optimizer.py` lint codes against upstream conda-forge linter (`conda-smithy recipe-lint`) and reconciles new codes.
+PRD §6 still has ~27 success measures with no **explicit** per-metric verification-story map in Epic 12/13 (the prior SF1). Capabilities are covered (Epic 12 = 10 test stories, Epic 13 = 16 docs/validation stories incl. E13.S8a–d air-gap validation + E13.S13 release-candidate). The explicit metric→story mapping remains a quality nicety. → **SF2** below.
 
 ---
 
-## Step 3: Epic Coverage Validation ❌ MUST FIX
+## Step 3: Epic Coverage Validation ✅
 
-**The big question**: do the 13 epics cover all 54 PRD features?
+**The question:** do the **14 epics / 232 stories** cover all 57 PRD features, including the four new clusters?
 
-### Coverage matrix (54 features → 13 epics)
+epics.md uses **per-story inline "Covers **F#**" annotations** (e.g., E6.S27 "Covers **F1.16**"; E3.S9 "Covers **FX.8**"; E8.S17 "per Q-PRD-04") rather than a single standalone coverage matrix. Coverage is therefore validated by tracing each PRD feature to its implementing story/epic.
 
-| PRD Feature | Priority | Covered by epic(s) | Verdict |
-|---|---|---|---|
-| **Part 1 (15 features)** | | | |
-| F1.1 (3-tier architecture) | P0 | E5 (wrapper layer) + E4 (Tier 1 scripts) + E1.S9 (scaffolding) | ✅ |
-| F1.2 (10-step autonomous loop in SKILL.md) | P0 | E6.S1 (SKILL.md) | ✅ |
-| F1.3 (5 Critical Constraints) | P0 | E6.S1 | ✅ |
-| F1.4 (42 Tier 1 scripts) | P0 | E4 (20 stories cover ~20 scripts) | ⚠️ **GAP** — Epic 4 covers 20 of 42 scripts; the other 22 are atlas scripts (Epics 7/8/9) — verify cross-coverage |
-| F1.5 (34 Tier 2 wrappers + pixi tasks) | P0 | E5 (8 stories cover all 34) | ✅ |
-| F1.6 (17-lint-code optimizer) | P0 | E4.S7 | ✅ |
-| F1.7 (G1-G6 gotchas) | P0 | E6.S1 — but G6 promotion is Q-PRD-03 dependent | ⚠️ blocked by Q-PRD-03 |
-| F1.8 (41 templates / 13 ecosystems) | P0 | E6.S19 | ✅ |
-| F1.9 (11 reference + 8 guides + 2 quickrefs) | P0 | E6.S5-S18 (14 doc stories) | ✅ |
-| F1.10 (MANIFEST.yaml + install.py) | P1 | E6.S4 | ✅ |
-| F1.11 (Build failure protocol) | P0 | E6.S1 (in SKILL.md) | ✅ |
-| F1.12 (Migration protocol) | P0 | E6.S1 + E4.S15 (feedstock-migrator) | ✅ |
-| F1.13 (Mapping subsystem) | P0 | E4.S1 (name_resolver) + E4.S2 (mapping_manager) | ✅ |
-| F1.14 (41 tests) | P0 | E6.S23-S26 (4 test-setup stories) + E12 (test completeness) | ✅ |
-| F1.15 (CHANGELOG with TL;DR) | P0 | E6.S3 | ✅ |
-| **Part 2 (12 features)** | | | |
-| F2.1 (SQLite schema v19) | P0 | E7.S1-S2 | ✅ |
-| F2.2 (17 phases via PHASES registry) | P0 | E7.S4-S11 (Phase B-E.5) + E8 (Phase F-N) + E9.S1 (atlas_phase.py with PHASES dispatch) | ✅ |
-| F2.3 (`bootstrap-data` orchestrator) | P0 | E9.S2 | ✅ |
-| F2.4 (`atlas-phase <ID>` CLI) | P0 | E9.S1 | ✅ |
-| F2.5 (TTL gates on F/G/H/K) | P0 | E8.S4, S16 + E12.S5 (meta-test) | ✅ |
-| F2.6 (`phase_state` checkpointing on B/D/N) | P0 | E7.S3 + E7.S14 (test) | ✅ |
-| F2.7 (Phase F S3 backend) | P0 | E8.S2, S3 | ✅ |
-| F2.8 (Phase H cf-graph backend) | P0 | E8.S8, S9 | ✅ |
-| F2.9 (60s heartbeat + capped cadence) | P0 | E8.S15 | ✅ |
-| F2.10 (17 public CLIs) | P0 | E9 (20 stories) | ✅ |
-| F2.11 (Phase G/G' require vuln-db) | P0 | E8.S5-S6 | ✅ |
-| F2.12 (Idempotent additive schema migrations) | P0 | E7.S2 + E12.S3 (migration test) | ✅ |
-| **Part 3 (8 features)** | | | |
-| F3.1 (`conda_forge_server.py` + FastMCP) | P0 | E10.S1 | ✅ |
-| F3.2 (35 `@mcp.tool()` registrations) | P0 | E10.S3-S5 | ✅ |
-| F3.3 (Thin subprocess wrapper pattern) | P0 | E10.S1 + S3 + S4 | ✅ |
-| F3.4 (`_run_script` 3-tier error handling) | P0 | E10.S2 | ✅ |
-| F3.5 (2 async tools) | P0 | E10.S3 (trigger_build) + E10.S4 (update_cve_database) | ✅ |
-| F3.6 (Out-of-band state files) | P0 | E10.S6 | ✅ |
-| F3.7 (`mcp_call.py` JSON-RPC client) | P1 | E10.S7 | ✅ |
-| F3.8 (`gemini_server.py` auxiliary) | P2 | E10.S8 | ✅ |
-| **Part 4 (10 features)** | | | |
-| F4.1 (BMAD installer) | P0 | E2.S1 | ✅ |
-| F4.2 (6-layer config merge) | P0 | E2.S2 + E2.S11 (round-trip test) | ✅ |
-| F4.3 (Active-project resolution) | P0 | E2.S2 + E2.S11 | ✅ |
-| F4.4 (`scripts/bmad-switch`) | P0 | E2.S5 | ✅ |
-| F4.5 (65 installed skills) | P0 | E2.S1 + E2.S9 | ✅ |
-| F4.6 (`conda-forge-expert` skill) | P0 | Wave 2 (Epics 4-6) | ✅ |
-| F4.7 (Per-skill customization) | P1 | E2.S3 | ✅ |
-| F4.8 (Multi-project layout) | P0 | E2.S6, S7, S8 | ✅ |
-| F4.9 (CLAUDE.md BMAD↔CFE integration rules) | P0 | E11.S1 | ✅ |
-| F4.10 (project-context.md + drift contract) | P0 | E11.S2 | ✅ |
-| **Cross-cutting (7 features)** | | | |
-| FX.1 (`_http.py` auth chain) | P0 | E3.S1-S3 | ✅ |
-| FX.2 (8 pixi envs) | P0 | E1.S2-S7 | ✅ |
-| FX.3 (JFROG_API_KEY leak docs) | P0 | E3.S4-S6 | ✅ |
-| FX.4 (vuln-db env separation) | P0 | E1.S6 | ✅ |
-| FX.5 (`docs/pixi-config-jfrog.example.toml`) | P1 | E13.S6 | ✅ |
-| FX.6 (`.claude/settings.json`) | P0 | E3.S7 | ✅ |
-| FX.7 (`build-locally.py` Docker wrapper) | P0 | E4.S9 | ✅ |
+### New-capability coverage (the load-bearing verification for this regeneration)
+
+| PRD FR | Covered by | Verdict |
+|---|---|---|
+| **F2.13** (PyPI-intelligence O/P/Q/R/S + score + template) | **Epic 14** S5 (Phase O), S6 (Phase P BigQuery/cost-capped), S7 (Phase Q cross-channel), S8 (Phase R pypi.org enrich), S9 (Phase S readiness score + recommended_template), S1/S4 (schema tables), S13 (orchestrator + profiles) | ✅ covered (capability) — **no F2.13 FR-ID citation** in the story rows (SF1) |
+| **F2.14** (KEV/EPSS/CWE overlays) | **Epic 14** S2/S3 (schema overlay tables), S10 (CISA KEV Path C), S11 (EPSS), S12 (CWE catalog), S13 (profile auto-runs) | ✅ covered (capability) — **no F2.14 FR-ID citation** (SF1) |
+| **F3.9** (7 net-new MCP tools) | **Epic 10** S5b–S5h (`pypi_intelligence`, `pypi_only_candidates`, `platform_breakdown`, `pyver_breakdown`, `channel_split`, `download_pr_artifacts`, `env_inspect`) — "bringing the tool surface 35 → 42" | ✅ covered (capability) — **no F3.9 FR-ID citation** (SF1) |
+| **F1.16** (Local-Only SPA / G45) | **Epic 6** S27 (explicitly "Covers **F1.16** and **JTBD-1.7**") | ✅ covered + cited |
+| **FX.8** (AI Provenance Hook) | **Epic 3** S9 (explicitly "Covers **FX.8**") | ✅ covered + cited |
+| **FX.2 → 9 pixi envs** (was 8) | **Epic 1** S11 (gcloud env, "9th env — Phase P BigQuery ADC auth") | ✅ covered |
+| **F1.7** (gotchas G1–G45, was G1–G6) | **Epic 6** S1a–f (G1–G6) + **S1g** (G7–G45 full catalog) | ✅ covered |
+| **F1.9** (now 17 reference + 9 guides) | **Epic 6** S5b / S9b / S15b (added reference files) + guide folded into S16 | ✅ covered |
+| **F2.10 / F2.10 CLIs** (pypi-intelligence + breakdown CLIs) | **Epic 9** S21–S25 (`pypi-intelligence`, `pypi-only-candidates`, `platform-breakdown`, `pyver-breakdown`, `channel-split`) | ✅ covered |
+| **F3.2 / Epic 10 → 42 tools** | **Epic 10** "Part 3 MCP Server + 42 Tools" (18 stories) | ✅ covered |
+
+The retrofit additions (E1 +1, E6 +4, E9 +5, E10 +7) and the new **Epic 14** (13 stories) account for the structural growth that brings the v8.6-era epics up to the v8.40.0 system. **The new capabilities are coherently covered across PRD + epics + architecture.** ✅
+
+### Baseline (pre-existing) feature coverage
+
+The 50 pre-existing features (F1.1–F1.15, F2.1–F2.12, F3.1–F3.8, F4.1–F4.10, FX.1/FX.3–FX.7) remain covered by Epics 1–13 as in the prior gate (no regressions; the prior gate validated 51/54 with the deltas now resolved by the operator's Q-PRD confirmations and the structural re-sync). ✅
 
 ### Coverage summary
 
-- **51 of 54 features ✅ covered** with explicit story(ies) (pending epic updates for new features)
-- **1 feature ⚠️ with verification gap** (F1.4 — verify 42 scripts split across Epic 4 + Epic 7-9)
-- **2 features ⚠️ blocked by open questions** (F1.7 G6 promotion blocked by Q-PRD-03; F3.7 P1 priority depends on Q-PRD-01)
-
-### Verification of F1.4 (42 Tier 1 scripts)
-
-`source-tree-analysis.md` lists the 42 scripts grouped by function. Cross-referencing:
-
-- **Recipe lifecycle (18 scripts)**: covered by Epic 4 (20 stories — extra coverage for some) ✅
-- **cf_atlas orchestration (7 scripts)**: covered by Epic 7 (`conda_forge_atlas.py`, `_cf_graph_versions.py`, `_parquet_cache.py`, `atlas_phase.py`, `bootstrap_data.py`, `detail_cf_atlas.py`, `inventory_channel.py` — all referenced) ✅
-- **Atlas query CLIs (11 scripts)**: covered by Epic 9 ✅
-- **Project-scanning + health (3 scripts)**: covered by E9.S14, S15, _sbom helper inside scan_project ✅
-- **Shared infrastructure (3 scripts: `_http.py`, `mapping_manager.py`, `test-skill.py`)**: E3.S1-S3 (_http.py), E4.S2 (mapping_manager), E12 (test-skill.py as test harness) — **`test-skill.py` not explicitly covered** ⚠️
-
-**Gap**: `test-skill.py` (skill-internal smoke test runner) is not covered by any story. Either add a story to Epic 12 or note it as out of scope.
+- **57 of 57 PRD features ✅ covered** by ≥1 story (capability-level).
+- **0 blocking gaps.**
+- **3 should-fix traceability/sync nits** (SF1–SF3) — none blocks sprint planning.
 
 ---
 
 ## Step 4: UX Alignment ✅ N/A
 
-The BMAD `bmad-check-implementation-readiness` skill expects a UX design doc to align against. **This rebuild has no UX design doc** because it's an infrastructure rebuild — there's no user-facing UI.
-
-### N/A justification
-
-- No web app, no mobile app, no native GUI
-- User surfaces are: CLI (pixi tasks), MCP tools (Claude Code), markdown documentation, skill activation
-- No visual design, no information architecture beyond markdown structure, no accessibility requirements beyond "readable in a terminal/Claude Code"
-
-**Verdict: SKIP this step**. Document explicitly in §0 of this report (already done above).
+This is an **infrastructure rebuild** with no user-facing UI. User surfaces are CLI (pixi tasks), MCP tools (Claude Code), markdown docs, and skill activation. No web/mobile/native GUI; no visual design, IA, or accessibility surface beyond "readable in a terminal/Claude Code." The skill expects a UX design doc to align against; none exists, correctly. **SKIP this step** (documented, unchanged from prior gate). ✅
 
 ---
 
-## Step 5: Epic Quality Review ⚠️
+## Step 5: Epic Quality Review ✅
 
-Each epic should have:
-- Clear goal
-- Defined owner (which part)
-- Acceptance criteria
-- Stories with: title, scope, AC, complexity, dependencies
+### Strengths
+
+- ✅ Each of the 14 epics has Goal + Owner part + Acceptance.
+- ✅ All 232 stories carry ID + title + scope + AC + complexity (S/M/L).
+- ✅ **0 XL stories remaining** — every former XL was split into right-sized stories (defect D-FIX-2 reconciled). The epics doc states this in the frontmatter (`xl_stories_remaining: 0`) and in six per-epic/wave closeouts.
+- ✅ Stories organized into 5 dependency-ordered waves; per-wave + per-epic totals sum cleanly to 232.
+- ✅ Epic 14 placed in Wave 3 (cf_atlas work) with an explicit dependency on Epic 7 (`init_schema()` + additive-migration invariant) called out in E14.S1.
+- ✅ Epic 14's one **non-additive** migration (v24 → v25 cleanup round-trip) is flagged as "the documented exception to the additive-only invariant — gated + tested" (E14.S3). Good discipline — the deviation is explicit, not silent.
 
 ### Findings
 
-#### Strengths
+#### 🟡 Story-level dependency columns still implicit within epics (carried, SF — non-blocking)
 
-- ✅ Each epic has a Goal + Owner part + Acceptance
-- ✅ All 176 stories have ID + title + scope + AC + complexity
-- ✅ Stories are organized into 5 dependency-ordered waves
-- ✅ Build order traces back to `project-parts.json` and `architecture.md` §9
-- ✅ Risk concentration is called out (7 highest-risk stories flagged for extra review)
+Cross-epic dependencies are stated (e.g., E14.S1 "Depends on Epic 7"), but **within** an epic, story-order dependencies remain largely implicit (e.g., E14.S5–S9 phases assume S1/S4 schema tables exist first; the ordering is correct but not annotated as "Depends on"). This was SF3 in the prior gate; it persists and is still a quality nicety, not a blocker. → **SF3**.
 
-#### Issues
+#### 🟡 New FRs covered but not FR-ID-annotated (the primary new finding, SF1)
 
-##### Story granularity skew
+F1.16 and FX.8 carry explicit "Covers **F#**" annotations on their stories, but the three **largest** new clusters — **F2.13** (Epic 14 S5–S9), **F2.14** (Epic 14 S10–S12), **F3.9** (Epic 10 S5b–S5h) — are covered by capability but **not** annotated with their FR IDs. A future requirements-traceability audit grepping for "F2.13" in epics.md finds nothing, despite full coverage. → **SF1** (add the three annotations).
 
-| Complexity | Count | % of total |
-|---|---|---|
-| S (small) | ~36 | 20% |
-| M (medium) | ~78 | 44% |
-| L (large) | ~50 | 28% |
-| XL (extra large) | ~12 | 7% |
-| **Total** | **~176** | **100%** |
+#### 🟡 A few softer ACs persist (carried, non-blocking)
 
-**Issue**: 12 XL stories. Per BMAD planning conventions, XL stories should be split — they're hard to estimate and produce risk concentration.
+Doc/validation stories (e.g., Epic 13 "release notes published", Epic 6 reference-authoring ACs) lean on judgment rather than objective verification. Acceptable for an infra rebuild; tighten opportunistically. → folded into SF3.
 
-XL stories identified:
-1. E4.S7 (recipe_optimizer.py — 17 lint codes) — could split into 17 lint-code stories or 3-5 by family
-2. E6.S1 (SKILL.md) — could split by section (Operating Principles + Constraints + Loop + ... = 4-6 sub-stories)
-3. E6.S25 (unit tests for each Tier 1 module) — should split into per-module test stories
-4. E7.S2 (schema v1-v19 migrations) — could split into per-version migration stories
-5. E9.S14 (scan_project.py with ~28 input formats) — could split by format family (manifest / lock file / SBOM / container / OCI)
-6. E13.S8 (air-gap deployment dry-run) — could split into setup + atlas + recipe-authoring + validation phases
+### Quality verdict
 
-**Recommended**: split 3-6 of the XL stories before sprint planning. Some may legitimately remain XL (E4.S7 lint codes might fit one sprint).
-
-##### Inter-story dependencies not fully documented
-
-Some stories list deps ("Epic X must complete first") but **within an epic**, story-level deps are often implicit. Example: in Epic 4 (recipe lifecycle), E4.S1 (name_resolver) precedes E4.S5 (dependency-checker) because the latter imports the former — but the dep isn't stated.
-
-**Recommended**: add a "Depends on" column to each epic's story table.
-
-##### Acceptance criteria are uneven
-
-Some stories have testable AC ("`atlas-phase F` populates `total_downloads` column"). Others are softer ("Cheatsheet complete"). Soft AC make sprint completion ambiguous.
-
-Spot-checked weak AC:
-- E5.S8 "Each task listed in quickref" — what's the verification? Manual count?
-- E6.S17 "Cheatsheet complete" — by whose judgment?
-- E13.S9 "Documentation reviewed by operator" — N/A unless operator signs off
-- E13.S12 "All PRD open questions resolved" — needs each Q-PRD-N status
-
-**Recommended**: tighten weak AC to objective + verifiable criteria.
+No 🔴 critical violations (no technical-milestone-only epics that lack user value within the infra-rebuild framing; no forward dependencies; no oversized stories). The earlier 🔴 (XL concentration) is resolved. Remaining items are 🟡 minor. ✅
 
 ---
 
 ## Step 6: Final Assessment
 
-### Verdict: CONDITIONAL_READY
+### Overall Readiness Status: CONDITIONAL_READY
 
-The triple (PRD + architecture + epics) is **largely consistent and implementable**, but **5 must-fix items** need resolution before sprint planning starts. Sprint planning against the current triple risks committing to ambiguous scope (open questions), under-specified AC, or unsplit XL stories.
+The triple (PRD + architecture set + epics) is **consistent and implementable** at the v8.40.0 state. All 57 PRD features — including the new Epic 14 PyPI-intelligence + security-signals layer and FRs F2.13/F2.14/F3.9 — are coherently covered across PRD + epics + architecture. Counts are internally self-consistent (**14 epics / 232 stories / 0 XL**, four agreeing statements). **0 blocking gaps.**
 
-### Must-fix before sprint planning (5 items)
+The verdict is CONDITIONAL (not READY) solely because of **3 should-fix traceability/sync hygiene nits**. None blocks sprint planning — they are recorded so the next planning pass closes them. An operator who chooses to proceed as-is incurs only a small future-traceability cost, not a scope or correctness risk.
 
-| ID | Action | Source | Effort |
-|---|---|---|---|
-| MF1 | **Resolve PRD §8 open questions** (Q-PRD-01, 03, 04, 05, 07) — each resolution either confirms a story stands or alters it | Step 2 gap 2 | M (~1-2 hr per operator's decision pace) |
-| MF2 | **Add JTBD↔Feature traceability matrix** to PRD (Appendix C) | validation-report-PRD.md D6 | M (~30 min) |
-| MF3 | **Add §12.5 Timeline to PRD** with milestone targets or explicit open-ended note | validation-report-PRD.md D10 | S (~10 min) |
-| MF4 | **Split XL stories** (E4.S7, E6.S1, E6.S25, E7.S2, E9.S14, E13.S8) into sized stories | Step 5 | M (~45 min — author 3-5 new story rows per XL) |
-| MF5 | **Cover `test-skill.py` script** with a story OR document as out-of-scope | Step 3 F1.4 gap | S (~5 min) |
-
-### Should-fix before sprint planning (7 items)
+### Should-fix (non-blocking, quality)
 
 | ID | Action | Source | Effort |
 |---|---|---|---|
-| SF1 | **Add success-metric → verification-story map** to Epic 13 (or augment E13.S10) | Step 2 gap 1 | M (~30 min) |
-| SF2 | **Add risk R7 mitigation story** (periodic lint-code reconciliation with upstream conda-smithy) | Step 2 gap 3 | S (~10 min) |
-| SF3 | **Add story-level dependency column** to each epic's story table | Step 5 | L (~1 hr — go through all 176 stories) |
-| SF4 | **Tighten weak AC** in 5-8 stories (E5.S8, E6.S17, E13.S9, E13.S12, …) | Step 5 | S (~20 min) |
-| SF5 | **Address PRD validation MINOR items** (density, measurability for 3 metrics, project-type note) | validation-report-PRD.md | S-M (~30 min) |
-| SF6 | **Frame implementation leakage** with PRD §5 introductory note | validation-report-PRD.md D7 | S (~10 min) |
-| SF7 | **Promote G6 gotcha to SKILL.md** per Q-PRD-03 (assumes accept) | open questions | S (~10 min during E6.S1 authoring) |
+| **SF1** | **Add explicit "Covers **F2.13** / **F2.14** / **F3.9**" annotations** to Epic 14 (S5–S12) and Epic 10 (S5b–S5h). Coverage exists; only the FR-ID traceability string is missing. | Step 3 / Step 5 | S (~15 min) |
+| **SF2** | **Add an explicit §6-success-metric → verification-story map** to Epic 12/13 (or per-metric AC). ~27 measures; capabilities are covered, mapping is implicit. | Step 2 | M (~30 min) |
+| **SF3** | **Add a "Depends on" column to each epic's story table** + reconcile the PRD/epics **edit-history narrative** wording ("v8.39.0") with the actual `source_pin` field (v8.40.0); tighten ~3–5 soft ACs. | Step 1 (I1) / Step 5 | M (~1 hr) |
 
 ### Informational (no action required)
 
 | Note | Finding |
 |---|---|
-| I1 | UX alignment step is N/A — infrastructure rebuild has no UX design doc. Acknowledged. |
-| I2 | The 176-story count exceeds initial 142 estimate. Reasonable expansion during detailed authoring. |
-| I3 | Story complexity skew (44% M) is healthy; the 7% XL is the only concern (see MF4). |
+| I1 | Pin **fields** are uniform at v8.40.0 across all 9 artifacts; only the PRD/epics edit-history *narrative prose* still reads "v8.39.0" (cosmetic; folded into SF3). |
+| I2 | UX alignment N/A — infrastructure rebuild, no UX design doc. |
+| I3 | Story growth 176 → 193 → **232** is reasonable: the +39 over the prior gate's 193 is the documented structural re-sync (Epic 14's 13 stories + E1/E6/E9/E10 retrofits + the reconciliation of an earlier internal drift 173/195/201 → 232). Not scope creep — it's the v8.6-era plan catching up to the v8.40.0 system. |
+| I4 | PRD §12 sign-off block still cites "193 stories, 0 XL" in its historical checklist. The "0 XL" half is still true; the "193" half is a stale historical artifact of the approval date. Not a defect in epics.md (the authoritative count source); optionally refresh during SF1. |
+| I5 | Recipe gotchas: PRD/architecture/epics pin **G1–G45** (the count at v8.40.0 capture); the live SKILL.md ground truth is **G1–G51**. This is normal post-pin skill drift (PATCH-level gotchas accrue between syncs), not an artifact inconsistency — the drift-detection contract (G6) is the mechanism that closes it at the next MINOR re-sync. |
 
-### Total effort to reach `READY_FOR_SPRINT_PLANNING`
+### What sprint planning can begin now
 
-- **Must-fix**: ~3-4 hours focused work (most is operator resolving open questions)
-- **Should-fix**: ~2-3 hours focused work
-- **Combined**: ~5-7 hours
+Unchanged from the prior gate and **strengthened** (all 7 open questions confirmed; 0 XL): **Wave 1 (Epics 1–3, 31 stories)** can begin immediately with no open-question dependencies. The three should-fix items are best applied as a single ~2-hour pass before Wave 3 (which contains Epic 14, the cluster most affected by SF1), but they do not gate Wave 1 or Wave 2.
 
-After these revisions, re-run this report (Step 6 only); expect verdict to flip to `READY`.
-
----
-
-## What Sprint Planning Can Begin Now
-
-Some work doesn't need the must-fix items resolved. **Wave 1 (Foundation) Epics 1-3 can begin immediately:**
-
-- Epic 1 (Pixi Monorepo Bootstrap) — 10 stories, no open-question dependencies
-- Epic 2 (BMAD Installer + Multi-Project) — 11 stories; only E2.S7 is mildly affected by Q-PRD-05 (sibling project stubs)
-- Epic 3 (Cross-Cutting Auth Chain + Permission Gates) — 8 stories, no open-question dependencies
-
-**Wave 1 = 29 stories, 0-1 dependencies on open questions.** Start here while the operator resolves Q-PRD-01 through Q-PRD-07 in parallel.
-
-Waves 2-5 should wait until must-fix items are resolved.
-
----
-
-## Risk Assessment
-
-### High-risk concentration confirmed
-
-`epics.md` § Risk Concentration flags 7 stories for extra review:
-1. E4.S7 (recipe_optimizer 17 codes) — also flagged as XL split candidate
-2. E7.S2 (schema migrations) — also flagged as XL split candidate
-3. E8.S2 (Phase F S3 path) — appropriate flag
-4. E8.S8 (Phase H cf-graph) — appropriate flag
-5. E10.S3+S4 (35 MCP tools) — could be more granular per-tool reviews
-6. E11.S1+S2 (CLAUDE.md + project-context.md) — appropriate flag
-7. E13.S8 (air-gap validation) — also flagged as XL split candidate
-
-This is solid risk identification. Each should get `bmad-code-review` + `bmad-review-adversarial-general` before close.
-
-### Additional risks surfaced by this report
-
-- **R8 (new)**: open questions Q-PRD-01-07 are blocked on operator availability; sprint planning can't commit to certain stories until resolved. **Mitigation**: Wave 1 has no open-question dependencies; start there.
-- **R9 (new)**: XL story under-estimation. 12 XL stories may consume more sprint budget than estimated. **Mitigation**: split before sprint planning (MF4).
-- **R10 (new)**: weak AC in 5-8 stories may produce ambiguous sprint completion. **Mitigation**: tighten AC (SF4) before sprint planning.
-
----
-
-## Recommended Sprint Planning Sequence
-
-When MF1-MF5 are resolved:
+### Recommended sequence (14 epics, 5 waves)
 
 ```
-Sprint 1: Epic 1 (Pixi monorepo bootstrap, 10 stories)
-Sprint 2: Epic 2 (BMAD installer, 11 stories)
-Sprint 3: Epic 3 (Cross-cutting auth chain, 8 stories)
-                    ─── End of Wave 1 ───
-
-Sprint 4-5: Epic 4 (Tier 1 recipe lifecycle scripts, 20 stories)
-Sprint 6: Epic 5 (Tier 2 wrappers + meta-test, 8 stories)
-Sprint 7-8: Epic 6 (Part 1 docs + templates + tests, 26 stories)
-                    ─── End of Wave 2 ───
-
-Sprint 9-10: Epic 7 (cf_atlas schema + Phase B-E, 14 stories)
-Sprint 11-12: Epic 8 (Phase F-N + backends + TTL, 16 stories)
-Sprint 13-14: Epic 9 (cf_atlas CLIs + bootstrap-data, 20 stories)
-                    ─── End of Wave 3 ───
-
-Sprint 15: Epic 10 (MCP server + 35 tools, 11 stories)
-Sprint 16: Epic 11 (BMAD↔CFE integration, 10 stories)
-                    ─── End of Wave 4 ───
-
-Sprint 17: Epic 12 (test suite completeness, 9 stories)
-Sprint 18-19: Epic 13 (docs + deployment validation, 13 stories)
-                    ─── End of Wave 5 ───
-                    ─── REBUILD COMPLETE ───
+Wave 1 (Foundation):      E1 (11) + E2 (11) + E3 (9)          = 31 stories
+Wave 2 (Part 1 skill):    E4 (23) + E5 (8) + E6 (40)          = 71 stories
+Wave 3 (cf_atlas):        E7 (17) + E8 (17) + E9 (29) + E14 (13) = 76 stories   ← apply SF1 before E14
+Wave 4 (Parts 3+4):       E10 (18) + E11 (10)                 = 28 stories
+Wave 5 (Hardening):       E12 (10) + E13 (16)                 = 26 stories
+                                                       Total  = 232 stories
 ```
 
-**~19 sprints** (vs. epic-level estimate of 16-20). Aligns with the epics.md estimate.
+### Final note
+
+This regenerated gate found **0 blocking gaps** and **3 non-blocking should-fix items** across the v8.40.0 artifact set. The two internal defects from the prior (2026-05-12) report — the stale ~176/193-story baseline and the 12-XL-vs-0-XL contradiction — are **fixed** here against the current epics.md reality (**232 stories / 14 epics / 0 XL**). The new capabilities (Epic 14 / FRs F2.13–F3.9 / phases O–S / 42 tools / 9 envs) are coherently covered across PRD + epics + architecture. The artifacts may be used to proceed to sprint planning as-is (Wave 1–2), with SF1–SF3 applied before Wave 3.
 
 ---
 
 ## References
 
-- [PRD.md](./PRD.md) — product requirements (validated separately in `validation-report-PRD.md`)
-- [architecture.md](./architecture.md) — unified architecture
-- [epics.md](./epics.md) — 13 epics, 176 stories, 5 waves
+- [PRD.md](./PRD.md) — v1.6.0, approved, pin v8.40.0 (57 features; 27 DW rows; 7 Q-PRD confirmed)
+- [architecture.md](./architecture.md) — unified architecture (consolidates 5 docs), pin v8.40.0
+- [architecture-cf-atlas.md](./architecture-cf-atlas.md) — Part 2: schema v28, 22 phases, 21 tables + 4 views
+- [architecture-mcp-server.md](./architecture-mcp-server.md) — Part 3: 42 tools across 3 surfaces
+- [epics.md](./epics.md) — **14 epics, 232 stories, 5 waves, 0 XL**, pin v8.40.0
 - [validation-report-PRD.md](./validation-report-PRD.md) — PRD-internal validation
+- [project-context.md](../project-context.md) — last_synced_skill_version v8.40.0, 63 rules
 - [project-parts.json](./project-parts.json) — machine-readable part inventory
 - [index.md](./index.md) — navigator

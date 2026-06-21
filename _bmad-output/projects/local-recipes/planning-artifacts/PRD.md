@@ -176,7 +176,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F1.4 | 44 Tier 1 canonical scripts | P0 | All 44 scripts in `scripts/` accept `--json` and emit valid JSON on stdout |
 | F1.5 | 36 Tier 2 CLI wrappers + pixi tasks | P0 | All 36 wrappers in `.claude/scripts/conda-forge-expert/` delegate to Tier 1 via subprocess; each has a matching pixi task |
 | F1.6 | 17-lint-code recipe optimizer | P0 | `optimize_recipe` flags STD-001 through OPT-NNN with structured output |
-| F1.7 | 45 Recipe Authoring Gotchas (G1-G45) | P0 | SKILL.md § "Recipe Authoring Gotchas" enumerates G1-G45 with cause + fix |
+| F1.7 | 51 Recipe Authoring Gotchas (G1-G51) | P0 | SKILL.md § "Recipe Authoring Gotchas" enumerates G1-G51 with cause + fix |
 | F1.8 | 41 recipe templates across 13 ecosystems | P0 | `templates/` contains v1 + v0 variants for python, rust, go, c-cpp, r, java, ruby, dotnet, fortran, multi-output, nodejs, perl + conda-forge-yml config-template; verified 41 files (39 `.yaml` + 2 `.yml`) / 13 dirs at 2026-05-12 |
 | F1.9 | 11 reference docs + 8 guides + 2 quickrefs | P0 | All documentation files exist with content; `INDEX.md` task→tool navigator points correctly |
 | F1.10 | `MANIFEST.yaml` + `install.py` portability | P1 | The skill can be moved to another repo and `install.py` bootstraps the wrappers + pixi tasks |
@@ -601,7 +601,7 @@ This is a **personal-time rebuild effort with no firm calendar deadline**. The o
 - **MCP** — Model Context Protocol (Anthropic's tool-use protocol)
 - **BMAD** — the AI-driven dev framework (`bmad-method`)
 - **CFEP-25** — conda-forge Enhancement Proposal #25 (python_min triad)
-- **G1-G45** — Recipe Authoring Gotchas in SKILL.md
+- **G1-G51** — Recipe Authoring Gotchas in SKILL.md
 - **STD-001 / TEST-002 / etc.** — Lint codes from `recipe_optimizer.py`
 - **Phase B/F/H/K/N/...** — atlas pipeline phases
 - **TTL gate** — phase eligibility predicate based on `*_fetched_at` column
@@ -621,7 +621,7 @@ Maps each of the 57 features in §5 to its **primary JTBD** (the user job it mos
 | F1.4 (44 Tier 1 scripts) | JTBD-1.1 | JTBD-3.1, JTBD-1.5, JTBD-1.6 | Behavior source-of-truth |
 | F1.5 (36 Tier 2 wrappers + tasks) | JTBD-1.1 | JTBD-1.4 | Pixi-task surface for shell + BMAD use |
 | F1.6 (17-lint-code optimizer) | JTBD-1.1 | JTBD-4.1 | Catches lint issues pre-review |
-| F1.7 (G1-G45 gotchas) | JTBD-1.2 | JTBD-3.1 | Non-obvious failures enumerated so agents avoid them |
+| F1.7 (G1-G51 gotchas) | JTBD-1.2 | JTBD-3.1 | Non-obvious failures enumerated so agents avoid them |
 | F1.8 (41 templates / 13 ecosystems) | JTBD-1.1 | — | Recipe scaffolding |
 | F1.9 (11 reference + 8 guides + 2 quickrefs) | JTBD-3.1 | JTBD-1.2, JTBD-5.1 | Documentation cascade |
 | F1.10 (MANIFEST.yaml + install.py) | JTBD-5.1 | — | Portability enables reuse in other repos |
