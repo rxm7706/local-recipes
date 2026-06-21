@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.32.0"
+
+package:
+  name: amundsen-common
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/amundsen-common/amundsen-common-${{ version }}.tar.gz
+  sha256: 88dcf7c8a43701385e99e4790c2e98f39f6680a8277d0e99819cb348db84a5f7
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flask >=2.2.5
+    - attrs >=19.0.0
+    - marshmallow >=3.0
+    - marshmallow3-annotations >=1.1.0
+
+tests:
+  - python:
+      imports:
+        - amundsen_common
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Common code library for Amundsen
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://github.com/amundsen-io/amundsen/tree/main/common
+  repository: https://github.com/amundsen-io/amundsen
+  description: |
+    Common code library for the Amundsen data discovery and metadata
+    platform. Provides shared models, entity definitions, and utilities
+    consumed by Amundsen's metadata, search, and frontend services.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amundsen-common
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: amundsen-common
+  cfe-purls:
+    - pkg:conda/amundsen-common@${{ version }}
+    - pkg:pypi/amundsen-common@${{ version }}
+  cfe-upstream-repo: https://github.com/amundsen-io/amundsen
+  cfe-upstream-homepage: https://github.com/amundsen-io/amundsen/tree/main/common
+  cfe-import-names: [amundsen_common]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/amundsen-common-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.40.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-H C2 format-migration: feedstock already v1 (recipe/recipe.yaml
+#    # 200, recipe/meta.yaml 404). Version UNCHANGED (0.32.0 deployed = PyPI
+#    # latest); the work is v0->v1 + modernization, NOT a version bump.
+#    # Deleted the stale local meta.yaml; authored modern v1 recipe.yaml.
+# build:
+#    # number: 2 mirrors the deployed feedstock (live build.number).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);
+#    # matches deployed feedstock host block.
+#  run:
+#    # dropped the feedstock's speculative python <4.0 upper bound (not
+#    # upstream-declared; setup.py python_requires is only ">=3.8"). Broad
+#    # >=python_min floor is correct. Deps verified byte-for-byte against
+#    # setup.py install_requires (flask/attrs/marshmallow/marshmallow3-annotations).
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. Import name amundsen_common G7-verified
+#    # against sdist top_level.txt.
+# about:
+#    # python_min omitted from context — setup.py python_requires=">=3.8" is
+#    # below the 3.10 conda-forge floor, so let conda-forge-pinning supply
+#    # python_min. license MIT AND Apache-2.0 + LICENSE/NOTICE mirror the
+#    # deployed feedstock (no relicense decision).
+####

@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.13.0"
+
+package:
+  name: amundsen-metadata
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/amundsen-metadata/amundsen-metadata-${{ version }}.tar.gz
+  sha256: 6472903a6e994d685703733d89c5056d7c76e001731f317a9446e79291d58c8d
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - neo4j-python-driver >=4.4.5
+    - apache-atlas >=0.0.11
+    - beaker >=1.10.0
+    - overrides >=2.5
+    - amundsen-common >=0.27.0
+    - attrs >=19.1.0
+    - boto3 >=1.17.23
+    - click >=8.1.7
+    - flasgger >=0.9.5
+    - flask >=2.2.5
+    - flask-restful >=0.3.9
+    - flask-cors >=3.0.10
+    - itsdangerous >=2.1.2
+    - jinja2 >=3.1.2
+    - jsonschema >=3.0.1,<4.0
+    - marshmallow >=3.0,<=3.6
+    - marshmallow3-annotations >=1.1.0
+    - pytz >=2021.1
+    - requests >=2.25.0
+    - requests-aws4auth >=1.1.0
+    - statsd >=3.2.1
+    - typing >=3.6.4
+    - werkzeug >=2.0.3
+    - wheel >=0.36.2
+
+tests:
+  - python:
+      imports:
+        - metadata_service
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Metadata service for Amundsen
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://www.github.com/amundsen-io/amundsen/tree/main/metadata
+  repository: https://github.com/amundsen-io/amundsen
+  description: |
+    Metadata service for Amundsen, a metadata-driven application for
+    improving the productivity of data analysts, data scientists, and
+    engineers when interacting with data.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amundsen-metadata
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: amundsen-metadata
+  cfe-purls:
+    - pkg:conda/amundsen-metadata@${{ version }}
+    - pkg:pypi/amundsen-metadata@${{ version }}
+  cfe-upstream-repo: https://github.com/amundsen-io/amundsen
+  cfe-upstream-homepage: https://www.github.com/amundsen-io/amundsen/tree/main/metadata
+  cfe-import-names: [metadata_service]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: false:upstream-setup-py-exact-pins-vs-newer-conda-deps
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/amundsen-metadata-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.40.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # WAVE-H C2: feedstock already migrated to v1 (recipe/recipe.yaml = 200,
+#    # meta.yaml = 404). Format migration, NOT a version bump: deployed,
+#    # PyPI-latest, and stale local meta.yaml all at 3.13.0. Authored
+#    # recipe.yaml mirroring the deployed feedstock, deleted local meta.yaml.
+# build:
+#    # build.number 2 mirrors the deployed feedstock's current build (3.13.0
+#    # build_number 2 is the latest on conda-forge); not a same-version
+#    # supersede edit, so left as deployed.
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg project (no
+#    # [build-system] in any pyproject.toml); matches deployed feedstock host.
+#  run:
+#    # import name diverges from dist name: amundsen-metadata -> metadata_service
+#    # (G7 verified against sdist top-level __init__.py).
+#    # dropped the deployed feedstock's speculative python <4.0 upper bound
+#    # (upstream declares only requires_python >=3.8; not an upstream cap).
+#    # python_min stays at the conda-forge default 3.10 floor (omitted from
+#    # context) — upstream >=3.8 is below the floor, no upward override.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the deployed
+#    # feedstock's single-value python_version. python.imports test passed.
+#    # pip_check kept false (matches deployed feedstock): upstream setup.py
+#    # declares EXACT == pins (apache_atlas==0.0.11, boto3==1.17.23,
+#    # Flask==2.2.5, neo4j==4.4.5, ...) baked into the wheel METADATA; conda
+#    # installs the newer available versions, so pip check fails. Also
+#    # upstream's `typing` backport reads as not-installed on modern Python
+#    # (typing is stdlib). This is upstream-pin-skew, not a recipe defect;
+#    # the deployed feedstock made the same call. Not loosening blindly.
+# about:
+#    # license reconciled to Apache-2.0 (setup.py SPDX-License-Identifier:
+#    # Apache-2.0; LICENSE is Apache-2.0; NOTICE is the Apache attribution
+#    # file). Stale local meta.yaml had over-broad "Apache-2.0 AND MIT".
+#    # Kept license_file: [LICENSE, NOTICE] (both ship in sdist; NOTICE is
+#    # part of Apache-2.0 attribution) vs the deployed feedstock which
+#    # dropped NOTICE.
+####

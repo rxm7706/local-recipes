@@ -1,0 +1,134 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.0"
+
+package:
+  name: amundsen-search
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/amundsen-search/amundsen-search-${{ version }}.tar.gz
+  sha256: 4d6cf0e15b27a628880e44097fe9318f28fae4eb7683a0974e3c147e35e3f32d
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - elasticsearch ==7.13.3
+    - elasticsearch-dsl ==7.4.0
+    - amundsen-common >=0.27.0
+    - attrs >=19.1.0
+    - boto3 >=1.17.23
+    - click >=8.1.7
+    - flasgger >=0.9.5
+    - flask >=2.2.5
+    - flask-restful >=0.3.9
+    - flask-cors >=3.0.10
+    - itsdangerous >=2.1.2
+    - jinja2 >=3.1.2
+    - jsonschema >=3.0.1,<4.0
+    - marshmallow >=3.0,<=3.6
+    - marshmallow3-annotations >=1.1.0
+    - pytz >=2021.1
+    - requests >=2.25.0
+    - requests-aws4auth >=1.1.0
+    - statsd >=3.2.1
+    - typing >=3.6.4
+    - werkzeug >=3.0.1
+    - wheel >=0.38.1
+
+tests:
+  - python:
+      imports:
+        - search_service
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Search Service for Amundsen
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://github.com/amundsen-io/amundsen/tree/main/search
+  repository: https://github.com/amundsen-io/amundsen
+  documentation: https://www.amundsen.io/amundsen/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amundsen-search
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: amundsen-search
+  cfe-purls:
+    - pkg:conda/amundsen-search@${{ version }}
+    - pkg:pypi/amundsen-search@${{ version }}
+  cfe-upstream-repo: https://github.com/amundsen-io/amundsen
+  cfe-upstream-homepage: https://www.amundsen.io/amundsen/
+  cfe-import-names: [search_service]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: false:upstream-exact-pins-loosened-G26
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/amundsen-search-feedstock
+  cfe-forge-recipe-updates-needed: recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.40.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T11:56:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Wave-H sole-maintainer feedstock refresh. Deployed feedstock is v1
+#    (recipe.yaml only) at version 4.2.0, which equals the latest PyPI
+#    release and the prior local meta.yaml version -> this is a
+#    version-current FORMAT modernization, not a version bump.
+# package:
+#    Modernized from the deployed feedstock's name|lower templated form to a
+#    literal package.name (canonical 2026 shape).
+# source:
+#    Modernized from the deployed feedstock's name[0]/name templated PyPI URL
+#    to fully-literal path segments; only version interpolates. The prior
+#    local meta.yaml used a pypi.io host -- corrected to pypi.org.
+# build:
+#    number kept at 2 to match the deployed feedstock build.number (same
+#    version, format modernization). Reset to 0 only on an upstream version bump.
+# requirements:
+#  run:
+#    Upstream requirements-common.txt / requirements.txt pin many deps with
+#    == (boto3, click, flasgger, flask, flask-cors, itsdangerous, jinja2,
+#    pytz, requests-aws4auth, statsd, typing, werkzeug, wheel) plus
+#    elasticsearch==7.13.3 and elasticsearch-dsl==7.4.0. The deployed
+#    feedstock loosened the general deps to >= but kept the two elasticsearch
+#    pins exact; this recipe mirrors that authoritative shape.
+# tests:
+#    pip_check is false because the loosened >= run-deps conflict with the
+#    wheel METADATA's upstream == pins (G26: loosening run-deps does not
+#    rewrite the bundled dist-info, so pip check would fail). Mirrors the
+#    deployed feedstock's pip_check: false. Modernized the test to the
+#    CFEP-25 dual-version triad (python_min.* + "*").
+# about:
+#    license set to Apache-2.0 (authoritative: setup.py declares
+#    SPDX-License-Identifier: Apache-2.0; the prior local meta.yaml's
+#    "Apache-2.0 AND MIT" was a stale guess). NOTICE shipped alongside LICENSE
+#    as the Apache-2.0 attribution file (present in the sdist).
+####

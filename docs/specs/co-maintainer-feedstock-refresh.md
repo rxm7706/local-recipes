@@ -192,6 +192,13 @@ LAST; `cfe-forge-recipe-updates-needed` token discipline). Plus:
     conservative (rule 2); when a "fix" would change behavior another maintainer set
     on purpose, park it in `# CFE comments` + a `cfe-forge-recipe-updates-needed`
     token instead of applying it.
+13. **Local-channel pollution during the bulk sweep (= skill gotcha G52).** Building
+    every recipe into one shared `--output-dir` lets a locally-built NEWER version
+    shadow the OLDER conda-forge version a *different* recipe's deps need → a FALSE
+    test-env block. Build each recipe into an isolated per-recipe
+    `--output-dir build_artifacts/cosweep/<name>`. If a test-env solve fails on a dep
+    that IS on conda-forge, suspect pollution and rebuild isolated before recording
+    `build-clean-test-blocked`. Surfaced by the azure-monitor-opentelemetry pilot.
 
 ---
 
@@ -272,11 +279,27 @@ A co-maintained recipe is DONE when its local `recipe.yaml`:
 
 ## Worked Examples
 
-*(none yet — first run TBD. Append per-batch state here as the sole spec does:
-re-baselined co counts, buckets, build tally, maintainer-preservation audit
-results, and any new co-specific landmines surfaced. The first run should pilot
-~5 across the buckets — at least one v1-refresh, one v0-migration C1, one C2, one
-compiled, and one no-local-recipe — to validate the maintainer-preservation rule
-and the dir↔conda mapping resolution before scaling.)*
+**Run 1 — 2026-06-21 (pilot + first scaled batch; PAUSED at weekly limit).**
+Wave A discovery computed the 769 total-coverage queue
+(`total_coverage_queue.json`): primary work **398** (283 v0-migrate + 66
+create-missing + 49 v1-refresh) + 371 audit-existing. **8 recipes done, all GREEN**
+(uncommitted, isolated build dirs under `build_artifacts/cosweep/`):
+- **Pilot (4):** airflow-code-editor (co C2 — **re-merged dropped maintainer `xylar`**),
+  airflow-provider-great-expectations (co C2, MAJOR 1.0.0, dropped `sqlalchemy` per sdist),
+  azure-monitor-opentelemetry (co C2 v1-refresh, kept opentelemetry `==` pins —
+  **surfaced the G52 channel-pollution landmine**), amundsen-common (sole Wave H C2
+  format-migration).
+- **First batch (4):** alang (co C1 — **re-merged dropped maintainer `praeclarum`**),
+  avro (co C1 1.12.0→1.12.1), amundsen-metadata (sole Wave H C2), amundsen-search
+  (sole Wave H C2).
+
+**Rules validated:** the maintainer-preservation rule caught + restored **2 dropped
+co-maintainers** (xylar, praeclarum) → landed as skill **G53**; deliberate exact-pin
+preservation held; the sole Wave H version-current format-migration works; isolated
+per-recipe build dirs fixed the local-channel pollution → skill **G52**. Retro shipped
+**conda-forge-expert v8.41.0 (G52, G53)**. Resume from
+`.claude/data/conda-forge-expert/feedstock-update/co_sweep_progress.md` — refill the
+≤4 pipeline from `total_coverage_queue.json` (the 66 create-missing await a dir↔conda
+mapping pass first).
 
 ---

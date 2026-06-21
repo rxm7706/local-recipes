@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.2.4"
+
+package:
+  name: airflow-code-editor
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/airflow-code-editor/airflow_code_editor-${{ version }}.tar.gz
+  sha256: 6e237efd1fe98d8b46e970346bf92b1a15c3f22743fe6626cb500fd76e5b63bc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flask
+    - fsspec
+    - pss >=1.44
+
+tests:
+  - python:
+      imports:
+        - airflow_code_editor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Apache Airflow code editor and file manager
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - airflow_code_editor/static/fonts/LICENSE
+  homepage: https://github.com/andreax79/airflow-code-editor
+  repository: https://github.com/andreax79/airflow-code-editor
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: airflow-code-editor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: airflow-code-editor
+  cfe-purls:
+    - pkg:conda/airflow-code-editor@${{ version }}
+    - pkg:pypi/airflow-code-editor@${{ version }}
+  cfe-upstream-repo: https://github.com/andreax79/airflow-code-editor
+  cfe-upstream-homepage: https://github.com/andreax79/airflow-code-editor
+  cfe-import-names: [airflow_code_editor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/airflow-code-editor-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.40.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # CO-MAINTAINER C2 sweep: feedstock already v1 at 8.2.4; authored
+#    # recipe.yaml mirroring the deployed feedstock, deleted the stale local
+#    # meta.yaml (was 7.4.1, single-maintainer rxm7706).
+# requirements:
+#  host:
+#    # setuptools kept in host — setup.py/setup.cfg + pyproject build-backend
+#    # is setuptools.build_meta; matches deployed feedstock host block.
+#  run:
+#    # flask + fsspec + pss >=1.44 verified against the 8.2.4 sdist
+#    # requires_dist (DELIBERATE upstream rewrite: 8.x dropped apache-airflow
+#    # and fs >=2.4.16 vs the local stale 7.4.1 meta.yaml). Kept verbatim from
+#    # deployed feedstock; not modernized.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] — modernizes the deployed
+#    # feedstock's single-version python_version: ${{ python_min }}.*.
+# context:
+#    # python_min omitted — upstream requires_python is >=3.6, below the
+#    # conda-forge 3.10 floor; default floor applies (no upward override).
+####
