@@ -328,7 +328,7 @@ When a BMAD effort that did conda-forge work reaches closeout (final story compl
 
 ### Project-context.md
 
-`_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn. Hand-maintained; pinned to skill version (currently `v8.39.0`, re-synced 2026-06-20; owner: rxm7706). Drift contract: MINOR bump triggers re-sync; PATCH does not — detected by `scripts/bmad_drift_check.py`, reconciled per `SYNC-RUNBOOK.md`.
+`_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn. Hand-maintained; pinned to skill version (currently `v8.40.0`, re-synced 2026-06-21; owner: rxm7706). Drift contract: MINOR bump triggers re-sync; PATCH does not — detected by `scripts/bmad_drift_check.py`, reconciled per `SYNC-RUNBOOK.md`.
 
 ### Implementation artifacts
 

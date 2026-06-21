@@ -516,3 +516,6 @@ These files are load-bearing — changing them affects the whole system, not jus
 - `reference/` 11 → 17 (added `*-reference-full.md`, `abi3-matrix-collapse.md`, `atlas-phase-p-cost-model.md`); `guides/` 8 → 9 (added `feedstock-platform-expansion.md`).
 - `docs/specs/` 5 → 22; new project subdirs `planning-artifacts/change-history/` (8 files) + `implementation-artifacts/retros/` (22 files).
 - Removed: top-level `wagtail/` one-off recipe (no longer present); `_bmad/bmm/` phase subdirs (installer layout changed).
+
+**Refresh notes (2026-06-21 vs. prior 2026-06-20 sync):**
+- Skill v8.39.0 → v8.40.0 (MINOR, additive). Recipe-Authoring Gotchas G1–G45 → G1–G51 (+G46–G51 feedstock-refresh build-shape gotchas). No source-tree structural change: CFE scripts/wrappers/tests, atlas phases (22), schema (v28), MCP tools (42), `reference/` (17), `guides/` (9) all unchanged — v8.40.0 is SKILL.md + guide prose only.
