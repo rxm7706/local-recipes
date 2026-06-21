@@ -1,5 +1,5 @@
 {% set name = "avro" %}
-{% set version = "1.12.0" %}
+{% set version = "1.12.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,14 +7,14 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/avro-{{ version }}.tar.gz
-  sha256: cad9c53b23ceed699c7af6bddced42e2c572fd6b408c257a7d4fc4e8cf2e2d6b
+  sha256: c5b8dd2dd4c10816f0dc127cc29cfd43b5e405cf7e6840e89460a024bf3d098d
 
 build:
   noarch: python
   entry_points:
     - avro = avro.__main__:main
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
+  number: 0
 
 requirements:
   host:
@@ -24,6 +24,8 @@ requirements:
     - pip
   run:
     - python >={{ python_min }}
+    # - zstandard
+    # - python-snappy
 
 test:
   imports:

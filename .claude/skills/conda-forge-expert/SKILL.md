@@ -2612,6 +2612,30 @@ Asset-bearing wheel + asset-free GitHub source → use the wheel. Set `cfe-sourc
 
 ---
 
+### G52. Bulk recipe sweeps poison a shared local channel — build each recipe into an ISOLATED per-recipe output dir
+
+**Symptom**: during a multi-recipe sweep that builds every recipe into one shared `--output-dir`, a recipe's **test-env solve** fails on a dependency that demonstrably IS on conda-forge (e.g. `fixedint 0.1.6`), so it looks `build-clean-test-blocked` — but the recipe is fine.
+
+**Why**: rattler-build treats the shared output dir as a local channel at higher priority than conda-forge. Once the sweep has built a NEWER version of some package (`fixedint 0.2.0`) into that channel, strict channel priority makes it SHADOW the OLDER conda-forge version (`fixedint 0.1.6`) a *different* recipe's transitive deps require → the solve picks the wrong local build and the test env fails. The contamination grows as the sweep fills the channel.
+
+**Fix**: build each recipe into its OWN isolated output dir — `--output-dir build_artifacts/<sweep>/<recipe>` — so there is no cross-recipe shadowing. (These are independent, already-on-conda-forge feedstocks; their deps come from conda-forge, not from each other, so isolation is correct.) If a test-env solve fails on a dep that IS on conda-forge, suspect channel pollution BEFORE recording `build-clean-test-blocked` — rebuild isolated to confirm `success`.
+
+**Case study**: azure-monitor-opentelemetry (Jun 21, 2026, co-maintainer total-coverage sweep) — its `azure-monitor-opentelemetry-exporter` dep needs `fixedint 0.1.6`, but the sweep's shared channel held a locally-built `fixedint 0.2.0` that shadowed it → false test block; an isolated `--output-dir` solved GREEN.
+
+---
+
+### G53. Refreshing an existing feedstock must RE-MERGE the deployed maintainer list — a regen emits only the invoker and silently drops co-maintainers
+
+**Symptom**: regenerating `recipe.yaml` for an existing multi-maintainer feedstock (via grayskull / `generate_recipe_from_pypi`) produces an `extra.recipe-maintainers` list containing only YOUR handle — every other co-maintainer is gone. A stale local mirror may already carry this defect.
+
+**Why**: the generator has no knowledge of the deployed feedstock's maintainer list; it emits only the invoking user. Shipping that as-is would (at submission) silently remove people who co-own the feedstock — a serious etiquette + governance defect.
+
+**Fix**: ALWAYS fetch the deployed feedstock's `extra.recipe-maintainers` and ensure the local `recipe.yaml`'s list is a SUPERSET — re-merge every other handle (including team handles like `conda-forge/<team>`). Verify local set ⊇ deployed set before leaving any refreshed recipe. (Sole-maintainer feedstocks are trivially safe; this bites co-maintained / multi-maintainer ones.)
+
+**Case study**: co-maintainer total-coverage sweep (Jun 21, 2026) — `airflow-code-editor` (dropped `xylar`) and `alang` (dropped `praeclarum`) both had stale local meta.yaml lists missing a co-maintainer; the re-merge rule caught + restored both. Drives `docs/specs/co-maintainer-feedstock-refresh.md`.
+
+---
+
 ## Skill Automation
 
 A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.

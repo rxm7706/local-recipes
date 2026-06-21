@@ -2,23 +2,15 @@
 schema_version: 1
 
 context:
-  name: azure-monitor-opentelemetry
-  version: "1.8.7"
-  azure_core_tracing_opentelemetry: '1.0.0b11'
-  azure_monitor_opentelemetry_exporter: '1.0.0b40'
-  opentelemetry_instrumentation_version: '0.57b0'
-  opentelemetry_resource_detector_azure: '0.1.5'
-  opentelemetry_resource_detector_azure_max: '0.2.dev0'
-  opentelemetry_sdk_version: '1.36.0'
-  opentelemetry_sdk_version_max: '1.37.dev0'
+  version: "1.8.8"
 
 package:
-  name: ${{ name|lower }}
+  name: azure-monitor-opentelemetry
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_monitor_opentelemetry-${{ version }}.tar.gz
-  sha256: d0a430c69451f8fa09362769d2d65471713989fb78e4ad0f50832b597921efbb
+  url: https://pypi.org/packages/source/a/azure-monitor-opentelemetry/azure_monitor_opentelemetry-${{ version }}.tar.gz
+  sha256: c6478cac82939230e9af1004b0a147e39b9046a564f3811d65241797f2f9d41d
 
 build:
   number: 0
@@ -31,20 +23,20 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - azure-core >=1.28.0,<2.0.0
-    - azure-core-tracing-opentelemetry >=1.0.0b11,<1.1.v0
-    - azure-monitor-opentelemetry-exporter >=1.0.0b49,<1.1.0
-    - opentelemetry-sdk ==1.40
+    - python >=${{ python_min }}
+    - azure-core <2.0.0,>=1.28.0
+    - azure-core-tracing-opentelemetry >=1.0.0b11,<1.1.dev0
+    - azure-monitor-opentelemetry-exporter >=1.0.0b52,<1.1.dev0
     - opentelemetry-instrumentation-django ==0.61b0
     - opentelemetry-instrumentation-fastapi ==0.61b0
     - opentelemetry-instrumentation-flask ==0.61b0
+    - opentelemetry-instrumentation-logging ==0.61b0
     - opentelemetry-instrumentation-psycopg2 ==0.61b0
     - opentelemetry-instrumentation-requests ==0.61b0
     - opentelemetry-instrumentation-urllib ==0.61b0
     - opentelemetry-instrumentation-urllib3 ==0.61b0
-    - opentelemetry-instrumentation-logging ==0.61b0
-    - opentelemetry-resource-detector-azure >=0.1.5,<1.0.0
+    - opentelemetry-resource-detector-azure >=0.1.5,<0.2.dev0
+    - opentelemetry-sdk ==1.40.0
 
 tests:
   - python:
@@ -52,6 +44,7 @@ tests:
         - azure.monitor.opentelemetry
         - azure.monitor.opentelemetry._autoinstrumentation
       pip_check: true
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Microsoft Azure Monitor Opentelemetry Distro Client Library for Python
@@ -62,10 +55,56 @@ about:
   documentation: https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/monitor/azure-monitor-opentelemetry/README.md
   license: Apache-2.0 AND MIT
   license_file:
-    - NOTICE.txt
     - LICENSE
+    - NOTICE.txt
 
 extra:
   recipe-maintainers:
     - rxm7706
     - conda-forge/opentelemetry-api
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-monitor-opentelemetry
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-monitor-opentelemetry
+  cfe-purls:
+    - pkg:conda/azure-monitor-opentelemetry@${{ version }}
+    - pkg:pypi/azure-monitor-opentelemetry@${{ version }}
+  cfe-upstream-repo: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/monitor/azure-monitor-opentelemetry
+  cfe-upstream-homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/monitor/azure-monitor-opentelemetry
+  cfe-import-names: [azure.monitor.opentelemetry]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/azure-monitor-opentelemetry-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.40.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T11:50:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Co-maintained feedstock (rxm7706 + conda-forge/opentelemetry-api team).
+#    # Full maintainer list preserved as a superset of the deployed feedstock.
+# context:
+#    # Deployed feedstock 1.8.8 dropped the per-dep version context vars that
+#    # the older local 1.8.7 recipe carried; refresh follows the feedstock's
+#    # flat literal-pin shape.
+# source:
+#    # Local recipe keeps the canonical pypi.org/packages/... URL (JFrog-proxy
+#    # friendly); the deployed feedstock currently uses files.pythonhosted.org.
+#    # Identical bytes (same sha256); a minor feedstock modernization candidate.
+#  run:
+#    # azure-monitor-opentelemetry-exporter >=1.0.0b52 and the <0.2.dev0 /
+#    # <1.1.dev0 upper caps are DELIBERATE sibling/opentelemetry pins mirrored
+#    # from the deployed feedstock (load-bearing, not speculative); kept as-is.
+#    # opentelemetry-sdk ==1.40.0 and all opentelemetry-instrumentation-* ==0.61b0
+#    # are upstream-exact pins from the 1.8.8 sdist; kept exact.
+####

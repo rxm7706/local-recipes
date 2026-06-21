@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.4"
+
+package:
+  name: alang
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/alang/alang-${{ version }}.tar.gz
+  sha256: 9b72414a06bf2289ff7b289a711497221445964d2bb6cbca27be17164e7036f0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - alang
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A programming language specializing in cross-compiling to lots of other languages
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/praeclarum/alang
+  repository: https://github.com/praeclarum/alang
+  description: |
+    A programming language specializing in cross-compiling to lots of other
+    languages (C, GLSL, JavaScript, Metal, WGSL, and more).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - praeclarum
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: alang
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: alang
+  cfe-purls:
+    - pkg:conda/alang@${{ version }}
+    - pkg:pypi/alang@${{ version }}
+  cfe-upstream-repo: https://github.com/praeclarum/alang
+  cfe-upstream-homepage: https://github.com/praeclarum/alang
+  cfe-import-names: [alang]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/alang-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.40.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # CO-MAINTAINED feedstock, format C1: deployed feedstock is still v0
+#    # (recipe/meta.yaml, no recipe/recipe.yaml). Kept the faithful v0 meta.yaml
+#    # mirror alongside this v1 recipe.yaml; meta.yaml deleted only after the
+#    # feedstock completes its own v0 to v1 migration.
+#    # Deployed version 0.0.4 == PyPI latest 0.0.4; this is a FORMAT migration,
+#    # not a version bump.
+# extra:
+#  recipe-maintainers:
+#    # CO-MAINTAINER list preserved as a superset: deployed feedstock carries
+#    # rxm7706 + praeclarum. The stale local meta.yaml had dropped praeclarum;
+#    # re-merged here and in the meta.yaml mirror.
+# requirements:
+#  host:
+#    # build-backend = hatchling.build (verified in sdist pyproject.toml); host
+#    # is hatchling + pip only, no redundant setuptools/wheel (G8 clean).
+#  run:
+#    # PROPOSED OVERRIDE (cfe-forge-recipe-updates-needed: dependency-fix):
+#    # dropped the deployed feedstock's speculative python <4.0 upper bound.
+#    # Upstream declares only requires-python >=3.8 (no upper bound); the broad
+#    # >=python_min floor is correct. Parked for human triage before pushing.
+# context:
+#    # python_min omitted from context: upstream requires-python >=3.8 is below
+#    # the conda-forge 3.10 floor, so the default floor applies; pinning supplies
+#    # python_min. No upward override needed.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python test. alang is a self-contained pure-Python library
+#    # (top-level import src/alang/__init__.py), so python.imports holds.
+####

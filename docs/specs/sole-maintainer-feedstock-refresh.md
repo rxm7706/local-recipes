@@ -1,7 +1,7 @@
 ---
-status: shipped
+status: in-progress
 implemented_by: bmad-quick-dev
-shipped_ref: "363537dd43 (Waves B–F: 197 recipes — C 174 v0-migration, D 10 compiled/host-blocked, E 13 gh-numbering — + CFE skill v8.40.0/G46–G51); 1fe1848b43 (Wave B v1-refresh, 55). Committed + pushed to origin/main; NOT submitted to conda-forge (local-only by design — Q2 defers feedstock v0→v1 PRs to a separate wave)."
+shipped_ref: "Waves B–F (behind set, 252 recipes) SHIPPED: 363537dd43 + 1fe1848b43 (pushed origin/main, not submitted to cf). REOPENED 2026-06-21 for Wave H — total-coverage follow-up (155 not-behind-v0→v1 + 24 missing = 179 sole) per the 769-coverage analysis in co-maintainer-feedstock-refresh.md."
 spec_updated: 2026-06-21
 ---
 # Tech Spec: Sole-Maintainer Feedstock Refresh (bulk local-recipe ↔ feedstock version sync)
@@ -130,6 +130,23 @@ correctly (or confirm not-behind) before any change. Most will be **no-ops**.
 - **CFE-skill retro** (Rule 2) folds in whatever the bulk refresh surfaces (new
   gotchas, recurring grayskull-regression patterns worth a `recipe-generator.py` fix).
 
+### Wave H — total-coverage follow-up (added 2026-06-21; Waves B–F were behind-scoped)
+Waves B–F closed the **behind** sole recipes; the total-coverage goal — *every* sole
+feedstock in build-green `recipe.yaml` so the only remaining step is submitting PRs —
+additionally needs the **version-current-but-still-v0** recipes migrated and the
+**missing** ones created. Live scan 2026-06-21: **155 sole meta.yaml-only (v0)** +
+**24 sole missing** = **179** remaining. (A recipe at the correct version in `meta.yaml`
+is NOT submission-ready — it still needs v0→v1.)
+- **H1 — migrate the 155 not-behind v0:** author a modern v1 `recipe.yaml` (same C1/C2
+  rule by feedstock format), full v8.40.0 cfe-* block, build-green — the migration is
+  format + modernization, not a version bump.
+- **H2 — create the 24 missing:** resolve dir↔conda mapping FIRST (some exist under a
+  different dir name — upper-bound count); pull + author the genuine net-new mirrors.
+- Work-list: `.claude/data/conda-forge-expert/feedstock-update/total_coverage_queue.json`
+  (`role=sole` AND `action∈{v0-migrate, create-missing}`). Same hard rules, ≤4 concurrent,
+  review every diff, no commit/push without explicit instruction. Runs alongside the
+  co-maintainer sweep (`co-maintainer-feedstock-refresh.md`) toward all-769 coverage.
+
 ---
 
 ## Open Questions
@@ -168,6 +185,17 @@ Batch-1 (`a2wsgi`, `condense-json`, `collate-data-diff`, `antlr4-tools`,
   - **High-value feedstock-defect catches:** `wagtail-draftail-plugins` deployed feedstock ships the **WRONG license** (`MIT`; upstream relicensed `ISC`) + stale `wagtail` pin + G31 ci_support skew; `gibr`/`ydata-profiling` caught **impending feedstock rebuild breakages** (G26 exact-pin drift; G34 setuptools-81); `mcp-django`/`django-components` found latent missing deps live feedstocks carry.
   - **Process retro:** landmines 5–9 above (rate-limit zombies, `'releases'` KeyError, jinja-in-comments, last-wins CBC, token drift) all surfaced here.
 - **Waves C–F (v0-migration 174 + compiled/host-blocked 10 + gh-numbering 13 = 197) COMPLETE** — committed `363537dd43` (2026-06-21), pushed to `origin/main`, **nothing submitted to conda-forge**. C split into C1 keep-meta + C2 catch-up-delete-meta; both action-classes validated. Build tally: **190 success, 4 build-clean-test-blocked, 3 not-attempted** (osx/win host-blocked: pyobjc-framework-{applicationservices,systemconfiguration}, uiautomation). Per-recipe detail in the **Review Digest** above. **Wave F closeout = CFE skill retro shipped v8.40.0 (G46–G51)**, plus 8 human-triage follow-ups (see Follow-ups below). Wave-C catches: dataprofiler G34(setuptools-82)+G26(requests-metadata); basedtyping py3.14-incompat → drop `"*"` test leg; cucumber-expressions uv-build drift; ag-ui-protocol G7 `ag_ui`; h2o-lightwave-web empty-package (G51); h2o stale-CBC cruft (G47).
+
+**Run 3 — 2026-06-21 (Wave H total-coverage follow-up; STARTED, PAUSED at weekly limit).**
+The behind-scoped Waves B–F left **179 sole** recipes un-migrated (155 not-behind-v0
++ 24 missing) — surfaced by the 769-coverage analysis in
+`co-maintainer-feedstock-refresh.md`. Wave H reopened this spec and ran alongside the
+co-maintainer sweep: pilot `amundsen-common` + batch `amundsen-metadata` / `amundsen-search`
+(all sole Wave H, C2 format-migrations — version-current v0→v1 + modernize, GREEN,
+uncommitted). Shared work-queue
+`.claude/data/conda-forge-expert/feedstock-update/total_coverage_queue.json`
+(`role=sole` AND `action∈{v0-migrate, create-missing}`); resume from `co_sweep_progress.md`.
+Goal: all 769 (sole + co) in build-green `recipe.yaml`. Retro folded into CFE skill v8.41.0 (G52, G53).
 
 
 ---

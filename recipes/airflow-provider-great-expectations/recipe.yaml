@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: airflow-provider-great-expectations
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/airflow-provider-great-expectations/airflow_provider_great_expectations-${{ version }}.tar.gz
+  sha256: 4f28f649dd43ca9b99ba76b93de726b17e87b2961114f1e3cfa0c951a52443f5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - apache-airflow >=2.1,<4
+    - great-expectations >=1.7.0,<2
+    - structlog <25.5.0
+
+tests:
+  - python:
+      imports:
+        - great_expectations_provider
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: An Apache Airflow provider for Great Expectations
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/astronomer/airflow-provider-great-expectations
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: airflow-provider-great-expectations
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: airflow-provider-great-expectations
+  cfe-purls:
+    - pkg:conda/airflow-provider-great-expectations@${{ version }}
+    - pkg:pypi/airflow-provider-great-expectations@${{ version }}
+  cfe-upstream-repo: https://github.com/great-expectations/airflow-provider-great-expectations
+  cfe-upstream-homepage: https://github.com/astronomer/airflow-provider-great-expectations
+  cfe-import-names: [great_expectations_provider]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/airflow-provider-great-expectations-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.40.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T11:50:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # MAJOR bump 0.2.8 -> 1.0.0. Co-maintained feedstock (xylar, rxm7706),
+#    # already deployed at 1.0.0 on conda-forge (v1/C2). This local recipe
+#    # is a faithful mirror of the deployed feedstock at the same version.
+# source:
+#    # Distribution name is hyphenated; the 1.0.0 sdist filename uses
+#    # underscores (airflow_provider_great_expectations-1.0.0.tar.gz) —
+#    # hatchling normalizes the stem. sha256 verified against the deployed
+#    # feedstock and a fresh pypi.org download.
+# build:
+#    # noarch:python; hatchling build backend (pyproject [build-system]
+#    # requires = ["hatchling"]). No setuptools/wheel needed (G8 clean).
+# requirements:
+#  host:
+#    # hatchling is the sole build backend; python + pip + hatchling.
+#  run:
+#    # run: deps are an exact mirror of the 1.0.0 sdist
+#    # [project.dependencies]. All three upper bounds are UPSTREAM-DECLARED
+#    # and load-bearing under pip_check:true (G24):
+#    #   apache-airflow >=2.1,<4  great-expectations >=1.7.0,<2
+#    #   structlog <25.5.0  (upstream note: airflow <3.1.3 imports Styles
+#    #   removed in structlog 25.5.0)
+#    # The 0.2.8 dep `sqlalchemy >=1.3.16` was DROPPED upstream in 1.0.0 —
+#    # no longer a declared dependency; dropped here to match the sdist +
+#    # deployed feedstock. NOT a regression.
+# about:
+#    # LICENSE pattern (2): the 1.0.0 sdist ships NO license file
+#    # (pyproject license-files points at LICENSE, absent from the sdist),
+#    # so LICENSE.txt is shipped in-recipe — mirrors the deployed feedstock
+#    # which carries recipe/LICENSE.txt. license_file: LICENSE.txt.
+# context:
+#    # python_min omitted: upstream requires-python ">3.9, <3.14" => floor
+#    # 3.10, which is the conda-forge default; let pinning supply it. The
+#    # upstream <3.14 Python upper bound is NOT encoded — matches the
+#    # deployed feedstock's deliberate choice (do not add it).
+####

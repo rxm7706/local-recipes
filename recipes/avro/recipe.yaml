@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.12.1"
+
+package:
+  name: avro
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/avro/avro-${{ version }}.tar.gz
+  sha256: c5b8dd2dd4c10816f0dc127cc29cfd43b5e405cf7e6840e89460a024bf3d098d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - avro = avro.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=40.8.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - avro
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - avro --help
+
+about:
+  summary: Avro is a serialization and RPC framework.
+  license: Apache-2.0
+  license_file:
+    - avro/LICENSE
+    - avro/NOTICE
+  homepage: https://avro.apache.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: avro
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: avro
+  cfe-purls:
+    - pkg:conda/avro@${{ version }}
+    - pkg:pypi/avro@${{ version }}
+  cfe-upstream-repo: https://github.com/apache/avro
+  cfe-upstream-homepage: https://avro.apache.org/
+  cfe-import-names: [avro]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/avro-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-generated-by-version: 8.40.0
+  cfe-generated-at-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # CO-MAINTAINED feedstock (rxm7706 + mariusvniekerk). C1: feedstock is
+#    # still v0 (recipe/meta.yaml; no recipe.yaml). meta.yaml kept as the
+#    # faithful deployed-state mirror; this recipe.yaml is the proposed v1.
+#    # This is the Apache Avro PYTHON package (PyPI dist "avro", import "avro"),
+#    # NOT the C++/Java avro libraries.
+# build:
+#  python:
+#    # entry_points preserved from setup.cfg [options.entry_points] console_scripts;
+#    # the avro CLI is exercised by the second test below (avro --help).
+# requirements:
+#  host:
+#    # setuptools>=40.8.0 + wheel + pip kept in host — legacy setup.py/setup.cfg
+#    # project (build-backend setuptools.build_meta, requires setuptools>=40.8.0
+#    # + wheel). Not the G8 redundant-pair trap: the backend genuinely needs both.
+#  run:
+#    # No mandatory runtime deps — setup.cfg [options] has no install_requires.
+#    # zstandard + python-snappy are OPTIONAL codecs in
+#    # [options.extras_require] (snappy/zstandard). The deployed feedstock leaves
+#    # them commented out in run: — a deliberate choice, PRESERVED here (mirrored
+#    # in meta.yaml; not added to v1 run).
+# context:
+#    # python_min omitted: upstream requires-python is >=3.9 (below the
+#    # conda-forge 3.10 floor), so the default python_min from pinning applies.
+# tests:
+#    # CFEP-25 triad with [python_min.*, "*"] modernizes the feedstock's
+#    # single-version python_version. Second test mirrors the feedstock's
+#    # `avro --help` CLI smoke command. The feedstock's `# test -f .../libavro.a`
+#    # commented line is a C++-artifact leftover and is intentionally dropped
+#    # (irrelevant to the pure-Python package).
+####
