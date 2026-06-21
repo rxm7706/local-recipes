@@ -19,10 +19,10 @@ platforms = [
 [feature.python.dependencies]
 python = ">=3.14.6,3.14.*"        # Python language interpreter
 pixi = ">=0.70.2"                 # Pixi package & environment manager
-gh = ">=2.94.0"                   # GitHub CLI for PR / issue / repo automation
+gh = ">=2.95.0"                   # GitHub CLI for PR / issue / repo automation
 nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
 bmad-method = ">=6.8.0"           # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=0.10.4"             # Spec-kit for spec-driven development
+spec-kit = ">=0.11.3"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
 
@@ -492,12 +492,12 @@ setuptools-scm = ">=10.0.5"       # Version metadata from VCS tags
 hatchling = ">=1.30.1"            # Hatch build backend (PEP 517)
 python-build = ">=1.5.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=6.2.0"                 # PyPI artifact uploader
-uv = ">=0.11.21"                  # Fast Rust-based Python package installer / resolver
+uv = ">=0.11.23"                  # Fast Rust-based Python package installer / resolver
 wheel = ">=0.47.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=11.7.0"                # Fast disk-efficient Node package manager
+pnpm = ">=11.8.0"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
-conda-lock = ">=2.5.7"            # Generate cross-platform lockfiles for conda envs
+conda-lock = ">=4.0.1"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
 conda-pypi = ">=0.10.1"            # Better PyPI interoperability for the conda ecosystem
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
@@ -505,7 +505,7 @@ feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-bu
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.70.2"                 # Pixi package & environment manager
 #pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
-rattler-build = ">=0.66.1"        # Rust-native v1 conda recipe build engine
+rattler-build = ">=0.66.2"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.4.0"  # pixi build backend that delegates to rattler-build
 pixi-build-cmake = ">=0.4.0"     # pixi build backend for CMake projects
 pixi-build-python = ">=0.6.0"     # pixi build backend for Python projects
@@ -528,22 +528,22 @@ pixi-diff = ">=0.1.6"             # Diff two pixi.lock files
 py-rattler = ">=0.22.0"           # Python bindings for the Rust rattler conda lib
 py-rattler-build = ">=0.66.1"     # Python bindings for rattler-build
 ## Nebi - local-first workspace management for Pixi (CLI + Desktop)
-nebi-cli = ">=0.12"               # Local-first workspace management for Pixi
+nebi-cli = ">=0.13"               # Local-first workspace management for Pixi
 #nebi-desktop = ">=0.11"           # Nebi desktop application - local-first workspace management for Pixi #NOTE webkit2gtk4.1 2.48.5 would require __glibc >=2.34,<3.0.a0, for which no candidates were found
 # Category 4: Data Processing & Transformation + Category 5: Workflow Orchestration
 # See: docs/reference/package-taxonomy.md#4-data-processing--transformation
 # See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines
 pyarrow = ">=24.0.0"              # Apache Arrow Python bindings
 pyarrow-all = ">=24.0.0"          # PyArrow with all optional extras (parquet, datasets, …)
-dagster = ">=1.13.9"              # The data orchestration platform built for productivity.
-dagster-pipes = ">=1.13.9"        # Toolkit for Dagster integrations with transform logic outside of Dagster
-dagster-webserver = ">=1.13.9"    # Web UI for dagster.
+dagster = ">=1.13.10"              # The data orchestration platform built for productivity.
+dagster-pipes = ">=1.13.10"        # Toolkit for Dagster integrations with transform logic outside of Dagster
+dagster-webserver = ">=1.13.10"    # Web UI for dagster.
 dask-core = ">=2026.6.0"           # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
 #dbt-core = ">=1.11.11"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
 #dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
 #dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
 #dlt = ">=1.27.2"                  # dlt requires dlt-pendulum which is only available on conda-forge for linux-64 dlt is an open-source python-first scalable data loading library that does not require any backend to run. # TODO PY314 conda-forge compat check;
-duckdb = ">=1.5.3"                # Embedded analytical SQL database
+duckdb = ">=1.5.4"                # Embedded analytical SQL database
 getdaft = ">=0.6.13"              # Distributed Dataframes for Multimodal Data
 gql = ">=4.0.0"                   # GraphQL client (v4.0.0+ has no websockets dependency)
 ibis-framework = ">=12.0.0"        # The portable Python dataframe library
@@ -562,7 +562,7 @@ bokeh-django = ">=0.2.1"          # Bokeh integration for Django web application
 kedro-viz = ">=12.3.0"            # Visualize your Kedro pipelines in the browser with Kedro-Viz
 panel = ">=1.9.3"                 # The powerful data exploration & web app framework for Python.
 panel-graphic-walker = ">=0.6.5"  # A project providing a Graphic Walker Pane for use with HoloViz Panel. Graphic Walker is an open-source alternative to Tableau.
-vizro = ">=0.1.58"                # Vizro is a package to facilitate visual analytics.
+vizro = ">=0.1.59"                # Vizro is a package to facilitate visual analytics.
 vizro-ai = ">=0.4.0"              # Vizro-AI is a tool for generating data visualizations.
 vizro-mcp = ">=0.1.4"             # MCP server to help create Vizro dashboards and charts
 #streamlit = ">=1.52.2"            # Needs Notebook and Jupyterlab A faster way to build and share data apps
@@ -587,15 +587,15 @@ ollama-python = ">=0.6.2"         # Python client (the existing 'ollama' is the 
 openpyxl = ">=3.1.5"              # Read / write Office Open XML .xlsx files
 pandoc = ">=3.10"              # Universal document format converter
 pdf2image = ">=1.17.0"            # Convert PDF pages to PIL images (Poppler-backed)
-"pdfminer.six" = ">=20251230"     # PDF parsing library for text extraction (alternative to PyMuPDF)
-pdfplumber = ">=0.11.9"           # Extract text, tables, and metadata from PDFs
+"pdfminer.six" = ">=20260107"     # PDF parsing library for text extraction (alternative to PyMuPDF)
+pdfplumber = ">=0.11.10"           # Extract text, tables, and metadata from PDFs
 pillow = ">=12.2.0"               # Python imaging library (PIL fork)
 playwright-python = ">=1.60.0"    # Python bindings (the existing 'playwright' is the Node binary)
 plotly = ">=6.8.0"                # Interactive web-based plotting library
 poppler = ">=26.5.0"              # PDF rendering library (pdf2image backend)
 pydub = ">=0.25.1"                # Audio processing library for Python (used in speechrecognition for audio manipulation)
 pymupdf = ">=1.27.2.2"            # MuPDF Python bindings — fast PDF text/layout extraction
-pypdf = ">=6.13.2"                # Pure-Python PDF reader / writer / splitter
+pypdf = ">=6.13.3"                # Pure-Python PDF reader / writer / splitter
 pytesseract = ">=0.3.13"          # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
 python-docx = ">=1.2.0"           # Read / write Microsoft Word .docx files
 python-pptx = ">=1.0.2"           # Read / write Microsoft PowerPoint .pptx files
@@ -606,8 +606,8 @@ speechrecognition = ">=3.10.4"    # Speech recognition library for Python (suppo
 tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pytesseract)
 transformers = ">=5.12.1"         # Hugging Face transformers (model hub + pipelines)
 xlrd = ">=2.0.2"                  # Excel .xls reader (used in markitdown's Excel loader)
-cocoindex = ">=1.0.10"            # Incremental engine for long horizon agents
-graphifyy = ">=0.8.40"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
+cocoindex = ">=1.0.11"            # Incremental engine for long horizon agents
+graphifyy = ">=0.8.44"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ## Data processing & conversion (ibis + adjacent ecosystem)
 google-cloud-bigquery = ">=3.42.0" # BigQuery client — cf_atlas Phase P (opt-in via PHASE_P_ENABLED=1; needs ADC creds via the `gcloud` env)
 ibis-duckdb = ">=12.0.0"          # Ibis backend for DuckDB
@@ -617,11 +617,11 @@ ibis-postgres = ">=12.0.0"        # Ibis backend for PostgreSQL
 ibis-mssql = ">=12.0.0"           # Ibis backend for Microsoft SQL Server
 ibis-oracle = ">=12.0.0"          # Ibis backend for Oracle Database
 pydantic = ">=2.13.4"             # type-hint-driven data validation
-ruff = ">=0.15.17"                # fast Rust-based Python linter + formatter
+ruff = ">=0.15.18"                # fast Rust-based Python linter + formatter
 pyright = ">=1.1.410"             # Microsoft's static type checker for Python
 mypy = ">=2.1.0"                 # static type checker for Python
-pyrefly = ">=1.0.0"               # Meta's fast Rust-based Python type checker
-pytest = ">=9.1.0"                # Python test framework
+pyrefly = ">=1.1.1"               # Meta's fast Rust-based Python type checker
+pytest = ">=9.1.1"                # Python test framework
 pytest-mock = ">=3.15.1"          # pytest fixture wrapper around `unittest.mock`
 pytest-cov = ">=7.1.0"            # coverage.py plugin for pytest
 pytest-xdist = ">=3.8.0"          # parallel / distributed test execution for pytest
@@ -629,8 +629,9 @@ playwright = ">=1.61.0"           # Node binary for browser automation (CLI)
 ## MCP, A2A & conversion (MCP + adjacent ecosystem)
 #aichat = ">=0.30.0"
 a2a-sdk = ">=1.1.0"               # Official Python SDK for the Agent2Agent (A2A) Protocol
+google-genai = ">=2.9.0"          # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
-claude-agent-acp = ">=0.45.1"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
+claude-agent-acp = ">=0.48.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 diffusers = ">=0.37.1"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
 fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A protocol
@@ -639,10 +640,10 @@ github-copilot-sdk =">=0.1.22"    # GitHub Copilot Python SDK
 langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
 langchain-mcp-adapters = ">=0.3.0"  # LangChain ↔ MCP tool/resource adapters
 lumen-ai-anthropic = ">=1.0.0"    # Lumen AI's Anthropic backend integration
-mcp = ">=1.27.2"                  # Official Model Context Protocol Python SDK
+mcp = ">=1.28.0"                  # Official Model Context Protocol Python SDK
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=1.107.0"          # Pydantic-AI agent framework
-"llama.cpp" = ">=9668"            # llama.cpp local LLM inference engine
+"llama.cpp" = ">=9716"            # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
 #litellm = ">=1.83.14"             # NOT ADDED - Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
@@ -698,7 +699,7 @@ python = "3.14.*"                 # Python language interpreter
 pixi = ">=0.70.2"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
 pip = ">=26.1.2"                  # Python package installer
-uv = ">=0.11.21"                  # fast Rust-based Python package installer / resolver
+uv = ">=0.11.23"                  # fast Rust-based Python package installer / resolver
 
 #[pypi-dependencies]
 #daft = ">=0.6.8"
