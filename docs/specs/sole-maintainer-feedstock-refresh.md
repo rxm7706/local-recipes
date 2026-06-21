@@ -1,7 +1,7 @@
 ---
-status: in-progress
+status: shipped
 implemented_by: bmad-quick-dev
-shipped_ref: "Waves B–F locally complete (197 recipes: C 174 v0-migration, D 10 compiled/host-blocked, E 13 gh-numbering) — UNCOMMITTED for review, nothing pushed/submitted; CFE skill retro shipped v8.40.0 (G46–G51)"
+shipped_ref: "363537dd43 (Waves B–F: 197 recipes — C 174 v0-migration, D 10 compiled/host-blocked, E 13 gh-numbering — + CFE skill v8.40.0/G46–G51); 1fe1848b43 (Wave B v1-refresh, 55). Committed + pushed to origin/main; NOT submitted to conda-forge (local-only by design — Q2 defers feedstock v0→v1 PRs to a separate wave)."
 spec_updated: 2026-06-21
 ---
 # Tech Spec: Sole-Maintainer Feedstock Refresh (bulk local-recipe ↔ feedstock version sync)
@@ -28,7 +28,7 @@ spec_updated: 2026-06-21
 
 | Field | Value |
 | ----- | ----- |
-| Status | **Wave B COMPLETE; Wave C in progress — PAUSED 60min at 18/184 (2026-06-20).** Wave A re-baselined to **256 BEHIND**. **Wave B (v1-refresh, 55) DONE** — committed `1fe1848b43`. **Wave C (v0-migration, 184): 18 done** (C1-keepmeta=5, C2-delmeta=13; 17 build-green, 1 build-clean-test-blocked). Both action-classes validated. 166 remaining — resume from `v0_queue.txt`/`wave_c_progress.md` at strict ≤4 concurrent. Remaining waves: D compiled-platform, E gh-numbering (13), F closeout retro. |
+| Status | **SHIPPED (local-only) 2026-06-21.** All waves complete + committed. Wave A re-baselined to **256 BEHIND**. **Wave B (v1-refresh, 55)** — `1fe1848b43`. **Waves C–F (197 recipes: C 174 v0-migration, D 10 compiled/host-blocked, E 13 gh-numbering) + CFE skill v8.40.0 (G46–G51)** — `363537dd43`. Build tally: 190 success, 4 build-clean-test-blocked, 3 not-attempted (osx/win host-blocked). Committed + pushed to `origin/main`; **NOT submitted to conda-forge** (deliberate — no-push hard rule + Q2 defers feedstock v0→v1 PRs to a separate wave). Per-recipe results in the Review Digest below; deferred work in Follow-ups. |
 | Owner | rxm7706 |
 | Track | BMAD Quick Flow (tech-spec only) |
 | Scope | Every `recipes/<name>/` that backs a **sole-maintainer** conda-forge feedstock and is **behind** the feedstock's published version. |
@@ -71,9 +71,9 @@ tables), and `behind_verified.prev_2026-06-13.json` (the prior 258 snapshot). Th
 | Bucket | Count | Status | What it needs |
 | ------ | ----- | ------ | ------------- |
 | **v1-refresh** | **55** | ✅ **DONE** (Wave B, commit `1fe1848b43`) | feedstock already v1; regen `recipe.yaml` to published version + modernize. |
-| **v0-migration** | **184** | ⏳ Wave C (in progress) | local recipe is v0 (`meta.yaml`). **Two action-classes by FEEDSTOCK format — see Wave C.** |
-| **gh-numbering** | **13** | ⏳ Wave E | feedstock sources a GitHub **tag** whose number ≠ PyPI/local (copilotkit `v1.57.2`=PyPI`0.1.88`). **NOT actually behind** — re-verify, do not blindly bump. |
-| **fs-unknown** | **4** | ⏳ | newly-behind dirs, feedstock format unverified — live-check at processing. |
+| **v0-migration** | **184** | ✅ **DONE** (Waves C+D, commit `363537dd43`) — 174 noarch in Wave C + 10 compiled/host-blocked re-routed to Wave D | local recipe is v0 (`meta.yaml`). **Two action-classes by FEEDSTOCK format — see Wave C.** |
+| **gh-numbering** | **13** | ✅ **DONE** (Wave E, commit `363537dd43`) — re-verified + refreshed | feedstock sources a GitHub **tag** whose number ≠ PyPI/local (copilotkit `v1.57.2`=PyPI`0.1.88`). **NOT actually behind** — re-verify, do not blindly bump. |
+| **fs-unknown** | **4** | ✅ resolved at processing (folded into the buckets above) | newly-behind dirs, feedstock format unverified — live-checked at processing. |
 | (AHEAD) | 9 | — | local newer than published (in-flight, e.g. cocoindex). Out of scope. |
 
 **Wave-C critical refinement (discovered 2026-06-20):** the "v0-migration" bucket is keyed
@@ -167,7 +167,7 @@ Batch-1 (`a2wsgi`, `condense-json`, `collate-data-diff`, `antlr4-tools`,
   - **`cfe-import-names` proved its worth:** ~12 G7 import divergences cached, incl. a *pre-existing wrong import* on `django-soft-delete` (`django_soft_delete`→`django_softdelete`); also `md2conf`, `wagtailseo`, `issues`, `flags`, `treenode`, `sqlfluff`, `key_value.*` (dotted), `opentelemetry.instrumentation.kafka`.
   - **High-value feedstock-defect catches:** `wagtail-draftail-plugins` deployed feedstock ships the **WRONG license** (`MIT`; upstream relicensed `ISC`) + stale `wagtail` pin + G31 ci_support skew; `gibr`/`ydata-profiling` caught **impending feedstock rebuild breakages** (G26 exact-pin drift; G34 setuptools-81); `mcp-django`/`django-components` found latent missing deps live feedstocks carry.
   - **Process retro:** landmines 5–9 above (rate-limit zombies, `'releases'` KeyError, jinja-in-comments, last-wins CBC, token drift) all surfaced here.
-- **Wave C (v0-migration, 184): IN PROGRESS — paused 60min at 18/184** (2026-06-20). Split into C1 keep-meta (141) + C2 catch-up-delete-meta (43). Pilot (4) validated both classes; **18 done** (C1=5, C2=13; 17 build-green, 1 build-clean-test-blocked). Progress + done-list persisted at `wave_c_progress.md`; resume from `v0_queue.txt` at strict ≤4 concurrent. Wave-C catches so far: dataprofiler G34(setuptools-82)+G26(requests-metadata); basedtyping py3.14-incompat → drop `"*"` test leg; cucumber-expressions uv-build drift; ag-ui-protocol G7 `ag_ui`.
+- **Waves C–F (v0-migration 174 + compiled/host-blocked 10 + gh-numbering 13 = 197) COMPLETE** — committed `363537dd43` (2026-06-21), pushed to `origin/main`, **nothing submitted to conda-forge**. C split into C1 keep-meta + C2 catch-up-delete-meta; both action-classes validated. Build tally: **190 success, 4 build-clean-test-blocked, 3 not-attempted** (osx/win host-blocked: pyobjc-framework-{applicationservices,systemconfiguration}, uiautomation). Per-recipe detail in the **Review Digest** above. **Wave F closeout = CFE skill retro shipped v8.40.0 (G46–G51)**, plus 8 human-triage follow-ups (see Follow-ups below). Wave-C catches: dataprofiler G34(setuptools-82)+G26(requests-metadata); basedtyping py3.14-incompat → drop `"*"` test leg; cucumber-expressions uv-build drift; ag-ui-protocol G7 `ag_ui`; h2o-lightwave-web empty-package (G51); h2o stale-CBC cruft (G47).
 
 
 ---
@@ -396,7 +396,7 @@ Batch-1 (`a2wsgi`, `condense-json`, `collate-data-diff`, `antlr4-tools`,
 These surfaced during Waves C/D/E and are recorded here so they aren't lost. None were acted on beyond flagging (locked no-git policy / out of per-recipe scope).
 
 1. **h2o-lightwave-web: deployed feedstock likely ships a BROKEN empty package.** The GitHub monorepo subdir has zero `www/` web assets (generated at release time, present only in the PyPI wheel) → from-source build = empty ~15 KiB shell. Local v1 now sources the PyPI wheel (423 assets); the feedstock needs the same fix. Tracked via `cfe-forge-recipe-updates-needed: recipe-regenerate`. (CFE gotcha **G51**.)
-2. **Stale git-tracked recipe-dir `conda_build_config.yaml` cruft** in `recipes/hll/` + `recipes/jh2/` — verbatim copies of the global pinning CBC (zero recipe-specific keys) that trigger conda-smithy lint errors + a hard `duplicate entry "libitk_devel"` build collision. Not present in the deployed feedstocks. Should be `git rm`'d in a follow-up (agents couldn't remove tracked files under the no-git policy). Check other compiled dirs too. (CFE gotcha **G47**.)
+2. **Stale git-tracked recipe-dir `conda_build_config.yaml` cruft** in `recipes/hll/` + `recipes/jh2/`. **RESOLVED 2026-06-21** — both `git rm`'d in this closeout pass (staged, uncommitted). **Correction to the original flag:** only `jh2` was a verbatim global-pinning copy (933 lines; the source of the `duplicate entry "libitk_devel"` collision + the conda-smithy lint errors). `hll`'s was a *different* artifact — a 20-line py3.7-reinstating + numpy-1.20 pin matrix ("exceptionally reinstate python 3.7 support"), obsolete after the modern python_min refresh, **not** a global-pinning copy. Both date to "first commit" and are absent from the deployed feedstocks. **Still TODO:** audit the other compiled recipe dirs for the same verbatim-global-pinning-copy pattern. (CFE gotcha **G47**.)
 3. **cookiecutter-django has NO conda-forge feedstock** (the behind-list misclassified it as on-cf). It is local-only `pending-submission-to-conda-forge`; PyPI is abandoned at 1.11.9; sources the GitHub CalVer tag. Stray files in the dir (`meta-2024.yaml`, `README.rst`, `{{cookiecutter.project_slug}}/`) for triage. (CFE refinement, guide Wave A.)
 4. **spec-kit two-feedstock collision:** our `spec-kit-feedstock` (github-tag, sole-maintainer) vs a competing `conda-forge/specify-cli-feedstock` (pypi-sdist, maintainer xhochy) for the same upstream. Decide consolidation. Also: spec-kit's vestigial deps (`httpx`/`socksio`/`truststore`, not imported in 0.11.3) mirrored faithfully, flagged for a maintenance PR.
 5. **pypac:** the redundant recipe-dir `LICENSE` was removed (the source archive ships it; matches the feedstock) — a reviewable deletion slightly beyond the meta.yaml-only rm rule.
