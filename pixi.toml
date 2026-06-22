@@ -466,14 +466,20 @@ cmd = "python .claude/scripts/conda-forge-expert/atlas_phase.py"
 #[feature.python.dependencies]
 python = "3.14.*"                 # Python language interpreter
 # kedro-dagster depenency pins
-#dagster-dg-core has a strict version pin requiring tomlkit = "<0.13.3"
+# dagster-dg-core has a strict version pin requiring tomlkit = "<0.13.3"
 tomlkit = "<0.13.3"               # TOML parser and writer library (used by dagster-dg-core, which is a dagster-dg-core dependency)
-#boring-semantic-layer dependency pins
+# boring-semantic-layer dependency pins
 #xorq>=0.3.19 depends on structlog>=24.2.0,<26 and structlog==26.1.0, we can conclude that xorq>=0.3.19 cannot be used.
 structlog = ">24.2.0,<26"         #
 sqlglot = ">26.32.0,<28.7.0"      # SQL parser + transpiler (for feedstock analysis)
 pyarrow = ">=13.0.0,<22"          # Apache Arrow Python bindings
 pandas = ">=1.5.3,<3"             # DataFrame library for tabular data
+# CrewAI dependency pins
+#tomli  = ">=2.0.2,<2.1"
+#tomli-w = ">=1.1.0,<1.2"
+#regex =  ">=2026.1.15,<2026.2.0"
+#pydantic = ">=2.11.9,<2.13"       # type-hint-driven data validation
+#portalocker = ">=2.7.0,<2.8.0"
 ##[feature.build.dependencies]
 conda = ">=26.5.0"                # conda package manager
 conda-libmamba-solver = ">=24.9.0"  # fast libmamba-backed solver for conda
@@ -634,7 +640,7 @@ ibis-sqlite = ">=12.0.0"          # Ibis backend for SQLite
 ibis-postgres = ">=12.0.0"        # Ibis backend for PostgreSQL
 ibis-mssql = ">=12.0.0"           # Ibis backend for Microsoft SQL Server
 ibis-oracle = ">=12.0.0"          # Ibis backend for Oracle Database
-pydantic = ">=2.13.4"             # type-hint-driven data validation
+#pydantic = ">=2.13.4"             # type-hint-driven data validation
 ruff = ">=0.15.18"                # fast Rust-based Python linter + formatter
 pyright = ">=1.1.410"             # Microsoft's static type checker for Python
 mypy = ">=2.1.0"                  # static type checker for Python
