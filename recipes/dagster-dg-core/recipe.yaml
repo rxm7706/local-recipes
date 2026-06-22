@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.13.10"
+
+package:
+  name: dagster-dg-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dagster-dg-core/dagster_dg_core-${{ version }}.tar.gz
+  sha256: e328f05943df55635c0b7382e2c3b9a872e630f283d8996c146dc64453a0d9d8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling >=1.19.0
+    - pip
+  run:
+    - python >=${{ python_min }},<3.15
+    - jinja2
+    # https://github.com/dagster-io/dagster/blob/master/python_modules/libraries/dagster-dg-core/pyproject.toml#L14
+    - tomlkit <0.13.3 # https://github.com/dagster-io/dagster/issues/33943
+    - click >=8,<9
+    - click-aliases
+    - typing_extensions <5,>=4.4.0
+    - gql
+    - markdown
+    - jsonschema
+    - pyyaml >=5.1
+    - rich
+    - watchdog
+    - yaspin
+    - setuptools
+    - packaging
+    - python-dotenv
+    - typer >=0.15.1,<1.0
+    - dagster-shared ==1.13.10
+    - dagster-cloud-cli ==1.13.10
+
+tests:
+  - python:
+      imports:
+        - dagster_dg_core
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Core libraries for the dagster-dg-cli and create-dagster packages.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/dagster-dg-core/
+  repository: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-dg-core
+
+extra:
+  recipe-maintainers:
+    - rxm7706

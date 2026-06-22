@@ -26,6 +26,9 @@ bmad-method = ">=6.9.0"           # BMAD agent-driven dev framework (planning + 
 spec-kit = ">=0.11.3"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
+# Additional Pins for Dependency resolution
+# --exclude tomlkit --exclude structlog --exclude sqlglot --exclude pyarrow --exclude pandas
+# pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude nodejs --exclude python --exclude django --exclude channels --exclude daphne --exclude wagtail --exclude coderedcms --exclude tomlkit --exclude structlog --exclude sqlglot --exclude pyarrow --exclude pandas
 
 [feature.build.dependencies]
 conda = ">=26.5.0"                # conda package manager
@@ -462,6 +465,15 @@ cmd = "python .claude/scripts/conda-forge-expert/atlas_phase.py"
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.14.*"                 # Python language interpreter
+# kedro-dagster depenency pins
+#dagster-dg-core has a strict version pin requiring tomlkit = "<0.13.3"
+tomlkit = "<0.13.3"               # TOML parser and writer library (used by dagster-dg-core, which is a dagster-dg-core dependency)
+#boring-semantic-layer dependency pins
+#xorq>=0.3.19 depends on structlog>=24.2.0,<26 and structlog==26.1.0, we can conclude that xorq>=0.3.19 cannot be used.
+structlog = ">24.2.0,<26"         #
+sqlglot = ">26.32.0,<28.7.0"      # SQL parser + transpiler (for feedstock analysis)
+pyarrow = ">=13.0.0,<22"          # Apache Arrow Python bindings
+pandas = ">=1.5.3,<3"             # DataFrame library for tabular data
 ##[feature.build.dependencies]
 conda = ">=26.5.0"                # conda package manager
 conda-libmamba-solver = ">=24.9.0"  # fast libmamba-backed solver for conda
@@ -474,7 +486,7 @@ frozendict = "*"                  # immutable dict (transitive build dep)
 rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build compat shims
 ##[feature.grayskull.dependencies]
 grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
-conda-recipe-manager = ">=0.8.0"  # lint + migrate v0 ↔ v1 conda recipes
+conda-recipe-manager = ">=0.8.0"  # lint + migrate v0 ↔ v1 conda recipes # TODO NOTE conflict with click ==8.2.1, for dbt-core
 ##[feature.conda-smithy.dependencies]
 conda-smithy = ">=3.44.6,<4"      # feedstock generator + recipe linter
 ##[feature.shellcheck]
@@ -534,9 +546,9 @@ nebi-cli = ">=0.13"               # Local-first workspace management for Pixi
 # Category 4: Data Processing & Transformation + Category 5: Workflow Orchestration
 # See: docs/reference/package-taxonomy.md#4-data-processing--transformation
 # See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines
-pyarrow = ">=24.0.0"              # Apache Arrow Python bindings
-pyarrow-all = ">=24.0.0"          # PyArrow with all optional extras (parquet, datasets, …)
-dagster = ">=1.13.10"          # The data orchestration platform built for productivity.
+#pyarrow = ">=13.0.0"              # Apache Arrow Python bindings
+pyarrow-all = ">=21.0.0"          # PyArrow with all optional extras (parquet, datasets, …)
+dagster = ">=1.13.10"             # The data orchestration platform built for productivity.
 dagster-pipes = ">=1.13.10"       # Toolkit for Dagster integrations with transform logic outside of Dagster
 dagster-webserver = ">=1.13.10"   # Web UI for dagster.
 dask-core = ">=2026.6.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
@@ -549,10 +561,9 @@ getdaft = ">=0.6.13"              # Distributed Dataframes for Multimodal Data
 gql = ">=4.0.0"                   # GraphQL client (v4.0.0+ has no websockets dependency)
 ibis-framework = ">=12.0.0"       # The portable Python dataframe library
 kedro = ">=1.3.1"                 # Kedro helps you build production-ready data and analytics pipelines.
-#kedro-dagster = ">=0.7.0"         # Kedro-Dagster makes it easy to deploy Kedro projects to Dagster # TODO PY314 conda-forge compat check;
+kedro-dagster = ">=0.7.0"         # Kedro-Dagster makes it easy to deploy Kedro projects to Dagster # TODO PY314 conda-forge compat check;
 kedro-datasets = ">=9.4.0"        # Kedro-Datasets is where you can find all of Kedro's data connectors.
 numpy = ">=2.5.0"                 # Numerical computing
-pandas = ">=3.0.3"                # DataFrame library for tabular data
 polars = ">=1.41.2"               # Rust-backed columnar DataFrame library
 tablib = ">=3.9.0"                # Tabular data handling
 tabulate = ">=0.10.0"             # Pretty-print tabular data
@@ -633,7 +644,7 @@ pytest-xdist = ">=3.8.0"          # parallel / distributed test execution for py
 playwright = ">=1.61.0"           # Node binary for browser automation (CLI)
 ## MCP, A2A & conversion (MCP + adjacent ecosystem)
 #aichat = ">=0.30.0"
-agno = ">=2.6.18"                    # Agno is a lightweight framework for building multi-modal Agents. It supports any model provider, native multi-modal I/O, multi-agent teams, memory management, knowledge stores, structured outputs, and real-time monitoring.
+agno = ">=2.6.18"                 # Agno is a lightweight framework for building multi-modal Agents. It supports any model provider, native multi-modal I/O, multi-agent teams, memory management, knowledge stores, structured outputs, and real-time monitoring.
 a2a-sdk = ">=1.1.0"               # Official Python SDK for the Agent2Agent (A2A) Protocol
 google-genai = ">=2.9.0"          # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
@@ -678,19 +689,23 @@ azure-identity = ">=1.25.3"       # Azure identity management and authentication
 #microsoft-agents-m365copilot = "*"  # NOT FOUND - Add to conda-forge
 msgraph-sdk = ">=1.48.0"          # Microsoft Graph REST API SDK for Python
 #kedro-dagster = ">=0.5.4,<0.6"
-django = ">=6.0.6,<7"             # Web framework for Python
+django = ">=5.2.15,<6.0"          # Web framework for Python # Pin to LTS version for Django
+channels = ">=4.3.2,<5.0"         # Pin to LTS version for Django
+daphne = ">=4.2.2,<5.0"           # Pin to LTS version for Django
+wagtail = ">=7.4.2,<8.0"          # Content Management System (CMS) framework for Django # Pin to LTS version for Django
+coderedcms = ">=6.0.0,<7.0"       # Pin to LTS version for Django
+django-lasuite = ">=0.0.26"       # Common Django library for La Suite numerique projects
 httpx = ">=0.28.1"                #
 jinja2 = ">=3.1.6"                #
 minio = ">=7.2.20"                # Amazon S3-compatible object storage system (see: local-recipes/src/unity_data_stack/knowledge/docs/database-server/minio-operations.md)
 psycopg2 = ">=2.9.12"             # PostgreSQL Python adapter (from `local-recipes/src/unity_data_stack/knowledge/lasuite/postgres`) is a mock implementation; this provides a real DB driver
 rich = ">=14.3.4"                 #
 typer = ">=0.26.7"                #
-wagtail = ">=7.4.2,<8"            # Content Management System (CMS) framework for Django
 watchdog = ">=6.0.0"              # File system event monitoring (used for live-reload in markitdown dev server)
-#vscodepy = "*"                   # NOT FOUND - Add to conda-forge
+#vscodepy = "*"                    # NOT FOUND - Add to conda-forge
 ## Visual Studio Code Extensions (npm yo and adjacent ecosystem)
-#generator-code = "*"             # NOT FOUND - Add to conda-forge
-#yo = "*"                         # NOT FOUND - Add to conda-forge
+#generator-code = "*"              # NOT FOUND - Add to conda-forge
+#yo = "*"                          # NOT FOUND - Add to conda-forge
 
 ## MLX (Apple's array framework) and mlx-lm (LLM runner).
 ## mlx-lm is noarch python; the native mlx C++ lib builds for linux-64 + osx-arm64
@@ -710,6 +725,7 @@ mlx = ">=0.31.2"                  # Apple's array framework (Metal-accelerated o
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
 
 [feature.local-recipes.pypi-dependencies]
+boring-semantic-layer = ">=0.3.14" # The Boring Semantic Layer (BSL) is a lightweight semantic layer based on Ibis.
 
 [dependencies]
 #[feature.python.dependencies]

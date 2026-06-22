@@ -13,9 +13,9 @@ source:
   sha256: b5f819c6c97cb73a7c3ec237d5bb7d5a042371d5e6a013025523834ea8d9b765
 
 build:
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
   python:
     entry_points:
       - vizro-mcp = vizro_mcp:main
@@ -27,7 +27,7 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }}
-    - pydantic
+    #- pydantic
     - httpx >=0.28.1
     - mcp >=1.6.0
     - vizro >=0.1.46
@@ -58,12 +58,19 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - vizro-mcp --help
 
 about:
   summary: MCP server to help create Vizro dashboards and charts
   license: Apache-2.0
   license_file: LICENSE.txt
-  homepage: https://vizro.mckinsey.com/
+  homepage: https://pypi.org/project/vizro-mcp/
+  description: Vizro-MCP is a Python library that provides a server to help create Vizro dashboards and charts.
   repository: https://github.com/mckinsey/vizro
   documentation: https://vizro.readthedocs.io/en/stable/
 
