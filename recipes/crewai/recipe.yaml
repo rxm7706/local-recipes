@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  name: crewai
-  version: "1.14.1"
-
+  version: "1.14.7"
 
 package:
-  name: ${{ name|lower }}
+  name: crewai
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/crewai-${{ version }}.tar.gz
-  sha256: 7e1a22b41f673a2f157e802a258e948d22eb8fc5a2411add81efa4c0b295a3a8
+  url: https://pypi.org/packages/source/c/crewai/crewai-${{ version }}.tar.gz
+  sha256: 85e35d4290470c9fe434c35e58055407a36c2600a0465add589133769febb371
 
 build:
   number: 0
@@ -20,7 +18,7 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - crewai = crewai.cli.cli:crewai
+      - crewai = crewai_cli.cli:crewai
 
 requirements:
   host:
@@ -28,9 +26,11 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<3.14
-    - pydantic >=2.11.9,<2.12.0
-    - openai >=1.83.0,<3
+    - python >=${{ python_min }}
+    - crewai-core ==${{ version }}
+    - crewai-cli ==${{ version }}
+    - pydantic >=2.11.9,<2.13
+    - openai >=2.30.0,<3
     - instructor >=1.3.3
     - pdfplumber >=0.11.4,<0.12.0
     - regex >=2026.1.15,<2026.2.0
@@ -40,10 +40,9 @@ requirements:
     - chromadb >=1.1.0,<1.2.0
     - tokenizers >=0.21,<1
     - openpyxl >=3.1.5,<3.2.0
-    - python-dotenv >=1.1.1,<1.2.0
-    - pyjwt >=2.9.0,<3
-    - textual >=7.5.0
-    - click >=8.1.7,<8.2.0
+    - python-dotenv >=1.2.2,<2
+    - pyjwt >=2.13.0,<3
+    - click >=8.1.7,<9
     - appdirs >=1.4.4,<1.5.0
     - jsonref >=1.1.0,<1.2.0
     - json-repair >=0.25.2,<0.26.0
@@ -51,16 +50,15 @@ requirements:
     - tomli >=2.0.2,<2.1.0
     - json5 >=0.10.0,<0.11.0
     - portalocker >=2.7.0,<2.8.0
-    - pydantic-settings >=2.10.1,<2.11.0
+    - pydantic-settings >=2.10.1,<3
     - httpx >=0.28.1,<0.29.0
     - mcp >=1.26.0,<1.27.0
-    - uv >=0.9.13,<0.10.0
+    - uv >=0.11.6,<0.12.0
     - python-uv # NOTE: Required to appease `pip check` for downstreams which (presently) might use `uv`
     # NOTE: https://github.com/conda-forge/python-uv-feedstock/blob/main/recipe/recipe.yaml
     - aiosqlite >=0.21.0,<0.22.0
     - pyyaml >=6.0,<7.0
     - aiofiles >=24.1.0,<24.2.0
-    - numpy >=1.26
     - lancedb >=0.29.2,<0.30.1
     # TODO: Update https://github.com/conda-forge/lancedb-feedstock to 0.30.0
 
@@ -75,6 +73,7 @@ tests:
   - requirements:
       run:
         - pip
+        - python
     script:
       - crewai --help
 
@@ -83,6 +82,7 @@ about:
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/crewAIInc/crewAI
+  documentation: https://docs.crewai.com
 
 extra:
   recipe-maintainers:
