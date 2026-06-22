@@ -127,6 +127,7 @@ gcloud = ["python", "gcloud-sdk"]
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
+env = { PYTHONWARNINGS = "ignore:Kedro is not yet fully compatible" }  # suppress kedro Python 3.14 compat warning
 
 [feature.local-recipes.tasks.sync-upstream-conda-forge]
 description = "Sync with upstream conda-forge/staged-recipes and rebase local commits"
