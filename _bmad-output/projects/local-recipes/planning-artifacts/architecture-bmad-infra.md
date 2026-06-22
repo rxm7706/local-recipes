@@ -4,7 +4,7 @@ part_id: bmad-infra
 display_name: BMAD infrastructure
 project_type_id: infra
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.40.0'
+source_pin: 'conda-forge-expert v8.41.0'
 ---
 
 # Architecture: BMAD Infrastructure (Part 4)
@@ -328,7 +328,7 @@ When a BMAD effort that did conda-forge work reaches closeout (final story compl
 
 ### Project-context.md
 
-`_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn. Hand-maintained; pinned to skill version (currently `v8.40.0`, re-synced 2026-06-21; owner: rxm7706). Drift contract: MINOR bump triggers re-sync; PATCH does not — detected by `scripts/bmad_drift_check.py`, reconciled per `SYNC-RUNBOOK.md`.
+`_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads on spawn. Hand-maintained; pinned to skill version (currently `v8.41.0`, re-synced 2026-06-21; owner: rxm7706). Drift contract: MINOR bump triggers re-sync; PATCH does not — detected by `scripts/bmad_drift_check.py`, reconciled per `SYNC-RUNBOOK.md`.
 
 ### Implementation artifacts
 

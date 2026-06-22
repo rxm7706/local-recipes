@@ -4,14 +4,14 @@ part_id: mcp-server
 display_name: FastMCP server
 project_type_id: backend
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.40.0'
+source_pin: 'conda-forge-expert v8.41.0'
 ---
 
 # Architecture: MCP Server (Part 3)
 
 The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 42 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
 
-**Surface deltas (v8.11.1 → v8.40.0):** the atlas-intelligence surface added `pypi_intelligence` (v8.1.0; the rich filter chain `--score-min`, `--activity`, `--license-ok`, `--noarch-python-candidate`, `--min-downloads`, per-channel `--in-*`, `--sort-by score|downloads|serial|name`) and the Phase F+ Wave-3 reads `platform_breakdown` / `pyver_breakdown` / `channel_split` (v8.19.0); the recipe-authoring surface added `download_pr_artifacts` (v8.14.0 PR-artifact downloader). Total: **42**.
+**Surface deltas (v8.11.1 → v8.41.0):** the atlas-intelligence surface added `pypi_intelligence` (v8.1.0; the rich filter chain `--score-min`, `--activity`, `--license-ok`, `--noarch-python-candidate`, `--min-downloads`, per-channel `--in-*`, `--sort-by score|downloads|serial|name`) and the Phase F+ Wave-3 reads `platform_breakdown` / `pyver_breakdown` / `channel_split` (v8.19.0); the recipe-authoring surface added `download_pr_artifacts` (v8.14.0 PR-artifact downloader). Total: **42**.
 
 Without Part 3, every BMAD agent would have to invoke pixi tasks directly (slow, bash-shaped, lossy round-tripping through stdout JSON). With Part 3, BMAD agents and Claude Code call `mcp__conda_forge_server__<tool>` natively with structured arguments and typed responses.
 

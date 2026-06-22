@@ -2,39 +2,39 @@
 doc_type: implementation-readiness-report
 project_name: local-recipes
 date: 2026-06-21
-source_pin: 'conda-forge-expert v8.40.0'
-sync_note: 'Regenerated 2026-06-21 against current artifacts (PRD v1.6.0, epics v1.1.0, architecture set v1.0.0 — all pinned conda-forge-expert v8.40.0). Supersedes the 2026-05-12 v7.8.1-era gate. Fixed two stale internal defects carried from the prior report: the ~176/193-story baseline (now 232 stories / 14 epics) and the "12 XL remaining vs 0 XL remaining" contradiction (now 0 XL remaining, per epics.md frontmatter xl_stories_remaining: 0).'
+source_pin: 'conda-forge-expert v8.41.0'
+sync_note: 'Regenerated 2026-06-21 against current artifacts (PRD v1.6.0, epics v1.1.0, architecture set v1.0.0 — all pinned conda-forge-expert v8.41.0). Supersedes the 2026-05-12 v7.8.1-era gate. Fixed two stale internal defects carried from the prior report: the ~176/193-story baseline (now 232 stories / 14 epics) and the "12 XL remaining vs 0 XL remaining" contradiction (now 0 XL remaining, per epics.md frontmatter xl_stories_remaining: 0).'
 artifacts_under_review:
-  - planning-artifacts/PRD.md (v1.6.0, approved, pin v8.40.0)
-  - planning-artifacts/architecture.md (v1.0.0, draft, pin v8.40.0)
-  - planning-artifacts/architecture-conda-forge-expert.md (pin v8.40.0)
-  - planning-artifacts/architecture-cf-atlas.md (pin v8.40.0)
-  - planning-artifacts/architecture-mcp-server.md (pin v8.40.0)
-  - planning-artifacts/architecture-bmad-infra.md (pin v8.40.0)
-  - planning-artifacts/integration-architecture.md (pin v8.40.0)
-  - planning-artifacts/epics.md (v1.1.0, draft, pin v8.40.0 — 14 epics / 232 stories / 0 XL)
-  - project-context.md (last_synced_skill_version v8.40.0, 63 rules)
+  - planning-artifacts/PRD.md (v1.6.0, approved, pin v8.41.0)
+  - planning-artifacts/architecture.md (v1.0.0, draft, pin v8.41.0)
+  - planning-artifacts/architecture-conda-forge-expert.md (pin v8.41.0)
+  - planning-artifacts/architecture-cf-atlas.md (pin v8.41.0)
+  - planning-artifacts/architecture-mcp-server.md (pin v8.41.0)
+  - planning-artifacts/architecture-bmad-infra.md (pin v8.41.0)
+  - planning-artifacts/integration-architecture.md (pin v8.41.0)
+  - planning-artifacts/epics.md (v1.1.0, draft, pin v8.41.0 — 14 epics / 232 stories / 0 XL)
+  - project-context.md (last_synced_skill_version v8.41.0, 63 rules)
 validator: bmad-check-implementation-readiness (Path 3 hybrid)
 overall_verdict: CONDITIONAL_READY — capabilities coherently covered; 3 should-fix traceability/sync nits, 0 blocking gaps
 status: final
 verdict_history:
   - initial: 'CONDITIONAL_READY (2026-05-12, v7.8.1 pin)'
   - after_must_fix: 'READY (2026-05-12 — MF1 confirmed, MF2-MF5 applied; 193 stories, 0 XL)'
-  - regenerated: 'CONDITIONAL_READY (2026-06-21, v8.40.0 pin — 232 stories / 14 epics; new Epic 14 + FRs F2.13/F2.14/F3.9 verified covered; 3 non-blocking should-fix nits)'
+  - regenerated: 'CONDITIONAL_READY (2026-06-21, v8.41.0 pin — 232 stories / 14 epics; new Epic 14 + FRs F2.13/F2.14/F3.9 verified covered; 3 non-blocking should-fix nits)'
 ground_truth_2026_06_21:
-  skill_version: v8.40.0
+  skill_version: v8.41.0
   schema: v28
   mcp_tools: 42
   atlas_phases: 22 (B→N + O/P/Q/R/S)
   pixi_envs: 9
-  recipe_gotchas: G1-G51 (skill SKILL.md); G1-G45 pinned in PRD/architecture/epics as of v8.40.0 capture
+  recipe_gotchas: G1-G53 (skill SKILL.md); G1-G45 pinned in PRD/architecture/epics as of v8.41.0 capture
 ---
 
 # Implementation Readiness Assessment
 
 This report validates that `PRD.md`, the **architecture set** (`architecture.md` + 4 part docs + `integration-architecture.md`), and `epics.md` form a **consistent, implementable triple** at the **current** artifact state. The PRD says WHAT to build; the architecture says HOW; the epics break the HOW into actionable stories. Each must align with the others or sprint planning will plan against contradictions.
 
-This is a **dated gate regenerated 2026-06-21** against the live artifacts. The verdict below follows from **current** evidence (v8.40.0-pinned artifacts, 14 epics / 232 stories), **not** the stale 2026-05-12 v7.8.1-era inventory. The prior report's two internal defects are fixed (see § "Defects Fixed From Prior Audit").
+This is a **dated gate regenerated 2026-06-21** against the live artifacts. The verdict below follows from **current** evidence (v8.41.0-pinned artifacts, 14 epics / 232 stories), **not** the stale 2026-05-12 v7.8.1-era inventory. The prior report's two internal defects are fixed (see § "Defects Fixed From Prior Audit").
 
 ---
 
@@ -47,9 +47,9 @@ The triple is **consistent and implementable** at the current state. Every PRD f
 Three **should-fix** items remain (traceability/sync hygiene, not coverage holes). None blocks sprint planning; they are recorded so the next planning pass closes them.
 
 - **Story/epic counts used:** **14 epics, 232 stories, 5 waves, 0 XL remaining** (epics.md v1.1.0 frontmatter `total_epics: 14`, `total_stories: 232`, `xl_stories_remaining: 0`; body line 47 "Total: 14 epics, 232 stories"; Wave Summary "Total | 14 | 232"; per-wave sum 31+71+76+28+26 = 232 — all four statements agree).
-- **Source pin:** **conda-forge-expert v8.40.0** (uniform across PRD, all 6 architecture docs, epics.md, project-context.md).
+- **Source pin:** **conda-forge-expert v8.41.0** (uniform across PRD, all 6 architecture docs, epics.md, project-context.md).
 
-> The earlier "READY" verdict (2026-05-12) was correct **for its inputs** (193 stories, v7.8.1 pin). Those inputs are now stale. This regeneration re-runs the gate against the v8.40.0 artifacts and lands at CONDITIONAL_READY only because of the three should-fix hygiene nits below — the system itself is more complete than at the prior gate, not less.
+> The earlier "READY" verdict (2026-05-12) was correct **for its inputs** (193 stories, v7.8.1 pin). Those inputs are now stale. This regeneration re-runs the gate against the v8.41.0 artifacts and lands at CONDITIONAL_READY only because of the three should-fix hygiene nits below — the system itself is more complete than at the prior gate, not less.
 
 ---
 
@@ -83,19 +83,19 @@ This report applies the BMAD `bmad-check-implementation-readiness` 6-step framew
 
 | Artifact | Path | Frontmatter | Pin |
 |---|---|---|---|
-| PRD | `planning-artifacts/PRD.md` | ✅ v1.6.0, **approved**, re_validated 2026-06-20 | v8.40.0 |
-| Architecture (unified) | `planning-artifacts/architecture.md` | ✅ v1.0.0, draft, consolidates 5 docs | v8.40.0 |
-| Architecture (CFE / Part 1) | `planning-artifacts/architecture-conda-forge-expert.md` | ✅ | v8.40.0 |
-| Architecture (cf_atlas / Part 2) | `planning-artifacts/architecture-cf-atlas.md` | ✅ schema v28, 22 phases, 21 tables + 4 views | v8.40.0 |
-| Architecture (MCP / Part 3) | `planning-artifacts/architecture-mcp-server.md` | ✅ 42 tools across 3 surfaces | v8.40.0 |
-| Architecture (BMAD / Part 4) | `planning-artifacts/architecture-bmad-infra.md` | ✅ | v8.40.0 |
-| Integration architecture | `planning-artifacts/integration-architecture.md` | ✅ parts_integrated 4 | v8.40.0 |
-| Epics & Stories | `planning-artifacts/epics.md` | ✅ v1.1.0, draft, **14 epics / 232 stories / 0 XL** | v8.40.0 |
-| Project context | `_bmad-output/projects/local-recipes/project-context.md` | ✅ 63 rules, 9 envs documented | v8.40.0 |
+| PRD | `planning-artifacts/PRD.md` | ✅ v1.6.0, **approved**, re_validated 2026-06-20 | v8.41.0 |
+| Architecture (unified) | `planning-artifacts/architecture.md` | ✅ v1.0.0, draft, consolidates 5 docs | v8.41.0 |
+| Architecture (CFE / Part 1) | `planning-artifacts/architecture-conda-forge-expert.md` | ✅ | v8.41.0 |
+| Architecture (cf_atlas / Part 2) | `planning-artifacts/architecture-cf-atlas.md` | ✅ schema v28, 22 phases, 21 tables + 4 views | v8.41.0 |
+| Architecture (MCP / Part 3) | `planning-artifacts/architecture-mcp-server.md` | ✅ 42 tools across 3 surfaces | v8.41.0 |
+| Architecture (BMAD / Part 4) | `planning-artifacts/architecture-bmad-infra.md` | ✅ | v8.41.0 |
+| Integration architecture | `planning-artifacts/integration-architecture.md` | ✅ parts_integrated 4 | v8.41.0 |
+| Epics & Stories | `planning-artifacts/epics.md` | ✅ v1.1.0, draft, **14 epics / 232 stories / 0 XL** | v8.41.0 |
+| Project context | `_bmad-output/projects/local-recipes/project-context.md` | ✅ 63 rules, 9 envs documented | v8.41.0 |
 
-**Pin uniformity:** all 9 artifacts carry `source_pin` / `last_synced_skill_version` = **conda-forge-expert v8.40.0**. ✅ No pin drift across the set.
+**Pin uniformity:** all 9 artifacts carry `source_pin` / `last_synced_skill_version` = **conda-forge-expert v8.41.0**. ✅ No pin drift across the set.
 
-> **Sync note (informational, I1):** PRD and epics edit-history *narratives* describe the 2026-06-20 structural re-sync as "v8.11.1 → v8.39.0," but the actual `source_pin` **fields** in both files were subsequently bumped to **v8.40.0** (matching project-context.md and the architecture set). The pin fields — the load-bearing values — are uniform and correct. The narrative lag is cosmetic (see SF3).
+> **Sync note (informational, I1):** PRD and epics edit-history *narratives* describe the 2026-06-20 structural re-sync as "v8.11.1 → v8.39.0," but the actual `source_pin` **fields** in both files were subsequently bumped to **v8.41.0** (matching project-context.md and the architecture set). The pin fields — the load-bearing values — are uniform and correct. The narrative lag is cosmetic (see SF3).
 
 **Cross-references:** PRD §11 + Appendix B cite the architecture set; architecture.md consolidates the 4 part docs + integration doc; epics.md `input_docs` cite PRD + architecture and annotate each retrofit story with its driving feature. All artifacts cite each other appropriately. ✅
 
@@ -125,7 +125,7 @@ These align with the **ground-truth 2026-06-21 facts**: schema v28, 42 MCP tools
 | Check | Result |
 |---|---|
 | §5 feature count internally consistent | ✅ §5 declares "Total features: 57"; sub-totals (16+14+9+10+8) sum to 57 |
-| §6 Success Metrics aligned to ground truth | ✅ "MCP tools 42/42", "Atlas phases 22/22", "Pixi envs 9/9" match v8.40.0 reality |
+| §6 Success Metrics aligned to ground truth | ✅ "MCP tools 42/42", "Atlas phases 22/22", "Pixi envs 9/9" match v8.41.0 reality |
 | §8 Open Questions | ✅ All 7 (Q-PRD-01..07) **CONFIRMED** by operator 2026-05-12; §12 status `approved`; no open question blocks any story |
 | §9 Deferred Work | ✅ 27 DW rows (DW1–DW27); DW12/DW13/DW15/DW17 marked SHIPPED inline with audit trail; remainder are explicitly v2/out-of-scope |
 | §10 Risks | ✅ 7 risks with mitigations; R1 (skill drift) is the live one — addressed by the drift-detection contract (G6) + this regeneration |
@@ -157,7 +157,7 @@ epics.md uses **per-story inline "Covers **F#**" annotations** (e.g., E6.S27 "Co
 | **F2.10 / F2.10 CLIs** (pypi-intelligence + breakdown CLIs) | **Epic 9** S21–S25 (`pypi-intelligence`, `pypi-only-candidates`, `platform-breakdown`, `pyver-breakdown`, `channel-split`) | ✅ covered |
 | **F3.2 / Epic 10 → 42 tools** | **Epic 10** "Part 3 MCP Server + 42 Tools" (18 stories) | ✅ covered |
 
-The retrofit additions (E1 +1, E6 +4, E9 +5, E10 +7) and the new **Epic 14** (13 stories) account for the structural growth that brings the v8.6-era epics up to the v8.40.0 system. **The new capabilities are coherently covered across PRD + epics + architecture.** ✅
+The retrofit additions (E1 +1, E6 +4, E9 +5, E10 +7) and the new **Epic 14** (13 stories) account for the structural growth that brings the v8.6-era epics up to the v8.41.0 system. **The new capabilities are coherently covered across PRD + epics + architecture.** ✅
 
 ### Baseline (pre-existing) feature coverage
 
@@ -212,7 +212,7 @@ No 🔴 critical violations (no technical-milestone-only epics that lack user va
 
 ### Overall Readiness Status: CONDITIONAL_READY
 
-The triple (PRD + architecture set + epics) is **consistent and implementable** at the v8.40.0 state. All 57 PRD features — including the new Epic 14 PyPI-intelligence + security-signals layer and FRs F2.13/F2.14/F3.9 — are coherently covered across PRD + epics + architecture. Counts are internally self-consistent (**14 epics / 232 stories / 0 XL**, four agreeing statements). **0 blocking gaps.**
+The triple (PRD + architecture set + epics) is **consistent and implementable** at the v8.41.0 state. All 57 PRD features — including the new Epic 14 PyPI-intelligence + security-signals layer and FRs F2.13/F2.14/F3.9 — are coherently covered across PRD + epics + architecture. Counts are internally self-consistent (**14 epics / 232 stories / 0 XL**, four agreeing statements). **0 blocking gaps.**
 
 The verdict is CONDITIONAL (not READY) solely because of **3 should-fix traceability/sync hygiene nits**. None blocks sprint planning — they are recorded so the next planning pass closes them. An operator who chooses to proceed as-is incurs only a small future-traceability cost, not a scope or correctness risk.
 
@@ -222,17 +222,17 @@ The verdict is CONDITIONAL (not READY) solely because of **3 should-fix traceabi
 |---|---|---|---|
 | **SF1** | **Add explicit "Covers **F2.13** / **F2.14** / **F3.9**" annotations** to Epic 14 (S5–S12) and Epic 10 (S5b–S5h). Coverage exists; only the FR-ID traceability string is missing. | Step 3 / Step 5 | S (~15 min) |
 | **SF2** | **Add an explicit §6-success-metric → verification-story map** to Epic 12/13 (or per-metric AC). ~27 measures; capabilities are covered, mapping is implicit. | Step 2 | M (~30 min) |
-| **SF3** | **Add a "Depends on" column to each epic's story table** + reconcile the PRD/epics **edit-history narrative** wording ("v8.39.0") with the actual `source_pin` field (v8.40.0); tighten ~3–5 soft ACs. | Step 1 (I1) / Step 5 | M (~1 hr) |
+| **SF3** | **Add a "Depends on" column to each epic's story table** + reconcile the PRD/epics **edit-history narrative** wording ("v8.39.0") with the actual `source_pin` field (v8.41.0); tighten ~3–5 soft ACs. | Step 1 (I1) / Step 5 | M (~1 hr) |
 
 ### Informational (no action required)
 
 | Note | Finding |
 |---|---|
-| I1 | Pin **fields** are uniform at v8.40.0 across all 9 artifacts; only the PRD/epics edit-history *narrative prose* still reads "v8.39.0" (cosmetic; folded into SF3). |
+| I1 | Pin **fields** are uniform at v8.41.0 across all 9 artifacts; only the PRD/epics edit-history *narrative prose* still reads "v8.39.0" (cosmetic; folded into SF3). |
 | I2 | UX alignment N/A — infrastructure rebuild, no UX design doc. |
-| I3 | Story growth 176 → 193 → **232** is reasonable: the +39 over the prior gate's 193 is the documented structural re-sync (Epic 14's 13 stories + E1/E6/E9/E10 retrofits + the reconciliation of an earlier internal drift 173/195/201 → 232). Not scope creep — it's the v8.6-era plan catching up to the v8.40.0 system. |
+| I3 | Story growth 176 → 193 → **232** is reasonable: the +39 over the prior gate's 193 is the documented structural re-sync (Epic 14's 13 stories + E1/E6/E9/E10 retrofits + the reconciliation of an earlier internal drift 173/195/201 → 232). Not scope creep — it's the v8.6-era plan catching up to the v8.41.0 system. |
 | I4 | PRD §12 sign-off block still cites "193 stories, 0 XL" in its historical checklist. The "0 XL" half is still true; the "193" half is a stale historical artifact of the approval date. Not a defect in epics.md (the authoritative count source); optionally refresh during SF1. |
-| I5 | Recipe gotchas: PRD/architecture/epics pin **G1–G45** (the count at v8.40.0 capture); the live SKILL.md ground truth is **G1–G51**. This is normal post-pin skill drift (PATCH-level gotchas accrue between syncs), not an artifact inconsistency — the drift-detection contract (G6) is the mechanism that closes it at the next MINOR re-sync. |
+| I5 | Recipe gotchas: PRD/architecture/epics pin **G1–G45** (the count at v8.41.0 capture); the live SKILL.md ground truth is **G1–G53**. This is normal post-pin skill drift (PATCH-level gotchas accrue between syncs), not an artifact inconsistency — the drift-detection contract (G6) is the mechanism that closes it at the next MINOR re-sync. |
 
 ### What sprint planning can begin now
 
@@ -251,18 +251,18 @@ Wave 5 (Hardening):       E12 (10) + E13 (16)                 = 26 stories
 
 ### Final note
 
-This regenerated gate found **0 blocking gaps** and **3 non-blocking should-fix items** across the v8.40.0 artifact set. The two internal defects from the prior (2026-05-12) report — the stale ~176/193-story baseline and the 12-XL-vs-0-XL contradiction — are **fixed** here against the current epics.md reality (**232 stories / 14 epics / 0 XL**). The new capabilities (Epic 14 / FRs F2.13–F3.9 / phases O–S / 42 tools / 9 envs) are coherently covered across PRD + epics + architecture. The artifacts may be used to proceed to sprint planning as-is (Wave 1–2), with SF1–SF3 applied before Wave 3.
+This regenerated gate found **0 blocking gaps** and **3 non-blocking should-fix items** across the v8.41.0 artifact set. The two internal defects from the prior (2026-05-12) report — the stale ~176/193-story baseline and the 12-XL-vs-0-XL contradiction — are **fixed** here against the current epics.md reality (**232 stories / 14 epics / 0 XL**). The new capabilities (Epic 14 / FRs F2.13–F3.9 / phases O–S / 42 tools / 9 envs) are coherently covered across PRD + epics + architecture. The artifacts may be used to proceed to sprint planning as-is (Wave 1–2), with SF1–SF3 applied before Wave 3.
 
 ---
 
 ## References
 
-- [PRD.md](./PRD.md) — v1.6.0, approved, pin v8.40.0 (57 features; 27 DW rows; 7 Q-PRD confirmed)
-- [architecture.md](./architecture.md) — unified architecture (consolidates 5 docs), pin v8.40.0
+- [PRD.md](./PRD.md) — v1.6.0, approved, pin v8.41.0 (57 features; 27 DW rows; 7 Q-PRD confirmed)
+- [architecture.md](./architecture.md) — unified architecture (consolidates 5 docs), pin v8.41.0
 - [architecture-cf-atlas.md](./architecture-cf-atlas.md) — Part 2: schema v28, 22 phases, 21 tables + 4 views
 - [architecture-mcp-server.md](./architecture-mcp-server.md) — Part 3: 42 tools across 3 surfaces
-- [epics.md](./epics.md) — **14 epics, 232 stories, 5 waves, 0 XL**, pin v8.40.0
+- [epics.md](./epics.md) — **14 epics, 232 stories, 5 waves, 0 XL**, pin v8.41.0
 - [validation-report-PRD.md](./validation-report-PRD.md) — PRD-internal validation
-- [project-context.md](../project-context.md) — last_synced_skill_version v8.40.0, 63 rules
+- [project-context.md](../project-context.md) — last_synced_skill_version v8.41.0, 63 rules
 - [project-parts.json](./project-parts.json) — machine-readable part inventory
 - [index.md](./index.md) — navigator

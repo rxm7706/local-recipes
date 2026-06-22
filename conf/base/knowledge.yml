@@ -1,0 +1,16 @@
+knowledge:
+  # La Suite Docs connection
+  lasuite_url: "http://lasuite-docs.unity-stack.svc.cluster.local"  # OpenShift service
+  lasuite_api_token: "${LASUITE_API_TOKEN}"  # injected from OpenShift secret
+
+  # Wiki paths (local filesystem or Minio mount)
+  raw_dir: "src/sentinel/knowledge/wiki/raw"
+  compiled_dir: "src/sentinel/knowledge/wiki/compiled"
+  outputs_dir: "src/sentinel/knowledge/wiki/outputs"
+
+  # Agent LLM settings
+  llm_model: "claude-sonnet-4-20250514"
+  llm_max_tokens: 4096
+
+  # Dagster schedule for linting
+  lint_schedule: "0 9 * * MON"  # Every Monday at 9am
