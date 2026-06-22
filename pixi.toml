@@ -520,9 +520,9 @@ pixi = ">=0.70.2"                 # Pixi package & environment manager
 #pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
 rattler-build = ">=0.66.2"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.4.0"  # pixi build backend that delegates to rattler-build
-pixi-build-cmake = ">=0.4.0"      # pixi build backend for CMake projects
+pixi-build-cmake = ">=0.4.2"      # pixi build backend for CMake projects
 pixi-build-python = ">=0.6.0"     # pixi build backend for Python projects
-pixi-build-rust = ">=0.5.0"       # pixi build backend for Rust / Cargo projects
+pixi-build-rust = ">=0.5.2"       # pixi build backend for Rust / Cargo projects
 #ixi-build-go = ">=0.3.0"         # pixi-experimental-backends build backend for Go projects
 #pixi-build-nodejs = ">=0.3.0"    # pixi-experimental-backends build backend for Node.js projects
 pixi-unpack = ">=0.7.9"           # Unpack a pixi-pack bundle on the target machine
@@ -556,6 +556,8 @@ dask-core = ">=2026.6.0"          # Parallel computing with task scheduling (pan
 #dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
 #dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
 #dlt = ">=1.27.2"                  # dlt requires dlt-pendulum which is only available on conda-forge for linux-64 dlt is an open-source python-first scalable data loading library that does not require any backend to run. # TODO PY314 conda-forge compat check;
+great-expectations = ">=1.18.1"   # GE data contracts in Kedro nodes
+pandera = ">=0.31.0"              # Statistical data validation for Pandas, Dask, and Spark
 duckdb = ">=1.5.4"                # Embedded analytical SQL database
 getdaft = ">=0.6.13"              # Distributed Dataframes for Multimodal Data
 gql = ">=4.0.0"                   # GraphQL client (v4.0.0+ has no websockets dependency)
@@ -695,12 +697,15 @@ daphne = ">=4.2.2,<5.0"           # Pin to LTS version for Django
 wagtail = ">=7.4.2,<8.0"          # Content Management System (CMS) framework for Django # Pin to LTS version for Django
 coderedcms = ">=6.0.0,<7.0"       # Pin to LTS version for Django
 django-lasuite = ">=0.0.26"       # Common Django library for La Suite numerique projects
-httpx = ">=0.28.1"                #
-jinja2 = ">=3.1.6"                #
+openlineage-python = ">=1.50.0"   # OpenLineage client
+opentelemetry-sdk = ">=1.42.1"    # OTel SDK
+opentelemetry-api = ">=1.42.1"    # OTel API
+httpx = ">=0.28.1"                # HTTP client for Python
+jinja2 = ">=3.1.6"                # Jinja2 template engine for Python
 minio = ">=7.2.20"                # Amazon S3-compatible object storage system (see: local-recipes/src/unity_data_stack/knowledge/docs/database-server/minio-operations.md)
 psycopg2 = ">=2.9.12"             # PostgreSQL Python adapter (from `local-recipes/src/unity_data_stack/knowledge/lasuite/postgres`) is a mock implementation; this provides a real DB driver
-rich = ">=14.3.4"                 #
-typer = ">=0.26.7"                #
+rich = ">=14.3.4"                 # Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal
+typer = ">=0.26.7"                # CLI framework for Python
 watchdog = ">=6.0.0"              # File system event monitoring (used for live-reload in markitdown dev server)
 #vscodepy = "*"                    # NOT FOUND - Add to conda-forge
 ## Visual Studio Code Extensions (npm yo and adjacent ecosystem)
@@ -726,6 +731,8 @@ mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers t
 
 [feature.local-recipes.pypi-dependencies]
 boring-semantic-layer = ">=0.3.14" # The Boring Semantic Layer (BSL) is a lightweight semantic layer based on Ibis.
+kedro-mcp = ">=0.1.2"              # MCP server with Kedro prompts and tools
+#crewai = ">=1.14.7"                # Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.
 
 [dependencies]
 #[feature.python.dependencies]
@@ -781,3 +788,55 @@ cmd = "python -m sentinel.knowledge.crews.qa_crew"
 
 [feature.local-recipes.tasks.wiki-sync]
 cmd = "python -m sentinel.knowledge.lasuite.sync"
+
+[feature.local-recipes.tasks.wiki-compile-all]
+description = "Compile all wiki pages into a single document"
+cmd = "python -m sentinel.knowledge.crews.compilation_crew --all"
+
+[feature.local-recipes.tasks.wiki-lint-all]
+description = "Lint all wiki pages"
+cmd = "python -m sentinel.knowledge.crews.linting_crew --all"
+
+[feature.local-recipes.tasks.wiki-ask-all]
+description = "Ask questions about all wiki pages"
+cmd = "python -m sentinel.knowledge.crews.qa_crew --all"
+
+[feature.local-recipes.tasks.wiki-ingest]
+description = "Ingest new or updated wiki pages"
+cmd = "python -m sentinel.knowledge.crews.ingestion_crew"
+
+[feature.local-recipes.tasks.wiki-ingest-all]
+description = "Ingest all wiki pages"
+cmd = "python -m sentinel.knowledge.crews.ingestion_crew --all"
+
+[feature.local-recipes.tasks.wiki-clean]
+description = "Clean up old or deleted wiki pages"
+cmd = "python -m sentinel.knowledge.crews.cleaning_crew"
+
+[feature.local-recipes.tasks.wiki-search]
+description = "Search wiki pages"
+cmd = "python -m sentinel.knowledge.crews.search_crew"
+
+[feature.local-recipes.tasks.wiki-chat]
+description = "Chat with the wiki"
+cmd = "python -m sentinel.knowledge.crews.chat_crew"
+
+[feature.local-recipes.tasks.wiki-summarize]
+description = "Summarize wiki pages"
+cmd = "python -m sentinel.knowledge.crews.summarization_crew"
+
+[feature.local-recipes.tasks.wiki-review]
+description = "Review wiki pages"
+cmd = "python -m sentinel.knowledge.crews.review_crew"
+
+[feature.local-recipes.tasks.wiki-compile]
+description = "Compile wiki pages into a single document"
+cmd = "python -m sentinel.knowledge.crews.compilation_crew"
+
+[feature.local-recipes.tasks.wiki-lint]
+description = "Lint wiki pages"
+cmd = "python -m sentinel.knowledge.crews.linting_crew"
+
+[feature.local-recipes.tasks.wiki-ask]
+description = "Ask questions about wiki pages"
+cmd = "python -m sentinel.knowledge.crews.qa_crew"
