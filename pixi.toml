@@ -519,9 +519,9 @@ feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-bu
 pixi = ">=0.70.2"                 # Pixi package & environment manager
 #pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
 rattler-build = ">=0.66.2"        # Rust-native v1 conda recipe build engine
-pixi-build-rattler-build = ">=0.4.0"  # pixi build backend that delegates to rattler-build
+pixi-build-rattler-build = ">=0.4.2"  # pixi build backend that delegates to rattler-build
 pixi-build-cmake = ">=0.4.2"      # pixi build backend for CMake projects
-pixi-build-python = ">=0.6.0"     # pixi build backend for Python projects
+pixi-build-python = ">=0.7.0"     # pixi build backend for Python projects
 pixi-build-rust = ">=0.5.2"       # pixi build backend for Rust / Cargo projects
 #ixi-build-go = ">=0.3.0"         # pixi-experimental-backends build backend for Go projects
 #pixi-build-nodejs = ">=0.3.0"    # pixi-experimental-backends build backend for Node.js projects
@@ -557,7 +557,7 @@ dask-core = ">=2026.6.0"          # Parallel computing with task scheduling (pan
 #dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
 #dlt = ">=1.27.2"                  # dlt requires dlt-pendulum which is only available on conda-forge for linux-64 dlt is an open-source python-first scalable data loading library that does not require any backend to run. # TODO PY314 conda-forge compat check;
 great-expectations = ">=1.18.1"   # GE data contracts in Kedro nodes
-pandera = ">=0.31.0"              # Statistical data validation for Pandas, Dask, and Spark
+pandera = ">=0.31.1"              # Statistical data validation for Pandas, Dask, and Spark
 duckdb = ">=1.5.4"                # Embedded analytical SQL database
 getdaft = ">=0.6.13"              # Distributed Dataframes for Multimodal Data
 gql = ">=4.0.0"                   # GraphQL client (v4.0.0+ has no websockets dependency)
@@ -828,15 +828,3 @@ cmd = "python -m sentinel.knowledge.crews.summarization_crew"
 [feature.local-recipes.tasks.wiki-review]
 description = "Review wiki pages"
 cmd = "python -m sentinel.knowledge.crews.review_crew"
-
-[feature.local-recipes.tasks.wiki-compile]
-description = "Compile wiki pages into a single document"
-cmd = "python -m sentinel.knowledge.crews.compilation_crew"
-
-[feature.local-recipes.tasks.wiki-lint]
-description = "Lint wiki pages"
-cmd = "python -m sentinel.knowledge.crews.linting_crew"
-
-[feature.local-recipes.tasks.wiki-ask]
-description = "Ask questions about wiki pages"
-cmd = "python -m sentinel.knowledge.crews.qa_crew"
