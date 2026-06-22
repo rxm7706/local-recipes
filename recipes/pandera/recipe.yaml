@@ -1,0 +1,312 @@
+schema_version: 1
+
+context:
+  name: pandera
+  version: "0.32.0"
+
+recipe:
+  name: pandera-suite
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 070c705eafbcfb4dd2ce494154d4bc0ce6d2b8e02a95ae15234040683bbab1f5
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: pandera-base
+    build:
+      noarch: python
+      script:
+        - python -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - setuptools >=61.0
+        - setuptools-scm >=8.0.1
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - packaging >=20.0
+        - pydantic
+        - typeguard
+        - typing_extensions
+        - typing_inspect >=0.6.0
+    tests:
+      - python:
+          imports:
+            - pandera
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - pandas >=2.1.1
+        - numpy >=1.24.4
+    tests:
+      - python:
+          imports:
+            - pandera
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-pandas
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - pandas >=2.1.1
+        - numpy >=1.24.4
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.pandas
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-strategies
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera', exact=True) }}
+        - hypothesis >=6.92.7
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.strategies
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-hypotheses
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera', exact=True) }}
+        - scipy
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.api.hypotheses
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-io
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera', exact=True) }}
+        - pyyaml >=5.1
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.io
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-polars
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - polars >=0.20.0
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.typing.polars
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-ibis
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - ibis-framework >=9.0.0
+    tests:
+      - python:
+          imports:
+            - pandera.ibis
+            - pandera.typing.ibis
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-pyspark
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - pyspark >=3.2.0
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.accessors.pyspark_accessor
+            - pandera.typing.pyspark
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-modin
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - modin
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.accessors.modin_accessor
+            - pandera.typing.modin
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-modin-ray
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - modin-ray
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.accessors.modin_accessor
+            - pandera.typing.modin
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-modin-dask
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - modin-dask
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.accessors.modin_accessor
+            - pandera.typing.modin
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-dask
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera-base', exact=True) }}
+        - dask
+        - distributed
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.accessors.dask_accessor
+            - pandera.typing.dask
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-mypy
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera', exact=True) }}
+        - mypy
+        - pandas-stubs
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.mypy
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-fastapi
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera', exact=True) }}
+        - fastapi
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.typing.fastapi
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-geopandas
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera', exact=True) }}
+        - geopandas
+        - shapely
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.typing.geopandas
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-xarray
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera', exact=True) }}
+        - xarray >= 2024.10.0
+        - numpy >= 1.24.4
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.xarray
+            - pandera.typing.xarray
+          pip_check: true
+          python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: The open source framework for precision data testing
+  description: |
+    A simple, zero-configuration Python library to help you build
+    confidence in the quality of your dataframe-like containers through
+    data validation and property-based testing.
+  homepage: https://github.com/pandera-dev/pandera
+  repository: https://github.com/unionai-oss/pandera
+  documentation: https://pandera.readthedocs.io/en/latest/
+
+extra:
+  feedstock-name: pandera
+  recipe-maintainers:
+    - cosmicBboy
+    - fhoehle
