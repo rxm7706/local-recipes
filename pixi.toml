@@ -20,8 +20,9 @@ platforms = [
 python = ">=3.14.6,3.14.*"        # Python language interpreter
 pixi = ">=0.70.2"                 # Pixi package & environment manager
 gh = ">=2.95.0"                   # GitHub CLI for PR / issue / repo automation
+gitpython = ">=3.1.50"            # Pythonic Git wrapper for complex repo interactions
 nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
-bmad-method = ">=6.8.0"           # BMAD agent-driven dev framework (planning + dev skills)
+bmad-method = ">=6.9.0"           # BMAD agent-driven dev framework (planning + dev skills)
 spec-kit = ">=0.11.3"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
@@ -499,7 +500,7 @@ pnpm = ">=11.8.0"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.1"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
-conda-pypi = ">=0.10.1"            # Better PyPI interoperability for the conda ecosystem
+conda-pypi = ">=0.10.1"           # Better PyPI interoperability for the conda ecosystem
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
 feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
@@ -507,7 +508,7 @@ pixi = ">=0.70.2"                 # Pixi package & environment manager
 #pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
 rattler-build = ">=0.66.2"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.4.0"  # pixi build backend that delegates to rattler-build
-pixi-build-cmake = ">=0.4.0"     # pixi build backend for CMake projects
+pixi-build-cmake = ">=0.4.0"      # pixi build backend for CMake projects
 pixi-build-python = ">=0.6.0"     # pixi build backend for Python projects
 pixi-build-rust = ">=0.5.0"       # pixi build backend for Rust / Cargo projects
 #ixi-build-go = ">=0.3.0"         # pixi-experimental-backends build backend for Go projects
@@ -535,10 +536,10 @@ nebi-cli = ">=0.13"               # Local-first workspace management for Pixi
 # See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines
 pyarrow = ">=24.0.0"              # Apache Arrow Python bindings
 pyarrow-all = ">=24.0.0"          # PyArrow with all optional extras (parquet, datasets, …)
-dagster = ">=1.13.10"              # The data orchestration platform built for productivity.
-dagster-pipes = ">=1.13.10"        # Toolkit for Dagster integrations with transform logic outside of Dagster
-dagster-webserver = ">=1.13.10"    # Web UI for dagster.
-dask-core = ">=2026.6.0"           # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
+dagster = ">=1.13.10"          # The data orchestration platform built for productivity.
+dagster-pipes = ">=1.13.10"       # Toolkit for Dagster integrations with transform logic outside of Dagster
+dagster-webserver = ">=1.13.10"   # Web UI for dagster.
+dask-core = ">=2026.6.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
 #dbt-core = ">=1.11.11"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
 #dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
 #dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
@@ -546,11 +547,11 @@ dask-core = ">=2026.6.0"           # Parallel computing with task scheduling (pa
 duckdb = ">=1.5.4"                # Embedded analytical SQL database
 getdaft = ">=0.6.13"              # Distributed Dataframes for Multimodal Data
 gql = ">=4.0.0"                   # GraphQL client (v4.0.0+ has no websockets dependency)
-ibis-framework = ">=12.0.0"        # The portable Python dataframe library
+ibis-framework = ">=12.0.0"       # The portable Python dataframe library
 kedro = ">=1.3.1"                 # Kedro helps you build production-ready data and analytics pipelines.
 #kedro-dagster = ">=0.7.0"         # Kedro-Dagster makes it easy to deploy Kedro projects to Dagster # TODO PY314 conda-forge compat check;
 kedro-datasets = ">=9.4.0"        # Kedro-Datasets is where you can find all of Kedro's data connectors.
-numpy = ">=2.4.6"                 # Numerical computing
+numpy = ">=2.5.0"                 # Numerical computing
 pandas = ">=3.0.3"                # DataFrame library for tabular data
 polars = ">=1.41.2"               # Rust-backed columnar DataFrame library
 tablib = ">=3.9.0"                # Tabular data handling
@@ -581,14 +582,18 @@ markitdown = ">=0.1.6"            # Microsoft's document → Markdown converter
 marp-cli = ">=4.2.3"              # Marp CLI for Markdown → slide-deck rendering
 matplotlib = ">=3.11.0"           # General-purpose 2D plotting library
 mermaid-py= ">=0.8.4"             # Python wrapper around the Mermaid diagram renderer
+markdown = ">=3.10.2"             # Markdown parser (used in markitdown)
+markdownify = ">=1.2.2"           # Markdown converter (used in markitdown)
+beautifulsoup4 = ">=4.15.0"       # HTML parser (used in markitdown)
+rank-bm25 = ">=0.2.2"             # Various BM25 algorithms for document ranking
 odfpy = ">=1.4.1"                 # ODP/ODT style extraction (stretch goal in FR-46d); OpenDocument Apache-2.0 noarch lib
 olefile = ">=0.47"                # OLE2 / old-style Microsoft Office file parser (used for legacy .doc loader in markitdown)
 ollama-python = ">=0.6.2"         # Python client (the existing 'ollama' is the Go server binary)
 openpyxl = ">=3.1.5"              # Read / write Office Open XML .xlsx files
-pandoc = ">=3.10"              # Universal document format converter
+pandoc = ">=3.10"                 # Universal document format converter
 pdf2image = ">=1.17.0"            # Convert PDF pages to PIL images (Poppler-backed)
 "pdfminer.six" = ">=20260107"     # PDF parsing library for text extraction (alternative to PyMuPDF)
-pdfplumber = ">=0.11.10"           # Extract text, tables, and metadata from PDFs
+pdfplumber = ">=0.11.10"          # Extract text, tables, and metadata from PDFs
 pillow = ">=12.2.0"               # Python imaging library (PIL fork)
 playwright-python = ">=1.60.0"    # Python bindings (the existing 'playwright' is the Node binary)
 plotly = ">=6.8.0"                # Interactive web-based plotting library
@@ -619,7 +624,7 @@ ibis-oracle = ">=12.0.0"          # Ibis backend for Oracle Database
 pydantic = ">=2.13.4"             # type-hint-driven data validation
 ruff = ">=0.15.18"                # fast Rust-based Python linter + formatter
 pyright = ">=1.1.410"             # Microsoft's static type checker for Python
-mypy = ">=2.1.0"                 # static type checker for Python
+mypy = ">=2.1.0"                  # static type checker for Python
 pyrefly = ">=1.1.1"               # Meta's fast Rust-based Python type checker
 pytest = ">=9.1.1"                # Python test framework
 pytest-mock = ">=3.15.1"          # pytest fixture wrapper around `unittest.mock`
@@ -628,6 +633,7 @@ pytest-xdist = ">=3.8.0"          # parallel / distributed test execution for py
 playwright = ">=1.61.0"           # Node binary for browser automation (CLI)
 ## MCP, A2A & conversion (MCP + adjacent ecosystem)
 #aichat = ">=0.30.0"
+agno = ">=2.6.18"                    # Agno is a lightweight framework for building multi-modal Agents. It supports any model provider, native multi-modal I/O, multi-agent teams, memory management, knowledge stores, structured outputs, and real-time monitoring.
 a2a-sdk = ">=1.1.0"               # Official Python SDK for the Agent2Agent (A2A) Protocol
 google-genai = ">=2.9.0"          # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
@@ -642,7 +648,7 @@ langchain-mcp-adapters = ">=0.3.0"  # LangChain ↔ MCP tool/resource adapters
 lumen-ai-anthropic = ">=1.0.0"    # Lumen AI's Anthropic backend integration
 mcp = ">=1.28.0"                  # Official Model Context Protocol Python SDK
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
-pydantic-ai = ">=1.107.0"          # Pydantic-AI agent framework
+pydantic-ai = ">=1.107.0"         # Pydantic-AI agent framework
 "llama.cpp" = ">=9716"            # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
@@ -667,10 +673,20 @@ requests = ">=2.34.2"             # Python HTTP client library
 ## Visual Studio Code Extensions
 ## Visual Studio Code Extensions (vscodepy + adjacent Microsoft Azure ecosystem)
 #agent-framework = "*"            # NOT FOUND - Add to conda-forge
-azure-identity = ">=1.25.3"       #
+azure-identity = ">=1.25.3"       # Azure identity management and authentication
 #azure-identity-broker = "*"      # NOT FOUND - Add to conda-forge
 #microsoft-agents-m365copilot = "*"  # NOT FOUND - Add to conda-forge
-msgraph-sdk = ">=1.48.0"          #
+msgraph-sdk = ">=1.48.0"          # Microsoft Graph REST API SDK for Python
+#kedro-dagster = ">=0.5.4,<0.6"
+django = ">=6.0.6,<7"             # Web framework for Python
+httpx = ">=0.28.1"                #
+jinja2 = ">=3.1.6"                #
+minio = ">=7.2.20"                # Amazon S3-compatible object storage system (see: local-recipes/src/unity_data_stack/knowledge/docs/database-server/minio-operations.md)
+psycopg2 = ">=2.9.12"             # PostgreSQL Python adapter (from `local-recipes/src/unity_data_stack/knowledge/lasuite/postgres`) is a mock implementation; this provides a real DB driver
+rich = ">=14.3.4"                 #
+typer = ">=0.26.7"                #
+wagtail = ">=7.4.2,<8"            # Content Management System (CMS) framework for Django
+watchdog = ">=6.0.0"              # File system event monitoring (used for live-reload in markitdown dev server)
 #vscodepy = "*"                   # NOT FOUND - Add to conda-forge
 ## Visual Studio Code Extensions (npm yo and adjacent ecosystem)
 #generator-code = "*"             # NOT FOUND - Add to conda-forge
@@ -692,6 +708,8 @@ mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on 
 [feature.local-recipes.target.osx-arm64.dependencies]
 mlx = ">=0.31.2"                  # Apple's array framework (Metal-accelerated on M-series)
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
+
+[feature.local-recipes.pypi-dependencies]
 
 [dependencies]
 #[feature.python.dependencies]
@@ -735,3 +753,15 @@ uv = ">=0.11.23"                  # fast Rust-based Python package installer / r
 #[target.osx-arm64.pypi-dependencies]
 #daft = ">=0.6.8"
 #pyarrow = ">=22.0.0"
+
+[feature.local-recipes.tasks.wiki-compile]
+cmd = "python -m sentinel.knowledge.crews.compilation_crew"
+
+[feature.local-recipes.tasks.wiki-lint]
+cmd = "python -m sentinel.knowledge.crews.linting_crew"
+
+[feature.local-recipes.tasks.wiki-ask]
+cmd = "python -m sentinel.knowledge.crews.qa_crew"
+
+[feature.local-recipes.tasks.wiki-sync]
+cmd = "python -m sentinel.knowledge.lasuite.sync"

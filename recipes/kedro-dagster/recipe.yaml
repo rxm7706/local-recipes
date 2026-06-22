@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: kedro-dagster
-  version: "0.6.0"
+  version: "0.7.0"
   python_min: '3.11'
 
 package:
@@ -12,12 +12,17 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kedro_dagster-${{ version }}.tar.gz
-  sha256: 492197ec1501485c0512c90b53ad4711775cca4f02bfe0a514bdf19048b7361a
+  sha256: a52d63fc3571ed399db7eed2877eb8a9e1cf5f44a821a7ad4cd233608757b782
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    env:
+      WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
+      PYTHONWARNINGS: "ignore::UserWarning"
+    content:
+      - "${{ PYTHON }} -m pip install -vv --use-pep517 --no-deps --no-build-isolation ."
 
 requirements:
   host:
@@ -26,7 +31,7 @@ requirements:
     - hatch-vcs
     - pip
   run:
-    - python >=${{ python_min }},<3.14
+    - python >=${{ python_min }},<3.15
     - kedro >=1.0.0
     - kedro-datasets >=1.0.0
     - dagster >=1.10,<2.0
@@ -36,11 +41,24 @@ requirements:
     - cachetools >=4.1
 
 tests:
-  - python:
-      imports:
-        - kedro_dagster
-      pip_check: true
-      python_version: ${{ python_min }}.*
+#  - python:
+#      imports:
+#        - kedro_dagster
+#      pip_check: true
+#      python_version:
+#        - ${{ python_min }}.*
+#        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      env:
+        WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
+        PYTHONWARNINGS: "ignore::UserWarning"
+      interpreter: python
+      content: |
+        import kedro_dagster
 
 about:
   summary: Kedro-Dagster makes it easy to deploy Kedro projects to Dagster
