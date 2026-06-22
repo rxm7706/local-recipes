@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.40.0'
+source_pin: 'conda-forge-expert v8.41.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -69,7 +69,7 @@ The `JFROG_API_KEY` cross-host leak (per `docs/enterprise-deployment.md` § 2 �
 │  Tier 3: DATA STATE  (.claude/data/conda-forge-expert/)
 │  → Mutable runtime artifacts (gitignored).
 │  → cf_atlas.db (Part 2 primary), vdb/ (vuln-db env), cve/, mapping caches.
-│  → Created/refreshed by Tier 1 scripts; consumed by Tier 1 + Tier 2 + Part 3 MCP tools.
+│  → Created/refreshed by Tier 1 scripts; consumed by Tier 1 + Tier 2 + Part 42 MCP tools.
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -289,7 +289,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Complementary Skills (which BMAD/practice skills compose with this one)
 - CI Infrastructure Reference (platform assignments, OS versions, compiler pins, bot commands)
 - Ecosystem Updates (May 2026)
-- Recipe Authoring Gotchas (G1-G51, all in SKILL.md; latest G46-G51 added v8.40.0)
+- Recipe Authoring Gotchas (G1–G53, all in SKILL.md; latest G46-G53 added v8.41.0)
 
 ### `INDEX.md` (task→tool navigator)
 
@@ -334,7 +334,7 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 
 ## Recipe Authoring Gotchas (SKILL.md § Recipe Authoring Gotchas)
 
-Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G51**, all promoted into SKILL.md (the table below shows the founding six; G7–G51 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
+Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G53**, all promoted into SKILL.md (the table below shows the founding six; G7–G53 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
 
 | Code | Description | Lives where |
 |---|---|---|
@@ -345,8 +345,8 @@ Non-obvious failures that have bitten enough times to be enumerated. The catalog
 | **G5** | tree-sitter PyPI sdists inconsistently strip `src/tree_sitter/*.h` headers — default to GitHub source for `tree-sitter-<lang>` | SKILL.md |
 | **G6** | npm packages with rich transitive deps ship `node_modules/.bin/` symlinks that fail noarch builds | SKILL.md |
 
-**G7–G51** (all in SKILL.md; titles only — see SKILL.md for symptom + fix):
-G7 grayskull import-name guess can be wrong · G8 redundant wheel/setuptools host deps for poetry-core · G9 monorepo with no per-language tag → pin LICENSE to a commit · G10 PyPI→conda name divergence (check four spellings) · G11 sdist symlinks fail hatchling on Windows · G12 platform-conditional noarch run deps need `noarch_platforms` · G13 CWD persists across `script:` entries / `(cmd)` not a subshell on cmd.exe · G14 autotick v0 bump trips linter float-parse · G15 same-version rebuild leaves repodata stale · G16 PyPI Varnish CDN degradation on source route · G17 pnpm `--ignore-scripts` doesn't suppress root lifecycle scripts · G18 unscoped `store_build_artifacts` crashes Windows Azure · G19 Windows pip UTF-8 stream error → `PYTHONUTF8: "1"` · G20 v0 jinja `{{ X }}` renders as literal text in v1 · G21 smithy mis-aligns `is_python_min` on upward override · G22 recipe-local CBC `*_cpython` crashes smithy py3.13+ · G23 inline sed+powershell escape hell · G24 conda label ≠ wheel dist-info version · G25 conda has no extras — flatten `pkg[extra]` into run · G26 loosening `==`→`>=` needs source patch under `pip_check` · G27 top-level import eagerly pulls a sibling's extra-only dep · G28 external dep's broken dist-info version breaks dependent `pip check` · G29 multi-output checkers are top-level-only · G30 cf `protobuf` ≠ `protoc` → Rust needs `libprotobuf` · G31 upward python_min override needs recipe-local CBC (v1) / `{% set %}` (v0) · G32 triaging autotick flake-vs-fix + push to bot branch · G33 don't pass `.ci_support` as variant config on local v1 feedstock build · G34 `pkg_resources.declare_namespace` breaks under setuptools 81+ · G35 noarch numpy env-marker selector collapse (refines G12) · G36 stale build wheel METADATA caps tighter than conda run dep · G37 `[tool.uv]` flags are NOT runtime deps · G38 single-Python compiled prereq blocks other-Python consumers · G39 setuptools_scm private-API `_version_helper` import break · G40 dep drops a Python version in a newer release (refines G38) · G41 hidden py3.11 floor via unconditional PEP-655 import · G42 verify CURRENT version's artifact shape before assuming compiled · G43 v1 inline list-item `# comment` trips comment-selector lint · G44 .NET/C# CLI tools have no source-build path — repackage release binaries · G45 browser SPA usually not cf-submittable — viability gate + local-only static-site fallback · G46 stale local `meta.yaml` `noarch: python` flag can be wrong for a genuinely-compiled package — current sdist is source of truth (sibling of G42) · G47 stale git-tracked recipe-dir `conda_build_config.yaml` (verbatim global-CBC copy) breaks build — lint errors + variant `duplicate entry` collision · G48 "Rust/Go upstream" ≠ heavy from-source compile — verify the PEP-517 backend before sizing build / adding `compiler('cxx')` · G49 per-Python compiled ≠ abi3 — verify `Cargo.toml`/setup.py before `version_independent`+`python-abi3`; per-Python artifact needs simple imports+pip_check test · G50 newer CPython dropping a private C-API symbol breaks a compiled build / host pin — cap python matrix with `match(python, ">=N")` (not `py<N`, per G3) · G51 a GitHub monorepo subdir may ship none of the release-time-generated assets — source the PyPI wheel instead or ship a broken empty package
+**G7–G53** (all in SKILL.md; titles only — see SKILL.md for symptom + fix):
+G7 grayskull import-name guess can be wrong · G8 redundant wheel/setuptools host deps for poetry-core · G9 monorepo with no per-language tag → pin LICENSE to a commit · G10 PyPI→conda name divergence (check four spellings) · G11 sdist symlinks fail hatchling on Windows · G12 platform-conditional noarch run deps need `noarch_platforms` · G13 CWD persists across `script:` entries / `(cmd)` not a subshell on cmd.exe · G14 autotick v0 bump trips linter float-parse · G15 same-version rebuild leaves repodata stale · G16 PyPI Varnish CDN degradation on source route · G17 pnpm `--ignore-scripts` doesn't suppress root lifecycle scripts · G18 unscoped `store_build_artifacts` crashes Windows Azure · G19 Windows pip UTF-8 stream error → `PYTHONUTF8: "1"` · G20 v0 jinja `{{ X }}` renders as literal text in v1 · G21 smithy mis-aligns `is_python_min` on upward override · G22 recipe-local CBC `*_cpython` crashes smithy py3.13+ · G23 inline sed+powershell escape hell · G24 conda label ≠ wheel dist-info version · G25 conda has no extras — flatten `pkg[extra]` into run · G26 loosening `==`→`>=` needs source patch under `pip_check` · G27 top-level import eagerly pulls a sibling's extra-only dep · G28 external dep's broken dist-info version breaks dependent `pip check` · G29 multi-output checkers are top-level-only · G30 cf `protobuf` ≠ `protoc` → Rust needs `libprotobuf` · G31 upward python_min override needs recipe-local CBC (v1) / `{% set %}` (v0) · G32 triaging autotick flake-vs-fix + push to bot branch · G33 don't pass `.ci_support` as variant config on local v1 feedstock build · G34 `pkg_resources.declare_namespace` breaks under setuptools 81+ · G35 noarch numpy env-marker selector collapse (refines G12) · G36 stale build wheel METADATA caps tighter than conda run dep · G37 `[tool.uv]` flags are NOT runtime deps · G38 single-Python compiled prereq blocks other-Python consumers · G39 setuptools_scm private-API `_version_helper` import break · G40 dep drops a Python version in a newer release (refines G38) · G41 hidden py3.11 floor via unconditional PEP-655 import · G42 verify CURRENT version's artifact shape before assuming compiled · G43 v1 inline list-item `# comment` trips comment-selector lint · G44 .NET/C# CLI tools have no source-build path — repackage release binaries · G45 browser SPA usually not cf-submittable — viability gate + local-only static-site fallback · G46 stale local `meta.yaml` `noarch: python` flag can be wrong for a genuinely-compiled package — current sdist is source of truth (sibling of G42) · G47 stale git-tracked recipe-dir `conda_build_config.yaml` (verbatim global-CBC copy) breaks build — lint errors + variant `duplicate entry` collision · G48 "Rust/Go upstream" ≠ heavy from-source compile — verify the PEP-517 backend before sizing build / adding `compiler('cxx')` · G49 per-Python compiled ≠ abi3 — verify `Cargo.toml`/setup.py before `version_independent`+`python-abi3`; per-Python artifact needs simple imports+pip_check test · G50 newer CPython dropping a private C-API symbol breaks a compiled build / host pin — cap python matrix with `match(python, ">=N")` (not `py<N`, per G3) · G53 a GitHub monorepo subdir may ship none of the release-time-generated assets — source the PyPI wheel instead or ship a broken empty package
 
 ---
 
@@ -461,9 +461,9 @@ This subsystem feeds:
 The skill version is the **source of truth** for what rules apply. Two version surfaces:
 
 - `MANIFEST.yaml: version: 7.0.0` — the "schema/portability version" (rarely changes; bumps only when the install protocol changes)
-- `CHANGELOG.md` TL;DR — the **release version** (v8.40.0 as of 2026-06-21)
+- `CHANGELOG.md` TL;DR — the **release version** (v8.41.0 as of 2026-06-21)
 
-Project-context.md re-syncs on MINOR bumps (current skill release v8.40.0). When CHANGELOG's MINOR exceeds the last-synced version, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
+Project-context.md re-syncs on MINOR bumps (current skill release v8.41.0). When CHANGELOG's MINOR exceeds the last-synced version, re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns). PATCH bumps don't require re-sync.
 
 The pin discipline is the rebuild target's drift-control mechanism. A rebuilt repo without this pin will silently diverge.
 

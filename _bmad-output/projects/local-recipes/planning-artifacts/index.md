@@ -5,14 +5,14 @@ date: 2026-06-20
 repository_type: monorepo
 parts: 4
 docs_generated: 13
-source_pin: 'conda-forge-expert v8.40.0'
+source_pin: 'conda-forge-expert v8.41.0'
 ---
 
 # `local-recipes` — Master Documentation Index
 
 This index is your **primary entry point** for AI-assisted development on `local-recipes`. When a Brownfield PRD, story breakdown, or BMAD planning workflow needs the architecture and feature inventory of this repo, point them at this file.
 
-The document set was originally produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template); **last reconciled 2026-06-21**. Source pin: **conda-forge-expert v8.40.0** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `change-history/sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `change-history/sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `change-history/sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `change-history/sprint-change-proposal-2026-05-15-v8.1.md`; v8.1.0 → v8.5.1 on 2026-05-23 after the env-inspect suite — see `../implementation-artifacts/retros/retro-env-inspect-suite-2026-05-23.md`; v8.5.1 → v8.5.2 on 2026-05-23 after the admin-refresh audit close-out — see `change-history/sprint-change-proposal-2026-05-23-v8.5.2.md`; v8.5.2 → v8.5.3 on 2026-05-23 after the same-day emergent DW12+DW13 bundle close-out — see `change-history/sprint-change-proposal-2026-05-23-v8.5.3.md` + `../implementation-artifacts/retros/retro-dw12-dw13-2026-05-23.md`; v8.5.3 → v8.6.0 on 2026-05-24 after the AppThreat Deep Signals release (Waves A + B + D shipped + Wave C cancelled pre-implementation) — see `change-history/sprint-change-proposal-2026-05-24-v8.6.0.md` + `../implementation-artifacts/retros/retro-appthreat-deep-signals-2026-05-24.md`; v8.6.0 → v8.11.1 on 2026-06-07, PRD synced to v1.5.1 to document active v1 migration, Feature G45 local-only SPA, AI provenance hook, and architectural gaps — see `change-history/sprint-change-proposal-2026-06-07-v8.11.1.md`; **v8.11.1 → v8.39.0** on 2026-06-20 — the skill advanced through the Phase F+ PyPI-intelligence waves, the PR-artifact downloader, the Phase P cost refactor, and gotchas through G45; this index reconciled to the live skill at the v8.39.0 pin; **v8.39.0 → v8.40.0** on 2026-06-21 — the sole-maintainer feedstock-refresh closeout added six feedstock-refresh build-shape gotchas G46–G51 (G46 stale-local-meta noarch, G47 stale recipe-dir CBC collision, G48 Rust/Go ≠ heavy compile, G49 per-Python ≠ abi3, G50 CPython C-API symbol drop, G51 monorepo-subdir missing generated assets); body-text current-state claims and gate reports regenerated to the v8.40.0 pin).
+The document set was originally produced 2026-05-12 by `bmad-document-project` (Path 3: hand-authored using existing sources, with the skill's output structure as template); **last reconciled 2026-06-21**. Source pin: **conda-forge-expert v8.41.0** (re-sync lineage: v7.7 → v7.8.1 on 2026-05-12 via `bmad-correct-course` → see `change-history/sprint-change-proposal-2026-05-12.md`; v7.8.1 → v7.9.0 on 2026-05-13 after the actionable-scope audit → see `change-history/sprint-change-proposal-2026-05-13.md`; v7.9.0 → v8.0.0 on 2026-05-13 after the structural-enforcement + persona-profile bundle → see `change-history/sprint-change-proposal-2026-05-13-v8.0.md`; v8.0.x → v8.1.0 on 2026-05-15 after the PyPI intelligence layer → see `change-history/sprint-change-proposal-2026-05-15-v8.1.md`; v8.1.0 → v8.5.1 on 2026-05-23 after the env-inspect suite — see `../implementation-artifacts/retros/retro-env-inspect-suite-2026-05-23.md`; v8.5.1 → v8.5.2 on 2026-05-23 after the admin-refresh audit close-out — see `change-history/sprint-change-proposal-2026-05-23-v8.5.2.md`; v8.5.2 → v8.5.3 on 2026-05-23 after the same-day emergent DW12+DW13 bundle close-out — see `change-history/sprint-change-proposal-2026-05-23-v8.5.3.md` + `../implementation-artifacts/retros/retro-dw12-dw13-2026-05-23.md`; v8.5.3 → v8.6.0 on 2026-05-24 after the AppThreat Deep Signals release (Waves A + B + D shipped + Wave C cancelled pre-implementation) — see `change-history/sprint-change-proposal-2026-05-24-v8.6.0.md` + `../implementation-artifacts/retros/retro-appthreat-deep-signals-2026-05-24.md`; v8.6.0 → v8.11.1 on 2026-06-07, PRD synced to v1.5.1 to document active v1 migration, Feature G45 local-only SPA, AI provenance hook, and architectural gaps — see `change-history/sprint-change-proposal-2026-06-07-v8.11.1.md`; **v8.11.1 → v8.39.0** on 2026-06-20 — the skill advanced through the Phase F+ PyPI-intelligence waves, the PR-artifact downloader, the Phase P cost refactor, and gotchas through G45; this index reconciled to the live skill at the v8.39.0 pin; **v8.39.0 → v8.41.0** on 2026-06-21 — the sole-maintainer feedstock-refresh closeout added six feedstock-refresh build-shape gotchas G46–G53 (G46 stale-local-meta noarch, G47 stale recipe-dir CBC collision, G48 Rust/Go ≠ heavy compile, G49 per-Python ≠ abi3, G50 CPython C-API symbol drop, G53 monorepo-subdir missing generated assets); body-text current-state claims and gate reports regenerated to the v8.41.0 pin).
 
 ---
 
@@ -23,7 +23,7 @@ The document set was originally produced 2026-05-12 by `bmad-document-project` (
 - **Build engine:** Pixi + rattler-build
 - **Default pixi env:** `local-recipes` (9 envs total)
 - **Recipe corpus:** 1,602 recipe dirs (718 v1 `recipe.yaml` + 1,054 v0 `meta.yaml`, mid-migration; outputs, NOT part of the rebuild target)
-- **Skill version:** v8.40.0 (re-synced 2026-06-21)
+- **Skill version:** v8.41.0 (re-synced 2026-06-21)
 
 > See **[project-overview.md](./project-overview.md)** for the full executive summary, technology stack, and four-part decomposition.
 
@@ -46,7 +46,7 @@ The document set was originally produced 2026-05-12 by `bmad-document-project` (
 |---|---|---|
 | 1 | [project-overview.md](./project-overview.md) | System framing, monorepo structure, four-part decomposition, cross-cutting concerns, getting-started orientation |
 | 2 | [source-tree-analysis.md](./source-tree-analysis.md) | Annotated directory tree at 5 levels, entry-points table, critical files |
-| 3 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier scripts/wrappers/data architecture, 10-step autonomous loop, 42 Tier 1 scripts, 41 templates / 13 ecosystems, build failure protocol, Recipe Authoring Gotchas G1–G51 |
+| 3 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier scripts/wrappers/data architecture, 10-step autonomous loop, 42 Tier 1 scripts, 41 templates / 13 ecosystems, build failure protocol, Recipe Authoring Gotchas G1–G53 |
 | 4 | [architecture-cf-atlas.md](./architecture-cf-atlas.md) | Part 2: phase pipeline B → T (incl. the O/P/Q/R/S PyPI-intelligence layer), schema v28, TTL gates, S3+cf-graph offline backends, performance characteristics, failure modes |
 | 5 | [architecture-mcp-server.md](./architecture-mcp-server.md) | Part 3: 42 MCP tools, thin-subprocess-wrapper pattern, auto-discovery + deferred `.mcp.json`, BMAD-agent invocation flow |
 | 6 | [architecture-bmad-infra.md](./architecture-bmad-infra.md) | Part 4: 6-layer config merge, active-project resolution, 65 installed skills, BMAD↔CFE integration rules |
@@ -74,7 +74,7 @@ The 8 `bmad-correct-course` proposals now live under **[`change-history/`](./cha
 | [sprint-change-proposal-2026-05-15-v8.1.md](./change-history/sprint-change-proposal-2026-05-15-v8.1.md) | `bmad-correct-course` (2026-05-15) | v8.0.x → v8.1.0 sync — PyPI intelligence layer (phases O/P/Q/R/S, `pypi_intelligence` side table). Additive Minor. |
 | [sprint-change-proposal-2026-05-23-v8.5.2.md](./change-history/sprint-change-proposal-2026-05-23-v8.5.2.md) | `bmad-correct-course` (2026-05-23) | v8.5.1 → v8.5.2 sync — admin-refresh audit close-out + observability primitives (Phase K hang fix). Patch. |
 | [sprint-change-proposal-2026-05-23-v8.5.3.md](./change-history/sprint-change-proposal-2026-05-23-v8.5.3.md) | `bmad-correct-course` (2026-05-23) | v8.5.2 → v8.5.3 sync — DW12 rollup-staleness fix + DW13 CISA KEV via Path C (after `vdb --cache-os` crashed at 33 GB pre-DW13-overlay). Also acknowledges the v8.6.0 spec as intake-ready. |
-| [sprint-change-proposal-2026-05-24-v8.6.0.md](./change-history/sprint-change-proposal-2026-05-24-v8.6.0.md) | `bmad-correct-course` (2026-05-24) | v8.5.3 → v8.6.0 sync — AppThreat Deep Signals release: Waves A + B + D shipped (schema v23 → v24 → v25 round-trip; +2 side tables `epss_scores` + `cwe_categories`; +4 packages columns; 2 new fetcher CLIs; persona-profile auto-runs). Wave C cancelled pre-implementation; 5 parent-spec errors caught by verify-don't-assume. 3 new DW rows. |
+| [sprint-change-proposal-2026-05-24-v8.6.0.md](./change-history/sprint-change-proposal-2026-05-24-v8.6.0.md) | `bmad-correct-course` (2026-05-24) | v8.5.3 → v8.6.0 sync — AppThreat Deep Signals release: Waves A + B + D shipped (schema v28 → v24 → v25 round-trip; +2 side tables `epss_scores` + `cwe_categories`; +4 packages columns; 2 new fetcher CLIs; persona-profile auto-runs). Wave C cancelled pre-implementation; 5 parent-spec errors caught by verify-don't-assume. 3 new DW rows. |
 | [sprint-change-proposal-2026-06-07-v8.11.1.md](./change-history/sprint-change-proposal-2026-06-07-v8.11.1.md) | `bmad-correct-course` (2026-06-07) | v8.10.0 → v8.11.1 sync (three releases bundled: v8.10.1 PATCH + v8.11.0 MINOR + v8.11.1 PATCH) — npm-generator default flipped to per-platform inline build; PRD `edit_history` bump + planning-artifact `source_pin` re-sync. Minor. |
 
 ---
@@ -114,7 +114,7 @@ The above documents are syntheses of these primary sources. A rebuild should tre
 - [`docs/specs/atlas-pypi-universe-split.md`](../../../../docs/specs/atlas-pypi-universe-split.md) — shipped v7.9.0 (2026-05-13)
 - [`docs/specs/conda-forge-expert-v8.0.md`](../../../../docs/specs/conda-forge-expert-v8.0.md) — shipped v8.0.0 (2026-05-13)
 - [`docs/specs/atlas-pypi-intelligence.md`](../../../../docs/specs/atlas-pypi-intelligence.md) — shipped v8.1.0 (2026-05-15)
-- [`docs/specs/atlas-appthreat-deep-signals.md`](../../../../docs/specs/atlas-appthreat-deep-signals.md) — **shipped v8.6.0 (2026-05-24)**: EPSS + CWE rollup ✅ via Waves A+B; blint hardening + withdrawn filter + Phase U ✋ CANCELLED (Wave C pre-implementation, low signal / redundant — see CHANGELOG v8.6.0 + retro); schema v23 → v24 → v25 round-trip
+- [`docs/specs/atlas-appthreat-deep-signals.md`](../../../../docs/specs/atlas-appthreat-deep-signals.md) — **shipped v8.6.0 (2026-05-24)**: EPSS + CWE rollup ✅ via Waves A+B; blint hardening + withdrawn filter + Phase U ✋ CANCELLED (Wave C pre-implementation, low signal / redundant — see CHANGELOG v8.6.0 + retro); schema v28 → v24 → v25 round-trip
 - [`docs/specs/conda-forge-tracker.md`](../../../../docs/specs/conda-forge-tracker.md) — 13 stories, channel-aware migration path
 - [`docs/specs/copilot-bridge-vscode-extension.md`](../../../../docs/specs/copilot-bridge-vscode-extension.md) — sideload-only VS Code extension
 - [`docs/specs/db-gpt-conda-forge.md`](../../../../docs/specs/db-gpt-conda-forge.md) — 13-story DB-GPT packaging plan
@@ -217,8 +217,8 @@ These are surprising or non-obvious facts that AI agents and humans both get wro
 
 | Asset | Pinned to | Current | Drift action |
 |---|---|---|---|
-| This doc set | v8.40.0 | conda-forge-expert v8.40.0 | None needed — reconciled this session |
-| project-context.md | v8.11.1 | v8.40.0 (skill) | Re-verify on next MINOR-bump sweep: § Recipe Format / MCP Lifecycle / Anti-Patterns / Gotchas (G1–G51) |
+| This doc set | v8.41.0 | conda-forge-expert v8.41.0 | None needed — reconciled this session |
+| project-context.md | v8.11.1 | v8.41.0 (skill) | Re-verify on next MINOR-bump sweep: § Recipe Format / MCP Lifecycle / Anti-Patterns / Gotchas (G1–G53) |
 | MANIFEST.yaml (Part 1 portability) | v7.0.0 | v7.0.0 | None |
 | Schema (Part 2 cf_atlas) | v28 | v28 | None |
 
@@ -232,7 +232,7 @@ This index and its 9 companion documents were produced via the hybrid Path 3 of 
 
 - Live filesystem (`find` / `ls` / `wc -l`)
 - Source code (`grep` for `@mcp.tool`, `PHASES`, `SCHEMA_VERSION`, etc.)
-- Skill CHANGELOG TL;DR (v8.40.0, re-verified 2026-06-21)
+- Skill CHANGELOG TL;DR (v8.41.0, re-verified 2026-06-21)
 - Existing repo docs (`CLAUDE.md`, `project-context.md`, `docs/`)
 
 **Outstanding risks / follow-ups**:
@@ -273,5 +273,5 @@ When ready to plan new features against the rebuilt system, run the PRD workflow
 | Originally generated | 2026-05-12 |
 | Last reconciled | 2026-06-21 |
 | Generator | `bmad-document-project` (Path 3 hybrid) |
-| Source pin | conda-forge-expert v8.40.0 |
+| Source pin | conda-forge-expert v8.41.0 |
 | Verification | live filesystem + source code grep + CHANGELOG cross-reference |
