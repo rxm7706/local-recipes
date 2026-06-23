@@ -2,9 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.83.14"
-  python_max: '3.14'
-  python_test_max: '3.13'
+  version: "1.89.3"
 
 package:
   name: litellm
@@ -12,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/l/litellm/litellm-${{ version }}.tar.gz
-  sha256: 24aef9b47cdc424c833e32f3727f411741c690832cd1fe4405e0077144fe09c9
+  sha256: 8fcdb2b7a0ef3381d41adf164443842e31ef9f0cd5bcda6fc3c0bd8bc2959510
 
 build:
   number: 0
@@ -25,86 +23,23 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - uv-build >=0.10.7 # Loosen pin ==0.10.7
+    - python >=3.10,<3.14
+    - uv-build >=0.11.8,<0.12
     - pip
   run:
-    - python >=${{ python_min }},<${{ python_max }}
-    - fastuuid ==0.14.0
-    - httpx ==0.28.1
-    - openai ==2.24.0
-    - python-dotenv ==1.2.2
-    - tiktoken ==0.12.0
-    - importlib-metadata ==8.5.0
-    - tokenizers ==0.22.2
-    - click ==8.1.8
-    - jinja2 ==3.1.6
-    - aiohttp ==3.13.4
-    - pydantic ==2.12.5
-    - jsonschema ==4.23.0
-  run_constraints:
-    # Versions loosened from upstream's PyPI exact-pin extras
-    # (litellm[proxy], litellm[caching], litellm[extra-proxy]) to `>=`
-    # bounds so the conda-forge ecosystem can advance dependencies without
-    # re-cutting litellm. The lower bound documents the minimum litellm
-    # itself was tested against; conda-forge typically ships newer.
-    - uvicorn >=0.33.0
-    - uvloop >=0.21.0
-    - gunicorn >=23.0.0
-    - fastapi >=0.124.4
-    - backoff >=2.2.1
-    - pyyaml >=6.0.3
-    - rq >=2.4.0 # loosen pin rq >=2.7.0
-    - orjson >=3.11.6
-    - apscheduler >=3.11.2
-    - pyjwt >=2.12.0
-    - python-multipart >=0.0.26
-    - cryptography >=46.0.7
-    - azure-identity >=1.25.2
-    - azure-keyvault-secrets >=4.10.0
-    - azure-storage-blob >=12.28.0
-    - google-cloud-kms >=2.24.2
-    - google-cloud-iam >=2.19.1
-    - google-cloud-aiplatform >=1.133.0
-    - pynacl >=1.6.2
-    - websockets >=15.0.1
-    - boto3 >=1.42.59
-    - mcp >=1.26.0
-    - a2a-sdk >=0.3.24
-    - rich >=13.9.4
-    - diskcache >=5.6.3
-    - polars >=1.38.1
-    - mlflow >=3.11.1
-    - fastapi-sso >=0.19.0
-    - redisvl >=0.4.1
-    - pyroscope-io >=0.8.16
-    - grpcio >=1.78.0
-    - restrictedpython >=8.1
-    # Not (yet) available on conda-forge — kept here as commented
-    # constrains so the version intent is preserved for when each is
-    # packaged. Uncomment as the conda-forge ecosystem catches up.
-    #
-    #   prisma                — litellm[extra-proxy] DB schema management
-    #   resend                — litellm[extra-proxy] transactional email
-    #   semantic-router       — litellm[extra-proxy] semantic-cache layer
-    #   aurelio-sdk           — transitive dep of semantic-router
-    #   litellm-proxy-extras  — sibling package, recipe pending submission
-    #   litellm-enterprise    — proprietary licence (LicenseRef-Proprietary);
-    #                           conda-forge does not redistribute proprietary code
-    #
-    # - prisma >=0.11.0
-    # - resend >=2.23.0
-    # - semantic-router >=0.1.12
-    # - aurelio-sdk >=0.0.19
-    # - litellm-proxy-extras >=0.4.69
-    # - litellm-enterprise >=0.1.39
-    #
-    # `soundfile` is the PyPI name; conda-forge publishes the same
-    # library as `pysoundfile`. The constrain is omitted because pinning
-    # `soundfile` on conda-forge has no effect (no candidates to filter)
-    # and pinning `pysoundfile` would diverge from the upstream PyPI
-    # extras-metadata declaration.
-    # - soundfile >=0.12.1
+    - python >=3.10,<3.14
+    - fastuuid >=0.14.0,<1.0
+    - httpx >=0.28.0,<1.0
+    - openai >=2.20.0,<3.0.0
+    - python-dotenv >=1.0.0,<2.0
+    - tiktoken >=0.8.0,<1.0
+    - importlib-metadata >=8.0.0,<9.0
+    - tokenizers >=0.21.0,<1.0
+    - click >=8.0.0,<9.0
+    - jinja2 >=3.1.6,<4.0
+    - aiohttp >=3.10,<4.0
+    - pydantic >=2.10.0,<3.0.0
+    - jsonschema >=4.0.0,<5.0
 
 tests:
   - python:
@@ -113,25 +48,65 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_test_max }}.*
+        - "*"
   - requirements:
       run:
         - pip
         - python ${{ python_min }}.*
     script:
       - litellm --help
-      #- litellm-proxy --help
+      - litellm-proxy --help
 
 about:
   summary: Library to easily interface with LLM API providers
+  description: |
+    <h1 align="center">
+            🚅 LiteLLM
+        </h1>
+        <p align="center">
+            <p align="center">LiteLLM AI Gateway
+            </p>
+            <p align="center">Open Source AI Gateway for 100+ LLMs. Self-hosted. Enterprise-ready. Call any LLM in OpenAI format.</p>
+            <p align="center">
+            <a href="https://render.com/deploy?repo=https://github.com/BerriAI/litellm" target="_blank" rel="nofollow"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render"></a>...
   license: MIT
   license_file: LICENSE
   homepage: https://litellm.ai
-  documentation: https://docs.litellm.ai
   repository: https://github.com/BerriAI/litellm
+  documentation: https://docs.litellm.ai
 
 extra:
   recipe-maintainers:
-    - m-rossi
-    - jan-janssen
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: litellm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: litellm
+  cfe-import-names: [litellm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/litellm-feedstock
+  cfe-forge-recipe-updates-needed:
+    - do-not-flatten-proxy-and-proxy-runtime-extras-as-hard-deps
+  cfe-last-checked: 2026-06-23T15:48:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-23T15:48:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # LOCAL-ONLY SKEW WORKAROUND — do NOT submit (litellm is already on
+#    # conda-forge). This local build exists only to unblock the langflow-suite
+#    # local test-env solve (Skew 2/3). It uses the REAL upstream 1.89.3 BASE
+#    # deps and therefore OMITS the proxy / proxy-runtime EXTRAS (fastapi,
+#    # cryptography, opentelemetry-api==1.28.0) that the cf litellm-feedstock
+#    # flattens into HARD deps. Those extras' otel-api==1.28.0 conflicts with
+#    # langflow-base's otel-api>=1.30, and the fastapi pin with lfx's
+#    # fastapi>=0.135. Durable fix = litellm-feedstock not flattening the proxy
+#    # extras; then this local recipe can be deleted.
+####
