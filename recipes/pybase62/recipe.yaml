@@ -9,18 +9,19 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py3/p/pybase62/pybase62-${{ version }}-py3-none-any.whl
-  sha256: 60539ad956ec9e9de091bc7ae88c9550bc2fa17f503050cf34d021b75e73cb27
+  url: https://github.com/suminb/base62/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 36ac9ef2bf547d1845aa48e3f5878251603904b0da881cdf92ccd011795c21cc
 
 build:
   noarch: python
   number: 0
-  script: ${{ PYTHON }} -m pip install pybase62-${{ version }}-py3-none-any.whl --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -34,7 +35,7 @@ tests:
         - "*"
 
 about:
-  homepage: https://pypi.org/project/pybase62/
+  homepage: https://github.com/suminb/base62
   license: BSD-2-Clause
   license_file: LICENSE
   summary: Python module for base62 encoding
@@ -79,8 +80,7 @@ extra:
 ####
 # CFE comments
 # source:
-#    # Upstream publishes no sdist for 1.0.0 — only a pure-Python wheel.
-#    # The `py3` path/tag segment is upstream-specific; recheck it on a version bump.
+#    # Switched to GitHub release tarball as requested.
 # about:
 #    # Upstream ships only a wheel (no sdist); the wheel's bundled LICENSE is
 #    # not reachable as a recipe-relative path, so it ships in the recipe dir.
