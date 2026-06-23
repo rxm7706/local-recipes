@@ -16,7 +16,9 @@ build:
   noarch: python
   number: 0
   script:
-    - ${{ PYTHON }} ${{ RECIPE_DIR }}/pin_version.py
+    #- ${{ PYTHON }} ${{ RECIPE_DIR }}/pin_version.py
+    # Overwrite the broken helper file to export a static version string
+    - python -c "open('_version_helper.py', 'w').write('version = \"${{ version }}\"\n')"
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:

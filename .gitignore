@@ -710,3 +710,6 @@ _bmad/config.user.toml
 _bmad/custom/.active-project
 _bmad-output/projects/*/implementation-artifacts/
 _bmad-output/projects/*/.bmad-config.user.toml
+
+# Junie: personal config (user-scoped) and per-developer artifacts.
+.junie/
