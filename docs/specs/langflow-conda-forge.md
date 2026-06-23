@@ -1,7 +1,7 @@
 ---
 status: ready
 implemented_by: bmad-quick-dev
-shipped_ref: "full local closure built GREEN (incl. ALL Set-C integrations now authored); conda-forge submission + skew-fix unimplemented; ultraplan-grounded + Q1–Q5 resolved 2026-06-23"
+shipped_ref: "langflow-suite all 3 outputs (lfx+langflow-base+langflow) build+test GREEN locally (2026-06-23) via LEAN re-architecture (integrations->run_constraints) + local skew-workaround channel builds; cf-submission blocked on 2 feedstock fixes (langchain-text-splitters stale pin, litellm proxy-extras flatten)"
 scope: full-closure   # core hard-dep closure + ALL optional run_constraints integrations (Set C now ALL authored locally) + ALL 3 external cf skews. Nothing deferred except the 3 named caveats (handled per § Caveats: elasticsearch gated on cf PR #122; apify-client attempt-or-drop; ragstack kept local-only).
 spec_updated: 2026-06-23
 ---
@@ -53,7 +53,7 @@ spec_updated: 2026-06-23
 
 | Field | Value |
 | ----- | ----- |
-| Status | **Local closure built GREEN; conda-forge submission not started; langflow-suite test-blocked on one external cf skew.** All ~46 core prerequisite recipes AND **all ~18 Set-C optional integrations are now authored + built** into the local channel (ultraplan re-grounding, 2026-06-23 — Set C is no longer "to author"; `spider-client`, `assemblyai`, `impit` are all present + `build=success`). `recipes/langflow-suite/` builds clean for all 3 outputs (`--test skip` GREEN, 2026-06-23). The langflow-suite test-env solve is blocked by the **langchain-text-splitters** skew (§ External Skews). **Residual work is now skew-fix → re-verify GREEN → leaves-first submission** (authoring is effectively complete). Only `firecrawl-py` lacks a build record and needs a verification build. |
+| Status | **GREEN locally — all 3 langflow-suite outputs (lfx, langflow-base, langflow) build + test pass** (imports + pip_check, 2026-06-23) against the local channel, via the **LEAN re-architecture** (integrations → `run_constraints`; § Packaging shape) + **local skew-workaround channel builds** of `langchain` 1.2.18 / `litellm` 1.89.3 (base deps; § External skews). `cfe-local-build-status: success`. **conda-forge submission stays `blocked-pending-prerequisites`** on 2 cf feedstock fixes (langchain-text-splitters stale pin; litellm proxy-extras flatten) that gate lfx's hard deps; the local channel works around both. |
 | Owner | rxm7706 |
 | Track | BMAD Quick Flow (tech-spec only) |
 | Upstream | `langflow-ai/langflow` v1.10.0 (MIT). Monorepo split into `lfx` (executor core, `src/lfx`), `langflow-base` (`src/backend/base`, ships the `langflow` import), `langflow` (umbrella, `.`), and the `lfx-*` extension plugins. |
@@ -73,25 +73,24 @@ spec_updated: 2026-06-23
 - **The 4 `lfx-*` extension plugins are SEPARATE feedstocks** (`lfx-arxiv`, `lfx-docling`,
   `lfx-duckduckgo`, `lfx-ibm`). The `langflow` umbrella **hard-deps** all four
   (upstream `langflow` `[project.dependencies]` = `langflow-base[complete]` + the 4 `lfx-*`).
-- **⚠ Cross-feedstock cycle → KEEP the single 3-output recipe (Q1 RESOLVED — do NOT split).**
-  `langflow` (a suite output) hard-deps the 4 `lfx-*`; each `lfx-*` deps `lfx` (also a suite
-  output). **Decision (rxm7706, 2026-06-23):** keep the **single 3-output `langflow-suite`
-  recipe** (lfx + langflow-base + langflow) so the three versions stay locked together — better
-  long-term (one feedstock; autotick bumps lfx/langflow-base/langflow in lockstep). This
-  overrides the earlier "split lfx out" recommendation.
-  The residual is a **bootstrap cycle at the *initial* staged-recipes gate**: `langflow`'s
-  test-env solve needs the 4 separate `lfx-*` feedstocks, which need `lfx` (a suite output not
-  yet on cf). **Mitigation = sequencing + a temporary test relaxation, NOT splitting:** submit
-  the 3-output suite first so `lfx` publishes → submit the 4 `lfx-*` (now `lfx` is on cf) →
-  build-number-bump follow-up to tighten/enable `langflow`'s full test (or relax just the
-  `langflow` output's lfx-* import test on the first submission, then re-enable). Once all are
-  on cf the single-feedstock shape is exactly what's wanted.
-- **Dependency lists come from upstream pyproject, not the hand-authored recipe lists.** Earlier
-  the recipe's output `run:` lists diverged from upstream (e.g. fabricated `atlaspy`/`dynamicconf`;
-  truncated `lfx` deps). For each output, flatten the real upstream `[project.dependencies]`
-  (+ `langflow-base[complete]` for the umbrella, **G25** — conda has no extras), mirror upstream
-  version caps (**G24** — `pip_check` enforces them), and verify with `check_dependencies` on a
-  **flattened single-output** recipe (**G29** — the multi-output checkers are top-level-only).
+- **LEAN base + umbrella (rxm7706 directive, 2026-06-23) — integrations are NOT forced.**
+  Upstream `langflow-base` bundles ~90 integration extras and `langflow-base[complete]` pulls
+  **all** of them (= `langflow[full]`); no one needs every integration. So the recipe ships a
+  **lean** langflow-base + langflow: hard `run` = the **framework core only**; ALL integrations
+  (langchain providers, vector/analytics DB clients, external SDKs, the 4 `lfx-*` component
+  packs) are **`run_constraints`** (version-pinned, optional — constrained only if a user adds
+  them). To keep `pip_check: true` green, each output's build **`sed`-strips the integration
+  deps from the wheel METADATA** (range-restricted to `[project.dependencies]`), and the umbrella
+  rewrites `langflow-base[complete]`→`langflow-base` + drops the 4 `lfx-*`. The lean core was
+  validated empirically (`import langflow`/pip_check); `jq` + `onnxruntime` were also demoted
+  once the build proved they're component-level, not load-time core.
+- **This dissolves the langflow→lfx-*→lfx bootstrap cycle** (the umbrella no longer hard-deps
+  `lfx-*`), so the earlier Q1 split-vs-keep question is moot — the single 3-output recipe stands
+  and submits cleanly, versions locked in lockstep.
+- **`lfx` keeps its upstream hard deps** (it IS the executor core): `langchain` +
+  `langchain-classic` + `opendsstar` (→ `litellm`), etc. This is **why the two external cf skews
+  still gate `lfx` on conda-forge** even though langflow-base/langflow are now lean
+  (§ External skews) — the local channel works around them with rebuilt `langchain`/`litellm`.
 
 ---
 
@@ -208,6 +207,12 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 *in isolation* on cf, but the full langflow graph does not. Per the CFE Build-Failure-Protocol
 "external cf ecosystem version-skew" case — fix upstream, do not churn the consumer recipe.
 
+> **STATUS 2026-06-23:** both **core-gating** skews (1 + 2) are **worked around locally** —
+> rebuilt `langchain` 1.2.18 / `litellm` 1.89.3 (base deps) into the channel → langflow-suite is
+> GREEN. Each still needs its **durable cf feedstock PR** (below) before cf submission can succeed.
+> Skew 3 (otel cluster) is now **optional-only** — the lean re-architecture moved it to
+> `run_constraints`, so it no longer gates the core.
+
 ### Skew 1 — langchain-text-splitters (PRIMARY hard blocker; the only one blocking langflow-suite core)
 
 - **Symptom:** `lfx` test-env solve fails. `lfx` pins **both** `langchain~=1.2.0` and
@@ -232,21 +237,28 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 - **Diagnosis test:** solve `langchain` + `langchain-classic` + `langchain-text-splitters` in
   isolation on cf — confirms the conflict is feedstock-internal, not a consumer defect.
 
-### Skew 2 — litellm ↔ lfx fastapi/cryptography (full-integration path)
+### Skew 2 — litellm proxy-extras flattened as hard deps (gates the CORE suite via lfx)
 
-- `lfx 1.10.0` needs `fastapi>=0.135.0,<1.0` + `cryptography>=46.0.7`. cf `litellm` (pulled via the
-  `opendsstar`→litellm path in the `[complete]` closure) bakes `fastapi==0.124.4` (litellm 1.83–1.87)
-  or conflicting otlp/text-splitters pins (1.88+).
-- **Fix:** PR `litellm-feedstock` to widen the `fastapi` pin to admit `>=0.135`, or rebuild
-  `litellm` locally at a fastapi-compatible version. Only bites the optional integration closure,
-  not the core suite.
+- **Root cause (verified 2026-06-23):** upstream `litellm` lists `fastapi`, `cryptography`, and
+  `opentelemetry-api==1.28.0` ONLY under its `proxy` / `proxy-runtime` **extras** — the core SDK
+  needs none of them. The cf `litellm` feedstock **flattens those extras into HARD deps**. `lfx`
+  hard-pulls `litellm` (via `opendsstar`), so the baked `opentelemetry-api==1.28.0` collides with
+  langflow-base's `opentelemetry-api>=1.30`, and the proxy `fastapi` pin with lfx's
+  `fastapi>=0.135`. This gates the **core** suite (lfx is a hard dep), not just optional integrations.
+- **Done locally:** rebuilt `litellm` 1.89.3 with **base deps only** (no proxy extras) into the
+  local channel → langflow-base + langflow go GREEN. **Durable fix:** PR `conda-forge/litellm-feedstock`
+  to stop flattening the `proxy` / `proxy-runtime` extras into hard run deps (keep them optional).
+- This also **subsumes the old "otel/observability skew" for the core**: with base-only litellm
+  there is no `otel-api==1.28.0`, and lean langflow-base keeps `otel-api>=1.30`.
 
-### Skew 3 — otel / observability cluster
+### Skew 3 — otel observability cluster (OPTIONAL integrations only — no longer gates the core)
 
-- `traceloop-sdk` forces `opentelemetry-semantic-conventions ==0.57b0..0.62b0` + `langchain>=0.3.15,<0.4.0`,
-  conflicting with `arize-phoenix-otel` / `opik` / `openinference-*` and lfx's newer `langchain`.
-- **Fix:** widen the otel / `traceloop-sdk` / `openinference-*` feedstock pins (may require
-  coordinating several feedstocks). Optional-integration scope only.
+- `traceloop-sdk` / `arize-phoenix-otel` / `opik` / `openinference-*` carry mutually-incompatible
+  otel-semantic-conventions / `langchain<0.4` pins. With the **lean** re-architecture these are all
+  `run_constraints` (never force-installed), so this **no longer blocks** langflow-suite — it only
+  matters for a user who opts into that observability cluster.
+- **Fix (deferred, optional):** widen the otel / `traceloop-sdk` / `openinference-*` feedstock pins
+  if/when the cluster is made co-installable. Not a submission gate.
 
 ---
 
@@ -256,17 +268,21 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 > recipe locally (against the merged local channel) before pushing. After each feedstock push,
 > request rerender.
 
-### Wave A — clear the external skews (gate to langflow-suite test-GREEN)
+### Wave A — clear the external skews (gate to langflow-suite test-GREEN) — DONE LOCALLY 2026-06-23
 
-- **A1 — langchain-text-splitters (Skew 1).** **Local rebuild FIRST** (resolved approach): rebuild
-  `langchain` locally with the loosened text-splitters pin → rebuild `lfx` → re-attempt the
-  3-output `langflow-suite` → require all 3 outputs **build + test GREEN (py3.11 leg)**. This is the
-  **only** skew blocking the core suite. THEN file + land the `conda-forge/langchain-feedstock`
-  ~1-line pin fix (the durable unblock for cf submission). Also in A1: **build + verify
-  `firecrawl-py`** (only closure recipe lacking a build record), and confirm `opendsstar` resolves
-  without `ragstack-ai-knowledge-store`. Flip affected cfe-status to `pending-submission-to-conda-forge`.
-- **A2 — litellm/fastapi (Skew 2)** and **A3 — otel cluster (Skew 3).** Needed only for the
-  optional-integration closure (Wave C). Drive in parallel; not a gate for Wave B.
+All 3 langflow-suite outputs now build + test GREEN locally (imports + pip_check). What remains in
+Wave A is the **two durable conda-forge feedstock PRs** — the local channel rebuilds are the
+iteration loop; the PRs are what actually unblock cf submission:
+
+- **A1 — langchain-text-splitters (Skew 1). Local rebuild DONE** (`langchain` 1.2.18, base deps,
+  in channel). **Durable fix to file:** ~1-line `conda-forge/langchain-feedstock` PR dropping the
+  stale `langchain-text-splitters <1.0.0` pin (verify vs the exact cf-pinned 1.2.x upstream metadata).
+- **A2 — litellm proxy-extras flatten (Skew 2). Local rebuild DONE** (`litellm` 1.89.3, base deps,
+  in channel). **Durable fix to file:** `conda-forge/litellm-feedstock` PR to stop flattening the
+  `proxy` / `proxy-runtime` extras into hard run deps.
+- **A3 — otel cluster (Skew 3):** no longer a Wave-A gate (lean → `run_constraints`); deferred/optional.
+- Carryover checks: confirm `opendsstar` resolves without `ragstack-ai-knowledge-store` (BUSL-1.1,
+  out of scope). `firecrawl-py` build record now recorded (it's a `run_constraints` integration).
 
 ### Wave B — submit the core hard-dep closure (leaves → roots)
 
