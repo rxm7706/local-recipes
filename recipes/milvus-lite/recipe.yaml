@@ -15,7 +15,11 @@ source:
 build:
   noarch: python
   number: 0
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: |
+    # conda faiss-cpu exposes bindings under dist-info `faiss` (no `faiss-cpu`
+    # dist-info); rewrite the wheel METADATA dep so `pip check` sees `faiss` (G28).
+    sed -i 's/"faiss-cpu>=1.7.4"/"faiss>=1.7.4"/' pyproject.toml
+    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - milvus-lite = milvus_lite.cmdline:main
@@ -34,16 +38,13 @@ requirements:
     - tomli >=2.0
 
 tests:
-  # pip_check disabled (G28 external false positive): upstream wheel METADATA
-  # declares `faiss-cpu>=1.7.4` (PyPI dist name) but conda-forge ships the
-  # importable bindings under dist-info `faiss` (conda `faiss-cpu` is a thin
-  # metapackage with no pip-visible faiss-cpu dist-info). `pip check` reports
-  # "requires faiss-cpu, which is not installed" though `import faiss` works.
-  # Verified faiss-cpu is the ONLY pip-check line; not a recipe defect.
+  # pip_check re-enabled: the build rewrites the wheel METADATA dep
+  # `faiss-cpu` -> `faiss` (conda faiss-cpu ships the `faiss` dist-info; there is
+  # no `faiss-cpu` dist-info), so `pip check` is satisfied by installed faiss (G28).
   - python:
       imports:
         - milvus_lite
-      pip_check: false
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"

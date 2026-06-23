@@ -16,7 +16,12 @@ source:
 build:
   noarch: python
   number: 0
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: |
+    # conda `docling` is a metapackage; the importable `docling` module + its
+    # dist-info ship as `docling-slim`. Rewrite the wheel METADATA dep so
+    # `pip check` sees `docling-slim`; the conda run dep stays `docling` (G28).
+    sed -i 's/"docling>=2.36.1,<3.0.0"/"docling-slim>=2.36.1,<3.0.0"/' pyproject.toml
+    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
