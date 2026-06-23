@@ -2,6 +2,7 @@
 status: ready
 implemented_by: bmad-quick-dev
 shipped_ref: "full local closure built GREEN; conda-forge submission + skew-fix unimplemented"
+scope: full-closure   # core hard-dep closure + ALL optional run_constraints integrations (incl. ~20 not-yet-authored) + ALL 3 external cf skews. Nothing deferred except the 3 named caveats.
 spec_updated: 2026-06-23
 ---
 # Tech Spec: langflow-suite on conda-forge (submission + external-skew remediation)
@@ -12,6 +13,25 @@ spec_updated: 2026-06-23
 > `conda-forge/staged-recipes` leaves-first. The local authoring is largely done (the closure
 > builds GREEN in the local channel); the remaining work is **feedstock pin-convergence +
 > staged-recipes submission**.
+>
+> ### 🔴 SCOPE — FULL CLOSURE (do not narrow)
+>
+> This effort covers the **entire** langflow-suite closure end-to-end — **nothing is deferred
+> or out-of-scope except the 3 explicitly-named caveats below.** "Full closure" means:
+> **(1)** the **core hard-dep closure** that makes `langflow-suite` installable (the lfx
+> closure, IBM chain, `opendsstar`, `jsonquerylang`, the langflow-family, the 4 `lfx-*`
+> feedstocks, …); **(2)** **ALL optional `run_constraints` integrations** — every `langchain-*`
+> provider wrapper + SDK leaf — **including the ~20 not yet authored** (§ Submission set C),
+> which must be **authored, their own recursive sub-closures resolved, and submitted**;
+> **(3)** **ALL THREE external cf skews fixed** — Skew 1 (langchain-text-splitters) gates the
+> core suite; Skews 2 (litellm/fastapi) + 3 (otel/observability) gate the optional integrations
+> — all three are in scope.
+>
+> The **only** things NOT submitted are the 3 caveats (§ Submission set → Caveats):
+> `ragstack-ai-knowledge-store` (BUSL-1.1, non-OSI → drop), `langchain-elasticsearch`
+> (cf `elasticsearch>=8.19` gap → file a feedstock bump or drop), `apify-client`
+> (needs `impit` py311+ → build it or drop). **Web-planning runs (Ultraplan) and BMAD must
+> plan to the full closure — do not scope down to "core only" or "Wave A only".**
 >
 > Run BMAD with this file as the intent document:
 >
