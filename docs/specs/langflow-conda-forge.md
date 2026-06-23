@@ -146,6 +146,8 @@ grandalf, mcp, cryptography, …).
 | agent-lifecycle-toolkit | blocked-pending-prereq | noarch | Apache-2.0 | ibm-watsonx-ai, smolagents, llm-sandbox (import `altk`, G7) |
 | opendsstar | blocked-pending-prereq | noarch | Apache-2.0 | pymilvus-model, milvus-lite, langchain-milvus, smolagents, ragworkbench (import `OpenDsStar`, G7) |
 | firecrawl-py | (built) | noarch | MIT | — (langflow-base hard dep) |
+| spider-client | pending-submission | noarch | MIT | — (leaf; langflow-base hard dep) |
+| assemblyai | pending-submission | noarch | MIT | — (leaf; langflow-base hard dep) |
 | **lfx** *(SPLIT OUT — own feedstock)* | blocked-pending-prereq | noarch | MIT | langflow-sdk, opendsstar, jsonquerylang, markitdown(cf), langchain+langchain-classic(cf) |
 | lfx-arxiv | blocked-pending-prereq | noarch | MIT | lfx |
 | lfx-docling | blocked-pending-prereq | noarch | MIT | lfx, docling-core(cf) |
