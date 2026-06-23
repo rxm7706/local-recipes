@@ -371,3 +371,104 @@ Q2 ragstack local-only commented-out; Q3 python_min 3.11; Q4 apify-client attemp
 langchain-elasticsearch gated on cf `elasticsearch-feedstock` PR #122) and recorded the **Skew 1
 approach** (local langchain rebuild first to verify GREEN, then the upstream feedstock PR).
 Execution (Waves A–D) is unstarted and gated on explicit per-action go-ahead; no pushes/PRs yet.
+
+---
+
+## Appendix: Recipe Registry & Submission Tracker
+
+Every local recipe in the langflow-suite closure, with its wave, current status, and submission PR.
+Recipe links point at `main`. **As of 2026-06-23 execution is unstarted — no submissions yet, so
+every PR cell is `—`.** Fill each PR cell as a recipe is submitted, e.g.
+`[#33846](https://github.com/conda-forge/staged-recipes/pull/33846)`. Keep this table the
+single source of truth for "where is each recipe in the pipeline".
+
+Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
+**ready** = `pending-submission-to-conda-forge` (built GREEN, no blockers) ·
+**blocked** = `blocked-pending-prerequisites` (built clean locally; gated on a prereq/skew) ·
+**not-built** = authored, no local build record yet ·
+**local-only** = never submit (license/eligibility).
+
+### Wave B — core hard-dep closure (leaves → roots)
+
+| Recipe | Wave | recipe.yaml | Status | Submission PR |
+|---|---|---|---|---|
+| primp | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/primp/recipe.yaml) | ready | — |
+| jsonquerylang | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/jsonquerylang/recipe.yaml) | ready | — |
+| langflow-sdk | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow-sdk/recipe.yaml) | ready | — |
+| jigsawstack | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/jigsawstack/recipe.yaml) | ready | — |
+| smolagents | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/smolagents/recipe.yaml) | ready | — |
+| llm-sandbox | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/llm-sandbox/recipe.yaml) | ready | — |
+| pybase62 | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pybase62/recipe.yaml) | ready | — |
+| lomond | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lomond/recipe.yaml) | ready | — |
+| apify-shared | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/apify-shared/recipe.yaml) | ready | — |
+| vlmrun-hub | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/vlmrun-hub/recipe.yaml) | ready | — |
+| ibm-cos-sdk-core | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-cos-sdk-core/recipe.yaml) | ready | — |
+| pymilvus-model | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pymilvus-model/recipe.yaml) | ready | — |
+| milvus-lite | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/milvus-lite/recipe.yaml) | ready | — |
+| couchbase | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/couchbase/recipe.yaml) | ready | — |
+| firecrawl-py | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/firecrawl-py/recipe.yaml) | not-built (build in Wave A) | — |
+| trustcall | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/trustcall/recipe.yaml) | blocked | — |
+| qianfan | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/qianfan/recipe.yaml) | blocked | — |
+| ragworkbench | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ragworkbench/recipe.yaml) | blocked | — |
+| toolguard | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/toolguard/recipe.yaml) | blocked | — |
+| pksuid | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pksuid/recipe.yaml) | blocked (→pybase62) | — |
+| vlmrun | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/vlmrun/recipe.yaml) | blocked (→vlmrun-hub) | — |
+| ddgs | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ddgs/recipe.yaml) | blocked (→primp) | — |
+| langchain-milvus | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-milvus/recipe.yaml) | ready | — |
+| ibm-cos-sdk-s3transfer | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-cos-sdk-s3transfer/recipe.yaml) | blocked (→core) | — |
+| langwatch | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langwatch/recipe.yaml) | blocked (→pksuid, pybase62) | — |
+| spider-client | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/spider-client/recipe.yaml) | ready | — |
+| assemblyai | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/assemblyai/recipe.yaml) | ready | — |
+| ibm-cos-sdk | B3 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-cos-sdk/recipe.yaml) | blocked (→core + s3transfer) | — |
+| ibm-watsonx-ai | B4 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-watsonx-ai/recipe.yaml) | blocked (→ibm-cos-sdk; also build 1.3.37 for py3.10, G40) | — |
+| langchain-ibm | B5 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-ibm/recipe.yaml) | blocked (→ibm-watsonx-ai) | — |
+| agent-lifecycle-toolkit | B5 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/agent-lifecycle-toolkit/recipe.yaml) | blocked (→ibm-watsonx-ai, smolagents, llm-sandbox) | — |
+| opendsstar | B5 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/opendsstar/recipe.yaml) | blocked (→pymilvus-model, milvus-lite, langchain-milvus, smolagents, ragworkbench) | — |
+| **langflow-suite** (lfx + langflow-base + langflow) | B6 / B8 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow-suite/recipe.yaml) | blocked (Skew 1; 3-output submission unit) | — |
+| lfx-arxiv | B7 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx-arxiv/recipe.yaml) | blocked (→lfx) | — |
+| lfx-docling | B7 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx-docling/recipe.yaml) | blocked (→lfx, docling-core) | — |
+| lfx-duckduckgo | B7 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx-duckduckgo/recipe.yaml) | blocked (→lfx, ddgs) | — |
+| lfx-ibm | B7 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx-ibm/recipe.yaml) | blocked (→lfx, langchain-ibm, ibm-watsonx-ai) | — |
+
+> **Folded into `langflow-suite`** (Q1 — single 3-output recipe; these dirs are kept for *local*
+> build-verification only, NOT submitted standalone):
+> [lfx](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx/recipe.yaml) ·
+> [langflow-base](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow-base/recipe.yaml) ·
+> [langflow](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow/recipe.yaml).
+
+### Wave C — optional integrations (`run_constraints`)
+
+| Recipe | Wave | recipe.yaml | Status | Submission PR |
+|---|---|---|---|---|
+| langchain-astradb | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-astradb/recipe.yaml) | blocked (→astrapy, cassio) | — |
+| langchain-graph-retriever | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-graph-retriever/recipe.yaml) | blocked | — |
+| langchain-google-vertexai | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-google-vertexai/recipe.yaml) | blocked | — |
+| langchain-sambanova | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-sambanova/recipe.yaml) | blocked | — |
+| langchain-google-community | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-google-community/recipe.yaml) | blocked (G12 numpy-selector, G35) | — |
+| ag2 | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ag2/recipe.yaml) | ready | — |
+| astrapy | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/astrapy/recipe.yaml) | ready | — |
+| cassio | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/cassio/recipe.yaml) | ready | — |
+| cleanlab-tlm | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/cleanlab-tlm/recipe.yaml) | ready | — |
+| composio-langchain | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/composio-langchain/recipe.yaml) | ready | — |
+| langchain-cohere | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-cohere/recipe.yaml) | ready | — |
+| langchain-google-calendar-tools | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-google-calendar-tools/recipe.yaml) | ready | — |
+| langchain-nvidia-ai-endpoints | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-nvidia-ai-endpoints/recipe.yaml) | ready | — |
+| langchain-pinecone | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-pinecone/recipe.yaml) | ready | — |
+| langchain-unstructured | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-unstructured/recipe.yaml) | ready | — |
+| langchain-weaviate | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-weaviate/recipe.yaml) | ready | — |
+| mem0ai | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/mem0ai/recipe.yaml) | not-built | — |
+| metal-sdk | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/metal-sdk/recipe.yaml) | ready | — |
+| needle-python | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/needle-python/recipe.yaml) | ready | — |
+| openlayer | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/openlayer/recipe.yaml) | ready | — |
+| opik | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/opik/recipe.yaml) | blocked (Skew 3 otel) | — |
+| scrapegraph-py | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/scrapegraph-py/recipe.yaml) | ready | — |
+| upstash-vector | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/upstash-vector/recipe.yaml) | ready | — |
+
+### Caveats / special handling
+
+| Recipe | Wave | recipe.yaml | Status | Submission PR |
+|---|---|---|---|---|
+| impit | C (prereq) | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/impit/recipe.yaml) | ready (compiled; unblocks apify-client, G38) | — |
+| apify-client | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/apify-client/recipe.yaml) | blocked (→impit; **attempt, may drop**) | — |
+| langchain-elasticsearch | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-elasticsearch/recipe.yaml) | blocked (gated on [elasticsearch-feedstock #122](https://github.com/conda-forge/elasticsearch-feedstock/pull/122)) | — |
+| ragstack-ai-knowledge-store | — | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ragstack-ai-knowledge-store/recipe.yaml) | **local-only — NEVER submit** (BUSL-1.1 / non-OSI) | n/a |
