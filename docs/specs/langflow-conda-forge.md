@@ -3,7 +3,8 @@ status: ready
 implemented_by: bmad-quick-dev
 shipped_ref: "langflow-suite all 3 outputs (lfx+langflow-base+langflow) build+test GREEN locally (2026-06-23) via LEAN re-architecture (integrations->run_constraints) + local skew-workaround channel builds; cf-submission blocked on 2 feedstock fixes (langchain-text-splitters stale pin, litellm proxy-extras flatten)"
 scope: full-closure   # core hard-dep closure + ALL optional run_constraints integrations (Set C now ALL authored locally) + ALL 3 external cf skews. Nothing deferred except the 3 named caveats (handled per § Caveats: elasticsearch gated on cf PR #122; apify-client attempt-or-drop; ragstack kept local-only).
-spec_updated: 2026-06-23
+submission_started: 2026-06-24   # Wave B started: 7 staged-recipes PRs — 4 MERGED (primp #33836, pybase62 #33838, pymilvus-model #33837, jsonquerylang #33846), 3 OPEN (langflow-sdk #33856, jigsawstack #33857, opendsstar #33840). Wave A skew feedstock PRs still TO FILE; elasticsearch-feedstock #122 still OPEN.
+spec_updated: 2026-06-24
 ---
 # Tech Spec: langflow-suite on conda-forge (submission + external-skew remediation)
 
@@ -59,7 +60,7 @@ spec_updated: 2026-06-23
 
 | Field | Value |
 | ----- | ----- |
-| Status | **GREEN locally — all 3 langflow-suite outputs (lfx, langflow-base, langflow) build + test pass** (imports + pip_check, 2026-06-23) against the local channel, via the **LEAN re-architecture** (integrations → `run_constraints`; § Packaging shape) + **local skew-workaround channel builds** of `langchain` 1.2.18 / `litellm` 1.89.3 (base deps; § External skews). `cfe-local-build-status: success`. **conda-forge submission stays `blocked-pending-prerequisites`** on 2 cf feedstock fixes (langchain-text-splitters stale pin; litellm proxy-extras flatten) that gate lfx's hard deps; the local channel works around both. |
+| Status | **GREEN locally — all 3 langflow-suite outputs (lfx, langflow-base, langflow) build + test pass** (imports + pip_check, 2026-06-23) against the local channel, via the **LEAN re-architecture** (integrations → `run_constraints`; § Packaging shape) + **local skew-workaround channel builds** of `langchain` 1.2.18 / `litellm` 1.89.3 (base deps; § External skews). `cfe-local-build-status: success`. **conda-forge submission stays `blocked-pending-prerequisites`** on 2 cf feedstock fixes (langchain-text-splitters stale pin; litellm proxy-extras flatten) that gate lfx's hard deps; the local channel works around both. **Wave B submission STARTED 2026-06-24** — 7 staged-recipes PRs up: **4 MERGED → on conda-forge** (primp [#33836](https://github.com/conda-forge/staged-recipes/pull/33836), pybase62 [#33838](https://github.com/conda-forge/staged-recipes/pull/33838), pymilvus-model [#33837](https://github.com/conda-forge/staged-recipes/pull/33837), jsonquerylang [#33846](https://github.com/conda-forge/staged-recipes/pull/33846)); **3 OPEN** (langflow-sdk [#33856](https://github.com/conda-forge/staged-recipes/pull/33856) + jigsawstack [#33857](https://github.com/conda-forge/staged-recipes/pull/33857) CI-green in review; opendsstar [#33840](https://github.com/conda-forge/staged-recipes/pull/33840) CI-red pending prereqs on cf). The 2 durable skew feedstock PRs (langchain / litellm) remain **TO FILE**. |
 | Owner | rxm7706 |
 | Track | BMAD Quick Flow (tech-spec only) |
 | Upstream | `langflow-ai/langflow` v1.10.0 (MIT). Monorepo split into `lfx` (executor core, `src/lfx`), `langflow-base` (`src/backend/base`, ships the `langflow` import), `langflow` (umbrella, `.`), and the `lfx-*` extension plugins. |
@@ -218,6 +219,12 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 > GREEN. Each still needs its **durable cf feedstock PR** (below) before cf submission can succeed.
 > Skew 3 (otel cluster) is now **optional-only** — the lean re-architecture moved it to
 > `run_constraints`, so it no longer gates the core.
+>
+> **RE-VERIFIED 2026-06-24:** neither durable feedstock PR has been filed yet — `conda-forge/langchain-feedstock`
+> (Skew 1) and `conda-forge/litellm-feedstock` (Skew 2) carry **no rxm7706 PR**; both remain **TO FILE**
+> and still gate cf submission of the `langflow-suite` outputs (lfx/langflow-base/langflow). Wave B
+> leaves that don't transit lfx (primp, pybase62, pymilvus-model, jsonquerylang) were submitted +
+> merged regardless — they don't depend on the skewed packages.
 
 ### Skew 1 — langchain-text-splitters (core-gating via lfx; one of TWO core skews — see Skew 2)
 
@@ -292,7 +299,19 @@ iteration loop; the PRs are what actually unblock cf submission:
 - Carryover checks: confirm `opendsstar` resolves without `ragstack-ai-knowledge-store` (BUSL-1.1,
   out of scope). `firecrawl-py` build record now recorded (it's a `run_constraints` integration).
 
-### Wave B — submit the core hard-dep closure (leaves → roots)
+### Wave B — submit the core hard-dep closure (leaves → roots) — IN PROGRESS (started 2026-06-24)
+
+> **Progress 2026-06-24:** 7 PRs filed. **B1 leaves MERGED → on cf:** primp [#33836](https://github.com/conda-forge/staged-recipes/pull/33836),
+> pybase62 [#33838](https://github.com/conda-forge/staged-recipes/pull/33838), pymilvus-model
+> [#33837](https://github.com/conda-forge/staged-recipes/pull/33837), jsonquerylang
+> [#33846](https://github.com/conda-forge/staged-recipes/pull/33846). **B1 leaves OPEN (CI-green, in review):**
+> langflow-sdk [#33856](https://github.com/conda-forge/staged-recipes/pull/33856), jigsawstack
+> [#33857](https://github.com/conda-forge/staged-recipes/pull/33857). **B5 opendsstar OPEN but CI-red**
+> ([#33840](https://github.com/conda-forge/staged-recipes/pull/33840)) — submitted ahead of its prereqs
+> (milvus-lite/langchain-milvus/smolagents/ragworkbench not yet on cf); leave open until they land or
+> close + resubmit in dependency order. Remaining B1 leaves (smolagents, llm-sandbox, lomond,
+> apify-shared, vlmrun-hub, ibm-cos-sdk-core, milvus-lite, couchbase, firecrawl-py, trustcall, qianfan,
+> ragworkbench, toolguard) not yet submitted.
 
 1. **B1 (leaves):** primp, jsonquerylang, langflow-sdk, jigsawstack, smolagents, llm-sandbox,
    pybase62, lomond, apify-shared, vlmrun-hub, ibm-cos-sdk-core, pymilvus-model, milvus-lite,
@@ -428,18 +447,37 @@ litellm proxy-CLI test). **Still outstanding for cf submission:** the 2 durable 
 (langchain stale pin; litellm proxy-extras flatten) — TO FILE — and Waves B–D (staged-recipes
 submissions), unstarted.
 
+The **2026-06-24 submission wave (Wave B start)** opened the first staged-recipes PRs for the closure,
+leaves-first. **4 merged → on conda-forge:** primp [#33836](https://github.com/conda-forge/staged-recipes/pull/33836),
+pybase62 [#33838](https://github.com/conda-forge/staged-recipes/pull/33838), pymilvus-model
+[#33837](https://github.com/conda-forge/staged-recipes/pull/33837), jsonquerylang
+[#33846](https://github.com/conda-forge/staged-recipes/pull/33846) (none transit the skewed `lfx`
+path, so they merged cleanly). **2 open + CI-green in review:** langflow-sdk
+[#33856](https://github.com/conda-forge/staged-recipes/pull/33856), jigsawstack
+[#33857](https://github.com/conda-forge/staged-recipes/pull/33857). **1 open but CI-red:** opendsstar
+[#33840](https://github.com/conda-forge/staged-recipes/pull/33840) (a Wave-B5 root submitted ahead of
+its prereqs; 5 build legs red until milvus-lite/langchain-milvus/smolagents/ragworkbench reach cf).
+The local-recipes side reached its current state via merged PRs **#21–#28** (the wheel→source G54
+sweep + v8.42.2 retro landed in #27/#28). **Unchanged blockers:** the 2 skew feedstock PRs remain TO
+FILE (re-verified 2026-06-24), and `elasticsearch-feedstock` [#122](https://github.com/conda-forge/elasticsearch-feedstock/pull/122)
+(Q5 gate for `langchain-elasticsearch`) is still OPEN.
+
 ---
 
 ## Appendix: Recipe Registry & Submission Tracker
 
 Every local recipe in the langflow-suite closure, with its wave, current status, and submission PR.
-Recipe links point at `main`. **As of 2026-06-23 no conda-forge submissions have been made — every
-PR cell is `—`** (the local recipe state — incl. the lean re-architecture + skew workarounds — now
-lives on `main`, landed via merged local-recipes PR #25). Fill each PR cell as a recipe is submitted to staged-recipes / a feedstock, e.g.
-`[#33846](https://github.com/conda-forge/staged-recipes/pull/33846)`. Keep this table the
-single source of truth for "where is each recipe in the pipeline".
+Recipe links point at `main`. **Wave B submission STARTED 2026-06-24** — 7 staged-recipes PRs up:
+**4 MERGED → on conda-forge** (primp #33836, pybase62 #33838, pymilvus-model #33837, jsonquerylang
+#33846), **2 OPEN + CI-green** (langflow-sdk #33856, jigsawstack #33857), **1 OPEN + CI-red**
+(opendsstar #33840, submitted ahead of its prereqs). Every other cell is `—` (authored + built
+locally, not yet submitted). The local recipe state — incl. the lean re-architecture + skew
+workarounds — lives on `main` (landed via merged local-recipes PRs #21–#28). Fill each PR cell as a
+recipe is submitted. Keep this table the single source of truth for "where is each recipe in the pipeline".
 
 Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
+**on conda-forge** = staged-recipes PR merged (feedstock being created) ·
+**submitted** = staged-recipes PR open (in review / CI) ·
 **ready** = `pending-submission-to-conda-forge` (built GREEN, no blockers) ·
 **blocked** = `blocked-pending-prerequisites` (built clean locally; gated on a prereq/skew) ·
 **not-built** = authored, no local build record yet ·
@@ -449,10 +487,10 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 
 | Recipe | Wave | recipe.yaml | Status | Submission PR |
 |---|---|---|---|---|
-| primp | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/primp/recipe.yaml) | ready | — |
-| jsonquerylang | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/jsonquerylang/recipe.yaml) | ready | — |
-| langflow-sdk | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow-sdk/recipe.yaml) | ready | — |
-| jigsawstack | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/jigsawstack/recipe.yaml) | ready | — |
+| primp | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/primp/recipe.yaml) | on conda-forge | [#33836](https://github.com/conda-forge/staged-recipes/pull/33836) MERGED |
+| jsonquerylang | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/jsonquerylang/recipe.yaml) | on conda-forge | [#33846](https://github.com/conda-forge/staged-recipes/pull/33846) MERGED |
+| langflow-sdk | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow-sdk/recipe.yaml) | submitted (CI-green, in review) | [#33856](https://github.com/conda-forge/staged-recipes/pull/33856) OPEN |
+| jigsawstack | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/jigsawstack/recipe.yaml) | submitted (CI-green, in review) | [#33857](https://github.com/conda-forge/staged-recipes/pull/33857) OPEN |
 | smolagents | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/smolagents/recipe.yaml) | ready | — |
 | llm-sandbox | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/llm-sandbox/recipe.yaml) | ready | — |
 | pybase62 | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pybase62/recipe.yaml) | ready | — |
@@ -460,7 +498,7 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | apify-shared | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/apify-shared/recipe.yaml) | ready | — |
 | vlmrun-hub | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/vlmrun-hub/recipe.yaml) | ready | — |
 | ibm-cos-sdk-core | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-cos-sdk-core/recipe.yaml) | ready | — |
-| pymilvus-model | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pymilvus-model/recipe.yaml) | ready | — |
+| pymilvus-model | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pymilvus-model/recipe.yaml) | on conda-forge | [#33837](https://github.com/conda-forge/staged-recipes/pull/33837) MERGED |
 | milvus-lite | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/milvus-lite/recipe.yaml) | ready | — |
 | couchbase | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/couchbase/recipe.yaml) | ready | — |
 | firecrawl-py | C* | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/firecrawl-py/recipe.yaml) | ready (built PR#24; post-lean a `run_constraints` integration, not a B1 core leaf) | — |
@@ -468,9 +506,9 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | qianfan | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/qianfan/recipe.yaml) | blocked | — |
 | ragworkbench | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ragworkbench/recipe.yaml) | blocked | — |
 | toolguard | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/toolguard/recipe.yaml) | blocked | — |
-| pksuid | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pksuid/recipe.yaml) | blocked (→pybase62) | — |
+| pksuid | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pksuid/recipe.yaml) | blocked (→pybase62 [#33838](https://github.com/conda-forge/staged-recipes/pull/33838) MERGED → on cf; ready to submit) | — |
 | vlmrun | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/vlmrun/recipe.yaml) | blocked (→vlmrun-hub) | — |
-| ddgs | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ddgs/recipe.yaml) | blocked (→primp) | — |
+| ddgs | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ddgs/recipe.yaml) | blocked (→primp [#33836](https://github.com/conda-forge/staged-recipes/pull/33836) MERGED → on cf; ready to submit) | — |
 | langchain-milvus | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-milvus/recipe.yaml) | ready | — |
 | ibm-cos-sdk-s3transfer | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-cos-sdk-s3transfer/recipe.yaml) | blocked (→core) | — |
 | langwatch | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langwatch/recipe.yaml) | blocked (→pksuid, pybase62) | — |
@@ -480,7 +518,7 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | ibm-watsonx-ai | B4 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-watsonx-ai/recipe.yaml) | blocked (→ibm-cos-sdk; also build 1.3.37 for py3.10, G40) | — |
 | langchain-ibm | B5 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-ibm/recipe.yaml) | blocked (→ibm-watsonx-ai) | — |
 | agent-lifecycle-toolkit | B5 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/agent-lifecycle-toolkit/recipe.yaml) | blocked (→ibm-watsonx-ai, smolagents, llm-sandbox) | — |
-| opendsstar | B5 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/opendsstar/recipe.yaml) | blocked (→pymilvus-model, milvus-lite, langchain-milvus, smolagents, ragworkbench) | — |
+| opendsstar | B5 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/opendsstar/recipe.yaml) | submitted, CI-red (→pymilvus-model on cf; milvus-lite, langchain-milvus, smolagents, ragworkbench NOT on cf yet) | [#33840](https://github.com/conda-forge/staged-recipes/pull/33840) OPEN |
 | **langflow-suite** (lfx + langflow-base + langflow) | B6 / B8 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow-suite/recipe.yaml) | blocked (Skew 1; 3-output submission unit) | — |
 | lfx-arxiv | B7 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx-arxiv/recipe.yaml) | blocked (→lfx) | — |
 | lfx-docling | B7 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx-docling/recipe.yaml) | blocked (→lfx, docling-core) | — |
@@ -527,7 +565,7 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 |---|---|---|---|---|
 | impit | C (prereq) | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/impit/recipe.yaml) | ready (compiled; unblocks apify-client, G38) | — |
 | apify-client | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/apify-client/recipe.yaml) | blocked (→impit; **attempt, may drop**) | — |
-| langchain-elasticsearch | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-elasticsearch/recipe.yaml) | blocked (gated on [elasticsearch-feedstock #122](https://github.com/conda-forge/elasticsearch-feedstock/pull/122)) | — |
+| langchain-elasticsearch | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-elasticsearch/recipe.yaml) | blocked (gated on [elasticsearch-feedstock #122](https://github.com/conda-forge/elasticsearch-feedstock/pull/122) — still OPEN 2026-06-24) | — |
 | langchain | — | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain/recipe.yaml) | **local-only skew-workaround — NEVER submit** (on cf; 1.2.18 base deps drop the stale text-splitters pin — Skew 1) | n/a |
 | litellm | — | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/litellm/recipe.yaml) | **local-only skew-workaround — NEVER submit** (on cf; 1.89.3 base deps drop the proxy-extras flatten — Skew 2) | n/a |
 | ragstack-ai-knowledge-store | — | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ragstack-ai-knowledge-store/recipe.yaml) | **local-only — NEVER submit** (BUSL-1.1 / non-OSI) | n/a |
