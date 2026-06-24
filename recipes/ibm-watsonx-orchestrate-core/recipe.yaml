@@ -10,20 +10,19 @@ package:
   version: ${{ version }}
 
 source:
-  # NOTE: the PyPI sdist for this package ships only metadata (zero .py files);
-  # building from it yields an empty module. Use the wheel (sdist is broken).
-  url: https://pypi.org/packages/py3/i/ibm-watsonx-orchestrate-core/ibm_watsonx_orchestrate_core-${{ version }}-py3-none-any.whl
-  sha256: f3231274761a5b04ebc7ae9a7e910bd5e58a91c33bd4d2656b5909e1ed077e8a
+  url: https://github.com/IBM/ibm-watsonx-orchestrate-adk/archive/refs/tags/${{ version }}.tar.gz
+  sha256: afb442be18de9452f3f0a00f420d74d81440287af436048c99e73468cc90cbbc
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install ibm_watsonx_orchestrate_core-${{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install ./packages/core -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }},<3.15
     - pydantic >=2.10.3,<3.0.0
@@ -69,18 +68,18 @@ extra:
   cfe-upstream-repo: https://github.com/IBM/ibm-watsonx-orchestrate-adk
   cfe-upstream-homepage: https://pypi.org/project/ibm-watsonx-orchestrate-core/
   cfe-import-names: [ibm_watsonx_orchestrate_core]
-  cfe-source-kind: pypi-wheel
+  cfe-source-kind: github-tag:pypi-sdist-metadata-only-G54
   cfe-noarch: python
   cfe-pip-check: true
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-06-24T09:58:17Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T17:25:55Z
+  cfe-local-build-datetime: 2026-06-24T09:58:17Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -89,10 +88,13 @@ extra:
 #    # Upstream requires-python is ">=3.11,<3.15"; override the conda-forge
 #    # default floor (3.10) upward to 3.11.
 # source:
-#    # Build from the wheel: the PyPI sdist ships no Python source (only
-#    # .gitignore + pyproject.toml + PKG-INFO), so `pip install .` from the
-#    # sdist would produce an empty package. The wheel is pure-Python
-#    # (py3-none-any), so noarch:python is still correct.
+#    # GitHub monorepo tag archive (G54 source preference). The PyPI sdist is
+#    # metadata-only (zero .py files) -> an sdist build yields an empty module,
+#    # but the ADK monorepo ships the full source at packages/core/, preferred
+#    # over the wheel. Build that subdir from the FULL extraction: hatchling reads
+#    # version from ../../src/ibm_watsonx_orchestrate/__init__.py (__version__ =
+#    # "2.11.0"), so the relative path must reach the monorepo src/ (no G39).
+#    # Tags are unprefixed (2.11.0, not v2.11.0). hatchling backend (G55).
 # about:
 #    # Upstream declares license-files = ["LICENSE"] but ships no LICENSE in
 #    # either the sdist or the wheel; vendored from the ADK repo (SKILL.md

@@ -63,7 +63,7 @@ extra:
   cfe-upstream-repo: https://github.com/suminb/base62
   cfe-upstream-homepage: https://github.com/suminb/base62
   cfe-import-names: [base62]
-  cfe-source-kind: pypi-wheel
+  cfe-source-kind: github-tag:pypi-wheel-only-no-sdist
   cfe-noarch: python
   cfe-pip-check: true
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
@@ -80,7 +80,10 @@ extra:
 ####
 # CFE comments
 # source:
-#    # Switched to GitHub release tarball as requested.
+#    # GitHub tag archive (G54 source preference): PyPI ships a wheel only (no
+#    # sdist), but the source IS on GitHub (base62.py + setup.py at the tag), so
+#    # conda-forge prefers building from source over repackaging the wheel.
+#    # setup.py sets version=base62.__version__ (read from base62.py — no G39).
 # about:
 #    # Upstream ships only a wheel (no sdist); the wheel's bundled LICENSE is
 #    # not reachable as a recipe-relative path, so it ships in the recipe dir.
