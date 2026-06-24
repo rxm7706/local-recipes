@@ -52,7 +52,7 @@ jobs:
       - name: lint
         run: |
           python .github/workflows/scripts/linter.py \
-            --owner=${{ github.repository_owner }} \
+            --repo=${{ github.repository }} \
             --pr-num=${{ github.event.number }} \
           >> $GITHUB_STEP_SUMMARY
         env:
