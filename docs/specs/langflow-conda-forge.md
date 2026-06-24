@@ -21,11 +21,16 @@ spec_updated: 2026-06-23
 > **(1)** the **core hard-dep closure** that makes `langflow-suite` installable (the lfx
 > closure, IBM chain, `opendsstar`, `jsonquerylang`, the langflow-family, the 4 `lfx-*`
 > feedstocks, …); **(2)** **ALL optional `run_constraints` integrations** — every `langchain-*`
-> provider wrapper + SDK leaf — **including the ~20 not yet authored** (§ Submission set C),
-> which must be **authored, their own recursive sub-closures resolved, and submitted**;
-> **(3)** **ALL THREE external cf skews fixed** — Skew 1 (langchain-text-splitters) gates the
-> core suite; Skews 2 (litellm/fastapi) + 3 (otel/observability) gate the optional integrations
-> — all three are in scope.
+> provider wrapper + SDK leaf (§ Submission set C) — **all now authored + built locally**; their
+> recursive sub-closures resolved + submitted leaves-first;
+> **(3)** **the external cf skews** — Skew 1 (langchain-text-splitters) **and** Skew 2 (litellm
+> proxy-extras flatten) **both gate the CORE suite** via lfx's hard deps; Skew 3 (otel cluster) is
+> now **optional-only** (lean → `run_constraints`). All are in scope; 1 + 2 are worked around
+> locally already (§ External skews).
+>
+> **Set C is already authored** (the integrations below are present locally + built) — Wave C is
+> "re-verify + submit leaves-first", not "author from scratch". The lean re-architecture (§ Packaging
+> shape) makes every Set-C integration a non-blocking `run_constraints` member.
 >
 > The **only** things NOT submitted are the 3 caveats (§ Submission set → Caveats):
 > `ragstack-ai-knowledge-store` (BUSL-1.1, non-OSI → drop), `langchain-elasticsearch`
@@ -45,7 +50,8 @@ spec_updated: 2026-06-23
 >
 > **Supersedes** the earlier "separate-recipes / authoring" model of this file. langflow,
 > langflow-base, and lfx are now packaged as **one multi-output recipe** (`recipes/langflow-suite/`),
-> with one important caveat (see § Packaging shape — the lfx-split decision).
+> built **lean** — integrations are optional `run_constraints`, not forced (see § Packaging shape).
+> The lean-architecture + skew-fix work landed in **local-recipes PR #25** (open).
 
 ---
 
@@ -129,7 +135,7 @@ grandalf, mcp, cryptography, …).
 | vlmrun | blocked-pending-prereq | noarch | Apache-2.0 | vlmrun-hub |
 | couchbase | pending-submission | compiled C++ | multi (Apache/MIT/BSD/CC0) | — |
 | pymilvus-model | pending-submission | noarch | Apache-2.0 | — |
-| milvus-lite | pending-submission | noarch | Apache-2.0 | — (3.0 pure-Python, G42; pip_check off, G28) |
+| milvus-lite | pending-submission | noarch | Apache-2.0 | — (3.0 pure-Python, G42; G28 faiss-cpu→faiss source-patch, pip_check re-enabled true) |
 | ibm-cos-sdk-core | pending-submission | noarch | Apache-2.0 | — |
 | ibm-cos-sdk-s3transfer | blocked-pending-prereq | noarch | Apache-2.0 | ibm-cos-sdk-core (==) |
 | ibm-cos-sdk | blocked-pending-prereq | noarch | Apache-2.0 | core + s3transfer |
@@ -144,10 +150,10 @@ grandalf, mcp, cryptography, …).
 | langchain-ibm | blocked-pending-prereq | noarch | MIT | ibm-watsonx-ai |
 | agent-lifecycle-toolkit | blocked-pending-prereq | noarch | Apache-2.0 | ibm-watsonx-ai, smolagents, llm-sandbox (import `altk`, G7) |
 | opendsstar | blocked-pending-prereq | noarch | Apache-2.0 | pymilvus-model, milvus-lite, langchain-milvus, smolagents, ragworkbench (import `OpenDsStar`, G7) |
-| firecrawl-py | (built) | noarch | MIT | — (langflow-base hard dep) |
-| spider-client | pending-submission | noarch | MIT | — (leaf; langflow-base hard dep) |
-| assemblyai | pending-submission | noarch | MIT | — (leaf; langflow-base hard dep) |
-| **lfx** *(SPLIT OUT — own feedstock)* | blocked-pending-prereq | noarch | MIT | langflow-sdk, opendsstar, jsonquerylang, markitdown(cf), langchain+langchain-classic(cf) |
+| firecrawl-py | pending-submission | noarch | MIT | — (built; post-lean a langflow-base `run_constraints` integration, NOT a hard dep) |
+| spider-client | pending-submission | noarch | MIT | — (leaf; post-lean langflow-base `run_constraints`, not a hard dep) |
+| assemblyai | pending-submission | noarch | MIT | — (leaf; post-lean langflow-base `run_constraints`, not a hard dep) |
+| **lfx** *(suite output — Q1: NOT split)* | blocked-pending-prereq | noarch | MIT | langflow-sdk, opendsstar (→litellm), jsonquerylang, markitdown(cf), langchain+langchain-classic(cf) |
 | lfx-arxiv | blocked-pending-prereq | noarch | MIT | lfx |
 | lfx-docling | blocked-pending-prereq | noarch | MIT | lfx, docling-core(cf) |
 | lfx-duckduckgo | blocked-pending-prereq | noarch | MIT | lfx, ddgs |
@@ -157,16 +163,15 @@ grandalf, mcp, cryptography, …).
 | langchain-google-vertexai | blocked-pending-prereq | noarch | MIT | — |
 | langchain-sambanova | blocked-pending-prereq | noarch | MIT | — |
 | langchain-google-community | blocked-pending-prereq | noarch | MIT | — (G12 numpy-selector, G35) |
-| **langflow-base** *(suite)* | blocked-pending-prereq | noarch | MIT | lfx, jsonquerylang, spider-client, assemblyai, firecrawl-py, langchain stack |
-| **langflow** *(suite)* | blocked-pending-prereq | noarch | MIT | langflow-base[complete], lfx-arxiv, lfx-docling, lfx-duckduckgo, lfx-ibm |
+| **langflow-base** *(suite; LEAN)* | blocked-pending-prereq | noarch | MIT | lfx + framework core ONLY (all integrations incl. spider-client/assemblyai/firecrawl-py → `run_constraints`; METADATA source-stripped) |
+| **langflow** *(suite; LEAN umbrella)* | blocked-pending-prereq | noarch | MIT | langflow-base ONLY (lfx-* + integrations → `run_constraints`; `[complete]`→`langflow-base` source-rewrite; cycle dissolved) |
 
-> **Re-verify before each wave:** **`spider-client`** and **`assemblyai`** (both langflow-base
-> BASE deps) are now **authored + `build=success` locally** (ultraplan scan 2026-06-23) — no
-> longer "to author". BMAD must still flatten each output's real upstream `[project.dependencies]`
-> (umbrella also `langflow-base[complete]`, G25), run `check_dependencies` on the **flattened
-> single-output** recipe (G29 — multi-output checkers are top-level-only), and author any
-> still-missing leaf before that wave. Only `firecrawl-py` currently lacks a `cfe-local-build-*`
-> record — build + verify it in Wave A.
+> **Re-verify before each wave:** the langflow-suite outputs are **LEAN** — `spider-client`,
+> `assemblyai`, `firecrawl-py` and the whole integration set are `run_constraints` (NOT hard deps),
+> and are `sed`-stripped from the wheel METADATA at build. All are authored + built; `firecrawl-py`
+> + `mem0ai` build records were added in PR #24. When adding a NEW hard dep to a lean output, run
+> `check_dependencies` on a flattened single-output recipe (G29) and decide core-vs-integration per
+> § Packaging shape before placing it in `run` vs `run_constraints`.
 
 ### C. Optional integrations (`run_constraints`) — full-closure scope
 
@@ -213,7 +218,7 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 > Skew 3 (otel cluster) is now **optional-only** — the lean re-architecture moved it to
 > `run_constraints`, so it no longer gates the core.
 
-### Skew 1 — langchain-text-splitters (PRIMARY hard blocker; the only one blocking langflow-suite core)
+### Skew 1 — langchain-text-splitters (core-gating via lfx; one of TWO core skews — see Skew 2)
 
 - **Symptom:** `lfx` test-env solve fails. `lfx` pins **both** `langchain~=1.2.0` and
   `langchain-classic~=1.0.7`. On cf, **every `langchain 1.2.x` build (all 37) pins
@@ -227,11 +232,13 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
   `langchain-text-splitters` run-dep so it admits `>=1.1.0` (match upstream + `langchain-classic`),
   rerender, merge. **Verify first** against the exact cf-pinned 1.2.x upstream metadata
   (`pypi.org/pypi/langchain/<ver>/json`).
-- **Approach RESOLVED (rxm7706, 2026-06-23): local rebuild FIRST, then the upstream PR.** Rebuild
-  `langchain` locally with the loosened text-splitters pin to confirm `lfx` + the 3-output
-  `langflow-suite` go **test-GREEN on the py3.11 leg** fast (no outward action / no waiting on
-  external review). THEN file the ~1-line `conda-forge/langchain-feedstock` PR as the durable fix.
-  The local rebuild is the iteration loop; the upstream PR is what actually unblocks cf submission.
+- **Approach DONE (rxm7706, 2026-06-23): local rebuild first, then the upstream PR.** Rebuilt
+  `langchain` 1.2.18 locally **from its real upstream base deps** (grayskull) — which declare only
+  `langchain-core`/`langgraph`/`pydantic` and **NO `langchain-text-splitters` at all** (so the cf
+  feedstock's `<1.0.0` pin simply *vanishes*, not "loosened"). `lfx` + the 3-output `langflow-suite`
+  then go **test-GREEN** (py3.11). The build is in the channel as `recipes/langchain/` (LOCAL-ONLY,
+  do-not-submit). **Still TO FILE:** the ~1-line `conda-forge/langchain-feedstock` PR dropping the
+  stale pin — the durable unblock for cf submission.
 - **Note:** `langchain 1.2.x` is NOT py3.13-only — it has `pymin310` builds (`python >=3.10,<3.13`)
   covering py3.11; Python is not the blocker, the text-splitters pin is.
 - **Diagnosis test:** solve `langchain` + `langchain-classic` + `langchain-text-splitters` in
@@ -290,23 +297,25 @@ iteration loop; the PRs are what actually unblock cf submission:
    pybase62, lomond, apify-shared, vlmrun-hub, ibm-cos-sdk-core, pymilvus-model, milvus-lite,
    couchbase, firecrawl-py, trustcall, qianfan, ragworkbench, toolguard.
 2. **B2:** pksuid (→pybase62), vlmrun (→vlmrun-hub), ddgs (→primp), langchain-milvus (→pymilvus-model),
-   ibm-cos-sdk-s3transfer (→core), langwatch (→pksuid, pybase62), + author/submit **spider-client**,
-   **assemblyai** (langflow-base hard deps).
+   ibm-cos-sdk-s3transfer (→core), langwatch (→pksuid, pybase62). (`spider-client` + `assemblyai` are
+   now `run_constraints` integrations post-lean, NOT hard deps — submit in Wave C with the rest.)
 3. **B3:** ibm-cos-sdk (→core + s3transfer).
 4. **B4:** ibm-watsonx-ai (→ibm-cos-sdk); also build 1.3.37 for the py3.10 leg (G40).
 5. **B5:** langchain-ibm (→ibm-watsonx-ai), agent-lifecycle-toolkit (→ibm-watsonx-ai, smolagents,
    llm-sandbox), opendsstar (→pymilvus-model, milvus-lite, langchain-milvus, smolagents, ragworkbench).
 6. **B6 (single 3-output suite — Q1 RESOLVED, NOT split):** submit `recipes/langflow-suite/`
-   producing **lfx + langflow-base + langflow** in one PR (→ langflow-sdk, opendsstar,
-   jsonquerylang, spider-client, assemblyai, firecrawl-py + cf langchain stack). Because the 4
-   `lfx-*` feedstocks aren't on cf yet, **temporarily relax the `langflow` output's lfx-* import
-   test** for this first submission (the bootstrap cycle — see § Packaging shape). This publishes
-   `lfx`.
-7. **B7:** submit the 4 `lfx-*` feedstocks (now that `lfx` is on cf): lfx-arxiv, lfx-docling,
-   lfx-duckduckgo (→ddgs), lfx-ibm (→langchain-ibm, ibm-watsonx-ai) — all → lfx.
-8. **B8 (follow-up):** build-number-bump PR on `langflow-suite` to **re-enable / tighten the
-   `langflow` output's full lfx-* test** now that all 4 `lfx-*` are on cf. Suite versions stay
-   locked together from here on (autotick maintains lfx/langflow-base/langflow in lockstep).
+   producing **lfx + langflow-base + langflow** in one PR. Lean hard deps only (→ langflow-sdk,
+   opendsstar, jsonquerylang + the cf langchain/framework stack); spider-client/assemblyai/
+   firecrawl-py and the 4 `lfx-*` are `run_constraints`, NOT submission prerequisites. **No test
+   relaxation needed** — the lean umbrella never hard-deps the lfx-*, so the bootstrap cycle is
+   already dissolved (§ Packaging shape); each output's `import lfx`/`import langflow` test passes
+   against the cf framework stack alone. Publishes lfx + langflow-base + langflow together.
+7. **B7:** submit the 4 `lfx-*` feedstocks (depend on `lfx`, now on cf): lfx-arxiv, lfx-docling,
+   lfx-duckduckgo (→ddgs), lfx-ibm (→langchain-ibm, ibm-watsonx-ai). Once on cf they satisfy the
+   umbrella's `run_constraints`.
+8. **B8 (optional follow-up):** nothing to "re-enable" (the lean umbrella never hard-required the
+   lfx-* test). Optionally tighten the `langflow` `run_constraints` lower bounds on the published
+   lfx-*. Suite versions stay locked together (autotick maintains lfx/langflow-base/langflow in lockstep).
 
 ### Wave C — submit optional integrations (full-closure scope)
 
@@ -330,13 +339,17 @@ iteration loop; the PRs are what actually unblock cf submission:
 
 ```bash
 # merged-CBC channel at build_artifacts/linux64/ (gitignored; rebuild from recipes/).
-# build one recipe into it (tests skipped while the skew is unresolved):
+# build one recipe into it (--test skip for fast channel population; the suite itself tests GREEN):
 pixi run -e local-recipes rattler-build build \
   --recipe recipes/<name>/recipe.yaml \
   --variant-config .pixi/envs/local-recipes/conda_build_config.yaml \
   --output-dir build_artifacts/linux64 --test skip
 pixi run -e local-recipes python -m conda_index build_artifacts/linux64
 ```
+
+**Local skew-workaround rebuilds FIRST** (they shadow cf's stale-pinned builds; LOCAL-ONLY,
+do-not-submit — `recipes/langchain/`, `recipes/litellm/`): `langchain` 1.2.18 + `litellm` 1.89.3
+(base deps). **Without these the suite test-env solve fails on Skews 1 + 2.**
 
 Channel build order (leaves → roots): primp → ddgs; pybase62 → pksuid; vlmrun-hub → vlmrun;
 ibm-cos-sdk-{core,s3transfer} → ibm-cos-sdk → ibm-watsonx-ai{1.3.37,1.5.13} →
@@ -346,7 +359,7 @@ langflow-base → langflow.
 
 ---
 
-## Open Questions — ALL RESOLVED 2026-06-23 (rxm7706, via ultraplan)
+## Open Questions — Q1–Q5 RESOLVED; Q6 is NEW + OPEN (2026-06-23)
 
 - **Q1 — suite shape. RESOLVED: KEEP the single 3-output recipe (do NOT split lfx).** lfx +
   langflow-base + langflow ship from one `langflow-suite` feedstock so the three versions stay
@@ -362,7 +375,16 @@ langflow-base → langflow.
   matrix per G38), **flag at-risk; DROP if it can't be unblocked cleanly.**
 - **Q5 — langchain-elasticsearch / elasticsearch ≥8.19. RESOLVED: INCLUDE, gated on
   `conda-forge/elasticsearch-feedstock` PR #122**
-  (https://github.com/conda-forge/elasticsearch-feedstock/pull/122, UP). Submit once #122 merges.
+  (https://github.com/conda-forge/elasticsearch-feedstock/pull/122 — **re-verify it's still open/merged
+  before relying on it**). Submit once #122 merges.
+- **Q6 — lean `lfx` too? (NEW, OPEN.)** The lean cut applied to langflow-base + langflow, but `lfx`
+  keeps its upstream hard dep on `opendsstar`, which pulls `litellm` + a heavy closure (docling,
+  milvus-lite, sentence-transformers, datasets, …). So `conda install langflow` still drags that in
+  via lfx even though the umbrella is lean. The "no one needs all integrations" rationale arguably
+  applies to `lfx → opendsstar` as well — **should `opendsstar` (and its heavy closure) be demoted
+  to an lfx `run_constraints` integration?** Note upstream lfx hard-deps `OpenDsStar` under a marker,
+  so this is a deliberate-deviation decision, not free. Affects how heavy the minimal install is
+  **and** whether Skews 1/2 still gate the core (opendsstar is the path that pulls litellm). Unresolved.
 
 ---
 
@@ -386,15 +408,29 @@ not authoring. It also **resolved all five open questions** (Q1 single 3-output 
 Q2 ragstack local-only commented-out; Q3 python_min 3.11; Q4 apify-client attempt-or-drop; Q5
 langchain-elasticsearch gated on cf `elasticsearch-feedstock` PR #122) and recorded the **Skew 1
 approach** (local langchain rebuild first to verify GREEN, then the upstream feedstock PR).
-Execution (Waves A–D) is unstarted and gated on explicit per-action go-ahead; no pushes/PRs yet.
+
+The **2026-06-23 GREEN session (PR #25)** executed the fix end-to-end and is the current state of
+record. It: rebuilt `langchain` 1.2.18 + `litellm` 1.89.3 locally (Skews 1 + 2 — the latter newly
+traced to the cf litellm feedstock flattening the `proxy`/`proxy-runtime` **extras** into hard deps,
+which gates the **core** via `lfx`); source-patched the two G28 dist-name false positives
+(`milvus-lite` `faiss-cpu`→`faiss`, `opendsstar` `docling`→`docling-slim`) and re-enabled their
+pip_check; and applied the **LEAN re-architecture** — langflow-base + langflow hard-`run` = framework
+core only, ALL integrations + the 4 lfx-* demoted to `run_constraints`, with the integration deps
+`sed`-stripped from the wheel METADATA (empirically validated; `jq` + `onnxruntime` also demoted).
+**Result: all 3 langflow-suite outputs build + test GREEN locally.** A Gemini review round on PR #25
+was addressed (jq/onnxruntime run-vs-run_constraints dedup; portable `sed -i.bak`; dropped the
+litellm proxy-CLI test). **Still outstanding for cf submission:** the 2 durable feedstock PRs
+(langchain stale pin; litellm proxy-extras flatten) — TO FILE — and Waves B–D (staged-recipes
+submissions), unstarted.
 
 ---
 
 ## Appendix: Recipe Registry & Submission Tracker
 
 Every local recipe in the langflow-suite closure, with its wave, current status, and submission PR.
-Recipe links point at `main`. **As of 2026-06-23 execution is unstarted — no submissions yet, so
-every PR cell is `—`.** Fill each PR cell as a recipe is submitted, e.g.
+Recipe links point at `main`. **As of 2026-06-23 no conda-forge submissions have been made — every
+PR cell is `—`** (the local recipe state — incl. the lean re-architecture + skew workarounds — lives
+in local-recipes PR #25). Fill each PR cell as a recipe is submitted to staged-recipes / a feedstock, e.g.
 `[#33846](https://github.com/conda-forge/staged-recipes/pull/33846)`. Keep this table the
 single source of truth for "where is each recipe in the pipeline".
 
@@ -422,7 +458,7 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | pymilvus-model | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pymilvus-model/recipe.yaml) | ready | — |
 | milvus-lite | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/milvus-lite/recipe.yaml) | ready | — |
 | couchbase | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/couchbase/recipe.yaml) | ready | — |
-| firecrawl-py | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/firecrawl-py/recipe.yaml) | not-built (build in Wave A) | — |
+| firecrawl-py | C* | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/firecrawl-py/recipe.yaml) | ready (built PR#24; post-lean a `run_constraints` integration, not a B1 core leaf) | — |
 | trustcall | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/trustcall/recipe.yaml) | blocked | — |
 | qianfan | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/qianfan/recipe.yaml) | blocked | — |
 | ragworkbench | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ragworkbench/recipe.yaml) | blocked | — |
@@ -472,7 +508,7 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | langchain-pinecone | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-pinecone/recipe.yaml) | ready | — |
 | langchain-unstructured | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-unstructured/recipe.yaml) | ready | — |
 | langchain-weaviate | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-weaviate/recipe.yaml) | ready | — |
-| mem0ai | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/mem0ai/recipe.yaml) | not-built | — |
+| mem0ai | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/mem0ai/recipe.yaml) | ready (built PR#24) | — |
 | metal-sdk | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/metal-sdk/recipe.yaml) | ready | — |
 | needle-python | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/needle-python/recipe.yaml) | ready | — |
 | openlayer | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/openlayer/recipe.yaml) | ready | — |
@@ -487,4 +523,6 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | impit | C (prereq) | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/impit/recipe.yaml) | ready (compiled; unblocks apify-client, G38) | — |
 | apify-client | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/apify-client/recipe.yaml) | blocked (→impit; **attempt, may drop**) | — |
 | langchain-elasticsearch | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-elasticsearch/recipe.yaml) | blocked (gated on [elasticsearch-feedstock #122](https://github.com/conda-forge/elasticsearch-feedstock/pull/122)) | — |
+| langchain | — | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain/recipe.yaml) | **local-only skew-workaround — NEVER submit** (on cf; 1.2.18 base deps drop the stale text-splitters pin — Skew 1) | n/a |
+| litellm | — | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/litellm/recipe.yaml) | **local-only skew-workaround — NEVER submit** (on cf; 1.89.3 base deps drop the proxy-extras flatten — Skew 2) | n/a |
 | ragstack-ai-knowledge-store | — | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ragstack-ai-knowledge-store/recipe.yaml) | **local-only — NEVER submit** (BUSL-1.1 / non-OSI) | n/a |
