@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-06-20
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v8.41.0'
+source_pin: 'conda-forge-expert v8.42.1'
 consolidates:
   - architecture-conda-forge-expert.md
   - architecture-cf-atlas.md
@@ -37,7 +37,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
    │  - active-project   │   ┌──────────────────────────▼──────────────────────┐
    │    resolution       │   │   Part 1: conda-forge-expert skill              │
    │                     │◀──│   - SKILL.md (10-step loop, 5 critical          │
-   │                     │   │     constraints, G1-G53 gotchas)                │
+   │                     │   │     constraints, G1-G55 gotchas)                │
    │                     │   │   - 54 Tier 1 canonical scripts                 │
    └─────────────────────┘   │   - 46 Tier 2 CLI wrappers                      │
               │              │   - 41 templates / 13 ecosystems (12 language + conda-forge-yml)                │
@@ -117,7 +117,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
 **Key invariants**:
 1. 10-step autonomous loop with one human gate at step 8b
 2. 5 critical constraints (no-mix-formats, stdlib-required, python-floor, pypi-url-pattern, build.bat-call-prefix)
-3. 51 Recipe Authoring Gotchas (G1-G53)
+3. 55 Recipe Authoring Gotchas (G1-G55)
 4. Three-place rule for new scripts (canonical + wrapper + pixi task + meta-test)
 
 **Detail**: see [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md)

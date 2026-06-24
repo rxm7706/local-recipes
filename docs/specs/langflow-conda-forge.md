@@ -51,7 +51,7 @@ spec_updated: 2026-06-23
 > **Supersedes** the earlier "separate-recipes / authoring" model of this file. langflow,
 > langflow-base, and lfx are now packaged as **one multi-output recipe** (`recipes/langflow-suite/`),
 > built **lean** — integrations are optional `run_constraints`, not forced (see § Packaging shape).
-> The lean-architecture + skew-fix work landed in **local-recipes PR #25** (open).
+> The lean-architecture + skew-fix work landed in **local-recipes PR #25** (merged to `main`).
 
 ---
 
@@ -332,7 +332,9 @@ iteration loop; the PRs are what actually unblock cf submission:
 ### Wave D — closeout
 
 - CFE-skill retro (Rule 2) folding in whatever the feedstock-convergence + submission work
-  surfaces. The authoring wave already shipped CFE v8.35.0 (G39–G43 + external-skew protocol).
+  surfaces. The authoring wave shipped CFE v8.35.0 (G39–G43 + external-skew protocol); the closure
+  has since driven the skill to **v8.42.x** (through G55 — notably G54/G55, the wheel→GitHub-source
+  switch this closure produced for `langflow-sdk` + the 4 `lfx-*`).
 
 ---
 
@@ -393,7 +395,8 @@ langflow-base → langflow.
 
 The 2026-06-19 session authored the full transitive closure (4 recursion layers; each layer's
 `check_dependencies` drove the next), surfacing CFE gotchas **G35, G39–G43** + the external-skew
-Build-Failure-Protocol note (shipped CFE v8.35.0). The 2026-06-23 session fixed the
+Build-Failure-Protocol note (shipped CFE v8.35.0; the closure later drove **G54+G55 / v8.42.0** —
+the wheel→GitHub-monorepo source switch for `langflow-sdk` + the 4 `lfx-*`). The 2026-06-23 session fixed the
 `langflow-suite` recipe (schema/lint repair; corrected the `lfx` output's truncated run list to
 upstream's ~43 deps with G24 caps + G25 `httpx[http2]` flatten), confirmed **all 3 outputs build
 GREEN** (`--test skip`), and pinned the residual blocker to **Skew 1 (langchain-text-splitters)** —
@@ -403,15 +406,16 @@ The **2026-06-23 ultraplan re-grounding** session (this update) read the spec in
 `conda-forge-expert` skill, **re-scanned `recipes/` against the closure**, and found the repo
 materially ahead of the spec's prose: **all ~46 core recipes AND all ~18 Set-C optional
 integrations are now authored + built** (Set C is no longer "to author"); `spider-client`,
-`assemblyai`, and `impit` are all present + `build=success`; only `firecrawl-py` lacks a build
-record. The residual work is therefore **skew-fix → re-verify GREEN → leaves-first submission**,
+`assemblyai`, and `impit` are all present + `build=success`; **all closure recipes — incl.
+`firecrawl-py` + `mem0ai` — now carry a local build record** (the last two added via merged PR #24).
+The residual work is therefore **skew-fix → re-verify GREEN → leaves-first submission**,
 not authoring. It also **resolved all five open questions** (Q1 single 3-output recipe / no split;
 Q2 ragstack local-only commented-out; Q3 python_min 3.11; Q4 apify-client attempt-or-drop; Q5
 langchain-elasticsearch gated on cf `elasticsearch-feedstock` PR #122) and recorded the **Skew 1
 approach** (local langchain rebuild first to verify GREEN, then the upstream feedstock PR).
 
-The **2026-06-23 GREEN session (PR #25)** executed the fix end-to-end and is the current state of
-record. It: rebuilt `langchain` 1.2.18 + `litellm` 1.89.3 locally (Skews 1 + 2 — the latter newly
+The **2026-06-23 GREEN session (PR #25, now merged to `main`)** executed the fix end-to-end and is
+the current state of record. It: rebuilt `langchain` 1.2.18 + `litellm` 1.89.3 locally (Skews 1 + 2 — the latter newly
 traced to the cf litellm feedstock flattening the `proxy`/`proxy-runtime` **extras** into hard deps,
 which gates the **core** via `lfx`); source-patched the two G28 dist-name false positives
 (`milvus-lite` `faiss-cpu`→`faiss`, `opendsstar` `docling`→`docling-slim`) and re-enabled their
@@ -430,8 +434,8 @@ submissions), unstarted.
 
 Every local recipe in the langflow-suite closure, with its wave, current status, and submission PR.
 Recipe links point at `main`. **As of 2026-06-23 no conda-forge submissions have been made — every
-PR cell is `—`** (the local recipe state — incl. the lean re-architecture + skew workarounds — lives
-in local-recipes PR #25). Fill each PR cell as a recipe is submitted to staged-recipes / a feedstock, e.g.
+PR cell is `—`** (the local recipe state — incl. the lean re-architecture + skew workarounds — now
+lives on `main`, landed via merged local-recipes PR #25). Fill each PR cell as a recipe is submitted to staged-recipes / a feedstock, e.g.
 `[#33846](https://github.com/conda-forge/staged-recipes/pull/33846)`. Keep this table the
 single source of truth for "where is each recipe in the pipeline".
 
