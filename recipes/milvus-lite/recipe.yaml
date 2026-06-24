@@ -18,7 +18,7 @@ build:
   script: |
     # conda faiss-cpu exposes bindings under dist-info `faiss` (no `faiss-cpu`
     # dist-info); rewrite the wheel METADATA dep so `pip check` sees `faiss` (G28).
-    sed -i 's/"faiss-cpu>=1.7.4"/"faiss>=1.7.4"/' pyproject.toml
+    sed -i.bak 's/"faiss-cpu>=1.7.4"/"faiss>=1.7.4"/' pyproject.toml && rm pyproject.toml.bak
     ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
