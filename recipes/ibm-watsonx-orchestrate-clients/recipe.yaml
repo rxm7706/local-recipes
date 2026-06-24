@@ -10,6 +10,8 @@ package:
   version: ${{ version }}
 
 source:
+  # NOTE: the PyPI sdist for this package ships only metadata (zero .py files);
+  # building from it yields an empty module. Use the wheel (sdist is broken).
   url: https://pypi.org/packages/py3/i/ibm-watsonx-orchestrate-clients/ibm_watsonx_orchestrate_clients-${{ version }}-py3-none-any.whl
   sha256: 8de53f530615d92d4b83417176afc37be144a867c2207c76b87354b41b592ba7
 
