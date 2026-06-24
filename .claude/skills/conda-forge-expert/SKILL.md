@@ -2645,7 +2645,7 @@ Asset-bearing wheel + asset-free GitHub source → use the wheel. Set `cfe-sourc
 - **Wheel-only on PyPI, but source IS on GitHub.** A package can publish only a wheel to PyPI yet keep source in a public repo/monorepo (e.g. `langflow-sdk` + `lfx-*` live in `langflow-ai/langflow` under `src/sdk`, `src/bundles/*`). The generator never checks GitHub and defaults to the wheel; the **GitHub tag archive is the preferred source**.
 
 **Fix — the decision order** (verify each before accepting it):
-1. **Usable PyPI sdist?** Confirm it ships the module: `curl -sL <sdist-url> | tar tz | grep -c '\.py$'` — must be > 0. If yes, use the sdist (+ G55 backend).
+1. **Usable PyPI sdist?** Confirm it ships the module: `curl -sL <sdist-url> | tar -tzf - | grep -c '\.py$'` — must be > 0. If yes, use the sdist (+ G55 backend).
 2. **Else, GitHub source tag archive?** `https://github.com/<org>/<repo>/archive/refs/tags/v<tag>.tar.gz`, building the subdir for a monorepo — preferred over the wheel. **Monorepo wrinkle:** package version ≠ monorepo tag → carry a separate `monorepo_tag` context var and `pip install ./src/<sub>`:
    ```yaml
    context:

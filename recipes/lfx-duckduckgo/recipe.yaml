@@ -18,7 +18,7 @@ source:
 build:
   noarch: python
   number: 0
-  script: pip install ./src/bundles/duckduckgo --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install ./src/bundles/duckduckgo --no-deps --no-build-isolation -vv
 
 requirements:
   host:
