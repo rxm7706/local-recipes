@@ -24,7 +24,7 @@
       steps:
         - name: check-teams
           id: check_teams
-          uses: actions/github-script@v6
+          uses: actions/github-script@v9
           with:
             script: |
               const teams = [
@@ -69,7 +69,7 @@
           if: >
             (steps.check_teams.outputs.result == 'true')
             && contains(github.event.issue.labels.*.name, 'Awaiting author contribution')
-          uses: actions/github-script@v6
+          uses: actions/github-script@v9
           with:
             script: |
               github.rest.issues.removeLabel({
@@ -88,7 +88,7 @@
       steps:
         - name: check-team-membership
           id: check_team_review
-          uses: actions/github-script@v6
+          uses: actions/github-script@v9
           with:
             script: |
               console.log(`Label was removed by ${context.payload.sender.login}`);
@@ -96,7 +96,7 @@
         - name: add-labels
           if: >
             (steps.check_team_review.outputs.result == 'true')
-          uses: actions/github-script@v6
+          uses: actions/github-script@v9
           with:
             script: |
               github.rest.issues.addLabels({
@@ -108,7 +108,7 @@
         - name: readd-review-label
           if: >
             (steps.check_team_review.outputs.result == 'false')
-          uses: actions/github-script@v6
+          uses: actions/github-script@v9
           with:
             script: |
               github.rest.issues.addLabels({
