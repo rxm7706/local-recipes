@@ -135,7 +135,7 @@ source:
   url: https://pypi.org/packages/source/l/litellm-proxy-extras/litellm_proxy_extras-${{ version }}.tar.gz
 ```
 
-**Wheel (only when no sdist exists upstream):**
+**Wheel (LAST resort — only when no *usable* sdist AND no GitHub source archive exist; see G54/G55 — a wheel-only PyPI package often still has source on GitHub, and many sdists are metadata-only/broken):**
 ```yaml
 source:
   url: https://pypi.org/packages/<py-tag>/m/my-package/my-package-${{ version }}-<py-tag>-none-any.whl
@@ -2636,6 +2636,61 @@ Asset-bearing wheel + asset-free GitHub source → use the wheel. Set `cfe-sourc
 
 ---
 
+### G54. Source preference is `sdist > GitHub-source > wheel` — but the source must actually SHIP the module; verify before switching (existence ≠ usable)
+
+**Symptom**: a recipe sources a PyPI **wheel** (`…-py3-none-any.whl`) and conda-forge's review nudges *"Detected pure Python wheel(s) in source … it's preferred to use a source distribution (sdist) if possible."* Reviewers prefer source builds. Conversely, naively switching a wheel recipe to "the sdist" can produce `ModuleNotFoundError` at the import test or a `0.0.0` version.
+
+**Why**: conda-forge prefers building from source (sdist or VCS tag) over repackaging a wheel — source is auditable + reproducible. grayskull / `recipe-generator.py` falls back to a wheel when it can't find a PyPI sdist, but it **does NOT check the project's GitHub for a source tag archive**, and it does NOT verify the chosen source contains code. Two real failure modes:
+- **Metadata-only / broken sdist.** Many PyPI sdists ship ONLY `pyproject.toml` + `PKG-INFO` (zero `.py` files) — the code lives only in the published wheel. `pip install .` builds an empty wheel → `ModuleNotFoundError` (e.g. `ibm-watsonx-orchestrate-core` 2.11.0 sdist has **0 `.py` files**; `jigsawstack` sdist omits a `requirements.txt` its build reads). For these the **wheel is correct** — document why.
+- **Wheel-only on PyPI, but source IS on GitHub.** A package can publish only a wheel to PyPI yet keep source in a public repo/monorepo (e.g. `langflow-sdk` + `lfx-*` live in `langflow-ai/langflow` under `src/sdk`, `src/bundles/*`). The generator never checks GitHub and defaults to the wheel; the **GitHub tag archive is the preferred source**.
+
+**Fix — the decision order** (verify each before accepting it):
+1. **Usable PyPI sdist?** Confirm it ships the module: `curl -sL <sdist-url> | tar tz | grep -c '\.py$'` — must be > 0. If yes, use the sdist (+ G55 backend).
+2. **Else, GitHub source tag archive?** `https://github.com/<org>/<repo>/archive/refs/tags/v<tag>.tar.gz`, building the subdir for a monorepo — preferred over the wheel. **Monorepo wrinkle:** package version ≠ monorepo tag → carry a separate `monorepo_tag` context var and `pip install ./src/<sub>`:
+   ```yaml
+   context:
+     version: "0.2.0"        # the package's own version
+     monorepo_tag: "1.10.0"  # the repo tag that CONTAINS it — bump BOTH on update
+   source:
+     url: https://github.com/<org>/<repo>/archive/refs/tags/v${{ monorepo_tag }}.tar.gz
+     sha256: <archive sha256>
+   build:
+     script: ${{ PYTHON }} -m pip install ./src/<sub> --no-deps --no-build-isolation
+   ```
+   Flag that **autotick cannot auto-bump this dual version** (it touches only one). Default to GitHub source; fall back to the wheel only when the monorepo download is prohibitive AND there's no standalone source repo.
+3. **Else (no usable sdist, no public source): the wheel is acceptable** for `noarch: python` / pure-Python — set `cfe-source-kind: pypi-wheel` + a comment ("sdist ships only metadata" / "wheel-only upstream, source not public"). The `<py-tag>` URL segment may change on a version bump.
+
+**Always re-verify after a wheel→source switch**: the import test (right module name, G7), that the built version == `context.version` (dynamic-version sdists can build `0.0.0`, G39), and `pip_check`.
+
+**Case study**: langflow closure (Jun 23, 2026) — `ibm-watsonx-orchestrate-{core,clients}` sdists were metadata-only (0 `.py`) → kept the wheel; `langflow-sdk` + the 4 `lfx-*` are wheel-only on PyPI but live in the `langflow-ai/langflow` v1.10.0 monorepo (`src/sdk`, `src/bundles/*`) → switched to the GitHub tag archive + subdir build (hatchling), GREEN. The generator had emitted wheels for all of them without checking GitHub — the gap this gotcha closes.
+
+### G55. "No valid build backend found for Python recipe … using pip" → a SOURCE build needs an explicit build backend in `host` (wheel installs do NOT)
+
+**Symptom**: build/metadata generation fails with *"No valid build backend found for Python recipe for package &lt;X&gt; using pip. Python recipes using pip need to explicitly specify a build backend in the host section … you likely should add setuptools to the host section."* — often **right after switching the source from a wheel to an sdist / GitHub source (G54)**.
+
+**Why**: installing a **wheel** (`pip install <name>.whl`) unpacks a pre-built artifact and needs NO build backend — so wheel-sourced recipes carry only `host: [python, pip]`. Building from **source** (`pip install .` / `pip install ./src/<sub>`) runs the PEP 517 build, which **requires the backend named in the source's `[build-system]`** to be in `host`. The wheel recipe never needed it, so a wheel→source switch surfaces it immediately.
+
+**Fix**: add the backend from the source's `pyproject.toml [build-system].requires` to `host`:
+```bash
+tar -xzOf <sdist>.tar.gz '*/pyproject.toml' | grep -A2 '\[build-system\]'   # or read the GitHub subdir's pyproject
+```
+| `[build-system].requires` | add to `host` |
+|---|---|
+| `setuptools` (+`wheel`) | `setuptools` (and `wheel` only if the build needs it; G8) |
+| `hatchling` | `hatchling` |
+| `flit-core` | `flit-core` |
+| `poetry-core` | `poetry-core` |
+| `pdm-backend` | `pdm-backend` |
+| `scikit-build-core` | `scikit-build-core` |
+| `maturin` | `maturin` (+ Rust toolchain) |
+| `uv_build` | **`uv-build`** (conda name — hyphen, G10) |
+
+Keep only the backend + `pip` (+ `python`); per **G8** don't re-add the legacy `wheel`+`setuptools` pair when a single PEP 517 backend is declared. `recipe-generator.py` should emit the backend automatically whenever it emits a **source** build — wheel-install recipes are the only ones that legitimately omit it.
+
+**Case study**: langflow closure (Jun 23, 2026) — switching `langflow-sdk` (and the sdist attempt on `ibm-watsonx-orchestrate-*`) from wheel-install to source build hit this exact error; fixed by adding `hatchling` to `host` (the backend in `src/sdk/pyproject.toml`).
+
+---
+
 ## Skill Automation
 
 A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.
@@ -2672,6 +2727,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.42.0** (Jun 23, 2026): Source-selection + build-backend rules. **MINOR bump** — two new gotchas, no change to existing paths. Driven by the langflow closure: ~13 recipes sourced from PyPI **wheels** (the generator's fallback when no PyPI sdist) without ever checking GitHub, and a wheel→sdist switch then hit *"No valid build backend found … using pip."* (1) **G54 — source preference `sdist > GitHub-source > wheel`, with a usable-source check.** conda-forge prefers source over wheel; the generator never checks GitHub for wheel-only PyPI packages, and a naive sdist switch can ship `ModuleNotFoundError`/`0.0.0`. Decision order: usable PyPI sdist (verify it ships `.py` files — many are metadata-only/broken: `ibm-watsonx-orchestrate-*` sdists have 0 `.py`; `jigsawstack` omits a `requirements.txt` its build reads) → GitHub tag archive (incl. monorepo subdir via a separate `monorepo_tag` context var + `pip install ./src/<sub>`; autotick can't dual-bump) → wheel as last resort (documented). (2) **G55 — source builds need a build backend in `host`.** Wheel installs need none (so wheel recipes carry `host: [python, pip]`); a source build runs PEP 517 and requires the `[build-system]` backend in host — a wheel→source switch surfaces it. Backend map (setuptools / hatchling / flit-core / poetry-core / pdm-backend / scikit-build-core / maturin / `uv-build`). Enhanced the "PyPI source.url" wheel note to point at G54. Applied live: `langflow-sdk` switched wheel→GitHub-monorepo source (`src/sdk`, hatchling) — GREEN; `ibm-watsonx-orchestrate-{core,clients}` reverted to wheel (metadata-only sdists). Updated `config/skill-config.yaml` to 8.42.0.
 - **v8.11.1** (Jun 2, 2026): Legacy-path cleanup + `edit_recipe` line-fold fix. **PATCH bump** — internal cleanup; no behavior change for the default path. Two follow-ups from v8.11.0's bmalph + yo CI runs. (1) **`recipe_editor.py` line-fold fix** — `ruamel.yaml`'s default `width=80` was folding long YAML strings (e.g. `pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt`) into 2-line continuations during the load-modify-dump cycle of `edit_recipe`. The fold is semantically a no-op (YAML's implicit line-folding parses both forms to the same string) but cosmetically reviewers ask "why is this wrapped?". Set `yaml.width = 4096` so single-line items stay single-line. Caught when the IDE selection of `recipes/yo/recipe.yaml` showed the fold after `edit_recipe` was used to swap the `MAINTAINER` placeholder. (2) **Removed the legacy `--no-inline-build` escape hatch + its dead code**. The legacy path (noarch:generic + standalone build.sh + tee Windows shim) was kept "for back-compat" in v8.11.0 but it's BROKEN on current staged-recipes CI — that's why bmalph and yo PRs failed before the v8.11.0 refactor. Keeping a known-broken path adds maintenance burden with no real users. Dropped: `_build_sh_template` function (legacy build.sh emitter), `_template_npm_tarball_filename` helper (only consumer was the above), `inline_build` + `with_build_bat` + `no_bin_links` kwargs from `generate_npm_recipe_yaml`, `--inline-build` / `--no-inline-build` / `--with-build-bat` / `--no-bin-links` CLI flags, the `elif not inline_build:` branch in the conda-forge.yml emitter, the `if args.inline_build` extras-note line. Tests `test_npm_legacy_inline_build_false_emits_build_sh_and_cfy` + `test_npm_with_build_bat_opt_in` removed (the paths they exercise no longer exist). `test_npm_url_and_filename_are_version_templated` renamed to `test_npm_source_url_is_version_templated` (the filename helper test went with the helper). `test_npm_inline_build` renamed to `test_npm_inline_build_default` and simplified (no flag needed; inline IS the default). `test_npm_no_third_party_licenses_inline_build` renamed similarly. 44/44 tests pass (was 46; net -2 for the two deleted legacy tests). Generator output unchanged: regen of `recipes/bmalph` matches live byte-for-byte (modulo the `MAINTAINER` placeholder). Updated `config/skill-config.yaml` to 8.11.1.
 
 - **v8.11.0** (Jun 2, 2026): npm generator switches default to per-platform inline build (openspec PR #32368 + bmalph PR #33557 pattern). **MINOR bump** — behavior change for all new npm recipes; legacy noarch:generic + standalone build.sh + tee Windows shim available via `--no-inline-build`. Driven by the bmalph PR #33557 CI failures that exposed two fundamental flaws in the v6+ "noarch:generic" canonical pattern: (1) rattler-build's symlink-portability check rejects the `bin/<cmd>` symlink that `npm install --global` creates on Unix because noarch:generic claims Windows compatibility where symlinks are non-portable; (2) staged-recipes CI builds noarch:generic on every platform, and without a `build.bat` the Windows leg runs nothing — no LICENSE staged → "No license files were copied" failure. The yo PR #33358 hit the same root cause (its `__unix`/`__win` virtual-package selectors are a different symptom of the same per-platform-vs-noarch tension). The merged openspec recipe (#32368) sidesteps both by dropping noarch:generic and using `build.script:` with `if: unix / then / else` branches — each platform's native `npm install --global` produces the right shape (Unix: symlinks-to-.js; Windows: native `.cmd` shims). Bmalph PR #33557's second attempt confirmed the pattern works cleanly on linux_64 + osx_64 + win_64 simultaneously (3m17s/6m14s/3m20s green CI). Six concrete changes in `scripts/recipe-generator.py`: (1) **`_inline_build_script` rewritten** to emit per-platform branches: `set -ex` + `pnpm install --ignore-scripts` + `npm pack --ignore-scripts` + `npm install --global "${SRC_DIR}/<filename>"` + `pnpm-licenses generate-disclaimer` on the Unix side; `call <cmd>` + `if %ERRORLEVEL% neq 0 exit 1` after every step on the Windows side. Tarball filename is jinja-templated (`${{ version }}`) — rattler-build pre-renders before the shell runs. (2) **`generate_npm_recipe_yaml` default `inline_build=True`** (was False); drops `noarch: generic` for ALL npm recipes when inline (native packages were already per-platform; pure-JS now matches). (3) **`requirements.host: nodejs`** now emitted for inline-build recipes (matches openspec; needed for the test-env solver). (4) **No standalone build.sh / build.bat / per-recipe conda-forge.yml** in the default output — staged-recipes' defaults cover everything and noarch_platforms restrictions are irrelevant when the recipe isn't noarch. (5) **`--inline-build` CLI flag rewired to `argparse.BooleanOptionalAction` with `default=True`** — `--no-inline-build` opts back into the pre-v8.11.0 standalone layout (noarch:generic + build.sh + per-recipe conda-forge.yml with `noarch_platforms: [linux_64]` + `shellcheck.enabled: true`); `--with-build-bat` documented as only effective with `--no-inline-build`. (6) **Feedstock-mode conda-forge.yml drops `noarch_platforms` and `shellcheck.enabled`** — feedstocks using the v8.11.0 pattern don't ship build.sh so shellcheck is a no-op and per-platform builds don't restrict to linux_64. **Test updates**: `test_npm_recipe_canonical_shape_offline` rewritten to assert the inline `script:` block + `if: unix` / `then:` / `else:` markers + per-platform commands + negative assertions (no build.sh, no conda-forge.yml, no `noarch: generic`); `test_npm_pure_js_keeps_noarch_generic` renamed to `test_npm_pure_js_omits_noarch_and_compilers` and reversed; `test_npm_prepare_fix` reads inline script from recipe.yaml instead of build.sh; `test_npm_default_mode_omits_feedstock_only_fields` renamed to `test_npm_default_mode_omits_conda_forge_yml`; new `test_npm_legacy_inline_build_false_emits_build_sh_and_cfy` asserts the back-compat path; live `test_npm_live_against_husky` + `test_npm_live_scoped_codex` updated for inline shape. 46/46 tests pass. Live verification: `recipe-generator.py npm bmalph` emits a recipe.yaml byte-for-byte identical to the CI-passing bmalph (modulo the `MAINTAINER` placeholder); no build.sh, no conda-forge.yml. **`scripts/_build_sh_template` + `_template_npm_tarball_filename` kept** for the legacy `--no-inline-build` path. Updated `config/skill-config.yaml` to 8.11.0. **Follow-up**: the yo PR #33358 will be regenerated with the new generator and force-pushed in the same session; expect the same green CI shape bmalph achieved.
