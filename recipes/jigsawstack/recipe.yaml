@@ -9,18 +9,20 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py3/j/jigsawstack/jigsawstack-${{ version }}-py3-none-any.whl
-  sha256: 014b029d132c7a36f2c26630fe424faf6880ca2a62c6d367bf72de8cf68d3e95
+  url: https://github.com/jigsawstack/jigsawstack-python/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 042be08a0e256363c7b918529edb120a35b86ab875c335accf62c5fdc56ea29f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install jigsawstack-${{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+  script: sed -i.bak '/setup_requires/d' setup.py && rm -f setup.py.bak && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
+    - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
     - requests >=2.31.0
@@ -62,18 +64,18 @@ extra:
   cfe-upstream-repo: https://github.com/jigsawstack/jigsawstack-python
   cfe-upstream-homepage: https://github.com/jigsawstack/jigsawstack-python
   cfe-import-names: [jigsawstack]
-  cfe-source-kind: pypi-wheel
+  cfe-source-kind: github-tag:pypi-sdist-omits-requirements-txt-G54
   cfe-noarch: python
   cfe-pip-check: true
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T20:30:00Z
+  cfe-last-checked: 2026-06-24T09:45:03Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:30:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T01:27:49Z
+  cfe-local-build-datetime: 2026-06-24T09:45:03Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -84,13 +86,20 @@ extra:
 #    # NO LICENSE file (absent from sdist AND GitHub repo, GH API license=None)
 #    # so LICENSE vendored in-recipe per SKILL.md license-placement pattern (2).
 # source:
-#    # WHEEL source (not sdist): the sdist's setup.py does
-#    # `open("requirements.txt").readlines()` but requirements.txt is NOT
-#    # packaged in the sdist -> `pip install .` fails with FileNotFoundError.
-#    # The py3-none-any wheel is pure-Python and carries the same deps
-#    # (egg-info/requires.txt == wheel Requires-Dist). File upstream issue to
-#    # ship requirements.txt (or migrate to pyproject.toml) so a future sdist
-#    # builds, then switch source back to sdist.
+#    # GitHub tag archive (G54 source preference: sdist > github-source > wheel).
+#    # The PyPI sdist is UNUSABLE: setup.py does `open("requirements.txt").readlines()`
+#    # but requirements.txt is NOT packaged in the sdist -> FileNotFoundError. The
+#    # GitHub tag archive DOES ship requirements.txt + setup.py, so it builds where
+#    # the sdist can't, and is preferred over the py3-none-any wheel. requirements.txt
+#    # == the recipe run deps. The build strips setup.py's `setup_requires=["pytest-
+#    # runner"]` (legacy `setup.py test` only; would trigger an offline-CI network
+#    # fetch — conda-forge runs its own tests). File upstream issue to package
+#    # requirements.txt (or migrate to pyproject.toml) so the sdist builds, then
+#    # switch source to sdist.
+# build:
+#  host:
+#    # setuptools + wheel are the PEP 517 backend for the setup.py source build
+#    # (G55: wheel installs need no backend, a source build does).
 # run:
 #    # All 3 deps confirmed on conda-forge (check_dependencies, 2026-06-19):
 #    # requests, typing_extensions, aiohttp. Zero missing -> leaf recipe.

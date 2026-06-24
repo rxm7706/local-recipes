@@ -9,13 +9,13 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py3/l/lfx/lfx-${{ version }}-py3-none-any.whl
-  sha256: c52e801a107da96b1828a8cfa93002ded0cbcd8b12c82d0401c32bb81599c383
+  url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 45a317111a5d7cbc2709e683a72a80779801a658f61e506b612978588788ab71
 
 build:
   noarch: python
   number: 0
-  script: pip install lfx-${{ version }}-py3-none-any.whl --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install src/lfx -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - lfx = lfx.__main__:main
@@ -25,6 +25,7 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
     - ag-ui-protocol >=0.1.10
@@ -107,7 +108,7 @@ extra:
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://github.com/langflow-ai/langflow
   cfe-import-names: [lfx]
-  cfe-source-kind: pypi-wheel
+  cfe-source-kind: github-tag:lfx-in-langflow-monorepo-src-lfx-no-sdist
   cfe-noarch: python
   cfe-pip-check: true
   cfe-on-conda-forge-status: blocked-pending-prerequisites
@@ -116,11 +117,11 @@ extra:
   cfe-forge-blocker-list:
     - opendsstar          # not on conda-forge AND not in local channel (third-party blocker)
     - langflow-sdk        # langflow-family; built in local channel, not yet on conda-forge
-  cfe-last-checked: 2026-06-19T20:00:00Z
+  cfe-last-checked: 2026-06-24T09:58:17Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:00:00Z
   cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-06-20T01:09:02Z
+  cfe-local-build-datetime: 2026-06-24T09:58:17Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -131,8 +132,11 @@ extra:
 #    # grayskull cannot generate this recipe: PyPI ships a wheel only (no
 #    # sdist), so the recipe is hand-authored from the canonical wheel URL.
 # source:
-#    # Wheel-only upstream (no sdist on PyPI). py-tag segment is "py3" and
-#    # may change on a version bump — re-check the wheel filename when bumping.
+#    # GitHub monorepo tag archive (G54): lfx ships a wheel only on PyPI (no
+#    # sdist), but its source IS in the langflow-ai/langflow monorepo at src/lfx/,
+#    # so conda-forge prefers building that subdir (hatchling backend, G55). lfx
+#    # version == the monorepo tag (1.10.0), so v${{ version }} is the tag.
+#    # NB: this standalone recipe mirrors the langflow-suite `lfx` output.
 # about:
 #    # No LICENSE in the wheel and pyproject declares no license field; the
 #    # langflow-ai/langflow monorepo LICENSE is MIT (Copyright 2024 Langflow).
