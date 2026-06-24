@@ -3,23 +3,27 @@ schema_version: 1
 
 context:
   version: "0.1.1"
+  # wheel-only on PyPI; source IS in the langflow monorepo (src/bundles/ibm).
+  # conda-forge prefers source > wheel. monorepo tag != package version - bump BOTH.
+  monorepo_tag: "1.10.0"
 
 package:
   name: lfx-ibm
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py3/l/lfx-ibm/lfx_ibm-${{ version }}-py3-none-any.whl
-  sha256: 79ee445781536f450d6a0684e426314fd41da7b6f926b85c3056d50c0271bff6
+  url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ monorepo_tag }}.tar.gz
+  sha256: 45a317111a5d7cbc2709e683a72a80779801a658f61e506b612978588788ab71
 
 build:
   noarch: python
   number: 0
-  script: pip install lfx_ibm-${{ version }}-py3-none-any.whl --no-deps --no-build-isolation -vv
+  script: pip install ./src/bundles/ibm --no-deps --no-build-isolation -vv
 
 requirements:
   host:
     - python ${{ python_min }}.*
+    - hatchling
     - pip
   run:
     - python >=${{ python_min }}
@@ -61,7 +65,7 @@ extra:
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://github.com/langflow-ai/langflow
   cfe-import-names: [lfx_ibm]
-  cfe-source-kind: pypi-wheel
+  cfe-source-kind: github-tag
   cfe-noarch: python
   cfe-pip-check: true
   cfe-on-conda-forge-status: blocked-pending-prerequisites
@@ -73,7 +77,7 @@ extra:
   cfe-last-checked: 2026-06-19T20:15:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:15:00Z
-  cfe-local-build-status: success
+  cfe-local-build-status: build-clean-test-blocked
   cfe-local-build-datetime: 2026-06-20T01:16:55Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
