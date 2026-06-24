@@ -135,7 +135,7 @@ grandalf, mcp, cryptography, …).
 | vlmrun | blocked-pending-prereq | noarch | Apache-2.0 | vlmrun-hub |
 | couchbase | pending-submission | compiled C++ | multi (Apache/MIT/BSD/CC0) | — |
 | pymilvus-model | pending-submission | noarch | Apache-2.0 | — |
-| milvus-lite | pending-submission | noarch | Apache-2.0 | — (3.0 pure-Python, G42; G28 faiss-cpu→faiss source-patch, pip_check re-enabled true) |
+| milvus-lite | pending-submission | noarch | Apache-2.0 | — (3.0 pure-Python, G42; G28 faiss-cpu→faiss source-patch, pip_check re-enabled) |
 | ibm-cos-sdk-core | pending-submission | noarch | Apache-2.0 | — |
 | ibm-cos-sdk-s3transfer | blocked-pending-prereq | noarch | Apache-2.0 | ibm-cos-sdk-core (==) |
 | ibm-cos-sdk | blocked-pending-prereq | noarch | Apache-2.0 | core + s3transfer |
@@ -183,8 +183,9 @@ submit". Set C (all present): `ag2`, `astrapy`, `cassio`, `cleanlab-tlm`, `compo
 `langchain-cohere`, `langchain-google-calendar-tools`, `langchain-nvidia-ai-endpoints`,
 `langchain-pinecone`, `langchain-unstructured`, `langchain-weaviate`, `mem0ai`, `metal-sdk`,
 `needle-python`, `openlayer`, `opik`, `scrapegraph-py`, `upstash-vector` — plus the 5 already-built
-`langchain-*` in table B and the now-relocated-to-B `spider-client` + `assemblyai` (langflow-base
-hard deps, not optional). Submit each leaf (SDK) before its `langchain-*` wrapper; re-run
+`langchain-*` in table B, and `spider-client` + `assemblyai` (once thought langflow-base hard deps,
+but **post-lean they are `run_constraints` integrations** — submit them here in Wave C). Submit each
+leaf (SDK) before its `langchain-*` wrapper; re-run
 `check_dependencies` per leaf since each carries its own recursive sub-closure. Skews 2 + 3 gate
 this wave (not the core suite).
 
@@ -469,8 +470,8 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | langchain-milvus | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-milvus/recipe.yaml) | ready | — |
 | ibm-cos-sdk-s3transfer | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-cos-sdk-s3transfer/recipe.yaml) | blocked (→core) | — |
 | langwatch | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langwatch/recipe.yaml) | blocked (→pksuid, pybase62) | — |
-| spider-client | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/spider-client/recipe.yaml) | ready | — |
-| assemblyai | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/assemblyai/recipe.yaml) | ready | — |
+| spider-client | C* | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/spider-client/recipe.yaml) | ready (post-lean a `run_constraints` integration, not a B2 hard dep) | — |
+| assemblyai | C* | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/assemblyai/recipe.yaml) | ready (post-lean a `run_constraints` integration, not a B2 hard dep) | — |
 | ibm-cos-sdk | B3 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-cos-sdk/recipe.yaml) | blocked (→core + s3transfer) | — |
 | ibm-watsonx-ai | B4 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ibm-watsonx-ai/recipe.yaml) | blocked (→ibm-cos-sdk; also build 1.3.37 for py3.10, G40) | — |
 | langchain-ibm | B5 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-ibm/recipe.yaml) | blocked (→ibm-watsonx-ai) | — |
