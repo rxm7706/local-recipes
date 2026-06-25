@@ -16,11 +16,17 @@ build:
   number: 0
   noarch: python
   script: |
-    # Upstream poetry pins pybase62 = "0.4.3" (== in the wheel METADATA).
-    # We loosen the conda run-dep to >=0.4.3, so the source pin must be
-    # loosened too or pip_check fails when a newer pybase62 is installed
-    # (CFE gotcha G26). noarch:python builds on linux only — plain sed.
+    # Upstream poetry pins pybase62 = "0.4.3" (== in the wheel METADATA). We
+    # loosen the conda run-dep to >=0.4.3 (base62 1.0.0 keeps encodebytes/
+    # decodebytes — runtime-compatible), so the source pin must be loosened too
+    # or pip_check fails against conda-forge's newer pybase62 (CFE gotcha G26).
+    # The pin lives in THREE files; conda-forge's poetry-core builds the wheel
+    # metadata from the bundled PKG-INFO (NOT pyproject.toml — patching only
+    # pyproject passes locally but fails on staged-recipes CI), so patch all
+    # three. noarch:python builds on linux only — plain sed.
     sed -i -E 's/^pybase62 *= *"0\.4\.3"/pybase62 = ">=0.4.3"/' pyproject.toml
+    sed -i -E 's/pybase62 \(==0\.4\.3\)/pybase62 (>=0.4.3)/' PKG-INFO
+    sed -i -E 's/pybase62==0\.4\.3/pybase62>=0.4.3/g' setup.py
     ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
@@ -75,16 +81,15 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - pybase62 not yet on conda-forge
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-25T03:00:00Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T18:27:40Z
+  cfe-local-build-datetime: 2026-06-25T05:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

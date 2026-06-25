@@ -15,7 +15,10 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    env:
+      PYTHONUTF8: "1"
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -64,19 +67,27 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33889
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-06-25T03:00:00Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T16:15:37Z
+  cfe-local-build-datetime: 2026-06-25T04:30:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# build:
+#  script:
+#    env:
+#      # PYTHONUTF8: "1" (PEP 540 UTF-8 mode). Upstream setup.py reads README.md
+#      # (UTF-8 box-drawing chars) with no explicit encoding; on win-64 the
+#      # default cp1252 codec can't decode it -> UnicodeDecodeError at metadata
+#      # gen (G19). Fixes staged-recipes PR #33889 win_64 (Azure buildId 1543779).
 # about:
 #    # Upstream sdist ships no license file; the BSD-3-Clause LICENSE.md is only
 #    # in the GitHub repo (no per-version tag carries it), so ship it in-recipe.

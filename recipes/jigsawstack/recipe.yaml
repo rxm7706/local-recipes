@@ -67,11 +67,12 @@ extra:
   cfe-source-kind: github-tag:pypi-sdist-omits-requirements-txt-G54
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33857
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-24T09:45:03Z
+  cfe-last-checked: 2026-06-25T03:00:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:30:00Z
   cfe-local-build-status: success
