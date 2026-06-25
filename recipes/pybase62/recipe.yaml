@@ -66,11 +66,12 @@ extra:
   cfe-source-kind: github-tag:pypi-wheel-only-no-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pybase62-feedstock
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33838
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-06-25T03:00:00Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success

@@ -84,9 +84,8 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - pksuid        # local-only (recipes/pksuid); not on conda-forge any spelling
-    - pybase62      # pksuid's only dep; local-only (recipes/pybase62); not on conda-forge
-  cfe-last-checked: 2026-06-19T20:30:00Z
+    - pksuid
+  cfe-last-checked: 2026-06-25T03:00:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:30:00Z
   cfe-local-build-status: build-clean-test-blocked

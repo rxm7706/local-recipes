@@ -106,11 +106,12 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: compiled
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/primp-feedstock
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33836
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T20:40:00Z
+  cfe-last-checked: 2026-06-25T03:00:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:40:00Z
   cfe-local-build-status: success

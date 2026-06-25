@@ -1,0 +1,21 @@
+conda_build_tool: rattler-build
+conda_forge_output_validation: true
+github:
+  branch_name: main
+  tooling_branch_name: main
+conda_build:
+  error_overlinking: true
+# Platform expansion: add osx-arm64 (Apple silicon) + linux-aarch64 (ARM Linux).
+# impit is a Rust/PyO3 (maturin) package — cross-compile linux_aarch64 from
+# linux_64 (a qemu-emulated native Rust build risks Azure's 6h timeout; the
+# linux_64->linux_aarch64 cross-build was verified GREEN locally, 2026-06-25,
+# producing impit.cpython-310-aarch64-linux-gnu.so with clean overlinking).
+# osx_arm64 builds natively on the Azure Apple-silicon runner (no build_platform
+# entry -> native build + native test). test: native_and_emulated runs the
+# import test under qemu for the linux_aarch64 cross-build.
+build_platform:
+  linux_aarch64: linux_64
+provider:
+  osx_arm64: default
+  linux_aarch64: default
+test: native_and_emulated

@@ -7,9 +7,10 @@ schema_version: 1
 #   - NOT noarch: the `couchbase.logic.pycbc_core._core` extension is platform-specific.
 #   - TLS: upstream defaults to PYCBC_USE_OPENSSL=true -> the C++ client DYNAMICALLY
 #     links OpenSSL (USE_STATIC_BORINGSSL=OFF). We pin `openssl` in host and set
-#     PYCBC_OPENSSL_DIR=$PREFIX so CMake's -DOPENSSL_ROOT_DIR resolves the conda
-#     OpenSSL instead of FetchContent-ing OpenSSL 3.5.2 from GitHub (which would
-#     fail in an isolated build). The bundled BoringSSL is therefore NOT linked.
+#     PYCBC_OPENSSL_DIR ($PREFIX on unix, %LIBRARY_PREFIX% on win) so CMake's
+#     -DOPENSSL_ROOT_DIR resolves the conda OpenSSL instead of FetchContent-ing
+#     OpenSSL 3.5.2 from GitHub (which 404s and would fail in an isolated build).
+#     The bundled BoringSSL is therefore NOT linked.
 #   - The C++ deps (snappy, json, llhttp, gsl, hdr_histogram, spdlog, jsonsl,
 #     expected) ship in the sdist's CPM cache and are compiled statically into
 #     _core; their licenses are shipped via about.license_file. PYCBC_USE_CPM_CACHE
@@ -34,17 +35,25 @@ build:
       # no C++ dep is fetched over the network at build time.
       PYCBC_USE_CPM_CACHE: "true"
     content:
-      # PYCBC_OPENSSL_DIR must point at the conda PREFIX so CMake's
-      # -DOPENSSL_ROOT_DIR resolves the conda OpenSSL (PYCBC_USE_OPENSSL defaults
-      # true -> dynamic-link OpenSSL); without it CMake FetchContents OpenSSL
-      # 3.5.2 from GitHub. PYCBC_CMAKE_PARALLEL_THREADS controls build parallelism
-      # (upstream default 4). Both $PREFIX and $CPU_COUNT are shell vars available
-      # only at run time, not jinja (script.env values do not shell-expand — G1),
-      # so set them in the script body.
-      - |
-        export PYCBC_OPENSSL_DIR="${PREFIX}"
-        export PYCBC_CMAKE_PARALLEL_THREADS="${CPU_COUNT}"
-        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      # PYCBC_OPENSSL_DIR must point at the conda OpenSSL root so pycbc_build_setup
+      # passes -DOPENSSL_ROOT_DIR and CMakeLists.txt calls find_package(OpenSSL)
+      # (PYCBC_USE_OPENSSL defaults true -> dynamic-link OpenSSL); WITHOUT it the
+      # CMake else-branch FetchContents OpenSSL from github.com/python/cpython-bin-
+      # deps (404, and forbidden in hermetic CI). The OpenSSL root differs by
+      # platform: $PREFIX on unix, %LIBRARY_PREFIX% (= %PREFIX%\Library) on win.
+      # PYCBC_CMAKE_PARALLEL_THREADS controls build parallelism (upstream default
+      # 4). These are shell vars resolved at run time, not jinja (script.env does
+      # not shell-expand — G1), and cmd.exe `set` differs from bash `export`, so
+      # the unix `export` form is win-incompatible — split unix/win in the body.
+      - if: unix
+        then: |
+          export PYCBC_OPENSSL_DIR="${PREFIX}"
+          export PYCBC_CMAKE_PARALLEL_THREADS="${CPU_COUNT}"
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+        else: |
+          set "PYCBC_OPENSSL_DIR=%LIBRARY_PREFIX%"
+          set "PYCBC_CMAKE_PARALLEL_THREADS=%CPU_COUNT%"
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
@@ -130,15 +139,16 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: compiled
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33893
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-06-25T03:00:00Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:48:08Z
+  cfe-local-build-datetime: 2026-06-25T05:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

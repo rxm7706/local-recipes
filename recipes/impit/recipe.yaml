@@ -13,48 +13,34 @@ source:
   sha256: ec5ff2932c6ccdd3004b0f5e0d0d9bce5c8a6f48df4f226e5ee172bc79952df8
 
 build:
-  number: 0
+  number: 2
   script:
+    # reqwest's http3 feature (used by impit) is gated behind this cfg flag.
+    # Setting it here works on all platforms, unlike an inline `env` prefix.
     env:
-      CARGO_PROFILE_RELEASE_STRIP: symbols
-      # CARGO_PROFILE_RELEASE_LTO: fat is intentionally NOT set — upstream's
-      # [profile.release] already enables fat LTO + opt-level z; the dep graph
-      # (reqwest/hyper/rustls/tokio/h2) is large, so leaving it to upstream
-      # avoids piling on extra build time on emulated CI platforms.
-      # PEP 540 — Python UTF-8 mode (Windows console codepage fix, CFE G19).
-      PYTHONUTF8: "1"
+      RUSTFLAGS: "--cfg reqwest_unstable"
+      CARGO_HTTP_MULTIPLEXING: "false"
     content:
-      - if: unix
-        then: |
-          # reqwest's HTTP/3 support (enabled by impit-python) is gated behind
-          # the documented `--cfg reqwest_unstable` opt-in. Append it to conda's
-          # CARGO_BUILD_RUSTFLAGS (which carries the prefix rpath link flags)
-          # rather than to plain RUSTFLAGS, which would override those flags.
-          export CARGO_BUILD_RUSTFLAGS="${CARGO_BUILD_RUSTFLAGS:-} --cfg reqwest_unstable"
-          # Bundle third-party licenses from the Cargo workspace dependency graph.
-          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-        else: |
-          set "CARGO_BUILD_RUSTFLAGS=%CARGO_BUILD_RUSTFLAGS% --cfg reqwest_unstable"
-          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-          %PYTHON% -m pip install . -vv --no-deps --no-build-isolation
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
+    - perl
+    - make
+    - cargo-bundle-licenses
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
     - if: build_platform != target_platform
       then:
         - python
         - cross-python_${{ target_platform }}
-        - crossenv
         - maturin >=1,<2
-    - ${{ compiler("c") }}
-    - ${{ stdlib("c") }}
-    - ${{ compiler("rust") }}
-    - cargo-bundle-licenses
   host:
     - python
-    - pip
     - maturin >=1,<2
+    - pip
   run:
     - python
 
@@ -63,28 +49,20 @@ tests:
       imports:
         - impit
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
-  homepage: https://pypi.org/project/impit/
+  summary: A library for making HTTP requests through browser impersonation
   license: Apache-2.0
   license_file:
     - LICENSE.md
     - THIRDPARTY.yml
-  summary: A library for making HTTP requests through browser impersonation
+  homepage: https://apify.github.io/impit/python/
   repository: https://github.com/apify/impit
-  documentation: https://apify.github.io/impit/python
-  description: |
-    impit is a Python package that provides bindings for the Rust impit
-    library. It allows you to switch the TLS fingerprints and the HTTP
-    headers of your requests (browser impersonation), while still using
-    the same API as httpx or requests.
+  documentation: https://apify.github.io/impit/python/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - Pijukatel
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -95,28 +73,53 @@ extra:
     - pkg:conda/impit@${{ version }}
     - pkg:pypi/impit@${{ version }}
   cfe-upstream-repo: https://github.com/apify/impit
-  cfe-upstream-homepage: https://apify.github.io/impit/python
+  cfe-upstream-homepage: https://apify.github.io/impit/python/
   cfe-import-names: [impit]
   cfe-source-kind: pypi-sdist
   cfe-noarch: compiled
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
-  cfe-forge-recipe-updates-needed: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/impit-feedstock
+  cfe-forge-recipe-updates-needed: platform-expansion-osx-arm64-linux-aarch64
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
-  cfe-generated-by-version: 8.30.1
-  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-platforms-shipping:
+    - linux-64
+    - osx-64
+    - win-64
+  cfe-platforms-target:
+    - linux-64
+    - osx-64
+    - win-64
+    - osx-arm64
+    - linux-aarch64
+  cfe-last-checked: 2026-06-25T05:30:00Z
+  cfe-generated-by-version: 8.42.2
+  cfe-generated-at-datetime: 2026-06-25T05:30:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T17:35:30Z
-  cfe-local-build-platform: linux-64
+  cfe-local-build-datetime: 2026-06-25T05:15:00Z
+  cfe-local-build-platform: linux-aarch64 (cross from linux-64)
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # FAITHFUL MIRROR of conda-forge/impit-feedstock (maintainer Pijukatel) for
+#    # a platform-expansion PR — NOT the prior rxm7706 standalone (impit is
+#    # already on conda-forge; the standalone was redundant). rxm7706 submits the
+#    # expansion as a contributor; Pijukatel stays the sole maintainer (no
+#    # self-add without consent).
 # build:
-#  script:
-#    env:
-#      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
-#      # for any Rust build. maturin invokes cargo build internally and inherits
-#      # these; the cdylib in the wheel is stripped.
+#    # number bumped 1 -> 2: platform-expansion same-version PR. The rerender
+#    # rebuilds the existing 3 platforms (immutable build-1 already published, so
+#    # a bump is required) plus the 2 new ones.
+# conda-forge.yml:
+#    # The expansion config lives in the sibling conda-forge.yml: cross-compile
+#    # linux_aarch64 from linux_64 (verified GREEN locally 2026-06-25 — 4 aarch64
+#    # .conda for py310-313, clean overlinking; ring + aws-lc-sys + the apify
+#    # rustls fork all cross-compiled), osx_arm64 native on the Apple-silicon
+#    # runner, test: native_and_emulated. osx-arm64 not buildable on a linux host
+#    # — verified by-construction (same Rust aarch64 target family) + feedstock CI.
+# submission:
+#    # Push to a fork of conda-forge/impit-feedstock + open a PR (edit conda-
+#    # forge.yml + bump build.number, then `@conda-forge-admin, please rerender`).
+#    # Optionally precede with `@conda-forge-admin, please add user @rxm7706`.
 ####
