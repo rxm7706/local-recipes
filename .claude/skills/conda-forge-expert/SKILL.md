@@ -1703,6 +1703,8 @@ After rerender, the win Azure variants stamp `store_build_artifacts: false`, the
 
 ### G19. Windows pip-install fails `Error reading output: stream did not contain valid UTF-8` — set `PYTHONUTF8: "1"` (+ canonical Rust env block while you're there)
 
+**Scope (v8.43.0): NOT Rust-specific.** This applies to ANY Windows build where Python reads a non-ASCII file with the default codec — most commonly a pure-**setuptools** recipe whose `setup.py` does `open('README.md')` (no `encoding=`) on a UTF-8 README. On win-64 the default codec is **cp1252**, which can't decode the UTF-8 bytes, so metadata generation dies with `UnicodeDecodeError: 'charmap' codec can't decode byte 0xNN` — a *different symptom* than the Rust "stream did not contain valid UTF-8", **same** `PYTHONUTF8: "1"` fix (PEP 540 forces Python's `open()` to default to UTF-8). Case: lomond 0.3.3 (staged-recipes #33889, Jun 25 2026) — `setup.py` reads its box-drawing-char README; win_64 (buildId 1543779) hit `charmap` byte 0x90 at metadata gen; `PYTHONUTF8: "1"` in `build.script.env` fixed it (no Rust env block needed for a pure-setuptools recipe).
+
 **Symptom**: Rust+PyO3 (or any cargo+pip) recipe's Windows Azure CI fails inside the `Run Windows build` task at the `pip install . -vv --no-deps --no-build-isolation` step with:
 
 ```
@@ -2064,6 +2066,16 @@ dbgpt 0.8.0 has requirement aiohttp==3.8.4, but you have aiohttp 3.14.1.
 **Why**: loosening the *recipe's* `requirements.run` only changes what conda installs. It does NOT change the built wheel's `dist-info/METADATA`, which still carries upstream's `Requires-Dist: aiohttp==3.8.4` verbatim from `pyproject.toml`. `pip_check: true` reads that METADATA and enforces the `==`, so the loosened conda install (aiohttp 3.14.1) violates it. Worse, the pinned version usually isn't even on conda-forge (the reason you loosened), so there is no way to satisfy the `==`.
 
 This is the **mirror image of G24 / the graphifyy upper-bound rule**: G24 says *mirror* upstream's load-bearing upper bounds in `run:`; G26 says when you *loosen* an upstream `==`, you must also loosen it in the wheel METADATA — i.e. patch the source — or `pip_check` rejects the build.
+
+**poetry-core caveat — patch ALL THREE files; beware the local-vs-CI divergence (v8.43.0).** When the build backend is **poetry-core**, conda-forge's poetry-core builds the wheel METADATA from the sdist's bundled **`PKG-INFO`**, NOT from `pyproject.toml`. So a sed that patches only `pyproject.toml` **passes locally** (the local poetry-core happens to regenerate metadata from `pyproject.toml`) but **fails on staged-recipes CI** (CI's poetry-core reuses `PKG-INFO`'s `Requires-Dist`) — a green local `pip check` does NOT prove the CI wheel METADATA is loosened. A poetry sdist can carry the pin in **three** files — `pyproject.toml` (`pkg = "X"`), `setup.py` (`['pkg==X']`), and `PKG-INFO` (`Requires-Dist: pkg (==X)`) — so patch **all three** to be robust to whichever the backend reads:
+```yaml
+script: |
+  sed -i -E 's/^pkg *= *"X"/pkg = ">=X"/' pyproject.toml
+  sed -i -E 's/pkg \(==X\)/pkg (>=X)/' PKG-INFO
+  sed -i -E 's/pkg==X/pkg>=X/g' setup.py
+  ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+```
+And verify the *loosen* is runtime-safe (the newer version on cf must keep the API the consumer uses) — don't loosen blindly across a major bump. Case: pksuid 1.1.2 (staged-recipes #33895, Jun 25 2026) loosened `pybase62==0.4.3`→`>=0.4.3` (cf ships 1.0.0, which keeps `encodebytes`/`decodebytes`); the pyproject-only sed passed locally but failed CI `pip check` until `PKG-INFO` + `setup.py` were also patched.
 
 **Fix**: rewrite the `==` pins to `>=` in the source `pyproject.toml` at build time, before `pip install`, so the wheel METADATA matches the loosened conda deps. A targeted regex that touches only PEP 508 version pins (`name==N`), leaving `<`/`<=` caps and `extra == "..."` / `python_version == "..."` markers untouched:
 
@@ -2697,6 +2709,70 @@ Keep only the backend + `pip` (+ `python`); per **G8** don't re-add the legacy `
 
 **Beyond the backend — the `setup_requires` / build-time network-fetch trap (source builds only).** A `setup.py` carrying `setup_requires=[...]` (legacy) — or any build step that reads the network — triggers an easy_install/pip **fetch during the build**. A **wheel** install never runs it, and a **local** source build **masks** it (the dev box has network); but conda-forge CI builds **offline**, so the fetch fails there. When switching wheel→source, strip legacy `setup_requires` (it only backs the deprecated `python setup.py test`; conda-forge runs the recipe's own `tests:`) with a build `sed`, or add the dep to `host`. Verified: `jigsawstack` — `sed -i.bak '/setup_requires/d' setup.py && rm -f setup.py.bak` dropped `setup_requires=["pytest-runner"]`. **Corollary of the live-verification principle: a clean LOCAL source build does NOT prove the recipe builds in conda-forge's offline CI** — reason about build-time network access explicitly.
 
+### G56. Multi-output `noarch: python` build scripts must be cross-platform — bash `cd "$SRC_DIR/<sub>"` + `"$PYTHON"` fails on win-64; use `${{ PYTHON }} -m pip install ./<sub>`
+
+**Symptom**: a multi-output recipe (N sdists → N outputs via a top-level `source:` list + `target_directory`) builds GREEN on linux + osx but the **win_64** leg fails at the build script:
+```
+(base) %SRC_DIR%>cd "$SRC_DIR/core_src"
+The system cannot find the path specified.
+(base) %SRC_DIR%>"$PYTHON" -m pip install . ...
+'"$PYTHON"' is not recognized as an internal or external command
+```
+
+**Why**: `noarch: python` is built on **every** platform on staged-recipes (incl. win-64), and a per-output build script written in **bash** — `cd "$SRC_DIR/<sub>"` then `"$PYTHON" -m pip install .` — is run by **cmd.exe** on Windows, which doesn't understand `$SRC_DIR` / `$PYTHON` (bash variable refs; cmd uses `%SRC_DIR%` / `%PYTHON%`). The `crewai-suite`-style `cd "$SRC_DIR/<sub>"` idiom is bash-only and was never win-CI-tested. (Same bash-vs-cmd class as [G13](#g13-cwd-persists-across-script-list-entries--and-cmd-is-not-a-subshell-on-windows-cmdexe), specialized to the multi-output `target_directory` subdir-build pattern.)
+
+**Fix**: drop the `cd` + shell-var form; use jinja `${{ PYTHON }}` (rendered to the literal interpreter path *before* any shell runs — neither bash nor cmd sees a variable) + a **relative subdir path** (the build CWD is already the work root holding the `target_directory` subdirs; the explicit `./` makes pip treat it as a path, not a PyPI name):
+```yaml
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install ./core_src -vv --no-deps --no-build-isolation
+```
+No `cd`, no `$SRC_DIR`, no `if: unix/else`. This is the standard noarch:python construct that passes win-64 across thousands of feedstocks; the only addition is `./<sub>` instead of `.`.
+
+**Case study**: ibm-cos-suite (3-output core+s3transfer+sdk; staged-recipes #33886, Jun 25 2026) — `cd "$SRC_DIR/core_src"` + `"$PYTHON"` passed linux+osx, failed win_64 (buildId 1543755). `${{ PYTHON }} -m pip install ./core_src` per output → green. The repo's `crewai-suite` recipe carries the same latent bash-only bug.
+
+### G57. A build-control env var set only via bash `export` is UNSET on win-64 — the build silently falls back to a network fetch (CMake FetchContent 404)
+
+**Symptom**: a compiled recipe whose build script sets an env var that steers the build *away* from a network download — e.g. `export PYCBC_OPENSSL_DIR="${PREFIX}"` so CMake uses the conda OpenSSL — builds GREEN on linux + osx but **win_64** fails with a fetch + 404:
+```
+CMake Error ... downloading 'https://github.com/python/cpython-bin-deps/archive/openssl-bin-3.5.2.zip' failed
+... The requested URL returned error : 404
+```
+
+**Why**: the script's `export VAR="${...}"` is **bash syntax**; on win-64 cmd.exe it does nothing, so `VAR` is **never set** on Windows. The upstream build's CMake/setup then takes its *fallback* path — a `FetchContent`/`urllib` download (here a prebuilt OpenSSL from `python/cpython-bin-deps`) — which 404s and is forbidden in hermetic CI anyway. The failure *looks* like a network/404 bug but the root cause is the **win-unset env var**. (Bash-vs-cmd class like [G56](#g56-multi-output-noarch-python-build-scripts-must-be-cross-platform), but here it degrades to a silent network fetch instead of erroring on the shell line.)
+
+**Fix**: set build-control env vars **cross-platform**, splitting the script unix/win (`script.env:` can't — it doesn't shell-expand `${PREFIX}`/`%LIBRARY_PREFIX%`, G1). On unix the conda prefix is `$PREFIX`; on win the equivalent (where conda ships `lib/*.lib` + `include/`) is **`%LIBRARY_PREFIX%`** (= `%PREFIX%\Library`):
+```yaml
+build:
+  script:
+    content:
+      - if: unix
+        then: |
+          export PYCBC_OPENSSL_DIR="${PREFIX}"
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+        else: |
+          set "PYCBC_OPENSSL_DIR=%LIBRARY_PREFIX%"
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+```
+**Verify the var actually steers the build** by reading the upstream build code first (don't guess): for couchbase, `pycbc_build_setup.py` does `ssl_dir=os.getenv('PYCBC_OPENSSL_DIR'); cmake_extra_args += [f'-DOPENSSL_ROOT_DIR={ssl_dir}']`, and `CMakeLists.txt` only `FetchContent`s OpenSSL when `OPENSSL_ROOT_DIR` is **unset**.
+
+**Case study**: couchbase 4.6.2 (staged-recipes #33893, Jun 25 2026) — `PYCBC_OPENSSL_DIR` set only via unix `export`; win_64 (buildId 1543796) FetchContent'd OpenSSL 3.5.2 → 404. Fixed by also setting it on win (`%LIBRARY_PREFIX%`); linux/osx were already green.
+
+### G58. `lookup_feedstock` BEFORE submitting — a package already on conda-forge is rejected by the GHA linter ("feedstock exists"), even while the linting-service bot says "excellent"
+
+**Symptom**: a staged-recipes PR's **linter** check fails, but the conda-forge-linting **service** bot comments the recipe is *"in excellent condition."* The two disagree. The GHA `linter.py` step's real output:
+```
+- recipes/<name>/recipe.yaml:
+  - lints:
+    - Feedstock with the same name exists in conda-forge.
+```
+
+**Why**: the package **already has a `conda-forge/<name>-feedstock`** (possibly maintained by someone else) — you can't submit to staged-recipes a package that already has a feedstock; updates go to the feedstock. The **two linters check different things**: the linting-*service* bot lints recipe **quality** (which can be perfect), while the GHA staged-recipes *linter.py* step also runs the **"feedstock already exists"** check. When they disagree, trust the **GHA linter** — it gates the PR.
+
+**Fix — prevention**: run `lookup_feedstock(pkg_name=<name>)` (or the MCP tool) on **every** recipe before a staged-recipes submission — `exists=True` ⇒ already on conda-forge ⇒ do **not** submit (CLOSE the PR; the local recipe is a redundant mirror). This is load-bearing for **dep-closure** efforts (langflow / db-gpt class): a closure can contain popular packages already on conda-forge under another maintainer, and an unverified "net-new" assumption wastes one PR per false positive. A closure spec's *"already on conda-forge → consume, don't submit"* list must be **verified against `lookup_feedstock`**, never assumed. If the package needs a newer version or more platforms, that's a **feedstock PR** (version bump / platform expansion), not a staged-recipes submission.
+
+**Case study**: impit (staged-recipes #33897, Jun 25 2026) — assumed net-new in the langflow closure + authored locally, but `conda-forge/impit-feedstock` v0.13.0 (maint. Pijukatel) already existed. Service bot said "excellent"; GHA linter rejected with "Feedstock with the same name exists." PR closed; the local recipe was repurposed as a feedstock platform-expansion mirror (osx-arm64 + linux-aarch64; aarch64 cross-build verified GREEN locally).
+
 ---
 
 ## Skill Automation
@@ -2735,6 +2811,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.43.0** (Jun 25, 2026): **langflow-closure submission-session retro.** **MINOR bump** — 3 new gotchas + 2 refinements from a long multi-PR staged-recipes session (ibm-cos-suite + ~19 langflow-closure PRs + an impit platform-expansion). **G56** (multi-output `noarch:python` build scripts run on win-64 → bash `cd "$SRC_DIR/<sub>"`+`"$PYTHON"` fails on cmd.exe; use `${{ PYTHON }} -m pip install ./<sub>`; `crewai-suite` has the same latent bug; ibm-cos-suite #33886). **G57** (a build-control env var set only via bash `export` is UNSET on win-64 → build silently falls back to a network fetch / CMake FetchContent 404; set cross-platform after reading the upstream build code; couchbase #33893). **G58** (`lookup_feedstock` BEFORE submitting — a package already on conda-forge is rejected by the GHA `linter.py` "feedstock exists" check even while the linting-service bot says "excellent"; trust the GHA linter; impit #33897). **G19 refinement** (generalized beyond Rust to any win-64 cp1252 file read — pure-setuptools `setup.py open('README.md')` on a UTF-8 README; lomond #33889). **G26 refinement** (poetry-core builds the wheel METADATA from the sdist's `PKG-INFO`, not `pyproject.toml` — pyproject-only loosen sed passes locally, fails CI; patch all three files; pksuid #33895). Also: the adversarial BFS closure-audit workflow (prove a dep-closure spec has zero unpackaged gaps + name every blocker / list every net-new prereq — the langflow spec was missing 9), and the canonical compiled-Rust platform-expansion `conda-forge.yml` (cross-`linux_aarch64`, native `osx_arm64`, `test: native_and_emulated`; impit aarch64 cross-build verified GREEN locally). **Files touched**: `SKILL.md` (G56/G57/G58 + G19/G26 refinements + this entry); `config/skill-config.yaml` (8.42.2 → 8.43.0); `CHANGELOG.md` (this entry).
 - **v8.42.2** (Jun 24, 2026): **wheel→source sweep retro — G54/G55 refinements.** **PATCH bump** — no new gotcha; refines the v8.42.0 source-preference rules from a `grep -rl 'cfe-source-kind:\s*pypi-wheel' recipes/` sweep. (1) **G54** — added a *retroactive-sweep* note (recipes generated before v8.42.0 may sit on a wheel when a usable sdist / GitHub source exists; audit + re-decide per recipe) and **corrected the case study**: the `ibm-watsonx-orchestrate-{core,clients}` "keep the wheel" call was overturned — their sdists are metadata-only, but the ADK monorepo ships source at `packages/{core,clients}` → migrated to GitHub source (GREEN). Lesson: *empty sdist ≠ no source*. Plus a *monorepo-subdir wrinkle*: build the subdir from the FULL extraction, because its dynamic version may read a file OUTSIDE it via a relative path (`[tool.hatch.version] path = "../../src/<pkg>/__init__.py"`) — isolating the subdir → G39 `0.0.0`. (2) **G55** — added the `setup_requires` / build-time network-fetch trap: a source build runs `setup.py`'s legacy `setup_requires` (or any net fetch) that a LOCAL build masks but conda-forge's OFFLINE CI fails on; strip it (`jigsawstack` `pytest-runner`) or host it. Corollary: *a clean local source build ≠ proof of offline-CI build*. (3) **cfe-source-kind** — keep it in sync with the `source:` block; a stale `pypi-wheel` (live: `pybase62`, already on a GitHub tag) mis-routes the next regen and hides the recipe from the sweep. Sweep migrations: `jigsawstack`, `ibm-watsonx-orchestrate-{core,clients}`, `lfx` (→ monorepo `src/lfx`); `pybase62` metadata-corrected. **Files touched**: `SKILL.md` (G54 + G55 + cfe-source-kind refinements + this entry); `config/skill-config.yaml` (8.42.1 → 8.42.2); `CHANGELOG.md` (this entry).
 - **v8.42.1** (Jun 23, 2026): **langflow-closure retro — convention clarification.** **PATCH bump** — no new gotcha; verified v8.42.0's G54/G55 source-preference + build-backend rules held across the closure. Clarified the `extra.cfe-*` convention: recording the **first** local build on a recipe that has **no** `cfe-*` block (older pre-convention recipes — `firecrawl-py`, `mem0ai` — carried only `recipe-maintainers`) means adding the **full** canonical block, not a `cfe-local-build-*`-only six-field stub (the failure mode caught in local-recipes PR #24's first draft). Re-grounded `docs/specs/langflow-conda-forge.md` to current state (PRs #23–#27 merged → spec's "PR #25 (open)" + "only firecrawl-py lacks a build record" corrected; firecrawl-py/mem0ai now built; skill ref v8.35.0/G43 → v8.42.0/G55). The session's **staged-recipes-fork CI** findings are project-level (→ auto-memory, not the skill): the staged-recipes linter's hard-coded `{owner}/staged-recipes` repo-target 404s on a fork (use `github.repository`); the **ungated** `environment.yaml`↔`pixi.toml` sync check reds every PR until resynced (`pixi project export conda-environment -e build`); the `maintenance` label suppresses the linter's "outside `recipes/`" lint for non-recipe PRs. **Files touched**: `SKILL.md` (cfe-block first-build clarification + this entry); `config/skill-config.yaml` (8.42.0 → 8.42.1); `CHANGELOG.md` (this entry).
 - **v8.42.0** (Jun 23, 2026): Source-selection + build-backend rules. **MINOR bump** — two new gotchas, no change to existing paths. Driven by the langflow closure: ~13 recipes sourced from PyPI **wheels** (the generator's fallback when no PyPI sdist) without ever checking GitHub, and a wheel→sdist switch then hit *"No valid build backend found … using pip."* (1) **G54 — source preference `sdist > GitHub-source > wheel`, with a usable-source check.** conda-forge prefers source over wheel; the generator never checks GitHub for wheel-only PyPI packages, and a naive sdist switch can ship `ModuleNotFoundError`/`0.0.0`. Decision order: usable PyPI sdist (verify it ships `.py` files — many are metadata-only/broken: `ibm-watsonx-orchestrate-*` sdists have 0 `.py`; `jigsawstack` omits a `requirements.txt` its build reads) → GitHub tag archive (incl. monorepo subdir via a separate `monorepo_tag` context var + `pip install ./src/<sub>`; autotick can't dual-bump) → wheel as last resort (documented). (2) **G55 — source builds need a build backend in `host`.** Wheel installs need none (so wheel recipes carry `host: [python, pip]`); a source build runs PEP 517 and requires the `[build-system]` backend in host — a wheel→source switch surfaces it. Backend map (setuptools / hatchling / flit-core / poetry-core / pdm-backend / scikit-build-core / maturin / `uv-build`). Enhanced the "PyPI source.url" wheel note to point at G54. Applied live: `langflow-sdk` switched wheel→GitHub-monorepo source (`src/sdk`, hatchling) — GREEN; `ibm-watsonx-orchestrate-{core,clients}` reverted to wheel (metadata-only sdists). Updated `config/skill-config.yaml` to 8.42.0.
