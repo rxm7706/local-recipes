@@ -144,7 +144,7 @@ grandalf, mcp, cryptography, …).
 | langchain-milvus | pending-approval (#33894) | noarch | MIT | pymilvus-model (on cf) |
 | ddgs | on-conda-forge (#33896 MERGED) | noarch | MIT | primp (on cf) |
 | trustcall | ready (dydantic merged #33898) | noarch | MIT | **dydantic** (→ B′; #33898) |
-| qianfan | ready (bce-python-sdk #33911 on cf) | noarch | Apache-2.0 | **bce-python-sdk** (→ B′) |
+| qianfan | submitted (#33935) | noarch | Apache-2.0 | **bce-python-sdk** (→ B′; on cf #33911) |
 | ragworkbench | blocked-pending-prereq | noarch | Apache-2.0 | **unitxt** (→ B′) |
 | toolguard | blocked-pending-prereq | noarch | Apache-2.0 | **smolagents** (#33887; fastmcp 3.x on cf already satisfies the G36 >=2.14 floor) |
 | langwatch | blocked-pending-prereq | noarch | MIT | pksuid (pybase62 on cf) |
@@ -593,7 +593,7 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | couchbase | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/couchbase/recipe.yaml) | submitted, **CI-GREEN all platforms** (win_64 OpenSSL FetchContent→conda-openssl fix landed) | [#33893](https://github.com/conda-forge/staged-recipes/pull/33893) OPEN |
 | firecrawl-py | C* | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/firecrawl-py/recipe.yaml) | ready (built PR#24; post-lean a `run_constraints` integration, not a B1 core leaf) | — |
 | trustcall | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/trustcall/recipe.yaml) | **ready** (→ **dydantic** [#33898](https://github.com/conda-forge/staged-recipes/pull/33898) MERGED) | — |
-| qianfan | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/qianfan/recipe.yaml) | **ready** (→ **bce-python-sdk** [#33911](https://github.com/conda-forge/staged-recipes/pull/33911) MERGED) | — |
+| qianfan | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/qianfan/recipe.yaml) | submitted (CI pending) | [#33935](https://github.com/conda-forge/staged-recipes/pull/33935) OPEN |
 | ragworkbench | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ragworkbench/recipe.yaml) | blocked (→ **unitxt** [#33912](https://github.com/conda-forge/staged-recipes/pull/33912) submitted, CI-green — ready once it merges) | — |
 | toolguard | B1 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/toolguard/recipe.yaml) | blocked (→ **smolagents** [#33887](https://github.com/conda-forge/staged-recipes/pull/33887); fastmcp 3.x on cf satisfies G36 >=2.14) | — |
 | pksuid | B2 | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/pksuid/recipe.yaml) | submitted (CI-green; G26 pin-loosen via **source patch** instead of sed, per reviewer ocefpaf) | [#33895](https://github.com/conda-forge/staged-recipes/pull/33895) OPEN |
