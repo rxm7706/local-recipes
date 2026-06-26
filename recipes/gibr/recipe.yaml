@@ -12,13 +12,13 @@ package:
 source:
   url: https://pypi.org/packages/source/g/gibr/gibr-${{ version }}.tar.gz
   sha256: 2f278040f5fc8c3e48ea78bb8f9ddb3c6ab86106864afc82bb8b9f12849bbb7f
+  patches:
+    - patches/0001-loosen-runtime-pins.patch
 
 build:
   number: 0
   noarch: python
-  script: |
-    sed -i -E 's/([A-Za-z0-9])==([0-9])/\1>=\2/g' pyproject.toml
-    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - gibr = gibr.cli:cli
@@ -100,18 +100,19 @@ extra:
 # context:
 #    # upstream pyproject.toml: requires-python = ">=3.11" — python_min override
 #    # above the conda-forge 3.10 floor, so declared in context: per policy.
-# build:
-#  script:
+# source:
+#  patches:
 #    # G26: upstream pins python-dotenv==1.2.1 and requests==2.32.5 exactly in
 #    # pyproject.toml, so the built wheel METADATA bakes in those ==. We loosen
 #    # the conda run: deps to >= (pin-loosening convention) and pip_check then
-#    # fails because conda-forge now ships dotenv 1.2.2 / requests 2.34.x. The
-#    # sed rewrites the == to >= in the source pyproject so the wheel METADATA
-#    # matches the loosened run: deps. The deployed feedstock 0.10.2 is green
-#    # only because the channel shipped the exact versions at its build time;
-#    # the feedstock owes this same source patch on its next rebuild.
+#    # fails because conda-forge now ships dotenv 1.2.2 / requests 2.34.x.
+#    # 0001-loosen-runtime-pins.patch rewrites the == to >= in the source
+#    # pyproject so the wheel METADATA matches the loosened run: deps. (A source
+#    # patch instead of an in-build sed — portable to macOS/BSD sed.) The
+#    # deployed feedstock 0.10.2 is green only because the channel shipped the
+#    # exact versions at build time; the feedstock owes this same patch on rebuild.
 # run:
 #    # upstream pins python-dotenv==1.2.1 and requests==2.32.5 exactly; loosened
 #    # to >= matching the deployed feedstock (pin-loosening convention). Coupled
-#    # with the build-script sed above so pip_check stays true (G26).
+#    # with the source patch above so pip_check stays true (G26).
 ####

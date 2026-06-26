@@ -26,6 +26,8 @@ package:
 source:
   - url: https://github.com/suitenumerique/messages/archive/${{ commit }}.tar.gz
     sha256: 7f9865bba474cdc9acdfb91924d4b171e0583796ba4b871be7576456c98be4df
+    patches:
+      - patches/0001-add-uv-module-name.patch
   # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
 build:
   number: 0
@@ -33,10 +35,9 @@ build:
   script:
     - |
       cd src/backend
-      # Upstream pyproject.toml omits [tool.uv.build-backend].module-name.
-      # Inject it via sed so uv_build doesn't fall back to the
-      # distribution name (which doesn't match any source dir here).
-      sed -i '/^\[tool\.uv\.build-backend\]$/a module-name = [\"core\", \"e2e\", \"messages\"]' pyproject.toml
+      # [tool.uv.build-backend].module-name is injected via
+      # patches/0001-add-uv-module-name.patch (uv_build would otherwise fall
+      # back to the distribution name, which matches no source dir here).
       ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:

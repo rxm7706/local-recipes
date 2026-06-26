@@ -26,6 +26,8 @@ package:
 source:
   - url: https://github.com/suitenumerique/st-deploycenter/archive/${{ commit }}.tar.gz
     sha256: b75b6c1f04104a9c21976076972c4b11aa10a20d8d8008df39ef9d63b25edafd
+    patches:
+      - patches/0001-build-metadata-fixups.patch
   # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
 build:
   number: 0
@@ -33,12 +35,11 @@ build:
   script:
     - |
       cd src/backend
-      # setuptools (PEP 639) rejects deprecated "License :: OSI Approved ::"
-      # trove classifiers. Strip them from pyproject.toml.
-      sed -i '/License :: OSI Approved/d' pyproject.toml
-      # setuptools auto-discovery refuses to pick a single package when
-      # multiple top-level modules exist. Append an explicit list.
-      printf '\n[tool.setuptools]\npackages = ["core", "deploycenter"]\n' >> pyproject.toml
+      # patches/0001-build-metadata-fixups.patch makes two pyproject.toml fixes:
+      # (1) strips the deprecated "License :: OSI Approved ::" trove classifier
+      # (setuptools PEP 639 rejects it); (2) appends [tool.setuptools].packages
+      # = ["core", "deploycenter"] (auto-discovery can't pick among multiple
+      # top-level modules). Done as a source patch so the build is shell-portable.
       ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:

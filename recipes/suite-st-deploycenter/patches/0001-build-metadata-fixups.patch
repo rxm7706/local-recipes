@@ -1,0 +1,17 @@
+--- a/src/backend/pyproject.toml
++++ b/src/backend/pyproject.toml
+@@ -11,7 +11,6 @@
+     "Framework :: Django",
+     "Framework :: Django :: 5",
+     "Intended Audience :: Developers",
+-    "License :: OSI Approved :: MIT License",
+     "Natural Language :: English",
+     "Programming Language :: Python :: 3",
+     "Programming Language :: Python :: 3.13",
+@@ -130,3 +129,6 @@
+     "test_*.py",
+     "tests.py",
+ ]
++
++[tool.setuptools]
++packages = ["core", "deploycenter"]

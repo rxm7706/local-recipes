@@ -24,7 +24,9 @@ build:
   # the placeholder with the recipe's version before pip-building so
   # `pip check` is happy in downstream consumers (semantic-router etc.).
   script:
-    - sed -i 's/^version = "0.0.0".*/version = "${{ version }}"/' pyproject.toml
+    # Portable sed -i.bak (works on GNU + macOS/BSD sed); a static source patch
+    # can't be used here because the replacement carries ${{ version }}.
+    - sed -i.bak 's/^version = "0.0.0".*/version = "${{ version }}"/' pyproject.toml && rm -f pyproject.toml.bak
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:

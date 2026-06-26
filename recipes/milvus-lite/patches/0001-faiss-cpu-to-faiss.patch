@@ -1,0 +1,11 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -28,7 +28,7 @@
+ dependencies = [
+     "pyarrow>=15.0",
+     "numpy>=1.24",
+-    "faiss-cpu>=1.7.4",
++    "faiss>=1.7.4",
+     "grpcio>=1.50",
+     "tomli>=2.0; python_version < '3.11'",
+ ]

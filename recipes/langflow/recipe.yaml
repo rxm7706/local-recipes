@@ -12,16 +12,16 @@ package:
 source:
   url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 45a317111a5d7cbc2709e683a72a80779801a658f61e506b612978588788ab71
+  patches:
+    # Lean umbrella: depend only on langflow-base (not [complete]); the lfx-*
+    # component packs + all integrations are optional (run_constraints), not
+    # forced. Source patch instead of an in-build sed.
+    - patches/0001-lean-umbrella-deps.patch
 
 build:
   noarch: python
   number: 0
-  script:
-    - |
-      # Lean umbrella: depend only on langflow-base (not [complete]); the lfx-*
-      # component packs + all integrations are optional (run_constraints), not forced.
-      sed -i.bak -E '/^dependencies = \[/,/^\]/{s/langflow-base\[complete\]/langflow-base/; /"(lfx-duckduckgo|lfx-arxiv|lfx-ibm|lfx-docling)>/d}' pyproject.toml && rm pyproject.toml.bak
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:

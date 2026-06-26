@@ -3,6 +3,7 @@ schema_version: 1
 
 context:
   version: "0.7.0"
+  python_min: "3.11"
 
 package:
   name: langchain-litellm
@@ -85,6 +86,12 @@ extra:
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# context:
+#    # python_min 3.11 (upstream declares >=3.10): conda-forge's fastuuid 0.14.0
+#    # (pulled transitively via litellm) ships no osx-64 py3.10 build (only
+#    # py3.11+), so this noarch package can't install on osx-64 + py3.10. 3.11
+#    # is the honest cross-platform floor (CFE skill G40). Revisit if the
+#    # fastuuid feedstock adds an osx-64 py3.10 build.
 # requirements:
 #  run:
 #    # Upstream upper bounds mirrored from pyproject.toml [project.dependencies];

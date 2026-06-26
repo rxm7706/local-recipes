@@ -1,0 +1,10 @@
+--- a/src/backend/pyproject.toml
++++ b/src/backend/pyproject.toml
+@@ -102,6 +102,7 @@
+ build-backend = "uv_build"
+ 
+ [tool.uv.build-backend]
++module-name = ["core", "e2e", "messages"]
+ module-root = ""
+ source-include = ["core/**"]
+ source-exclude = ["core/tests/**"]
