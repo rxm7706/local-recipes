@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-re2
+  version: "1.1.20251105"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 1db14a292ee8303b91e91e7c37e05ac17d3c467f29416c79ac70a78be3e65bda
+
+build:
+  number: 1
+  #skip: winAdd_Platforms
+  script:
+    env:
+      CL: "/std:c++17"
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: pybind11
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pybind11
+    - pip
+    - re2
+    - setuptools
+  run:
+    - python
+  run_constraints:
+    - pyre2 ==9999999999
+
+tests:
+  - python:
+      imports:
+        - re2
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+
+about:
+  summary: RE2 Python bindings
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/google/re2/tree/main/python
+  repository: https://github.com/google/re2
+
+extra:
+  recipe-maintainers:
+    - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-re2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-re2
+  cfe-purls:
+    - pkg:conda/google-re2@${{ version }}
+    - pkg:pypi/google-re2@${{ version }}
+  cfe-upstream-repo: https://github.com/google/re2
+  cfe-upstream-homepage: https://github.com/google/re2/tree/main/python
+  cfe-import-names: [re2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-re2-feedstock
+  cfe-forge-recipe-updates-needed:
+    - win-build-msvc-cxx17-flag
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-25T00:00:00Z
+  cfe-generated-by-version: 8.43.0
+  cfe-generated-at-datetime: 2026-06-25T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-25T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# General:
+#    # A v0 meta.yaml is kept alongside this recipe.yaml at the user's explicit
+#    # request ("keep both meta and recipe.yaml here"). NOTE: the deployed
+#    # google-re2-feedstock has already fully migrated to v1 (main = recipe.yaml,
+#    # no meta.yaml upstream), so per the usual local-mirror convention meta.yaml
+#    # would normally be dropped — kept here only because the user asked. The
+#    # meta.yaml mirrors this recipe.yaml (same version 1.1.20251105, same win
+#    # C++17 fix in v0 form). The FEEDSTOCK builds from recipe.yaml; that is the
+#    # file whose fix unblocks PR #24.
+# build:
+#  script:
+#    # PR #24 (conda-forge/google-re2-feedstock, "re-instate win build") fails
+#    # ONLY on win_64 (all 5 py variants) with absl/base/policy_checks.h(77)
+#    # "fatal error C1189: C++ versions less than C++17 are not supported".
+#    # The _re2 pybind11 extension pulls in abseil headers via re2, which
+#    # require C++17. MSVC defaults to C++14 and upstream setup.py sets only
+#    # extra_compile_args=['-fvisibility=hidden'] (ignored by cl.exe, D9002) —
+#    # it never passes a /std flag. GCC 14 / Clang 19 already default to
+#    # >=C++17 so linux/osx pass.
+#    #
+#    # FIX (applied): set CL=/std:c++17 via build.script.env. cl.exe reads the
+#    # CL / _CL_ env var and prepends it to every compile, so the missing
+#    # /std:c++17 reaches MSVC. Harmless on unix (gcc/clang do not read CL).
+#    # This is the MINIMAL, config-style recipe change requested.
+#    #
+#    # Why NOT conda-forge.yml / conda_build_config.yaml: neither can inject a
+#    # compile flag. conda-forge.yml only configures conda-smithy/CI (rerender:
+#    # provider, os_version, test, channels) — no compiler-flag or env-var
+#    # injection into the build step. conda_build_config.yaml only declares
+#    # build VARIANTS/pins (and jinja vars you would still have to wire into the
+#    # recipe); it cannot set a process env var or pass /std to cl.exe. On
+#    # Windows, distutils/setuptools' MSVCCompiler does NOT honour CFLAGS/
+#    # CXXFLAGS — the ONLY env var cl.exe consumes is CL/_CL_ — so the flag must
+#    # be set in the recipe build script (here) or patched into setup.py.
+#    #
+#    # Alternative recipe forms: (a) win-scoped script branch
+#    # `set CL=/std:c++17 && pip install ...` under `if: win` (scopes the var to
+#    # Windows; more lines); (b) a patches/ diff adding ['/std:c++17'] to
+#    # extra_compile_args under sys.platform=='win32' (the upstream root-cause
+#    # fix; heavier, re-rolls on version bumps).
+####
