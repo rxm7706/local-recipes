@@ -11,6 +11,12 @@ recipe:
 source:
   url: https://github.com/eosphoros-ai/DB-GPT/archive/v${{ version }}.tar.gz
   sha256: ac2f47a4495326150ddbbf2f3ac2b0e5888a7deb242a4ad810ed18173dda8017
+  patches:
+    # Loosen upstream's `==` pins to `>=` (G26) so the wheel METADATA matches the
+    # loosened conda run deps and pip_check passes. Source patches instead of an
+    # in-build sed — portable to macOS/BSD sed.
+    - patches/0001-loosen-dbgpt-core-pins.patch
+    - patches/0002-loosen-dbgpt-ext-pins.patch
 
 build:
   number: 0
@@ -23,7 +29,6 @@ outputs:
       noarch: python
       script: |
         cd packages/dbgpt-core
-        sed -i -E 's/([A-Za-z0-9])==([0-9])/\1>=\2/g' pyproject.toml
         ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
     requirements:
       host:
@@ -57,7 +62,6 @@ outputs:
       noarch: python
       script: |
         cd packages/dbgpt-ext
-        sed -i -E 's/([A-Za-z0-9])==([0-9])/\1>=\2/g' pyproject.toml
         ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
     requirements:
       host:

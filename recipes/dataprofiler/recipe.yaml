@@ -11,13 +11,13 @@ package:
 source:
   url: https://pypi.org/packages/source/D/DataProfiler/DataProfiler-${{ version }}.tar.gz
   sha256: 469e3acb234b43300f498b84d678949cee1a02f88e98fadfaad725f63447f086
+  patches:
+    - patches/0001-loosen-requests-pin.patch
 
 build:
   number: 1
   noarch: python
-  script: |
-    sed -i -E 's/^requests==2\.32\.\*/requests>=2.32/' requirements.txt
-    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -109,11 +109,13 @@ extra:
 # build:
 #    # versioneer drives the package version (setup.py imports versioneer); it is
 #    # kept in host (build-time) AND run (wheel METADATA lists it; pip_check needs it).
-#  script:
+#  source:
+#   patches:
 #    # G26: upstream requirements.txt pins `requests==2.32.*`, baked verbatim into
-#    # the wheel METADATA. We loosen the conda run-dep to `requests >=2.32`, so the
-#    # sed rewrites the source pin to `>=2.32` before pip install -> METADATA matches
-#    # the loosened dep and pip_check passes (else requests 2.34.2 violates ==2.32.*).
+#    # the wheel METADATA. We loosen the conda run-dep to `requests >=2.32`, so
+#    # 0001-loosen-requests-pin.patch rewrites the source pin to `>=2.32` -> METADATA
+#    # matches the loosened dep and pip_check passes (else requests 2.34.2 violates
+#    # ==2.32.*). A source patch instead of an in-build sed — portable to BSD sed.
 # requirements:
 #  run:
 #    # Only the base requirements.txt is activated; the heavy ML/reports extras

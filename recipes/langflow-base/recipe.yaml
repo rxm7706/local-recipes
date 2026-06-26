@@ -13,16 +13,16 @@ package:
 source:
   url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ monorepo_tag }}.tar.gz
   sha256: 45a317111a5d7cbc2709e683a72a80779801a658f61e506b612978588788ab71
+  patches:
+    # Strip optional-integration deps from src/backend/base/pyproject.toml so
+    # langflow-base stays lean (no langflow[full]); listed in run_constraints
+    # below. Source patch instead of an in-build sed.
+    - patches/0001-strip-integration-deps.patch
 
 build:
   noarch: python
   number: 0
-  script:
-    - |
-      # Strip optional-integration deps from src/backend/base/pyproject.toml so
-      # langflow-base stays lean (no langflow[full]); listed in run_constraints below.
-      sed -i.bak -E '/^dependencies = \[/,/^\]/{/(langchain-mongodb|langchain-perplexity|langchain-qdrant|langchain-weaviate|langchain-chroma|langchain-ibm|ibm-watsonx-ai|firecrawl-py|spider-client|assemblyai|elevenlabs|clickhouse-connect|duckdb|trustcall|jq|onnxruntime)[<>=~]/d}' src/backend/base/pyproject.toml && rm src/backend/base/pyproject.toml.bak
-    - ${{ PYTHON }} -m pip install src/backend/base -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install src/backend/base -vv --no-deps --no-build-isolation
 
 requirements:
   host:

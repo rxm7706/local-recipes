@@ -12,16 +12,16 @@ package:
 source:
   url: https://pypi.org/packages/source/o/opendsstar/opendsstar-${{ version }}.tar.gz
   sha256: 035fdeaf2bc3d9b9126f9f2f9ffe9f8de17b28f43a8539dbe5fcd46a857703e7
+  patches:
+    # conda `docling` is a metapackage; the importable `docling` module + its
+    # dist-info ship as `docling-slim`. Rewrite the wheel METADATA dep so
+    # `pip check` sees `docling-slim`; the conda run dep stays `docling` (G28).
+    - patches/0001-docling-to-docling-slim.patch
 
 build:
   noarch: python
   number: 0
-  script: |
-    # conda `docling` is a metapackage; the importable `docling` module + its
-    # dist-info ship as `docling-slim`. Rewrite the wheel METADATA dep so
-    # `pip check` sees `docling-slim`; the conda run dep stays `docling` (G28).
-    sed -i.bak 's/"docling>=2.36.1,<3.0.0"/"docling-slim>=2.36.1,<3.0.0"/' pyproject.toml && rm pyproject.toml.bak
-    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:

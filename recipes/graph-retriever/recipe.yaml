@@ -11,13 +11,13 @@ package:
 source:
   url: https://pypi.org/packages/source/g/graph-retriever/graph_retriever-${{ version }}.tar.gz
   sha256: e61f1cb27184e8d4559ece6de0a6ea18920908ffbae945051f9a01380af73347
+  patches:
+    - patches/0001-drop-pytest-from-runtime-deps.patch
 
 build:
   number: 0
   noarch: python
-  script: |
-    sed -i '/^[[:space:]]*"pytest[<>=!~ ]/d' pyproject.toml
-    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -87,9 +87,12 @@ extra:
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
-# build:
-#    # Upstream declares pytest as an ungated core dependency in
-#    # [project.dependencies] (a test framework leaked into runtime deps). Strip
-#    # it from pyproject.toml so the built wheel's METADATA matches the runtime
-#    # deps and pip_check passes — pytest is a test dep, not a runtime dep (G26).
+# source:
+#  patches:
+#    # 0001-drop-pytest-from-runtime-deps.patch: upstream declares pytest as an
+#    # ungated core dependency in [project.dependencies] (a test framework leaked
+#    # into runtime deps). The patch removes that one line so the built wheel's
+#    # METADATA matches the runtime deps and pip_check passes — pytest is a test
+#    # dep, not a runtime dep (G26). A source patch is used instead of an in-build
+#    # sed because GNU `sed -i` is not portable to macOS/BSD sed (osx CI fail).
 ####

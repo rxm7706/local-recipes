@@ -26,6 +26,8 @@ package:
 source:
   - url: https://github.com/suitenumerique/drive/archive/${{ commit }}.tar.gz
     sha256: 4b10bc02c211ca3db19eab21095490266596c6b59fe433a0ee46106e814c64b2
+    patches:
+      - patches/0001-add-uv-module-name.patch
   # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
 build:
   number: 0
@@ -36,10 +38,9 @@ build:
       # Upstream ships an empty __init__.py at src/backend/__init__.py that
       # uv_build rejects for namespace packages. Drop it.
       rm -f __init__.py
-      # Upstream pyproject.toml omits [tool.uv.build-backend].module-name.
-      # Inject it via sed so uv_build doesn't fall back to the
-      # distribution name (which doesn't match any source dir here).
-      sed -i '/^\[tool\.uv\.build-backend\]$/a module-name = [\"core\", \"demo\", \"drive\", \"e2e\", \"wopi\"]' pyproject.toml
+      # [tool.uv.build-backend].module-name is injected via
+      # patches/0001-add-uv-module-name.patch (uv_build would otherwise fall
+      # back to the distribution name, which matches no source dir here).
       ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:

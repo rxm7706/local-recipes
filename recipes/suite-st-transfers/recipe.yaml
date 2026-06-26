@@ -24,7 +24,9 @@ package:
 
 source:
   - url: https://github.com/suitenumerique/st-transfers/archive/${{ commit }}.tar.gz
-    sha256: b3c875af074e9287a40ef62714e47f369f3130b21597c1be2d845589ec7885bc
+    sha256: e1082e44bd86a93c9e729b4132c09822e00bf29c1d6aa5b42021418dc8536ed9
+    patches:
+      - patches/0001-add-uv-module-name.patch
   # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
 build:
   number: 0
@@ -32,10 +34,9 @@ build:
   script:
     - |
       cd src/backend
-      # Upstream pyproject.toml omits [tool.uv.build-backend].module-name.
-      # Inject it via sed so uv_build doesn't fall back to the
-      # distribution name (which doesn't match any source dir here).
-      sed -i '/^\[tool\.uv\.build-backend\]$/a module-name = [\"core\", \"transferts\"]' pyproject.toml
+      # [tool.uv.build-backend].module-name is injected via
+      # patches/0001-add-uv-module-name.patch (uv_build would otherwise fall
+      # back to the distribution name, which matches no source dir here).
       ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:

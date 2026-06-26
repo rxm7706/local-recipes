@@ -11,11 +11,15 @@ package:
 source:
   url: https://github.com/jigsawstack/jigsawstack-python/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 042be08a0e256363c7b918529edb120a35b86ab875c335accf62c5fdc56ea29f
+  patches:
+    # Drop legacy setup_requires=["pytest-runner"] so the offline source build
+    # doesn't try to fetch it (G55). Source patch instead of an in-build sed.
+    - patches/0001-drop-setup-requires.patch
 
 build:
   number: 0
   noarch: python
-  script: sed -i.bak '/setup_requires/d' setup.py && rm -f setup.py.bak && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:

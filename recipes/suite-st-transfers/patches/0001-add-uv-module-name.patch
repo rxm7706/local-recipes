@@ -1,0 +1,10 @@
+--- a/src/backend/pyproject.toml
++++ b/src/backend/pyproject.toml
+@@ -76,6 +76,7 @@
+ build-backend = "uv_build"
+ 
+ [tool.uv.build-backend]
++module-name = ["core", "transferts"]
+ module-root = ""
+ source-include = ["core/**"]
+ source-exclude = ["core/tests/**"]

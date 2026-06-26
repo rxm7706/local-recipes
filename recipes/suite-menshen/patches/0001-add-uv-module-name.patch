@@ -1,0 +1,10 @@
+--- a/src/backend/pyproject.toml
++++ b/src/backend/pyproject.toml
+@@ -62,6 +62,7 @@
+ ]
+ 
+ [tool.uv.build-backend]
++module-name = ["menshen", "token_exchange"]
+ module-root = ""
+ source-exclude = [
+     "**/tests/**",

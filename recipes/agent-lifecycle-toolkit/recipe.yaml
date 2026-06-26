@@ -11,13 +11,13 @@ package:
 source:
   url: https://pypi.org/packages/source/a/agent-lifecycle-toolkit/agent_lifecycle_toolkit-${{ version }}.tar.gz
   sha256: 940920d84b844616b33baedaf4bbed34b9e678142f4a4f8a012e588aaa8a20b4
+  patches:
+    - patches/0001-loosen-runtime-pins.patch
 
 build:
   noarch: python
   number: 0
-  script: |
-    sed -i -E 's/([A-Za-z0-9_])==([0-9])/\1>=\2/g' pyproject.toml
-    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -109,16 +109,16 @@ extra:
 #    # (OSI-approved, conda-forge-eligible) read from the sdist LICENSE +
 #    # pyproject [project] (PyPI JSON had license: None). Build backend
 #    # hatchling -> host is hatchling + pip only (G8).
-# build:
-#  script:
-#    # G26: upstream pins aiofiles==24.1.0, tomli==2.2.1 (+ onnxruntime==1.23.2
-#    # on py3.10) via `==`. The project pin-loosening convention rewrites them
+# source:
+#  patches:
+#    # G26: upstream pins aiofiles==24.1.0, tomli==2.2.1 (+ onnxruntime==1.23.2,
+#    # torch==2.2.2) via `==`. The project pin-loosening convention rewrites them
 #    # to `>=`. Because pip_check: true reads the wheel's dist-info METADATA
 #    # (which bakes in the `==` from pyproject), the recipe MUST also loosen the
-#    # `==` in pyproject.toml at build time (sed) or pip check rejects the build.
-#    # The ([A-Za-z0-9_])==([0-9]) guard touches only PEP 508 pins, never
-#    # `extra == "..."` / `python_version == "..."` markers. noarch:python builds
-#    # on linux only, so no m2-sed/Windows handling is needed.
+#    # `==` in pyproject.toml, via 0001-loosen-runtime-pins.patch, or pip check
+#    # rejects the build. The patch touches only PEP 508 pins, never
+#    # `extra == "..."` / `python_version == "..."` markers. (A source patch
+#    # instead of an in-build sed — portable to macOS/BSD sed.)
 #    # TODO: tighten the `>=` floors back toward upstream once the pinned
 #    # versions are reliably available on conda-forge.
 #  tests:
