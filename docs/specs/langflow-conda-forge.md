@@ -663,7 +663,7 @@ leaves-first. (Audit found **zero** truly-unpackaged recipes — see § B′.)
 | metal-sdk | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/metal-sdk/recipe.yaml) | ready | — |
 | needle-python | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/needle-python/recipe.yaml) | ready | — |
 | openlayer | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/openlayer/recipe.yaml) | ready | — |
-| opik | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/opik/recipe.yaml) | blocked (→ **mypy-boto3-bedrock-runtime** [#33918](https://github.com/conda-forge/staged-recipes/pull/33918) on cf; still gated on Skew 3 otel) | — |
+| opik | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/opik/recipe.yaml) | submitted (CI pending; built+tested GREEN against cf — Skew-3 otel did NOT block) | [#33936](https://github.com/conda-forge/staged-recipes/pull/33936) OPEN |
 | scrapegraph-py | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/scrapegraph-py/recipe.yaml) | ready | — |
 | upstash-vector | C | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/upstash-vector/recipe.yaml) | ready | — |
 
