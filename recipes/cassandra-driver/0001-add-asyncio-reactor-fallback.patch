@@ -1,0 +1,25 @@
+--- a/cassandra/cluster.py
++++ b/cassandra/cluster.py
+@@ -155,6 +155,13 @@
+     except DependencyException as e:
+         return (None, e)
+ 
++def _try_asyncio_import():
++    try:
++        from cassandra.io.asyncioreactor import AsyncioConnection
++        return (AsyncioConnection,None)
++    except (DependencyException, ImportError) as e:
++        return (None, e)
++
+ def _connection_reduce_fn(val,import_fn):
+     (rv, excs) = val
+     # If we've already found a workable Connection class return immediately
+@@ -167,7 +174,7 @@
+ 
+ log = logging.getLogger(__name__)
+ 
+-conn_fns = (_try_gevent_import, _try_eventlet_import, _try_libev_import, _try_asyncore_import)
++conn_fns = (_try_gevent_import, _try_eventlet_import, _try_libev_import, _try_asyncore_import, _try_asyncio_import)
+ (conn_class, excs) = reduce(_connection_reduce_fn, conn_fns, (None,[]))
+ if not conn_class:
+     raise DependencyException("Unable to load a default connection class", excs)
