@@ -7,34 +7,22 @@ context:
   # langflow-sdk ships from the same monorepo (src/sdk) but carries its OWN
   # version, independent of the langflow monorepo tag — bump both on update.
   sdk_version: "0.2.1"
-  # langflow-base's own version at the v1.10.1 tag (src/backend/base/pyproject).
-  # Used to pull its release-built frontend wheel — bump with the monorepo tag.
-  lfb_version: "0.10.1"
 
 recipe:
   name: langflow-suite
   version: ${{ version }}
 
 source:
-  - url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: 807470ff4bc1283db9716e911af8755b4104847bb6dbba03fc2e610184598fdb
-    patches:
-      # Applied once to the shared monorepo source: (1) strip optional-integration
-      # deps from src/backend/base/pyproject.toml (lean langflow-base);
-      # (2) lean the umbrella pyproject.toml (langflow-base, not [complete]; drop
-      # the 4 lfx-* hard deps). Both sets move to run_constraints. Source patches
-      # instead of per-output in-build seds.
-      - patches/0001-strip-integration-deps.patch
-      - patches/0002-lean-umbrella-deps.patch
-  # langflow-base's web UI (langflow/frontend/, the built React bundle) is
-  # generated at release time (npm build) and ships ONLY in the PyPI wheel — the
-  # GitHub tag carries just src/frontend SOURCE. Pull the prebuilt frontend from
-  # the wheel and graft it into the langflow-base output (G73/G51; building it
-  # from source would need a build-time npm fetch, against cf norms — G45).
-  # Downloaded as a file (not extracted); the langflow-base script unzips it.
-  - url: https://pypi.org/packages/py3/l/langflow-base/langflow_base-${{ lfb_version }}-py3-none-any.whl
-    sha256: 3e8ba6cf530bbcee07f3d449dac1bf42f166b22aff4ea08d098e7e8c480cca83
-    file_name: langflow-base-frontend.whl
+  url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 807470ff4bc1283db9716e911af8755b4104847bb6dbba03fc2e610184598fdb
+  patches:
+    # Applied once to the shared monorepo source: (1) strip optional-integration
+    # deps from src/backend/base/pyproject.toml (lean langflow-base);
+    # (2) lean the umbrella pyproject.toml (langflow-base, not [complete]; drop
+    # the 4 lfx-* hard deps). Both sets move to run_constraints. Source patches
+    # instead of per-output in-build seds.
+    - patches/0001-strip-integration-deps.patch
+    - patches/0002-lean-umbrella-deps.patch
 
 build:
   number: 0
@@ -157,11 +145,18 @@ outputs:
     build:
       noarch: python
       script:
-        - ${{ PYTHON }} -m pip install src/backend/base -vv --no-deps --no-build-isolation
-        # Graft the prebuilt web UI from the langflow-base wheel (G73/G51): the
-        # from-source build above produces no frontend.
-        - ${{ PYTHON }} -c "import os,sysconfig,zipfile; sp=os.environ.get('SP_DIR') or sysconfig.get_paths()['purelib']; z=zipfile.ZipFile('langflow-base-frontend.whl'); m=[n for n in z.namelist() if n.startswith('langflow/frontend/')]; assert m, 'no langflow/frontend/ in wheel'; z.extractall(sp, m); print('grafted', len(m), 'frontend files ->', sp)"
+        - |
+          set -ex
+          pushd src/frontend
+          npm ci
+          npm run build
+          popd
+          rm -rf src/backend/base/langflow/frontend
+          cp -r src/frontend/build src/backend/base/langflow/frontend
+          ${{ PYTHON }} -m pip install src/backend/base -vv --no-deps --no-build-isolation
     requirements:
+      build:
+        - nodejs >=20.19.0
       host:
         - python ${{ python_min }}.*
         - pip
@@ -270,6 +265,10 @@ outputs:
           pip_check: true
           python_version:
             - ${{ python_min }}.*
+      - package_contents:
+          site_packages:
+            - langflow/frontend/index.html
+            - langflow/frontend/assets/*.js
 
   # ======================================================================
   # OUTPUT 3: langflow (Top-Level Web Interface Umbrella Package)
@@ -468,6 +467,36 @@ extra:
 #    # one GitHub tag archive). A PyPI wheel cannot be used: the outputs build
 #    # src/lfx, src/backend/base, and . from the source tree. sha256 of the
 #    # v1.10.0 archive verified 2026-06-23 (cfe-source-kind: github-tag).
+# build:
+#  script:  (langflow-base)
+#    # FRONTEND (G51/G73): langflow's web UI (langflow/frontend/, ~1,874 built
+#    # files) is release-time-generated and ships ONLY in the PyPI wheel — the
+#    # GitHub tag carries just src/frontend/ React+Vite SOURCE. A tag build that
+#    # only `pip install`s ships 0 frontend files (import + pip_check still PASS,
+#    # but `langflow run` serves no UI). We BUILD it from source at build time
+#    # (nodejs >=20.19 per package.json engines; npm ci + `npm run build` = vite
+#    # build -> src/frontend/build), then copy into src/backend/base/langflow/
+#    # frontend/ so hatchling (packages=["langflow"]) ships it in langflow-base.
+#    # WHY node-build, not wheel-graft: build-from-tag is the conda-forge IDIOM
+#    # for a wheel-only frontend (cf BUILD jobs HAVE network — only the TEST
+#    # phase is offline; npm ci fetches node_modules at build, which is fine).
+#    # Precedents on conda-forge (verified 2026-06-27):
+#    #   1. gradio-feedstock      — exact match: GitHub-archive source, nodejs+pnpm
+#    #      build deps, runs upstream scripts/build_frontend.sh (pnpm i; pnpm build)
+#    #      at build time. The closest analogue (no-sdist JS-UI Python app).
+#    #   2. chainlit-feedstock    — pnpm in build:, the hatchling backend hook
+#    #      builds the frontend from the GitHub tarball at build time.
+#    #   3. mlflow-feedstock      — `yarn install; yarn build` of mlflow/server/js
+#    #      in-recipe from the GitHub archive, then strips node_modules/.map.
+#    #   4. agentsview / nebi     — `cd frontend && pnpm install && pnpm run build`
+#    #      then embed the built dist (Go embed dir). Same node-build-in-recipe.
+#    # Rejected: wheel-graft (extract langflow/frontend/ from the PyPI wheel via a
+#    # secondary source) — NO conda-forge precedent; the wheel-in-source lint
+#    # (R-029 lint / R-030 hint, gated by noarch:python; NOT skippable) tolerates
+#    # it only as a hint, but reviewers ask "why not build from source like
+#    # gradio/mlflow?". tensorboard-feedstock is the only "ship the wheel
+#    # wholesale" precedent, and it sources the wheel as the WHOLE package, not a
+#    # graft. Node-build is the defensible, precedented path.
 # requirements:
 #  run:
 #    # --- conda-forge submission order (leaves-first) for prereqs NOT yet on cf ---

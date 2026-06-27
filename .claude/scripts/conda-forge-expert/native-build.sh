@@ -145,5 +145,9 @@ PY
   fi
 fi
 
+# Pass through any extra args after the recipe path straight to rattler-build
+# (e.g. `--test skip`, `--target-platform`, `--keep-build`).
+CMD+=("${@:2}")
+
 echo "→ ${CMD[*]}"
 "${CMD[@]}"
