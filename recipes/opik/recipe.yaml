@@ -12,13 +12,17 @@ package:
 source:
   url: https://pypi.org/packages/source/o/opik/opik-${{ version }}.tar.gz
   sha256: c843f60719adfada1ece49dff51a3562ec28baa7ab7f4492d177b06b7e591b09
+  patches:
+    # opik's PyPI sdist is the comet-ml/opik monorepo sub-SDK; its setup.py reads
+    # ../../README.md (absent from the sdist). Patch long_description="" so
+    # metadata generation succeeds. (Version comes from the VERSION env below.)
+    - patches/0001-neutralize-out-of-tree-readme.patch
 
 build:
   number: 0
   noarch: python
   script: |
     export VERSION="${PKG_VERSION}"
-    python -c "import pathlib, re; p = pathlib.Path('setup.py'); s = p.read_text(); s = re.sub(r'long_description=open\(\s*os\.path\.join\(HERE, \"\.\.\", \"\.\.\", \"README\.md\"\), encoding=\"utf-8\"\s*\)\.read\(\),', 'long_description=\"\",', s); p.write_text(s)"
     ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
@@ -91,10 +95,10 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
-  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33936
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33937
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []   # mypy-boto3-bedrock-runtime now on conda-forge (#33918 merged)
-  cfe-last-checked: 2026-06-26T00:00:00Z
+  cfe-last-checked: 2026-06-26T12:00:00Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
@@ -107,12 +111,13 @@ extra:
 #    # python_min 3.11 (upstream declares >=3.10): on osx-64, conda-forge's
 #    # fastuuid (pulled via litellm) ships no py3.10 build, so this noarch
 #    # package can't install on osx-64 + py3.10 — 3.11 is the honest floor (G40).
-# build:
-#  script:
+# source/build:
 #    # The standalone PyPI sdist is a sub-SDK of the comet-ml/opik monorepo
 #    # (sdks/python/); its setup.py reads ../../README.md and ../../version.txt
-#    # which are absent from the sdist. Pin VERSION via env and neutralize the
-#    # out-of-tree README read so metadata generation succeeds.
+#    # which are absent from the sdist. VERSION is pinned via env (setup.py reads
+#    # $VERSION); the out-of-tree README read is neutralized via
+#    # patches/0001-neutralize-out-of-tree-readme.patch (was a fragile inline
+#    # python re.sub — now a clean source patch per G59).
 # requirements:
 #  run:
 #    # boto3-stubs[bedrock-runtime] flattened per G25 (conda has no extras).
