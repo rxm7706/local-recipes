@@ -8,7 +8,7 @@ status: 'complete'
 rule_count: 63
 optimized_for_llm: true
 sync_sources: ['CLAUDE.md', '.claude/skills/conda-forge-expert/SKILL.md', '.claude/skills/conda-forge-expert/reference/', '.claude/skills/conda-forge-expert/guides/', '.claude/skills/conda-forge-expert/quickref/', '.claude/skills/conda-forge-expert/CHANGELOG.md', 'docs/enterprise-deployment.md']
-last_synced_skill_version: 'conda-forge-expert v8.42.1'
+last_synced_skill_version: 'conda-forge-expert v8.52.1'
 maintenance_model: 'hand-edited rulebook; per-section (Sync: ...) tags name the upstream source. Re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns) on each CHANGELOG MINOR bump'
 ---
 # Project Context for AI Agents
@@ -181,6 +181,6 @@ Rules that reshape **story scope** for `bmad-create-prd`, `bmad-create-epics-and
 ## Usage
 
 - **BMAD agents**: read on spawn; cite specific sections rather than restating rules.
-- **Humans**: keep this file in sync with the source files identified in each section's `(Sync: ...)` tag. The `CHANGELOG.md` TL;DR section is the canonical drift-detection source — re-verify the **volatile sections** (Recipe Format Rules, Autonomous MCP Lifecycle, Anti-Patterns) whenever the latest CHANGELOG **MINOR** version exceeds the `last_synced_skill_version` pinned in frontmatter. PATCH bumps do not require re-sync.
+- **Humans**: keep this file in sync with the source files identified in each section's `(Sync: ...)` tag. The `CHANGELOG.md` TL;DR section is the canonical drift-detection source — re-verify the **volatile sections** (Recipe Format Rules, Autonomous MCP Lifecycle, Anti-Patterns) whenever the latest CHANGELOG **MINOR** version exceeds the `last_synced_skill_version` pinned in frontmatter. PATCH bumps do not require re-sync. **(Sync 2026-06-27: re-verified at v8.52.1 — the v8.42→v8.52 span added recipe-authoring gotchas G56–G75 [submission-flow, run_constraints reconciliation, win+py3.12, fold-into-suite, frontend node-build, atlas-membership-staleness, lean-submission-clean]; these are recipe-specific edge cases in SKILL.md, not new foundational rules — the volatile sections hold. rule_count 63 unchanged.)**
 
 <!-- Sync sources: CLAUDE.md (repo-wide) + .claude/skills/conda-forge-expert/ (conda-forge specifics) + docs/enterprise-deployment.md (JFROG mirror). Hand-maintained — verify alignment when sources change. -->

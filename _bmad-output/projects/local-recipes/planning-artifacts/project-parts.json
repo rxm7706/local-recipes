@@ -3,7 +3,7 @@
   "doc_type": "project-parts",
   "project_name": "local-recipes",
   "date": "2026-06-20",
-  "source_pin": "conda-forge-expert v8.42.1",
+  "source_pin": "conda-forge-expert v8.52.1",
   "shipped_spec_history": [
     {
       "version_target": "v8.6.0",
@@ -39,7 +39,7 @@
       "pixi_envs": ["local-recipes", "grayskull", "conda-smithy", "vuln-db", "gcloud"],
       "version_pin": "v8.41.0",
       "subdirectories": {
-        "SKILL.md": "primary spine: critical constraints, 10-step autonomous loop, recipe authoring gotchas G1–G55",
+        "SKILL.md": "primary spine: critical constraints, 10-step autonomous loop, recipe authoring gotchas G1–G75",
         "INDEX.md": "task→tool navigator",
         "CHANGELOG.md": "release history with TL;DR section (canonical drift-detection source)",
         "reference/": "17 deep-reference files (recipe-yaml-reference[-full], meta-yaml-reference, mcp-tools, python-min-policy, conda-forge-yml-reference[-full], pinning-reference, selectors-reference, jinja-functions, abi3-matrix-collapse, dependency-input-formats, atlas-actionable-intelligence, atlas-phases-overview, atlas-phase-engineering, atlas-phase-p-cost-model, conda-forge-ecosystem)",

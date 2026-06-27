@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.42.1'
+source_pin: 'conda-forge-expert v8.52.1'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -289,7 +289,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Complementary Skills (which BMAD/practice skills compose with this one)
 - CI Infrastructure Reference (platform assignments, OS versions, compiler pins, bot commands)
 - Ecosystem Updates (May 2026)
-- Recipe Authoring Gotchas (G1–G55, all in SKILL.md; latest G54–G55 added v8.42.0)
+- Recipe Authoring Gotchas (G1–G75, all in SKILL.md; latest G74–G75 added v8.52.1)
 
 ### `INDEX.md` (task→tool navigator)
 
@@ -334,7 +334,7 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 
 ## Recipe Authoring Gotchas (SKILL.md § Recipe Authoring Gotchas)
 
-Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G55**, all promoted into SKILL.md (the table below shows the founding six; G7–G55 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
+Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G75**, all promoted into SKILL.md (the table below shows the founding six; G7–G55 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
 
 | Code | Description | Lives where |
 |---|---|---|
