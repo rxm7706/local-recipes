@@ -71,6 +71,7 @@ class TestSkillMdConsistency:
             "linter.py",                  # G58 GHA staged-recipes linter step
             "variant_algebra.py",         # G21/G22 conda-smithy internal
             "pycbc_build_setup.py",       # G57 couchbase upstream build file
+            "cluster.py",                 # G71 cassandra-driver upstream source file (cassandra/cluster.py)
             "_version_helper.py",         # G39 setuptools_scm helper (upstream sdist)
             "_version.py",                # G39/G54 upstream dynamic-version module
             "main.py",                    # G31 case study (llms/main.py imports)
