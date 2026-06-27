@@ -32,7 +32,7 @@ spec_updated: 2026-06-27
 
 ### Submission risks for langflow-suite (acknowledge before opening the PR)
 - **Frontend (above)** — ✅ RESOLVED via node-build (verified: built `langflow-base` `.conda` ships `langflow/frontend/index.html` + `assets/*.js`; `package_contents` test passes). The build now requires `nodejs` + an `npm ci` at build time — a heavier, longer build than a pure `pip install`; reviewers may note the build-time npm fetch (precedented: gradio/chainlit/mlflow).
-- **Multi-output from a GitHub monorepo tag, not a PyPI wheel** (4 outputs, incl. per-output-versioned langflow-sdk 0.2.1) — tag-sourced multi-output draws reviewer scrutiny.
+- **Multi-output from a GitHub monorepo tag, not a PyPI wheel** (4 outputs, incl. per-output-versioned langflow-sdk 0.2.1) — tag-sourced multi-output draws reviewer scrutiny. **langflow-base is deliberately tag-versioned `1.10.1`** (= recipe `${{ version }}`), NOT its pyproject `0.10.1` — a suite-versioning choice (rxm7706, 2026-06-27: keep tag-versioning); conda pins (`pin_subpackage exact`) use the conda label so it's internally consistent (pip dist-info stays 0.10.1, invisible to conda; `pip_check` passes).
 - **Wheel-METADATA `sed`-strip of ~90 integration deps** (lean base/umbrella) — installed conda metadata deliberately diverges from upstream's declared deps; justify via "conda has no extras" (G25), integrations are `run_constraints`.
 - **`langflow-base[complete]`→`langflow-base` + lfx-* dropped to `run_constraints`** — conda `langflow` is leaner than upstream's umbrella; document the deliberate deviation.
 - **python_min 3.11** (upstream declares `>=3.10`; `jsonquerylang` hard-imports PEP 655 `typing.NotRequired`, G41) — folding langflow-sdk also raised its floor 3.10→3.11.
