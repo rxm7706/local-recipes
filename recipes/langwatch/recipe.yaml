@@ -80,12 +80,13 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33966
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
     - pksuid
-  cfe-last-checked: 2026-06-25T03:00:00Z
+  cfe-last-checked: 2026-06-27T13:40:14Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:30:00Z
   cfe-local-build-status: build-clean-test-blocked
