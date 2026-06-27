@@ -277,7 +277,7 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 > collides with langflow-base's upstream-accurate hard `aiosqlite >=0.20.0`. This lives in `constrains`, not
 > `depends`, and the narrow `langchain + langchain-classic` dry-run above never pulled aiosqlite, so it missed
 > it (CFE [G67](../../.claude/skills/conda-forge-expert/SKILL.md)). **This one DOES need a langchain-feedstock
-> PR** (loosen the stale `aiosqlite` cap to `<1.0`) — prepared locally; the local green build uses a workaround
+> PR** (re-sync the stale `aiosqlite` cap to langchain 1.3.11's `extended_testing_deps.txt` → `>=0.19.0,<0.23`, NOT a guessed `<1.0`) — fixed in `recipes/langchain/` (commit d1c6b20c7a); the local green build uses a workaround
 > langchain. So "no feedstock PR needed" above is superseded for this aiosqlite case.
 
 - **Symptom:** `lfx` test-env solve fails. `lfx` pins **both** `langchain~=1.2.0` and
@@ -360,8 +360,9 @@ All 3 langflow-suite outputs build + test GREEN locally (imports + pip_check) �
 - **A1 — langchain (Skew 1). text-splitters RESOLVED; NEW aiosqlite `run_constrained` skew needs a PR.** The
   old text-splitters `depends` pin is gone (lfx 1.10.1 → `langchain~=1.3.0`; cf 1.3.11 clean). The 1.10.1 bump
   is done. But cf `langchain 1.3.11` carries a stale `run_constrained` `aiosqlite >=0.19.0,<0.20` that blocks
-  langflow-base's `aiosqlite>=0.20` (G67) → **a 1-line langchain-feedstock PR is needed** (loosen to `<1.0`;
-  prepared locally). **A1b — langflow-sdk 0.2.0→0.2.1** (lfx 1.10.1 requires `>=0.2.1`; bump #33856).
+  langflow-base's `aiosqlite>=0.20` (G67) → **a 1-line langchain-feedstock PR is needed** (re-sync to langchain
+  1.3.11's `extended_testing_deps.txt`: `aiosqlite >=0.19.0,<0.23`; fixed in `recipes/langchain/` d1c6b20c7a).
+  **A1b — langflow-sdk 0.2.0→0.2.1** (lfx 1.10.1 requires `>=0.2.1`; bump #33856).
 - **A2 — litellm proxy-extras flatten (Skew 2). ✅ RESOLVED — NO PR.** litellm-feedstock 1.89.4 already
   moved the proxy/proxy-runtime/extra-proxy deps to `run_constrained:`; `litellm` installs cleanly from cf
   (mamba dry-run, 90 pkgs). Nothing to file.
