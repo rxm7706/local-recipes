@@ -4,6 +4,9 @@ schema_version: 1
 context:
   version: "1.10.1"
   python_min: "3.11"
+  # langflow-sdk ships from the same monorepo (src/sdk) but carries its OWN
+  # version, independent of the langflow monorepo tag — bump both on update.
+  sdk_version: "0.2.1"
 
 recipe:
   name: langflow-suite
@@ -25,6 +28,41 @@ build:
   number: 0
 
 outputs:
+  # ======================================================================
+  # OUTPUT 0: langflow-sdk (Python client SDK — same monorepo, src/sdk)
+  # Carries its own version (sdk_version), independent of the langflow tag.
+  # Built before lfx so lfx can pin_subpackage it (no external dep / no gate
+  # on the standalone staged-recipes #33856).
+  # ======================================================================
+  - package:
+      name: langflow-sdk
+      version: ${{ sdk_version }}
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install src/sdk -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - hatchling
+      run:
+        - python >=${{ python_min }},<3.15
+        - httpx
+        - h2
+        - pydantic-settings >=2.10.1
+        - pydantic >=2.0.0
+        - tomli >=2.2.1
+        - typing_extensions >=4.14.0
+    tests:
+      - python:
+          imports:
+            - langflow_sdk
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
   # ======================================================================
   # OUTPUT 1: lfx (Langflow Executor Engine)
   # ======================================================================
@@ -79,7 +117,7 @@ outputs:
         - pypdf >=6.10.0,<7.0.0
         - cryptography >=46.0.7
         - ag-ui-protocol >=0.1.10
-        - langflow-sdk >=0.2.1
+        - ${{ pin_subpackage('langflow-sdk', exact=True) }}
         - markitdown >=0.1.4,<2.0.0
         - setuptools >=80.0.0,<81.0.0
         - wheel >=0.46.2,<1.0.0
@@ -356,14 +394,14 @@ extra:
     - pkg:pypi/langflow@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://pypi.org/project/langflow/
-  cfe-import-names: [lfx, langflow]
+  cfe-import-names: [langflow_sdk, lfx, langflow]
   cfe-source-kind: github-tag
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
+  cfe-forge-blocker-list: []   # ✅ both former blockers CLEARED 2026-06-27 (see notes)
     # 2026-06-23 STATUS: ALL 3 outputs (lfx, langflow-base, langflow) BUILD +
     # TEST GREEN locally (imports + pip_check) against the local channel. Two
     # things made this work:
@@ -390,19 +428,21 @@ extra:
     #      with langflow-base's otel-api>=1.30 and the fastapi pin with lfx's
     #      fastapi>=0.135. Worked around with a local litellm 1.89.3 (base deps
     #      only). Durable fix: litellm-feedstock not flattening proxy extras.
-    # ✅ 2026-06-27 UPDATE (supersedes the 2026-06-23 status above): bumped to langflow
-    # 1.10.1; ALL 3 outputs build + test GREEN locally. The former 2 skews are GONE
-    # (langchain text-splitters: feedstock advanced to 1.3.x; litellm: feedstock
-    # de-flattened proxy extras to run_constrained). lfx 1.10.1 demoted opendsstar ->
-    # run_constraints (breaks the lfx->litellm chain). transformers (new base hard dep)
-    # -> run_constraints. TWO real cf-submission prerequisites remain:
-    - cf langchain-feedstock - loosen stale run_constrained "aiosqlite >=0.19.0,<0.20" (a langchain==1.2.0-era cap) to <1.0; it conflicts with langflow-base's aiosqlite>=0.20. Fix prepared locally (build 1); PR pending. Local builds use a workaround langchain.
-    - langflow-sdk >=0.2.1 not yet on cf - lfx 1.10.1 requires it; staged-recipes #33856 is 0.2.0 and must bump to 0.2.1
-  cfe-last-checked: 2026-06-27T00:00:00Z
+    # ✅ 2026-06-27 FINAL (supersedes everything above) — BOTH blockers CLEARED, suite is cf-submittable:
+    #   1. langflow-sdk: FOLDED INTO THIS SUITE as a 4th output (src/sdk; lfx pins it
+    #      via pin_subpackage('langflow-sdk', exact=True)). No external langflow-sdk dep,
+    #      so the standalone staged-recipes #33856 is SUPERSEDED → CLOSE it.
+    #   2. langchain aiosqlite skew: CLEARED on cf. A clean-channel rebuild (local
+    #      langchain purged per G68) resolves langchain 1.3.11 (pyhcf101f3_1 — the #276
+    #      <0.23 rebuild) + aiosqlite 0.22.1 from conda-forge; langchain-classic 1.0.8,
+    #      langchain-core 1.4.8, langchain-text-splitters 1.1.2 all from cf too.
+    #   Result: all 4 outputs (langflow-sdk + lfx + langflow-base + langflow) build +
+    #   test GREEN against PURE conda-forge — no workaround langchain. Ready to submit.
+  cfe-last-checked: 2026-06-27T14:00:10Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-27T00:00:00Z
+  cfe-local-build-datetime: 2026-06-27T14:00:10Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
