@@ -2,7 +2,8 @@
 schema_version: 1
 
 context:
-  version: "1.10.0"
+  version: "1.10.1"
+  python_min: "3.11"
 
 package:
   name: lfx
@@ -10,7 +11,7 @@ package:
 
 source:
   url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 45a317111a5d7cbc2709e683a72a80779801a658f61e506b612978588788ab71
+  sha256: 807470ff4bc1283db9716e911af8755b4104847bb6dbba03fc2e610184598fdb
 
 build:
   noarch: python
@@ -27,14 +28,14 @@ requirements:
     - pip
     - hatchling
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<3.15
     - ag-ui-protocol >=0.1.10
     - aiofile >=3.8.0,<4.0.0
     - aiofiles >=24.1.0,<25.0.0
     - asyncer >=0.0.8,<1.0.0
     - cachetools >=6.0.0
     - chardet >=7.3.0
-    - cryptography >=46.0.7
+    - cryptography >=48.0.1
     - defusedxml >=0.7.1,<1.0.0
     - docstring_parser >=0.16,<1.0.0
     - emoji >=2.14.1,<3.0.0
@@ -45,14 +46,13 @@ requirements:
     - json-repair >=0.30.3,<1.0.0
     - langchain-classic >=1.0.7,<1.1.0
     - langchain-core >=1.2.28,<2.0.0
-    - langchain >=1.2.0,<1.3.0
-    - langflow-sdk >=0.1.0
+    - langchain >=1.3.0,<1.4.0
+    - langflow-sdk >=0.2.1
     - loguru >=0.7.3,<1.0.0
     - markitdown >=0.1.4,<2.0.0
     - mcp >=1.17.0,<2.0.0
     - nanoid >=2.0.0,<3.0.0
     - networkx >=3.4.2,<4.0.0
-    - opendsstar ==1.0.26
     - orjson >=3.11.6,<4.0.0
     - pandas >=2.0.0,<3.0.0
     - passlib >=1.7.4,<2.0.0
@@ -72,6 +72,9 @@ requirements:
     - uvicorn >=0.34.3,<1.0.0
     - validators >=0.34.0,<1.0.0
     - wheel >=0.46.2,<1.0.0
+  run_constraints:
+    - opendsstar ==1.0.26
+    - magika >=0.6.1,!=0.6.3,<0.7.0
 
 tests:
   - python:
@@ -115,13 +118,15 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - opendsstar          # not on conda-forge AND not in local channel (third-party blocker)
-    - langflow-sdk        # langflow-family; built in local channel, not yet on conda-forge
-  cfe-last-checked: 2026-06-24T09:58:17Z
+    - langflow-sdk        # langflow-family; now a langflow-suite OUTPUT (G72 fold), not a standalone cf feedstock; resolvable in local channel
+  # opendsstar dropped from the hard-blocker list: it is an optional-dependencies
+  # group in lfx 1.10.1 (now a run_constraint, not a hard dep), so the core lfx
+  # install no longer depends on it.
+  cfe-last-checked: 2026-06-27T23:19:44Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-06-24T09:58:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-27T23:19:44Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -131,6 +136,11 @@ extra:
 #    # split living in the langflow-ai/langflow monorepo at src/lfx/.
 #    # grayskull cannot generate this recipe: PyPI ships a wheel only (no
 #    # sdist), so the recipe is hand-authored from the canonical wheel URL.
+# context:
+#    # python_min 3.11 (not the 3.10 default): lfx depends on langflow-sdk, whose
+#    # chain hard-imports jsonquerylang -> typing.NotRequired (PEP 655, py3.11+)
+#    # (G41). conda-forge has no py3.10 langflow-sdk build, so a py3.10 test leg
+#    # can't resolve it. Matches langflow-suite's python_min.
 # source:
 #    # GitHub monorepo tag archive (G54): lfx ships a wheel only on PyPI (no
 #    # sdist), but its source IS in the langflow-ai/langflow monorepo at src/lfx/,
@@ -152,13 +162,20 @@ extra:
 #    # docstring_parser (underscore) is the conda-forge feedstock spelling
 #    #   (G10): PyPI ships `docstring-parser` (hyphen) but conda-forge ships
 #    #   `docstring_parser`; the hyphen form fails the solve.
-#    # opendsstar ==1.0.26 is a known third-party blocker, NOT on conda-forge.
-#    #   Upstream marker gates it to py3.11-3.13 on non-(darwin x86_64); for a
-#    #   noarch artifact the per-(py,platform) marker can't be expressed in run:
-#    #   without violating G12/G35, so it is listed unconditionally. It is a
-#    #   prerequisite blocker either way (see cfe-forge-blocker-list).
-#    # langflow-sdk is another langflow-family package — likely not yet on
-#    #   conda-forge; prerequisite blocker.
+#    # langflow-sdk (>=0.2.1 in 1.10.1) is a langflow-family package, now a
+#    #   langflow-suite OUTPUT (G72 fold), NOT a standalone conda-forge feedstock;
+#    #   resolvable from the local channel, prerequisite blocker for cf submission.
+#  run_constraints:
+#    # opendsstar is an optional-dependencies group in lfx 1.10.1 (was a hard run
+#    #   dep in 1.10.0). Demoting it breaks the lfx -> opendsstar ->
+#    #   langchain-text-splitters>=1.1.0 chain that conflicted with langchain
+#    #   1.2.x; with langchain ~=1.3.0 (text-splitters 1.1.x) they reconcile.
+#    #   Upstream marker gates it to py3.11-3.13 on non-(darwin x86_64); the
+#    #   per-(py,platform) marker can't be expressed on a noarch artifact
+#    #   (G12/G35), so it is listed unconditionally. NOT on conda-forge.
+#    # magika reaches lfx via markitdown. 0.6.3's wheel caps onnxruntime<=1.20.1
+#    #   on win32 (absent in 0.6.2/1.0+); exclude only 0.6.3 (!=) so the Windows
+#    #   pip check passes. Stopgap until markitdown-feedstock PR #20 lands.
 #    # setuptools <81 mirrors upstream's explicit cap (related to G34's
 #    #   pkg_resources/setuptools-81 class); load-bearing under pip_check.
 ####
