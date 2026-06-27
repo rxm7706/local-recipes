@@ -161,7 +161,7 @@ grandalf, mcp, cryptography, …).
 | lfx-ibm | blocked-pending-prereq | noarch | MIT | lfx, langchain-ibm, ibm-watsonx-ai (import `ibm_db`, G10) |
 | langchain-astradb | blocked-pending-prereq | noarch | MIT | (astrapy, cassio — see C) |
 | langchain-graph-retriever | submitted (#33939) | noarch | Apache-2.0 | **graph-retriever** (→ B′; on cf #33913) |
-| langchain-google-vertexai | ready (google-cloud-vectorsearch #33914 on cf) | noarch | MIT | **google-cloud-vectorsearch** (→ B′) |
+| langchain-google-vertexai | submitted (#33940) | noarch | MIT | **google-cloud-vectorsearch** (→ B′; on cf #33914) |
 | langchain-sambanova | ready (sambanova #33916 on cf) | noarch | MIT | **sambanova** (→ B′) |
 | langchain-google-community | blocked-pending-prereq | noarch | MIT | **google-cloud-modelarmor** (→ B′; recipe-internal G12 numpy-selector, G35) |
 | **langflow-base** *(suite; LEAN)* | blocked-pending-prereq | noarch | MIT | lfx + framework core ONLY (all integrations incl. spider-client/assemblyai/firecrawl-py → `run_constraints`; METADATA source-stripped) |
