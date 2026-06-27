@@ -68,11 +68,12 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33942
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-23T10:49:42Z
+  cfe-last-checked: 2026-06-27T11:57:49Z
   cfe-generated-by-version: 8.42.0
   cfe-generated-at-datetime: 2026-06-23T10:49:42Z
   cfe-local-build-status: success
