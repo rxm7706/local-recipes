@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.8"
+
+package:
+  name: langchain-anthropic
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langchain-anthropic/langchain_anthropic-${{ version }}.tar.gz
+  sha256: c76891b2044d56105ff13c106ed12650637b53bd598a4bdf15b4796eefa2a4ec
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - anthropic >=0.96.0,<1.0.0
+    - langchain-core >=1.4.7,<2.0.0
+    - pydantic >=2.7.4,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - langchain_anthropic
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.langchain.com/oss/python/integrations/providers/anthropic
+  license: MIT
+  license_file: LICENSE
+  summary: Integration package connecting Claude (Anthropic) APIs and LangChain
+  repository: https://github.com/langchain-ai/langchain
+  documentation: https://reference.langchain.com/python/integrations/langchain_anthropic/
+  description: |
+    langchain-anthropic is the LangChain partner package that integrates
+    Anthropic's Claude models with LangChain. It provides the ChatAnthropic
+    chat model and related interfaces (tool calling, streaming, multimodal
+    inputs) backed by the Anthropic Messages API, exposed through the standard
+    LangChain abstractions.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-anthropic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-anthropic
+  cfe-name-aliases:
+    - langchain_anthropic
+  cfe-purls:
+    - pkg:conda/langchain-anthropic@${{ version }}
+    - pkg:pypi/langchain-anthropic@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain
+  cfe-upstream-homepage: https://docs.langchain.com/oss/python/integrations/providers/anthropic
+  cfe-import-names: [langchain_anthropic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-anthropic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-27T00:00:00Z
+  cfe-generated-by-version: 8.50.0
+  cfe-generated-at-datetime: 2026-06-27T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-27T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
