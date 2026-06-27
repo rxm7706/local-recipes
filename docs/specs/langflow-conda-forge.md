@@ -162,7 +162,7 @@ grandalf, mcp, cryptography, …).
 | langchain-astradb | blocked-pending-prereq | noarch | MIT | (astrapy, cassio — see C) |
 | langchain-graph-retriever | submitted (#33939) | noarch | Apache-2.0 | **graph-retriever** (→ B′; on cf #33913) |
 | langchain-google-vertexai | submitted (#33940) | noarch | MIT | **google-cloud-vectorsearch** (→ B′; on cf #33914) |
-| langchain-sambanova | ready (sambanova #33916 on cf) | noarch | MIT | **sambanova** (→ B′) |
+| langchain-sambanova | submitted (#33941) | noarch | MIT | **sambanova** (→ B′; on cf #33916) |
 | langchain-google-community | blocked-pending-prereq | noarch | MIT | **google-cloud-modelarmor** (→ B′; recipe-internal G12 numpy-selector, G35) |
 | **langflow-base** *(suite; LEAN)* | blocked-pending-prereq | noarch | MIT | lfx + framework core ONLY (all integrations incl. spider-client/assemblyai/firecrawl-py → `run_constraints`; METADATA source-stripped) |
 | **langflow** *(suite; LEAN umbrella)* | blocked-pending-prereq | noarch | MIT | langflow-base ONLY (lfx-* + integrations → `run_constraints`; `[complete]`→`langflow-base` source-rewrite; cycle dissolved) |
