@@ -3,7 +3,7 @@ status: ready
 implemented_by: bmad-quick-dev
 shipped_ref: "langflow-suite all 3 outputs (lfx+langflow-base+langflow) build+test GREEN locally (2026-06-23) via LEAN re-architecture (integrations->run_constraints) + local skew-workaround channel builds; cf-submission blocked on 2 feedstock fixes (langchain-text-splitters stale pin, litellm proxy-extras flatten)"
 scope: full-closure   # core hard-dep closure + ALL optional run_constraints integrations (Set C now ALL authored locally) + ALL 3 external cf skews. Nothing deferred except the 3 named caveats (handled per § Caveats: elasticsearch gated on cf PR #122; apify-client attempt-or-drop; ragstack kept local-only).
-submission_started: 2026-06-24   # Wave B well advanced (live PR reconcile 2026-06-26): 29 staged-recipes PRs in the langflow range — 13 MERGED→on cf (primp #33836, pybase62 #33838, pymilvus-model #33837, jsonquerylang #33846, ibm-cos-suite #33886, vlmrun-hub #33891, ddgs #33896, dydantic #33898, bce-python-sdk #33911, graph-retriever #33913, google-cloud-vectorsearch #33914, sambanova #33916, mypy-boto3-bedrock-runtime #33918); 13 OPEN CI-GREEN (langflow-sdk #33856, jigsawstack #33857, smolagents #33887, llm-sandbox #33888, lomond #33889, apify-shared #33890, milvus-lite #33892, couchbase #33893, langchain-milvus #33894, pksuid #33895, unitxt #33912, google-cloud-modelarmor #33915, langchain-litellm #33917); 1 OPEN CI-RED (opendsstar #33840 — waits on its prereqs milvus-lite/langchain-milvus/smolagents/unitxt(→ragworkbench)/langchain-litellm to merge); 2 TO-CLOSE (standalone ibm-cos-sdk #33885 dup of suite #33886; impit #33897 already on cf). ALL 9 § B′ prereqs now SUBMITTED (6 merged + 3 open-green). This session also converted in-build seds→source patches on graph-retriever/pksuid/milvus-lite/opendsstar/langflow-suite and fixed langchain-litellm (#33917: restored context block + python_min 3.11 for the osx fastuuid-py3.10 gap). Wave A skew feedstock PRs still TO FILE; elasticsearch-feedstock #122 still OPEN. NOTE: #33861/#33862 (ibm-watsonx-orchestrate-*) are a SEPARATE effort, not this closure.
+submission_started: 2026-06-24   # Wave B well advanced (live PR reconcile 2026-06-26): 29 staged-recipes PRs in the langflow range — 13 MERGED→on cf (primp #33836, pybase62 #33838, pymilvus-model #33837, jsonquerylang #33846, ibm-cos-suite #33886, vlmrun-hub #33891, ddgs #33896, dydantic #33898, bce-python-sdk #33911, graph-retriever #33913, google-cloud-vectorsearch #33914, sambanova #33916, mypy-boto3-bedrock-runtime #33918); 13 OPEN CI-GREEN (langflow-sdk #33856, jigsawstack #33857, smolagents #33887, llm-sandbox #33888, lomond #33889, apify-shared #33890, milvus-lite #33892, couchbase #33893, langchain-milvus #33894, pksuid #33895, unitxt #33912, google-cloud-modelarmor #33915, langchain-litellm #33917); 1 OPEN CI-RED (opendsstar #33840 — waits on its prereqs milvus-lite/langchain-milvus/smolagents/unitxt(→ragworkbench)/langchain-litellm to merge); 2 TO-CLOSE (standalone ibm-cos-sdk #33885 dup of suite #33886; impit #33897 already on cf). ALL 9 § B′ prereqs now SUBMITTED (6 merged + 3 open-green). This session also converted in-build seds→source patches on graph-retriever/pksuid/milvus-lite/opendsstar/langflow-suite and fixed langchain-litellm (#33917: restored context block + python_min 3.11 for the osx fastuuid-py3.10 gap). Wave A skews ✅ RESOLVED 2026-06-27 (solver-verified, NO cf PR needed — langchain-feedstock advanced to 1.3.11 + lfx 1.10.1 moved to langchain~=1.3.0; litellm-feedstock 1.89.4 already de-flattened proxy extras to run_constrained); remaining gate is the LOCAL langflow-suite 1.10.0→1.10.1 + langchain~=1.3.0 bump. elasticsearch-feedstock #122 still OPEN. NOTE: #33861/#33862 (ibm-watsonx-orchestrate-*) are a SEPARATE effort, not this closure.
 spec_updated: 2026-06-26
 ---
 # Tech Spec: langflow-suite on conda-forge (submission + external-skew remediation)
@@ -60,7 +60,7 @@ spec_updated: 2026-06-26
 
 | Field | Value |
 | ----- | ----- |
-| Status | **GREEN locally — all 3 langflow-suite outputs (lfx, langflow-base, langflow) build + test pass** (imports + pip_check, 2026-06-23) against the local channel, via the **LEAN re-architecture** (integrations → `run_constraints`; § Packaging shape) + **local skew-workaround channel builds** of `langchain` 1.2.18 / `litellm` 1.89.3 (base deps; § External skews). `cfe-local-build-status: success`. **conda-forge submission stays `blocked-pending-prerequisites`** on 2 cf feedstock fixes (langchain-text-splitters stale pin; litellm proxy-extras flatten) that gate lfx's hard deps; the local channel works around both. **Wave B well advanced (live reconcile 2026-06-26)** — 29 staged-recipes PRs in the langflow range: **13 MERGED → on conda-forge** (primp [#33836](https://github.com/conda-forge/staged-recipes/pull/33836), pybase62 [#33838](https://github.com/conda-forge/staged-recipes/pull/33838), pymilvus-model [#33837](https://github.com/conda-forge/staged-recipes/pull/33837), jsonquerylang [#33846](https://github.com/conda-forge/staged-recipes/pull/33846), ibm-cos-suite [#33886](https://github.com/conda-forge/staged-recipes/pull/33886), vlmrun-hub [#33891](https://github.com/conda-forge/staged-recipes/pull/33891), ddgs [#33896](https://github.com/conda-forge/staged-recipes/pull/33896), dydantic [#33898](https://github.com/conda-forge/staged-recipes/pull/33898), bce-python-sdk [#33911](https://github.com/conda-forge/staged-recipes/pull/33911), graph-retriever [#33913](https://github.com/conda-forge/staged-recipes/pull/33913), google-cloud-vectorsearch [#33914](https://github.com/conda-forge/staged-recipes/pull/33914), sambanova [#33916](https://github.com/conda-forge/staged-recipes/pull/33916), mypy-boto3-bedrock-runtime [#33918](https://github.com/conda-forge/staged-recipes/pull/33918)); **13 OPEN CI-GREEN** (langflow-sdk [#33856](https://github.com/conda-forge/staged-recipes/pull/33856), jigsawstack [#33857](https://github.com/conda-forge/staged-recipes/pull/33857), smolagents [#33887](https://github.com/conda-forge/staged-recipes/pull/33887), llm-sandbox [#33888](https://github.com/conda-forge/staged-recipes/pull/33888), lomond [#33889](https://github.com/conda-forge/staged-recipes/pull/33889), apify-shared [#33890](https://github.com/conda-forge/staged-recipes/pull/33890), milvus-lite [#33892](https://github.com/conda-forge/staged-recipes/pull/33892), couchbase [#33893](https://github.com/conda-forge/staged-recipes/pull/33893), langchain-milvus [#33894](https://github.com/conda-forge/staged-recipes/pull/33894), pksuid [#33895](https://github.com/conda-forge/staged-recipes/pull/33895), unitxt [#33912](https://github.com/conda-forge/staged-recipes/pull/33912), google-cloud-modelarmor [#33915](https://github.com/conda-forge/staged-recipes/pull/33915), langchain-litellm [#33917](https://github.com/conda-forge/staged-recipes/pull/33917)); **1 OPEN CI-RED** (opendsstar [#33840](https://github.com/conda-forge/staged-recipes/pull/33840) — waits on its prereqs milvus-lite/langchain-milvus/smolagents/unitxt(→ragworkbench)/langchain-litellm to merge); **2 TO-CLOSE** (standalone ibm-cos-sdk [#33885](https://github.com/conda-forge/staged-recipes/pull/33885) **duplicates** suite #33886; impit [#33897](https://github.com/conda-forge/staged-recipes/pull/33897) already on cf — osx-arm64+linux-aarch64 platform-expansion prepped locally, linux-aarch64 cross-build verified GREEN). **ALL 9 § B′ prereqs now SUBMITTED** — 6 merged (dydantic, bce-python-sdk, graph-retriever, google-cloud-vectorsearch, sambanova, mypy-boto3-bedrock-runtime) + 3 open-green (unitxt #33912, google-cloud-modelarmor #33915, langchain-litellm #33917). **CI fixes this session:** langchain-litellm #33917 (restored dropped `context:` block + raised `python_min` to 3.11 — osx-64 `fastuuid 0.14.0` ships no py3.10 build; G40); graph-retriever #33913 + pksuid #33895 (in-build `sed`→source patch; pksuid per reviewer ocefpaf request); mypy-boto3-bedrock-runtime #33918 (moved recipe under `recipes/`). The 2 durable skew feedstock PRs (langchain / litellm) remain **TO FILE**; elasticsearch-feedstock [#122](https://github.com/conda-forge/elasticsearch-feedstock/pull/122) still OPEN. (#33861/#33862 ibm-watsonx-orchestrate-* are a SEPARATE effort, not this closure.) |
+| Status | **GREEN locally — all 3 langflow-suite outputs (lfx, langflow-base, langflow) build + test pass** (imports + pip_check, 2026-06-23) against the local channel, via the **LEAN re-architecture** (integrations → `run_constraints`; § Packaging shape). `cfe-local-build-status: success`. **External skews ✅ RESOLVED 2026-06-27 (solver-verified — NO cf PR needed):** Skew 1 dissolved (lfx 1.10.1 → `langchain~=1.3.0`; cf langchain 1.3.11 dropped the stale text-splitters pin; co-installs clean) and Skew 2 dissolved (litellm-feedstock 1.89.4 already moved proxy extras to `run_constrained`; litellm installs clean from cf). The only remaining gate for the core suite is the **LOCAL** langflow-suite 1.10.0→1.10.1 + `langchain~=1.3.0` bump (no longer the 2 feedstock PRs the spec carried since 2026-06-23). **Wave B well advanced (live reconcile 2026-06-26)** — 29 staged-recipes PRs in the langflow range: **13 MERGED → on conda-forge** (primp [#33836](https://github.com/conda-forge/staged-recipes/pull/33836), pybase62 [#33838](https://github.com/conda-forge/staged-recipes/pull/33838), pymilvus-model [#33837](https://github.com/conda-forge/staged-recipes/pull/33837), jsonquerylang [#33846](https://github.com/conda-forge/staged-recipes/pull/33846), ibm-cos-suite [#33886](https://github.com/conda-forge/staged-recipes/pull/33886), vlmrun-hub [#33891](https://github.com/conda-forge/staged-recipes/pull/33891), ddgs [#33896](https://github.com/conda-forge/staged-recipes/pull/33896), dydantic [#33898](https://github.com/conda-forge/staged-recipes/pull/33898), bce-python-sdk [#33911](https://github.com/conda-forge/staged-recipes/pull/33911), graph-retriever [#33913](https://github.com/conda-forge/staged-recipes/pull/33913), google-cloud-vectorsearch [#33914](https://github.com/conda-forge/staged-recipes/pull/33914), sambanova [#33916](https://github.com/conda-forge/staged-recipes/pull/33916), mypy-boto3-bedrock-runtime [#33918](https://github.com/conda-forge/staged-recipes/pull/33918)); **13 OPEN CI-GREEN** (langflow-sdk [#33856](https://github.com/conda-forge/staged-recipes/pull/33856), jigsawstack [#33857](https://github.com/conda-forge/staged-recipes/pull/33857), smolagents [#33887](https://github.com/conda-forge/staged-recipes/pull/33887), llm-sandbox [#33888](https://github.com/conda-forge/staged-recipes/pull/33888), lomond [#33889](https://github.com/conda-forge/staged-recipes/pull/33889), apify-shared [#33890](https://github.com/conda-forge/staged-recipes/pull/33890), milvus-lite [#33892](https://github.com/conda-forge/staged-recipes/pull/33892), couchbase [#33893](https://github.com/conda-forge/staged-recipes/pull/33893), langchain-milvus [#33894](https://github.com/conda-forge/staged-recipes/pull/33894), pksuid [#33895](https://github.com/conda-forge/staged-recipes/pull/33895), unitxt [#33912](https://github.com/conda-forge/staged-recipes/pull/33912), google-cloud-modelarmor [#33915](https://github.com/conda-forge/staged-recipes/pull/33915), langchain-litellm [#33917](https://github.com/conda-forge/staged-recipes/pull/33917)); **1 OPEN CI-RED** (opendsstar [#33840](https://github.com/conda-forge/staged-recipes/pull/33840) — waits on its prereqs milvus-lite/langchain-milvus/smolagents/unitxt(→ragworkbench)/langchain-litellm to merge); **2 TO-CLOSE** (standalone ibm-cos-sdk [#33885](https://github.com/conda-forge/staged-recipes/pull/33885) **duplicates** suite #33886; impit [#33897](https://github.com/conda-forge/staged-recipes/pull/33897) already on cf — osx-arm64+linux-aarch64 platform-expansion prepped locally, linux-aarch64 cross-build verified GREEN). **ALL 9 § B′ prereqs now SUBMITTED** — 6 merged (dydantic, bce-python-sdk, graph-retriever, google-cloud-vectorsearch, sambanova, mypy-boto3-bedrock-runtime) + 3 open-green (unitxt #33912, google-cloud-modelarmor #33915, langchain-litellm #33917). **CI fixes this session:** langchain-litellm #33917 (restored dropped `context:` block + raised `python_min` to 3.11 — osx-64 `fastuuid 0.14.0` ships no py3.10 build; G40); graph-retriever #33913 + pksuid #33895 (in-build `sed`→source patch; pksuid per reviewer ocefpaf request); mypy-boto3-bedrock-runtime #33918 (moved recipe under `recipes/`). The 2 durable skew feedstock PRs (langchain / litellm) are now **✅ OBSOLETE / RESOLVED 2026-06-27** (solver-verified — both feedstocks advanced; fix is the LOCAL langflow-suite 1.10.1 + langchain~=1.3.0 bump, see § External skews); elasticsearch-feedstock [#122](https://github.com/conda-forge/elasticsearch-feedstock/pull/122) still OPEN. (#33861/#33862 ibm-watsonx-orchestrate-* are a SEPARATE effort, not this closure.) |
 | Owner | rxm7706 |
 | Track | BMAD Quick Flow (tech-spec only) |
 | Upstream | `langflow-ai/langflow` v1.10.0 (MIT). Monorepo split into `lfx` (executor core, `src/lfx`), `langflow-base` (`src/backend/base`, ships the `langflow` import), `langflow` (umbrella, `.`), and the `lfx-*` extension plugins. |
@@ -261,6 +261,15 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 
 ### Skew 1 — langchain-text-splitters (core-gating via lfx; one of TWO core skews — see Skew 2)
 
+> **✅ RESOLVED 2026-06-27 (solver-verified) — no feedstock PR or repodata-patch needed.** The premise
+> below decayed as upstream advanced: **lfx 1.10.1 now pins `langchain~=1.3.0`** (not `~=1.2.0`), and cf
+> `langchain 1.3.11` already **dropped** the stale `langchain-text-splitters <1.0.0` pin. A `mamba` dry-run
+> confirms `langchain>=1.3.0,<1.4.0` + `langchain-classic~=1.0.7` co-install cleanly (resolves langchain
+> 1.3.11 + langchain-classic 1.0.8 + langchain-text-splitters 1.1.2 + langchain-core 1.4.8). The old
+> "~1-line langchain-feedstock PR" is **moot** (the feedstock builds 1.3.x now; it can't retroactively fix the
+> published 1.2.x builds lfx used to pull). **Durable fix is now purely LOCAL:** bump `langflow-suite`
+> 1.10.0 → 1.10.1 and align its langchain pin to `~=1.3.0`. Historical analysis (1.2.x era) preserved below.
+
 - **Symptom:** `lfx` test-env solve fails. `lfx` pins **both** `langchain~=1.2.0` and
   `langchain-classic~=1.0.7`. On cf, **every `langchain 1.2.x` build (all 37) pins
   `langchain-text-splitters <1.0.0,>=0.3.9`**, while `langchain-classic ~=1.0.7` and local
@@ -286,6 +295,16 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
   isolation on cf — confirms the conflict is feedstock-internal, not a consumer defect.
 
 ### Skew 2 — litellm proxy-extras flattened as hard deps (gates the CORE suite via lfx)
+
+> **✅ RESOLVED 2026-06-27 (solver-verified) — no feedstock PR needed; the cf litellm feedstock already
+> de-flattened.** As of litellm-feedstock **1.89.4**, the proxy/proxy-runtime/extra-proxy deps (`fastapi`,
+> `cryptography`, `litellm-proxy-extras==0.4.74`, `litellm-enterprise==0.1.42`, `prisma`, otel-instrumentation,
+> …) live in **`run_constrained:`**, NOT `run:` — exactly the de-flatten this skew asked for. The `run:`
+> section is now just the 12 core upstream deps. A `mamba` dry-run confirms `litellm` **installs cleanly from
+> cf** (90 packages, no error), so the absent `litellm-proxy-extras`/`litellm-enterprise` don't block it
+> (run_constrained constrains-if-present, never requires). Also note the spec's two *specific* collisions are
+> independently gone: no `opentelemetry-api==1.28.0` in the deps anymore, and `fastapi >=0.136.3` satisfies
+> lfx's `>=0.135`. Historical analysis preserved below.
 
 - **Root cause (verified 2026-06-23):** upstream `litellm` lists `fastapi`, `cryptography`, and
   `opentelemetry-api==1.28.0` ONLY under its `proxy` / `proxy-runtime` **extras** — the core SDK
@@ -316,18 +335,23 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 > recipe locally (against the merged local channel) before pushing. After each feedstock push,
 > request rerender.
 
-### Wave A — clear the external skews (gate to langflow-suite test-GREEN) — DONE LOCALLY 2026-06-23
+### Wave A — clear the external skews (gate to langflow-suite test-GREEN) — ✅ CLEAR 2026-06-27 (no cf PR needed)
 
-All 3 langflow-suite outputs now build + test GREEN locally (imports + pip_check). What remains in
-Wave A is the **two durable conda-forge feedstock PRs** — the local channel rebuilds are the
-iteration loop; the PRs are what actually unblock cf submission:
+> **✅ Wave A is CLEAR (solver-verified 2026-06-27).** Both durable feedstock PRs the spec carried since
+> 2026-06-23 are now **obsolete** — both feedstocks moved on their own and the skews resolved without any
+> conda-forge PR from us. The only remaining gate is a **local** langflow-suite version bump (1.10.0 → 1.10.1
+> + `langchain~=1.3.0`). See the ✅ RESOLVED banners in § Skew 1 / § Skew 2.
 
-- **A1 — langchain-text-splitters (Skew 1). Local rebuild DONE** (`langchain` 1.2.18, base deps,
-  in channel). **Durable fix to file:** ~1-line `conda-forge/langchain-feedstock` PR dropping the
-  stale `langchain-text-splitters <1.0.0` pin (verify vs the exact cf-pinned 1.2.x upstream metadata).
-- **A2 — litellm proxy-extras flatten (Skew 2). Local rebuild DONE** (`litellm` 1.89.3, base deps,
-  in channel). **Durable fix to file:** `conda-forge/litellm-feedstock` PR to stop flattening the
-  `proxy` / `proxy-runtime` extras into hard run deps.
+All 3 langflow-suite outputs build + test GREEN locally (imports + pip_check). The two "durable feedstock
+PRs" are no longer the gate:
+
+- **A1 — langchain-text-splitters (Skew 1). ✅ RESOLVED — NO PR.** lfx 1.10.1 moved to `langchain~=1.3.0`;
+  cf `langchain 1.3.11` dropped the stale pin; `langchain 1.3.x` + `langchain-classic~=1.0.7` co-install
+  cleanly (mamba dry-run). The old langchain-feedstock PR is moot (feedstock is at 1.3.11). Remaining work
+  is LOCAL: bump `langflow-suite` to 1.10.1 + `langchain~=1.3.0`.
+- **A2 — litellm proxy-extras flatten (Skew 2). ✅ RESOLVED — NO PR.** litellm-feedstock 1.89.4 already
+  moved the proxy/proxy-runtime/extra-proxy deps to `run_constrained:`; `litellm` installs cleanly from cf
+  (mamba dry-run, 90 pkgs). Nothing to file.
 - **A3 — otel cluster (Skew 3):** no longer a Wave-A gate (lean → `run_constraints`); deferred/optional.
 - Carryover checks: confirm `opendsstar` resolves without `ragstack-ai-knowledge-store` (BUSL-1.1,
   out of scope). `firecrawl-py` build record now recorded (it's a `run_constraints` integration).
@@ -545,6 +569,26 @@ committed outside `recipes/` and was moved in). All now green/merged. **Adjacent
 milvus-lite, opendsstar, langflow-suite/-base/langflow); each rebuilt + tested GREEN locally. **Open work:**
 let the remaining open-green PRs merge (opendsstar auto-unblocks); file the 2 durable skew feedstock PRs;
 push the impit feedstock platform-expansion PR; close #33885 + #33897.
+
+The **2026-06-27 update** (this entry) closed out the **§ B′-consumer batch** and **retired both Wave-A
+skews**. **6 consumer PRs submitted, all CI-green first try + `@conda-forge/help-python`-pinged:** qianfan
+[#33935](https://github.com/conda-forge/staged-recipes/pull/33935), opik
+[#33937](https://github.com/conda-forge/staged-recipes/pull/33937) (re-submitted clean after the draft
+#33936 was closed), trustcall [#33938](https://github.com/conda-forge/staged-recipes/pull/33938),
+langchain-graph-retriever [#33939](https://github.com/conda-forge/staged-recipes/pull/33939),
+langchain-google-vertexai [#33940](https://github.com/conda-forge/staged-recipes/pull/33940),
+langchain-sambanova [#33941](https://github.com/conda-forge/staged-recipes/pull/33941). Each prereq was
+cross-checked **live on the cf channel** before submitting (G66); langchain-google-vertexai additionally
+cleared a proactive G40 per-platform compiled-dep floor check (pyarrow/bottleneck/numexpr cover py3.10 on
+osx-64+win-64 → no python_min bump). **Both Wave-A skews ✅ RESOLVED (solver-verified, NO cf PR needed)** —
+the spec's "2 durable feedstock PRs TO FILE" are **obsolete**: Skew 1 dissolved (lfx 1.10.1 → `langchain~=1.3.0`;
+cf langchain 1.3.11 dropped the stale text-splitters pin; `langchain 1.3.x` + `langchain-classic~=1.0.7`
+co-install clean via mamba dry-run) and Skew 2 dissolved (litellm-feedstock 1.89.4 already moved the
+proxy/proxy-runtime/extra-proxy deps to `run_constrained:`; `litellm` installs clean from cf, 90 pkgs).
+**The remaining gate for the CORE suite is now LOCAL:** bump `langflow-suite` 1.10.0 → 1.10.1 + `langchain~=1.3.0`
+(which also makes the 4 `lfx-*` extensions hard deps of `langflow`). **Still-open hygiene:** close #33885 (dup)
++ #33897 (already-on-cf); push the impit platform-expansion PR. Retro of this session landed as
+**conda-forge-expert v8.48.0** (G66 = merge≠installable; G40 proactive-check refinement).
 
 ---
 
