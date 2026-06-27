@@ -4,8 +4,8 @@
  ]
  # Define your main dependencies here
  dependencies = [
--    "langflow-base[complete]>=0.10.0",
-+    "langflow-base>=0.10.0",
+-    "langflow-base[complete]>=0.10.1",
++    "langflow-base>=0.10.1",
      # langflow-extensions:bundle-deps-start
 -    "lfx-duckduckgo>=0.1.0",
 -    "lfx-arxiv>=0.1.0",
