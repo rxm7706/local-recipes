@@ -36,7 +36,7 @@ br
 - **python_min 3.11** (upstream declares `>=3.10`; `jsonquerylang` hard-imports PEP 655 `typing.NotRequired`, G41) — folding langflow-sdk also raised its floor 3.10→3.11.
 - **opendsstar** demoted to lfx `run_constraints` (1.10.1 made it optional) — good (breaks the lfx→litellm hard chain), but opendsstar + its sub-closure are now **optional**, not suite prerequisites.
 - **ag2 #33945** — possible duplicate of existing `pyautogen-feedstock` (same AutoGen upstream); may be closed as dup (G58).
-- **Windows — EXCLUDED from the CI matrix** (`conda-forge.yml` `noarch_platforms: [linux_64, osx_64, osx_arm64]`). linux + osx (incl. osx-arm64) GREEN; win deferred on an external `magika`→`onnxruntime` conda-vs-wheel skew. The noarch artifact still installs on Windows. Full analysis + re-enablement task: **§ Windows build**.
+- **Windows — ✅ GREEN** (PR #33972 build 1545234, all legs pass). The win blocker (transitive `magika 0.6.3` → `onnxruntime<=1.20.1; win32` cap) was fixed by excluding **only** 0.6.3 in lfx run_constraints (`magika >=0.6.1,!=0.6.3,<0.7.0` → solver picks 0.6.2); `win_64` re-added to `noarch_platforms`. See **§ Windows build**.
 
 > **BMAD intake document.** Written for `bmad-quick-dev` / `bmad-dev`. This is the
 > **submission** spec for the `langflow-suite` multi-output recipe and its full prerequisite
@@ -376,7 +376,13 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 
 ---
 
-## Windows build — DEFERRED (win excluded from the CI matrix; external magika-feedstock skew)
+## Windows build — ✅ RESOLVED (PR #33972 fully GREEN on win, build 1545234; magika 0.6.3 excluded)
+
+**✅ 2026-06-27 — Windows is GREEN.** PR #33972 passes **all** legs (linux + osx + **win_64**) + both linters (build `eff237f` / Azure `1545234`). The win blocker (failure #3 below) was **fixed**, not deferred: magika **0.6.3 specifically** caps `onnxruntime<=1.20.1; sys_platform=="win32"` (a one-version aberration — cf has 0.6.1/**0.6.2**/0.6.3/1.0.x), so lfx `run_constraints` now exclude **only** that version — **`magika >=0.6.1,!=0.6.3,<0.7.0`** — and the solver picks magika **0.6.2** (no win cap) → win pip check passes. `win_64` was re-added to `conda-forge.yml noarch_platforms`. (Root fix also staged in markitdown-feedstock PR #20 — markitdown 0.1.6 with the same exclusion.) The deferred/exclude-win analysis below is retained as the **historical** trail.
+
+---
+
+## Windows build — historical analysis (superseded by the RESOLVED note above)
 
 **Status (2026-06-27):** `recipes/langflow-suite/conda-forge.yml` sets `noarch_platforms: [linux_64, osx_64, osx_arm64]` + `workflow_settings.store_build_artifacts`. linux + osx build + test GREEN; the **win leg still fails** (failure #3 below).
 
