@@ -128,6 +128,11 @@ outputs:
         # lfx -> opendsstar -> litellm HARD chain (Skew 2 can no longer touch the
         # core). Upstream marker excludes osx-64 (darwin x86_64).
         - opendsstar ==1.0.26
+        # magika reaches lfx transitively via markitdown. 0.6.3's wheel caps
+        # onnxruntime<=1.20.1 on win32 (absent in 0.6.2 and 1.0+); exclude only
+        # 0.6.3 so the Windows pip check passes. Stopgap until markitdown-feedstock
+        # PR #20 lands the same pin; harmless once it does.
+        - magika >=0.6.1,!=0.6.3,<0.7.0
     tests:
       - python:
           imports:
