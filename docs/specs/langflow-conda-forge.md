@@ -143,7 +143,7 @@ grandalf, mcp, cryptography, …).
 | ibm-watsonx-ai | ready (ibm-cos-sdk merged via #33886) | noarch | BSD-3 | ibm-cos-sdk (also build 1.3.37 for py3.10, G40) |
 | langchain-milvus | pending-approval (#33894) | noarch | MIT | pymilvus-model (on cf) |
 | ddgs | on-conda-forge (#33896 MERGED) | noarch | MIT | primp (on cf) |
-| trustcall | ready (dydantic merged #33898) | noarch | MIT | **dydantic** (→ B′; #33898) |
+| trustcall | submitted (#33938) | noarch | MIT | **dydantic** (→ B′; on cf #33898) |
 | qianfan | submitted (#33935) | noarch | Apache-2.0 | **bce-python-sdk** (→ B′; on cf #33911) |
 | ragworkbench | blocked-pending-prereq | noarch | Apache-2.0 | **unitxt** (→ B′) |
 | toolguard | blocked-pending-prereq | noarch | Apache-2.0 | **smolagents** (#33887; fastmcp 3.x on cf already satisfies the G36 >=2.14 floor) |
@@ -188,7 +188,7 @@ also surfaced but belong to `docs/specs/db-gpt-conda-forge.md`, not this closure
 
 | Net-new prereq | unblocks (consumer) | status |
 |---|---|---|
-| dydantic | trustcall | **MERGED → on cf [#33898](https://github.com/conda-forge/staged-recipes/pull/33898)** (trustcall now ready-to-submit) |
+| dydantic | trustcall | **MERGED → on cf [#33898](https://github.com/conda-forge/staged-recipes/pull/33898)** (trustcall submitted [#33938](https://github.com/conda-forge/staged-recipes/pull/33938)) |
 | bce-python-sdk | qianfan | **MERGED → on cf [#33911](https://github.com/conda-forge/staged-recipes/pull/33911)** |
 | unitxt | ragworkbench | **submitted, CI-green [#33912](https://github.com/conda-forge/staged-recipes/pull/33912)** |
 | graph-retriever | langchain-graph-retriever | **MERGED → on cf [#33913](https://github.com/conda-forge/staged-recipes/pull/33913)** (sed→source patch fix) |
