@@ -75,16 +75,16 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33938
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - dydantic not yet on conda-forge
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-forge-blocker-list: []   # dydantic now on conda-forge (#33898 merged, v0.0.8 live)
+  cfe-last-checked: 2026-06-26T12:00:00Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:28:24Z
+  cfe-local-build-datetime: 2026-06-26T12:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
