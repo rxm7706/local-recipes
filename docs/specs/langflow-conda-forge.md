@@ -160,7 +160,7 @@ grandalf, mcp, cryptography, …).
 | lfx-duckduckgo | blocked-pending-prereq | noarch | MIT | lfx, ddgs |
 | lfx-ibm | blocked-pending-prereq | noarch | MIT | lfx, langchain-ibm, ibm-watsonx-ai (import `ibm_db`, G10) |
 | langchain-astradb | blocked-pending-prereq | noarch | MIT | (astrapy, cassio — see C) |
-| langchain-graph-retriever | ready (graph-retriever #33913 on cf) | noarch | Apache-2.0 | **graph-retriever** (→ B′) |
+| langchain-graph-retriever | submitted (#33939) | noarch | Apache-2.0 | **graph-retriever** (→ B′; on cf #33913) |
 | langchain-google-vertexai | ready (google-cloud-vectorsearch #33914 on cf) | noarch | MIT | **google-cloud-vectorsearch** (→ B′) |
 | langchain-sambanova | ready (sambanova #33916 on cf) | noarch | MIT | **sambanova** (→ B′) |
 | langchain-google-community | blocked-pending-prereq | noarch | MIT | **google-cloud-modelarmor** (→ B′; recipe-internal G12 numpy-selector, G35) |
