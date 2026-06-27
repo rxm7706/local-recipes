@@ -43,7 +43,8 @@ requirements:
     - tiktoken >=0.7,<1
     # copied from langchain-anthropic-feedstock 1.3.0: https://github.com/conda-forge/langchain-anthropic-feedstock/blob/f4a6b8d250cdf25eec2bf9a2b368148ed7c237d4/recipe/meta.yaml
     - anthropic >=0.75.0,<1
-    - defusedxml <0.8.0,>=0.7.1
+    # https://github.com/langchain-ai/langchain/blob/langchain%3D%3D1.3.11/libs/partners/anthropic/pyproject.toml#L26
+    - defusedxml >=0.7.1,<1.0.0  # Potentially can be removed after verifying fix to langchain-anthropic-feedstock "defusedxml>=0.7.1,<1.0.0" is only in tests section
     # copied from langchain-fireworks-feedstock 1.1.0: https://github.com/conda-forge/langchain-fireworks-feedstock/blob/cc50a2f8f99615534b6d3c81f270daeb4eeccc83/recipe/meta.yaml
     # and langchain-together-feedstock 0.3.1: https://github.com/conda-forge/langchain-together-feedstock/blob/503f8b42da6bf1b7c4b370b1d3b59e8263639bd9/recipe/meta.yaml
     - fireworks-ai >=0.13.0
