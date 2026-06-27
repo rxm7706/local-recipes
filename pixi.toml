@@ -86,7 +86,7 @@ description = "generate a v0 (conda-build) recipe for a CRAN package name with `
 cmd = "cd recipes && grayskull cran --strict-conda-forge"
 
 [feature.conda-smithy.dependencies]
-conda-smithy = ">=3.44.6,<4"      # feedstock generator + recipe linter
+conda-smithy = ">=3.44.6,<4"      # feedstock generator + recipe linter (NOTE: CalVer 2026.x needs the `conda` pkg, not in this env — for CI-parity lint use `pixi exec conda-smithy recipe-lint`)
 [feature.conda-smithy.tasks.lint]
 description = "validate all recipes with `conda-smithy`"
 cmd = "conda-smithy recipe-lint --conda-forge recipes/*"
