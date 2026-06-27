@@ -621,6 +621,19 @@ the stale 1.2.18 workaround was purged — **G68**). (2) **langflow-sdk cascade*
 bump (**G69**). So **Wave A is NOT fully clear**: cf submission of the suite still needs the langchain aiosqlite
 PR + langflow-sdk 0.2.1 on cf. Retro landed as **conda-forge-expert v8.49.0** (G67/G68/G69).
 
+The **2026-06-27 run_constraints audit + reconciliation** (later same day) did two separate passes.
+**(1) langchain run_constraints** (the `recipes/langchain/` mirror / langchain-feedstock fix): audited all
+16 — only **`aiosqlite`** was genuinely stale (fixed to `>=0.19.0,<0.23`, re-synced to langchain 1.3.11's
+`extended_testing_deps.txt`); **`groq <1` is accurate, NOT stale** despite cf groq 1.5.0 (upstream
+`langchain-groq 1.3.11` pins `groq>=0.30.0,<1.0.0` — no groq 1.x support — and the feedstock mirrors it).
+Lesson: a `run_constrained` cap is stale only if it diverges from its **cited source's current pin**, not
+merely because cf has a higher version (CFE G67 v8.49.1/v8.49.2 corrections). **(2) langflow-suite's own
+run_constraints**: the `langflow` output had **75/78** entries as `>=0.1` placeholders → reconciled all 78
+to langflow 1.10.1's real extra pins (sourced from the upstream base+umbrella `optional-dependencies`;
+PEP 508→conda; 0 phantoms; `langfuse-python` G10 rename preserved). Since `run_constraints` are soft
+(not installed in the test env) the change is metadata-only — all 3 outputs stayed GREEN + lint-clean
+(commit `37366f4575`). Retro landed as **conda-forge-expert v8.50.0** (G70 = reconcile own run_constraints).
+
 ---
 
 ## Appendix: Recipe Registry & Submission Tracker
