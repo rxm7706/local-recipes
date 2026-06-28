@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-06-20
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v8.52.1'
+source_pin: 'conda-forge-expert v8.62.0'
 ---
 
 # Source Tree Analysis
@@ -88,7 +88,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 ├── skills/                                  # 65 skills total (mix of BMAD-installer + repo-specific + auxiliary)
 │   │
 │   ├── conda-forge-expert/                  # ★★ Part 1 canonical source
-│   │   ├── SKILL.md                         # ★ primary spine: critical constraints, 10-step loop, gotchas G1–G75
+│   │   ├── SKILL.md                         # ★ primary spine: critical constraints, 10-step loop, gotchas G1–G87
 │   │   ├── INDEX.md                         # task→tool navigator
 │   │   ├── CHANGELOG.md                     # ★ release history with TL;DR (canonical drift-detection source)
 │   │   ├── MANIFEST.yaml                    # declares "standalone-portable" deployment (host-repo install.py target)
@@ -508,7 +508,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | BMAD multi-projects | 3 (deckcraft, local-recipes, presenton-pixi-image) |
 | Atlas pipeline phases | 22 phase IDs (B, B.5, B.6, C, C.5, D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N) |
 | Atlas schema version | v28 (additive migrations only) |
-| Skill version (source_pin) | conda-forge-expert v8.52.1 |
+| Skill version (source_pin) | conda-forge-expert v8.62.0 |
 
 **Refresh notes (2026-06-20 vs. prior 2026-06-07 sync):**
 - Recipe corpus grew 1,415 → 1,602; CFE scripts 50 → 54, wrappers 41 → 46, tests 41 → 82.
@@ -522,3 +522,6 @@ These files are load-bearing — changing them affects the whole system, not jus
 
 **Refresh notes (2026-06-27 vs. prior 2026-06-24 sync):**
 - Skill v8.42.1 → v8.52.1 (langflow-suite closure + submission span). Recipe-Authoring Gotchas grew to **G1–G75** (G56–G75: multi-output-win/feedstock-check, submission-flow + run_constraints reconciliation, G71 win+py3.12 reactor gap, G72 fold-sibling-into-suite, G73 monorepo-tag-ships-no-frontend → cross-platform node-build, G74 atlas-membership-staleness, G75 lean-submission-clean). No source-tree structural change: scripts/wrappers/tests, atlas phases (22), schema (v28), MCP tools (42), `reference/` (17), `guides/` (9) all unchanged — SKILL.md + CHANGELOG only.
+
+**Refresh notes (2026-06-28 vs. prior 2026-06-27 sync):**
+- Skill v8.52.1 → v8.62.0 (v0→v1 feedstock-migration retro + the conda-forge.yml-default span). Recipe-Authoring Gotchas grew to **G1–G87** (G76–G87: langflow-win closeout, go-licenses, pnpm<11, staged-recipes-ARM, G83 conda-forge.yml-inert, G84–G87 the v0→v1 feedstock-migration set). **One structural change**: new `scripts/_cfy_template.py` — the shared renderer for the universal `conda-forge.yml` pre-seed (v8.61.0; now emitted by default on every generator path). atlas phases (22), schema (v28), MCP tools (42), `reference/` (17), `guides/` (9) all unchanged.
