@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/conda-forge/conda-smithy/main/conda_smithy/data/conda-forge.json
+# Enable osx-arm64 (Apple Silicon) on the feedstock.
+# staged-recipes IGNORES this for the PR build (its matrix is hardcoded
+# linux_64/osx_64/win_64 on an Intel runner — see CFE skill G82), but this
+# conda-forge.yml is carried to the tolaria-feedstock on merge, so conda-smithy's
+# first rerender generates the osx_arm64 .ci_support and builds it from creation
+# (cross-compiled osx_64 -> osx_arm64; build_platform defaults automatically).
+# Validated lever: lyric-py-feedstock#2 used `provider: {osx_arm64: azure}` and the
+# rerender produced green osx_arm64 legs for all 4 Python versions.
+# (Add `linux_aarch64: azure` here too if ARM-Linux coverage is wanted.)
+provider:
+  osx_arm64: azure
