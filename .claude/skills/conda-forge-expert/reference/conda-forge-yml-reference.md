@@ -203,10 +203,18 @@ for recipes with vendored deps or selective `host:` pins).
 | `conda_install_tool` | `mamba` / `micromamba` / `pixi` / `conda` | **`pixi`** for new feedstocks (faster, deterministic; landed as conda-forge default in 2025-Q4) |
 | `conda_build_tool` | `conda-build` / `rattler-build` / `conda-build+conda-libmamba-solver` | **`rattler-build`** for new feedstocks (faster, recipe-v1 native) |
 
-Both keys are set automatically by `conda smithy rerender` based on
-recipe shape. Override only when you need to pin a specific tool — e.g.
-a recipe that hits a known rattler-build bug can fall back to
-`conda_build_tool: conda-build`. Bump back to default at the next bump.
+Both keys are **consumed inputs, not rerender outputs** — `conda smithy
+rerender` reads them to provision tooling and (for `conda_build_tool`) to
+**select the recipe file** (`rattler-build` ⇒ smithy looks for `recipe.yaml`);
+it does **not** auto-derive or rewrite them from recipe shape (a widely-held
+misconception). A v1 `recipe.yaml` feedstock therefore needs
+`conda_build_tool: rattler-build` set **explicitly** — the schema default is
+`conda-build` (which can't parse v1), and `conda_install_tool` defaults to
+`micromamba` (so `pixi` is a deliberate non-default, not a restated one).
+Override the tool only to work around a specific bug; bump back at the next
+release. (See the § "Per-setting applicability audit" table below for which
+keys are genuinely auto-managed by rerender — only the CI-provider blocks
+`azure`/`github_actions`/… are; none of the keys in this section are.)
 
 ### `conda_build.pkg_format: '2'`
 
@@ -625,6 +633,94 @@ comments for keys you remove.
 | `pinning` | Don't override conda-forge-pinning; rerendering will overwrite. |
 | `provider.linux_aarch64: default` (Travis) | Travis is gone; use Cirun or Azure (emulated). |
 | `azure.store_build_artifacts` | Deprecated. Use `workflow_settings.store_build_artifacts` (top-level — accepts `true`, or a list of `{provider/os/platform, value}` objects for scoped activation). |
+
+## Per-setting applicability audit (deep-research + adversarial, Jun 2026)
+
+> Sourced by tracing the conda-smithy schema (`conda_smithy/schema.py`), the
+> autotick-bot schema (`cf_tick_schema.json`), and
+> **`staged-recipes/.ci_support/build_all.py`** directly, cross-checked against
+> the canonical Rust+PyO3 exemplar **`pydantic-core-feedstock`**. It answers, for
+> every key: *restated-default, no-op, or load-bearing?* · *which recipe TYPES is
+> it for?* · *does it do anything in a staged-recipes PR, or only the feedstock?*
+
+### Crucial mechanism — a staged-recipes per-recipe `conda-forge.yml` is almost entirely INERT in the PR
+
+`build_all.py` reads **exactly one key** from `recipes/<name>/conda-forge.yml`:
+`conda_build_tool` (and only to toggle the legacy mambabuild path). The build
+**matrix is repo-fixed** (`.ci_support/{linux64,osx64,win64,linux64_cuda12x}.yaml`
++ the Azure pipeline `--arch` arg — there is **no osx_arm64 / linux_aarch64 /
+ppc64le leg pre-merge**, see [G82](../SKILL.md)); the rattler-vs-conda-build choice
+is actually made by **`recipe.yaml`-vs-`meta.yaml` presence**, not by
+`conda_build_tool`; the Linux image + CUDA are **auto-detected from recipe text**
+(`sysroot_linux-64` / `c_stdlib_version==2.17` → `cos7`; `"cuda"` → CUDA variants),
+not from `os_version`. **Every other key** — `provider`, `build_platform`,
+`noarch_platforms`, `test`, `os_version`, `conda_forge_output_validation`, all
+`bot.*`, `github.*`, `shellcheck`, `error_overlinking`,
+`workflow_settings.store_build_artifacts` — is **unread in the PR**; conda-smithy
+**forwards** the whole file into the new feedstock's `conda-forge.yml` on merge,
+where those keys finally activate.
+
+**So a per-recipe staged-recipes `conda-forge.yml` should usually carry only
+`conda_build_tool: rattler-build`** (for a v1 recipe) — plus, *deliberately and
+knowing they do nothing yet*, any keys you want **pre-seeded into the feedstock**
+(e.g. `provider: {osx_arm64: azure}` to enable Apple Silicon day-one,
+`noarch_platforms`, `os_version`). Everything else is inert-and-forwarded or pure
+cargo-cult in the PR.
+
+> **Corrects [G77](../SKILL.md).** The downloadable `conda_pkgs_{linux,noarch,osx}`
+> artifacts on a staged-recipes PR are published **unconditionally by the fixed
+> pipeline** — `build_all.py` never reads `workflow_settings.store_build_artifacts`,
+> and the gated 7z `Prepare conda build artifacts` task (the one G18's win-crash is
+> about) **doesn't exist in staged-recipes at all**. So `store_build_artifacts` is a
+> **no-op in a staged-recipes PR** (you get `conda_pkgs_*` either way); it is
+> load-bearing **only at the feedstock**. The G77 "it works in the PR" reading was a
+> misattribution.
+
+### Per-setting table — default · classification · recipe types · staged-PR vs feedstock
+
+Classification key: **LOAD-BEARING** (does real work) · **REDUNDANT-DEFAULT**
+(restates the schema default) · **NO-OP** (inert in this context/type) ·
+**POLICY** (deliberate maintainer choice, not a no-op).
+
+| key | schema default | relevant recipe TYPES (load-bearing) / no-op for | staged-recipes PR | feedstock |
+|---|---|---|---|---|
+| `conda_build_tool: rattler-build` | `conda-build` | **all v1** recipe.yaml types · no-op on v0 | **the one key read** (mambabuild toggle; rattler path actually picked by `recipe.yaml` presence) | LOAD-BEARING (v1 parser) |
+| `conda_install_tool: pixi` | `micromamba` | all v1 (feedstock provisioning) | NO-OP (forwarded) | LOAD-BEARING (rattler companion) |
+| `conda_forge_output_validation: true` | `False` | **all types** (mandatory org override) | NO-OP (re-stamped at feedstock creation) | **MANDATORY — never delete** |
+| `github.branch_name` / `tooling_branch_name` | `main` | none type-specific | NO-OP (re-stamped) | REDUNDANT-DEFAULT (auto-managed) |
+| `build_platform.<arch>` | native (`x: x`) | **compiled + cross-arch** only · no-op on noarch / native-x86 | NO-OP (matrix is repo-fixed; forwarded) | LOAD-BEARING (the cross-compile map) |
+| `provider.<arch>: default` | x86 set; **other arches `None` (disabled)** | **compiled + cross-arch** (the *enable switch* for an otherwise-disabled arch; `osx_arm64` is default-on so needs only `build_platform`) · no-op on noarch | NO-OP (forwarded) | LOAD-BEARING |
+| `test: native_and_emulated` | `None` | **compiled cross-arch w/ an emulated leg** (linux_aarch64/ppc64le QEMU tests) · **not** osx_arm64 (no x86→arm-mac emulator → tests skip regardless) · no-op on noarch | NO-OP (no emulated legs in PR) | LOAD-BEARING |
+| `noarch_platforms` | `[linux_64]` | **noarch only**, and only with platform-conditional run-deps (G12 escape hatch) · meaningless on any compiled type; waste on plain pure-python | NO-OP (recipe still runs all 3 fixed jobs) | LOAD-BEARING (G12) |
+| `os_version: {linux_64: alma9}` | none (`alma9` image) | **compiled-linux** needing glibc>2.17 · no-op on noarch | likely honored at build (auto-detected from `sysroot`; *unverified for the explicit key*) | LOAD-BEARING |
+| `conda_build.error_overlinking: true` | `False` | **conda-build compiled** only · NO-OP on noarch · **NO-OP on rattler-build/v1** (verified: conda-smithy's `rattler_render` path doesn't thread the `conda_build:` block, and rattler-build reads overlinking from the recipe's `build.dynamic_linking` field — `pydantic-core` omits the key). On rattler-build, configure overlinking in `recipe.yaml`'s `build.dynamic_linking`, not here. | NO-OP | NO-OP on rattler-build; honored only on conda-build |
+| `workflow_settings.store_build_artifacts` | `[]` | convenience (any type); **`win_64` must be ABSENT** for build-time-HTTPS recipes (Rust/Go-modules/npm/cgo — G18) | **NO-OP** (pipeline publishes `conda_pkgs_*` regardless) | convenience-only; win-absent is load-bearing |
+| `bot.automerge: true` | `False` | POLICY — any type (CI-gated); risk scales with surface (compiled/cross/CUDA/multi-output > noarch:python) | INERT (no autotick on staged-recipes) | active POLICY |
+| `bot.inspection: update-grayskull` | `hint` | **noarch:python** (grayskull's home) · ⚠ **maturin/compiled-python** can mangle hand-tuned host pins on bump → prefer `hint-all`/`update-source` · NO-OP/wrong for **non-python** (npm/Go/Rust-CLI/R → `disabled`/`hint-*`) | INERT | active (riskiest line; pairs badly with `automerge`) |
+| `bot.check_solvable: true` | `True` | protective, any type | INERT | active but REDUNDANT-DEFAULT |
+| `bot.run_deps_from_wheel: true` | `False` | **python-wheel w/ real `Requires-Dist`** (noarch:python, maturin) · NO-OP for non-python (no wheel) and ~no-op for dep-less extensions | INERT | active (wheel-only) |
+| `bot.version_updates.exclude` | `[]` | any feedstock skipping bad upstream tags | INERT | active |
+| `shellcheck.enabled: true` | `False` | **only recipes that ship a `build.sh`/`*.sh`** (compiled C/C++, **Go**, **R/CRAN**, Tauri/complex multi-output) · **pure NO-OP for every inline-`build.script` recipe** (noarch:python pip, maturin/PyO3, **modern Rust-CLI** + **modern npm ≥v8.11.0** — both inline) — *the single most cargo-culted key* | inert in PR (review-time lint needs a `*.sh`) | only does work if a `*.sh` exists |
+| `idle_timeout_minutes` | `None` | **circleci/travis legs only** · NO-OP on azure/github_actions | NO-OP | NO-OP unless circle/travis |
+| `azure.{free_disk_space,max_parallel,settings_*}` | varies | **large/compiled/GPU/multi-output** builds (disk, concurrency, swap) · no-op on small noarch · `azure.free_disk_space` is **deprecated → `workflow_settings.free_disk_space`** | NO-OP (repo-level pipelines) | LOAD-BEARING when resource-constrained |
+
+### Cargo-cult boilerplate to DELETE (most-confident first)
+
+1. **Everything except `conda_build_tool` in a staged-recipes per-recipe `conda-forge.yml`** that you don't specifically want **forwarded** to the feedstock — `bot.*`, `github.*`, `conda_forge_output_validation`, `store_build_artifacts`, `conda_install_tool`, `test`, `shellcheck`, `error_overlinking` are all inert in the PR. (Keep only forward-seeding keys you understand are dormant: `provider`/`build_platform`/`noarch_platforms`/`os_version`.)
+2. **`shellcheck.enabled: true` on any inline-`build.script` recipe** — no `.sh` ⇒ pure no-op (maturin, noarch:python, modern Rust-CLI, modern npm ≥v8.11.0). It IS meaningful for **Go / compiled C/C++ / R/CRAN / Tauri** (they ship a `build.sh`).
+3. **`conda_build.error_overlinking: true` on any noarch** (no binaries) **or any rattler-build/v1 recipe** (wrong config namespace — likely ignored).
+4. **`noarch_platforms` on any compiled recipe** (it's not noarch) and on plain pure-python noarch with no platform branching (default `[linux_64]` is right).
+5. **`provider`/`build_platform`/`test: native_and_emulated` on any noarch recipe** (one artifact; no cross-arch; no emulated legs).
+6. **`bot.run_deps_from_wheel: true`** on non-python (no wheel); **`bot.inspection: update-grayskull`** on non-python (→ `disabled`/`hint-*`) and on maturin/compiled-python (→ `hint-all`/`update-source`, so grayskull can't auto-rewrite hand-tuned host pins — amplified by `automerge`).
+7. **`github.branch_name`/`tooling_branch_name`** — redundant defaults (rerender re-stamps them; deleting is cosmetic churn — they earn nothing).
+
+### Minimal-correct baselines by recipe type
+
+- **Rust+PyO3 / maturin** — `pydantic-core-feedstock` is the canonical minimal file: only `bot.automerge`, `build_platform` (3 arches), `conda_build_tool: rattler-build`, `conda_forge_output_validation`, `conda_install_tool: pixi`, `github.*`, `test: native_and_emulated` — and **no** `provider`, `shellcheck`, `store_build_artifacts`, `error_overlinking`, or `bot.inspection/check_solvable/run_deps_from_wheel`. It still builds aarch64+ppc64le+osx_arm64 because it rides conda-forge-pinning's `arch_rebuild` migration; a recipe **not** in that migration (e.g. `lyric-py`) needs the explicit `provider: {linux_aarch64: default}` opt-in to enable the otherwise-disabled arch.
+- **noarch:python** — `conda_build_tool: rattler-build` + `conda_install_tool: pixi` + `conda_forge_output_validation: true` + the canonical `bot` block; add `noarch_platforms` **only** with platform-conditional run-deps; no `build_platform`/`provider`/`test`/`error_overlinking`/`shellcheck`.
+- **compiled C/C++ (single-arch)** — add `conda_build.error_overlinking: true` only on a **conda-build** (v0) feedstock; add `build_platform`+`provider` per arch when expanding; `os_version` only if glibc>2.17 is genuinely needed.
+
+> **Verification flags (not bluffed):** (1) whether `error_overlinking` is honored under rattler-build — strong circumstantial evidence it is **not** (wrong namespace; pydantic-core omits it), but the rattler-build config-mapping code wasn't located. (2) Whether `os_version`/`channel_sources` in a *staged-recipes* per-recipe file are honored at build time — `build_all.py` ignores both, but `build_steps.sh`/docker-image selection wasn't traced; the skill treats `os_version: alma9` as a working staged-recipes opt-in, so it's likely read by the build path (not the matrix). (3) There is **no top-level `channels:` key** for adding *build* channels — extra build channels go in the recipe's `conda_build_config.yaml` `channel_sources`; `channels.targets`/`channel_priority` are real keys.
 
 ## Verifying changes
 
