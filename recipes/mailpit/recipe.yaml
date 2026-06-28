@@ -75,8 +75,7 @@ extra:
   cfe-pip-check: false:not-a-python-package
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mailpit-feedstock
-  cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-28T00:00:00Z
   cfe-generated-by-version: 8.37.0
@@ -88,11 +87,10 @@ extra:
 ####
 # CFE comments
 # Header:
-#    # v1 migration of the deployed v0 mailpit-feedstock (meta.yaml). The local
-#    # meta.yaml mirror was dropped -- recipe.yaml is now the single source.
-#    # Migration PR OPEN: conda-forge/mailpit-feedstock#20 (v1 recipe.yaml + ARM
-#    # osx-arm64/linux-aarch64, build 1, rerendered). updates-needed keeps
-#    # meta-yaml-to-recipe-yaml until that PR merges. Local bumped 1.30.2 -> 1.30.3
+#    # v1 migration of the (formerly v0) mailpit-feedstock. recipe.yaml is the
+#    # single source. Migration PR MERGED: conda-forge/mailpit-feedstock#20 (v1
+#    # recipe.yaml + ARM osx-arm64/linux-aarch64, build 1, rerendered) -- the
+#    # feedstock is now v1, updates-needed cleared. Local bumped 1.30.2 -> 1.30.3
 #    # to match the feedstock (was stale by one patch).
 #    # mailpit = axllent/mailpit, a Go-source email/SMTP testing tool (NOT
 #    # Python). Builds from the GitHub tag: web UI via npm, two Go binaries
