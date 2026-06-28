@@ -1,8 +1,8 @@
 ---
 status: in-progress
 implemented_by: bmad-quick-dev
-shipped_ref: "staged-recipes PRs #33764-#33768 open; db-gpt PR pending"
-spec_updated: 2026-06-20
+shipped_ref: "staged-recipes: #33764/#33767/#33768 MERGED; #33765/#33766 green+pending-review; db-gpt held on those 2"
+spec_updated: 2026-06-27
 ---
 # Tech Spec: DB-GPT on conda-forge
 
@@ -21,13 +21,73 @@ spec_updated: 2026-06-20
 
 | Field        | Value                                                                                                                                                                                   |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status       | **Implemented & submitting** (2026-06-17) — built via `bmad-quick-dev`. Q1=B-full, Q2=keep upstream caps, Q3=`db-gpt-feedstock`. All 6 recipes built green on linux-64; **5 prerequisite PRs open** on staged-recipes (#33764–#33768, all green); the db-gpt PR is pending the 5 merges. See **§ Submission Status (2026-06-17)** |
+| Status       | **Implemented; submission gated** (live: 2026-06-27) — **3/5 prereq PRs MERGED** (#33764/#33767/#33768); 2 green + pending-review (#33765/#33766); db-gpt held on those 2 landing. pdfminer.six fixed (build `_1`) → dbgpt-app `pip_check` re-enabled. All 8 recipes rebuilt locally + cfe-metadata refreshed to v8.55.0. See **§ Readiness (live: 2026-06-27)** |
 | Owner        | rxm7706                                                                                                                                                                                 |
 | Track        | BMAD Quick Flow (tech-spec only, no PRD/architecture phase)                                                                                                                             |
 | Upstream     | `eosphoros-ai/DB-GPT` v0.8.0 (released 2026-03-27, MIT license)                                                                                                                       |
 | Target       | `conda-forge/staged-recipes` — 7 outputs in a single multi-output recipe, plus 7 prerequisite recipes — 2 already on conda-forge (`abstract-singleton`, `lyric-task`), **5 to build** (1 trivial pure-Python, 3 itkwasm-pattern noarch, 1 cocoindex-class Rust+PyO3) |
 | Distribution | conda-forge (linux-64, osx-64, osx-arm64, win-64) —`noarch: python` for all outputs                                                                                                  |
 | Lifetime     | Long-running — feedstocks become autotick-maintained after first PR lands                                                                                                              |
+
+---
+
+## Readiness (live: 2026-06-27)
+
+Re-audited live (CFE gotcha **G78** — verify against `gh pr` state + channeldata, not the
+recipes' own `cfe-on-conda-forge-status`, which had drifted). State has moved since the
+2026-06-17 submission:
+
+| Recipe | conda-forge | PR | State |
+| ------ | ----------- | -- | ----- |
+| `abstract-singleton` | ✅ on cf | — | prereq, already shipping |
+| `lyric-task` | ✅ on cf | — | prereq, already shipping |
+| `lyric-py` | ✅ on cf | [#33764](https://github.com/conda-forge/staged-recipes/pull/33764) | **MERGED** |
+| `lyric-js-worker` | ✅ on cf | [#33767](https://github.com/conda-forge/staged-recipes/pull/33767) | **MERGED** |
+| `lyric-component-ts-transpiling` | ✅ on cf | [#33768](https://github.com/conda-forge/staged-recipes/pull/33768) | **MERGED** |
+| `auto-gpt-plugin-template` | ⏳ pending | [#33765](https://github.com/conda-forge/staged-recipes/pull/33765) | OPEN — green, `review-requested` + pinged; awaiting reviewer-merge |
+| `lyric-py-worker` | ⏳ pending | [#33766](https://github.com/conda-forge/staged-recipes/pull/33766) | OPEN — green, `review-requested` + pinged; awaiting reviewer-merge |
+| `db-gpt` (7 outputs) | ⛔ not submitted | — | held on the 2 OPEN prereqs landing on cf |
+
+**db-gpt is gated on exactly two reviewer-merges** (`auto-gpt-plugin-template` #33765,
+`lyric-py-worker` #33766). Both are green, carry the `review-requested` label, and were
+already pinged (`@conda-forge/help-python, ready for review!`) — so there is nothing
+further to *do* on them; they await a conda-forge reviewer (don't double-ping, G64). When
+both land on cf, the db-gpt multi-output PR's `check_dependencies` / test-env solve
+resolves and db-gpt can be submitted (as a cfe-stripped draft — G62).
+
+### langflow learnings applied to db-gpt
+
+- **pdfminer.six / dbgpt-app `pip_check` (G76).** The original plan disabled `pip_check` on
+  the `dbgpt-app` output to dodge conda-forge's pdfminer.six dist-info `Version: 0.0.0` bug
+  (pdfplumber pins `pdfminer.six==<exact>`, so `pip check` saw `0.0.0` ≠ the pin). The
+  langflow effort established **G76**: staged-recipes runs `pip check` for **every** output
+  **regardless of the recipe's `pip_check:` setting** — so the waiver would not have survived
+  CI. Re-checked live (2026-06-27): the pdfminer.six-feedstock **rebuilt to `number: 1`**,
+  and build `_1` now reports `Version: 20260107` correctly (the feedstock's own test asserts
+  it). Blocker **gone** → `dbgpt-app` `pip_check` **re-enabled** (all 7 outputs now check),
+  waiver dropped.
+- **Verify live, not cfe metadata (G78).** This table was rebuilt from `gh pr` + channeldata,
+  not `cfe-on-conda-forge-status` (e.g. `lyric-py` still read `pending-approval` post-merge).
+- **Source patches, not in-build seds (G59).** Already done — the 13-pin loosening lives in
+  `patches/0001-loosen-dbgpt-core-pins.patch` + `0002-loosen-dbgpt-ext-pins.patch`.
+
+### Local rebuild + cfe metadata refresh (2026-06-27)
+
+All 8 db-gpt-scope recipes were authored at `cfe-generated-by-version: 8.30.1` and predate
+the `cfe-local-build-*` fields (v8.36.0). Rebuilt locally (rattler-build, linux-64) in
+dependency order — **all 8 green** — and re-stamped to **v8.55.0** with the v8.36+ identity
+fields + `cfe-local-build-*: success` populated:
+
+| Recipe | local build | cfe-status | notes |
+| ------ | ----------- | ---------- | ----- |
+| `abstract-singleton` | ✅ success | confirmed-on-cf | full cfe block added (had none) |
+| `auto-gpt-plugin-template` | ✅ success | pending-approval | #33765 |
+| `lyric-component-ts-transpiling` | ✅ success | confirmed-on-cf | |
+| `lyric-js-worker` | ✅ success | confirmed-on-cf | |
+| `lyric-task` | ✅ success | confirmed-on-cf | |
+| `lyric-py` | ✅ success | confirmed-on-cf | ~17 min (Rust/PyO3); import cached as `lyric` (≠ dist name — G7/G10); github-tag + compiled |
+| `lyric-py-worker` | ✅ success | pending-approval | #33766 |
+| `db-gpt` (7 outputs) | ✅ success | blocked-pending-prereqs | dbgpt-app `pip_check` re-enabled — passes against fixed pdfminer.six `20260107` |
 
 ---
 

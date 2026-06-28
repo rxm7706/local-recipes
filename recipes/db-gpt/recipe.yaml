@@ -284,19 +284,10 @@ outputs:
         - onnxruntime >=1.14.1,<=1.18.1  # Q2: upstream cap kept
         - chromadb >=0.4.22
     tests:
-      # pip_check is disabled for THIS output only (the other six keep it).
-      # The full dbgpt-app dependency graph was verified consistent except for
-      # one external false positive: conda-forge's `pdfminer.six` ships a wheel
-      # whose dist-info reports `Version: 0.0.0` (a setuptools_scm fallback bug
-      # in that feedstock), while the conda package version is the correct
-      # 20251230. pdfplumber pins `pdfminer.six==20251230` exactly, so pip_check
-      # fails against the bogus 0.0.0 string. No in-recipe fix exists; tracked
-      # upstream against pdfminer.six-feedstock. Import + the other 6 outputs'
-      # pip_check cover consistency.
       - python:
           imports:
             - dbgpt_app
-          pip_check: false
+          pip_check: true
           python_version:
             - ${{ python_min }}.*
             - "*"
@@ -326,16 +317,23 @@ extra:
     - pkg:github/eosphoros-ai/DB-GPT@${{ version }}
   cfe-upstream-repo: https://github.com/eosphoros-ai/DB-GPT
   cfe-upstream-homepage: https://github.com/eosphoros-ai/DB-GPT
+  cfe-import-names: [dbgpt]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: blocked-pending-prerequisites
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
     - auto-gpt-plugin-template not yet on conda-forge
-    - lyric-py not yet on conda-forge
     - lyric-py-worker not yet on conda-forge
-  cfe-last-checked: 2026-06-19T13:36:19Z
-  cfe-generated-by-version: 8.30.1
-  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-06-27T02:38:06Z
+  cfe-generated-by-version: 8.55.0
+  cfe-generated-at-datetime: 2026-06-27T02:38:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-27T02:32:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # source:
