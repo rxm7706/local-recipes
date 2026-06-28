@@ -94,6 +94,44 @@ spec_updated: 2026-06-27
 
 ---
 
+## Handoff: complete recipe inventory & submission status (2026-06-27)
+
+> Captures **every recipe created in/around this effort** + its conda-forge status so the spec is self-contained for handoff (no rxm7706/local-recipes access needed). **How "langflow-related" is decided:** a recipe is in scope iff it's in **langflow-suite's dependency closure** — a `run`/`run_constraints` dep of any langflow-suite output (lfx / langflow-base / langflow / langflow-sdk), an `lfx-*` extension depending on the suite's `lfx` output, or named in this spec's closure (verified by grepping `recipes/langflow-suite/recipe.yaml`). **Draft PRs are opened ONLY for langflow-related recipes** (user directive 2026-06-27); unrelated recipes from other efforts are listed here for completeness but are submitted under their own efforts, not this one.
+
+### A. Langflow-related GAP → draft PRs (handoff: continue these)
+Each is a noarch leaf, red until its prereq lands (auto-greens, like bucket C). `langflow-suite` itself = **#33972** (GREEN); `lfx`/`langflow-base`/`langflow`/`langflow-sdk` are its outputs.
+
+| Recipe | staged-recipes PR | Red until… |
+|---|---|---|
+| lfx-arxiv | [#33977](https://github.com/conda-forge/staged-recipes/pull/33977) | → `lfx` (lands when #33972 merges) |
+| lfx-docling | _pending (paced submit)_ | → `lfx`, docling-core |
+| lfx-duckduckgo | _pending (paced submit)_ | → `lfx`, ddgs |
+| lfx-ibm | _pending (paced submit)_ | → `lfx`, langchain-ibm |
+| langchain-elasticsearch | _pending (paced submit)_ | → elasticsearch ≥8.19 (elasticsearch-feedstock #122, external) |
+
+### B. Unrelated recipes (other efforts) — NOT submitted under this spec
+Exist under `recipes/<name>/` but are **not** langflow deps. Submit under their own efforts/specs, not the langflow handoff.
+
+| Recipe(s) | Effort / spec | Notes |
+|---|---|---|
+| `db-gpt` | `docs/specs/db-gpt-conda-forge.md` | 7-output multi-output + patches; own prereq closure |
+| `ctranslate2` | graphifyy effort | compiled C++ multi-output |
+| `cyclonedx-cli`, `cyclonedx-bom-studio` | (no spec — ad-hoc) | compiled/build.sh; submit cli before bom-studio |
+| `sqlite-vec` | (no spec — ad-hoc) | compiled (build.sh) |
+| `browsergym-core`, `cuga-oak-health`, `google-search-results`, `langchain-docling`, `metaphor-python`, `twelvelabs`, `wolframalpha`, `zep-python` | (no spec — ad-hoc noarch leaves) | created across sessions; not langflow deps |
+| `langsmith-pyo3` | langsmith-mirror build-dep | Rust; cf `langsmith` suffices → vestigial; dual `meta.yaml`+`recipe.yaml` |
+
+### C. Cannot submit (non-OSI license)
+| Recipe | Reason |
+|---|---|
+| `ragstack-ai-knowledge-store` | **BUSL-1.1** (non-OSI) → conda-forge rejects non-FOSS. Stays local-only. |
+
+### D. Already on conda-forge / already-PR'd (no action — for completeness)
+- **On cf (consume):** apify-client, bce-python-sdk, cookiecutter-django, google-cloud-vectorsearch, graph-retriever, ibm-cos-sdk{,-core,-s3transfer}, ibm-watsonx-orchestrate-{clients,core}, mypy-boto3-bedrock-runtime, sambanova (+ the §A "already on cf → consume" set).
+- **Already PR'd** (older non-`add-recipe-*` branches the matcher initially missed): apache-tika #31649, google-cloud-modelarmor #33915, langchain-litellm #33917, pksuid #33895, unitxt #33912, ibm-watsonx-ai #33968.
+
+---
+
 ## Status
 
 
