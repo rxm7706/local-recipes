@@ -26,6 +26,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Sibling helper — universal conda-forge.yml pre-seed (shared with recipe-generator.py).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _cfy_template import render_conda_forge_yml  # noqa: E402
+
 # .claude/skills/conda-forge-expert/scripts/ -> repo root (4 levels up)
 REPO_ROOT = Path(__file__).resolve().parents[4]
 STAGED_RECIPES_FORK_PATH = REPO_ROOT.parent / "staged-recipes"
@@ -143,6 +147,10 @@ def prepare_branch(
             "fork_exists": STAGED_RECIPES_FORK_PATH.exists(),
             "fork_branch_url": fork_branch_url,
             "force": force,
+            "conda_forge_yml": (
+                "present" if (recipe_dir / "conda-forge.yml").exists()
+                else "would-emit (missing)"
+            ),
             "planned_commit_message": f"Add recipe for {recipe_name}",
             "message": (f"Dry run OK — would push branch '{branch}' to "
                         f"{github_user}/staged-recipes. "
@@ -163,6 +171,22 @@ def prepare_branch(
         _run(["git", "reset", "--hard", "origin/main"], cwd=fork_path)
     except RuntimeError as e:
         return {"success": False, "error": f"Branch creation failed: {e}"}
+
+    # Emit-if-missing: a hand-authored recipe with no conda-forge.yml still
+    # defaults to the universal feedstock pre-seed (G83). Written into the LOCAL
+    # recipe_dir (so local == pushed + persistent); dry_run returned earlier, so
+    # this never fires during a dry run. Recipe shape inferred from recipe.yaml.
+    cfy_path = recipe_dir / "conda-forge.yml"
+    if not cfy_path.exists():
+        rtext = recipe_file.read_text(encoding="utf-8")
+        if "noarch: python" in rtext:
+            kwargs = dict(compiled=False, noarch_python=True, python_wheel=True)
+        elif ("compiler(" in rtext or "stdlib(" in rtext) and "noarch:" not in rtext:
+            kwargs = dict(compiled=True, noarch_python=False, python_wheel=True)
+        else:
+            kwargs = dict(compiled=False, noarch_python=True, python_wheel=True)
+        cfy_path.write_text(render_conda_forge_yml(**kwargs), encoding="utf-8")
+        print(f"  Emitted universal conda-forge.yml pre-seed → {cfy_path} (G83)")
 
     # Copy recipe into fork
     dest = fork_path / "recipes" / recipe_name

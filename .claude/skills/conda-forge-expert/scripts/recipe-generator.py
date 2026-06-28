@@ -24,6 +24,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+# Sibling helper — universal conda-forge.yml pre-seed (shared with submit_pr.py).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _cfy_template import render_conda_forge_yml  # noqa: E402
+
 # Inject OS trust store before requests import so corporate CA roots are
 # honored on PyPI calls in air-gapped JFrog environments. Idempotent.
 try:
@@ -888,6 +892,15 @@ extra:
     recipe_path = output_dir / "recipe.yaml"
     recipe_path.write_text(recipe)
 
+    # Universal conda-forge.yml pre-seed (G83): noarch:python → no ARM block,
+    # bot.inspection: update-grayskull, run_deps_from_wheel.
+    (output_dir / "conda-forge.yml").write_text(
+        render_conda_forge_yml(
+            compiled=False, noarch_python=True, python_wheel=True,
+        ),
+        encoding="utf-8",
+    )
+
     return recipe_path
 
 
@@ -1027,6 +1040,16 @@ extra:
     output_dir.mkdir(parents=True, exist_ok=True)
     recipe_path = output_dir / "recipe.yaml"
     recipe_path.write_text(recipe)
+
+    # Universal conda-forge.yml pre-seed (G83): maturin/PyO3 is a compiled,
+    # per-platform Python wheel → ARM block + bot.inspection: hint-all
+    # (grayskull mangles hand-tuned host pins) + run_deps_from_wheel.
+    (output_dir / "conda-forge.yml").write_text(
+        render_conda_forge_yml(
+            compiled=True, noarch_python=False, python_wheel=True,
+        ),
+        encoding="utf-8",
+    )
     return recipe_path
 
 
@@ -1954,38 +1977,19 @@ def generate_npm_recipe_yaml(
     recipe_path.write_text("\n".join(recipe_lines), encoding="utf-8")
 
     # ── conda-forge.yml ───────────────────────────────────────────────────
-    # Per-recipe conda-forge.yml is only written when ``feedstock_mode=True``.
-    # The default per-platform inline build doesn't restrict noarch_platforms
-    # (it isn't noarch) and doesn't need shellcheck-on-build.sh (no
-    # standalone build.sh exists). Staged-recipes' defaults handle the rest.
-    if feedstock_mode:
-        # Full feedstock-style conda-forge.yml — for updating an existing
-        # <pkg>-feedstock repo. Adds bot/github/output_validation/conda_build
-        # fields that only take effect post-merge.
-        cfy_lines = [
-            "# Feedstock-level conda-forge.yml. See:",
-            "# https://conda-forge.org/docs/maintainer/conda_forge_yml",
-            "conda_build_tool: rattler-build",
-            "conda_install_tool: pixi",
-            "github:",
-            "  branch_name: main",
-            "  tooling_branch_name: main",
-            "conda_build:",
-            "  error_overlinking: true",
-            "conda_forge_output_validation: true",
-            "bot:",
-            "  automerge: true",
-            "  inspection: hint-all",
-            "  check_solvable: true",
-            "  run_deps_from_wheel: true",
-            "",
-        ]
-        (pkg_dir / "conda-forge.yml").write_text(
-            "\n".join(cfy_lines), encoding="utf-8"
-        )
-    # Default (non-feedstock) mode emits no per-recipe conda-forge.yml —
-    # staged-recipes' defaults cover everything and per-platform builds
-    # don't need a noarch_platforms restriction.
+    # Universal pre-seed (G83) — always emitted now (reverses the v8.11.0
+    # default-mode omission). npm is a per-platform JS CLI: not noarch, not a
+    # Python wheel → bot.inspection: hint-all (grayskull is PyPI-only), NO
+    # run_deps_from_wheel (no wheel), NO ARM block (ARM left to a deliberate
+    # expansion). feedstock_mode also emits the feedstock-root keys
+    # (conda_forge_output_validation + github.*).
+    (pkg_dir / "conda-forge.yml").write_text(
+        render_conda_forge_yml(
+            compiled=False, noarch_python=False, python_wheel=False,
+            feedstock=feedstock_mode,
+        ),
+        encoding="utf-8",
+    )
 
     return recipe_path
 
@@ -2070,6 +2074,16 @@ def _run_rattler_generate(ecosystem: str, args: list[str], output_dir: Path) -> 
     # Newest match — handles re-runs in same dir
     recipe_path = max(candidates, key=lambda p: p.stat().st_mtime)
     _ensure_yaml_language_server_header(recipe_path)
+
+    # Universal conda-forge.yml pre-seed (G83). CRAN/CPAN/LuaRocks commonly
+    # ship compiled code → ARM block unless the generated recipe is noarch.
+    is_noarch = "noarch:" in recipe_path.read_text(encoding="utf-8")
+    (recipe_path.parent / "conda-forge.yml").write_text(
+        render_conda_forge_yml(
+            compiled=not is_noarch, noarch_python=False, python_wheel=False,
+        ),
+        encoding="utf-8",
+    )
     return recipe_path
 
 

@@ -305,10 +305,7 @@ conda_install_tool: pixi
 conda_build_tool: rattler-build
 conda_build:
   pkg_format: '2'
-  error_overlinking: true
 conda_forge_output_validation: true
-workflow_settings:
-  store_build_artifacts: true
 provider:
   osx_arm64: default
   linux_aarch64: default
@@ -721,6 +718,66 @@ Classification key: **LOAD-BEARING** (does real work) · **REDUNDANT-DEFAULT**
 - **compiled C/C++ (single-arch)** — add `conda_build.error_overlinking: true` only on a **conda-build** (v0) feedstock; add `build_platform`+`provider` per arch when expanding; `os_version` only if glibc>2.17 is genuinely needed.
 
 > **Verification flags (not bluffed):** (1) whether `error_overlinking` is honored under rattler-build — strong circumstantial evidence it is **not** (wrong namespace; pydantic-core omits it), but the rattler-build config-mapping code wasn't located. (2) Whether `os_version`/`channel_sources` in a *staged-recipes* per-recipe file are honored at build time — `build_all.py` ignores both, but `build_steps.sh`/docker-image selection wasn't traced; the skill treats `os_version: alma9` as a working staged-recipes opt-in, so it's likely read by the build path (not the matrix). (3) There is **no top-level `channels:` key** for adding *build* channels — extra build channels go in the recipe's `conda_build_config.yaml` `channel_sources`; `channels.targets`/`channel_priority` are real keys.
+
+## Recommended pre-seed defaults (CFE skill default)
+
+**The CFE recipe generator now emits a `conda-forge.yml` for every new recipe**
+carrying the *universal pre-seed* below (+ the ARM matrix for compiled recipes).
+It's inert in the staged-recipes PR but forwarded into the feedstock on merge
+([G83](../SKILL.md)) — pre-seeding the bot policy, `conda_install_tool: pixi`, and
+the platform matrix so **no post-merge "add bot config" or "platform-expansion"
+follow-up PR is needed**. `submit_pr` emits the same if a hand-authored recipe
+lacks one. This is the canonical default; the Shapes above are illustrative.
+
+**Universal block (every recipe type):**
+```yaml
+# Inert in the staged-recipes PR (build_all.py reads only conda_build_tool);
+# forwarded into the feedstock on merge (G83).
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: <update-grayskull for noarch:python | hint-all for everything else>
+  run_deps_from_wheel: <true for Python wheels (noarch:python + maturin) | omit otherwise>
+```
+
+**COMPILED recipes also get the ARM matrix** (maturin/PyO3, compiled-C/C++, Go,
+Rust-CLI, compiled CRAN/CPAN/LuaRocks):
+```yaml
+build_platform:
+  linux_aarch64: linux_64
+  osx_arm64: osx_64
+provider:
+  linux_aarch64: azure
+  osx_arm64: azure
+test: native_and_emulated
+```
+
+**By recipe type:**
+
+| Recipe type | `bot.inspection` | `run_deps_from_wheel` | ARM block |
+|---|---|---|---|
+| noarch:python | `update-grayskull` | yes | **no** (one artifact) |
+| maturin / PyO3 (compiled Python) | `hint-all` | yes | **yes** |
+| compiled C/C++ / Go / Rust-CLI | `hint-all` | (omit; no wheel) | **yes** |
+| CRAN / CPAN / LuaRocks | `hint-all` | (omit) | **yes** (unless the recipe is noarch) |
+| npm (per-platform JS) | `hint-all` | (omit) | **no** (left to a deliberate expansion) |
+| noarch:generic | `hint-all` | (omit) | **no** |
+
+**Never in the default:** `workflow_settings` (no-op in PR, convenience-only at
+the feedstock), `conda_build.error_overlinking` (no-op on rattler-build — use the
+recipe's `build.dynamic_linking`), `shellcheck` (no-op without a `build.sh`),
+`github.*` (redundant default — the staged-recipes file omits it; the
+feedstock-root file may carry it). `inspection: hint-all` (not `update-grayskull`)
+on compiled/maturin recipes is deliberate — grayskull re-deriving deps on a bump
+mangles hand-tuned host/Rust pins (especially paired with `automerge: true`).
+
+**Caveat — ARM is pre-seeded but untested in the PR** ([G82](../SKILL.md)):
+staged-recipes can't build osx-arm64/aarch64 pre-merge, so the feedstock's *first*
+CI validates the ARM legs. Reliable for Rust/maturin/Go cross-compile; for complex
+C/C++ (SIMD/asm) or a dep that lacks ARM builds (G40), a *tested* post-merge
+expansion PR is safer than a red feedstock.
 
 ## Verifying changes
 

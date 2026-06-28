@@ -1,28 +1,34 @@
-# conda-forge.yml — staged-recipes per-recipe override.
-# Drop at recipes/<name>/conda-forge.yml. Uncomment only what you need.
-# Reference: reference/conda-forge-yml-reference.md
+# conda-forge.yml — staged-recipes per-recipe file.
+# The CFE generator now emits this automatically (the universal pre-seed below).
+# It is INERT in the staged-recipes PR (build_all.py reads only conda_build_tool)
+# and FORWARDED into the feedstock on merge — it pre-seeds the feedstock so no
+# post-merge bot/tooling/platform-expansion PR is needed (CFE gotcha G83).
+# Reference: reference/conda-forge-yml-reference.md § Per-setting applicability audit
 
-# azure:
-#   store_build_artifacts: true   # save build_artifacts/ to Azure (default false)
-#   timeout_minutes: 480          # default ~360 (6h)
-#   free_disk_space: [true]       # cleanup before build; use only if disk runs out
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: update-grayskull   # noarch:python. Use `hint-all` for compiled/maturin/npm/Go/CRAN
+  run_deps_from_wheel: true        # Python wheels only (noarch:python + maturin); drop for npm/Go/CRAN
 
-# os_version:                     # default cos7 (glibc 2.17)
-#   linux_64: alma9               # alma8 (2.28) | alma9 (2.34) | alma10 (2.38+) | ubi8
-#   linux_aarch64: alma9
-
-# provider:                       # default azure
-#   linux_64: github_actions      # opt-in for linux_64 only (conda-smithy 3.57.1+)
-
-# noarch_platforms:               # default [linux_64]
-#   - linux_64
-#   - osx_64
-#   - osx_arm64
-#   - win_64
-
-# build_platform:                 # cross-build emulated targets on x86_64 + qemu
+# COMPILED recipes (maturin/PyO3, C/C++, Go, Rust-CLI, CRAN/CPAN/LuaRocks) — pre-seed
+# the ARM matrix so the feedstock builds osx-arm64 + linux-aarch64 from day 1 (no
+# post-merge platform-expansion PR). noarch (python/generic) + npm: omit (one artifact /
+# per-platform JS). Untested pre-merge (G82), so the feedstock's first CI validates ARM.
+# build_platform:
 #   linux_aarch64: linux_64
-#   linux_ppc64le: linux_64
+#   osx_arm64: osx_64
+# provider:
+#   linux_aarch64: azure
+#   osx_arm64: azure
+# test: native_and_emulated
 
-# github_actions:
-#   timeout_minutes: 360          # default ~360 (6h)
+# Optional extras (NOT defaults):
+# os_version:                        # compiled recipes needing glibc > 2.17
+#   linux_64: alma9                  # cos7 (2.17, default) | alma8 (2.28) | alma9 (2.34)
+# workflow_settings:                 # downloadable .conda from the FEEDSTOCK's CI (no-op in
+#   store_build_artifacts:           # the staged-recipes PR). EXCLUDE win_64 for build-time-
+#     - platform: [linux_64, linux_aarch64, osx_64, osx_arm64]   # HTTPS recipes (Rust/Go/npm — G18)
+#       value: true

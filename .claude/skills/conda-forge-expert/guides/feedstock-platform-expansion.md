@@ -311,14 +311,20 @@ either applies them or builds on them.
    For compiled recipes:
 
    ```yaml
-   # Add the smallest necessary blocks; do not re-add keys already present
-   workflow_settings:
-     store_build_artifacts: true   # enables v8.14.0 pr-artifacts workflow
-                                   # (was azure.store_build_artifacts — now deprecated)
+   # Do NOT re-add keys already upstream (an existing feedstock already carries
+   # conda_build_tool/conda_install_tool/bot — the universal pre-seed). The
+   # platform-expansion delta for a COMPILED recipe is just the ARM matrix:
+   build_platform:
+     <new-target>: <build-host>    # e.g. linux_aarch64: linux_64, osx_arm64: osx_64
    provider:
-     <target-platform-1>: default
-     <target-platform-2>: default
+     <new-target>: azure           # ENABLES the otherwise-disabled arch (field default is None)
+   test: native_and_emulated       # runs the emulated aarch64/ppc64le tests under QEMU
    ```
+
+   If the upstream feedstock predates the universal pre-seed and is missing the
+   bot/tooling block, also add it (reference § Recommended pre-seed defaults).
+   `workflow_settings.store_build_artifacts` is **optional** reviewer-convenience
+   (win-exclude per G18), **not** part of the default.
 
    For noarch:python with platform-conditional selectors:
 

@@ -136,9 +136,20 @@ class TestRecipeGenerator:
         assert not (pkg_dir / "build.bat").exists()
         # Critical: must NOT use v0's bld.bat
         assert not (pkg_dir / "bld.bat").exists()
-        # No per-recipe conda-forge.yml — staged-recipes defaults cover it
-        # and noarch_platforms is not relevant (the recipe isn't noarch).
-        assert not (pkg_dir / "conda-forge.yml").exists()
+        # Universal conda-forge.yml pre-seed (G83) — emitted for every recipe
+        # now. npm = per-platform JS CLI: hint-all, no run_deps_from_wheel, no
+        # ARM block, and none of the no-op keys.
+        cfy = (pkg_dir / "conda-forge.yml").read_text()
+        assert "conda_build_tool: rattler-build" in cfy
+        assert "conda_install_tool: pixi" in cfy
+        assert "automerge: true" in cfy
+        assert "inspection: hint-all" in cfy
+        assert "run_deps_from_wheel" not in cfy   # no wheel for an npm CLI
+        assert "build_platform:" not in cfy        # no ARM block for npm
+        assert "provider:" not in cfy
+        assert "workflow_settings" not in cfy
+        assert "error_overlinking" not in cfy
+        assert "shellcheck" not in cfy
 
     def test_npm_scoped_package_handling(self, load_module):
         """Scoped npm names (`@scope/name`) → conda name `name`, tarball
@@ -320,30 +331,29 @@ class TestRecipeGenerator:
             info, tmp_path, feedstock_mode=True,
         )
         cfy = (recipe_path.parent / "conda-forge.yml").read_text()
-        # Feedstock-only fields present
+        # Universal pre-seed + feedstock-root keys (output_validation + github).
         for field_name in (
-            "bot:", "automerge:", "inspection:", "check_solvable:",
+            "bot:", "automerge:", "inspection: hint-all", "check_solvable:",
             "github:", "branch_name:", "tooling_branch_name:",
             "conda_forge_output_validation: true",
-            "conda_build:", "error_overlinking: true",
-            "conda_install_tool: pixi",
+            "conda_install_tool: pixi", "conda_build_tool: rattler-build",
         ):
             assert field_name in cfy, f"missing {field_name} in feedstock conda-forge.yml"
-        assert "conda_build_tool: rattler-build" in cfy
-        # v8.11.0: feedstock cfy no longer carries noarch_platforms or a
-        # shellcheck-enable (the new default doesn't ship build.sh and isn't
-        # noarch). If the user opts into the legacy standalone-build path,
-        # the staged-recipes cfy is emitted with those keys instead.
+        # npm = non-Python, non-noarch JS CLI: no wheel, no ARM, none of the
+        # no-op/wrong keys (error_overlinking is a rattler-build no-op).
+        assert "run_deps_from_wheel" not in cfy
+        assert "error_overlinking" not in cfy
+        assert "build_platform:" not in cfy
         assert "noarch_platforms" not in cfy
-        assert "shellcheck:" not in cfy
+        assert "shellcheck" not in cfy
+        assert "workflow_settings" not in cfy
 
-    def test_npm_default_mode_omits_conda_forge_yml(
+    def test_npm_default_mode_emits_universal_conda_forge_yml(
         self, load_module, tmp_path,
     ):
-        """v8.11.0 default (per-platform inline) mode emits NO per-recipe
-        conda-forge.yml — staged-recipes defaults cover everything and the
-        legacy ``noarch_platforms: [linux_64]`` restriction is irrelevant
-        because the recipe isn't noarch."""
+        """Default (per-platform inline) npm mode now emits the universal
+        conda-forge.yml pre-seed (G83) — reverses the v8.11.0 omission. npm is
+        non-Python/non-noarch → hint-all, no run_deps_from_wheel, no ARM."""
         mod = load_module("recipe-generator.py")
         info = mod.NpmPackageInfo(
             raw_name="thing", conda_name="thing", version="1.0.0",
@@ -355,7 +365,59 @@ class TestRecipeGenerator:
             bin_entries={"thing": "cli.js"},
         )
         recipe_path = mod.generate_npm_recipe_yaml(info, tmp_path)
-        assert not (recipe_path.parent / "conda-forge.yml").exists()
+        cfy = (recipe_path.parent / "conda-forge.yml").read_text()
+        assert "conda_build_tool: rattler-build" in cfy
+        assert "conda_install_tool: pixi" in cfy
+        assert "inspection: hint-all" in cfy
+        assert "run_deps_from_wheel" not in cfy
+        assert "build_platform:" not in cfy
+        assert "workflow_settings" not in cfy
+        # Default (staged-recipes) mode omits the feedstock-root keys.
+        assert "conda_forge_output_validation" not in cfy
+        assert "github:" not in cfy
+
+    def test_pypi_noarch_python_emits_universal_conda_forge_yml(
+        self, load_module, tmp_path,
+    ):
+        """noarch:python pypi recipe → universal conda-forge.yml pre-seed (G83):
+        update-grayskull + run_deps_from_wheel, NO ARM block, none of the
+        no-op keys (workflow_settings/error_overlinking/shellcheck)."""
+        mod = load_module("recipe-generator.py")
+        info = mod.PackageInfo(name="rich", version="13.0.0", summary="x")
+        recipe_path = mod.generate_recipe_yaml(info, tmp_path)
+        cfy = (recipe_path.parent / "conda-forge.yml").read_text()
+        assert "conda_build_tool: rattler-build" in cfy
+        assert "conda_install_tool: pixi" in cfy
+        assert "inspection: update-grayskull" in cfy   # noarch:python → grayskull
+        assert "run_deps_from_wheel: true" in cfy
+        assert "build_platform:" not in cfy             # noarch → no ARM block
+        assert "provider:" not in cfy
+        assert "test: native_and_emulated" not in cfy
+        assert "workflow_settings" not in cfy
+        assert "error_overlinking" not in cfy
+        assert "shellcheck" not in cfy
+
+    def test_maturin_compiled_emits_arm_block(
+        self, load_module, tmp_path,
+    ):
+        """maturin/PyO3 compiled recipe → universal pre-seed + the full ARM
+        platform block (build_platform + provider + test), inspection: hint-all
+        (grayskull mangles hand-tuned host pins), run_deps_from_wheel."""
+        mod = load_module("recipe-generator.py")
+        info = mod.PackageInfo(
+            name="thing", version="1.0.0", summary="x", build_backend="maturin",
+        )
+        recipe_path = mod.generate_recipe_yaml(info, tmp_path)  # routes to maturin
+        cfy = (recipe_path.parent / "conda-forge.yml").read_text()
+        assert "inspection: hint-all" in cfy
+        assert "run_deps_from_wheel: true" in cfy
+        assert "build_platform:" in cfy
+        assert "linux_aarch64: linux_64" in cfy
+        assert "osx_arm64: osx_64" in cfy
+        assert "provider:" in cfy
+        assert "test: native_and_emulated" in cfy
+        assert "workflow_settings" not in cfy
+        assert "error_overlinking" not in cfy
 
     def test_npm_no_third_party_licenses_zero_dep_pattern(
         self, load_module, tmp_path
