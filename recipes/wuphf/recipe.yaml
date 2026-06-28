@@ -2,29 +2,29 @@
 schema_version: 1
 
 context:
-  name: wuphf
-  version: "0.88.4"
+  version: "0.230.0"
 
 package:
-  name: ${{ name }}
+  name: wuphf
   version: ${{ version }}
 
 source:
   url: https://github.com/nex-crm/wuphf/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 727db8776ad34bb7ba28723a3ea6a7a2bf7c4b1e4eca4fd8ac64ea9b0853af45
+  sha256: 4cc4e13f5af7db752f34985df8d947d16f7bb670d97787f011e1b8d14bcf89a9
 
 build:
   number: 0
-  # Upstream .goreleaser.yml only ships darwin/linux x amd64/arm64; Windows is
-  # not a supported target.
-  skip:
-    - win
-  script: bash "${RECIPE_DIR}/build.sh"
+  script:
+    - if: win
+      then: call "%RECIPE_DIR%/build.bat"
+      else: bash "${RECIPE_DIR}/build.sh"
 
 requirements:
   build:
     - ${{ compiler("go-nocgo") }}
     - go-licenses
+    - if: win
+      then: posix
 
 tests:
   - script:
@@ -36,19 +36,73 @@ tests:
 
 about:
   homepage: https://wuphf.team/
-  summary: Slack-style coordination plane for AI coding agents with a shared brain
+  repository: https://github.com/nex-crm/wuphf
+  documentation: https://github.com/nex-crm/wuphf
+  summary: Spin up a personal office of AI teammates that collaborate over shared context
   description: |
-    wuphf is a terminal-based "Slack for AI employees" that coordinates Claude
-    Code, Codex, and other coding agents across shared channels. It maintains
-    a knowledge graph so agents can collaborate without losing context between
-    handoffs. Ships as a single Go binary with CGO disabled.
-  license: MIT
+    WUPHF (by Nex.ai) is a terminal-based "Slack for AI employees": it
+    coordinates Claude Code, Codex, OpenCode and other coding agents across
+    shared channels and a shared context graph, so teammates collaborate
+    without losing context between handoffs. Ships as a single pure-Go binary
+    (CGO disabled). The optional embedded web UI is not built by this recipe;
+    the CLI/TUI is fully functional.
+  license: LicenseRef-SustainableUseLicense-1.0
   license_file:
     - LICENSE
     - license-files/
-  repository: https://github.com/nex-crm/wuphf
-  documentation: https://github.com/nex-crm/wuphf
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wuphf
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/nex-crm/wuphf
+  cfe-purls:
+    - pkg:conda/wuphf@${{ version }}
+    - pkg:golang/github.com/nex-crm/wuphf@${{ version }}
+  cfe-upstream-repo: https://github.com/nex-crm/wuphf
+  cfe-upstream-homepage: https://wuphf.team/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: false:not-a-python-package
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "LICENSE: n8n Sustainable Use License v1.0 is source-available NON-OSI (non-commercial / internal-use only; free redistribution only). conda-forge distributes only OSI-approved licenses. NOT submittable to staged-recipes. Local-only. Unblocks only on upstream relicense to an OSI license."
+  cfe-last-checked: 2026-06-28T02:39:27Z
+  cfe-generated-by-version: 8.56.0
+  cfe-generated-at-datetime: 2026-06-28T02:39:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-28T02:39:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # wuphf = nex-crm/wuphf, YC S26 Go CLI ("personal office of AI teammates").
+#    # Pure Go, CGO_ENABLED=0, go 1.25.11 (cf go-nocgo 1.26.4 satisfies it).
+# about.license:
+#    # n8n "Sustainable Use License" v1.0 — source-available, NON-OSI. Same
+#    # non-cf-eligible class as BUSL-1.1 (ragstack-ai-knowledge-store precedent).
+#    # SPDX has no identifier for it -> LicenseRef- form used. The pre-existing
+#    # v0.88.4 stub mislabeled this as `license: MIT` (FACTUALLY WRONG) — corrected.
+# build:
+#    # Cross-platform: unix -> build.sh (bash; keeps SOURCE_DATE_EPOCH
+#    # reproducible-BuildTimestamp logic, G1 pattern c); win -> build.bat.
+#    # Both mirror upstream .goreleaser.yml: CGO_ENABLED=0, -trimpath, -s -w,
+#    # -X internal/buildinfo.Version=<version>. main pkg ./cmd/wuphf.
+#    # win build verified by cross-compile (GOOS=windows GOARCH=amd64 go build
+#    # -> valid PE32+ .exe, exit 0); upstream ships windows amd64/arm64 release
+#    # zips + a setup.exe, and cf go-nocgo has a win-64 build. The conda win-64
+#    # PACKAGING (build.bat + go-licenses-on-win) is NOT locally verified (no win
+#    # host) -> cfe-local-build-platform records the verified linux-64 conda
+#    # build; `posix` is on win build deps for go-licenses' sake.
+#    # The embedded web UI (//go:embed all:web/dist) is NOT built (no bun/npm
+#    # frontend step). web/dist/.gitkeep makes the embed compile and WebFS()
+#    # degrades gracefully -> the CLI/TUI is fully functional without the UI.
+####
