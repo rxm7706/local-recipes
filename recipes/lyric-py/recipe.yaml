@@ -78,14 +78,22 @@ extra:
     - pkg:pypi/lyric-py@${{ version }}
   cfe-upstream-repo: https://github.com/fangyinc/lyric
   cfe-upstream-homepage: https://github.com/fangyinc/lyric
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-import-names: [lyric]
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lyric-py-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33764
-  cfe-last-checked: 2026-06-19T13:36:19Z
-  cfe-generated-by-version: 8.30.1
-  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-06-27T02:38:06Z
+  cfe-generated-by-version: 8.55.0
+  cfe-generated-at-datetime: 2026-06-27T02:38:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-27T02:32:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # source:

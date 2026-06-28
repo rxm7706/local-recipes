@@ -66,11 +66,19 @@ extra:
     - pkg:pypi/lyric-js-worker@${{ version }}
   cfe-upstream-repo: https://github.com/fangyinc/lyric
   cfe-upstream-homepage: https://github.com/fangyinc/lyric
+  cfe-import-names: [lyric_js_worker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lyric-js-worker-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
-  cfe-generated-by-version: 8.30.1
-  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-06-27T02:38:06Z
+  cfe-generated-by-version: 8.55.0
+  cfe-generated-at-datetime: 2026-06-27T02:38:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-27T02:32:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
