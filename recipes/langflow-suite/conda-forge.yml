@@ -1,4 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/conda-forge/conda-smithy/main/conda_smithy/data/conda-forge.json
+# conda-forge.yml — pre-seeds the feedstock
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: update-grayskull
+  run_deps_from_wheel: true
 noarch_platforms:
   - linux_64
   - osx_64
@@ -11,3 +19,18 @@ workflow_settings:
         - osx_64
         - osx_arm64
       value: true
+
+#### CFE metadata AND comments
+# CFE comments
+#    # Pre-seeds the feedstock (CFE skill default, G83): these keys are INERT
+#    # in the staged-recipes PR (build_all.py reads only conda_build_tool) and
+#    # are forwarded into the feedstock on merge, so no post-merge bot / tooling
+#    # / platform-expansion PR is needed. The universal block (build tools + bot
+#    # policy) applies to every recipe; COMPILED recipes also carry the ARM
+#    # platform matrix above (trim it to the arches the recipe actually builds —
+#    # drop any its `skip:` excludes; e.g. an osx-arm64-only recipe keeps just
+#    # the osx_arm64 leg). This #### CFE block is local-recipes-only and is
+#    # STRIPPED before push (same convention as recipe.yaml's cfe block, G62) —
+#    # the submitted staged-recipes / feedstock file is just the trim top
+#    # comment + the keys above.
+####
