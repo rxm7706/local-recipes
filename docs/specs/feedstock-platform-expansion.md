@@ -301,12 +301,15 @@ points at `conda-forge/<feedstock>-feedstock`.
 For **compiled** recipes (`recipe_shape: compiled`):
 
 ```yaml
-workflow_settings:
-  store_build_artifacts: true   # iff not already upstream
-                                # (replaces deprecated azure.store_build_artifacts)
+# Platform-expansion delta = the ARM matrix (build_platform + provider + test).
+# Do NOT re-add the universal pre-seed (conda_build_tool/conda_install_tool/bot)
+# if already upstream. workflow_settings.store_build_artifacts is optional
+# reviewer-convenience (win-exclude per G18), NOT a default.
+build_platform:
+  <new-target>: <build-host>    # e.g. linux_aarch64: linux_64, osx_arm64: osx_64
 provider:
-  <target-platform-1>: default
-  <target-platform-2>: default
+  <new-target>: azure           # enables the otherwise-disabled arch (field default None)
+test: native_and_emulated
 ```
 
 For **noarch:python** recipes with platform-conditional selectors
@@ -319,7 +322,9 @@ noarch_platforms:
   - <new-platforms>
 ```
 
-Do **not** add keys already present upstream.
+Do **not** add keys already present upstream. New recipes ship the universal
+pre-seed automatically (CFE skill default, G83) — see
+`reference/conda-forge-yml-reference.md § Recommended pre-seed defaults`.
 
 **Acceptance**: `conda-forge.yml` differs from upstream only by the
 intended additive blocks.

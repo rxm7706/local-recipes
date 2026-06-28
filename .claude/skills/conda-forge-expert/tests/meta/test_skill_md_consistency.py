@@ -73,6 +73,7 @@ class TestSkillMdConsistency:
             "pycbc_build_setup.py",       # G57 couchbase upstream build file
             "cluster.py",                 # G71 cassandra-driver upstream source file (cassandra/cluster.py)
             "build_all.py",               # G82 conda-forge/staged-recipes .ci_support/build_all.py (matrix authority, named in prose)
+            "schema.py",                  # G83/cfy audit — conda_smithy/schema.py (config schema, named in prose)
             "_version_helper.py",         # G39 setuptools_scm helper (upstream sdist)
             "_version.py",                # G39/G54 upstream dynamic-version module
             "main.py",                    # G31 case study (llms/main.py imports)

@@ -58,11 +58,11 @@ class TestWorkflowNpmCanonical:
         recipe_dir = recipe_path.parent
 
         # Canonical files for the merged 2026 inline-script pattern
-        # (openspec PR #32368 + bmalph PR #33557): only recipe.yaml in
-        # default mode — no separate build.sh, no build.bat (per-platform
-        # build commands live inline in recipe.yaml's build.script), and
-        # no per-recipe conda-forge.yml (staged-recipes' defaults handle
-        # it; conda-forge.yml is emitted only under feedstock_mode=True).
+        # (openspec PR #32368 + bmalph PR #33557): only recipe.yaml — no
+        # separate build.sh, no build.bat (per-platform build commands live
+        # inline in recipe.yaml's build.script) — PLUS the universal
+        # conda-forge.yml pre-seed (G83; emitted for every recipe since the
+        # Jun-2026 audit, reversing the v8.11.0 default-mode omission).
         assert (recipe_dir / "recipe.yaml").exists(), "missing recipe.yaml"
         assert not (recipe_dir / "build.sh").exists(), (
             "build.sh leaked back into the npm generator — the 2026 "
@@ -70,11 +70,11 @@ class TestWorkflowNpmCanonical:
             "build.sh. See recipe-generator.py:_inline_build_script."
         )
         assert not (recipe_dir / "build.bat").exists()
-        assert not (recipe_dir / "conda-forge.yml").exists(), (
-            "conda-forge.yml leaked under default (non-feedstock) mode — "
-            "per-recipe conda-forge.yml is feedstock-mode-only since the "
-            "merged 2026 pattern. See recipe-generator.py:1986."
-        )
+        cfy = (recipe_dir / "conda-forge.yml").read_text()
+        assert "conda_build_tool: rattler-build" in cfy
+        assert "inspection: hint-all" in cfy        # npm = non-Python
+        assert "run_deps_from_wheel" not in cfy      # no wheel for a JS CLI
+        assert "workflow_settings" not in cfy
 
         # The generated YAML must parse and have key fields
         data = yaml.safe_load(recipe_path.read_text())

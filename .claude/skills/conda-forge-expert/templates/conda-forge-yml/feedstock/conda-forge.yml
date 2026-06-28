@@ -1,43 +1,41 @@
 # conda-forge.yml — feedstock root template.
 # Lives at the root of <pkg>-feedstock; consumed by `conda smithy rerender`.
-# Uncomment only what you need.
-# Reference: reference/conda-forge-yml-reference.md
+# Reference: reference/conda-forge-yml-reference.md § Per-setting applicability audit
 
-# bot:
-#   automerge: true                       # auto-merge bot PRs that pass CI
-#   inspection: hint-all                  # hint | hint-all | update-all | update-grayskull
-#   run_deps_from_wheel_metadata: true
-#   version_updates:
-#     exclude:
-#       - "1.0.0rc1"                      # tags the bot keeps mis-detecting as releases
-#     # sources: [pypi]                   # restrict source (default: all detected)
+# ── Universal pre-seed (active default; the staged-recipes file carries the
+#    same, minus the two feedstock-root keys below) ──────────────────────────
+conda_build_tool: rattler-build          # required for a v1 recipe.yaml feedstock
+conda_install_tool: pixi                 # v1 companion (schema default is micromamba)
+conda_forge_output_validation: true      # mandatory for any conda-forge-org feedstock
+github:
+  branch_name: main
+  tooling_branch_name: main
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: update-grayskull           # noarch:python. Use `hint-all` for compiled/maturin/npm/Go/CRAN
+  run_deps_from_wheel: true               # Python wheels only (noarch:python + maturin); drop for npm/Go/CRAN
+  # version_updates:
+  #   exclude:
+  #     - "1.0.0rc1"                      # tags the bot keeps mis-detecting as releases
 
-# os_version:                             # default cos7 (glibc 2.17)
-#   linux_64: alma9                       # alma8 (2.28) | alma9 (2.34) | alma10 (2.38+) | ubi8
-#   linux_aarch64: alma9
-
-# provider:                               # default azure
-#   linux_64: github_actions              # opt-in for linux_64 only (conda-smithy 3.57.1+)
-
-# build_platform:                         # cross-build emulated targets on x86_64 + qemu
+# ── COMPILED recipes — ARM platform matrix (omit for noarch + npm) ──────────
+# build_platform:
 #   linux_aarch64: linux_64
-#   linux_ppc64le: linux_64
+#   osx_arm64: osx_64
+# provider:
+#   linux_aarch64: azure
+#   osx_arm64: azure
+# test: native_and_emulated
 
-# channels:
-#   sources: [conda-forge]                # default
-#   targets:
-#     - [conda-forge, main]               # default
-
+# ── Optional ────────────────────────────────────────────────────────────────
+# os_version:                             # compiled recipes needing glibc > 2.17
+#   linux_64: alma9                       # cos7 (2.17, default) | alma8 (2.28) | alma9 (2.34)
+# workflow_settings:                      # downloadable .conda from CI for reviewer smoke-tests.
+#   store_build_artifacts:                # EXCLUDE win_64 for build-time-HTTPS recipes (G18).
+#     - platform: [linux_64, linux_aarch64, osx_64, osx_arm64]
+#       value: true
 # channel_priority: strict                # strict (recommended) | flexible | disabled
-
 # linter:
 #   skip:                                 # justify each entry in a comment
 #     # - lint_check_name
-
-# conda_forge_output_validation: true     # default true; leave on
-
-# azure:
-#   store_build_artifacts: true           # save build_artifacts/ to Azure (default false)
-#   # upload_packages: false              # skip anaconda.org upload (rare)
-#   # timeout_minutes: 480
-#   # free_disk_space: [true]
