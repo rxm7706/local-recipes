@@ -1,6 +1,8 @@
 ---
-status: ready
-spec_updated: 2026-06-20
+status: shipped
+spec_updated: 2026-06-28
+implemented_by: bmad-quick-dev (full 13-story build)
+shipped_ref: "conda-forge-tracker@3f74589 (sibling repo ~/UserLocal/Projects/Github/rxm7706/conda-forge-tracker/)"
 ---
 # Tech Spec: `conda-forge-tracker`
 
