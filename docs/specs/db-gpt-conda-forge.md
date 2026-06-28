@@ -2,7 +2,7 @@
 status: in-progress
 implemented_by: bmad-quick-dev
 shipped_ref: "staged-recipes: #33764/#33767/#33768 MERGED; #33765/#33766 green+pending-review; db-gpt held on those 2"
-spec_updated: 2026-06-27
+spec_updated: 2026-06-28
 ---
 # Tech Spec: DB-GPT on conda-forge
 
@@ -26,7 +26,7 @@ spec_updated: 2026-06-27
 | Track        | BMAD Quick Flow (tech-spec only, no PRD/architecture phase)                                                                                                                             |
 | Upstream     | `eosphoros-ai/DB-GPT` v0.8.0 (released 2026-03-27, MIT license)                                                                                                                       |
 | Target       | `conda-forge/staged-recipes` — 7 outputs in a single multi-output recipe, plus 7 prerequisite recipes — 2 already on conda-forge (`abstract-singleton`, `lyric-task`), **5 to build** (1 trivial pure-Python, 3 itkwasm-pattern noarch, 1 cocoindex-class Rust+PyO3) |
-| Distribution | conda-forge, all outputs `noarch: python`. ⚠ **dbgpt-app is uninstallable on osx-arm64/linux-aarch64 until `lyric-py` is platform-expanded — see § Readiness → C1**                                                                                                  |
+| Distribution | conda-forge, all outputs `noarch: python`. ✅ **`lyric-py` platform-expanded (lyric-py-feedstock #2 **merged** 2026-06-28) → dbgpt-app installable on osx-arm64/linux-aarch64 once the ARM artifacts propagate to the channel (G66); see § Readiness → C1**                                                                                                  |
 | Lifetime     | Long-running — feedstocks become autotick-maintained after first PR lands                                                                                                              |
 
 ---
@@ -89,7 +89,7 @@ fields + `cfe-local-build-*: success` populated:
 | `lyric-py-worker` | ✅ success | pending-approval | #33766 |
 | `db-gpt` (7 outputs) | ✅ success | blocked-pending-prereqs | dbgpt-app `pip_check` re-enabled — passes against fixed pdfminer.six `20260107` |
 
-### C1 — `lyric-py` ARM platform gap (🔴 MUST fix before db-gpt submission)
+### C1 — `lyric-py` ARM platform gap (✅ RESOLVED — lyric-py-feedstock #2 merged 2026-06-28)
 
 **Defect (adversarial review, 2026-06-27).** `dbgpt-app` is `noarch: python` and
 hard-requires `lyric-py >=0.1.7` **unconditionally**, but `lyric-py` is a **compiled,
@@ -112,11 +112,16 @@ py3.10–3.13. osx-arm64 uses the same Rust cross-compile path, so the wasmtime-
 risk flagged in S4 is retired — lyric-py is genuinely ARM-buildable.
 
 **Resolution — platform-expand `lyric-py`** (preserves B-full `[code]` parity, the Q1 choice).
-**OPENED 2026-06-27: conda-forge/lyric-py-feedstock [#2](https://github.com/conda-forge/lyric-py-feedstock/pull/2)** (draft
-+ rerender requested) — adds `osx_arm64` + `linux_aarch64` via a `provider:` block. Once it
-merges + the new subdirs land on the channel at every Python the recipe tests, this gate
-clears. **It is a hard gate on db-gpt submission** (effectively a 6th prerequisite, alongside
-#33765/#33766). The db-gpt recipe itself needs no change.
+**MERGED 2026-06-28: conda-forge/lyric-py-feedstock [#2](https://github.com/conda-forge/lyric-py-feedstock/pull/2)** —
+adds `osx_arm64` + `linux_aarch64` via a `provider:` block. Its win legs first failed at
+`Prepare conda build artifacts` (the G18 INetCache 7z crash) because the
+`workflow_settings.store_build_artifacts` list still included `win_64`; dropping `- win_64`
++ rerender turned win green and the PR merged. **Per G66 (merged ≠ live), the new
+osx-arm64/linux-aarch64 builds land on the channel only after the post-merge feedstock build
+uploads — at the 2026-06-28 check there were still 0 lyric-py builds on osx-arm64/linux-aarch64
+(3 on linux-64).** The C1 gate fully clears once those ARM artifacts are live at every Python
+db-gpt tests; **verify per-subdir before submitting db-gpt** (don't trust "merged"). The
+db-gpt recipe itself needs no change.
 
 - *Fallback if osx-arm64 can't be built on CI:* make `lyric-py` **optional** — strip it from
   `dbgpt-app`'s wheel `[project.dependencies]` (patch) + move to `run_constraints` (the
@@ -886,8 +891,9 @@ multi-output recipe and submit the PR.
 **Blocked by** (corrected — H4/G66): db-gpt's CI test-env needs its prereqs **merged AND
 live on the conda-forge channel**, not merely "in the review queue." Live gate (2026-06-27):
 #33765 (`auto-gpt-plugin-template`) + #33766 (`lyric-py-worker`) must merge + land on the
-channel; the other prereqs already ship. **PLUS** the **C1 `lyric-py` platform-expansion**
-(osx-arm64 + linux-aarch64) must land, or db-gpt ships broken on ARM.
+channel; the other prereqs already ship. The **C1 `lyric-py` platform-expansion** (osx-arm64
++ linux-aarch64) is **MERGED** (lyric-py-feedstock #2, 2026-06-28) — confirm the ARM artifacts
+are **live on the channel** (G66; not yet at the 2026-06-28 check) before db-gpt submission.
 
 **Submission checklist (G62–G65):** strip every `extra.cfe-*` key + the `#### CFE` block
 (G62); branch `add-recipe-db-gpt` on `rxm7706/staged-recipes` off conda-forge main; replace
