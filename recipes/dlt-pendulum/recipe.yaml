@@ -1,0 +1,143 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.2"
+
+package:
+  name: dlt-pendulum
+  version: ${{ version }}
+
+source:
+  url: https://github.com/dlt-hub/pendulum/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 9a0225a8e97399ad7c3930856d581093b65e36bb27c85c0da5a2575ddbaa9248
+  patches:
+    - 0001-remove-tzdata-dep-for-pip-check.patch
+
+build:
+  number: 4
+  script:
+    - if: unix
+      then: build.sh
+    - if: win
+      then: build.bat
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1.0,<2.0
+  host:
+    - python
+    - maturin >=1.0,<2.0
+    - pip
+  run:
+    - python
+    - python-dateutil >=2.6
+    - python-tzdata >=2020.1
+    - cffi >=1.17
+
+tests:
+  - python:
+      imports:
+        - pendulum
+      pip_check: true
+  - script:
+      - if: python_impl == "cpython"
+        then:
+          - python -c "from pendulum._pendulum import parse_iso8601"
+          - python -c "from pendulum._helpers import days_in_year"
+
+about:
+  homepage: https://github.com/dlt-hub/pendulum
+  repository: https://github.com/dlt-hub/pendulum
+  documentation: https://pendulum.eustace.io
+  summary: Python datetimes made easy
+  description: |
+    Pendulum is a Python library that simplifies datetime operations,
+    providing a cleaner API built on Python's standard datetime library.
+    This is a fork maintained by dlt-hub to support Python 3.9-3.13.
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dlt-pendulum
+  cfe-upstream-registry: github
+  cfe-upstream-name: github.com/dlt-hub/pendulum
+  cfe-purls:
+    - pkg:conda/dlt-pendulum@${{ version }}
+    - pkg:github/dlt-hub/pendulum@${{ version }}
+  cfe-upstream-repo: https://github.com/dlt-hub/pendulum
+  cfe-upstream-homepage: https://github.com/dlt-hub/pendulum
+  cfe-import-names: [pendulum]
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dlt-pendulum-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-28T00:00:00Z
+  cfe-generated-by-version: 8.61.1
+  cfe-generated-at-datetime: 2026-06-28T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-28T14:32:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # v1 migration of the deployed v0 dlt-pendulum-feedstock (meta.yaml).
+#    # Migration PR OPEN: conda-forge/dlt-pendulum-feedstock#5 (v1 recipe.yaml +
+#    # ARM osx-arm64/linux-aarch64, build 4, rerendered). updates-needed keeps
+#    # meta-yaml-to-recipe-yaml until that PR merges.
+#    # dlt-pendulum = dlt-hub/pendulum, a maintained fork of the `pendulum`
+#    # datetime library that keeps the compiled Rust/PyO3 extension building on
+#    # Python 3.9-3.13. Compiled (per-arch, per-Python) -- maturin + PyO3 from
+#    # the rust/ workspace; NOT noarch. The feedstock still ships meta.yaml, so
+#    # updates-needed carries meta-yaml-to-recipe-yaml.
+# source:
+#    # github-tag archive (tag == bare version `3.0.2`, no `v` prefix). The
+#    # dlt-hub fork is sourced from GitHub, not PyPI, because the build needs the
+#    # in-repo rust/ workspace. sha256 verified against the GitHub tarball.
+#    # 0001-remove-tzdata-dep-for-pip-check.patch drops the `tzdata>=2020.1`
+#    # pyproject dependency so `pip check` is clean -- the runtime tz data comes
+#    # from python-tzdata (run dep) instead, the correct conda-forge package.
+# build:
+#    # build.number 4 supersedes the deployed v0 feedstock's 3.0.2_3 (this is the
+#    # same-version v0->v1 migration: format change only, same package version).
+#    # build.sh / build.bat (renamed from bld.bat on v1 migration) are unchanged:
+#    # they bundle THIRDPARTY licenses via cargo-bundle-licenses and run
+#    # `maturin build` per platform (PENDULUM_EXTENSIONS=1), with the osx-arm64 /
+#    # osx-64 / linux-ppc64le cross-compile linker setup retained verbatim.
+# requirements:
+#  build:
+#    # go-cgo-style cross block: python / cross-python / crossenv / maturin are
+#    # added only when build_platform != target_platform (ARM emulation legs).
+#    # compiler('c') + stdlib('c') + compiler('rust') are load-bearing for the
+#    # PyO3 extension -- never drop.
+# tests:
+#    # python.imports + pip_check (== the v0 `pip check`). The extension-import
+#    # checks are guarded by python_impl == "cpython": the private _pendulum /
+#    # _helpers C-extension modules exist only on the cpython build, matching the
+#    # v0 `# [python_impl == 'cpython']` selector. cfe-import-names: [pendulum].
+# about:
+#    # platform review: feedstock currently ships the default compiled matrix.
+#    # The conda-forge.yml pre-seeds the full ARM block (osx-arm64 +
+#    # linux-aarch64); the build.sh already handles those legs.
+####

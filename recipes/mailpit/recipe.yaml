@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.30.2"
+  version: "1.30.3"
 
 package:
   name: mailpit
@@ -10,15 +10,15 @@ package:
 
 source:
   url: https://github.com/axllent/mailpit/archive/v${{ version }}.tar.gz
-  sha256: 239f044997dcb6ec27ed1b85b5ca3bba9d5996d66dad67014c3f4aa75549269b
+  sha256: 1e6a94e92b5e6ebbdaed7ec2dd280b7d200185697d723044c5a9fc239fcdb6d8
 
 build:
-  number: 0
+  number: 1
   script:
     - if: unix
       then: build.sh
     - if: win
-      then: bld.bat
+      then: build.bat
 
 requirements:
   build:
@@ -78,23 +78,25 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-06-28T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-06-28T15:19:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # WAVE-E C1: feedstock is v0 (meta.yaml). Kept the deployed meta.yaml
-#    # mirror at 1.30.2 (faithful, un-annotated) AND authored this v1
-#    # recipe.yaml; both coexist until the feedstock completes its v0->v1
-#    # switch. updates-needed carries meta-yaml-to-recipe-yaml.
+#    # v1 migration of the deployed v0 mailpit-feedstock (meta.yaml). The local
+#    # meta.yaml mirror was dropped -- recipe.yaml is now the single source.
+#    # Migration PR OPEN: conda-forge/mailpit-feedstock#20 (v1 recipe.yaml + ARM
+#    # osx-arm64/linux-aarch64, build 1, rerendered). updates-needed keeps
+#    # meta-yaml-to-recipe-yaml until that PR merges. Local bumped 1.30.2 -> 1.30.3
+#    # to match the feedstock (was stale by one patch).
 #    # mailpit = axllent/mailpit, a Go-source email/SMTP testing tool (NOT
 #    # Python). Builds from the GitHub tag: web UI via npm, two Go binaries
-#    # (mailpit + mailpit-sendmail) via build.sh/bld.bat.
+#    # (mailpit + mailpit-sendmail) via build.sh/build.bat.
 # source:
 #    # github-tag source (vX.Y.Z); upstream tag scheme matches the release
 #    # version exactly -- no gh-numbering anomaly. sha256 verified against the
@@ -103,8 +105,9 @@ extra:
 #  script:
 #    # go-cgo (NOT go-nocgo): mailpit stores messages in sqlite via
 #    # mattn/go-sqlite3, which requires CGO -> compiler('c') + stdlib('c')
-#    # are load-bearing, not boilerplate. build.sh/bld.bat are byte-identical
-#    # to the deployed feedstock scripts.
+#    # are load-bearing, not boilerplate. build.sh/build.bat carry the same
+#    # build logic as the deployed feedstock scripts (the feedstock's bld.bat is
+#    # renamed to build.bat here on the v1 migration).
 # requirements:
 #  build:
 #    # nodejs >=18 builds the embedded web UI; go-licenses vendors third-party
