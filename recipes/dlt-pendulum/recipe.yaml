@@ -89,8 +89,7 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dlt-pendulum-feedstock
-  cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-28T00:00:00Z
   cfe-generated-by-version: 8.61.1
@@ -102,10 +101,10 @@ extra:
 ####
 # CFE comments
 # Header:
-#    # v1 migration of the deployed v0 dlt-pendulum-feedstock (meta.yaml).
-#    # Migration PR OPEN: conda-forge/dlt-pendulum-feedstock#5 (v1 recipe.yaml +
-#    # ARM osx-arm64/linux-aarch64, build 4, rerendered). updates-needed keeps
-#    # meta-yaml-to-recipe-yaml until that PR merges.
+#    # v1 migration of the (formerly v0) dlt-pendulum-feedstock.
+#    # Migration PR MERGED: conda-forge/dlt-pendulum-feedstock#5 (v1 recipe.yaml +
+#    # ARM osx-arm64/linux-aarch64, build 4, rerendered) -- the feedstock is now
+#    # v1, updates-needed cleared.
 #    # dlt-pendulum = dlt-hub/pendulum, a maintained fork of the `pendulum`
 #    # datetime library that keeps the compiled Rust/PyO3 extension building on
 #    # Python 3.9-3.13. Compiled (per-arch, per-Python) -- maturin + PyO3 from
