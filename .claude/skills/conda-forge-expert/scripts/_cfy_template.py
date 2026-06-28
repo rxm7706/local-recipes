@@ -6,6 +6,16 @@ pre-seeds the feedstock so no post-merge bot/tooling/platform-expansion PR is
 needed (CFE gotcha G83). Used by ``recipe-generator.py`` (generation) and
 ``submit_pr.py`` (emit-if-missing at submission). Keep both call sites in sync
 by routing through this one renderer — do not hard-fork the content.
+
+**Comment convention (mirrors the recipe.yaml cfe block):** the top of the file
+carries only the trim one-line ``# conda-forge.yml — pre-seeds the feedstock``
+comment + the keys (this is what gets submitted to staged-recipes / pushed to a
+feedstock). The verbose rationale lives in a bottom ``#### CFE metadata AND
+comments`` block that is **local-recipes-only and STRIPPED before push** (same as
+recipe.yaml's ``#### CFE`` block — see G62). Keep the bottom comment free of the
+literal key names the generator tests assert-absent (``build_platform:``,
+``provider:``, ``run_deps_from_wheel``, ``workflow_settings``, ``error_overlinking``,
+``shellcheck``).
 """
 
 from __future__ import annotations
@@ -18,7 +28,7 @@ def render_conda_forge_yml(
     python_wheel: bool,
     feedstock: bool = False,
 ) -> str:
-    """Render the universal ``conda-forge.yml`` pre-seed.
+    """Render the universal ``conda-forge.yml`` pre-seed (trim top + bottom CFE block).
 
     Args:
         compiled: per-platform compiled recipe (maturin/PyO3, compiled-C/C++,
@@ -40,11 +50,9 @@ def render_conda_forge_yml(
     convenience-only / inert for these recipe shapes.
     """
     inspection = "update-grayskull" if noarch_python else "hint-all"
+    # --- Submitted portion: trim comment + keys -------------------------------
     lines = [
-        "# conda-forge.yml — pre-seeds the feedstock.",
-        "# These keys are INERT in the staged-recipes PR (build_all.py reads only",
-        "# conda_build_tool) and are forwarded into the feedstock on merge, so no",
-        "# post-merge bot/tooling/platform-expansion PR is needed (CFE gotcha G83).",
+        "# conda-forge.yml — pre-seeds the feedstock",
         "conda_build_tool: rattler-build",
         "conda_install_tool: pixi",
     ]
@@ -73,4 +81,24 @@ def render_conda_forge_yml(
             "  osx_arm64: azure",
             "test: native_and_emulated",
         ]
+    # --- Local-recipes-only detail: STRIPPED before push (G62) ----------------
+    # NB: keep this comment free of the literal key strings the generator tests
+    # assert-absent (build_platform:/provider:/run_deps_from_wheel/...).
+    lines += [
+        "",
+        "#### CFE metadata AND comments",
+        "# CFE comments",
+        "#    # Pre-seeds the feedstock (CFE skill default, G83): these keys are INERT",
+        "#    # in the staged-recipes PR (build_all.py reads only conda_build_tool) and",
+        "#    # are forwarded into the feedstock on merge, so no post-merge bot / tooling",
+        "#    # / platform-expansion PR is needed. The universal block (build tools + bot",
+        "#    # policy) applies to every recipe; COMPILED recipes also carry the ARM",
+        "#    # platform matrix above (trim it to the arches the recipe actually builds —",
+        "#    # drop any its `skip:` excludes; e.g. an osx-arm64-only recipe keeps just",
+        "#    # the osx_arm64 leg). This #### CFE block is local-recipes-only and is",
+        "#    # STRIPPED before push (same convention as recipe.yaml's cfe block, G62) —",
+        "#    # the submitted staged-recipes / feedstock file is just the trim top",
+        "#    # comment + the keys above.",
+        "####",
+    ]
     return "\n".join(lines) + "\n"
