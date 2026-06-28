@@ -175,6 +175,8 @@ conda-recipe-manager convert meta.yaml > recipe.yaml
 pixi exec feedrattler my-package-feedstock your-github-username
 ```
 
+**`feedrattler` operates on the REMOTE feedstock by name, not a local path** (G84). It clones `conda-forge/<name>-feedstock`, converts its `meta.yaml`, rerenders, and opens a fork PR. Passing a local `recipes/<name>/` directory (or calling the `migrate_to_v1` MCP tool on one) fails with a GitHub `404 Not Found` — there is no local-directory mode. To get a `recipe.yaml` next to a **local** `meta.yaml`, hand-author it (see Manual Conversion Steps below). The recommended feedstock-migration path keeps full control by hand-authoring on a fork branch + `conda-smithy rerender` locally (see [Feedstock Migration](#feedstock-migration)).
+
 ## Manual Conversion Steps
 
 ### Step 1: Add Schema Header
@@ -563,16 +565,23 @@ diff <(conda-render recipes/my-package-legacy) \
 
 ### Full Feedstock Conversion
 
-1. **Fork the feedstock**
-2. **Create branch**: `git checkout -b migrate-to-v1`
-3. **Convert recipe**: Use automated tools + manual review
-4. **Update conda-forge.yml**:
+1. **Verify the feedstock's CURRENT version first** (discipline #6 below — the local mirror can be stale → a silent downgrade).
+2. **Fork the feedstock**; clone the fork, then branch from the live upstream (not the possibly-stale fork HEAD):
+   ```bash
+   git remote add upstream https://github.com/conda-forge/<name>-feedstock.git
+   git fetch upstream && git checkout -b migrate-to-v1 upstream/main
+   ```
+3. **Convert recipe**: hand-author `recipe/recipe.yaml` (G84 — `feedrattler` is remote-only; for a controlled migration, hand-author). **Strip `cfe-*` keys + `#### CFE` blocks** if you mirror from a local-recipes recipe. Remove `recipe/meta.yaml`.
+4. **Update conda-forge.yml** — merge the universal keys into the feedstock's **existing** root file; **drop `conda_build.error_overlinking`** (no-op on rattler-build):
    ```yaml
    conda_build_tool: rattler-build
+   conda_install_tool: pixi
+   # + bot policy; + the ARM block (build_platform/provider/test) for compiled recipes
    ```
-5. **Rerender**: `conda-smithy rerender`
-6. **Test locally**: `python build-locally.py`
-7. **Submit PR**
+5. **Bump `build.number`** to supersede the feedstock's current artifact (discipline #2).
+6. **Rerender**: `conda-smithy rerender --feedstock_directory <fork> -c auto` — regenerates the v1 CI (`pixi.toml` + rattler-build `.ci_support`, incl. any new ARM legs). Done against current pinning, no separate `@conda-forge-admin rerender` is needed.
+7. **Test locally** (the recipe, before the fork push): `rattler-build build` native + `rattler-build test --package-file <pkg>.conda`.
+8. **Submit PR** (worked example: conda-forge/mailpit-feedstock#20 + conda-forge/dlt-pendulum-feedstock#5, 2026-06-28).
 
 ### Partial Migration (Hybrid)
 
@@ -580,7 +589,7 @@ Not recommended. Choose one format per feedstock.
 
 ## Migration Discipline
 
-Five points learned the hard way from feedstock v0→v1 migrations. Each one carries an empirical case to show why the discipline is required, not optional.
+Six points learned the hard way from feedstock v0→v1 migrations. Each one carries an empirical case to show why the discipline is required, not optional.
 
 ### 1. `package.name:` MUST match the feedstock identity, not the local folder name
 
@@ -688,6 +697,23 @@ The trade-off: the v1 selector form (`if: match(python, "<3.11") then: typing_ex
 **Case**: python-confluent-kafka v0→v1 migration (Jun 14, 2026). Original v0 meta.yaml had `test.imports: [confluent_kafka]` only — no `pip check`. v1 migration added `pip_check: true` per CFEP-25 canonical pattern; local rattler-build immediately failed on `confluent-kafka 2.14.2 requires typing-extensions, which is not installed`. Upstream's `requirements/requirements.txt` had been declaring `typing-extensions ; python_version < "3.11"` since v2.x.x; the v0 recipe had simply never caught it because pip-check was off. Added `typing_extensions` to `run:` unconditionally; subsequent build green across py310/311/312/313.
 
 This is *expected* during v0→v1 migrations of older feedstocks. Plan for it; don't be surprised by it.
+
+### 6. Verify the feedstock's CURRENT version before pushing — the local mirror can be stale (a silent downgrade)
+
+The local-recipes mirror is captured at some point in time, but the deployed feedstock keeps moving (autotick version bumps, rebuilds). The mirror's version can therefore **lag** the feedstock. Pushing a migration built from the stale mirror **downgrades** the feedstock — a hard review failure (and a real regression if it merges).
+
+**Verify before pushing** (parallel to discipline #1's name check):
+
+```bash
+# Feedstock's live version + build number
+gh api repos/conda-forge/<name>-feedstock/contents/recipe/meta.yaml --jq .content | base64 -d | grep -E "set version|number:"
+# Latest upstream (so you don't migrate at a version already superseded upstream)
+gh api repos/<org>/<repo>/releases/latest --jq .tag_name
+```
+
+Match the feedstock's current version (and the latest upstream, when the feedstock is up to date) — never push a lower version. If the mirror is behind, **bump it first** (new version + sha + a local rebuild) before assembling the migration.
+
+**Case**: `mailpit` v0→v1 migration (Jun 28, 2026). Local mirror was `1.30.2`; the deployed feedstock had already advanced to `1.30.3` (= latest upstream). Pushing the mirror as-is would have downgraded the feedstock. Bumped the local recipe to `1.30.3` (new sha256, rebuilt + re-tested green on linux-64), `build.number 0 → 1`, then migrated. Sibling concern in `dlt-pendulum` (same version `3.0.2`, but feedstock at `build 3` → migration shipped `build 4`). See SKILL.md G87.
 
 ## Resources
 
