@@ -7,7 +7,7 @@ spec_updated: 2026-06-27
 # Tech Spec: DB-GPT on conda-forge
 
 > **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —
-> bounded scope, packaging effort, 13 implementation stories spanning 8
+> bounded scope, packaging effort, 13 implementation stories spanning 6
 > staged-recipes PRs).
 > Run BMAD with this file as the intent document:
 >
@@ -26,7 +26,7 @@ spec_updated: 2026-06-27
 | Track        | BMAD Quick Flow (tech-spec only, no PRD/architecture phase)                                                                                                                             |
 | Upstream     | `eosphoros-ai/DB-GPT` v0.8.0 (released 2026-03-27, MIT license)                                                                                                                       |
 | Target       | `conda-forge/staged-recipes` — 7 outputs in a single multi-output recipe, plus 7 prerequisite recipes — 2 already on conda-forge (`abstract-singleton`, `lyric-task`), **5 to build** (1 trivial pure-Python, 3 itkwasm-pattern noarch, 1 cocoindex-class Rust+PyO3) |
-| Distribution | conda-forge (linux-64, osx-64, osx-arm64, win-64) —`noarch: python` for all outputs                                                                                                  |
+| Distribution | conda-forge, all outputs `noarch: python`. ⚠ **dbgpt-app is uninstallable on osx-arm64/linux-aarch64 until `lyric-py` is platform-expanded — see § Readiness → C1**                                                                                                  |
 | Lifetime     | Long-running — feedstocks become autotick-maintained after first PR lands                                                                                                              |
 
 ---
@@ -60,7 +60,7 @@ resolves and db-gpt can be submitted (as a cfe-stripped draft — G62).
 - **pdfminer.six / dbgpt-app `pip_check` (G76).** The original plan disabled `pip_check` on
   the `dbgpt-app` output to dodge conda-forge's pdfminer.six dist-info `Version: 0.0.0` bug
   (pdfplumber pins `pdfminer.six==<exact>`, so `pip check` saw `0.0.0` ≠ the pin). The
-  langflow effort established **G76**: staged-recipes runs `pip check` for **every** output
+  langflow effort established (recorded under **G76**): staged-recipes runs `pip check` for **every** output
   **regardless of the recipe's `pip_check:` setting** — so the waiver would not have survived
   CI. Re-checked live (2026-06-27): the pdfminer.six-feedstock **rebuilt to `number: 1`**,
   and build `_1` now reports `Version: 20260107` correctly (the feedstock's own test asserts
@@ -89,9 +89,61 @@ fields + `cfe-local-build-*: success` populated:
 | `lyric-py-worker` | ✅ success | pending-approval | #33766 |
 | `db-gpt` (7 outputs) | ✅ success | blocked-pending-prereqs | dbgpt-app `pip_check` re-enabled — passes against fixed pdfminer.six `20260107` |
 
+### C1 — `lyric-py` ARM platform gap (🔴 MUST fix before db-gpt submission)
+
+**Defect (adversarial review, 2026-06-27).** `dbgpt-app` is `noarch: python` and
+hard-requires `lyric-py >=0.1.7` **unconditionally**, but `lyric-py` is a **compiled,
+per-platform** package that currently ships on **only linux-64 / osx-64 / win-64**
+(verified live per-subdir: **0 builds on osx-arm64, 0 on linux-aarch64**). A noarch
+artifact bakes its `depends` at build time, so on **Apple Silicon (osx-arm64)** and **ARM
+Linux (linux-aarch64)** the `dbgpt-app` solve fails (*nothing provides lyric-py*). It ships
+**silently**: staged-recipes CI runs only linux-64/osx-64/win-64 (no ARM legs), where
+lyric-py is present, so the db-gpt PR goes green while the artifact is broken on ARM. This
+makes the § Status Distribution line ("osx-arm64") and AC-4 ("install **any** package")
+false on those two subdirs.
+
+**Root cause.** Not a build failure — the merged `lyric-py-feedstock` `.ci_support` never
+enabled `osx_arm64` + `linux_aarch64` (only the 3 staged-recipes subdirs). The local recipe
+is already cross-compile-ready (`cross-python_${{ target_platform }}`, no platform skip).
+
+**Feasibility — VERIFIED (2026-06-27).** A local **linux-aarch64 cross-build of `lyric-py`
+succeeded**: the wasmtime v26 crate cross-compiled in ~3.5 min and produced `.conda` for
+py3.10–3.13. osx-arm64 uses the same Rust cross-compile path, so the wasmtime-under-ARM-sysroot
+risk flagged in S4 is retired — lyric-py is genuinely ARM-buildable.
+
+**Resolution — platform-expand `lyric-py`** (preserves B-full `[code]` parity, the Q1 choice).
+**OPENED 2026-06-27: conda-forge/lyric-py-feedstock [#2](https://github.com/conda-forge/lyric-py-feedstock/pull/2)** (draft
++ rerender requested) — adds `osx_arm64` + `linux_aarch64` via a `provider:` block. Once it
+merges + the new subdirs land on the channel at every Python the recipe tests, this gate
+clears. **It is a hard gate on db-gpt submission** (effectively a 6th prerequisite, alongside
+#33765/#33766). The db-gpt recipe itself needs no change.
+
+- *Fallback if osx-arm64 can't be built on CI:* make `lyric-py` **optional** — strip it from
+  `dbgpt-app`'s wheel `[project.dependencies]` (patch) + move to `run_constraints` (the
+  langflow **G76** lean pattern). dbgpt-app stays installable everywhere; `[code]` degrades
+  where lyric-py is absent. Caveat: `run_constraints` doesn't auto-install lyric-py *on any*
+  platform, so this trades full `[code]` parity for universal installability — only if
+  platform-expand fails.
+- *Last resort:* `B-six-plus-app-patched` (drop `[code]`) **and correct** the Distribution +
+  AC-4 claims.
+
+You **cannot** platform-exclude a hard dep on one noarch artifact (G76) — "just skip ARM for
+dbgpt-app" is not an option.
+
 ---
 
-## Submission Status (2026-06-17)
+## Submission Status (2026-06-17) — ⚠ SUPERSEDED
+
+> **Historical record only — for current state see § Readiness (live: 2026-06-27) above.**
+> This section reflects the 2026-06-17 submission and is **not current**:
+> 3 of the 5 prereq PRs have since **MERGED** (#33764/#33767/#33768; only #33765/#33766
+> remain open); `dbgpt-app` `pip_check` was **re-enabled** (pdfminer.six fixed in build `_1`);
+> the pin-loosening is implemented via **source patches** (`0001`/`0002`, G59), **not** the
+> build-time `sed` described below; and the rerun closeout retro is **CFE v8.57.0 / G80**
+> (the v8.28.0 retro below covers only the original 2026-06-17 effort). Q2 (= keep all caps)
+> and Q3 (= `db-gpt-feedstock`) are **resolved** (see § Open Questions). Counts below ("5
+> prereq PRs", "6 recipes") describe the original plan; the actionable remainder is now just
+> the db-gpt submission once #33765 + #33766 land on the channel.
 
 All 6 recipes authored via `bmad-quick-dev`, built green on linux-64, and committed to
 `rxm7706/local-recipes` `main` (`8b6bb2791a` recipes, `a361f6d555` CFE-skill retro,
@@ -179,7 +231,7 @@ staged-recipes PR. Without packaging:
   | Package                            | Build dependency                             | conda-forge status                                                                                                                      |
   | ---------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
   | `lyric-task`                     | pure Python                                  | trivial — already pip-installable                                                                                                      |
-  | `lyric-py`                       | maturin + protoc                             | feasible —`protobuf` 7.35.1 on conda-forge                                                                                             |
+  | `lyric-py`                       | maturin + protoc                             | feasible — `libprotobuf` provides protoc on conda-forge                                                                                             |
   | `lyric-py-worker`                | `componentize-py` + `wasm-tools`         | both**NOT on conda-forge**                                                                                                        |
   | `lyric-js-worker`                | `nodejs` + `@bytecodealliance/jco` (npm) | jco**NOT on conda-forge**                                                                                                         |
   | `lyric-component-ts-transpiling` | `cargo build --target wasm32-wasip1`       | `rust-std-wasm32-wasip1` **NOT on conda-forge** (only `wasm32-unknown-unknown` and `wasm32-unknown-emscripten` are shipped) |
@@ -219,7 +271,9 @@ WASM support announcement); `https://github.com/pyodide/pyodide/issues/795`
 (closed, 2020 — Pyodide on conda-forge integration ruled out, leading
 to the parallel `emscripten-forge` distribution).
 
-**Runtimes and bindings on conda-forge already (✓):**
+**Runtimes and bindings on conda-forge already (✓):** *(versions below are a 2026-06-17
+snapshot — several have since advanced, e.g. `python-wasmer` 1.2.0, `wasm-pack` 0.15.0,
+`pyodide-build` 0.35.1; the on-cf / not-on-cf status is what's load-bearing, not the exact versions.)*
 
 | Package                                                | Version | Origin            | Purpose                                                                                                                                                                           |
 | ------------------------------------------------------ | ------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -333,7 +387,7 @@ already ship.
   recipe must use v1 names (`homepage`, `repository`, `documentation`).
 - **Existing canonical recipe patterns** in the skill's
   `templates/multi-output/lib-python-recipe.yaml` — directly applicable
-  to the DB-GPT 6/7-output recipe.
+  to the DB-GPT 7-output recipe.
 
 ---
 
@@ -403,13 +457,23 @@ without further effort from this spec:
   output we shipped.
 - The `dbgpt-acc-flash-attn` accelerator (NG1) gets a future feedstock
   attempt only when CUDA infrastructure on conda-forge stabilizes —
-  tracked in `_bmad-output/projects/local-recipes/ implementation-artifacts/deferred-work.md`.
+  tracked in `_bmad-output/projects/local-recipes/implementation-artifacts/deferred-work.md`.
 
 ---
 
 ## User Stories
 
 Q1 is resolved (**B-full** — see § "Open Questions"). 13 stories total.
+
+> **▶ STATUS (live 2026-06-27): S1–S11 are DONE.** All recipes are authored + built green
+> locally; S1/S3 (`abstract-singleton`, `lyric-task`) already shipped; the S2/S4–S7 prereq
+> PRs are filed (#33764/#33767/#33768 merged, #33765/#33766 open); S8–S11 are complete in
+> `recipes/db-gpt/`. **The per-story "Blocked by … entering review queue" lines below are
+> HISTORICAL** — several name S1/S3 PRs that never existed (those recipes already ship). The
+> only remaining work is **S12 (submit db-gpt)**, gated on (a) #33765 + #33766 **merging and
+> landing on the channel** (not merely queued — G66), and (b) the **C1 `lyric-py`
+> platform-expansion**. See § Readiness.
+
 Post-audit (2026-06-17): S1 + S3 are already satisfied —
 `abstract-singleton` (1.0.1) and `lyric-task` (0.1.7) already ship on
 conda-forge — so the actionable work is **5 prerequisite recipes**
@@ -544,11 +608,13 @@ maturin.
   published tarball omits it), whereas the `v0.1.7` archive ships the
   MIT `LICENSE` at the root.
 - Build deps: `${{ compiler('rust') }}`, `${{ compiler('c') }}`,
-  `${{ stdlib('c') }}`, `maturin`, `protobuf` (provides protoc 28+),
-  `pkg-config`.
+  `${{ stdlib('c') }}`, `libprotobuf` (provides `protoc`; conda-forge's
+  Python `protobuf` package ships **no** protoc binary — see § Submission
+  Status S4 protoc note), `cargo-bundle-licenses`, `pkg-config`.
+  **`maturin` is a host dep, not a build dep.**
 - Host deps: `python`, `pip`, `maturin`.
 - Run deps: `python >=3.10`, `msgpack-python`, `cloudpickle`,
-  `${{ pin_compatible('lyric-task', max_pin='x.x') }}`.
+  `lyric-task >=0.1.7`.
 - Per-platform build (NOT noarch) — wheel ships compiled extension
   `lyric/_py_lyric.so`.
 - Build matrix: linux-64, linux-aarch64, osx-64, osx-arm64, win-64.
@@ -590,7 +656,7 @@ pip-installs the upstream PyPI sdist (which contains the pre-built
 - Source from PyPI sdist (`lyric_py_worker-0.1.7.tar.gz`, ~10.8 MB —
   contains pre-built `src/lyric_py_worker/python_worker.wasm`, ~28 MB
   uncompressed; accepted per itkwasm precedent).
-- Run-deps: `${{ pin_compatible('lyric-task', max_pin='x.x') }}` only.
+- Run-deps: `lyric-task >=0.1.7` only.
   Upstream's `pyproject.toml` declares **`lyric-task`** as the sole
   runtime dep — **not** `lyric-py` and **not** `wasmtime-py`. The WASI
   engine that executes the blob is supplied by `lyric-py` (its embedded
@@ -599,7 +665,7 @@ pip-installs the upstream PyPI sdist (which contains the pre-built
   `importlib.resources`. Adding undeclared deps would violate the
   mirror-upstream convention and is unnecessary.
 - License: MIT, but the PyPI sdist ships **no** LICENSE file — vendor
-  the MIT text from the GitHub `v0.1.7` tag (G4 pattern) or ship
+  the MIT text from the GitHub `v0.1.7` tag (CFE gotcha G4 — license-vendoring; not Goal G4) or ship
   LICENSE in-recipe. PyPI `license` metadata is empty.
 - Tests: `import lyric_py_worker`; verify the `.wasm` file exists
   inside the installed package directory; do not invoke the worker
@@ -630,7 +696,7 @@ JS-targeted `.wasm` (3.5 MB).
 - Source from PyPI sdist (`lyric_js_worker-0.1.7.tar.gz`, ~3.5 MB —
   contains `src/lyric_js_worker/javascript_worker.wasm`, ~10.3 MB
   uncompressed).
-- Run-deps: `${{ pin_compatible('lyric-task', max_pin='x.x') }}` only
+- Run-deps: `lyric-task >=0.1.7` only
   (same rationale as S5 — `lyric-py`/`wasmtime-py` are NOT upstream-
   declared deps).
 - Same license (MIT, vendor from GitHub `v0.1.7` — sdist omits
@@ -658,7 +724,7 @@ recipe (1.8 MB sdist; smallest of the three itkwasm-pattern workers).
 - **`requires-python` is `>=3.10`** for this package (a higher floor
   than the `>=3.8` of the other lyric-* members; 3.10 is the
   conda-forge floor anyway, so no `context:` override is needed).
-- Run-deps: `${{ pin_compatible('lyric-task', max_pin='x.x') }}` only
+- Run-deps: `lyric-task >=0.1.7` only
   (same rationale as S5).
 - Same license (MIT, vendor from GitHub `v0.1.7` — sdist omits
   LICENSE), test, and PR-body pattern as S5.
@@ -718,7 +784,8 @@ v0.8.0 `pyproject.toml` files, 2026-06-17.
   `dbgpt-core[client,cli]` deps** (`httpx`, `fastapi >=0.100.0,<0.113.0`,
   `tenacity <=8.3.0`, `prettytable`, `click`, `psutil`, `colorama`,
   `tomlkit`, `rich`) + `shortuuid`, `sqlalchemy >=2.0.25,<2.0.29`,
-  `msgpack-python`, `cloudpickle`.
+  `msgpack-python`, `cloudpickle`, `beautifulsoup4` (under-declared hard
+  import via `dbgpt_ext.rag`, G27).
 - `dbgpt-serve` run-deps: `${{ pin_subpackage('dbgpt-ext', exact=True) }}`
   (which transitively pins `dbgpt`). serve has no other declared deps.
 - `dbgpt-acc-auto` run-deps: empty (upstream `dependencies = []`).
@@ -731,7 +798,7 @@ v0.8.0 `pyproject.toml` files, 2026-06-17.
   activates** — `dbgpt[client,cli,agent,simple_framework,framework,
   code,proxy_openai,proxy_tongyi,proxy_zhipuai]` + `dbgpt-ext[rag,
   storage_chromadb]` + direct `aiofiles`, `httpx >=0.24.0`,
-  `pyparsing`. That union is **68 external deps** (Technical Approach
+  `pyparsing`. That union is **69 external deps** (Technical Approach
   § "dbgpt-app flattened run-deps"), and notably includes
   `auto-gpt-plugin-template` (S2), the lyric-* stack (S4–S7),
   `socksio` (the conda dep behind `httpx[socks]`), `chromadb`,
@@ -816,9 +883,17 @@ multi-output recipe and submit the PR.
 
 **Wave**: 4 (final story).
 
-**Blocked by**: S1, S2, S3, S4, S5, S6, S7 PRs entering
-`staged-recipes` review queue (do not need to fully merge first;
-reviewers can sequence cross-PR).
+**Blocked by** (corrected — H4/G66): db-gpt's CI test-env needs its prereqs **merged AND
+live on the conda-forge channel**, not merely "in the review queue." Live gate (2026-06-27):
+#33765 (`auto-gpt-plugin-template`) + #33766 (`lyric-py-worker`) must merge + land on the
+channel; the other prereqs already ship. **PLUS** the **C1 `lyric-py` platform-expansion**
+(osx-arm64 + linux-aarch64) must land, or db-gpt ships broken on ARM.
+
+**Submission checklist (G62–G65):** strip every `extra.cfe-*` key + the `#### CFE` block
+(G62); branch `add-recipe-db-gpt` on `rxm7706/staged-recipes` off conda-forge main; replace
+the PR template with a completed-checklist body (G63); run the CI-parity lint via `pixi exec`
+with the current conda-smithy (G65); after green, **one** language-team ping (G64); PR body
+cross-references #33765/#33766.
 
 **Fallback (if S5/S6/S7 are rejected)**: Switch DB-GPT to
 `B-six-plus-app-patched` — add a recipe-side patch that strips the
@@ -870,7 +945,10 @@ never the v0 names `home`, `dev_url`, `doc_url`. This enforces the
 ### FR-5: `python_min` floor is `3.10`
 
 Matches every member's `requires-python = ">= 3.10"`. No override in
-`context:` because `conda-forge-pinning` provides the default.
+`context:` because `conda-forge-pinning` provides the default. Verified 2026-06-27: the
+compiled transitive deps (`chromadb`/`spacy`/`onnxruntime`) ship py3.10 on osx-arm64, so the
+floor holds across subdirs — no raise needed (the `onnxruntime` cap × py3.10 intersection is
+the Q2/C1 re-verify item).
 
 ### FR-6: Internal cross-deps use `pin_subpackage(exact=True)`
 
@@ -885,18 +963,24 @@ outputs that are conceptually one workspace.
 level. No per-output license overrides — every output is MIT and they
 all share the root file.
 
-### FR-8: No upstream patches in the happy path
+### FR-8: Two pin-loosening patches in the happy path; a code-extra patch only on fallback
 
-The `B-full` happy path ships **no** patches against upstream
-`dbgpt-app/pyproject.toml`. All extras (`code`, `agent`, etc.) resolve
-because every transitive dep lands on conda-forge (S1–S7).
+The `B-full` happy path ships **two** source patches that loosen upstream's
+exact (`==`) pins so the wheel METADATA matches the loosened conda run-deps
+and `pip_check` passes (G26 + G59 — patch, not in-build `sed`):
 
-A patches/ directory is only authored if S5/S6/S7 are rejected during
-review (S12 fallback) — in that case, exactly one patch ships under
-`recipes/db-gpt/patches/0001-drop-code-extra-from-dbgpt-app.patch`,
-the minimal diff that removes the `code` extra reference from
-`dbgpt-app`. Authoring this patch is *contingent*; it is not part of
-S8–S11.
+- `recipes/db-gpt/patches/0001-loosen-dbgpt-core-pins.patch` (dbgpt-core pyproject)
+- `recipes/db-gpt/patches/0002-loosen-dbgpt-ext-pins.patch` (dbgpt-ext pyproject)
+
+Both are top-level `source.patches`, applied once to the shared source tree.
+
+The happy path ships **no** patch against `dbgpt-app/pyproject.toml` — all
+extras (`code`, `agent`, …) resolve because every transitive dep lands on
+conda-forge (S2/S4–S7 + the two already-shipping prereqs). A code-extra patch
+is authored **only** if S5/S6/S7 are rejected during review (S12 fallback): a
+single `recipes/db-gpt/patches/0003-drop-code-extra-from-dbgpt-app.patch`
+removing the `code` extra reference from `dbgpt-app`. That one is *contingent*;
+it is not part of S8–S11.
 
 ---
 
@@ -918,8 +1002,10 @@ S8–S11.
 recipes/
   db-gpt/
     recipe.yaml              # the 7-output multi-output recipe
-    patches/                 # only authored if S12 fallback fires
-      0001-drop-code-extra-from-dbgpt-app.patch
+    patches/
+      0001-loosen-dbgpt-core-pins.patch          # happy path (G59 pin-loosening)
+      0002-loosen-dbgpt-ext-pins.patch           # happy path (G59 pin-loosening)
+      0003-drop-code-extra-from-dbgpt-app.patch  # ONLY if S12 fallback fires
   abstract-singleton/
     recipe.yaml
   auto-gpt-plugin-template/
@@ -965,11 +1051,46 @@ dbgpt-app ── pin_subpackage(exact=True) on all six siblings:
                 arrives transitively via lyric-py.
 ```
 
+### dbgpt-app flattened run-deps
+
+This is the authoritative flattened union S9 references. `dbgpt-app` activates
+`dbgpt[client,cli,agent,simple_framework,framework,code,proxy_openai,proxy_tongyi,proxy_zhipuai]`
++ `dbgpt-ext[rag,storage_chromadb]`; conda has no extras, so the output carries that
+union directly. The **literal source of truth** is the `dbgpt-app` output's `run:`
+block in `recipes/db-gpt/recipe.yaml` — **69 external deps** plus the 6
+`pin_subpackage(exact=True)` siblings (`dbgpt`, `dbgpt-ext`, `dbgpt-serve`,
+`dbgpt-client`, `dbgpt-sandbox`, `dbgpt-acc-auto`).
+
+The 69 external deps (✱ = landed by a prerequisite story; ⚑ = upper-bound cap kept, Q2):
+
+> aiofiles, httpx, pyparsing, aiohttp, chardet, importlib_resources, cachetools,
+> pydantic, typeguard, snowflake-id, typing_inspect, tomli, fastapi⚑, tenacity⚑,
+> prettytable, click, psutil, colorama, tomlkit, rich, termcolor, pandas, numpy⚑,
+> auto-gpt-plugin-template✱, mcp, jinja2, uvicorn, shortuuid, sqlalchemy⚑,
+> msgpack-python, cloudpickle, pympler, python-duckdb, duckdb-engine, schedule, sqlparse,
+> python-multipart, coloredlogs, seaborn, gtts, pymysql, jsonschema, python-jsonpath,
+> tokenizers, alembic, openpyxl, xlrd, gitpython, python-graphviz, cryptography, pyzmq,
+> lyric-py✱, lyric-py-worker✱, lyric-js-worker✱, lyric-component-ts-transpiling✱,
+> openai, tiktoken, socksio, dashscope, spacy, markdown, beautifulsoup4, python-pptx,
+> python-docx, olefile, pypdf, pdfplumber, onnxruntime⚑, chromadb.
+
+The 5 ✱ deps are landed by S2/S4–S7 (`auto-gpt-plugin-template` + `lyric-py` + the 3
+workers); `lyric-task` arrives transitively via `lyric-py`. The remaining 64 are on
+conda-forge (§ Dependencies and Constraints → "External dependencies that must already
+exist"). `python-duckdb` is the conda name for the `duckdb` PyPI binding (bare `duckdb` is
+the CLI/old, linux-64+noarch only — G10/M4). `beautifulsoup4` is an under-declared hard import surfaced via `dbgpt_ext.rag`
+(G27). **`lyric-py` carries the osx-arm64/linux-aarch64 caveat — see § Readiness → C1.**
+
 ### Build matrix
 
-`noarch: python` collapses the matrix to one job (`linux-64`). Native
-host build (step 7a in the skill's autonomous loop) is sufficient; no
-Docker / CI-parity build needed because there are no native artifacts.
+`noarch: python` collapses the *build* matrix to one job (`linux-64`) — there are no
+native artifacts to compile. **But a noarch output must still SOLVE on every platform**,
+and `dbgpt-app` pulls compiled transitive deps (`lyric-py`, `onnxruntime`, `chromadb`,
+`spacy`, `tokenizers`, `pyzmq`, `cryptography`, `numpy`, `pandas`). Before submission, run
+the per-subdir check (G40): confirm every compiled transitive dep ships a build at the
+recipe's `python_min` on linux-64 / osx-64 / **osx-arm64** / win-64 / **linux-aarch64**.
+The earlier "native linux-64 build is sufficient" claim was the **C1** root cause — it
+caught nothing because the gap is in the *solve*, not the *build*.
 
 ### Pin-loosening reference
 
@@ -992,10 +1113,10 @@ is the proposed value subject to `check_dependencies` confirmation.
 | `sqlparse==0.4.4`             | `sqlparse >=0.4.4`             |                                                              |
 | `spacy==3.7`                  | `spacy >=3.7`                  | from dbgpt-ext[rag]                                          |
 | `tenacity<=8.3.0`             | `tenacity >=8.0,<9`            | from dbgpt-core[client]; upper bound retained (Q2)          |
-| `fastapi>=0.100.0,<0.113.0`   | `fastapi >=0.100.0,<1`         | drop 0.113 cap (likely stale); re-evaluate (Q2)             |
+| `fastapi>=0.100.0,<0.113.0`   | `fastapi >=0.100.0,<0.113.0`   | cap KEPT (Q2 resolved: keep all); matches the recipe        |
 | `numpy>=1.21.0,<2.0.0`        | `numpy >=1.21,<2`             | keep <2 cap + TODO (Q2; upstream code targets NumPy 1)      |
 | `sqlalchemy>=2.0.25,<2.0.29`  | `sqlalchemy >=2.0.25,<2.0.30`  | upstream cap (simple_framework); keep, narrow (Q2)          |
-| `onnxruntime>=1.14.1,<=1.18.1`| `onnxruntime >=1.14.1`         | dbgpt-ext[storage_chromadb]; drop cap? re-evaluate (Q2)     |
+| `onnxruntime>=1.14.1,<=1.18.1`| `onnxruntime >=1.14.1,<=1.18.1`| cap KEPT (Q2 resolved); chromadb-compat — re-verify at S10  |
 
 The capped rows are "audit during S10" — drop a cap only if upstream
 runs CI against the newer major (NumPy 2 / ONNX 1.20+ / SQLAlchemy
@@ -1016,7 +1137,7 @@ follows. **Do not confuse them.**
 | `dbgpt-serve`                          | `dbgpt-serve`    | `packages/dbgpt-serve`                      | `src/dbgpt_serve`    |
 | `dbgpt-acc-auto`                       | `dbgpt-acc-auto` | `packages/dbgpt-accelerator/dbgpt-acc-auto` | `src/dbgpt_acc_auto` |
 | `dbgpt-sandbox`                        | `dbgpt-sandbox`  | `packages/dbgpt-sandbox`                    | `src/dbgpt_sandbox`  |
-| `dbgpt-app` *(Q1)*                   | `dbgpt-app`      | `packages/dbgpt-app`                        | `src/dbgpt_app`      |
+| `dbgpt-app`                          | `dbgpt-app`      | `packages/dbgpt-app`                        | `src/dbgpt_app`      |
 
 Note the asymmetry: PyPI's `dbgpt` lives under `packages/dbgpt-core/`
 in the source tree.
@@ -1037,16 +1158,19 @@ base) and is **not** one of the 7 outputs. Only `dbgpt-acc-auto` ships.
   DB-GPT multi-output recipe (S12). **S1 (`abstract-singleton`) and S3
   (`lyric-task`) need no PR — they already ship on conda-forge.** Each
   PR addresses every bot-lint, conda-smithy-lint, and reviewer comment.
-- **AC-2.** All 7 DB-GPT outputs build green on at least `linux-64`
-  in conda-forge CI. All 5 prerequisite recipes built by this effort
-  likewise build green (lyric-py builds on every platform in its
-  matrix; the others are noarch and need only one job). The 2
-  already-shipping prereqs (abstract-singleton, lyric-task) need no
-  rebuild.
+- **AC-2.** All 7 DB-GPT outputs build green on `linux-64`/`osx-64`/`win-64` in
+  conda-forge CI, **and the noarch outputs SOLVE on osx-arm64 + linux-aarch64** (the
+  per-subdir G40 check — see § Build matrix). `lyric-py` (the only compiled prereq) must
+  ship on **all four+ target subdirs**; it currently ships only on linux-64/osx-64/win-64,
+  so **osx-arm64 + linux-aarch64 require the C1 platform-expansion before `dbgpt-app` is
+  installable there**. The other prereqs are noarch (one job each); abstract-singleton +
+  lyric-task already ship.
 - **AC-3.** `pip check` passes for every output's test stage and for
   every prerequisite recipe's test stage.
 - **AC-4.** A user on a fresh pixi env can install **any** included
-  package by name and import its primary module:
+  package by name and import its primary module (**on osx-arm64/linux-aarch64 this holds
+  only after the C1 `lyric-py` platform-expansion — until then `dbgpt-app` does not install
+  there**):
   - `pixi add dbgpt && pixi run python -c "import dbgpt"`
   - …and same for `dbgpt-client`, `dbgpt-ext`, `dbgpt-serve`,
     `dbgpt-acc-auto`, `dbgpt-sandbox`, `dbgpt-app`.
@@ -1131,7 +1255,15 @@ The story set, FRs, technical approach, and acceptance criteria have
 been updated to cover the prerequisite recipes (see Stories S1–S7; S1
 and S3 already ship on conda-forge, leaving 5 to build).
 
-### Q2 (audit during S10) — Upper-bound caps
+### Q2 (RESOLVED) — Upper-bound caps
+
+**Decision: keep all 5 caps** (resolved 2026-06-17 — the recipe and the
+pin-loosening table both reflect this). Conservative default: caps can block some
+conda-forge global migrations (notably NumPy 2); revisit per-dep only when upstream
+CI proves the newer major, keeping a TODO until then. **Risk to re-verify at S10
+(gaps review M3/M4):** confirm `onnxruntime <=1.18.1` and `numpy <2.0.0` still
+*solve* against the (unbounded) `chromadb`/`spacy`/`tokenizers` builds on every
+target subdir + python — a kept cap that's unsatisfiable is worse than a dropped one.
 
 Five of the loosened pins (`tenacity<=8.3.0`, `fastapi<0.113.0`,
 `numpy<2.0.0`, `sqlalchemy<2.0.29`, `onnxruntime<=1.18.1`) carry
@@ -1141,14 +1273,14 @@ migration) or drop the cap (riskier, but matches conda-forge's general
 "trust semver" stance). Default if unsure: **keep the cap with a
 TODO**.
 
-### Q3 (genuinely open) — `feedstock-name`
+### Q3 (RESOLVED) — `feedstock-name`
 
 Should the conda-forge feedstock be `db-gpt-feedstock` (matches the
 upstream repo name and PR title casing) or `dbgpt-feedstock` (matches
 the canonical PyPI name and the multi-output package names)? PyPI
 metadata canonicalizes to `dbgpt`; the upstream repo name is `DB-GPT`.
 
-**Default**: `db-gpt-feedstock` — preserves the upstream repo name,
+**Decision (resolved): `db-gpt-feedstock`** — preserves the upstream repo name,
 which is also what most users will search for. The conda packages
 themselves are named `dbgpt`, `dbgpt-client`, etc., independent of the
 feedstock slug.
@@ -1217,7 +1349,9 @@ The Bytecode Alliance toolchain stays out of this spec's scope (NG3).
 
 ### Upstream constraints
 
-- DB-GPT v0.8.0 is the chosen baseline. Tag-based source URL.
+- DB-GPT v0.8.0 is the chosen baseline. Tag-based source URL. (v0.8.1 shipped
+  2026-06-18; this effort deliberately targets v0.8.0 — autotick-bot bumps the
+  feedstock post-merge.)
 - The repo's root `LICENSE` is MIT (verified). Sub-packages declare
   `license = "MIT"` in their pyproject.toml; no per-package LICENSE
   files (verified).
@@ -1232,7 +1366,7 @@ The Bytecode Alliance toolchain stays out of this spec's scope (NG3).
   (`lyric-component-ts-transpiling` has a higher `requires-python`
   floor of `>=3.10`). PyPI `license` metadata is empty for 4 of them;
   `lyric-py` declares `MIT`. **None of the 5 sdists ship a LICENSE
-  file** — vendor the MIT text from the GitHub `v0.1.7` tag (G4) for
+  file** — vendor the MIT text from the GitHub `v0.1.7` tag (CFE gotcha G4) for
   every lyric-* recipe.
 
 ### Skill-version constraint

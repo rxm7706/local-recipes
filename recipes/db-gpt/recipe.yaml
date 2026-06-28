@@ -246,7 +246,7 @@ outputs:
         - msgpack-python
         - cloudpickle
         - pympler
-        - duckdb
+        - python-duckdb
         - duckdb-engine >=0.9.1        # TODO(pin-tighten): upstream pins duckdb-engine==0.9.1
         - schedule
         - sqlparse >=0.4.4             # TODO(pin-tighten): upstream pins sqlparse==0.4.4
