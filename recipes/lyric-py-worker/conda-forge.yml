@@ -2,17 +2,11 @@
 # conda-forge.yml — pre-seeds the feedstock
 conda_build_tool: rattler-build
 conda_install_tool: pixi
-conda_forge_output_validation: true
-github:
-  branch_name: main
-  tooling_branch_name: main
 bot:
   automerge: true
   check_solvable: true
-  inspection: hint-all
-provider:
-  linux_aarch64: default
-  osx_arm64: default
+  inspection: update-grayskull
+  run_deps_from_wheel: true
 
 #### CFE metadata AND comments
 # CFE comments

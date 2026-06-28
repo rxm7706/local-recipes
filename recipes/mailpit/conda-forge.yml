@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/conda-forge/conda-smithy/main/conda_smithy/data/conda-forge.json
+# conda-forge.yml — pre-seeds the feedstock
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: hint-all
+build_platform:
+  linux_aarch64: linux_64
+  osx_arm64: osx_64
+provider:
+  linux_aarch64: azure
+  osx_arm64: azure
+test: native_and_emulated
+
+#### CFE metadata AND comments
+# CFE comments
+#    # v0 (meta.yaml) feedstock — pre-seeds bot policy + the ARM platform matrix
+#    # ONLY. The rattler-build / pixi build-tool keys are OMITTED on purpose:
+#    # setting them on a v0 recipe flips conda-smithy to the v1 parser and breaks
+#    # the build. Add them (switch to the universal compiled pre-seed) when this
+#    # feedstock migrates v0 meta.yaml -> v1 recipe.yaml. The keys here are INERT
+#    # in a staged-recipes PR (G83) and forwarded into the feedstock on merge, so
+#    # the ARM legs apply from the next rerender with no separate expansion PR.
+#    # This #### CFE block is local-recipes-only and STRIPPED before push (G62) —
+#    # the pushed file is just the trim top comment + the keys above.
+####
