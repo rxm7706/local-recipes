@@ -1,12 +1,22 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/conda-forge/conda-smithy/main/conda_smithy/data/conda-forge.json
-# Enable osx-arm64 (Apple Silicon) on the feedstock.
-# staged-recipes IGNORES this for the PR build (its matrix is hardcoded
-# linux_64/osx_64/win_64 on an Intel runner — see CFE skill G82), but this
-# conda-forge.yml is carried to the tolaria-feedstock on merge, so conda-smithy's
-# first rerender generates the osx_arm64 .ci_support and builds it from creation
-# (cross-compiled osx_64 -> osx_arm64; build_platform defaults automatically).
-# Validated lever: lyric-py-feedstock#2 used `provider: {osx_arm64: azure}` and the
-# rerender produced green osx_arm64 legs for all 4 Python versions.
-# (Add `linux_aarch64: azure` here too if ARM-Linux coverage is wanted.)
+# conda-forge.yml — pre-seeds the feedstock (CFE skill default, G83).
+# These keys are INERT in the staged-recipes PR (build_all.py reads only
+# conda_build_tool, and its matrix is the hardcoded linux_64/osx_64/win_64 Intel
+# runners — see G82) and are forwarded into the tolaria-feedstock on merge, so
+# conda-smithy's first rerender applies the bot policy + osx_arm64 leg from
+# creation — no post-merge bot/tooling/platform-expansion PR needed.
+#
+# tolaria builds osx-arm64 + linux-64 + win-64 ONLY (recipe `skip:` excludes
+# linux-aarch64), so this carries the universal pre-seed + the osx_arm64 leg
+# (native Apple Silicon, validated via lyric-py-feedstock#2) but NOT the default
+# full ARM block — no `linux_aarch64`, no cross `build_platform`, no emulated
+# `test` leg, since those would generate an empty/broken leg for a platform the
+# recipe skips. Add `linux_aarch64: azure` (+ build_platform/test) here only if
+# the recipe is extended to build ARM-Linux.
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: hint-all
 provider:
   osx_arm64: azure
