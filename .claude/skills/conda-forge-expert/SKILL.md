@@ -337,6 +337,27 @@ When pattern (2) is used, ship the LICENSE in-recipe and remove the stale "upstr
 
 Why this matters: the conda-forge web-service review accepts any of the three patterns, but reviewers occasionally flag (3) ("can this be simplified?"). (1) is invisible; (2) reads as deliberate and gets a free conversational checkpoint with reviewers ("ship LICENSE in-recipe because upstream archive omits it").
 
+**Apache-2.0 `NOTICE` files.** If the upstream source ships a `NOTICE` file, Apache-2.0 §4(d) requires it to be redistributed alongside the license. List both in `license_file` as a YAML list:
+
+```yaml
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+```
+
+When you pull a missing `LICENSE` from GitHub under pattern (2)/(3), grab the `NOTICE` in the same step — reviewers will ask for it. If upstream has no `NOTICE`, confirm by listing the repo tree (`gh api repos/<org>/<repo>/git/trees/HEAD`) rather than assuming its absence.
+
+**A LICENSE-less sdist is an upstream bug — fix it there too.** Shipping the LICENSE in-recipe (pattern 2) is the local workaround; the root cause is the published sdist not packaging it. The concrete upstream fix to propose (PEP 639) is to add to `pyproject.toml`:
+
+```toml
+[project]
+license-files = ["LICENSE", "NOTICE"]
+```
+
+(requires `setuptools >=77` when setuptools is the build backend). Open an upstream issue/PR with that change and link it in the recipe comment next to the in-recipe LICENSE — it gives reviewers the provenance and a path to drop the workaround once upstream republishes.
+
 ### Rust Recipe Standards (CLI binaries — conda-forge 2026 canonical pattern)
 
 Every new Rust **CLI** recipe must adopt the canonical pattern documented at
