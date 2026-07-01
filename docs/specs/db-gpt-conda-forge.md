@@ -6,28 +6,38 @@ spec_updated: 2026-07-01
 ---
 # Tech Spec: DB-GPT on conda-forge
 
-> **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow track —
-> bounded scope, packaging effort, 13 implementation stories spanning 6
-> staged-recipes PRs).
-> Run BMAD with this file as the intent document:
+> **⚠ TERMINAL — DELIVERED EXTERNALLY. DO NOT RE-RUN BMAD ON THIS SPEC.**
+> db-gpt is being delivered by an independent staged-recipes PR — **#33883
+> (@pb01ka)** — not by us. Per the 2026-07-01 decision we **consume `dbgpt` once
+> it lands and do NOT open a competing PR (G58)**. Running `bmad-quick-dev` to
+> "implement" the stories below would re-author and submit a competing db-gpt
+> recipe — the exact thing this decision forbids. The story set / FRs / AC /
+> Technical Approach below are **HISTORICAL PLANNING CONTEXT** (the original
+> 2026-05→06-17 plan, adopted-then-superseded by #33883); the **only**
+> authoritative sections are **§ Current State** and **§ Readiness** below.
 >
-> ```
-> run quick-dev — implement the intent in docs/specs/db-gpt-conda-forge.md
-> ```
+> **BMAD intake note (historical):** written for `bmad-quick-dev` (Quick Flow,
+> 13 stories, 6 PRs) — all prerequisite work is DONE (5 prereq PRs merged); db-gpt
+> itself is out of our hands.
 
 ---
 
-## Status
+## Current State (2026-07-01) — CANONICAL
+
+> Single source of truth. Everything from **§ Background and Context** onward is
+> historical planning context (the original plan), superseded by this block +
+> § Readiness. Structural claims below (7 outputs, v0.8.0, "we submit") were
+> corrected in place per the 2026-07-01 adversarial review.
 
 | Field        | Value                                                                                                                                                                                   |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status       | **Implemented; submission gated on pipeline lag** (live: 2026-07-01) — **ALL 5 prereq PRs MERGED** (#33764/#33765/#33766/#33767/#33768). C1 `lyric-py` ARM now live on all 5 subdirs. db-gpt (S12) held only on `auto-gpt-plugin-template` + `lyric-py-worker` completing feedstock creation → first build → channel upload (both merged 2026-07-01, feedstocks not yet created — G66 lag). pdfminer.six fixed (build `_1`) → dbgpt-app `pip_check` re-enabled. All 8 recipes built green locally + cfe-metadata at v8.55.0. See **§ Readiness (live: 2026-07-01)** |
+| Status       | **Delivered via #33883 (@pb01ka) — gated on the pipeline lag, not on us** (live: 2026-07-01) — **ALL 5 prereq PRs MERGED** (#33764/#33765/#33766/#33767/#33768). C1 `lyric-py` ARM now live on all 5 subdirs. db-gpt (delivered via #33883, @pb01ka — NOT ours) held only on `auto-gpt-plugin-template` + `lyric-py-worker` completing feedstock creation → first build → channel upload (both merged 2026-07-01, feedstocks not yet created — G66 lag). Our `recipes/db-gpt/` mirrors #33883 (8 outputs, v0.8.1), verified GREEN locally 8/8 (2026-07-01, cfe v8.62.0); **S12 (our own submission) RETIRED — consume, don't submit (G58).** See **§ Readiness** |
 | Owner        | rxm7706                                                                                                                                                                                 |
 | Track        | BMAD Quick Flow (tech-spec only, no PRD/architecture phase)                                                                                                                             |
-| Upstream     | `eosphoros-ai/DB-GPT` v0.8.0 (released 2026-03-27, MIT license)                                                                                                                       |
-| Target       | `conda-forge/staged-recipes` — 7 outputs in a single multi-output recipe, plus 7 prerequisite recipes — 2 already on conda-forge (`abstract-singleton`, `lyric-task`), **5 to build** (1 trivial pure-Python, 3 itkwasm-pattern noarch, 1 cocoindex-class Rust+PyO3) |
-| Distribution | conda-forge, all outputs `noarch: python`. ✅ **`lyric-py` platform-expanded (lyric-py-feedstock #2 **merged** 2026-06-28) → dbgpt-app installable on osx-arm64/linux-aarch64 once the ARM artifacts propagate to the channel (G66); see § Readiness → C1**                                                                                                  |
-| Lifetime     | Long-running — feedstocks become autotick-maintained after first PR lands                                                                                                              |
+| Upstream     | `eosphoros-ai/DB-GPT` — **shipped recipe (#33883) targets v0.8.1** (MIT license). This spec's original dep/pin analysis was done at **v0.8.0** (2026-06-17) and was NOT re-verified against 0.8.1 (the local 8/8 build proves 0.8.1 self-consistent) |
+| Target       | `conda-forge/staged-recipes` — **8 outputs** (incl `dbgpt-acc-flash-attn`) in a single multi-output recipe (#33883), plus 7 prerequisite recipes — 2 already on conda-forge (`abstract-singleton`, `lyric-task`), **5 built + all merged** (1 trivial pure-Python, 3 itkwasm-pattern noarch, 1 cocoindex-class Rust+PyO3) |
+| Distribution | conda-forge, all 8 outputs `noarch: python`. `lyric-py` ARM **live on all 5 subdirs** (C1 CLEARED 2026-07-01). **⚠ dbgpt-app ARM installability is UNVERIFIED via the PR path** — staged-recipes has no ARM legs (G82) and only chromadb/spacy/onnxruntime were spot-checked on osx-arm64; needs a post-merge feedstock G40 check across the full compiled-dep set × osx-arm64 + linux-aarch64. See § Readiness → C1 |
+| Lifetime     | db-gpt feedstock autotick-maintained **by @pb01ka** post-merge                                                                                                              |
 
 ---
 
@@ -64,6 +74,15 @@ upload. **Next action = monitor, not submit:** a background poll watches for
 #33883's CI can be restarted (by @pb01ka / autotick) and should go green. S12 (our own
 submission) is retired.
 
+**Contingency + ownership (F6).** #33883 is a **draft** owned by a third party (@pb01ka)
+since 2026-06-24 — delivery is now outside our control. If it stalls (pb01ka inactive) or a
+reviewer forces the recipe shape to change (e.g. asks to drop the `dbgpt-acc-flash-attn`
+output), dbgpt may not land. **Re-evaluate submitting our own recipe if #33883 shows no
+progress ~2 weeks after both prereqs go live.** Consequence of consume-not-submit: the db-gpt
+feedstock will be **pb01ka's**, so rxm7706 gets **no** autotick/maintenance control over any
+`dbgpt-*` output — the "Owner: rxm7706" and "feedstocks … we shipped" framing elsewhere in
+this spec refers to the **retired** self-submit plan, not the actual delivery.
+
 ### langflow learnings applied to db-gpt
 
 - **pdfminer.six / dbgpt-app `pip_check` (G76).** The original plan disabled `pip_check` on
@@ -73,7 +92,7 @@ submission) is retired.
   **regardless of the recipe's `pip_check:` setting** — so the waiver would not have survived
   CI. Re-checked live (2026-06-27): the pdfminer.six-feedstock **rebuilt to `number: 1`**,
   and build `_1` now reports `Version: 20260107` correctly (the feedstock's own test asserts
-  it). Blocker **gone** → `dbgpt-app` `pip_check` **re-enabled** (all 7 outputs now check),
+  it). Blocker **gone** → `dbgpt-app` `pip_check` **re-enabled** (all 8 outputs now check),
   waiver dropped.
 - **Verify live, not cfe metadata (G78).** This table was rebuilt from `gh pr` + channeldata,
   not `cfe-on-conda-forge-status` (e.g. `lyric-py` still read `pending-approval` post-merge).
@@ -96,7 +115,7 @@ fields + `cfe-local-build-*: success` populated:
 | `lyric-task` | ✅ success | confirmed-on-cf | |
 | `lyric-py` | ✅ success | confirmed-on-cf | ~17 min (Rust/PyO3); import cached as `lyric` (≠ dist name — G7/G10); github-tag + compiled |
 | `lyric-py-worker` | ✅ success | pending-approval | #33766 |
-| `db-gpt` (7 outputs) | ✅ success | blocked-pending-prereqs | dbgpt-app `pip_check` re-enabled — passes against fixed pdfminer.six `20260107` |
+| `db-gpt` (8 outputs, #33883 mirror) | ✅ success | delivered-via-#33883 | 8th output `dbgpt-acc-flash-attn` (zero-dep noarch shim); dbgpt-app `pip_check` re-enabled — passes against fixed pdfminer.six `20260107` |
 
 ### C1 — `lyric-py` ARM platform gap (✅ RESOLVED — lyric-py-feedstock #2 merged 2026-06-28)
 
@@ -145,6 +164,28 @@ You **cannot** platform-exclude a hard dep on one noarch artifact (G76) — "jus
 dbgpt-app" is not an option.
 
 ---
+
+# ═══════════ HISTORICAL PLANNING CONTEXT (superseded) ═══════════
+
+> Everything below is the **original plan** (2026-05-08 → 06-17), later
+> adopted-then-superseded by **#33883**. Retained for the record. Per the
+> 2026-07-01 adversarial review, several structural claims here were **factually
+> wrong or overtaken**; the highest-signal ones are corrected in place, but the
+> narrative below is still written as "we author and submit," which is **no longer
+> true** (see § Current State). **Blanket corrections that apply throughout:**
+>
+> - **"7 outputs" → 8.** The shipped recipe (#33883) ships `dbgpt-acc-flash-attn`
+>   as an 8th `noarch: python` output. NG1/OOS-1 excluded it as "CUDA-only,
+>   GPU-tier" — that rationale is **WRONG**: upstream `dbgpt-acc-flash-attn`
+>   declares `dependencies: []` and is a trivial zero-dep pure-Python shim
+>   (verified 2026-07-01). It packages exactly like `dbgpt-acc-auto`.
+> - **"v0.8.0" → v0.8.1.** The shipped recipe targets 0.8.1; the dep/pin tables
+>   below were verified at 0.8.0 and were not re-checked against 0.8.1.
+> - **"we submit db-gpt (S12)" → RETIRED.** db-gpt is delivered by #33883; do not
+>   re-author or submit (G58).
+> - **NG4 ("no `provider:` override") was VIOLATED** by C1's fix —
+>   `lyric-py-feedstock #2` added a `provider:` block for ARM. NG4 is scoped (at
+>   most) to the db-gpt feedstock, not the prereqs.
 
 ## Submission Status (2026-06-17) — ⚠ SUPERSEDED
 
@@ -414,6 +455,9 @@ already ship.
   already ship on conda-forge, 5 to build). Coherent = all
   outputs share the same source archive, same version, and resolve
   their internal `dbgpt-*` cross-dependencies via `pin_subpackage`.
+  **[CORRECTED 2026-07-01: the shipped recipe (#33883) has 8 outputs — it also
+  ships `dbgpt-acc-flash-attn` (a zero-dep noarch shim); NG1's exclusion was
+  wrong. See § Current State.]**
 - **G2.** Use upstream's GitHub source archive (`v${{version}}.tar.gz`)
   for the DB-GPT multi-output, not 7 separate PyPI sdists. The 7
   prerequisite recipes each source from PyPI individually (or from the
@@ -435,8 +479,15 @@ already ship.
 
 ## Non-Goals
 
-- **NG1.** No `dbgpt-acc-flash-attn` recipe — CUDA-only, GPU-tier, not
-  pulled by `dbgpt-app`'s base. Defer indefinitely.
+- **NG1.** ~~No `dbgpt-acc-flash-attn` recipe — CUDA-only, GPU-tier.~~
+  **OVERTURNED 2026-07-01 (adversarial review).** This rationale was factually
+  wrong: upstream `dbgpt-acc-flash-attn` declares `dependencies: []` and is a
+  trivial zero-dep **pure-Python noarch shim** (`__init__.py` + `_version.py`) —
+  it is NOT the heavy CUDA `flash-attn` library (the spec conflated the two). The
+  shipped recipe (#33883) correctly ships it as the 8th `noarch: python` output;
+  it built + `pip_check`-passed green locally. (`flash_attn` is imported lazily,
+  so the shim installs everywhere; it is only *functional* where the user also
+  has the GPU `flash-attn` package.)
 - **NG2.** No upstream PR to DB-GPT to soften the pinned dependencies.
   Loosening happens recipe-side only.
 - **NG3.** No upstreaming of WASI-side Bytecode Alliance toolchain
@@ -447,9 +498,12 @@ already ship.
   vendor-the-blob pattern despite the precedent, the fallback is
   `B-six-plus-app-patched` (drop `dbgpt-app[code]`); upstreaming the
   full WASI toolchain is out of scope for this spec.
-- **NG4.** No feedstock-level CI customization beyond what conda-forge
-  provides by default. Standard `.ci_support` matrix; no `provider:`
-  override.
+- **NG4.** No feedstock-level CI customization on the **db-gpt** feedstock
+  beyond conda-forge defaults. **[CORRECTED 2026-07-01: this does NOT hold for
+  the prereq feedstocks — C1 required a `provider:` override on
+  `lyric-py-feedstock #2` to ship osx-arm64 + linux-aarch64. NG4 as originally
+  written ("no `provider:` override") was violated by that fix; it is scoped here
+  to the db-gpt feedstock only.]**
 - **NG5.** No PyPI-side coordination with eosphoros-ai or
   lyric-project for licensing cleanup, README updates, or sdist
   contents. Recipes absorb upstream artifacts as published.
@@ -873,9 +927,14 @@ single root `LICENSE` (MIT) and no per-package `LICENSE` files
 
 **Estimated effort**: 10 min.
 
-### Story S12 — Validate, build, and submit DB-GPT multi-output
+### Story S12 — Validate, build, and submit DB-GPT multi-output — ⚠ RETIRED
 
-**Goal**: Run the full conda-forge-expert 9-step loop on the
+> **RETIRED 2026-07-01: DO NOT EXECUTE.** db-gpt is delivered by #33883 (@pb01ka).
+> Submitting our own db-gpt PR would open a competing recipe (G58). The goal / AC /
+> checklist below are historical; our only action is to consume `dbgpt` once
+> #33883 lands (see § Current State).
+
+**Goal (historical)**: Run the full conda-forge-expert 9-step loop on the
 multi-output recipe and submit the PR.
 
 **Acceptance criteria**:
@@ -1159,9 +1218,10 @@ in the source tree.
 
 `packages/dbgpt-accelerator/` contains a **second** member,
 `dbgpt-acc-flash-attn`, alongside `dbgpt-acc-auto` (verified at the
-v0.8.0 tag, 2026-06-17). `dbgpt-acc-flash-attn` is deliberately out of
-scope (NG1 / OOS-1 — CUDA-only, GPU-tier, not pulled by dbgpt-app's
-base) and is **not** one of the 7 outputs. Only `dbgpt-acc-auto` ships.
+v0.8.0 tag, 2026-06-17). **[CORRECTED 2026-07-01: `dbgpt-acc-flash-attn` IS
+shipped — it is the 8th output of the adopted #33883 recipe. Upstream declares
+`dependencies: []` (a zero-dep noarch shim), so NG1/OOS-1's "CUDA-only" exclusion
+was wrong. BOTH `dbgpt-acc-auto` AND `dbgpt-acc-flash-attn` ship.]**
 
 ---
 
@@ -1173,13 +1233,13 @@ base) and is **not** one of the 7 outputs. Only `dbgpt-acc-auto` ships.
   DB-GPT multi-output recipe (S12). **S1 (`abstract-singleton`) and S3
   (`lyric-task`) need no PR — they already ship on conda-forge.** Each
   PR addresses every bot-lint, conda-smithy-lint, and reviewer comment.
-- **AC-2.** All 7 DB-GPT outputs build green on `linux-64`/`osx-64`/`win-64` in
-  conda-forge CI, **and the noarch outputs SOLVE on osx-arm64 + linux-aarch64** (the
-  per-subdir G40 check — see § Build matrix). `lyric-py` (the only compiled prereq) must
-  ship on **all four+ target subdirs**; it currently ships only on linux-64/osx-64/win-64,
-  so **osx-arm64 + linux-aarch64 require the C1 platform-expansion before `dbgpt-app` is
-  installable there**. The other prereqs are noarch (one job each); abstract-singleton +
-  lyric-task already ship.
+- **AC-2.** All **8** DB-GPT outputs build green on `linux-64`/`osx-64`/`win-64` in
+  conda-forge CI. **⚠ ARM installability is NOT verified by the PR:** staged-recipes runs
+  no ARM legs (G82), so #33883 going green does NOT prove the noarch outputs SOLVE on
+  osx-arm64 + linux-aarch64. `lyric-py` is now live on all 5 subdirs (C1 cleared), but the
+  full compiled-transitive-dep set (onnxruntime/chromadb/spacy/tokenizers/pyzmq/cryptography/
+  numpy/pandas) × both ARM subdirs × py3.10 was only partially spot-checked — the definitive
+  G40 check must run **post-merge on the feedstock**. abstract-singleton + lyric-task already ship.
 - **AC-3.** `pip check` passes for every output's test stage and for
   every prerequisite recipe's test stage.
 - **AC-4.** A user on a fresh pixi env can install **any** included
@@ -1395,8 +1455,10 @@ on have been available since v6.0.0) and rattler-build ≥ v0.61.0.
 
 ## Out of Scope (Explicit)
 
-- **OOS-1.** `dbgpt-acc-flash-attn` — CUDA-only, GPU-tier, deferred
-  indefinitely.
+- **OOS-1.** ~~`dbgpt-acc-flash-attn` — CUDA-only, GPU-tier, deferred.~~
+  **OVERTURNED 2026-07-01** — see NG1. The `dbgpt-acc-flash-attn` *wrapper* is a
+  zero-dep noarch shim and IS shipped (8th output of #33883). The heavy GPU
+  `flash-attn` library remains out of scope, but that is a different package.
 - **OOS-2.** Source-rebuilding the lyric-* WASM blobs on conda-forge CI.
   The recipes vendor the upstream PyPI sdists' pre-built `.wasm` per
   the itkwasm precedent (NG3). Source-rebuild would require packaging
@@ -1473,18 +1535,22 @@ on have been available since v6.0.0) and rattler-build ≥ v0.61.0.
 
 ---
 
-## Suggested BMAD Invocation
+## Suggested BMAD Invocation — ⚠ RETIRED (do NOT run)
+
+> **This effort is DELIVERED EXTERNALLY via #33883 (@pb01ka). There is nothing to
+> implement.** Running `bmad-quick-dev` on this spec would re-author and submit a
+> competing db-gpt recipe — forbidden by the 2026-07-01 consume-not-submit
+> decision (G58). All prerequisite work is done (5 PRs merged); the only remaining
+> action is to consume `dbgpt` once #33883 lands. The original invocation + wave
+> plan is preserved below strictly as a historical record:
 
 ```
+# HISTORICAL — DO NOT RUN
 run quick-dev — implement the intent in docs/specs/db-gpt-conda-forge.md
-
-# Q1 is resolved (B-full). 13 stories; S1 + S3 already ship on
-# conda-forge (no PR), leaving 5 prereq recipes + the multi-output:
-#   Wave 1: S1 (abstract-singleton), S3 (lyric-task) — ✅ DONE, skip
-#   Wave 2 (parallel): S2 (auto-gpt-plugin-template), S4 (lyric-py,
-#                      cocoindex-class) — both unblocked now
-#   Wave 3 (parallel): S5, S6, S7 (lyric workers, blocked by S4)
-#   Wave 4 (sequential within wave): S8 → S9, S10, S11 → S12
+#   Wave 1: S1 (abstract-singleton), S3 (lyric-task) — DONE
+#   Wave 2: S2 (auto-gpt-plugin-template), S4 (lyric-py) — DONE (merged)
+#   Wave 3: S5, S6, S7 (lyric workers) — DONE (merged)
+#   Wave 4: S8 → S9, S10, S11 → S12 — S12 RETIRED (delivered via #33883)
 ```
 
 The story sequencing constraints inside `bmad-quick-dev`:
