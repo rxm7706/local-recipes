@@ -1,8 +1,8 @@
 ---
 status: in-progress
 implemented_by: bmad-quick-dev
-shipped_ref: "staged-recipes: #33764/#33767/#33768 MERGED; #33765/#33766 green+pending-review; db-gpt held on those 2"
-spec_updated: 2026-06-28
+shipped_ref: "staged-recipes: ALL 5 prereq PRs MERGED (#33764/#33765/#33766/#33767/#33768); C1 lyric-py ARM live on all 5 subdirs. db-gpt itself DELIVERED VIA #33883 (@pb01ka, dbgpt-split, 8 outputs incl dbgpt-acc-flash-attn) — NOT our own PR (G58 consume-not-submit, user decision 2026-07-01). Our recipes/db-gpt/ now mirrors #33883, verified GREEN locally (8/8, v0.8.1). #33883 red only on G66 channel lag (auto-gpt-plugin-template + lyric-py-worker not yet uploaded); monitoring channel; consume dbgpt on land."
+spec_updated: 2026-07-01
 ---
 # Tech Spec: DB-GPT on conda-forge
 
@@ -21,7 +21,7 @@ spec_updated: 2026-06-28
 
 | Field        | Value                                                                                                                                                                                   |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status       | **Implemented; submission gated** (live: 2026-06-27) — **3/5 prereq PRs MERGED** (#33764/#33767/#33768); 2 green + pending-review (#33765/#33766); db-gpt held on those 2 landing. pdfminer.six fixed (build `_1`) → dbgpt-app `pip_check` re-enabled. All 8 recipes rebuilt locally + cfe-metadata refreshed to v8.55.0. See **§ Readiness (live: 2026-06-27)** |
+| Status       | **Implemented; submission gated on pipeline lag** (live: 2026-07-01) — **ALL 5 prereq PRs MERGED** (#33764/#33765/#33766/#33767/#33768). C1 `lyric-py` ARM now live on all 5 subdirs. db-gpt (S12) held only on `auto-gpt-plugin-template` + `lyric-py-worker` completing feedstock creation → first build → channel upload (both merged 2026-07-01, feedstocks not yet created — G66 lag). pdfminer.six fixed (build `_1`) → dbgpt-app `pip_check` re-enabled. All 8 recipes built green locally + cfe-metadata at v8.55.0. See **§ Readiness (live: 2026-07-01)** |
 | Owner        | rxm7706                                                                                                                                                                                 |
 | Track        | BMAD Quick Flow (tech-spec only, no PRD/architecture phase)                                                                                                                             |
 | Upstream     | `eosphoros-ai/DB-GPT` v0.8.0 (released 2026-03-27, MIT license)                                                                                                                       |
@@ -31,29 +31,38 @@ spec_updated: 2026-06-28
 
 ---
 
-## Readiness (live: 2026-06-27)
+## Readiness (live: 2026-07-01)
 
 Re-audited live (CFE gotcha **G78** — verify against `gh pr` state + channeldata, not the
-recipes' own `cfe-on-conda-forge-status`, which had drifted). State has moved since the
-2026-06-17 submission:
+recipes' own `cfe-on-conda-forge-status`). **All 5 prereq PRs have now MERGED** — the two
+that were the last human-review gate (#33765 `auto-gpt-plugin-template`, #33766
+`lyric-py-worker`) merged 2026-07-01T01:44–45Z. Per-subdir channel verification (anaconda.org
+API):
 
-| Recipe | conda-forge | PR | State |
-| ------ | ----------- | -- | ----- |
+| Recipe | live on cf channel | PR | State |
+| ------ | ------------------ | -- | ----- |
 | `abstract-singleton` | ✅ on cf | — | prereq, already shipping |
 | `lyric-task` | ✅ on cf | — | prereq, already shipping |
-| `lyric-py` | ✅ on cf | [#33764](https://github.com/conda-forge/staged-recipes/pull/33764) | **MERGED** |
-| `lyric-js-worker` | ✅ on cf | [#33767](https://github.com/conda-forge/staged-recipes/pull/33767) | **MERGED** |
-| `lyric-component-ts-transpiling` | ✅ on cf | [#33768](https://github.com/conda-forge/staged-recipes/pull/33768) | **MERGED** |
-| `auto-gpt-plugin-template` | ⏳ pending | [#33765](https://github.com/conda-forge/staged-recipes/pull/33765) | OPEN — green, `review-requested` + pinged; awaiting reviewer-merge |
-| `lyric-py-worker` | ⏳ pending | [#33766](https://github.com/conda-forge/staged-recipes/pull/33766) | OPEN — green, `review-requested` + pinged; awaiting reviewer-merge |
-| `db-gpt` (7 outputs) | ⛔ not submitted | — | held on the 2 OPEN prereqs landing on cf |
+| `lyric-py` | ✅ **all 5 subdirs** (linux-64/aarch64, osx-64/arm64, win-64) | [#33764](https://github.com/conda-forge/staged-recipes/pull/33764) | **MERGED** — C1 ARM now LIVE |
+| `lyric-js-worker` | ✅ noarch | [#33767](https://github.com/conda-forge/staged-recipes/pull/33767) | **MERGED** |
+| `lyric-component-ts-transpiling` | ✅ noarch | [#33768](https://github.com/conda-forge/staged-recipes/pull/33768) | **MERGED** |
+| `auto-gpt-plugin-template` | ⏳ **NOT yet on channel** (feedstock not yet created) | [#33765](https://github.com/conda-forge/staged-recipes/pull/33765) | **MERGED 2026-07-01** — feedstock first-build+upload pending (G66) |
+| `lyric-py-worker` | ⏳ **NOT yet on channel** (feedstock not yet created) | [#33766](https://github.com/conda-forge/staged-recipes/pull/33766) | **MERGED 2026-07-01** — feedstock first-build+upload pending (G66) |
+| `db-gpt` (8 outputs) | ⛔ not on cf yet | [#33883](https://github.com/conda-forge/staged-recipes/pull/33883) (@pb01ka) | DRAFT, red **only** on G66 channel lag — build passes; `dbgpt-app` test-env can't find `auto-gpt-plugin-template`. NOT ours — consume, don't submit |
 
-**db-gpt is gated on exactly two reviewer-merges** (`auto-gpt-plugin-template` #33765,
-`lyric-py-worker` #33766). Both are green, carry the `review-requested` label, and were
-already pinged (`@conda-forge/help-python, ready for review!`) — so there is nothing
-further to *do* on them; they await a conda-forge reviewer (don't double-ping, G64). When
-both land on cf, the db-gpt multi-output PR's `check_dependencies` / test-env solve
-resolves and db-gpt can be submitted (as a cfe-stripped draft — G62).
+**db-gpt is being delivered by an independent PR — #33883 (@pb01ka), not us.** Decision
+(user, 2026-07-01): do **NOT** open a competing PR (G58); #33883 is the accepted solution and
+we **consume `dbgpt` once it lands**. #33883 is an OPEN DRAFT whose CI is red **only on the
+G66 channel lag** — the build succeeds; `dbgpt-app`'s test-env solve fails on
+`auto-gpt-plugin-template >=0.0.3` not being on the channel (and that CI run even predated the
+2026-07-01 prereq merges). Our `recipes/db-gpt/` now mirrors #33883 verbatim (8 outputs incl
+`dbgpt-acc-flash-attn`, v0.8.1; cfe-block added, `pb01ka` retained as sole maintainer) and was
+verified **GREEN locally** — all 8 outputs built + tested against the full local channel
+(2026-07-01) — proving the recipe is correct and the sole blocker is the prereq channel
+upload. **Next action = monitor, not submit:** a background poll watches for
+`auto-gpt-plugin-template` + `lyric-py-worker` going live (anaconda.org API); once both land,
+#33883's CI can be restarted (by @pb01ka / autotick) and should go green. S12 (our own
+submission) is retired.
 
 ### langflow learnings applied to db-gpt
 
@@ -116,12 +125,12 @@ risk flagged in S4 is retired — lyric-py is genuinely ARM-buildable.
 adds `osx_arm64` + `linux_aarch64` via a `provider:` block. Its win legs first failed at
 `Prepare conda build artifacts` (the G18 INetCache 7z crash) because the
 `workflow_settings.store_build_artifacts` list still included `win_64`; dropping `- win_64`
-+ rerender turned win green and the PR merged. **Per G66 (merged ≠ live), the new
-osx-arm64/linux-aarch64 builds land on the channel only after the post-merge feedstock build
-uploads — at the 2026-06-28 check there were still 0 lyric-py builds on osx-arm64/linux-aarch64
-(3 on linux-64).** The C1 gate fully clears once those ARM artifacts are live at every Python
-db-gpt tests; **verify per-subdir before submitting db-gpt** (don't trust "merged"). The
-db-gpt recipe itself needs no change.
++ rerender turned win green and the PR merged. Per G66 (merged ≠ live), the new
+osx-arm64/linux-aarch64 builds landed on the channel only after the post-merge feedstock
+build uploaded — at the 2026-06-28 check there were still 0 lyric-py builds on
+osx-arm64/linux-aarch64. **✅ VERIFIED LIVE 2026-07-01: `lyric-py` 0.1.7 now ships on ALL 5
+subdirs (linux-64, linux-aarch64, osx-64, osx-arm64, win-64) — the C1 gate is fully CLEARED.**
+The db-gpt recipe itself needed no change.
 
 - *Fallback if osx-arm64 can't be built on CI:* make `lyric-py` **optional** — strip it from
   `dbgpt-app`'s wheel `[project.dependencies]` (patch) + move to `run_constraints` (the
