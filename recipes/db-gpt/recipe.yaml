@@ -2,19 +2,18 @@
 schema_version: 1
 
 context:
-  version: "0.8.0"
+  version: "0.8.1"
 
 recipe:
   name: db-gpt
   version: ${{ version }}
 
 source:
-  url: https://github.com/eosphoros-ai/DB-GPT/archive/v${{ version }}.tar.gz
-  sha256: ac2f47a4495326150ddbbf2f3ac2b0e5888a7deb242a4ad810ed18173dda8017
+  url: https://github.com/eosphoros-ai/DB-GPT/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 65e25642dfb0f2e3028a50301fda060ca09008d754ea46a8268edc47c131a2ec
   patches:
     # Loosen upstream's `==` pins to `>=` (G26) so the wheel METADATA matches the
-    # loosened conda run deps and pip_check passes. Source patches instead of an
-    # in-build sed — portable to macOS/BSD sed.
+    # loosened conda run deps and pip_check passes.
     - patches/0001-loosen-dbgpt-core-pins.patch
     - patches/0002-loosen-dbgpt-ext-pins.patch
 
@@ -27,9 +26,7 @@ outputs:
       version: ${{ version }}
     build:
       noarch: python
-      script: |
-        cd packages/dbgpt-core
-        ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+      script: ${{ PYTHON }} -m pip install ./packages/dbgpt-core --no-deps --no-build-isolation -vv
     requirements:
       host:
         - python ${{ python_min }}.*
@@ -37,9 +34,10 @@ outputs:
         - pip
       run:
         - python >=${{ python_min }}
-        - aiohttp >=3.8.4         # TODO(pin-tighten): upstream pins aiohttp==3.8.4
-        - chardet >=5.1.0         # TODO(pin-tighten): upstream pins chardet==5.1.0
-        - importlib_resources >=5.12.0  # TODO(pin-tighten): upstream pins importlib-resources==5.12.0
+        - aiohttp >=3.8.4
+        - apscheduler >=3.10,<4
+        - chardet >=5.1.0
+        - importlib-resources >=5.12.0
         - cachetools
         - pydantic >=2.6.0
         - typeguard
@@ -60,9 +58,7 @@ outputs:
       version: ${{ version }}
     build:
       noarch: python
-      script: |
-        cd packages/dbgpt-ext
-        ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+      script: ${{ PYTHON }} -m pip install ./packages/dbgpt-ext --no-deps --no-build-isolation -vv
     requirements:
       host:
         - python ${{ python_min }}.*
@@ -86,7 +82,7 @@ outputs:
       version: ${{ version }}
     build:
       noarch: python
-      script: cd packages/dbgpt-serve && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+      script: ${{ PYTHON }} -m pip install ./packages/dbgpt-serve --no-deps --no-build-isolation -vv
     requirements:
       host:
         - python ${{ python_min }}.*
@@ -109,7 +105,7 @@ outputs:
       version: ${{ version }}
     build:
       noarch: python
-      script: cd packages/dbgpt-client && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+      script: ${{ PYTHON }} -m pip install ./packages/dbgpt-client --no-deps --no-build-isolation -vv
     requirements:
       host:
         - python ${{ python_min }}.*
@@ -119,19 +115,21 @@ outputs:
         - python >=${{ python_min }}
         - ${{ pin_subpackage('dbgpt', exact=True) }}
         - ${{ pin_subpackage('dbgpt-ext', exact=True) }}
+        # Flattened dbgpt-core[client] + [cli] extras (conda has no extras, G25)
         - httpx
-        - fastapi >=0.100.0,<0.113.0   # Q2: upstream cap kept
-        - tenacity <=8.3.0             # Q2: upstream cap kept
+        - fastapi >=0.100.0,<0.113.0
+        - tenacity <=8.3.0
         - prettytable
         - click
-        - psutil >=5.9.4               # TODO(pin-tighten): upstream pins psutil==5.9.4
-        - colorama >=0.4.6             # TODO(pin-tighten): upstream pins colorama==0.4.6
+        - psutil >=5.9.4
+        - colorama >=0.4.6
         - tomlkit
         - rich
         - shortuuid
-        - sqlalchemy >=2.0.25,<2.0.29  # Q2: upstream cap kept
+        - sqlalchemy >=2.0.25,<2.0.29
         - msgpack-python
         - cloudpickle
+        # bs4 is an under-declared hard import pulled in via dbgpt_ext.rag (G27)
         - beautifulsoup4
     tests:
       - python:
@@ -147,7 +145,7 @@ outputs:
       version: ${{ version }}
     build:
       noarch: python
-      script: cd packages/dbgpt-sandbox && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+      script: ${{ PYTHON }} -m pip install ./packages/dbgpt-sandbox --no-deps --no-build-isolation -vv
     requirements:
       host:
         - python ${{ python_min }}.*
@@ -178,7 +176,7 @@ outputs:
       version: ${{ version }}
     build:
       noarch: python
-      script: cd packages/dbgpt-accelerator/dbgpt-acc-auto && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+      script: ${{ PYTHON }} -m pip install ./packages/dbgpt-accelerator/dbgpt-acc-auto --no-deps --no-build-isolation -vv
     requirements:
       host:
         - python ${{ python_min }}.*
@@ -196,11 +194,33 @@ outputs:
             - "*"
 
   - package:
+      name: dbgpt-acc-flash-attn
+      version: ${{ version }}
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install ./packages/dbgpt-accelerator/dbgpt-acc-flash-attn --no-deps --no-build-isolation -vv
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - dbgpt_acc_flash_attn
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+  - package:
       name: dbgpt-app
       version: ${{ version }}
     build:
       noarch: python
-      script: cd packages/dbgpt-app && ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+      script: ${{ PYTHON }} -m pip install ./packages/dbgpt-app --no-deps --no-build-isolation -vv
     requirements:
       host:
         - python ${{ python_min }}.*
@@ -214,66 +234,76 @@ outputs:
         - ${{ pin_subpackage('dbgpt-client', exact=True) }}
         - ${{ pin_subpackage('dbgpt-sandbox', exact=True) }}
         - ${{ pin_subpackage('dbgpt-acc-auto', exact=True) }}
+        # dbgpt-app base
         - aiofiles
         - httpx >=0.24.0
         - pyparsing
-        - aiohttp >=3.8.4         # TODO(pin-tighten): upstream pins aiohttp==3.8.4
-        - chardet >=5.1.0         # TODO(pin-tighten): upstream pins chardet==5.1.0
-        - importlib_resources >=5.12.0  # TODO(pin-tighten): upstream pins importlib-resources==5.12.0
+        # Flattened dbgpt-core base (sibling built without extras, G25)
+        - aiohttp >=3.8.4
+        - chardet >=5.1.0
+        - importlib-resources >=5.12.0
         - cachetools
         - pydantic >=2.6.0
         - typeguard
         - snowflake-id
         - typing_inspect
         - tomli >=2.2.1
-        - fastapi >=0.100.0,<0.113.0   # Q2: upstream cap kept
-        - tenacity <=8.3.0             # Q2: upstream cap kept
+        # Flattened dbgpt-core[client] + [cli]
+        - fastapi >=0.100.0,<0.113.0
+        - tenacity <=8.3.0
         - prettytable
         - click
-        - psutil >=5.9.4               # TODO(pin-tighten): upstream pins psutil==5.9.4
-        - colorama >=0.4.6             # TODO(pin-tighten): upstream pins colorama==0.4.6
+        - psutil >=5.9.4
+        - colorama >=0.4.6
         - tomlkit
         - rich
+        # Flattened dbgpt-core[agent]
         - termcolor
-        - pandas >=2.2.3               # TODO(pin-tighten): upstream pins pandas==2.2.3
-        - numpy >=1.21.0,<2.0.0        # Q2: upstream <2 cap kept (NumPy-1 targeted)
+        - pandas >=2.2.3
+        - numpy >=1.21.0,<2.0.0
         - auto-gpt-plugin-template >=0.0.3
         - mcp >=1.4.1
+        # Flattened dbgpt-core[simple_framework] + [framework]
         - jinja2
         - uvicorn
         - shortuuid
-        - sqlalchemy >=2.0.25,<2.0.29  # Q2: upstream cap kept
+        - sqlalchemy >=2.0.25,<2.0.29
         - msgpack-python
         - cloudpickle
-        - pympler
-        - python-duckdb
-        - duckdb-engine >=0.9.1        # TODO(pin-tighten): upstream pins duckdb-engine==0.9.1
-        - schedule
-        - sqlparse >=0.4.4             # TODO(pin-tighten): upstream pins sqlparse==0.4.4
-        - python-multipart
         - coloredlogs
         - seaborn
-        - gtts >=2.3.1                 # TODO(pin-tighten): upstream pins gTTS==2.3.1
+        - gtts >=2.3.1
         - pymysql
         - jsonschema
         - python-jsonpath
         - tokenizers >=0.14
-        - alembic >=1.12.0             # TODO(pin-tighten): upstream pins alembic==1.12.0
-        - openpyxl >=3.1.2             # TODO(pin-tighten): upstream pins openpyxl==3.1.2
-        - xlrd >=2.0.1                 # TODO(pin-tighten): upstream pins xlrd==2.0.1
+        - alembic >=1.12.0
+        - openpyxl >=3.1.2
+        - xlrd >=2.0.1
         - gitpython
         - python-graphviz
         - cryptography
+        # Flattened dbgpt-core[code] (lyric stack)
         - pyzmq
         - lyric-py >=0.1.7
         - lyric-py-worker >=0.1.7
         - lyric-js-worker >=0.1.7
         - lyric-component-ts-transpiling >=0.1.7
+        # Flattened dbgpt-core[proxy_openai]
         - openai >=1.59.6
         - tiktoken >=0.8.0
         - socksio
+        # Flattened dbgpt-core[proxy_tongyi]
         - dashscope
-        - spacy >=3.7                  # TODO(pin-tighten): upstream pins spacy==3.7
+        # Flattened dbgpt-core[simple_framework] continued
+        - pympler
+        - python-duckdb
+        - duckdb-engine >=0.9.1
+        - schedule
+        - sqlparse >=0.4.4
+        - python-multipart
+        # Flattened dbgpt-ext[rag]
+        - spacy >=3.7
         - markdown
         - beautifulsoup4
         - python-pptx
@@ -281,7 +311,8 @@ outputs:
         - olefile
         - pypdf
         - pdfplumber
-        - onnxruntime >=1.14.1,<=1.18.1  # Q2: upstream cap kept
+        - onnxruntime >=1.14.1,<=1.18.1
+        # Flattened dbgpt-ext[storage_chromadb]
         - chromadb >=0.4.22
     tests:
       - python:
@@ -295,87 +326,54 @@ outputs:
 about:
   homepage: https://github.com/eosphoros-ai/DB-GPT
   repository: https://github.com/eosphoros-ai/DB-GPT
-  documentation: http://docs.dbgpt.cn/
+  documentation: http://docs.dbgpt.cn/docs/overview
   license: MIT
   license_file: LICENSE
-  summary: An open-source AI native data app development framework with AWEL and agents (DB-GPT).
+  summary: An open-source AI native data app development framework with AWEL and agents (DB-GPT)
 
 extra:
   feedstock-name: db-gpt
   recipe-maintainers:
-    - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
   cfe-conda-name: db-gpt
   cfe-upstream-registry: github
-  cfe-upstream-name: DB-GPT
-  cfe-name-aliases:
-    - dbgpt
+  cfe-upstream-name: eosphoros-ai/DB-GPT
   cfe-purls:
-    - pkg:conda/db-gpt@${{ version }}
-    - pkg:github/eosphoros-ai/DB-GPT@${{ version }}
+    - pkg:conda/dbgpt@${{ version }}
+    - pkg:github/eosphoros-ai/DB-GPT@v${{ version }}
   cfe-upstream-repo: https://github.com/eosphoros-ai/DB-GPT
   cfe-upstream-homepage: https://github.com/eosphoros-ai/DB-GPT
-  cfe-import-names: [dbgpt]
+  cfe-import-names: [dbgpt, dbgpt_ext, dbgpt_serve, dbgpt_client, dbgpt_sandbox, dbgpt_acc_auto, dbgpt_acc_flash_attn, dbgpt_app]
   cfe-source-kind: github-tag
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - auto-gpt-plugin-template not yet on conda-forge
-    - lyric-py-worker not yet on conda-forge
-  cfe-last-checked: 2026-06-27T02:38:06Z
-  cfe-generated-by-version: 8.55.0
-  cfe-generated-at-datetime: 2026-06-27T02:38:06Z
+    - "channel lag (G66): prereqs auto-gpt-plugin-template + lyric-py-worker merged 2026-07-01, not yet uploaded to the cf channel — db-gpt test-env solve fails until both land"
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33883
+  cfe-last-checked: 2026-07-01T08:34:44Z
+  cfe-generated-by-version: 8.62.0
+  cfe-generated-at-datetime: 2026-07-01T08:34:44Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-27T02:32:55Z
+  cfe-local-build-datetime: 2026-07-01T08:34:44Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
-# source:
-#    # Single GitHub archive keeps all 7 outputs in lockstep (same SHA, same
-#    # version, same uv workspace). Per-output PyPI sdists would decouple the
-#    # internal dbgpt-* cross-references that pin_subpackage(exact=True) enforces.
-# outputs (dbgpt):
-#  build:
-#    script:
-#      # Loosen upstream's exact (==) dependency pins in the wheel METADATA so
-#      # they match the loosened conda run-deps. Without this, pip_check fails:
-#      # the wheel declares e.g. aiohttp==3.8.4 (not on conda-forge) while conda
-#      # installs aiohttp>=3.8.4. The regex rewrites `name==N` → `name>=N` only,
-#      # leaving `<`/`<=` caps and `extra == "..."` markers untouched (G26).
-# outputs (dbgpt-ext):
-#  build:
-#    script:
-#      # Loosen upstream's exact (==) pins in the wheel METADATA (e.g. the [rag]
-#      # extra's spacy==3.7) so pip_check passes against the loosened conda deps.
-#      # See the dbgpt output for the rationale (G26).
-# outputs (dbgpt-client):
-#  requirements:
-#    run:
-#      # upstream `dbgpt[client,cli]` + `dbgpt_ext`. Conda has no extras; the
-#      # [client]+[cli] deps of dbgpt-core are flattened in directly (G25).
-#      #   - httpx ... rich:            flattened dbgpt-core[client] + [cli]
-#      #   - shortuuid ... cloudpickle: dbgpt-client base
-#      # `import dbgpt_client` eagerly pulls dbgpt_ext.rag → dbgpt.rag.knowledge
-#      # → bs4. Upstream declares bs4 only under dbgpt-ext[rag]; it is an
-#      # under-declared hard import for dbgpt-client, so add beautifulsoup4
-#      # directly (G27).
-# outputs (dbgpt-app):
-#  requirements:
-#    run:
-#      # pin_subpackage(exact) on all six siblings PLUS the flattened union of
-#      # every extra it activates, because conda has no extras and the sibling
-#      # `dbgpt` output is built WITHOUT extras (G25). Activates:
-#      # dbgpt[client,cli,agent,simple_framework,framework,code,proxy_openai,
-#      # proxy_tongyi,proxy_zhipuai] + dbgpt-ext[rag,storage_chromadb].
-#      # Group provenance (in list order): dbgpt-app base; dbgpt-core base
-#      # (built without extras → carried here); [client]; [cli]; [agent];
-#      # [simple_framework]; [framework]; [code] = the lyric-* stack
-#      # (S4–S7 of this effort); [proxy_openai] (httpx[socks] → socksio);
-#      # [proxy_tongyi]; dbgpt-ext[rag]; dbgpt-ext[storage_chromadb].
+# Header:
+#   Recipe body is a verbatim MIRROR of conda-forge/staged-recipes#33883
+#   (author @pb01ka, recipe dir `dbgpt-split`; 8 outputs — includes
+#   dbgpt-acc-flash-attn, which this repo's B-full spec had excluded as NG1/OOS-1).
+#   Decision (user, 2026-07-01): do NOT open a competing PR (G58); #33883 is the
+#   accepted solution — we consume `dbgpt` once it lands. Verified GREEN locally
+#   (all 8 outputs, v0.8.1, linux-64, full local channel) 2026-07-01.
+# extra:
+#   recipe-maintainers: pb01ka only — consume, not co-maintain.
+# cfe-submission-pr:
+#   points at pb01ka's PR (not ours) — it is the submission of record for this pkg.
 ####
