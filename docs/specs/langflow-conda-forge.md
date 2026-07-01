@@ -3,12 +3,12 @@ status: in-progress
 implemented_by: bmad-quick-dev
 shipped_ref: "langflow-suite PR #33972 (4 outputs langflow-sdk+lfx+langflow-base+langflow, v1.10.1, MIT) is FULLY GREEN on conda-forge/staged-recipes (2026-06-27) — ALL legs pass: linux + osx + WINDOWS + conda-forge-linter + linter (build 1545234, head eff237f). All blockers fixed: frontend node-build (G73), gunicorn->run_constraints (G76), magika-0.6.3 win-skew via exclude-only-0.6.3 (G77), + langchain/langflow-sdk/litellm external skews cleared (clean-channel verified, G68). PR is OPEN as a DRAFT (branch rxm7706:langflow-suite-clean); NOT yet merged. Next: mark ready-for-review (G64 ping) + coordinate competing pb01ka PRs #33853/#33875. Build artifacts incl conda_pkgs_noarch (universal/macos-arm64) downloadable via store_build_artifacts."
 scope: full-closure   # core hard-dep closure + ALL optional run_constraints integrations (Set C now ALL authored locally) + ALL 3 external cf skews. Nothing deferred except the 3 named caveats (handled per § Caveats: elasticsearch gated on cf PR #122; apify-client already on cf (do not submit); ragstack kept local-only).
-submission_started: 2026-06-24   # Wave B well advanced (live PR reconcile 2026-06-26): 29 staged-recipes PRs in the langflow range — 13 MERGED→on cf (primp #33836, pybase62 #33838, pymilvus-model #33837, jsonquerylang #33846, ibm-cos-suite #33886, vlmrun-hub #33891, ddgs #33896, dydantic #33898, bce-python-sdk #33911, graph-retriever #33913, google-cloud-vectorsearch #33914, sambanova #33916, mypy-boto3-bedrock-runtime #33918); 13 OPEN CI-GREEN (langflow-sdk #33856, jigsawstack #33857, smolagents #33887, llm-sandbox #33888, lomond #33889, apify-shared #33890, milvus-lite #33892, couchbase #33893, langchain-milvus #33894, pksuid #33895, unitxt #33912, google-cloud-modelarmor #33915, langchain-litellm #33917); 1 OPEN CI-RED (opendsstar #33840 — waits on its prereqs milvus-lite/langchain-milvus/smolagents/unitxt(→ragworkbench)/langchain-litellm to merge); 2 TO-CLOSE (standalone ibm-cos-sdk #33885 dup of suite #33886; impit #33897 already on cf). ALL 9 § B′ prereqs now SUBMITTED (6 merged + 3 open-green). This session also converted in-build seds→source patches on graph-retriever/pksuid/milvus-lite/opendsstar/langflow-suite and fixed langchain-litellm (#33917: restored context block + python_min 3.11 for the osx fastuuid-py3.10 gap). langflow-suite ✅ BUMPED to 1.10.1 + langchain~=1.3.0 2026-06-27 — all 3 outputs (lfx/langflow-base/langflow) build+test GREEN locally (commit a0045a9f46). Skew-2 (litellm) RESOLVED (feedstock de-flattened to run_constrained). Skew-1 text-splitters resolved, BUT the bump SURFACED A NEW cf langchain skew: a stale `run_constrained` `aiosqlite >=0.19.0,<0.20` (langchain==1.2.0-era cap, in `constrains` not `depends`) conflicts with langflow-base's `aiosqlite>=0.20` → needs a 1-line langchain-feedstock PR (#276) — MERGED 2026-06-27, but per G66 NOT yet rebuilt-to-channel (live cf langchain 1.3.11 still serves aiosqlite <0.20); local green uses a workaround langchain. Plus langflow-sdk must bump 0.2.0→0.2.1 (lfx 1.10.1 requires >=0.2.1; #33856 CLOSED — langflow-sdk folded into the suite). So Wave A is NOT fully clear. elasticsearch-feedstock #122 still OPEN. NOTE: #33861/#33862 (ibm-watsonx-orchestrate-*) are a SEPARATE effort, not this closure.
+submission_started: 2026-06-24   # Wave B well advanced (live PR reconcile 2026-06-26): 29 staged-recipes PRs in the langflow range — 13 MERGED→on cf (primp #33836, pybase62 #33838, pymilvus-model #33837, jsonquerylang #33846, ibm-cos-suite #33886, vlmrun-hub #33891, ddgs #33896, dydantic #33898, bce-python-sdk #33911, graph-retriever #33913, google-cloud-vectorsearch #33914, sambanova #33916, mypy-boto3-bedrock-runtime #33918); 13 OPEN CI-GREEN (langflow-sdk #33856, jigsawstack #33857, smolagents #33887, llm-sandbox #33888, lomond #33889, apify-shared #33890, milvus-lite #33892, couchbase #33893, langchain-milvus #33894, pksuid #33895, unitxt #33912, google-cloud-modelarmor #33915, langchain-litellm #33917); 1 OPEN CI-RED (opendsstar #33840 — waits on its prereqs milvus-lite/langchain-milvus/smolagents/unitxt(→ragworkbench)/langchain-litellm to merge); 2 TO-CLOSE (standalone ibm-cos-sdk #33885 dup of suite #33886; impit #33897 already on cf). ALL 9 § B′ prereqs now SUBMITTED (6 merged + 3 open-green). This session also converted in-build seds→source patches on graph-retriever/pksuid/milvus-lite/opendsstar/langflow-suite and fixed langchain-litellm (#33917: restored context block + python_min 3.11 for the osx fastuuid-py3.10 gap). langflow-suite ✅ BUMPED to 1.10.1 + langchain~=1.3.0 2026-06-27 — all 3 outputs (lfx/langflow-base/langflow) build+test GREEN locally (commit a0045a9f46). Skew-2 (litellm) RESOLVED (feedstock de-flattened to run_constrained). Skew-1 text-splitters resolved, BUT the bump SURFACED A NEW cf langchain skew: a stale `run_constrained` `aiosqlite >=0.19.0,<0.20` (langchain==1.2.0-era cap, in `constrains` not `depends`) conflicts with langflow-base's `aiosqlite>=0.20` → needs a 1-line langchain-feedstock PR (#276) — MERGED 2026-06-27; the <0.23 rebuild is now LIVE on cf (langchain-1.3.11-pyhcf101f3_1, verified 2026-07-01) — no workaround langchain. langflow-sdk folded into the suite as a 4th output (0.2.1; #33856 CLOSED). Wave A is FULLY CLEAR; the suite (#33972) is fully green as a draft (not yet merged). elasticsearch-feedstock #122 still OPEN. NOTE: #33861/#33862 (ibm-watsonx-orchestrate-*) are a SEPARATE effort, not this closure.
 spec_updated: 2026-06-27
 ---
 # Tech Spec: langflow-suite on conda-forge (submission + external-skew remediation)
 
-## ⚡ CURRENT STATE (2026-06-27) — READ THIS FIRST (single source of truth)
+## ⚡ CURRENT STATE (2026-07-01) — READ THIS FIRST (single source of truth)
 
 > This block is authoritative. The sections below grew by accretion across many sessions; where any
 > of them disagrees, **this block is current** (older dated entries are historical record, not status).
@@ -20,7 +20,7 @@ spec_updated: 2026-06-27
 
 **Gates CLEARED (verified 2026-06-27):**
 
-- **langchain aiosqlite skew** — cf `langchain 1.3.11` build `pyhcf101f3_1` carries `aiosqlite >=0.19.0,<0.23` (the #276 fix, **landed on-channel**); `aiosqlite 0.22.1` on cf. Clean-channel rebuild (local langchain purged, G68) resolves the suite entirely from **conda-forge** — no workaround langchain.
+- **langchain aiosqlite skew** — ✅ **VERIFIED LIVE 2026-07-01:** cf's newest build `langchain-1.3.11-pyhcf101f3_1` (build_number 1) carries the fixed `aiosqlite >=0.19.0,<0.23` (#276); older 1.3.x builds still serve the stale `<0.20` but the solver picks the newest. Clean-channel rebuild (local langchain purged, G68) resolves the suite entirely from **conda-forge** — no workaround langchain.
 - **langflow-sdk** — FOLDED into the suite as a 4th output (`src/sdk`; lfx pins it via `pin_subpackage(exact=True)`); **no external langflow-sdk dep**. Standalone **#33856 CLOSED** (superseded).
 - **litellm (Skew 2)** — cf `litellm 1.89.4` de-flattened the proxy extras to `run_constrained`; installs clean from cf.
 
@@ -30,10 +30,10 @@ spec_updated: 2026-06-27
 
 1. ✅ All build/win blockers fixed (frontend G73, gunicorn G76, magika G77) + external skews cleared (G68). PR #33972 passes **every** leg (linux + osx + win + both linters).
 2. **Mark the draft PR ready-for-review**, then one G64 language-matched review ping (after green).
-3. **Coordinate the competing pb01ka PRs** — #33853 (langflow-base draft, ships no frontend) + #33875 (langflow-sdk open) overlap this suite; note the overlap / align before or at review so a reviewer doesn't merge a conflicting langflow-base.
+3. **Coordinate the competing pb01ka PRs** — **#33875 (langflow-sdk) is now CLOSED** (2026-06-30); **#33853 (langflow-base) is still OPEN-draft and ships NO frontend** (verified 2026-07-01 — same G73 tag-build gap → a broken UI). Our #33972 is the superior submission; flag the overlap at review so a reviewer doesn't merge pb01ka's frontend-less langflow-base.
 4. Per-recipe truth for the rest of the closure = the Appendix tracker tables (see the risk list below for the deliberate deviations to acknowledge at review).
 
-**Closure PR state (live 2026-06-27; per-recipe truth = the Appendix tracker tables):** ~13 merged → on cf; ~38 open + CI-green (in review); ~10 open **draft, CI-red** (opendsstar #33840 + the 8 bucket-C #33963–#33970 — auto-clear as prereqs merge; jigsawstack #33857 draft-green); **3 CLOSED** (#33856 folded, #33885 ibm-cos-sdk dup, #33936 opik superseded); **impit #33897 → CLOSE** (already on cf). The 4 `lfx-*` feedstocks stay blocked until langflow-suite is on cf; `langchain-elasticsearch` stays blocked on `elasticsearch-feedstock #122` (open, awaiting its owners).
+**Closure PR state (live 2026-07-01; per-recipe truth = the Appendix tracker tables):** **~17 merged → on cf** (the 13 core + lomond #33889, astrapy #33943, cleanlab-tlm #33947, upstash-vector #33961, all merged 2026-06-29/30); **~30 open + CI-green** (incl. the 18 remaining ex-bucket-B, now un-drafted); **~14 open draft, CI-red** (opendsstar #33840; the 8 bucket-C #33963–#33970; the 4 `lfx-*` #33977–#33980 + langchain-elasticsearch #33981 — all auto-clear as prereqs land); **jigsawstack #33857** + **#33972 langflow-suite** are green drafts; **3 CLOSED** (#33856 folded, #33885 dup, #33936 superseded). **impit #33897 → still OPEN** (the close is still pending — not done). `lfx-*` stay red until langflow-suite is on cf; `langchain-elasticsearch` stays blocked on `elasticsearch-feedstock #122` (still OPEN/unmerged 2026-07-01; no `8.19.x` on cf yet).
 
 ### Submission risks for langflow-suite (acknowledge before opening the PR)
 
@@ -140,8 +140,8 @@ Exist under `recipes/<name>/` but are **not** langflow deps. Submit under their 
 | Status           | **IN PROGRESS — see the ## CURRENT STATE block (top) for the authoritative state.** Headline: langflow-suite (4-output, v1.10.1) builds+tests GREEN locally against PURE conda-forge (langchain/langflow-sdk/litellm gates ALL cleared, G68) **frontend fix APPLIED** — the GitHub-tag build shipped no prebuilt frontend (G51/G73; `langflow/frontend/` is wheel-only), now node-built at build time (G73). Plus gunicorn→`run_constraints` (G76) + magika-0.6.3 win-skew→exclude-only-0.6.3 (G77). **PR [#33972](https://github.com/conda-forge/staged-recipes/pull/33972) is SUBMITTED + FULLY GREEN** (linux + osx + WINDOWS + both linters, build 1545234) — OPEN as a DRAFT; next: mark ready-for-review + coordinate competing pb01ka #33853/#33875. Closure PRs: ~13 merged / ~38 open-green / ~10 draft-red / 3 closed (per-recipe = Appendix). |
 | Owner            | rxm7706                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Track            | BMAD Quick Flow (tech-spec only)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Upstream         | `langflow-ai/langflow` v1.10.0 (MIT). Monorepo split into `lfx` (executor core, `src/lfx`), `langflow-base` (`src/backend/base`, ships the `langflow` import), `langflow` (umbrella, `.`), and the `lfx-*` extension plugins.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Recipe           | `recipes/langflow-suite/recipe.yaml` — multi-output (`recipe:` + `outputs: [lfx, langflow-base, langflow]`). Source = GitHub monorepo tag archive (a PyPI wheel can't be used: outputs build `src/lfx`, `src/backend/base`, and `.`). sha256(`v1.10.0`) = `45a317111a5d7cbc2709e683a72a80779801a658f61e506b612978588788ab71`.                                                                                                                                                                                                                                                                                                                                                        |
+| Upstream         | `langflow-ai/langflow` **v1.10.1** (MIT; bumped from 1.10.0). Monorepo split into `langflow-sdk` (`src/sdk`, own version 0.2.1), `lfx` (executor core, `src/lfx`), `langflow-base` (`src/backend/base`, ships the `langflow` import), `langflow` (umbrella, `.`), and the `lfx-*` extension plugins.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Recipe           | `recipes/langflow-suite/recipe.yaml` — multi-output (`recipe:` + `outputs: [langflow-sdk, lfx, langflow-base, langflow]` — **4 outputs**; langflow-sdk folded in as a per-output-versioned 4th output, #33856 CLOSED). Source = GitHub monorepo tag archive (a PyPI wheel can't be used: outputs build `src/sdk`, `src/lfx`, `src/backend/base`, and `.`). **v1.10.1**, sha256 = `807470ff4bc1283db9716e911af8755b4104847bb6dbba03fc2e610184598fdb`.                                                                                                                                                                                                                                                                                                                                                        |
 | Target           | `conda-forge/staged-recipes` → the langflow closure (most `noarch: python`; `primp` compiled Rust, `couchbase` compiled C++).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Real`python_min` | **3.11** — NOT the upstream-aspirational 3.10. `jsonquerylang` (a hard dep) imports `typing.NotRequired` (PEP 655, py3.11+) unconditionally (**G41**).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Lifetime         | Long-running — feedstocks become autotick-maintained after the first PR lands.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -150,10 +150,12 @@ Exist under `recipes/<name>/` but are **not** langflow deps. Submit under their 
 
 ## Packaging shape & key decisions
 
-- **Multi-output suite.** `recipes/langflow-suite/` produces `lfx` → `langflow-base` → `langflow`
-  from one source. python_min 3.11; source = GitHub tag archive; `build.number: 0`. Each output
-  carries its own `tests:` (per-output is required for multi-output — conda-smithy rejects a
-  top-level `tests:`).
+- **Multi-output suite (4 outputs).** `recipes/langflow-suite/` produces
+  **`langflow-sdk` → `lfx` → `langflow-base` → `langflow`** from one monorepo source (langflow-sdk
+  folded in 2026-06-27 as a per-output-versioned 4th output — 0.2.1 — so lfx pins it via
+  `pin_subpackage(exact=True)` with no external langflow-sdk dep; #33856 CLOSED). python_min 3.11;
+  source = GitHub tag archive (v1.10.1); `build.number: 0`. Each output carries its own `tests:`
+  (per-output is required for multi-output — conda-smithy rejects a top-level `tests:`).
 - **The 4 `lfx-*` extension plugins are SEPARATE feedstocks** (`lfx-arxiv`, `lfx-docling`,
   `lfx-duckduckgo`, `lfx-ibm`). The `langflow` umbrella **hard-deps** all four
   (upstream `langflow` `[project.dependencies]` = `langflow-base[complete]` + the 4 `lfx-*`).
@@ -169,8 +171,8 @@ Exist under `recipes/<name>/` but are **not** langflow deps. Submit under their 
   validated empirically (`import langflow`/pip_check); `jq` + `onnxruntime` were also demoted
   once the build proved they're component-level, not load-time core.
 - **This dissolves the langflow→lfx-*→lfx bootstrap cycle** (the umbrella no longer hard-deps
-  `lfx-*`), so the earlier Q1 split-vs-keep question is moot — the single 3-output recipe stands
-  and submits cleanly, versions locked in lockstep.
+  `lfx-*`), so the earlier Q1 split-vs-keep question is moot — the single 4-output recipe
+  (langflow-sdk + lfx + langflow-base + langflow) stands and submits cleanly, versions locked in lockstep.
 - **`lfx` keeps its upstream hard deps** (it IS the executor core): `langchain` +
   `langchain-classic` + `opendsstar` (→ `litellm`), etc. This is **why the two external cf skews
   still gate `lfx` on conda-forge** even though langflow-base/langflow are now lean
@@ -360,8 +362,8 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 > collides with langflow-base's upstream-accurate hard `aiosqlite >=0.20.0`. This lives in `constrains`, not
 > `depends`, and the narrow `langchain + langchain-classic` dry-run above never pulled aiosqlite, so it missed
 > it (CFE [G67](../../.claude/skills/conda-forge-expert/SKILL.md)). **This one DOES need a langchain-feedstock
-> PR** (re-sync the stale `aiosqlite` cap to langchain 1.3.11's `extended_testing_deps.txt` → `>=0.19.0,<0.23`, NOT a guessed `<1.0`) — fixed in `recipes/langchain/` (commit d1c6b20c7a) and pushed as **`conda-forge/langchain-feedstock` [#276](https://github.com/conda-forge/langchain-feedstock/pull/276), MERGED 2026-06-27** ("V2 recipe, fix run constraints — anthropic, aiosqlite, remove defusedxml"; the closed #275 was a superseded duplicate). **⚠️ Per G66, MERGED ≠ INSTALLABLE:** the feedstock must still rebuild + upload — verified 2026-06-27 the live cf `langchain 1.3.11` builds (`pymin310`/`pymin313`, build_number 0) **still carry the stale `aiosqlite >=0.19.0,<0.20` in `constrains`**; the `<0.23` fix is NOT yet on the channel. So the suite's local green still uses a workaround
-> langchain, and cf submission stays gated until the rebuilt langchain uploads. "No feedstock PR needed" above is superseded for this aiosqlite case.
+> PR** (re-sync the stale `aiosqlite` cap to langchain 1.3.11's `extended_testing_deps.txt` → `>=0.19.0,<0.23`, NOT a guessed `<1.0`) — fixed in `recipes/langchain/` (commit d1c6b20c7a) and pushed as **`conda-forge/langchain-feedstock` [#276](https://github.com/conda-forge/langchain-feedstock/pull/276), MERGED 2026-06-27** ("V2 recipe, fix run constraints — anthropic, aiosqlite, remove defusedxml"; the closed #275 was a superseded duplicate). **✅ VERIFIED LIVE 2026-07-01 (G66 discharged): the rebuild HAS propagated** — cf's newest build `langchain-1.3.11-pyhcf101f3_1` (build_number 1) carries the fixed `aiosqlite >=0.19.0,<0.23` in `constrains` (older 1.3.x builds still serve the stale `<0.20`, but the solver picks the newest). **The suite now resolves langchain entirely from conda-forge — no workaround langchain needed**
+> (purge any local copy per G68).
 
 - **Symptom:** `lfx` test-env solve fails. `lfx` pins **both** `langchain~=1.2.0` and
   `langchain-classic~=1.0.7`. On cf, **every `langchain 1.2.x` build (all 37) pins
@@ -463,27 +465,28 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 > recipe locally (against the merged local channel) before pushing. After each feedstock push,
 > request rerender.
 
-### Wave A — clear the external skews — ✅ langchain/langflow-sdk/litellm gates CLEARED (2026-06-27); ⚠️ a NEW blocker (no frontend, G51) now gates langflow-suite submission — see § CURRENT STATE
+### Wave A — clear the external skews — ✅ ALL CLEARED (verified 2026-07-01): langchain aiosqlite `<0.23` fix LIVE on cf, langflow-sdk folded, litellm de-flattened, frontend node-built (G73). See § CURRENT STATE
 
-> **⚠️ Wave A is MOSTLY clear, NOT fully (updated 2026-06-27 after the 1.10.1 bump).** The two *original*
-> durable feedstock PRs (text-splitters / litellm-flatten) are obsolete — both feedstocks moved on their own.
-> The local `langflow-suite` 1.10.0 → 1.10.1 + `langchain~=1.3.0` bump is **DONE** (commit `a0045a9f46`; all 3
-> outputs GREEN locally). **BUT the bump surfaced TWO new prerequisites:** (1) a NEW cf langchain skew on the
-> `constrains` axis — stale `run_constrained` `aiosqlite >=0.19.0,<0.20` vs langflow-base `aiosqlite>=0.20`
-> (G67) → a 1-line langchain-feedstock PR — **[#276](https://github.com/conda-forge/langchain-feedstock/pull/276) MERGED 2026-06-27, but per G66 NOT yet rebuilt-to-channel** (live cf langchain 1.3.11 still serves `aiosqlite <0.20`); (2) `langflow-sdk` must bump 0.2.0 → **0.2.1**
-> (lfx 1.10.1 requires `>=0.2.1`; #33856 CLOSED — langflow-sdk folded into the suite). Local green uses a workaround langchain. See § Skew 1 banner.
+> **✅ Wave A is FULLY CLEAR (verified 2026-07-01).** The two *original* durable feedstock PRs
+> (text-splitters / litellm-flatten) are obsolete — both feedstocks moved on their own. The local
+> `langflow-suite` 1.10.0 → 1.10.1 + `langchain~=1.3.0` bump is **DONE** (commit `a0045a9f46`; all 4
+> outputs GREEN locally). The two prerequisites the bump surfaced are both satisfied: (1) the cf langchain
+> `constrains`-axis skew (stale `aiosqlite >=0.19.0,<0.20`) is **FIXED AND LIVE** —
+> **[#276](https://github.com/conda-forge/langchain-feedstock/pull/276) MERGED**, and the rebuild has
+> propagated: cf's newest build `langchain-1.3.11-pyhcf101f3_1` carries `aiosqlite >=0.19.0,<0.23` (verified
+> live 2026-07-01); **no workaround langchain needed** (purge any local copy, G68); (2) `langflow-sdk` was
+> **folded into the suite** as a per-output-versioned 4th output (0.2.1), so the external langflow-sdk dep is
+> gone (#33856 CLOSED). See § Skew 1 banner.
 
 All 3 langflow-suite outputs build + test GREEN locally (imports + pip_check) — but via a workaround langchain:
 
-- **A1 — langchain (Skew 1). text-splitters RESOLVED; NEW aiosqlite `run_constrained` skew needs a PR.** The
-  old text-splitters `depends` pin is gone (lfx 1.10.1 → `langchain~=1.3.0`; cf 1.3.11 clean). The 1.10.1 bump
-  is done. But cf `langchain 1.3.11` carries a stale `run_constrained` `aiosqlite >=0.19.0,<0.20` that blocks
-  langflow-base's `aiosqlite>=0.20` (G67) → the 1-line langchain-feedstock PR (re-sync to langchain
-  1.3.11's `extended_testing_deps.txt`: `aiosqlite >=0.19.0,<0.23`; fixed in `recipes/langchain/` d1c6b20c7a) is
-  **[#276](https://github.com/conda-forge/langchain-feedstock/pull/276), MERGED 2026-06-27 — but per G66 NOT yet
-  rebuilt-to-channel** (verified live cf `langchain 1.3.11` still carries `aiosqlite >=0.19.0,<0.20`; the rebuild
-  must upload before the suite can submit).
-  **A1b — langflow-sdk 0.2.0→0.2.1** (lfx 1.10.1 requires `>=0.2.1`; #33856 CLOSED — langflow-sdk folded into the suite (no longer a gate)).
+- **A1 — langchain (Skew 1). ✅ FULLY RESOLVED (verified 2026-07-01).** text-splitters `depends` pin gone
+  (lfx 1.10.1 → `langchain~=1.3.0`; cf 1.3.11 clean). The stale `run_constrained` `aiosqlite >=0.19.0,<0.20`
+  that blocked langflow-base's `aiosqlite>=0.20` (G67) is **fixed AND live**: langchain-feedstock
+  **[#276](https://github.com/conda-forge/langchain-feedstock/pull/276) MERGED**, and the rebuild has
+  propagated — cf's newest build `langchain-1.3.11-pyhcf101f3_1` carries `aiosqlite >=0.19.0,<0.23` (re-synced
+  to 1.3.11's `extended_testing_deps.txt`; fixed in `recipes/langchain/` d1c6b20c7a). **No workaround langchain
+  needed.** **A1b — langflow-sdk** folded into the suite as a 4th output (0.2.1); #33856 CLOSED — no longer a gate.
 - **A2 — litellm proxy-extras flatten (Skew 2). ✅ RESOLVED — NO PR.** litellm-feedstock 1.89.4 already
   moved the proxy/proxy-runtime/extra-proxy deps to `run_constrained:`; `litellm` installs cleanly from cf
   (mamba dry-run, 90 pkgs). Nothing to file.
@@ -528,8 +531,8 @@ All 3 langflow-suite outputs build + test GREEN locally (imports + pip_check) �
 4. **B4:** ibm-watsonx-ai (→ibm-cos-sdk); also build 1.3.37 for the py3.10 leg (G40).
 5. **B5:** langchain-ibm (→ibm-watsonx-ai), agent-lifecycle-toolkit (→ibm-watsonx-ai, smolagents,
    llm-sandbox), opendsstar (→pymilvus-model, milvus-lite, langchain-milvus, smolagents, ragworkbench).
-6. **B6 (single 3-output suite — Q1 RESOLVED, NOT split):** submit `recipes/langflow-suite/`
-   producing **lfx + langflow-base + langflow** in one PR. Lean hard deps only (→ langflow-sdk,
+6. **B6 (single 4-output suite — Q1 RESOLVED, NOT split):** submit `recipes/langflow-suite/`
+   producing **langflow-sdk + lfx + langflow-base + langflow** in one PR (= PR #33972). Lean hard deps only (→ langflow-sdk,
    opendsstar, jsonquerylang + the cf langchain/framework stack); spider-client/assemblyai/
    firecrawl-py and the 4 `lfx-*` are `run_constraints`, NOT submission prerequisites. **No test
    relaxation needed** — the lean umbrella never hard-deps the lfx-*, so the bootstrap cycle is
@@ -570,7 +573,7 @@ before each push — feedstocks land continuously.)
 
 - **A. ALREADY ON CF → do NOT submit (G58 reject), re-stamp metadata (1):** `apify-client`
   (`apify-client-feedstock` created 2026-06-26; local metadata stale).
-- **B. NET-NEW, built clean, no blocker → ✅ ALL 21 SUBMITTED AS DRAFTS 2026-06-27 (#33942–#33962); ALL 21 CI-GREEN:** `firecrawl-py`, `astrapy`, `needle-python`,
+- **B. NET-NEW, built clean, no blocker → ✅ ALL 21 SUBMITTED (#33942–#33962); now un-drafted — 3 MERGED (astrapy #33943, cleanlab-tlm #33947, upstash-vector #33961) + 18 OPEN CI-GREEN (2026-07-01):** `firecrawl-py`, `astrapy`, `needle-python`,
   `cassio`, `cleanlab-tlm`, `scrapegraph-py`, `composio-langchain`, `langchain-cohere`, `mem0ai`,
   `langchain-google-calendar-tools`, `metal-sdk`, `langchain-nvidia-ai-endpoints`, `langchain-pinecone`,
   `langchain-weaviate`, `langchain-unstructured`, `openlayer`, `spider-client`, `assemblyai`, `upstash-vector`,
@@ -625,11 +628,11 @@ langflow-base → langflow.
 
 ## Open Questions — Q1–Q5 RESOLVED; Q6 is NEW + OPEN (2026-06-23)
 
-- **Q1 — suite shape. RESOLVED: KEEP the single 3-output recipe (do NOT split lfx).** lfx +
-  langflow-base + langflow ship from one `langflow-suite` feedstock so the three versions stay
-  locked together (better long-term; autotick bumps them in lockstep). The `langflow → lfx-* → lfx`
-  bootstrap cycle is handled at the *initial* staged-recipes gate by **sequencing + a temporary
-  relaxation of the `langflow` output's lfx-* test** (Wave B6 → B7 → B8 follow-up), not by splitting.
+- **Q1 — suite shape. RESOLVED: KEEP a single multi-output recipe (do NOT split lfx) — now 4 outputs.**
+  `langflow-sdk` + `lfx` + `langflow-base` + `langflow` ship from one `langflow-suite` feedstock so the
+  versions stay locked together (autotick bumps them in lockstep). langflow-sdk was folded in 2026-06-27
+  (was separate #33856, now CLOSED). The `langflow → lfx-* → lfx` bootstrap cycle is dissolved by the lean
+  re-architecture (the umbrella no longer hard-deps lfx-*; § Packaging shape), so no test relaxation is needed.
 - **Q2 — ragstack-ai-knowledge-store BUSL-1.1. RESOLVED: keep the recipe LOCAL-ONLY, commented-out,
   marked non-OSI/out-of-scope; NEVER submit.** Confirm `opendsstar` resolves without it (Wave A).
 - **Q3 — python_min 3.11. RESOLVED: declare `python_min 3.11` across the suite** (honest floor per
@@ -641,14 +644,11 @@ langflow-base → langflow.
   `conda-forge/elasticsearch-feedstock` PR #122**
   (https://github.com/conda-forge/elasticsearch-feedstock/pull/122 — **re-verify it's still open/merged
   before relying on it**). Submit once #122 merges.
-- **Q6 — lean `lfx` too? ✅ RESOLVED (opendsstar demoted to lfx `run_constraints` in 1.10.1 — breaks the lfx→litellm hard chain; the heavy closure is now optional).** The lean cut applied to langflow-base + langflow, but `lfx`
-  keeps its upstream hard dep on `opendsstar`, which pulls `litellm` + a heavy closure (docling,
-  milvus-lite, sentence-transformers, datasets, …). So `conda install langflow` still drags that in
-  via lfx even though the umbrella is lean. The "no one needs all integrations" rationale arguably
-  applies to `lfx → opendsstar` as well — **should `opendsstar` (and its heavy closure) be demoted
-  to an lfx `run_constraints` integration?** Note upstream lfx hard-deps `OpenDsStar` under a marker,
-  so this is a deliberate-deviation decision, not free. Affects how heavy the minimal install is
-  **and** whether Skews 1/2 still gate the core (opendsstar is the path that pulls litellm). Unresolved.
+- **Q6 — lean `lfx` too? ✅ RESOLVED (opendsstar demoted to lfx `run_constraints` in 1.10.1 — breaks the lfx→litellm hard chain; the heavy closure is now optional).** **Resolved by the 1.10.1 bump:** upstream lfx 1.10.1
+  made `opendsstar` optional, so it was demoted from lfx `run:` → `run_constraints`. The minimal
+  `conda install langflow` no longer drags in `litellm` + the heavy opendsstar closure (docling,
+  milvus-lite, sentence-transformers, datasets, …) — and this is *why* Skews 1/2 no longer gate the
+  core (opendsstar was the path that pulled litellm). The heavy closure is now opt-in.
 
 ---
 
@@ -830,7 +830,7 @@ The **2026-06-27 verified live submission tally** (this update — a `gh pr list
 - **40 OPEN + CI-GREEN:** the 21 bucket-B (#33942–#33962) + 6 § B′ consumers (#33935/#33937/#33938/#33939/#33940/#33941) + 13 Wave-B/B′ core (langflow-sdk #33856, jigsawstack #33857[draft], smolagents #33887, llm-sandbox #33888, lomond #33889, apify-shared #33890, milvus-lite #33892, couchbase #33893, langchain-milvus #33894, pksuid #33895, unitxt #33912, google-cloud-modelarmor #33915, langchain-litellm #33917).
 - **2 OPEN + CI-RED (intentional drafts):** opendsstar #33840 (waits on its prereqs to merge → auto-clears) and impit #33897 (TO-CLOSE — already on cf).
 - **2 CLOSED:** ibm-cos-sdk #33885 (dup of suite), opik #33936 (superseded by #33937).
-- **6 NOT SUBMITTED (deferred, zero PRs):** bucket D only (hard-gated: langflow-suite, lfx-arxiv, lfx-docling, lfx-duckduckgo, lfx-ibm, langchain-elasticsearch) — see § Submission-readiness sweep bucket D for blockers.
+- **6 bucket-D (hard-gated) — ⚠ this "zero PRs" line is STALE; all 6 are now SUBMITTED (2026-07-01):** langflow-suite **#33972** (green draft), lfx-arxiv **#33977**, lfx-docling **#33978**, lfx-duckduckgo **#33979**, lfx-ibm **#33980**, langchain-elasticsearch **#33981** (the 5 leaves draft-red until their prereqs land). See § Handoff.
 
 > **UPDATE (later 2026-06-27): bucket C (8) now SUBMITTED AS DRAFTS** (#33963 ragworkbench, #33964 toolguard, #33965 langchain-google-community, #33966 langwatch, #33967 langchain-astradb, #33968 ibm-watsonx-ai, #33969 langchain-ibm, #33970 agent-lifecycle-toolkit), each CI-red until its prereq PR merges (auto-clears, opendsstar-style). All 8 cfe-free on push (G62), draft, template-bodied (G63). So **only bucket D (6) remains unsubmitted.** Bucket D gates rechecked: langchain aiosqlite rebuild has landed on cf (a `<0.23` build of langchain 1.3.11 is now on-channel), but **langflow-sdk 0.2.1 is still not on cf** (#33856 CLOSED (folded)) → langflow-suite still gated; lfx-* gated on the suite; langchain-elasticsearch gated on elasticsearch-feedstock #122 (open, CI-passing — waiting on the feedstock owners, nothing for us to do).
 
@@ -909,8 +909,9 @@ Status legend (mirrors the recipe's `cfe-on-conda-forge-status`):
 | 36 | lfx-duckduckgo                                                     | B7      | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx-duckduckgo/recipe.yaml)          | blocked (→lfx, ddgs)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [#33979](https://github.com/conda-forge/staged-recipes/pull/33979) |
 | 37 | lfx-ibm                                                            | B7      | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx-ibm/recipe.yaml)                 | blocked (→lfx, langchain-ibm, ibm-watsonx-ai)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [#33980](https://github.com/conda-forge/staged-recipes/pull/33980) |
 
-> **Folded into `langflow-suite`** (Q1 — single 3-output recipe; these dirs are kept for *local*
-> build-verification only, NOT submitted standalone):
+> **Folded into `langflow-suite`** (Q1 — single **4-output** recipe: langflow-sdk + lfx + langflow-base
+> + langflow; these dirs are kept for *local* build-verification only, NOT submitted standalone):
+> [langflow-sdk](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow-sdk/recipe.yaml) ·
 > [lfx](https://github.com/rxm7706/local-recipes/blob/main/recipes/lfx/recipe.yaml) ·
 > [langflow-base](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow-base/recipe.yaml) ·
 > [langflow](https://github.com/rxm7706/local-recipes/blob/main/recipes/langflow/recipe.yaml).
@@ -971,7 +972,7 @@ leaves-first. (Audit found **zero** truly-unpackaged recipes — see § B′.)
 | 1 | impit                       | C (prereq) | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/impit/recipe.yaml)                       | **ALREADY ON CONDA-FORGE** (conda-forge/impit-feedstock v0.13.0, maint. Pijukatel); staged-recipes PR [#33897](https://github.com/conda-forge/staged-recipes/pull/33897) → CLOSE (linter "feedstock exists"). **Platform-expansion prepped locally**: `recipes/impit/` now mirrors the feedstock + a `conda-forge.yml` adding **osx-arm64 + linux-aarch64** (linux-aarch64 cross-build verified GREEN locally 2026-06-25; ring/aws-lc/rustls-fork all cross-compiled) — push as a feedstock PR (rerender).                          | feedstock PR (not staged-recipes) |
 | 2 | apify-client                | C          | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/apify-client/recipe.yaml)                | **ALREADY ON CONDA-FORGE — do NOT submit (G58)** (`apify-client-feedstock` created 2026-06-26; local `cfe-on-conda-forge-feedstock: none` is STALE — re-stamp to confirmed-on-conda-forge). Its old `impit` blocker is also now on cf (moot).                                                                                                                                                                                                                                                                                       | n/a (feedstock exists)            |
 | 3 | langchain-elasticsearch     | C          | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain-elasticsearch/recipe.yaml)     | blocked (gated on[elasticsearch-feedstock #122](https://github.com/conda-forge/elasticsearch-feedstock/pull/122) — still OPEN 2026-06-24)                                                                                                                                                                                                                                                                                                                                                                                            | [#33981](https://github.com/conda-forge/staged-recipes/pull/33981) |
-| 4 | langchain                   | —         | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain/recipe.yaml)                   | **local mirror of the durable feedstock fix — do NOT submit to staged-recipes** (already on cf). Now at **1.3.11** with `aiosqlite >=0.19.0,<0.23` (`groq <1` correctly retained per G67); pushed as `conda-forge/langchain-feedstock` [#276](https://github.com/conda-forge/langchain-feedstock/pull/276), **MERGED 2026-06-27**. Local channel still uses this as the workaround build until the merged fix rebuilds-to-channel (G66 — live cf 1.3.11 still serves `aiosqlite <0.20`).                                            | langchain-feedstock #276 (MERGED) |
+| 4 | langchain                   | —         | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/langchain/recipe.yaml)                   | **local mirror of the durable feedstock fix — do NOT submit to staged-recipes** (already on cf). Now at **1.3.11** with `aiosqlite >=0.19.0,<0.23` (`groq <1` correctly retained per G67); pushed as `conda-forge/langchain-feedstock` [#276](https://github.com/conda-forge/langchain-feedstock/pull/276), **MERGED**. **✅ The `<0.23` rebuild IS LIVE on cf** (`langchain-1.3.11-pyhcf101f3_1`, verified 2026-07-01) — G66 discharged; the local workaround build is **no longer needed** (purge per G68).                                            | langchain-feedstock #276 (MERGED) |
 | 5 | litellm                     | —         | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/litellm/recipe.yaml)                     | **local-only — NEVER submit; workaround NO LONGER NEEDED** (Skew 2 RESOLVED on cf: litellm 1.89.4 already moved the proxy/proxy-runtime/extra-proxy extras to `run_constrained`; `litellm` installs clean from cf). Safe to purge the stale local 1.89.3 build (G68).                                                                                                                                                                                                                                                                | n/a                               |
 | 6 | ragstack-ai-knowledge-store | —         | [recipe.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/ragstack-ai-knowledge-store/recipe.yaml) | **local-only — NEVER submit** (BUSL-1.1 / non-OSI)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | n/a                               |
 | 7 | cassandra-driver            | —         | [meta.yaml](https://github.com/rxm7706/local-recipes/blob/main/recipes/cassandra-driver/meta.yaml)                | **feedstock-fix mirror (durable fix for cassio win+py3.12+)** — v0 meta.yaml + `0001-add-asyncio-reactor-fallback.patch` (asyncio reactor fallback) + build.number 0→1 + `cassandra.cluster` test guard. Patch runtime-verified (repro: unpatched fails / patched→AsyncioConnection); local full conda-build blocked by an unrelated `ez_setup`/tarfile env quirk. **TO FILE: `conda-forge/cassandra-driver-feedstock` PR** (maintainers: petercable/anirrudh/scopatz/xylar — PR, don't self-merge; flag the ez_setup fragility). | feedstock PR (TO FILE)            |
