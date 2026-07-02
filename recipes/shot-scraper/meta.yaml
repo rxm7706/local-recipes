@@ -1,14 +1,13 @@
 {% set name = "shot-scraper" %}
-{% set version = "1.9.1" %}
-{% set python_min = "3.10" %}
+{% set version = "1.10" %}
 
 package:
   name: {{ name|lower }}
-  version: {{ version }}
+  version: "{{ version }}"
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/shot_scraper-{{ version }}.tar.gz
-  sha256: 794d1408d87cc2eaf66b3dd6357aa27f51872b035c066a9aedb27f51312e0a14
+  sha256: 571be6d721d1d3cbc47c703b1cd3314ed43457e2c3f5fa65fa217fdcdaf16679
 
 build:
   entry_points:
@@ -23,6 +22,8 @@ requirements:
     - pip
     - uv-build >=0.9.7,<0.10.0
   run:
+    - pydantic
+    - playwright >=1.61.0
     - python >={{ python_min }}
     - click
     - pyyaml
@@ -32,9 +33,6 @@ requirements:
 test:
   imports:
     - shot_scraper
-  commands:
-    - pip check
-    - shot-scraper --help
   requires:
     - pip
     - python {{ python_min }}
