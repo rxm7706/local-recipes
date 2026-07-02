@@ -2,7 +2,7 @@
 doc_type: development-guide
 project_name: local-recipes
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.62.0'
+source_pin: 'conda-forge-expert v8.63.0'
 ---
 
 # Development Guide
@@ -409,7 +409,7 @@ GitHub Actions (`.github/workflows/`) handles:
 | Cross-compile question | `.claude/skills/conda-forge-expert/guides/cross-compilation.md` |
 | Atlas operations | `.claude/skills/conda-forge-expert/guides/atlas-operations.md` |
 | Air-gap setup | `docs/enterprise-deployment.md` (or `deployment-guide.md` in this set) |
-| Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1–G87) |
+| Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1–G88) |
 | BMAD multi-project | `_bmad-output/PROJECTS.md` |
 | Project-specific rules | `_bmad-output/projects/local-recipes/project-context.md` |
 | Recent changes | `.claude/skills/conda-forge-expert/CHANGELOG.md` TL;DR |
