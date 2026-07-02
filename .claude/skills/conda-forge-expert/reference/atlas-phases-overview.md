@@ -1,37 +1,236 @@
-# cf_atlas Phases — Overview by Actionable Intelligence
+# cf_atlas — Phases & Actionable Intelligence
 
-Companion to
-[`atlas-actionable-intelligence.md`](atlas-actionable-intelligence.md)
-(persona × goal index). This file is the **phase-indexed** view: one
-section per pipeline stage, capturing the four things every consumer of
-the atlas needs to know about a phase before relying on it.
+> **Consolidated reference (2026-07-02).** This file absorbed
+> `atlas-actionable-intelligence.md` (the persona × goal catalog); the two views now live
+> together. **Part A** is the persona-indexed catalog (WHO uses WHAT); **Part B** is the
+> phase-indexed overview (WHAT each phase does and writes). Engineering patterns (rate
+> limits, GraphQL batching, atomic writes, checkpoints, the Phase P cost model) live in
+> [`atlas-phase-engineering.md`](atlas-phase-engineering.md); cadence, TTLs, profile
+> invocations, and recovery playbooks live in
+> [`../guides/atlas-operations.md`](../guides/atlas-operations.md) — link out, don't
+> duplicate.
 
-For each phase:
-
-- **Data source** — exact URL(s), dataset, or upstream table fetched.
-- **Purpose** — why the phase exists; what new fact lands in `cf_atlas.db`.
-- **What gets written** — tables + columns, so downstream queries are
-  grounded in real schema rather than recall.
-- **Actionable intelligence** — the CLIs, MCP tools, and SQL queries that
-  this phase makes possible. Anything `📋 open` in the persona catalog is
-  noted here against the phase that would deliver it.
-
-Cadence + TTL + recovery details live in
-[`../guides/atlas-operations.md`](../guides/atlas-operations.md);
-engineering patterns (rate limits, GraphQL batching, atomic writes,
-checkpoint recovery, enterprise routing) live in
-[`atlas-phase-engineering.md`](atlas-phase-engineering.md). Don't
-duplicate those here — link out.
-
-Source of truth for each phase's behavior remains the docstring in
-`.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py`. This
-document distills those docstrings into the intelligence outcomes they
-unlock. Update on every release that adds, removes, or materially
-changes a phase.
+Source of truth for each phase's behavior remains the docstrings in
+`scripts/conda_forge_atlas.py`. This document distills them into the intelligence
+outcomes they unlock. Update on every release that adds a phase, CLI, or actionable
+signal — both parts plus the Status Summary, in the same edit as the CHANGELOG entry.
 
 ---
 
-## At-a-glance index
+## Part A — Actionable-intelligence catalog (persona × goal)
+
+Organized by persona (feedstock maintainer / conda-forge admin / consumer / cross-cutting),
+then by goal, then by the action that produces the outcome. Each row captures:
+
+- **Goal** — the question the user is trying to answer
+- **Action** — the CLI / SQL / tool that produces the answer
+- **Data source** — phase, table, or external system
+- **Outcome** — what the user does next
+- **Status** — `✅ shipped` / `📋 open` (planned, not yet shipped) / `❌ gap` (no current coverage, not yet planned)
+
+### I. Feedstock Maintainer
+
+The maintainer of one or more conda-forge feedstocks (e.g., `rxm7706` with
+~729 feedstocks). Pain points: too many feedstocks to track manually, bot
+PR churn, CVE response time, knowing when to update vs archive vs migrate.
+
+#### Triage
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| What should I work on this week? | `staleness-report --maintainer X --by-risk --limit 25` | Phase B+B.6 (status), Phase G (CVE counts), `package_maintainers` join | Prioritized list combining "old release" + "actively risky" | ✅ shipped |
+| Which of my feedstocks have stuck bots? | `feedstock-health --maintainer X --filter stuck` | Phase M (cf-graph `version_pr_info.new_version_errors`) | List of feedstocks where the bot has tried & failed N times to update | ✅ shipped |
+| Which of my feedstocks are behind upstream (PyPI)? | `behind-upstream --maintainer X` | Phase H + `upstream_versions` side table | List with conda version, pypi version, lag classification (major/minor/patch) | ✅ shipped |
+| Which of my feedstocks are behind upstream (GitHub/GitLab/Codeberg)? | Same CLI; multi-source via Phase K | Phase K + `upstream_versions` side table | Adds SOURCE column distinguishing pypi/github/gitlab | ✅ shipped |
+| Which of my feedstocks are behind upstream (npm)? | `behind-upstream --maintainer X --source npm` | Phase L (npm resolver) | Same shape, source='npm' | ✅ shipped |
+| Which of my feedstocks are behind upstream (CRAN/CPAN/LuaRocks/Maven/crates/RubyGems/NuGet)? | Same | Phase L (per-registry resolver) | Same shape with source label | ✅ shipped |
+| What CVEs landed on my packages this week? | `cve-watcher --maintainer X --since-days 7 --severity C` | Phase G snapshot history (`vuln_history` table) | Delta table: package, then-count, now-count, +N delta | ✅ shipped |
+| Which of my feedstocks have open bot PRs awaiting review? | `feedstock-health --maintainer X --filter open-pr` | Phase M (`bot_open_pr_count`) | Count + last bot-tried version per feedstock | ✅ shipped |
+| Which of my feedstocks have open *human* PRs? | `feedstock-health --maintainer X --filter open-prs-human` | Phase N — GitHub Pulls API (`gh_open_prs_count`) | Per-feedstock open-PR count (bot + human; triangulate with `--filter open-pr` for bot-only via Phase M) | ✅ shipped (v8.0.0 — Phase N default-on under `--profile maintainer`) |
+| Which of my feedstocks have open issues? | `feedstock-health --maintainer X --filter open-issues` | Phase N — GitHub Issues API (`gh_open_issues_count`) | Per-feedstock open-issue count | ✅ shipped (v8.0.0 — Phase N default-on under `--profile maintainer`) |
+| Which of my feedstocks have CI red on default branch? | `feedstock-health --maintainer X --filter ci-red` | Phase N — GitHub Checks API (`gh_default_branch_status`) | List of feedstocks with failing main-branch CI | ✅ shipped (v8.0.0 — Phase N default-on under `--profile maintainer`) |
+| Which of my feedstocks are flagged 'bad' in cf-graph? | `feedstock-health --maintainer X --filter bad` | Phase M (`feedstock_bad`) | Feedstocks where cf-graph's overall health flag is set | ✅ shipped |
+
+#### Decisions
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Should I archive this feedstock? | Composite query: download trend + last upstream activity + CVE pressure + dependent count | Phase F + Phase H/K + Phase G + Phase J | Archive / migrate / keep recommendation | 📋 open (composite tool) |
+| Should I split a multi-output feedstock? | Per-output dep graph (currently only primary captured) | Phase J extension | Sub-output dep counts; identify natural split lines | 📋 open (Phase J+) |
+| Will my recipe change break dependents? | `whodepends <pkg> --reverse` | Phase J | List of feedstocks with their pin specs against me | ✅ shipped |
+| Is this version of mine adopted? | `version-downloads <pkg>` | Phase I (`package_version_downloads`) | Per-version download breakdown; adoption curve | ✅ shipped |
+| Is my release cadence accelerating or slowing? | `release-cadence --package <pkg>` or `--maintainer X` | Phase I rolling window aggregation | Trend label: accelerating / stable / decelerating / silent | ✅ shipped |
+| Is the upstream PyPI version yanked? | `behind-upstream --maintainer X --json` then filter `pypi_current_version_yanked=1` | Phase H (PEP 592 `releases[v][i].yanked` — yanked iff ALL files yanked) | "yanked" flag on pypi_current_version_yanked | ✅ shipped |
+
+#### Response
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Respond to a bot version PR | `bot-pr-context <feedstock>` (planned) — composite of upstream version, breaking-change scan, dependents affected | Phase H/K + Phase J + GitHub PR diff | "merge / rerender / manual-fix" recommendation | 📋 open |
+| Audit my recent activity | GitHub PR/commit search by author within conda-forge org | Phase N (or `gh search`) | Activity summary over rolling window | 📋 open (Phase N) |
+| Find which of my feedstocks are stuck on the same upstream issue | Cluster by `bot_version_errors_count` + `bot_last_pr_version` | Phase M | Group of feedstocks failing the same way (e.g., the opentelemetry-instrumentation-* family at 25-27 attempts each) | ✅ shipped (manual SQL) |
+
+#### v0→v1 Migration
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| What's my v0→v1 backlog? | `staleness-report --maintainer X` filtered to `recipe_format='meta.yaml'` (filter exists implicitly via SQL; needs CLI flag) | Phase E classifier | List of v0 recipes still owned | ✅ shipped (via SQL); 📋 CLI flag open |
+| Which of my v0 recipes have similar shape? (group migration) | Cluster v0 recipes by source registry, dep set, multi-output pattern | Phase E + Phase J | Migration cohorts to attack together | 📋 open |
+
+---
+
+### II. conda-forge Admin / Core Team
+
+Channel-wide health, abandoned-feedstock detection, security exposure,
+migration progress, maintainer-load distribution, license auditing.
+
+#### Channel Health
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| How many feedstocks have critical CVEs affecting current? | `pixi run -e local-recipes python -c "..."` against `vuln_critical_affecting_current` column (no dedicated CLI yet) | Phase G | Aggregate count + worst-offender list | ✅ shipped (SQL); 📋 dashboard CLI open |
+| What's the channel-wide CVE exposure delta? | `cve-watcher --severity C --only-increases --since-days 7` | Phase G snapshot history | Channel-wide changes; new critical CVEs landed | ✅ shipped |
+| How many feedstocks are bot-stuck? | `feedstock-health --filter stuck --limit 100` | Phase M | Channel-wide list (4,121 stuck channel-wide as of v6.9.0) | ✅ shipped |
+| How many feedstocks are flagged 'bad'? | `feedstock-health --filter bad` | Phase M | List of feedstocks cf-graph has marked unhealthy | ✅ shipped |
+| Channel migration progress (v0→v1)? | Aggregate `recipe_format` distribution | Phase E classifier | "%v0 / %v1 / %unknown" roll-up | ✅ shipped (SQL); 📋 dashboard CLI open |
+| What's on PyPI but not on conda-forge? (candidate-list) | `pypi-only-candidates --limit N --min-serial M` | Phase D + `pypi_universe` side table (schema v20+) | Newest unmatched PyPI projects, ordered by `last_serial DESC` | ✅ shipped (v7.9.0) |
+| Python version coverage matrix? | Parse cf-graph variant configs | Phase J extension | Matrix of feedstocks vs Python 3.10/3.11/3.12 support | 📋 open |
+| CUDA support matrix? | Parse cf-graph variant configs | Phase J extension | Same shape, CUDA variants | 📋 open |
+
+#### Abandonment Detection
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Find abandoned feedstocks (no maintainer activity + no upstream activity) | SQL composite against `gh_pushed_at` + `latest_conda_upload` + `bot_version_errors_count` | Phase N (`gh_pushed_at` per feedstock — admin profile runs channel-wide) + Phase B (`latest_conda_upload`) + Phase M | List for mass-archive or take-over | ✅ shipped (v8.0.0 — Phase N channel-wide under `--profile admin`; per-user `contributionsCollection` query is a 📋-open enhancement) |
+| Bus-factor=1 critical infrastructure | Single-maintainer rows with high downloads + many dependents | Phase F + Phase J + maintainer junction | Recruit help / set up co-maintainership | ✅ shipped (SQL) |
+| Orphans needing new maintainers | Feedstocks where ALL maintainers ignored bot PRs > 6mo | Phase M + Phase N | Take-over candidates | 📋 open (needs Phase N for human PR response data) |
+| Feedstocks marked archived but actively used | `feedstock_archived=1` joined to recent downloads | Phase E.5 + Phase F + Phase I | Find should-not-have-archived cases | ✅ shipped (SQL) |
+
+#### Maintainer Distribution
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Top maintainers by feedstock count | Aggregate `package_maintainers` by handle | Phase E maintainer junction | Identify overloaded maintainers | ✅ shipped (SQL) |
+| Download-weighted maintainer leaderboard | Same join + downloads sum | Phase F + maintainer junction | Reach-weighted "most-impactful maintainer" list | ✅ shipped (SQL) |
+| Maintainer last-active across the channel | SQL aggregate over `gh_pushed_at` per maintainer (latest feedstock push) | Phase N (`gh_pushed_at` — admin profile runs channel-wide) + maintainer junction | Latest-push timestamp per maintainer; dormant-maintainer signal | ✅ shipped (v8.0.0 — feedstock-push proxy; per-user GitHub-activity API is a 📋-open enhancement) |
+
+#### Security & Compliance
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Channel-wide CVE summary by severity | Aggregate `vuln_*_affecting_current` | Phase G | Severity-banded counts | ✅ shipped (SQL); 📋 dashboard open |
+| CVE cascade alert: when CVE-X published, find affected feedstocks | Phase G + Phase J join | Phase G + Phase J | Notification list of feedstocks to repin / rebuild | 📋 open (notification daemon) |
+| KEV-list (CISA Known Exploited Vulnerabilities) coverage | `vuln_kev_affecting_current` aggregate | Phase G | High-priority remediation queue | ✅ shipped (SQL) |
+| Rank by exploitation probability (not just severity) | `staleness-report --by-epss` (v8.6.0) — uses `vuln_max_epss_score` (FIRST.org EPSS overlay populated by `fetch-epss` + Phase G/G' Wave B wiring). Operator question this answers: "of my Critical/High CVEs, which are actively being exploited in the wild right now?" — distinct from raw severity count. | Phase G + EPSS overlay (Wave B v8.6.0) | Top-N feedstocks by exploitation-probability; pairs with KEV as the "most-urgent" signal | ✅ shipped (v8.6.0 Wave B + D) |
+| Triage by attack category (RCE vs DoS vs Info-Disclosure vs …) | `staleness-report --has-cwe <CAT>` (v8.6.0) + `my-feedstocks --cwe` + `detail-cf-atlas` (auto-renders) — uses `vuln_cwe_top` + `vuln_cwe_categories_json` (MITRE CWE Research Concepts catalog mapped to 7 cf_atlas categories via committed seed JSON; Wave B). Operator question: "I have 10 CVEs — which are RCE vs which are info-disclosure?" | Phase G + CWE overlay (Wave B v8.6.0) | Per-package CWE-category dominant-bucket + full breakdown JSON | ✅ shipped (v8.6.0 Wave B + D) |
+| Per-package binary hardening profile (PIE / RELRO / stack-canary / NX) | ~~Originally specced as Phase T (blint)~~ | ~~blint via Phase T~~ | ~~Hardening score per feedstock~~ | ✋ Wave C cancelled (v8.6.0, 2026-05-23) — conda-forge's hermetic compile environment produces uniform hardening; signal-to-effort too low. See CHANGELOG v8.6.0 Wave C section + `deferred-work.md`. |
+| Filter CVE count by active-only (exclude withdrawn OSV/GHSA advisories) | ~~Originally specced as `vuln_total_active` + Phase G/G' withdrawn filter~~ | ~~Phase G/G' overlay loop with vdb `withdrawn` field~~ | ~~Active-only severity count~~ | ✋ Wave B partial-cancel (v8.6.0, 2026-05-23) — vdb's OSV (`osv.py:91`) + GHSA (`gha.py:184-185`) ingest paths skip withdrawn records at source; nothing reaches Phase G to filter. Columns dropped in schema v25 cleanup. |
+| License audit (unusual / unknown / proprietary) | Aggregate `conda_license` | Phase B | Legal review queue | ✅ shipped (SQL); 📋 dashboard open |
+| License compatibility check for downstream projects | Match license against compatibility matrix | Phase B + static matrix | "Yes/no compatible with target license" + offending deps | 📋 open |
+
+#### Cross-Channel Coordination
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Find packages also on bioconda / nvidia / pytorch / robostack channels | `inventory-channel` against the other channel; or `pypi-intelligence --in-bioconda` / `--in-pytorch` / `--in-nvidia` / `--in-robostack` against the v8.1.0 pypi_intelligence `in_<channel>` BOOLs (Phase Q populates them; robostack was 404 until v8.5.2 fixed the subdir + repodata.json fallback) | `inventory_channel.py` (legacy) + Phase Q (v8.1.0+, all 4 channels reporting since v8.5.2) | Coordination opportunities | ✅ shipped (v8.5.2: 4/4 channels) |
+| Mirror health (JFrog, prefix.dev) | `inventory-channel --health` | `inventory_channel.py` | Mirror cache hit rate / freshness | ✅ shipped |
+
+#### Channel Growth & Churn
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| New / archived / renamed feedstocks per month | Diff successive `built_at` snapshots of `packages` | Phase E.5 + meta history | Monthly health graph | 📋 open (needs snapshot side table) |
+| Feedstock churn over time | Same, but expanded | Snapshot history | Trend metric | 📋 open |
+
+---
+
+### III. Consumer / Downstream User
+
+Picking safe & maintained packages, evaluating dependency closures,
+finding alternatives for archived/yanked things, environment lockdown,
+SBOM generation, license compliance.
+
+#### Selection
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Evaluate a package before adding to my env | `detail-cf-atlas <name>` (with all v6.9 enrichment sections) | Phases B/E/F/G/H/K/M | Health card: status, downloads, CVEs, behind-upstream, bot-stuck status, dependencies | ✅ shipped (most sections; bot/upstream sections in `detail-cf-atlas` 📋 open) |
+| Find maintained alternative to archived X | `find-alternative <archived-name>` (planned) | Phase E keywords + Phase J dep similarity (TF-IDF) | Ranked alternatives by health | 📋 open |
+| Predict package health trend | `release-cadence --package <pkg>` | Phase I | "actively maintained" vs "winding down" label | ✅ shipped |
+| Adoption stage classifier | Combine release-cadence + downloads + age | Phase F + Phase I + age | bleeding-edge / stable / mature / declining label | 📋 open |
+
+#### Environment Auditing
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Scan my pixi.lock / requirements.txt for vulns | `scan-project pixi.lock` | `scan_project.py` (existing) + vdb | CVE list across closure | ✅ shipped |
+| Same scan offline (no vuln-db env required) | `scan-project --use-cached-vulns` (planned) | `scan_project.py` + Phase G cache | Same output, no heavy env | 📋 open |
+| Bus-factor my dependencies | `env-inspect --bus-factor` (live env via conda-meta + atlas maintainer junction); or `bus-factor-my-env pixi.lock` for manifest-mode (still 📋) | `scan_project.py` parser + maintainer junction | Single-points-of-failure list | ✅ shipped (v8.5.0 — env-mode; manifest-mode still 📋) |
+| License compatibility for my project | `env-inspect --licenses` for env rollup + non-permissive flag; `scan-project --license-check --target Apache-2.0` for target-comparison (still 📋) | `scan_project.py` + license matrix | Yes/no with offending deps | ✅ shipped (v8.5.0 — env rollup; target-license comparison still 📋) |
+| SBOM (CycloneDX/SPDX) | `scan-project --sbom cyclonedx` (manifest/image/etc.); `env-inspect --sbom cyclonedx\|spdx` (live env mode) | `scan_project.py` + `env_inspect.py` + `_sbom.py` | Standard SBOM | ✅ shipped (v8.5.0 — env mode added) |
+| Env-vs-env drift (set + version diff) | `env-inspect --diff OTHER_ENV` | `conda-meta/` of both envs | only-in-A / only-in-B / version-different / in-sync | ✅ shipped (v8.5.0) |
+| Env-level CVE rollup | `env-inspect --security` for installed-version CVE counts; `scan-project pixi.lock` for manifest-mode | Phase G `package_version_vulns` | Per-pkg KEV/Critical/High/total ranked | ✅ shipped (v8.5.0 — env-mode; manifest-mode shipped earlier) |
+| Env-version-vs-conda-forge-vs-PyPI lag | `env-inspect --freshness` with `--scope roots\|explicits\|all` (live PyPI by default; `--no-live` for atlas-only) | Phase B (cf) + Phase H/live (pypi) + Phase M (bot) | Status-banded list (cf-behind-pypi-no-PR / env-behind-cf / in-sync / …) | ✅ shipped (v8.4.0) |
+| Manifest hygiene audit (pure-intent / transitively-covered / drifted explicits) | `env-inspect --audit` | `conda-meta/` + `pixi list --explicit --json` | Three-bucket pixi.toml cleanup list | ✅ shipped (v8.3.2) |
+| Maintainer triage (composite) | `my-feedstocks --triage --maintainer NAME` (composes CVE / CI-red / stuck-bot / behind-upstream / open-PRs+issues into one urgency score; severity-banded) | Phase B/G/H/M/N composite | Top-N daily punch list | ✅ shipped (v8.5.0) |
+| SBOM enriched with cached vuln annotations | `scan-project --sbom cyclonedx --enrich-vulns-from-atlas` (planned) | `scan_project.py` + Phase G | SBOM with CVE tags, no vdb env required | 📋 open |
+| Reproduce env at known-safe state | "Show me the most recent build set with 0 critical CVEs" | Per-version vuln data — Phase G extension | Locked env recommendation | 📋 open (needs per-version vulns) |
+
+#### Notification & Tracking
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Track when "my" package gets a security fix | `cve-watcher --watch <pkg> --notify` (poll first, webhook later) | Phase G snapshot history | Alert when CVE-X resolved | 📋 open (needs daemon/webhook) |
+| Track upstream version drift over time | `upstream-history <pkg>` (planned) | `upstream_versions` history side table (planned) | Plot upstream version changes | 📋 open |
+| Subscribe to risk increases for my dep set | `cve-watcher --watch-pixi-lock <path> --notify` | Phase G + lock parser | Alert on any new C/H/KEV in my closure | 📋 open |
+
+---
+
+### IV. Cross-cutting / Infrastructure
+
+| Goal | Action | Data source | Outcome | Status |
+|---|---|---|---|---|
+| Phase H full backfill (all 805k pypi names) | Cron-style runner respecting PyPI rate limit | Phase H | Universal `behind-upstream` coverage | 📋 open (operational) |
+| Phase K full backfill (all VCS-source rows) | Same, but for github/gitlab/codeberg | Phase K | Universal multi-VCS coverage | 📋 open (operational) |
+| Multi-output feedstock dep parsing | Iterate each `outputs_names` element with its own requirements | Phase J extension | Accurate dep graph for big feedstocks | 📋 open |
+| Recipe-format detector edge cases (116 unknown rows globally) | Probe `raw_meta_yaml` heuristics for outliers | Phase E classifier | Push 'unknown' below 1% | 📋 open |
+| `upstream_versions` historical snapshots | Mirror Phase G's snapshot pattern for upstream versions | New side table | "version churn" trend analysis | 📋 open |
+| Per-version vuln scoring | Phase G iterates all `package_version_downloads` rows, not just current | Phase G extension | Lock to "safe set" of versions | 📋 open |
+| MCP exposure of all atlas signals | Wrap `query_atlas`, `package_health`, `my_feedstocks`, `staleness_report`, `feedstock_health`, `whodepends`, `behind_upstream`, `cve_watcher`, `version_downloads`, `release_cadence`, `find_alternative`, `adoption_stage`, `scan_project` | All phases | Single tool calls instead of one-off Python | ✅ shipped (v7.0.0) |
+| Phase F download-source attribution | `SELECT downloads_source FROM packages` — populated by every Phase F write | Phase F (v7.6+) | Consumers surface which dataset produced each number (`'anaconda-api'` / `'s3-parquet'` / `'merged'`) | ✅ shipped (v7.6.0) |
+| Phase P download-source provenance + coverage caveat | `pypi_intelligence.downloads_source` — under the default ClickHouse backend, NULL `downloads_30d`/`downloads_90d` means "outside top-1,000 by 90-day downloads", NOT "zero downloads"; check provenance (`'clickhouse-clickpy'` ships only ~1,000 rows ≈ 3.3% of candidates) before any demand-side filter. Full caveat: Part B § Phase P | Phase P (v8.16.0+, default ClickHouse) | Correct NULL interpretation; `PHASE_P_SOURCE=bigquery` (~$22/refresh, ~30k rows) for full coverage | ✅ shipped (v8.16.0); coverage caveat documented v8.16.2 |
+| Air-gap Phase F via public S3 parquet | `PHASE_F_SOURCE=s3-parquet` reads `anaconda-package-data.s3.amazonaws.com`; `S3_PARQUET_BASE_URL` redirects to JFrog mirror | Phase F (v7.6+) | Atlas builds cleanly with `*.anaconda.org` blocked; downloads still populate | ✅ shipped (v7.6.0) |
+| Phase F rolling 30/90-day windows + 90-day trend slope + lifetime activity months | `SELECT downloads_30d, downloads_90d, downloads_trend_90d, first_nonzero_month, last_nonzero_month FROM packages` — s3-parquet path only; NULL on `anaconda-api` rows (provenance contract). Column semantics + NULL/cap rules: Part B § Phase F | Phase F+ Wave 2 (v8.18.0) | Adoption-momentum + direction signals; feeds adoption-stage, staleness rollups, find-alternative | ✅ shipped (v8.18.0) |
+| Phase F per-platform / per-Python / per-channel breakdown tables | `package_platform_downloads` + `package_python_downloads` (Wave 2) + `package_channel_downloads` (Wave 3) — table semantics, noarch/dirty-value handling, and re-run discipline: Part B § Phase F | Phase F+ Waves 2–3 (v8.18.0 / v8.19.0) | The raw data behind the three Wave-3 CLIs below | ✅ shipped |
+| `platform-breakdown` CLI — 3 modes: `<pkg>` / `--top N --platform P` / `--feedstock-roundup --maintainer X` | `package_platform_downloads` JOIN `packages` / `package_maintainers` | Phase F+ Wave 3 (v8.19.0) | "How much of the traffic is ARM / win / aarch64?" — drop-old-platform decisions, per-platform leaderboards, maintainer roundup | ✅ shipped (v8.19.0) |
+| `pyver-breakdown` CLI — single-package + `--policy-check [--maintainer X] [--threshold-pct N]` (default 2%) | `package_python_downloads` + `packages.python_min` (Phase E write, schema v28; single-writer contract) | Phase F+ Wave 3 (v8.19.0) | **Headline value**: flags feedstocks where `python_min` can be raised without losing material adoption; sorted bump-safe → aligned → aggressive (Q1=A) | ✅ shipped (v8.19.0) |
+| `channel-split` CLI — 3 modes: `<pkg>` / `--defaults-share-min N --top M` / `--migration-checklist --maintainer X` | `package_channel_downloads` JOIN `packages` | Phase F+ Wave 3 (v8.19.0) | Per-channel traffic split; defaults-channel migration leaderboard + paste-into-GitHub-issue checklist | ✅ shipped (v8.19.0) |
+
+---
+
+### Status Summary (at v8.5.2)
+
+| Status | Count | Notes |
+|---|---|---|
+| ✅ Shipped | ~70 | All 22 pipeline phases (B/B.5/B.6/C/C.5/D/E/E.5/F/G/G'/H/I/J/K/L/M/N + v8.1.0's O/P/Q/R/S); 17+ CLIs; full multi-registry coverage (PyPI/GitHub/GitLab/Codeberg/npm/CRAN/CPAN/LuaRocks/crates/RubyGems/NuGet/Maven — including Phase E auto-detection of Maven coordinates from cf-graph URLs); SBOM input/output across CycloneDX 1.4-1.6 (JSON+XML), SPDX 2.x JSON+tag-value+3.0, syft/trivy native; **SBOM relationship traversal rendered as a tree**; container image + OCI manifest probe + live env + GitOps (Argo/Flux with auto git-clone fallback) + K8s scanning; license-check + find-alternative + adoption-stage + SBOM atlas-vuln enrichment; **PyPI yanked-flag detection (PEP 592)**; **12 MCP tools** wrapping the entire read-side surface; **`bootstrap-data` single-command refresh with `--fresh` hard reset**; **v8.0.0: `v_actionable_packages` view + structural-enforcement meta-test**; **Phase H serial-aware eligible-rows gate (warm-daily ~5 min → ~30 s)**; **`--profile maintainer\|admin\|consumer` persona-aware default profiles for `bootstrap-data` with `gh api user` auto-detection**; **5 previously-📋 Phase-N-gated catalog rows flipped to ✅** (open human PRs, open issues, ci-red filter, abandonment composite, maintainer last-active — all via Phase N default-on under `--profile maintainer`); **v8.5.2: Phase K hang fix (hard-timeout watchdog + per-batch checkpoint + per-batch progress log); Phase P (BigQuery PyPI downloads) operationally enabled — google-cloud-bigquery bundled, new `gcloud` env, 4-step operator setup walkthrough; **v8.15.0: Phase P incremental refresh — schema v26 `pypi_downloads_daily` side table + dry-run preflight + `maximum_bytes_billed` hard cap + `job_timeout_ms` wall-clock cap; drives sustained refresh cost below $1/run (~$30/year vs ~$2,000+/year pre-fix); new env vars `PHASE_P_MAX_COST_USD=10`, `PHASE_P_MAX_COST_FIRST_PULL_USD=100`, `PHASE_P_RETAIN_DAYS=95`, `PHASE_P_JOB_TIMEOUT_MS=600000`, `PHASE_P_FORCE_FIRST_PULL=1`; cost model at `atlas-phase-engineering.md` § 13**; Phase Q robostack 4/4 channels reporting (was 0); Phase N partial-batch recovery (no more whole-batch poisoning on one missing repo)** |
+| 📋 Open | ~6 | Channel-wide Phase H/N cron operationalization (per-maintainer scope shipped; full-channel needs PAT rotation or daily 30-min run); per-version vdb-history snapshot side table for time-travel queries; multi-output feedstock per-output dep-graph (Phase J extension — currently captures top-level only); `recipe_format='unknown'` heuristic refinement (116 outliers); CycloneDX Protobuf / SPDX RDF (deferred — heavy deps, marginal use); per-user GitHub `contributionsCollection` query for finer-grained maintainer-activity signal (current `gh_pushed_at` proxy is feedstock-push, not user activity); drop or properly-wire `vuln_total` column (4 consumers found in v8.0.0 audit — column kept; CLI consolidation deferred) |
+| ❌ Gap | 0 | All originally-identified gaps now have a path forward; remaining items are operational/enhancement work, not feature blockers |
+
+The 📋 open items are tracked in
+[CHANGELOG.md](../CHANGELOG.md) v6.9.0 "Limitations / known follow-ups" and
+in this catalog. Update both when shipping.
+
+---
+
+## Part B — Phase-indexed overview
+
+One section per pipeline stage. For each phase: **data source** (exact URLs/datasets),
+**purpose** (what new fact lands in `cf_atlas.db`), **what gets written** (tables +
+columns), and **actionable intelligence** (the CLIs, MCP tools, and SQL it makes
+possible; `📋 open` items from Part A are noted against the phase that would deliver
+them).
+
+### At-a-glance index
 
 | Phase | Name | Primary source | TTL | Default | Feeds |
 |---|---|---|---|---|---|
@@ -64,7 +263,7 @@ For cron cadence, TTL reset, and recovery playbooks, see
 
 ---
 
-## Phase B — Conda enumeration
+### Phase B — Conda enumeration
 
 - **Data source.** `conda.anaconda.org/conda-forge/<subdir>/current_repodata.json`
   for each of the 8 active subdirs (`noarch`, `linux-64`, `linux-aarch64`,
@@ -88,7 +287,7 @@ For cron cadence, TTL reset, and recovery playbooks, see
   - Universe enumeration — backs `detail-cf-atlas`, `lookup_feedstock`,
     `get_conda_name`, and every "is this real?" check.
 
-## Phase B.5 — Feedstock-outputs archive
+### Phase B.5 — Feedstock-outputs archive
 
 - **Data source.** `github.com/conda-forge/feedstock-outputs` (master
   tarball, JSON-per-output). Resolves the canonical feedstock for every
@@ -107,7 +306,7 @@ For cron cadence, TTL reset, and recovery playbooks, see
   - Yanked-output detection ("was once shipped, no longer present in
     repodata") — backs the "archived but used" composite (Phase E.5 + F + I).
 
-## Phase B.6 — Yanked detection (lite)
+### Phase B.6 — Yanked detection (lite)
 
 - **Data source.** None (operates on the Phase B `current_repodata_names`
   temp table).
@@ -121,7 +320,7 @@ For cron cadence, TTL reset, and recovery playbooks, see
     yanked / deprecated rows — feeds correctness, not new outputs.
   - Roll-up "% of channel active vs inactive" (admin persona, ✅ SQL).
 
-## Phase C — Parselmouth PyPI ↔ conda join
+### Phase C — Parselmouth PyPI ↔ conda join
 
 - **Data source.** `conda_forge_metadata.autotick_bot.pypi_to_conda.get_pypi_name_mapping()`
   — wraps the prefix-dev/parselmouth bot's hourly output (~12k verified
@@ -140,7 +339,7 @@ For cron cadence, TTL reset, and recovery playbooks, see
   - `scan-project` resolves PyPI manifest names to conda packages for
     enrichment.
 
-## Phase C.5 — source.url match (folded into Phase E)
+### Phase C.5 — source.url match (folded into Phase E)
 
 - **Data source.** None standalone — uses cf-graph data fetched by Phase E.
 - **Purpose.** Match recipe `source.url` patterns to known upstream
@@ -154,7 +353,7 @@ For cron cadence, TTL reset, and recovery playbooks, see
     + `whodepends` workflows where the user knows the upstream repo
     but not the conda name.
 
-## Phase D — PyPI universe enumeration
+### Phase D — PyPI universe enumeration
 
 - **Data source.** `pypi.org/simple/` (Simple v1 JSON, ~40 MB, ~800k
   project entries with freshness serials).
@@ -185,7 +384,7 @@ For cron cadence, TTL reset, and recovery playbooks, see
   - `pypi_last_serial` change-detection feeds Phase H's serial-aware
     eligible-rows gate (shipped v8.0.0, schema v21).
 
-## Phase O — PyPI activity snapshots (v8.1.0+)
+### Phase O — PyPI activity snapshots (v8.1.0+)
 
 - **Data source.** None — Phase O reads `pypi_universe.last_serial`
   (populated by Phase D's daily-lean path) and writes one snapshot
@@ -220,13 +419,13 @@ For cron cadence, TTL reset, and recovery playbooks, see
     are no historical snapshots yet to compute deltas against. Steady
     state emerges after the second daily run.
 
-## Phase P — BigQuery PyPI downloads (v8.1.0+, opt-in)
+### Phase P — BigQuery PyPI downloads (v8.1.0+, opt-in)
 
 - **Data source (v8.16.0+).** Default backend is ClickHouse clickpy —
   free, no auth, no billing, sub-minute refresh. BigQuery available
   as `PHASE_P_SOURCE=bigquery` opt-in for operators needing raw event
   data. Selection via `PHASE_P_SOURCE` env var; see
-  `reference/atlas-phase-p-cost-model.md` § "Source backends".
+  `atlas-phase-engineering.md` § 13 "Source backends".
 - **ClickHouse (default, free).** `pypi.pypi_downloads_per_day` at
   `sql-clickhouse.clickhouse.com/?user=play` — pre-aggregated
   (date, project, count) materialized view mirrored daily from the
@@ -281,7 +480,7 @@ For cron cadence, TTL reset, and recovery playbooks, see
 - **Per-version granularity is out of scope** for v8.1.0 — would 200×
   the scan cost and blow the BQ free tier. Project-level only.
 
-### Phase P operator setup (one-time)
+#### Phase P operator setup (one-time)
 
 Phase P needs a GCP billing project (free to create at
 console.cloud.google.com — even free-tier queries bill against one)
@@ -317,7 +516,7 @@ print('creds type:', type(creds).__name__)
 "
 ```
 
-### Phase P run
+#### Phase P run
 
 ```bash
 # Standalone (just Phase P — fastest when the rest of the atlas is fresh)
@@ -340,7 +539,7 @@ activity in the last 90 days. See `docs/specs/atlas-phase-p-incremental.md`
 for the v8.15.0 incremental architecture that drives steady-state
 cost below $1/run.
 
-## Phase Q — Cross-channel presence (v8.1.0+)
+### Phase Q — Cross-channel presence (v8.1.0+)
 
 - **Data source.** `current_repodata.json` for four non-conda-forge
   anaconda.org channels: `bioconda`, `pytorch`, `nvidia`,
@@ -368,7 +567,7 @@ cost below $1/run.
   deferred to v8.2.0. URL-pointer heuristic (count formulas whose
   source URL points at PyPI) will be the implementation pattern.
 
-## Phase R — Per-project JSON enrichment (v8.1.0+, opt-in)
+### Phase R — Per-project JSON enrichment (v8.1.0+, opt-in)
 
 - **Data source.** `pypi.org/pypi/<name>/json` per row, bounded to the
   top-N (default 5000) pypi-only candidate slice by `last_serial DESC`.
@@ -409,7 +608,7 @@ cost below $1/run.
   pass. **Actual: 171.8 s (~2.9 min) at concurrency=3** because
   pypi.org/json payloads are small + CDN-cached. 9× faster than estimate.
 
-## Phase S — Computed scores (v8.1.0+)
+### Phase S — Computed scores (v8.1.0+)
 
 - **Data source.** Pure SQL UPDATE over `pypi_intelligence` Tier 1-3
   columns. No HTTP, no external state.
@@ -445,7 +644,7 @@ cost below $1/run.
     populate NULL in v8.1.0 (v8.2.0 stretch — needs deps.dev /
     repo-contributor data).
 
-## Phase E — cf-graph enrichment
+### Phase E — cf-graph enrichment
 
 - **Data source.** `github.com/regro/cf-graph-countyfair` (master tarball,
   ~150 MB compressed). The tarball is the basis for E + J + M, so all
@@ -488,7 +687,7 @@ cost below $1/run.
   - Pre-recipe-decision context — `detail-cf-atlas` summary/homepage
     section (consumer persona).
 
-## Phase E.5 — Archived feedstocks
+### Phase E.5 — Archived feedstocks
 
 - **Data source.** `gh api graphql` against `organization(login:"conda-forge")
   { repositories(first:100, isArchived:true ...) }`. Page-level checkpoints
@@ -505,7 +704,7 @@ cost below $1/run.
     maintainer-last-active (Phase N) for the open "mass-archive
     take-over" list.
 
-## Phase F — Download counts
+### Phase F — Download counts
 
 - **Data source (auto-dispatch on `PHASE_F_SOURCE`).**
   - `anaconda-api` — `api.anaconda.org/package/conda-forge/<name>` per
@@ -595,7 +794,7 @@ cost below $1/run.
     one-shot sentinels so the column + table populate on the next
     bootstrap-data run without waiting for natural TTL expiry.
 
-## Phase G — vdb risk summary
+### Phase G — vdb risk summary
 
 - **Data source.** Local AppThreat **vdb** library (must be importable —
   requires running from the `vuln-db` env). For each active row, derives
@@ -625,7 +824,7 @@ cost below $1/run.
     the feedstocks to repin"); `scan-project --use-cached-vulns`
     offline mode; SBOM `--enrich-vulns-from-atlas`.
 
-## Phase G' — Per-version vuln scoring
+### Phase G' — Per-version vuln scoring
 
 - **Data source.** Same vdb as Phase G, but iterates every row in
   `package_version_downloads` instead of only `latest_conda_version`.
@@ -643,7 +842,7 @@ cost below $1/run.
   - "Which historical versions are risky for downstream pinners" —
     maintainer-side warning data.
 
-## Phase H — PyPI current version
+### Phase H — PyPI current version
 
 - **Data source (dispatches on `PHASE_H_SOURCE`).**
   - `pypi-json` (default) — `pypi.org/pypi/<name>/json` per row.
@@ -696,7 +895,7 @@ cost below $1/run.
     (H + J + breaking-change scan); `upstream-history` time-series
     (needs a snapshot side table like `vuln_history`).
 
-## Phase I — Per-version download history (side-table)
+### Phase I — Per-version download history (side-table)
 
 - **Data source.** Side-effect of Phase F's anaconda-api path
   (`api.anaconda.org/package/conda-forge/<name>` already returns the
@@ -714,7 +913,7 @@ cost below $1/run.
     declining composite (F + I + age).
   - Feeds Phase G' (per-version vuln scoring iterates `package_version_downloads`).
 
-## Phase J — Dependency graph
+### Phase J — Dependency graph
 
 - **Data source.** Phase E's cached cf-graph tarball — auto-skips if the
   cache is missing.
@@ -746,7 +945,7 @@ cost below $1/run.
   - 📋 Open: CVE cascade alert (G + J join); multi-output per-output
     dep-graph extension; Python / CUDA support-matrix queries.
 
-## Phase K — VCS upstream versions
+### Phase K — VCS upstream versions
 
 - **Data source.**
   - GitHub: `api.github.com/graphql` — **batched** since v7.8.0 (one
@@ -790,7 +989,7 @@ cost below $1/run.
   - 📋 Open: full-channel backfill (currently per-maintainer scope);
     `bot-pr-context` composite with H + J.
 
-## Phase L — Extra registries
+### Phase L — Extra registries
 
 - **Data source.** Per-registry concurrency-capped requests (v7.8.0):
   - npm — `registry.npmjs.org`
@@ -828,7 +1027,7 @@ cost below $1/run.
     (pypi + 3 VCS + 8 extra registries); `behind-upstream` and
     `bot-pr-context` consume it generically.
 
-## Phase M — Feedstock health
+### Phase M — Feedstock health
 
 - **Data source.** Phase E's cached cf-graph tarball — parses
   `pr_info/<sharded>/<f>.json` and `version_pr_info/<sharded>/<f>.json`
@@ -857,7 +1056,7 @@ cost below $1/run.
   - Channel-wide stuck count (~4,121 stuck channel-wide as of v6.9.0)
     is the admin's "where's the bot-failure pile?" query.
 
-## Phase N — Live GitHub
+### Phase N — Live GitHub
 
 - **Data source.** `gh api graphql` per feedstock — one HTTP POST per
   25-feedstock batch (~125 GraphQL points, well under 5,000-pt hourly
@@ -893,37 +1092,36 @@ cost below $1/run.
 
 ---
 
-## How to extend this overview
+## How to extend this document
 
-When adding a new phase or materially changing an existing one:
+When adding a new phase, CLI, or actionable signal:
 
-1. Add or update a row in the at-a-glance table (data source, TTL,
-   default, primary intel it unlocks).
-2. Add or update the per-phase section with the four required fields:
-   data source, purpose, what gets written, actionable intelligence
-   (including the corresponding `📋 open` items in
-   [`atlas-actionable-intelligence.md`](atlas-actionable-intelligence.md)).
-3. Bump the skill `CHANGELOG.md` per semver — MINOR for new phases or
-   intel additions, PATCH for clarifications.
-4. Cross-link, don't duplicate. Cadence / TTL reset / recovery lives in
-   `guides/atlas-operations.md`. Rate limits, GraphQL batching,
-   Retry-After + jitter, atomic writes, enterprise routing live in
-   `reference/atlas-phase-engineering.md`. Persona × goal × CLI rows
-   live in `reference/atlas-actionable-intelligence.md`.
+1. **Part A** — add a row in the appropriate persona section; tie it to the phase letter
+   and the specific column / table / CLI. If the item promotes an existing 📋 → ✅, flip
+   the status in place (preserves history) and update the Status Summary count. The flip
+   is part of the release work — the same edit as the CHANGELOG entry.
+2. **Part B** — add or update the at-a-glance row + the per-phase section with the four
+   required fields (data source, purpose, what gets written, actionable intelligence).
+3. Bump the skill `CHANGELOG.md` per semver — MINOR for new phases or intel additions,
+   PATCH for clarifications.
+4. Cross-link, don't duplicate: cadence / TTL reset / recovery →
+   [`../guides/atlas-operations.md`](../guides/atlas-operations.md); rate limits, GraphQL
+   batching, Retry-After + jitter, atomic writes, enterprise routing, volume-billed-API
+   cost caps → [`atlas-phase-engineering.md`](atlas-phase-engineering.md).
 
-The three files form a triangle:
+The atlas docs form a triangle (consolidated 2026-07-02 from five files):
 
 ```
-                atlas-actionable-intelligence.md
-                          (WHO uses WHAT)
-                              /        \
-                             /          \
-           atlas-phases-overview.md ──── atlas-phase-engineering.md
-            (WHAT each phase does)       (HOW phases compute it)
+            atlas-phases-overview.md  (this file)
+        Part A: WHO uses WHAT · Part B: WHAT each phase does
+                    /                        \
+  atlas-phase-engineering.md          ../guides/atlas-operations.md
+  (HOW phases compute it, incl.       (HOW to run it: profiles,
+   the Phase P cost model)             cadence, cron, recovery)
 ```
 
-Together they answer: *what intelligence does the atlas surface, where
-in the pipeline does it come from, and how is it engineered?*
+Together they answer: *what intelligence does the atlas surface, where in the pipeline
+does it come from, how is it engineered, and how do I operate it?*
 
 ---
 

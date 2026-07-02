@@ -917,7 +917,7 @@ in the same wave or a documented `run_constraints:` drop.
   — § 10 (a)–(k): atomic writes, DELETE+INSERT, provenance, dry-run,
   rate-limit, step-04 adversarial review (load-bearing for Phase T).
 - `.claude/skills/conda-forge-expert/reference/atlas-phases-overview.md`,
-  `atlas-actionable-intelligence.md` — where Phase T slots in; the
+  `atlas-phases-overview.md` Part A — where Phase T slots in; the
   persona-profile gating.
 - `.claude/skills/conda-forge-expert/SKILL.md` — 10-step loop, Critical
   Constraints, Build-Failure Protocol, G-series gotchas.

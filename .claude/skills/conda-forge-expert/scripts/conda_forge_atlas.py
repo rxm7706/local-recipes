@@ -7541,7 +7541,7 @@ def _phase_p_bigquery(conn: sqlite3.Connection) -> dict:
       - gap > 90 days since last refresh: reverts to first-pull mode +
         prints warning.
       - no new partitions since last run: early no-op (no BQ traffic).
-    Re-run the dry-run preflight from `reference/atlas-phase-p-cost-model.md`
+    Re-run the dry-run preflight from `reference/atlas-phase-engineering.md` § 13
     to verify these numbers against current table growth.
 
     Tunables:
