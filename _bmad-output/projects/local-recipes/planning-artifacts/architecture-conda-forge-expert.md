@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.63.0'
+source_pin: 'conda-forge-expert v8.64.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -313,11 +313,9 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 | `selectors-reference.md` | rattler-build selector syntax |
 | `jinja-functions.md` | `${{ compiler() / stdlib() / pin_subpackage() / cdt() }}` |
 | `dependency-input-formats.md` | scan_project input matrix (~28 formats) |
-| `atlas-actionable-intelligence.md` | Persona-mapped atlas signal index (renamed from `actionable-intelligence-catalog.md`) |
-| `atlas-phases-overview.md` | Phase-indexed companion to the persona catalog: per pipeline stage (B → N), data source, purpose, what gets written, and the actionable intelligence (CLIs / MCP tools / SQL) it unlocks. |
+| `atlas-phases-overview.md` | Consolidated atlas intelligence reference (2026-07-02; absorbed `atlas-actionable-intelligence.md`): **Part A** persona-mapped signal catalog + **Part B** phase-indexed overview — per pipeline stage (B → S/N), data source, purpose, what gets written, and the actionable intelligence (CLIs / MCP tools / SQL) it unlocks. |
 | `conda-forge-ecosystem.md` | Ecosystem overview (bot, smithy, repodata-patches) |
-| `atlas-phase-engineering.md` | **Added in v7.8.0.** Rule book for authoring or refactoring `conda_forge_atlas.py` pipeline phases. 9 patterns: per-host rate limits, GraphQL batching, Retry-After + jitter, per-registry concurrency, atomic writes, incremental commits + idempotent SQL, streaming tarfiles, page-level checkpoints, `<HOST>_BASE_URL` routing convention. |
-| `atlas-phase-p-cost-model.md` | Phase P BigQuery cost model + caps (v8.15.0 incremental refactor) |
+| `atlas-phase-engineering.md` | **Added in v7.8.0.** Rule book for authoring or refactoring `conda_forge_atlas.py` pipeline phases: per-host rate limits, GraphQL batching, Retry-After + jitter, per-registry concurrency, atomic writes, incremental commits + idempotent SQL, streaming tarfiles, page-level checkpoints, `<HOST>_BASE_URL` routing, volume-billed-API caps, per-day caches, dry-run preflight — plus **§ 13**, the Phase P cost model + operator playbook (absorbed `atlas-phase-p-cost-model.md`, 2026-07-02). |
 | `recipe-yaml-reference-full.md` | Full v1 `recipe.yaml` schema reference (long-form companion to `recipe-yaml-reference.md`) |
 | `conda-forge-yml-reference-full.md` | Full `conda-forge.yml` key reference (long-form companion) |
 | `abi3-matrix-collapse.md` | abi3 / limited-API wheel build-matrix collapse pattern |
