@@ -1,8 +1,8 @@
 ---
 status: shipped
-spec_updated: 2026-06-28
+spec_updated: 2026-07-02
 implemented_by: bmad-quick-dev (full 13-story build)
-shipped_ref: "conda-forge-tracker@3f74589 (sibling repo ~/UserLocal/Projects/Github/rxm7706/conda-forge-tracker/)"
+shipped_ref: "conda-forge-tracker@e357d69 (sibling repo ~/UserLocal/Projects/Github/rxm7706/conda-forge-tracker/; e357d69 = 2026-07-02 sharded node_attrs discovery fix)"
 ---
 # Tech Spec: `conda-forge-tracker`
 
@@ -549,7 +549,11 @@ gv.check_github_version(...)
    active = json.load(open(all_feedstocks_path))["active"]
 3. found = []
    for name in active:
-       node = mirrors/_cf-graph/node_attrs/{name}.json
+       # cf-graph shards node_attrs via lazy-json: sha1('<name>.json')[:5],
+       # one hex char per dir level (node_attrs/b/6/1/e/8/mailpit.json) —
+       # verified 2026-07-02; the flat path below is the legacy fallback
+       # (shipped as _node_path() in scripts/sync.py, tracker@e357d69).
+       node = mirrors/_cf-graph/node_attrs/<sha1-shard>/{name}.json
        if not node.exists(): continue
        data = json.load(open(node))
        maintainers = data.get("meta_yaml", {}).get("extra", {}).get("recipe-maintainers", []) or []
