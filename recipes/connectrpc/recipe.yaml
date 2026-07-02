@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.1"
+
+package:
+  name: connectrpc
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/connectrpc/connectrpc-${{ version }}.tar.gz
+  sha256: eaf093a4f0d1b9c854c71839083ed5242a551100e99cf52e3cc5e35663f2a5ea
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - uv-build >=0.11.0,<0.12.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - protobuf >=5.28
+    - pyqwest >=0.5.1
+
+tests:
+  - python:
+      imports:
+        - connectrpc
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Server and client runtime library for Connect RPC
+  description: |
+    # Connect for Python
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/connectrpc/connect-python
+  repository: https://github.com/connectrpc/connect-py
+  documentation: https://connectrpc.com/docs/python/getting-started/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: connectrpc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: connectrpc
+  cfe-purls:
+    - pkg:conda/connectrpc@${{ version }}
+    - pkg:pypi/connectrpc@${{ version }}
+  cfe-upstream-repo: https://github.com/connectrpc/connect-python
+  cfe-upstream-homepage: https://github.com/connectrpc/connect-python
+  cfe-import-names: [connectrpc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "flyte-2 local-only closure (docs/specs/flyte-conda-forge.md); pinned <0.11 (flyte requires <0.11,>=0.9.0) to avoid the net-new protobuf-py that 0.11 pulls"
+  cfe-last-checked: "2026-07-01T00:00:00Z"
+  cfe-generated-by-version: "8.62.0"
+  cfe-generated-at-datetime: "2026-07-01T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-01T20:45:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Flyte-2 closure, LOCAL-ONLY. Version capped <0.11 per flyte's pin; 0.10.1
+#    # is the newest <0.11 (0.11 would add the net-new protobuf-py dep).
+# requirements:
+#  host:
+#    # uv_build (PyPI backend) -> conda pkg is uv-build (G10/G55 hyphen rename).
+#  run:
+#    # pyqwest is the compiled Rust HTTP backend (Wave-1 leaf); protobuf on cf.
+####

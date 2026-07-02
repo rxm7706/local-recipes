@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.26"
+  python_min: "3.11"
+
+package:
+  name: flyteidl2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/f/flyteidl2/flyteidl2-${{ version }}-py3-none-any.whl
+  sha256: 7ac8c7e3fabaabb8dbf6db330c3895a97d960aba2edc48ea6b5efbcae56ed7b5
+  file_name: flyteidl2-${{ version }}-py3-none-any.whl
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install flyteidl2-${{ version }}-py3-none-any.whl -vv --no-deps
+    - ${{ PYTHON }} -c "import shutil, sysconfig, os; shutil.rmtree(os.path.join(sysconfig.get_paths()['purelib'], 'buf'), ignore_errors=True)"
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - googleapis-common-protos
+    - protoc-gen-openapiv2
+    - protobuf >=4.21.1
+    - protovalidate >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - flyteidl2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: IDL for Flyte 2 — protobuf-generated Python stubs
+  description: |
+    flyteidl2 contains the Flyte 2 platform IDL: the protobuf message and
+    gRPC service definitions and their generated Python stubs.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/flyteorg/flyte
+  repository: https://github.com/flyteorg/flyte
+  documentation: https://docs.flyte.org
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flyteidl2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flyteidl2
+  cfe-purls:
+    - pkg:conda/flyteidl2@${{ version }}
+    - pkg:pypi/flyteidl2@${{ version }}
+  cfe-upstream-repo: https://github.com/flyteorg/flyte
+  cfe-upstream-homepage: https://github.com/flyteorg/flyte
+  cfe-import-names: [flyteidl2]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed:
+    - buf-validate-stub-collision-with-protovalidate
+  cfe-forge-blocker-list:
+    - "upstream: flyteidl2 is wheel-only (no sdist) AND bundles an older buf.validate that conflicts with protovalidate's. Local-only workaround: strip flyteidl2's buf/ and depend on protovalidate (which owns the newer, superset buf.validate). Not cf-submittable until upstream stops bundling buf.validate / depends on protovalidate for it"
+  cfe-last-checked: "2026-07-01T00:00:00Z"
+  cfe-generated-by-version: "8.62.0"
+  cfe-generated-at-datetime: "2026-07-01T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-01T20:47:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Flyte-2 closure, LOCAL-ONLY. Wheel-only upstream (no sdist, G54 last-resort).
+# source:
+#    # pypi-wheel: flyteidl2 publishes only a py3-none-any wheel (no sdist).
+# build:
+#  script:
+#    # STRIP the wheel's bundled buf/ (older buf.validate) to avoid a conda
+#    # file-collision with protovalidate's newer buf.validate; flyteidl2's protos
+#    # then resolve buf.validate from protovalidate (verified superset-compatible).
+#  run:
+#    # protovalidate is the single owner of buf.validate for this closure.
+#    # python_min 3.11 inherited via protovalidate -> cel-python (cf py3.11+ floor).
+# about:
+#    # LICENSE vendored (Apache-2.0): the wheel ships no license file.
+####

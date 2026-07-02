@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.2"
+
+package:
+  name: pyqwest
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyqwest/pyqwest-${{ version }}.tar.gz
+  sha256: 17c41121b9dc400133aae282ce8b00bc8d59e75e095b18ca1d9fb5bd1a3ee33a
+
+build:
+  number: 0
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      PYTHONUTF8: "1"
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1.12,<2.0
+  host:
+    - python
+    - pip
+    - maturin >=1.12,<2.0
+  run:
+    - python
+    - opentelemetry-api >=1.39.1
+
+tests:
+  - python:
+      imports:
+        - pyqwest
+      pip_check: true
+
+about:
+  summary: A modern, high-performance HTTP client for Python and Rust.
+  description: |
+    pyqwest is a modern, high-performance HTTP client for Python and Rust.
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/curioswitch/pyqwest
+  repository: https://github.com/curioswitch/pyqwest
+  documentation: https://github.com/curioswitch/pyqwest
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyqwest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyqwest
+  cfe-purls:
+    - pkg:conda/pyqwest@${{ version }}
+    - pkg:pypi/pyqwest@${{ version }}
+  cfe-upstream-repo: https://github.com/curioswitch/pyqwest
+  cfe-upstream-homepage: https://github.com/curioswitch/pyqwest
+  cfe-import-names: [pyqwest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "part of the flyte-2 local-only closure (docs/specs/flyte-conda-forge.md); consumer connectrpc/flyte blocked on the buf.validate upstream issue"
+  cfe-last-checked: "2026-07-01T00:00:00Z"
+  cfe-generated-by-version: "8.62.0"
+  cfe-generated-at-datetime: "2026-07-01T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-01T20:40:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Flyte-2 closure leaf, LOCAL-ONLY. Compiled Rust/maturin (pyo3 0.29, reqwest).
+#    # Upstream ships abi3 (cp310-abi3) wheels, but Cargo.toml declares no abi3
+#    # feature; built here per-Python (simpler for local use). To match upstream
+#    # abi3 (one build), add pyo3/abi3-py310 to [tool.maturin] features + the
+#    # version_independent/skip matrix-collapse (see reference/abi3-matrix-collapse.md).
+# build:
+#  script:
+#    # canonical Rust env block (G19): STRIP=symbols + PYTHONUTF8=1; LTO omitted
+#    # (fat LTO can exceed CI time on reqwest/hyper/rustls dep graphs).
+####
