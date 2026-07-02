@@ -1,31 +1,36 @@
 {% set name = "import-linter" %}
-{% set version = "2.1" %}
+{% set version = "2.12" %}
 
 package:
   name: {{ name|lower }}
-  version: {{ version }}
+  version: "{{ version }}"
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/import_linter-{{ version }}.tar.gz
-  sha256: 393fadb2e91304c22c5ceab575213ed2b6a794abc7bd05ab345f2430930b2eae
+  sha256: 217f0f0f0890b8625389765039d52c215f4c6d4a047f42ea78b6d00ceba1900e
 
 build:
-  skip: true  # [py<39]
   entry_points:
     - lint-imports = importlinter.cli:lint_imports_command
+  noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python >=3.9
-    - setuptools >=61.2
+    - python {{ python_min }}
+    - hatchling
     - pip
   run:
-    - python >=3.9
+    - nox
+    - fastapi
+    - uvicorn
+    - rich >=14.2.0
+    - python >={{ python_min }}
     - click >=6
-    - grimp >=3.2
-    - tomli >=1.2.1  # [py<311]
+    - grimp >=3.14
+    - tomli >=1.2.1
+    - typing-extensions >=3.10.0.0
     - typing_extensions >=3.10.0.0
 
 test:
@@ -36,12 +41,16 @@ test:
     - lint-imports --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://pypi.org/project/import-linter/
   summary: Enforces rules for the imports within and between Python packages.
   license: BSD-2-Clause
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
+    - millsks
     - rxm7706
+    - cshaley
