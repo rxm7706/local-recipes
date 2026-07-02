@@ -2,7 +2,7 @@
 status: shipped
 spec_updated: 2026-07-02
 implemented_by: bmad-quick-dev (full 13-story build)
-shipped_ref: "conda-forge-tracker@e357d69 (sibling repo ~/UserLocal/Projects/Github/rxm7706/conda-forge-tracker/; e357d69 = 2026-07-02 sharded node_attrs discovery fix)"
+shipped_ref: "conda-forge-tracker@cef3be5 (sibling repo ~/UserLocal/Projects/Github/rxm7706/conda-forge-tracker/; e357d69 = sharded node_attrs discovery fix, cef3be5 = watching mode + 813-feedstock merge + first 88-issue audit, both 2026-07-02)"
 ---
 # Tech Spec: `conda-forge-tracker`
 
@@ -27,6 +27,28 @@ shipped_ref: "conda-forge-tracker@e357d69 (sibling repo ~/UserLocal/Projects/Git
 | Distribution | Local-only directory; no PyPI / conda / pip package |
 | Lifetime | Long-running — replaces ad-hoc personal tracking of conda-forge involvement |
 | Sibling to | `local-recipes/` (this repo) |
+
+### Addendum — watching mode (shipped 2026-07-02, tracker@cef3be5)
+
+Post-v1 evolution after the first `--discover` run (813 feedstocks: 558 maintainer +
+255 co-maintainer):
+
+- **`status: watching` is now audited mirror-less** — `sync.py` mirrors ONLY `active`
+  entries (813 watching mirrors would mean 813 weekly clones); `audit.py` reads a
+  watching entry's conda-side version from the cf-graph node (sharded lazy-json,
+  fetched by `--discover`) and files the same idempotent `outdated-package` issues.
+  **Deliberate FR-6 deviation**: the v1 table said watching = "dry-run only"; with 811
+  watching entries that produces nothing actionable, so watching files real issues.
+- **Upstream version-check authority comes from the recipe's SOURCE url only**:
+  github source → GitHub releases; pypi source → PyPI under the recipe's REAL PyPI
+  name (`https://pypi.org/project/<name>/` in `upstream:`); `about.dev_url` is never
+  used for routing. Lesson from the first dry-run: dev_url-routed PyPI packages
+  produced monorepo/date-tag false positives (ag-ui "0.0.4 → 2026-06-24", amundsen
+  "0.32.0 → 7.5.1", azure-ai-ml "1.32.0 → 31.0.1"); the fix cut the gate from 158
+  raw would-file to 88 verified (725 up-to-date, 0 skips).
+- **tracker.yaml now carries all 813** (2 `active` with mirrors + 811 `watching`);
+  first real audit filed issues 003–090. Everything stays local — audit performs
+  read-only version GETs; nothing is pushed to conda-forge.
 
 ---
 
@@ -381,7 +403,7 @@ All cross-references go through `_cf_tools.py`. Override path with
 ### FR-6: Role-gated audit
 | Role | Active checks (v1) | Watching (v1) |
 |---|---|---|
-| `maintainer`, `co-maintainer` | outdated upstream | dry-run only |
+| `maintainer`, `co-maintainer` | outdated upstream | ~~dry-run only~~ real issues, mirror-less via cf-graph node (2026-07-02 Addendum) |
 | `consumer`, `client` | outdated upstream | dry-run only |
 | `requestor` | "now on conda-forge?" | n/a |
 
