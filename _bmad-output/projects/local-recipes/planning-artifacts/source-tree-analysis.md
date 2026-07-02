@@ -368,7 +368,7 @@ docs/                                        # human-facing documentation
 ├── bmad-setup-plan.md                       # BMAD installation rationale
 ├── pixi-config-jfrog.example.toml           # example .pixi/config.toml for JFrog air-gap
 │
-└── specs/                                   # BMAD-consumable feature specs (13; consolidated 2026-07-02)
+└── specs/                                   # BMAD-consumable feature specs (12; consolidated 2026-07-02)
     ├── # ── atlas / cf_atlas engine ──
     ├── atlas-appthreat-deep-signals.md      # EPSS + CWE overlay (shipped v8.6.0)
     ├── atlas-phase-f-s3-backend.md          # Phase F/F+ S3 backend + richer metrics + CLIs (Waves 1-3, v7.6.0→v8.19.0; consolidated 2026-07-02)
@@ -500,7 +500,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | Pixi envs | 9 (linux, osx, win, build, grayskull, conda-smithy, local-recipes, vuln-db, gcloud) |
 | Pixi features | 7 with tasks (`linux`, `osx`, `win`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`); ~80 tasks total (65 in `local-recipes`) |
 | Docs (top-level) | 5 .md + 1 example .toml |
-| Spec files | 13 in `docs/specs/` (consolidated 2026-07-02: shipped-release archive + two-track feedstock-refresh) |
+| Spec files | 12 in `docs/specs/` (consolidated 2026-07-02: shipped-release archive + two-track feedstock-refresh + two-track trendshift) |
 | BMAD multi-projects | 3 (deckcraft, local-recipes, presenton-pixi-image) |
 | Atlas pipeline phases | 22 phase IDs (B, B.5, B.6, C, C.5, D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N) |
 | Atlas schema version | v28 (additive migrations only) |
