@@ -567,7 +567,7 @@ CREATE INDEX IF NOT EXISTS idx_package_python_downloads_conda_name
 -- discipline as Wave 2 so stale-channel zombies don't accumulate when a
 -- channel's downloads drop to zero between sweeps. Populated only for rows
 -- with `downloads_source='s3-parquet'`; the API-path fallback never touches
--- this table (NG4 in `docs/specs/atlas-phase-f-s3-backend.md` Part 3).
+-- this table (NG4 in `docs/specs/cfe-shipped-releases.md` Part 8, Wave-3 intake).
 CREATE TABLE IF NOT EXISTS package_channel_downloads (
     conda_name        TEXT NOT NULL,
     data_source       TEXT NOT NULL,

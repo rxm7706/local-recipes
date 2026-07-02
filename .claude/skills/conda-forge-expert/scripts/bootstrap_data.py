@@ -241,7 +241,7 @@ PROFILES: dict[str, dict[str, str]] = {
         # admin run: API path serial ~6 req/s × ~32k packages = ~83 min wall;
         # S3 parquet bulk sweep is seconds for the same coverage. The numbers
         # disagree by ~0.5–1.5× per the discrepancy table in
-        # docs/specs/atlas-phase-f-s3-backend.md § "Verified discrepancies" —
+        # docs/specs/cfe-shipped-releases.md Part 8 § "Verified discrepancies" —
         # consumers MUST check `packages.downloads_source` before treating
         # admin-profile numbers as API-equivalent. Operators wanting API
         # numbers for an admin run set PHASE_F_SOURCE=auto (or

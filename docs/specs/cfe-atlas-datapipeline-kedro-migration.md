@@ -639,7 +639,7 @@ The following are deliberately excluded from this migration, with reason:
 - `.claude/tools/conda_forge_server.py` — the FastMCP server whose tools are ported via `kedro-mcp` (FR-7).
 - `.claude/skills/conda-forge-expert/reference/atlas-phases-overview.md` — phase-indexed map of the current pipeline (source for § 5.2 pipeline decomposition).
 - `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md` — engineering patterns (rate limits, atomic writes, enterprise routing) that constrain the node ports.
-- `docs/specs/atlas-phase-f-s3-backend.md` — the S3/parquet backend whose datasets become Kedro catalog entries (§ 5.1).
+- `docs/specs/cfe-shipped-releases.md` Part 8 — the S3/parquet backend (Phase F Waves 1–3) whose datasets become Kedro catalog entries (§ 5.1).
 - `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" — Rule 1 + Rule 2 governing this BMAD effort.
 
 ### External / ecosystem

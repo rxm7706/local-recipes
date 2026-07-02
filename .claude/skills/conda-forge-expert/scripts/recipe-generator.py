@@ -229,7 +229,7 @@ def _resolve_python_min(python_requires: str) -> str:
 
 
 # --- v8.9.0 sdist cache + extraction helpers ----------------------------
-# Driven by the conda-forge-expert v8.9.0 spec (docs/specs/conda-forge-expert-v8.9.md).
+# Driven by the conda-forge-expert v8.9.0 spec (docs/specs/cfe-shipped-releases.md Part 5).
 # When the generator routes a maturin/PyO3 package, several authoritative
 # facts (import name, abi3 feature, [project.scripts] entry points) live in
 # the sdist's pyproject.toml + Cargo.toml + src/lib.rs and are NOT exposed
