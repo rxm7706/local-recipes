@@ -160,8 +160,7 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 
 | Spec | What it is |
 |---|---|
-| `docs/specs/trendshift-conda-forge.md` | cf_atlas **Phase T** GitHub-trending discovery engine (schema v28→v29, `trending-candidates` CLI/MCP tool) + tiered packaging workflow; first batch seeded by `cli-anything-hub`. Resume at Wave A. |
-| `docs/specs/microsoft-conda-forge.md` | June 2026 `github.com/microsoft/*` org audit — ~10–14 new recipes in 3 waves (quick wins → mid-tier Python → native/compiled). Q1–Q3 open. |
+| `docs/specs/trendshift-conda-forge.md` | Two-track upstream-sweep packaging. Track A: cf_atlas **Phase T** GitHub-trending discovery engine (schema v28→v29, `trending-candidates` CLI/MCP tool) + tiered packaging workflow, first batch seeded by `cli-anything-hub` — resume at Wave A. Track B (absorbed `microsoft-conda-forge.md`): the June 2026 `github.com/microsoft/*` org audit — ~10–14 recipes in 3 waves, Q1–Q3 open. |
 | `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | Migrate the cf_atlas orchestrator from hand-rolled phases to a Kedro/Dagster/DuckDB stack (Waves A–G). Run via `bmad`. |
 | `docs/specs/claude-team-memory.md` | `.claude/memory/` team-shared memory layer + `team-memory` skill (10 waved stories). |
 | `docs/specs/copilot-bridge-vscode-extension.md` | Sideload-only VS Code extension wrapping the copilot-api bridge pattern (see `docs/copilot-to-api.md`). |
