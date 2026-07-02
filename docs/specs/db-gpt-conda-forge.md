@@ -1,8 +1,8 @@
 ---
 status: in-progress
 implemented_by: bmad-quick-dev
-shipped_ref: "staged-recipes: ALL 5 prereq PRs MERGED (#33764/#33765/#33766/#33767/#33768); C1 lyric-py ARM live on all 5 subdirs. db-gpt itself DELIVERED VIA #33883 (@pb01ka, dbgpt-split, 8 outputs incl dbgpt-acc-flash-attn) — NOT our own PR (G58 consume-not-submit, user decision 2026-07-01). Our recipes/db-gpt/ now mirrors #33883, verified GREEN locally (8/8, v0.8.1). #33883 red only on G66 channel lag (auto-gpt-plugin-template + lyric-py-worker not yet uploaded); monitoring channel; consume dbgpt on land."
-spec_updated: 2026-07-01
+shipped_ref: "5 prereq PRs merged (#33764–#33768); db-gpt itself delivered via external PR #33883 (consume-not-submit, G58) — live detail in § Current State"
+spec_updated: 2026-07-02
 ---
 # Tech Spec: DB-GPT on conda-forge
 
@@ -1571,3 +1571,18 @@ The story sequencing constraints inside `bmad-quick-dev`:
   `recipes/db-gpt/patches/0001-drop-code-extra-from-dbgpt-app.patch`
   diff and degrade to `B-six-plus-app-patched` for the rejected
   extras.
+
+---
+
+## Appendix — archived frontmatter status dump (pre-2026-07-02 normalization)
+
+> Moved verbatim out of the YAML frontmatter on 2026-07-02 when the frontmatter was normalized
+> to the AGENTS.md contract. This is a status snapshot from 2026-07-01 — superseded by
+> **§ Current State (2026-07-01) — CANONICAL**; kept only as historical record.
+
+```yaml
+status: in-progress
+implemented_by: bmad-quick-dev
+shipped_ref: "staged-recipes: ALL 5 prereq PRs MERGED (#33764/#33765/#33766/#33767/#33768); C1 lyric-py ARM live on all 5 subdirs. db-gpt itself DELIVERED VIA #33883 (@pb01ka, dbgpt-split, 8 outputs incl dbgpt-acc-flash-attn) — NOT our own PR (G58 consume-not-submit, user decision 2026-07-01). Our recipes/db-gpt/ now mirrors #33883, verified GREEN locally (8/8, v0.8.1). #33883 red only on G66 channel lag (auto-gpt-plugin-template + lyric-py-worker not yet uploaded); monitoring channel; consume dbgpt on land."
+spec_updated: 2026-07-01
+```

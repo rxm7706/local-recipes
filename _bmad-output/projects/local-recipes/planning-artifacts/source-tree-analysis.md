@@ -370,12 +370,10 @@ docs/                                        # human-facing documentation
 ├── bmad-setup-plan.md                       # BMAD installation rationale
 ├── pixi-config-jfrog.example.toml           # example .pixi/config.toml for JFrog air-gap
 │
-└── specs/                                   # BMAD-consumable feature specs (22)
+└── specs/                                   # BMAD-consumable feature specs (23)
     ├── # ── atlas / cf_atlas engine ──
     ├── atlas-appthreat-deep-signals.md      # EPSS + CWE overlay (shipped v8.6.0)
-    ├── atlas-phase-f-s3-backend.md          # S3 parquet backend (Wave 1 shipped v7.6.0)
-    ├── atlas-phase-f-wave2-richer-metrics.md  # rolling downloads + trend slope (shipped v8.18.0)
-    ├── atlas-phase-f-wave3-cli-surface.md   # platform/pyver/channel CLIs (shipped v8.19.0)
+    ├── atlas-phase-f-s3-backend.md          # Phase F/F+ S3 backend + richer metrics + CLIs (Waves 1-3, v7.6.0→v8.19.0; consolidated 2026-07-02)
     ├── atlas-phase-k-cron-runner.md         # token-bucket rate scheduler (v8.20.0)
     ├── atlas-phase-p-incremental.md         # Phase P incremental BigQuery refresh (v8.15.0)
     ├── atlas-pypi-intelligence.md           # Phase O→S PyPI intel layer (shipped v8.1.0)
