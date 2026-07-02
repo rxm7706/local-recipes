@@ -535,7 +535,7 @@ below the operator cap (`PHASE_P_MAX_COST_USD` default $10 refresh /
 query runs with `maximum_bytes_billed` as a hard server-side ceiling.
 Completes in ~1-2 min and upserts `downloads_30d` + `downloads_90d`
 into `pypi_intelligence` for the ~300k PyPI projects with any download
-activity in the last 90 days. See `docs/specs/atlas-phase-p-incremental.md`
+activity in the last 90 days. See `docs/specs/cfe-shipped-releases.md` Part 7
 for the v8.15.0 incremental architecture that drives steady-state
 cost below $1/run.
 
@@ -760,7 +760,7 @@ cost below $1/run.
   wall-clock for a full --fresh admin run; the S3 parquet bulk sweep
   covers the same row set in seconds. The numbers disagree by
   ~0.5–1.5× per the discrepancy table in
-  `docs/specs/atlas-phase-f-s3-backend.md` § "Verified discrepancies".
+  `docs/specs/cfe-shipped-releases.md` Part 8 § "Verified discrepancies".
   **Consumer impact**: admin-profile `total_downloads` numbers shift to
   S3 totals; consumers querying `packages.total_downloads` for an
   admin-built DB MUST check `packages.downloads_source = 's3-parquet'`
@@ -774,7 +774,7 @@ cost below $1/run.
     many-dependents.
   - Download-weighted maintainer leaderboard.
   - "Archived but actively used" (with E.5 + I).
-  - ✅ shipped v8.18.0 (Wave 2 from `docs/specs/atlas-phase-f-s3-backend.md`):
+  - ✅ shipped v8.18.0 (Wave 2 intake archived at `docs/specs/cfe-shipped-releases.md` Part 8):
     rolling 30/90-day windows, 90-day trend slope, first/last nonzero month,
     per-platform + per-Python breakdown tables. Computed in one extended
     parquet sweep — no extra HTTP. A v26 → v27 migration writes a
@@ -782,7 +782,7 @@ cost below $1/run.
     columns populate from the cached parquet on first post-migration
     Phase F run (operator can also set `PHASE_F_FORCE_REFRESH=1`
     manually).
-  - ✅ shipped v8.19.0 (Wave 3 from `docs/specs/atlas-phase-f-s3-backend.md`):
+  - ✅ shipped v8.19.0 (Wave 3 intake archived at `docs/specs/cfe-shipped-releases.md` Part 8):
     `platform-breakdown`, `pyver-breakdown` (incl. `--policy-check` for
     python_min validation against the new `packages.python_min` column),
     `channel-split` (incl. `--migration-checklist` markdown emit) CLIs +

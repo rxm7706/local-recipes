@@ -154,13 +154,12 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 | `docs/specs/langflow-conda-forge.md` | langflow-suite multi-output recipe (4 outputs: langflow-sdk+lfx+langflow-base+langflow, v1.10.1) + full ~71-recipe closure submission to staged-recipes. Suite PR #33972 is a fully-green draft; closure PRs in flight. python_min 3.11 (G41). |
 | `docs/specs/db-gpt-conda-forge.md` | DB-GPT on conda-forge. **TERMINAL — delivered via external PR #33883 (consume-not-submit, G58); do NOT re-run BMAD on it.** Only § Current State + § Readiness are authoritative; the stories are historical. |
 | `docs/specs/flyte-conda-forge.md` | Flyte 2 SDK (PyPI `flyte` ≠ v1 `flytekit`) — 6-recipe closure built GREEN locally; submission blocked on the buf.validate namespace collision (G88). python_min 3.11 (G40/G41). |
-| `docs/specs/sole-maintainer-feedstock-refresh.md` | Bulk refresh of the 537 sole-maintainer feedstocks' local recipes (regenerate, v0→v1, platform-expand; review diffs, push nothing). Waves B–F shipped (252 recipes); reopened for Wave H total-coverage (179 remaining). |
+| `docs/specs/feedstock-refresh.md` | Two-track bulk refresh of ALL 769 feedstocks rxm7706 can modify (regenerate, v0→v1, platform-expand). Track A (sole, 537): Waves B–F shipped, reopened for Wave H total-coverage (179 remaining). Track B (co, 232): ready; adds co-maintainer etiquette + a no-local-recipe bucket. Delegates per-feedstock work to `feedstock-platform-expansion.md`. |
 
 **Ready (backlog, unimplemented):**
 
 | Spec | What it is |
 |---|---|
-| `docs/specs/co-maintainer-feedstock-refresh.md` | Co-maintainer sibling of the sole refresh — the other 232 feedstocks (together = all 769 rxm7706 can modify). Adds co-maintainer etiquette (never drop maintainers; PR-not-self-merge) + a no-local-recipe bucket. Waves A–G. |
 | `docs/specs/trendshift-conda-forge.md` | cf_atlas **Phase T** GitHub-trending discovery engine (schema v28→v29, `trending-candidates` CLI/MCP tool) + tiered packaging workflow; first batch seeded by `cli-anything-hub`. Resume at Wave A. |
 | `docs/specs/microsoft-conda-forge.md` | June 2026 `github.com/microsoft/*` org audit — ~10–14 new recipes in 3 waves (quick wins → mid-tier Python → native/compiled). Q1–Q3 open. |
 | `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | Migrate the cf_atlas orchestrator from hand-rolled phases to a Kedro/Dagster/DuckDB stack (Waves A–G). Run via `bmad`. |
@@ -176,18 +175,9 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 
 **Shipped (historical record — evidence in each spec's `shipped_ref`):**
 
-| Spec | Shipped as |
+| Spec | What it is |
 |---|---|
-| `docs/specs/atlas-pypi-universe-split.md` | v7.9.0 — `pypi_universe` side-table split + Phase H denominator fix (56× cut) |
-| `docs/specs/conda-forge-expert-v8.0.md` | v8.0.0 — `v_actionable_packages` view, Phase H freshness gate, persona `--profile`s (MAJOR) |
-| `docs/specs/atlas-pypi-intelligence.md` | v8.1.0 — PyPI intelligence layer: Phases O–S, `pypi_intelligence` table, readiness score |
-| `docs/specs/atlas-appthreat-deep-signals.md` | v8.6.0 — EPSS + CWE-rollup overlays on the Phase G/G' vulnerability columns |
-| `docs/specs/conda-forge-expert-v8.9.md` | v8.9.0 — generator hardening: maturin/PyO3 routing, sdist import-name extraction |
-| `docs/specs/cfe-pr-artifact-downloader.md` | v8.14.0 — PR CI-artifact downloader (`pr-artifacts` task / `download_pr_artifacts` MCP tool) |
-| `docs/specs/atlas-phase-p-incremental.md` | v8.15.0 — cost-capped incremental BigQuery Phase P (post-invoice-surprise refactor) |
-| `docs/specs/atlas-phase-f-s3-backend.md` | Phase F/F+ consolidated record (Waves 1–3): S3/parquet backend v7.6.0+v8.17.0, richer metrics v8.18.0, breakdown CLIs v8.19.0 |
-| `docs/specs/atlas-phase-k-cron-runner.md` | v8.20.0 — token-bucket Phase K scheduler (secondary-rate-limit fix) |
-| `docs/specs/graphifyy-osx-arm64-fanout.md` | Effort closed 2026-06-17 — 22 tree-sitter-* platform PRs + graphifyy osx-arm64 smoke-test |
+| `docs/specs/cfe-shipped-releases.md` | Consolidated archive of the 10 shipped intakes (2026-07-02): v7.9.0 pypi-universe-split, v8.0.0 + v8.9.0 CFE bundles, v8.1.0 PyPI intelligence, v8.6.0 AppThreat, v8.14.0 PR-artifact downloader, v8.15.0 Phase P incremental, Phase F Waves 1–3 (v7.6.0→v8.19.0), v8.20.0 Phase K scheduler, + the closed graphifyy osx-arm64 fanout effort. Release notes: skill CHANGELOG. Do not re-run BMAD on any part. |
 | `docs/specs/conda-forge-tracker.md` | Sibling repo `~/UserLocal/Projects/Github/rxm7706/conda-forge-tracker/` — markdown-first personal feedstock tracker (13 stories) |
 
 Skill-internal documentation (loaded on-demand when the skill activates):

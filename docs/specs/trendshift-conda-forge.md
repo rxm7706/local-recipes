@@ -910,8 +910,8 @@ in the same wave or a documented `run_constraints:` drop.
   wave packaging of an upstream set; wave/parallelism conventions reused.
 - `docs/specs/feedstock-platform-expansion.md` — parameterized timeless-
   workflow + appended-worked-examples pattern reused for the recurring layer.
-- `docs/specs/atlas-pypi-intelligence.md`, `atlas-phase-f-s3-backend.md` (Part 3, CLI surface),
-  `atlas-phase-p-incremental.md` — schema-migration + new-phase + new-CLI
+- `docs/specs/cfe-shipped-releases.md` Parts 3 (pypi-intelligence), 8 (Phase F Waves 1–3
+  incl. the Wave-3 CLI surface), and 7 (Phase P incremental) — schema-migration + new-phase + new-CLI
   mechanics; the `v_*` view + read-side-CLI patterns.
 - `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md`
   — § 10 (a)–(k): atomic writes, DELETE+INSERT, provenance, dry-run,

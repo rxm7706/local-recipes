@@ -1611,8 +1611,8 @@ the safety net.
 
 ### See also
 
-- `docs/specs/atlas-phase-p-incremental.md` — the v8.15.0 spec.
-- `docs/specs/atlas-pypi-intelligence.md` — v8.1.0 predecessor; carries
+- `docs/specs/cfe-shipped-releases.md` Part 7 — the v8.15.0 spec (archived).
+- `docs/specs/cfe-shipped-releases.md` Part 3 — the v8.1.0 predecessor (archived); carries
   a top-of-document erratum banner pointing here.
 - `reference/atlas-phases-overview.md` § Phase P — phase-indexed
   catalog entry.

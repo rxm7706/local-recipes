@@ -56,7 +56,7 @@ spec_updated: 2026-06-20
 | Status | **Active** — workflow proven end-to-end; parameterized for reuse |
 | First worked example | 2026-06-17/18 batch — 12 PRs (10 merged, 2 deferred) |
 | Skill version at authoring | conda-forge-expert v8.30.0 (gotchas G31–G34 landed from the first worked example) |
-| Predecessor specs | `feedstock-platform-expansion.md` (platform widening), `cfe-pr-artifact-downloader.md` (artifact smoke-tests) |
+| Predecessor specs | `feedstock-platform-expansion.md` (platform widening), `cfe-shipped-releases.md` Part 6 (PR-artifact downloader — artifact smoke-tests) |
 
 ---
 
@@ -392,7 +392,7 @@ handled the PR push.*
   `feedback_loosen_pins`, `feedback_bump_build_number_on_feedstock_pr_update`,
   `feedback_omit_python_min_at_default_floor`.
 - **Sibling specs** — `feedstock-platform-expansion.md`,
-  `cfe-pr-artifact-downloader.md`.
+  `cfe-shipped-releases.md` Part 6 (the PR-artifact downloader intake).
 
 ---
 
