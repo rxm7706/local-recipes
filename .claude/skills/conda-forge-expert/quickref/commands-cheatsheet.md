@@ -568,7 +568,7 @@ Default cadence is monthly (`PHASE_P_TTL_DAYS=30`) but the empirical
 cost exceeds the default $10 cap. Choose: (a) weekly cadence
 (`PHASE_P_TTL_DAYS=7`) keeps you under the cap; (b) monthly cadence
 requires `PHASE_P_MAX_COST_USD=25`. See
-`reference/atlas-phase-p-cost-model.md` for the full cost model and
+`reference/atlas-phase-engineering.md` § 13 for the full cost model and
 re-running the dry-run preflight to refresh these numbers.
 
 ### Vulnerability scanning (vuln-db env)

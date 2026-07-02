@@ -3,7 +3,7 @@
 Reads `pypi_universe LEFT JOIN packages` to find PyPI projects with no
 conda-forge equivalent. Output of the 2026-05-13 actionable-scope audit's
 Wave 4 — the admin-persona candidate list that was 📋-open in
-`reference/atlas-actionable-intelligence.md`.
+`reference/atlas-phases-overview.md` Part A.
 """
 from __future__ import annotations
 

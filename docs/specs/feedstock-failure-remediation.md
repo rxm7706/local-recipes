@@ -380,7 +380,7 @@ handled the PR push.*
 - **`conda-forge-expert` SKILL.md** — "Diagnostic chain for feedstock CI test
   failures"; gotchas G10, G14, G19, G24, G26, **G31–G34** (this spec's first
   worked example authored G31–G34).
-- **conda-forge-atlas** — `reference/atlas-actionable-intelligence.md` (persona-
+- **conda-forge-atlas** — `reference/atlas-phases-overview.md` Part A (persona-
   mapped catalog of every actionable signal) and
   `reference/atlas-phases-overview.md`; daily read-side CLIs `behind-upstream`,
   `whodepends`, `feedstock-health`, `detail-cf-atlas`, `staleness-report` (all
