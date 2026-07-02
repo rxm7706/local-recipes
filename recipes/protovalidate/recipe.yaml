@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+  python_min: "3.11"
+
+package:
+  name: protovalidate
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/protovalidate/protovalidate-${{ version }}.tar.gz
+  sha256: 4cb9a5065f32abc9baf2cf25c5bd09a139f7dffb7b8692f636a8e3e6883bb9a2
+  patches:
+    - patches/0001-ship-buf-validate-stubs.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatch-vcs
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - cel-python >=0.5
+    - google-re2 >=1
+    - protobuf >=5
+
+tests:
+  - python:
+      imports:
+        - protovalidate
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Protocol Buffer Validation for Python
+  description: |
+    [![The Buf logo](https://raw.githubusercontent.com/bufbuild/protovalidate/main/.github/buf-logo.svg)][buf]
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/bufbuild/protovalidate-python
+  repository: https://github.com/bufbuild/protovalidate-python
+  documentation: https://protovalidate.com
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: protovalidate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: protovalidate
+  cfe-purls:
+    - pkg:conda/protovalidate@${{ version }}
+    - pkg:pypi/protovalidate@${{ version }}
+  cfe-upstream-repo: https://github.com/bufbuild/protovalidate-python
+  cfe-upstream-homepage: https://github.com/bufbuild/protovalidate-python
+  cfe-import-names: [protovalidate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed:
+    - buf-validate-stub-collision-with-flyteidl2
+  cfe-forge-blocker-list:
+    - "upstream: protovalidate PyPI wheels omit the buf.validate stubs (gen/ never packaged) — broken standalone on every version"
+    - "upstream: flyteidl2 bundles an incompatible older buf.validate; conda file-collision on buf/validate/validate_pb2.py. Local-only workaround: protovalidate owns the newer buf.validate (force-include gen/buf), flyteidl2 strips its copy + deps protovalidate"
+  cfe-last-checked: "2026-07-01T00:00:00Z"
+  cfe-generated-by-version: "8.62.0"
+  cfe-generated-at-datetime: "2026-07-01T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-01T20:19:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Flyte-2 closure, LOCAL-ONLY (not cf-submittable): see docs/specs/flyte-conda-forge.md § BLOCKER.
+# source:
+#    # patches/0001 ships the buf.validate protobuf stubs upstream's wheel omits
+#    # (they live in gen/, written by `buf generate`). Makes protovalidate the
+#    # single owner of buf.validate for the flyte closure; flyteidl2 strips its
+#    # bundled older copy and depends on protovalidate. Verified: protovalidate's
+#    # newer buf.validate is a superset that flyteidl2's protos also tolerate.
+# requirements:
+#  run:
+#    # protovalidate runtime imports only buf.validate + celpy (cel-python); the
+#    # gen/cel stubs are unused at runtime, so cel/ is NOT shipped (avoids any
+#    # cel-python top-level collision). python_min 3.11 = the cel-python cf floor.
+####

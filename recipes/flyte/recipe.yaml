@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.7"
+  python_min: "3.11"
+
+package:
+  name: flyte
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/f/flyte/flyte-${{ version }}-py3-none-any.whl
+  sha256: 70a1427c9606489fe8862d67984b4ab1811c4ecc3a6053f331744d0afbedb4ce
+  file_name: flyte-${{ version }}-py3-none-any.whl
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install flyte-${{ version }}-py3-none-any.whl -vv --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - aiofiles >=24.1.0
+    - click >=8.2.1
+    - cloudpickle >=3.1.1
+    - docstring_parser >=0.16
+    - fsspec >=2025.3.0
+    - connectrpc >=0.9.0,<0.11
+    - obstore >=0.7.3
+    - protobuf >=6.30.1
+    - pydantic >=2.10.6
+    - pyyaml >=6.0.2
+    - rich-click ==1.8.9
+    - httpx >=0.28.1,<1.0.0
+    - keyring >=25.6.0
+    - msgpack-python >=1.1.0
+    - toml >=0.10.2
+    - async-lru >=2.0.5
+    - mashumaro
+    - aiolimiter >=1.2.1
+    - flyteidl2 ==2.0.26
+    - packaging
+    - sentry-sdk >=2.0
+    - pyopenssl >=24.0.0
+    - asyncssh >=2.14
+
+tests:
+  - python:
+      imports:
+        - flyte
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Reliably orchestrate ML pipelines, models, and agents at scale — in pure Python
+  description: |
+    Flyte 2 SDK — type-safe, distributed orchestration of agents, ML pipelines,
+    and real-time inference in pure Python with async/await.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/flyteorg/flyte
+  repository: https://github.com/flyteorg/flyte-sdk
+  documentation: https://docs.flyte.org
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flyte
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flyte
+  cfe-purls:
+    - pkg:conda/flyte@${{ version }}
+    - pkg:pypi/flyte@${{ version }}
+  cfe-upstream-repo: https://github.com/flyteorg/flyte-sdk
+  cfe-upstream-homepage: https://github.com/flyteorg/flyte
+  cfe-import-names: [flyte]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed:
+    - flyteidl2-buf-validate-closure-blocker
+  cfe-forge-blocker-list:
+    - "flyte-2 SDK (v2), distinct from cf's v1 flytekit. Wheel-only upstream (no sdist, G54 last-resort)"
+    - "local-only: transitively blocked by the flyteidl2/protovalidate buf.validate collision (docs/specs/flyte-conda-forge.md § BLOCKER). Not cf-submittable until that upstream issue is fixed"
+  cfe-last-checked: "2026-07-01T00:00:00Z"
+  cfe-generated-by-version: "8.62.0"
+  cfe-generated-at-datetime: "2026-07-01T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-01T20:55:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Flyte 2 SDK — LOCAL-ONLY. The actual target of docs/specs/flyte-conda-forge.md.
+#    # DISTINCT from cf's v1 `flytekit`/`flyteidl` (coexist; do not conflate).
+# source:
+#    # pypi-wheel: flyte publishes only a py3-none-any wheel (no sdist, like flyteidl2).
+#    # LICENSE vendored from the wheel's dist-info (Apache-2.0).
+# requirements:
+#  run:
+#    # python_min 3.11 = the real floor (flyteidl2 -> protovalidate -> cel-python
+#    # cf py3.11+, G40/G41; upstream requires-python >=3.10 is aspirational on cf).
+#    # Upstream constraints mirrored for pip_check (rich-click ==1.8.9 IS on cf;
+#    # httpx <1.0.0 fine). G10 conda names: docstring_parser, msgpack-python, pyopenssl.
+#    # Base deps only (Q1 extras verified separately in Wave 4).
+####

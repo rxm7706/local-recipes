@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.7"
+
+package:
+  name: flyte-controller-base
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/84/d3/f6e9405a73c2d15b9076a12e11162adbc90eac4f5dfec6a08cd7b7589f29/flyte_controller_base-${{ version }}-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: de556c506042eb819728fe3cdea056710c143ca7966523318ad79677c85f6550
+  file_name: flyte_controller_base-${{ version }}-cp310-abi3-manylinux_2_17_x86_64.whl
+
+build:
+  number: 0
+  python:
+    version_independent: true
+  script:
+    - ${{ PYTHON }} -m pip install flyte_controller_base-${{ version }}-cp310-abi3-manylinux_2_17_x86_64.whl -vv --no-deps
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python >=3.10
+    - flyteidl2 ==2.0.26
+
+tests:
+  - python:
+      imports:
+        - flyte_controller_base
+      pip_check: true
+
+about:
+  summary: Flyte 2 Rust controller base (rust-controller extra of flyte)
+  description: |
+    flyte_controller_base is the compiled Rust controller runtime that backs
+    the flyte SDK's optional `rust-controller` extra (from flyteorg/flyte-sdk
+    rs_controller). Version-locked to the flyte SDK.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/flyteorg/flyte
+  repository: https://github.com/flyteorg/flyte-sdk
+  documentation: https://docs.flyte.org
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flyte-controller-base
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flyte_controller_base
+  cfe-purls:
+    - pkg:conda/flyte-controller-base@${{ version }}
+    - pkg:pypi/flyte-controller-base@${{ version }}
+  cfe-upstream-repo: https://github.com/flyteorg/flyte-sdk
+  cfe-upstream-homepage: https://github.com/flyteorg/flyte
+  cfe-import-names: [flyte_controller_base]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed:
+    - build-from-source-not-wheel-repackage
+    - flyteidl2-buf-validate-closure-blocker
+  cfe-forge-blocker-list:
+    - "flyte 'rust-controller' extra (optional). LOCAL-ONLY: repackages the upstream cp310-abi3 manylinux x86_64 wheel (no sdist). cf-submission would need a from-source Rust/maturin build of flyte-sdk/rs_controller + resolving the flyteidl2 buf.validate closure blocker"
+  cfe-last-checked: "2026-07-01T00:00:00Z"
+  cfe-generated-by-version: "8.62.0"
+  cfe-generated-at-datetime: "2026-07-01T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-01T21:05:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Flyte-2 rust-controller extra, LOCAL-ONLY, linux-64 only.
+# source:
+#    # pypi-wheel repackage: upstream ships only cp310-abi3 platform wheels (no
+#    # sdist). abi3 -> version_independent (one build covers py3.10+). Only the
+#    # x86_64 manylinux wheel is repackaged (linux-64); osx-arm64/linux-aarch64
+#    # wheels exist upstream if those platforms are needed.
+# build:
+#    # A proper cf submission must build from source (rs_controller Rust/maturin),
+#    # not repackage the wheel.
+####
