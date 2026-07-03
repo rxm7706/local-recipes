@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.2"
+
+package:
+  name: django-fsm-log
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-fsm-log/django_fsm_log-${{ 
+    version }}.tar.gz
+  sha256: 5276a587bff3112c123c73456f37decf9c1bdc631e005c760e248adc25c8ec97
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - django-appconf
+    - django-fsm-2
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - django_fsm_log
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/jazzband/django-fsm-log
+  license: MIT
+  license_file: LICENSE
+  summary: Transition's persistence for django-fsm
+  description: |
+    Transition's persistence for django-fsm
+  documentation: https://django-fsm-log.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-fsm-log
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-fsm-log
+  cfe-purls:
+    - pkg:conda/django-fsm-log@${{ version }}
+    - pkg:pypi/django-fsm-log@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-fsm-log
+  cfe-upstream-homepage: https://github.com/jazzband/django-fsm-log
+  cfe-import-names: [django_fsm_log]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-fsm-log-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-5.0.2]
+  cfe-forge-blocker-list:
+    - django-fsm-2 not on conda-forge yet (local recipe ready, pending submission)
+  cfe-last-checked: 2026-07-03T12:06:23Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T12:06:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

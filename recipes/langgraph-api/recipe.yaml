@@ -1,0 +1,121 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.0"
+  python_min: "3.11"
+
+package:
+  name: langgraph-api
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langgraph-api/langgraph_api-${{ version }}.tar.gz
+  sha256: f594a160857e2cd7fb2352bba585111177a4a394625ad0cf5898814754fb7bc1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - cloudpickle >=3.0.0
+    - cryptography >=42.0.0
+    - grpcio >=1.80.0,<1.81.0
+    - grpcio-health-checking >=1.80.0,<1.81.0
+    - grpcio-tools ==1.80.0
+    - httptools >=0.5.0
+    - httpx >=0.25.0
+    - jsonschema-rs >=0.20.0,<0.45
+    - langchain-core >=0.3.64
+    - langchain-protocol >=0.0.16,<0.1
+    - langgraph >=0.4.10,<2
+    - langgraph-checkpoint >=3.0.1,<5
+    - langgraph-runtime-inmem >=0.30.0.dev0,<0.31.0.dev0
+    - langgraph-sdk >=0.3.5
+    - langsmith >=0.6.3
+    - opentelemetry-api >=0.0.1
+    - opentelemetry-exporter-otlp-proto-http >=0.0.1
+    - opentelemetry-sdk >=0.0.1
+    - orjson >=3.9.7
+    - protobuf >=6.32.1,<7.0.0
+    - pyjwt >=2.9.0
+    - sse-starlette >=2.1.3,<3.4.0
+    - starlette >=1.0.1
+    - structlog >=24.1.0,<26
+    - tenacity >=8.0.0
+    - truststore >=0.1
+    - uuid-utils >=0.12.0
+    - uvicorn >=0.26.0
+    - uvloop >=0.18.0
+    - watchfiles >=0.13
+    - websockets >=13.0
+    - zstandard >=0.23.0
+
+tests:
+  - python:
+      imports:
+        - langgraph_api
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langgraph-api/
+  license: Elastic-2.0
+  license_file: LICENSE
+  summary: Implements the LangGraph API for rapid development and testing. Build and iterate on LangGraph agents with a tight feedback loop.
+  description: |
+    This package implements the LangGraph API for rapid development and testing. Build and iterate on LangGraph agents with a tight feedback loop. 
+    The server is backed by a predominently in-memory data store that is persisted to local disk when the server is restarted.
+    For production use, see the various deployment options for the LangGraph API, which are backed by a production-grade database.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph-api
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph-api
+  cfe-purls:
+    - pkg:conda/langgraph-api@${{ version }}
+    - pkg:pypi/langgraph-api@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langgraph-api
+  cfe-upstream-homepage: https://github.com/langchain-ai/langgraph-api
+  cfe-import-names: [langgraph_api]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34052
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: [staged-recipes #34052 held in draft until langgraph-runtime-inmem #34051 merges; Elastic-2.0 license under cf policy review in the PR, grpcio <1.81 + grpcio-tools ==1.80.0 pins unsatisfiable alongside pyarrow on current cf (libgrpc 1.80 vs libarrow/libgoogle-cloud lattice) — recheck on next upstream release]
+  cfe-last-checked: 2026-07-03T13:38:44Z
+  cfe-generated-by-version: 8.66.0
+  cfe-generated-at-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 langgraph-cli[inmem] chain for universal-mcp (blockbuster ->
+#    # langgraph-runtime-inmem -> langgraph-api -> langgraph-cli).
+#    # Elastic-2.0 (valid SPDX, redistribution permitted, NOT OSI) — cf license
+#    # review risk; LICENSE file fetched from SPDX (sdist ships none).
+# run:
+#    # httptools/uvloop are unix-only by upstream marker; unconditional here
+#    # (noarch cannot express platform markers). langsmith[otel] extra expanded
+#    # via the explicit opentelemetry-* deps upstream also lists.
+####
