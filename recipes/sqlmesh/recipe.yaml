@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: sqlmesh
-  version: "0.196.2"
+  version: "0.235.4"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlmesh-${{ version }}.tar.gz
-  sha256: c31c8cee87d333cb5127b9273eec0e05e793db3ab8715798dc87fba7a48579b0
+  sha256: 21c8e8f7a0aafae99b864c22a13cf521787c598d2d20f1826f856696fb3ec950
 
 build:
   number: 0
@@ -21,33 +21,33 @@ build:
     entry_points:
       - sqlmesh = sqlmesh.cli.main:cli
       - sqlmesh_cicd = sqlmesh.cicd.bot:bot
-      - sqlmesh_lsp = sqlmesh.lsp.main:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=61.0
+    - setuptools
     - setuptools-scm
-    - toml
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - humanize
+    - python-dotenv
+    - python >=${{ python_min }}
     - astor
     - click
     - croniter
     - python-duckdb >=0.10.0,!=0.10.3
-    - dateparser
+    - dateparser <=1.2.1
     - hyperscript >=0.1.0
     - importlib-metadata
     - ipywidgets
     - jinja2
     - packaging
-    - pandas
+    - pandas <3.0.0
     - pydantic >=2.0.0
     - requests
     - rich
     - ruamel.yaml
-    - sqlglot >=26.30.0,<26.31.dev0
+    - sqlglot >=30.8.0,<30.9.dev0
     - tenacity
     - time-machine
     - json_stream
@@ -58,17 +58,18 @@ tests:
         - sqlmesh
         - web
       pip_check: true
+      python_version: ${{ python_min }}.*
   - requirements:
       run:
         - python ${{ python_min }}.*
+        - pip
     script:
       - sqlmesh --help
       - sqlmesh_cicd --help
-      - sqlmesh_lsp --help
 
 about:
-  homepage: https://github.com/TobikoData/sqlmes
-  summary: Next-generation data transformation framework
+  homepage: https://github.com/TobikoData/sqlmesh
+  summary: Efficient data transformation and modeling framework that is backwards compatible with dbt.
   license: Apache-2.0
   license_file: LICENSE
 
@@ -76,3 +77,40 @@ extra:
   recipe-maintainers:
     - rxm7706
     - fhoehle
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlmesh
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlmesh
+  cfe-purls:
+    - pkg:conda/sqlmesh@${{ version }}
+    - pkg:pypi/sqlmesh@${{ version }}
+  cfe-upstream-repo: https://github.com/tobymao/sqlglot
+  cfe-upstream-homepage: https://sqlmesh.com/
+  cfe-import-names: [sqlmesh, web]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlmesh-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.235.4 (PR#82 open), sqlglot-pin-30.8]
+  cfe-forge-blocker-list: [sqlglot >=30.8.0 not on cf: chain = sqlglotrs#48 reshape -> sqlglot 30.8.0 bump -> PR#82 re-run; full chain verified GREEN locally]
+  cfe-last-checked: 2026-07-03T15:29:19Z
+  cfe-generated-by-version: 8.66.0
+  cfe-generated-at-datetime: 2026-07-03T15:29:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T15:29:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 sqlmesh-unblock chain (tracker/sqlmesh-feedstock#82). NOT our
+#    # feedstocks (sqlglot: tobymao+thewchan; sqlglotrs: thewchan) — fix material
+#    # verified locally for handoff, no maintainer-edit pushes possible.
+# Header:
+#    # local recipe re-based on the feedstock shape: the generated one had a
+#    # truncated run block (10/20 deps) AND G39 0.0.0 dist-info (setuptools-scm
+#    # missing from host).
+####

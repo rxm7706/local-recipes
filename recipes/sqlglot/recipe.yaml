@@ -1,11 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# from `sqlglotrs/Cargo.toml#package/version`
 # handle undefined PYTHON in `noarch: generic` outputs
 schema_version: 1
 
 context:
-  version: "27.6.0"
-  sqlglotrs_version: 0.6.1
+  version: "30.8.0"
+  sqlglotrs_version: "0.13.0"
   PYTHON: $PYTHON
 
 recipe:
@@ -14,7 +13,7 @@ recipe:
 
 source:
   url: https://pypi.org/packages/source/s/sqlglot/sqlglot-${{ version }}.tar.gz
-  sha256: 413bc6c9978710bd97110e9a4363c517dfb92954d0a9fd2922e87c5707395deb
+  sha256: 1c5f93fb742dd9aaa75eee6bb33a637794a858b9a86375fac23a2dc0f7bc127e
 
 build:
   number: 0
@@ -72,11 +71,8 @@ outputs:
           pip_check: true
           python_version: ${{ python_min }}.*
       - files:
-          recipe:
-            - test_sqlglotrs_version.py
           source:
             - tests/
-            - sqlglotrs/Cargo.toml
         requirements:
           run:
             - openjdk
@@ -86,11 +82,9 @@ outputs:
             - pytest
             - python-dateutil
             - python-duckdb >=0.6
-            - tomli
             - python ${{ python_min }}.*
         script:
-          - pytest -vvv --capture=tee-sys --color=yes --tb=long test_sqlglotrs_version.py
-          - pytest -vvv --capture=tee-sys --color=yes --tb=long -k "not test_token_repr" tests
+          - pytest -vvv --capture=tee-sys --color=yes --tb=long tests
 
 about:
   summary: An easily customizable SQL parser and transpiler
@@ -102,3 +96,40 @@ extra:
   recipe-maintainers:
     - tobymao
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlglot
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlglot
+  cfe-purls:
+    - pkg:conda/sqlglot@${{ version }}
+    - pkg:pypi/sqlglot@${{ version }}
+  cfe-upstream-repo: https://github.com/tobymao/sqlglot
+  cfe-upstream-homepage: https://github.com/tobymao/sqlglot
+  cfe-import-names: [sqlglot]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlglot-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-30.8.0, sqlglotrs-pin-0.13.0, drop-obsolete-cargo-version-test]
+  cfe-forge-blocker-list: [sqlglotrs 0.13.0 must land on cf first (feedstock#48); bot bump PRs stop at 30.1.0 — fresh 30.8.0 PR needed for sqlmesh]
+  cfe-last-checked: 2026-07-03T15:29:19Z
+  cfe-generated-by-version: 8.66.0
+  cfe-generated-at-datetime: 2026-07-03T15:29:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T15:29:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 sqlmesh-unblock chain (tracker/sqlmesh-feedstock#82). NOT our
+#    # feedstocks (sqlglot: tobymao+thewchan; sqlglotrs: thewchan) — fix material
+#    # verified locally for handoff, no maintainer-edit pushes possible.
+# outputs:
+#    # sqlglot-rs metapackage kept per feedstock shape; at 30.8.0 the upstream rs
+#    # extra also pins sqlglotc==30.8.0 — NOT added: sqlglotc ships the same
+#    # sqlglot/ namespace (G88 file-clash on conda), parked.
+####
