@@ -15,7 +15,12 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    env:
+      WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
+      PYTHONWARNINGS: "ignore::UserWarning"
+    content:
+      - "${{ PYTHON }} -m pip install -vv --use-pep517 --no-deps --no-build-isolation ."
 
 requirements:
   host:
@@ -53,11 +58,11 @@ tests:
         import kedro_datasets_experimental
 
 about:
-  summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
+  summary: "Kedro-Datasets is where you can find all of Kedro's data connectors."
   homepage: https://pypi.org/project/kedro-datasets/
   description: |
-    Kedro-Datasets is where you can find all of Kedro's data connectors.
-    These data connectors are implementations of the AbstractDataset.
+    "Kedro-Datasets is where you can find all of Kedro's data connectors.
+    These data connectors are implementations of the AbstractDataset."
   repository: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
   documentation: https://docs.kedro.org
   license: Apache-1.1
