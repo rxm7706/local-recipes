@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "9.4.0"
+  version: "9.5.0"
 
 package:
   name: kedro-datasets
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/k/kedro-datasets/kedro_datasets-${{ version }}.tar.gz
-  sha256: 46b2e20e6b1d81914d44eab83f6d911da1191b79ce3d43eb07bc49ceea3f7cc8
+  sha256: 331c84d47d39d8582bb09d6e9196eded1f672d0ae369cabce042ca6dcdd2c498
 
 build:
   number: 0
@@ -32,10 +32,25 @@ tests:
   - python:
       imports:
         - kedro_datasets
+        - kedro_datasets_benchmarks
         - kedro_datasets_experimental
+        - kedro
+        - kedro_benchmarks
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      env:
+        WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
+        PYTHONWARNINGS: "ignore::UserWarning"
+      interpreter: python
+      content: |
+        import kedro
+        import kedro_datasets
+        import kedro_datasets_benchmarks
+        import kedro_datasets_experimental
 
 about:
   summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
@@ -43,6 +58,11 @@ about:
   description: |
     Kedro-Datasets is where you can find all of Kedro's data connectors.
     These data connectors are implementations of the AbstractDataset.
+  repository: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  documentation: https://docs.kedro.org
+  license: Apache-1.1
+  license_file:
+    - LICENSE.md
 
 extra:
   recipe-maintainers:
