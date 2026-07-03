@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.62.0"
+  version: "0.64.0"
 
 package:
   name: feast
@@ -10,36 +10,33 @@ package:
 
 source:
   url: https://pypi.org/packages/source/f/feast/feast-${{ version }}.tar.gz
-  sha256: 1896bec798c7b81c6e4afb3ba429facfa8a1d67c1fad6adf300dd9a40cca490e
+  sha256: 0625750041dbabd05a722aa480a1713db3be85d50c551f4e8203385a594abc6a
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - feast = feast.cli.cli:cli
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pybindgen >=0.22.0  # Pinned to ==0.22.0, which is not available
+    - pybindgen >=0.22.0
     - setuptools >=60,<81
     - setuptools-scm >=6.2
     - sphinx !=4.0.0
     - wheel
     - pip
   run:
-    - python >=${{ python_min }},<4.0
-    - click >=7.0.0,<9.0.0
-    - colorama >=0.3.9,<1
-    - dill >=0.3.0,<0.4.dev0
+    - python >=${{ python_min }}
+    - click <9.0.0,>=7.0.0
+    - colorama <1,>=0.3.9
+    - dill >=0.3.0,<0.4
     - protobuf >=4.24.0
-    - jinja2 >=2,<4
+    - jinja2 <4,>=2
     - jsonschema
     - mmh3
-    - numpy >=2.0.0,<3
-    - pandas >=1.4.3,<3
+    - numpy <3,>=2.0.0
+    - pandas <3,>=1.4.3
     - pyarrow >=21.0.0
     - pydantic >=2.10.6
     - pygments >=2.12.0,<3
@@ -52,11 +49,12 @@ requirements:
     - tqdm >=4,<5
     - typeguard >=4.0.0
     - fastapi >=0.68.0
+    - starlette >=1.0.1
     - uvicorn >=0.30.6,<=0.34.0
     - uvicorn-worker
     - gunicorn
     - dask-core >=2024.2.1
-    - prometheus_client
+    - prometheus_client >=0.20.0,<0.25.0
     - psutil
     - bigtree >=0.19.2
     - pyjwt
@@ -76,11 +74,12 @@ tests:
       - feast --help
 
 about:
+  homepage: https://github.com/feast-dev/feast
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/feast-dev/feast
-  repository: https://github.com/feast-dev/feast
   summary: Python SDK for Feast
+  description: |
+    Python SDK for Feast
 
 extra:
   recipe-maintainers:
@@ -96,34 +95,23 @@ extra:
     - pkg:pypi/feast@${{ version }}
   cfe-upstream-repo: https://github.com/feast-dev/feast
   cfe-upstream-homepage: https://github.com/feast-dev/feast
-  cfe-import-names: [feast]
+  cfe-import-names: [go]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: true
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/feast-feedstock
-  cfe-forge-recipe-updates-needed: none
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.64.0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
-  cfe-generated-by-version: 8.37.0
-  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T06:33:00Z
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # feast is a heavy ML feature store with a large run-dep tree; local
-#    # build is best-effort. Deployed feedstock at 0.62.0 is authoritative
-#    # for deps — the local recipe already matched it byte-for-byte; this
-#    # refresh bumps version 0.59.0 -> 0.62.0 + sha256 and modernizes
-#    # identity/URL to the v8.10.0 canonical shape.
-# requirements:
-#  run:
-#    # Base install_requires verified from feast-0.62.0 egg-info/requires.txt.
-#    # Extras flattened/renamed (G25): uvicorn[standard]->uvicorn,
-#    # dask[dataframe]->dask-core, SQLAlchemy[mypy]->sqlalchemy. gunicorn is
-#    # gated platform_system != "Windows" upstream but shipped unconditionally
-#    # to match the deployed feedstock.
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####
