@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.25.0"
+  version: "0.25.1"
 
 package:
   name: apitally
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/apitally/apitally-${{ version }}.tar.gz
-  sha256: 8f6a5c015aac9c69d0b3a393ece62378f01a28e47b987a40d8001c36be74adb6
+  sha256: 2681e925deffbc94eb7fc65e1f0db397df58634ab1d90597be458d69b2185f7b
 
 build:
   number: 0
@@ -20,20 +20,18 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
-    - hatch-vcs
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - backoff >=2.0.0
-    - opentelemetry-sdk >=1.39.1,<2.0.0
+    - opentelemetry-sdk <2.0.0,>=1.39.1
     - psutil >=5.9.6
-    - typing-extensions >=4.0.0
+    - typing_extensions >=4.0.0
 
 tests:
   - python:
       imports:
-        - apitally
       pip_check: true
       python_version:
         - ${{ python_min }}.*
@@ -41,11 +39,13 @@ tests:
 
 about:
   homepage: https://apitally.io
-  repository: https://github.com/apitally/apitally-py
-  documentation: https://docs.apitally.io
   license: MIT
   license_file: LICENSE
   summary: Simple API monitoring & analytics for REST APIs built with FastAPI, Flask, Django, Starlette, Litestar and BlackSheep.
+  description: |
+    Simple API monitoring & analytics for REST APIs built with FastAPI, Flask, Django, Starlette, Litestar and BlackSheep.
+  repository: https://github.com/apitally/apitally-py
+  documentation: https://docs.apitally.io
 
 extra:
   recipe-maintainers:
@@ -60,28 +60,24 @@ extra:
     - pkg:conda/apitally@${{ version }}
     - pkg:pypi/apitally@${{ version }}
   cfe-upstream-repo: https://github.com/apitally/apitally-py
-  cfe-upstream-homepage: https://apitally.io
+  cfe-upstream-homepage: https://github.com/apitally/apitally-py
   cfe-import-names: [apitally]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: true
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apitally-feedstock
-  cfe-forge-recipe-updates-needed: none
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.25.1]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
-  cfe-generated-by-version: 8.37.0
-  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
-# requirements:
-#  run:
-#    # typing-extensions is marker-gated upstream
-#    # (typing-extensions>=4.0.0; python_version<'3.11'), but listed
-#    # unconditionally here to match the published feedstock and avoid a
-#    # per-Python run-dep selector on this noarch:python recipe (G12).
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####

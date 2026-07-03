@@ -2,15 +2,15 @@
 schema_version: 1
 
 context:
-  version: "5.0.8"
+  version: "1.9.2"
 
 package:
-  name: django-cms
+  name: dacite
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-cms/django_cms-${{ version }}.tar.gz
-  sha256: ad3c640cfd784d93f0fb33fd3ba8ecfbd024c2e65b01a86a14379a0a5a895283
+  url: https://pypi.org/packages/source/d/dacite/dacite-${{ version }}.tar.gz
+  sha256: 6ccc3b299727c7aa17582f0021f6ae14d5de47c7227932c47fec4cdfefd26f09
 
 build:
   number: 0
@@ -24,55 +24,47 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - django >=2.2
-    - django-classy-tags >=0.7.2
-    - django-formtools >=2.1
-    - django-treebeard >=4.3
-    - django-sekizai >=0.7
-    - djangocms-admin-style >=1.2
-    - packaging
-    - setuptools
+    - dataclasses
 
 tests:
   - python:
       imports:
-        - cms
+        - dacite
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
-  homepage: https://www.django-cms.org/
-  license: BSD-3-Clause
+  homepage: https://github.com/konradhalas/dacite
+  license: MIT
   license_file: LICENSE
-  summary: Lean enterprise content management powered by Django.
+  summary: Simple creation of data classes from dictionaries.
   description: |
-    Lean enterprise content management powered by Django.
-  repository: https://github.com/django-cms/django-cms
-  documentation: https://docs.django-cms.org/
+    Simple creation of data classes from dictionaries.
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - mands
 
 #### CFE metadata AND comments
 # CFE metadata
-  cfe-conda-name: django-cms
+  cfe-conda-name: dacite
   cfe-upstream-registry: pypi
-  cfe-upstream-name: django-cms
+  cfe-upstream-name: dacite
   cfe-purls:
-    - pkg:conda/django-cms@${{ version }}
-    - pkg:pypi/django-cms@${{ version }}
-  cfe-upstream-repo: https://github.com/django-cms/django-cms
-  cfe-upstream-homepage: https://github.com/django-cms/django-cms
-  cfe-import-names: [cms]
+    - pkg:conda/dacite@${{ version }}
+    - pkg:pypi/dacite@${{ version }}
+  cfe-upstream-repo: https://github.com/konradhalas/dacite
+  cfe-upstream-homepage: https://github.com/konradhalas/dacite
+  cfe-import-names: [dacite]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
-  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-cms-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-5.0.8]
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dacite-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.9.2-fix, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0

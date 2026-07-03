@@ -3,26 +3,28 @@ schema_version: 1
 
 context:
   name: openlineage-integration-common
-  version: "1.35.0"
+  version: "1.50.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openlineage_integration_common-${{ version }}.tar.gz
-  sha256: 673f4287cf7852ab1828c2c82f4df417a751e75d962e897852183e6275e0c779
+  url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 393af02649095ff829dfc1f4193b61a6955cff1243facb8131429d6ec986096b
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - cd integration/common
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - uv-build >=0.9.4,<0.10.0
   run:
     - python >=${{ python_min }},<4.0
     - attrs >=19.3.0
@@ -50,3 +52,34 @@ extra:
     - millsks
     - conda-forge/openlineage-sql
     - conda-forge/openlineage-python
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openlineage-integration-common
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openlineage-integration-common
+  cfe-purls:
+    - pkg:conda/openlineage-integration-common@${{ version }}
+    - pkg:pypi/openlineage-integration-common@${{ version }}
+  cfe-upstream-repo: https://github.com/OpenLineage/OpenLineage
+  cfe-upstream-homepage: https://github.com/OpenLineage/OpenLineage
+  cfe-import-names: [openlineage.common]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openlineage-integration-common-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.50.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

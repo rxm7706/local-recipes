@@ -2,16 +2,17 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation-boto3sqs
-  version: "0.56b0"
+  version: "0.64b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-boto3sqs
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_boto3sqs-${{ version }}.tar.gz
-  sha256: 168437d9d437aff5841a544174addf6e862218c6794d53f54de1cb675332acba
+  url: 
+    https://pypi.org/packages/source/o/opentelemetry-instrumentation-boto3sqs/opentelemetry_instrumentation_boto3sqs-${{
+    version }}.tar.gz
+  sha256: 35dbf801f8921c65ce40b917f2e9e32cffd3538c10d9498ad0ee672c5909720f
 
 build:
   number: 0
@@ -21,14 +22,14 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }},<4.0
     - opentelemetry-api >=1.12,<2.dev0
     - opentelemetry-instrumentation ==${{ version }}
     - opentelemetry-semantic-conventions ==${{ version }}
-    - wrapt >=1.0.0,<2.0.0
+    - wrapt >=1.0.0,<3.0.0
     - boto3 >=1.0.0,<2.0.0
 
 tests:
@@ -37,14 +38,52 @@ tests:
         - opentelemetry
         - opentelemetry.instrumentation.boto3sqs
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Boto3 SQS service tracing for OpenTelemetry
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-boto3sqs
+  homepage: 
+    https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-boto3sqs
   license: Apache-2.0
   license_file: LICENSE
+  summary: Boto3 SQS service tracing for OpenTelemetry
+  description: |
+    Boto3 SQS service tracing for OpenTelemetry
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - conda-forge/opentelemetry-api
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-boto3sqs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-boto3sqs
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-boto3sqs@${{ version }}
+    - pkg:pypi/opentelemetry-instrumentation-boto3sqs@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-import-names: [opentelemetry_instrumentation_boto3sqs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-boto3sqs-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.64b0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

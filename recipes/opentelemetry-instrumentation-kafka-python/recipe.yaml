@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.63b1"
+  version: "0.64b0"
 
 package:
   name: opentelemetry-instrumentation-kafka-python
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-kafka-python/opentelemetry_instrumentation_kafka_python-${{ version }}.tar.gz
-  sha256: b572bd9f02b5efe18292442190924bef9b86a51436c9d120745a950a584fe5f8
+  sha256: 0b2b58ba1fc38fac7124306d541be04e8c4441b2973961261037d84fa268a7e4
 
 build:
   number: 0
@@ -20,14 +20,14 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
-    - kafka-python >=2.0,<3.0
+    - python >=${{ python_min }}
     - opentelemetry-api >=1.5,<2.dev0
     - opentelemetry-instrumentation ==${{ version }}
     - opentelemetry-semantic-conventions ==${{ version }}
+    - kafka-python >=2.0,<3.0
 
 tests:
   - python:
@@ -40,16 +40,17 @@ tests:
 
 about:
   homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-kafka-python
-  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
   license: Apache-2.0
   license_file: LICENSE
   summary: OpenTelemetry Kafka-Python instrumentation
   description: |
     OpenTelemetry Kafka-Python instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - conda-forge/opentelemetry-api
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -60,20 +61,24 @@ extra:
     - pkg:conda/opentelemetry-instrumentation-kafka-python@${{ version }}
     - pkg:pypi/opentelemetry-instrumentation-kafka-python@${{ version }}
   cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
-  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-kafka-python
-  cfe-import-names: [opentelemetry.instrumentation.kafka]
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-import-names: [opentelemetry_instrumentation_kafka_python]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: true
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-kafka-python-feedstock
-  cfe-forge-recipe-updates-needed: none
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.64b0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
-  cfe-generated-by-version: 8.37.0
-  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####
