@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  version: "2.12"
+  version: "5.0.0"
 
 package:
-  name: import-linter
+  name: django-tinymce
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/import-linter/import_linter-${{ 
-    version }}.tar.gz
-  sha256: 217f0f0f0890b8625389765039d52c215f4c6d4a047f42ea78b6d00ceba1900e
+  url: https://pypi.org/packages/source/d/django-tinymce/django_tinymce-${{ version }}.tar.gz
+  sha256: 6257669ed596accf5fa967ff3061276b2c5352baac1bbc658fcd8252b12ca38a
 
 build:
   number: 0
@@ -22,14 +21,10 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - hatchling
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - click >=6
-    - grimp >=3.14
-    - rich >=14.2.0
-    - tomli >=1.2.1
-    - typing_extensions >=3.10.0.0
+    - django >=4.2
 
 tests:
   - python:
@@ -40,42 +35,35 @@ tests:
         - "*"
 
 about:
-  homepage: https://pypi.org/project/import-linter/
-  license: BSD-2-Clause
+  homepage: https://github.com/jazzband/django-tinymce
+  license: MIT AND GPL-2.0-or-later
   license_file: LICENSE
-  summary: Lint your Python architecture
+  summary: A Django application that contains a widget to render a
   description: |
-    Lint your Python architecture
-  documentation: https://import-linter.readthedocs.io/
+    A Django application that contains a widget to render a
+  documentation: https://django-tinymce.readthedocs.org/
 
 extra:
   recipe-maintainers:
     - rxm7706
-    - millsks
-    - cshaley
-####
-# CFE comments
-# Header:
-#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
-####
 
 #### CFE metadata AND comments
 # CFE metadata
-  cfe-conda-name: import-linter
+  cfe-conda-name: django-tinymce
   cfe-upstream-registry: pypi
-  cfe-upstream-name: import-linter
+  cfe-upstream-name: django-tinymce
   cfe-purls:
-    - pkg:conda/import-linter@${{ version }}
-    - pkg:pypi/import-linter@${{ version }}
-  cfe-upstream-repo: https://pypi.org/project/import-linter/
-  cfe-upstream-homepage: https://pypi.org/project/import-linter/
-  cfe-import-names: [import_linter]
+    - pkg:conda/django-tinymce@${{ version }}
+    - pkg:pypi/django-tinymce@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-tinymce
+  cfe-upstream-homepage: https://github.com/jazzband/django-tinymce
+  cfe-import-names: [django_tinymce]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
-  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/import-linter-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-2.12, meta-yaml-to-recipe-yaml]
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-tinymce-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-5.0.0, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0

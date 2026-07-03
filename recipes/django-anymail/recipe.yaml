@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "15.0"
+
+package:
+  name: django-anymail
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-anymail/django_anymail-${{ 
+    version }}.tar.gz
+  sha256: 23d8ab6589afe8cc1ae7665c26879814ad192f4c3ed837a2a1868b0a056869e0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - django >=5.0
+    - idna
+    - requests >=2.4.3
+    - typing_extensions >=4.12
+    - urllib3 >=1.25.0
+
+tests:
+  - python:
+      imports:
+        - anymail
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/anymail/django-anymail
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Django email backends and webhooks for Amazon SES, Brevo,  
+    MailerSend, Mailgun, Mailjet, Mailtrap, Mandrill, Postal, Postmark, Resend,  
+    Scaleway TEM, SendGrid, SparkPost, and Unisender Go  (EmailBackend, 
+    transactional email tracking and inbound email signals)
+  description: "Anymail integrates several transactional email service providers (ESPs)
+    into Django, with a consistent API that lets you use ESP-added features without
+    locking your code to a particular ESP.\nIt currently fully supports Mailgun, Mailjet,
+    Postmark, SendGrid, and SparkPost, and has limited support for Mandrill.\n"
+  repository: https://github.com/anymail/django-anymail
+  documentation: https://anymail.dev/en/stable/
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley
+    - elanqo
+    - zaigner
+    - millsks
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-anymail
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-anymail
+  cfe-purls:
+    - pkg:conda/django-anymail@${{ version }}
+    - pkg:pypi/django-anymail@${{ version }}
+  cfe-upstream-repo: https://github.com/anymail/django-anymail
+  cfe-upstream-homepage: https://github.com/anymail/django-anymail
+  cfe-import-names: [anymail]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-anymail-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-15.0, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

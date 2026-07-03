@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: ydata-profiling
-  version: "4.18.1"
+  version: 4.18.4
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 6dc529893c84abecda2e6038564cabcd69a6b801a730e077b61b6d500a98f30c
+  sha256: c19a0b3dec081da024d18800ffcee0160b076edecef66ca55c75e00e6ac15e21
 
 build:
   number: 0
@@ -29,6 +29,7 @@ requirements:
     - wheel >=0.38.4,<1.0.0
     - pip
   run:
+    - setuptools <81
     - python >=${{ python_min }},<4.0
     - scipy >=1.8,<1.17
     - pandas >1.5,<3.0,!=1.4.0
@@ -51,7 +52,13 @@ requirements:
     - wordcloud >=1.9.4
     - dacite >=1.9,<2
     - numba >=0.60,<0.63
-    #- ipython <9.0
+    - arm_pyart
+    - ipywidgets
+    - pyspark
+    - packaging
+    - markupsafe
+    - ipython
+    - networkx
   run_constraints:
     - jupyter-client >=5.3.4
     - jupyter-core >=4.6.3
@@ -93,20 +100,23 @@ extra:
     - pkg:pypi/ydata-profiling@${{ version }}
   cfe-upstream-repo: https://github.com/ydataai/ydata-profiling
   cfe-upstream-homepage: https://github.com/ydataai/ydata-profiling
-  cfe-import-names: [ydata_profiling]
+  cfe-import-names: [src.ydata_profiling]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: true
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ydata-profiling-feedstock
-  cfe-forge-recipe-updates-needed:
-    - dependency-fix
+  cfe-forge-recipe-updates-needed: [version-bump-to-4.18.4]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
-  cfe-generated-by-version: 8.37.0
-  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-07-03T11:07:01Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T11:07:01Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####

@@ -47,15 +47,6 @@ requirements:
     - shap >=0.46.0
     - shapely >=2.0.0
     # This list should be identical to the list in shapash/report/__init__.py
-#    - ipython
-#    - nbconvert >=7.2.0
-#    - papermill >=2.5.0
-#    - jupyter_client >=8.3.0
-#    - seaborn >=0.12.2
-#    - notebook >=7.0.0
-#    - jinja2 >=3.1.0
-#    - phik >=0.12.4
-#    - pyarrow >=17.0.0
   run_constraints:
     # https://github.com/MAIF/shapash/blob/v2.9.0/pyproject.toml#L54
     - jinja2 >=3.1.0
@@ -75,12 +66,6 @@ requirements:
 tests:
   - python:
       imports:
-#        - build
-#        - catboost_info
-#        - data
-#        - dist
-#        - docs
-#        - tutorial
         - shapash
 
       pip_check: true
@@ -97,3 +82,41 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: shapash
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: shapash
+  cfe-purls:
+    - pkg:conda/shapash@${{ version }}
+    - pkg:pypi/shapash@${{ version }}
+  cfe-upstream-repo: https://github.com/MAIF/shapash
+  cfe-upstream-homepage: https://github.com/MAIF/shapash
+  cfe-import-names: [shapash]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/shapash-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-2.9.0, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+# run:
+#    # optional viz/report extras not packaged: ipython, nbconvert >=7.2.0, papermill >=2.5.0,
+#    # jupyter_client >=8.3.0, seaborn >=0.12.2, notebook >=7.0.0, jinja2 >=3.1.0, phik >=0.12.4,
+#    # pyarrow >=17.0.0
+# tests:
+#  imports:
+#    # sdist ships stray top-level dirs excluded from import tests: build, catboost_info, data, dist, docs, tutorial
+####

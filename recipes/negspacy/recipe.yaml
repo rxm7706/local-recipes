@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  version: "2.12"
+  version: "1.1.0"
 
 package:
-  name: import-linter
+  name: negspacy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/import-linter/import_linter-${{ 
-    version }}.tar.gz
-  sha256: 217f0f0f0890b8625389765039d52c215f4c6d4a047f42ea78b6d00ceba1900e
+  url: https://pypi.org/packages/source/n/negspacy/negspacy-${{ version }}.tar.gz
+  sha256: 13d8c4d7bd1b9f5c7e83bc1d7e4689ca70ace3232b8b0c38c22a3807fc0b9a1f
 
 build:
   number: 0
@@ -25,11 +24,7 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - click >=6
-    - grimp >=3.14
-    - rich >=14.2.0
-    - tomli >=1.2.1
-    - typing_extensions >=3.10.0.0
+    - spacy <4.0,>=3.8
 
 tests:
   - python:
@@ -40,42 +35,34 @@ tests:
         - "*"
 
 about:
-  homepage: https://pypi.org/project/import-linter/
-  license: BSD-2-Clause
+  homepage: https://github.com/jenojp/negspacy
+  license: MIT
   license_file: LICENSE
-  summary: Lint your Python architecture
+  summary: A spaCy pipeline component for negating concepts in text (NegEx).
   description: |
-    Lint your Python architecture
-  documentation: https://import-linter.readthedocs.io/
+    A spaCy pipeline component for negating concepts in text (NegEx).
 
 extra:
   recipe-maintainers:
     - rxm7706
-    - millsks
-    - cshaley
-####
-# CFE comments
-# Header:
-#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
-####
 
 #### CFE metadata AND comments
 # CFE metadata
-  cfe-conda-name: import-linter
+  cfe-conda-name: negspacy
   cfe-upstream-registry: pypi
-  cfe-upstream-name: import-linter
+  cfe-upstream-name: negspacy
   cfe-purls:
-    - pkg:conda/import-linter@${{ version }}
-    - pkg:pypi/import-linter@${{ version }}
-  cfe-upstream-repo: https://pypi.org/project/import-linter/
-  cfe-upstream-homepage: https://pypi.org/project/import-linter/
-  cfe-import-names: [import_linter]
+    - pkg:conda/negspacy@${{ version }}
+    - pkg:pypi/negspacy@${{ version }}
+  cfe-upstream-repo: https://github.com/jenojp/negspacy
+  cfe-upstream-homepage: https://github.com/jenojp/negspacy
+  cfe-import-names: [negspacy]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
-  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/import-linter-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-2.12, meta-yaml-to-recipe-yaml]
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/negspacy-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.1.0, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0

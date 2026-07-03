@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  version: "2.12"
+  version: "0.3.7"
 
 package:
-  name: import-linter
+  name: wagtail-app-pages
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/import-linter/import_linter-${{ 
-    version }}.tar.gz
-  sha256: 217f0f0f0890b8625389765039d52c215f4c6d4a047f42ea78b6d00ceba1900e
+  url: https://pypi.org/packages/source/w/wagtail-app-pages/wagtail_app_pages-${{ version }}.tar.gz
+  sha256: 4eeaeb702c5badc741b802fe3b32ce1504460f43848d1b8d13a603cd4e91c627
 
 build:
   number: 0
@@ -22,14 +21,10 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - hatchling
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - click >=6
-    - grimp >=3.14
-    - rich >=14.2.0
-    - tomli >=1.2.1
-    - typing_extensions >=3.10.0.0
+    - wagtail <7.3,>=6.0
 
 tests:
   - python:
@@ -40,42 +35,34 @@ tests:
         - "*"
 
 about:
-  homepage: https://pypi.org/project/import-linter/
-  license: BSD-2-Clause
+  homepage: https://github.com/mwesterhof/wagtail_app_pages
+  license: MIT
   license_file: LICENSE
-  summary: Lint your Python architecture
+  summary: Full MVC support for wagtail pages
   description: |
-    Lint your Python architecture
-  documentation: https://import-linter.readthedocs.io/
+    Full MVC support for wagtail pages
 
 extra:
   recipe-maintainers:
     - rxm7706
-    - millsks
-    - cshaley
-####
-# CFE comments
-# Header:
-#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
-####
 
 #### CFE metadata AND comments
 # CFE metadata
-  cfe-conda-name: import-linter
+  cfe-conda-name: wagtail-app-pages
   cfe-upstream-registry: pypi
-  cfe-upstream-name: import-linter
+  cfe-upstream-name: wagtail-app-pages
   cfe-purls:
-    - pkg:conda/import-linter@${{ version }}
-    - pkg:pypi/import-linter@${{ version }}
-  cfe-upstream-repo: https://pypi.org/project/import-linter/
-  cfe-upstream-homepage: https://pypi.org/project/import-linter/
-  cfe-import-names: [import_linter]
+    - pkg:conda/wagtail-app-pages@${{ version }}
+    - pkg:pypi/wagtail-app-pages@${{ version }}
+  cfe-upstream-repo: https://github.com/mwesterhof/wagtail_app_pages
+  cfe-upstream-homepage: https://github.com/mwesterhof/wagtail_app_pages
+  cfe-import-names: [wagtail_app_pages]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
-  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/import-linter-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-2.12, meta-yaml-to-recipe-yaml]
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-app-pages-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.3.7, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0
