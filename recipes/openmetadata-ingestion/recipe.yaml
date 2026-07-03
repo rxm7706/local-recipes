@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.11.6.1"
+  version: "1.13.1.1"
 
 package:
   name: openmetadata-ingestion
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/openmetadata-ingestion/openmetadata_ingestion-${{ version }}.tar.gz
-  sha256: cd3e8caf084c95cd0fb08800491cb202fde864483f40e0e528815acbfc77d04a
+  sha256: ef4d2e794b8b8e36e32f46bb8f66803f696346601c82a9fa03b3ec184ab5aa94
 
 build:
   number: 0
@@ -45,7 +45,7 @@ requirements:
     - mypy_extensions >=0.4.3
     - httpx >=0.28.0,<0.29.0
     - email-validator >=2.0
-    - setuptools >=78.1.1,<78.2.0
+    - setuptools >=78.1.1,<<81
     - boto3 >=1.20,<2.0
     - google-cloud-secret-manager ==2.24.0  # Needs Equal
     # memory_profiler is the conda-forge package name for memory-profiler pypi package
@@ -64,7 +64,7 @@ requirements:
     - pyyaml >=6.0,<7.0
     - python-kubernetes >=21.0.0
     - python-dateutil >=2.8.1
-    - collate-data-diff >=0.11.6
+    - collate-data-diff >=0.11.9
     - tabulate ==0.9.0  # Needs Equal
     - pymysql >=1.0,<2.0
     - azure-keyvault-secrets
