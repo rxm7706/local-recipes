@@ -47,3 +47,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-inventory
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-inventory
+  cfe-purls:
+    - pkg:conda/wagtail-inventory@${{ version }}
+    - pkg:pypi/wagtail-inventory@${{ version }}
+  cfe-upstream-repo: https://github.com/cfpb/wagtail-inventory
+  cfe-upstream-homepage: https://github.com/cfpb/wagtail-inventory
+  cfe-import-names: [wagtailinventory]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-inventory-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-3.3, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

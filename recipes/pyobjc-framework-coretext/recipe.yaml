@@ -5,12 +5,12 @@ context:
   version: "12.2.1"
 
 package:
-  name: pyobjc-framework-systemconfiguration
+  name: pyobjc-framework-coretext
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/pyobjc-framework-systemconfiguration/pyobjc_framework_systemconfiguration-${{ version }}.tar.gz
-  sha256: 877a90eafe3df72625e50d61fc9c6dbd40e8cdabab7c4101992090107bb71ddb
+  url: https://pypi.org/packages/source/p/pyobjc-framework-coretext/pyobjc_framework_coretext-${{ version }}.tar.gz
+  sha256: af740e784d7c592c34025ec7165f4f6c1a69b5a2d9075f06e41e4f77c212aed2
 
 build:
   number: 0
@@ -37,39 +37,36 @@ requirements:
     - python
     - pyobjc-core >=${{ version }}
     - pyobjc-framework-cocoa >=${{ version }}
+    - pyobjc-framework-quartz >=${{ version }}
 
 tests:
   - python:
       imports:
         - PyObjCTools
-        - SystemConfiguration
+        - CoreText
       pip_check: true
 
 about:
-  summary: Wrappers for the framework SystemConfiguration on macOS
+  summary: Wrappers for the framework CoreText on macOS
   license: MIT
   license_file: LICENSE.txt
   homepage: https://github.com/ronaldoussoren/pyobjc
   repository: https://github.com/ronaldoussoren/pyobjc
-  documentation: https://pyobjc.readthedocs.io/en/latest/
-  description: |
-    Wrappers for the SystemConfiguration framework on macOS. Part of the
-    PyObjC bridge, this package lets Python code call the Objective-C
-    SystemConfiguration APIs (network reachability, dynamic store, captive
-    network, and related configuration services).
+  documentation: https://pythonhosted.org/pyobjc-framework-CoreText/
 
 extra:
   recipe-maintainers:
+    - Tobias-Fischer
     - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
-  cfe-conda-name: pyobjc-framework-systemconfiguration
+  cfe-conda-name: pyobjc-framework-coretext
   cfe-upstream-registry: pypi
-  cfe-upstream-name: pyobjc-framework-systemconfiguration
+  cfe-upstream-name: pyobjc-framework-coretext
   cfe-purls:
-    - pkg:conda/pyobjc-framework-systemconfiguration@${{ version }}
-    - pkg:pypi/pyobjc-framework-systemconfiguration@${{ version }}
+    - pkg:conda/pyobjc-framework-coretext@${{ version }}
+    - pkg:pypi/pyobjc-framework-coretext@${{ version }}
   cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
   cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc
   cfe-import-names: [PyObjCTools]
@@ -77,7 +74,7 @@ extra:
   cfe-noarch: compiled
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
-  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-systemconfiguration-feedstock
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-coretext-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-12.2.1, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-03T04:00:00Z

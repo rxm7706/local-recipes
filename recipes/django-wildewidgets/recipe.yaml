@@ -2,15 +2,18 @@
 schema_version: 1
 
 context:
-  version: "1.6.1"
+  version: "1.7.2"
+  python_min: "3.14"
 
 package:
   name: django-wildewidgets
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-wildewidgets/django_wildewidgets-${{ version }}.tar.gz
-  sha256: dc5aa3803966c7839b6f20e51888f059c756ee26bce39205567f4455ed638514
+  url: 
+    https://pypi.org/packages/source/d/django-wildewidgets/django_wildewidgets-${{
+    version }}.tar.gz
+  sha256: c9cca8b87c913f06a649474da962b012296ae9cafac4d88eafb882497c148ae9
 
 build:
   number: 0
@@ -38,16 +41,14 @@ tests:
         - "*"
 
 about:
-  summary: django-wildewidgets is a Django design library providing several tools for building full-featured, widget-based web applications with a standard, consistent design, based on Bootstrap.
+  homepage: https://github.com/caltechads/django-wildewidgets
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://github.com/caltechads/django-wildewidgets
-  repository: https://github.com/caltechads/django-wildewidgets
-  description: |
-    django-wildewidgets is a Django design library providing several tools
-    for building full-featured, widget-based web applications with a
+  summary: django-wildewidgets is a Django design library providing several 
+    tools for building full-featured, widget-based web applications with a 
     standard, consistent design, based on Bootstrap.
-
+  description: |
+    django-wildewidgets is a Django design library providing several tools for building full-featured, widget-based web applications with a standard, consistent design, based on Bootstrap.
 extra:
   recipe-maintainers:
     - rxm7706
@@ -65,45 +66,20 @@ extra:
   cfe-import-names: [wildewidgets]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: true
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-wildewidgets-feedstock
-  cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.7.2, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
-  cfe-generated-by-version: 8.37.0
-  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # WAVE-C C1 keep-meta: feedstock still v0 (recipe/recipe.yaml -> 404,
-#    # recipe/meta.yaml -> 200). Refreshed local meta.yaml to faithfully mirror
-#    # the deployed v0 at 1.6.1; authored this v1 recipe.yaml alongside as the
-#    # proposed migration. Both files coexist until the feedstock migrates.
-#    # MAJOR bump 0.16.13 -> 1.6.1; deps reconciled vs the 1.6.1 sdist
-#    # pyproject.toml [project.dependencies] (floors raised).
-# requirements:
-#  host:
-#    # setuptools kept in host -- setuptools.build_meta backend (G8); wheel
-#    # is declared in build-system requires but is the legacy belt-and-
-#    # suspenders pair, omitted. Matches deployed feedstock host block.
-#  run:
-#    # django >=5.1 is NEW vs the old 0.16.13 local recipe (which had no django
-#    # dep); django-crispy-forms >=2.4 + crispy-bootstrap5 >=2025.6 floors
-#    # raised to match upstream 1.6.1 [project.dependencies]. No upstream upper
-#    # bounds declared, so none added.
-# tests:
-#    # CFEP-25 triad with [python_min.*, "*"]. G7-verified import name is
-#    # `wildewidgets` (top_level.txt + wildewidgets/__init__.py), NOT
-#    # django_wildewidgets. import wildewidgets loads standalone (no
-#    # DJANGO_SETTINGS_MODULE needed -- the deployed feedstock uses the same
-#    # plain imports test and passes CI), so no CFEP-25 escape hatch required.
-# context:
-#    # python_min omitted -- upstream requires-python is >=3.10 (the conda-forge
-#    # default floor); conda-forge-pinning supplies python_min.
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####

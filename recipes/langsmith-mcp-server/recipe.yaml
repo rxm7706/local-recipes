@@ -57,3 +57,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langsmith-mcp-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langsmith-mcp-server
+  cfe-purls:
+    - pkg:conda/langsmith-mcp-server@${{ version }}
+    - pkg:pypi/langsmith-mcp-server@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langsmith-mcp-server
+  cfe-upstream-homepage: https://github.com/langchain-ai/langsmith-mcp-server
+  cfe-import-names: [langsmith_mcp_server]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langsmith-mcp-server-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.1.1]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

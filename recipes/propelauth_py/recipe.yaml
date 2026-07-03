@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "4.3.2"
+  version: "4.4.0"
 
 package:
   name: propelauth_py
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/propelauth-py/propelauth_py-${{ version }}.tar.gz
-  sha256: e9542011605ecad06a2ef15b84cf9ed1f6d6c50c48b6c5bf53a92e95717a0580
+  sha256: 0767ff4765db9eeb71a4097f3e92a890e6cd53422fcfa813e0ed03a8e048b5b4
 
 build:
   number: 0
@@ -21,13 +21,12 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - pyjwt >=2,<3
-    - cryptography >=3.4.0
-    - requests
     - httpx >=0.28.1
+    - pyjwt <3,>=2
+    - requests
 
 tests:
   - python:
@@ -39,10 +38,12 @@ tests:
         - "*"
 
 about:
-  summary: A python authentication library
+  homepage: https://github.com/propelauth/propelauth-py
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/propelauth/propelauth-py
+  summary: A python authentication library
+  description: |
+    A python authentication library
   repository: https://github.com/propelauth/propelauth-py
 
 extra:
@@ -53,50 +54,29 @@ extra:
 # CFE metadata
   cfe-conda-name: propelauth_py
   cfe-upstream-registry: pypi
-  cfe-upstream-name: propelauth-py
+  cfe-upstream-name: propelauth_py
   cfe-purls:
     - pkg:conda/propelauth_py@${{ version }}
-    - pkg:pypi/propelauth-py@${{ version }}
+    - pkg:pypi/propelauth_py@${{ version }}
   cfe-upstream-repo: https://github.com/propelauth/propelauth-py
   cfe-upstream-homepage: https://github.com/propelauth/propelauth-py
   cfe-import-names: [propelauth_py]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: true
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/propelauth_py-feedstock
-  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-recipe-updates-needed: [version-bump-to-4.4.0, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
-  cfe-generated-by-version: 8.37.0
-  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # WAVE-C C1 keep-meta: feedstock is STILL v0/meta.yaml at 4.3.2; kept the
-#    # deployed meta.yaml mirror and authored this v1 recipe.yaml alongside.
-#    # cfe-forge-recipe-updates-needed includes meta-yaml-to-recipe-yaml (the
-#    # feedstock owes the v0 to v1 migration).
-# source:
-#    # distribution name on PyPI is propelauth-py (hyphen); sdist filename stem
-#    # is propelauth_py (underscore). URL keeps the hyphenated path-2 segment
-#    # and the underscored filename stem, per the literal-URL convention.
-# requirements:
-#  host:
-#    # setuptools kept in host — legacy setup.py/setup.cfg project (no
-#    # pyproject.toml); matches deployed feedstock host block.
-#  run:
-#    # upstream install_requires is pyjwt[crypto]>=2,<3, requests, httpx>=0.28.1.
-#    # G25 flatten of the pyjwt[crypto] extra to pyjwt >=2,<3 + cryptography
-#    # >=3.4.0 (matches the deployed feedstock; the crypto extra pulls
-#    # cryptography). The stale local v0 4.2.4 mirror had only pyjwt + requests
-#    # (missing httpx + the crypto extra); the feedstock 4.3.2 deps are correct.
-# tests:
-#    # CFEP-25 triad with [python_min.*, "*"]; propelauth_py imports cleanly
-#    # standalone. python_min omitted from context (upstream requires-python is
-#    # unset, so the default 3.10 floor applies).
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####
