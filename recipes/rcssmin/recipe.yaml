@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.2"
+
+package:
+  name: rcssmin
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/rcssmin/rcssmin-${{ version }}.tar.gz
+  sha256: 806986eaf7414545edc28a1d29523e9560e49e151ff4a337d9d1f0271d6e1cc4
+
+build:
+  # build.number 1 supersedes the broken *_0 noarch:generic builds (C extension
+  # compiled for one CPython, published noarch — installable anywhere, working
+  # only on the build-time Python). This recipe restores per-python builds.
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - rcssmin
+      pip_check: true
+
+about:
+  homepage: https://github.com/ndparker/rcssmin
+  license: Apache-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - bench/LICENSE.cssmin
+  summary: Fast CSS minifier for Python
+  description: "RCSSmin is a CSS minifier written in python. The minifier is based
+    on the semantics of the YUI compressor, \nwhich itself is based on the rule list
+    by Isaac Schlueter. This module is a re-implementation aiming for \nspeed instead
+    of maximum compression, so it can be used at runtime (rather than during a preprocessing
+    step). \nRCSSmin does syntactical compression only (removing spaces, comments
+    and possibly semicolons). It does not \nprovide semantic compression (like removing
+    empty blocks, collapsing redundant properties etc). It does, \nhowever, support
+    various CSS hacks (by keeping them working as intended).\n"
+  documentation: http://opensource.perlig.de/rcssmin/doc-1.0/index.html
+  repository: https://github.com/ndparker/rcssmin
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rcssmin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rcssmin
+  cfe-purls:
+    - pkg:conda/rcssmin@${{ version }}
+    - pkg:pypi/rcssmin@${{ version }}
+  cfe-upstream-repo: https://github.com/ndparker/rcssmin
+  cfe-upstream-homepage: https://github.com/ndparker/rcssmin
+  cfe-import-names: [rcssmin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rcssmin-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T10:30:29Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

@@ -1,28 +1,28 @@
 {% set name = "rjsmin" %}
-{% set version = "1.2.2" %}
+{% set version = "1.2.5" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/rjsmin-{{ version }}.tar.gz
-  sha256: 8c1bcd821143fecf23242012b55e13610840a839cd467b358f16359010d62dae
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/rjsmin-{{ version }}.tar.gz
+  sha256: a3f8040b0273dec773e0e807e86a4d0a9535516c0a0a35aa1bb6de6e15bb1f09
 
 build:
-  noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 1
 
 requirements:
   build:
     - {{ compiler('c') }}
-    - {{ stdlib('c') }}    
+    - {{ stdlib('c') }}
   host:
-    - python >=3.8
+    - python
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python
 
 test:
   imports:

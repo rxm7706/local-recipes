@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.5"
+
+package:
+  name: rjsmin
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/rjsmin/rjsmin-${{ version }}.tar.gz
+  sha256: a3f8040b0273dec773e0e807e86a4d0a9535516c0a0a35aa1bb6de6e15bb1f09
+
+build:
+  # build.number 1 supersedes the broken *_0 noarch:generic builds (C extension
+  # compiled for one CPython, published noarch — installable anywhere, working
+  # only on the build-time Python). This recipe restores per-python builds.
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - rjsmin
+      pip_check: true
+
+about:
+  homepage: https://github.com/ndparker/rjsmin
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Javascript Minifier
+  repository: https://github.com/ndparker/rjsmin
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rjsmin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rjsmin
+  cfe-purls:
+    - pkg:conda/rjsmin@${{ version }}
+    - pkg:pypi/rjsmin@${{ version }}
+  cfe-upstream-repo: https://github.com/ndparker/rjsmin
+  cfe-upstream-homepage: https://github.com/ndparker/rjsmin
+  cfe-import-names: [rjsmin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rjsmin-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T10:30:29Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####
