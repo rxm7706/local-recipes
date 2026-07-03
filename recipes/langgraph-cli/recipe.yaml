@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.30"
+
+package:
+  name: langgraph-cli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langgraph-cli/langgraph_cli-${{ version }}.tar.gz
+  sha256: 4948fdc77ff45fc5ef3d8330d17bbecfcb26cd9c4d3a4f00da84a41a0226cd72
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - click >=8.1.7
+    - httpx >=0.24.0
+    - langgraph-sdk >=0.1.0
+    - pathspec >=0.11.0
+    - python-dotenv >=0.8.0
+    - tomli >=2.0.1
+
+tests:
+  - python:
+      imports:
+        - langgraph_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langgraph-cli/
+  license: MIT
+  license_file: LICENSE
+  summary: CLI for interacting with LangGraph API
+  description: |
+    CLI for interacting with LangGraph API
+  repository: https://github.com/langchain-ai/langgraph/tree/main/libs/cli
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph-cli
+  cfe-purls:
+    - pkg:conda/langgraph-cli@${{ version }}
+    - pkg:pypi/langgraph-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langgraph
+  cfe-upstream-homepage: https://github.com/langchain-ai/langgraph
+  cfe-import-names: [langgraph_cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34049
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T13:27:24Z
+  cfe-generated-by-version: 8.66.0
+  cfe-generated-at-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 langgraph-cli[inmem] chain for universal-mcp (blockbuster ->
+#    # langgraph-runtime-inmem -> langgraph-api -> langgraph-cli).
+####

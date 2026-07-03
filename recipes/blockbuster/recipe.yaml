@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.26"
+
+package:
+  name: blockbuster
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/blockbuster/blockbuster-${{ version }}.tar.gz
+  sha256: cc3ce8c70fa852a97ee3411155f31e4ad2665cd1c6c7d2f8bb1851dab61dc629
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - forbiddenfruit >=0.1.4
+
+tests:
+  - python:
+      imports:
+        - blockbuster
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/blockbuster/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Utility to detect blocking calls in the async event loop
+  description: |
+    Utility to detect blocking calls in the async event loop
+  repository: https://github.com/cbornet/blockbuster.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: blockbuster
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: blockbuster
+  cfe-purls:
+    - pkg:conda/blockbuster@${{ version }}
+    - pkg:pypi/blockbuster@${{ version }}
+  cfe-upstream-repo: https://github.com/cbornet/blockbuster
+  cfe-upstream-homepage: https://github.com/cbornet/blockbuster
+  cfe-import-names: [blockbuster]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34048
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T13:27:24Z
+  cfe-generated-by-version: 8.66.0
+  cfe-generated-at-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 langgraph-cli[inmem] chain for universal-mcp (blockbuster ->
+#    # langgraph-runtime-inmem -> langgraph-api -> langgraph-cli).
+####
