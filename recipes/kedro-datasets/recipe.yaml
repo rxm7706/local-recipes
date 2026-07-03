@@ -39,10 +39,7 @@ tests:
 
 about:
   summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
-  license: Apache-2.0
-  license_file: LICENSE.md
-  homepage: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
-  repository: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  homepage: https://pypi.org/project/kedro-datasets/
   description: |
     Kedro-Datasets is where you can find all of Kedro's data connectors.
     These data connectors are implementations of the AbstractDataset.
