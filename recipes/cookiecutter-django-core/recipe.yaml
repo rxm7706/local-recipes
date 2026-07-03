@@ -3,10 +3,10 @@ schema_version: 1
 
 context:
   name: cookiecutter-django
-  version: "2025.06.13"
-  python_min: '3.12'
-  python_max: '4.0'
-  python_test_max: '3.13'
+  version: "2026.07.02"
+  python_min: '3.14'
+  python_max: '3.15'
+  python_test_max: '3.14'
   cookiecutter: "{{cookiecutter"
   project_slug: "project_slug}}"
 
@@ -16,10 +16,10 @@ package:
 
 source:
   url: https://github.com/cookiecutter/cookiecutter-django/archive/${{ version }}.tar.gz
-  sha256: 791c9442aed18881c71a68f0856890a979e7a6a7ff4daf64a1f3855ae03acda5
+  sha256: cdd71ff0014b8d4de6ebac7aafb655cd2aa8a3b88db13731809994260ffa57d1
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -33,36 +33,36 @@ requirements:
     - __${{ noarch_platform }}
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/pyproject.toml
     # ------------------------------------------------------------------------------
-    - cookiecutter >=2.6.0
+    - cookiecutter >=2.7.1
     - if: noarch_platform != "win"
       then:
-        - sh >=2.1
-    - binaryornot >=0.4.4
+        - sh >=2.3.0
+    - binaryornot >=0.6.0
     # Code quality
     # ------------------------------------------------------------------------------
-    - ruff >=0.11.13
-    - django-upgrade >=1.22.2
-    - djlint >=1.36.4
-    - pre-commit >=4.1.0
+    - ruff >=0.15.20
+    - django-upgrade >=1.31.1
+    - djlint >=1.40.1
+    - pre-commit >=4.6.0
     # Testing
     # ------------------------------------------------------------------------------
-    - tox >=4.23.2
+    - tox >=4.56.1
     - tox-uv >=1.17.0
-    - pytest >=8.3.4
-    - pytest-xdist >=3.6.1
+    - pytest >=9.1.1
+    - pytest-xdist >=3.8.0
     - pytest-cookies >=0.7.0
     - pytest-instafail >=0.5.0
-    - pyyaml >=6.0.2
+    - pyyaml >=6.0.3
     # Scripting
     # ------------------------------------------------------------------------------
-    - pygithub >=2.5.0
-    - gitpython >=3.1.43
-    - jinja2 >=3.1.5
-    - requests >=2.32.3
+    - pygithub >=2.9.1
+    - gitpython >=3.1.50
+    - jinja2 >=3.1.6
+    - requests >=2.34.2
     # Base Not Optional ; Limit to Django LTS and Include DRF, Redis and Asyc
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
     - python-slugify >=8.0.4  # https://github.com/un33k/python-slugify
-    - pillow >=11.1.0  # https://github.com/python-pillow/Pillow
+    - pillow >=11.3.0  # https://github.com/python-pillow/Pillow
     - argon2-cffi >=25.1.0  # https://github.com/hynek/argon2_cffi
     - redis-py >=6.2.0  # https://github.com/redis/redis-py
     # Base
@@ -71,18 +71,18 @@ requirements:
     - django >=4.2.20,<5.3  # https://www.djangoproject.com/
     - django-environ >=0.12.0  # https://github.com/joke2k/django-environ
     - django-model-utils >=5.0.0  # https://github.com/jazzband/django-model-utils
-    - django-allauth >=65.9.0  # https://github.com/pennersr/django-allauth
+    - django-allauth >=65.10.0  # https://github.com/pennersr/django-allauth
     #- fido2 <2  # https://github.com/Yubico/python-fido2 - dependency of django-allauth mfa NOTE https://github.com/cookiecutter/cookiecutter-django/pull/5854
     - django-crispy-forms >=2.4  # https://github.com/django-crispy-forms/django-crispy-forms
     - crispy-bootstrap5 >=2025.4  # https://github.com/django-crispy-forms/crispy-bootstrap5
-    - django-redis >=5.4.0  # https://github.com/jazzband/django-redis
+    - django-redis >=6.0.0  # https://github.com/jazzband/django-redis
     # Base - # Django REST Framework
     - djangorestframework >=3.16.0  # https://github.com/encode/django-rest-framework
     - django-cors-headers >=4.7.0  # https://github.com/adamchainz/django-cors-headers
     # Base - # DRF-spectacular for api documentation
     - drf-spectacular >=0.28.0  # https://github.com/tfranzel/drf-spectacular
     # Base - # Use Async
-    - uvicorn-standard >=0.34.3  # https://github.com/encode/uvicorn
+    - uvicorn-standard >=0.35.0  # https://github.com/encode/uvicorn
     - if: noarch_platform != "win"
       then:
         - uvicorn-worker >=0.3.0  # https://github.com/Kludex/uvicorn-worker
@@ -93,17 +93,17 @@ requirements:
     # https://github.com/pallets/werkzeug/blob/main/pyproject.toml#L36C22-L36C27
     - watchdog >=2.3  # https://github.com/pallets/werkzeug
     - ipdb >=0.13.13  # https://github.com/gotcha/ipdb
-    - watchfiles >=1.0.5  # https://github.com/samuelcolvin/watchfiles
+    - watchfiles >=1.1.0  # https://github.com/samuelcolvin/watchfiles
     # Local # Testing
-    - mypy >=1.15.0  # https://github.com/python/mypy
-    - django-stubs >=5.2.0  # https://github.com/typeddjango/django-stubs
+    - mypy >=1.17.0  # https://github.com/python/mypy
+    - django-stubs >=5.2.2  # https://github.com/typeddjango/django-stubs
     - pytest-sugar >=1.0.0  # https://github.com/Teemu/pytest-sugar
     - djangorestframework-stubs >=3.16.0  # https://github.com/typeddjango/djangorestframework-stubs
     # Local # Documentation
     # Local # Code quality
     # ------------------------------------------------------------------------------
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/local.txt#L29
-    - coverage >=7.9.0  # https://github.com/nedbat/coveragepy
+    - coverage >=7.10.1  # https://github.com/nedbat/coveragepy
     - djlint >=1.36.3  # https://github.com/Riverside-Healthcare/djLint
     # Local # Django
     # ------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ requirements:
     - factory_boy >=3.3.2  # https://github.com/FactoryBoy/factory_boy
     - django-debug-toolbar >=5.2.0  # https://github.com/jazzband/django-debug-toolbar
     - django-extensions >=4.1  # https://github.com/django-extensions/django-extensions
-    - django_coverage_plugin >=3.1.0  # https://github.com/nedbat/django_coverage_plugin
+    - django_coverage_plugin >=3.1.1  # https://github.com/nedbat/django_coverage_plugin
     - pytest-django >=4.11.1  # https://github.com/pytest-dev/pytest-django
     # ------------------------------------------------------------------------------
     # Production
@@ -147,43 +147,43 @@ tests:
           - echo "no win tests"
     requirements:
       run:
-      - if: noarch_platform != "win"
-        then:
-          - python >=${{ python_min }},<${{ python_max }}
-          - pip
-          - django-upgrade ==1.22.2
-          - gitpython ==3.1.43
-          - jinja2 ==3.1.5
-          - pre-commit ==4.1.0
-          - pygithub ==2.5
-          - pytest ==8.3.4
-          - pytest-xdist ==3.6.1
-          - ruff ==0.11.13
-          - if: noarch_platform != "win"
-            then:
-              - sh ==2.1
-          - tox ==4.23.2
-          - tox-uv ==1.19.1
-          - cryptography >=2.6,!=35,<45
-          - requests ==2.32.3
-        else:
-          - python >=${{ python_min }},<${{ python_max }}
-          - pip
-          - django-upgrade ==1.22.2
-          - gitpython ==3.1.43
-          - jinja2 ==3.1.5
-          - pre-commit ==4.1.0
-          - pygithub ==2.5
-          - pytest ==8.3.4
-          - pytest-xdist ==3.6.1
-          - ruff ==0.11.13
-          - if: noarch_platform != "win"
-            then:
-              - sh ==2.1
-          - tox ==4.23.2
-          - tox-uv ==1.19.1
-          - cryptography >=2.6,!=35,<45
-          - requests ==2.32.3
+        - if: noarch_platform != "win"
+          then:
+            - python >=${{ python_min }},<${{ python_max }}
+            - pip
+            - django-upgrade ==1.31.1
+            - gitpython ==3.1.50
+            - jinja2 ==3.1.6
+            - pre-commit ==4.6.0
+            - pygithub ==2.9.1
+            - pytest ==9.1.1
+            - pytest-xdist ==3.8.0
+            - ruff ==0.15.20
+            - if: noarch_platform != "win"
+              then:
+                - sh ==2.3.0
+            - tox ==4.56.1
+            - tox-uv >=1.17
+            - cryptography >=2.6,!=35
+            - requests ==2.34.2
+          else:
+            - python >=${{ python_min }},<${{ python_max }}
+            - pip
+            - django-upgrade ==1.31.1
+            - gitpython ==3.1.50
+            - jinja2 ==3.1.6
+            - pre-commit ==4.6.0
+            - pygithub ==2.9.1
+            - pytest ==9.1.1
+            - pytest-xdist ==3.8.0
+            - ruff ==0.15.20
+            - if: noarch_platform != "win"
+              then:
+                - sh ==2.3.0
+            - tox ==4.56.1
+            - tox-uv >=1.17
+            - cryptography >=2.6,!=35
+            - requests ==2.34.2
   - python:
       imports:
         - cookiecutter
@@ -222,3 +222,40 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cookiecutter-django-core
+  cfe-upstream-registry: github
+  cfe-upstream-name: cookiecutter-django
+  cfe-purls:
+    - pkg:conda/cookiecutter-django-core@${{ version }}
+    - pkg:github/cookiecutter-django@${{ version }}
+  cfe-upstream-repo: https://github.com/cookiecutter/cookiecutter-django
+  cfe-upstream-homepage: https://github.com/cookiecutter/cookiecutter-django
+  cfe-import-names: [cookiecutter]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cookiecutter-django-core-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-2026.07.02, pin-resync-from-pyproject]
+  cfe-forge-blocker-list:
+    - sh ==2.3.0 not on cf (latest 2.2.4) — sh-feedstock has 3 stale bot PRs (#46-#48, sole maintainer inactive there); pip check cannot pass until sh 2.3.0 lands
+  cfe-last-checked: 2026-07-03T19:44:41Z
+  cfe-generated-by-version: 8.67.0
+  cfe-generated-at-datetime: 2026-07-03T19:44:41Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T19:44:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 Set E wave (tracker audit findings) — LOCAL BUILDS ONLY per user
+#    # direction.
+# context:
+#    # upstream pins Requires-Python ==3.14.* exactly (daily calver releases);
+#    # python window + all exact test pins re-synced from the 2026.07.02 pyproject.
+#    # G95 static gate done: run mins + test pins verified against upstream pins.
+####
