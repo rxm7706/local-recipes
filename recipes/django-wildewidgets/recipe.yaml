@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-wildewidgets
   cfe-purls:
-    - pkg:conda/django-wildewidgets@${{ version }}
+    - pkg:conda/django-wildewidgets@${{ version }}?channel=conda-forge
     - pkg:pypi/django-wildewidgets@${{ version }}
   cfe-upstream-repo: https://github.com/caltechads/django-wildewidgets
   cfe-upstream-homepage: https://github.com/caltechads/django-wildewidgets

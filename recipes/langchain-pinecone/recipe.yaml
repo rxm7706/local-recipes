@@ -67,7 +67,7 @@ extra:
   cfe-name-aliases:
     - langchain_pinecone
   cfe-purls:
-    - pkg:conda/langchain-pinecone@${{ version }}
+    - pkg:conda/langchain-pinecone@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-pinecone@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-pinecone
   cfe-upstream-homepage: https://pypi.org/project/langchain-pinecone/

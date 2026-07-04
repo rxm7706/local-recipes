@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-flags
   cfe-purls:
-    - pkg:conda/django-flags@${{ version }}
+    - pkg:conda/django-flags@${{ version }}?channel=conda-forge
     - pkg:pypi/django-flags@${{ version }}
   cfe-upstream-repo: https://github.com/cfpb/django-flags
   cfe-upstream-homepage: https://cfpb.github.io/django-flags/

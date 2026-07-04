@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtailstreamforms
   cfe-purls:
-    - pkg:conda/wagtailstreamforms@${{ version }}
+    - pkg:conda/wagtailstreamforms@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtailstreamforms@${{ version }}
   cfe-upstream-repo: https://github.com/AccentDesign/wagtailstreamforms
   cfe-upstream-homepage: https://github.com/AccentDesign/wagtailstreamforms

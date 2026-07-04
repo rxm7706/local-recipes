@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: smartsheet-python-sdk
   cfe-purls:
-    - pkg:conda/smartsheet-python-sdk@${{ version }}
+    - pkg:conda/smartsheet-python-sdk@${{ version }}?channel=conda-forge
     - pkg:pypi/smartsheet-python-sdk@${{ version }}
   cfe-upstream-repo: https://github.com/smartsheet/smartsheet-python-sdk
   cfe-upstream-homepage: http://smartsheet-platform.github.io/api-docs/
@@ -72,10 +72,8 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/smartsheet-python-sdk-feedstock
-  cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
- []
-  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-forge-recipe-updates-needed: none
+  cfe-last-checked: 2026-07-04T22:21:47Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success

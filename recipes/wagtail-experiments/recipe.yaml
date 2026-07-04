@@ -51,7 +51,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-experiments
   cfe-purls:
-    - pkg:conda/wagtail-experiments@${{ version }}
+    - pkg:conda/wagtail-experiments@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-experiments@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtail-experiments
   cfe-upstream-homepage: https://github.com/torchbox/wagtail-experiments

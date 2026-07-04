@@ -61,7 +61,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: json-stream-rs-tokenizer
   cfe-purls:
-    - pkg:conda/json-stream-rs-tokenizer@${{ version }}
+    - pkg:conda/json-stream-rs-tokenizer@${{ version }}?channel=conda-forge
     - pkg:pypi/json-stream-rs-tokenizer@${{ version }}
   cfe-upstream-repo: https://github.com/smheidrich/py-json-stream-rs-tokenizer
   cfe-upstream-homepage: https://github.com/smheidrich/py-json-stream-rs-tokenizer

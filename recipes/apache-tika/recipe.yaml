@@ -185,7 +185,7 @@ extra:
   cfe-upstream-registry: maven
   cfe-upstream-name: org.apache.tika:tika-app
   cfe-purls:
-    - pkg:conda/apache-tika@${{ version }}
+    - pkg:conda/apache-tika@${{ version }}?channel=conda-forge
     - pkg:maven/org.apache.tika/tika-app@${{ version }}
   cfe-upstream-repo: https://github.com/apache/tika
   cfe-upstream-homepage: https://tika.apache.org/

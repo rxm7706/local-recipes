@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: a2wsgi
   cfe-purls:
-    - pkg:conda/a2wsgi@${{ version }}
+    - pkg:conda/a2wsgi@${{ version }}?channel=conda-forge
     - pkg:pypi/a2wsgi@${{ version }}
   cfe-upstream-repo: https://github.com/abersheeran/a2wsgi
   cfe-upstream-homepage: https://github.com/abersheeran/a2wsgi

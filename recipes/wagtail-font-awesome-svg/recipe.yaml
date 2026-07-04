@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-font-awesome-svg
   cfe-purls:
-    - pkg:conda/wagtail-font-awesome-svg@${{ version }}
+    - pkg:conda/wagtail-font-awesome-svg@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-font-awesome-svg@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-font-awesome-svg
   cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-font-awesome-svg

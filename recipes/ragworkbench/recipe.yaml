@@ -78,7 +78,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: ragworkbench
   cfe-purls:
-    - pkg:conda/ragworkbench@${{ version }}
+    - pkg:conda/ragworkbench@${{ version }}?channel=conda-forge
     - pkg:pypi/ragworkbench@${{ version }}
   cfe-upstream-repo: https://github.com/IBM/RagWorkbench
   cfe-upstream-homepage: https://github.com/IBM/RagWorkbench

@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-surveyjs
   cfe-purls:
-    - pkg:conda/wagtail-surveyjs@${{ version }}
+    - pkg:conda/wagtail-surveyjs@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-surveyjs@${{ version }}
   cfe-upstream-repo: https://github.com/wmo-raf/wagtail-surveyjs
   cfe-upstream-homepage: https://github.com/wmo-raf/wagtail-surveyjs

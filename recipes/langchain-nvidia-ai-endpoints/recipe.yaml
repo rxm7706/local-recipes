@@ -65,7 +65,7 @@ extra:
   cfe-name-aliases:
     - langchain_nvidia_ai_endpoints
   cfe-purls:
-    - pkg:conda/langchain-nvidia-ai-endpoints@${{ version }}
+    - pkg:conda/langchain-nvidia-ai-endpoints@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-nvidia-ai-endpoints@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-nvidia
   cfe-upstream-homepage: https://github.com/langchain-ai/langchain-nvidia

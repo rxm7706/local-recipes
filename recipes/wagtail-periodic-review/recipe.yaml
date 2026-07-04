@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-periodic-review
   cfe-purls:
-    - pkg:conda/wagtail-periodic-review@${{ version }}
+    - pkg:conda/wagtail-periodic-review@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-periodic-review@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtail-periodic-review
   cfe-upstream-homepage: https://github.com/torchbox/wagtail-periodic-review

@@ -83,7 +83,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: prophecy-build-tool
   cfe-purls:
-    - pkg:conda/prophecy-build-tool@${{ version }}
+    - pkg:conda/prophecy-build-tool@${{ version }}?channel=conda-forge
     - pkg:pypi/prophecy-build-tool@${{ version }}
   cfe-upstream-repo: https://github.com/SimpleDataLabsInc/prophecy-build-tool
   cfe-upstream-homepage: https://github.com/SimpleDataLabsInc/prophecy-build-tool
@@ -96,7 +96,6 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - recipe-regenerate
- []
   cfe-last-checked: 2026-07-03T22:07:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z

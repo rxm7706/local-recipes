@@ -68,7 +68,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pksuid
   cfe-purls:
-    - pkg:conda/pksuid@${{ version }}
+    - pkg:conda/pksuid@${{ version }}?channel=conda-forge
     - pkg:pypi/pksuid@${{ version }}
   cfe-upstream-repo: https://github.com/sashahilton00/python-pksuid
   cfe-upstream-homepage: https://github.com/sashahilton00/python-pksuid

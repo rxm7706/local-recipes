@@ -85,7 +85,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opik
   cfe-purls:
-    - pkg:conda/opik@${{ version }}
+    - pkg:conda/opik@${{ version }}?channel=conda-forge
     - pkg:pypi/opik@${{ version }}
   cfe-upstream-repo: https://github.com/comet-ml/opik
   cfe-upstream-homepage: https://www.comet.com

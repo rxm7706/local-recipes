@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-socio-grpc
   cfe-purls:
-    - pkg:conda/django-socio-grpc@${{ version }}
+    - pkg:conda/django-socio-grpc@${{ version }}?channel=conda-forge
     - pkg:pypi/django-socio-grpc@${{ version }}
   cfe-upstream-repo: https://pypi.org/project/django-socio-grpc/
   cfe-upstream-homepage: https://pypi.org/project/django-socio-grpc/

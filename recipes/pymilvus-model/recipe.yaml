@@ -63,12 +63,12 @@ extra:
 # CFE metadata
   cfe-conda-name: pymilvus-model
   cfe-upstream-registry: pypi
-  cfe-upstream-name: pymilvus-model
+  cfe-upstream-name: pymilvus.model
   cfe-name-aliases:
     - pymilvus.model
   cfe-purls:
-    - pkg:conda/pymilvus-model@${{ version }}
-    - pkg:pypi/pymilvus-model@${{ version }}
+    - pkg:conda/pymilvus-model@${{ version }}?channel=conda-forge
+    - pkg:pypi/pymilvus.model@${{ version }}
   cfe-upstream-repo: https://github.com/milvus-io/milvus-model
   cfe-upstream-homepage: https://github.com/milvus-io/milvus-model
   cfe-import-names: [pymilvus.model]

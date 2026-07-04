@@ -68,7 +68,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: collate-sqlfluff
   cfe-purls:
-    - pkg:conda/collate-sqlfluff@${{ version }}
+    - pkg:conda/collate-sqlfluff@${{ version }}?channel=conda-forge
     - pkg:pypi/collate-sqlfluff@${{ version }}
   cfe-upstream-repo: https://github.com/open-metadata/collate-sqlfluff
   cfe-upstream-homepage: https://github.com/sqlfluff/sqlfluff

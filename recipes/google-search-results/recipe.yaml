@@ -60,7 +60,7 @@ extra:
   cfe-name-aliases:
     - serpapi
   cfe-purls:
-    - pkg:conda/google-search-results@${{ version }}
+    - pkg:conda/google-search-results@${{ version }}?channel=conda-forge
     - pkg:pypi/google-search-results@${{ version }}
   cfe-upstream-repo: https://github.com/serpapi/google-search-results-python
   cfe-upstream-homepage: https://serpapi.com/

@@ -64,7 +64,7 @@ extra:
   cfe-name-aliases:
     - langchain_elasticsearch
   cfe-purls:
-    - pkg:conda/langchain-elasticsearch@${{ version }}
+    - pkg:conda/langchain-elasticsearch@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-elasticsearch@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-elastic
   cfe-upstream-homepage: https://github.com/langchain-ai/langchain-elastic

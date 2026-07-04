@@ -61,7 +61,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: amundsen-common
   cfe-purls:
-    - pkg:conda/amundsen-common@${{ version }}
+    - pkg:conda/amundsen-common@${{ version }}?channel=conda-forge
     - pkg:pypi/amundsen-common@${{ version }}
   cfe-upstream-repo: https://github.com/amundsen-io/amundsen
   cfe-upstream-homepage: https://github.com/amundsen-io/amundsen/tree/main/common

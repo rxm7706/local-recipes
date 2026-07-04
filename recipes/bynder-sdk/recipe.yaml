@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: bynder-sdk
   cfe-purls:
-    - pkg:conda/bynder-sdk@${{ version }}
+    - pkg:conda/bynder-sdk@${{ version }}?channel=conda-forge
     - pkg:pypi/bynder-sdk@${{ version }}
   cfe-upstream-repo: https://github.com/Bynder/bynder-python-sdk
   cfe-upstream-homepage: https://bynder.com

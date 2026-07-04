@@ -78,7 +78,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: DataProfiler
   cfe-purls:
-    - pkg:conda/dataprofiler@${{ version }}
+    - pkg:conda/dataprofiler@${{ version }}?channel=conda-forge
     - pkg:pypi/dataprofiler@${{ version }}
   cfe-upstream-repo: https://github.com/capitalone/data-profiler
   cfe-upstream-homepage: https://github.com/capitalone/data-profiler

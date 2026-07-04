@@ -91,7 +91,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: html-to-markdown
   cfe-purls:
-    - pkg:conda/html-to-markdown@${{ version }}
+    - pkg:conda/html-to-markdown@${{ version }}?channel=conda-forge
     - pkg:pypi/html-to-markdown@${{ version }}
   cfe-upstream-repo: https://github.com/kreuzberg-dev/html-to-markdown
   cfe-upstream-homepage: https://pypi.org/project/html-to-markdown/

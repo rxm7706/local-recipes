@@ -51,7 +51,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-treenode
   cfe-purls:
-    - pkg:conda/django-treenode@${{ version }}
+    - pkg:conda/django-treenode@${{ version }}?channel=conda-forge
     - pkg:pypi/django-treenode@${{ version }}
   cfe-upstream-repo: https://github.com/fabiocaccamo/django-treenode
   cfe-upstream-homepage: https://github.com/fabiocaccamo/django-treenode

@@ -72,7 +72,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: djlint
   cfe-purls:
-    - pkg:conda/djlint@${{ version }}
+    - pkg:conda/djlint@${{ version }}?channel=conda-forge
     - pkg:pypi/djlint@${{ version }}
   cfe-upstream-repo: https://github.com/djlint/djLint
   cfe-upstream-homepage: https://github.com/djlint/djLint

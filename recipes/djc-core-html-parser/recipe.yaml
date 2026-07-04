@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: djc-core-html-parser
   cfe-purls:
-    - pkg:conda/djc-core-html-parser@${{ version }}
+    - pkg:conda/djc-core-html-parser@${{ version }}?channel=conda-forge
     - pkg:pypi/djc-core-html-parser@${{ version }}
   cfe-upstream-repo: https://github.com/django-components/djc-core-html-parser
   cfe-upstream-homepage: https://github.com/django-components/djc-core-html-parser

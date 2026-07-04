@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: airflow-code-editor
   cfe-purls:
-    - pkg:conda/airflow-code-editor@${{ version }}
+    - pkg:conda/airflow-code-editor@${{ version }}?channel=conda-forge
     - pkg:pypi/airflow-code-editor@${{ version }}
   cfe-upstream-repo: https://github.com/andreax79/airflow-code-editor
   cfe-upstream-homepage: https://github.com/andreax79/airflow-code-editor

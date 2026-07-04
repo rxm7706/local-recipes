@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-mptt2
   cfe-purls:
-    - pkg:conda/django-mptt2@${{ version }}
+    - pkg:conda/django-mptt2@${{ version }}?channel=conda-forge
     - pkg:pypi/django-mptt2@${{ version }}
   cfe-upstream-repo: https://github.com/jokiefer/django-mptt2
   cfe-upstream-homepage: https://github.com/jokiefer/django-mptt2

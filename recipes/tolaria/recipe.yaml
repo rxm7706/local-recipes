@@ -127,7 +127,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: refactoringhq/tolaria
   cfe-purls:
-    - pkg:conda/tolaria@${{ version }}
+    - pkg:conda/tolaria@${{ version }}?channel=conda-forge
     - pkg:github/refactoringhq/tolaria@v${{ version | replace(".", "-") }}
   cfe-upstream-repo: https://github.com/refactoringhq/tolaria
   cfe-upstream-homepage: https://tolaria.md

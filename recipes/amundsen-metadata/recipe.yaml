@@ -81,7 +81,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: amundsen-metadata
   cfe-purls:
-    - pkg:conda/amundsen-metadata@${{ version }}
+    - pkg:conda/amundsen-metadata@${{ version }}?channel=conda-forge
     - pkg:pypi/amundsen-metadata@${{ version }}
   cfe-upstream-repo: https://github.com/amundsen-io/amundsen
   cfe-upstream-homepage: https://www.github.com/amundsen-io/amundsen/tree/main/metadata

@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dbt-protos
   cfe-purls:
-    - pkg:conda/dbt-protos@${{ version }}
+    - pkg:conda/dbt-protos@${{ version }}?channel=conda-forge
     - pkg:pypi/dbt-protos@${{ version }}
   cfe-upstream-repo: https://github.com/dbt-labs/proto-python-public
   cfe-upstream-homepage: https://github.com/dbt-labs/proto-python-public
@@ -66,7 +66,6 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-protos-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-1.0.514]
- []
   cfe-last-checked: 2026-07-03T22:07:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T10:33:34Z

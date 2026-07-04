@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lomond
   cfe-purls:
-    - pkg:conda/lomond@${{ version }}
+    - pkg:conda/lomond@${{ version }}?channel=conda-forge
     - pkg:pypi/lomond@${{ version }}
   cfe-upstream-repo: https://github.com/wildfoundry/dataplicity-lomond
   cfe-upstream-homepage: https://pypi.org/project/lomond/
@@ -67,12 +67,12 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lomond-feedstock
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33889
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-25T03:00:00Z
+  cfe-last-checked: 2026-07-04T21:06:13Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success

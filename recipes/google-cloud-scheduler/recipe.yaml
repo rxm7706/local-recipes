@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: google-cloud-scheduler
   cfe-purls:
-    - pkg:conda/google-cloud-scheduler@${{ version }}
+    - pkg:conda/google-cloud-scheduler@${{ version }}?channel=conda-forge
     - pkg:pypi/google-cloud-scheduler@${{ version }}
   cfe-upstream-repo: https://github.com/googleapis/google-cloud-python
   cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-scheduler

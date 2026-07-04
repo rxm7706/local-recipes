@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: shot-scraper
   cfe-purls:
-    - pkg:conda/shot-scraper@${{ version }}
+    - pkg:conda/shot-scraper@${{ version }}?channel=conda-forge
     - pkg:pypi/shot-scraper@${{ version }}
   cfe-upstream-repo: https://shot-scraper.datasette.io/
   cfe-upstream-homepage: https://shot-scraper.datasette.io/

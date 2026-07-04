@@ -69,7 +69,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: djc-core
   cfe-purls:
-    - pkg:conda/djc-core@${{ version }}
+    - pkg:conda/djc-core@${{ version }}?channel=conda-forge
     - pkg:pypi/djc-core@${{ version }}
   cfe-upstream-repo: https://github.com/django-components/djc-core
   cfe-upstream-homepage: https://github.com/django-components/djc-core

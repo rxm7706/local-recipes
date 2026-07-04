@@ -84,7 +84,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: vizro-mcp
   cfe-purls:
-    - pkg:conda/vizro-mcp@${{ version }}
+    - pkg:conda/vizro-mcp@${{ version }}?channel=conda-forge
     - pkg:pypi/vizro-mcp@${{ version }}
   cfe-upstream-repo: https://github.com/mckinsey/vizro
   cfe-upstream-homepage: https://vizro.mckinsey.com/
@@ -94,10 +94,9 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/vizro-mcp-feedstock
-  cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-07-04T22:24:52Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success

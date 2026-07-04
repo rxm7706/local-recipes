@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lfx-docling
   cfe-purls:
-    - pkg:conda/lfx-docling@${{ version }}
+    - pkg:conda/lfx-docling@${{ version }}?channel=conda-forge
     - pkg:pypi/lfx-docling@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://github.com/langflow-ai/langflow

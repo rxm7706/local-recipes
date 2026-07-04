@@ -69,7 +69,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pyqwest
   cfe-purls:
-    - pkg:conda/pyqwest@${{ version }}
+    - pkg:conda/pyqwest@${{ version }}?channel=conda-forge
     - pkg:pypi/pyqwest@${{ version }}
   cfe-upstream-repo: https://github.com/curioswitch/pyqwest
   cfe-upstream-homepage: https://github.com/curioswitch/pyqwest

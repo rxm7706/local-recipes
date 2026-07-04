@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: taipy-config
   cfe-purls:
-    - pkg:conda/taipy-config@${{ version }}
+    - pkg:conda/taipy-config@${{ version }}?channel=conda-forge
     - pkg:pypi/taipy-config@${{ version }}
   cfe-upstream-repo: https://github.com/avaiga/taipy-config
   cfe-upstream-homepage: https://github.com/avaiga/taipy-config

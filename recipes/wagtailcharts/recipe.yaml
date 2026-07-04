@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtailcharts
   cfe-purls:
-    - pkg:conda/wagtailcharts@${{ version }}
+    - pkg:conda/wagtailcharts@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtailcharts@${{ version }}
   cfe-upstream-repo: https://github.com/overcastsoftware/wagtailcharts
   cfe-upstream-homepage: https://github.com/overcastsoftware/wagtailcharts

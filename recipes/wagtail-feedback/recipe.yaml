@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-feedback
   cfe-purls:
-    - pkg:conda/wagtail-feedback@${{ version }}
+    - pkg:conda/wagtail-feedback@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-feedback@${{ version }}
   cfe-upstream-repo: https://github.com/Nigel2392/wagtail_feedback
   cfe-upstream-homepage: https://pypi.org/project/wagtail-feedback/

@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: drf-pydantic
   cfe-purls:
-    - pkg:conda/drf-pydantic@${{ version }}
+    - pkg:conda/drf-pydantic@${{ version }}?channel=conda-forge
     - pkg:pypi/drf-pydantic@${{ version }}
   cfe-upstream-repo: https://github.com/georgebv/drf-pydantic
   cfe-upstream-homepage: https://github.com/georgebv/drf-pydantic

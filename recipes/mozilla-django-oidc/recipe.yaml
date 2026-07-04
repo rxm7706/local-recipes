@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: mozilla-django-oidc
   cfe-purls:
-    - pkg:conda/mozilla-django-oidc@${{ version }}
+    - pkg:conda/mozilla-django-oidc@${{ version }}?channel=conda-forge
     - pkg:pypi/mozilla-django-oidc@${{ version }}
   cfe-upstream-repo: https://github.com/mozilla/mozilla-django-oidc
   cfe-upstream-homepage: https://github.com/mozilla/mozilla-django-oidc

@@ -62,7 +62,7 @@ extra:
   cfe-name-aliases:
     - langchain_google_calendar_tools
   cfe-purls:
-    - pkg:conda/langchain-google-calendar-tools@${{ version }}
+    - pkg:conda/langchain-google-calendar-tools@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-google-calendar-tools@${{ version }}
   cfe-upstream-repo: https://github.com/sun-asterisk-research/langchain-google-calendar-tools
   cfe-upstream-homepage: https://github.com/sun-asterisk-research/langchain-google-calendar-tools

@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: tox-uv-bare
   cfe-purls:
-    - pkg:conda/tox-uv@${{ version }}
+    - pkg:conda/tox-uv@${{ version }}?channel=conda-forge
     - pkg:pypi/tox-uv-bare@${{ version }}
   cfe-upstream-repo: https://github.com/tox-dev/tox-uv
   cfe-upstream-homepage: https://github.com/tox-dev/tox-uv

@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pydantic-sqlalchemy
   cfe-purls:
-    - pkg:conda/pydantic-sqlalchemy@${{ version }}
+    - pkg:conda/pydantic-sqlalchemy@${{ version }}?channel=conda-forge
     - pkg:pypi/pydantic-sqlalchemy@${{ version }}
   cfe-upstream-repo: https://github.com/tiangolo/pydantic-sqlalchemy
   cfe-upstream-homepage: https://github.com/tiangolo/pydantic-sqlalchemy

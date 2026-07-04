@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wolframalpha
   cfe-purls:
-    - pkg:conda/wolframalpha@${{ version }}
+    - pkg:conda/wolframalpha@${{ version }}?channel=conda-forge
     - pkg:pypi/wolframalpha@${{ version }}
   cfe-upstream-repo: https://github.com/jaraco/wolframalpha
   cfe-upstream-homepage: https://pypi.org/project/wolframalpha/

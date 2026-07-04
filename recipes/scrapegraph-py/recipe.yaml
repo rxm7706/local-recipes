@@ -60,7 +60,7 @@ extra:
   cfe-name-aliases:
     - scrapegraph_py
   cfe-purls:
-    - pkg:conda/scrapegraph-py@${{ version }}
+    - pkg:conda/scrapegraph-py@${{ version }}?channel=conda-forge
     - pkg:pypi/scrapegraph-py@${{ version }}
   cfe-upstream-repo: https://github.com/ScrapeGraphAI/scrapegraph-py
   cfe-upstream-homepage: https://scrapegraphai.com

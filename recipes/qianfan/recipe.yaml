@@ -73,7 +73,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: qianfan
   cfe-purls:
-    - pkg:conda/qianfan@${{ version }}
+    - pkg:conda/qianfan@${{ version }}?channel=conda-forge
     - pkg:pypi/qianfan@${{ version }}
   cfe-upstream-repo: https://github.com/baidubce/bce-qianfan-sdk
   cfe-upstream-homepage: https://cloud.baidu.com/product/wenxinworkshop

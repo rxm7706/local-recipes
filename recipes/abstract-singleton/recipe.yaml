@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: abstract-singleton
   cfe-purls:
-    - pkg:conda/abstract-singleton@${{ version }}
+    - pkg:conda/abstract-singleton@${{ version }}?channel=conda-forge
     - pkg:pypi/abstract-singleton@${{ version }}
   cfe-upstream-repo: https://github.com/BillSchumacher/Abstract-Singleton
   cfe-upstream-homepage: https://github.com/BillSchumacher/Abstract-Singleton

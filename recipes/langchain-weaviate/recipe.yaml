@@ -61,7 +61,7 @@ extra:
   cfe-name-aliases:
     - langchain_weaviate
   cfe-purls:
-    - pkg:conda/langchain-weaviate@${{ version }}
+    - pkg:conda/langchain-weaviate@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-weaviate@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-weaviate
   cfe-upstream-homepage: https://github.com/langchain-ai/langchain-weaviate

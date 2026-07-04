@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: datasette-configure-fts
   cfe-purls:
-    - pkg:conda/datasette-configure-fts@${{ version }}
+    - pkg:conda/datasette-configure-fts@${{ version }}?channel=conda-forge
     - pkg:pypi/datasette-configure-fts@${{ version }}
   cfe-upstream-repo: https://github.com/simonw/datasette-configure-fts
   cfe-upstream-homepage: https://github.com/simonw/datasette-configure-fts

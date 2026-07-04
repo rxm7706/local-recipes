@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lazy-imports
   cfe-purls:
-    - pkg:conda/lazy-imports@${{ version }}
+    - pkg:conda/lazy-imports@${{ version }}?channel=conda-forge
     - pkg:pypi/lazy-imports@${{ version }}
   cfe-upstream-repo: https://github.com/bachorp/lazy-imports
   cfe-upstream-homepage: https://github.com/bachorp/lazy-imports

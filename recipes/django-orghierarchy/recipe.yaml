@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-orghierarchy
   cfe-purls:
-    - pkg:conda/django-orghierarchy@${{ version }}
+    - pkg:conda/django-orghierarchy@${{ version }}?channel=conda-forge
     - pkg:pypi/django-orghierarchy@${{ version }}
   cfe-upstream-repo: https://github.com/City-of-Helsinki/django-orghierarchy
   cfe-upstream-homepage: https://github.com/City-of-Helsinki/django-orghierarchy

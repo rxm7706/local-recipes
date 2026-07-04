@@ -158,7 +158,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langflow-base
   cfe-purls:
-    - pkg:conda/langflow-base@${{ version }}
+    - pkg:conda/langflow-base@${{ version }}?channel=conda-forge
     - pkg:pypi/langflow-base@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://pypi.org/project/langflow-base/

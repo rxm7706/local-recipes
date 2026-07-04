@@ -61,7 +61,7 @@ extra:
   cfe-name-aliases:
     - langchain_sambanova
   cfe-purls:
-    - pkg:conda/langchain-sambanova@${{ version }}
+    - pkg:conda/langchain-sambanova@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-sambanova@${{ version }}
   cfe-upstream-repo: https://github.com/sambanova/langchain-sambanova
   cfe-upstream-homepage: https://github.com/sambanova/langchain-sambanova

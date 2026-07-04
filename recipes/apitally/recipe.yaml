@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: apitally
   cfe-purls:
-    - pkg:conda/apitally@${{ version }}
+    - pkg:conda/apitally@${{ version }}?channel=conda-forge
     - pkg:pypi/apitally@${{ version }}
   cfe-upstream-repo: https://github.com/apitally/apitally-py
   cfe-upstream-homepage: https://github.com/apitally/apitally-py

@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: donhauser/wagtail-pdf
   cfe-purls:
-    - pkg:conda/wagtail-pdf@${{ version }}
+    - pkg:conda/wagtail-pdf@${{ version }}?channel=conda-forge
     - pkg:github/donhauser/wagtail-pdf@${{ version }}
     - pkg:pypi/wagtail-pdf-view@${{ version }}
   cfe-upstream-repo: https://github.com/donhauser/wagtail-pdf

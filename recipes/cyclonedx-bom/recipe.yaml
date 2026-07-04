@@ -85,7 +85,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: cyclonedx-bom
   cfe-purls:
-    - pkg:conda/cyclonedx-bom@${{ version }}
+    - pkg:conda/cyclonedx-bom@${{ version }}?channel=conda-forge
     - pkg:pypi/cyclonedx-bom@${{ version }}
   cfe-upstream-repo: https://github.com/CycloneDX/cyclonedx-python
   cfe-upstream-homepage: https://pypi.org/project/cyclonedx-bom/

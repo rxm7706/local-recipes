@@ -56,8 +56,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: propelauth_py
   cfe-purls:
-    - pkg:conda/propelauth_py@${{ version }}
-    - pkg:pypi/propelauth_py@${{ version }}
+    - pkg:conda/propelauth_py@${{ version }}?channel=conda-forge
+    - pkg:pypi/propelauth-py@${{ version }}
   cfe-upstream-repo: https://github.com/propelauth/propelauth-py
   cfe-upstream-homepage: https://github.com/propelauth/propelauth-py
   cfe-import-names: [propelauth_py]
@@ -66,9 +66,9 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/propelauth_py-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-4.4.0, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [version-bump-to-4.4.0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-07-04T22:24:52Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success

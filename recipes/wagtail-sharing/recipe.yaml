@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-sharing
   cfe-purls:
-    - pkg:conda/wagtail-sharing@${{ version }}
+    - pkg:conda/wagtail-sharing@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-sharing@${{ version }}
   cfe-upstream-repo: https://github.com/cfpb/wagtail-sharing
   cfe-upstream-homepage: https://github.com/cfpb/wagtail-sharing

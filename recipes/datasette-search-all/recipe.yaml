@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: datasette-search-all
   cfe-purls:
-    - pkg:conda/datasette-search-all@${{ version }}
+    - pkg:conda/datasette-search-all@${{ version }}?channel=conda-forge
     - pkg:pypi/datasette-search-all@${{ version }}
   cfe-upstream-repo: https://github.com/simonw/datasette-search-all
   cfe-upstream-homepage: https://github.com/simonw/datasette-search-all

@@ -342,7 +342,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: eosphoros-ai/DB-GPT
   cfe-purls:
-    - pkg:conda/dbgpt@${{ version }}
+    - pkg:conda/dbgpt@${{ version }}?channel=conda-forge
     - pkg:github/eosphoros-ai/DB-GPT@v${{ version }}
   cfe-upstream-repo: https://github.com/eosphoros-ai/DB-GPT
   cfe-upstream-homepage: https://github.com/eosphoros-ai/DB-GPT
@@ -353,10 +353,9 @@ extra:
   cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - "channel lag (G66): prereqs auto-gpt-plugin-template + lyric-py-worker merged 2026-07-01, not yet uploaded to the cf channel — db-gpt test-env solve fails until both land"
+  cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33883
-  cfe-last-checked: 2026-07-01T08:34:44Z
+  cfe-last-checked: 2026-07-04T22:21:00Z
   cfe-generated-by-version: 8.62.0
   cfe-generated-at-datetime: 2026-07-01T08:34:44Z
   cfe-local-build-status: success

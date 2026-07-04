@@ -70,7 +70,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: airfly
   cfe-purls:
-    - pkg:conda/airfly@${{ version }}
+    - pkg:conda/airfly@${{ version }}?channel=conda-forge
     - pkg:pypi/airfly@${{ version }}
   cfe-upstream-repo: https://github.com/ryanchao2012/airfly
   cfe-upstream-homepage: https://github.com/ryanchao2012/airfly

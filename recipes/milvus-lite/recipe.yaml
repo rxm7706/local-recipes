@@ -72,7 +72,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: milvus-lite
   cfe-purls:
-    - pkg:conda/milvus-lite@${{ version }}
+    - pkg:conda/milvus-lite@${{ version }}?channel=conda-forge
     - pkg:pypi/milvus-lite@${{ version }}
   cfe-upstream-repo: https://github.com/milvus-io/milvus-lite
   cfe-upstream-homepage: https://github.com/milvus-io/milvus-lite

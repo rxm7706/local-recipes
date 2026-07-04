@@ -74,7 +74,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dremioframe
   cfe-purls:
-    - pkg:conda/dremioframe@${{ version }}
+    - pkg:conda/dremioframe@${{ version }}?channel=conda-forge
     - pkg:pypi/dremioframe@${{ version }}
   cfe-upstream-repo: https://github.com/developer-advocacy-dremio/dremio-cloud-dremioframe
   cfe-upstream-homepage: https://github.com/developer-advocacy-dremio/dremio-cloud-dremioframe

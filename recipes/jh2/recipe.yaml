@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: jh2
   cfe-purls:
-    - pkg:conda/jh2@${{ version }}
+    - pkg:conda/jh2@${{ version }}?channel=conda-forge
     - pkg:pypi/jh2@${{ version }}
   cfe-upstream-repo: https://github.com/jawah/h2
   cfe-upstream-homepage: https://github.com/jawah/h2
@@ -76,11 +76,10 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jh2-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
     - dependency-fix
     - platform-expansion
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-07-04T22:21:47Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success

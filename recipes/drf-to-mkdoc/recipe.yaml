@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: drf-to-mkdoc
   cfe-purls:
-    - pkg:conda/drf-to-mkdoc@${{ version }}
+    - pkg:conda/drf-to-mkdoc@${{ version }}?channel=conda-forge
     - pkg:pypi/drf-to-mkdoc@${{ version }}
   cfe-upstream-repo: https://github.com/shayestehhs/drf-to-mkdoc
   cfe-upstream-homepage: https://github.com/shayestehhs/drf-to-mkdoc

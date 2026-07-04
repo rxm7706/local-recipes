@@ -58,7 +58,7 @@ extra:
   cfe-name-aliases:
     - langchain_astradb
   cfe-purls:
-    - pkg:conda/langchain-astradb@${{ version }}
+    - pkg:conda/langchain-astradb@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-astradb@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-datastax
   cfe-upstream-homepage: https://github.com/langchain-ai/langchain-datastax
@@ -70,9 +70,8 @@ extra:
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33967
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - astrapy not yet on conda-forge
-  cfe-last-checked: 2026-06-27T13:40:14Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:21:00Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success

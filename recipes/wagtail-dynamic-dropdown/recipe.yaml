@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-dynamic-dropdown
   cfe-purls:
-    - pkg:conda/wagtail-dynamic-dropdown@${{ version }}
+    - pkg:conda/wagtail-dynamic-dropdown@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-dynamic-dropdown@${{ version }}
   cfe-upstream-repo: https://github.com/LilJack118/wagtail-dynamic-dropdown
   cfe-upstream-homepage: https://github.com/LilJack118/wagtail-dynamic-dropdown

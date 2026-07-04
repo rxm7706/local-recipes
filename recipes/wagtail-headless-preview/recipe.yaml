@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-headless-preview
   cfe-purls:
-    - pkg:conda/wagtail-headless-preview@${{ version }}
+    - pkg:conda/wagtail-headless-preview@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-headless-preview@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtail-headless-preview
   cfe-upstream-homepage: https://github.com/torchbox/wagtail-headless-preview

@@ -64,7 +64,7 @@ extra:
   cfe-name-aliases:
     - langchain_cohere
   cfe-purls:
-    - pkg:conda/langchain-cohere@${{ version }}
+    - pkg:conda/langchain-cohere@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-cohere@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-cohere
   cfe-upstream-homepage: https://github.com/langchain-ai/langchain-cohere

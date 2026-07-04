@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-tenant-users
   cfe-purls:
-    - pkg:conda/django-tenant-users@${{ version }}
+    - pkg:conda/django-tenant-users@${{ version }}?channel=conda-forge
     - pkg:pypi/django-tenant-users@${{ version }}
   cfe-upstream-repo: https://github.com/Corvia/django-tenant-users
   cfe-upstream-homepage: https://github.com/Corvia/django-tenant-users

@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pytest-excel
   cfe-purls:
-    - pkg:conda/pytest-excel@${{ version }}
+    - pkg:conda/pytest-excel@${{ version }}?channel=conda-forge
     - pkg:pypi/pytest-excel@${{ version }}
   cfe-upstream-repo: https://github.com/ssrikanta/pytest-excel
   cfe-upstream-homepage: https://github.com/ssrikanta/pytest-excel

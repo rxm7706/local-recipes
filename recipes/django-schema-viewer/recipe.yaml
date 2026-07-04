@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-schema-viewer
   cfe-purls:
-    - pkg:conda/django-schema-viewer@${{ version }}
+    - pkg:conda/django-schema-viewer@${{ version }}?channel=conda-forge
     - pkg:pypi/django-schema-viewer@${{ version }}
   cfe-upstream-repo: https://github.com/pikhovkin/django-schema-viewer
   cfe-upstream-homepage: https://github.com/pikhovkin/django-schema-viewer

@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: firecrawl-py
   cfe-purls:
-    - pkg:conda/firecrawl-py@${{ version }}
+    - pkg:conda/firecrawl-py@${{ version }}?channel=conda-forge
     - pkg:pypi/firecrawl-py@${{ version }}
   cfe-upstream-repo: https://github.com/firecrawl/firecrawl
   cfe-upstream-homepage: https://github.com/firecrawl/firecrawl

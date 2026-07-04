@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: crispy-bootstrap5
   cfe-purls:
-    - pkg:conda/crispy-bootstrap5@${{ version }}
+    - pkg:conda/crispy-bootstrap5@${{ version }}?channel=conda-forge
     - pkg:pypi/crispy-bootstrap5@${{ version }}
   cfe-upstream-repo: https://github.com/django-crispy-forms/crispy-bootstrap5
   cfe-upstream-homepage: https://github.com/django-crispy-forms/crispy-bootstrap5

@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-compressor
   cfe-purls:
-    - pkg:conda/django_compressor@${{ version }}
+    - pkg:conda/django_compressor@${{ version }}?channel=conda-forge
     - pkg:pypi/django-compressor@${{ version }}
   cfe-upstream-repo: https://github.com/django-compressor/django-compressor
   cfe-upstream-homepage: https://github.com/django-compressor/django-compressor
@@ -67,9 +67,9 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django_compressor-feedstock
-  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T10:30:29Z
+  cfe-last-checked: 2026-07-04T22:24:52Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: not-attempted

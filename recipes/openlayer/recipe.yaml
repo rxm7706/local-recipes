@@ -70,7 +70,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openlayer
   cfe-purls:
-    - pkg:conda/openlayer@${{ version }}
+    - pkg:conda/openlayer@${{ version }}?channel=conda-forge
     - pkg:pypi/openlayer@${{ version }}
   cfe-upstream-repo: https://github.com/openlayer-ai/openlayer-python
   cfe-upstream-homepage: https://www.openlayer.com

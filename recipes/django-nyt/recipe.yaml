@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-nyt
   cfe-purls:
-    - pkg:conda/django-nyt@${{ version }}
+    - pkg:conda/django-nyt@${{ version }}?channel=conda-forge
     - pkg:pypi/django-nyt@${{ version }}
   cfe-upstream-repo: https://github.com/django-wiki/django-nyt
   cfe-upstream-homepage: https://github.com/django-wiki/django-nyt

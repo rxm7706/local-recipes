@@ -87,7 +87,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langgraph-api
   cfe-purls:
-    - pkg:conda/langgraph-api@${{ version }}
+    - pkg:conda/langgraph-api@${{ version }}?channel=conda-forge
     - pkg:pypi/langgraph-api@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langgraph-api
   cfe-upstream-homepage: https://github.com/langchain-ai/langgraph-api
@@ -99,7 +99,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34052
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list: [staged-recipes #34052 held in draft until langgraph-runtime-inmem #34051 merges; Elastic-2.0 license under cf policy review in the PR, grpcio <1.81 + grpcio-tools ==1.80.0 pins unsatisfiable alongside pyarrow on current cf (libgrpc 1.80 vs libarrow/libgoogle-cloud lattice) — recheck on next upstream release]
+  cfe-forge-blocker-list: ["staged-recipes #34052 held in draft until langgraph-runtime-inmem #34051 merges; Elastic-2.0 license under cf policy review in the PR, grpcio <1.81 + grpcio-tools ==1.80.0 pins unsatisfiable alongside pyarrow on current cf (libgrpc 1.80 vs libarrow/libgoogle-cloud lattice) — recheck on next upstream release"]
   cfe-last-checked: 2026-07-03T13:38:44Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T13:27:24Z

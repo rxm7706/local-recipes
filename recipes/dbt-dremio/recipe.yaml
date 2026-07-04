@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dbt-dremio
   cfe-purls:
-    - pkg:conda/dbt-dremio@${{ version }}
+    - pkg:conda/dbt-dremio@${{ version }}?channel=conda-forge
     - pkg:pypi/dbt-dremio@${{ version }}
   cfe-upstream-repo: https://github.com/dremio/dbt-dremio
   cfe-upstream-homepage: https://github.com/dremio/dbt-dremio

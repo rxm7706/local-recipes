@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-log-viewer
   cfe-purls:
-    - pkg:conda/django-log-viewer@${{ version }}
+    - pkg:conda/django-log-viewer@${{ version }}?channel=conda-forge
     - pkg:pypi/django-log-viewer@${{ version }}
   cfe-upstream-repo: https://github.com/agusmakmun/django-log-viewer
   cfe-upstream-homepage: https://github.com/agusmakmun/django-log-viewer

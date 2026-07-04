@@ -64,7 +64,7 @@ extra:
   cfe-name-aliases:
     - spider
   cfe-purls:
-    - pkg:conda/spider-client@${{ version }}
+    - pkg:conda/spider-client@${{ version }}?channel=conda-forge
     - pkg:pypi/spider-client@${{ version }}
   cfe-upstream-repo: https://github.com/spider-rs/spider-clients
   cfe-upstream-homepage: https://spider.cloud

@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-excel-tools
   cfe-purls:
-    - pkg:conda/django-excel-tools@${{ version }}
+    - pkg:conda/django-excel-tools@${{ version }}?channel=conda-forge
     - pkg:pypi/django-excel-tools@${{ version }}
   cfe-upstream-repo: https://github.com/NorakGithub/django-excel-tools
   cfe-upstream-homepage: https://github.com/NorakGithub/django-excel-tools

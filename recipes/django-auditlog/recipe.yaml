@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-auditlog
   cfe-purls:
-    - pkg:conda/django-auditlog@${{ version }}
+    - pkg:conda/django-auditlog@${{ version }}?channel=conda-forge
     - pkg:pypi/django-auditlog@${{ version }}
   cfe-upstream-repo: https://github.com/jazzband/django-auditlog
   cfe-upstream-homepage: https://github.com/jazzband/django-auditlog

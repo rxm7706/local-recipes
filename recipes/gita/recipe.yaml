@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: gita
   cfe-purls:
-    - pkg:conda/gita@${{ version }}
+    - pkg:conda/gita@${{ version }}?channel=conda-forge
     - pkg:pypi/gita@${{ version }}
   cfe-upstream-repo: https://github.com/nosarthur/gita
   cfe-upstream-homepage: https://github.com/nosarthur/gita

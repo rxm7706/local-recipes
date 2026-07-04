@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lyric-component-ts-transpiling
   cfe-purls:
-    - pkg:conda/lyric-component-ts-transpiling@${{ version }}
+    - pkg:conda/lyric-component-ts-transpiling@${{ version }}?channel=conda-forge
     - pkg:pypi/lyric-component-ts-transpiling@${{ version }}
   cfe-upstream-repo: https://github.com/fangyinc/lyric
   cfe-upstream-homepage: https://github.com/fangyinc/lyric

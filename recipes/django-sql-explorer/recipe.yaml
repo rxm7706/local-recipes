@@ -72,7 +72,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-sql-explorer
   cfe-purls:
-    - pkg:conda/django-sql-explorer@${{ version }}
+    - pkg:conda/django-sql-explorer@${{ version }}?channel=conda-forge
     - pkg:pypi/django-sql-explorer@${{ version }}
   cfe-upstream-repo: https://github.com/chrisclark/django-sql-explorer
   cfe-upstream-homepage: https://www.sqlexplorer.io

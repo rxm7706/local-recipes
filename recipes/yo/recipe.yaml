@@ -68,7 +68,7 @@ extra:
   cfe-upstream-registry: npm
   cfe-upstream-name: yo
   cfe-purls:
-    - pkg:conda/yo@${{ version }}
+    - pkg:conda/yo@${{ version }}?channel=conda-forge
     - pkg:npm/yo@${{ version }}
   cfe-upstream-repo: https://github.com/yeoman/yo
   cfe-upstream-homepage: http://yeoman.io

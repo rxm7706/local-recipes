@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-components
   cfe-purls:
-    - pkg:conda/django-components@${{ version }}
+    - pkg:conda/django-components@${{ version }}?channel=conda-forge
     - pkg:pypi/django-components@${{ version }}
   cfe-upstream-repo: https://github.com/django-components/django-components
   cfe-upstream-homepage: https://github.com/django-components/django-components

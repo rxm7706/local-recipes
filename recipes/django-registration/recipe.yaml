@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-registration
   cfe-purls:
-    - pkg:conda/django-registration@${{ version }}
+    - pkg:conda/django-registration@${{ version }}?channel=conda-forge
     - pkg:pypi/django-registration@${{ version }}
   cfe-upstream-repo: https://github.com/ubernostrum/django-registration
   cfe-upstream-homepage: https://github.com/ubernostrum/django-registration

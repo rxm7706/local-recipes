@@ -71,7 +71,7 @@ extra:
   cfe-name-aliases:
     - langchain_google_vertexai
   cfe-purls:
-    - pkg:conda/langchain-google-vertexai@${{ version }}
+    - pkg:conda/langchain-google-vertexai@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-google-vertexai@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-google
   cfe-upstream-homepage: https://docs.langchain.com/oss/python/integrations/providers/google

@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: psycopg2-yugabytedb
   cfe-purls:
-    - pkg:conda/psycopg2-yugabytedb@${{ version }}
+    - pkg:conda/psycopg2-yugabytedb@${{ version }}?channel=conda-forge
     - pkg:pypi/psycopg2-yugabytedb@${{ version }}
   cfe-upstream-repo: https://github.com/yugabyte/psycopg2
   cfe-upstream-homepage: https://github.com/yugabyte/psycopg2

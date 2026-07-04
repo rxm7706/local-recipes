@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-draftail-plugins
   cfe-purls:
-    - pkg:conda/wagtail-draftail-plugins@${{ version }}
+    - pkg:conda/wagtail-draftail-plugins@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-draftail-plugins@${{ version }}
   cfe-upstream-repo: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
   cfe-upstream-homepage: https://gitlab.com/thelabnyc/wagtail-draftail-plugins

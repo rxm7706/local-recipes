@@ -72,7 +72,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: unitxt
   cfe-purls:
-    - pkg:conda/unitxt@${{ version }}
+    - pkg:conda/unitxt@${{ version }}?channel=conda-forge
     - pkg:pypi/unitxt@${{ version }}
   cfe-upstream-repo: https://github.com/IBM/unitxt
   cfe-upstream-homepage: https://www.unitxt.ai

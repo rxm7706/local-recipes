@@ -72,7 +72,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langwatch
   cfe-purls:
-    - pkg:conda/langwatch@${{ version }}
+    - pkg:conda/langwatch@${{ version }}?channel=conda-forge
     - pkg:pypi/langwatch@${{ version }}
   cfe-upstream-repo: https://github.com/langwatch/langwatch
   cfe-upstream-homepage: https://pypi.org/project/langwatch/

@@ -67,7 +67,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: confluence-markdown-exporter
   cfe-purls:
-    - pkg:conda/confluence-markdown-exporter@${{ version }}
+    - pkg:conda/confluence-markdown-exporter@${{ version }}?channel=conda-forge
     - pkg:pypi/confluence-markdown-exporter@${{ version }}
   cfe-upstream-repo: https://github.com/Spenhouet/confluence-markdown-exporter
   cfe-upstream-homepage: https://github.com/Spenhouet/confluence-markdown-exporter

@@ -67,7 +67,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: diazo
   cfe-purls:
-    - pkg:conda/diazo@${{ version }}
+    - pkg:conda/diazo@${{ version }}?channel=conda-forge
     - pkg:pypi/diazo@${{ version }}
   cfe-upstream-repo: http://diazo.org
   cfe-upstream-homepage: http://diazo.org

@@ -106,7 +106,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: bigframes
   cfe-purls:
-    - pkg:conda/bigframes@${{ version }}
+    - pkg:conda/bigframes@${{ version }}?channel=conda-forge
     - pkg:pypi/bigframes@${{ version }}
   cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/bigframes
   cfe-upstream-homepage: https://dataframes.bigquery.dev

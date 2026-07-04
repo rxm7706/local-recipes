@@ -70,7 +70,7 @@ extra:
   cfe-name-aliases:
     - browsergym.core
   cfe-purls:
-    - pkg:conda/browsergym-core@${{ version }}
+    - pkg:conda/browsergym-core@${{ version }}?channel=conda-forge
     - pkg:pypi/browsergym-core@${{ version }}
   cfe-upstream-repo: https://github.com/ServiceNow/BrowserGym
   cfe-upstream-homepage: https://github.com/ServiceNow/BrowserGym

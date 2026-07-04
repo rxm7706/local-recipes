@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: djangorestframework-dataclasses
   cfe-purls:
-    - pkg:conda/djangorestframework-dataclasses@${{ version }}
+    - pkg:conda/djangorestframework-dataclasses@${{ version }}?channel=conda-forge
     - pkg:pypi/djangorestframework-dataclasses@${{ version }}
   cfe-upstream-repo: https://github.com/oxan/djangorestframework-dataclasses
   cfe-upstream-homepage: https://github.com/oxan/djangorestframework-dataclasses

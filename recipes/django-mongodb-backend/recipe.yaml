@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-mongodb-backend
   cfe-purls:
-    - pkg:conda/django-mongodb-backend@${{ version }}
+    - pkg:conda/django-mongodb-backend@${{ version }}?channel=conda-forge
     - pkg:pypi/django-mongodb-backend@${{ version }}
   cfe-upstream-repo: https://github.com/mongodb/django-mongodb-backend
   cfe-upstream-homepage: https://www.mongodb.com/docs/languages/python/django-mongodb/current/

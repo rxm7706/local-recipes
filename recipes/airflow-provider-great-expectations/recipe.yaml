@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: airflow-provider-great-expectations
   cfe-purls:
-    - pkg:conda/airflow-provider-great-expectations@${{ version }}
+    - pkg:conda/airflow-provider-great-expectations@${{ version }}?channel=conda-forge
     - pkg:pypi/airflow-provider-great-expectations@${{ version }}
   cfe-upstream-repo: https://github.com/great-expectations/airflow-provider-great-expectations
   cfe-upstream-homepage: https://github.com/astronomer/airflow-provider-great-expectations

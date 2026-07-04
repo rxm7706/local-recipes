@@ -103,7 +103,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: sqlglot
   cfe-purls:
-    - pkg:conda/sqlglot@${{ version }}
+    - pkg:conda/sqlglot@${{ version }}?channel=conda-forge
     - pkg:pypi/sqlglot@${{ version }}
   cfe-upstream-repo: https://github.com/tobymao/sqlglot
   cfe-upstream-homepage: https://github.com/tobymao/sqlglot
@@ -114,7 +114,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlglot-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-30.8.0, sqlglotrs-pin-0.13.0, drop-obsolete-cargo-version-test]
-  cfe-forge-blocker-list: [sqlglotrs 0.13.0 must land on cf first (feedstock#48); bot bump PRs stop at 30.1.0 — fresh 30.8.0 PR needed for sqlmesh]
+  cfe-forge-blocker-list: ["sqlglotrs 0.13.0 must land on cf first (feedstock#48); bot bump PRs stop at 30.1.0 — fresh 30.8.0 PR needed for sqlmesh"]
   cfe-last-checked: 2026-07-03T15:29:19Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T15:29:19Z

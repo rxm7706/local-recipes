@@ -84,7 +84,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: universal-mcp
   cfe-purls:
-    - pkg:conda/universal-mcp@${{ version }}
+    - pkg:conda/universal-mcp@${{ version }}?channel=conda-forge
     - pkg:pypi/universal-mcp@${{ version }}
   cfe-upstream-repo: https://github.com/universal-mcp/universal-mcp
   cfe-upstream-homepage: https://github.com/universal-mcp/universal-mcp

@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: metaphor-python
   cfe-purls:
-    - pkg:conda/metaphor-python@${{ version }}
+    - pkg:conda/metaphor-python@${{ version }}?channel=conda-forge
     - pkg:pypi/metaphor-python@${{ version }}
   cfe-upstream-repo: https://github.com/metaphorsystems/metaphor-python
   cfe-upstream-homepage: https://pypi.org/project/metaphor-python/

@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-review
   cfe-purls:
-    - pkg:conda/wagtail-review@${{ version }}
+    - pkg:conda/wagtail-review@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-review@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-review
   cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-review

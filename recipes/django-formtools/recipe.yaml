@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-formtools
   cfe-purls:
-    - pkg:conda/django-formtools@${{ version }}
+    - pkg:conda/django-formtools@${{ version }}?channel=conda-forge
     - pkg:pypi/django-formtools@${{ version }}
   cfe-upstream-repo: https://github.com/jazzband/django-formtools
   cfe-upstream-homepage: https://django-formtools.readthedocs.io/en/latest/

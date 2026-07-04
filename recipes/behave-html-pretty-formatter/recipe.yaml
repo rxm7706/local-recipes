@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: behave-html-pretty-formatter
   cfe-purls:
-    - pkg:conda/behave-html-pretty-formatter@${{ version }}
+    - pkg:conda/behave-html-pretty-formatter@${{ version }}?channel=conda-forge
     - pkg:pypi/behave-html-pretty-formatter@${{ version }}
   cfe-upstream-repo: https://github.com/behave-contrib/behave-html-pretty-formatter
   cfe-upstream-homepage: https://github.com/behave-contrib/behave-html-pretty-formatter

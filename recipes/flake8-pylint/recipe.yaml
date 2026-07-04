@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: flake8-pylint
   cfe-purls:
-    - pkg:conda/flake8-pylint@${{ version }}
+    - pkg:conda/flake8-pylint@${{ version }}?channel=conda-forge
     - pkg:pypi/flake8-pylint@${{ version }}
   cfe-upstream-repo: https://github.com/orsinium-labs/flake8-pylint
   cfe-upstream-homepage: https://github.com/orsinium-labs/flake8-pylint

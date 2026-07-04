@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-jsonstore
   cfe-purls:
-    - pkg:conda/django-jsonstore@${{ version }}
+    - pkg:conda/django-jsonstore@${{ version }}?channel=conda-forge
     - pkg:pypi/django-jsonstore@${{ version }}
   cfe-upstream-repo: http://github.com/viewflow/jsonstore
   cfe-upstream-homepage: http://github.com/viewflow/jsonstore

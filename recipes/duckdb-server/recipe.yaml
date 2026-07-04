@@ -66,7 +66,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: duckdb-server
   cfe-purls:
-    - pkg:conda/duckdb-server@${{ version }}
+    - pkg:conda/duckdb-server@${{ version }}?channel=conda-forge
     - pkg:pypi/duckdb-server@${{ version }}
   cfe-upstream-repo: https://github.com/uwdata/mosaic
   cfe-upstream-homepage: https://github.com/uwdata/mosaic/tree/main/packages/duckdb-server

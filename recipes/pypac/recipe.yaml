@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pypac
   cfe-purls:
-    - pkg:conda/pypac@${{ version }}
+    - pkg:conda/pypac@${{ version }}?channel=conda-forge
     - pkg:pypi/pypac@${{ version }}
   cfe-upstream-repo: https://github.com/carsonyl/pypac
   cfe-upstream-homepage: https://github.com/carsonyl/pypac

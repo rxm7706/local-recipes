@@ -78,7 +78,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: tastymap
   cfe-purls:
-    - pkg:conda/tastymap@${{ version }}
+    - pkg:conda/tastymap@${{ version }}?channel=conda-forge
     - pkg:pypi/tastymap@${{ version }}
   cfe-upstream-repo: https://github.com/ahuang11/tastymap
   cfe-upstream-homepage: https://github.com/ahuang11/tastymap

@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: cssbeautifier
   cfe-purls:
-    - pkg:conda/cssbeautifier@${{ version }}
+    - pkg:conda/cssbeautifier@${{ version }}?channel=conda-forge
     - pkg:pypi/cssbeautifier@${{ version }}
   cfe-upstream-repo: https://github.com/beautify-web/js-beautify
   cfe-upstream-homepage: https://github.com/beautify-web/js-beautify

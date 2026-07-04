@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: alt-profanity-check
   cfe-purls:
-    - pkg:conda/alt-profanity-check@${{ version }}
+    - pkg:conda/alt-profanity-check@${{ version }}?channel=conda-forge
     - pkg:pypi/alt-profanity-check@${{ version }}
   cfe-upstream-repo: https://github.com/dimitrismistriotis/alt-profanity-check
   cfe-upstream-homepage: https://github.com/dimitrismistriotis/alt-profanity-check

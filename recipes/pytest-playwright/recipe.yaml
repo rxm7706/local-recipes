@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pytest-playwright
   cfe-purls:
-    - pkg:conda/pytest-playwright@${{ version }}
+    - pkg:conda/pytest-playwright@${{ version }}?channel=conda-forge
     - pkg:pypi/pytest-playwright@${{ version }}
   cfe-upstream-repo: https://github.com/microsoft/playwright-pytest
   cfe-upstream-homepage: https://github.com/microsoft/playwright-pytest

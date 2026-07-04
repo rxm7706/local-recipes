@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-modeladmin
   cfe-purls:
-    - pkg:conda/wagtail-modeladmin@${{ version }}
+    - pkg:conda/wagtail-modeladmin@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-modeladmin@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-modeladmin
   cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-modeladmin

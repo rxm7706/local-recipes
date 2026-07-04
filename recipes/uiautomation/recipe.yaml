@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: uiautomation
   cfe-purls:
-    - pkg:conda/uiautomation@${{ version }}
+    - pkg:conda/uiautomation@${{ version }}?channel=conda-forge
     - pkg:pypi/uiautomation@${{ version }}
   cfe-upstream-repo: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
   cfe-upstream-homepage: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows

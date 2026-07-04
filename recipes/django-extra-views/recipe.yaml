@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-extra-views
   cfe-purls:
-    - pkg:conda/django-extra-views@${{ version }}
+    - pkg:conda/django-extra-views@${{ version }}?channel=conda-forge
     - pkg:pypi/django-extra-views@${{ version }}
   cfe-upstream-repo: https://github.com/AndrewIngram/django-extra-views
   cfe-upstream-homepage: https://github.com/AndrewIngram/django-extra-views

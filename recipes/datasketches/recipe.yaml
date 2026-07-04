@@ -68,7 +68,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: datasketches
   cfe-purls:
-    - pkg:conda/datasketches@${{ version }}
+    - pkg:conda/datasketches@${{ version }}?channel=conda-forge
     - pkg:pypi/datasketches@${{ version }}
   cfe-upstream-repo: https://github.com/apache/datasketches-python
   cfe-upstream-homepage: https://datasketches.apache.org

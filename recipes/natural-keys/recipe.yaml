@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: natural-keys
   cfe-purls:
-    - pkg:conda/natural-keys@${{ version }}
+    - pkg:conda/natural-keys@${{ version }}?channel=conda-forge
     - pkg:pypi/natural-keys@${{ version }}
   cfe-upstream-repo: https://github.com/wq/django-natural-keys
   cfe-upstream-homepage: https://github.com/wq/django-natural-keys

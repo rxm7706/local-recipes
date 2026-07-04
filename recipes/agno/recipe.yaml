@@ -74,7 +74,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: agno
   cfe-purls:
-    - pkg:conda/agno@${{ version }}
+    - pkg:conda/agno@${{ version }}?channel=conda-forge
     - pkg:pypi/agno@${{ version }}
   cfe-upstream-repo: https://github.com/agno-agi/agno
   cfe-upstream-homepage: https://github.com/agno-agi/agno

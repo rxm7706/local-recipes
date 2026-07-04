@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: selectolax
   cfe-purls:
-    - pkg:conda/selectolax@${{ version }}
+    - pkg:conda/selectolax@${{ version }}?channel=conda-forge
     - pkg:pypi/selectolax@${{ version }}
   cfe-upstream-repo: https://github.com/rushter/selectolax
   cfe-upstream-homepage: https://github.com/rushter/selectolax

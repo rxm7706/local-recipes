@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: docstring_parser_fork
   cfe-purls:
-    - pkg:conda/docstring_parser_fork@${{ version }}
+    - pkg:conda/docstring_parser_fork@${{ version }}?channel=conda-forge
     - pkg:pypi/docstring-parser-fork@${{ version }}
   cfe-upstream-repo: https://github.com/jsh9/docstring_parser_fork
   cfe-upstream-homepage: https://github.com/jsh9/docstring_parser_fork

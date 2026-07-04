@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: jinja2-simple-tags
   cfe-purls:
-    - pkg:conda/jinja2-simple-tags@${{ version }}
+    - pkg:conda/jinja2-simple-tags@${{ version }}?channel=conda-forge
     - pkg:pypi/jinja2-simple-tags@${{ version }}
   cfe-upstream-repo: https://github.com/dldevinc/jinja2-simple-tags
   cfe-upstream-homepage: https://github.com/dldevinc/jinja2-simple-tags

@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wasmtime
   cfe-purls:
-    - pkg:conda/wasmtime-py@${{ version }}
+    - pkg:conda/wasmtime-py@${{ version }}?channel=conda-forge
     - pkg:pypi/wasmtime@${{ version }}
   cfe-upstream-repo: https://github.com/bytecodealliance/wasmtime-py
   cfe-upstream-homepage: https://github.com/bytecodealliance/wasmtime-py

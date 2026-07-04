@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: CycloneDX/cyclonedx-bom-studio
   cfe-purls:
-    - pkg:conda/cyclonedx-bom-studio@${{ version }}
+    - pkg:conda/cyclonedx-bom-studio@${{ version }}?channel=conda-forge
     - pkg:github/cyclonedx/cyclonedx-bom-studio@${{ commit }}
   cfe-upstream-repo: https://github.com/CycloneDX/cyclonedx-bom-studio
   cfe-upstream-homepage: https://cyclonedx.studio/

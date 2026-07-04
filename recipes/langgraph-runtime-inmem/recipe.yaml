@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langgraph-runtime-inmem
   cfe-purls:
-    - pkg:conda/langgraph-runtime-inmem@${{ version }}
+    - pkg:conda/langgraph-runtime-inmem@${{ version }}?channel=conda-forge
     - pkg:pypi/langgraph-runtime-inmem@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langgraph-api
   cfe-upstream-homepage: https://github.com/langchain-ai/langgraph-api
@@ -72,7 +72,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34051
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list: [staged-recipes #34051 held in draft until blockbuster #34048 merges; Elastic-2.0 license under cf policy review in the PR]
+  cfe-forge-blocker-list: ["staged-recipes #34051 held in draft until blockbuster #34048 merges; Elastic-2.0 license under cf policy review in the PR"]
   cfe-last-checked: 2026-07-03T13:38:44Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T13:27:24Z

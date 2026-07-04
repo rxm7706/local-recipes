@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-footnotes
   cfe-purls:
-    - pkg:conda/wagtail-footnotes@${{ version }}
+    - pkg:conda/wagtail-footnotes@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-footnotes@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtail-footnotes
   cfe-upstream-homepage: https://github.com/torchbox/wagtail-footnotes

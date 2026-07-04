@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opentelemetry-exporter-gcp-trace
   cfe-purls:
-    - pkg:conda/opentelemetry-exporter-gcp-trace@${{ version }}
+    - pkg:conda/opentelemetry-exporter-gcp-trace@${{ version }}?channel=conda-forge
     - pkg:pypi/opentelemetry-exporter-gcp-trace@${{ version }}
   cfe-upstream-repo: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
   cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-exporter-gcp-trace

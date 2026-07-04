@@ -69,7 +69,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: toolguard
   cfe-purls:
-    - pkg:conda/toolguard@${{ version }}
+    - pkg:conda/toolguard@${{ version }}?channel=conda-forge
     - pkg:pypi/toolguard@${{ version }}
   cfe-upstream-repo: https://github.com/AgentToolkit/toolguard
   cfe-upstream-homepage: https://github.com/AgentToolkit/toolguard

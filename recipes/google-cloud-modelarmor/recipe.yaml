@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: google-cloud-modelarmor
   cfe-purls:
-    - pkg:conda/google-cloud-modelarmor@${{ version }}
+    - pkg:conda/google-cloud-modelarmor@${{ version }}?channel=conda-forge
     - pkg:pypi/google-cloud-modelarmor@${{ version }}
   cfe-upstream-repo: https://github.com/googleapis/google-cloud-python
   cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-modelarmor

@@ -114,7 +114,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openmetadata-ingestion
   cfe-purls:
-    - pkg:conda/openmetadata-ingestion@${{ version }}
+    - pkg:conda/openmetadata-ingestion@${{ version }}?channel=conda-forge
     - pkg:pypi/openmetadata-ingestion@${{ version }}
   cfe-upstream-repo: https://github.com/open-metadata/OpenMetadata
   cfe-upstream-homepage: https://open-metadata.org/

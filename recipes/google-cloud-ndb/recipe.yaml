@@ -66,7 +66,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: google-cloud-ndb
   cfe-purls:
-    - pkg:conda/google-cloud-ndb@${{ version }}
+    - pkg:conda/google-cloud-ndb@${{ version }}?channel=conda-forge
     - pkg:pypi/google-cloud-ndb@${{ version }}
   cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-ndb
   cfe-upstream-homepage: https://pypi.org/project/google-cloud-ndb

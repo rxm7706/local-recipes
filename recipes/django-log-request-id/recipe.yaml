@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-log-request-id
   cfe-purls:
-    - pkg:conda/django-log-request-id@${{ version }}
+    - pkg:conda/django-log-request-id@${{ version }}?channel=conda-forge
     - pkg:pypi/django-log-request-id@${{ version }}
   cfe-upstream-repo: https://github.com/dabapps/django-log-request-id
   cfe-upstream-homepage: https://github.com/dabapps/django-log-request-id

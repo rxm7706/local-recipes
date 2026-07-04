@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: gotenberg-client
   cfe-purls:
-    - pkg:conda/gotenberg-client@${{ version }}
+    - pkg:conda/gotenberg-client@${{ version }}?channel=conda-forge
     - pkg:pypi/gotenberg-client@${{ version }}
   cfe-upstream-repo: https://github.com/stumpylog/gotenberg-client/
   cfe-upstream-homepage: https://github.com/stumpylog/gotenberg-client/

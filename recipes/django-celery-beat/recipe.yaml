@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-celery-beat
   cfe-purls:
-    - pkg:conda/django-celery-beat@${{ version }}
+    - pkg:conda/django-celery-beat@${{ version }}?channel=conda-forge
     - pkg:pypi/django-celery-beat@${{ version }}
   cfe-upstream-repo: https://github.com/celery/django-celery-beat
   cfe-upstream-homepage: https://github.com/celery/django-celery-beat

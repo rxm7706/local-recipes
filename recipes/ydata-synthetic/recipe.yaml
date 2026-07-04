@@ -73,7 +73,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: ydata-synthetic
   cfe-purls:
-    - pkg:conda/ydata-synthetic@${{ version }}
+    - pkg:conda/ydata-synthetic@${{ version }}?channel=conda-forge
     - pkg:pypi/ydata-synthetic@${{ version }}
   cfe-upstream-repo: 
   cfe-upstream-homepage: 

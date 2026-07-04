@@ -59,7 +59,7 @@ extra:
   cfe-name-aliases:
     - metal_sdk
   cfe-purls:
-    - pkg:conda/metal-sdk@${{ version }}
+    - pkg:conda/metal-sdk@${{ version }}?channel=conda-forge
     - pkg:pypi/metal-sdk@${{ version }}
   cfe-upstream-repo: https://github.com/getmetal/metal-python
   cfe-upstream-homepage: https://github.com/getmetal/metal-python

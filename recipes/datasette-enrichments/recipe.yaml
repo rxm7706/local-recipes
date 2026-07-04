@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: datasette-enrichments
   cfe-purls:
-    - pkg:conda/datasette-enrichments@${{ version }}
+    - pkg:conda/datasette-enrichments@${{ version }}?channel=conda-forge
     - pkg:pypi/datasette-enrichments@${{ version }}
   cfe-upstream-repo: https://github.com/simonw/datasette-enrichments
   cfe-upstream-homepage: https://github.com/simonw/datasette-enrichments

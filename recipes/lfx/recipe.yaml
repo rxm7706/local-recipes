@@ -106,7 +106,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lfx
   cfe-purls:
-    - pkg:conda/lfx@${{ version }}
+    - pkg:conda/lfx@${{ version }}?channel=conda-forge
     - pkg:pypi/lfx@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://github.com/langflow-ai/langflow

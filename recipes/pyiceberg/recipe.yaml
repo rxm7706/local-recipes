@@ -112,7 +112,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pyiceberg
   cfe-purls:
-    - pkg:conda/pyiceberg@${{ version }}
+    - pkg:conda/pyiceberg@${{ version }}?channel=conda-forge
     - pkg:pypi/pyiceberg@${{ version }}
   cfe-upstream-repo: https://github.com/apache/iceberg-python
   cfe-upstream-homepage: https://iceberg.apache.org/

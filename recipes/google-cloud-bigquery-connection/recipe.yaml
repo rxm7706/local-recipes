@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: google-cloud-bigquery-connection
   cfe-purls:
-    - pkg:conda/google-cloud-bigquery-connection@${{ version }}
+    - pkg:conda/google-cloud-bigquery-connection@${{ version }}?channel=conda-forge
     - pkg:pypi/google-cloud-bigquery-connection@${{ version }}
   cfe-upstream-repo: https://github.com/googleapis/python-bigquery-connection
   cfe-upstream-homepage: https://github.com/googleapis/python-bigquery-connection

@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openmetadata-managed-apis
   cfe-purls:
-    - pkg:conda/openmetadata-managed-apis@${{ version }}
+    - pkg:conda/openmetadata-managed-apis@${{ version }}?channel=conda-forge
     - pkg:pypi/openmetadata-managed-apis@${{ version }}
   cfe-upstream-repo: https://github.com/open-metadata/OpenMetadata
   cfe-upstream-homepage: https://open-metadata.org/

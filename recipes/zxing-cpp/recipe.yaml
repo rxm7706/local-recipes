@@ -68,7 +68,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: zxing-cpp
   cfe-purls:
-    - pkg:conda/zxing-cpp@${{ version }}
+    - pkg:conda/zxing-cpp@${{ version }}?channel=conda-forge
     - pkg:pypi/zxing-cpp@${{ version }}
   cfe-upstream-repo: https://github.com/zxing-cpp/zxing-cpp
   cfe-upstream-homepage: https://github.com/zxing-cpp/zxing-cpp

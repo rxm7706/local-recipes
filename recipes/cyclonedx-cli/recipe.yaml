@@ -76,7 +76,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: CycloneDX/cyclonedx-cli
   cfe-purls:
-    - pkg:conda/cyclonedx-cli@${{ version }}
+    - pkg:conda/cyclonedx-cli@${{ version }}?channel=conda-forge
     - pkg:github/cyclonedx/cyclonedx-cli@v${{ version }}
   cfe-upstream-repo: https://github.com/CycloneDX/cyclonedx-cli
   cfe-upstream-homepage: https://cyclonedx.org/

@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-linear-migrations
   cfe-purls:
-    - pkg:conda/django-linear-migrations@${{ version }}
+    - pkg:conda/django-linear-migrations@${{ version }}?channel=conda-forge
     - pkg:pypi/django-linear-migrations@${{ version }}
   cfe-upstream-repo: https://github.com/adamchainz/django-linear-migrations
   cfe-upstream-homepage: https://github.com/adamchainz/django-linear-migrations

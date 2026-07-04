@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-rangefilter
   cfe-purls:
-    - pkg:conda/wagtail-rangefilter@${{ version }}
+    - pkg:conda/wagtail-rangefilter@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-rangefilter@${{ version }}
   cfe-upstream-repo: https://github.com/wunderweiss/wagtail-rangefilter
   cfe-upstream-homepage: https://github.com/wunderweiss/wagtail-rangefilter

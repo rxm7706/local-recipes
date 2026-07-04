@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: install-jdk
   cfe-purls:
-    - pkg:conda/install-jdk@${{ version }}
+    - pkg:conda/install-jdk@${{ version }}?channel=conda-forge
     - pkg:pypi/install-jdk@${{ version }}
   cfe-upstream-repo: https://github.com/jyksnw/install-jdk
   cfe-upstream-homepage: https://github.com/jyksnw/install-jdk

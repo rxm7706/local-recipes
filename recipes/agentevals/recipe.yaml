@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: agentevals
   cfe-purls:
-    - pkg:conda/agentevals@${{ version }}
+    - pkg:conda/agentevals@${{ version }}?channel=conda-forge
     - pkg:pypi/agentevals@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/agentevals
   cfe-upstream-homepage: https://github.com/langchain-ai/agentevals

@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: detect-test-pollution
   cfe-purls:
-    - pkg:conda/detect-test-pollution@${{ version }}
+    - pkg:conda/detect-test-pollution@${{ version }}?channel=conda-forge
     - pkg:pypi/detect-test-pollution@${{ version }}
   cfe-upstream-repo: https://github.com/asottile/detect-test-pollution
   cfe-upstream-homepage: https://github.com/asottile/detect-test-pollution

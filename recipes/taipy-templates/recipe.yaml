@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: taipy-templates
   cfe-purls:
-    - pkg:conda/taipy-templates@${{ version }}
+    - pkg:conda/taipy-templates@${{ version }}?channel=conda-forge
     - pkg:pypi/taipy-templates@${{ version }}
   cfe-upstream-repo: https://github.com/avaiga/taipy-templates
   cfe-upstream-homepage: https://github.com/Avaiga/taipy

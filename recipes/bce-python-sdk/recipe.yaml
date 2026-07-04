@@ -61,7 +61,7 @@ extra:
   cfe-name-aliases:
     - baidubce
   cfe-purls:
-    - pkg:conda/bce-python-sdk@${{ version }}
+    - pkg:conda/bce-python-sdk@${{ version }}?channel=conda-forge
     - pkg:pypi/bce-python-sdk@${{ version }}
   cfe-upstream-repo: https://github.com/baidubce/bce-sdk-python
   cfe-upstream-homepage: http://bce.baidu.com
@@ -69,11 +69,11 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bce-python-sdk-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-07-04T21:04:05Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success

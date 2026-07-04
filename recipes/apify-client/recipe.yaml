@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: apify-client
   cfe-purls:
-    - pkg:conda/apify-client@${{ version }}
+    - pkg:conda/apify-client@${{ version }}?channel=conda-forge
     - pkg:pypi/apify-client@${{ version }}
   cfe-upstream-repo: https://github.com/apify/apify-client-python
   cfe-upstream-homepage: https://docs.apify.com/api/client/python/
@@ -68,12 +68,11 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apify-client-feedstock
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - impit not yet on conda-forge
-  cfe-last-checked: 2026-06-19T19:30:00Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T21:04:05Z
   cfe-generated-by-version: 8.33.0
   cfe-generated-at-datetime: 2026-06-19T19:30:00Z
   cfe-local-build-status: build-clean-test-blocked

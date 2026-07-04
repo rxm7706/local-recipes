@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: connectrpc
   cfe-purls:
-    - pkg:conda/connectrpc@${{ version }}
+    - pkg:conda/connectrpc@${{ version }}?channel=conda-forge
     - pkg:pypi/connectrpc@${{ version }}
   cfe-upstream-repo: https://github.com/connectrpc/connect-python
   cfe-upstream-homepage: https://github.com/connectrpc/connect-python

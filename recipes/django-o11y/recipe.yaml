@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-o11y
   cfe-purls:
-    - pkg:conda/django-o11y@${{ version }}
+    - pkg:conda/django-o11y@${{ version }}?channel=conda-forge
     - pkg:pypi/django-o11y@${{ version }}
   cfe-upstream-repo: https://github.com/adinhodovic/django-o11y
   cfe-upstream-homepage: https://github.com/adinhodovic/django-o11y

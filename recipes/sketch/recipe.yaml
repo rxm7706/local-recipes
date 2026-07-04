@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: sketch
   cfe-purls:
-    - pkg:conda/sketch@${{ version }}
+    - pkg:conda/sketch@${{ version }}?channel=conda-forge
     - pkg:pypi/sketch@${{ version }}
   cfe-upstream-repo: https://github.com/approximatelabs/sketch
   cfe-upstream-homepage: https://github.com/approximatelabs/sketch

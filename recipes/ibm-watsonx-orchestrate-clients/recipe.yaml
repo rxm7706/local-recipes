@@ -65,7 +65,7 @@ extra:
   cfe-name-aliases:
     - ibm_watsonx_orchestrate_clients
   cfe-purls:
-    - pkg:conda/ibm-watsonx-orchestrate-clients@${{ version }}
+    - pkg:conda/ibm-watsonx-orchestrate-clients@${{ version }}?channel=conda-forge
     - pkg:pypi/ibm-watsonx-orchestrate-clients@${{ version }}
   cfe-upstream-repo: https://github.com/IBM/ibm-watsonx-orchestrate-adk
   cfe-upstream-homepage: https://pypi.org/project/ibm-watsonx-orchestrate-clients/
@@ -73,12 +73,11 @@ extra:
   cfe-source-kind: github-tag:pypi-sdist-metadata-only-G54
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ibm-watsonx-orchestrate-clients-feedstock
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - ibm-watsonx-orchestrate-core not yet on conda-forge
-  cfe-last-checked: 2026-06-24T09:58:17Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T21:06:13Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success

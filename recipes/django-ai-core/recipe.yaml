@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-ai-core
   cfe-purls:
-    - pkg:conda/django-ai-core@${{ version }}
+    - pkg:conda/django-ai-core@${{ version }}?channel=conda-forge
     - pkg:pypi/django-ai-core@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail/django-ai-core
   cfe-upstream-homepage: https://github.com/wagtail/django-ai-core

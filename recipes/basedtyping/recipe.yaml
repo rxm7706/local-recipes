@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: basedtyping
   cfe-purls:
-    - pkg:conda/basedtyping@${{ version }}
+    - pkg:conda/basedtyping@${{ version }}?channel=conda-forge
     - pkg:pypi/basedtyping@${{ version }}
   cfe-upstream-repo: https://github.com/KotlinIsland/basedtyping
   cfe-upstream-homepage: https://github.com/KotlinIsland/basedtyping

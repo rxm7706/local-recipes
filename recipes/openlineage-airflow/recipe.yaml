@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openlineage-airflow
   cfe-purls:
-    - pkg:conda/openlineage-airflow@${{ version }}
+    - pkg:conda/openlineage-airflow@${{ version }}?channel=conda-forge
     - pkg:pypi/openlineage-airflow@${{ version }}
   cfe-upstream-repo: https://github.com/OpenLineage/OpenLineage
   cfe-upstream-homepage: https://github.com/OpenLineage/OpenLineage

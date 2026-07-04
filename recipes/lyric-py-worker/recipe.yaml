@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lyric-py-worker
   cfe-purls:
-    - pkg:conda/lyric-py-worker@${{ version }}
+    - pkg:conda/lyric-py-worker@${{ version }}?channel=conda-forge
     - pkg:pypi/lyric-py-worker@${{ version }}
   cfe-upstream-repo: https://github.com/fangyinc/lyric
   cfe-upstream-homepage: https://github.com/fangyinc/lyric
@@ -62,12 +62,12 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lyric-py-worker-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33766
-  cfe-last-checked: 2026-06-27T02:38:06Z
+  cfe-last-checked: 2026-07-04T21:06:13Z
   cfe-generated-by-version: 8.55.0
   cfe-generated-at-datetime: 2026-06-27T02:38:06Z
   cfe-local-build-status: success

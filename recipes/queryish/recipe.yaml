@@ -51,7 +51,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: queryish
   cfe-purls:
-    - pkg:conda/queryish@${{ version }}
+    - pkg:conda/queryish@${{ version }}?channel=conda-forge
     - pkg:pypi/queryish@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail/queryish
   cfe-upstream-homepage: https://github.com/wagtail/queryish

@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-sesame
   cfe-purls:
-    - pkg:conda/django-sesame@${{ version }}
+    - pkg:conda/django-sesame@${{ version }}?channel=conda-forge
     - pkg:pypi/django-sesame@${{ version }}
   cfe-upstream-repo: https://github.com/aaugustin/django-sesame
   cfe-upstream-homepage: https://github.com/aaugustin/django-sesame

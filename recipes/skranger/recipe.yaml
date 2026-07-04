@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: skranger
   cfe-purls:
-    - pkg:conda/skranger@${{ version }}
+    - pkg:conda/skranger@${{ version }}?channel=conda-forge
     - pkg:pypi/skranger@${{ version }}
   cfe-upstream-repo: https://github.com/crflynn/skranger
   cfe-upstream-homepage: https://github.com/crflynn/skranger

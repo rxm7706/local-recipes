@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: intake-dataframe-catalog
   cfe-purls:
-    - pkg:conda/intake-dataframe-catalog@${{ version }}
+    - pkg:conda/intake-dataframe-catalog@${{ version }}?channel=conda-forge
     - pkg:pypi/intake-dataframe-catalog@${{ version }}
   cfe-upstream-repo: https://github.com/ACCESS-NRI/intake-dataframe-catalog
   cfe-upstream-homepage: https://github.com/ACCESS-NRI/intake-dataframe-catalog

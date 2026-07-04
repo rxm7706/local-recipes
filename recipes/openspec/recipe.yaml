@@ -68,7 +68,7 @@ extra:
   cfe-name-aliases:
     - openspec
   cfe-purls:
-    - pkg:conda/openspec@${{ version }}
+    - pkg:conda/openspec@${{ version }}?channel=conda-forge
     - pkg:npm/%40fission-ai/openspec@${{ version }}
   cfe-upstream-repo: https://github.com/Fission-AI/OpenSpec
   cfe-upstream-homepage: https://github.com/Fission-AI/OpenSpec

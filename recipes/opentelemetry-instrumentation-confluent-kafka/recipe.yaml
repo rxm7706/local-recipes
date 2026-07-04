@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opentelemetry-instrumentation-confluent-kafka
   cfe-purls:
-    - pkg:conda/opentelemetry-instrumentation-confluent-kafka@${{ version }}
+    - pkg:conda/opentelemetry-instrumentation-confluent-kafka@${{ version }}?channel=conda-forge
     - pkg:pypi/opentelemetry-instrumentation-confluent-kafka@${{ version }}
   cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
   cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib

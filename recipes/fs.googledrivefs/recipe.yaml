@@ -55,8 +55,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: fs.googledrivefs
   cfe-purls:
-    - pkg:conda/fs.googledrivefs@${{ version }}
-    - pkg:pypi/fs-googledrivefs@${{ version }}
+    - pkg:conda/fs.googledrivefs@${{ version }}?channel=conda-forge
+    - pkg:pypi/fs.googledrivefs@${{ version }}
   cfe-upstream-repo: https://github.com/rkhwaja/fs.googledrivefs
   cfe-upstream-homepage: https://github.com/rkhwaja/fs.googledrivefs
   cfe-import-names: [fs.googledrivefs]

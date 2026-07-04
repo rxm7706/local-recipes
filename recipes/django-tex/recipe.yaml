@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-tex
   cfe-purls:
-    - pkg:conda/django-tex@${{ version }}
+    - pkg:conda/django-tex@${{ version }}?channel=conda-forge
     - pkg:pypi/django-tex@${{ version }}
   cfe-upstream-repo: https://github.com/weinbusch/django-tex
   cfe-upstream-homepage: https://github.com/weinbusch/django-tex

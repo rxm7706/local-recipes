@@ -60,7 +60,7 @@ extra:
   cfe-name-aliases:
     - llm_sandbox
   cfe-purls:
-    - pkg:conda/llm-sandbox@${{ version }}
+    - pkg:conda/llm-sandbox@${{ version }}?channel=conda-forge
     - pkg:pypi/llm-sandbox@${{ version }}
   cfe-upstream-repo: https://github.com/vndee/llm-sandbox
   cfe-upstream-homepage: https://vndee.github.io/llm-sandbox/

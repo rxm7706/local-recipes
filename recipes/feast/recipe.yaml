@@ -91,7 +91,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: feast
   cfe-purls:
-    - pkg:conda/feast@${{ version }}
+    - pkg:conda/feast@${{ version }}?channel=conda-forge
     - pkg:pypi/feast@${{ version }}
   cfe-upstream-repo: https://github.com/feast-dev/feast
   cfe-upstream-homepage: https://github.com/feast-dev/feast

@@ -74,7 +74,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: gibr
   cfe-purls:
-    - pkg:conda/gibr@${{ version }}
+    - pkg:conda/gibr@${{ version }}?channel=conda-forge
     - pkg:pypi/gibr@${{ version }}
   cfe-upstream-repo: https://github.com/ytreister/gibr
   cfe-upstream-homepage: https://github.com/ytreister/gibr

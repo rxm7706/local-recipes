@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: negspacy
   cfe-purls:
-    - pkg:conda/negspacy@${{ version }}
+    - pkg:conda/negspacy@${{ version }}?channel=conda-forge
     - pkg:pypi/negspacy@${{ version }}
   cfe-upstream-repo: https://github.com/jenojp/negspacy
   cfe-upstream-homepage: https://github.com/jenojp/negspacy
@@ -62,9 +62,9 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/negspacy-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-1.1.0, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.1.0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-07-04T22:24:52Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success

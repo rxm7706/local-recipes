@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openevals
   cfe-purls:
-    - pkg:conda/openevals@${{ version }}
+    - pkg:conda/openevals@${{ version }}?channel=conda-forge
     - pkg:pypi/openevals@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/openevals
   cfe-upstream-homepage: https://github.com/langchain-ai/openevals

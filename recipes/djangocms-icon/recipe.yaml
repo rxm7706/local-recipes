@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: djangocms-icon
   cfe-purls:
-    - pkg:conda/djangocms-icon@${{ version }}
+    - pkg:conda/djangocms-icon@${{ version }}?channel=conda-forge
     - pkg:pypi/djangocms-icon@${{ version }}
   cfe-upstream-repo: https://github.com/django-cms/djangocms-icon
   cfe-upstream-homepage: https://github.com/django-cms/djangocms-icon

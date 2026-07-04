@@ -89,7 +89,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: shapash
   cfe-purls:
-    - pkg:conda/shapash@${{ version }}
+    - pkg:conda/shapash@${{ version }}?channel=conda-forge
     - pkg:pypi/shapash@${{ version }}
   cfe-upstream-repo: https://github.com/MAIF/shapash
   cfe-upstream-homepage: https://github.com/MAIF/shapash
@@ -99,9 +99,9 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/shapash-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-2.9.0, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [version-bump-to-2.9.0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-07-04T22:24:52Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success

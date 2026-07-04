@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pyobjc-framework-applicationservices
   cfe-purls:
-    - pkg:conda/pyobjc-framework-applicationservices@${{ version }}
+    - pkg:conda/pyobjc-framework-applicationservices@${{ version }}?channel=conda-forge
     - pkg:pypi/pyobjc-framework-applicationservices@${{ version }}
   cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
   cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc

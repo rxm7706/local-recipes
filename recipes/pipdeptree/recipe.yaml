@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pipdeptree
   cfe-purls:
-    - pkg:conda/pipdeptree@${{ version }}
+    - pkg:conda/pipdeptree@${{ version }}?channel=conda-forge
     - pkg:pypi/pipdeptree@${{ version }}
   cfe-upstream-repo: https://github.com/tox-dev/pipdeptree
   cfe-upstream-homepage: https://github.com/tox-dev/pipdeptree

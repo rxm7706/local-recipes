@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: google-cloud-functions
   cfe-purls:
-    - pkg:conda/google-cloud-functions@${{ version }}
+    - pkg:conda/google-cloud-functions@${{ version }}?channel=conda-forge
     - pkg:pypi/google-cloud-functions@${{ version }}
   cfe-upstream-repo: https://github.com/googleapis/google-cloud-python
   cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python

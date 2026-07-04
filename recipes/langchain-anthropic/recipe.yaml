@@ -63,7 +63,7 @@ extra:
   cfe-name-aliases:
     - langchain_anthropic
   cfe-purls:
-    - pkg:conda/langchain-anthropic@${{ version }}
+    - pkg:conda/langchain-anthropic@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-anthropic@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain
   cfe-upstream-homepage: https://docs.langchain.com/oss/python/integrations/providers/anthropic

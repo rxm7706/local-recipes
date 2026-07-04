@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pytest-deadfixtures
   cfe-purls:
-    - pkg:conda/pytest-deadfixtures@${{ version }}
+    - pkg:conda/pytest-deadfixtures@${{ version }}?channel=conda-forge
     - pkg:pypi/pytest-deadfixtures@${{ version }}
   cfe-upstream-repo: https://github.com/jllorencetti/pytest-deadfixtures
   cfe-upstream-homepage: https://github.com/jllorencetti/pytest-deadfixtures

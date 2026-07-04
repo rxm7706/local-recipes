@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openlineage-dbt
   cfe-purls:
-    - pkg:conda/openlineage-dbt@${{ version }}
+    - pkg:conda/openlineage-dbt@${{ version }}?channel=conda-forge
     - pkg:pypi/openlineage-dbt@${{ version }}
   cfe-upstream-repo: https://github.com/OpenLineage/OpenLineage
   cfe-upstream-homepage: https://github.com/OpenLineage/OpenLineage

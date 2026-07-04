@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-trash
   cfe-purls:
-    - pkg:conda/wagtail-trash@${{ version }}
+    - pkg:conda/wagtail-trash@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-trash@${{ version }}
   cfe-upstream-repo: https://github.com/Frojd/wagtail-trash
   cfe-upstream-homepage: https://github.com/Frojd/wagtail-trash

@@ -73,7 +73,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: ironcalc
   cfe-purls:
-    - pkg:conda/ironcalc@${{ version }}
+    - pkg:conda/ironcalc@${{ version }}?channel=conda-forge
     - pkg:pypi/ironcalc@${{ version }}
   cfe-upstream-repo: https://github.com/ironcalc/ironcalc
   cfe-upstream-homepage: https://www.ironcalc.com/

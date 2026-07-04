@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: behave-django
   cfe-purls:
-    - pkg:conda/behave-django@${{ version }}
+    - pkg:conda/behave-django@${{ version }}?channel=conda-forge
     - pkg:pypi/behave-django@${{ version }}
   cfe-upstream-repo: https://github.com/behave/behave-django
   cfe-upstream-homepage: https://github.com/behave/behave-django

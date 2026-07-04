@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: golang
   cfe-upstream-name: github.com/nex-crm/wuphf
   cfe-purls:
-    - pkg:conda/wuphf@${{ version }}
+    - pkg:conda/wuphf@${{ version }}?channel=conda-forge
     - pkg:golang/github.com/nex-crm/wuphf@${{ version }}
   cfe-upstream-repo: https://github.com/nex-crm/wuphf
   cfe-upstream-homepage: https://wuphf.team/

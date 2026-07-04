@@ -229,7 +229,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: cookiecutter-django
   cfe-purls:
-    - pkg:conda/cookiecutter-django-core@${{ version }}
+    - pkg:conda/cookiecutter-django-core@${{ version }}?channel=conda-forge
     - pkg:github/cookiecutter-django@${{ version }}
   cfe-upstream-repo: https://github.com/cookiecutter/cookiecutter-django
   cfe-upstream-homepage: https://github.com/cookiecutter/cookiecutter-django

@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: MasterSergius/acachecontrol
   cfe-purls:
-    - pkg:conda/acachecontrol@${{ version }}
+    - pkg:conda/acachecontrol@${{ version }}?channel=conda-forge
     - pkg:pypi/acachecontrol@${{ version }}
   cfe-upstream-repo: https://github.com/MasterSergius/acachecontrol
   cfe-upstream-homepage: https://github.com/MasterSergius/acachecontrol

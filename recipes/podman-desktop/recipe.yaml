@@ -115,7 +115,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: podman-desktop/podman-desktop
   cfe-purls:
-    - pkg:conda/podman-desktop@${{ version }}
+    - pkg:conda/podman-desktop@${{ version }}?channel=conda-forge
     - pkg:github/podman-desktop/podman-desktop@v${{ version }}
   cfe-upstream-repo: https://github.com/podman-desktop/podman-desktop
   cfe-upstream-homepage: https://podman-desktop.io/
