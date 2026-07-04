@@ -138,4 +138,5 @@ extra:
 #    # pip check for the same reason (commands: #- pip check is commented out).
 #    # Durable fix is in django-cryptography-django5-feedstock (sed the real
 #    # version into the wheel METADATA, per G24); no in-recipe fix possible.
+#    # Filed: https://github.com/conda-forge/django-cryptography-django5-feedstock/issues/6 (2026-07-04).
 ####
