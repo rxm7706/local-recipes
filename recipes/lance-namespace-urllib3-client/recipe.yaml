@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.7.0"
+  version: "0.9.0"
 
 package:
   name: lance-namespace-urllib3-client
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/l/lance-namespace-urllib3-client/lance_namespace_urllib3_client-${{ version }}.tar.gz
-  sha256: e1384d4d0c6b1de4b344bb709ea53bd9cef6f471b864b1ee8968aa89698a30c5
+  sha256: cf796fa5307fa4dde91fe4bec2af28b90ba79191852d4394e8fe44276538e40f
 
 build:
   number: 0
@@ -48,3 +48,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lance-namespace-urllib3-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lance-namespace-urllib3-client
+  cfe-purls:
+    - pkg:conda/lance-namespace-urllib3-client@${{ version }}
+    - pkg:pypi/lance-namespace-urllib3-client@${{ version }}
+  cfe-upstream-repo: 
+  cfe-upstream-homepage: 
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lance-namespace-urllib3-client-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.9.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-generated-by-version: 8.67.0
+  cfe-generated-at-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
+####

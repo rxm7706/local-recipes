@@ -3,39 +3,48 @@ schema_version: 1
 
 context:
   name: openlineage-airflow
-  version: "1.35.0"
+  version: "1.41.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openlineage_airflow-${{ version }}.tar.gz
-  sha256: 04088fd06eaeacfdadc75de17bc91cee293e7f7e8f80ea35c62b4ee26d20f86e
+  url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
+  sha256: fb188ea7ea7316900f5bb67959d95070255d5d8f69d8ba426dc9719003267780
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - cd integration/airflow
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - uv-build >=0.9.4,<0.10.0
   run:
     - python >=${{ python_min }},<4.0
     - attrs >=20.0
-    - openlineage-integration-common==${{ version }}
-    - openlineage-python==${{ version }}
+    - openlineage-integration-common ==1.40.0
+    - openlineage-sql ==1.40.0
+    - openlineage-python ==1.40.0
+
+  run_constraints:
+    - apache-airflow >=2.3
 
 tests:
-  - python:
-      imports:
-        - openlineage.airflow
-        - openlineage.airflow.extractors
-      pip_check: true
-      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - apache-airflow >=2.3
+        - pip
+    script:
+      - python -c "import openlineage.airflow, openlineage.airflow.extractors"
+      - pip check
 
 about:
   summary: OpenLineage integration with Airflow
@@ -46,7 +55,38 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
-    - millsks
-    - conda-forge/openlineage-integration-common
-    - conda-forge/openlineage-sql
-    - conda-forge/openlineage-python
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openlineage-airflow
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openlineage-airflow
+  cfe-purls:
+    - pkg:conda/openlineage-airflow@${{ version }}
+    - pkg:pypi/openlineage-airflow@${{ version }}
+  cfe-upstream-repo: https://github.com/OpenLineage/OpenLineage
+  cfe-upstream-homepage: https://github.com/OpenLineage/OpenLineage
+  cfe-import-names: [openlineage.airflow]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openlineage-airflow-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.41.0]
+  cfe-forge-blocker-list:
+    - pins openlineage-{integration-common,python,sql} ==1.40.0 exactly; cf never built 1.40.0 (feedstock jumped 1.36->1.50) — and upstream SUNSET this package at 1.41 in favor of apache-airflow-providers-openlineage
+  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-generated-by-version: 8.67.0
+  cfe-generated-at-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
+# Header:
+#    # upstream deprecation: airflow integration moved into apache-airflow-providers-openlineage;
+#    # consider retiring the feedstock rather than chasing 1.41.
+####

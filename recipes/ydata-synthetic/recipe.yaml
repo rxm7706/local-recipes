@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: ydata-synthetic
-  version: "2.0.0"
+  version: "2.0.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://github.com/ydataai/ydata-synthetic/archive/${{ version }}.tar.gz
-  sha256: 101b7400e984f6f9c71eadf97772bd6a5c9cf6b5a3c4be505d1c843847d400b2
+  url: https://pypi.org/packages/source/y/ydata-synthetic/ydata_synthetic-${{ version }}.tar.gz
+  sha256: bbb37d8d1cd079a74b50587885274f30a9f603d147d64761408dfa420634244c
 
 build:
   number: 0
@@ -21,7 +21,10 @@ build:
     #- echo "__version__ = '${{ version }}'" > version.py
     #- export $SRC_DIR/VERSION=${{ version }}
     #- ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-    -  script: SETUPTOOLS_SCM_PRETEND_VERSION=${{ version }} ${{ PYTHON }} -m pip install . -vvv --no-deps --no-build-isolation
+    env:
+      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
+    content:
+      - ${{ PYTHON }} -m pip install . -vvv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -63,3 +66,35 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ydata-synthetic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ydata-synthetic
+  cfe-purls:
+    - pkg:conda/ydata-synthetic@${{ version }}
+    - pkg:pypi/ydata-synthetic@${{ version }}
+  cfe-upstream-repo: 
+  cfe-upstream-homepage: 
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ydata-synthetic-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-2.0.1, source-github-to-pypi-sdist, script-block-repair]
+  cfe-forge-blocker-list:
+    - ydata-sdk >=1.1.4 not on cf (net-new; upstream 2.0.x pivoted onto it)
+  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-generated-by-version: 8.67.0
+  cfe-generated-at-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
+####

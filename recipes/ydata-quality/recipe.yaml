@@ -48,3 +48,37 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ydata-quality
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ydata-quality
+  cfe-purls:
+    - pkg:conda/ydata-quality@${{ version }}
+    - pkg:pypi/ydata-quality@${{ version }}
+  cfe-upstream-repo: https://github.com/ydataai/ydata-quality
+  cfe-upstream-homepage: https://github.com/ydataai/ydata-quality
+  cfe-import-names: [ydata_quality]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ydata-quality-feedstock
+  cfe-forge-recipe-updates-needed: [none]
+  cfe-forge-blocker-list:
+    - upstream 0.1.2 pins Requires-Python >=3.7,<3.9 — BELOW the cf floor (3.10); unshippable until upstream modernizes (dormant)
+  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-generated-by-version: 8.67.0
+  cfe-generated-at-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
+# Header:
+#    # TERMINAL: python cap below cf floor; tracker issue 088 closed as unshippable.
+####

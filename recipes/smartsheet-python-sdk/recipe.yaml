@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "3.5.3"
+  version: "4.1.0"
 
 package:
   name: smartsheet-python-sdk
@@ -10,9 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/s/smartsheet-python-sdk/smartsheet_python_sdk-${{ version }}.tar.gz
-  sha256: 2ce6ed7a2e69dc76273fb69ccacb8b6f2bd57aa0b5b72dbff9b8bbdc1e5303e8
-  patches:
-    - setup.py.patch
+  sha256: 2b1d524ffe34897d3480726a8cf7f63290ef6139deb694ff2b302606c95ca0e9
 
 build:
   noarch: python
@@ -23,7 +21,8 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - setuptools-scm >=7.0,<8
-    - setuptools
+    - hatchling
+    - hatch-vcs
     - six >=1.9
     - pip
   run:
@@ -75,12 +74,12 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/smartsheet-python-sdk-feedstock
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
-  cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+ []
+  cfe-last-checked: 2026-07-03T22:07:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-07-03T22:07:06Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
