@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.474"
+  version: "1.0.514"
 
 package:
   name: dbt-protos
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/dbt-protos/dbt_protos-${{ version }}.tar.gz
-  sha256: 03e036eb93537d3055cfb0dd8c7d2c61991ee1c2c2f30d3c143d6bb91faf796b
+  sha256: 4429a8b0675140467206aaaf9d9468e619a9697f443e4b3921f297d01e4a77a0
 
 build:
   number: 0
@@ -65,13 +65,13 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-protos-feedstock
-  cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T10:33:34Z
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.0.514]
+ []
+  cfe-last-checked: 2026-07-03T22:07:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T10:33:34Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T10:34:00Z
+  cfe-local-build-datetime: 2026-07-03T22:07:06Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

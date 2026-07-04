@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.10.1"
+  version: "1.11.7"
 
 package:
   name: microsoft-kiota-bundle
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/m/microsoft-kiota-bundle/microsoft_kiota_bundle-${{ version }}.tar.gz
-  sha256: 76975eed76fb01fcdd760a9968552e629292fc0b7a2c25b7ffd6c697ebdd0c99
+  sha256: 54a4359f711706eda92a051c5a4d0294d92d4010d5e5dd3994bff001c4695769
 
 build:
   number: 0
@@ -22,6 +22,7 @@ requirements:
     - python ${{ python_min }}.*
     - poetry-core
     - pip
+    - flit-core
   run:
     - python >=${{ python_min }}
     - microsoft-kiota-abstractions ${{ version }}.*
@@ -51,3 +52,35 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: microsoft-kiota-bundle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: microsoft-kiota-bundle
+  cfe-purls:
+    - pkg:conda/microsoft-kiota-bundle@${{ version }}
+    - pkg:pypi/microsoft-kiota-bundle@${{ version }}
+  cfe-upstream-repo: 
+  cfe-upstream-homepage: 
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/microsoft-kiota-bundle-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.11.7]
+  cfe-forge-blocker-list:
+    - microsoft-kiota-* sibling family must bump to 1.11.7 first (bundle pins siblings exact; cf at 1.10.1) — candidate future wave
+  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-generated-by-version: 8.67.0
+  cfe-generated-at-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
+####

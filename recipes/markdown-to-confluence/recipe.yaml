@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.6.0"
+  version: "0.6.1"
 
 package:
   name: markdown-to-confluence
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/m/markdown-to-confluence/markdown_to_confluence-${{ version }}.tar.gz
-  sha256: f821a4315769c6152b0a80988f4997c81dabb213da830e6a210b5acbaa428225
+  sha256: 2f5cc303310285a3089be0009a7688a5d2386fecb13542b9ae22d22a5ef60e45
 
 build:
   number: 0
@@ -80,13 +80,13 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/markdown-to-confluence-feedstock
-  cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.6.1]
+ []
+  cfe-last-checked: 2026-07-03T22:07:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-07-03T22:07:06Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
