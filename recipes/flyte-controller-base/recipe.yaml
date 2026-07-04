@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: flyte_controller_base
   cfe-purls:
-    - pkg:conda/flyte-controller-base@${{ version }}
+    - pkg:conda/flyte-controller-base@${{ version }}?channel=conda-forge
     - pkg:pypi/flyte-controller-base@${{ version }}
   cfe-upstream-repo: https://github.com/flyteorg/flyte-sdk
   cfe-upstream-homepage: https://github.com/flyteorg/flyte

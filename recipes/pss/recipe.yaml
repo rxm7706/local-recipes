@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pss
   cfe-purls:
-    - pkg:conda/pss@${{ version }}
+    - pkg:conda/pss@${{ version }}?channel=conda-forge
     - pkg:pypi/pss@${{ version }}
   cfe-upstream-repo: https://github.com/eliben/pss
   cfe-upstream-homepage: https://github.com/eliben/pss

@@ -130,7 +130,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: cyclonedx-python-lib
   cfe-purls:
-    - pkg:conda/cyclonedx-python-lib@${{ version }}
+    - pkg:conda/cyclonedx-python-lib@${{ version }}?channel=conda-forge
     - pkg:pypi/cyclonedx-python-lib@${{ version }}
   cfe-upstream-repo: https://github.com/CycloneDX/cyclonedx-python-lib
   cfe-upstream-homepage: https://github.com/CycloneDX/cyclonedx-python-lib

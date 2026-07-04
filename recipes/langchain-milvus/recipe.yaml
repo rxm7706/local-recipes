@@ -63,7 +63,7 @@ extra:
   cfe-name-aliases:
     - langchain_milvus
   cfe-purls:
-    - pkg:conda/langchain-milvus@${{ version }}
+    - pkg:conda/langchain-milvus@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-milvus@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-milvus
   cfe-upstream-homepage: https://pypi.org/project/langchain-milvus/

@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langgraph-cli
   cfe-purls:
-    - pkg:conda/langgraph-cli@${{ version }}
+    - pkg:conda/langgraph-cli@${{ version }}?channel=conda-forge
     - pkg:pypi/langgraph-cli@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langgraph
   cfe-upstream-homepage: https://github.com/langchain-ai/langgraph

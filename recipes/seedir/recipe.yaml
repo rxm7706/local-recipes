@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: seedir
   cfe-purls:
-    - pkg:conda/seedir@${{ version }}
+    - pkg:conda/seedir@${{ version }}?channel=conda-forge
     - pkg:pypi/seedir@${{ version }}
   cfe-upstream-repo: https://github.com/earnestt1234/seedir
   cfe-upstream-homepage: https://github.com/earnestt1234/seedir

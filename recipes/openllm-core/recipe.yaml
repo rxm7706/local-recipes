@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openllm-core
   cfe-purls:
-    - pkg:conda/openllm-core@${{ version }}
+    - pkg:conda/openllm-core@${{ version }}?channel=conda-forge
     - pkg:pypi/openllm-core@${{ version }}
   cfe-upstream-repo: https://github.com/bentoml/OpenLLM
   cfe-upstream-homepage: https://github.com/bentoml/OpenLLM

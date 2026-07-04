@@ -61,7 +61,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: redshift-connector
   cfe-purls:
-    - pkg:conda/redshift_connector@${{ version }}
+    - pkg:conda/redshift_connector@${{ version }}?channel=conda-forge
     - pkg:pypi/redshift-connector@${{ version }}
   cfe-upstream-repo: https://github.com/aws/amazon-redshift-python-driver
   cfe-upstream-homepage: https://github.com/aws/amazon-redshift-python-driver

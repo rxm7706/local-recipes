@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: json-stream
   cfe-purls:
-    - pkg:conda/json_stream@${{ version }}
+    - pkg:conda/json_stream@${{ version }}?channel=conda-forge
     - pkg:pypi/json-stream@${{ version }}
   cfe-upstream-repo: https://github.com/daggaz/json-stream
   cfe-upstream-homepage: https://github.com/daggaz/json-stream

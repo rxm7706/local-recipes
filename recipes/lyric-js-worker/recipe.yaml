@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lyric-js-worker
   cfe-purls:
-    - pkg:conda/lyric-js-worker@${{ version }}
+    - pkg:conda/lyric-js-worker@${{ version }}?channel=conda-forge
     - pkg:pypi/lyric-js-worker@${{ version }}
   cfe-upstream-repo: https://github.com/fangyinc/lyric
   cfe-upstream-homepage: https://github.com/fangyinc/lyric

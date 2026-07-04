@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-plotly
   cfe-purls:
-    - pkg:conda/wagtail-plotly@${{ version }}
+    - pkg:conda/wagtail-plotly@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-plotly@${{ version }}
   cfe-upstream-repo: https://github.com/cursive-works/wagtail-plotly
   cfe-upstream-homepage: https://github.com/cursive-works/wagtail-plotly

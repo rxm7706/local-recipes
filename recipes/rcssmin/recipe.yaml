@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: rcssmin
   cfe-purls:
-    - pkg:conda/rcssmin@${{ version }}
+    - pkg:conda/rcssmin@${{ version }}?channel=conda-forge
     - pkg:pypi/rcssmin@${{ version }}
   cfe-upstream-repo: https://github.com/ndparker/rcssmin
   cfe-upstream-homepage: https://github.com/ndparker/rcssmin

@@ -82,7 +82,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: agent-lifecycle-toolkit
   cfe-purls:
-    - pkg:conda/agent-lifecycle-toolkit@${{ version }}
+    - pkg:conda/agent-lifecycle-toolkit@${{ version }}?channel=conda-forge
     - pkg:pypi/agent-lifecycle-toolkit@${{ version }}
   cfe-upstream-repo: https://github.com/AgentToolkit/agent-lifecycle-toolkit
   cfe-upstream-homepage: https://altk.ai/

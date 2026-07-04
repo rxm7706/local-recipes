@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-yugabytedb
   cfe-purls:
-    - pkg:conda/django-yugabytedb@${{ version }}
+    - pkg:conda/django-yugabytedb@${{ version }}?channel=conda-forge
     - pkg:pypi/django-yugabytedb@${{ version }}
   cfe-upstream-repo: https://github.com/yugabyte/yb-django
   cfe-upstream-homepage: https://www.yugabyte.com/

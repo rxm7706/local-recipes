@@ -70,7 +70,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: antlr4-tools
   cfe-purls:
-    - pkg:conda/antlr4-tools@${{ version }}
+    - pkg:conda/antlr4-tools@${{ version }}?channel=conda-forge
     - pkg:pypi/antlr4-tools@${{ version }}
   cfe-upstream-repo: https://github.com/antlr/antlr4-tools
   cfe-upstream-homepage: http://www.antlr.org

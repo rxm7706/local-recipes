@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-approval
   cfe-purls:
-    - pkg:conda/django-approval@${{ version }}
+    - pkg:conda/django-approval@${{ version }}?channel=conda-forge
     - pkg:pypi/django-approval@${{ version }}
   cfe-upstream-repo: https://github.com/artscoop/django-approval
   cfe-upstream-homepage: https://github.com/artscoop/django-approval

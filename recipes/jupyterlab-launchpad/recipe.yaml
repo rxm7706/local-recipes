@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: jupyterlab-launchpad
   cfe-purls:
-    - pkg:conda/jupyterlab-launchpad@${{ version }}
+    - pkg:conda/jupyterlab-launchpad@${{ version }}?channel=conda-forge
     - pkg:pypi/jupyterlab-launchpad@${{ version }}
   cfe-upstream-repo: https://github.com/nebari-dev/jupyterlab-launchpad
   cfe-upstream-homepage: https://github.com/nebari-dev/jupyterlab-launchpad

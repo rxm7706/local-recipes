@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-survey-and-report
   cfe-purls:
-    - pkg:conda/django-survey-and-report@${{ version }}
+    - pkg:conda/django-survey-and-report@${{ version }}?channel=conda-forge
     - pkg:pypi/django-survey-and-report@${{ version }}
   cfe-upstream-repo: https://github.com/Pierre-Sassoulas/django-survey
   cfe-upstream-homepage: https://github.com/Pierre-Sassoulas/django-survey

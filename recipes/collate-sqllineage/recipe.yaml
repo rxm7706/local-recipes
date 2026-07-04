@@ -74,7 +74,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: collate-sqllineage
   cfe-purls:
-    - pkg:conda/collate-sqllineage@${{ version }}
+    - pkg:conda/collate-sqllineage@${{ version }}?channel=conda-forge
     - pkg:pypi/collate-sqllineage@${{ version }}
   cfe-upstream-repo: https://github.com/open-metadata/openmetadata-sqllineage
   cfe-upstream-homepage: https://open-metadata.org

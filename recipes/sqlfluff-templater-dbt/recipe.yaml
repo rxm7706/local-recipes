@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: sqlfluff-templater-dbt
   cfe-purls:
-    - pkg:conda/sqlfluff-templater-dbt@${{ version }}
+    - pkg:conda/sqlfluff-templater-dbt@${{ version }}?channel=conda-forge
     - pkg:pypi/sqlfluff-templater-dbt@${{ version }}
   cfe-upstream-repo: https://github.com/sqlfluff/sqlfluff
   cfe-upstream-homepage: https://www.sqlfluff.com

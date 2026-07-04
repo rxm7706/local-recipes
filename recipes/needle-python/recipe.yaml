@@ -60,7 +60,7 @@ extra:
   cfe-name-aliases:
     - needle
   cfe-purls:
-    - pkg:conda/needle-python@${{ version }}
+    - pkg:conda/needle-python@${{ version }}?channel=conda-forge
     - pkg:pypi/needle-python@${{ version }}
   cfe-upstream-repo: https://github.com/oeken/needle-python
   cfe-upstream-homepage: https://needle.app

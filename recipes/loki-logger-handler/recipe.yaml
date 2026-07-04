@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: loki-logger-handler
   cfe-purls:
-    - pkg:conda/loki-logger-handler@${{ version }}
+    - pkg:conda/loki-logger-handler@${{ version }}?channel=conda-forge
     - pkg:pypi/loki-logger-handler@${{ version }}
   cfe-upstream-repo: https://github.com/xente/loki-logger-handler
   cfe-upstream-homepage: https://github.com/xente/loki-logger-handler

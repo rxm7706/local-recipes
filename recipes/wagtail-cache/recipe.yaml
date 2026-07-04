@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-cache
   cfe-purls:
-    - pkg:conda/wagtail-cache@${{ version }}
+    - pkg:conda/wagtail-cache@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-cache@${{ version }}
   cfe-upstream-repo: https://github.com/coderedcorp/wagtail-cache
   cfe-upstream-homepage: https://github.com/coderedcorp/wagtail-cache

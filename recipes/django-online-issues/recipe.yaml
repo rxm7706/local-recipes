@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-online-issues
   cfe-purls:
-    - pkg:conda/django-online-issues@${{ version }}
+    - pkg:conda/django-online-issues@${{ version }}?channel=conda-forge
     - pkg:pypi/django-online-issues@${{ version }}
   cfe-upstream-repo: https://github.com/saxix/django-issues
   cfe-upstream-homepage: https://github.com/saxix/django-issues

@@ -82,7 +82,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: cassio
   cfe-purls:
-    - pkg:conda/cassio@${{ version }}
+    - pkg:conda/cassio@${{ version }}?channel=conda-forge
     - pkg:pypi/cassio@${{ version }}
   cfe-upstream-repo: https://github.com/CassioML/cassio
   cfe-upstream-homepage: https://cassio.org

@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lfx-duckduckgo
   cfe-purls:
-    - pkg:conda/lfx-duckduckgo@${{ version }}
+    - pkg:conda/lfx-duckduckgo@${{ version }}?channel=conda-forge
     - pkg:pypi/lfx-duckduckgo@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://github.com/langflow-ai/langflow
@@ -74,9 +74,8 @@ extra:
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33979
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - ddgs
-  cfe-last-checked: 2026-06-19T20:15:00Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:21:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:15:00Z
   cfe-local-build-status: build-clean-test-blocked

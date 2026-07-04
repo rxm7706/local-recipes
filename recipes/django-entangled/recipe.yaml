@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-entangled
   cfe-purls:
-    - pkg:conda/django-entangled@${{ version }}
+    - pkg:conda/django-entangled@${{ version }}?channel=conda-forge
     - pkg:pypi/django-entangled@${{ version }}
   cfe-upstream-repo: https://github.com/jrief/django-entangled
   cfe-upstream-homepage: https://github.com/jrief/django-entangled

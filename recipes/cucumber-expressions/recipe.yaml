@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: cucumber-expressions
   cfe-purls:
-    - pkg:conda/cucumber-expressions@${{ version }}
+    - pkg:conda/cucumber-expressions@${{ version }}?channel=conda-forge
     - pkg:pypi/cucumber-expressions@${{ version }}
   cfe-upstream-repo: https://github.com/cucumber/cucumber-expressions
   cfe-upstream-homepage: https://github.com/cucumber/cucumber-expressions

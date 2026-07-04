@@ -96,7 +96,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: ydata-profiling
   cfe-purls:
-    - pkg:conda/ydata-profiling@${{ version }}
+    - pkg:conda/ydata-profiling@${{ version }}?channel=conda-forge
     - pkg:pypi/ydata-profiling@${{ version }}
   cfe-upstream-repo: https://github.com/ydataai/ydata-profiling
   cfe-upstream-homepage: https://github.com/ydataai/ydata-profiling

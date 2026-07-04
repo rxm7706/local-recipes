@@ -66,7 +66,7 @@ extra:
   cfe-name-aliases:
     - ibm_botocore
   cfe-purls:
-    - pkg:conda/ibm-cos-sdk-core@${{ version }}
+    - pkg:conda/ibm-cos-sdk-core@${{ version }}?channel=conda-forge
     - pkg:pypi/ibm-cos-sdk-core@${{ version }}
   cfe-upstream-repo: https://github.com/ibm/ibm-cos-sdk-python-core
   cfe-upstream-homepage: https://www.ibm.com/cloud/object-storage
@@ -74,11 +74,11 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ibm-cos-suite-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T20:45:00Z
+  cfe-last-checked: 2026-07-04T21:06:13Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:45:00Z
   cfe-local-build-status: success

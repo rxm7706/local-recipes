@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-colorful
   cfe-purls:
-    - pkg:conda/django-colorful@${{ version }}
+    - pkg:conda/django-colorful@${{ version }}?channel=conda-forge
     - pkg:pypi/django-colorful@${{ version }}
   cfe-upstream-repo: https://github.com/charettes/django-colorful
   cfe-upstream-homepage: https://github.com/charettes/django-colorful

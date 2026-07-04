@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: kedro-light
   cfe-purls:
-    - pkg:conda/kedro-light@${{ version }}
+    - pkg:conda/kedro-light@${{ version }}?channel=conda-forge
     - pkg:pypi/kedro-light@${{ version }}
   cfe-upstream-repo: https://github.com/ellwise/kedro-light
   cfe-upstream-homepage: https://github.com/ellwise/kedro-light

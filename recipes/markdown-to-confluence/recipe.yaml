@@ -70,7 +70,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: markdown-to-confluence
   cfe-purls:
-    - pkg:conda/markdown-to-confluence@${{ version }}
+    - pkg:conda/markdown-to-confluence@${{ version }}?channel=conda-forge
     - pkg:pypi/markdown-to-confluence@${{ version }}
   cfe-upstream-repo: https://github.com/hunyadi/md2conf
   cfe-upstream-homepage: https://github.com/hunyadi/md2conf
@@ -81,7 +81,6 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/markdown-to-confluence-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-0.6.1]
- []
   cfe-last-checked: 2026-07-03T22:07:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z

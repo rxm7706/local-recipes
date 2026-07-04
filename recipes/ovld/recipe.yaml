@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: ovld
   cfe-purls:
-    - pkg:conda/ovld@${{ version }}
+    - pkg:conda/ovld@${{ version }}?channel=conda-forge
     - pkg:pypi/ovld@${{ version }}
   cfe-upstream-repo: https://github.com/breuleux/ovld
   cfe-upstream-homepage: https://ovld.readthedocs.io/en/latest/

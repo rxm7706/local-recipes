@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: cmudict
   cfe-purls:
-    - pkg:conda/cmudict@${{ version }}
+    - pkg:conda/cmudict@${{ version }}?channel=conda-forge
     - pkg:pypi/cmudict@${{ version }}
   cfe-upstream-repo: https://github.com/prosegrinder/python-cmudict
   cfe-upstream-homepage: https://github.com/prosegrinder/python-cmudict

@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: jasongi/collectfasta
   cfe-purls:
-    - pkg:conda/collectfasta@${{ version }}
+    - pkg:conda/collectfasta@${{ version }}?channel=conda-forge
     - pkg:pypi/collectfasta@${{ version }}
   cfe-upstream-repo: https://github.com/jasongi/collectfasta
   cfe-upstream-homepage: https://github.com/jasongi/collectfasta/

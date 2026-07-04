@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: apify-shared
   cfe-purls:
-    - pkg:conda/apify-shared@${{ version }}
+    - pkg:conda/apify-shared@${{ version }}?channel=conda-forge
     - pkg:pypi/apify-shared@${{ version }}
   cfe-upstream-repo: https://github.com/apify/apify-shared-python
   cfe-upstream-homepage: https://apify.com

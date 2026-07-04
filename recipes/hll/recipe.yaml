@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: HLL
   cfe-purls:
-    - pkg:conda/hll@${{ version }}
+    - pkg:conda/hll@${{ version }}?channel=conda-forge
     - pkg:pypi/hll@${{ version }}
   cfe-upstream-repo: https://github.com/ascv/HyperLogLog
   cfe-upstream-homepage: https://github.com/ascv/HyperLogLog

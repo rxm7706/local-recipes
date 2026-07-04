@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: h2o-lightwave-web
   cfe-purls:
-    - pkg:conda/h2o-lightwave-web@${{ version }}
+    - pkg:conda/h2o-lightwave-web@${{ version }}?channel=conda-forge
     - pkg:pypi/h2o-lightwave-web@${{ version }}
   cfe-upstream-repo: https://github.com/h2oai/wave
   cfe-upstream-homepage: https://wave.h2o.ai/

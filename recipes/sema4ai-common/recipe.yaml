@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: sema4ai-common
   cfe-purls:
-    - pkg:conda/sema4ai-common@${{ version }}
+    - pkg:conda/sema4ai-common@${{ version }}?channel=conda-forge
     - pkg:pypi/sema4ai-common@${{ version }}
   cfe-upstream-repo: https://github.com/Sema4AI/actions/
   cfe-upstream-homepage: https://github.com/Sema4AI/actions/

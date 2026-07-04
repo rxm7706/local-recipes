@@ -96,7 +96,7 @@ extra:
   cfe-name-aliases:
     - sqlite_vec
   cfe-purls:
-    - pkg:conda/sqlite-vec@${{ version }}
+    - pkg:conda/sqlite-vec@${{ version }}?channel=conda-forge
     - pkg:pypi/sqlite-vec@${{ version }}
   cfe-upstream-repo: https://github.com/asg017/sqlite-vec
   cfe-upstream-homepage: https://alexgarcia.xyz/sqlite-vec

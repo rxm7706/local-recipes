@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: hubspot-api-client
   cfe-purls:
-    - pkg:conda/hubspot-api-client@${{ version }}
+    - pkg:conda/hubspot-api-client@${{ version }}?channel=conda-forge
     - pkg:pypi/hubspot-api-client@${{ version }}
   cfe-upstream-repo: https://github.com/HubSpot/hubspot-api-python
   cfe-upstream-homepage: https://github.com/HubSpot/hubspot-api-python

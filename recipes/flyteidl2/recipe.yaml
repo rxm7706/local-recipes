@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: flyteidl2
   cfe-purls:
-    - pkg:conda/flyteidl2@${{ version }}
+    - pkg:conda/flyteidl2@${{ version }}?channel=conda-forge
     - pkg:pypi/flyteidl2@${{ version }}
   cfe-upstream-repo: https://github.com/flyteorg/flyte
   cfe-upstream-homepage: https://github.com/flyteorg/flyte

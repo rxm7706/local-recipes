@@ -71,7 +71,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dremio-cli
   cfe-purls:
-    - pkg:conda/dremio-cli@${{ version }}
+    - pkg:conda/dremio-cli@${{ version }}?channel=conda-forge
     - pkg:pypi/dremio-cli@${{ version }}
   cfe-upstream-repo: https://github.com/dremio/cli
   cfe-upstream-homepage: https://pypi.org/project/dremio-cli/

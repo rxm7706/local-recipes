@@ -73,7 +73,7 @@ extra:
   cfe-name-aliases:
     - autogen
   cfe-purls:
-    - pkg:conda/ag2@${{ version }}
+    - pkg:conda/ag2@${{ version }}?channel=conda-forge
     - pkg:pypi/ag2@${{ version }}
   cfe-upstream-repo: https://github.com/ag2ai/ag2
   cfe-upstream-homepage: https://ag2.ai/

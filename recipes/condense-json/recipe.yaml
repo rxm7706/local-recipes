@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: condense-json
   cfe-purls:
-    - pkg:conda/condense-json@${{ version }}
+    - pkg:conda/condense-json@${{ version }}?channel=conda-forge
     - pkg:pypi/condense-json@${{ version }}
   cfe-upstream-repo: https://github.com/simonw/condense-json
   cfe-upstream-homepage: https://github.com/simonw/condense-json

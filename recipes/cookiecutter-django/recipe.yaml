@@ -180,7 +180,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: cookiecutter/cookiecutter-django
   cfe-purls:
-    - pkg:conda/cookiecutter-django@${{ version }}
+    - pkg:conda/cookiecutter-django@${{ version }}?channel=conda-forge
     - pkg:github/cookiecutter/cookiecutter-django@${{ version }}
   cfe-upstream-repo: https://github.com/cookiecutter/cookiecutter-django
   cfe-upstream-homepage: https://github.com/cookiecutter/cookiecutter-django
@@ -188,11 +188,11 @@ extra:
   cfe-source-kind: github-tag
   cfe-noarch: python
   cfe-pip-check: false:upstream-exact-pins
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cookiecutter-django-core-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-07-04T21:06:13Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success

@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: datastar-py
   cfe-purls:
-    - pkg:conda/datastar-py@${{ version }}
+    - pkg:conda/datastar-py@${{ version }}?channel=conda-forge
     - pkg:pypi/datastar-py@${{ version }}
   cfe-upstream-repo: https://github.com/starfederation/datastar-python
   cfe-upstream-homepage: https://data-star.dev/

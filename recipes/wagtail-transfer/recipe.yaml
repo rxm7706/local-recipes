@@ -61,7 +61,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-transfer
   cfe-purls:
-    - pkg:conda/wagtail-transfer@${{ version }}
+    - pkg:conda/wagtail-transfer@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-transfer@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail/wagtail-transfer
   cfe-upstream-homepage: https://github.com/wagtail/wagtail-transfer

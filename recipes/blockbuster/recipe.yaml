@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: blockbuster
   cfe-purls:
-    - pkg:conda/blockbuster@${{ version }}
+    - pkg:conda/blockbuster@${{ version }}?channel=conda-forge
     - pkg:pypi/blockbuster@${{ version }}
   cfe-upstream-repo: https://github.com/cbornet/blockbuster
   cfe-upstream-homepage: https://github.com/cbornet/blockbuster

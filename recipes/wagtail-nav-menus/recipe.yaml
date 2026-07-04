@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-nav-menus
   cfe-purls:
-    - pkg:conda/wagtail-nav-menus@${{ version }}
+    - pkg:conda/wagtail-nav-menus@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-nav-menus@${{ version }}
   cfe-upstream-repo: https://gitlab.com/thelabnyc/wagtail-nav-menus
   cfe-upstream-homepage: https://gitlab.com/thelabnyc/wagtail-nav-menus

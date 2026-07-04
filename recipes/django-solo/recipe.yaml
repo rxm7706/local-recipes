@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-solo
   cfe-purls:
-    - pkg:conda/django-solo@${{ version }}
+    - pkg:conda/django-solo@${{ version }}?channel=conda-forge
     - pkg:pypi/django-solo@${{ version }}
   cfe-upstream-repo: https://github.com/lazybird/django-solo
   cfe-upstream-homepage: https://github.com/lazybird/django-solo

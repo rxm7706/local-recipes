@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langchain-ibm
   cfe-purls:
-    - pkg:conda/langchain-ibm@${{ version }}
+    - pkg:conda/langchain-ibm@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-ibm@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-ibm
   cfe-upstream-homepage: https://github.com/langchain-ai/langchain-ibm

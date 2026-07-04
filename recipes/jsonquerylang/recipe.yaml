@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: jsonquerylang
   cfe-purls:
-    - pkg:conda/jsonquerylang@${{ version }}
+    - pkg:conda/jsonquerylang@${{ version }}?channel=conda-forge
     - pkg:pypi/jsonquerylang@${{ version }}
   cfe-upstream-repo: https://github.com/jsonquerylang/jsonquery-python
   cfe-upstream-homepage: https://jsonquerylang.org/

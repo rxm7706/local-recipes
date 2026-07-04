@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: robotframework-databaselibrary
   cfe-purls:
-    - pkg:conda/robotframework-databaselibrary@${{ version }}
+    - pkg:conda/robotframework-databaselibrary@${{ version }}?channel=conda-forge
     - pkg:pypi/robotframework-databaselibrary@${{ version }}
   cfe-upstream-repo: https://github.com/MarketSquare/Robotframework-Database-Library
   cfe-upstream-homepage: https://github.com/MarketSquare/Robotframework-Database-Library

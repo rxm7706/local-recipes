@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-meta-preview
   cfe-purls:
-    - pkg:conda/wagtail-meta-preview@${{ version }}
+    - pkg:conda/wagtail-meta-preview@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-meta-preview@${{ version }}
   cfe-upstream-repo: https://github.com/Frojd/wagtail-meta-preview
   cfe-upstream-homepage: https://github.com/Frojd/wagtail-meta-preview

@@ -67,7 +67,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: twelvelabs
   cfe-purls:
-    - pkg:conda/twelvelabs@${{ version }}
+    - pkg:conda/twelvelabs@${{ version }}?channel=conda-forge
     - pkg:pypi/twelvelabs@${{ version }}
   cfe-upstream-repo: https://github.com/twelvelabs-io/twelvelabs-python
   cfe-upstream-homepage: https://www.twelvelabs.io

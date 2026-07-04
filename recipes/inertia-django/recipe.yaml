@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: inertia-django
   cfe-purls:
-    - pkg:conda/inertia-django@${{ version }}
+    - pkg:conda/inertia-django@${{ version }}?channel=conda-forge
     - pkg:pypi/inertia-django@${{ version }}
   cfe-upstream-repo: https://github.com/inertiajs/inertia-django
   cfe-upstream-homepage: https://github.com/inertiajs/inertia-django

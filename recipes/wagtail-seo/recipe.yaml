@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-seo
   cfe-purls:
-    - pkg:conda/wagtail-seo@${{ version }}
+    - pkg:conda/wagtail-seo@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-seo@${{ version }}
   cfe-upstream-repo: https://github.com/coderedcorp/wagtail-seo
   cfe-upstream-homepage: https://github.com/coderedcorp/wagtail-seo

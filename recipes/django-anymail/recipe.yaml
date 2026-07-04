@@ -73,7 +73,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-anymail
   cfe-purls:
-    - pkg:conda/django-anymail@${{ version }}
+    - pkg:conda/django-anymail@${{ version }}?channel=conda-forge
     - pkg:pypi/django-anymail@${{ version }}
   cfe-upstream-repo: https://github.com/anymail/django-anymail
   cfe-upstream-homepage: https://github.com/anymail/django-anymail

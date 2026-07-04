@@ -72,7 +72,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: validate-pyproject
   cfe-purls:
-    - pkg:conda/validate-pyproject@${{ version }}
+    - pkg:conda/validate-pyproject@${{ version }}?channel=conda-forge
     - pkg:pypi/validate-pyproject@${{ version }}
   cfe-upstream-repo: https://github.com/abravalheri/validate-pyproject
   cfe-upstream-homepage: https://github.com/abravalheri/validate-pyproject

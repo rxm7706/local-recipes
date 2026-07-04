@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtailmedia
   cfe-purls:
-    - pkg:conda/wagtailmedia@${{ version }}
+    - pkg:conda/wagtailmedia@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtailmedia@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtailmedia
   cfe-upstream-homepage: https://github.com/torchbox/wagtailmedia

@@ -81,7 +81,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: gitflow-analytics
   cfe-purls:
-    - pkg:conda/gitflow-analytics@${{ version }}
+    - pkg:conda/gitflow-analytics@${{ version }}?channel=conda-forge
     - pkg:pypi/gitflow-analytics@${{ version }}
   cfe-upstream-repo: https://github.com/bobmatnyc/gitflow-analytics
   cfe-upstream-homepage: https://github.com/bobmatnyc/gitflow-analytics

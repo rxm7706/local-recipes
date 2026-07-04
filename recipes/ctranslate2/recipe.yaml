@@ -206,7 +206,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: OpenNMT/CTranslate2
   cfe-purls:
-    - pkg:conda/ctranslate2@${{ version }}
+    - pkg:conda/ctranslate2@${{ version }}?channel=conda-forge
     - pkg:github/OpenNMT/CTranslate2@v${{ version }}
   cfe-upstream-repo: https://github.com/OpenNMT/CTranslate2
   cfe-upstream-homepage: https://opennmt.net/CTranslate2/

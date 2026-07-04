@@ -68,7 +68,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: vizro
   cfe-purls:
-    - pkg:conda/vizro@${{ version }}
+    - pkg:conda/vizro@${{ version }}?channel=conda-forge
     - pkg:pypi/vizro@${{ version }}
   cfe-upstream-repo: https://github.com/mckinsey/vizro
   cfe-upstream-homepage: https://vizro.mckinsey.com/

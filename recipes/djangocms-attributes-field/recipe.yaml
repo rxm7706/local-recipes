@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: djangocms-attributes-field
   cfe-purls:
-    - pkg:conda/djangocms-attributes-field@${{ version }}
+    - pkg:conda/djangocms-attributes-field@${{ version }}?channel=conda-forge
     - pkg:pypi/djangocms-attributes-field@${{ version }}
   cfe-upstream-repo: https://github.com/django-cms/djangocms-attributes-field/
   cfe-upstream-homepage: https://github.com/django-cms/djangocms-attributes-field/

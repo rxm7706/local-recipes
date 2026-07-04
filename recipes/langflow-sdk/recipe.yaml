@@ -70,7 +70,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langflow-sdk
   cfe-purls:
-    - pkg:conda/langflow-sdk@${{ version }}
+    - pkg:conda/langflow-sdk@${{ version }}?channel=conda-forge
     - pkg:pypi/langflow-sdk@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://pypi.org/project/langflow-sdk/

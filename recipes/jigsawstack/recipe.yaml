@@ -63,7 +63,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: jigsawstack
   cfe-purls:
-    - pkg:conda/jigsawstack@${{ version }}
+    - pkg:conda/jigsawstack@${{ version }}?channel=conda-forge
     - pkg:pypi/jigsawstack@${{ version }}
   cfe-upstream-repo: https://github.com/jigsawstack/jigsawstack-python
   cfe-upstream-homepage: https://github.com/jigsawstack/jigsawstack-python

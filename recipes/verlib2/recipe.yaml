@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: verlib2
   cfe-purls:
-    - pkg:conda/verlib2@${{ version }}
+    - pkg:conda/verlib2@${{ version }}?channel=conda-forge
     - pkg:pypi/verlib2@${{ version }}
   cfe-upstream-repo: https://github.com/pyveci/verlib2
   cfe-upstream-homepage: https://github.com/pyveci/verlib2

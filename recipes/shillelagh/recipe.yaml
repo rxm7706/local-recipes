@@ -70,7 +70,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: shillelagh
   cfe-purls:
-    - pkg:conda/shillelagh@${{ version }}
+    - pkg:conda/shillelagh@${{ version }}?channel=conda-forge
     - pkg:pypi/shillelagh@${{ version }}
   cfe-upstream-repo: https://github.com/betodealmeida/shillelagh
   cfe-upstream-homepage: https://github.com/betodealmeida/shillelagh

@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-vite
   cfe-purls:
-    - pkg:conda/django-vite@${{ version }}
+    - pkg:conda/django-vite@${{ version }}?channel=conda-forge
     - pkg:pypi/django-vite@${{ version }}
   cfe-upstream-repo: https://github.com/MrBin99/django-vite
   cfe-upstream-homepage: https://github.com/MrBin99/django-vite

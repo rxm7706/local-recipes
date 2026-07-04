@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pytest-pythonpath
   cfe-purls:
-    - pkg:conda/pytest-pythonpath@${{ version }}
+    - pkg:conda/pytest-pythonpath@${{ version }}?channel=conda-forge
     - pkg:pypi/pytest-pythonpath@${{ version }}
   cfe-upstream-repo: https://github.com/bigsassy/pytest-pythonpath
   cfe-upstream-homepage: https://github.com/bigsassy/pytest-pythonpath

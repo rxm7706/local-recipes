@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: microsoft-kiota-bundle
   cfe-purls:
-    - pkg:conda/microsoft-kiota-bundle@${{ version }}
+    - pkg:conda/microsoft-kiota-bundle@${{ version }}?channel=conda-forge
     - pkg:pypi/microsoft-kiota-bundle@${{ version }}
   cfe-upstream-repo: 
   cfe-upstream-homepage: 

@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langsmith-mcp-server
   cfe-purls:
-    - pkg:conda/langsmith-mcp-server@${{ version }}
+    - pkg:conda/langsmith-mcp-server@${{ version }}?channel=conda-forge
     - pkg:pypi/langsmith-mcp-server@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langsmith-mcp-server
   cfe-upstream-homepage: https://github.com/langchain-ai/langsmith-mcp-server

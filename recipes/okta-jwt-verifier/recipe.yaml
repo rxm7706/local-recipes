@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: okta-jwt-verifier
   cfe-purls:
-    - pkg:conda/okta-jwt-verifier@${{ version }}
+    - pkg:conda/okta-jwt-verifier@${{ version }}?channel=conda-forge
     - pkg:pypi/okta-jwt-verifier@${{ version }}
   cfe-upstream-repo: https://github.com/okta/okta-jwt-verifier-python
   cfe-upstream-homepage: https://github.com/okta/okta-jwt-verifier-python

@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opentelemetry-resourcedetector-gcp
   cfe-purls:
-    - pkg:conda/opentelemetry-resourcedetector-gcp@${{ version }}
+    - pkg:conda/opentelemetry-resourcedetector-gcp@${{ version }}?channel=conda-forge
     - pkg:pypi/opentelemetry-resourcedetector-gcp@${{ version }}
   cfe-upstream-repo: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
   cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-resourcedetector-gcp

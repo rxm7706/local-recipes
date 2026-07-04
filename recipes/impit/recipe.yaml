@@ -70,7 +70,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: impit
   cfe-purls:
-    - pkg:conda/impit@${{ version }}
+    - pkg:conda/impit@${{ version }}?channel=conda-forge
     - pkg:pypi/impit@${{ version }}
   cfe-upstream-repo: https://github.com/apify/impit
   cfe-upstream-homepage: https://apify.github.io/impit/python/

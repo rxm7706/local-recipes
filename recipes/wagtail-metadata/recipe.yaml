@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-metadata
   cfe-purls:
-    - pkg:conda/wagtail-metadata@${{ version }}
+    - pkg:conda/wagtail-metadata@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-metadata@${{ version }}
   cfe-upstream-repo: https://github.com/neon-jungle/wagtail-metadata
   cfe-upstream-homepage: https://github.com/neon-jungle/wagtail-metadata

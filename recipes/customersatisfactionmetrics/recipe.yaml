@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: customersatisfactionmetrics
   cfe-purls:
-    - pkg:conda/customersatisfactionmetrics@${{ version }}
+    - pkg:conda/customersatisfactionmetrics@${{ version }}?channel=conda-forge
     - pkg:pypi/customersatisfactionmetrics@${{ version }}
   cfe-upstream-repo: http://github.com/pescheckit/customersatisfactionmetrics
   cfe-upstream-homepage: http://github.com/pescheckit/customersatisfactionmetrics

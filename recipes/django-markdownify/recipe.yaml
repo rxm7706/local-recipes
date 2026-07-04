@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-markdownify
   cfe-purls:
-    - pkg:conda/django-markdownify@${{ version }}
+    - pkg:conda/django-markdownify@${{ version }}?channel=conda-forge
     - pkg:pypi/django-markdownify@${{ version }}
   cfe-upstream-repo: https://github.com/erwinmatijsen/django-markdownify
   cfe-upstream-homepage: https://github.com/erwinmatijsen/django-markdownify

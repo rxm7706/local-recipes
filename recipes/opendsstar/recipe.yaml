@@ -91,7 +91,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opendsstar
   cfe-purls:
-    - pkg:conda/opendsstar@${{ version }}
+    - pkg:conda/opendsstar@${{ version }}?channel=conda-forge
     - pkg:pypi/opendsstar@${{ version }}
   cfe-upstream-repo: https://github.com/IBM/OpenDsStar
   cfe-upstream-homepage: https://github.com/IBM/OpenDsStar

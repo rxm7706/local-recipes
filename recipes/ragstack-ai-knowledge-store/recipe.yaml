@@ -61,7 +61,7 @@ extra:
   cfe-name-aliases:
     - ragstack_knowledge_store
   cfe-purls:
-    - pkg:conda/ragstack-ai-knowledge-store@${{ version }}
+    - pkg:conda/ragstack-ai-knowledge-store@${{ version }}?channel=conda-forge
     - pkg:pypi/ragstack-ai-knowledge-store@${{ version }}
   cfe-upstream-repo: https://github.com/datastax/ragstack-ai
   cfe-upstream-homepage: https://github.com/datastax/ragstack-ai

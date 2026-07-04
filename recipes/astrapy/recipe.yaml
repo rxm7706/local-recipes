@@ -74,7 +74,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: astrapy
   cfe-purls:
-    - pkg:conda/astrapy@${{ version }}
+    - pkg:conda/astrapy@${{ version }}?channel=conda-forge
     - pkg:pypi/astrapy@${{ version }}
   cfe-upstream-repo: https://github.com/datastax/astrapy
   cfe-upstream-homepage: https://github.com/datastax/astrapy
@@ -82,12 +82,12 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33943
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/astrapy-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-27T11:57:49Z
+  cfe-last-checked: 2026-07-04T21:04:05Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success

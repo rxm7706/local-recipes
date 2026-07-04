@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: alang
   cfe-purls:
-    - pkg:conda/alang@${{ version }}
+    - pkg:conda/alang@${{ version }}?channel=conda-forge
     - pkg:pypi/alang@${{ version }}
   cfe-upstream-repo: https://github.com/praeclarum/alang
   cfe-upstream-homepage: https://github.com/praeclarum/alang

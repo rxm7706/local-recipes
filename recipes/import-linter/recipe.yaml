@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: import-linter
   cfe-purls:
-    - pkg:conda/import-linter@${{ version }}
+    - pkg:conda/import-linter@${{ version }}?channel=conda-forge
     - pkg:pypi/import-linter@${{ version }}
   cfe-upstream-repo: https://pypi.org/project/import-linter/
   cfe-upstream-homepage: https://pypi.org/project/import-linter/

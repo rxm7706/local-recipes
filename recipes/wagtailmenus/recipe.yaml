@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtailmenus
   cfe-purls:
-    - pkg:conda/wagtailmenus@${{ version }}
+    - pkg:conda/wagtailmenus@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtailmenus@${{ version }}
   cfe-upstream-repo: https://github.com/jazzband/wagtailmenus
   cfe-upstream-homepage: https://github.com/jazzband/wagtailmenus

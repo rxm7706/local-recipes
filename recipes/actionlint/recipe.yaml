@@ -117,7 +117,7 @@ extra:
   cfe-upstream-registry: golang
   cfe-upstream-name: github.com/rhysd/actionlint
   cfe-purls:
-    - pkg:conda/actionlint@${{ version }}
+    - pkg:conda/actionlint@${{ version }}?channel=conda-forge
     - pkg:golang/github.com/rhysd/actionlint@${{ version }}
   cfe-upstream-repo: https://github.com/rhysd/actionlint
   cfe-upstream-homepage: https://rhysd.github.io/actionlint/

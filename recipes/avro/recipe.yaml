@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: avro
   cfe-purls:
-    - pkg:conda/avro@${{ version }}
+    - pkg:conda/avro@${{ version }}?channel=conda-forge
     - pkg:pypi/avro@${{ version }}
   cfe-upstream-repo: https://github.com/apache/avro
   cfe-upstream-homepage: https://avro.apache.org/

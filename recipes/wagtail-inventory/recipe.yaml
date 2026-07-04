@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-inventory
   cfe-purls:
-    - pkg:conda/wagtail-inventory@${{ version }}
+    - pkg:conda/wagtail-inventory@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-inventory@${{ version }}
   cfe-upstream-repo: https://github.com/cfpb/wagtail-inventory
   cfe-upstream-homepage: https://github.com/cfpb/wagtail-inventory
@@ -64,9 +64,9 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-inventory-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-3.3, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [version-bump-to-3.3]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-07-04T22:24:52Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success

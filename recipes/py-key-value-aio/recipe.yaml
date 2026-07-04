@@ -83,7 +83,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: py-key-value-aio
   cfe-purls:
-    - pkg:conda/py-key-value-aio@${{ version }}
+    - pkg:conda/py-key-value-aio@${{ version }}?channel=conda-forge
     - pkg:pypi/py-key-value-aio@${{ version }}
   cfe-upstream-repo: https://github.com/strawgate/py-key-value
   cfe-upstream-homepage: https://pypi.org/project/py-key-value-aio/

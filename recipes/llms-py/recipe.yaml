@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: llms-py
   cfe-purls:
-    - pkg:conda/llms-py@${{ version }}
+    - pkg:conda/llms-py@${{ version }}?channel=conda-forge
     - pkg:pypi/llms-py@${{ version }}
   cfe-upstream-repo: https://github.com/ServiceStack/llms
   cfe-upstream-homepage: https://github.com/ServiceStack/llms

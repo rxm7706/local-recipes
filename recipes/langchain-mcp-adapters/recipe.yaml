@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langchain-mcp-adapters
   cfe-purls:
-    - pkg:conda/langchain-mcp-adapters@${{ version }}
+    - pkg:conda/langchain-mcp-adapters@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-mcp-adapters@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-mcp-adapters
   cfe-upstream-homepage: https://github.com/langchain-ai/langchain-mcp-adapters

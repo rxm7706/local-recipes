@@ -77,7 +77,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: splunk-opentelemetry
   cfe-purls:
-    - pkg:conda/splunk-opentelemetry@${{ version }}
+    - pkg:conda/splunk-opentelemetry@${{ version }}?channel=conda-forge
     - pkg:pypi/splunk-opentelemetry@${{ version }}
   cfe-upstream-repo: https://github.com/signalfx/splunk-otel-python
   cfe-upstream-homepage: https://github.com/signalfx/splunk-otel-python

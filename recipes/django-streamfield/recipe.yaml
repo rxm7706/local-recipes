@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-streamfield
   cfe-purls:
-    - pkg:conda/django-streamfield@${{ version }}
+    - pkg:conda/django-streamfield@${{ version }}?channel=conda-forge
     - pkg:pypi/django-streamfield@${{ version }}
   cfe-upstream-repo: https://github.com/raagin/django-streamfield
   cfe-upstream-homepage: https://github.com/raagin/django-streamfield

@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-data-browser
   cfe-purls:
-    - pkg:conda/django-data-browser@${{ version }}
+    - pkg:conda/django-data-browser@${{ version }}?channel=conda-forge
     - pkg:pypi/django-data-browser@${{ version }}
   cfe-upstream-repo: https://github.com/tolomea/django-data-browser
   cfe-upstream-homepage: https://github.com/tolomea/django-data-browser

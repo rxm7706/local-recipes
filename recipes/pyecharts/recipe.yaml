@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pyecharts
   cfe-purls:
-    - pkg:conda/pyecharts@${{ version }}
+    - pkg:conda/pyecharts@${{ version }}?channel=conda-forge
     - pkg:pypi/pyecharts@${{ version }}
   cfe-upstream-repo: https://github.com/pyecharts/pyecharts
   cfe-upstream-homepage: https://pyecharts.org/

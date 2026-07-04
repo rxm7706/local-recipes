@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtailgridder
   cfe-purls:
-    - pkg:conda/wagtailgridder@${{ version }}
+    - pkg:conda/wagtailgridder@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtailgridder@${{ version }}
   cfe-upstream-repo: https://github.com/wharton/wagtailgridder
   cfe-upstream-homepage: https://github.com/wharton/wagtailgridder

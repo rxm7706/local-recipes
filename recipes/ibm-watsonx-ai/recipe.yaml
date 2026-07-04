@@ -68,7 +68,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: ibm-watsonx-ai
   cfe-purls:
-    - pkg:conda/ibm-watsonx-ai@${{ version }}
+    - pkg:conda/ibm-watsonx-ai@${{ version }}?channel=conda-forge
     - pkg:pypi/ibm-watsonx-ai@${{ version }}
   cfe-upstream-repo: https://github.com/IBM/watsonx-ai-python-sdk
   cfe-upstream-homepage: https://ibm.github.io/watsonx-ai-python-sdk
@@ -80,9 +80,8 @@ extra:
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33968
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - ibm-cos-sdk
-  cfe-last-checked: 2026-06-27T13:40:14Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:21:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:35:00Z
   cfe-local-build-status: success

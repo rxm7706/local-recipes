@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opentelemetry-instrumentation-click
   cfe-purls:
-    - pkg:conda/opentelemetry-instrumentation-click@${{ version }}
+    - pkg:conda/opentelemetry-instrumentation-click@${{ version }}?channel=conda-forge
     - pkg:pypi/opentelemetry-instrumentation-click@${{ version }}
   cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
   cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib

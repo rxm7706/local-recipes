@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-app-pages
   cfe-purls:
-    - pkg:conda/wagtail-app-pages@${{ version }}
+    - pkg:conda/wagtail-app-pages@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-app-pages@${{ version }}
   cfe-upstream-repo: https://github.com/mwesterhof/wagtail_app_pages
   cfe-upstream-homepage: https://github.com/mwesterhof/wagtail_app_pages

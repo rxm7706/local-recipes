@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: drf-standardized-errors
   cfe-purls:
-    - pkg:conda/drf-standardized-errors@${{ version }}
+    - pkg:conda/drf-standardized-errors@${{ version }}?channel=conda-forge
     - pkg:pypi/drf-standardized-errors@${{ version }}
   cfe-upstream-repo: https://github.com/ghazi-git/drf-standardized-errors
   cfe-upstream-homepage: https://github.com/ghazi-git/drf-standardized-errors

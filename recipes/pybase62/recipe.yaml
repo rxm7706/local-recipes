@@ -58,7 +58,7 @@ extra:
   cfe-name-aliases:
     - base62
   cfe-purls:
-    - pkg:conda/pybase62@${{ version }}
+    - pkg:conda/pybase62@${{ version }}?channel=conda-forge
     - pkg:pypi/pybase62@${{ version }}
   cfe-upstream-repo: https://github.com/suminb/base62
   cfe-upstream-homepage: https://github.com/suminb/base62

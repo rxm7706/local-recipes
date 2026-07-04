@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dacite
   cfe-purls:
-    - pkg:conda/dacite@${{ version }}
+    - pkg:conda/dacite@${{ version }}?channel=conda-forge
     - pkg:pypi/dacite@${{ version }}
   cfe-upstream-repo: https://github.com/konradhalas/dacite
   cfe-upstream-homepage: https://github.com/konradhalas/dacite

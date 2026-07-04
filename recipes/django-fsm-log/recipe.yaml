@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-fsm-log
   cfe-purls:
-    - pkg:conda/django-fsm-log@${{ version }}
+    - pkg:conda/django-fsm-log@${{ version }}?channel=conda-forge
     - pkg:pypi/django-fsm-log@${{ version }}
   cfe-upstream-repo: https://github.com/jazzband/django-fsm-log
   cfe-upstream-homepage: https://github.com/jazzband/django-fsm-log
@@ -69,9 +69,8 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-fsm-log-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-5.0.2]
-  cfe-forge-blocker-list:
-    - django-fsm-2 not on conda-forge yet (local recipe ready, pending submission)
-  cfe-last-checked: 2026-07-03T12:06:23Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:21:00Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success

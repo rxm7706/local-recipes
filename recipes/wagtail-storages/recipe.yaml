@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-storages
   cfe-purls:
-    - pkg:conda/wagtail-storages@${{ version }}
+    - pkg:conda/wagtail-storages@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-storages@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtail-storages
   cfe-upstream-homepage: https://github.com/torchbox/wagtail-storages

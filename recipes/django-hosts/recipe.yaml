@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-hosts
   cfe-purls:
-    - pkg:conda/django-hosts@${{ version }}
+    - pkg:conda/django-hosts@${{ version }}?channel=conda-forge
     - pkg:pypi/django-hosts@${{ version }}
   cfe-upstream-repo: https://github.com/jazzband/django-hosts
   cfe-upstream-homepage: https://django-hosts.readthedocs.io/

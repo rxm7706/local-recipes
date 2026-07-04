@@ -79,7 +79,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: github.com/dlt-hub/pendulum
   cfe-purls:
-    - pkg:conda/dlt-pendulum@${{ version }}
+    - pkg:conda/dlt-pendulum@${{ version }}?channel=conda-forge
     - pkg:github/dlt-hub/pendulum@${{ version }}
   cfe-upstream-repo: https://github.com/dlt-hub/pendulum
   cfe-upstream-homepage: https://github.com/dlt-hub/pendulum

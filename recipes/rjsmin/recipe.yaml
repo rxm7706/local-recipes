@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: rjsmin
   cfe-purls:
-    - pkg:conda/rjsmin@${{ version }}
+    - pkg:conda/rjsmin@${{ version }}?channel=conda-forge
     - pkg:pypi/rjsmin@${{ version }}
   cfe-upstream-repo: https://github.com/ndparker/rjsmin
   cfe-upstream-homepage: https://github.com/ndparker/rjsmin

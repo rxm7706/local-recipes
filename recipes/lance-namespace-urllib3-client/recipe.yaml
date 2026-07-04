@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lance-namespace-urllib3-client
   cfe-purls:
-    - pkg:conda/lance-namespace-urllib3-client@${{ version }}
+    - pkg:conda/lance-namespace-urllib3-client@${{ version }}?channel=conda-forge
     - pkg:pypi/lance-namespace-urllib3-client@${{ version }}
   cfe-upstream-repo: 
   cfe-upstream-homepage: 

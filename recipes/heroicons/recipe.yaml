@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: heroicons
   cfe-purls:
-    - pkg:conda/heroicons@${{ version }}
+    - pkg:conda/heroicons@${{ version }}?channel=conda-forge
     - pkg:pypi/heroicons@${{ version }}
   cfe-upstream-repo: https://github.com/adamchainz/heroicons
   cfe-upstream-homepage: https://github.com/adamchainz/heroicons

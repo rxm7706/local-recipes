@@ -69,7 +69,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: mem0ai
   cfe-purls:
-    - pkg:conda/mem0ai@${{ version }}
+    - pkg:conda/mem0ai@${{ version }}?channel=conda-forge
     - pkg:pypi/mem0ai@${{ version }}
   cfe-upstream-repo: https://github.com/mem0ai/mem0
   cfe-upstream-homepage: https://docs.mem0.ai

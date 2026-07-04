@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: tinyhtml5
   cfe-purls:
-    - pkg:conda/tinyhtml5@${{ version }}
+    - pkg:conda/tinyhtml5@${{ version }}?channel=conda-forge
     - pkg:pypi/tinyhtml5@${{ version }}
   cfe-upstream-repo: https://github.com/CourtBouillon/tinyhtml5
   cfe-upstream-homepage: https://github.com/CourtBouillon/tinyhtml5

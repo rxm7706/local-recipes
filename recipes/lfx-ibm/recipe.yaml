@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lfx-ibm
   cfe-purls:
-    - pkg:conda/lfx-ibm@${{ version }}
+    - pkg:conda/lfx-ibm@${{ version }}?channel=conda-forge
     - pkg:pypi/lfx-ibm@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://github.com/langflow-ai/langflow

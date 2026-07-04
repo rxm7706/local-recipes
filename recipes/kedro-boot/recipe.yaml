@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: kedro-boot
   cfe-purls:
-    - pkg:conda/kedro-boot@${{ version }}
+    - pkg:conda/kedro-boot@${{ version }}?channel=conda-forge
     - pkg:pypi/kedro-boot@${{ version }}
   cfe-upstream-repo: https://github.com/takikadiri/kedro-boot
   cfe-upstream-homepage: https://github.com/takikadiri/kedro-boot

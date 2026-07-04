@@ -80,7 +80,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: kantoku
   cfe-purls:
-    - pkg:conda/kantoku@${{ version }}
+    - pkg:conda/kantoku@${{ version }}?channel=conda-forge
     - pkg:pypi/kantoku@${{ version }}
   cfe-upstream-repo: https://github.com/bentoml/kantoku
   cfe-upstream-homepage: https://circus.readthedocs.io/en/latest/

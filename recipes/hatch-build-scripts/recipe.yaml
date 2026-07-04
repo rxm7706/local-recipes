@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: hatch-build-scripts
   cfe-purls:
-    - pkg:conda/hatch-build-scripts@${{ version }}
+    - pkg:conda/hatch-build-scripts@${{ version }}?channel=conda-forge
     - pkg:pypi/hatch-build-scripts@${{ version }}
   cfe-upstream-repo: https://github.com/rmorshea/hatch-build-scripts
   cfe-upstream-homepage: https://github.com/rmorshea/hatch-build-scripts

@@ -86,7 +86,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: tabpy
   cfe-purls:
-    - pkg:conda/tabpy@${{ version }}
+    - pkg:conda/tabpy@${{ version }}?channel=conda-forge
     - pkg:pypi/tabpy@${{ version }}
   cfe-upstream-repo: https://github.com/tableau/TabPy
   cfe-upstream-homepage: https://github.com/tableau/TabPy

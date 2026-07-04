@@ -98,7 +98,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: primp
   cfe-purls:
-    - pkg:conda/primp@${{ version }}
+    - pkg:conda/primp@${{ version }}?channel=conda-forge
     - pkg:pypi/primp@${{ version }}
   cfe-upstream-repo: https://github.com/deedy5/primp
   cfe-upstream-homepage: https://github.com/deedy5/primp

@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-tenant-schemas
   cfe-purls:
-    - pkg:conda/django-tenant-schemas@${{ version }}
+    - pkg:conda/django-tenant-schemas@${{ version }}?channel=conda-forge
     - pkg:pypi/django-tenant-schemas@${{ version }}
   cfe-upstream-repo: https://github.com/bcarneiro/django-tenant-schemas
   cfe-upstream-homepage: https://github.com/bcarneiro/django-tenant-schemas

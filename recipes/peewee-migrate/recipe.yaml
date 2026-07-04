@@ -64,7 +64,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: peewee-migrate
   cfe-purls:
-    - pkg:conda/peewee-migrate@${{ version }}
+    - pkg:conda/peewee-migrate@${{ version }}?channel=conda-forge
     - pkg:pypi/peewee-migrate@${{ version }}
   cfe-upstream-repo: https://github.com/klen/peewee_migrate
   cfe-upstream-homepage: https://github.com/klen/peewee_migrate

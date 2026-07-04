@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: json-strong-typing
   cfe-purls:
-    - pkg:conda/json-strong-typing@${{ version }}
+    - pkg:conda/json-strong-typing@${{ version }}?channel=conda-forge
     - pkg:pypi/json-strong-typing@${{ version }}
   cfe-upstream-repo: https://github.com/hunyadi/strong_typing
   cfe-upstream-homepage: https://github.com/hunyadi/strong_typing

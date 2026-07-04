@@ -61,7 +61,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: protovalidate
   cfe-purls:
-    - pkg:conda/protovalidate@${{ version }}
+    - pkg:conda/protovalidate@${{ version }}?channel=conda-forge
     - pkg:pypi/protovalidate@${{ version }}
   cfe-upstream-repo: https://github.com/bufbuild/protovalidate-python
   cfe-upstream-homepage: https://github.com/bufbuild/protovalidate-python

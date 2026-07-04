@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: asttrs
   cfe-purls:
-    - pkg:conda/asttrs@${{ version }}
+    - pkg:conda/asttrs@${{ version }}?channel=conda-forge
     - pkg:pypi/asttrs@${{ version }}
   cfe-upstream-repo: https://github.com/ryanchao2012/asttrs
   cfe-upstream-homepage: https://github.com/ryanchao2012/asttrs

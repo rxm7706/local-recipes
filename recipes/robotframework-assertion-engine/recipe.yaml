@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: robotframework-assertion-engine
   cfe-purls:
-    - pkg:conda/robotframework-assertion-engine@${{ version }}
+    - pkg:conda/robotframework-assertion-engine@${{ version }}?channel=conda-forge
     - pkg:pypi/robotframework-assertion-engine@${{ version }}
   cfe-upstream-repo: https://github.com/MarketSquare/AssertionEngine
   cfe-upstream-homepage: https://github.com/MarketSquare/AssertionEngine

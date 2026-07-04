@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-timezone-field
   cfe-purls:
-    - pkg:conda/django-timezone-field@${{ version }}
+    - pkg:conda/django-timezone-field@${{ version }}?channel=conda-forge
     - pkg:pypi/django-timezone-field@${{ version }}
   cfe-upstream-repo: https://github.com/mfogel/django-timezone-field
   cfe-upstream-homepage: https://github.com/mfogel/django-timezone-field

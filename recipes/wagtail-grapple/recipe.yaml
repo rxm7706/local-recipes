@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-grapple
   cfe-purls:
-    - pkg:conda/wagtail-grapple@${{ version }}
+    - pkg:conda/wagtail-grapple@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-grapple@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtail-grapple
   cfe-upstream-homepage: https://github.com/torchbox/wagtail-grapple

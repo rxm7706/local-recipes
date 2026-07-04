@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-admin-rangefilter
   cfe-purls:
-    - pkg:conda/django-admin-rangefilter@${{ version }}
+    - pkg:conda/django-admin-rangefilter@${{ version }}?channel=conda-forge
     - pkg:pypi/django-admin-rangefilter@${{ version }}
   cfe-upstream-repo: https://github.com/silentsokolov/django-admin-rangefilter
   cfe-upstream-homepage: https://github.com/silentsokolov/django-admin-rangefilter

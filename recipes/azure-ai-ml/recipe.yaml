@@ -72,7 +72,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: azure-ai-ml
   cfe-purls:
-    - pkg:conda/azure-ai-ml@${{ version }}
+    - pkg:conda/azure-ai-ml@${{ version }}?channel=conda-forge
     - pkg:pypi/azure-ai-ml@${{ version }}
   cfe-upstream-repo: https://github.com/Azure/azure-sdk-for-python
   cfe-upstream-homepage: https://github.com/Azure/azure-sdk-for-python

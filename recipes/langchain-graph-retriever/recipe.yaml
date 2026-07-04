@@ -66,7 +66,7 @@ extra:
   cfe-name-aliases:
     - langchain_graph_retriever
   cfe-purls:
-    - pkg:conda/langchain-graph-retriever@${{ version }}
+    - pkg:conda/langchain-graph-retriever@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-graph-retriever@${{ version }}
   cfe-upstream-repo: https://github.com/datastax/graph-rag
   cfe-upstream-homepage: https://datastax.github.io/graph-rag

@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-comments-xtd
   cfe-purls:
-    - pkg:conda/django-comments-xtd@${{ version }}
+    - pkg:conda/django-comments-xtd@${{ version }}?channel=conda-forge
     - pkg:pypi/django-comments-xtd@${{ version }}
   cfe-upstream-repo: https://github.com/danirus/django-comments-xtd
   cfe-upstream-homepage: https://github.com/danirus/django-comments-xtd

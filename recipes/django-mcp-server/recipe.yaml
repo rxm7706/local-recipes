@@ -68,7 +68,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-mcp-server
   cfe-purls:
-    - pkg:conda/django-mcp-server@${{ version }}
+    - pkg:conda/django-mcp-server@${{ version }}?channel=conda-forge
     - pkg:pypi/django-mcp-server@${{ version }}
   cfe-upstream-repo: https://github.com/omarbenhamid/django-mcp-server
   cfe-upstream-homepage: https://github.com/omarbenhamid/django-mcp-server

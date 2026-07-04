@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: gekko
   cfe-purls:
-    - pkg:conda/gekko@${{ version }}
+    - pkg:conda/gekko@${{ version }}?channel=conda-forge
     - pkg:pypi/gekko@${{ version }}
   cfe-upstream-repo: https://github.com/BYU-PRISM/GEKKO
   cfe-upstream-homepage: https://github.com/BYU-PRISM/GEKKO

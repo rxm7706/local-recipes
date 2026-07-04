@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: TableauScraper
   cfe-purls:
-    - pkg:conda/tableauscraper@${{ version }}
+    - pkg:conda/tableauscraper@${{ version }}?channel=conda-forge
     - pkg:pypi/tableauscraper@${{ version }}
   cfe-upstream-repo: https://github.com/bertrandmartel/tableau-scraping
   cfe-upstream-homepage: https://github.com/bertrandmartel/tableau-scraping

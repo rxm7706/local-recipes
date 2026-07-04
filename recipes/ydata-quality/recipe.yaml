@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: ydata-quality
   cfe-purls:
-    - pkg:conda/ydata-quality@${{ version }}
+    - pkg:conda/ydata-quality@${{ version }}?channel=conda-forge
     - pkg:pypi/ydata-quality@${{ version }}
   cfe-upstream-repo: https://github.com/ydataai/ydata-quality
   cfe-upstream-homepage: https://github.com/ydataai/ydata-quality

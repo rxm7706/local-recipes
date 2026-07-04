@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: CopilotKit/CopilotKit
   cfe-purls:
-    - pkg:conda/copilotkit@${{ version }}
+    - pkg:conda/copilotkit@${{ version }}?channel=conda-forge
     - pkg:pypi/copilotkit@0.1.88
     - pkg:github/copilotkit/copilotkit@${{ version }}
   cfe-upstream-repo: https://github.com/CopilotKit/CopilotKit

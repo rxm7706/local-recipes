@@ -60,7 +60,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-ab-testing
   cfe-purls:
-    - pkg:conda/wagtail-ab-testing@${{ version }}
+    - pkg:conda/wagtail-ab-testing@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-ab-testing@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-ab-testing
   cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-ab-testing

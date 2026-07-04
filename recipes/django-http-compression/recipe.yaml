@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-http-compression
   cfe-purls:
-    - pkg:conda/django-http-compression@${{ version }}
+    - pkg:conda/django-http-compression@${{ version }}?channel=conda-forge
     - pkg:pypi/django-http-compression@${{ version }}
   cfe-upstream-repo: https://github.com/adamchainz/django-http-compression
   cfe-upstream-homepage: https://github.com/adamchainz/django-http-compression

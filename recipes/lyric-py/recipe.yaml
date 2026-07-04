@@ -74,7 +74,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lyric-py
   cfe-purls:
-    - pkg:conda/lyric-py@${{ version }}
+    - pkg:conda/lyric-py@${{ version }}?channel=conda-forge
     - pkg:pypi/lyric-py@${{ version }}
   cfe-upstream-repo: https://github.com/fangyinc/lyric
   cfe-upstream-homepage: https://github.com/fangyinc/lyric

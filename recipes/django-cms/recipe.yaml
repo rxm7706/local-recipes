@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-cms
   cfe-purls:
-    - pkg:conda/django-cms@${{ version }}
+    - pkg:conda/django-cms@${{ version }}?channel=conda-forge
     - pkg:pypi/django-cms@${{ version }}
   cfe-upstream-repo: https://github.com/django-cms/django-cms
   cfe-upstream-homepage: https://github.com/django-cms/django-cms

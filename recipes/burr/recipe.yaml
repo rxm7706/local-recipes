@@ -97,7 +97,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: burr
   cfe-purls:
-    - pkg:conda/burr@${{ version }}
+    - pkg:conda/burr@${{ version }}?channel=conda-forge
     - pkg:pypi/burr@${{ version }}
   cfe-upstream-repo: https://github.com/dagworks-inc/burr
   cfe-upstream-homepage: https://github.com/dagworks-inc/burr

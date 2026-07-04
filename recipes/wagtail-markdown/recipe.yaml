@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-markdown
   cfe-purls:
-    - pkg:conda/wagtail-markdown@${{ version }}
+    - pkg:conda/wagtail-markdown@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-markdown@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtail-markdown
   cfe-upstream-homepage: https://github.com/torchbox/wagtail-markdown

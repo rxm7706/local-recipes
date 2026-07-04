@@ -124,7 +124,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: cocoindex
   cfe-purls:
-    - pkg:conda/cocoindex@${{ version }}
+    - pkg:conda/cocoindex@${{ version }}?channel=conda-forge
     - pkg:pypi/cocoindex@${{ version }}
   cfe-upstream-repo: https://github.com/cocoindex-io/cocoindex
   cfe-upstream-homepage: https://cocoindex.io/

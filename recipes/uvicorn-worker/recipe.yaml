@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: uvicorn-worker
   cfe-purls:
-    - pkg:conda/uvicorn-worker@${{ version }}
+    - pkg:conda/uvicorn-worker@${{ version }}?channel=conda-forge
     - pkg:pypi/uvicorn-worker@${{ version }}
   cfe-upstream-repo: https://github.com/Kludex/uvicorn-worker
   cfe-upstream-homepage: https://github.com/Kludex/uvicorn-worker

@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: golang
   cfe-upstream-name: github.com/axllent/mailpit
   cfe-purls:
-    - pkg:conda/mailpit@${{ version }}
+    - pkg:conda/mailpit@${{ version }}?channel=conda-forge
     - pkg:golang/github.com/axllent/mailpit@${{ version }}
   cfe-upstream-repo: https://github.com/axllent/mailpit
   cfe-upstream-homepage: https://github.com/axllent/mailpit

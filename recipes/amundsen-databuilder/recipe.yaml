@@ -78,7 +78,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: amundsen-databuilder
   cfe-purls:
-    - pkg:conda/amundsen-databuilder@${{ version }}
+    - pkg:conda/amundsen-databuilder@${{ version }}?channel=conda-forge
     - pkg:pypi/amundsen-databuilder@${{ version }}
   cfe-upstream-repo: https://github.com/amundsen-io/amundsen
   cfe-upstream-homepage: https://www.amundsen.io/amundsen/

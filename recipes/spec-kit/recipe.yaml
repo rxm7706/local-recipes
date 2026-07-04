@@ -72,7 +72,7 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: github/spec-kit
   cfe-purls:
-    - pkg:conda/spec-kit@${{ version }}
+    - pkg:conda/spec-kit@${{ version }}?channel=conda-forge
     - pkg:pypi/specify-cli@${{ version }}
     - pkg:github/github/spec-kit@v${{ version }}
   cfe-upstream-repo: https://github.com/github/spec-kit

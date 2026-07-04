@@ -61,7 +61,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-structlog
   cfe-purls:
-    - pkg:conda/django-structlog@${{ version }}
+    - pkg:conda/django-structlog@${{ version }}?channel=conda-forge
     - pkg:pypi/django-structlog@${{ version }}
   cfe-upstream-repo: https://github.com/jrobichaud/django-structlog
   cfe-upstream-homepage: https://github.com/jrobichaud/django-structlog

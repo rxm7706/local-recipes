@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-ai
   cfe-purls:
-    - pkg:conda/wagtail-ai@${{ version }}
+    - pkg:conda/wagtail-ai@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-ai@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail/wagtail-ai
   cfe-upstream-homepage: https://github.com/wagtail/wagtail-ai

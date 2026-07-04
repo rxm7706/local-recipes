@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtailmath
   cfe-purls:
-    - pkg:conda/wagtailmath@${{ version }}
+    - pkg:conda/wagtailmath@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtailmath@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-polymath
   cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-polymath

@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dagster-async-executor
   cfe-purls:
-    - pkg:conda/dagster-async-executor@${{ version }}
+    - pkg:conda/dagster-async-executor@${{ version }}?channel=conda-forge
     - pkg:pypi/dagster-async-executor@${{ version }}
   cfe-upstream-repo: https://github.com/dagster-io/community-integrations
   cfe-upstream-homepage: https://github.com/dagster-io/community-integrations

@@ -59,7 +59,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openlineage-integration-common
   cfe-purls:
-    - pkg:conda/openlineage-integration-common@${{ version }}
+    - pkg:conda/openlineage-integration-common@${{ version }}?channel=conda-forge
     - pkg:pypi/openlineage-integration-common@${{ version }}
   cfe-upstream-repo: https://github.com/OpenLineage/OpenLineage
   cfe-upstream-homepage: https://github.com/OpenLineage/OpenLineage

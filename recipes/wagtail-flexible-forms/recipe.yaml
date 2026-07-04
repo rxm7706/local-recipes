@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-flexible-forms
   cfe-purls:
-    - pkg:conda/wagtail-flexible-forms@${{ version }}
+    - pkg:conda/wagtail-flexible-forms@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-flexible-forms@${{ version }}
   cfe-upstream-repo: https://github.com/coderedcorp/wagtail-flexible-forms
   cfe-upstream-homepage: https://docs.coderedcorp.com/wagtail-flexible-forms

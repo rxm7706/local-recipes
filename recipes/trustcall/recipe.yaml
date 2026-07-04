@@ -67,7 +67,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: trustcall
   cfe-purls:
-    - pkg:conda/trustcall@${{ version }}
+    - pkg:conda/trustcall@${{ version }}?channel=conda-forge
     - pkg:pypi/trustcall@${{ version }}
   cfe-upstream-repo: https://github.com/hinthornw/trustcall
   cfe-upstream-homepage: https://github.com/hinthornw/trustcall

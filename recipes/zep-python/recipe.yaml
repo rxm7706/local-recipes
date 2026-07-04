@@ -62,7 +62,7 @@ extra:
   cfe-name-aliases:
     - zep_python
   cfe-purls:
-    - pkg:conda/zep-python@${{ version }}
+    - pkg:conda/zep-python@${{ version }}?channel=conda-forge
     - pkg:pypi/zep-python@${{ version }}
   cfe-upstream-repo: https://github.com/getzep/zep-python
   cfe-upstream-homepage: https://www.getzep.com

@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-dbbackup
   cfe-purls:
-    - pkg:conda/django-dbbackup@${{ version }}
+    - pkg:conda/django-dbbackup@${{ version }}?channel=conda-forge
     - pkg:pypi/django-dbbackup@${{ version }}
   cfe-upstream-repo: https://github.com/Archmonger/django-dbbackup
   cfe-upstream-homepage: https://github.com/Archmonger/django-dbbackup

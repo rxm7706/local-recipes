@@ -60,7 +60,7 @@ extra:
   cfe-name-aliases:
     - langchain_docling
   cfe-purls:
-    - pkg:conda/langchain-docling@${{ version }}
+    - pkg:conda/langchain-docling@${{ version }}?channel=conda-forge
     - pkg:pypi/langchain-docling@${{ version }}
   cfe-upstream-repo: https://github.com/docling-project/docling-langchain
   cfe-upstream-homepage: https://github.com/docling-project

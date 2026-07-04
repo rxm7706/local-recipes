@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-fsm-2
   cfe-purls:
-    - pkg:conda/django-fsm-2@${{ version }}
+    - pkg:conda/django-fsm-2@${{ version }}?channel=conda-forge
     - pkg:pypi/django-fsm-2@${{ version }}
   cfe-upstream-repo: https://github.com/django-commons/django-fsm-2
   cfe-upstream-homepage: https://github.com/django-commons/django-fsm-2
@@ -66,12 +66,12 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-fsm-2-feedstock
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34042
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T12:16:19Z
+  cfe-last-checked: 2026-07-04T21:06:13Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T12:05:45Z
   cfe-local-build-status: success

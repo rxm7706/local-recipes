@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lm-format-enforcer
   cfe-purls:
-    - pkg:conda/lm-format-enforcer@${{ version }}
+    - pkg:conda/lm-format-enforcer@${{ version }}?channel=conda-forge
     - pkg:pypi/lm-format-enforcer@${{ version }}
   cfe-upstream-repo: https://github.com/noamgat/lm-format-enforcer
   cfe-upstream-homepage: https://github.com/noamgat/lm-format-enforcer

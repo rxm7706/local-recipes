@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: laces
   cfe-purls:
-    - pkg:conda/laces@${{ version }}
+    - pkg:conda/laces@${{ version }}?channel=conda-forge
     - pkg:pypi/laces@${{ version }}
   cfe-upstream-repo: https://github.com/tbrlpld/laces
   cfe-upstream-homepage: https://github.com/tbrlpld/laces

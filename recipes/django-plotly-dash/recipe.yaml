@@ -62,7 +62,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-plotly-dash
   cfe-purls:
-    - pkg:conda/django-plotly-dash@${{ version }}
+    - pkg:conda/django-plotly-dash@${{ version }}?channel=conda-forge
     - pkg:pypi/django-plotly-dash@${{ version }}
   cfe-upstream-repo: https://github.com/GibbsConsulting/django-plotly-dash
   cfe-upstream-homepage: https://github.com/GibbsConsulting/django-plotly-dash
@@ -72,9 +72,9 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-plotly-dash-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-2.5.1, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [version-bump-to-2.5.1]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-07-04T22:24:52Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success

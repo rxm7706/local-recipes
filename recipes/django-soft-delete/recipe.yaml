@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-soft-delete
   cfe-purls:
-    - pkg:conda/django-soft-delete@${{ version }}
+    - pkg:conda/django-soft-delete@${{ version }}?channel=conda-forge
     - pkg:pypi/django-soft-delete@${{ version }}
   cfe-upstream-repo: https://github.com/san4ezy/django_softdelete
   cfe-upstream-homepage: https://github.com/san4ezy/django_softdelete

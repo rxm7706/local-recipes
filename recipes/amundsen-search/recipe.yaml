@@ -76,7 +76,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: amundsen-search
   cfe-purls:
-    - pkg:conda/amundsen-search@${{ version }}
+    - pkg:conda/amundsen-search@${{ version }}?channel=conda-forge
     - pkg:pypi/amundsen-search@${{ version }}
   cfe-upstream-repo: https://github.com/amundsen-io/amundsen
   cfe-upstream-homepage: https://www.amundsen.io/amundsen/

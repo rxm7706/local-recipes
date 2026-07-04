@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: tika-client
   cfe-purls:
-    - pkg:conda/tika-client@${{ version }}
+    - pkg:conda/tika-client@${{ version }}?channel=conda-forge
     - pkg:pypi/tika-client@${{ version }}
   cfe-upstream-repo: https://github.com/stumpylog/tika-client
   cfe-upstream-homepage: https://github.com/stumpylog/tika-client

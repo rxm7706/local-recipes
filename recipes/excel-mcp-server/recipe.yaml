@@ -67,7 +67,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: excel-mcp-server
   cfe-purls:
-    - pkg:conda/excel-mcp-server@${{ version }}
+    - pkg:conda/excel-mcp-server@${{ version }}?channel=conda-forge
     - pkg:pypi/excel-mcp-server@${{ version }}
   cfe-upstream-repo: https://github.com/haris-musa/excel-mcp-server
   cfe-upstream-homepage: https://excelmcpserver.com

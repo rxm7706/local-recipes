@@ -52,7 +52,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: robocorp-http
   cfe-purls:
-    - pkg:conda/robocorp-http@${{ version }}
+    - pkg:conda/robocorp-http@${{ version }}?channel=conda-forge
     - pkg:pypi/robocorp-http@${{ version }}
   cfe-upstream-repo: https://github.com/robocorp/robocorp
   cfe-upstream-homepage: https://github.com/robocorp/robocorp

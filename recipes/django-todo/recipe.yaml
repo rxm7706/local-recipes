@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-todo
   cfe-purls:
-    - pkg:conda/django-todo@${{ version }}
+    - pkg:conda/django-todo@${{ version }}?channel=conda-forge
     - pkg:pypi/django-todo@${{ version }}
   cfe-upstream-repo: https://github.com/shacker/django-todo
   cfe-upstream-homepage: http://django-todo.org

@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: daff
   cfe-purls:
-    - pkg:conda/daff@${{ version }}
+    - pkg:conda/daff@${{ version }}?channel=conda-forge
     - pkg:pypi/daff@${{ version }}
   cfe-upstream-repo: https://github.com/paulfitz/daff
   cfe-upstream-homepage: https://github.com/paulfitz/daff

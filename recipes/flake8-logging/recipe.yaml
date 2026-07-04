@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: flake8-logging
   cfe-purls:
-    - pkg:conda/flake8-logging@${{ version }}
+    - pkg:conda/flake8-logging@${{ version }}?channel=conda-forge
     - pkg:pypi/flake8-logging@${{ version }}
   cfe-upstream-repo: https://github.com/adamchainz/flake8-logging
   cfe-upstream-homepage: https://github.com/adamchainz/flake8-logging

@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: xorq-dasher
   cfe-purls:
-    - pkg:conda/xorq-dasher@${{ version }}
+    - pkg:conda/xorq-dasher@${{ version }}?channel=conda-forge
     - pkg:pypi/xorq-dasher@${{ version }}
   cfe-upstream-repo: https://github.com/xorq-labs/dasher
   cfe-upstream-homepage: https://pypi.org/project/xorq-dasher/

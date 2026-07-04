@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: flake8-tidy-imports
   cfe-purls:
-    - pkg:conda/flake8-tidy-imports@${{ version }}
+    - pkg:conda/flake8-tidy-imports@${{ version }}?channel=conda-forge
     - pkg:pypi/flake8-tidy-imports@${{ version }}
   cfe-upstream-repo: https://github.com/adamchainz/flake8-tidy-imports
   cfe-upstream-homepage: https://github.com/adamchainz/flake8-tidy-imports

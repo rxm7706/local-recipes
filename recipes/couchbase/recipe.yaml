@@ -131,7 +131,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: couchbase
   cfe-purls:
-    - pkg:conda/couchbase@${{ version }}
+    - pkg:conda/couchbase@${{ version }}?channel=conda-forge
     - pkg:pypi/couchbase@${{ version }}
   cfe-upstream-repo: https://github.com/couchbase/couchbase-python-client
   cfe-upstream-homepage: https://pypi.org/project/couchbase/

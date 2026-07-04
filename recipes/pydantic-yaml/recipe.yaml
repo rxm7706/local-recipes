@@ -56,7 +56,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pydantic-yaml
   cfe-purls:
-    - pkg:conda/pydantic-yaml@${{ version }}
+    - pkg:conda/pydantic-yaml@${{ version }}?channel=conda-forge
     - pkg:pypi/pydantic-yaml@${{ version }}
   cfe-upstream-repo: https://pypi.org/project/pydantic_yaml/
   cfe-upstream-homepage: https://pypi.org/project/pydantic_yaml/

@@ -54,7 +54,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: ag-ui-protocol
   cfe-purls:
-    - pkg:conda/ag-ui-protocol@${{ version }}
+    - pkg:conda/ag-ui-protocol@${{ version }}?channel=conda-forge
     - pkg:pypi/ag-ui-protocol@${{ version }}
   cfe-upstream-repo: https://github.com/ag-ui-protocol/ag-ui
   cfe-upstream-homepage: https://github.com/ag-ui-protocol/ag-ui

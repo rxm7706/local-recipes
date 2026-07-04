@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: djangocms-text-ckeditor
   cfe-purls:
-    - pkg:conda/djangocms-text-ckeditor@${{ version }}
+    - pkg:conda/djangocms-text-ckeditor@${{ version }}?channel=conda-forge
     - pkg:pypi/djangocms-text-ckeditor@${{ version }}
   cfe-upstream-repo: https://github.com/django-cms/djangocms-text-ckeditor
   cfe-upstream-homepage: https://github.com/django-cms/djangocms-text-ckeditor

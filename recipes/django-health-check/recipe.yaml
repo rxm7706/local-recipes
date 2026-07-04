@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-health-check
   cfe-purls:
-    - pkg:conda/django-health-check@${{ version }}
+    - pkg:conda/django-health-check@${{ version }}?channel=conda-forge
     - pkg:pypi/django-health-check@${{ version }}
   cfe-upstream-repo: https://github.com/codingjoe/django-health-check
   cfe-upstream-homepage: https://github.com/codingjoe/django-health-check

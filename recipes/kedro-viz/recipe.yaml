@@ -73,7 +73,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: kedro-viz
   cfe-purls:
-    - pkg:conda/kedro-viz@${{ version }}
+    - pkg:conda/kedro-viz@${{ version }}?channel=conda-forge
     - pkg:pypi/kedro-viz@${{ version }}
   cfe-upstream-repo: https://github.com/kedro-org/kedro-viz
   cfe-upstream-homepage: https://github.com/kedro-org/kedro-viz
@@ -83,9 +83,9 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kedro-viz-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-12.4.0, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [version-bump-to-12.4.0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-07-04T22:24:52Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: build-clean-test-blocked

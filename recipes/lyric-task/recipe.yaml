@@ -58,7 +58,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lyric-task
   cfe-purls:
-    - pkg:conda/lyric-task@${{ version }}
+    - pkg:conda/lyric-task@${{ version }}?channel=conda-forge
     - pkg:pypi/lyric-task@${{ version }}
   cfe-upstream-repo: https://github.com/fangyinc/lyric
   cfe-upstream-homepage: https://github.com/fangyinc/lyric

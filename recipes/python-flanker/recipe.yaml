@@ -65,7 +65,7 @@ extra:
     - flanker
     - flanker-python
   cfe-purls:
-    - pkg:conda/python-flanker@${{ version }}
+    - pkg:conda/python-flanker@${{ version }}?channel=conda-forge
     - pkg:pypi/flanker@${{ version }}
   cfe-upstream-repo: https://github.com/mailgun/flanker
   cfe-upstream-homepage: https://www.mailgun.com/

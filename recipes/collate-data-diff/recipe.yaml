@@ -95,7 +95,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: collate-data-diff
   cfe-purls:
-    - pkg:conda/collate-data-diff@${{ version }}
+    - pkg:conda/collate-data-diff@${{ version }}?channel=conda-forge
     - pkg:pypi/collate-data-diff@${{ version }}
   cfe-upstream-repo: https://github.com/datafold/data-diff
   cfe-upstream-homepage: https://github.com/datafold/data-diff

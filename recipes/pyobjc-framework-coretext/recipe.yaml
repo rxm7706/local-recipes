@@ -65,7 +65,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pyobjc-framework-coretext
   cfe-purls:
-    - pkg:conda/pyobjc-framework-coretext@${{ version }}
+    - pkg:conda/pyobjc-framework-coretext@${{ version }}?channel=conda-forge
     - pkg:pypi/pyobjc-framework-coretext@${{ version }}
   cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
   cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc

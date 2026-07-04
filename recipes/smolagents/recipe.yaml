@@ -67,7 +67,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: smolagents
   cfe-purls:
-    - pkg:conda/smolagents@${{ version }}
+    - pkg:conda/smolagents@${{ version }}?channel=conda-forge
     - pkg:pypi/smolagents@${{ version }}
   cfe-upstream-repo: https://github.com/huggingface/smolagents
   cfe-upstream-homepage: https://github.com/huggingface/smolagents

@@ -53,7 +53,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: auto-gpt-plugin-template
   cfe-purls:
-    - pkg:conda/auto-gpt-plugin-template@${{ version }}
+    - pkg:conda/auto-gpt-plugin-template@${{ version }}?channel=conda-forge
     - pkg:pypi/auto-gpt-plugin-template@${{ version }}
   cfe-upstream-repo: https://github.com/Significant-Gravitas/Auto-GPT
   cfe-upstream-homepage: https://github.com/Significant-Gravitas/Auto-GPT
@@ -61,12 +61,12 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/auto-gpt-plugin-template-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33765
-  cfe-last-checked: 2026-06-27T02:38:06Z
+  cfe-last-checked: 2026-07-04T21:04:05Z
   cfe-generated-by-version: 8.55.0
   cfe-generated-at-datetime: 2026-06-27T02:38:06Z
   cfe-local-build-status: success

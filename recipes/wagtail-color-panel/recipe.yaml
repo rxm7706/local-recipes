@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-color-panel
   cfe-purls:
-    - pkg:conda/wagtail-color-panel@${{ version }}
+    - pkg:conda/wagtail-color-panel@${{ version }}?channel=conda-forge
     - pkg:pypi/wagtail-color-panel@${{ version }}
   cfe-upstream-repo: https://github.com/marteinn/wagtail-color-panel
   cfe-upstream-homepage: https://github.com/marteinn/wagtail-color-panel

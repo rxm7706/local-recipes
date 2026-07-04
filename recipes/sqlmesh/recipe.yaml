@@ -84,7 +84,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: sqlmesh
   cfe-purls:
-    - pkg:conda/sqlmesh@${{ version }}
+    - pkg:conda/sqlmesh@${{ version }}?channel=conda-forge
     - pkg:pypi/sqlmesh@${{ version }}
   cfe-upstream-repo: https://github.com/tobymao/sqlglot
   cfe-upstream-homepage: https://sqlmesh.com/
@@ -94,8 +94,8 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlmesh-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-0.235.4 (PR#82 open), sqlglot-pin-30.8]
-  cfe-forge-blocker-list: [sqlglot >=30.8.0 not on cf: chain = sqlglotrs#48 reshape -> sqlglot 30.8.0 bump -> PR#82 re-run; full chain verified GREEN locally]
+  cfe-forge-recipe-updates-needed: ["version-bump-to-0.235.4 (PR#82 open)", sqlglot-pin-30.8]
+  cfe-forge-blocker-list: ["sqlglot >=30.8.0 not on cf: chain = sqlglotrs#48 reshape -> sqlglot 30.8.0 bump -> PR#82 re-run; full chain verified GREEN locally"]
   cfe-last-checked: 2026-07-03T15:29:19Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T15:29:19Z

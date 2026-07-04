@@ -51,7 +51,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: sqlglotrs
   cfe-purls:
-    - pkg:conda/sqlglotrs@${{ version }}
+    - pkg:conda/sqlglotrs@${{ version }}?channel=conda-forge
     - pkg:pypi/sqlglotrs@${{ version }}
   cfe-upstream-repo: https://github.com/tobymao/sqlglot
   cfe-upstream-homepage: https://sqlglot.com/
@@ -62,7 +62,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlglotrs-feedstock
   cfe-forge-recipe-updates-needed: [reshape-to-noarch-python-stub, version-bump-to-0.13.0]
-  cfe-forge-blocker-list: [feedstock#48 red: recipe still Rust-shaped for what is now a pure-python deprecation stub — reshape diff verified locally]
+  cfe-forge-blocker-list: ["feedstock#48 red: recipe still Rust-shaped for what is now a pure-python deprecation stub — reshape diff verified locally"]
   cfe-last-checked: 2026-07-03T15:29:19Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T15:29:19Z

@@ -57,7 +57,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-tastypie
   cfe-purls:
-    - pkg:conda/django-tastypie@${{ version }}
+    - pkg:conda/django-tastypie@${{ version }}?channel=conda-forge
     - pkg:pypi/django-tastypie@${{ version }}
   cfe-upstream-repo: https://github.com/django-tastypie/django-tastypie
   cfe-upstream-homepage: https://github.com/django-tastypie/django-tastypie

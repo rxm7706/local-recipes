@@ -55,7 +55,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: py-key-value-shared
   cfe-purls:
-    - pkg:conda/py-key-value-shared@${{ version }}
+    - pkg:conda/py-key-value-shared@${{ version }}?channel=conda-forge
     - pkg:pypi/py-key-value-shared@${{ version }}
   cfe-upstream-repo: https://github.com/strawgate/py-key-value
   cfe-upstream-homepage: https://pypi.org/project/py-key-value-shared/

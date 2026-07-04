@@ -70,7 +70,7 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: google-re2
   cfe-purls:
-    - pkg:conda/google-re2@${{ version }}
+    - pkg:conda/google-re2@${{ version }}?channel=conda-forge
     - pkg:pypi/google-re2@${{ version }}
   cfe-upstream-repo: https://github.com/google/re2
   cfe-upstream-homepage: https://github.com/google/re2/tree/main/python
