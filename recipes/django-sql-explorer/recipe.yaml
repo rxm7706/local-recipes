@@ -84,7 +84,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-sql-explorer-feedstock
   cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-07-04T22:35:56Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
