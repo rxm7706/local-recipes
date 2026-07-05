@@ -1445,6 +1445,8 @@ ATLAS_PYPI_ONLY_CANDIDATES = SCRIPTS_DIR / "pypi_only_candidates.py"
 ATLAS_PYPI_INTELLIGENCE = SCRIPTS_DIR / "pypi_intelligence.py"
 # cyclonedx-universe-inventory Wave A/S1 — purl + mapping exporter.
 ATLAS_EXPORT_PURLS         = SCRIPTS_DIR / "export_purls.py"
+# cyclonedx-universe-inventory Wave B/S3 — full-universe SBOM emitter.
+ATLAS_UNIVERSE_SBOM        = SCRIPTS_DIR / "universe_sbom.py"
 ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
 # v8.19.0 Phase F+ Wave 3 — per-platform / per-Python / per-channel breakdowns.
 ATLAS_PLATFORM_BREAKDOWN   = SCRIPTS_DIR / "platform_breakdown.py"
@@ -1824,6 +1826,44 @@ def export_purls(out_dir: str | None = None) -> str:
     # exceed _run_script's 120s default; a mid-sequence kill would leave a
     # mixed old/new artifact set.
     return json.dumps(_run_script(ATLAS_EXPORT_PURLS, args, timeout=600), indent=2)
+
+
+@mcp.tool()
+def universe_sbom(
+    out: str | None = None,
+    format: str = "cyclonedx",
+    actionable_only: bool = False,
+    mapped_only: bool = False,
+    conda_only: bool = False,
+    pypi_only: bool = False,
+    with_vulns: bool = False,
+    allow_stale: bool = False,
+) -> str:
+    """Emit the full conda-forge + PyPI universe inventory as an SBOM.
+
+    cyclonedx-universe-inventory Wave B/S3. Offline; reads cf_atlas.db.
+    A mapped conda↔pypi pair is ONE conda component (cfe:pypi_purl /
+    cfe:match_* properties); standalone pkg:pypi components appear only
+    for unmapped names, enriched via v_pypi_intelligence_valid (v29).
+    Refuses when the atlas is >14 days old unless allow_stale.
+
+    Slices for consumers that can't ingest the full set: actionable_only,
+    mapped_only, conda_only, pypi_only. with_vulns attaches current-version
+    vuln-count properties. Returns the run summary (counts, path, bytes,
+    wall time). Regenerate after every atlas rebuild."""
+    args = ["--json", "--format", format]
+    if out:
+        args += ["--out", out]
+    for flag, on in (("--actionable-only", actionable_only),
+                     ("--mapped-only", mapped_only),
+                     ("--conda-only", conda_only),
+                     ("--pypi-only", pypi_only),
+                     ("--with-vulns", with_vulns),
+                     ("--allow-stale", allow_stale)):
+        if on:
+            args.append(flag)
+    # Full-universe emit (~880k components) can exceed the 120s default.
+    return json.dumps(_run_script(ATLAS_UNIVERSE_SBOM, args, timeout=600), indent=2)
 
 
 @mcp.tool()
