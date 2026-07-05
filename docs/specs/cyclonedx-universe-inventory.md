@@ -76,7 +76,12 @@ spec_updated: 2026-07-05
   `.claude/skills/conda-forge-expert/` (e.g.
   `.claude/skills/conda-forge-expert/tests/unit/test_export_purls.py`), not a
   repo-root `tests/` tree. See also § Execution-environment split (web pass)
-  below. Zero implementation. Resume at **Wave A / S1**.
+  below. **Implementation state: Wave A shipped 2026-07-05** (`ad0d3be3c1` +
+  adversarial patches `14dfd218d7`; live gates run same day, incl. the D2
+  `uncorroborated` live-gate fix `4821907ab0`). **Wave B shipped 2026-07-05**
+  (web slice `dd54e47d4d` + adversarial patches `5e39ffe293`, PR #33; local
+  live gates ALL PASS 2026-07-05 — see § Wave B Dev Notes). Resume at
+  **Wave C / S5**.
 
 ### Execution-environment split (web pass)
 
@@ -456,6 +461,59 @@ calls), the 19-line wrapper template in `.claude/scripts/conda-forge-expert/`.
   plus an explicit test that `scan_project`'s purl parser accepts the
   `?channel=conda-forge` qualifier. Success: schema-valid on live data, not just
   fixtures (run the validator once against the real full BOM and record the result).
+
+#### Wave B Dev Notes — local live-gate run (2026-07-05; measured, not estimated)
+
+Environment: pixi 0.72.0 (user-level — the env-resident 0.70.2 no longer
+satisfies the manifest's `requires-pixi >=0.71`), atlas `built_at`
+2026-07-05 17:49 UTC (fresh; no `--allow-stale`), 16-core / 60 GiB host.
+
+**S3 measured emits** (each run via `pixi run -e local-recipes universe-sbom`;
+`bytes`/`wall_seconds` from the CLI's own `--json` summary, RSS from
+`/usr/bin/time`):
+
+| Run | Components (conda + pypi) | Bytes | Emit wall | Peak RSS |
+|---|---|---|---|---|
+| full CycloneDX (default) | 856,766 (33,624 + 823,142) | 160,904,709 (~153 MiB) | 10.2 s | ~0.69 GiB |
+| `--actionable-only` | 855,797 (32,655 + 823,142) | 160,529,118 | 10.2 s | ~0.69 GiB |
+| `--mapped-only` | 21,615 (conda only) | 9,503,402 (~9.1 MiB) | 0.6 s | ~87 MiB |
+| `--conda-only` | 33,624 | 13,808,379 (~13.2 MiB) | 1.0 s | ~103 MiB |
+| `--pypi-only` | 823,142 | 147,096,931 (~140 MiB) | 9.5 s | ~624 MiB |
+| full SPDX (`--format spdx`) | 856,766 | 304,148,686 (~290 MiB) | 15.0 s | ~1.24 GiB |
+
+PyPI-side reconciliation: 843,641 G98-distinct universe purls − 823,142
+standalone components = 20,499 names folded into mapped conda components
+(the D1 fold-suppression path; 21,615 mapped conda components > 20,499
+because multiple conda packages can share one pypi_name and some mapped
+names have no universe row).
+
+**Layout decision (D2, made HERE from the numbers): SINGLE combined file.**
+~153 MiB / ~10 s emit is tractable to store, transfer, and stream-parse;
+consumers that can't ingest the full set already have the split pair on
+demand (`--conda-only` + `--pypi-only`) plus the smaller slices. No code
+change; revisit only if the universe outgrows ~1 GiB.
+
+**S4 real-data gates (all PASS, 2026-07-05):**
+
+- **CycloneDX 1.6 schema validation of the REAL full BOM: VALID** — all
+  856,766 components, using the test suite's exact schemas + Draft7
+  validator (jsonschema 4.26.0, vendored bom-1.6/spdx/jsf), 17.3 s wall
+  across 14 worker chunks + a 4.3 s exact `uniqueItems` check (0 duplicate
+  components, canonical-JSON identity). **Method note (retro candidate):**
+  the naive single-pass `Draft7Validator.validate(doc)` the unit tests use
+  is INTRACTABLE on the real BOM — jsonschema implements the components
+  array's `uniqueItems: true` as an O(n²) pairwise dict scan (~3.7×10¹¹
+  comparisons at 856k; a run was killed after 75 min of a projected
+  multi-day walk). The gate run strips `uniqueItems` from the schema copy,
+  checks that predicate exactly in O(n) via canonical-JSON hashing, and
+  chunk-parallelizes the remaining walk — semantically identical verdicts.
+  Fixture-scale tests can never surface this class; the live gate did.
+- **CLI-level round-trip**: a 50-component slice of the real mapped BOM
+  (purls carrying `?channel=conda-forge`) through
+  `pixi run -e vuln-db scan-project -- --sbom-in`: 50/50 deps loaded,
+  50/50 atlas-matched, clean vuln report, 0.69 s.
+- **Full suite in the real env**: `pixi run -e local-recipes test` —
+  1914 passed / 2 skipped (known `--help` skips) / 1 xpassed, 89 s.
 
 ### Wave C — Inventory gap / version-lag matcher
 
