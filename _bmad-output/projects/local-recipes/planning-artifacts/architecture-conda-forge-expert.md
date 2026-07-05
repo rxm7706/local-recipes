@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.67.0'
+source_pin: 'conda-forge-expert v8.68.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -289,7 +289,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Complementary Skills (which BMAD/practice skills compose with this one)
 - CI Infrastructure Reference (platform assignments, OS versions, compiler pins, bot commands)
 - Ecosystem Updates (May 2026)
-- Recipe Authoring Gotchas (G1–G97, all in SKILL.md; latest G95–G97 — the punch-list-closure set: BCTB metadata-unverified, bump-PR dep authority, C-ABI era diamonds — added v8.67.0)
+- Recipe Authoring Gotchas (G1–G98, all in SKILL.md; latest G98 — batch cfe-metadata edit discipline (parse-gate every write, \g<1> re.sub, provenance-check vs git) + purl conventions (conda channel qualifier; purl-spec pypi keeps dots) — added v8.68.0)
 - conda-forge.yml universal pre-seed now emitted by default on every generator path (v8.61.0, via `scripts/_cfy_template.py`; pre-seeds the feedstock per G83)
 
 ### `INDEX.md` (task→tool navigator)
@@ -333,7 +333,7 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 
 ## Recipe Authoring Gotchas (SKILL.md § Recipe Authoring Gotchas)
 
-Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G97**, all promoted into SKILL.md (the table below shows the founding six; G7–G97 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
+Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G98**, all promoted into SKILL.md (the table below shows the founding six; G7–G98 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
 
 | Code | Description | Lives where |
 |---|---|---|
