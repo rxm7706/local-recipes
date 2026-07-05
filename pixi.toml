@@ -395,6 +395,14 @@ cmd = "python .claude/scripts/conda-forge-expert/adoption_stage.py"
 description = "List PyPI projects with no conda-forge equivalent. Reads the pypi_universe side table (Phase D, schema v20+). --limit N, --min-serial M, --json. Admin-persona candidate list."
 cmd = "python .claude/scripts/conda-forge-expert/pypi_only_candidates.py"
 
+[feature.local-recipes.tasks.export-purls]
+description = "Export the six purl + mapping artifacts (conda purls, versioned, pypi universe, conda↔pypi TSV, recipe exceptions, non-pypi upstream TSV) from cf_atlas.db + recipes/. --out-dir DIR, --json. cyclonedx-universe-inventory Wave A/S1."
+cmd = "python .claude/scripts/conda-forge-expert/export_purls.py"
+
+[feature.local-recipes.tasks.mapping-gap]
+description = "Classify + recover conda↔PyPI mapping gaps offline (inverse-G10 spellings vs pypi_universe + grayskull reverse index). DRY-RUN by default; --write applies the no-clobber g10_spelling writeback. --json, --limit N, --report PATH. cyclonedx-universe-inventory Wave A/S2."
+cmd = "python .claude/scripts/conda-forge-expert/mapping_gap.py"
+
 [feature.local-recipes.tasks.pypi-intelligence]
 description = "Surface PyPI candidates with rich enrichment filters (schema v22+ pypi_intelligence). --not-in-conda-forge, --activity hot|warm|cold|dormant, --license-ok, --noarch-python-candidate, --min-downloads N, --in-bioconda / --in-pytorch / etc., --score-min N, --sort-by score|downloads|serial|name, --limit N, --json. Admin/maintainer-persona ranked candidate list with conda_forge_readiness scores."
 cmd = "python .claude/scripts/conda-forge-expert/pypi_intelligence.py"

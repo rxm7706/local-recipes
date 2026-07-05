@@ -1,5 +1,5 @@
 ---
-status: ready
+status: in-progress
 spec_updated: 2026-07-05
 ---
 

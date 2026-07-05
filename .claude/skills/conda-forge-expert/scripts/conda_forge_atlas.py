@@ -135,7 +135,7 @@ CONDA_FORGE_CHANNEL = "conda-forge"
 # Air-gapped JFrog routing is configured via env vars or pixi config; no
 # enterprise URLs live in this script.
 
-SCHEMA_VERSION = 28
+SCHEMA_VERSION = 29
 
 
 def _get_data_dir() -> Path:
@@ -600,6 +600,20 @@ SELECT
 FROM pypi_universe u
 LEFT JOIN pypi_intelligence i ON i.pypi_name = u.pypi_name
 LEFT JOIN packages p ON p.pypi_name = u.pypi_name AND p.conda_name IS NOT NULL;
+
+-- Schema v29 (cyclonedx-universe-inventory Wave A / S2, D3): the ORPHAN_RULE
+-- view. `pypi_intelligence` carries rows with no `pypi_universe` counterpart
+-- (deleted/renamed PyPI projects — 93,390 at 2026-07-05). Those orphans must
+-- NEVER be used as version truth: consumers reading `latest_version` /
+-- `requires_python` / enrichment columns for version-comparison purposes read
+-- FROM this view, which inner-joins the universe so only live PyPI projects
+-- surface. Raw `FROM pypi_intelligence` reads outside this view need a
+-- `# scope: ...` justification comment (enforced by
+-- `tests/meta/test_pypi_intelligence_scope.py`, the
+-- `test_actionable_scope.py` pattern applied to the pypi_intelligence table).
+CREATE VIEW IF NOT EXISTS v_pypi_intelligence_valid AS
+SELECT pi.* FROM pypi_intelligence pi
+JOIN pypi_universe pu ON pu.pypi_name = pi.pypi_name;
 
 CREATE INDEX IF NOT EXISTS idx_relationship ON packages(relationship);
 CREATE INDEX IF NOT EXISTS idx_match_source ON packages(match_source);
@@ -1141,6 +1155,16 @@ def init_schema(conn: sqlite3.Connection) -> None:
             except Exception:
                 conn.execute("ROLLBACK")
                 raise
+
+        # v28 → v29 (cyclonedx-universe-inventory Wave A / S2, D3): the
+        # `v_pypi_intelligence_valid` ORPHAN_RULE view. The view is in
+        # SCHEMA_DDL guarded by CREATE VIEW IF NOT EXISTS, so no migration
+        # step is needed here — `executescript(SCHEMA_DDL)` at the end of
+        # init_schema creates it (v21(B)/v22 precedent). No tables or
+        # columns are modified; no sentinels are required (the view is a
+        # pure read-surface: version-truth consumers of pypi_intelligence
+        # switch to `FROM v_pypi_intelligence_valid`, which excludes the
+        # orphan rows that have no pypi_universe counterpart).
 
         # v2 → v3: dedupe before the unique index in SCHEMA_DDL is created, or
         # the CREATE UNIQUE INDEX would fail on the duplicates.
@@ -7150,6 +7174,8 @@ def phase_o_serial_snapshots(conn: sqlite3.Connection) -> dict:
     ).rowcount
 
     # 5. Band-count summary for logging
+    # scope: Phase O producer-side stats over the rows it just stamped —
+    # not version truth; orphans are legitimately included in the count.
     band_counts = dict(
         conn.execute(
             "SELECT activity_band, COUNT(*) FROM pypi_intelligence "
@@ -7890,6 +7916,8 @@ def phase_q_cross_channel(conn: sqlite3.Connection) -> dict:
             # Set column = 0 for any prior-matched name not in this batch.
             # We DON'T flip non-matched-and-never-matched rows from NULL → 0;
             # only flip rows that previously had this column = 1.
+            # scope: Phase Q producer-side self-join maintaining its own
+            # cross-channel flags — not version truth; orphans stay eligible.
             conn.execute(
                 f"UPDATE pypi_intelligence SET {col} = 0, cross_channel_at = ? "
                 f"WHERE {col} = 1 AND pypi_name NOT IN ("
@@ -8452,6 +8480,8 @@ def phase_s_computed_scores(conn: sqlite3.Connection) -> dict:
     conn.commit()
 
     # Summary stats
+    # scope: Phase S producer-side readiness histogram over the whole
+    # table it just scored — not version truth; orphans included by design.
     band_stats = dict(conn.execute(
         "SELECT CASE "
         "  WHEN conda_forge_readiness IS NULL THEN 'unscored' "
