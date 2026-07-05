@@ -96,6 +96,12 @@ grayskull cache) does **not** exist there, and `pixi` is not installed:
   D3 view count, re-export growth check, `pixi run -e local-recipes test`),
   and every dated Dev-Notes count. A web pass must NOT fabricate these
   numbers — they come from the local run (CFE live-verification principle).
+  **Wave B local-only additions (recorded 2026-07-05, with the web slice):**
+  the S4 validator run against the REAL full BOM; the measured full-universe
+  size/emit-time numbers that decide single-file-vs-split (S3 Dev Notes);
+  and the CLI-level `scan-project --sbom-in` invocation of the ~50-component
+  round-trip (the web tests cover the same parser in-process with a
+  60-component slice — the CLI surface needs the full pixi env).
 
 ### Adjacent prefix.dev / nebari tooling (survey 2026-07-05, per user — the eighth amendment)
 

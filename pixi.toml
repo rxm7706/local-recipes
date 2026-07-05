@@ -410,6 +410,10 @@ cmd = "python .claude/scripts/conda-forge-expert/export_purls.py"
 description = "Classify + recover conda↔PyPI mapping gaps offline (inverse-G10 spellings vs pypi_universe + grayskull reverse index). DRY-RUN by default; --write applies the no-clobber g10_spelling writeback. --json, --limit N, --report PATH. cyclonedx-universe-inventory Wave A/S2."
 cmd = "python .claude/scripts/conda-forge-expert/mapping_gap.py"
 
+[feature.local-recipes.tasks.universe-sbom]
+description = "Emit the full conda-forge + PyPI universe inventory as a CycloneDX 1.6 (or SPDX 2.3) SBOM from cf_atlas.db. Slices: --actionable-only, --mapped-only, --conda-only, --pypi-only; --with-vulns, --allow-stale, --format, --out, --json. Refuses on a >14d-stale atlas (decision 6). cyclonedx-universe-inventory Wave B/S3."
+cmd = "python .claude/scripts/conda-forge-expert/universe_sbom.py"
+
 [feature.local-recipes.tasks.pypi-intelligence]
 description = "Surface PyPI candidates with rich enrichment filters (schema v22+ pypi_intelligence). --not-in-conda-forge, --activity hot|warm|cold|dormant, --license-ok, --noarch-python-candidate, --min-downloads N, --in-bioconda / --in-pytorch / etc., --score-min N, --sort-by score|downloads|serial|name, --limit N, --json. Admin/maintainer-persona ranked candidate list with conda_forge_readiness scores."
 cmd = "python .claude/scripts/conda-forge-expert/pypi_intelligence.py"
