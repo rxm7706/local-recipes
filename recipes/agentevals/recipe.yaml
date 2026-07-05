@@ -68,7 +68,7 @@ extra:
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34047
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - staged-recipes #34047 held in draft until openevals #34044 merges
+    - "staged-recipes #34047 held in draft until openevals #34044 merges"
   cfe-last-checked: 2026-07-03T12:16:19Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T12:05:45Z

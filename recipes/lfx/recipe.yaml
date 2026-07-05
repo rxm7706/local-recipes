@@ -118,7 +118,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - langflow-sdk        # langflow-family; now a langflow-suite OUTPUT (G72 fold), not a standalone cf feedstock; resolvable in local channel
+    - "langflow-sdk — langflow-family; now a langflow-suite OUTPUT (G72 fold), not a standalone cf feedstock; resolvable in local channel"
   # opendsstar dropped from the hard-blocker list: it is an optional-dependencies
   # group in lfx 1.10.1 (now a run_constraint, not a hard dep), so the core lfx
   # install no longer depends on it.

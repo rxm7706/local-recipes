@@ -73,8 +73,8 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - langchain-ibm        # not on conda-forge AND not in local channel (third-party blocker; needs authoring)
-    - ibm-watsonx-ai       # not on conda-forge AND not in local channel (third-party blocker; needs authoring)
+    - "langchain-ibm — not on conda-forge AND not in local channel (third-party blocker; needs authoring)"
+    - "ibm-watsonx-ai — not on conda-forge AND not in local channel (third-party blocker; needs authoring)"
   cfe-last-checked: 2026-06-19T20:15:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:15:00Z
