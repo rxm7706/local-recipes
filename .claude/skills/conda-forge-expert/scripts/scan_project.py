@@ -199,10 +199,15 @@ def parse_requirements_txt(path: Path) -> list[Dep]:
         line = line.split("#")[0].strip()
         if not line or line.startswith("-"):
             continue
-        m = re.match(r"^([A-Za-z0-9._-]+)(?:\s*[=<>~!]=?\s*([0-9][^,;\s]*))?", line)
+        m = re.match(r"^([A-Za-z0-9._-]+)\s*(?:([=<>~!]=?)\s*([0-9][^,;\s]*))?", line)
         if m:
-            deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
-                            ecosystem="pypi", manifest=path.name))
+            # The operator rides in extras so version-comparison consumers
+            # (inventory-match) can tell a real `==` pin from the lower
+            # bound of `>=`/`~=`/`!=` ranges; `version` stays populated for
+            # the vuln-lookup path either way.
+            extras = {"op": m.group(2)} if m.group(2) and m.group(2) != "==" else {}
+            deps.append(Dep(name=m.group(1).lower(), version=m.group(3),
+                            ecosystem="pypi", manifest=path.name, extras=extras))
     return deps
 
 
@@ -220,15 +225,17 @@ def parse_pyproject_toml(path: Path) -> list[Dep]:
         return []
     deps: list[Dep] = []
     project = data.get("project") or {}
-    spec_re = re.compile(r"^([A-Za-z0-9._-]+)(?:\s*[=<>~!]=?\s*([0-9][^,;\s]*))?")
+    spec_re = re.compile(r"^([A-Za-z0-9._-]+)\s*(?:([=<>~!]=?)\s*([0-9][^,;\s]*))?")
 
     def _add(spec: Any, manifest: str) -> None:
         if not isinstance(spec, str):
             return
         m = spec_re.match(spec)
         if m:
-            deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
-                            ecosystem="pypi", manifest=manifest))
+            # non-== operators recorded so range bounds aren't taken as pins
+            extras = {"op": m.group(2)} if m.group(2) and m.group(2) != "==" else {}
+            deps.append(Dep(name=m.group(1).lower(), version=m.group(3),
+                            ecosystem="pypi", manifest=manifest, extras=extras))
 
     # PEP 621 standard
     for spec in project.get("dependencies") or []:
@@ -277,9 +284,14 @@ def parse_pyproject_toml(path: Path) -> list[Dep]:
                 continue  # Python interpreter constraint, not a dep
             ver = (v.get("version") if isinstance(v, dict)
                    else (v if isinstance(v, str) else None))
+            op = None
+            if ver:
+                m_op = re.match(r"^\s*([\^~>=<*]+)", ver)
+                op = m_op.group(1) if m_op else None
             ver = (re.sub(r"^[\^~>=<*]+\s*", "", ver) or None) if ver else None
             deps.append(Dep(name=n.lower(), version=ver, ecosystem="pypi",
-                            manifest=f"{path.name}#poetry.{section_name}"))
+                            manifest=f"{path.name}#poetry.{section_name}",
+                            extras={"op": op} if op else {}))
     poetry_groups = poetry.get("group") or {}
     if isinstance(poetry_groups, dict):
         for gname, gdef in poetry_groups.items():
@@ -291,9 +303,14 @@ def parse_pyproject_toml(path: Path) -> list[Dep]:
                     continue
                 ver = (v.get("version") if isinstance(v, dict)
                        else (v if isinstance(v, str) else None))
+                op = None
+                if ver:
+                    m_op = re.match(r"^\s*([\^~>=<*]+)", ver)
+                    op = m_op.group(1) if m_op else None
                 ver = (re.sub(r"^[\^~>=<*]+\s*", "", ver) or None) if ver else None
                 deps.append(Dep(name=n.lower(), version=ver, ecosystem="pypi",
-                                manifest=f"{path.name}#poetry.group.{gname}"))
+                                manifest=f"{path.name}#poetry.group.{gname}",
+                                extras={"op": op} if op else {}))
 
     # PDM [tool.pdm.dev-dependencies] — dict of groups, each a list[str]
     pdm = tool.get("pdm") or {}
@@ -459,6 +476,332 @@ def parse_poetry_lock(path: Path) -> list[Dep]:
             name=name.lower(), version=ver,
             ecosystem="pypi", manifest=path.name,
         ))
+    return deps
+
+
+def parse_pdm_lock(path: Path) -> list[Dep]:
+    """pdm.lock — TOML with [[package]] entries (same shape as uv/poetry).
+    Policy tier: future (S5a, cyclonedx-universe-inventory Wave C)."""
+    try:
+        import tomllib
+    except ImportError:
+        try:
+            import tomli as tomllib  # type: ignore[import-not-found,no-redef]
+        except ImportError:
+            return []
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    deps: list[Dep] = []
+    for pkg in data.get("package", []) or []:
+        if not isinstance(pkg, dict):
+            continue
+        name = pkg.get("name")
+        ver = pkg.get("version")
+        if not name:
+            continue
+        deps.append(Dep(
+            name=name.lower(), version=ver,
+            ecosystem="pypi", manifest=path.name,
+        ))
+    return deps
+
+
+def parse_pylock_toml(path: Path) -> list[Dep]:
+    """pylock.toml (PEP 751) — TOML with [[packages]] entries (note the
+    plural key, unlike uv/poetry/pdm). Policy tier: future (S5a)."""
+    try:
+        import tomllib
+    except ImportError:
+        try:
+            import tomli as tomllib  # type: ignore[import-not-found,no-redef]
+        except ImportError:
+            return []
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    deps: list[Dep] = []
+    for pkg in data.get("packages", []) or []:
+        if not isinstance(pkg, dict):
+            continue
+        name = pkg.get("name")
+        ver = pkg.get("version")
+        if not name:
+            continue
+        deps.append(Dep(
+            name=name.lower(), version=ver,
+            ecosystem="pypi", manifest=path.name,
+        ))
+    return deps
+
+
+def parse_pip_text(path: Path) -> list[Dep]:
+    """`pip list` / `pip list --format=freeze|json` / `pip freeze` output
+    (S5a text intake). No canonical filename exists for these, so this
+    parser is NOT in the filename dispatch — callers (inventory-match
+    `--format pip`) route to it explicitly.
+
+    Handles: freeze lines (`name==ver`), direct refs (`name @ url`),
+    editable installs (`-e ...#egg=name`), the columnar `pip list` table
+    (header + dashes), and the `--format=json` array.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, ValueError):  # ValueError covers UnicodeDecodeError
+        return []
+    stripped = text.lstrip()
+    if stripped.startswith("["):  # pip list --format=json
+        try:
+            rows = json.loads(stripped)
+        except json.JSONDecodeError:
+            return []
+        return [
+            Dep(name=str(r["name"]).lower(), version=r.get("version"),
+                ecosystem="pypi", manifest=path.name)
+            for r in rows
+            if isinstance(r, dict) and r.get("name")
+        ]
+    deps: list[Dep] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        # columnar header / separator rows
+        if re.match(r"^Package\s+Version", line, re.IGNORECASE):
+            continue
+        if re.match(r"^-+(\s+-+)*$", line):
+            continue
+        # editable: -e git+https://...#egg=name
+        m = re.match(r"^-e\s+.*#egg=([A-Za-z0-9._-]+)", line)
+        if m:
+            deps.append(Dep(name=m.group(1).lower(), version=None,
+                            ecosystem="pypi", manifest=path.name,
+                            extras={"editable": True}))
+            continue
+        if line.startswith("-"):  # other pip options
+            continue
+        # direct reference: name @ file:///... or name @ https://...
+        m = re.match(r"^([A-Za-z0-9._-]+)\s+@\s+(\S+)", line)
+        if m:
+            deps.append(Dep(name=m.group(1).lower(), version=None,
+                            ecosystem="pypi", manifest=path.name,
+                            extras={"url": m.group(2)}))
+            continue
+        # freeze: name==1.2.3
+        m = re.match(r"^([A-Za-z0-9._-]+)==([^\s;]+)", line)
+        if m:
+            deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
+                            ecosystem="pypi", manifest=path.name))
+            continue
+        # pip list columns: name  version  [location...]
+        m = re.match(r"^([A-Za-z0-9._-]+)\s+(\d[^\s]*)", line)
+        if m:
+            deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
+                            ecosystem="pypi", manifest=path.name))
+    return deps
+
+
+def parse_conda_list_text(path: Path) -> list[Dep]:
+    """`conda list` / `conda list --export` / `conda list --explicit` /
+    `conda list --json` output (S5a text intake; explicit-routing only,
+    like parse_pip_text).
+
+    Default format rows are `name version build channel` (channel column
+    optional); rows whose channel is `pypi` are pip-installed and tagged
+    ecosystem=pypi. `--export` rows are `name=version=build`; `--explicit`
+    rows are package URLs (parsed like pixi.lock conda URLs, `#<hash>`
+    fragments stripped); `--json` is an array of package objects.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, ValueError):  # ValueError covers UnicodeDecodeError
+        return []
+    deps: list[Dep] = []
+    stripped_text = text.lstrip()
+    if stripped_text.startswith("["):  # conda list --json
+        try:
+            rows = json.loads(stripped_text)
+        except json.JSONDecodeError:
+            return []
+        for r in rows:
+            if not isinstance(r, dict) or not r.get("name"):
+                continue
+            channel = r.get("channel")
+            eco = "pypi" if channel == "pypi" else "conda"
+            deps.append(Dep(name=str(r["name"]).lower(), version=r.get("version"),
+                            ecosystem=eco, manifest=path.name,
+                            extras={"channel": channel} if channel else {}))
+        return deps
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith(("#", "@")):
+            continue
+        if line.startswith(("http://", "https://", "file://")):  # --explicit
+            # `--explicit --md5` / conda-lock renders append `#<hash>`
+            basename = line.split("#", 1)[0].rsplit("/", 1)[-1]
+            m = re.match(r"^(.+)-([^-]+)-[^-]+\.(?:conda|tar\.bz2)$", basename)
+            if m:
+                deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
+                                ecosystem="conda", manifest=path.name,
+                                extras={"url": line}))
+            continue
+        m = re.match(r"^([A-Za-z0-9._-]+)=([^=\s]+)=(\S+)$", line)  # --export
+        if m:
+            deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
+                            ecosystem="conda", manifest=path.name,
+                            extras={"build": m.group(3)}))
+            continue
+        parts = line.split()
+        if len(parts) >= 2 and re.match(r"^\d", parts[1]):  # default columns
+            channel = parts[3] if len(parts) >= 4 else None
+            eco = "pypi" if channel == "pypi" else "conda"
+            deps.append(Dep(name=parts[0].lower(), version=parts[1],
+                            ecosystem=eco, manifest=path.name,
+                            extras={"channel": channel} if channel else {}))
+    return deps
+
+
+# S5a recipe-manifest intake (cyclonedx-universe-inventory Wave C): conda
+# recipes ARE dependency manifests per the Python Dependency Policy —
+# `requirements.host/run` from meta.yaml (v0) and recipe.yaml (v1).
+
+_RECIPE_SECTION_LABELS = ("build", "host", "run")
+
+
+def _parse_recipe_entry(raw: str) -> tuple[str, str | None, str | None] | None:
+    """One requirements entry → (name, exact_version | None, constraint | None).
+
+    Skips templated names (`{{ compiler('c') }}`, `${{ pin_subpackage(...) }}`)
+    — their identity is unknowable without rendering. Jinja INSIDE a
+    constraint (`python {{ python_min }}`) keeps the name, drops the version.
+    """
+    # trailing comments: selector ([win]) or plain — both are not constraints
+    entry = re.sub(r"\s+#.*$", "", raw).strip()
+    entry = re.sub(r"^#.*$", "", entry)
+    entry = entry.strip("'\"")
+    if not entry or entry.startswith(("{{", "${{")):
+        return None
+    parts = entry.split(None, 1)
+    name = parts[0].lower()
+    if not re.match(r"^[a-z0-9._-]+$", name):
+        return None
+    constraint = parts[1].strip() if len(parts) > 1 else None
+    version = None
+    if constraint and "{{" not in constraint:
+        m = re.match(r"^==\s*([0-9][\w.]*)$", constraint)
+        if m:
+            version = m.group(1)
+        elif re.match(r"^[0-9][\w.]*$", constraint):
+            version = constraint  # bare version = exact in conda match specs
+        # `=1.22` (single =) is conda fuzzy (1.22.*) — a range, never exact
+    return name, version, constraint
+
+
+def parse_meta_yaml(path: Path) -> list[Dep]:
+    """meta.yaml (v0 recipe) as a dependency manifest — jinja-tolerant
+    LINE-BASED extraction of `requirements:` build/host/run entries (v0
+    templates rarely survive yaml.safe_load). Multi-output recipes work
+    too: the indentation state machine catches every requirements block.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, ValueError):  # ValueError covers UnicodeDecodeError
+        return []
+    deps: list[Dep] = []
+    req_indent: int | None = None   # indent of the open `requirements:` key
+    section: str | None = None      # build / host / run
+    section_indent: int | None = None
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip())
+        stripped = line.strip()
+        if req_indent is not None and indent <= req_indent:
+            req_indent, section, section_indent = None, None, None
+        if re.match(r"^requirements:\s*(#.*)?$", stripped):
+            req_indent, section, section_indent = indent, None, None
+            continue
+        if req_indent is None:
+            continue
+        m = re.match(r"^(build|host|run):\s*(#.*)?$", stripped)
+        if m and indent > req_indent:
+            section, section_indent = m.group(1), indent
+            continue
+        # Any OTHER sibling key (`run_constrained:`, `run_exports:`, …)
+        # closes the open section — its entries are not hard deps.
+        if section_indent is not None and indent <= section_indent \
+                and re.match(r"^[A-Za-z0-9_-]+:", stripped):
+            section, section_indent = None, None
+            continue
+        if section and section_indent is not None and indent > section_indent \
+                and stripped.startswith("- "):
+            parsed = _parse_recipe_entry(stripped[2:])
+            if parsed:
+                name, version, constraint = parsed
+                deps.append(Dep(
+                    name=name, version=version, ecosystem="conda",
+                    manifest=f"{path.name}#{section}",
+                    extras={"constraint": constraint} if constraint else {},
+                ))
+    return deps
+
+
+def parse_recipe_yaml(path: Path) -> list[Dep]:
+    """recipe.yaml (v1 recipe) as a dependency manifest — real YAML
+    (`${{ }}` templates parse as plain strings). Reads top-level and
+    per-output `requirements:` build/host/run, including `if/then/else`
+    conditional entries (both branches collected).
+    """
+    try:
+        import yaml  # type: ignore[import-untyped]
+    except ImportError:
+        return []
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    if not isinstance(data, dict):
+        return []
+
+    def _entries(node: Any) -> list[str]:
+        if isinstance(node, (dict, str)):  # malformed v1 shape — inert
+            return []
+        out: list[str] = []
+        for item in node or []:
+            if isinstance(item, str):
+                out.append(item)
+            elif isinstance(item, dict):  # {if: ..., then: [...], else: [...]}
+                for branch in ("then", "else"):
+                    v = item.get(branch)
+                    if isinstance(v, str):
+                        out.append(v)
+                    elif isinstance(v, list):
+                        out.extend(s for s in v if isinstance(s, str))
+        return out
+
+    deps: list[Dep] = []
+
+    def _collect(req: Any, label_prefix: str) -> None:
+        if not isinstance(req, dict):
+            return
+        for section in _RECIPE_SECTION_LABELS:
+            for raw in _entries(req.get(section)):
+                parsed = _parse_recipe_entry(raw)
+                if parsed:
+                    name, version, constraint = parsed
+                    deps.append(Dep(
+                        name=name, version=version, ecosystem="conda",
+                        manifest=f"{label_prefix}#{section}",
+                        extras={"constraint": constraint} if constraint else {},
+                    ))
+
+    _collect(data.get("requirements"), path.name)
+    for output in data.get("outputs") or []:
+        if isinstance(output, dict):
+            out_name = (output.get("package") or {}).get("name", "output")
+            _collect(output.get("requirements"), f"{path.name}#{out_name}")
     return deps
 
 
@@ -3115,6 +3458,12 @@ def main() -> int:
         candidates.append(("uv.lock", parse_uv_lock))
         candidates.append(("poetry.lock", parse_poetry_lock))
         candidates.append(("Pipfile.lock", parse_pipfile_lock))
+        candidates.append(("pdm.lock", parse_pdm_lock))
+        candidates.append(("pylock.toml", parse_pylock_toml))
+        # Conda recipes as dependency manifests (S5a): requirements.host/run
+        # from v0 meta.yaml + v1 recipe.yaml.
+        candidates.append(("meta.yaml", parse_meta_yaml))
+        candidates.append(("recipe.yaml", parse_recipe_yaml))
         # npm — package-lock.json is preferred over package.json (transitive
         # resolution); we still parse package.json if no lock is present.
         has_npm_lock = any(project_dir.glob("**/package-lock.json"))

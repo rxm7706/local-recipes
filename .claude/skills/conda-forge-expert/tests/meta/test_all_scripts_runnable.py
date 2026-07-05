@@ -37,6 +37,7 @@ SCRIPTS = [
     "github_version_checker.py",
     "health_check.py",
     "inventory_channel.py",
+    "inventory_match.py",
     "license-checker.py",
     "local_builder.py",
     "mapping_gap.py",

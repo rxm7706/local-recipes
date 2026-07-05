@@ -53,7 +53,6 @@ import re
 import sqlite3
 import sys
 import time
-import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -606,8 +605,8 @@ def main() -> int:
     if args.write:
         conn = sqlite3.connect(DB_PATH)
     else:
-        conn = sqlite3.connect(
-            f"file:{urllib.parse.quote(str(DB_PATH))}?mode=ro", uri=True)
+        # as_uri(): canonical cross-platform file-URI.
+        conn = sqlite3.connect(f"{DB_PATH.as_uri()}?mode=ro", uri=True)
     try:
         result = run(conn, write=args.write, limit=args.limit)
     except sqlite3.OperationalError as exc:

@@ -1,0 +1,7 @@
+# comment lines are legal in redirected freeze output
+certifi==2024.2.2
+charset-normalizer==3.3.2
+mypkg @ file:///home/user/src/mypkg
+-e git+https://github.com/acme/devtool.git@abc123#egg=devtool
+--extra-index-url https://example.com/simple
+requests==2.31.0 ; python_version >= "3.8"

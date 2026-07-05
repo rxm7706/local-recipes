@@ -330,14 +330,24 @@ def write_artifact(out_dir: Path, filename: str, lines: list[str]) -> dict[str, 
     previous = _count_lines(path)
     # Unique temp per run (concurrent exports must not interleave) +
     # streamed lines (the pypi artifact is hundreds of thousands of lines
-    # at full-universe scale).
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=out_dir,
-        prefix=filename + ".", suffix=".tmp", delete=False,
-    ) as fh:
-        tmp = Path(fh.name)
-        fh.writelines(f"{ln}\n" for ln in lines)
-    os.replace(tmp, path)
+    # at full-universe scale). try/finally: a write failure must not leak
+    # the delete=False temp file.
+    tmp: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=out_dir,
+            prefix=filename + ".", suffix=".tmp", delete=False,
+        ) as fh:
+            tmp = Path(fh.name)
+            fh.writelines(f"{ln}\n" for ln in lines)
+        os.replace(tmp, path)
+        tmp = None
+    finally:
+        if tmp is not None:
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
     return {"lines": len(lines), "previous_lines": previous}
 
 
@@ -414,8 +424,8 @@ def main() -> int:
         )
         return 1
 
-    conn = sqlite3.connect(
-        f"file:{urllib.parse.quote(str(DB_PATH))}?mode=ro", uri=True)
+    # as_uri(): canonical cross-platform file-URI (drive letters, %-encoding).
+    conn = sqlite3.connect(f"{DB_PATH.as_uri()}?mode=ro", uri=True)
     try:
         # Refuse to overwrite six good artifacts with degraded output when
         # the universe hasn't been populated yet (lean daily Phase D only —
