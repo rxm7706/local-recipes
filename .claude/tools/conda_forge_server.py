@@ -1443,6 +1443,8 @@ ATLAS_ADOPTION_STAGE       = SCRIPTS_DIR / "adoption_stage.py"
 ATLAS_DETAIL_CF_ATLAS      = SCRIPTS_DIR / "detail_cf_atlas.py"
 ATLAS_PYPI_ONLY_CANDIDATES = SCRIPTS_DIR / "pypi_only_candidates.py"
 ATLAS_PYPI_INTELLIGENCE = SCRIPTS_DIR / "pypi_intelligence.py"
+# cyclonedx-universe-inventory Wave A/S1 — purl + mapping exporter.
+ATLAS_EXPORT_PURLS         = SCRIPTS_DIR / "export_purls.py"
 ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
 # v8.19.0 Phase F+ Wave 3 — per-platform / per-Python / per-channel breakdowns.
 ATLAS_PLATFORM_BREAKDOWN   = SCRIPTS_DIR / "platform_breakdown.py"
@@ -1796,6 +1798,29 @@ def pypi_only_candidates(limit: int = 100, min_serial: int = 0) -> str:
     `atlas-phase D` first."""
     args = ["--json", "--limit", str(limit), "--min-serial", str(min_serial)]
     return json.dumps(_run_script(ATLAS_PYPI_ONLY_CANDIDATES, args), indent=2)
+
+
+@mcp.tool()
+def export_purls(out_dir: str | None = None) -> str:
+    """Export the six purl + mapping artifacts from cf_atlas.db + recipes/.
+
+    cyclonedx-universe-inventory Wave A/S1. Read-only; writes into the
+    skill data dir's `purl-export/` unless `out_dir` overrides it:
+
+      1. purls_conda-forge.txt            (active conda purls, ?channel=)
+      2. purls_conda-forge_versioned.txt  (same rows, @version)
+      3. purls_pypi.txt                   (full pypi_universe, G98 names)
+      4. purls_conda-pypi_mapped.tsv      (mapping + provenance passthrough)
+      5. recipe-purl-exceptions.txt       (pending-/blocked- recipe gaps)
+      6. purls_conda-upstream_mapped.tsv  (non-PyPI upstream identities)
+
+    Returns per-artifact `{lines, previous_lines}` plus
+    `recipes_scanned` / `recipes_parse_errors` / `unparseable_upstream`
+    counters. Regenerate after every atlas rebuild."""
+    args = ["--json"]
+    if out_dir:
+        args += ["--out-dir", out_dir]
+    return json.dumps(_run_script(ATLAS_EXPORT_PURLS, args), indent=2)
 
 
 @mcp.tool()
