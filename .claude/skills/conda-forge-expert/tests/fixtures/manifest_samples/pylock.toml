@@ -1,0 +1,11 @@
+lock-version = "1.0"
+environments = ["sys_platform == 'linux'"]
+created-by = "pip"
+
+[[packages]]
+name = "attrs"
+version = "25.3.0"
+
+[[packages]]
+name = "ruamel.yaml"
+version = "0.18.10"

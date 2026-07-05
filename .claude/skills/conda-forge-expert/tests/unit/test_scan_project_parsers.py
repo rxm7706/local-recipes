@@ -229,3 +229,125 @@ def test_dep_purl_oci_image(sp):
     # 'oci-image' isn't in the known set, so falls back to 'generic'
     assert purl == "pkg:generic/nginx@1.25"
     assert d.extras["image_ref"] == "nginx:1.25"
+
+
+# ── S5a intake parsers (cyclonedx-universe-inventory Wave C) ─────────────────
+
+def test_pdm_lock(sp):
+    deps = sp.parse_pdm_lock(FIXTURES / "pdm.lock")
+    by_name = {d.name: d for d in deps}
+    assert by_name["requests"].version == "2.31.0"
+    # names lowercased (PDM preserves upstream casing in the lock)
+    assert "charset-normalizer" in by_name
+    assert all(d.ecosystem == "pypi" for d in deps)
+
+
+def test_pylock_toml_pep751(sp):
+    """PEP 751 uses the PLURAL [[packages]] key — the parser must not read
+    the uv/poetry/pdm singular [[package]] shape."""
+    deps = sp.parse_pylock_toml(FIXTURES / "pylock.toml")
+    by_name = {d.name: d for d in deps}
+    assert by_name["attrs"].version == "25.3.0"
+    assert by_name["ruamel.yaml"].version == "0.18.10"  # dots preserved
+
+
+def test_pip_list_columns(sp):
+    deps = sp.parse_pip_text(FIXTURES / "pip-list.txt")
+    by_name = {d.name: d for d in deps}
+    # header + dashes rows skipped, columnar rows parsed
+    assert by_name["numpy"].version == "1.26.4"
+    assert by_name["typing_extensions"].version == "4.12.2"
+    assert "package" not in by_name
+    assert all(d.ecosystem == "pypi" for d in deps)
+
+
+def test_pip_freeze(sp):
+    deps = sp.parse_pip_text(FIXTURES / "pip-freeze.txt")
+    by_name = {d.name: d for d in deps}
+    assert by_name["certifi"].version == "2024.2.2"
+    # env-marker suffix stripped
+    assert by_name["requests"].version == "2.31.0"
+    # direct ref: no version, url captured
+    assert by_name["mypkg"].version is None
+    assert by_name["mypkg"].extras["url"].startswith("file:///")
+    # editable install resolved via #egg=
+    assert by_name["devtool"].extras.get("editable") is True
+    # option lines (--extra-index-url) are not deps
+    assert not any(d.name.startswith("--") for d in deps)
+
+
+def test_pip_list_json(sp, tmp_path):
+    p = tmp_path / "pip.json"
+    p.write_text('[{"name": "Flask", "version": "3.0.2"}, {"name": "idna", "version": "3.7"}]')
+    deps = sp.parse_pip_text(p)
+    by_name = {d.name: d for d in deps}
+    assert by_name["flask"].version == "3.0.2"
+
+
+def test_conda_list_default(sp):
+    deps = sp.parse_conda_list_text(FIXTURES / "conda-list.txt")
+    by_name = {d.name: d for d in deps}
+    assert by_name["numpy"].version == "1.26.4"
+    assert by_name["numpy"].ecosystem == "conda"
+    # pip-installed rows (channel `pypi`) are tagged ecosystem=pypi
+    assert by_name["sphinx"].ecosystem == "pypi"
+    # header/comment rows skipped
+    assert "name" not in by_name
+
+
+def test_conda_list_export(sp):
+    deps = sp.parse_conda_list_text(FIXTURES / "conda-list-export.txt")
+    by_name = {d.name: d for d in deps}
+    assert by_name["python"].version == "3.12.3"
+    assert by_name["ruamel.yaml"].version == "0.18.6"
+    assert by_name["libffi"].extras["build"] == "h7f98852_5"
+
+
+def test_conda_list_explicit(sp):
+    deps = sp.parse_conda_list_text(FIXTURES / "conda-list-explicit.txt")
+    by_name = {d.name: d for d in deps}
+    # URL basename parsed name-version-build; @EXPLICIT marker skipped
+    assert by_name["_openmp_mutex"].version == "4.5"
+    assert by_name["numpy"].version == "1.26.4"
+    assert by_name["tzdata"].version == "2024a"
+
+
+def test_meta_yaml_manifest(sp):
+    deps = sp.parse_meta_yaml(FIXTURES / "meta.yaml")
+    by_key = {(d.name, d.manifest): d for d in deps}
+    # host + run sections captured with section labels
+    assert ("pip", "meta.yaml#host") in by_key
+    assert ("numpy", "meta.yaml#run") in by_key
+    # jinja-templated names ({{ compiler('c') }}) are skipped
+    assert not any("compiler" in d.name for d in deps)
+    # jinja inside a constraint keeps the name, drops the version
+    py = by_key[("python", "meta.yaml#host")]
+    assert py.version is None
+    # exact pins: conda `name 1.2.3` and `name ==1.2.3` forms
+    assert by_key[("click", "meta.yaml#run")].version == "8.1.7"
+    assert by_key[("pyyaml", "meta.yaml#run")].version == "6.0.1"
+    # range constraint → no exact version, constraint preserved
+    numpy = by_key[("numpy", "meta.yaml#run")]
+    assert numpy.version is None and numpy.extras["constraint"] == ">=1.22"
+    # selector comment stripped
+    assert ("typing-extensions", "meta.yaml#run") in by_key
+    # test.requires is NOT a requirements block
+    assert not any(d.name == "pytest" for d in deps)
+    assert all(d.ecosystem == "conda" for d in deps)
+
+
+def test_recipe_yaml_manifest(sp):
+    deps = sp.parse_recipe_yaml(FIXTURES / "recipe.yaml")
+    by_key = {(d.name, d.manifest): d for d in deps}
+    assert ("hatchling", "recipe.yaml#host") in by_key
+    # ${{ }} in constraint → name kept, version dropped
+    assert by_key[("python", "recipe.yaml#host")].version is None
+    # bare version = exact pin
+    assert by_key[("rich", "recipe.yaml#run")].version == "13.7.1"
+    # if/then/else conditionals: both branches collected
+    assert ("colorama", "recipe.yaml#run") in by_key
+    assert ("uvloop", "recipe.yaml#run") in by_key
+    # per-output requirements labeled by output name
+    assert by_key[("httpx", "recipe.yaml#demo-suite-extra#run")].version == "0.27.0"
+    # templated names (${{ pin_subpackage(...) }}) skipped
+    assert not any("pin_subpackage" in d.name for d in deps)

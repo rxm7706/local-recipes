@@ -1,0 +1,8 @@
+# packages in environment at /opt/conda/envs/demo:
+#
+# Name                    Version                   Build  Channel
+_libgcc_mutex             0.1                 conda_forge    conda-forge
+numpy                     1.26.4          py312heda63a1_0    conda-forge
+python                    3.12.3          hab00c5b_0_cpython    conda-forge
+sphinx                    7.3.7                    pypi_0    pypi
+zstandard                 0.22.0          py312h5b18bf6_1    conda-forge
