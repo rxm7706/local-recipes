@@ -82,6 +82,13 @@ def db(tmp_path, atlas_mod):
         ("weird",            "weird",            "abd",    "parselmouth", "verified", "MIT",          0),
         ("oldarch",          "oldarch",          "0.9",    "parselmouth", "verified", "MIT",          1),
         ("noupstream",       None,               "3.3",    "none",        "n/a",      None,           0),
+        # the wasmtime trap: conda `wasmtime` maps to a DIFFERENT pypi name
+        ("wasmtime",         "wasmtime-py",      "20.0",   "parselmouth", "verified", "Apache-2.0",   0),
+        # conda names are exact identifiers: two fold-equivalent packages
+        ("ruamel.yaml",      "ruamel.yaml",      "0.18.10", "parselmouth", "verified", "MIT",         0),
+        ("ruamel_yaml",      None,               "0.15.80", "none",       "n/a",      "MIT",          0),
+        # cf behind upstream with NO history rows (lag from current row only)
+        ("behind-nohist",    "behind-nohist",    "1.0",    "parselmouth", "verified", "MIT",          0),
     ]
     for conda, pypi, ver, src, confidence, lic, archived in pkg_rows:
         conn.execute(
@@ -98,6 +105,7 @@ def db(tmp_path, atlas_mod):
         ("ripgrep", "github", "14.1.0"),
         ("fs-googledrivefs", "pypi", "2.4.1"),
         ("weird",   "pypi",   "abd"),
+        ("behind-nohist", "pypi", "2.0"),
     ]:
         conn.execute(
             "INSERT INTO upstream_versions (conda_name, source, version, url, fetched_at) "
@@ -117,7 +125,8 @@ def db(tmp_path, atlas_mod):
             "VALUES (?, 'numpy', 'pypi', ?)", (NOW - i * 86400, f"1.{15 + i}.0"),
         )
     for name in ("numpy", "torch", "olddep", "fs.googledrivefs", "coincide",
-                 "weird", "leftpadpy", "oldarch"):
+                 "weird", "leftpadpy", "oldarch", "wasmtime", "wasmtime-py",
+                 "behind-nohist"):
         conn.execute(
             "INSERT INTO pypi_universe (pypi_name, last_serial, fetched_at) "
             "VALUES (?, 1, ?)", (name, NOW),
@@ -314,6 +323,45 @@ class TestBuckets:
         assert rows[0]["pin_kind"] == "unpinned"
         assert rows[0]["bucket"] == "CURRENT"
 
+    def test_wasmtime_trap_bare_fold_refused(self, im, db, sp_mod):
+        """A pypi dep whose bare fold hits a conda package already mapped
+        to a DIFFERENT pypi name must NOT match it (mapping_gap G10) —
+        it falls through to the ADD/universe path."""
+        rows = _match_one(im, db, [_dep(sp_mod, "wasmtime", "20.0")])
+        r = rows[0]
+        assert r["conda_name"] is None
+        assert r["bucket"] == "ADD"          # pypi `wasmtime` is in the universe
+
+    def test_conda_exact_name_beats_fold(self, im, db, sp_mod):
+        # ruamel_yaml and ruamel.yaml are two DIFFERENT conda packages
+        rows = _match_one(im, db, [_dep(sp_mod, "ruamel_yaml", "0.15.80", eco="conda")])
+        r = rows[0]
+        assert r["conda_name"] == "ruamel_yaml"
+        assert r["match_confidence"] == "exact"
+        assert r["bucket"] == "CURRENT"
+
+    def test_conda_fold_fallback_flagged_likely(self, im, db, sp_mod):
+        # no exact conda name → fold fallback is a flagged guess, not exact
+        rows = _match_one(im, db, [_dep(sp_mod, "fs.googledrivefs", "2.4.1", eco="conda")])
+        r = rows[0]
+        assert r["conda_name"] == "fs-googledrivefs"
+        assert r["match_via"] == "conda_fold"
+        assert r["match_confidence"] == "likely"
+
+    def test_other_eco_python_package_is_name_coincidence(self, im, db, sp_mod):
+        # a cargo dep matching a conda package that maps to PyPI is
+        # probably a different artifact of the same name
+        rows = _match_one(im, db, [_dep(sp_mod, "numpy", "1.26.4", eco="cargo")])
+        assert rows[0]["match_confidence"] == "name_coincidence"
+
+    def test_update_feedstock_lag_without_history(self, im, db, sp_mod):
+        # current upstream row proves lag >= 1 even with no history snapshot
+        rows = _match_one(im, db, [_dep(sp_mod, "behind-nohist", "1.0")])
+        r = rows[0]
+        assert r["bucket"] == "UPDATE-FEEDSTOCK"
+        assert r["lag_releases"] == 1
+        assert r["lag_days"] is None
+
 
 # ── dedupe ───────────────────────────────────────────────────────────────────
 
@@ -340,6 +388,44 @@ class TestDedupe:
             _dep(sp_mod, "numpy", "1.26.4", resolution="locked"),
         ])
         assert rows[0]["resolution"] == "locked"
+
+    def test_conda_fold_variants_never_merge(self, im, sp_mod):
+        rows = im.dedupe_deps([
+            _dep(sp_mod, "ruamel.yaml", "0.18.10", eco="conda"),
+            _dep(sp_mod, "ruamel_yaml", "0.15.80", eco="conda"),
+        ])
+        assert len(rows) == 2               # exact conda identity, no folding
+
+    def test_pin_conflict_recorded(self, im, sp_mod):
+        rows = im.dedupe_deps([
+            _dep(sp_mod, "numpy", "1.24.0", manifest="a.lock"),
+            _dep(sp_mod, "numpy", "1.26.4", manifest="b.lock"),
+        ])
+        assert rows[0]["pinned"] == "1.24.0"           # first wins
+        assert rows[0]["pin_conflict"] == ["1.26.4"]   # conflict surfaced
+
+    def test_range_bound_never_a_pin(self, im, sp_mod):
+        # extras op from requirements/pyproject parsers demotes to constraint
+        rows = im.dedupe_deps([_dep(sp_mod, "requests", "2.0", op=">=")])
+        assert rows[0]["pinned"] is None
+        assert rows[0]["constraint"] == ">=2.0"
+        assert rows[0]["pin_kind"] == "range"
+        # raw spec strings (pixi.toml-style) demote by value
+        rows = im.dedupe_deps([_dep(sp_mod, "numpy", ">=1.0,<2")])
+        assert rows[0]["pinned"] is None and rows[0]["pin_kind"] == "range"
+        # explicit == survives as exact
+        rows = im.dedupe_deps([_dep(sp_mod, "numpy", "==1.26.4")])
+        assert rows[0]["pinned"] == "1.26.4" and rows[0]["pin_kind"] == "exact"
+
+    def test_policy_tier_propagates(self, im, sp_mod):
+        rows = im.dedupe_deps([_dep(sp_mod, "attrs", "25.3.0", policy_tier="future")])
+        assert rows[0]["policy_tier"] == "future"
+        # most-supported tier wins when a dep appears in mixed sources
+        rows = im.dedupe_deps([
+            _dep(sp_mod, "attrs", "25.3.0", policy_tier="future", manifest="pdm.lock"),
+            _dep(sp_mod, "attrs", None, policy_tier="policy", manifest="pyproject.toml"),
+        ])
+        assert rows[0]["policy_tier"] == "policy"
 
 
 # ── weights + policy gate ────────────────────────────────────────────────────
@@ -405,6 +491,32 @@ class TestPolicyGate:
         p = tmp_path / "policy.toml"
         p.write_text("[freshness]\nmax_fail = 0\n")
         assert im.load_policy(p) == {"freshness": {"max_fail": 0}}
+
+    def test_policy_schema_unknown_key_fails_closed(self, im):
+        out = im.evaluate_policy([], {"freshnesss": {"max_fail": 0}})
+        assert out["pass"] is False
+        assert out["violations"][0]["check"] == "policy.schema"
+        assert "freshnesss" in out["violations"][0]["note"]
+
+    def test_policy_schema_misspelled_bucket_fails_closed(self, im):
+        out = im.evaluate_policy([], {"buckets": {"max": {"add": 0}}})
+        assert out["pass"] is False
+        assert "add" in out["violations"][0]["note"]
+
+    def test_policy_schema_freshness_missing_max_fail(self, im):
+        out = im.evaluate_policy([], {"freshness": {"max_failures": 0}})
+        assert out["pass"] is False
+
+    def test_policy_schema_deny_must_be_list(self, im):
+        out = im.evaluate_policy([], {"license": {"deny": "GPL-3.0-only"}})
+        assert out["pass"] is False
+
+    def test_license_deny_hits_compound_expression(self, im, db, sp_mod):
+        # coincide carries GPL-3.0-only; a compound string must also trip
+        rows = _match_one(im, db, [_dep(sp_mod, "coincide", "0.5")])
+        rows[0]["conda_license"] = "GPL-3.0-only OR MIT"
+        out = im.evaluate_policy(rows, {"license": {"deny": ["GPL-3.0-only"]}})
+        assert out["pass"] is False
 
 
 # ── intake: format detection + resolution stamping ───────────────────────────
@@ -521,3 +633,53 @@ class TestRunAndOutputs:
         inv = im.dedupe_deps([_dep(sp_mod, "numpy", "1.26.4")])
         rows = im.match_inventory(db, inv, version_provider=provider)
         assert rows[0]["freshness"]["verdict"] == "fail"   # 1.26.4 below all 9.x
+
+    def test_annotate_nonpypi_purl_component(self, im, db, sp_mod, tmp_path):
+        """ADD-NONPYPI rows (npm/cargo purls) must annotate too, and a
+        pkg:npm component must never inherit a same-named PyPI row."""
+        bom = {
+            "bomFormat": "CycloneDX", "specVersion": "1.6", "version": 1,
+            "components": [
+                {"type": "library", "name": "left-pad", "version": "1.3.0",
+                 "purl": "pkg:npm/left-pad@1.3.0"},
+                {"type": "library", "name": "numpy", "version": "1.0",
+                 "purl": "pkg:npm/numpy@1.0"},
+            ],
+        }
+        bom_path = tmp_path / "npm.cdx.json"
+        bom_path.write_text(json.dumps(bom))
+        deps = im.FORMAT_PARSERS["cyclonedx"](bom_path)
+        result = im.run(db, deps, [str(bom_path)])
+        annotated = im.annotate_sbom(bom_path, result["rows"], result["built_at"])
+        lp_props = {p["name"]: p["value"]
+                    for p in annotated["components"][0]["properties"]}
+        assert lp_props["cfe:gap_status"] == "ADD-NONPYPI"
+        # npm numpy gets ITS row (name_coincidence conda match), not the
+        # pypi numpy row's verdict via a name fallback
+        np_row = next(r for r in result["rows"] if r["ecosystem"] == "npm"
+                      and r["name"] == "numpy")
+        np_props = {p["name"]: p["value"]
+                    for p in annotated["components"][1]["properties"]}
+        assert np_props["cfe:gap_status"] == np_row["bucket"]
+
+    def test_usage_errors_exit_1_not_2(self, im, monkeypatch):
+        # exit 2 is RESERVED for the policy verdict; argparse usage errors
+        # (bad flag, no inputs) must exit 1
+        for argv in (["inventory-match", "--nonsense"], ["inventory-match"]):
+            monkeypatch.setattr(sys, "argv", argv)
+            with pytest.raises(SystemExit) as exc:
+                im.main()
+            assert exc.value.code == 1
+
+    def test_add_yanked_latest_flagged(self, im, db, sp_mod):
+        db.execute(
+            "INSERT INTO pypi_universe (pypi_name, last_serial, fetched_at) "
+            "VALUES ('yankedpkg', 1, ?)", (NOW,))
+        db.execute(
+            "INSERT INTO pypi_intelligence (pypi_name, latest_version, "
+            "latest_yanked, json_fetched_at) VALUES ('yankedpkg', '2.0', 1, ?)",
+            (NOW,))
+        db.commit()
+        rows = _match_one(im, db, [_dep(sp_mod, "yankedpkg", "1.0")])
+        assert rows[0]["bucket"] == "ADD"
+        assert rows[0]["upstream_yanked"] is True

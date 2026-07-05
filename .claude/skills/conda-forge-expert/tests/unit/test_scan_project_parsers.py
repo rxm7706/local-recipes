@@ -310,6 +310,23 @@ def test_conda_list_explicit(sp):
     assert by_name["_openmp_mutex"].version == "4.5"
     assert by_name["numpy"].version == "1.26.4"
     assert by_name["tzdata"].version == "2024a"
+    # `--explicit --md5` / conda-lock renders append #<hash> — must still parse
+    assert by_name["zstd"].version == "1.5.6"
+
+
+def test_conda_list_json(sp, tmp_path):
+    p = tmp_path / "conda.json"
+    p.write_text(
+        '[{"base_url": "https://conda.anaconda.org/conda-forge", '
+        '"channel": "conda-forge", "dist_name": "numpy-1.26.4-py312_0", '
+        '"name": "numpy", "version": "1.26.4"}, '
+        '{"base_url": null, "channel": "pypi", "dist_name": "sphinx-7.3.7", '
+        '"name": "sphinx", "version": "7.3.7"}]'
+    )
+    deps = sp.parse_conda_list_text(p)
+    by_name = {d.name: d for d in deps}
+    assert by_name["numpy"].ecosystem == "conda"
+    assert by_name["sphinx"].ecosystem == "pypi"
 
 
 def test_meta_yaml_manifest(sp):
@@ -331,9 +348,42 @@ def test_meta_yaml_manifest(sp):
     assert numpy.version is None and numpy.extras["constraint"] == ">=1.22"
     # selector comment stripped
     assert ("typing-extensions", "meta.yaml#run") in by_key
+    # plain trailing comment stripped — never becomes a constraint
+    req = by_key[("requests", "meta.yaml#run")]
+    assert req.extras.get("constraint") is None
+    # run_constrained entries are NOT hard run deps
+    assert not any(d.name in ("dask", "mpich") for d in deps)
     # test.requires is NOT a requirements block
     assert not any(d.name == "pytest" for d in deps)
     assert all(d.ecosystem == "conda" for d in deps)
+
+
+def test_recipe_entry_conda_fuzzy_not_exact(sp):
+    # `=1.22` is conda fuzzy (1.22.*) — a range, never an exact pin
+    name, version, constraint = sp._parse_recipe_entry("numpy =1.22")
+    assert name == "numpy" and version is None and constraint == "=1.22"
+    # `==` and bare remain exact
+    assert sp._parse_recipe_entry("numpy ==1.22")[1] == "1.22"
+    assert sp._parse_recipe_entry("numpy 1.22")[1] == "1.22"
+
+
+def test_recipe_yaml_dict_section_inert(sp, tmp_path):
+    p = tmp_path / "recipe.yaml"
+    p.write_text(
+        "package: {name: bad, version: '1.0'}\n"
+        "requirements:\n"
+        "  run: {python: '>=3.9', numpy: '>=1.22'}\n"
+    )
+    assert sp.parse_recipe_yaml(p) == []
+
+
+def test_requirements_range_bound_records_operator(sp, tmp_path):
+    p = tmp_path / "requirements.txt"
+    p.write_text("requests>=2.0\nflask==3.0.2\nweird!=1.2\n")
+    by_name = {d.name: d for d in sp.parse_requirements_txt(p)}
+    assert by_name["requests"].extras["op"] == ">="
+    assert "op" not in by_name["flask"].extras       # == is a real pin
+    assert by_name["weird"].extras["op"] == "!="
 
 
 def test_recipe_yaml_manifest(sp):

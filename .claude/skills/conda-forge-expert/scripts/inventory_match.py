@@ -16,8 +16,11 @@ cf-latest vs upstream-of-record):
                    `upstream_versions_history` allows)
   UPDATE-PIN       inventory pin behind conda-forge
   CURRENT          nothing to do
-  UNKNOWN          no data (incl. non-Python conda packages with no
-                   `upstream_versions` row → `signals_absent: upstream_freshness`)
+  UNKNOWN          not decidable (no cf version, name absent everywhere, …).
+                   A matched package with no `upstream_versions` row still
+                   buckets on the inv-vs-cf comparison where decidable and
+                   carries `signals_absent: upstream_freshness` (the spec's
+                   "UNKNOWN-leaning" soft reading — see § Risks).
 
 Every row carries `match_confidence` verbatim from the mapping tier
 (`unattributed`/`name_coincidence` rows are NEVER presented as verified) and
@@ -33,11 +36,13 @@ requires-python filtering — lands in the LOCAL wave). Dense history
 eligible − 1 suffices.
 
 Policy gate (CI): --policy <json|toml> + deterministic exit codes —
-0 = pass, 2 = policy violations, 1 = error. Missing data blocks when the
-policy says so (`block_on_missing_data`, default true when a vuln/license
-threshold is set). --weights <csv|json> attaches the user-estate
-criticality multiplier per package (conda-forge blast radius is not the
-user's blast radius).
+0 = pass, 2 = policy violations, 1 = error (incl. usage errors — exit 2 is
+RESERVED for the policy verdict). Missing data blocks when the policy says
+so (`block_on_missing_data`, default true whenever a freshness threshold
+is set); malformed/unknown policy keys are themselves a violation
+(fail-closed — a typo'd gate must not silently pass). --weights <csv|json>
+attaches the user-estate criticality multiplier per package (conda-forge
+blast radius is not the user's blast radius).
 
 Transitive resolution of bare manifests (pip/conda solve, policy § 3) is
 deliberately NOT run here: rows from unresolved manifests are flagged
@@ -47,8 +52,14 @@ wave (needs network + solvers).
 Freshness contract (decision 6): refuses an atlas older than 14 days or
 with no parseable built_at (--allow-stale overrides).
 
+Live-env intake: --conda-env / --venv read installed metadata offline via
+scan_project's existing walkers. Container-image intake
+(--image/--oci-archive) is the LOCAL wave (needs container tooling) — use
+`scan-project --image ... --sbom cyclonedx` and feed the BOM via --sbom-in.
+
 CLI:
   inventory-match [INPUT ...] [--format FMT] [--sbom-in BOM]
+                  [--conda-env DIR] [--venv DIR]
                   [--policy FILE] [--weights FILE]
                   [--report PATH] [--json] [--sbom-out PATH]
                   [--allow-stale]
@@ -143,6 +154,22 @@ _LOCKED_FORMATS = frozenset({
     "pdm-lock", "pylock", "pipfile-lock", "cyclonedx", "spdx",
 })
 
+# Policy tier per intake format (spec § Wave C S5 input contract). Rows from
+# future-tier sources are flagged `policy_tier: future` in every output.
+_POLICY_TIERS: dict[str, str] = {
+    # policy-supported — the Dependency Policy's CI formats
+    "requirements": "policy", "pyproject": "policy", "environment-yml": "policy",
+    "conda-lock": "policy", "pixi-toml": "policy", "pixi-lock": "policy",
+    "meta-yaml": "policy", "recipe-yaml": "policy",
+    # tool-supported beyond policy (the tool runs ahead of the policy)
+    "pip": "tool", "conda-list": "tool", "cyclonedx": "tool", "spdx": "tool",
+    "pipfile": "tool", "pipfile-lock": "tool",
+    # future tier
+    "uv-lock": "future", "poetry-lock": "future", "pdm-lock": "future",
+    "pylock": "future",
+}
+_TIER_RANK = {"policy": 0, "tool": 1, "future": 2}
+
 
 def detect_format(path: Path) -> str | None:
     """Filename first; content sniff for text/JSON without canonical names."""
@@ -160,7 +187,11 @@ def detect_format(path: Path) -> str | None:
             return "spdx"
         return None
     if stripped.startswith("["):
-        return "pip"  # pip list --format=json
+        # conda list --json rows carry base_url/dist_name; pip list --format=json
+        # rows are bare {name, version}
+        if '"base_url"' in head or '"dist_name"' in head:
+            return "conda-list"
+        return "pip"
     if ("# packages in environment" in head or "@EXPLICIT" in head
             or re.search(r"(?m)^[A-Za-z0-9._-]+=[^=\s]+=\S+$", head)):
         return "conda-list"
@@ -209,41 +240,82 @@ def load_inventory(
 
 def _stamp_resolution(deps: list[Any], fmt: str) -> list[Any]:
     resolution = "locked" if fmt in _LOCKED_FORMATS else "direct"
+    return _stamp(deps, resolution, _POLICY_TIERS.get(fmt, "tool"))
+
+
+def _stamp(deps: list[Any], resolution: str, tier: str) -> list[Any]:
     for d in deps:
         d.extras.setdefault("resolution", resolution)
+        d.extras.setdefault("policy_tier", tier)
     return deps
 
 
+def _effective_pin(d: Any) -> tuple[str | None, str | None]:
+    """(exact_pin | None, constraint | None) for one Dep. Range bounds are
+    NEVER pins: a recorded non-== operator (`>=`/`~=`/`!=` — parsers stash
+    it in extras['op']) or operator/wildcard characters inside the version
+    string (pixi.toml-style raw specs) demote to constraint."""
+    ver = d.version
+    constraint = d.extras.get("constraint")
+    op = d.extras.get("op")
+    if not ver:
+        return None, constraint
+    if op and op not in ("==", "==="):
+        return None, f"{op}{ver}"
+    if re.search(r"[<>=!~^*\s]", ver):
+        v = ver.strip()
+        if v.startswith("=="):
+            exact = v.lstrip("=").strip()
+            if re.fullmatch(r"[0-9][\w.!+-]*", exact):
+                return exact, None
+        return None, ver
+    return ver, constraint
+
+
 def dedupe_deps(deps: list[Any]) -> list[dict[str, Any]]:
-    """Collapse to one row per (ecosystem-group, folded name). A pinned
-    occurrence beats an unpinned one; manifests are unioned."""
+    """Collapse to one row per (ecosystem, identity). Identity is the
+    PEP-503 fold for pypi (and other registries) but the EXACT lowercase
+    name for conda — `ruamel.yaml` and `ruamel_yaml` are two different
+    conda-forge packages and must never merge. A pinned occurrence beats an
+    unpinned one; two DIFFERENT pins are kept first-wins and recorded in
+    `pin_conflict`; manifests are unioned."""
     merged: dict[tuple[str, str], dict[str, Any]] = {}
     for d in deps:
         if not d.name:
             continue
         eco = d.ecosystem
-        key = (eco, fold_name(d.name))
+        ident = d.name.lower() if eco == "conda" else fold_name(d.name)
+        key = (eco, ident)
+        pinned, constraint = _effective_pin(d)
+        tier = d.extras.get("policy_tier", "tool")
         row = merged.get(key)
         if row is None:
-            row = {
+            merged[key] = {
                 "name": d.name,
                 "ecosystem": eco,
-                "pinned": d.version,
-                "constraint": d.extras.get("constraint"),
+                "pinned": pinned,
+                "constraint": constraint,
                 "manifests": [d.manifest],
                 "resolution": d.extras.get("resolution", "locked"),
+                "policy_tier": tier,
             }
-            merged[key] = row
-        else:
-            if d.manifest not in row["manifests"]:
-                row["manifests"].append(d.manifest)
-            if row["pinned"] is None and d.version:
-                row["pinned"] = d.version
+            continue
+        if d.manifest not in row["manifests"]:
+            row["manifests"].append(d.manifest)
+        if pinned:
+            if row["pinned"] is None:
+                row["pinned"] = pinned
                 row["name"] = d.name
-            if row["constraint"] is None:
-                row["constraint"] = d.extras.get("constraint")
-            if d.extras.get("resolution") == "locked":
-                row["resolution"] = "locked"
+            elif pinned != row["pinned"] and pinned not in row.get("pin_conflict", []):
+                row.setdefault("pin_conflict", []).append(pinned)
+        # a constraint never attaches to an exact-pinned row (a `<1.20`
+        # bound from another manifest must not masquerade as its metadata)
+        if row["pinned"] is None and row["constraint"] is None:
+            row["constraint"] = constraint
+        if d.extras.get("resolution") == "locked":
+            row["resolution"] = "locked"
+        if _TIER_RANK.get(tier, 1) < _TIER_RANK.get(row["policy_tier"], 1):
+            row["policy_tier"] = tier
     for row in merged.values():
         row["pin_kind"] = ("exact" if row["pinned"]
                            else ("range" if row["constraint"] else "unpinned"))
@@ -261,8 +333,7 @@ def cmp_versions(a: str | None, b: str | None) -> tuple[int | None, bool]:
     is the only unreliable verdict (decision 3)."""
     if not a or not b:
         return None, True
-    # conda epochs ("1!2.0") parse under packaging; strip a trailing conda
-    # build-string separator if a caller passed one through.
+    # conda epochs ("1!2.0") parse under packaging
     try:
         from packaging.version import InvalidVersion, Version
         try:
@@ -357,6 +428,7 @@ def history_version_provider(conn: sqlite3.Connection) -> Callable[[str], list[s
 # ── atlas indexes ────────────────────────────────────────────────────────────
 
 def load_atlas_indexes(conn: sqlite3.Connection) -> dict[str, Any]:
+    conda_by_name: dict[str, dict[str, Any]] = {}
     conda_by_fold: dict[str, dict[str, Any]] = {}
     mapping_by_fold: dict[str, list[dict[str, Any]]] = {}
     # scope: the matcher must see EVERY conda row — archived/inactive
@@ -373,6 +445,10 @@ def load_atlas_indexes(conn: sqlite3.Connection) -> dict[str, Any]:
             "conda_license": row[5], "feedstock_name": row[6],
             "match_source": row[7], "match_confidence": row[8],
         }
+        # conda names are exact identifiers; the fold index exists only for
+        # the flagged g10_bare / conda_fold fallbacks (fold collisions like
+        # ruamel.yaml vs ruamel_yaml keep the first name — never `exact`).
+        conda_by_name[row[0].lower()] = rec
         conda_by_fold.setdefault(fold_name(row[0]), rec)
         if row[1]:
             mapping_by_fold.setdefault(fold_name(row[1]), []).append(rec)
@@ -388,8 +464,8 @@ def load_atlas_indexes(conn: sqlite3.Connection) -> dict[str, Any]:
         if cur is None or rank < cur["rank"]:
             upstream[name] = {"source": source, "version": version,
                               "fetched_at": fetched_at, "rank": rank}
-    return {"conda_by_fold": conda_by_fold, "mapping_by_fold": mapping_by_fold,
-            "upstream": upstream}
+    return {"conda_by_name": conda_by_name, "conda_by_fold": conda_by_fold,
+            "mapping_by_fold": mapping_by_fold, "upstream": upstream}
 
 
 def universe_lookup(conn: sqlite3.Connection, wanted_folds: set[str]) -> dict[str, str]:
@@ -430,31 +506,36 @@ def enrichment_lookup(conn: sqlite3.Connection, names: list[str]) -> dict[str, d
 
 def _upstream_lag(
     conn: sqlite3.Connection, conda_name: str, cf_latest: str | None,
+    up_version: str | None, up_source: str | None,
 ) -> tuple[int | None, int | None]:
-    """(lag_releases, lag_days) from upstream_versions_history: distinct
-    history versions strictly newer than cf-latest, and days since the
-    earliest snapshot that carried one. (None, None) when history is absent
-    or comparison never lands reliable."""
+    """(lag_releases, lag_days): distinct known upstream versions — the
+    current `upstream_versions` row plus source-filtered history — strictly
+    newer than cf-latest, and days since the earliest history snapshot that
+    carried one. (None, None) when nothing lands reliably newer (history
+    may not have snapshotted the drift yet); lag_days None when only the
+    current row proves the lag (no dated snapshot)."""
     if not cf_latest:
         return None, None
-    rows = list(conn.execute(
+    rows: list[tuple[str, int | None]] = list(conn.execute(
         "SELECT version, MIN(snapshot_at) FROM upstream_versions_history "
-        "WHERE conda_name = ? AND version IS NOT NULL GROUP BY version",
-        (conda_name,),
+        "WHERE conda_name = ? AND source = ? AND version IS NOT NULL "
+        "GROUP BY version",
+        (conda_name, up_source),
     ))
-    if not rows:
-        return None, None
-    newer: list[tuple[str, int]] = []
+    if up_version:
+        rows.append((up_version, None))
+    newer_versions: set[str] = set()
+    snaps: list[int] = []
     for version, first_seen in rows:
         c, ok = cmp_versions(version, cf_latest)
         if ok and c is not None and c > 0:
-            newer.append((version, first_seen))
-    if not newer:
-        return 0, 0
-    earliest = min(s for _, s in newer if s is not None) if any(
-        s is not None for _, s in newer) else None
-    lag_days = int((time.time() - earliest) / 86400) if earliest else None
-    return len(newer), lag_days
+            newer_versions.add(version)
+            if first_seen is not None:
+                snaps.append(first_seen)
+    if not newer_versions:
+        return None, None
+    lag_days = int((time.time() - min(snaps)) / 86400) if snaps else None
+    return len(newer_versions), lag_days
 
 
 def match_inventory(
@@ -466,6 +547,7 @@ def match_inventory(
     """The S5 matcher: resolve → three-way compare → bucket, one output row
     per deduped inventory row."""
     idx = load_atlas_indexes(conn)
+    conda_by_name = idx["conda_by_name"]
     conda_by_fold = idx["conda_by_fold"]
     mapping_by_fold = idx["mapping_by_fold"]
     upstream = idx["upstream"]
@@ -483,7 +565,9 @@ def match_inventory(
         fold = fold_name(inv["name"])
         row: dict[str, Any] = {
             **{k: inv[k] for k in ("name", "ecosystem", "pinned", "pin_kind",
-                                   "constraint", "manifests", "resolution")},
+                                   "constraint", "manifests", "resolution",
+                                   "policy_tier")},
+            **({"pin_conflict": inv["pin_conflict"]} if inv.get("pin_conflict") else {}),
             "conda_name": None, "cf_latest": None, "match_via": None,
             "match_source": None, "match_confidence": None,
             "upstream_version": None, "upstream_source": None,
@@ -497,10 +581,17 @@ def match_inventory(
         # ── resolve to a conda package ──
         rec: dict[str, Any] | None = None
         if inv["ecosystem"] == "conda":
-            rec = conda_by_fold.get(fold)
+            # conda names are exact identifiers — exact lookup first; the
+            # fold fallback is a flagged guess (ruamel.yaml ≠ ruamel_yaml).
+            rec = conda_by_name.get(inv["name"].lower())
             if rec:
                 row["match_via"] = "conda_name"
                 row["match_confidence"] = "exact"
+            else:
+                rec = conda_by_fold.get(fold)
+                if rec:
+                    row["match_via"] = "conda_fold"
+                    row["match_confidence"] = "likely"
         elif inv["ecosystem"] == "pypi":
             mapped = mapping_by_fold.get(fold)
             if mapped:
@@ -514,6 +605,12 @@ def match_inventory(
                 row["match_confidence"] = rec["match_confidence"]
             else:
                 rec = conda_by_fold.get(fold)
+                if rec and rec["pypi_name"] and fold_name(rec["pypi_name"]) != fold:
+                    # the conda package is already mapped to a DIFFERENT
+                    # PyPI project — a bare-name match here would re-open
+                    # the wasmtime-vs-wasmtime-py trap (mapping_gap G10);
+                    # fall through to the ADD/universe path instead.
+                    rec = None
                 if rec:
                     row["match_via"] = "g10_bare"
                     row["match_confidence"] = "likely"
@@ -521,7 +618,11 @@ def match_inventory(
             rec = conda_by_fold.get(fold)
             if rec:
                 row["match_via"] = "g10_bare"
-                row["match_confidence"] = "likely"
+                # a conda package mapped to a PyPI project is a Python
+                # package — a same-named cargo/npm dep is probably a
+                # different artifact (name coincidence), not the same one.
+                row["match_confidence"] = ("name_coincidence"
+                                           if rec["pypi_name"] else "likely")
 
         # ── unmatched → ADD / ADD-NONPYPI / UNKNOWN ──
         if rec is None:
@@ -541,6 +642,9 @@ def match_inventory(
                         row["license_spdx"] = e["license_spdx"]
                         row["upstream_version"] = e["latest_version"]
                         row["upstream_source"] = "pypi"
+                        if e["latest_yanked"]:
+                            # a yanked latest is not a clean upstream-of-record
+                            row["upstream_yanked"] = True
                     else:
                         row["signals_absent"].append("pypi_enrichment")
                     local = RECIPES_DIR / fold
@@ -586,12 +690,12 @@ def match_inventory(
         elif cmp_cf_up is not None and cmp_cf_up < 0:
             row["bucket"] = "UPDATE-FEEDSTOCK"
             row["pin_behind_cf"] = bool(cmp_inv_cf is not None and cmp_inv_cf < 0)
-            lag_rel, lag_days = _upstream_lag(conn, conda_name, rec["cf_latest"])
+            lag_rel, lag_days = _upstream_lag(
+                conn, conda_name, rec["cf_latest"],
+                row["upstream_version"], row["upstream_source"])
             row["lag_releases"], row["lag_days"] = lag_rel, lag_days
         elif cmp_inv_cf is not None and cmp_inv_cf < 0:
             row["bucket"] = "UPDATE-PIN"
-        elif cmp_inv_cf is None and inv["pinned"] and rec["cf_latest"]:
-            row["bucket"] = "UNKNOWN"  # both present, no comparable verdict
         else:
             row["bucket"] = "CURRENT"
         row["version_comparison"] = "unreliable" if unreliable else "reliable"
@@ -652,9 +756,43 @@ def evaluate_policy(rows: list[dict[str, Any]], policy: dict[str, Any]) -> dict[
                                         when a freshness threshold is set)
 
     Vulnerability-severity thresholds are the LOCAL wave (need the vdb).
+    Unknown top-level keys, unknown bucket names, and malformed threshold
+    shapes are `policy.schema` VIOLATIONS (fail-closed — a typo'd gate must
+    never silently pass CI).
     Returns {"pass": bool, "violations": [...]} — weighted rows listed first.
     """
     violations: list[dict[str, Any]] = []
+
+    # ── schema validation (fail-closed on typos) ──
+    known_keys = {"freshness", "buckets", "license", "metadata", "vulns",
+                  "block_on_missing_data"}
+    schema_errors: list[str] = []
+    for key in sorted(set(policy) - known_keys):
+        schema_errors.append(f"unknown policy key {key!r}")
+    if "freshness" in policy and (
+            not isinstance(policy["freshness"], dict)
+            or "max_fail" not in policy["freshness"]):
+        schema_errors.append("freshness must be a table with max_fail")
+    if "buckets" in policy:
+        bmax = policy["buckets"].get("max") if isinstance(policy["buckets"], dict) else None
+        if not isinstance(bmax, dict):
+            schema_errors.append("buckets must be a table with a max table")
+        else:
+            for bucket in sorted(set(bmax) - set(BUCKETS)):
+                schema_errors.append(f"unknown bucket {bucket!r} in buckets.max")
+    if "license" in policy and (
+            not isinstance(policy["license"], dict)
+            or not isinstance(policy["license"].get("deny", []), list)):
+        schema_errors.append("license must be a table; license.deny must be a list")
+    if "metadata" in policy and not isinstance(policy["metadata"], dict):
+        schema_errors.append("metadata must be a table")
+    if schema_errors:
+        violations.append({
+            "check": "policy.schema",
+            "limit": 0, "actual": len(schema_errors), "rows": [],
+            "note": "; ".join(schema_errors),
+        })
+        return {"pass": False, "violations": violations}
 
     def _named(rs: list[dict[str, Any]]) -> list[str]:
         ordered = sorted(rs, key=lambda r: (-(r.get("weight") or 0), r["name"]))
@@ -701,8 +839,12 @@ def evaluate_policy(rows: list[dict[str, Any]], policy: dict[str, Any]) -> dict[
                 })
         deny = {str(x).lower() for x in lic_pol.get("deny") or []}
         if deny:
-            denied = [r for r in matched
-                      if str(r.get("conda_license") or r.get("license_spdx") or "").lower() in deny]
+            def _lic_tokens(r: dict[str, Any]) -> set[str]:
+                # token-level so compound expressions ("GPL-3.0-only OR
+                # MIT") still trip the denylist (conservative CI reading)
+                s = str(r.get("conda_license") or r.get("license_spdx") or "")
+                return {t.lower() for t in re.findall(r"[A-Za-z0-9.+-]+", s)}
+            denied = [r for r in matched if deny & _lic_tokens(r)]
             if denied:
                 violations.append({
                     "check": "license.deny",
@@ -782,6 +924,12 @@ def render_report(result: dict[str, Any]) -> str:
                 bits.append(f"confidence {r['match_confidence']}")
             if r.get("version_comparison") == "unreliable":
                 bits.append("version_comparison UNRELIABLE")
+            if r.get("pin_conflict"):
+                bits.append(f"PIN CONFLICT (also seen: {', '.join(r['pin_conflict'])})")
+            if r.get("policy_tier") == "future":
+                bits.append("policy: future")
+            if r.get("upstream_yanked"):
+                bits.append("upstream latest YANKED")
             if r.get("feedstock_archived"):
                 bits.append("ARCHIVED feedstock")
             if r["signals_absent"]:
@@ -816,15 +964,23 @@ def annotate_sbom(
     by_fold: dict[tuple[str, str], dict[str, Any]] = {}
     for r in rows:
         by_fold.setdefault((r["ecosystem"], fold_name(r["name"])), r)
+    # purl-type → matcher ecosystem, mirroring parse_sbom_cyclonedx's
+    # classification so ADD-NONPYPI rows (npm/cargo/…) annotate too and a
+    # pkg:npm/redis never inherits the PyPI redis row's verdict.
+    purl_eco = {"pypi": "pypi", "conda": "conda", "npm": "npm", "deb": "apt",
+                "rpm": "dnf", "apk": "apk", "cargo": "cargo",
+                "maven": "maven", "gem": "gem"}
+    purl_type_re = re.compile(r"^pkg:([A-Za-z0-9.+-]+)/")
     for comp in doc.get("components") or []:
         name = comp.get("name") or ""
         purl = comp.get("purl") or ""
-        eco = "conda" if purl.startswith("pkg:conda/") else (
-            "pypi" if purl.startswith("pkg:pypi/") else None)
+        m = purl_type_re.match(purl)
         row = None
-        if eco:
+        if m:
+            eco = purl_eco.get(m.group(1).lower(), "generic")
             row = by_fold.get((eco, fold_name(name)))
-        else:
+        elif name:
+            # purl-less components only: name-based fallback
             row = by_fold.get(("pypi", fold_name(name))) \
                 or by_fold.get(("conda", fold_name(name)))
         if row is None:
@@ -871,8 +1027,18 @@ def run(
     return result
 
 
+class _ExitOneArgumentParser(argparse.ArgumentParser):
+    """argparse exits 2 on usage errors — but exit 2 is RESERVED for the
+    policy-gate FAIL verdict here, so usage errors must exit 1."""
+
+    def error(self, message: str):  # type: ignore[override]
+        self.print_usage(sys.stderr)
+        sys.stderr.write(f"error: {message}\n")
+        sys.exit(1)
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(
+    parser = _ExitOneArgumentParser(
         description="Match a user inventory against the conda-forge atlas "
                     "(gap + version-lag buckets; optional CI policy gate).")
     parser.add_argument("inputs", nargs="*", type=Path,
@@ -883,6 +1049,10 @@ def main() -> int:
     parser.add_argument("--sbom-in", type=Path, default=None,
                         help="CycloneDX/SPDX JSON SBOM input (annotation source "
                              "for --sbom-out)")
+    parser.add_argument("--conda-env", type=Path, default=None,
+                        help="Live conda env prefix (reads conda-meta/ offline)")
+    parser.add_argument("--venv", type=Path, default=None,
+                        help="Python venv path (reads site-packages dist-info)")
     parser.add_argument("--policy", type=Path, default=None,
                         help="Policy thresholds (JSON or TOML); violations → exit 2")
     parser.add_argument("--weights", type=Path, default=None,
@@ -898,8 +1068,9 @@ def main() -> int:
                         help="Bypass the 14-day atlas freshness gate (decision 6)")
     args = parser.parse_args()
 
-    if not args.inputs and not args.sbom_in:
-        parser.error("no inputs given (files, directories, or --sbom-in)")
+    if not (args.inputs or args.sbom_in or args.conda_env or args.venv):
+        parser.error("no inputs given (files, directories, --sbom-in, "
+                     "--conda-env, or --venv)")
     if args.sbom_out and not args.sbom_in:
         parser.error("--sbom-out requires --sbom-in (it annotates the input BOM)")
 
@@ -920,8 +1091,18 @@ def main() -> int:
             sys.stderr.write(f"--sbom-in {args.sbom_in}: not a recognizable "
                              "CycloneDX/SPDX JSON SBOM\n")
             return 1
+        if args.sbom_out and fmt != "cyclonedx":
+            sys.stderr.write("--sbom-out annotation requires a CycloneDX "
+                             "--sbom-in (SPDX input cannot be annotated)\n")
+            return 1
         deps.extend(_stamp_resolution(FORMAT_PARSERS[fmt](args.sbom_in), fmt))
         labels.append(str(args.sbom_in))
+    if args.conda_env:
+        deps.extend(_stamp(sp.parse_conda_meta_dir(args.conda_env), "locked", "tool"))
+        labels.append(f"conda-env:{args.conda_env}")
+    if args.venv:
+        deps.extend(_stamp(sp.parse_python_venv(args.venv), "locked", "tool"))
+        labels.append(f"venv:{args.venv}")
     for w in warnings:
         sys.stderr.write(f"  warn: {w}\n")
     if not deps:
