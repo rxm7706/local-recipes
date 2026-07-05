@@ -56,8 +56,61 @@ spec_updated: 2026-07-05
   defaults), built-in transitive resolution for bare manifests (+ depth/fan-out →
   S7), a CI policy-gate mode with exit codes, and policy-tiered input formats
   (+`meta.yaml`/`recipe.yaml` as manifests, +`pdm.lock`); exception lists +
-  `--verify-against` BOM drift explicitly deferred. Zero implementation. Resume at
-  **Wave A / S1**.
+  `--verify-against` BOM drift explicitly deferred. **Seventh amendment
+  (2026-07-05, the anticipated second-pass refinement on Claude Code web):
+  spec re-verified against the live repo — zero claim drift found.** Confirmed
+  live: both `_sbom.py` defects (`_purl` at `scripts/_sbom.py:48-50` emits no
+  channel qualifier; license emission at `:86` is always `{"license": {"id": …}}`);
+  `SCHEMA_VERSION = 28` (`conda_forge_atlas.py:138` — v29 still free); the
+  trendshift v30 + kedro-migration cross-spec sync lines are in place;
+  endoflife.date API v1 re-verified live (django 4.2 `isMaintained: false`,
+  EOL 2026-04-07; 5.2 EOL 2028-04-30); 84 recipes currently carry
+  `pending-`/`blocked-` cfe status (consistent with the 84-line ad-hoc
+  exceptions baseline → 82 expected post-D1); all `recipes/*/recipe.yaml`
+  parse clean (G92/G98 gate green). Two refinements: (a) **S4's
+  `?channel=` qualifier risk is nil by construction** —
+  `scan_project.parse_sbom_cyclonedx` classifies by purl *prefix* only and
+  reads name/version from the component's own fields, so the qualifier cannot
+  break ingestion; keep the pinned test as a regression formality. (b) **Path
+  clarification**: every `tests/…` path in this spec is relative to
+  `.claude/skills/conda-forge-expert/` (e.g.
+  `.claude/skills/conda-forge-expert/tests/unit/test_export_purls.py`), not a
+  repo-root `tests/` tree. See also § Execution-environment split (web pass)
+  below. Zero implementation. Resume at **Wave A / S1**.
+
+### Execution-environment split (web pass)
+
+Wave A work splits cleanly between Claude Code web and a local machine — the
+web container clones the repo fresh, so the gitignored
+`.claude/data/conda-forge-expert/` (cf_atlas.db, `purl-export/` baseline,
+grayskull cache) does **not** exist there, and `pixi` is not installed:
+
+- **Web-executable**: all code (S1/S2 six-file surfaces), all fixture-DB unit
+  tests (the `open_db()` + `init_schema()` + raw-INSERT pattern needs no live
+  DB), the v28→v29 migration + its idempotency test, the three-place
+  meta-tests, and spec/docs edits. Tests run via a scratch venv
+  (`pip install pytest pyyaml`) invoking pytest directly.
+- **Local-only**: the entire § Verification Wave A live-gate block (baseline
+  copy, `export-purls` count assertions, sort checks, exceptions diff,
+  `mapping-gap` dry-run → human spot-check → `--write` → idempotency re-run,
+  D3 view count, re-export growth check, `pixi run -e local-recipes test`),
+  and every dated Dev-Notes count. A web pass must NOT fabricate these
+  numbers — they come from the local run (CFE live-verification principle).
+
+### Adjacent prefix.dev / nebari tooling (survey 2026-07-05, per user — the eighth amendment)
+
+Live survey of nebi, recent pixi releases, prefix-dev org repos, and wolfv's
+repos, asking "can any of their tooling be used here?" Verdicts:
+
+| Tool | Verdict for this effort |
+|---|---|
+| **`prefix-dev/purl-associator`** (pushed 2026-06-24) | **ADOPT as an optional S2 corroboration source + a standing cross-check.** Canonical conda-forge→PURL mappings (primary + alternative purls, optional CPE 2.3 prefixes) maintained via auto-inference + edit-via-PR; published artifacts: `web/public/mappings.json` (full bundle), `mappings-index.json` (compact), sharded per-package JSONs; repo-side `mappings/{auto,manual}.json`. S2 (D2-ext): a TTL-cached fetch of the bundle may serve as a SECOND independent corroborator alongside the reverse grayskull cache — agreement from either ⇒ `verified`; cache absent → warn + continue (same discipline as the grayskull cache; keeps S2's offline-only rule). S3/S1 follow-up: cross-check our conda purls + `cfe:upstream_purl` values against its alternative-purls; its externally-maintained CPE prefixes also vindicate the 2026-06-19 decision NOT to cache `cfe-cpe` in recipes (consume, don't cache). |
+| **pixi 0.71.0+ configurable conda↔PyPI mappings** (2026-06-24) | **Follow-up, not scope**: pixi now accepts custom per-channel `conda-pypi-map` files (default source: the parselmouth-hosted mapping — the same provenance tier the atlas already ingests). Emitting our `purls_conda-pypi_mapped.tsv` additionally in pixi's mapping format (an `--pixi-map` flag on `export-purls`) would let any pixi user point at the atlas-derived mapping. Deferred — record as a Wave E candidate, do not widen S1's pinned artifact contract. |
+| **py-rattler / rattler** | **USE for decision 3's conda-side comparison** (upgraded from "evaluate": `py-rattler >=0.22.0` is already pinned in `pixi.toml` `[feature.local-recipes.dependencies]` (verified 2026-07-05) — as are `py-rattler-build`, `pixi-inspect`, `pixi-diff`). `rattler.Version` implements conda version ordering natively; fall back to conda's `VersionOrder` only if the import fails at runtime. No change to Wave A. |
+| **nebi** (`nebari-dev/nebi`, Go/TS, alpha) | **No new intake needed — and `nebi-cli >=0.13` is already pinned in `pixi.toml` `[feature.local-recipes.dependencies]`** (verified 2026-07-05). nebi is a pixi-lockfile-based team environment manager (push/pull/diff envs via OCI registries); a nebi workspace IS a pixi workspace, so S5's `pixi.toml`/`pixi.lock` intake covers nebi-managed inventories (`nebi pull` → lockfile → `inventory-match`). S9 runbook line cites the env-resident CLI. |
+| **Env-resident pixi extensions** — `pixi-to-conda-lock >=0.4.3`, `pixi-inspect >=2.0.2`, `pixi-diff >=0.1.6`, `pixi-pack`/`pixi-unpack`, `conda-lock >=4.0.1`, `conda-pypi >=0.10.1` (all pinned in `[feature.local-recipes.dependencies]`) | **S5a implementation option**: `pixi-to-conda-lock` converts `pixi.lock` → `conda-lock.yml`, so the S5a pixi.lock intake (the DW17 discharge) may EITHER parse pixi.lock natively OR shell out to the converter and reuse `scan_project`'s existing conda-lock parser — decide in S5a by which is simpler + testable offline (fixture-driven either way). `pixi-inspect` (conda-artifact metadata) and `pixi-diff` (lock-diffs) are candidate corroborators for S5's three-way version comparison at Wave C; not Wave A scope. |
+| pixi releases 0.68–0.72, rattler-build, resolvo, rip, pixi-build-backends | **Nothing to adopt**: no SBOM/CycloneDX/purl-export surface found in recent pixi releases or the full prefix-dev + wolfv repo sweeps — S3's `_sbom.py` extension remains the right implementation path (no existing wheel to reuse). |
+| prefix.dev attestation cluster — `siglog` (Merkle transparency log, Jul 2026), `sigstore-example` (signing conda pkgs), `vouched`; wolfv's `sigstore-rust`/`tough` (TUF)/`ceps` fork | **Watch only**: this is the ecosystem's SBOM-*signing*/provenance direction (CEP #127 territory — SBOM's home is `conda-meta/`, attestation in external Sigstore bundles). Orthogonal to this effort's inventory/matcher scope; revisit at the S-retro if a signed-BOM ask appears. |
 
 ## Intent (the user's ask, decomposed)
 
@@ -307,6 +360,11 @@ calls), the 19-line wrapper template in `.claude/scripts/conda-forge-expert/`.
   bucket with the candidate list. **Collision** (candidate pypi name already set on
   a different conda package) → skip; `collisions` bucket — the
   `wasmtime`-vs-`wasmtime-py` trap; never a "bare name wins" heuristic.
+  (**D2-ext, eighth amendment:** the `prefix-dev/purl-associator` mapping
+  bundle may serve as a second independent corroborator — agreement from
+  EITHER the reverse grayskull cache OR purl-associator ⇒ `verified`; both
+  caches absent → `likely`-only mode. Optional; see § Adjacent prefix.dev
+  tooling.)
 
   **Writeback (pinned SQL — idempotent, no-clobber, `commit_every=500` per the
   Phase C pattern):**
