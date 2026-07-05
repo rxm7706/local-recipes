@@ -12,6 +12,13 @@ either read `FROM v_pypi_intelligence_valid` OR carry an inline
 `# scope: <reason>` justification comment within the preceding lines
 (producer-side phase stats and the orphan probe itself are the legitimate
 raw readers).
+
+Known coverage limits (shared with the model test, deliberately kept
+identical to it): the string-literal-anchored regex cannot see a SELECT
+whose `FROM pypi_intelligence` sits in a LATER adjacent string fragment
+(`"SELECT x "  "FROM pypi_intelligence"`) or behind an f-string table
+variable. All current raw reads carry `# scope:` comments regardless;
+an AST-based scanner is tracked as deferred work.
 """
 from __future__ import annotations
 
