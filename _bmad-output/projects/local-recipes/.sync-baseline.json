@@ -1,5 +1,5 @@
 {
-  "skill_version": "8.68.0",
+  "skill_version": "8.68.1",
   "schema_version": 28,
   "mcp_tools": 42,
   "atlas_phases": 22,
@@ -29,5 +29,5 @@
     "M",
     "N"
   ],
-  "git_head": "1ab9621f6f"
+  "git_head": "7ec5d4dbab"
 }
