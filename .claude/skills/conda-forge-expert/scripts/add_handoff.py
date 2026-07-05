@@ -80,9 +80,25 @@ def enrich_add_rows(
     """Bounded single-package enrichment for ADD names whose
     `pypi_intelligence` row lacks `json_fetched_at`. Idempotent by
     construction: already-enriched names are skipped up front, and the
-    upsert is Phase R's own. Returns counters + the enriched name list."""
+    upsert is Phase R's own. Returns counters + the enriched name list.
+
+    Names are de-duplicated (a name appearing in two manifests must not
+    burn two live fetches / two --limit slots), and names absent from
+    `pypi_universe` are NOT fetched — enriching them would mint exactly the
+    orphan `pypi_intelligence` rows the schema-v29 ORPHAN_RULE excludes."""
+    universe = {
+        r[0] for r in conn.execute("SELECT pypi_name FROM pypi_universe")
+    }
     needing: list[str] = []
+    not_in_universe: list[str] = []
+    seen: set[str] = set()
     for name in names:
+        if name in seen:
+            continue
+        seen.add(name)
+        if name not in universe:
+            not_in_universe.append(name)
+            continue
         # scope: eligibility probe, not version truth — mirrors Phase R's
         # own TTL query; NULL/missing json_fetched_at is exactly the signal.
         row = conn.execute(
@@ -119,6 +135,7 @@ def enrich_add_rows(
         "not_found": not_found,
         "failed": failed,
         "dropped_by_limit": dropped,
+        "not_in_universe": not_in_universe,
         "enriched_names": enriched_names,
     }
 
@@ -145,14 +162,23 @@ def _intel_for(conn: sqlite3.Connection, names: list[str]) -> dict[str, dict[str
     return out
 
 
+def _row_name(r: dict[str, Any]) -> str | None:
+    """The PyPI name of a match row: `pypi_name` (S5 always sets it for ADD)
+    then `name`. None for a malformed row (hand-edited --matches) — callers
+    skip those rather than KeyError."""
+    n = r.get("pypi_name") or r.get("name")
+    return n if isinstance(n, str) and n else None
+
+
 def build_worklist(
     conn: sqlite3.Connection, add_rows: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """One worklist entry per ADD row, blockers fail-closed on license."""
-    names = [r.get("pypi_name") or r["name"] for r in add_rows]
-    intel = _intel_for(conn, names)
+    paired = [(r, _row_name(r)) for r in add_rows]
+    paired = [(r, n) for r, n in paired if n is not None]
+    intel = _intel_for(conn, [n for _, n in paired])
     entries: list[dict[str, Any]] = []
-    for match_row, name in zip(add_rows, names):
+    for match_row, name in paired:
         e = intel.get(name)
         blockers: list[str] = []
         signals_absent: list[str] = []
@@ -198,14 +224,17 @@ def build_worklist(
 
 
 def nonpypi_entries(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """ADD-NONPYPI rows appended unscored — upstream identity as a purl."""
+    """ADD-NONPYPI rows appended unscored — upstream identity as a purl.
+    Malformed rows (no name; hand-edited --matches) are skipped."""
     out = []
-    for r in sorted(rows, key=lambda x: x["name"]):
+    valid = [r for r in rows if isinstance(r.get("name"), str) and r["name"]]
+    for r in sorted(valid, key=lambda x: x["name"]):
+        eco = r.get("ecosystem") or "generic"
         ver = f"@{r['pinned']}" if r.get("pinned") else ""
         out.append({
             "name": r["name"],
-            "ecosystem": r["ecosystem"],
-            "upstream_purl": f"pkg:{r['ecosystem']}/{r['name']}{ver}",
+            "ecosystem": eco,
+            "upstream_purl": f"pkg:{eco}/{r['name']}{ver}",
         })
     return out
 
@@ -222,14 +251,21 @@ def run_handoff(
 
     enrichment: dict[str, Any] = {"skipped": True}
     if enrich and add_rows:
-        names = [r.get("pypi_name") or r["name"] for r in add_rows]
+        names = [n for n in (_row_name(r) for r in add_rows) if n]
         enrichment = enrich_add_rows(conn, names, fetcher or _default_fetcher(),
                                      limit=limit)
 
     built = None
     try:
         row = conn.execute("SELECT value FROM meta WHERE key='built_at'").fetchone()
-        built = row[0] if row else None
+        if row:
+            # stored as a UNIX-epoch string — render ISO for the human report;
+            # fall back to the raw value if it isn't a parseable timestamp.
+            try:
+                built = dt.datetime.fromtimestamp(
+                    int(float(row[0])), dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            except (ValueError, TypeError):
+                built = row[0]
     except sqlite3.Error:
         pass
     return {
@@ -267,6 +303,11 @@ def render_report(result: dict[str, Any]) -> str:
                 f"- **--limit dropped {len(enr['dropped_by_limit'])} names "
                 f"(still un-enriched, still blocked):** "
                 + ", ".join(enr["dropped_by_limit"]))
+        if enr.get("not_in_universe"):
+            lines.append(
+                f"- **{len(enr['not_in_universe'])} ADD names not in "
+                f"pypi_universe (not fetched — would orphan; stale --matches?):** "
+                + ", ".join(enr["not_in_universe"]))
     lines += ["", "## Worklist (readiness-desc)", ""]
     for e in result["worklist"]:
         bits = [f"readiness {e['readiness'] if e['readiness'] is not None else '?'}"]
@@ -322,6 +363,9 @@ def main() -> int:
     if bool(args.inputs) == bool(args.matches):
         sys.stderr.write("give either INPUT files/dirs or --matches, not both/neither\n")
         return 1
+    if args.limit is not None and args.limit < 0:
+        sys.stderr.write("--limit must be >= 0\n")
+        return 1
     if not DB_PATH.exists():
         sys.stderr.write(
             f"cf_atlas.db not found at {DB_PATH}. "
@@ -335,7 +379,10 @@ def main() -> int:
         check_freshness(conn, args.allow_stale)
         if args.matches:
             doc = json.loads(args.matches.read_text(encoding="utf-8"))
-            match_rows = doc.get("rows")
+            # a bare JSON list (or any non-object) has no `rows` — guard the
+            # .get() so a hand-made/wrong file gets the friendly message,
+            # not an AttributeError traceback.
+            match_rows = doc.get("rows") if isinstance(doc, dict) else None
             if not isinstance(match_rows, list):
                 sys.stderr.write(f"--matches {args.matches}: no `rows` list "
                                  "(is this `inventory-match --json` output?)\n")

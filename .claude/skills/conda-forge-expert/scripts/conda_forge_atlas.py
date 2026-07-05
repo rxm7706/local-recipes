@@ -8100,40 +8100,53 @@ _CPYTHON_ABI_RE = re.compile(r"cp3\d+-cp3\d+")
 
 def _phase_r_fetch_one(pypi_name: str
                        ) -> tuple[str, dict | None, str | None]:
-    """Worker for Phase R. Returns (pypi_name, json_doc_or_None, err).
+    """Worker for Phase R (and the S6 add-handoff bounded enrichment).
+    Returns (pypi_name, json_doc_or_None, err).
 
-    Hits https://pypi.org/pypi/<name>/json. Same retry shape as
-    `_phase_h_fetch_one` — 3 attempts with Retry-After honored on 429/503
-    and ±25% jitter on exponential backoff otherwise.
+    Routes through `_http.resolve_pypi_json_urls` (PYPI_JSON_BASE_URL env /
+    pixi `pypi-config.index-url` mirror / pypi.org fallback) so air-gapped
+    JFrog setups reach their mirror — the same enterprise-routing chain
+    `recipe_updater` / `recipe-generator` use. Each URL in the chain gets
+    the `_phase_h_fetch_one` retry shape (3 attempts, Retry-After on
+    429/503, ±25% jitter); a 404 is definitive (short-circuits the whole
+    chain), other failures fall through to the next mirror.
     """
     import random as _random
-    url = f"https://pypi.org/pypi/{pypi_name}/json"
+    try:
+        from _http import resolve_pypi_json_urls  # type: ignore[import-not-found]
+        urls = resolve_pypi_json_urls(pypi_name)
+    except Exception:
+        urls = [f"https://pypi.org/pypi/{pypi_name}/json"]
+
     last_err: str | None = None
-    for attempt in range(3):
-        try:
-            req = _make_req(url)
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                payload = json.load(resp)
-            return (pypi_name, payload, None)
-        except urllib.error.HTTPError as e:
-            last_err = f"HTTP {e.code}"
-            if e.code == 404:
-                return (pypi_name, None, "HTTP 404")
-            if e.code in (429, 503) and attempt < 2:
-                retry_after = e.headers.get("Retry-After") if e.headers else None
-                base = 2.0 ** attempt + 1.0
-                jitter = base * (0.75 + 0.5 * _random.random())
-                sleep_for = _parse_retry_after(retry_after, fallback=jitter)
-                time.sleep(sleep_for)
-                continue
-            return (pypi_name, None, last_err)
-        except Exception as e:
-            last_err = f"{type(e).__name__}: {str(e)[:120]}"
-            if attempt < 2:
-                base = 1.0 + attempt
-                time.sleep(base * (0.75 + 0.5 * _random.random()))
-                continue
-            return (pypi_name, None, last_err)
+    for url in urls:
+        for attempt in range(3):
+            try:
+                req = _make_req(url)
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    payload = json.load(resp)
+                return (pypi_name, payload, None)
+            except urllib.error.HTTPError as e:
+                last_err = f"HTTP {e.code}"
+                if e.code == 404:
+                    # definitive: the project does not exist on this index —
+                    # trying another mirror would only mask a real 404
+                    return (pypi_name, None, "HTTP 404")
+                if e.code in (429, 503) and attempt < 2:
+                    retry_after = e.headers.get("Retry-After") if e.headers else None
+                    base = 2.0 ** attempt + 1.0
+                    jitter = base * (0.75 + 0.5 * _random.random())
+                    sleep_for = _parse_retry_after(retry_after, fallback=jitter)
+                    time.sleep(sleep_for)
+                    continue
+                break  # non-retryable HTTP — try the next mirror
+            except Exception as e:
+                last_err = f"{type(e).__name__}: {str(e)[:120]}"
+                if attempt < 2:
+                    base = 1.0 + attempt
+                    time.sleep(base * (0.75 + 0.5 * _random.random()))
+                    continue
+                break  # exhausted retries on this URL — try the next mirror
     return (pypi_name, None, last_err or "exhausted retries")
 
 
