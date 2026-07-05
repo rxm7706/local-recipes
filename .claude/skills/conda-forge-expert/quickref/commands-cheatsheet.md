@@ -577,6 +577,17 @@ re-running the dry-run preflight to refresh these numbers.
 # Build / refresh the AppThreat multi-source vulnerability DB (~5–10 min)
 pixi run -e vuln-db vdb-refresh
 
+# Run Phase G (vdb risk-summary) after a vdb refresh — the pixi task works for G:
+pixi run -e vuln-db atlas-phase G
+# Phase G' (per-version scoring) CANNOT go through the pixi task — pixi's task
+# shell chokes on the apostrophe ("Expected closing single quote"). Activate the
+# env via shell-hook and invoke the script directly (v8.68.0):
+eval "$(pixi shell-hook -e vuln-db)" && \
+  PHASE_GP_ENABLED=1 python .claude/scripts/conda-forge-expert/atlas_phase.py "G'"
+# NOTE: single-phase atlas-phase runs write results to cf_atlas.db but do NOT
+# rewrite cf_atlas_meta.json — the meta file keeps the last FULL build's
+# phase entries (G/G' may still read "skipped" there; the DB is the truth).
+
 # Refresh the lighter OSV CVE DB used by scan-vulnerabilities
 pixi run -e local-recipes update-cve-db
 
