@@ -148,7 +148,7 @@ quantitative-claims discipline — re-verify at implementation time, the atlas m
 
 | Asset | Where | State |
 |---|---|---|
-| purl exports (ad-hoc, 2026-07-04) | `.claude/data/conda-forge-expert/purl-export/` | `purls_conda-forge.txt` 33,392 · `purls_conda-forge_versioned.txt` · `purls_pypi.txt` 843,641 (live universe 843,764 on 2026-07-05 — +123 Phase-D drift since the export) · `purls_conda-pypi_mapped.tsv` 21,403 pairs (`conda_purl · pypi_purl · match_source · match_confidence`) · `recipe-purl-exceptions.txt` 82. **No committed generator script.** The exceptions file derives from `recipes/*/recipe.yaml` cfe metadata (NOT the DB) — see S1. |
+| purl exports (ad-hoc, 2026-07-04) | `.claude/data/conda-forge-expert/purl-export/` | `purls_conda-forge.txt` 33,392 · `purls_conda-forge_versioned.txt` · `purls_pypi.txt` 843,641 (the 843,764-row live universe emits 843,641 purls — exactly 123 names collapse under G98 normalization (case/`_` collisions); verified 2026-07-05, this is dedup, NOT drift) · `purls_conda-pypi_mapped.tsv` 21,403 pairs (`conda_purl · pypi_purl · match_source · match_confidence`) · `recipe-purl-exceptions.txt` 82. **No committed generator script.** The exceptions file derives from `recipes/*/recipe.yaml` cfe metadata (NOT the DB) — see S1. |
 | conda↔pypi mapping (source of truth) | `cf_atlas.db packages.pypi_name` **+ per-row provenance columns `match_source` / `match_confidence`** | 21,490 rows with `pypi_name` set (of 33,624 total / 32,655 in `v_actionable_packages`). Provenance tiers (the LITERAL `packages.match_source` enum): parselmouth / recipe_source_url / name_coincidence / **`none`** (= the 3,527 "unattributed" rows; use `'none'` in SQL — it is the real stored value); plus the grayskull cache (`pypi_conda_map.json`, `update_mapping_cache`). |
 | **Non-Python upstream-of-record** | `upstream_versions` (+ `upstream_versions_history`) | **47,143 rows across sources: github 25,154 · pypi 21,217 · gitlab 381 · npm 198 · rubygems 165 · codeberg 16 · crates 10 · maven 2.** This is the freshness backbone for non-Python packages. Registry-name columns on `packages` are sparse (`npm_name` 198; `cran_name`/`cpan_name`/`luarocks_name` 0) — GitHub tracking is the dominant non-Python upstream identity. `behind-upstream` CLI already consumes this. |
 | **Conda-side downloads (ecosystem-agnostic)** | `package_version_downloads` (417,850 rows, **32,636 distinct packages**) + `package_platform_downloads` + `package_channel_downloads` | Phase F; covers non-Python packages equally — adoption signal for the 2027+ scoring. |
@@ -365,6 +365,15 @@ calls), the 19-line wrapper template in `.claude/scripts/conda-forge-expert/`.
   EITHER the reverse grayskull cache OR purl-associator ⇒ `verified`; both
   caches absent → `likely`-only mode. Optional; see § Adjacent prefix.dev
   tooling.)
+  **D2 refinement (live-gate finding, 2026-07-05):** the writeback is further
+  restricted to **`bare`-transform pairs (PEP 503 name equivalence — the same
+  registry entry) OR corroborated (`verified`) pairs**; a suffix/prefix
+  recovery backed only by universe membership queues in a new
+  `uncorroborated` triage bucket instead of writing. Proven necessary by the
+  first live dry-run: `tvm-py` (Apache TVM) resolved via strip-py to PyPI
+  `tvm` — the "Time Value of Money" package, an unrelated project the
+  collision guard cannot catch (no conda package claims PyPI `tvm`).
+  Regression-pinned in `test_uncorroborated_suffix_not_written`.
 
   **Writeback (pinned SQL — idempotent, no-clobber, `commit_every=500` per the
   Phase C pattern):**
@@ -596,7 +605,12 @@ calls), the 19-line wrapper template in `.claude/scripts/conda-forge-expert/`.
 - **Wave A live gates** (run in order; record dated counts in Dev Notes):
   ```bash
   cp -r .claude/data/conda-forge-expert/purl-export <scratch>/purl-export.baseline-20260704
-  pixi run -e local-recipes export-purls -- --json   # conda≈33,392±drift · versioned==conda · pypi≥843,764 · mapped≥21,403 · exceptions≈82
+  pixi run -e local-recipes export-purls -- --json
+  # VERIFIED 2026-07-05: conda 33,392 · versioned 33,392 · pypi 843,641 (= the
+  # G98-distinct count of the 843,764 universe rows) · mapped 21,403 → 21,528
+  # after S2 (+125) · exceptions 84 — the D1 gate is `not-in-pypi-export == 0`
+  # (confirmed), NOT the total, which tracks pending/blocked recipe drift
+  # (2 recipes gained pending status since the 2026-07-04 baseline)
   LC_ALL=C sort -c .claude/data/conda-forge-expert/purl-export/purls_pypi.txt
   sed 's|^pkg:conda/||; s|[@?].*$||' .claude/data/conda-forge-expert/purl-export/purls_conda-forge.txt | LC_ALL=C sort -c
   diff <baseline>/recipe-purl-exceptions.txt <live>  # expected: ONLY the 2 dots-bug lines removed + status drift

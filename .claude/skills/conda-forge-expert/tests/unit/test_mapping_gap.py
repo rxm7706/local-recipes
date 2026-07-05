@@ -151,6 +151,22 @@ class TestRecovery:
         # the ambiguous bucket still holds baz-py.
         assert [a["conda_name"] for a in r["ambiguous"]] == ["baz-py"]
 
+    def test_uncorroborated_suffix_not_written(self, db, cli_mod, tmp_path):
+        """Live-gate regression (2026-07-05): conda `tvm-py` (Apache TVM)
+        resolved via strip-py to PyPI `tvm` ("Time Value of Money") — a
+        DIFFERENT project. A suffix/prefix recovery backed only by universe
+        membership must NOT be recovered/written; it queues in the
+        `uncorroborated` triage bucket. Bare-transform recoveries (PEP 503
+        name equivalence) are unaffected."""
+        r = _run(cli_mod, db, False, tmp_path / "no-cache.json", tmp_path)
+        unc = {u["conda_name"]: u for u in r["uncorroborated"]}
+        assert "foo-py" in unc  # strip-py hit, no corroborator present
+        assert unc["foo-py"]["candidate"] == "foo"
+        assert unc["foo-py"]["transform"] == "strip-py"
+        recovered_names = {x["conda_name"] for x in r["recovered"]}
+        assert "foo-py" not in recovered_names
+        assert "bar" in recovered_names  # bare stays recoverable
+
     def test_intra_run_duplicate_claim_is_collision(self, cli_mod, atlas_mod, tmp_path):
         """Two unmapped packages folding to the SAME universe name in one
         run: the first accepted recovery claims it; the second must land in
@@ -282,7 +298,11 @@ class TestReadOnlyDryRun:
         finally:
             ro.close()
         assert r["mode"] == "dry-run" and r["rows_written"] == 0
-        assert [(x["conda_name"], x["pypi_name"]) for x in r["recovered"]] == \
+        # foo-py (strip-py, no corroborator) routes to the uncorroborated
+        # triage bucket under the 2026-07-05 live-gate writeback restriction;
+        # the point of THIS test is only that the ro-connection path works.
+        assert r["recovered"] == []
+        assert [(x["conda_name"], x["candidate"]) for x in r["uncorroborated"]] == \
             [("foo-py", "foo")]
 
 

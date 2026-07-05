@@ -265,6 +265,7 @@ def recover(
     recovered: list[dict[str, Any]] = []
     ambiguous: list[dict[str, Any]] = []
     collisions: list[dict[str, Any]] = []
+    uncorroborated: list[dict[str, Any]] = []
     unrecovered: list[str] = []
 
     for conda_name in python_track:
@@ -322,18 +323,34 @@ def recover(
             })
             continue
 
+        # Live-gate finding (2026-07-05): tvm-py → pypi `tvm` ("Time Value of
+        # Money", kenkundert) — a suffix/prefix transform lands on a DIFFERENT
+        # PyPI name, so universe membership alone cannot prove identity (G10's
+        # bare-name trap, now observed live). Only the `bare` transform (PEP
+        # 503 name equivalence — the SAME registry entry) or an independent
+        # corroborator earns the writeback; the rest queue for human triage.
+        transform = hits[chosen]
+        if transform != "bare" and confidence != "verified":
+            uncorroborated.append({
+                "conda_name": conda_name,
+                "candidate": chosen,
+                "transform": transform,
+            })
+            continue
+
         claimed[fold_name(chosen)] = conda_name  # intra-run claim
         recovered.append({
             "conda_name": conda_name,
             "pypi_name": chosen,
             "confidence": confidence,
-            "transform": hits[chosen],
+            "transform": transform,
         })
 
     return {
         "recovered": recovered,
         "ambiguous": ambiguous,
         "collisions": collisions,
+        "uncorroborated": uncorroborated,
         "unrecovered": unrecovered,
     }
 
@@ -465,6 +482,19 @@ def render_report(result: dict[str, Any]) -> str:
         lines.append("- (none)")
     lines += [
         "",
+        "### Uncorroborated suffix/prefix recoveries (NOT written — a "
+        "suffix/prefix transform names a DIFFERENT PyPI project; needs a "
+        "corroborator or human confirmation)",
+        "",
+    ]
+    for u in r["uncorroborated"]:
+        lines.append(
+            f"- {u['conda_name']}: candidate {u['candidate']} ({u['transform']})"
+        )
+    if not r["uncorroborated"]:
+        lines.append("- (none)")
+    lines += [
+        "",
         "## Orphan pypi_intelligence rows",
         "",
         f"> {r['orphans']['rule']}",
@@ -538,6 +568,7 @@ def run(
         "recovered": rec["recovered"],
         "ambiguous": rec["ambiguous"],
         "collisions": rec["collisions"],
+        "uncorroborated": rec["uncorroborated"],
         "unrecovered_python_track": rec["unrecovered"],
         "rows_written": rows_written,
         "mapped_before": mapped_before,
