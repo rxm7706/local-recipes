@@ -490,7 +490,7 @@ def parse_pdm_lock(path: Path) -> list[Dep]:
         except ImportError:
             return []
     try:
-        data = tomllib.loads(path.read_text())
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return []
     deps: list[Dep] = []
@@ -519,7 +519,7 @@ def parse_pylock_toml(path: Path) -> list[Dep]:
         except ImportError:
             return []
     try:
-        data = tomllib.loads(path.read_text())
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return []
     deps: list[Dep] = []
@@ -548,8 +548,8 @@ def parse_pip_text(path: Path) -> list[Dep]:
     (header + dashes), and the `--format=json` array.
     """
     try:
-        text = path.read_text()
-    except OSError:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, ValueError):  # ValueError covers UnicodeDecodeError
         return []
     stripped = text.lstrip()
     if stripped.startswith("["):  # pip list --format=json
@@ -615,8 +615,8 @@ def parse_conda_list_text(path: Path) -> list[Dep]:
     fragments stripped); `--json` is an array of package objects.
     """
     try:
-        text = path.read_text()
-    except OSError:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, ValueError):  # ValueError covers UnicodeDecodeError
         return []
     deps: list[Dep] = []
     stripped_text = text.lstrip()
@@ -706,8 +706,8 @@ def parse_meta_yaml(path: Path) -> list[Dep]:
     too: the indentation state machine catches every requirements block.
     """
     try:
-        text = path.read_text()
-    except OSError:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, ValueError):  # ValueError covers UnicodeDecodeError
         return []
     deps: list[Dep] = []
     req_indent: int | None = None   # indent of the open `requirements:` key
@@ -759,7 +759,7 @@ def parse_recipe_yaml(path: Path) -> list[Dep]:
     except ImportError:
         return []
     try:
-        data = yaml.safe_load(path.read_text())
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception:
         return []
     if not isinstance(data, dict):

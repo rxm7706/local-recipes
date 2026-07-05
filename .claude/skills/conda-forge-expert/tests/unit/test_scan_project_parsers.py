@@ -386,6 +386,20 @@ def test_requirements_range_bound_records_operator(sp, tmp_path):
     assert by_name["weird"].extras["op"] == "!="
 
 
+def test_s5a_text_parsers_survive_bad_encoding(sp, tmp_path):
+    """A mis-encoded manifest must return [] (graceful), never crash the
+    scan with UnicodeDecodeError — the S5a text parsers catch it."""
+    bad = tmp_path / "pip.txt"
+    bad.write_bytes(b"numpy==1.26.4\n\xff\xfe not utf-8\n")   # invalid UTF-8
+    assert sp.parse_pip_text(bad) == []
+    bad2 = tmp_path / "conda.txt"
+    bad2.write_bytes(b"numpy 1.26.4 py312 conda-forge\n\xff\xfe\n")
+    assert sp.parse_conda_list_text(bad2) == []
+    bad3 = tmp_path / "meta.yaml"
+    bad3.write_bytes(b"requirements:\n  run:\n    - numpy\n\xff\xfe\n")
+    assert sp.parse_meta_yaml(bad3) == []
+
+
 def test_recipe_yaml_manifest(sp):
     deps = sp.parse_recipe_yaml(FIXTURES / "recipe.yaml")
     by_key = {(d.name, d.manifest): d for d in deps}
