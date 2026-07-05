@@ -57,6 +57,7 @@ SCRIPTS = [
     "scan_project.py",
     "staleness_report.py",
     "submit_pr.py",
+    "universe_sbom.py",
     "validate_recipe.py",
     "version_downloads.py",
     "vulnerability_scanner.py",
