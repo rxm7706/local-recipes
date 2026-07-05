@@ -26,6 +26,7 @@ Where:
 from __future__ import annotations
 
 import datetime as dt
+import re
 import uuid
 from typing import Any
 
@@ -45,9 +46,97 @@ def _spdx_id(eco: str, name: str, version: str | None) -> str:
     return f"SPDXRef-{safe}"
 
 
-def _purl(eco: str, name: str, version: str | None) -> str:
+def _purl(
+    eco: str,
+    name: str,
+    version: str | None,
+    qualifiers: dict[str, str] | None = None,
+) -> str:
+    """Build a purl; qualifiers are appended sorted-by-key (purl spec).
+
+    conda purls must carry `?channel=conda-forge` (G98) — callers pass
+    `qualifiers={"channel": "conda-forge"}` for the conda ecosystem.
+    """
     base = f"pkg:{eco}/{name}"
-    return f"{base}@{version}" if version else base
+    if version:
+        base = f"{base}@{version}"
+    if qualifiers:
+        pairs = "&".join(f"{k}={v}" for k, v in sorted(qualifiers.items()))
+        base = f"{base}?{pairs}"
+    return base
+
+
+# --- SPDX license normalization (cyclonedx-universe-inventory Wave B / S3) --
+
+# SPDX idstring: letters, digits, '.', '-', with an optional trailing '+'.
+_SPDX_ID_RE = re.compile(r"^[A-Za-z0-9.\-]+\+?$")
+_SPDX_OPERATORS = {"AND", "OR", "WITH"}
+
+
+def _is_spdx_expression(text: str) -> bool:
+    """Grammar-level check for a compound SPDX license expression.
+
+    Validates STRUCTURE only (operands, case-sensitive uppercase AND/OR/WITH,
+    balanced parens) — not license-list membership, which needs the SPDX list
+    and is the conda-forge linter's job. Lowercase operators (`x and y`) are
+    NOT valid SPDX and correctly fail this check.
+    """
+    tokens = re.findall(r"\(|\)|[^\s()]+", text)
+    if len(tokens) < 3:
+        return False
+    depth = 0
+    expect_operand = True
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok == "(":
+            if not expect_operand:
+                return False
+            depth += 1
+        elif tok == ")":
+            if expect_operand or depth == 0:
+                return False
+            depth -= 1
+        elif tok in ("AND", "OR"):
+            if expect_operand:
+                return False
+            expect_operand = True
+        elif tok == "WITH":
+            # `id WITH exception-id` — exception must be a plain idstring.
+            if expect_operand or i + 1 >= len(tokens):
+                return False
+            i += 1
+            if not _SPDX_ID_RE.match(tokens[i]):
+                return False
+        else:
+            if not expect_operand or not _SPDX_ID_RE.match(tok):
+                return False
+            expect_operand = False
+        i += 1
+    return depth == 0 and not expect_operand
+
+
+def normalize_license(license_str: str | None) -> dict[str, Any] | None:
+    """Map a raw conda license string to a schema-valid CycloneDX entry.
+
+    - single SPDX-shaped id            → {"license": {"id": ...}}
+    - valid SPDX *expression*          → {"expression": ...}
+    - anything else (non-SPDX junk)    → {"license": {"name": ...}}
+
+    The pre-Wave-B emitter always used {"license": {"id": ...}}, which is
+    schema-INVALID for expressions (live data: `0BSD AND LGPL-2.1-or-later`)
+    and for junk (`(FTL or GPLv2+) and BSD and ...`).
+    """
+    if not license_str:
+        return None
+    s = str(license_str).strip()
+    if not s:
+        return None
+    if _SPDX_ID_RE.match(s):
+        return {"license": {"id": s}}
+    if _is_spdx_expression(s):
+        return {"expression": s}
+    return {"license": {"name": s}}
 
 
 def emit_cyclonedx(
@@ -67,7 +156,8 @@ def emit_cyclonedx(
     components: list[dict[str, Any]] = []
     component_refs: dict[str, str] = {}  # "<eco>:<name>@<version>" -> bom-ref
     for dep in deps:
-        purl = _purl(dep.ecosystem, dep.name, dep.version)
+        qualifiers = {"channel": "conda-forge"} if dep.ecosystem == "conda" else None
+        purl = _purl(dep.ecosystem, dep.name, dep.version, qualifiers)
         ref = _bom_ref(dep.ecosystem, dep.name, dep.version)
         dep_key = f"{dep.ecosystem}:{dep.name}@{dep.version}"
         component_refs[dep_key] = ref
@@ -81,9 +171,9 @@ def emit_cyclonedx(
         # License from atlas if available (conda/pypi packages)
         atlas_key = f"{dep.ecosystem}:{dep.name}"
         if atlas_key in atlas_records:
-            license_str = atlas_records[atlas_key].get("conda_license")
-            if license_str:
-                comp["licenses"] = [{"license": {"id": license_str}}]
+            entry = normalize_license(atlas_records[atlas_key].get("conda_license"))
+            if entry:
+                comp["licenses"] = [entry]
         # Manifest property
         manifest = getattr(dep, "manifest", None)
         if manifest:
