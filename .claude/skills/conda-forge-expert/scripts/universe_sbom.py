@@ -39,7 +39,6 @@ import sqlite3
 import sys
 import tempfile
 import time
-import urllib.parse
 import uuid
 from pathlib import Path
 from typing import Any
@@ -481,10 +480,9 @@ def main() -> int:
 
     t0 = time.monotonic()
     try:
-        # Percent-encode the path: sqlite URI parsing would otherwise split
-        # on ?/# and mis-open checkouts with special characters.
-        conn = sqlite3.connect(
-            f"file:{urllib.parse.quote(str(DB_PATH))}?mode=ro", uri=True)
+        # as_uri(): canonical cross-platform file-URI — handles drive
+        # letters and percent-encodes ?/# so sqlite can't mis-split the path.
+        conn = sqlite3.connect(f"{DB_PATH.as_uri()}?mode=ro", uri=True)
     except sqlite3.Error as exc:
         sys.stderr.write(f"cannot open {DB_PATH}: {exc}\n")
         return 1
@@ -519,13 +517,23 @@ def main() -> int:
         # emits interleave and defeat the atomic-replace guarantee. Compact
         # separators: pretty-printing would inflate the full-universe file
         # ~1/3 and skew the measured size/time the layout decision rests on.
-        with tempfile.NamedTemporaryFile(
-            "w", encoding="utf-8", dir=out.parent,
-            prefix=out.name + ".", suffix=".tmp", delete=False,
-        ) as fh:
-            tmp = Path(fh.name)
-            json.dump(doc, fh, separators=(",", ":"))
-        tmp.replace(out)
+        tmp: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w", encoding="utf-8", dir=out.parent,
+                prefix=out.name + ".", suffix=".tmp", delete=False,
+            ) as fh:
+                tmp = Path(fh.name)
+                json.dump(doc, fh, separators=(",", ":"))
+            tmp.replace(out)
+            tmp = None
+        finally:
+            # A write failure must not leak the delete=False temp file.
+            if tmp is not None:
+                try:
+                    tmp.unlink()
+                except OSError:
+                    pass
     except OSError as exc:
         sys.stderr.write(f"cannot write {out}: {exc}\n")
         return 1
