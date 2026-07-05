@@ -37,13 +37,15 @@ import datetime as dt
 import json
 import sqlite3
 import sys
+import tempfile
 import time
+import urllib.parse
 import uuid
 from pathlib import Path
 from typing import Any
 
 from _sbom import TOOL_NAME, TOOL_VENDOR, TOOL_VERSION, _purl, normalize_license
-from export_purls import g98_pypi_name, upstream_purl
+from export_purls import fold_name, g98_pypi_name, upstream_purl
 
 
 def _get_data_dir() -> Path:
@@ -51,7 +53,11 @@ def _get_data_dir() -> Path:
 
 
 DB_PATH = _get_data_dir() / "cf_atlas.db"
-DEFAULT_OUT = _get_data_dir() / "universe-sbom" / "universe-sbom.cdx.json"
+DEFAULT_OUT_DIR = _get_data_dir() / "universe-sbom"
+DEFAULT_OUT = {
+    "cyclonedx": DEFAULT_OUT_DIR / "universe-sbom.cdx.json",
+    "spdx": DEFAULT_OUT_DIR / "universe-sbom.spdx.json",
+}
 
 STALE_AFTER_DAYS = 14
 
@@ -68,15 +74,23 @@ class StaleAtlasError(RuntimeError):
 def atlas_built_at(conn: sqlite3.Connection) -> int | None:
     try:
         row = conn.execute("SELECT value FROM meta WHERE key='built_at'").fetchone()
-        return int(row[0]) if row else None
+        return int(float(row[0])) if row else None
     except (sqlite3.Error, ValueError, TypeError):
         return None
 
 
 def check_freshness(conn: sqlite3.Connection, allow_stale: bool) -> int | None:
+    """Decision 6, FAIL-CLOSED: an atlas whose age cannot be verified
+    (missing/unparseable built_at — precisely the atlases most likely to be
+    ancient) is REFUSED like a stale one; --allow-stale overrides both."""
     built = atlas_built_at(conn)
     if built is None:
-        sys.stderr.write("  warn: atlas has no built_at stamp — emitting anyway\n")
+        if not allow_stale:
+            raise StaleAtlasError(
+                "atlas has no parseable built_at stamp — freshness cannot be "
+                "verified; rebuild it or pass --allow-stale"
+            )
+        sys.stderr.write("  warn: no parseable built_at — emitting on --allow-stale\n")
         return None
     age_days = (time.time() - built) / 86400
     if age_days > STALE_AFTER_DAYS and not allow_stale:
@@ -95,14 +109,17 @@ def _prop(name: str, value: Any) -> dict[str, str]:
 
 
 def mapped_pypi_folds(conn: sqlite3.Connection) -> set[str]:
-    """G98-folded pypi names mapped by ANY conda package — computed from the
-    full table regardless of slice flags: decision 1's sibling-suppression is
-    about identity (the name IS mapped), not about whether the conda side of
-    the pair made it into the current slice."""
+    """PEP-503-FOLDED pypi names mapped by ANY conda package — computed from
+    the full table regardless of slice flags: decision 1's sibling-suppression
+    is about identity (the name IS mapped), not about whether the conda side
+    of the pair made it into the current slice. Folding uses Wave A's
+    `fold_name` (membership-lookup-only, D1) so dot/dash/underscore spelling
+    variance between `packages.pypi_name` and the universe cannot resurrect
+    a mapped name as a standalone sibling; `g98_pypi_name` stays emission-only."""
     # scope: mapping-identity lookup over every row — a slice-narrowed scan
     # would resurrect mapped names as standalone pkg:pypi components.
     return {
-        g98_pypi_name(row[0]) for row in conn.execute(
+        fold_name(row[0]) for row in conn.execute(
             "SELECT pypi_name FROM packages "
             "WHERE pypi_name IS NOT NULL AND pypi_name <> ''"
         )
@@ -132,7 +149,8 @@ def conda_components(
 
     upstreams: dict[str, list[tuple[str, str | None]]] = {}
     for name, source, url in conn.execute(
-        "SELECT conda_name, source, url FROM upstream_versions WHERE source <> 'pypi'"
+        "SELECT conda_name, source, url FROM upstream_versions "
+        "WHERE source <> 'pypi' ORDER BY conda_name, source, url"
     ):
         upstreams.setdefault(name, []).append((source, url))
 
@@ -211,14 +229,21 @@ def pypi_components(
         )
     }
     components: list[dict[str, Any]] = []
+    seen_refs: set[str] = set()
     for (name, last_serial) in conn.execute(
         "SELECT pypi_name, last_serial FROM pypi_universe ORDER BY pypi_name"
     ):
-        g98 = g98_pypi_name(name)
-        if g98 in mapped_fold:
+        if fold_name(name) in mapped_fold:
             continue
+        g98 = g98_pypi_name(name)
         version, license_str = enrich.get(name, (None, None))
         purl = _purl("pypi", g98, version)
+        if purl in seen_refs:
+            # Two stored spellings can G98-normalize identically (Phase D
+            # never prunes renamed rows); bom-ref uniqueness is a CycloneDX
+            # requirement the JSON schema cannot express.
+            continue
+        seen_refs.add(purl)
         comp: dict[str, Any] = {
             "type": "library",
             "bom-ref": purl,
@@ -239,8 +264,32 @@ def pypi_components(
 # --- document emitters ---------------------------------------------------------
 
 
+def signal_ages(conn: sqlite3.Connection, with_vulns: bool) -> list[dict[str, str]]:
+    """Decision 6: per-signal `*_fetched_at` age stamps for BOM metadata."""
+    props: list[dict[str, str]] = []
+    # scope: aggregate freshness stamps over full tables — metadata, not
+    # version truth.
+    row = conn.execute("SELECT MAX(fetched_at) FROM pypi_universe").fetchone()
+    if row and row[0]:
+        props.append(_prop("cfe:pypi_universe_max_fetched_at", row[0]))
+    row = conn.execute(
+        "SELECT MAX(fetched_at) FROM upstream_versions"
+    ).fetchone()
+    if row and row[0]:
+        props.append(_prop("cfe:upstream_versions_max_fetched_at", row[0]))
+    if with_vulns:
+        row = conn.execute(
+            "SELECT MAX(vuln_scanned_at) FROM v_current_version_vulns"
+        ).fetchone()
+        if row and row[0]:
+            props.append(_prop("cfe:vulns_max_scanned_at", row[0]))
+    return props
+
+
 def emit_universe_cyclonedx(
-    components: list[dict[str, Any]], built_at: int | None
+    components: list[dict[str, Any]],
+    built_at: int | None,
+    extra_metadata_props: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     metadata: dict[str, Any] = {
         "timestamp": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -258,8 +307,10 @@ def emit_universe_cyclonedx(
             "bom-ref": "conda-forge-pypi-universe",
         },
     }
-    if built_at is not None:
-        metadata["properties"] = [_prop("cfe:atlas_built_at", built_at)]
+    props = ([_prop("cfe:atlas_built_at", built_at)] if built_at is not None else [])
+    props += extra_metadata_props or []
+    if props:
+        metadata["properties"] = props
     return {
         "bomFormat": "CycloneDX",
         "specVersion": "1.6",
@@ -275,6 +326,8 @@ def emit_universe_spdx(
 ) -> dict[str, Any]:
     """Minimal SPDX 2.3 rendering of the same component set."""
     packages = []
+    seen_ids: dict[str, int] = {}
+    extracted: dict[str, str] = {}  # license text -> LicenseRef id
     for comp in components:
         licenses = comp.get("licenses") or []
         declared = "NOASSERTION"
@@ -282,10 +335,26 @@ def emit_universe_spdx(
             lic = licenses[0]
             declared = (lic.get("expression")
                         or lic.get("license", {}).get("id")
-                        or "NOASSERTION")
-        spdx_id = "SPDXRef-" + "".join(
+                        or "")
+            if not declared:
+                # name-form (non-SPDX junk): preserve the text via a
+                # LicenseRef + hasExtractedLicensingInfos instead of
+                # dropping it to NOASSERTION.
+                text = lic.get("license", {}).get("name", "")
+                if text:
+                    ref = extracted.setdefault(
+                        text, f"LicenseRef-cfe-{len(extracted) + 1}")
+                    declared = ref
+                else:
+                    declared = "NOASSERTION"
+        base_id = "SPDXRef-" + "".join(
             c if c.isalnum() or c in ".-" else "-" for c in comp["bom-ref"]
         )
+        # The sanitizer is many-to-one (`_`/`@`/`?` all collapse to `-`);
+        # SPDXIDs must be unique per document — dedupe with a counter.
+        n = seen_ids.get(base_id, 0)
+        seen_ids[base_id] = n + 1
+        spdx_id = base_id if n == 0 else f"{base_id}-{n}"
         packages.append({
             "SPDXID": spdx_id,
             "name": comp["name"],
@@ -310,7 +379,13 @@ def emit_universe_spdx(
             "creators": [f"Tool: {TOOL_NAME}-{TOOL_VERSION}"],
         },
         "packages": packages,
+        "documentDescribes": [p["SPDXID"] for p in packages],
     }
+    if extracted:
+        doc["hasExtractedLicensingInfos"] = [
+            {"licenseId": ref, "extractedText": text}
+            for text, ref in sorted(extracted.items(), key=lambda kv: kv[1])
+        ]
     if built_at is not None:
         doc["comment"] = f"cfe:atlas_built_at={built_at}"
     return doc
@@ -329,7 +404,20 @@ def build_universe_bom(
     with_vulns: bool = False,
     allow_stale: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Returns (document, summary). Raises StaleAtlasError per decision 6."""
+    """Returns (document, summary). Raises StaleAtlasError per decision 6,
+    ValueError on contradictory slice combinations (guarded HERE, not only in
+    main(), so the MCP/library path cannot emit a silently-empty BOM)."""
+    if conda_only and pypi_only:
+        raise ValueError("--conda-only and --pypi-only are mutually exclusive")
+    if mapped_only and pypi_only:
+        raise ValueError(
+            "--mapped-only and --pypi-only are contradictory: mapped pairs "
+            "are conda components (decision 1) and the pypi side would be empty"
+        )
+    if actionable_only and pypi_only:
+        sys.stderr.write(
+            "  warn: --actionable-only has no effect with --pypi-only\n"
+        )
     built = check_freshness(conn, allow_stale)
     components: list[dict[str, Any]] = []
     n_conda = n_pypi = 0
@@ -343,7 +431,9 @@ def build_universe_bom(
         components += pypi_comps
         n_pypi = len(pypi_comps)
 
-    doc = (emit_universe_cyclonedx(components, built) if fmt == "cyclonedx"
+    doc = (emit_universe_cyclonedx(components, built,
+                                   signal_ages(conn, with_vulns))
+           if fmt == "cyclonedx"
            else emit_universe_spdx(components, built))
     summary = {
         "format": fmt,
@@ -359,8 +449,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Emit the full conda-forge + PyPI universe inventory as an SBOM."
     )
-    parser.add_argument("--out", type=Path, default=DEFAULT_OUT,
-                        help=f"Output path (default {DEFAULT_OUT})")
+    parser.add_argument("--out", type=Path, default=None,
+                        help="Output path (default: per-format file under "
+                             f"{DEFAULT_OUT_DIR})")
     parser.add_argument("--format", choices=("cyclonedx", "spdx"),
                         default="cyclonedx")
     parser.add_argument("--actionable-only", action="store_true",
@@ -381,9 +472,6 @@ def main() -> int:
                         help="Print the run summary as JSON")
     args = parser.parse_args()
 
-    if args.conda_only and args.pypi_only:
-        sys.stderr.write("--conda-only and --pypi-only are mutually exclusive\n")
-        return 1
     if not DB_PATH.exists():
         sys.stderr.write(
             f"cf_atlas.db not found at {DB_PATH}. "
@@ -391,8 +479,15 @@ def main() -> int:
         )
         return 1
 
-    conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     t0 = time.monotonic()
+    try:
+        # Percent-encode the path: sqlite URI parsing would otherwise split
+        # on ?/# and mis-open checkouts with special characters.
+        conn = sqlite3.connect(
+            f"file:{urllib.parse.quote(str(DB_PATH))}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        sys.stderr.write(f"cannot open {DB_PATH}: {exc}\n")
+        return 1
     try:
         doc, summary = build_universe_bom(
             conn, fmt=args.format,
@@ -403,37 +498,46 @@ def main() -> int:
             with_vulns=args.with_vulns,
             allow_stale=args.allow_stale,
         )
-    except StaleAtlasError as exc:
+    except (StaleAtlasError, ValueError) as exc:
         sys.stderr.write(f"{exc}\n")
         return 1
     except sqlite3.OperationalError as exc:
         sys.stderr.write(
-            f"atlas schema too old or incomplete ({exc}). "
-            "Re-run `pixi run -e local-recipes build-cf-atlas` "
-            "(schema v29+ adds v_pypi_intelligence_valid).\n"
+            f"atlas query failed: {exc}. If the schema predates v20/v29 "
+            "(pypi_universe / v_pypi_intelligence_valid), re-run "
+            "`pixi run -e local-recipes build-cf-atlas`; otherwise inspect "
+            "the error before rebuilding.\n"
         )
         return 1
     finally:
         conn.close()
 
+    out = args.out if args.out is not None else DEFAULT_OUT[args.format]
     try:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        tmp = args.out.with_suffix(args.out.suffix + ".tmp")
-        with tmp.open("w", encoding="utf-8") as fh:
-            json.dump(doc, fh, indent=1)
-        tmp.replace(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        # Unique temp per run: a shared fixed .tmp would let two concurrent
+        # emits interleave and defeat the atomic-replace guarantee. Compact
+        # separators: pretty-printing would inflate the full-universe file
+        # ~1/3 and skew the measured size/time the layout decision rests on.
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=out.parent,
+            prefix=out.name + ".", suffix=".tmp", delete=False,
+        ) as fh:
+            tmp = Path(fh.name)
+            json.dump(doc, fh, separators=(",", ":"))
+        tmp.replace(out)
     except OSError as exc:
-        sys.stderr.write(f"cannot write {args.out}: {exc}\n")
+        sys.stderr.write(f"cannot write {out}: {exc}\n")
         return 1
 
-    summary["out"] = str(args.out)
-    summary["bytes"] = args.out.stat().st_size
+    summary["out"] = str(out)
+    summary["bytes"] = out.stat().st_size
     summary["wall_seconds"] = round(time.monotonic() - t0, 2)
     if args.json:
         print(json.dumps(summary, indent=2))
     else:
         sys.stdout.write(
-            f"  {summary['format']} universe SBOM → {args.out}\n"
+            f"  {summary['format']} universe SBOM → {out}\n"
             f"  conda components: {summary['conda_components']:,} · "
             f"pypi components: {summary['pypi_components']:,} · "
             f"{summary['bytes']:,} bytes in {summary['wall_seconds']}s\n"
