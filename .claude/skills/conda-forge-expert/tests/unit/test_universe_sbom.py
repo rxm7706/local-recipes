@@ -30,6 +30,7 @@ import pytest
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+_SKILL_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 
 
 def _load(name: str):
@@ -85,7 +86,8 @@ def db(tmp_path, atlas_mod):
         "VALUES ('gotool', 'github', '3.0', 'https://github.com/Acme/GoTool', ?)",
         (now,),
     )
-    for name in ("reqster", "oldpkg", "flask-extra", "fs.googledrivefs"):
+    for name in ("reqster", "oldpkg", "flask-extra", "fs.googledrivefs",
+                 "Under_Score"):
         conn.execute(
             "INSERT INTO pypi_universe (pypi_name, last_serial, fetched_at) "
             "VALUES (?, 7, ?)", (name, now),
@@ -136,8 +138,8 @@ class TestDecisionOne:
         assert props["cfe:match_source"] == "parselmouth"
         assert props["cfe:match_confidence"] == "verified"
         assert summary["conda_components"] == 5
-        # unmapped universe names only: flask-extra + fs.googledrivefs
-        assert summary["pypi_components"] == 2
+        # unmapped universe names: flask-extra + fs.googledrivefs + Under_Score
+        assert summary["pypi_components"] == 3
 
 
 class TestLicenseNormalization:
@@ -164,6 +166,8 @@ class TestG98PurlForms:
                 assert _re.fullmatch(r"[a-z0-9.\-]+", name), purl
         assert any(c["purl"].startswith("pkg:pypi/fs.googledrivefs")
                    for c in doc["components"])
+        # `_`→`-` actually exercised, not just regex-asserted
+        assert any(c["purl"] == "pkg:pypi/under-score" for c in doc["components"])
 
 
 class TestFlagsAndSlices:
@@ -211,6 +215,16 @@ class TestUpstreamAndEnrichment:
 
 
 class TestFreshnessGate:
+    def test_missing_stamp_refuses_fail_closed(self, db, cli_mod):
+        db.execute("DELETE FROM meta WHERE key='built_at'")
+        db.commit()
+        with pytest.raises(cli_mod.StaleAtlasError):
+            _bom(cli_mod, db)
+        doc, _ = _bom(cli_mod, db, allow_stale=True)
+        assert "properties" not in doc["metadata"] or all(
+            p["name"] != "cfe:atlas_built_at"
+            for p in doc["metadata"].get("properties", []))
+
     def test_stale_refuses_and_allow_stale_overrides(self, db, cli_mod):
         stale = int(time.time()) - 20 * 86400
         db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('built_at', ?)",
@@ -228,7 +242,7 @@ class TestSchemaValidity:
     def test_cyclonedx_16_schema_valid(self, db, cli_mod):
         jsonschema = pytest.importorskip("jsonschema")
         schema = json.loads((_DATA_DIR / "bom-1.6.schema.json").read_text())
-        spdx = json.loads((_DATA_DIR / "spdx.schema.json").read_text())
+        spdx = json.loads((_SKILL_DATA_DIR / "spdx.schema.json").read_text())
         jsf = json.loads((_DATA_DIR / "jsf-0.82.schema.json").read_text())
         doc, _ = _bom(cli_mod, db, with_vulns=True)
         base = "http://cyclonedx.org/schema/"
@@ -239,9 +253,17 @@ class TestSchemaValidity:
             "spdx.schema.json": spdx,
             "jsf-0.82.schema.json": jsf,
         }
-        resolver = jsonschema.RefResolver(
-            base_uri=base + "bom-1.6.schema.json", referrer=schema, store=store)
-        jsonschema.validate(doc, schema, resolver=resolver)
+        try:
+            # jsonschema >= 4.18: RefResolver is deprecated; use `referencing`.
+            from referencing import Registry
+            from referencing.jsonschema import DRAFT7
+            registry = Registry().with_resources(
+                (uri, DRAFT7.create_resource(s)) for uri, s in store.items())
+            jsonschema.Draft7Validator(schema, registry=registry).validate(doc)
+        except ImportError:
+            resolver = jsonschema.RefResolver(
+                base_uri=base + "bom-1.6.schema.json", referrer=schema, store=store)
+            jsonschema.validate(doc, schema, resolver=resolver)
 
     def test_spdx_format_emits(self, db, cli_mod):
         doc, summary = _bom(cli_mod, db, fmt="spdx")
@@ -265,12 +287,107 @@ class TestRoundTrip:
         assert by_name["flask-extra"].ecosystem == "pypi"
 
 
+class TestFoldVariantSuppression:
+    def test_mapping_spelling_variant_still_suppresses(self, tmp_path, atlas_mod, cli_mod):
+        """D1: membership folds BOTH sides (PEP-503 fold_name) — a mapping
+        stored as `ruamel-yaml` must suppress universe `ruamel.yaml`."""
+        conn = atlas_mod.open_db(tmp_path / "fold.db")
+        atlas_mod.init_schema(conn)
+        conn.execute(
+            "INSERT INTO packages (conda_name, latest_conda_version, pypi_name, "
+            "match_source, match_confidence, relationship) "
+            "VALUES ('ruamel.yaml', '0.18', 'ruamel-yaml', 'parselmouth', "
+            "'verified', 'test')")
+        conn.execute(
+            "INSERT INTO pypi_universe (pypi_name, last_serial, fetched_at) "
+            "VALUES ('ruamel.yaml', 1, 1)")
+        conn.execute(
+            "INSERT OR REPLACE INTO meta(key, value) VALUES ('built_at', ?)",
+            (str(int(time.time())),))
+        conn.commit()
+        doc, summary = cli_mod.build_universe_bom(conn)
+        assert summary["pypi_components"] == 0,             "spelling variant must not resurrect a mapped name as a sibling"
+        conn.close()
+
+
+class TestSpdxDocument:
+    def test_unique_spdxids_and_extracted_licensing(self, tmp_path, atlas_mod, cli_mod):
+        """SPDXID sanitizer is many-to-one (`_`→`-`) — collisions must dedupe;
+        name-form licenses survive as LicenseRef + hasExtractedLicensingInfos."""
+        conn = atlas_mod.open_db(tmp_path / "spdx.db")
+        atlas_mod.init_schema(conn)
+        for name in ("prompt_toolkit", "prompt-toolkit"):
+            conn.execute(
+                "INSERT INTO packages (conda_name, latest_conda_version, "
+                "conda_license, match_source, match_confidence, relationship) "
+                "VALUES (?, '3.0', '(FTL or GPLv2+) and BSD', 'none', 'n/a', 'test')",
+                (name,))
+        conn.execute(
+            "INSERT OR REPLACE INTO meta(key, value) VALUES ('built_at', ?)",
+            (str(int(time.time())),))
+        conn.commit()
+        doc, _ = cli_mod.build_universe_bom(conn, fmt="spdx", conda_only=True)
+        ids = [pkg["SPDXID"] for pkg in doc["packages"]]
+        assert len(ids) == len(set(ids)) == 2, "SPDXIDs must be unique"
+        refs = {pkg["licenseDeclared"] for pkg in doc["packages"]}
+        assert refs == {"LicenseRef-cfe-1"}
+        infos = doc["hasExtractedLicensingInfos"]
+        assert infos == [{"licenseId": "LicenseRef-cfe-1",
+                          "extractedText": "(FTL or GPLv2+) and BSD"}]
+        assert set(doc["documentDescribes"]) == set(ids)
+        conn.close()
+
+
+class TestSignalAges:
+    def test_metadata_carries_per_signal_fetched_at(self, db, cli_mod):
+        doc, _ = _bom(cli_mod, db, with_vulns=True)
+        names = {p["name"] for p in doc["metadata"]["properties"]}
+        assert "cfe:atlas_built_at" in names
+        assert "cfe:pypi_universe_max_fetched_at" in names
+        assert "cfe:upstream_versions_max_fetched_at" in names
+
+
+class TestBoundedSliceRoundTrip:
+    def test_fifty_plus_component_slice_parses(self, tmp_path, atlas_mod, cli_mod):
+        """S4's bounded (~50-component) round-trip, in-process via
+        scan_project.parse_sbom_cyclonedx. The CLI-level `scan-project
+        --sbom-in` invocation of the same parser runs at the LOCAL live gate
+        (needs the full env); recorded as a deferral, not skipped silently."""
+        conn = atlas_mod.open_db(tmp_path / "big.db")
+        atlas_mod.init_schema(conn)
+        for i in range(60):
+            conn.execute(
+                "INSERT INTO pypi_universe (pypi_name, last_serial, fetched_at) "
+                "VALUES (?, 1, 1)", (f"pkg-{i:03d}",))
+        conn.execute(
+            "INSERT OR REPLACE INTO meta(key, value) VALUES ('built_at', ?)",
+            (str(int(time.time())),))
+        conn.commit()
+        doc, summary = cli_mod.build_universe_bom(conn, pypi_only=True)
+        assert summary["total_components"] >= 50
+        bom_path = tmp_path / "slice.cdx.json"
+        bom_path.write_text(json.dumps(doc), encoding="utf-8")
+        sp = _load("scan_project")
+        deps = sp.parse_sbom_cyclonedx(bom_path)
+        assert len(deps) >= 50
+        assert {d.ecosystem for d in deps} == {"pypi"}
+        conn.close()
+
+
 class TestNormalizeLicenseHelper:
     @pytest.mark.parametrize("raw,expected", [
         ("MIT", {"license": {"id": "MIT"}}),
+        # idstring-SHAPED but not in the CycloneDX SPDX-id enum → name form
+        # (schema-invalid as `id`; the enum gate is the Wave B review fix).
         ("LicenseRef-SustainableUseLicense-1.0",
-         {"license": {"id": "LicenseRef-SustainableUseLicense-1.0"}}),
-        ("GPL-2.0-or-later+", {"license": {"id": "GPL-2.0-or-later+"}}),
+         {"license": {"name": "LicenseRef-SustainableUseLicense-1.0"}}),
+        ("GPL-2.0-or-later+", {"license": {"name": "GPL-2.0-or-later+"}}),
+        ("PSF", {"license": {"name": "PSF"}}),
+        ("GPLv2", {"license": {"name": "GPLv2"}}),
+        ("Proprietary", {"license": {"name": "Proprietary"}}),
+        # chained WITH violates the one-exception-per-simple-expression rule
+        ("MIT WITH Classpath-exception-2.0 WITH LLVM-exception",
+         {"license": {"name": "MIT WITH Classpath-exception-2.0 WITH LLVM-exception"}}),
         ("0BSD AND LGPL-2.1-or-later",
          {"expression": "0BSD AND LGPL-2.1-or-later"}),
         ("Apache-2.0 WITH LLVM-exception",
@@ -294,8 +411,8 @@ class TestCliGuards:
         monkeypatch.setattr(sys, "argv", ["universe_sbom"])
         assert cli_mod.main() == 1
 
-    def test_mutually_exclusive_slices_rc_1(self, cli_mod, tmp_path, monkeypatch):
-        monkeypatch.setattr(cli_mod, "DB_PATH", tmp_path / "missing.db")
-        monkeypatch.setattr(sys, "argv",
-                            ["universe_sbom", "--conda-only", "--pypi-only"])
-        assert cli_mod.main() == 1
+    def test_contradictory_slices_raise_in_library(self, db, cli_mod):
+        with pytest.raises(ValueError):
+            _bom(cli_mod, db, conda_only=True, pypi_only=True)
+        with pytest.raises(ValueError):
+            _bom(cli_mod, db, mapped_only=True, pypi_only=True)

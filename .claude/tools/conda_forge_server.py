@@ -1851,6 +1851,11 @@ def universe_sbom(
     mapped_only, conda_only, pypi_only. with_vulns attaches current-version
     vuln-count properties. Returns the run summary (counts, path, bytes,
     wall time). Regenerate after every atlas rebuild."""
+    if format not in ("cyclonedx", "spdx"):
+        return json.dumps({"error": f"format must be cyclonedx or spdx, got {format!r}"})
+    if (conda_only and pypi_only) or (mapped_only and pypi_only):
+        return json.dumps({"error": "contradictory slice flags: "
+                           "conda_only/mapped_only cannot combine with pypi_only"})
     args = ["--json", "--format", format]
     if out:
         args += ["--out", out]
@@ -1862,7 +1867,8 @@ def universe_sbom(
                      ("--allow-stale", allow_stale)):
         if on:
             args.append(flag)
-    # Full-universe emit (~880k components) can exceed the 120s default.
+    # A full-universe emit (hundreds of thousands of components — measured
+    # numbers land in Dev Notes from the local run) can exceed the 120s default.
     return json.dumps(_run_script(ATLAS_UNIVERSE_SBOM, args, timeout=600), indent=2)
 
 
