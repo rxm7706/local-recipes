@@ -3,7 +3,7 @@
 
 [workspace]
 name = "staged-recipes"
-requires-pixi = ">=0.70.1"
+requires-pixi = ">=0.71"  # virtual-package platform entries (osx-arm64-macos14) need the 0.71+ manifest syntax
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
