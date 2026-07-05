@@ -8137,6 +8137,138 @@ def _phase_r_fetch_one(pypi_name: str
     return (pypi_name, None, last_err or "exhausted retries")
 
 
+def phase_r_upsert_one(
+    conn: sqlite3.Connection,
+    pypi_name: str,
+    payload: dict | None,
+    err: str | None,
+    now: int,
+) -> str:
+    """Parse one pypi.org/pypi/<name>/json result and upsert it into
+    `pypi_intelligence` (idempotent; INSERT OR IGNORE + UPDATE). The ONE
+    write path for per-project JSON enrichment — Phase R's bulk loop and
+    the S6 `add-handoff` bounded single-package enrichment both call this,
+    so parse semantics can never drift between them.
+
+    Returns 'fetched' | 'not_found' | 'failed'. A transient failure records
+    json_last_error but does NOT bump json_fetched_at (the row stays
+    eligible for the next run); a 404 bumps both (the project is gone).
+    """
+    if payload is not None and err is None:
+        info = payload.get("info") or {}
+        urls = payload.get("urls") or []
+        license_raw = info.get("license")
+        license_spdx = _normalize_license_to_spdx(license_raw)
+        # If license_raw is missing, also check classifiers for OSI tag
+        if not license_spdx:
+            for c in (info.get("classifiers") or []):
+                if isinstance(c, str) and c.lower().startswith("license ::"):
+                    sp = _normalize_license_to_spdx(c)
+                    if sp:
+                        license_spdx = sp
+                        break
+        summary = info.get("summary") or None
+        home_page = info.get("home_page") or None
+        proj_urls = info.get("project_urls") or {}
+        if not isinstance(proj_urls, dict):
+            proj_urls = {}
+        repo_url = proj_urls.get("Repository") or proj_urls.get("Source") or proj_urls.get("Source Code") or None
+        docs_url = proj_urls.get("Documentation") or proj_urls.get("Docs") or None
+        issues_url = proj_urls.get("Issues") or proj_urls.get("Bug Tracker") or proj_urls.get("Tracker") or None
+        requires_python = info.get("requires_python") or None
+        classifiers_json = json.dumps(info.get("classifiers") or [])
+        # Wheel coverage
+        has_wheel = 0
+        has_sdist = 0
+        wheel_platforms_set: set[str] = set()
+        python_tags_set: set[str] = set()
+        for u in urls:
+            if not isinstance(u, dict):
+                continue
+            pt = u.get("packagetype")
+            fn = u.get("filename") or ""
+            if pt == "bdist_wheel":
+                has_wheel = 1
+                # Filename: name-version-pythontag-abi-platform.whl
+                parts = fn.rsplit("-", 3)
+                if len(parts) == 4:
+                    python_tags_set.add(parts[1])
+                    wheel_platforms_set.add(parts[3].rsplit(".whl", 1)[0])
+            elif pt == "sdist":
+                has_sdist = 1
+        wheel_platforms_json = json.dumps(sorted(wheel_platforms_set))
+        python_tags_json = json.dumps(sorted(python_tags_set))
+        packaging_shape = _classify_packaging_shape(payload)
+        # Latest version info
+        latest_version = info.get("version") or None
+        latest_upload_at: int | None = None
+        latest_yanked: int | None = None
+        if latest_version:
+            rel = (payload.get("releases") or {}).get(latest_version) or []
+            if isinstance(rel, list) and rel:
+                # Use the most recent upload_time
+                for f in rel:
+                    t = _iso_to_unix_safe(f.get("upload_time_iso_8601") or f.get("upload_time"))
+                    if t and (latest_upload_at is None or t > latest_upload_at):
+                        latest_upload_at = t
+                # Yanked: all files yanked
+                latest_yanked = 1 if all(bool(f.get("yanked")) for f in rel) else 0
+        # Upsert
+        conn.execute(
+            "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
+            (pypi_name,),
+        )
+        conn.execute(
+            """
+            UPDATE pypi_intelligence SET
+                latest_version = ?, latest_upload_at = ?, latest_yanked = ?,
+                requires_python = ?,
+                license_raw = ?, license_spdx = ?,
+                summary = ?, home_page = ?, repo_url = ?, docs_url = ?, issues_url = ?,
+                classifiers = ?,
+                has_wheel = ?, has_sdist = ?,
+                wheel_platforms = ?, python_tags = ?,
+                packaging_shape = ?,
+                json_fetched_at = ?, json_last_error = NULL
+            WHERE pypi_name = ?
+            """,
+            (
+                latest_version, latest_upload_at, latest_yanked,
+                requires_python,
+                license_raw, license_spdx,
+                summary, home_page, repo_url, docs_url, issues_url,
+                classifiers_json,
+                has_wheel, has_sdist,
+                wheel_platforms_json, python_tags_json,
+                packaging_shape,
+                now, pypi_name,
+            ),
+        )
+        return "fetched"
+    if err == "HTTP 404":
+        conn.execute(
+            "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
+            (pypi_name,),
+        )
+        conn.execute(
+            "UPDATE pypi_intelligence SET json_last_error = ?, "
+            "json_fetched_at = ? WHERE pypi_name = ?",
+            (err, now, pypi_name),
+        )
+        return "not_found"
+    # Transient failure — record last_error but don't bump fetched_at
+    # (so the row stays eligible next run)
+    conn.execute(
+        "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
+        (pypi_name,),
+    )
+    conn.execute(
+        "UPDATE pypi_intelligence SET json_last_error = ? WHERE pypi_name = ?",
+        (err or "unknown error", pypi_name),
+    )
+    return "failed"
+
+
 def phase_r_pypi_json_enrich(conn: sqlite3.Connection) -> dict:
     """Phase R: per-project JSON enrichment for the top-N candidate slice.
 
@@ -8243,119 +8375,12 @@ def phase_r_pypi_json_enrich(conn: sqlite3.Connection) -> dict:
         futures = [ex.submit(_phase_r_fetch_one, r["pypi_name"]) for r in candidates]
         for fut in as_completed(futures):
             pypi_name, payload, err = fut.result()
-            if payload is not None and err is None:
-                info = payload.get("info") or {}
-                urls = payload.get("urls") or []
-                license_raw = info.get("license")
-                license_spdx = _normalize_license_to_spdx(license_raw)
-                # If license_raw is missing, also check classifiers for OSI tag
-                if not license_spdx:
-                    for c in (info.get("classifiers") or []):
-                        if isinstance(c, str) and c.lower().startswith("license ::"):
-                            sp = _normalize_license_to_spdx(c)
-                            if sp:
-                                license_spdx = sp
-                                break
-                summary = info.get("summary") or None
-                home_page = info.get("home_page") or None
-                proj_urls = info.get("project_urls") or {}
-                if not isinstance(proj_urls, dict):
-                    proj_urls = {}
-                repo_url = proj_urls.get("Repository") or proj_urls.get("Source") or proj_urls.get("Source Code") or None
-                docs_url = proj_urls.get("Documentation") or proj_urls.get("Docs") or None
-                issues_url = proj_urls.get("Issues") or proj_urls.get("Bug Tracker") or proj_urls.get("Tracker") or None
-                requires_python = info.get("requires_python") or None
-                classifiers_json = json.dumps(info.get("classifiers") or [])
-                # Wheel coverage
-                has_wheel = 0
-                has_sdist = 0
-                wheel_platforms_set: set[str] = set()
-                python_tags_set: set[str] = set()
-                for u in urls:
-                    if not isinstance(u, dict):
-                        continue
-                    pt = u.get("packagetype")
-                    fn = u.get("filename") or ""
-                    if pt == "bdist_wheel":
-                        has_wheel = 1
-                        # Filename: name-version-pythontag-abi-platform.whl
-                        parts = fn.rsplit("-", 3)
-                        if len(parts) == 4:
-                            python_tags_set.add(parts[1])
-                            wheel_platforms_set.add(parts[3].rsplit(".whl", 1)[0])
-                    elif pt == "sdist":
-                        has_sdist = 1
-                wheel_platforms_json = json.dumps(sorted(wheel_platforms_set))
-                python_tags_json = json.dumps(sorted(python_tags_set))
-                packaging_shape = _classify_packaging_shape(payload)
-                # Latest version info
-                latest_version = info.get("version") or None
-                latest_upload_at: int | None = None
-                latest_yanked: int | None = None
-                if latest_version:
-                    rel = (payload.get("releases") or {}).get(latest_version) or []
-                    if isinstance(rel, list) and rel:
-                        # Use the most recent upload_time
-                        for f in rel:
-                            t = _iso_to_unix_safe(f.get("upload_time_iso_8601") or f.get("upload_time"))
-                            if t and (latest_upload_at is None or t > latest_upload_at):
-                                latest_upload_at = t
-                        # Yanked: all files yanked
-                        latest_yanked = 1 if all(bool(f.get("yanked")) for f in rel) else 0
-                # Upsert
-                conn.execute(
-                    "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
-                    (pypi_name,),
-                )
-                conn.execute(
-                    """
-                    UPDATE pypi_intelligence SET
-                        latest_version = ?, latest_upload_at = ?, latest_yanked = ?,
-                        requires_python = ?,
-                        license_raw = ?, license_spdx = ?,
-                        summary = ?, home_page = ?, repo_url = ?, docs_url = ?, issues_url = ?,
-                        classifiers = ?,
-                        has_wheel = ?, has_sdist = ?,
-                        wheel_platforms = ?, python_tags = ?,
-                        packaging_shape = ?,
-                        json_fetched_at = ?, json_last_error = NULL
-                    WHERE pypi_name = ?
-                    """,
-                    (
-                        latest_version, latest_upload_at, latest_yanked,
-                        requires_python,
-                        license_raw, license_spdx,
-                        summary, home_page, repo_url, docs_url, issues_url,
-                        classifiers_json,
-                        has_wheel, has_sdist,
-                        wheel_platforms_json, python_tags_json,
-                        packaging_shape,
-                        now, pypi_name,
-                    ),
-                )
+            outcome = phase_r_upsert_one(conn, pypi_name, payload, err, now)
+            if outcome == "fetched":
                 fetched += 1
-            elif err == "HTTP 404":
-                conn.execute(
-                    "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
-                    (pypi_name,),
-                )
-                conn.execute(
-                    "UPDATE pypi_intelligence SET json_last_error = ?, "
-                    "json_fetched_at = ? WHERE pypi_name = ?",
-                    (err, now, pypi_name),
-                )
+            elif outcome == "not_found":
                 not_found += 1
             else:
-                # Transient failure — record last_error but don't bump fetched_at
-                # (so the row stays eligible next run)
-                conn.execute(
-                    "INSERT OR IGNORE INTO pypi_intelligence (pypi_name) VALUES (?)",
-                    (pypi_name,),
-                )
-                conn.execute(
-                    "UPDATE pypi_intelligence SET json_last_error = ? WHERE pypi_name = ?",
-                    (err or "unknown error", pypi_name),
-                )
                 failed += 1
             completed += 1
             if completed % progress_every == 0:
@@ -8398,6 +8423,68 @@ _PACKAGING_SHAPE_TO_TEMPLATE: dict[str, str | None] = {
 }
 
 
+def apply_readiness_scores(
+    conn: sqlite3.Connection, names: list[str] | None = None,
+) -> int:
+    """The canonical Phase S readiness UPDATE (0-100 composite +
+    recommended_template). `names=None` scores the whole table (Phase S);
+    a name list scopes it to a slice (S6 `add-handoff` re-scores freshly
+    enriched rows with the SAME formula — no parallel scorer to drift).
+    Rows with no Phase R enrichment (json_fetched_at IS NULL) are always
+    skipped: their score would be meaningless. Commits; returns rowcount."""
+    now = int(time.time())
+    two_years_ago = now - 2 * 365 * 86400
+
+    # OSI-approved SPDX set inlined as SQL CASE (~25 values). Keep in sync
+    # with _OSI_APPROVED_SPDX above.
+    osi_set_sql = "(" + ",".join(f"'{lic}'" for lic in sorted(_OSI_APPROVED_SPDX)) + ")"
+
+    scope_sql = ""
+    params: list = []
+    if names is not None:
+        if not names:
+            return 0
+        scope_sql = " AND pypi_name IN (" + ",".join("?" for _ in names) + ")"
+        params = list(names)
+
+    # Single UPDATE — all components computed inline.
+    updated = conn.execute(
+        f"""
+        UPDATE pypi_intelligence
+        SET
+            conda_forge_readiness = (
+                CASE WHEN license_spdx IN {osi_set_sql} THEN 25 ELSE 0 END
+              + CASE
+                    WHEN requires_python IS NULL THEN 20
+                    WHEN requires_python LIKE '%>=3.1%' OR requires_python LIKE '%>=3.2%' THEN 20
+                    WHEN requires_python LIKE '%>=3.9%' THEN 10
+                    ELSE 0
+                END
+              + CASE WHEN repo_url IS NOT NULL THEN 15 ELSE 0 END
+              + CASE WHEN latest_upload_at IS NOT NULL AND latest_upload_at >= {two_years_ago} THEN 15 ELSE 0 END
+              + CASE WHEN has_sdist = 1 THEN 10 ELSE 0 END
+              + CASE
+                    WHEN packaging_shape IN ('pure-python','rust-pyo3','cython') THEN 15
+                    WHEN packaging_shape = 'c-extension' THEN 7
+                    ELSE 0
+                END
+            ),
+            recommended_template = CASE packaging_shape
+                WHEN 'pure-python'  THEN 'templates/python/recipe.yaml'
+                WHEN 'rust-pyo3'    THEN 'templates/python/maturin-recipe.yaml'
+                WHEN 'cython'       THEN 'templates/python/compiled-recipe.yaml'
+                WHEN 'c-extension'  THEN 'templates/python/compiled-recipe.yaml'
+                ELSE NULL
+            END,
+            score_calc_at = {now}
+        WHERE json_fetched_at IS NOT NULL{scope_sql}
+        """,
+        params,
+    ).rowcount
+    conn.commit()
+    return updated
+
+
 def phase_s_computed_scores(conn: sqlite3.Connection) -> dict:
     """Phase S: compute conda_forge_readiness + recommended_template.
 
@@ -8435,49 +8522,7 @@ def phase_s_computed_scores(conn: sqlite3.Connection) -> dict:
             "duration_seconds": round(elapsed, 1),
         }
 
-    now = int(time.time())
-    two_years_ago = now - 2 * 365 * 86400
-
-    # OSI-approved SPDX set inlined as SQL CASE (~25 values). Keep in sync
-    # with _OSI_APPROVED_SPDX above.
-    osi_set_sql = "(" + ",".join(f"'{lic}'" for lic in sorted(_OSI_APPROVED_SPDX)) + ")"
-
-    # Single UPDATE — all components computed inline. Skip rows with no
-    # Phase R enrichment (json_fetched_at IS NULL) since their score
-    # would be meaningless.
-    updated = conn.execute(
-        f"""
-        UPDATE pypi_intelligence
-        SET
-            conda_forge_readiness = (
-                CASE WHEN license_spdx IN {osi_set_sql} THEN 25 ELSE 0 END
-              + CASE
-                    WHEN requires_python IS NULL THEN 20
-                    WHEN requires_python LIKE '%>=3.1%' OR requires_python LIKE '%>=3.2%' THEN 20
-                    WHEN requires_python LIKE '%>=3.9%' THEN 10
-                    ELSE 0
-                END
-              + CASE WHEN repo_url IS NOT NULL THEN 15 ELSE 0 END
-              + CASE WHEN latest_upload_at IS NOT NULL AND latest_upload_at >= {two_years_ago} THEN 15 ELSE 0 END
-              + CASE WHEN has_sdist = 1 THEN 10 ELSE 0 END
-              + CASE
-                    WHEN packaging_shape IN ('pure-python','rust-pyo3','cython') THEN 15
-                    WHEN packaging_shape = 'c-extension' THEN 7
-                    ELSE 0
-                END
-            ),
-            recommended_template = CASE packaging_shape
-                WHEN 'pure-python'  THEN 'templates/python/recipe.yaml'
-                WHEN 'rust-pyo3'    THEN 'templates/python/maturin-recipe.yaml'
-                WHEN 'cython'       THEN 'templates/python/compiled-recipe.yaml'
-                WHEN 'c-extension'  THEN 'templates/python/compiled-recipe.yaml'
-                ELSE NULL
-            END,
-            score_calc_at = {now}
-        WHERE json_fetched_at IS NOT NULL
-        """,
-    ).rowcount
-    conn.commit()
+    updated = apply_readiness_scores(conn)
 
     # Summary stats
     # scope: Phase S producer-side readiness histogram over the whole
