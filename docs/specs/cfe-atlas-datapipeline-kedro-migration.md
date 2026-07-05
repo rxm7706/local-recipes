@@ -46,6 +46,21 @@ spec_updated: 2026-07-05
 > must preserve), a `library-futures` scoring module, and an external
 > **endoflife.date** EOL/LTS cache — all migration surface if it ships first.
 > `trendshift-conda-forge.md` Phase T now claims **v29→v30**.
+>
+> **Wave A SHIPPED (2026-07-05, web slice — the pinned S2 implementation-time
+> sync):** `export-purls` + `mapping-gap` + the v29 view are now live code.
+> Two facts this migration must preserve: (1) the **`mapping-gap` writeback**
+> — `packages.pypi_name` rows written with `match_source='g10_spelling'` and
+> `match_confidence` `verified`/`likely` (the pinned no-clobber UPDATE never
+> touches `parselmouth`/`recipe_source_url` provenance) — any Kedro/Dagster
+> re-implementation of the mapping layer must keep `g10_spelling` as a valid
+> provenance tier; (2) the **purl conventions** — the `cfe:*` property
+> namespace and the `?channel=conda-forge` qualifier on conda purls (G98) —
+> **FR-13's CycloneDX normalizer must preserve both** (never strip the
+> channel qualifier or the `cfe:` prefix during normalization).
+> Trendshift's base-version conditional (its Story A1: base = v29 once
+> cyclonedx Wave A ships, else v28) is re-confirmed and now resolves to
+> **base = v29**.
 
 ---
 
