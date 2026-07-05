@@ -328,7 +328,10 @@ def write_artifact(out_dir: Path, filename: str, lines: list[str]) -> dict[str, 
     path = out_dir / filename
     previous = _count_lines(path)
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text("".join(f"{ln}\n" for ln in lines), encoding="utf-8")
+    # Stream lines rather than materializing the whole file as one string —
+    # the pypi artifact is ~880k lines at full-universe scale.
+    with tmp.open("w", encoding="utf-8") as fh:
+        fh.writelines(f"{ln}\n" for ln in lines)
     os.replace(tmp, path)
     return {"lines": len(lines), "previous_lines": previous}
 
