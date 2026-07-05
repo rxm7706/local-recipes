@@ -5,7 +5,7 @@ display_name: cfe-atlas-datapipeline Kedro Migration Spec
 project_type_id: data
 date: 2026-06-20
 status: ready
-spec_updated: 2026-06-20
+spec_updated: 2026-07-05
 ---
 
 # Spec: cfe-atlas-datapipeline Kedro Migration
@@ -33,6 +33,19 @@ spec_updated: 2026-06-20
 | Tooling | Pixi-first; every component sourced from conda-forge and scaffolded via `nebi`. |
 | Lifetime | Forward-looking migration. Legacy orchestrator runs in parallel until dataset parity is proven (Wave B), then is retired. |
 | Predecessor | The existing 15-phase `cf_atlas` pipeline (B → N + O–S) and its 16 read CLIs (`staleness-report`, `behind-upstream`, …). |
+
+> **Cross-spec sync (2026-07-05):** the CLI / MCP / phase / schema counts in this spec
+> are FROZEN at authoring time and already drift (live: 17+ CLIs, 30+ MCP tools). At
+> BMAD intake, **re-enumerate the migration surface from live groundtruth**
+> (`bmad-groundtruth`, SKILL.md § Atlas Intelligence Layer) — per the standing rule
+> that `docs/specs/` stays mutually in sync. In particular,
+> `cyclonedx-universe-inventory.md` (ready) adds up to **+5 read CLIs**
+> (`export-purls`, `mapping-gap`, `universe-sbom`, `inventory-match`,
+> `recommend-2027`), **+4 MCP tools**, **+1 view** `v_pypi_intelligence_valid`
+> (schema **v28→v29**; its consumers must read the view — a constraint this migration
+> must preserve), a `library-futures` scoring module, and an external
+> **endoflife.date** EOL/LTS cache — all migration surface if it ships first.
+> `trendshift-conda-forge.md` Phase T now claims **v29→v30**.
 
 ---
 
