@@ -81,9 +81,11 @@ spec_updated: 2026-07-05
   `uncorroborated` live-gate fix `4821907ab0`). **Wave B shipped 2026-07-05**
   (web slice `dd54e47d4d` + adversarial patches `5e39ffe293`, PR #33; local
   live gates ALL PASS 2026-07-05 — see § Wave B Dev Notes). **Wave C S5+S5a
-  web slice shipped 2026-07-05** (`44ea734` + adversarial patches, branch
-  `claude/wave-c-inventory-match`; S6 and the Wave C local gates remain).
-  Resume at **Wave C local gates / S6**.
+  web slice shipped 2026-07-05** (`44ea734` + adversarial patches, PR #34
+  merged `29542f3`). **Wave C S6 web slice shipped 2026-07-05**
+  (`2800eb2` + adversarial/Gemini patches, PR #35, branch
+  `claude/wave-c-s6-add-handoff`; the Wave C local gates remain). Resume at
+  **Wave C local gates**, then **Wave D / S7**.
 
 ### Execution-environment split (web pass)
 
@@ -124,6 +126,17 @@ grayskull cache) does **not** exist there, and `pixi` is not installed:
   S5 end-to-end smoke (real pixi.toml env + real SBOM, hand-verified bucket
   members incl. the G10-rename / stale-atlas / unreliable-comparison /
   non-Python-GitHub-upstream cases).
+  **Wave C S6 local-only additions (recorded 2026-07-05, with the S6 web
+  slice):** the bounded live `pypi.org/pypi/<name>/json` enrichment of
+  ADD-bucket names — the web slice injects a fake fetcher in every test and
+  defers the real `_phase_r_fetch_one` worker (now mirror-routed via
+  `_http.resolve_pypi_json_urls`, so air-gapped JFrog reaches its mirror) to
+  the local run; and the § Verification S6 hand-check that a real ADD slice
+  enriches, scores readiness-desc, and blocks non-OSI/unknown-license/gone
+  projects. Idempotency (`--no-enrich` offline mode + zero-fetch re-run) is
+  covered by the web fixture tests. The extracted `phase_r_upsert_one` /
+  `apply_readiness_scores(names=…)` helpers are the SAME write/score paths
+  Phase R/S bulk use — no parallel scorer to drift.
 
 ### Adjacent prefix.dev / nebari tooling (survey 2026-07-05, per user — the eighth amendment)
 

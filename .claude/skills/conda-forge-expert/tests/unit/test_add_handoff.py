@@ -252,6 +252,41 @@ class TestWorklistShape:
         result = ah.run_handoff(db, rows, enrich=False)
         assert result["add_count"] == 0 and result["worklist"] == []
 
+    def test_duplicate_names_fetched_once(self, ah, db):
+        fetcher = _fake_fetcher({"goodpkg": _payload("goodpkg")})
+        result = ah.run_handoff(
+            db, [_add_row("goodpkg"), _add_row("goodpkg")], fetcher=fetcher)
+        assert fetcher.calls == ["goodpkg"]          # deduped, one live fetch
+        # both rows still appear in the worklist (dedup is on FETCH, not display)
+        assert len(result["worklist"]) == 2
+
+    def test_not_in_universe_name_not_fetched(self, ah, db):
+        """An ADD name absent from pypi_universe (stale --matches) is NOT
+        live-fetched — that would mint the orphan pypi_intelligence row the
+        ORPHAN_RULE excludes — and is reported."""
+        fetcher = _fake_fetcher({"orphanpkg": _payload("orphanpkg")})
+        result = ah.run_handoff(db, [_add_row("orphanpkg")], fetcher=fetcher)
+        assert fetcher.calls == []
+        assert "orphanpkg" in result["enrichment"]["not_in_universe"]
+        # no orphan row minted
+        assert db.execute("SELECT COUNT(*) FROM pypi_intelligence "
+                          "WHERE pypi_name='orphanpkg'").fetchone()[0] == 0
+        assert "not in" in ah.render_report(result)
+
+    def test_malformed_matches_rows_skipped_not_crash(self, ah, db):
+        rows = [
+            {"bucket": "ADD"},                       # no name at all
+            _add_row("prescored"),
+            {"bucket": "ADD-NONPYPI", "pinned": "1.0"},   # no name/ecosystem
+        ]
+        result = ah.run_handoff(db, rows, enrich=False)
+        assert [e["pypi_name"] for e in result["worklist"]] == ["prescored"]
+        assert result["nonpypi"] == []              # nameless nonpypi skipped
+
+    def test_built_at_rendered_iso(self, ah, db):
+        result = ah.run_handoff(db, [_add_row("prescored")], enrich=False)
+        assert result["built_at"].endswith("Z") and "T" in result["built_at"]
+
     def test_in_flight_pr_and_local_recipe_surfaced(self, ah, db):
         db.execute("UPDATE pypi_intelligence SET staged_recipes_pr_url = "
                    "'https://github.com/conda-forge/staged-recipes/pull/12345' "
