@@ -258,6 +258,34 @@ class TestWritePath:
         assert r1["mapped_after"] == r1["mapped_before"] + 2
 
 
+class TestReadOnlyDryRun:
+    def test_dry_run_works_on_readonly_connection(self, tmp_path, atlas_mod, cli_mod):
+        """main() opens the DB with `mode=ro` for dry-runs; classify()'s
+        temp-table scoping must keep working there (SQLite temp tables live
+        in the separate temp database, which stays writable on a ro main DB
+        — pinned so a future PRAGMA/refactor can't silently break the
+        production dry-run path the read-write test fixtures don't cover)."""
+        import sqlite3 as _sq
+        db_path = tmp_path / "ro.db"
+        conn = atlas_mod.open_db(db_path)
+        atlas_mod.init_schema(conn)
+        _insert_pkg(conn, "foo-py")
+        _python_dep(conn, "foo-py")
+        _universe(conn, "foo")
+        conn.commit()
+        conn.close()
+        ro = _sq.connect(f"file:{db_path}?mode=ro", uri=True)
+        try:
+            r = cli_mod.run(ro, write=False, limit=None,
+                            grayskull_path=tmp_path / "absent.json",
+                            associator_path=tmp_path / "absent2.json")
+        finally:
+            ro.close()
+        assert r["mode"] == "dry-run" and r["rows_written"] == 0
+        assert [(x["conda_name"], x["pypi_name"]) for x in r["recovered"]] == \
+            [("foo-py", "foo")]
+
+
 class TestOrphanRuleAndMigration:
     def test_view_excludes_orphans(self, db, cli_mod):
         db.execute("INSERT INTO pypi_intelligence (pypi_name) VALUES ('ghost')")
