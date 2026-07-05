@@ -26,8 +26,10 @@ Where:
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 import uuid
+from pathlib import Path
 from typing import Any
 
 TOOL_NAME = "conda-forge-expert"
@@ -72,6 +74,26 @@ def _purl(
 _SPDX_ID_RE = re.compile(r"^[A-Za-z0-9.\-]+\+?$")
 _SPDX_OPERATORS = {"AND", "OR", "WITH"}
 
+# CycloneDX 1.6 enum-constrains `license.id` to the canonical SPDX license
+# list ($ref spdx.schema.json). A shape-only check would emit schema-invalid
+# ids for live conda junk (`PSF`, `GPLv2`, `LicenseRef-*`) — the enum ships
+# as tracked skill data and is the id-branch gate.
+_SPDX_ENUM_PATH = Path(__file__).resolve().parent.parent / "data" / "spdx.schema.json"
+_SPDX_ENUM_CACHE: frozenset[str] | None = None
+
+
+def _spdx_id_enum() -> frozenset[str]:
+    global _SPDX_ENUM_CACHE
+    if _SPDX_ENUM_CACHE is None:
+        try:
+            data = json.loads(_SPDX_ENUM_PATH.read_text(encoding="utf-8"))
+            _SPDX_ENUM_CACHE = frozenset(data.get("enum", ()))
+        except (OSError, json.JSONDecodeError, AttributeError):
+            # Enum unavailable → no string can prove itself a canonical id;
+            # everything falls through to expression/name (schema-safe).
+            _SPDX_ENUM_CACHE = frozenset()
+    return _SPDX_ENUM_CACHE
+
 
 def _is_spdx_expression(text: str) -> bool:
     """Grammar-level check for a compound SPDX license expression.
@@ -86,6 +108,10 @@ def _is_spdx_expression(text: str) -> bool:
         return False
     depth = 0
     expect_operand = True
+    # SPDX allows exactly ONE `WITH exception` per simple expression, and
+    # only directly after a plain license id (not after `)` or another WITH).
+    last_operand_plain = False
+    prev_with = False
     i = 0
     while i < len(tokens):
         tok = tokens[i]
@@ -97,21 +123,25 @@ def _is_spdx_expression(text: str) -> bool:
             if expect_operand or depth == 0:
                 return False
             depth -= 1
+            last_operand_plain = False
         elif tok in ("AND", "OR"):
             if expect_operand:
                 return False
             expect_operand = True
+            prev_with = False
         elif tok == "WITH":
-            # `id WITH exception-id` — exception must be a plain idstring.
-            if expect_operand or i + 1 >= len(tokens):
+            if (expect_operand or prev_with or not last_operand_plain
+                    or i + 1 >= len(tokens)):
                 return False
             i += 1
             if not _SPDX_ID_RE.match(tokens[i]):
                 return False
+            prev_with = True
         else:
             if not expect_operand or not _SPDX_ID_RE.match(tok):
                 return False
             expect_operand = False
+            last_operand_plain = True
         i += 1
     return depth == 0 and not expect_operand
 
@@ -119,13 +149,15 @@ def _is_spdx_expression(text: str) -> bool:
 def normalize_license(license_str: str | None) -> dict[str, Any] | None:
     """Map a raw conda license string to a schema-valid CycloneDX entry.
 
-    - single SPDX-shaped id            → {"license": {"id": ...}}
-    - valid SPDX *expression*          → {"expression": ...}
-    - anything else (non-SPDX junk)    → {"license": {"name": ...}}
+    - single CANONICAL SPDX id (enum-checked) → {"license": {"id": ...}}
+    - valid SPDX *expression* (grammar)       → {"expression": ...}
+    - anything else (incl. idstring-shaped
+      junk like `PSF`/`GPLv2`, `LicenseRef-*`) → {"license": {"name": ...}}
 
     The pre-Wave-B emitter always used {"license": {"id": ...}}, which is
-    schema-INVALID for expressions (live data: `0BSD AND LGPL-2.1-or-later`)
-    and for junk (`(FTL or GPLv2+) and BSD and ...`).
+    schema-INVALID for expressions (live data: `0BSD AND LGPL-2.1-or-later`),
+    for junk, AND for shape-plausible non-enum ids — CycloneDX 1.6
+    enum-constrains `license.id` to the canonical SPDX list.
     """
     if not license_str:
         return None
@@ -133,7 +165,9 @@ def normalize_license(license_str: str | None) -> dict[str, Any] | None:
     if not s:
         return None
     if _SPDX_ID_RE.match(s):
-        return {"license": {"id": s}}
+        if s in _spdx_id_enum():
+            return {"license": {"id": s}}
+        return {"license": {"name": s}}
     if _is_spdx_expression(s):
         return {"expression": s}
     return {"license": {"name": s}}

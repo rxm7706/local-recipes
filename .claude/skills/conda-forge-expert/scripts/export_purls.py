@@ -44,6 +44,7 @@ import os
 import re
 import sqlite3
 import sys
+import tempfile
 import urllib.parse
 from pathlib import Path
 from typing import Any
@@ -327,10 +328,14 @@ def write_artifact(out_dir: Path, filename: str, lines: list[str]) -> dict[str, 
     previous file's line count (None when the artifact didn't exist)."""
     path = out_dir / filename
     previous = _count_lines(path)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    # Stream lines rather than materializing the whole file as one string —
-    # the pypi artifact is ~880k lines at full-universe scale.
-    with tmp.open("w", encoding="utf-8") as fh:
+    # Unique temp per run (concurrent exports must not interleave) +
+    # streamed lines (the pypi artifact is hundreds of thousands of lines
+    # at full-universe scale).
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=out_dir,
+        prefix=filename + ".", suffix=".tmp", delete=False,
+    ) as fh:
+        tmp = Path(fh.name)
         fh.writelines(f"{ln}\n" for ln in lines)
     os.replace(tmp, path)
     return {"lines": len(lines), "previous_lines": previous}
@@ -409,7 +414,8 @@ def main() -> int:
         )
         return 1
 
-    conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    conn = sqlite3.connect(
+        f"file:{urllib.parse.quote(str(DB_PATH))}?mode=ro", uri=True)
     try:
         # Refuse to overwrite six good artifacts with degraded output when
         # the universe hasn't been populated yet (lean daily Phase D only —
