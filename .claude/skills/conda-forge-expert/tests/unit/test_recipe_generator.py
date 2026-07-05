@@ -925,3 +925,21 @@ class TestV8690GeneratorFixes:
                 tar.addfile(ti, _io.BytesIO(b""))
         got = rg._extract_import_name_from_sdist(sdist, "demo-pkg")
         assert got == "demo_pkg", got
+
+    def test_sdist_usability_check_g54(self, rg, tmp_path):
+        import tarfile, io
+        def mk(name, members):
+            path = tmp_path / name
+            with tarfile.open(path, "w:gz") as tar:
+                for m in members:
+                    ti = tarfile.TarInfo(m); ti.size = 0
+                    tar.addfile(ti, io.BytesIO(b""))
+            return path
+        code = mk("code-1.0.tar.gz", ["p-1.0/pkg/__init__.py", "p-1.0/pyproject.toml"])
+        meta_only = mk("meta-1.0.tar.gz", ["p-1.0/PKG-INFO", "p-1.0/pyproject.toml"])
+        assert rg._sdist_ships_python_code(code) is True
+        assert rg._sdist_ships_python_code(meta_only) is False
+
+    def test_github_tag_source_rejects_non_github(self, rg):
+        assert rg._github_tag_source("https://gitlab.com/x/y", "1.0") is None
+        assert rg._github_tag_source("", "1.0") is None
