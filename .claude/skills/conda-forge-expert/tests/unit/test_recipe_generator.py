@@ -860,3 +860,68 @@ class TestRecipeGenerator:
         # Sanity: the file is valid YAML with a package.name starting with r-
         content = yaml.safe_load(recipe.read_text())
         assert content["package"]["name"].startswith("r-")
+
+
+class TestV8690GeneratorFixes:
+    """Regression tests for the DW-2026-07-03 emission fixes (v8.69.0)."""
+
+    @pytest.fixture(scope="class")
+    def rg(self, load_module):
+        return load_module("recipe-generator.py")
+
+    def _info(self, rg, **kw):
+        defaults = dict(name="demo-pkg", version="1.0", license="MIT",
+                        build_backend="hatchling")
+        defaults.update(kw)
+        return rg.PackageInfo(**defaults)
+
+    def test_run_deps_not_truncated(self, rg, tmp_path):
+        deps = [f"dep{i} >=1.{i}" for i in range(30)]
+        info = self._info(rg, dependencies=deps)
+        path = rg.generate_recipe_yaml(info, tmp_path)
+        text = path.read_text()
+        for d in deps:
+            assert f"- {d}" in text, f"run dep dropped: {d}"
+
+    def test_cfe_block_emitted_with_purl_conventions(self, rg, tmp_path):
+        info = self._info(rg, import_name="demo_pkg")
+        text = rg.generate_recipe_yaml(info, tmp_path).read_text()
+        assert "#### CFE metadata AND comments" in text
+        assert "pkg:conda/demo-pkg@${{ version }}?channel=conda-forge" in text
+        assert "pkg:pypi/demo-pkg@${{ version }}" in text
+        assert "cfe-local-build-status: not-attempted" in text
+        assert "cfe-import-names: [demo_pkg]" in text
+
+    def test_host_mirrors_build_system_requires(self, rg, tmp_path):
+        info = self._info(
+            rg, build_system_requires=["hatchling", "hatch-requirements-txt"]
+        )
+        text = rg.generate_recipe_yaml(info, tmp_path).read_text()
+        assert "- hatch-requirements-txt" in text  # G91 plugin dep in host
+
+    def test_license_resolver_chain(self, rg):
+        assert rg._resolve_license({"license_expression": "Apache-2.0"}) == "Apache-2.0"
+        assert rg._resolve_license({"license": "MIT License"}) == "MIT"
+        assert rg._resolve_license({"license": "Apache License, Version 2.0"}) == "Apache-2.0"
+        # bare BSD is ambiguous -> classifier decides
+        assert rg._resolve_license(
+            {"license": "BSD",
+             "classifiers": ["License :: OSI Approved :: BSD License"]}
+        ) == "BSD-3-Clause"
+        # full license text never passes through
+        text = "MIT License\n\nPermission is hereby granted, free of charge..."
+        assert rg._resolve_license({"license": text, "classifiers": []}) == ""
+
+    def test_import_extraction_skips_non_package_dirs(self, rg, tmp_path):
+        import tarfile
+        sdist = tmp_path / "demo_pkg-1.0.tar.gz"
+        with tarfile.open(sdist, "w:gz") as tar:
+            for member in ("demo_pkg-1.0/tests/__init__.py",
+                           "demo_pkg-1.0/src/demo_pkg/__init__.py",
+                           "demo_pkg-1.0/docs/__init__.py"):
+                ti = tarfile.TarInfo(member)
+                ti.size = 0
+                import io as _io
+                tar.addfile(ti, _io.BytesIO(b""))
+        got = rg._extract_import_name_from_sdist(sdist, "demo-pkg")
+        assert got == "demo_pkg", got

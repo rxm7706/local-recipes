@@ -103,6 +103,9 @@ class PackageInfo:
     sys_platform_deps: dict[str, list[str]] = field(default_factory=dict)
     # ^ maps "win"/"linux"/"osx" → list of conda-mapped run deps; sourced
     # from requires_dist markers like `colorama ; sys_platform == 'win32'`.
+    build_system_requires: list[str] = field(default_factory=list)
+    # ^ conda-mapped [build-system].requires from the sdist (G91): the backend
+    #   PLUS its plugins (hatch-requirements-txt, hatch-vcs, uv-build, …).
 
 
 _PEP508_NAME_SPEC_RE = re.compile(
@@ -325,6 +328,13 @@ _PYPROJECT_SCRIPTS_RE = re.compile(
 )
 
 
+_NON_PACKAGE_DIRS = {
+    "test", "tests", "testing", "doc", "docs", "example", "examples",
+    "benchmark", "benchmarks", "script", "scripts", "tool", "tools",
+    "task", "tasks", "ci", "go", "js", "web", "frontend",
+}
+
+
 def _extract_import_name_from_sdist(sdist_path: Path, distribution_name: str) -> str:
     """Return the actual top-level Python import name.
 
@@ -365,7 +375,15 @@ def _extract_import_name_from_sdist(sdist_path: Path, distribution_name: str) ->
             if len(parts) < 3:
                 continue
             module_parts = parts[1:-1]  # drop root + drop __init__.py
+            # v8.69.0 (G90 gaps 3+7): src-layout strips the `src` segment;
+            # non-package top-level dirs never become import candidates.
+            if module_parts and module_parts[0] == "src":
+                module_parts = module_parts[1:]
             if not module_parts:
+                continue
+            if module_parts[0].lower() in _NON_PACKAGE_DIRS:
+                continue
+            if not module_parts[0].isidentifier():
                 continue
             candidates.append(".".join(module_parts))
         if candidates:
@@ -581,6 +599,77 @@ def _extract_project_urls(info: dict) -> tuple[str, str, str]:
     return homepage, repository, documentation
 
 
+
+# ── License resolution (v8.69.0, DW items 3+6 / G90) ────────────────────────
+# Chain: PEP 639 license_expression → short-string normalization → OSI
+# classifier map → GitHub license API (best-effort). NEVER emit full license
+# text into about.license (multiline / >80-char values are treated as text).
+_SPDX_NORMALIZE = {
+    "mit": "MIT", "mit license": "MIT",
+    "apache 2.0": "Apache-2.0", "apache-2.0": "Apache-2.0",
+    "apache license 2.0": "Apache-2.0", "apache license, version 2.0": "Apache-2.0",
+    "apache software license": "Apache-2.0",
+    "apache software license (apache 2.0)": "Apache-2.0",
+    "bsd 2-clause license": "BSD-2-Clause", "bsd-2-clause": "BSD-2-Clause",
+    "bsd 3-clause license": "BSD-3-Clause", "bsd-3-clause": "BSD-3-Clause",
+    "isc license": "ISC", "isc": "ISC",
+    "agpl-3.0": "AGPL-3.0-only", "gpl-3.0": "GPL-3.0-only",
+    "gpl-2.0": "GPL-2.0-only", "lgpl-3.0": "LGPL-3.0-only",
+    "lgpl-2.1": "LGPL-2.1-only", "mpl-2.0": "MPL-2.0",
+    "the unlicense": "Unlicense", "unlicense": "Unlicense", "zlib": "Zlib",
+}
+_CLASSIFIER_SPDX = {
+    "License :: OSI Approved :: MIT License": "MIT",
+    "License :: OSI Approved :: Apache Software License": "Apache-2.0",
+    "License :: OSI Approved :: BSD License": "BSD-3-Clause",
+    "License :: OSI Approved :: ISC License (ISCL)": "ISC",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)": "GPL-3.0-only",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)": "GPL-3.0-or-later",
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)": "GPL-2.0-only",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)": "LGPL-3.0-only",
+    "License :: OSI Approved :: GNU Affero General Public License v3": "AGPL-3.0-only",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
+    "License :: OSI Approved :: Python Software Foundation License": "PSF-2.0",
+    "License :: OSI Approved :: The Unlicense (Unlicense)": "Unlicense",
+    "License :: OSI Approved :: zlib/libpng License": "Zlib",
+}
+
+
+def _resolve_license(info: dict, repository: str = "") -> str:
+    """Resolve about.license to an SPDX id; return "" when unresolvable."""
+    expr = (info.get("license_expression") or "").strip()
+    if expr:
+        return expr  # PEP 639 — authoritative, already SPDX
+    raw = (info.get("license") or "").strip()
+    if raw and "\n" not in raw and len(raw) <= 80:
+        key = raw.lower().rstrip(".")
+        if key in _SPDX_NORMALIZE:
+            return _SPDX_NORMALIZE[key]
+        # single-token values without spaces (e.g. "Apache-2.0") pass through
+        # UNLESS they look like the bare ambiguous "BSD" (needs classifier).
+        if " " not in raw and key not in {"bsd", "gpl", "lgpl", "agpl"}:
+            return raw
+    for c in info.get("classifiers") or []:
+        if c in _CLASSIFIER_SPDX:
+            return _CLASSIFIER_SPDX[c]
+    # Best-effort GitHub license API (G90: the chain must not end at a
+    # placeholder when the repo can answer). Never fatal.
+    m = re.match(r"https?://github\.com/([^/]+)/([^/]+)", repository or "")
+    if m and REQUESTS_AVAILABLE and requests is not None:
+        try:
+            r = requests.get(
+                f"https://api.github.com/repos/{m.group(1)}/{m.group(2).removesuffix('.git')}/license",
+                timeout=10,
+            )
+            if r.ok:
+                spdx = (r.json().get("license") or {}).get("spdx_id") or ""
+                if spdx and spdx != "NOASSERTION":
+                    return spdx
+        except Exception:
+            pass
+    return ""
+
+
 def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> PackageInfo:
     """Fetch package info from PyPI.
 
@@ -656,7 +745,11 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     source_url = ""           # templated URL emitted into the recipe (v8.9.1)
     concrete_source_url = ""  # literal URL used by _ensure_sdist_cached
     sha256 = ""
-    for release in data["releases"].get(version, []):
+    # v8.69.0: the per-version JSON endpoint (`/pypi/<name>/<ver>/json`) has
+    # NO "releases" key — its file list lives under "urls". Support both
+    # endpoint shapes (fixes the pinned-generation `Error: 'releases'` crash).
+    release_files = (data.get("releases") or {}).get(version) or data.get("urls") or []
+    for release in release_files:
         if release["packagetype"] == "sdist":
             filename = release["filename"]
             concrete_source_url = (
@@ -678,7 +771,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         # `py2.py3`, `cp310`, …) is extracted from the wheel filename per
         # PEP 425; it is upstream-specific, so a comment in the recipe
         # should flag that the URL needs revisiting on version bump.
-        for release in data["releases"].get(version, []):
+        for release in release_files:
             if release["packagetype"] == "bdist_wheel":
                 filename = release["filename"]
                 # Wheel filename: <name>-<ver>(-<build>)?-<py>-<abi>-<plat>.whl
@@ -718,6 +811,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
 
     # Prefer pyproject.toml [build-system].requires when sdist is available (G2 fix).
     build_backend = "setuptools"
+    build_system_requires: list[str] = []
     if sdist_path is not None:
         build_system_requires = _extract_build_system_requires_from_sdist(sdist_path)
         if build_system_requires:
@@ -762,7 +856,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         homepage=homepage,
         repository=repository,
         documentation=documentation,
-        license=info.get("license", ""),
+        license=_resolve_license(info, repository),
         source_url=source_url,
         sha256=sha256,
         dependencies=dependencies,
@@ -773,7 +867,70 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         import_name=import_name,
         has_abi3=has_abi3,
         sys_platform_deps=sys_platform_deps,
+        build_system_requires=_parse_requires_dist_specs(build_system_requires),
     )
+
+
+
+def _skill_version() -> str:
+    """Read the CFE skill version from config/skill-config.yaml (best-effort)."""
+    try:
+        cfg = Path(__file__).resolve().parent.parent / "config" / "skill-config.yaml"
+        m = re.search(r"^\s*version:\s*(\S+)", cfg.read_text(), re.M)
+        return m.group(1) if m else "unknown"
+    except Exception:
+        return "unknown"
+
+
+def _render_cfe_block(info: "PackageInfo", conda_name: str, noarch_kind: str) -> str:
+    """Canonical `#### CFE metadata AND comments` block (DW-2026-07-03 item 1).
+
+    Local-recipes-only; stripped before any push (G62). Emitted on every v1
+    generation path so authored recipes carry identity + decision fields +
+    the truthful `cfe-local-build-status: not-attempted` from birth. The v0
+    meta.yaml path deliberately does NOT emit it (a v0 mirror stays a faithful
+    upstream copy; CFE metadata lives in recipe.yaml only).
+    """
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # purl-spec pypi normalization: lowercase + underscore->dash, DOTS KEPT (G98).
+    pypi_purl_name = info.name.lower().replace("_", "-")
+    source_kind = "pypi-wheel" if ".whl" in (info.source_url or "") else "pypi-sdist"
+    import_names = f"[{info.import_name}]" if info.import_name else "[]"
+    now_ver = _skill_version()
+    return f"""
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: {conda_name}
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: {info.name}
+  cfe-purls:
+    - pkg:conda/{conda_name}@${{{{ version }}}}?channel=conda-forge
+    - pkg:pypi/{pypi_purl_name}@${{{{ version }}}}
+  cfe-upstream-repo: {info.repository or info.homepage or "none"}
+  cfe-upstream-homepage: {info.homepage or "none"}
+  cfe-import-names: {import_names}
+  cfe-source-kind: {source_kind}
+  cfe-noarch: {noarch_kind}
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: {now}
+  cfe-generated-by-version: {now_ver}
+  cfe-generated-at-datetime: {now}
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####
+"""
 
 
 def generate_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
@@ -838,13 +995,18 @@ requirements:
   host:
     - python ${{{{ python_min }}}}.*
     - pip
-    - {info.build_backend}
-  run:
-    - python >=${{{{ python_min }}}}
 '''
+    # G91 (v8.69.0): mirror the sdist's FULL [build-system].requires — backend
+    # plus plugins (hatch-requirements-txt / hatch-vcs / uv-build), conda-name
+    # mapped. Falls back to the single detected backend when no sdist.
+    for dep in (info.build_system_requires or [info.build_backend]):
+        recipe += f"    - {dep}\n"
+    recipe += "  run:\n    - python >=${{ python_min }}\n"
 
-    # Add dependencies
-    for dep in info.dependencies[:10]:  # Limit to avoid huge lists
+    # Emit ALL parsed run deps. v8.69.0: removed the silent `[:10]` cap — the
+    # G90 "run-block truncation" root cause (7 catalogued recipes shipped
+    # 10-dep run lists against 18–26 upstream requires_dist entries).
+    for dep in info.dependencies:
         recipe += f"    - {dep}\n"
 
     # v8.9.0: emit OS-conditional run deps when requires_dist had sys_platform markers.
@@ -886,6 +1048,7 @@ extra:
   recipe-maintainers:
     - REPLACE_MAINTAINER
 '''
+    recipe += _render_cfe_block(info, literal_name, "python")
 
     # Write recipe
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1036,6 +1199,7 @@ extra:
   recipe-maintainers:
     - REPLACE_MAINTAINER
 '''
+    recipe += _render_cfe_block(info, info.name.lower(), "compiled")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     recipe_path = output_dir / "recipe.yaml"
@@ -2264,7 +2428,7 @@ Examples:
             print(f"Fetching info for {name}...")
             info = fetch_pypi_info(name, version)
 
-            output_dir = args.output or Path(f"recipes/{info.name}")
+            output_dir = args.output or Path(f"recipes/{info.name.lower()}")  # G94c: lowercase feedstock-style dir
 
             if args.format == "v1":
                 path = generate_recipe_yaml(info, output_dir)
