@@ -1447,6 +1447,8 @@ ATLAS_PYPI_INTELLIGENCE = SCRIPTS_DIR / "pypi_intelligence.py"
 ATLAS_EXPORT_PURLS         = SCRIPTS_DIR / "export_purls.py"
 # cyclonedx-universe-inventory Wave B/S3 — full-universe SBOM emitter.
 ATLAS_UNIVERSE_SBOM        = SCRIPTS_DIR / "universe_sbom.py"
+# cyclonedx-universe-inventory Wave C/S5 — inventory gap/version-lag matcher.
+ATLAS_INVENTORY_MATCH      = SCRIPTS_DIR / "inventory_match.py"
 ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
 # v8.19.0 Phase F+ Wave 3 — per-platform / per-Python / per-channel breakdowns.
 ATLAS_PLATFORM_BREAKDOWN   = SCRIPTS_DIR / "platform_breakdown.py"
@@ -1870,6 +1872,59 @@ def universe_sbom(
     # A full-universe emit (hundreds of thousands of components — measured
     # numbers land in Dev Notes from the local run) can exceed the 120s default.
     return json.dumps(_run_script(ATLAS_UNIVERSE_SBOM, args, timeout=600), indent=2)
+
+
+@mcp.tool()
+def inventory_match(
+    inputs: list[str] | None = None,
+    format: str | None = None,
+    sbom_in: str | None = None,
+    sbom_out: str | None = None,
+    conda_env: str | None = None,
+    venv: str | None = None,
+    policy: str | None = None,
+    weights: str | None = None,
+    allow_stale: bool = False,
+) -> str:
+    """Match a user inventory against the conda-forge atlas.
+
+    cyclonedx-universe-inventory Wave C/S5. Offline; reads cf_atlas.db.
+    `inputs` are manifest/lock/SBOM/text files or project directories
+    (pip list / conda list text needs `format` — 'pip' / 'conda-list').
+    Every dep resolves to a conda package (mapping → inverse-G10 bare),
+    then buckets on the three-way version comparison: ADD / ADD-NONPYPI /
+    UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN, with
+    match_confidence, freshness percentile (Dependency Policy defaults),
+    and signals_absent per row.
+
+    Optional: `policy` (JSON/TOML thresholds → rc 2 on violations, the CI
+    gate), `weights` (csv/json criticality sidecar), `sbom_in`+`sbom_out`
+    (annotate the input BOM with cfe:gap_status / cfe:conda_purl),
+    `conda_env`/`venv` (live-env intake, read offline).
+    Refuses when the atlas is >14 days old unless allow_stale."""
+    args = ["--json"]
+    args += list(inputs or [])
+    if format:
+        args += ["--format", format]
+    if sbom_in:
+        args += ["--sbom-in", sbom_in]
+    if sbom_out:
+        args += ["--sbom-out", sbom_out]
+    if conda_env:
+        args += ["--conda-env", conda_env]
+    if venv:
+        args += ["--venv", venv]
+    if policy:
+        args += ["--policy", policy]
+    if weights:
+        args += ["--weights", weights]
+    if allow_stale:
+        args.append("--allow-stale")
+    # rc 2 is the policy-gate FAIL verdict, not an execution error —
+    # _run_script parses the stdout JSON regardless of return code, and the
+    # result carries `policy.violations` either way.
+    return json.dumps(_run_script(ATLAS_INVENTORY_MATCH, args, timeout=600),
+                      indent=2)
 
 
 @mcp.tool()

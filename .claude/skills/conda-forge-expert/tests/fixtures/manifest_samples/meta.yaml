@@ -1,0 +1,44 @@
+{% set name = "demo-pkg" %}
+{% set version = "1.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/demo-pkg/demo_pkg-{{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - {{ compiler('c') }}  # [not win]
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61
+  run:
+    - python >={{ python_min }}
+    - numpy >=1.22
+    - click 8.1.7
+    - pyyaml ==6.0.1
+    - typing-extensions  # [py<312]
+    - requests  # tested with 2.31
+  run_constrained:
+    - dask >=2021.1
+    - mpich * external_*
+
+test:
+  imports:
+    - demo_pkg
+  requires:
+    - pytest
+
+about:
+  home: https://example.com
+  license: MIT
+  summary: fixture recipe for parse_meta_yaml

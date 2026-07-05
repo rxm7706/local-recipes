@@ -80,8 +80,10 @@ spec_updated: 2026-07-05
   adversarial patches `14dfd218d7`; live gates run same day, incl. the D2
   `uncorroborated` live-gate fix `4821907ab0`). **Wave B shipped 2026-07-05**
   (web slice `dd54e47d4d` + adversarial patches `5e39ffe293`, PR #33; local
-  live gates ALL PASS 2026-07-05 — see § Wave B Dev Notes). Resume at
-  **Wave C / S5**.
+  live gates ALL PASS 2026-07-05 — see § Wave B Dev Notes). **Wave C S5+S5a
+  web slice shipped 2026-07-05** (`44ea734` + adversarial patches, branch
+  `claude/wave-c-inventory-match`; S6 and the Wave C local gates remain).
+  Resume at **Wave C local gates / S6**.
 
 ### Execution-environment split (web pass)
 
@@ -107,6 +109,21 @@ grayskull cache) does **not** exist there, and `pixi` is not installed:
   and the CLI-level `scan-project --sbom-in` invocation of the ~50-component
   round-trip (the web tests cover the same parser in-process with a
   60-component slice — the CLI surface needs the full pixi env).
+  **Wave C local-only additions (recorded 2026-07-05, with the web slice):**
+  transitive resolution of bare manifests (pip `--dry-run --report` /
+  conda-pixi solve — web rows are flagged `resolution: direct` until then,
+  and graph depth + fan-out for S7 come with the resolver); decision-4 live
+  channeldata probing (web resolution chain stops at mapping → inverse-G10
+  bare fold); the live PyPI eligible-set provider for the freshness check
+  (yanked / requires-python filtering — the web default provider derives
+  eligible sets from `upstream_versions_history` and stamps its basis into
+  every report); vuln-severity policy thresholds (need the local vdb — the
+  web gate REFUSES them fail-closed as an explicit violation); container
+  intake `--image`/`--oci-archive` (locally: `scan-project --image …
+  --sbom cyclonedx` → `inventory-match --sbom-in`); and the § Verification
+  S5 end-to-end smoke (real pixi.toml env + real SBOM, hand-verified bucket
+  members incl. the G10-rename / stale-atlas / unreliable-comparison /
+  non-Python-GitHub-upstream cases).
 
 ### Adjacent prefix.dev / nebari tooling (survey 2026-07-05, per user — the eighth amendment)
 
@@ -542,7 +559,10 @@ change; revisit only if the universe outgrows ~1 GiB.
   conda/pixi manifests via a conda/pixi solve; lockfiles, SBOMs, and live envs are
   used as-given (already complete). Resolver-derived rows are flagged
   `resolution: resolved` (vs `locked`); per-package graph **depth + fan-out** are
-  computed from the resolved graph (feeds S7).
+  computed from the resolved graph (feeds S7). *(Vocabulary note, 2026-07-05: the
+  web slice flags unresolved bare-manifest rows `resolution: direct`; the local
+  wave's resolver upgrades those rows to `resolved` — `locked` unchanged. Three
+  values total.)*
   **Freshness policy check (defaults from the Dependency Policy, dated + configurable
   in the weights dict):** per dep, compute the ELIGIBLE version set
   (runtime-Python-compatible, non-yanked); dense history (≥ N eligible versions,
@@ -564,8 +584,12 @@ change; revisit only if the universe outgrows ~1 GiB.
   **ADD-NONPYPI** (non-Python, not on cf; upstream identity reported, unscored),
   **UPDATE-FEEDSTOCK** (cf behind upstream — report both versions + lag in
   releases/days where `upstream_versions_history` allows), **UPDATE-PIN** (inventory
-  behind cf), **CURRENT**, **UNKNOWN** (no data — including non-Python conda packages
-  with no `upstream_versions` row, flagged `signals_absent: upstream_freshness`).
+  behind cf), **CURRENT**, **UNKNOWN** (not decidable — no cf version, name absent
+  from every source, or a conda identifier not on conda-forge). *(Amended 2026-07-05
+  with the web slice, per the Risks section's "UNKNOWN-leaning" soft reading: a
+  MATCHED package with no `upstream_versions` row still buckets on the inv-vs-cf
+  comparison where decidable and carries `signals_absent: upstream_freshness` —
+  demoting a decidable row to UNKNOWN would hide a real UPDATE-PIN.)*
   Every row carries `match_confidence` (never present `unattributed`/`name_coincidence`
   mappings as verified) and the `version_comparison` reliability flag. Output: markdown
   report + `--json` + `--sbom-out` (input BOM annotated with `cfe:gap_status` /
