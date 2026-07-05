@@ -13,7 +13,7 @@ source:
   sha256: ce2da0e8c67eab0b22e0fa7dfc0caf189735029bdc83e33dceef009be787a08a
 
 build:
-  number: 0
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -84,7 +84,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-sql-explorer-feedstock
   cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-05T01:07:51Z
+  cfe-last-checked: 2026-07-05T01:53:23Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
@@ -133,7 +133,7 @@ extra:
 #    # Version: 2.2, satisfying upstream's exact ==2.2 pin. Waiver history:
 #    # builds _0.._4 shipped 2.2.dev20251005171540 (alpha VERSION tuple via
 #    # django get_version), which false-failed pip check here.
-#    # FOLLOW-UP: the deployed django-sql-explorer v0 feedstock still has
-#    # pip check commented out (independent same-cause disable) — re-enable
-#    # in a feedstock PR now that _5 is live.
+#    # Feedstock re-enabled pip check via the v0->v1 migration PR #15
+#    # (merged 2026-07-05, build 2; superseded the standalone re-enable
+#    # PR #14). Local mirror synced: build number matches the deployed 2.
 ####
