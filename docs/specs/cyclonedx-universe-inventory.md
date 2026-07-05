@@ -373,8 +373,18 @@ calls), the 19-line wrapper template in `.claude/scripts/conda-forge-expert/`.
 
 ### Wave C — Inventory gap / version-lag matcher
 
-- **S5 — `inventory-match` CLI.** Input: anything `scan_project.py` accepts (CycloneDX
-  SBOM, manifests, lockfiles, conda env, venv, container image), plus an **optional
+- **S5 — `inventory-match` CLI.** **Input contract (pinned per user 2026-07-05):**
+  everything `scan_project.py` accepts today — CycloneDX/SPDX SBOM (`--sbom-in`),
+  requirements.txt/.in, pyproject.toml, pixi.toml, environment.yaml, conda-lock,
+  live conda env (`--conda-env`), venv (`--venv`), container image (`--image` /
+  `--oci-archive`) — PLUS six formats **verified missing 2026-07-05** and closed by
+  sub-task **S5a (extend `scan_project`'s intake parsers,** shared with the plain
+  `scan-project` surface — not an inventory-match-only fork): `pixi.lock`
+  (**discharges the DW17 follow-up** filed in `cfe-shipped-releases.md`), `uv.lock`,
+  `poetry.lock`, `pylock.toml` (PEP 751), `pip list`/`pip freeze` text output, and
+  `conda list` text output (incl. the `--export` form). All feed the same `Dep`
+  dataclass; each gets a fixture-driven unit test in `scan_project`'s test file and
+  a row in `reference/dependency-input-formats.md` (Wave E docs). Plus an **optional
   criticality/weight sidecar** (`--weights <csv|json>`: per-package multiplicity or
   criticality the user's estate assigns — conda-forge blast radius is not the user's
   blast radius). For **every** dep (any ecosystem): resolve to conda name (mapping →
@@ -542,7 +552,7 @@ re-verified **at the retro**. Full-tree impact analysis (all 13 specs, 2026-07-0
 |---|---|
 | `trendshift-conda-forge.md` | **IMPACTED — synced 2026-07-05**: Phase T renumbered v29→v30 (incl. the A1 acceptance line), v29 fixture-base conditional, `v_pypi_intelligence_valid` read note |
 | `cfe-atlas-datapipeline-kedro-migration.md` | **IMPACTED — synced 2026-07-05**: re-enumerate-at-intake note (+5 CLIs / +4 MCP tools / +1 view / endoflife.date cache / trendshift v30) |
-| `cfe-shipped-releases.md` | INFORMATIONAL — dated archive, no update (optional retro cross-ref: its DW17 `scan_project --pixi-lock` follow-up ↔ this spec's S4 `?channel=` parser work) |
+| `cfe-shipped-releases.md` | INFORMATIONAL — dated archive, no update (retro cross-ref: its DW17 `scan_project --pixi-lock` follow-up is **discharged by S5a**'s lockfile-intake work — note it at the retro) |
 | the other 9 (conda-forge-tracker, claude-team-memory, copilot-bridge, db-gpt, flyte, langflow, feedstock-refresh / -platform-expansion / -failure-remediation) | NONE — recipe-authoring / process docs; no atlas read-surface touched (their `python_min` / `schema_version: 1` / parselmouth mentions are recipe-level, verified line-by-line) |
 
 **Implementation-time tasks (owned by the wave that ships the change):**
