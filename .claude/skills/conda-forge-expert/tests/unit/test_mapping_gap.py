@@ -151,6 +151,63 @@ class TestRecovery:
         # the ambiguous bucket still holds baz-py.
         assert [a["conda_name"] for a in r["ambiguous"]] == ["baz-py"]
 
+    def test_intra_run_duplicate_claim_is_collision(self, cli_mod, atlas_mod, tmp_path):
+        """Two unmapped packages folding to the SAME universe name in one
+        run: the first accepted recovery claims it; the second must land in
+        the collisions bucket (the intra-run face of the wasmtime trap)."""
+        conn = atlas_mod.open_db(tmp_path / "dup.db")
+        atlas_mod.init_schema(conn)
+        _insert_pkg(conn, "dup");     _python_dep(conn, "dup")
+        _insert_pkg(conn, "dup-py");  _python_dep(conn, "dup-py")
+        _universe(conn, "dup")
+        conn.commit()
+        r = cli_mod.run(conn, write=True, limit=None,
+                        grayskull_path=tmp_path / "no-cache.json",
+                        associator_path=tmp_path / "no-assoc.json")
+        recovered = {rec["conda_name"] for rec in r["recovered"]}
+        assert recovered == {"dup"}, "only ONE package may claim pypi `dup`"
+        assert r["collisions"] == [{
+            "conda_name": "dup-py", "candidate": "dup", "claimed_by": "dup",
+        }]
+        assert r["rows_written"] == 1
+        mapped = [tuple(row) for row in conn.execute(
+            "SELECT conda_name, pypi_name FROM packages "
+            "WHERE pypi_name = 'dup'"
+        )]
+        assert mapped == [("dup", "dup")]
+        conn.close()
+
+    def test_corroborator_disagreement_routes_to_ambiguous(self, cli_mod, atlas_mod, tmp_path):
+        """A corroborator that names a DIFFERENT pypi project than the sole
+        universe hit is contrary evidence — no `likely` write; triage."""
+        conn = atlas_mod.open_db(tmp_path / "disagree.db")
+        atlas_mod.init_schema(conn)
+        _insert_pkg(conn, "sneaky");  _python_dep(conn, "sneaky")
+        _universe(conn, "sneaky")
+        conn.commit()
+        cache = tmp_path / "gs.json"
+        cache.write_text(json.dumps({"totally-other-name": "sneaky"}),
+                         encoding="utf-8")
+        r = cli_mod.run(conn, write=True, limit=None,
+                        grayskull_path=cache,
+                        associator_path=tmp_path / "no-assoc.json")
+        assert r["recovered"] == [] and r["rows_written"] == 0
+        assert r["ambiguous"] == [{
+            "conda_name": "sneaky",
+            "candidates": ["sneaky"],
+            "corroborator_suggests": ["totally-other-name"],
+        }]
+        conn.close()
+
+    def test_corrupt_grayskull_cache_reported_distinctly(self, db, cli_mod, tmp_path):
+        corrupt = tmp_path / "corrupt.json"
+        corrupt.write_text("{not json", encoding="utf-8")
+        r = _run(cli_mod, db, False, corrupt, tmp_path)
+        assert r["grayskull_cache_present"] is False
+        assert r["grayskull_cache_state"] == "corrupt"
+        assert r["grayskull_cache_mtime"] is not None
+        assert "PRESENT BUT UNREADABLE" in cli_mod.render_report(r)
+
     def test_purl_associator_corroborates(self, db, cli_mod, tmp_path):
         assoc = tmp_path / "assoc.json"
         assoc.write_text(json.dumps(

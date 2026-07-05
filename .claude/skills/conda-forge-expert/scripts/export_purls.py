@@ -26,7 +26,9 @@ Ordering contract (regression surface):
 purl conventions (G98): conda purls carry `?channel=conda-forge`; PyPI purl
 names use purl-spec normalization — lowercase + `_`→`-`, dots PRESERVED
 (PEP 503 over-normalizes dotted names). Folding (`[-_.]+` → `-`) is used for
-MEMBERSHIP LOOKUP ONLY (D1), never for emission.
+MEMBERSHIP LOOKUP ONLY — on the PyPI side of the exceptions artifact (D1),
+never for emission; conda-side membership is exact-spelling per the
+artifact-#5 contract.
 
 CLI:
   export-purls [--out-dir DIR] [--json]
@@ -42,6 +44,7 @@ import os
 import re
 import sqlite3
 import sys
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +52,9 @@ import yaml
 
 
 def _get_data_dir() -> Path:
-    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+    # resolve() so the data dir and REPO_ROOT anchor to the SAME real
+    # location even when the script is reached through a symlink.
+    return Path(__file__).resolve().parent.parent.parent.parent / "data" / "conda-forge-expert"
 
 
 DB_PATH = _get_data_dir() / "cf_atlas.db"
@@ -114,7 +119,8 @@ def conda_purl_lines(pkgs: list[dict[str, Any]]) -> list[str]:
 
 def conda_versioned_purl_lines(pkgs: list[dict[str, Any]]) -> list[str]:
     """Same rows + order as artifact #1; NULL version → unversioned line so
-    count parity with #1 holds (asserted by the meta gate)."""
+    count parity with #1 holds (asserted by the unit tests + the intake
+    spec's local live gate)."""
     out = []
     for p in pkgs:
         ver = p["latest_conda_version"]
@@ -129,7 +135,13 @@ def conda_versioned_purl_lines(pkgs: list[dict[str, Any]]) -> list[str]:
 
 def pypi_purl_lines(conn: sqlite3.Connection) -> list[str]:
     names = [r[0] for r in conn.execute("SELECT pypi_name FROM pypi_universe")]
-    return sorted(f"pkg:pypi/{g98_pypi_name(n)}" for n in names)
+    # set-dedupe: two stored spellings can G98-normalize identically
+    # (case / underscore variants); one purl each.
+    return sorted({f"pkg:pypi/{g98_pypi_name(n)}" for n in names})
+
+
+def universe_is_populated(conn: sqlite3.Connection) -> bool:
+    return bool(conn.execute("SELECT 1 FROM pypi_universe LIMIT 1").fetchone())
 
 
 # --- artifact 4: conda↔pypi mapping TSV ------------------------------------
@@ -192,10 +204,11 @@ def recipe_exception_lines(
         if not (status.startswith("pending-") or status.startswith("blocked-")):
             continue
         rdir = recipe_path.parent.name
+        pkg = doc.get("package")
+        if not isinstance(pkg, dict):
+            pkg = {}
         conda_name = str(
-            extra.get("cfe-conda-name")
-            or (doc.get("package") or {}).get("name")
-            or rdir
+            extra.get("cfe-conda-name") or pkg.get("name") or rdir
         )
         if conda_name not in conda_names:
             lines.append(f"{rdir}: conda:{conda_name} not-on-cf (status={status})")
@@ -220,18 +233,27 @@ _MAVEN_RE = re.compile(r"maven2/(.+)/([^/]+)/maven-metadata", re.IGNORECASE)
 
 
 def upstream_purl(source: str, url: str | None) -> str | None:
-    """Map an upstream_versions (source, url) pair to a purl, or None when
-    the URL doesn't parse (caller counts + skips)."""
+    """Map an upstream_versions (source, url) pair to a spec-conformant
+    purl, or None when the URL doesn't parse (caller counts + skips).
+
+    purl-spec conformance: `pkg:github` namespace/name are lowercased;
+    npm scoped-package `@` is percent-encoded (`pkg:npm/%40scope/name`);
+    qualifier values (the generic `vcs_url`) are percent-encoded.
+    """
     url = url or ""
     if source == "github":
         m = _GITHUB_RE.search(url)
         if m:
-            owner, repo = m.group(1), re.sub(r"\.git$", "", m.group(2))
+            owner = m.group(1).lower()
+            repo = re.sub(r"\.git$", "", m.group(2)).lower()
             return f"pkg:github/{owner}/{repo}"
         return None
     if source == "npm":
         m = _NPM_RE.search(url)
-        return f"pkg:npm/{m.group(1)}" if m else None
+        if m:
+            name = m.group(1).replace("@", "%40", 1)
+            return f"pkg:npm/{name}"
+        return None
     if source == "crates":
         m = _CRATES_RE.search(url)
         return f"pkg:cargo/{m.group(1)}" if m else None
@@ -245,10 +267,15 @@ def upstream_purl(source: str, url: str | None) -> str | None:
             return f"pkg:maven/{group}/{m.group(2)}"
         return None
     if source in ("gitlab", "codeberg"):
-        repo = re.sub(r"\.git$", "", url.rstrip("/").rsplit("/", 1)[-1]) if url else ""
-        if repo:
-            return f"pkg:generic/{repo}?vcs_url=git+{url}"
-        return None
+        # Require host + at least one path segment: a host-only URL has no
+        # repo to name (skip + count instead of a nonsense purl).
+        parsed = urllib.parse.urlsplit(url)
+        segments = [s for s in parsed.path.split("/") if s]
+        if not (parsed.netloc and segments):
+            return None
+        repo = re.sub(r"\.git$", "", segments[-1])
+        vcs_url = urllib.parse.quote(f"git+{url}", safe="")
+        return f"pkg:generic/{repo}?vcs_url={vcs_url}"
     return None
 
 
@@ -286,10 +313,13 @@ def upstream_tsv_lines(conn: sqlite3.Connection) -> tuple[list[str], int]:
 # --- write + report ----------------------------------------------------------
 
 def _count_lines(path: Path) -> int | None:
-    if not path.exists():
+    """Previous artifact's line count; None when absent OR unreadable (a
+    hand-corrupted previous file must not abort the fresh export)."""
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            return sum(1 for _ in fh)
+    except OSError:
         return None
-    with path.open("r", encoding="utf-8") as fh:
-        return sum(1 for _ in fh)
 
 
 def write_artifact(out_dir: Path, filename: str, lines: list[str]) -> dict[str, Any]:
@@ -378,7 +408,27 @@ def main() -> int:
 
     conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     try:
+        # Refuse to overwrite six good artifacts with degraded output when
+        # the universe hasn't been populated yet (lean daily Phase D only —
+        # same state pypi_only_candidates guards).
+        if not universe_is_populated(conn):
+            sys.stderr.write(
+                "pypi_universe is empty — refusing to export (artifacts #3-#5 "
+                "would be wrong and would overwrite good previous ones). Run "
+                "`pixi run -e local-recipes atlas-phase D` first.\n"
+            )
+            return 1
         result = export_all(conn, args.out_dir)
+    except sqlite3.OperationalError as exc:
+        sys.stderr.write(
+            f"atlas schema too old or incomplete ({exc}). "
+            "Re-run `pixi run -e local-recipes build-cf-atlas` (schema v20+ "
+            "adds pypi_universe).\n"
+        )
+        return 1
+    except OSError as exc:
+        sys.stderr.write(f"cannot write to --out-dir {args.out_dir}: {exc}\n")
+        return 1
     finally:
         conn.close()
 

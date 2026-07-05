@@ -226,13 +226,20 @@ class TestDeterminismAndReport:
 class TestUpstreamPurlHelper:
     @pytest.mark.parametrize("source,url,expected", [
         ("github", "https://github.com/acme/tool.git", "pkg:github/acme/tool"),
-        ("npm", "https://registry.npmjs.org/@scope/pkg", "pkg:npm/@scope/pkg"),
+        # purl-spec: github namespace/name lowercased.
+        ("github", "https://github.com/Acme/CoolTool", "pkg:github/acme/cooltool"),
+        # purl-spec: npm scope `@` percent-encoded.
+        ("npm", "https://registry.npmjs.org/@scope/pkg", "pkg:npm/%40scope/pkg"),
+        ("npm", "https://registry.npmjs.org/plainpkg", "pkg:npm/plainpkg"),
         ("crates", "https://crates.io/api/v1/crates/serde", "pkg:cargo/serde"),
         ("rubygems", "https://rubygems.org/api/v1/gems/rails.json", "pkg:gem/rails"),
         ("maven", "https://repo1.maven.org/maven2/org/apache/foo/bar/maven-metadata.xml",
          "pkg:maven/org.apache.foo/bar"),
+        # purl-spec: qualifier value percent-encoded.
         ("gitlab", "https://gitlab.com/grp/proj",
-         "pkg:generic/proj?vcs_url=git+https://gitlab.com/grp/proj"),
+         "pkg:generic/proj?vcs_url=git%2Bhttps%3A%2F%2Fgitlab.com%2Fgrp%2Fproj"),
+        # host-only URL: no repo to name → skip, not a nonsense purl.
+        ("gitlab", "https://gitlab.com/", None),
         ("github", "https://example.com/nope", None),
         ("npm", "garbage", None),
     ])
@@ -245,3 +252,54 @@ class TestMissingDb:
         monkeypatch.setattr(cli_mod, "DB_PATH", tmp_path / "missing.db")
         monkeypatch.setattr(sys, "argv", ["export_purls"])
         assert cli_mod.main() == 1
+
+
+class TestEmptyUniverseGuard:
+    def test_refuses_export_rc_1(self, cli_mod, atlas_mod, tmp_path, monkeypatch):
+        """Empty pypi_universe (lean daily Phase D only): refuse to
+        overwrite good artifacts with degraded output."""
+        db_path = tmp_path / "cf_atlas.db"
+        conn = atlas_mod.open_db(db_path)
+        atlas_mod.init_schema(conn)
+        conn.commit()
+        conn.close()
+        out = tmp_path / "out"
+        monkeypatch.setattr(cli_mod, "DB_PATH", db_path)
+        monkeypatch.setattr(sys, "argv", ["export_purls", "--out-dir", str(out)])
+        assert cli_mod.main() == 1
+        assert not out.exists(), "no artifacts may be written on refusal"
+
+
+class TestG98Dedupe:
+    def test_case_variants_collapse_to_one_line(self, atlas_mod, cli_mod, tmp_path):
+        conn = atlas_mod.open_db(tmp_path / "dedupe.db")
+        atlas_mod.init_schema(conn)
+        for name in ("Foo_Bar", "foo-bar"):
+            conn.execute(
+                "INSERT INTO pypi_universe (pypi_name, last_serial, fetched_at) "
+                "VALUES (?, 1, 1)", (name,),
+            )
+        conn.commit()
+        lines = cli_mod.pypi_purl_lines(conn)
+        assert lines == ["pkg:pypi/foo-bar"]
+        conn.close()
+
+
+class TestNonDictPackageKey:
+    def test_warns_not_crashes(self, db, cli_mod, tmp_path):
+        root = tmp_path / "r2"
+        d = root / "weird"
+        d.mkdir(parents=True)
+        (d / "recipe.yaml").write_text(
+            "package: just-a-string\n"
+            "extra:\n"
+            "  cfe-on-conda-forge-status: pending-submission-to-conda-forge\n",
+            encoding="utf-8",
+        )
+        lines, scanned, errors = cli_mod.recipe_exception_lines(
+            root, conda_names=set(), pypi_fold_index=set()
+        )
+        assert scanned == 1 and errors == 0
+        # falls back to the dir name; flagged as not-on-cf, no AttributeError
+        assert lines == ["weird: conda:weird not-on-cf "
+                         "(status=pending-submission-to-conda-forge)"]

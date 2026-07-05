@@ -99,22 +99,33 @@ def build_universe_fold_index(conn: sqlite3.Connection) -> dict[str, set[str]]:
     return index
 
 
-def load_grayskull_reverse(path: Path = GRAYSKULL_CACHE_PATH) -> dict[str, set[str]] | None:
+def load_grayskull_reverse(
+    path: Path = GRAYSKULL_CACHE_PATH,
+) -> tuple[dict[str, set[str]] | None, str, str | None]:
     """Reverse the `{pypi_lower: conda_name}` grayskull cache into
-    `conda_name.lower() → {pypi names}`. None when the cache is absent
-    (caller warns + continues in `likely`-only mode)."""
-    if not path.exists():
-        return None
+    `conda_name.lower() → {pypi names}`.
+
+    Returns (reverse | None, state, mtime_iso | None) with state one of
+    'ok' / 'absent' / 'corrupt' — a present-but-unreadable cache must NOT
+    be reported as absent (the operator would re-fetch instead of
+    investigating corruption). mtime is stamped only when the cache was
+    actually loaded (no exists()/stat() TOCTOU)."""
+    try:
+        stat = path.stat()
+    except OSError:
+        return None, "absent", None
+    mtime = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(stat.st_mtime))
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+        return None, "corrupt", mtime
+    if not isinstance(raw, dict):
+        return None, "corrupt", mtime
     reverse: dict[str, set[str]] = {}
-    if isinstance(raw, dict):
-        for pypi_name, conda_name in raw.items():
-            if isinstance(conda_name, str) and isinstance(pypi_name, str):
-                reverse.setdefault(conda_name.lower(), set()).add(pypi_name)
-    return reverse
+    for pypi_name, conda_name in raw.items():
+        if isinstance(conda_name, str) and isinstance(pypi_name, str):
+            reverse.setdefault(conda_name.lower(), set()).add(pypi_name)
+    return reverse, "ok", mtime
 
 
 _PYPI_PURL_RE = re.compile(r"pkg:pypi/([A-Za-z0-9._-]+)")
@@ -151,8 +162,18 @@ def fetch_working_set(conn: sqlite3.Connection, limit: int | None = None) -> lis
         "ORDER BY conda_name"
     )
     if limit is not None:
-        sql += f" LIMIT {int(limit)}"
+        # Clamp: SQLite treats a negative LIMIT as "no limit".
+        sql += f" LIMIT {max(0, int(limit))}"
     return [r[0] for r in conn.execute(sql)]
+
+
+def count_unmapped(conn: sqlite3.Connection) -> int:
+    """Full (un-limited) unmapped count — the honest denominator for the
+    report's `remaining unmapped` line even when --limit bounds the run."""
+    return conn.execute(
+        "SELECT COUNT(*) FROM v_actionable_packages "
+        "WHERE pypi_name IS NULL OR pypi_name = ''"
+    ).fetchone()[0]
 
 
 def classify(conn: sqlite3.Connection, conda_names: list[str]) -> dict[str, list[str]]:
@@ -211,13 +232,18 @@ def recover(
     """Offline recovery over the python-track rows. Returns buckets:
     recovered (list of dicts), ambiguous, collisions, unrecovered."""
     # Collision index: fold(pypi_name) → conda_name for every already-mapped
-    # row anywhere in packages (the wasmtime-vs-wasmtime-py trap).
+    # row anywhere in packages (the wasmtime-vs-wasmtime-py trap). ORDER BY
+    # keeps `claimed_by` deterministic when several rows fold identically,
+    # and the index is UPDATED as in-run recoveries are accepted so two
+    # unmapped packages can never both claim the same PyPI name in one run
+    # (the intra-run face of the same trap).
     # scope: collision detection must see EVERY mapped row, including
     # archived/inactive ones — a narrower view would miss real claims.
     claimed: dict[str, str] = {}
     for pypi_name, conda_name in conn.execute(
         "SELECT pypi_name, conda_name FROM packages "
-        "WHERE pypi_name IS NOT NULL AND pypi_name <> ''"
+        "WHERE pypi_name IS NOT NULL AND pypi_name <> '' "
+        "ORDER BY conda_name"
     ):
         claimed.setdefault(fold_name(pypi_name), conda_name)
 
@@ -239,14 +265,28 @@ def recover(
         # Corroborators: does an independent source map THIS conda name to
         # one of the hit spellings?
         corroborated: set[str] = set()
+        corroborator_names: set[str] = set()
         for reverse in (grayskull_reverse, associator_reverse):
             if not reverse:
                 continue
             for pypi_name in reverse.get(conda_name.lower(), ()):
+                corroborator_names.add(pypi_name)
                 folded = fold_name(pypi_name)
                 for stored in hits:
                     if fold_name(stored) == folded:
                         corroborated.add(stored)
+
+        # An independent source that ACTIVELY DISAGREES (it names pypi
+        # projects for this conda name, none matching any universe hit) is
+        # stronger evidence of a wrong mapping than no corroborator — route
+        # to the human-triage queue instead of writing a `likely` guess.
+        if corroborator_names and not corroborated:
+            ambiguous.append({
+                "conda_name": conda_name,
+                "candidates": sorted(hits),
+                "corroborator_suggests": sorted(corroborator_names),
+            })
+            continue
 
         if len(hits) > 1 and len(corroborated) != 1:
             ambiguous.append({
@@ -267,6 +307,7 @@ def recover(
             })
             continue
 
+        claimed[fold_name(chosen)] = conda_name  # intra-run claim
         recovered.append({
             "conda_name": conda_name,
             "pypi_name": chosen,
@@ -310,10 +351,11 @@ def orphan_intelligence_stats(conn: sqlite3.Connection, sample: int = 5) -> dict
     counterpart (the rows v_pypi_intelligence_valid excludes)."""
     # scope: the orphan probe must read the RAW table — measuring exactly
     # the rows the v_pypi_intelligence_valid view excludes.
-    has_table = conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='pypi_intelligence'"
-    ).fetchone()
-    if not has_table:
+    tables = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' "
+        "AND name IN ('pypi_intelligence', 'pypi_universe')"
+    )}
+    if tables != {"pypi_intelligence", "pypi_universe"}:
         return {"count": 0, "sample": [], "rule": ORPHAN_RULE}
     count = conn.execute(
         "SELECT COUNT(*) FROM pypi_intelligence pi "
@@ -321,8 +363,9 @@ def orphan_intelligence_stats(conn: sqlite3.Connection, sample: int = 5) -> dict
         "WHERE pu.pypi_name IS NULL"
     ).fetchone()[0]
     # scope: raw-table read by design — sampling the orphans the
-    # v_pypi_intelligence_valid view excludes.
-    sample_rows = [r[0] for r in conn.execute(
+    # v_pypi_intelligence_valid view excludes. NULL pypi_name (legal in a
+    # SQLite TEXT PK) is coerced so report rendering can't crash on join().
+    sample_rows = [str(r[0]) for r in conn.execute(
         "SELECT pi.pypi_name FROM pypi_intelligence pi "
         "LEFT JOIN pypi_universe pu ON pu.pypi_name = pi.pypi_name "
         "WHERE pu.pypi_name IS NULL ORDER BY pi.pypi_name LIMIT ?",
@@ -360,7 +403,10 @@ def render_report(result: dict[str, Any]) -> str:
         f"- mode: {'WRITE' if r['mode'] == 'write' else 'DRY-RUN'}",
         f"- grayskull cache: "
         + (f"present (mtime {r['grayskull_cache_mtime']})"
-           if r["grayskull_cache_present"] else "ABSENT — likely-only mode"),
+           if r["grayskull_cache_state"] == "ok"
+           else ("PRESENT BUT UNREADABLE (corrupt?) — likely-only mode"
+                 if r["grayskull_cache_state"] == "corrupt"
+                 else "ABSENT — likely-only mode")),
         f"- purl-associator bundle (D2-ext): "
         + ("present" if r["purl_associator_present"] else "absent"),
         "",
@@ -433,11 +479,17 @@ def run(
     grayskull_path: Path = GRAYSKULL_CACHE_PATH,
     associator_path: Path = PURL_ASSOCIATOR_PATH,
 ) -> dict[str, Any]:
-    grayskull_reverse = load_grayskull_reverse(grayskull_path)
-    if grayskull_reverse is None:
+    grayskull_reverse, grayskull_state, grayskull_mtime = load_grayskull_reverse(grayskull_path)
+    if grayskull_state == "absent":
         sys.stderr.write(
             f"  warn: grayskull cache absent at {grayskull_path} — "
             "continuing in likely-only mode (refresh via update_mapping_cache)\n"
+        )
+    elif grayskull_state == "corrupt":
+        sys.stderr.write(
+            f"  warn: grayskull cache at {grayskull_path} is present but "
+            "unreadable (corrupt JSON?) — continuing in likely-only mode; "
+            "investigate the file before re-fetching\n"
         )
     associator_reverse = load_purl_associator_reverse(associator_path)
 
@@ -460,11 +512,9 @@ def run(
         "mode": "write" if write else "dry-run",
         "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "built_at": _atlas_built_at(conn),
-        "grayskull_cache_present": grayskull_reverse is not None,
-        "grayskull_cache_mtime": (
-            time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(grayskull_path.stat().st_mtime))
-            if grayskull_path.exists() else None
-        ),
+        "grayskull_cache_present": grayskull_state == "ok",
+        "grayskull_cache_state": grayskull_state,
+        "grayskull_cache_mtime": grayskull_mtime,
         "purl_associator_present": associator_reverse is not None,
         "actionable_unmapped": len(working),
         "python_track": buckets["python_track"],
@@ -477,7 +527,9 @@ def run(
         "rows_written": rows_written,
         "mapped_before": mapped_before,
         "mapped_after": mapped_after,
-        "remaining_unmapped": len(working) - rows_written,
+        # Honest denominator: the FULL unmapped population post-run, not the
+        # --limit-bounded working set.
+        "remaining_unmapped": count_unmapped(conn),
         "orphans": orphan_intelligence_stats(conn),
     }
     return result
@@ -510,6 +562,13 @@ def main() -> int:
         conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     try:
         result = run(conn, write=args.write, limit=args.limit)
+    except sqlite3.OperationalError as exc:
+        sys.stderr.write(
+            f"atlas schema too old or incomplete ({exc}). "
+            "Re-run `pixi run -e local-recipes build-cf-atlas` (schema v29+ "
+            "adds v_pypi_intelligence_valid; v20+ adds pypi_universe).\n"
+        )
+        return 1
     finally:
         conn.close()
 

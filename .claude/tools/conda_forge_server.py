@@ -1820,7 +1820,10 @@ def export_purls(out_dir: str | None = None) -> str:
     args = ["--json"]
     if out_dir:
         args += ["--out-dir", out_dir]
-    return json.dumps(_run_script(ATLAS_EXPORT_PURLS, args), indent=2)
+    # 600s: a full-universe export (~880k lines across six artifacts) can
+    # exceed _run_script's 120s default; a mid-sequence kill would leave a
+    # mixed old/new artifact set.
+    return json.dumps(_run_script(ATLAS_EXPORT_PURLS, args, timeout=600), indent=2)
 
 
 @mcp.tool()
