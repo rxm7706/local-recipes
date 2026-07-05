@@ -1,6 +1,6 @@
 ---
 status: ready
-spec_updated: 2026-07-02
+spec_updated: 2026-07-05
 ---
 > **Consolidated 2026-07-02.** This file absorbed `microsoft-conda-forge.md` as
 > [Track B](#track-b) — the fixed-source (`github.com/microsoft/*` org) worked instance of
@@ -179,7 +179,7 @@ automate) splits them:
 
 - **G1.** Ship a cf_atlas **Phase T** that ingests GitHub-trending Python
   repos (daily/weekly/monthly) into a new `github_trending_repos` table
-  (schema v28→v29), with atomic writes + provenance + rate-limit
+  (schema v29→v30; renumbered 2026-07-05 — v29 is claimed by `cyclonedx-universe-inventory.md` Wave A/S2's `v_pypi_intelligence_valid` migration; allocate the next free version at implementation time), with atomic writes + provenance + rate-limit
   discipline per `atlas-phase-engineering.md`.
 - **G2.** Ship a **tier classifier** that joins each trending repo against
   feedstock enumeration + `pypi_universe` + `pypi_intelligence` and labels
@@ -317,19 +317,20 @@ starting list, not a committed count.
 
 | Wave | Stories | Description |
 |---|---|---|
-| A | A1–A5 | **Engine**: schema v29 + Phase T ingest + tier classifier + `trending-candidates` CLI/MCP + tests. |
+| A | A1–A5 | **Engine**: schema v30 + Phase T ingest + tier classifier + `trending-candidates` CLI/MCP + tests. |
 | B | B1, **B-CLI-Anything**, B2…Bn | **First batch, Tier-1**: B1 runs the engine + triage; B-CLI-Anything ships `cli-anything-hub` (named, parallel-safe with B1); B2…Bn ship the verified curated-gap `noarch:python` recipes. |
 | C | C1–C? | **First batch, Tier-2**: ship broad/compiled recipes + any prereq closures. |
 | D | D1 (guide+cadence), D2 (retro) | **Cadence + closeout**: CFE guide, optional `/schedule`, CFE-skill retro (Rule 2). |
 
 ### Wave A — The discovery engine
 
-#### Story A1 — Schema v28→v29: `github_trending_repos` + `v_trending_candidates`
+#### Story A1 — Schema v29→v30 (renumbered 2026-07-05; base = v29 after cyclonedx-universe-inventory Wave A): `github_trending_repos` + `v_trending_candidates`
 
 **Goal**: Add the storage layer for trending ingestion.
 
 **Acceptance criteria**:
-- `SCHEMA_VERSION` bumped 28 → 29 in `conda_forge_atlas.py` with a
+- `SCHEMA_VERSION` bumped 29 → 30 (renumbered 2026-07-05; base = v28 if
+  cyclonedx-universe-inventory Wave A has not shipped) in `conda_forge_atlas.py` with a
   forward migration that creates:
   - **`github_trending_repos`** — columns: `full_name` (PK part),
     `owner`, `repo`, `description`, `language`, `stars`, `stars_delta`,
@@ -354,7 +355,7 @@ starting list, not a committed count.
   `CREATE TABLE IF NOT EXISTS` + `user_version` bump path (mirror an
   existing migration, e.g. the v27→v28 one).
 - A structural meta-test asserts the new table + view exist after a
-  migration of a v28 fixture DB.
+  migration of a v29 fixture DB (the then-current base; if cyclonedx-universe-inventory Wave A has not shipped yet, base is v28 and this story claims the next free version).
 
 **Wave**: A. **Effort**: 1.5–2 h.
 
@@ -466,7 +467,7 @@ adversarial review (§ 10 (i): mandatory for dispatcher-touching changes).
 - Unit tests: HTML parser (A2 fixture), classifier (A3 fixture), CLI
   output shape + `--json` schema, MCP tool round-trip.
 - Meta-tests green: `test_all_scripts_runnable.py` includes the new
-  script; schema-version test recognizes v29; phase-list test includes T.
+  script; schema-version test recognizes v30; phase-list test includes T.
 - **Adversarial self-review** of the Phase-T writer + dispatcher wiring
   per `atlas-phase-engineering.md` § 10 (i) (the atomic-write slice
   semantics, the never-hard-fail-the-build guarantee, the provenance
@@ -674,7 +675,7 @@ documented external-bug reason, e.g. the db-gpt `pdfminer.six` precedent),
             ┌──────────────────────────── Wave A: ENGINE ──────────────────────────┐
             │  Phase T (fetch)            classifier (local SQL)        operator     │
 github.com/trending/python  ─► github_trending_repos ─► v_trending_candidates ─► trending-candidates CLI/MCP
-   (HTML, primary)                 (schema v29)        (join: feedstocks +         (--period/--tier/--top/--json)
+   (HTML, primary)                 (schema v30)        (join: feedstocks +         (--period/--tier/--top/--json)
 GitHub Search API                                       pypi_universe +
    (JSON, fallback Q1)                                  pypi_intelligence)
             └───────────────────────────────────────────────────────────────────────┘
@@ -728,7 +729,7 @@ prereq-closure leaves-first), per the skill's Critical Constraints.
 ## Acceptance Criteria (Whole Feature)
 
 - **AC-1.** `pixi run -e local-recipes build-cf-atlas` (admin profile)
-  runs Phase T, populating `github_trending_repos`; schema is v29.
+  runs Phase T, populating `github_trending_repos`; schema is v30.
 - **AC-2.** `pixi run -e local-recipes trending-candidates --json`
   returns a tiered, ranked candidate list; the MCP tool returns the same.
   Both are offline-safe (work with no network after the snapshot).
@@ -830,6 +831,9 @@ per-backend deps (Pillow/bpy/lxml/sox…) are genuinely optional (→
 - `pypi_universe` (name/published; schema v20).
 - `pypi_intelligence` (license / requires_python / packaging_shape /
   downloads_30d/90d / conda_forge_readiness; schema v22+, Phases O–S).
+  **Post-v29 (`cyclonedx-universe-inventory` D3, 2026-07-05):** version-truth
+  reads of `pypi_intelligence` go via `v_pypi_intelligence_valid` (orphan
+  guard); the scope meta-test will apply to Phase T code.
 
 ### Per-recipe external deps
 
@@ -961,7 +965,7 @@ in the same wave or a documented `run_constraints:` drop.
 ```
 @bmad-quick-dev — implement the intent in docs/specs/trendshift-conda-forge.md.
 
-Wave A first (the engine): A1 schema v29 → A2 Phase T ingest → A3 tier
+Wave A first (the engine): A1 schema v30 → A2 Phase T ingest → A3 tier
 classifier → A4 trending-candidates CLI + MCP tool → A5 tests + the
 step-04 adversarial review. Invoke conda-forge-expert for all atlas-touching
 work (Rule 1). Resolve Q1 (source robustness; default scrape+Search-fallback)
