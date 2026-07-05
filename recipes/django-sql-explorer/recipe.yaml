@@ -42,7 +42,7 @@ tests:
   - python:
       imports:
         - explorer
-      pip_check: false
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
@@ -79,16 +79,16 @@ extra:
   cfe-import-names: [explorer]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: false:django-cryptography-django5-poisoned-dist-info-G28
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-sql-explorer-feedstock
   cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-04T22:35:56Z
+  cfe-last-checked: 2026-07-05T01:07:51Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-07-05T01:07:51Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -127,16 +127,13 @@ extra:
 #    # lightweight (version info only; no module-level Django imports), so
 #    # "import explorer" does NOT trip AppRegistryNotReady — standard
 #    # python.imports test holds, no package_contents escape hatch needed.
-#    # pip_check DISABLED (G28): conda-forge django-cryptography-django5 is
-#    # conda-labeled 2.2 but its bundled wheel dist-info reports Version
-#    # 2.2.dev20251005171540 (setuptools_scm dev-version leak, systemic across
-#    # all 5 channel builds _0.._4). Upstream django-sql-explorer pins
-#    # django-cryptography-django5==2.2 exactly, so pip check compares ==2.2
-#    # against the poisoned 2.2.dev... dist-info and false-fails. Verified the
-#    # full installed graph is otherwise consistent (the dev-version line is the
-#    # ONLY pip check failure). The deployed v0 feedstock independently disabled
-#    # pip check for the same reason (commands: #- pip check is commented out).
-#    # Durable fix is in django-cryptography-django5-feedstock (sed the real
-#    # version into the wheel METADATA, per G24); no in-recipe fix possible.
-#    # Filed: https://github.com/conda-forge/django-cryptography-django5-feedstock/issues/6 (2026-07-04).
+#    # pip_check RE-ENABLED 2026-07-04 (waiver discharged, G80): the
+#    # django-cryptography-django5 dev-version dist-info bug (issue #6) was
+#    # fixed by feedstock PR #7 — same-version rebuild _5 ships wheel
+#    # Version: 2.2, satisfying upstream's exact ==2.2 pin. Waiver history:
+#    # builds _0.._4 shipped 2.2.dev20251005171540 (alpha VERSION tuple via
+#    # django get_version), which false-failed pip check here.
+#    # FOLLOW-UP: the deployed django-sql-explorer v0 feedstock still has
+#    # pip check commented out (independent same-cause disable) — re-enable
+#    # in a feedstock PR now that _5 is live.
 ####
