@@ -10,6 +10,7 @@ import pytest
 
 # Hyphenated and underscored — no exclusions
 SCRIPTS = [
+    "add_handoff.py",
     "adoption_stage.py",
     "atlas_phase.py",
     "behind_upstream.py",
