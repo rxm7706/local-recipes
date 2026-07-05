@@ -70,7 +70,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - lfx                 # langflow-family core dep; built in local channel, not yet on conda-forge
+    - "lfx — langflow-family core dep; built in local channel, not yet on conda-forge"
   cfe-last-checked: 2026-06-19T20:15:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:15:00Z
