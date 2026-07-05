@@ -178,18 +178,33 @@ def count_unmapped(conn: sqlite3.Connection) -> int:
 
 def classify(conn: sqlite3.Connection, conda_names: list[str]) -> dict[str, list[str]]:
     """Split the working set into python_track / non_python_with_identity /
-    non_python_no_identity per the S2 contract."""
+    non_python_no_identity per the S2 contract.
+
+    The python-dep and upstream-source lookups are scoped to the working
+    set via a temp table rather than loading the full `dependencies` /
+    `upstream_versions` tables into memory (they can be hundreds of
+    thousands of rows on a real atlas).
+    """
+    conn.execute("DROP TABLE IF EXISTS _mapping_gap_ws")
+    conn.execute("CREATE TEMP TABLE _mapping_gap_ws (conda_name TEXT PRIMARY KEY)")
+    conn.executemany(
+        "INSERT OR IGNORE INTO _mapping_gap_ws (conda_name) VALUES (?)",
+        ((n,) for n in conda_names),
+    )
     python_dep = {
         r[0] for r in conn.execute(
-            "SELECT DISTINCT source_conda_name FROM dependencies "
-            "WHERE target_conda_name = 'python' AND requirement_type = 'run'"
+            "SELECT DISTINCT d.source_conda_name FROM dependencies d "
+            "JOIN _mapping_gap_ws w ON w.conda_name = d.source_conda_name "
+            "WHERE d.target_conda_name = 'python' AND d.requirement_type = 'run'"
         )
     }
     upstream_sources: dict[str, set[str]] = {}
     for name, source in conn.execute(
-        "SELECT conda_name, source FROM upstream_versions"
+        "SELECT uv.conda_name, uv.source FROM upstream_versions uv "
+        "JOIN _mapping_gap_ws w ON w.conda_name = uv.conda_name"
     ):
         upstream_sources.setdefault(name, set()).add(source)
+    conn.execute("DROP TABLE IF EXISTS _mapping_gap_ws")
 
     buckets: dict[str, list[str]] = {
         "python_track": [],
