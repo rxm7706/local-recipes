@@ -49,7 +49,14 @@ spec_updated: 2026-07-05
   refresh became an operator-gated S8 option (data verified fresh 2026-07-04); and
   **cross-spec sync is an explicit implementation + retro obligation** — the
   2026-07-05 all-specs impact analysis (2 impacted / 9 none / 1 historical) is
-  encoded in § Cross-spec impact & sync. Zero implementation. Resume at
+  encoded in § Cross-spec impact & sync. **Sixth amendment (same day, per user):
+  aligned with the Python Dependency Policy write-up**
+  (`gist.github.com/rxm7706/6dfaa127f4b86c8d4717522ff0107e6c`) — S5 gains the
+  freshness policy check (top-20th-percentile / last-eligible−1, configurable
+  defaults), built-in transitive resolution for bare manifests (+ depth/fan-out →
+  S7), a CI policy-gate mode with exit codes, and policy-tiered input formats
+  (+`meta.yaml`/`recipe.yaml` as manifests, +`pdm.lock`); exception lists +
+  `--verify-against` BOM drift explicitly deferred. Zero implementation. Resume at
   **Wave A / S1**.
 
 ## Intent (the user's ask, decomposed)
@@ -131,6 +138,12 @@ renumbering applied to trendshift), and S5/S6 may perform a **bounded live fetch
 - No re-derivation of the mapping from scratch — `packages.pypi_name` +
   `match_source`/`match_confidence` are the source of truth; Wave A only closes *gaps*
   and productizes the export.
+- **Exception-list handling and deploy-time `--verify-against` BOM drift verification
+  are DEFERRED** (user decision 2026-07-05) — the Python Dependency Policy write-up
+  names both (approved exception lists; build-BOM vs deployed-graph verification with
+  ticketing), but only the policy gate mode ships now. The gate's JSON output and
+  exit-code contract are designed so both can be added by amendment without breaking
+  consumers.
 
 ## Design decisions (pre-resolved)
 
@@ -373,21 +386,46 @@ calls), the 19-line wrapper template in `.claude/scripts/conda-forge-expert/`.
 
 ### Wave C — Inventory gap / version-lag matcher
 
-- **S5 — `inventory-match` CLI.** **Input contract (pinned per user 2026-07-05):**
-  everything `scan_project.py` accepts today — CycloneDX/SPDX SBOM (`--sbom-in`),
-  requirements.txt/.in, pyproject.toml, pixi.toml, environment.yaml, conda-lock,
-  live conda env (`--conda-env`), venv (`--venv`), container image (`--image` /
-  `--oci-archive`) — PLUS six formats **verified missing 2026-07-05** and closed by
-  sub-task **S5a (extend `scan_project`'s intake parsers,** shared with the plain
-  `scan-project` surface — not an inventory-match-only fork): `pixi.lock`
-  (**discharges the DW17 follow-up** filed in `cfe-shipped-releases.md`), `uv.lock`,
-  `poetry.lock`, `pylock.toml` (PEP 751), `pip list`/`pip freeze` text output, and
-  `conda list` text output (incl. the `--export` form). All feed the same `Dep`
-  dataclass; each gets a fixture-driven unit test in `scan_project`'s test file and
-  a row in `reference/dependency-input-formats.md` (Wave E docs). Plus an **optional
-  criticality/weight sidecar** (`--weights <csv|json>`: per-package multiplicity or
-  criticality the user's estate assigns — conda-forge blast radius is not the user's
-  blast radius). For **every** dep (any ecosystem): resolve to conda name (mapping →
+- **S5 — `inventory-match` CLI.** **Input contract (pinned per user 2026-07-05;
+  policy-TIERED 2026-07-05 per the Python Dependency Policy write-up —
+  `gist.github.com/rxm7706/6dfaa127f4b86c8d4717522ff0107e6c`):**
+  - **policy-supported** (the write-up's CI formats): pyproject.toml (PEP 621;
+    517/518/639/735), requirements.txt (+ frozen), environment.yaml, conda-lock.yml,
+    pixi.toml, pixi.lock (S5a — **discharges the DW17 follow-up** filed in
+    `cfe-shipped-releases.md`), and **`meta.yaml` (v0) + `recipe.yaml` (v1) as
+    dependency manifests** (S5a, NEW per the policy: parse `requirements.host/run`
+    from recipes, reusing the repo's existing recipe parsers);
+  - **tool-supported beyond policy** (the tool runs ahead of the policy):
+    CycloneDX/SPDX SBOM (`--sbom-in`), live conda env (`--conda-env`), venv
+    (`--venv`), container image (`--image`/`--oci-archive`), plus S5a text intake:
+    `pip list`/`pip freeze` output and `conda list` output (incl. `--export`);
+  - **future-tier** (S5a builds the parsers; rows flagged `policy: future`):
+    `pylock.toml` (PEP 751), `poetry.lock`, `uv.lock`, **`pdm.lock`**.
+  **S5a extends `scan_project`'s intake parsers** (shared with the plain
+  `scan-project` surface — not an inventory-match-only fork); all formats feed the
+  same `Dep` dataclass; each gets a fixture-driven unit test and a row (with policy
+  tier) in `reference/dependency-input-formats.md` (Wave E docs).
+  **Transitive resolution (per policy § 3, decision 2026-07-05):** bare manifests
+  (direct-pinned, no lock) are RESOLVED to the full graph before matching — PyPI
+  manifests via pip's resolver (resolvelib / `pip install --dry-run --report`),
+  conda/pixi manifests via a conda/pixi solve; lockfiles, SBOMs, and live envs are
+  used as-given (already complete). Resolver-derived rows are flagged
+  `resolution: resolved` (vs `locked`); per-package graph **depth + fan-out** are
+  computed from the resolved graph (feeds S7).
+  **Freshness policy check (defaults from the Dependency Policy, dated + configurable
+  in the weights dict):** per dep, compute the ELIGIBLE version set
+  (runtime-Python-compatible, non-yanked); dense history (≥ N eligible versions,
+  default N=10) → the pinned version must sit in the **top 20th percentile** of
+  eligible versions; sparse history → **last-eligible −1** or newer suffices.
+  Output pass/warn/fail + the percentile on every row.
+  **Policy gate mode (CI):** `--policy <file>` (thresholds: freshness,
+  metadata-completeness, vuln severity, license) + deterministic **exit codes**
+  (0 = pass, 2 = policy violations, 1 = error) so CI can block; when enabled,
+  incomplete/ambiguous metadata blocks per the policy. (Exception lists and
+  deploy-time `--verify-against` BOM drift are deliberately deferred — see Not
+  Doing.) Plus an **optional criticality/weight sidecar** (`--weights <csv|json>`:
+  per-package multiplicity or criticality the user's estate assigns — conda-forge
+  blast radius is not the user's blast radius). For **every** dep (any ecosystem): resolve to conda name (mapping →
   G10 → live channeldata per decision 4), then bucket on the **three-way version
   comparison** (decision 3: inventory-pinned vs cf-latest vs upstream-of-record):
   **ADD** (Python, not on cf; attach `conda_forge_readiness`, `recommended_template`,
@@ -422,8 +460,10 @@ calls), the 19-line wrapper template in `.claude/scripts/conda-forge-expert/`.
   platform / channel), vuln posture (Critical/High counts, KEV, max EPSS, CWE
   categories — verified present for 11,588 non-PyPI packages), feedstock health +
   archived flag, license quality (`conda_license` present? SPDX-parseable? OSI?),
-  cf-graph blast radius (`whodepends --reverse`), and the user-estate weight from the
-  S5 sidecar. **Python-only enrichment layer** (adds precision where present):
+  cf-graph blast radius (`whodepends --reverse`), the user-estate weight from the
+  S5 sidecar, plus two S5-computed signals (per the Dependency Policy write-up):
+  the **freshness percentile / policy verdict** and the resolved-graph
+  **depth + fan-out** of each package within the user's own inventory. **Python-only enrichment layer** (adds precision where present):
   activity_band + serial deltas, PyPI downloads, bus_factor_proxy, packaging health
   (has_wheel/has_sdist/packaging_shape/yanked), metadata completeness
   (repo_url/docs_url/classifiers/requires_python currency), cross-channel `in_*`
