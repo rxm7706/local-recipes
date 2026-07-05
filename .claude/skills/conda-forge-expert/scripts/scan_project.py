@@ -199,10 +199,15 @@ def parse_requirements_txt(path: Path) -> list[Dep]:
         line = line.split("#")[0].strip()
         if not line or line.startswith("-"):
             continue
-        m = re.match(r"^([A-Za-z0-9._-]+)(?:\s*[=<>~!]=?\s*([0-9][^,;\s]*))?", line)
+        m = re.match(r"^([A-Za-z0-9._-]+)\s*(?:([=<>~!]=?)\s*([0-9][^,;\s]*))?", line)
         if m:
-            deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
-                            ecosystem="pypi", manifest=path.name))
+            # The operator rides in extras so version-comparison consumers
+            # (inventory-match) can tell a real `==` pin from the lower
+            # bound of `>=`/`~=`/`!=` ranges; `version` stays populated for
+            # the vuln-lookup path either way.
+            extras = {"op": m.group(2)} if m.group(2) and m.group(2) != "==" else {}
+            deps.append(Dep(name=m.group(1).lower(), version=m.group(3),
+                            ecosystem="pypi", manifest=path.name, extras=extras))
     return deps
 
 
@@ -220,15 +225,17 @@ def parse_pyproject_toml(path: Path) -> list[Dep]:
         return []
     deps: list[Dep] = []
     project = data.get("project") or {}
-    spec_re = re.compile(r"^([A-Za-z0-9._-]+)(?:\s*[=<>~!]=?\s*([0-9][^,;\s]*))?")
+    spec_re = re.compile(r"^([A-Za-z0-9._-]+)\s*(?:([=<>~!]=?)\s*([0-9][^,;\s]*))?")
 
     def _add(spec: Any, manifest: str) -> None:
         if not isinstance(spec, str):
             return
         m = spec_re.match(spec)
         if m:
-            deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
-                            ecosystem="pypi", manifest=manifest))
+            # non-== operators recorded so range bounds aren't taken as pins
+            extras = {"op": m.group(2)} if m.group(2) and m.group(2) != "==" else {}
+            deps.append(Dep(name=m.group(1).lower(), version=m.group(3),
+                            ecosystem="pypi", manifest=manifest, extras=extras))
 
     # PEP 621 standard
     for spec in project.get("dependencies") or []:
@@ -277,9 +284,14 @@ def parse_pyproject_toml(path: Path) -> list[Dep]:
                 continue  # Python interpreter constraint, not a dep
             ver = (v.get("version") if isinstance(v, dict)
                    else (v if isinstance(v, str) else None))
+            op = None
+            if ver:
+                m_op = re.match(r"^\s*([\^~>=<*]+)", ver)
+                op = m_op.group(1) if m_op else None
             ver = (re.sub(r"^[\^~>=<*]+\s*", "", ver) or None) if ver else None
             deps.append(Dep(name=n.lower(), version=ver, ecosystem="pypi",
-                            manifest=f"{path.name}#poetry.{section_name}"))
+                            manifest=f"{path.name}#poetry.{section_name}",
+                            extras={"op": op} if op else {}))
     poetry_groups = poetry.get("group") or {}
     if isinstance(poetry_groups, dict):
         for gname, gdef in poetry_groups.items():
@@ -291,9 +303,14 @@ def parse_pyproject_toml(path: Path) -> list[Dep]:
                     continue
                 ver = (v.get("version") if isinstance(v, dict)
                        else (v if isinstance(v, str) else None))
+                op = None
+                if ver:
+                    m_op = re.match(r"^\s*([\^~>=<*]+)", ver)
+                    op = m_op.group(1) if m_op else None
                 ver = (re.sub(r"^[\^~>=<*]+\s*", "", ver) or None) if ver else None
                 deps.append(Dep(name=n.lower(), version=ver, ecosystem="pypi",
-                                manifest=f"{path.name}#poetry.group.{gname}"))
+                                manifest=f"{path.name}#poetry.group.{gname}",
+                                extras={"op": op} if op else {}))
 
     # PDM [tool.pdm.dev-dependencies] — dict of groups, each a list[str]
     pdm = tool.get("pdm") or {}
@@ -587,25 +604,43 @@ def parse_pip_text(path: Path) -> list[Dep]:
 
 
 def parse_conda_list_text(path: Path) -> list[Dep]:
-    """`conda list` / `conda list --export` / `conda list --explicit` output
-    (S5a text intake; explicit-routing only, like parse_pip_text).
+    """`conda list` / `conda list --export` / `conda list --explicit` /
+    `conda list --json` output (S5a text intake; explicit-routing only,
+    like parse_pip_text).
 
     Default format rows are `name version build channel` (channel column
     optional); rows whose channel is `pypi` are pip-installed and tagged
     ecosystem=pypi. `--export` rows are `name=version=build`; `--explicit`
-    rows are package URLs (parsed like pixi.lock conda URLs).
+    rows are package URLs (parsed like pixi.lock conda URLs, `#<hash>`
+    fragments stripped); `--json` is an array of package objects.
     """
     try:
         text = path.read_text()
     except OSError:
         return []
     deps: list[Dep] = []
+    stripped_text = text.lstrip()
+    if stripped_text.startswith("["):  # conda list --json
+        try:
+            rows = json.loads(stripped_text)
+        except json.JSONDecodeError:
+            return []
+        for r in rows:
+            if not isinstance(r, dict) or not r.get("name"):
+                continue
+            channel = r.get("channel")
+            eco = "pypi" if channel == "pypi" else "conda"
+            deps.append(Dep(name=str(r["name"]).lower(), version=r.get("version"),
+                            ecosystem=eco, manifest=path.name,
+                            extras={"channel": channel} if channel else {}))
+        return deps
     for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith(("#", "@")):
             continue
         if line.startswith(("http://", "https://", "file://")):  # --explicit
-            basename = line.rsplit("/", 1)[-1]
+            # `--explicit --md5` / conda-lock renders append `#<hash>`
+            basename = line.split("#", 1)[0].rsplit("/", 1)[-1]
             m = re.match(r"^(.+)-([^-]+)-[^-]+\.(?:conda|tar\.bz2)$", basename)
             if m:
                 deps.append(Dep(name=m.group(1).lower(), version=m.group(2),
@@ -642,7 +677,9 @@ def _parse_recipe_entry(raw: str) -> tuple[str, str | None, str | None] | None:
     — their identity is unknowable without rendering. Jinja INSIDE a
     constraint (`python {{ python_min }}`) keeps the name, drops the version.
     """
-    entry = re.sub(r"#\s*\[.*$", "", raw).strip()   # trailing selector comment
+    # trailing comments: selector ([win]) or plain — both are not constraints
+    entry = re.sub(r"\s+#.*$", "", raw).strip()
+    entry = re.sub(r"^#.*$", "", entry)
     entry = entry.strip("'\"")
     if not entry or entry.startswith(("{{", "${{")):
         return None
@@ -653,13 +690,12 @@ def _parse_recipe_entry(raw: str) -> tuple[str, str | None, str | None] | None:
     constraint = parts[1].strip() if len(parts) > 1 else None
     version = None
     if constraint and "{{" not in constraint:
-        m = re.match(r"^==?\s*([0-9][\w.]*)$", constraint)
+        m = re.match(r"^==\s*([0-9][\w.]*)$", constraint)
         if m:
             version = m.group(1)
         elif re.match(r"^[0-9][\w.]*$", constraint):
             version = constraint  # bare version = exact in conda match specs
-        if version and version.endswith(".*"):
-            version = None  # wildcard pin is a range, not an exact version
+        # `=1.22` (single =) is conda fuzzy (1.22.*) — a range, never exact
     return name, version, constraint
 
 
@@ -693,6 +729,12 @@ def parse_meta_yaml(path: Path) -> list[Dep]:
         if m and indent > req_indent:
             section, section_indent = m.group(1), indent
             continue
+        # Any OTHER sibling key (`run_constrained:`, `run_exports:`, …)
+        # closes the open section — its entries are not hard deps.
+        if section_indent is not None and indent <= section_indent \
+                and re.match(r"^[A-Za-z0-9_-]+:", stripped):
+            section, section_indent = None, None
+            continue
         if section and section_indent is not None and indent > section_indent \
                 and stripped.startswith("- "):
             parsed = _parse_recipe_entry(stripped[2:])
@@ -724,6 +766,8 @@ def parse_recipe_yaml(path: Path) -> list[Dep]:
         return []
 
     def _entries(node: Any) -> list[str]:
+        if isinstance(node, (dict, str)):  # malformed v1 shape — inert
+            return []
         out: list[str] = []
         for item in node or []:
             if isinstance(item, str):

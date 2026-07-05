@@ -27,6 +27,10 @@ requirements:
     - click 8.1.7
     - pyyaml ==6.0.1
     - typing-extensions  # [py<312]
+    - requests  # tested with 2.31
+  run_constrained:
+    - dask >=2021.1
+    - mpich * external_*
 
 test:
   imports:

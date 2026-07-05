@@ -1880,6 +1880,8 @@ def inventory_match(
     format: str | None = None,
     sbom_in: str | None = None,
     sbom_out: str | None = None,
+    conda_env: str | None = None,
+    venv: str | None = None,
     policy: str | None = None,
     weights: str | None = None,
     allow_stale: bool = False,
@@ -1897,7 +1899,8 @@ def inventory_match(
 
     Optional: `policy` (JSON/TOML thresholds → rc 2 on violations, the CI
     gate), `weights` (csv/json criticality sidecar), `sbom_in`+`sbom_out`
-    (annotate the input BOM with cfe:gap_status / cfe:conda_purl).
+    (annotate the input BOM with cfe:gap_status / cfe:conda_purl),
+    `conda_env`/`venv` (live-env intake, read offline).
     Refuses when the atlas is >14 days old unless allow_stale."""
     args = ["--json"]
     args += list(inputs or [])
@@ -1907,6 +1910,10 @@ def inventory_match(
         args += ["--sbom-in", sbom_in]
     if sbom_out:
         args += ["--sbom-out", sbom_out]
+    if conda_env:
+        args += ["--conda-env", conda_env]
+    if venv:
+        args += ["--venv", venv]
     if policy:
         args += ["--policy", policy]
     if weights:
