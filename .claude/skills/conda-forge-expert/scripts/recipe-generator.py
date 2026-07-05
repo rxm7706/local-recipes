@@ -670,6 +670,47 @@ def _resolve_license(info: dict, repository: str = "") -> str:
     return ""
 
 
+
+def _sdist_ships_python_code(sdist_path: Path) -> bool:
+    """G54 usability check: a metadata-only sdist (0 .py files) is unusable."""
+    try:
+        import tarfile as _tf
+        with _tf.open(sdist_path, "r:*") as tar:
+            return any(n.endswith(".py") for n in tar.getnames())
+    except Exception:
+        return True  # unreadable → don't block the sdist path on a probe error
+
+
+def _github_tag_source(repo_url: str, version: str):
+    """G54 step 2: try the GitHub tag archive (v<ver>, then <ver>).
+
+    Returns (templated_url, concrete_url, sha256) or None. The archive is
+    streamed once to compute the sha256 (G61: commit-archives drift, but tag
+    archives are the G54-preferred no-sdist source and hashed at author time).
+    """
+    import hashlib as _hl
+    m = re.match(r"https?://github\.com/([^/]+)/([^/#?]+)", repo_url or "")
+    if not (m and REQUESTS_AVAILABLE and requests is not None):
+        return None
+    owner, repo = m.group(1), m.group(2).removesuffix(".git")
+    for tag in (f"v{version}", version):
+        url = f"https://github.com/{owner}/{repo}/archive/refs/tags/{tag}.tar.gz"
+        try:
+            r = requests.get(url, timeout=120, stream=True)
+            if r.status_code != 200:
+                continue
+            h = _hl.sha256()
+            for chunk in r.iter_content(1 << 20):
+                h.update(chunk)
+            templated = url.replace(
+                f"/{tag}.tar.gz",
+                "/" + tag.replace(version, "${{ version }}") + ".tar.gz", 1)
+            return templated, url, h.hexdigest()
+        except requests.RequestException:
+            continue
+    return None
+
+
 def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> PackageInfo:
     """Fetch package info from PyPI.
 
@@ -765,6 +806,27 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
             )
             sha256 = release["digests"]["sha256"]
             break
+    # v8.70.0 (G54 / DW item 5): a chosen sdist must actually SHIP the module.
+    # Metadata-only sdists (0 .py files) are unusable — fall through to the
+    # GitHub tag archive; the wheel stays the LAST resort.
+    sdist_path = (
+        _ensure_sdist_cached(concrete_source_url, info["name"], version)
+        if concrete_source_url
+        else None
+    )
+    if sdist_path is not None and not _sdist_ships_python_code(sdist_path):
+        print(f"NOTE: {info['name']} sdist is metadata-only (0 .py files) — trying GitHub tag (G54)")
+        source_url = concrete_source_url = sha256 = ""
+        sdist_path = None
+
+    homepage, repository, documentation = _extract_project_urls(info)
+
+    if not source_url:
+        gh = _github_tag_source(repository or homepage, version)
+        if gh:
+            source_url, concrete_source_url, sha256 = gh
+            sdist_path = _ensure_sdist_cached(concrete_source_url, info["name"], version)
+
     if not source_url:
         # Wheel-only fallback: synthesise a pypi.org wheel URL from the
         # first wheel in the release. The Python-tag segment (`py3`,
@@ -803,11 +865,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     # accurate import-name from Cargo.toml [lib] / __init__.py, abi3 feature detection,
     # [project.scripts] entry-point extraction.
     # Download via the CONCRETE url; recipe-emitted `source_url` may be templated.
-    sdist_path = (
-        _ensure_sdist_cached(concrete_source_url, info["name"], version)
-        if concrete_source_url
-        else None
-    )
+    # (sdist_path already downloaded above during G54 source selection)
 
     # Prefer pyproject.toml [build-system].requires when sdist is available (G2 fix).
     build_backend = "setuptools"
@@ -845,8 +903,6 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
 
     # OS-conditional run deps from sys_platform markers (Wave D / S16).
     sys_platform_deps = _classify_sys_platform_deps(requires_dist)
-
-    homepage, repository, documentation = _extract_project_urls(info)
 
     return PackageInfo(
         name=info["name"],
@@ -895,7 +951,12 @@ def _render_cfe_block(info: "PackageInfo", conda_name: str, noarch_kind: str) ->
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     # purl-spec pypi normalization: lowercase + underscore->dash, DOTS KEPT (G98).
     pypi_purl_name = info.name.lower().replace("_", "-")
-    source_kind = "pypi-wheel" if ".whl" in (info.source_url or "") else "pypi-sdist"
+    if "github.com" in (info.source_url or ""):
+        source_kind = "github-tag:no-sdist-on-pypi-G54"
+    elif ".whl" in (info.source_url or ""):
+        source_kind = "pypi-wheel"
+    else:
+        source_kind = "pypi-sdist"
     import_names = f"[{info.import_name}]" if info.import_name else "[]"
     now_ver = _skill_version()
     return f"""
