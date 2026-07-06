@@ -1,0 +1,111 @@
+# Catalog for the target-state cf_atlas DAG prototype.
+#
+# Every dataset is a MemoryDataset (stub run, no IO). The kedro-viz `layer`
+# metadata models the real storage tiers of the migration:
+#   raw          — external API feeds / tarballs (18 resolve_*_urls endpoints)
+#   atlas        — today's cf_atlas.db tables -> tomorrow's DuckDB parquet
+#   views        — the 5 named views (query-time-correct surfaces)
+#   derived      — regenerated artifacts (purl export, BOMs, reports)
+#   read_surface — BSL / Vizro / kedro-mcp consumption layer
+#
+# Underscore keys are YAML anchors, ignored by the catalog loader.
+
+_raw: &raw
+  type: MemoryDataset
+  metadata:
+    kedro-viz:
+      layer: raw
+
+_atlas: &atlas
+  type: MemoryDataset
+  metadata:
+    kedro-viz:
+      layer: atlas
+
+_views: &views
+  type: MemoryDataset
+  metadata:
+    kedro-viz:
+      layer: views
+
+_derived: &derived
+  type: MemoryDataset
+  metadata:
+    kedro-viz:
+      layer: derived
+
+_read_surface: &read_surface
+  type: MemoryDataset
+  metadata:
+    kedro-viz:
+      layer: read_surface
+
+# --- raw API feeds -----------------------------------------------------------
+raw_conda_repodata: *raw
+raw_feedstock_outputs: *raw
+raw_cf_graph: *raw
+raw_anaconda_downloads: *raw
+raw_github_graphql: *raw
+raw_forge_apis: *raw
+raw_extra_registries: *raw
+raw_parselmouth_map: *raw
+raw_pypi_simple_index: *raw
+raw_pypi_project_json: *raw
+raw_bigquery_downloads: *raw
+raw_cross_channel_repodata: *raw
+raw_appthreat_vdb: *raw
+raw_cisa_kev_feed: *raw
+raw_epss_feed: *raw
+raw_cwe_catalog: *raw
+raw_project_manifest: *raw
+raw_endoflife_eol: *raw
+handoff_request: *raw
+
+# --- atlas tables (today cf_atlas.db, tomorrow DuckDB parquet) ----------------
+packages: *atlas
+feedstock_outputs_map: *atlas
+package_status: *atlas
+cf_graph_enrichment: *atlas
+download_counts: *atlas
+package_version_downloads: *atlas
+dependency_graph: *atlas
+feedstock_health: *atlas
+archived_feedstocks: *atlas
+vcs_versions: *atlas
+registry_versions: *atlas
+github_live: *atlas
+pypi_mapping: *atlas
+pypi_mapping_extended: *atlas
+pypi_universe: *atlas
+activity_snapshots: *atlas
+pypi_downloads: *atlas
+cross_channel_presence: *atlas
+pypi_intelligence: *atlas
+handoff_rows: *atlas
+readiness_scores: *atlas
+pypi_current_versions: *atlas
+cisa_kev: *atlas
+epss_scores: *atlas
+cwe_categories: *atlas
+vuln_rollup: *atlas
+package_version_vulns: *atlas
+lts_registry: *atlas
+
+# --- named views --------------------------------------------------------------
+v_packages_enriched: *views
+v_actionable_packages: *views
+v_pypi_intelligence_valid: *views
+v_pypi_candidates: *views
+v_current_version_vulns: *views
+
+# --- derived artifacts (regen after every rebuild) -----------------------------
+purl_export: *derived
+universe_sbom_bom: *derived
+inventory_report: *derived
+futures_scores: *derived
+recommend_2027_bom: *derived
+
+# --- read surface ---------------------------------------------------------------
+bsl_semantic_model: *read_surface
+vizro_dashboard: *read_surface
+kedro_mcp_tools: *read_surface

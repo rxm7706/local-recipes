@@ -1,0 +1,2 @@
+# No parameters — all nodes are stubs. The real migration will surface the
+# TTL windows (PHASE_*_TTL_DAYS) and profile switches here.

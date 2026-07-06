@@ -351,6 +351,11 @@ pixi run -e local-recipes bmad-preflight
 # Full diagnostic on the dev environment (also: run_system_health_check MCP tool)
 pixi run -e local-recipes health-check
 
+# Kedro-migration prototype (docs/specs/cfe-atlas-datapipeline-kedro-migration.md):
+# interactive kedro-viz DAG of the TARGET-STATE atlas pipeline / <1 s stub smoke run
+pixi run -e local-recipes kedro-viz-proto
+pixi run -e local-recipes kedro-run-proto
+
 # List root packages of a pixi/conda env's resolved dep graph (works for any env)
 pixi run -e local-recipes env-inspect                              # active env
 pixi run -e local-recipes env-inspect -- --environment build       # another pixi env
