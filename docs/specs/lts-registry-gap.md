@@ -4,7 +4,9 @@ part_id: lts-registry-gap
 display_name: lts-registry-gap suggester
 project_type_id: tooling
 date: 2026-07-06
-status: in-progress
+status: shipped
+implemented_by: conda-forge-expert v8.74.0
+shipped_ref: c428c5849aa88abccc170582c222babc6f6b1260
 spec_updated: 2026-07-06
 ---
 
