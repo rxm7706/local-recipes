@@ -1523,7 +1523,12 @@ def annotate_sbom(
         props.append({"name": "cfe:gap_status", "value": row["bucket"]})
         if row.get("conda_purl"):
             props.append({"name": "cfe:conda_purl", "value": row["conda_purl"]})
-    meta_props = doc.setdefault("metadata", {}).setdefault("properties", [])
+    # an explicit `"metadata": null` makes setdefault return None — guard
+    metadata = doc.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+        doc["metadata"] = metadata
+    meta_props = metadata.setdefault("properties", [])
     meta_props.append({"name": "cfe:atlas_built_at", "value": str(built_at)})
     return doc
 

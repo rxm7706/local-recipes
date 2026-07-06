@@ -146,7 +146,10 @@ def load_lts_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
         return {}
     try:
         doc = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except Exception:
+        # yaml raises YAMLError subclasses (not ValueError) on syntax
+        # errors — a corrupt registry degrades to bare-name slugs, never
+        # a crash (matches this docstring's contract)
         return {}
     if not isinstance(doc, dict):
         return {}
@@ -483,7 +486,10 @@ def _requires_python_excludes_314(rp: str) -> bool:
     (e.g. `>=3.8,<3.14`, `<3.13`) or an explicit `!=3.14` exclusion.
     Best-effort string parse."""
     import re
-    if re.search(r"!=\s*3\.14(\.\*)?", rp):
+    # negative lookahead: `!=3.14.1` excludes ONE patch release, not the
+    # minor — only `!=3.14` / `!=3.14.*` exclude the whole line (Gemini
+    # post-merge sweep, PR #36)
+    if re.search(r"!=\s*3\.14(?:\.\*)?(?![0-9]|\.[0-9])", rp):
         return True
     for m in re.finditer(r"<=?\s*3\.(\d+)", rp):
         minor = int(m.group(1))
@@ -631,9 +637,15 @@ def _score_user_weight(conn, conda_name, row, pkg):
     w = row.get("weight")
     if w is None:
         return None, False
+    # score_packages is a library API — a hand-edited --matches row can
+    # carry a non-numeric weight; unparseable → absent, never a crash
+    try:
+        val = float(w)
+    except (ValueError, TypeError):
+        return None, False
     # clamp BOTH ends — a negative sidecar weight must not drag the
     # composite below zero
-    return max(0.0, min(100.0, 40.0 + float(w) * 12.0)), True
+    return max(0.0, min(100.0, 40.0 + val * 12.0)), True
 
 
 def _score_freshness_policy(conn, conda_name, row, pkg):
@@ -772,9 +784,11 @@ def band_from_score(score, weights):
     return "replace"
 
 
-def derive_tier(conn, score, row, pkg, py314, lts, weights):
+def derive_tier(conn, score, row, pkg, py314, lts, weights, now=None):
     """The lattice meet: most-severe of the base band + all caps + all
-    floors. Returns (tier, reasons, alternatives)."""
+    floors. Returns (tier, reasons, alternatives). `now` keeps the silence
+    cap deterministic — same reference timestamp the caller threads
+    through EolClient and score_row."""
     h = weights["horizon"]
     base = band_from_score(score, weights)
     candidates: list[tuple[str, str]] = [(base, f"score band {base} ({score})")]
@@ -782,7 +796,7 @@ def derive_tier(conn, score, row, pkg, py314, lts, weights):
 
     if is_py and py314 == "py314-not-ready":
         candidates.append((h["py314_not_ready_cap"], "py314-not-ready caps at watch"))
-    if _silent_18mo(conn, row, pkg, weights):
+    if _silent_18mo(conn, row, pkg, weights, now):
         candidates.append((h["silence_cap"], ">18mo silence caps at watch"))
     if row.get("conda_name") and _kev_current(conn, row["conda_name"]):
         candidates.append((h["kev_cap"], "KEV-listed vuln on current version caps at watch"))
@@ -814,12 +828,13 @@ def derive_tier(conn, score, row, pkg, py314, lts, weights):
     return tier, reasons, alternatives
 
 
-def _silent_18mo(conn, row, pkg, weights):
+def _silent_18mo(conn, row, pkg, weights, now=None):
     days = weights["horizon"]["silence_cap_days"]
     upload = pkg.get("latest_conda_upload") if pkg else None
     if not upload:
         return False
-    age = (int(time.time()) - upload) / 86400
+    ref = now if now is not None else int(time.time())
+    age = (ref - upload) / 86400
     if age <= days:
         return False
     # AND no upstream movement: no positive lag and no failing CI churn signal
@@ -881,7 +896,7 @@ def score_row(conn, row, weights, eol_client, now):
             latest_upload_at=intel.get("latest_upload_at") if intel else None)
 
     tier, reasons, alternatives = derive_tier(
-        conn, score, row, pkg, py314, lts, weights)
+        conn, score, row, pkg, py314, lts, weights, now)
 
     signals_absent = list(row.get("signals_absent") or [])
     signals_absent += [a for a in absent if a not in signals_absent]

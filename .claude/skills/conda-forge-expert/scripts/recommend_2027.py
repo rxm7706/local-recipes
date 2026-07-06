@@ -104,29 +104,34 @@ def _notes_overrides(conn: sqlite3.Connection,
     names = [r["conda_name"] for r in scored if r.get("conda_name")]
     if not names:
         return out
-    marks = ",".join("?" for _ in names)
-    for conda_name, notes in conn.execute(
-        f"SELECT p.conda_name, v.notes FROM packages p "
-        f"JOIN v_pypi_intelligence_valid v ON v.pypi_name = p.pypi_name "
-        f"WHERE p.conda_name IN ({marks}) AND v.notes IS NOT NULL", names,
-    ):
-        notes_str = str(notes)
-        if _NOTES_TIER_MARK not in notes_str:
-            continue
-        tail = notes_str.split(_NOTES_TIER_MARK, 1)[1].split()
-        if not tail:
-            sys.stderr.write(f"  warn: {conda_name}: empty {_NOTES_TIER_MARK} "
-                             "marker in notes — override ignored\n")
-            continue
-        tier = tail[0].strip(".,;:!)")
-        if tier in _VALID_TIERS:
-            # exact conda identifier — never folded (conda names are exact)
-            out[conda_name.lower()] = {"tier": tier,
-                                       "reason": "pypi_intelligence.notes"}
-        else:
-            # overrides are never SILENTLY dropped — an unparseable tier warns
-            sys.stderr.write(f"  warn: {conda_name}: unrecognized futures tier "
-                             f"{tier!r} in notes — override ignored\n")
+    # chunk-at-500: the house convention (_intel_for, enrichment_lookup) —
+    # keeps real-estate inventories (1,149 rows measured) under any
+    # SQLite parameter limit, old builds included
+    for i in range(0, len(names), 500):
+        chunk = names[i:i + 500]
+        marks = ",".join("?" for _ in chunk)
+        for conda_name, notes in conn.execute(
+            f"SELECT p.conda_name, v.notes FROM packages p "
+            f"JOIN v_pypi_intelligence_valid v ON v.pypi_name = p.pypi_name "
+            f"WHERE p.conda_name IN ({marks}) AND v.notes IS NOT NULL", chunk,
+        ):
+            notes_str = str(notes)
+            if _NOTES_TIER_MARK not in notes_str:
+                continue
+            tail = notes_str.split(_NOTES_TIER_MARK, 1)[1].split()
+            if not tail:
+                sys.stderr.write(f"  warn: {conda_name}: empty {_NOTES_TIER_MARK} "
+                                 "marker in notes — override ignored\n")
+                continue
+            tier = tail[0].strip(".,;:!)")
+            if tier in _VALID_TIERS:
+                # exact conda identifier — never folded (conda names are exact)
+                out[conda_name.lower()] = {"tier": tier,
+                                           "reason": "pypi_intelligence.notes"}
+            else:
+                # overrides are never SILENTLY dropped — unparseable tier warns
+                sys.stderr.write(f"  warn: {conda_name}: unrecognized futures "
+                                 f"tier {tier!r} in notes — override ignored\n")
     return out
 
 
@@ -371,7 +376,11 @@ def annotate_sbom(sbom_path: Path, scored: list[dict[str, Any]],
         props.append({"name": "cfe:lts_status", "value": str(row["lts_status"])})
         if row.get("eol_date"):
             props.append({"name": "cfe:eol_date", "value": str(row["eol_date"])})
-    metadata = doc.setdefault("metadata", {})
+    # an explicit `"metadata": null` makes setdefault return None — guard
+    metadata = doc.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+        doc["metadata"] = metadata
     meta_props = [p for p in metadata.get("properties") or []
                   if p.get("name") != "cfe:atlas_built_at"]
     meta_props.append({"name": "cfe:atlas_built_at", "value": str(built_at)})
