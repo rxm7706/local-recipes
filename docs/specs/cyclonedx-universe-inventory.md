@@ -95,8 +95,15 @@ spec_updated: 2026-07-05
   S8 web slice shipped 2026-07-06** (branch
   `claude/wave-d-s8-recommend-2027` — recommend-2027 scorecard + MCP tool
   + the full calibration gate as fixture tests + the dated `kev_cap`
-  calibration amendment + v8.71.0; the Wave D local gates remain). Resume
-  at **Wave D local gates**, then **Wave E / S9**.
+  calibration amendment + v8.71.0; PRs #36+#37 merged 2026-07-06).
+  **Wave E S9 docs shipped 2026-07-06** (branch `claude/wave-e-s9-docs` —
+  mcp-tools/+4, SKILL.md CLI table +7, overview persona rows,
+  cheatsheet, regen cadence, dependency-input-formats S5a re-grounding
+  with policy tiers, kedro cross-spec extension, v8.72.0). Remaining:
+  **Wave D local gates** (user machine — live endoflife smoke, measured
+  distributions, real Phase-P path) and the **S-retro** (Rule 2; gated on
+  those gates — runs the closing all-specs sweep + the BMAD baseline
+  re-stamp, both local). Resume at **Wave D local gates → S-retro**.
 
 ### Execution-environment split (web pass)
 

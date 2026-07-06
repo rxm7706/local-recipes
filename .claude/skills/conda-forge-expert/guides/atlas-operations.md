@@ -58,6 +58,22 @@ vdb is the dominant cost; the rest is < 5 minutes combined). Warm-daily
 under `--profile maintainer` runs ~3-5 min (Phase H drops ~5 min → ~30 s
 thanks to the schema v21 serial-aware eligible-rows gate).
 
+### Post-rebuild artifact regeneration (cyclonedx-universe-inventory)
+
+After every atlas rebuild, regenerate the derived purl/SBOM artifacts —
+they snapshot the DB and go stale with it:
+
+```bash
+pixi run -e local-recipes export-purls -- --json     # six purl+mapping artifacts
+pixi run -e local-recipes universe-sbom -- --json    # full-universe BOM
+```
+
+No automatic hook is wired (optional follow-up); the enforcement is
+decision 6's freshness gate — `universe-sbom`, `inventory-match`,
+`library-futures`, and `recommend-2027` REFUSE an atlas older than 14
+days (`--allow-stale` overrides), so stale derived artifacts cannot be
+regenerated silently from stale data.
+
 ---
 
 ## Cron schedules — recommended cadence per data source
