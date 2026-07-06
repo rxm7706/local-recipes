@@ -37,6 +37,7 @@ Pixi tasks:
 from __future__ import annotations
 
 import argparse
+import functools as _functools
 import json
 import math
 import os
@@ -8026,7 +8027,26 @@ def _normalize_license_to_spdx(raw: str | None) -> str | None:
         last = raw.rsplit("::", 1)[-1].strip().lower()
         if last in _LICENSE_TO_SPDX:
             return _LICENSE_TO_SPDX[last]
+    # A literal SPDX id the common-form map doesn't cover (live case:
+    # `BUSL-1.1` — non-OSI ids are deliberately absent from the map) passes
+    # through case-corrected via the Wave B vendored SPDX enum, so the S6
+    # OSI-eligibility blocker can say `non-osi-license` instead of the
+    # less-actionable `license-unknown`. Enum unavailable → None (unchanged).
+    canon = _spdx_canonical_ids().get(key)
+    if canon:
+        return canon
     return None
+
+
+@_functools.lru_cache(maxsize=1)
+def _spdx_canonical_ids() -> dict[str, str]:
+    """lowercase → canonical SPDX id, from the vendored CycloneDX enum
+    (`data/spdx.schema.json`, shared with `_sbom.normalize_license`)."""
+    try:
+        from _sbom import _spdx_id_enum
+        return {i.lower(): i for i in _spdx_id_enum()}
+    except ImportError:
+        return {}
 
 
 def _classify_packaging_shape(json_doc: dict) -> str:

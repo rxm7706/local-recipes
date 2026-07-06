@@ -5,10 +5,11 @@ conda-forge atlas (cyclonedx-universe-inventory Wave C / S5).
 
 Reads a user inventory (manifests, lock files, SBOMs, `pip list` /
 `conda list` text — all via `scan_project`'s shared parsers, S5a), resolves
-every dep to a conda-forge package (mapping → inverse-G10 bare fold; live
-channeldata probing per decision 4 is the LOCAL wave), then buckets each row
-on the three-way version comparison (decision 3: inventory-pinned vs
-cf-latest vs upstream-of-record):
+every dep to a conda-forge package (mapping → inverse-G10 bare fold → the
+decision-4 LIVE channeldata cross-check of every would-be-missing row,
+implemented in the local wave; --offline/--no-live-cf revert to atlas-only),
+then buckets each row on the three-way version comparison (decision 3:
+inventory-pinned vs cf-latest vs upstream-of-record):
 
   ADD              Python, not on conda-forge (readiness/template attached)
   ADD-NONPYPI      non-Python ecosystem, not on conda-forge
@@ -29,11 +30,11 @@ string-inequality fallback → unreliable).
 
 Freshness policy check (Python Dependency Policy defaults, dated 2026-07-05,
 overridable via --policy): per pinned dep, the ELIGIBLE version set comes
-from an injectable provider — the default offline provider derives it from
-`upstream_versions_history` (the live PyPI eligible-set provider — yanked /
-requires-python filtering — lands in the LOCAL wave). Dense history
-(≥ 10 eligible) → pin must sit in the top 20th percentile; sparse → last
-eligible − 1 suffices.
+from an injectable provider — the DEFAULT (local wave) is the live PyPI
+provider (pypi.org JSON per pypi-mapped package, yanked + requires-python
+filtered, history fallback); --offline reverts to the
+`upstream_versions_history` provider. Dense history (≥ 10 eligible) → pin
+must sit in the top 20th percentile; sparse → last eligible − 1 suffices.
 
 Policy gate (CI): --policy <json|toml> + deterministic exit codes —
 0 = pass, 2 = policy violations, 1 = error (incl. usage errors — exit 2 is
@@ -44,25 +45,28 @@ is set); malformed/unknown policy keys are themselves a violation
 attaches the user-estate criticality multiplier per package (conda-forge
 blast radius is not the user's blast radius).
 
-Transitive resolution of bare manifests (pip/conda solve, policy § 3) is
-deliberately NOT run here: rows from unresolved manifests are flagged
-`resolution: direct` (vs `locked`); the resolver integration is the LOCAL
-wave (needs network + solvers).
+Transitive resolution of bare manifests (policy § 3, local wave): direct
+rows resolve via pip's `--dry-run --report` (PyPI track) / a py-rattler
+conda-forge solve (conda track) and upgrade to `resolution: resolved`
+(+ depth/fan-out for S7); resolver-discovered packages join as
+`via: transitive` rows. `locked` rows are used as-given. Resolver failure
+warns and leaves rows `direct` (--no-resolve/--offline skip deliberately).
 
 Freshness contract (decision 6): refuses an atlas older than 14 days or
 with no parseable built_at (--allow-stale overrides).
 
 Live-env intake: --conda-env / --venv read installed metadata offline via
-scan_project's existing walkers. Container-image intake
-(--image/--oci-archive) is the LOCAL wave (needs container tooling) — use
-`scan-project --image ... --sbom cyclonedx` and feed the BOM via --sbom-in.
+scan_project's existing walkers. Container-image intake stays via
+scan-project (`scan-project --image ... --sbom cyclonedx` → --sbom-in);
+verified end-to-end in the Wave C local gates.
 
 CLI:
   inventory-match [INPUT ...] [--format FMT] [--sbom-in BOM]
                   [--conda-env DIR] [--venv DIR]
                   [--policy FILE] [--weights FILE]
                   [--report PATH] [--json] [--sbom-out PATH]
-                  [--allow-stale]
+                  [--allow-stale] [--offline] [--no-resolve]
+                  [--no-live-cf] [--python-version X.Y]
 """
 from __future__ import annotations
 
@@ -298,6 +302,10 @@ def dedupe_deps(deps: list[Any]) -> list[dict[str, Any]]:
                 "manifests": [d.manifest],
                 "resolution": d.extras.get("resolution", "locked"),
                 "policy_tier": tier,
+                **({"depth": d.extras["depth"]}
+                   if d.extras.get("depth") is not None else {}),
+                **({"fanout": d.extras["fanout"]}
+                   if d.extras.get("fanout") is not None else {}),
             }
             continue
         if d.manifest not in row["manifests"]:
@@ -312,8 +320,16 @@ def dedupe_deps(deps: list[Any]) -> list[dict[str, Any]]:
         # bound from another manifest must not masquerade as its metadata)
         if row["pinned"] is None and row["constraint"] is None:
             row["constraint"] = constraint
-        if d.extras.get("resolution") == "locked":
-            row["resolution"] = "locked"
+        # resolution rank: locked (as-given complete) > resolved > direct
+        res = d.extras.get("resolution")
+        if res == "locked" or (res == "resolved" and row["resolution"] == "direct"):
+            row["resolution"] = res
+        for graph_key in ("depth", "fanout"):
+            v = d.extras.get(graph_key)
+            if v is not None:
+                cur = row.get(graph_key)
+                row[graph_key] = v if cur is None else (
+                    min(cur, v) if graph_key == "depth" else max(cur, v))
         if _TIER_RANK.get(tier, 1) < _TIER_RANK.get(row["policy_tier"], 1):
             row["policy_tier"] = tier
     for row in merged.values():
@@ -423,6 +439,471 @@ def history_version_provider(conn: sqlite3.Connection) -> Callable[[str], list[s
 
     provider.basis = "upstream_versions_history (offline)"  # type: ignore[attr-defined]
     return provider
+
+
+# ── local wave (Wave C): live providers + transitive resolver ────────────────
+# Everything in this section needs network and/or tooling the web container
+# lacks (pip's resolver, py-rattler, pypi.org JSON, live channeldata, the
+# vdb-derived vuln rollups). Each surface degrades gracefully — any failure
+# warns and falls back to the web-slice (offline) behavior, never a hard
+# match failure. `--offline` disables the lot explicitly.
+
+CACHE_DIR = _get_data_dir() / "cache"
+CHANNELDATA_CACHE = CACHE_DIR / "channeldata-inventory-match.json"
+CHANNELDATA_TTL_S = 24 * 3600
+_LIVE_TIMEOUT_S = 30
+_RESOLVE_TIMEOUT_S = 900
+
+
+def _fetch_url_bytes(urls: list[str], timeout: int = _LIVE_TIMEOUT_S) -> bytes | None:
+    """First-success fetch over an ordered URL chain via _http (enterprise
+    routing + truststore). None when every URL fails."""
+    import _http
+    for url in urls:
+        try:
+            with _http.open_url(_http.make_request(url), timeout=timeout) as resp:
+                return resp.read()
+        except Exception:  # noqa: BLE001 — any transport failure → next URL
+            continue
+    return None
+
+
+def fetch_live_channeldata(ttl_s: int = CHANNELDATA_TTL_S) -> dict[str, Any] | None:
+    """TTL-cached live conda-forge `channeldata.json` packages map — the
+    decision-4 / G74 cross-check source (the atlas can lag freshly-created
+    feedstocks). Returns None when unreachable (caller warns + rows keep the
+    atlas-only verdict, stamped `live_cf_check: unavailable`)."""
+    try:
+        if (CHANNELDATA_CACHE.exists()
+                and time.time() - CHANNELDATA_CACHE.stat().st_mtime < ttl_s):
+            return json.loads(
+                CHANNELDATA_CACHE.read_text(encoding="utf-8")).get("packages")
+    except (OSError, json.JSONDecodeError):
+        pass
+    import _http
+    data = _fetch_url_bytes(
+        [f"{b.rstrip('/')}/channeldata.json"
+         for b in _http.resolve_conda_forge_urls()])
+    if data is None:
+        return None
+    try:
+        packages = json.loads(data).get("packages")
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(packages, dict) or not packages:
+        return None
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        _http.atomic_write_bytes(CHANNELDATA_CACHE, data)
+    except OSError:
+        pass
+    return packages
+
+
+def _needs_live_cf_check(row: dict[str, Any]) -> bool:
+    """Rows about to be REPORTED as missing from conda-forge (decision 4:
+    a 'missing' declaration is destructive/report-final)."""
+    if row["bucket"] in ("ADD", "ADD-NONPYPI"):
+        return True
+    return (row["bucket"] == "UNKNOWN" and row["ecosystem"] == "conda"
+            and "conda_forge_presence" in row["signals_absent"])
+
+
+def apply_live_cf_check(rows: list[dict[str, Any]],
+                        channeldata: dict[str, Any]) -> dict[str, int]:
+    """Decision-4 post-pass: cross-check every would-be-missing row against
+    LIVE channeldata. A hit means the atlas is stale for that package — the
+    row is re-bucketed against the channeldata version and stamped
+    `atlas_stale`; a miss is stamped `live_cf_check: absent-confirmed`."""
+    stats = {"checked": 0, "recovered": 0, "confirmed_absent": 0}
+    fold_idx: dict[str, str] = {}
+    for k in channeldata:
+        fold_idx.setdefault(fold_name(k), k)
+    for row in rows:
+        if not _needs_live_cf_check(row):
+            continue
+        stats["checked"] += 1
+        name = row["name"]
+        if name in channeldata:
+            hit_name = name
+        elif name.lower() in channeldata:
+            hit_name = name.lower()
+        else:
+            hit_name = fold_idx.get(fold_name(name))
+        if hit_name is None:
+            row["live_cf_check"] = "absent-confirmed"
+            stats["confirmed_absent"] += 1
+            continue
+        cd_version = (channeldata.get(hit_name) or {}).get("version")
+        row["conda_name"] = hit_name
+        row["cf_latest"] = cd_version
+        row["match_via"] = "channeldata_live"
+        row["match_confidence"] = ("exact" if row["ecosystem"] == "conda"
+                                   and hit_name == name.lower() else "likely")
+        row["atlas_stale"] = True
+        row["live_cf_check"] = "present"
+        row["conda_purl"] = (
+            f"pkg:conda/{hit_name}@{cd_version}{CHANNEL_QUALIFIER}"
+            if cd_version else f"pkg:conda/{hit_name}{CHANNEL_QUALIFIER}")
+        if "upstream_freshness" not in row["signals_absent"]:
+            row["signals_absent"].append("upstream_freshness")
+        if cd_version is None:
+            row["bucket"] = "UNKNOWN"
+            row["signals_absent"].append("cf_version")
+        else:
+            c, ok = cmp_versions(row.get("pinned"), cd_version)
+            row["bucket"] = ("UPDATE-PIN" if c is not None and c < 0
+                             else "CURRENT")
+            row["version_comparison"] = "reliable" if ok else "unreliable"
+        stats["recovered"] += 1
+    return stats
+
+
+def _py_admits(requires_python: str, pyv: str) -> bool:
+    """Does a requires-python spec admit runtime `pyv`? Unparseable specs
+    never exclude (fail-open per-version; the eligible set stays useful)."""
+    try:
+        from packaging.specifiers import SpecifierSet
+        return pyv in SpecifierSet(requires_python)
+    except Exception:  # noqa: BLE001 — malformed upstream spec
+        return True
+
+
+def _fetch_pypi_release_map(pypi_name: str) -> dict[str, Any] | None:
+    import _http
+    data = _fetch_url_bytes(_http.resolve_pypi_json_urls(pypi_name))
+    if data is None:
+        return None
+    try:
+        releases = json.loads(data).get("releases")
+    except json.JSONDecodeError:
+        return None
+    return releases if isinstance(releases, dict) else None
+
+
+def live_pypi_version_provider(
+    conn: sqlite3.Connection,
+    *,
+    py_version: str | None = None,
+    fetch: Callable[[str], dict[str, Any] | None] = _fetch_pypi_release_map,
+) -> Callable[[str], list[str] | None]:
+    """LOCAL-wave eligible-set provider (policy: runtime-Python-compatible,
+    non-yanked). One pypi.org JSON fetch per pypi-mapped matched package
+    (bounded to the inventory slice, memoized per run); releases that are
+    fully yanked or whose requires-python excludes the runtime are dropped.
+    Falls back to the offline history provider per name on any failure or
+    for packages with no PyPI identity."""
+    fallback = history_version_provider(conn)
+    pypi_by_conda = {
+        r[0]: r[1] for r in conn.execute(
+            "SELECT conda_name, pypi_name FROM packages "
+            "WHERE conda_name IS NOT NULL AND pypi_name IS NOT NULL "
+            "AND pypi_name != ''")
+    }
+    pyv = py_version or ".".join(str(v) for v in sys.version_info[:3])
+    stats = {"live": 0, "fallback": 0}
+
+    @functools.lru_cache(maxsize=4096)
+    def _eligible(pypi_name: str) -> tuple[str, ...] | None:
+        releases = fetch(pypi_name)
+        if releases is None:
+            return None
+        eligible = []
+        for ver, files in releases.items():
+            if not files or not isinstance(files, list):
+                continue  # no artifacts → not installable
+            if all(f.get("yanked") for f in files):
+                continue
+            rp = next((f.get("requires_python") for f in files
+                       if f.get("requires_python")), None)
+            if rp and not _py_admits(rp, pyv):
+                continue
+            eligible.append(ver)
+        return tuple(eligible)
+
+    def provider(conda_name: str) -> list[str] | None:
+        pypi_name = pypi_by_conda.get(conda_name)
+        if pypi_name:
+            e = _eligible(pypi_name)
+            if e is not None and len(e) >= 2:
+                stats["live"] += 1
+                return sorted(e)
+        stats["fallback"] += 1
+        return fallback(conda_name)
+
+    provider.basis = (  # type: ignore[attr-defined]
+        f"pypi.org JSON (live; yanked + requires-python[{pyv}] filtered), "
+        "upstream_versions_history fallback")
+    provider.stats = stats  # type: ignore[attr-defined]
+    return provider
+
+
+# ── transitive resolver (policy § 3) ─────────────────────────────────────────
+
+def _spec_string(d: Any, *, conda: bool = False) -> str:
+    pinned, constraint = _effective_pin(d)
+    if pinned:
+        return f"{d.name} =={pinned}" if conda else f"{d.name}=={pinned}"
+    if constraint:
+        return f"{d.name} {constraint}" if conda else f"{d.name}{constraint}"
+    return d.name
+
+
+def _pip_report(specs: list[str], warnings: list[str]) -> dict[str, Any] | None:
+    """`pip install --dry-run --report` (installation report, pip ≥ 23) —
+    the policy-named PyPI resolver. None on failure."""
+    import subprocess
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+        report_path = Path(tmp.name)
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--dry-run",
+             "--ignore-installed", "--quiet", "--report", str(report_path),
+             *specs],
+            capture_output=True, text=True, timeout=_RESOLVE_TIMEOUT_S)
+        if proc.returncode != 0:
+            tail = (proc.stderr or proc.stdout or "").strip().splitlines()
+            warnings.append("pip resolver failed — pypi rows stay direct"
+                            + (f": {tail[-1]}" if tail else ""))
+            return None
+        return json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError) as exc:
+        warnings.append(f"pip resolver unavailable ({exc}) — pypi rows stay direct")
+        return None
+    finally:
+        report_path.unlink(missing_ok=True)
+
+
+def derive_pip_graph(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """fold → {name, version, requested, depth, fanout} from a pip
+    installation report. Edges come from each package's requires_dist with
+    markers evaluated against the report's environment (extra unset); depth
+    is BFS from the requested roots; fanout is the resolved out-degree.
+    Marker-hidden reachability leaves depth None (still a resolved row)."""
+    env = report.get("environment") or {}
+    nodes: dict[str, dict[str, Any]] = {}
+    requires: dict[str, list[str]] = {}
+    for item in report.get("install", []):
+        meta = item.get("metadata") or {}
+        name = meta.get("name")
+        if not name:
+            continue
+        f = fold_name(name)
+        nodes[f] = {"name": name, "version": meta.get("version"),
+                    "requested": bool(item.get("requested"))}
+        requires[f] = meta.get("requires_dist") or []
+    edges: dict[str, set[str]] = {f: set() for f in nodes}
+    try:
+        from packaging.markers import default_environment
+        from packaging.requirements import Requirement
+        menv = {**default_environment(), **env, "extra": ""}
+    except ImportError:
+        Requirement = None  # type: ignore[assignment]
+        menv = {}
+    if Requirement is not None:
+        for f, reqs in requires.items():
+            for spec in reqs:
+                try:
+                    r = Requirement(spec)
+                    if r.marker is not None and not r.marker.evaluate(menv):
+                        continue
+                except Exception:  # noqa: BLE001 — malformed/extra-only marker
+                    continue
+                tf = fold_name(r.name)
+                if tf in nodes:
+                    edges[f].add(tf)
+    depth = {f: 0 for f, n in nodes.items() if n["requested"]}
+    queue = list(depth)
+    while queue:
+        cur = queue.pop(0)
+        for nxt in sorted(edges.get(cur, ())):
+            if nxt not in depth:
+                depth[nxt] = depth[cur] + 1
+                queue.append(nxt)
+    for f, n in nodes.items():
+        n["depth"] = depth.get(f)
+        n["fanout"] = len(edges.get(f, ()))
+    return nodes
+
+
+def _conda_solve_records(specs: list[str],
+                         warnings: list[str]) -> list[Any] | None:
+    """py-rattler conda-forge solve for the conda track. None on failure."""
+    try:
+        import asyncio
+        import datetime as _dt
+        import rattler
+
+        async def _solve() -> list[Any]:
+            vps = None
+            for attr in ("detect", "current"):
+                try:
+                    vps = getattr(rattler.VirtualPackage, attr)()
+                    break
+                except Exception:  # noqa: BLE001
+                    continue
+            return await rattler.solve(
+                ["conda-forge"], specs,
+                platforms=[rattler.Platform.current(), rattler.Platform("noarch")],
+                virtual_packages=vps,
+                timeout=_dt.timedelta(seconds=_RESOLVE_TIMEOUT_S))
+
+        return asyncio.run(_solve())
+    except Exception as exc:  # noqa: BLE001 — solver missing/unsolvable/offline
+        warnings.append(f"conda solve failed ({type(exc).__name__}: {exc}) "
+                        "— conda rows stay direct")
+        return None
+
+
+def derive_conda_graph(records: list[Any],
+                       requested: set[str]) -> dict[str, dict[str, Any]]:
+    """lowercase-name → {name, version, requested, depth, fanout} from
+    solved RepoDataRecords (edges from each record's `depends` specs)."""
+    nodes: dict[str, dict[str, Any]] = {}
+    edges: dict[str, set[str]] = {}
+    for rec in records:
+        name = getattr(rec.name, "normalized", None) or str(rec.name)
+        key = name.lower()
+        nodes[key] = {"name": name, "version": str(rec.version),
+                      "requested": key in requested}
+        edges[key] = {d.split()[0].lower() for d in (rec.depends or []) if d}
+    for key in edges:
+        edges[key] = {d for d in edges[key] if d in nodes}
+    depth = {k: 0 for k, n in nodes.items() if n["requested"]}
+    queue = list(depth)
+    while queue:
+        cur = queue.pop(0)
+        for nxt in sorted(edges.get(cur, ())):
+            if nxt not in depth:
+                depth[nxt] = depth[cur] + 1
+                queue.append(nxt)
+    for key, n in nodes.items():
+        n["depth"] = depth.get(key)
+        n["fanout"] = len(edges.get(key, ()))
+    return nodes
+
+
+def resolve_transitive(deps: list[Any], warnings: list[str]) -> dict[str, int]:
+    """Policy § 3: bare-manifest (`resolution: direct`) rows are resolved to
+    the full graph before matching — PyPI track via pip's resolver, conda
+    track via a py-rattler conda-forge solve. Direct rows upgrade to
+    `resolution: resolved` (+ depth/fanout for S7); resolver-discovered
+    transitive packages append as new rows (`via: transitive`). Any resolver
+    failure warns and leaves the affected rows `direct`."""
+    stats = {"pypi_upgraded": 0, "conda_upgraded": 0, "added": 0}
+    direct = [d for d in deps if d.name and d.extras.get("resolution") == "direct"]
+    pypi_direct = [d for d in direct if d.ecosystem == "pypi"]
+    conda_direct = [d for d in direct if d.ecosystem == "conda"]
+
+    def _tier(group: list[Any]) -> str:
+        tiers = [d.extras.get("policy_tier", "tool") for d in group]
+        return min(tiers, key=lambda t: _TIER_RANK.get(t, 1)) if tiers else "tool"
+
+    if pypi_direct:
+        report = _pip_report([_spec_string(d) for d in pypi_direct], warnings)
+        if report is not None:
+            nodes = derive_pip_graph(report)
+            covered = set()
+            for d in pypi_direct:
+                node = nodes.get(fold_name(d.name))
+                if node is None:
+                    continue
+                covered.add(fold_name(d.name))
+                d.extras.update(
+                    resolution="resolved",
+                    depth=node["depth"] if node["depth"] is not None else 0,
+                    fanout=node["fanout"])
+                if not d.version:
+                    d.version = node["version"]
+                stats["pypi_upgraded"] += 1
+            tier = _tier(pypi_direct)
+            label = f"resolved:{pypi_direct[0].manifest}"
+            for f, node in sorted(nodes.items()):
+                if f in covered or node["requested"]:
+                    continue
+                deps.append(sp.Dep(
+                    name=node["name"], version=node["version"],
+                    ecosystem="pypi", manifest=label,
+                    extras={"resolution": "resolved", "policy_tier": tier,
+                            "depth": node["depth"], "fanout": node["fanout"],
+                            "via": "transitive"}))
+                stats["added"] += 1
+
+    if conda_direct:
+        records = _conda_solve_records(
+            [_spec_string(d, conda=True) for d in conda_direct], warnings)
+        if records is not None:
+            requested = {d.name.lower() for d in conda_direct}
+            nodes = derive_conda_graph(records, requested)
+            covered = set()
+            for d in conda_direct:
+                node = nodes.get(d.name.lower())
+                if node is None:
+                    continue
+                covered.add(d.name.lower())
+                d.extras.update(
+                    resolution="resolved",
+                    depth=node["depth"] if node["depth"] is not None else 0,
+                    fanout=node["fanout"])
+                if not d.version:
+                    d.version = node["version"]
+                stats["conda_upgraded"] += 1
+            tier = _tier(conda_direct)
+            label = f"resolved:{conda_direct[0].manifest}"
+            for key, node in sorted(nodes.items()):
+                if key in covered or node["requested"]:
+                    continue
+                deps.append(sp.Dep(
+                    name=node["name"], version=node["version"],
+                    ecosystem="conda", manifest=label,
+                    extras={"resolution": "resolved", "policy_tier": tier,
+                            "depth": node["depth"], "fanout": node["fanout"],
+                            "via": "transitive"}))
+                stats["added"] += 1
+    return stats
+
+
+# ── vuln rollups (vdb-derived Phase G posture, read from the atlas) ──────────
+
+_VULN_COLS = ("vuln_critical_affecting_current", "vuln_high_affecting_current",
+              "vuln_kev_affecting_current", "vuln_max_epss_score")
+
+# policy `vulns.*` threshold key → the attached rollup field it gates
+_VULN_THRESHOLDS = {"max_critical": "critical", "max_high": "high",
+                    "max_kev": "kev"}
+
+
+def attach_vuln_rollups(conn: sqlite3.Connection,
+                        rows: list[dict[str, Any]]) -> None:
+    """Attach the atlas's Phase G vuln rollups (CURRENT-cf-version posture —
+    stamped as such) to atlas-matched rows; matched rows with no rollup data
+    gain `signals_absent: vuln_rollups` so fail-closed policies see the gap."""
+    names = sorted({r["conda_name"] for r in rows if r.get("conda_name")})
+    if not names:
+        return
+    got: dict[str, dict[str, Any]] = {}
+    for i in range(0, len(names), 500):
+        chunk = names[i:i + 500]
+        marks = ",".join("?" for _ in chunk)
+        for row in conn.execute(
+            f"SELECT conda_name, {', '.join(_VULN_COLS)} FROM packages "
+            f"WHERE conda_name IN ({marks})", chunk,
+        ):
+            if any(v is not None for v in row[1:]):
+                got[row[0]] = {
+                    "critical": row[1] or 0, "high": row[2] or 0,
+                    "kev": row[3] or 0, "max_epss": row[4],
+                    "basis": "atlas Phase G rollups (current cf version)",
+                }
+    for r in rows:
+        cn = r.get("conda_name")
+        if not cn:
+            continue
+        if cn in got:
+            r["vulns"] = got[cn]
+        elif "vuln_rollups" not in r["signals_absent"]:
+            r["signals_absent"].append("vuln_rollups")
 
 
 # ── atlas indexes ────────────────────────────────────────────────────────────
@@ -568,6 +1049,8 @@ def match_inventory(
                                    "constraint", "manifests", "resolution",
                                    "policy_tier")},
             **({"pin_conflict": inv["pin_conflict"]} if inv.get("pin_conflict") else {}),
+            **({"depth": inv["depth"]} if inv.get("depth") is not None else {}),
+            **({"fanout": inv["fanout"]} if inv.get("fanout") is not None else {}),
             "conda_name": None, "cf_latest": None, "match_via": None,
             "match_source": None, "match_confidence": None,
             "upstream_version": None, "upstream_source": None,
@@ -702,6 +1185,7 @@ def match_inventory(
 
         row["freshness"] = freshness_check(inv["pinned"], provider(conda_name))
         out.append(row)
+    attach_vuln_rollups(conn, out)
     return out
 
 
@@ -751,11 +1235,18 @@ def evaluate_policy(rows: list[dict[str, Any]], policy: dict[str, Any]) -> dict[
       license.require_present (bool)    matched rows must carry a license
       license.deny ([spdx ids])         denylisted licenses (matched rows)
       metadata.max_signals_absent_rows  rows with ANY signals_absent
+      vulns.max_critical (int)          rows whose matched package carries
+                                        >0 critical vulns affecting its
+                                        CURRENT cf version (Phase G rollups)
+      vulns.max_high (int)              same, high severity
+      vulns.max_kev (int)               same, CISA-KEV-listed
       block_on_missing_data (bool)      freshness 'unknown' rows count as
-                                        failures (fail-closed; default true
-                                        when a freshness threshold is set)
+                                        failures, and rows missing vuln
+                                        rollup data count against every
+                                        vulns threshold (fail-closed;
+                                        default true when the corresponding
+                                        threshold is set)
 
-    Vulnerability-severity thresholds are the LOCAL wave (need the vdb).
     Unknown top-level keys, unknown bucket names, and malformed threshold
     shapes are `policy.schema` VIOLATIONS (fail-closed — a typo'd gate must
     never silently pass CI).
@@ -786,6 +1277,13 @@ def evaluate_policy(rows: list[dict[str, Any]], policy: dict[str, Any]) -> dict[
         schema_errors.append("license must be a table; license.deny must be a list")
     if "metadata" in policy and not isinstance(policy["metadata"], dict):
         schema_errors.append("metadata must be a table")
+    if "vulns" in policy:
+        vp = policy["vulns"]
+        if not isinstance(vp, dict):
+            schema_errors.append("vulns must be a table")
+        else:
+            for key in sorted(set(vp) - set(_VULN_THRESHOLDS)):
+                schema_errors.append(f"unknown vulns key {key!r}")
     if schema_errors:
         violations.append({
             "check": "policy.schema",
@@ -862,14 +1360,29 @@ def evaluate_policy(rows: list[dict[str, Any]], policy: dict[str, Any]) -> dict[
                 "rows": _named(gaps),
             })
 
-    if "vulns" in policy:
-        violations.append({
-            "check": "vulns",
-            "limit": None, "actual": None,
-            "rows": [],
-            "note": "vulnerability thresholds need the local vdb — "
-                    "unsupported in this environment (fail-closed)",
-        })
+    vuln_pol = policy.get("vulns")
+    if isinstance(vuln_pol, dict):
+        block_missing = policy.get("block_on_missing_data", True)
+        matched = [r for r in rows if r.get("conda_name")]
+        missing = ([r for r in matched
+                    if "vuln_rollups" in r["signals_absent"]]
+                   if block_missing else [])
+        for key, field in _VULN_THRESHOLDS.items():
+            if key not in vuln_pol:
+                continue
+            hits = [r for r in matched
+                    if (r.get("vulns") or {}).get(field, 0) > 0]
+            offending = hits + [r for r in missing if r not in hits]
+            if len(offending) > int(vuln_pol[key]):
+                violations.append({
+                    "check": f"vulns.{key}",
+                    "limit": int(vuln_pol[key]),
+                    "actual": len(offending),
+                    "rows": _named(offending),
+                    **({"note": f"{len(missing)} row(s) counted for missing "
+                                "vuln rollup data (fail-closed)"}
+                       if missing else {}),
+                })
 
     return {"pass": not violations, "violations": violations}
 
@@ -889,6 +1402,18 @@ def render_report(result: dict[str, Any]) -> str:
         f"- inputs: {', '.join(result['inputs']) or '(none)'}",
         f"- deps (deduped): {len(rows):,}",
         f"- freshness eligible-set basis: {result['freshness_basis']}",
+    ]
+    rc = result.get("resolution_counts")
+    if rc:
+        lines.append("- resolution: "
+                     + " · ".join(f"{rc[k]} {k}" for k in ("locked", "resolved", "direct")))
+    lc = result.get("live_cf_check")
+    if lc:
+        detail = (f" — checked {lc['checked']}, recovered {lc['recovered']}, "
+                  f"absent-confirmed {lc['confirmed_absent']}"
+                  if "checked" in lc else "")
+        lines.append(f"- live cf cross-check (decision 4): {lc['basis']}{detail}")
+    lines += [
         "",
         "## Buckets",
         "",
@@ -932,6 +1457,15 @@ def render_report(result: dict[str, Any]) -> str:
                 bits.append("upstream latest YANKED")
             if r.get("feedstock_archived"):
                 bits.append("ARCHIVED feedstock")
+            if r.get("atlas_stale"):
+                bits.append("ATLAS STALE (live channeldata hit)")
+            if r.get("live_cf_check") == "absent-confirmed":
+                bits.append("absence live-confirmed")
+            v = r.get("vulns")
+            if v and (v["critical"] or v["high"] or v["kev"]):
+                bits.append(f"vulns: {v['critical']}C/{v['high']}H/{v['kev']}KEV")
+            if r.get("depth") is not None and r["depth"] > 0:
+                bits.append(f"depth {r['depth']}")
             if r["signals_absent"]:
                 bits.append(f"signals_absent: {', '.join(r['signals_absent'])}")
             if r.get("weight") is not None:
@@ -1003,11 +1537,20 @@ def run(
     weights: dict[str, float] | None = None,
     policy: dict[str, Any] | None = None,
     version_provider: Callable[[str], list[str] | None] | None = None,
+    live_cf: dict[str, Any] | None = None,
+    live_cf_mode: str = "disabled",
 ) -> dict[str, Any]:
+    """`live_cf` is the live channeldata packages map (decision-4 post-pass)
+    or None; `live_cf_mode` records why it is absent ('disabled' — the web /
+    --offline behavior — or 'unavailable' — fetch failed, G74 residual)."""
     inv_rows = dedupe_deps(deps)
     provider = version_provider or history_version_provider(conn)
     rows = match_inventory(conn, inv_rows, weights=weights,
                            version_provider=provider)
+    live_cf_result: dict[str, Any] = {"basis": live_cf_mode}
+    if live_cf is not None:
+        live_cf_result = {"basis": "channeldata.json (live)",
+                          **apply_live_cf_check(rows, live_cf)}
     built = None
     try:
         built = conn.execute("SELECT value FROM meta WHERE key='built_at'").fetchone()
@@ -1019,6 +1562,10 @@ def run(
         "built_at": built,
         "inputs": inputs,
         "freshness_basis": getattr(provider, "basis", "injected"),
+        "live_cf_check": live_cf_result,
+        "resolution_counts": {
+            res: sum(1 for r in rows if r["resolution"] == res)
+            for res in ("locked", "resolved", "direct")},
         "counts": {b: sum(1 for r in rows if r["bucket"] == b) for b in BUCKETS},
         "rows": rows,
     }
@@ -1066,6 +1613,20 @@ def main() -> int:
                              "cfe:gap_status / cfe:conda_purl")
     parser.add_argument("--allow-stale", action="store_true",
                         help="Bypass the 14-day atlas freshness gate (decision 6)")
+    parser.add_argument("--offline", action="store_true",
+                        help="Web-slice behavior: no transitive resolver, no "
+                             "live channeldata cross-check, offline "
+                             "(history-based) freshness eligible sets")
+    parser.add_argument("--no-resolve", action="store_true",
+                        help="Keep bare-manifest rows `resolution: direct` "
+                             "(skip the pip / conda transitive resolver)")
+    parser.add_argument("--no-live-cf", action="store_true",
+                        help="Skip the decision-4 live channeldata "
+                             "cross-check of missing-from-cf declarations")
+    parser.add_argument("--python-version", default=None,
+                        help="Runtime Python X.Y[.Z] for the live "
+                             "eligible-set requires-python filter "
+                             "(default: this interpreter)")
     args = parser.parse_args()
 
     if not (args.inputs or args.sbom_in or args.conda_env or args.venv):
@@ -1103,11 +1664,18 @@ def main() -> int:
     if args.venv:
         deps.extend(_stamp(sp.parse_python_venv(args.venv), "locked", "tool"))
         labels.append(f"venv:{args.venv}")
-    for w in warnings:
-        sys.stderr.write(f"  warn: {w}\n")
     if not deps:
+        for w in warnings:
+            sys.stderr.write(f"  warn: {w}\n")
         sys.stderr.write("no dependencies parsed from any input\n")
         return 1
+
+    resolve_on = not (args.offline or args.no_resolve)
+    live_cf_on = not (args.offline or args.no_live_cf)
+    if resolve_on and any(d.extras.get("resolution") == "direct" for d in deps):
+        resolve_transitive(deps, warnings)
+    for w in warnings:
+        sys.stderr.write(f"  warn: {w}\n")
 
     try:
         weights = load_weights(args.weights) if args.weights else None
@@ -1119,7 +1687,19 @@ def main() -> int:
     conn = sqlite3.connect(f"{DB_PATH.as_uri()}?mode=ro", uri=True)
     try:
         check_freshness(conn, args.allow_stale)
-        result = run(conn, deps, labels, weights=weights, policy=policy)
+        provider = (None if args.offline
+                    else live_pypi_version_provider(
+                        conn, py_version=args.python_version))
+        channeldata = fetch_live_channeldata() if live_cf_on else None
+        live_cf_mode = "disabled"
+        if live_cf_on and channeldata is None:
+            live_cf_mode = "unavailable"
+            sys.stderr.write(
+                "  warn: live channeldata unreachable — missing-from-cf "
+                "declarations are atlas-only (G74 residual risk)\n")
+        result = run(conn, deps, labels, weights=weights, policy=policy,
+                     version_provider=provider, live_cf=channeldata,
+                     live_cf_mode=live_cf_mode)
         if args.sbom_out:
             annotated = annotate_sbom(args.sbom_in, result["rows"],
                                       result["built_at"])

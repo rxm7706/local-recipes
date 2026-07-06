@@ -7,8 +7,10 @@ freshness percentile policy (dense/sparse), the deterministic policy gate,
 weights sidecar, intake format detection, and CycloneDX annotation
 (`cfe:gap_status` / `cfe:conda_purl`).
 
-Live-only surfaces (transitive resolution, channeldata probing, live PyPI
-eligible sets, vuln thresholds) are asserted DEFERRED, not silently absent.
+The local-wave surfaces (transitive resolution, channeldata probing, live
+PyPI eligible sets, vuln thresholds) are tested offline via injected
+fetchers / monkeypatched resolvers; their live network behavior is
+exercised by the § Verification S5 end-to-end smoke.
 """
 from __future__ import annotations
 
@@ -473,10 +475,33 @@ class TestPolicyGate:
         out = im.evaluate_policy(rows, {"license": {"require_present": True}})
         assert out["pass"] is False
 
-    def test_vuln_thresholds_fail_closed_in_web_slice(self, im):
-        out = im.evaluate_policy([], {"vulns": {"max_critical": 0}})
+    def test_vuln_threshold_gate(self, im, db, sp_mod):
+        db.execute("UPDATE packages SET vuln_critical_affecting_current = 2, "
+                   "vuln_high_affecting_current = 0, "
+                   "vuln_kev_affecting_current = 0 WHERE conda_name = 'numpy'")
+        rows = _match_one(im, db, [_dep(sp_mod, "numpy", "1.26.4")])
+        assert rows[0]["vulns"]["critical"] == 2
+        out = im.evaluate_policy(rows, {"vulns": {"max_critical": 0},
+                                        "block_on_missing_data": False})
         assert out["pass"] is False
-        assert "vdb" in out["violations"][0]["note"]
+        assert out["violations"][0]["check"] == "vulns.max_critical"
+
+    def test_vuln_missing_rollups_fail_closed(self, im, db, sp_mod):
+        # fixture packages carry NULL rollups → signals_absent: vuln_rollups;
+        # with block_on_missing_data (default true) they count as offending.
+        rows = _match_one(im, db, [_dep(sp_mod, "torch", "2.2.0")])
+        assert "vuln_rollups" in rows[0]["signals_absent"]
+        out = im.evaluate_policy(rows, {"vulns": {"max_critical": 0}})
+        assert out["pass"] is False
+        assert "missing" in out["violations"][0]["note"]
+        relaxed = im.evaluate_policy(rows, {"vulns": {"max_critical": 0},
+                                            "block_on_missing_data": False})
+        assert relaxed["pass"] is True
+
+    def test_vuln_unknown_key_is_schema_violation(self, im):
+        out = im.evaluate_policy([], {"vulns": {"max_criticall": 0}})
+        assert out["pass"] is False
+        assert out["violations"][0]["check"] == "policy.schema"
 
     def test_violation_rows_weight_ordered(self, im, db, sp_mod):
         inv = im.dedupe_deps([
@@ -683,3 +708,181 @@ class TestRunAndOutputs:
         rows = _match_one(im, db, [_dep(sp_mod, "yankedpkg", "1.0")])
         assert rows[0]["bucket"] == "ADD"
         assert rows[0]["upstream_yanked"] is True
+
+
+# ── local wave (Wave C): live providers + transitive resolver ────────────────
+# All offline: fetchers/resolvers are injected or monkeypatched; the live
+# network behavior is exercised by the § Verification S5 end-to-end smoke.
+
+class TestLiveCfCheck:
+    def test_add_row_recovered_as_atlas_stale(self, im, db, sp_mod):
+        rows = _match_one(im, db, [_dep(sp_mod, "leftpadpy", "3.1.0")])
+        assert rows[0]["bucket"] == "ADD"
+        stats = im.apply_live_cf_check(rows, {"leftpadpy": {"version": "3.1.0"}})
+        assert stats == {"checked": 1, "recovered": 1, "confirmed_absent": 0}
+        assert rows[0]["bucket"] == "CURRENT"
+        assert rows[0]["atlas_stale"] is True
+        assert rows[0]["conda_name"] == "leftpadpy"
+        assert rows[0]["live_cf_check"] == "present"
+        assert "?channel=conda-forge" in rows[0]["conda_purl"]
+
+    def test_add_row_recovered_update_pin(self, im, db, sp_mod):
+        rows = _match_one(im, db, [_dep(sp_mod, "leftpadpy", "2.0")])
+        im.apply_live_cf_check(rows, {"leftpadpy": {"version": "3.1.0"}})
+        assert rows[0]["bucket"] == "UPDATE-PIN"
+
+    def test_absence_confirmed(self, im, db, sp_mod):
+        rows = _match_one(im, db, [_dep(sp_mod, "leftpadpy", "3.1.0")])
+        stats = im.apply_live_cf_check(rows, {"unrelated": {"version": "1.0"}})
+        assert stats["confirmed_absent"] == 1
+        assert rows[0]["bucket"] == "ADD"
+        assert rows[0]["live_cf_check"] == "absent-confirmed"
+
+    def test_conda_unknown_recovered_exact(self, im, db, sp_mod):
+        rows = _match_one(im, db, [_dep(sp_mod, "brandnew", "1.0", eco="conda")])
+        assert rows[0]["bucket"] == "UNKNOWN"
+        im.apply_live_cf_check(rows, {"brandnew": {"version": "1.0"}})
+        assert rows[0]["bucket"] == "CURRENT"
+        assert rows[0]["match_confidence"] == "exact"
+        assert rows[0]["match_via"] == "channeldata_live"
+
+    def test_matched_rows_untouched(self, im, db, sp_mod):
+        rows = _match_one(im, db, [_dep(sp_mod, "numpy", "1.26.4")])
+        stats = im.apply_live_cf_check(rows, {"numpy": {"version": "99.0"}})
+        assert stats["checked"] == 0
+        assert rows[0]["cf_latest"] == "1.26.4"
+
+
+class TestLiveEligibleProvider:
+    def test_yanked_and_requires_python_filtered(self, im, db):
+        releases = {
+            "1.0": [{"requires_python": ">=3.8"}],
+            "1.1": [{}],
+            "2.0": [{"yanked": True}],                    # fully yanked → out
+            "3.0": [{"requires_python": ">=3.99"}],       # excludes runtime → out
+            "4.0": [],                                    # no artifacts → out
+        }
+        provider = im.live_pypi_version_provider(
+            db, py_version="3.12.0", fetch=lambda name: releases)
+        assert provider("numpy") == ["1.0", "1.1"]
+        assert provider.stats["live"] == 1
+
+    def test_fallback_on_fetch_failure(self, im, db):
+        provider = im.live_pypi_version_provider(
+            db, py_version="3.12.0", fetch=lambda name: None)
+        got = provider("numpy")   # numpy has 12 history versions in fixture
+        assert got is not None and len(got) >= 12
+        assert provider.stats["fallback"] == 1
+
+    def test_no_pypi_identity_uses_fallback(self, im, db):
+        provider = im.live_pypi_version_provider(
+            db, py_version="3.12.0",
+            fetch=lambda name: (_ for _ in ()).throw(AssertionError("no fetch")))
+        assert provider("ripgrep") is None  # no mapping, no dense history
+        assert provider.stats["fallback"] == 1
+
+
+class TestPipGraph:
+    REPORT = {
+        "environment": {"python_version": "3.12"},
+        "install": [
+            {"requested": True,
+             "metadata": {"name": "rootpkg", "version": "1.0",
+                          "requires_dist": ["midpkg>=1", "winonly; sys_platform == 'win32'"]}},
+            {"metadata": {"name": "midpkg", "version": "2.0",
+                          "requires_dist": ["leafpkg"]}},
+            {"metadata": {"name": "leafpkg", "version": "0.3",
+                          "requires_dist": None}},
+            {"metadata": {"name": "winonly", "version": "9.9",
+                          "requires_dist": []}},
+        ],
+    }
+
+    def test_depth_fanout_and_marker_exclusion(self, im):
+        nodes = im.derive_pip_graph(self.REPORT)
+        assert nodes["rootpkg"]["depth"] == 0
+        assert nodes["midpkg"]["depth"] == 1
+        assert nodes["leafpkg"]["depth"] == 2
+        # the win32 marker edge is excluded on this platform → unreachable
+        assert nodes["winonly"]["depth"] is None
+        assert nodes["rootpkg"]["fanout"] == 1
+        assert nodes["leafpkg"]["fanout"] == 0
+
+    def test_resolve_upgrades_and_adds_transitive(self, im, sp_mod, monkeypatch):
+        monkeypatch.setattr(im, "_pip_report", lambda specs, warnings: self.REPORT)
+        deps = [_dep(sp_mod, "rootpkg", None, manifest="requirements.txt",
+                     resolution="direct", policy_tier="policy")]
+        warnings: list[str] = []
+        stats = im.resolve_transitive(deps, warnings)
+        assert stats["pypi_upgraded"] == 1 and stats["added"] == 3
+        assert deps[0].extras["resolution"] == "resolved"
+        assert deps[0].version == "1.0"          # resolver-chosen version
+        assert deps[0].extras["fanout"] == 1
+        added = {d.name: d for d in deps[1:]}
+        assert set(added) == {"midpkg", "leafpkg", "winonly"}
+        assert added["midpkg"].extras["via"] == "transitive"
+        assert added["midpkg"].extras["policy_tier"] == "policy"
+        assert not warnings
+
+    def test_resolver_failure_keeps_direct(self, im, sp_mod, monkeypatch):
+        monkeypatch.setattr(im, "_pip_report", lambda specs, warnings:
+                            warnings.append("pip resolver failed") or None)
+        deps = [_dep(sp_mod, "rootpkg", None, resolution="direct")]
+        warnings: list[str] = []
+        stats = im.resolve_transitive(deps, warnings)
+        assert stats == {"pypi_upgraded": 0, "conda_upgraded": 0, "added": 0}
+        assert deps[0].extras["resolution"] == "direct"
+        assert warnings
+
+
+class TestCondaGraph:
+    class _Rec:
+        def __init__(self, name, version, depends):
+            self.name = type("N", (), {"normalized": name})()
+            self.version = version
+            self.depends = depends
+
+    def test_depth_and_fanout(self, im):
+        records = [
+            self._Rec("app", "1.0", ["libfoo >=2", "python >=3.10"]),
+            self._Rec("libfoo", "2.1", ["libbar"]),
+            self._Rec("libbar", "0.9", []),
+            self._Rec("python", "3.12.4", []),
+        ]
+        nodes = im.derive_conda_graph(records, {"app"})
+        assert nodes["app"]["depth"] == 0
+        assert nodes["libfoo"]["depth"] == 1
+        assert nodes["libbar"]["depth"] == 2
+        assert nodes["app"]["fanout"] == 2
+
+    def test_conda_solve_failure_keeps_direct(self, im, sp_mod, monkeypatch):
+        monkeypatch.setattr(im, "_conda_solve_records", lambda specs, warnings:
+                            warnings.append("conda solve failed") or None)
+        deps = [_dep(sp_mod, "somepkg", None, eco="conda", resolution="direct")]
+        warnings: list[str] = []
+        im.resolve_transitive(deps, warnings)
+        assert deps[0].extras["resolution"] == "direct"
+        assert warnings
+
+
+class TestDedupResolution:
+    def test_resolved_beats_direct_and_graph_fields_carry(self, im, sp_mod):
+        rows = im.dedupe_deps([
+            _dep(sp_mod, "numpy", None, resolution="direct"),
+            _dep(sp_mod, "numpy", "1.26.4", resolution="resolved",
+                 depth=2, fanout=5),
+        ])
+        assert rows[0]["resolution"] == "resolved"
+        assert rows[0]["depth"] == 2 and rows[0]["fanout"] == 5
+
+    def test_locked_still_wins_over_resolved(self, im, sp_mod):
+        rows = im.dedupe_deps([
+            _dep(sp_mod, "numpy", "1.26.4", resolution="resolved"),
+            _dep(sp_mod, "numpy", "1.26.4", resolution="locked"),
+        ])
+        assert rows[0]["resolution"] == "locked"
+
+    def test_depth_flows_to_match_row(self, im, db, sp_mod):
+        rows = _match_one(im, db, [_dep(sp_mod, "numpy", "1.26.4",
+                                        resolution="resolved", depth=1, fanout=3)])
+        assert rows[0]["depth"] == 1 and rows[0]["fanout"] == 3

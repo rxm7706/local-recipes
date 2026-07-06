@@ -84,8 +84,12 @@ spec_updated: 2026-07-05
   web slice shipped 2026-07-05** (`44ea734` + adversarial patches, PR #34
   merged `29542f3`). **Wave C S6 web slice shipped 2026-07-05**
   (`2800eb2` + adversarial/Gemini patches, PR #35, branch
-  `claude/wave-c-s6-add-handoff`; the Wave C local gates remain). Resume at
-  **Wave C local gates**, then **Wave D / S7**.
+  `claude/wave-c-s6-add-handoff`). **Wave C local slice + live gates
+  shipped 2026-07-05 (local)** — all five S5 deferred surfaces implemented
+  (transitive resolver, live channeldata cross-check, live eligible sets,
+  `vulns.*` thresholds, container chain) and the S5 end-to-end smoke + S6
+  live-enrichment gate PASSED (incl. a normalizer fix the S6 gate
+  surfaced); see § Wave C Dev Notes. Resume at **Wave D / S7**.
 
 ### Execution-environment split (web pass)
 
@@ -607,6 +611,85 @@ change; revisit only if the universe outgrows ~1 GiB.
   mappings as verified) and the `version_comparison` reliability flag. Output: markdown
   report + `--json` + `--sbom-out` (input BOM annotated with `cfe:gap_status` /
   `cfe:conda_purl` properties). MCP: `inventory_match`.
+#### Wave C Dev Notes — local slice + live gates (2026-07-05; measured, not estimated)
+
+The web slice deliberately deferred five surfaces to local (see § Execution-
+environment split); all five shipped in the local slice, each with an
+`--offline` opt-out that reproduces the web behavior exactly, plus offline
+unit tests (injected fetchers / monkeypatched resolvers; suite total after
+the local slice: **2,039 passed / 2 known skips / 1 xpassed, 103 s**):
+
+1. **Transitive resolver (policy § 3)** — pip `install --dry-run --report`
+   (PyPI track) + py-rattler 0.22 conda-forge solve (conda track); direct
+   rows upgrade to `resolution: resolved` with depth + fan-out (S7 feed),
+   resolver-discovered packages join as `via: transitive` rows; failure
+   warns and leaves rows `direct`.
+2. **Decision-4 live channeldata cross-check** — every would-be-missing row
+   (ADD / ADD-NONPYPI / conda-UNKNOWN) probes the TTL-cached (24 h) live
+   `channeldata.json`; a hit re-buckets as `atlas_stale`, a miss stamps
+   `live_cf_check: absent-confirmed`.
+3. **Live PyPI eligible-set provider** — pypi.org JSON per pypi-mapped
+   matched package (memoized, inventory-bounded), yanked + requires-python
+   filtered; history-provider fallback per name.
+4. **`vulns.*` policy thresholds** — `max_critical` / `max_high` / `max_kev`
+   row ceilings read from the atlas's Phase G rollups
+   (`vuln_*_affecting_current` — current-cf-version posture, stamped);
+   matched rows without rollups get `signals_absent: vuln_rollups` and count
+   against thresholds under `block_on_missing_data` (default true).
+5. **Container intake** — via scan-project as designed (no new matcher code).
+
+New flags: `--offline`, `--no-resolve`, `--no-live-cf`, `--python-version`.
+
+**S5 end-to-end smoke (all PASS, run 2026-07-05 on the fresh same-day atlas):**
+
+- **Repo `pixi.toml` (bare manifest, full live path)**: 46 direct conda deps
+  → rattler solve → **1,150 rows, 100% `resolution: resolved`** in 122 s
+  wall (solve + live channeldata + live PyPI freshness). Buckets: 982
+  CURRENT · 122 UPDATE-FEEDSTOCK · 45 UPDATE-PIN · 1 ADD · 0 UNKNOWN; max
+  graph depth 6 (`at-spi2-core`, fan-out 6); vuln rollups attached (e.g.
+  `dulwich` 3 High, `intake` 1 High).
+- **Hand-verified bucket members** (per § Verification):
+  *G10 rename*: `tzdata`→`python-tzdata` (parselmouth/verified),
+  `certifi`→`ca-certificates` (recipe_source_url/verified).
+  *Atlas-stale / channeldata-fresh (real G74 event)*: `refleak` + `doclang`
+  (staged-recipes merged 2026-07-04, ABSENT from the 2026-07-05 atlas) were
+  **recovered live** — `match_via: channeldata_live`, `atlas_stale: true`,
+  CURRENT at cf 0.1.1 / 0.7.2 — where `--offline` misreports both as ADD.
+  *`version_comparison: unreliable`*: the `azure-*-cpp` family (upstream
+  github tags in the `azure-template_1.1.0-beta.*` scheme vs cf `1.16.3`).
+  *Non-Python conda + GitHub upstream*: the `aws-c-*` C family across all
+  three matched buckets (aws-c-auth UPDATE-FEEDSTOCK 0.10.3→0.27.2;
+  aws-c-common UPDATE-PIN 0.14.0→0.14.1; aws-c-compression CURRENT).
+  *ADD*: `kedro-mcp` — live **absent-confirmed** (decision-4 gate exercised).
+- **Real SBOM round-trip**: the Wave B 50-component mapped-BOM slice →
+  39 CURRENT + 11 UPDATE-FEEDSTOCK, all rows `locked`; `--sbom-out` wrote
+  `cfe:gap_status` + `cfe:conda_purl` per component.
+- **Policy gate**: `{"vulns": {"max_high": 0}}` on a dulwich inventory →
+  **exit 2** with `vulns.max_high` naming dulwich (3 High affecting current).
+- **Container chain (daemonless)**: docker-daemon socket is root-gated on
+  the gate host, so: `pixi exec skopeo` (needs a v2 `--registries-conf`
+  override — conda-forge's skopeo ships a rejected v1 file) → OCI archive
+  of `python:3.12-slim` (43 MB) → `scan-project --oci-archive` with a
+  pixi-exec'd `syft` on PATH (2,747 deps, 6.0 s; syft/trivy are not in this
+  host's vuln-db env) → `inventory-match --sbom-in`: 5.7 s, `pip` 25.0.1
+  correctly UPDATE-PIN vs cf 26.1.2, 2,724 deb packages → ADD-NONPYPI with
+  **all 2,724 live-confirmed absent** (the probe scales: one channeldata
+  fetch, in-memory fold checks).
+- **S6 gate — live ADD-slice enrichment (PASS)**: a 4-name real ADD slice
+  (kedro-mcp, ragstack-ai-knowledge-store, flyte-controller-base,
+  langflow-sdk) through `add-handoff`: eligible 2 → fetched 2 (live
+  pypi.org JSON via the mirror-routed `_phase_r_fetch_one`, idempotently
+  upserted through `phase_r_upsert_one`), worklist sorted readiness-desc
+  (65 · 60 · 50 · 50), fail-closed license rule held (NULL never passed).
+  **Gate finding, fixed in this slice:** `_normalize_license_to_spdx`
+  dropped literal SPDX ids absent from its OSI-common map — live case:
+  ragstack's `info.license = 'BUSL-1.1'` stored as NULL, degrading the
+  blocker to `license-unknown`. Fixed with a case-corrected pass-through
+  via the Wave B vendored SPDX enum (+3 regression tests); the re-run
+  blocks it as **`license-non-osi (BUSL-1.1)`**. kedro-mcp correctly stays
+  `license-unknown` (its PyPI metadata is the full Apache license TEXT with
+  no expression/classifier — the G90 metadata class; human triage).
+
 - **S6 — ADD-bucket handoff artifact (with on-demand enrichment).** Readiness/license
   coverage is sparse (43,717 / 22,450 rows — see Grounding), so for ADD-bucket names
   lacking `json_fetched_at`, run a **bounded Phase-R-style single-package enrichment**
