@@ -126,13 +126,17 @@ def classify(
 ) -> list[dict[str, Any]]:
     """One proposal per conda name, highest tier wins. Registry-covered
     names (incl. aliases — the load_lts_registry index carries both) are
-    excluded: they're decided, not gaps."""
+    excluded: they're decided, not gaps.
+
+    load_lts_registry already lowercases its keys; the fold below hardens
+    the library API for direct callers passing a raw mixed-case dict."""
     slug_set = {s.lower() for s in slugs}
+    registry_keys = {str(k).lower() for k in registry}
     proposals: list[dict[str, Any]] = []
     for conda_name, pypi_name in candidates:
-        if not conda_name or conda_name.lower() in registry:
+        if not conda_name or conda_name.lower() in registry_keys:
             continue
-        if pypi_name and pypi_name.lower() in registry:
+        if pypi_name and pypi_name.lower() in registry_keys:
             continue
         hit: tuple[str, str, str] | None = None   # (slug, confidence, via)
         for label, value in (("conda_name", conda_name),
@@ -251,6 +255,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     snippets = render_yaml_snippets(proposals, today)
     if args.out is not None:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(snippets, encoding="utf-8")
     if args.as_json:
         print(json.dumps(summary, indent=2))
