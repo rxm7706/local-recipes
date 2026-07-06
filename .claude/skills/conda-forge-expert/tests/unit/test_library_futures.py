@@ -169,6 +169,16 @@ class TestPy314:
         assert lf.py314_readiness("[]", "[]", ">=3.6,!=3.14.*", None,
                                   "pure-python", True) == "py314-not-ready"
 
+    def test_patch_exclusion_is_not_whole_minor(self, lf):
+        # `!=3.14.1` excludes ONE patch release — the minor line stays
+        # supported (Gemini post-merge sweep, PR #36)
+        assert lf.py314_readiness("[]", "[]", ">=3.9,!=3.14.1", None,
+                                  "pure-python", True,
+                                  latest_upload_at=NOW) == "py314-likely"
+        # bare `!=3.14` still excludes the whole line
+        assert lf.py314_readiness("[]", "[]", ">=3.9,!=3.14", None,
+                                  "pure-python", True) == "py314-not-ready"
+
     def test_compiled_no_cp314_not_ready(self, lf):
         assert lf.py314_readiness("[]", "[]", ">=3.8", None,
                                   "c-extension", True) == "py314-not-ready"
@@ -307,6 +317,27 @@ class TestSignals:
     def test_negative_user_weight_clamped(self, lf, db):
         val, present = lf._score_user_weight(db, "healthy", {"weight": -50.0}, None)
         assert present and val == 0.0  # never drags the composite negative
+
+    def test_invalid_user_weight_handled(self, lf, db):
+        # library API: a hand-edited --matches row with a non-numeric
+        # weight is absent, never a ValueError crash
+        val, present = lf._score_user_weight(db, "healthy", {"weight": "invalid"}, None)
+        assert present is False and val is None
+
+    def test_corrupt_registry_degrades_to_empty(self, lf, tmp_path):
+        # yaml syntax errors raise YAMLError (not ValueError) — the
+        # docstring's "unparseable → empty map" contract must hold
+        bad = tmp_path / "lts-registry.yaml"
+        bad.write_text("products:\n  django: [unclosed\n    slug: {{{")
+        assert lf.load_lts_registry(bad) == {}
+
+    def test_silent_18mo_deterministic_with_now(self, lf, db):
+        pkg = lf._pkg_row(db, "silentpkg")     # uploaded 600 d before NOW
+        row = {"conda_name": "silentpkg"}
+        assert lf._silent_18mo(db, row, pkg, lf.DEFAULT_WEIGHTS, now=NOW) is True
+        # same call with `now` rewound before the upload → not silent
+        assert lf._silent_18mo(db, row, pkg, lf.DEFAULT_WEIGHTS,
+                               now=NOW - 590 * DAY) is False
 
     def test_epss_cwe_report_only_never_scored(self, lf, db):
         # seed the STALE rollup columns; assert they surface as enrichment
