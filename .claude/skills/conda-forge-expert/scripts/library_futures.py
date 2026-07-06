@@ -36,7 +36,10 @@ Horizon signals (decision 5, both hard bounds on the tier):
 
 Read-only + offline (reads cf_atlas.db, the git-tracked lts-registry.yaml,
 and a TTL'd eol_cache.json). NOT an MCP tool — consumed by recommend-2027
-(S8) and available as a standalone CLI.
+(S8) and available as a standalone CLI. The spec's annotated-BOM properties
+(`cfe:py314_readiness` / `cfe:lts_status`) are S8's `--sbom-out` job — S7
+exposes both as explicit row columns for S8 to annotate. EPSS/CWE ride each
+row's `vuln_enrichment` REPORT-ONLY (stale rollup; never scored).
 
 CLI:
   library-futures [--package NAME ...] [INVENTORY ...] [--json] [--allow-stale]
@@ -101,9 +104,11 @@ DEFAULT_WEIGHTS: dict[str, Any] = {
         "packaging_health":     {"weight": 4,  "applies": "python"},
         "metadata_complete":    {"weight": 3,  "applies": "python"},
         "cross_channel_redund": {"weight": 2,  "applies": "python"},
-        # REPORT-ONLY (weight 0, never scored): PyPI downloads (non-portable),
-        # bus_factor_proxy / dependency_blast_radius (NULL placeholders), EPSS
-        # + CWE (only in the stale rollup, not query-time-correct).
+        # NEVER SCORED: PyPI downloads (non-portable — a credential-less
+        # rebuild loses them), bus_factor_proxy / dependency_blast_radius
+        # (NULL placeholders). EPSS + CWE exist only on the STALE packages
+        # rollup (not the query-time-correct view) — surfaced REPORT-ONLY
+        # via each row's `vuln_enrichment`, excluded from the composite.
     },
     "horizon": {
         "py314_not_ready_cap": "watch",
@@ -117,7 +122,12 @@ DEFAULT_WEIGHTS: dict[str, Any] = {
     },
     "tier_bands": {"keep": 70, "watch": 45, "plan-migration": 25},  # else replace
     "min_present_weight_frac": 0.35,
+    # decision 5(a): `py314-likely` requires a release WITHIN the 3.14 cycle
+    "py314_cycle_start": "2025-10-07",
 }
+
+_PY314_CYCLE_START_TS = int(dt.datetime(2025, 10, 7,
+                                        tzinfo=dt.timezone.utc).timestamp())
 
 
 # ── LTS registry + endoflife.date client ────────────────────────────────────
@@ -347,9 +357,14 @@ def _http_eol_fetcher(slug: str) -> list | None:
 def py314_readiness(
     python_tags: Any, classifiers: Any, requires_python: str | None,
     pkg_pythons: list[str] | None, packaging_shape: str | None, is_py: bool,
+    latest_upload_at: int | None = None,
 ) -> str:
     """`py314-ready` / `py314-likely` / `py314-not-ready` / `unknown`;
-    non-Python → `unknown` (absent). Pure over already-extracted values."""
+    non-Python → `unknown` (absent). Pure over already-extracted values.
+    Per decision 5(a), `py314-likely` requires pure-python AND
+    requires_python not excluding 3.14 AND a release within the 3.14 cycle
+    (latest_upload_at >= 2025-10-07); an unknown/older upload stays
+    `unknown` — recency is a claim, not a default."""
     if not is_py:
         return "unknown"
     tags = _as_list(python_tags)
@@ -366,7 +381,9 @@ def py314_readiness(
     is_pure = packaging_shape == "pure-python"
     compiled = packaging_shape in ("cython", "c-extension", "rust-pyo3", "fortran")
     if is_pure:
-        return "py314-likely"
+        if latest_upload_at is not None and latest_upload_at >= _PY314_CYCLE_START_TS:
+            return "py314-likely"
+        return "unknown"
     if compiled:
         # compiled with no cp314 wheel/build evidence → not ready
         return "py314-not-ready"
@@ -375,8 +392,11 @@ def py314_readiness(
 
 def _requires_python_excludes_314(rp: str) -> bool:
     """True when requires_python has an upper bound below 3.14
-    (e.g. `>=3.8,<3.14`, `<3.13`). Best-effort string parse."""
+    (e.g. `>=3.8,<3.14`, `<3.13`) or an explicit `!=3.14` exclusion.
+    Best-effort string parse."""
     import re
+    if re.search(r"!=\s*3\.14(\.\*)?", rp):
+        return True
     for m in re.finditer(r"<=?\s*3\.(\d+)", rp):
         minor = int(m.group(1))
         # `<3.14` excludes; `<=3.13` excludes; `<3.15` does not
@@ -523,7 +543,9 @@ def _score_user_weight(conn, conda_name, row, pkg):
     w = row.get("weight")
     if w is None:
         return None, False
-    return min(100.0, 40.0 + float(w) * 12.0), True
+    # clamp BOTH ends — a negative sidecar weight must not drag the
+    # composite below zero
+    return max(0.0, min(100.0, 40.0 + float(w) * 12.0)), True
 
 
 def _score_freshness_policy(conn, conda_name, row, pkg):
@@ -547,8 +569,8 @@ def _score_graph_depth_fanout(conn, conda_name, row, pkg):
 def _intel_row(conn, pypi_name):
     cur = conn.execute(
         "SELECT activity_band, has_wheel, has_sdist, packaging_shape, "
-        "latest_yanked, repo_url, docs_url, classifiers, requires_python, "
-        "python_tags, json_fetched_at, cross_channel_at, "
+        "latest_yanked, latest_upload_at, repo_url, docs_url, classifiers, "
+        "requires_python, python_tags, json_fetched_at, cross_channel_at, "
         "in_bioconda, in_pytorch, in_nvidia, in_robostack, in_homebrew, "
         "in_nixpkgs, in_spack, in_debian, in_fedora "
         "FROM v_pypi_intelligence_valid WHERE pypi_name = ?", (pypi_name,))
@@ -559,10 +581,13 @@ def _intel_row(conn, pypi_name):
 
 
 def _score_py_activity_band(intel):
+    # serial deltas are the Phase-O inputs that COMPUTE activity_band —
+    # scoring the band scores the deltas; they are not a second signal.
     if not intel or not intel.get("activity_band"):
         return None, False
-    return {"hot": 100.0, "warm": 75.0, "cold": 45.0,
-            "dormant": 15.0}.get(intel["activity_band"]), True
+    score = {"hot": 100.0, "warm": 75.0, "cold": 45.0,
+             "dormant": 15.0}.get(intel["activity_band"])
+    return score, score is not None
 
 
 def _score_packaging_health(intel):
@@ -754,7 +779,8 @@ def score_row(conn, row, weights, eol_client, now):
             intel.get("classifiers") if intel else None,
             intel.get("requires_python") if intel else None,
             pkg_pythons,
-            intel.get("packaging_shape") if intel else None, is_py)
+            intel.get("packaging_shape") if intel else None, is_py,
+            latest_upload_at=intel.get("latest_upload_at") if intel else None)
 
     tier, reasons, alternatives = derive_tier(
         conn, score, row, pkg, py314, lts, weights)
@@ -778,6 +804,9 @@ def score_row(conn, row, weights, eol_client, now):
         "eol_stale": lts.get("stale", False),
         "weight": row.get("weight"),
     }
+    enrich = _vuln_enrichment(conn, conda_name) if conda_name else None
+    if enrich:
+        out["vuln_enrichment"] = enrich
     if alternatives:
         out["alternatives"] = [
             {"conda_name": a["conda_name"], "score": a.get("composite_score")}
@@ -796,6 +825,20 @@ def _pkg_pythons(conn, conda_name) -> list[str]:
     return [r[0] for r in conn.execute(
         "SELECT pkg_python FROM package_python_downloads WHERE conda_name = ?",
         (conda_name,))]
+
+
+def _vuln_enrichment(conn, conda_name) -> dict[str, Any] | None:
+    """EPSS / CWE, REPORT-ONLY (never in the composite): these columns exist
+    only on the stale `packages.vuln_*` rollup, not the query-time-correct
+    view — surfacing them with their scan stamp keeps the spec's 'max EPSS,
+    CWE categories' visible without importing stale data into the score."""
+    r = conn.execute(
+        "SELECT vuln_max_epss_score, vuln_cwe_top, vdb_scanned_at "
+        "FROM packages WHERE conda_name = ?", (conda_name,)).fetchone()
+    if r is None or (r[0] is None and r[1] is None):
+        return None
+    return {"max_epss": r[0], "cwe_top": r[1], "rollup_scanned_at": r[2],
+            "note": "stale rollup — report-only, never scored"}
 
 
 def score_packages(conn, rows, weights=None, eol_client=None, now=None):
@@ -872,6 +915,9 @@ def main() -> int:
                         help="Inventory inputs (forwarded to inventory-match)")
     parser.add_argument("--package", action="append", default=[],
                         help="Score a single conda package by name (repeatable)")
+    parser.add_argument("--weights", type=Path, default=None,
+                        help="Criticality sidecar (csv name,weight or JSON "
+                             "object) — feeds the user_weight signal")
     parser.add_argument("--json", action="store_true", help="Emit JSON")
     parser.add_argument("--allow-stale", action="store_true",
                         help="Bypass the 14-day atlas freshness gate")
@@ -889,10 +935,11 @@ def main() -> int:
         rows = _rows_from_packages(conn, args.package)
         if args.inputs:
             import inventory_match as im
+            sidecar = im.load_weights(args.weights) if args.weights else None
             deps, labels, warnings = im.load_inventory([Path(p) for p in args.inputs], None)
             for w in warnings:
                 sys.stderr.write(f"  warn: {w}\n")
-            rows += im.run(conn, deps, labels)["rows"]
+            rows += im.run(conn, deps, labels, weights=sidecar)["rows"]
         result = score_packages(conn, rows)
     except StaleAtlasError as exc:
         sys.stderr.write(f"REFUSED: {exc}\n")

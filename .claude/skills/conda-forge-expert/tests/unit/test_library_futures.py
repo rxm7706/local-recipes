@@ -148,12 +148,24 @@ class TestPy314:
         assert lf.py314_readiness("[]", "[]", ">=3.9", ["3.12", "3.14"],
                                   "c-extension", True) == "py314-ready"
 
-    def test_pure_python_no_exclusion_likely(self, lf):
-        assert lf.py314_readiness("[]", "[]", ">=3.9", None,
-                                  "pure-python", True) == "py314-likely"
+    def test_pure_python_no_exclusion_recent_release_likely(self, lf):
+        # decision 5(a): likely = pure + not-excluded + released in the 3.14 cycle
+        assert lf.py314_readiness("[]", "[]", ">=3.9", None, "pure-python",
+                                  True, latest_upload_at=NOW) == "py314-likely"
+
+    def test_pure_python_old_or_unknown_release_stays_unknown(self, lf):
+        old = lf._PY314_CYCLE_START_TS - 90 * DAY
+        assert lf.py314_readiness("[]", "[]", ">=3.9", None, "pure-python",
+                                  True, latest_upload_at=old) == "unknown"
+        assert lf.py314_readiness("[]", "[]", ">=3.9", None, "pure-python",
+                                  True, latest_upload_at=None) == "unknown"
 
     def test_requires_python_upper_bound_not_ready(self, lf):
         assert lf.py314_readiness("[]", "[]", ">=3.8,<3.14", None,
+                                  "pure-python", True) == "py314-not-ready"
+
+    def test_explicit_314_exclusion_not_ready(self, lf):
+        assert lf.py314_readiness("[]", "[]", ">=3.6,!=3.14.*", None,
                                   "pure-python", True) == "py314-not-ready"
 
     def test_compiled_no_cp314_not_ready(self, lf):
@@ -290,6 +302,26 @@ class TestSignals:
         assert present and val is not None
         val, present = lf._score_graph_depth_fanout(db, "healthy", {}, None)
         assert present is False        # locked/unresolved row → absent
+
+    def test_negative_user_weight_clamped(self, lf, db):
+        val, present = lf._score_user_weight(db, "healthy", {"weight": -50.0}, None)
+        assert present and val == 0.0  # never drags the composite negative
+
+    def test_epss_cwe_report_only_never_scored(self, lf, db):
+        # seed the STALE rollup columns; assert they surface as enrichment
+        # but never enter the composite (no breakdown signal carries them)
+        db.execute("UPDATE packages SET vuln_max_epss_score=0.97, "
+                   "vuln_cwe_top='CWE-787', vdb_scanned_at=? "
+                   "WHERE conda_name='vulnpkg'", (NOW,))
+        db.commit()
+        rows = [{"name": "vulnpkg", "conda_name": "vulnpkg", "ecosystem": "pypi",
+                 "bucket": "CURRENT", "pinned": "1.0", "signals_absent": []}]
+        out = lf.score_packages(db, rows, eol_client=_stub_eol(lf), now=NOW)
+        e = out[0]["vuln_enrichment"]
+        assert e["max_epss"] == 0.97 and e["cwe_top"] == "CWE-787"
+        assert "never scored" in e["note"]
+        assert not any("epss" in s.lower() or "cwe" in s.lower()
+                       for s in out[0]["breakdown"])
 
 
 # ── tier lattice ─────────────────────────────────────────────────────────────
