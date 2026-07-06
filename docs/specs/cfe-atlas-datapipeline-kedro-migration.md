@@ -481,7 +481,7 @@ DuckDB is the single engine for analytical compute, graph traversal (recursive C
 
 ### FR-6. Dagster orchestrates schedules + retries via `kedro-dagster`
 
-The Kedro DAG compiles to a Dagster repository. Daily/weekly schedules and retry logic move from cron+bash to Dagster Schedules; state is observable in the Dagster UI. (§ 4.4, § 5.4.)
+The Kedro DAG compiles to a Dagster repository. Daily/weekly schedules and retry logic move from cron+bash to Dagster Schedules; state is observable in the Dagster UI. The `bootstrap-data --fresh` entry point becomes the full-DAG Dagster job (the `__default__` Kedro pipeline); the script itself is retired at B4 parity along with the legacy orchestrator. (§ 4.4, § 5.4.)
 
 ### FR-7. MCP surface preserved via `kedro-mcp`
 
