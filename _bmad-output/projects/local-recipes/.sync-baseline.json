@@ -1,9 +1,9 @@
 {
-  "skill_version": "8.70.0",
-  "schema_version": 28,
-  "mcp_tools": 42,
-  "atlas_phases": 22,
-  "gotcha_max": 98,
+  "skill_version": "8.73.0",
+  "schema_version": 29,
+  "mcp_tools": 46,
+  "atlas_phases": 23,
+  "gotcha_max": 99,
   "pixi_envs": 9,
   "phase_ids": [
     "B",
@@ -29,5 +29,5 @@
     "M",
     "N"
   ],
-  "git_head": "067211ad3b"
+  "git_head": "5a1ee00a10"
 }

@@ -129,6 +129,25 @@ both via `--sbom cyclonedx` / `--sbom spdx`.
 | **Live conda env directory** (`--conda-env <path>`) | ✅ | none | Reads `<env>/conda-meta/*.json` for installed conda packages + `<env>/lib/python*/site-packages/*.dist-info/METADATA` for pip-installed packages. Offline-safe; matches `conda list --json` output without invoking conda. |
 | **Live Python virtualenv** (`--venv <path>`) | ✅ | none | Walks `lib/python*/site-packages/*.dist-info/METADATA` and `Lib/site-packages/*.dist-info/METADATA` (Windows). Works with venv / virtualenv / uv-created envs / pipenv envs / poetry envs. |
 
+**Daemonless container intake (verified 2026-07-05, cyclonedx Wave C local gate)**:
+when the docker daemon socket is root-gated (common on shared hosts), fetch the
+image WITHOUT a daemon and use `--oci-archive`:
+
+```bash
+# conda-forge's skopeo ships a v1 registries.conf that skopeo itself rejects —
+# pass a minimal v2 file:
+printf 'unqualified-search-registries = ["docker.io"]\n' > /tmp/registries.conf
+pixi exec --spec skopeo skopeo --registries-conf /tmp/registries.conf copy \
+    --override-os linux docker://docker.io/library/<image>:<tag> \
+    oci-archive:/tmp/img.oci.tar
+# syft/trivy may be absent from the vuln-db env on a given host — provide
+# syft ephemerally on PATH the same way:
+SYFT_BIN=$(dirname "$(pixi exec --spec syft -- sh -c 'command -v syft')")
+PATH="$SYFT_BIN:$PATH" pixi run -e vuln-db scan-project -- \
+    --oci-archive /tmp/img.oci.tar --sbom cyclonedx --sbom-out /tmp/img.cdx.json
+# then: pixi run -e local-recipes inventory-match -- --sbom-in /tmp/img.cdx.json
+```
+
 **Authentication**: image references that require registry auth use the
 local Docker / Podman / `~/.docker/config.json` credentials picked up by
 syft/trivy. cf_atlas does not handle registry login — set up the

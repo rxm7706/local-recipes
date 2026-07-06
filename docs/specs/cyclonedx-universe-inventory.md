@@ -1,6 +1,8 @@
 ---
-status: in-progress
+status: shipped
 spec_updated: 2026-07-06
+implemented_by: bmad-quick-dev (web waves A-E on claude.ai/code) + local live-gate slices (Waves B/C/D local surfaces + gates)
+shipped_ref: "local-recipes@main — Wave A ad0d3be3c1+4821907ab0, B dd54e47d4d+a3f4b9b0ad (PR #33), C 44ea7345b0+aacd5776d9 (PRs #34/#35), D 7b0c84cc3c+c6b6a650cd+5a1ee00a10 (PRs #36/#37), E S9 PR #38 + S-retro (CFE v8.73.0); all local gates PASS, dated Dev Notes in §§ Wave B/C/D"
 ---
 
 # Tech Spec: CycloneDX Universe Inventory — full PyPI + full conda-forge, purl mapping, gap/version-lag matching, and 2027–2030 library recommendations

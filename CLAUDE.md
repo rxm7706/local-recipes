@@ -160,7 +160,6 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 
 | Spec | What it is |
 |---|---|
-| `docs/specs/cyclonedx-universe-inventory.md` | CycloneDX inventory of the FULL PyPI + FULL conda-forge universes: productized purl/mapping export (`export-purls`, incl. non-Python upstream purls), full-universe CycloneDX BOM (`universe-sbom`), user-inventory gap/version-lag matcher (`inventory-match` → ADD/ADD-NONPYPI/UPDATE-FEEDSTOCK/UPDATE-PIN/CURRENT via three-way version comparison), and the `library-futures`/`recommend-2027` quality layer for the 2027–2030 window — ecosystem-agnostic (non-Python cf packages first-class, scored via upstream_versions/Phase F/vuln rollups), with Python-3.14-readiness tiers + an LTS-policy flag (curated `lts-registry.yaml` + labeled heuristic) as key horizon signals. Composition over existing atlas tables — no new phase. Resume at Wave A/S1. |
 | `docs/specs/trendshift-conda-forge.md` | Two-track upstream-sweep packaging. Track A: cf_atlas **Phase T** GitHub-trending discovery engine (schema v28→v29, `trending-candidates` CLI/MCP tool) + tiered packaging workflow, first batch seeded by `cli-anything-hub` — resume at Wave A. Track B (absorbed `microsoft-conda-forge.md`): the June 2026 `github.com/microsoft/*` org audit — ~10–14 recipes in 3 waves, Q1–Q3 open. |
 | `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | Migrate the cf_atlas orchestrator from hand-rolled phases to a Kedro/Dagster/DuckDB stack (Waves A–G). Run via `bmad`. |
 | `docs/specs/claude-team-memory.md` | `.claude/memory/` team-shared memory layer + `team-memory` skill (10 waved stories). |
@@ -177,6 +176,7 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 
 | Spec | What it is |
 |---|---|
+| `docs/specs/cyclonedx-universe-inventory.md` | CycloneDX inventory of the FULL PyPI + conda-forge universes — SHIPPED 2026-07-06 (Waves A–E + S-retro, CFE v8.73.0): `export-purls`/`mapping-gap` (+v29 view), `universe-sbom` (856,766-component BOM), `inventory-match` (S5a intake incl. pixi.lock; transitive resolver; decision-4 live channeldata; vulns policy gate), `add-handoff`, `library-futures`/`recommend-2027` (2027–2030 tiers, py314 + LTS/endoflife signals). All local live gates PASS — dated Dev Notes in the spec. Do not re-run BMAD on it. |
 | `docs/specs/cfe-shipped-releases.md` | Consolidated archive of the 10 shipped intakes (2026-07-02): v7.9.0 pypi-universe-split, v8.0.0 + v8.9.0 CFE bundles, v8.1.0 PyPI intelligence, v8.6.0 AppThreat, v8.14.0 PR-artifact downloader, v8.15.0 Phase P incremental, Phase F Waves 1–3 (v7.6.0→v8.19.0), v8.20.0 Phase K scheduler, + the closed graphifyy osx-arm64 fanout effort. Release notes: skill CHANGELOG. Do not re-run BMAD on any part. |
 | `docs/specs/conda-forge-tracker.md` | Sibling repo `~/UserLocal/Projects/Github/rxm7706/conda-forge-tracker/` — markdown-first personal feedstock tracker (13 stories) |
 
