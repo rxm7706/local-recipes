@@ -422,6 +422,10 @@ cmd = "python .claude/scripts/conda-forge-expert/inventory_match.py"
 description = "Score conda-forge packages for 2027–2030 survival (keep/watch/plan-migration/replace) via a transparent weighted composite over atlas signals (upstream freshness, cadence, adoption, downloads, vuln posture, feedstock health, license, blast radius) + horizon signals (Python 3.14 readiness; LTS/EOL from endoflife.date→lts-registry→heuristic). --package NAME (repeatable) and/or inventory inputs; --json, --allow-stale. cyclonedx-universe-inventory Wave D/S7."
 cmd = "python .claude/scripts/conda-forge-expert/library_futures.py"
 
+[feature.local-recipes.tasks.recommend-2027]
+description = "Single scorecard for the 2027–2030 window: runs inventory-match then library-futures over a user inventory → markdown + --json + optional annotated CycloneDX (cfe:futures_tier/score, cfe:py314_readiness, cfe:lts_status). --matches RESULT.json replays a saved match; --weights criticality sidecar; --overrides operator tier overrides (shown, never silent); Phase-P downloads refresh is OFFERED when stale, never run. cyclonedx-universe-inventory Wave D/S8."
+cmd = "python .claude/scripts/conda-forge-expert/recommend_2027.py"
+
 [feature.local-recipes.tasks.add-handoff]
 description = "Emit the ADD-bucket packaging worklist from inventory-match results (name, readiness, template, blockers e.g. non-OSI license, signals_absent; ADD-NONPYPI appended unscored). Runs a bounded Phase-R-style single-package PyPI enrichment BEFORE scoring (idempotent pypi_intelligence upsert; --no-enrich for offline, --limit N caps fetches with dropped names reported). --matches RESULT.json consumes a saved inventory-match --json run. cyclonedx-universe-inventory Wave C/S6."
 cmd = "python .claude/scripts/conda-forge-expert/add_handoff.py"
