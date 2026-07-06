@@ -17,6 +17,18 @@ layers top-to-bottom, sidebar node list + tag filters on the left. For actual
 navigation (pan, zoom, collapse pipelines, click-through metadata), run the
 interactive version below.
 
+Per-pipeline captures (each is the same viz with one registered pipeline
+selected — far less dense, labels readable at 100%+):
+
+| Pipeline | Capture |
+|---|---|
+| `core` | [docs/pipeline-core.png](docs/pipeline-core.png) |
+| `vcs_health` | [docs/pipeline-vcs_health.png](docs/pipeline-vcs_health.png) |
+| `pypi_intelligence` | [docs/pipeline-pypi_intelligence.png](docs/pipeline-pypi_intelligence.png) |
+| `vulnerability` | [docs/pipeline-vulnerability.png](docs/pipeline-vulnerability.png) |
+| `universal_sbom` | [docs/pipeline-universal_sbom.png](docs/pipeline-universal_sbom.png) |
+| `read_surface` | [docs/pipeline-read_surface.png](docs/pipeline-read_surface.png) |
+
 ## Run it
 
 All dependencies (kedro, kedro-viz) are already in the `local-recipes` pixi
