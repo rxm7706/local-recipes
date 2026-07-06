@@ -772,6 +772,7 @@ The following are deliberately excluded from this migration, with reason:
 - `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md` — engineering patterns (rate limits, atomic writes, enterprise routing) that constrain the node ports.
 - `docs/specs/cfe-shipped-releases.md` Part 8 — the S3/parquet backend (Phase F Waves 1–3) whose datasets become Kedro catalog entries (§ 5.1).
 - `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" — Rule 1 + Rule 2 governing this BMAD effort.
+- `prototypes/cf-atlas-kedro-viz/` — runnable kedro-viz stub model of the target-state DAG (§ 5.2 pipelines, § 3.3 surface); `pixi run -e local-recipes kedro-viz-proto`.
 
 ### External / ecosystem
 

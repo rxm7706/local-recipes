@@ -209,6 +209,16 @@ cmd = "python .claude/scripts/conda-forge-expert/cisa_kev_fetcher.py"
 description = "Refresh the FIRST.org EPSS scores table in cf_atlas.db (v8.6.0 Wave A — AppThreat Deep Signals). Pulls ~3 MB gzipped CSV from https://epss.empiricalsecurity.com/epss_scores-current.csv.gz (Cyentia rebranded to Empirical Security; the older epss.cyentia.com host redirects). Columns: cve, epss, percentile (both 0.0-1.0 at source). Stored percentile is normalized to 0.0-100.0 to match CISA's published convention. Phase G / G' overlay this in Wave B alongside the CWE rollup. ~30 s end-to-end; ~334k CVEs. Pass --dry-run / --json / --db / --timeout."
 cmd = "python .claude/scripts/conda-forge-expert/epss_fetcher.py"
 
+[feature.local-recipes.tasks.kedro-viz-proto]
+description = "Serve the kedro-viz DAG of the TARGET-STATE cf_atlas pipeline (prototypes/cf-atlas-kedro-viz — illustrative stub model for docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.2; 57 stub nodes / 60 datasets across 6 modular pipelines and 5 storage layers). Opens the interactive browser UI."
+cmd = "kedro viz"
+cwd = "prototypes/cf-atlas-kedro-viz"
+
+[feature.local-recipes.tasks.kedro-run-proto]
+description = "Smoke-run the target-state cf_atlas Kedro DAG prototype (all stub nodes, MemoryDatasets, <1 s). Proves the DAG resolves; companion to kedro-viz-proto."
+cmd = "kedro run"
+cwd = "prototypes/cf-atlas-kedro-viz"
+
 [feature.local-recipes.tasks.fetch-cwe-catalog]
 description = "Refresh the MITRE CWE Research Concepts table in cf_atlas.db (v8.6.0 Wave B — AppThreat Deep Signals). Pulls ~640 KB zip from https://cwe.mitre.org/data/csv/1000.csv.zip (Research Concepts view — note: parent v8.6.0 spec incorrectly cited 2000.csv.zip which is the Architectural Concepts view). 944 CWEs. Applies a committed seed-mapping JSON at .claude/skills/conda-forge-expert/data/cwe_categories_seed.json (top-N well-known CWEs → 7 cf_atlas categories: RCE / DoS / Info-Disclosure / Auth-Bypass / Memory-Safety / Traversal / Injection). Anything not in the seed → 'Other'. Runs in seconds. Pass --dry-run / --json / --db / --timeout."
 cmd = "python .claude/scripts/conda-forge-expert/cwe_catalog_fetcher.py"
