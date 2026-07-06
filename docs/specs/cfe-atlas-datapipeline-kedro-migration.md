@@ -61,6 +61,24 @@ spec_updated: 2026-07-05
 > Trendshift's base-version conditional (its Story A1: base = v29 once
 > cyclonedx Wave A ships, else v28) is re-confirmed and now resolves to
 > **base = v29**.
+>
+> **Waves B–D SHIPPED (2026-07-05/06 — the S9 closing sync):** the "up to
+> +5 read CLIs / +4 MCP tools" above is now **live surface**, plus two
+> Wave C/D additions the enumeration missed: `add-handoff` (S6 — writes
+> `pypi_intelligence` through the SAME `phase_r_upsert_one` /
+> `apply_readiness_scores(names=…)` helpers Phase R/S bulk use; the
+> migration must keep that single-write-path property) and
+> `library-futures` (S7 — CLI/pixi-only by design, no MCP tool). Further
+> migration-surface facts to preserve: the **derived-artifact regeneration
+> cadence** (`export-purls` + `universe-sbom` re-run after every atlas
+> rebuild; decision 6's 14-day freshness gate is the enforcement — any
+> orchestrated pipeline should model them as downstream nodes of the
+> rebuild); the **`v_current_version_vulns` view** as the ONLY
+> query-time-correct vuln source (S7's load-bearing subscore reads it;
+> the stale `packages.vuln_*` rollup is report-only); and the
+> **endoflife.date cache** (`eol_cache.json`, TTL 7 d, offline-stale-OK,
+> `ENDOFLIFE_BASE_URL` mirror routing) + the git-tracked
+> `data/lts-registry.yaml` slug map as external-data nodes.
 
 ---
 

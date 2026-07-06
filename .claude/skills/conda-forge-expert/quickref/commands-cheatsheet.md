@@ -684,6 +684,18 @@ pixi run -e vuln-db scan-project <path> --license-check \
     --target-license Apache-2.0                                  # license compatibility
 pixi run -e vuln-db scan-project <path> --sbom cyclonedx \
     --enrich-vulns-from-atlas                                    # SBOM with offline vuln annotations
+
+# cyclonedx-universe-inventory suite (Waves A–D, v8.71.0)
+pixi run -e local-recipes export-purls -- --json                 # six purl+mapping artifacts (regen after every atlas rebuild)
+pixi run -e local-recipes mapping-gap -- --json                  # conda↔pypi gap recovery (DRY-RUN; --write to apply)
+pixi run -e local-recipes universe-sbom -- --mapped-only         # full-universe BOM (slices: --actionable/--conda/--pypi-only)
+pixi run -e local-recipes inventory-match -- pixi.lock --json    # gap/version-lag buckets for MY inventory
+pixi run -e local-recipes inventory-match -- reqs.txt \
+    --policy policy.toml --weights crit.csv                      # CI gate: rc 2 on violations
+pixi run -e local-recipes add-handoff -- --matches match.json    # ADD-bucket packaging worklist (bounded enrichment first)
+pixi run -e local-recipes library-futures -- --package numpy     # 2027–2030 survival score for one package
+pixi run -e local-recipes recommend-2027 -- pixi.lock \
+    --sbom-in bom.json --sbom-out scored.cdx.json                # THE window scorecard + annotated BOM
 ```
 
 ### Maintenance & sync

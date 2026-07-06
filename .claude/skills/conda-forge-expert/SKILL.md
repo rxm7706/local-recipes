@@ -579,12 +579,22 @@ for the full per-phase profile matrix and auto-detection details.
 | `pyver-breakdown <pkg> \| --policy-check [--maintainer X] [--threshold-pct N]` | Per-Python download breakdown; `--policy-check` **(headline value)** compares declared `python_min` against the empirical floor and flags bump-safe candidates, sorted bump-safe → aligned → aggressive |
 | `channel-split <pkg> \| --defaults-share-min N --top M \| --migration-checklist --maintainer X` | Per-channel 90d download breakdown (conda-forge / defaults / bioconda / pytorch / ...); `--migration-checklist` emits paste-into-GitHub-issue markdown for defaults-heavy packages |
 | `scan-project [PATH \| --image <ref> \| --sbom-in <file> \| --conda-env <path> \| --venv <path> \| --helm-chart <path> \| --kustomize <dir> \| --argo-app <file> \| --flux-cr <file>] [--license-check] [--sbom cyclonedx]` | Unified scanner — manifests, container images, SBOMs (8+ formats), live envs, GitOps |
+| `export-purls [--out-dir DIR] [--json]` | The six purl + mapping artifacts (conda / versioned / pypi-universe purls, conda↔pypi TSV, recipe exceptions, upstream TSV) — regenerate after every atlas rebuild (cyclonedx-universe-inventory S1) |
+| `mapping-gap [--write] [--limit N] [--json]` | Classify + recover conda↔PyPI mapping gaps offline (inverse-G10 vs pypi_universe + corroborators); DRY-RUN by default (S2) |
+| `universe-sbom [--format cyclonedx\|spdx] [--actionable-only\|--mapped-only\|--conda-only\|--pypi-only] [--with-vulns] [--allow-stale]` | Full-universe CycloneDX 1.6 / SPDX BOM; mapped pair = ONE conda component; 14-day freshness gate (S3/S4) |
+| `inventory-match [INPUTS \| --matches J] [--sbom-in/-out] [--policy F] [--weights F] [--conda-env P] [--venv P]` | User-inventory gap/version-lag buckets (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN) + freshness percentile + CI policy gate rc 2 (S5) |
+| `add-handoff [INPUTS \| --matches J] [--no-enrich] [--limit N]` | ADD-bucket packaging worklist (readiness, template, fail-closed license blockers); bounded Phase-R-style enrichment BEFORE scoring (S6) |
+| `library-futures [--package NAME \| INPUTS] [--weights F]` | 2027–2030 survival composite per package (any ecosystem): futures_score + keep/watch/plan-migration/replace tier, py314 + LTS/EOL horizon signals (S7; CLI/pixi-only) |
+| `recommend-2027 [INPUTS \| --matches J] [--sbom-in/-out] [--overrides F] [--weights F]` | The single 2027–2030 scorecard: S5→S7, annotated BOM (5 `cfe:*` properties), overrides shown-never-silent, Phase-P refresh offered-never-run (S8) |
 
 ### MCP exposure
 
-All twelve atlas read-tools are wrapped as MCP tools in
-`.claude/tools/conda_forge_server.py` — see
-`reference/mcp-tools.md` for the full index and selection cheatsheet.
+The atlas read-tools are wrapped as MCP tools in
+`.claude/tools/conda_forge_server.py` — including the four
+cyclonedx-universe-inventory tools (`export_purls`, `universe_sbom`,
+`inventory_match`, `recommend_2027`; `library-futures` and `add-handoff`
+are deliberately CLI/pixi-only). See `reference/mcp-tools.md` for the
+full index and selection cheatsheet.
 
 ### When to invoke the atlas
 
@@ -599,6 +609,11 @@ can't easily answer. Recommended triggers:
   there's a viable migration path
 - **Pre-deployment scan**: `scan-project --image <prod-image>` or
   `scan-project --sbom-in <cyclonedx.json>` for env audits
+- **Inventory gap review**: `inventory-match <manifest/lock/SBOM>` for the
+  ADD / UPDATE buckets, then `add-handoff` for the packaging worklist
+- **2027–2030 portfolio review**: `recommend-2027 <inventory>` — which of
+  my libraries (Python or not) survive the window; audit any verdict via
+  the per-signal breakdown
 
 ### Persona catalog + phase overview
 
@@ -3501,6 +3516,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.72.0** (Jul 6, 2026) — **cyclonedx-universe-inventory Wave E / S9 docs (MINOR, docs-only).** mcp-tools.md +4 tools + cheatsheet rows; SKILL.md Atlas CLI table +7; atlas-phases-overview Part A § Consumer +4 persona rows; commands-cheatsheet suite block; atlas-operations post-rebuild regen cadence; dependency-input-formats re-grounded for S5a with policy tiers; kedro-migration cross-spec note extended (Waves B–D live surface). Remaining: Wave D local gates + S-retro. See CHANGELOG.
 - **v8.71.0** (Jul 6, 2026) — **Wave D of cyclonedx-universe-inventory: `library-futures` (S7) + `recommend-2027` (S8) (MINOR).** The 2027–2030 survival layer: S7 scores every matched cf package (any ecosystem) via a transparent weighted composite (one auditable dated weights dict; denominator-shrinking `signals_absent`; tier = lattice meet with py314-not-ready / 18-month-silence / KEV caps and archived / yanked / EOL floors; EPSS+CWE report-only; PyPI downloads weight-0) with the two horizon signals (py314 readiness; LTS/EOL via endoflife.date → the new git-tracked `data/lts-registry.yaml` → lts-like, TTL cache, offline-safe). S8 runs S5→S7 into ONE scorecard (md/JSON/annotated CycloneDX with 5 cfe:* properties), operator overrides shown-never-silent, Phase-P refresh offered-never-run; MCP tool `recommend_2027`. The spec's full calibration gate (django 5.2 vs 4.2, KEV, silent, archived, py314 both ways, non-Python keep) passes as fixture tests. +62 tests. See CHANGELOG.
 - **v8.70.0** (Jul 5, 2026) — **G54 source decision order in the generator (MINOR; closes DW-2026-07-03).** Usable-sdist check (metadata-only sdists rejected) → GitHub tag-archive fallback (streamed sha256, templated URL, `cfe-source-kind: github-tag:no-sdist-on-pypi-G54`) → wheel last. Live-verified on redshift_connector. +2 regression tests. See CHANGELOG.
 - **v8.69.0** (Jul 5, 2026) — **recipe-generator emission fixes (MINOR).** DW-2026-07-03 items 1–4+6–8: `[:10]` run-dep cap removed (the G90 truncation root cause); per-version endpoint `urls` fallback (pinned `pkg==ver` generation fixed); `_resolve_license()` chain (PEP 639 → short-string SPDX map → classifiers → GitHub API; full text never emitted); import extraction strips `src`-layout + excludes non-package dirs; host mirrors full `[build-system].requires` (G91); lowercase output dirs (G94c); canonical CFE block emitted on both v1 pypi paths via `_render_cfe_block()` (open since v8.31.0). 5 regression tests. DW item 5 (G54 wheel re-audit) remains open. See CHANGELOG for the full narrative.
