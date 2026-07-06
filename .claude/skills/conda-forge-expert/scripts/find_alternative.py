@@ -64,11 +64,21 @@ def _jaccard(a: set[str], b: set[str]) -> float:
     return len(a & b) / max(1, len(a | b))
 
 
-def find_alternatives(name: str, limit: int = 10) -> list[dict[str, Any]]:
-    if not DB_PATH.exists():
-        print(f"cf_atlas.db not found at {DB_PATH}.", file=sys.stderr)
-        sys.exit(1)
-    conn = sqlite3.connect(DB_PATH)
+def find_alternatives(
+    name: str, limit: int = 10, conn: sqlite3.Connection | None = None,
+) -> list[dict[str, Any]]:
+    """Suggest healthier conda-forge alternatives. When `conn` is provided
+    (S7's `replace`-tier escalation calls it on the shared scorer
+    connection), it is used as-is and NOT closed, and a missing DB is the
+    caller's problem; the standalone CLI path opens its own connection and
+    exits 1 on a missing DB."""
+    if conn is None:
+        if not DB_PATH.exists():
+            print(f"cf_atlas.db not found at {DB_PATH}.", file=sys.stderr)
+            sys.exit(1)
+        conn = sqlite3.connect(DB_PATH)
+    # row_factory is required by this function's dict-style row access; set it
+    # on whatever connection we were handed (harmless for the caller).
     conn.row_factory = sqlite3.Row
 
     # 1. Pull source package fields
