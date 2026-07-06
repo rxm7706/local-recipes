@@ -82,6 +82,28 @@ def test_registry_covered_and_unmatched_excluded(mod, fixture_db):
     assert "langchain" not in names
 
 
+def test_mixed_case_registry_keys_excluded(mod, fixture_db):
+    # load_lts_registry lowercases its keys, but classify() is a library
+    # API — a direct caller's raw mixed-case dict must still exclude.
+    registry = {"NodeJS": {"slug": "nodejs", "_name": "NodeJS"}}
+    proposals = mod.classify(
+        mod._candidates(fixture_db), PRODUCTS, registry)
+    assert "nodejs" not in {p["conda_name"] for p in proposals}
+
+
+def test_out_creates_missing_parent_dirs(mod, fixture_db, tmp_path, monkeypatch):
+    db_path = tmp_path / "cf_atlas.db"
+    products_file = tmp_path / "products.json"
+    products_file.write_text(json.dumps(PRODUCTS), encoding="utf-8")
+    monkeypatch.setattr(mod, "load_lts_registry", lambda: REGISTRY)
+    out = tmp_path / "does" / "not" / "exist" / "proposals.yaml"
+    rc = mod.main(["--db", str(db_path),
+                   "--products-file", str(products_file),
+                   "--out", str(out)])
+    assert rc == 0
+    assert out.is_file() and "slug:" in out.read_text(encoding="utf-8")
+
+
 def test_registry_alias_exclusion(mod, fixture_db):
     # load_lts_registry indexes aliases too — an alias key must exclude
     registry = {"nodejs": {"slug": "nodejs", "_name": "node"}}
