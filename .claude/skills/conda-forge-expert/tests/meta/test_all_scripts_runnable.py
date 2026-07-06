@@ -42,6 +42,7 @@ SCRIPTS = [
     "library_futures.py",
     "license-checker.py",
     "local_builder.py",
+    "lts_registry_gap.py",
     "mapping_gap.py",
     "mapping_manager.py",
     "my_feedstocks.py",
