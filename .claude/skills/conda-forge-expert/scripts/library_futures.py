@@ -113,6 +113,10 @@ DEFAULT_WEIGHTS: dict[str, Any] = {
     "horizon": {
         "py314_not_ready_cap": "watch",
         "silence_cap": "watch",
+        # S8-calibration amendment (2026-07-06): a KEV-listed vuln affecting
+        # the CURRENT version is known-bad by definition — the composite
+        # alone can't outweigh active exploitation, so it caps the tier.
+        "kev_cap": "watch",
         "silence_cap_days": 547,          # 18 months, dated
         "archived_floor": "plan-migration",
         "yanked_latest_floor": "plan-migration",
@@ -696,6 +700,8 @@ def derive_tier(conn, score, row, pkg, py314, lts, weights):
         candidates.append((h["py314_not_ready_cap"], "py314-not-ready caps at watch"))
     if _silent_18mo(conn, row, pkg, weights):
         candidates.append((h["silence_cap"], ">18mo silence caps at watch"))
+    if row.get("conda_name") and _kev_current(conn, row["conda_name"]):
+        candidates.append((h["kev_cap"], "KEV-listed vuln on current version caps at watch"))
     if pkg and pkg.get("feedstock_archived"):
         candidates.append((h["archived_floor"], "archived feedstock"))
     if row.get("upstream_yanked") or (pkg and _latest_yanked(conn, pkg)):
@@ -735,6 +741,13 @@ def _silent_18mo(conn, row, pkg, weights):
     # AND no upstream movement: no positive lag and no failing CI churn signal
     upstream_moving = bool(row.get("lag_releases"))
     return not upstream_moving
+
+
+def _kev_current(conn, conda_name) -> bool:
+    r = conn.execute(
+        "SELECT vuln_kev_current FROM v_current_version_vulns WHERE conda_name = ?",
+        (conda_name,)).fetchone()
+    return bool(r and r[0])
 
 
 def _latest_yanked(conn, pkg):
