@@ -698,6 +698,8 @@ pixi run -e local-recipes lts-registry-gap                       # propose lts-r
 pixi run -e local-recipes lts-registry-gap -- --json --limit 20  # machine summary, capped per tier
 pixi run -e local-recipes recommend-2027 -- pixi.lock \
     --sbom-in bom.json --sbom-out scored.cdx.json                # THE window scorecard + annotated BOM
+pixi run -e local-recipes cwe-seed-gap                           # propose cwe_categories_seed.json entries (offline; git review decides)
+pixi run -e local-recipes spdx-schema-gap -- --json --drift      # propose spdx.schema.json enum adds + upstream staleness
 ```
 
 ### Maintenance & sync
