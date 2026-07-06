@@ -341,6 +341,10 @@ _DEFAULT_NUGET_FALLBACKS: tuple[str, ...] = (
     "https://api.nuget.org",
 )
 
+_DEFAULT_ENDOFLIFE_FALLBACKS: tuple[str, ...] = (
+    "https://endoflife.date",
+)
+
 _DEFAULT_GITHUB_API_FALLBACKS: tuple[str, ...] = (
     "https://api.github.com",
 )
@@ -644,6 +648,20 @@ def resolve_nuget_urls(package_name: str) -> list[str]:
     base_list = _dedup_strip(bases)
     suffix = f"v3-flatcontainer/{package_name.lower()}/index.json"
     return [f"{b}/{suffix}" for b in base_list]
+
+
+def resolve_endoflife_urls(product: str) -> list[str]:
+    """endoflife.date product release-cycle JSON (public API v1).
+
+    Priority: ENDOFLIFE_BASE_URL env → public endoflife.date.
+    Returns `<base>/api/<product>.json`. Free, no auth — call sites pass
+    `skip_auth=True` to make_request so JFrog/GitHub tokens never leak to
+    this host. Used by library-futures (S7) for authoritative LTS/EOL dates.
+    """
+    bases: list[str | None] = [os.environ.get("ENDOFLIFE_BASE_URL")]
+    bases.extend(_DEFAULT_ENDOFLIFE_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/api/{product}.json" for b in base_list]
 
 
 def resolve_github_api_urls(path_suffix: str = "") -> list[str]:

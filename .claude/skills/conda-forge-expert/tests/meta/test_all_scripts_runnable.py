@@ -39,6 +39,7 @@ SCRIPTS = [
     "health_check.py",
     "inventory_channel.py",
     "inventory_match.py",
+    "library_futures.py",
     "license-checker.py",
     "local_builder.py",
     "mapping_gap.py",
