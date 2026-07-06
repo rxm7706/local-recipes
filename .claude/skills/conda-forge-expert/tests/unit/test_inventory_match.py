@@ -651,6 +651,15 @@ class TestRunAndOutputs:
         with pytest.raises(ValueError):
             im.annotate_sbom(p, [], "0")
 
+    def test_annotate_survives_explicit_null_metadata(self, im, tmp_path):
+        # `"metadata": null` is legal JSON — setdefault would return None
+        p = tmp_path / "nullmeta.cdx.json"
+        p.write_text(json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6",
+                                 "version": 1, "metadata": None, "components": []}))
+        annotated = im.annotate_sbom(p, [], "12345")
+        names = [x["name"] for x in annotated["metadata"]["properties"]]
+        assert names == ["cfe:atlas_built_at"]
+
     def test_injectable_version_provider(self, im, db, sp_mod):
         def provider(conda_name):
             return [f"9.{i}" for i in range(12)]
