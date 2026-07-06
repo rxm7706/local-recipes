@@ -7,6 +7,16 @@ decomposition — every node is a stub (pure passthrough), so the value is the
 **DAG shape**: dataset names, phase dependencies, pipeline grouping, and
 storage layers, rendered interactively by kedro-viz.
 
+## The DAG at a glance
+
+![Target-state cf_atlas DAG in kedro-viz](docs/target-state-dag.png)
+
+High-resolution capture (7800×5400 — zoomable to node-label level) of the
+static `kedro viz build` render: all 57 nodes / 60 datasets, the 5 storage
+layers top-to-bottom, sidebar node list + tag filters on the left. For actual
+navigation (pan, zoom, collapse pipelines, click-through metadata), run the
+interactive version below.
+
 ## Run it
 
 All dependencies (kedro, kedro-viz) are already in the `local-recipes` pixi
