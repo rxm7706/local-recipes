@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-06-20
 version: '1.0.0'
 status: draft
-source_pin: 'conda-forge-expert v8.68.0'
+source_pin: 'conda-forge-expert v8.73.1'
 consolidates:
   - architecture-conda-forge-expert.md
   - architecture-cf-atlas.md
@@ -14,6 +14,9 @@ consolidates:
 ---
 
 # Unified Architecture: `local-recipes`
+
+> **Re-grounded 2026-07-06** (source_pin → v8.73.1; reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.73.1.
+
 
 This document is the **executive architecture** for the rebuild. It consolidates the four part-specific architecture docs plus the integration doc into one navigable artifact. Part-specific docs remain authoritative for fine-grained detail (~3,000 lines collectively); this doc is for orientation, decision rationale, and rebuild planning.
 
@@ -31,13 +34,13 @@ This document is the **executive architecture** for the rebuild. It consolidates
               ▼ (BMAD-driven planning)                                          ▼ (direct conda-forge work)
    ┌─────────────────────┐                                          ┌────────────────────────┐
    │  Part 4: BMAD       │                                          │  Part 3: MCP Server    │
-   │  - 65 skills        │── Rule 1: invoke ────────────┐           │  - 42 tools            │
+   │  - 65 skills        │── Rule 1: invoke ────────────┐           │  - 46 tools            │
    │  - 6-layer config   │                              │           │  - thin subprocess     │
    │  - 3 projects       │                              │           │    wrappers            │
    │  - active-project   │   ┌──────────────────────────▼──────────────────────┐
    │    resolution       │   │   Part 1: conda-forge-expert skill              │
    │                     │◀──│   - SKILL.md (10-step loop, 5 critical          │
-   │                     │   │     constraints, G1-G98 gotchas)                │
+   │                     │   │     constraints, G1-G99 gotchas)                │
    │                     │   │   - 54 Tier 1 canonical scripts                 │
    └─────────────────────┘   │   - 46 Tier 2 CLI wrappers                      │
               │              │   - 41 templates / 13 ecosystems (12 language + conda-forge-yml)                │
@@ -50,7 +53,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
                                      ┌──────────────────────────────────────┐
                                      │  Part 2: cf_atlas data pipeline      │
                                      │  - 22 phases (B → N + O/P/Q/R/S)     │
-                                     │  - SQLite schema v28 (21 tables/4 views)│
+                                     │  - SQLite schema v29 (21 tables/4 views)│
                                      │  - TTL gates on F, G, H, K           │
                                      │  - phase_state checkpoint (B, D, N)  │
                                      │  - S3-parquet + cf-graph offline     │
@@ -117,7 +120,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
 **Key invariants**:
 1. 10-step autonomous loop with one human gate at step 8b
 2. 5 critical constraints (no-mix-formats, stdlib-required, python-floor, pypi-url-pattern, build.bat-call-prefix)
-3. 95 Recipe Authoring Gotchas (G1-G98)
+3. 95 Recipe Authoring Gotchas (G1-G99)
 4. Three-place rule for new scripts (canonical + wrapper + pixi task + meta-test)
 
 **Detail**: see [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md)
@@ -145,7 +148,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
 
 ### Part 3: FastMCP server
 
-**Role**: exposes Parts 1+2 as 42 MCP tools for Claude Code / BMAD agents.
+**Role**: exposes Parts 1+2 as 46 MCP tools for Claude Code / BMAD agents.
 
 **Components**:
 - **Server**: `conda_forge_server.py` (2,084 lines, FastMCP)
@@ -263,7 +266,7 @@ Default deny: `Bash(git push --force *)` and variants (`-f`, etc.).
 
 ### 5.1 cf_atlas.db (primary data store)
 
-21 tables + 4 views (schema v28):
+21 tables + 4 views (schema v29):
 
 ```
 packages                       — 60+ columns; row per conda package

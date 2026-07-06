@@ -8,10 +8,13 @@ status: 'complete'
 rule_count: 63
 optimized_for_llm: true
 sync_sources: ['CLAUDE.md', '.claude/skills/conda-forge-expert/SKILL.md', '.claude/skills/conda-forge-expert/reference/', '.claude/skills/conda-forge-expert/guides/', '.claude/skills/conda-forge-expert/quickref/', '.claude/skills/conda-forge-expert/CHANGELOG.md', 'docs/enterprise-deployment.md']
-last_synced_skill_version: 'conda-forge-expert v8.68.0'
+last_synced_skill_version: 'conda-forge-expert v8.73.1'
 maintenance_model: 'hand-edited rulebook; per-section (Sync: ...) tags name the upstream source. Re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns) on each CHANGELOG MINOR bump'
 ---
 # Project Context for AI Agents
+
+> **Re-grounded 2026-07-06** (source_pin → v8.73.1; reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.73.1.
+
 
 _Foundational rules every BMAD agent reads on spawn. This file is a **rulebook**, not a primer — full mechanics live in the cited upstream sources. Mirrors `CLAUDE.md` (repo-wide guidance) and the `conda-forge-expert` skill (conda-forge specifics)._
 
