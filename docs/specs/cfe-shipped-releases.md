@@ -2847,6 +2847,12 @@ The proposed workflow also had fabricated inputs (`actions/setup-python` `python
 
 ### Where cdxgen-on-pixi.lock *would* belong (separate follow-up, not v8.6.0)
 
+> **DISCHARGED (2026-07-05, cross-ref added at the cyclonedx S-retro):** the DW17
+> follow-up shipped as `cyclonedx-universe-inventory` **S5a** — `scan_project`
+> gained a NATIVE `pixi.lock` parser (no cdxgen subprocess needed), policy-tier
+> `policy`, wired into `scan-project` and `inventory-match` intake. See that
+> spec's Wave C and `reference/dependency-input-formats.md`.
+
 cdxgen-on-pixi.lock is a legitimate **`scan_project` input format**. Today, `scan_project` accepts `--conda-env <path>` (live env scan), `--venv <path>` (live env scan), `--sbom-in <file>` (pre-built CycloneDX/SPDX consumption), and a handful of manifest/lockfile types — but not `--pixi-lock <file>`. Adding `--pixi-lock` as a new input mode (which would shell out to `cdxgen -t pixi -o /tmp/bom.json <path>` and then re-enter the `--sbom-in` code path with the produced BOM) gives operators a one-command flow for any pixi-managed workspace:
 
 ```bash
