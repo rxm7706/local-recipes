@@ -339,6 +339,15 @@ class TestAnnotation:
         with pytest.raises(ValueError):
             r27.annotate_sbom(p, [], "0")
 
+    def test_annotate_survives_explicit_null_metadata(self, r27, tmp_path):
+        # `"metadata": null` is legal JSON — setdefault would return None
+        p = tmp_path / "nullmeta.cdx.json"
+        p.write_text(json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6",
+                                 "version": 1, "metadata": None, "components": []}))
+        annotated = r27.annotate_sbom(p, [], "12345")
+        names = [x["name"] for x in annotated["metadata"]["properties"]]
+        assert names == ["cfe:atlas_built_at"]
+
 
 class TestOverrides:
     def test_sidecar_override_shown_never_silent(self, r27, db, eol_client, tmp_path):

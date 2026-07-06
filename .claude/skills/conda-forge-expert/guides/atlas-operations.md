@@ -65,7 +65,7 @@ they snapshot the DB and go stale with it:
 
 ```bash
 pixi run -e local-recipes export-purls -- --json     # six purl+mapping artifacts
-pixi run -e local-recipes universe-sbom -- --json    # full-universe BOM
+pixi run -e local-recipes universe-sbom -- --json    # BOM → data dir; --json prints the run summary
 ```
 
 No automatic hook is wired (optional follow-up); the enforcement is
