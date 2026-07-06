@@ -418,6 +418,10 @@ cmd = "python .claude/scripts/conda-forge-expert/universe_sbom.py"
 description = "Match a user inventory (manifests / locks / SBOMs / pip+conda list text) against cf_atlas.db: ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN buckets via three-way version comparison, freshness percentile, optional --policy CI gate (exit 2 on violations) + --weights sidecar; --sbom-in/--sbom-out annotates the BOM with cfe:gap_status. cyclonedx-universe-inventory Wave C/S5."
 cmd = "python .claude/scripts/conda-forge-expert/inventory_match.py"
 
+[feature.local-recipes.tasks.library-futures]
+description = "Score conda-forge packages for 2027–2030 survival (keep/watch/plan-migration/replace) via a transparent weighted composite over atlas signals (upstream freshness, cadence, adoption, downloads, vuln posture, feedstock health, license, blast radius) + horizon signals (Python 3.14 readiness; LTS/EOL from endoflife.date→lts-registry→heuristic). --package NAME (repeatable) and/or inventory inputs; --json, --allow-stale. cyclonedx-universe-inventory Wave D/S7."
+cmd = "python .claude/scripts/conda-forge-expert/library_futures.py"
+
 [feature.local-recipes.tasks.add-handoff]
 description = "Emit the ADD-bucket packaging worklist from inventory-match results (name, readiness, template, blockers e.g. non-OSI license, signals_absent; ADD-NONPYPI appended unscored). Runs a bounded Phase-R-style single-package PyPI enrichment BEFORE scoring (idempotent pypi_intelligence upsert; --no-enrich for offline, --limit N caps fetches with dropped names reported). --matches RESULT.json consumes a saved inventory-match --json run. cyclonedx-universe-inventory Wave C/S6."
 cmd = "python .claude/scripts/conda-forge-expert/add_handoff.py"
