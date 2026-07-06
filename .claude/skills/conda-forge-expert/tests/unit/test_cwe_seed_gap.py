@@ -107,6 +107,19 @@ def test_other_impact_counts_packages(mod, fixture_db):
     assert mod._other_impact(fixture_db) == 1   # only 'somepkg' has Other>0
 
 
+def test_other_impact_survives_non_dict_json(mod, fixture_db):
+    # a malformed vuln_cwe_categories_json (non-dict) must not crash (PR #42)
+    for bad in (json.dumps([1, 2]), json.dumps("5"), "not json"):
+        fixture_db.execute(
+            "INSERT INTO packages (conda_name, latest_status, relationship, "
+            "match_source, match_confidence, feedstock_archived, "
+            "vuln_cwe_categories_json) VALUES (?, 'active', 'test', "
+            "'parselmouth', 'verified', 0, ?)",
+            (f"bad-{hash(bad) & 0xffff}", bad))
+    fixture_db.commit()
+    assert mod._other_impact(fixture_db) == 1   # unchanged; no AttributeError
+
+
 def test_cli_json_limit_and_seed_untouched(mod, fixture_db, tmp_path, capsys):
     db_path = tmp_path / "cf_atlas.db"
     from cwe_catalog_fetcher import _SEED_PATH
