@@ -217,6 +217,14 @@ cmd = "python .claude/scripts/conda-forge-expert/lts_registry_gap.py"
 description = "Refresh the MITRE CWE Research Concepts table in cf_atlas.db (v8.6.0 Wave B — AppThreat Deep Signals). Pulls ~640 KB zip from https://cwe.mitre.org/data/csv/1000.csv.zip (Research Concepts view — note: parent v8.6.0 spec incorrectly cited 2000.csv.zip which is the Architectural Concepts view). 944 CWEs. Applies a committed seed-mapping JSON at .claude/skills/conda-forge-expert/data/cwe_categories_seed.json (top-N well-known CWEs → 7 cf_atlas categories: RCE / DoS / Info-Disclosure / Auth-Bypass / Memory-Safety / Traversal / Injection). Anything not in the seed → 'Other'. Runs in seconds. Pass --dry-run / --json / --db / --timeout."
 cmd = "python .claude/scripts/conda-forge-expert/cwe_catalog_fetcher.py"
 
+[feature.local-recipes.tasks.cwe-seed-gap]
+description = "Propose cwe_categories_seed.json entries by keyword-classifying MITRE CWEs currently bucketed 'Other' in the cwe_categories table — the mapping-gap sibling for the CWE seed. Fully offline (reads cwe_categories, populated by fetch-cwe-catalog). READ-ONLY: emits ready-to-paste seed lines with strong/weak confidence tiers + an 'Other-bucket affects N packages' headline; accept/reject stays with git review; the seed is never written. Pass --json / --limit N / --out FILE."
+cmd = "python .claude/scripts/conda-forge-expert/cwe_seed_gap.py"
+
+[feature.local-recipes.tasks.spdx-schema-gap]
+description = "Propose spdx.schema.json enum additions by diffing the vendored SPDX enum against the upstream SPDX license list (spdx/license-list-data, GITHUB_RAW_BASE_URL-routable, TTL-7d cache), ranked by the licenses real packages carry (v_actionable_packages) — the mapping-gap sibling for the SPDX schema. READ-ONLY: add-to-schema (real upstream IDs on packages) vs non-standard (normalize) tiers; --drift for pure staleness; the schema is never written. Pass --json / --limit N / --out FILE / --source-file FILE (offline) / --drift."
+cmd = "python .claude/scripts/conda-forge-expert/spdx_schema_gap.py"
+
 [feature.local-recipes.tasks.scan-vulnerabilities]
 description = "Scan a recipe's dependencies for vulnerabilities using the local CVE database"
 cmd = "python .claude/scripts/conda-forge-expert/vulnerability_scanner.py"
