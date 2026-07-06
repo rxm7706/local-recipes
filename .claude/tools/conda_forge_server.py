@@ -1449,6 +1449,8 @@ ATLAS_EXPORT_PURLS         = SCRIPTS_DIR / "export_purls.py"
 ATLAS_UNIVERSE_SBOM        = SCRIPTS_DIR / "universe_sbom.py"
 # cyclonedx-universe-inventory Wave C/S5 — inventory gap/version-lag matcher.
 ATLAS_INVENTORY_MATCH      = SCRIPTS_DIR / "inventory_match.py"
+# cyclonedx-universe-inventory Wave D/S8 — the 2027-2030 window scorecard.
+ATLAS_RECOMMEND_2027       = SCRIPTS_DIR / "recommend_2027.py"
 ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
 # v8.19.0 Phase F+ Wave 3 — per-platform / per-Python / per-channel breakdowns.
 ATLAS_PLATFORM_BREAKDOWN   = SCRIPTS_DIR / "platform_breakdown.py"
@@ -1924,6 +1926,57 @@ def inventory_match(
     # _run_script parses the stdout JSON regardless of return code, and the
     # result carries `policy.violations` either way.
     return json.dumps(_run_script(ATLAS_INVENTORY_MATCH, args, timeout=600),
+                      indent=2)
+
+
+@mcp.tool()
+def recommend_2027(
+    inputs: list[str] | None = None,
+    format: str | None = None,
+    matches: str | None = None,
+    sbom_in: str | None = None,
+    sbom_out: str | None = None,
+    weights: str | None = None,
+    overrides: str | None = None,
+    allow_stale: bool = False,
+) -> str:
+    """The 2027–2030 window scorecard for a user inventory.
+
+    cyclonedx-universe-inventory Wave D/S8. Offline; reads cf_atlas.db.
+    Runs inventory-match (S5) then library-futures (S7) and returns ONE
+    scorecard: futures_score (0-100) + futures_tier (keep / watch /
+    plan-migration / replace) per matched conda-forge package in ANY
+    ecosystem, with per-signal breakdown, signals_absent, py314_readiness,
+    lts_status/eol_date, per-signal freshness ages, and find-alternative
+    suggestions on replace-tier rows. Not-on-cf rows are listed as
+    not-evaluated (see add-handoff).
+
+    `inputs` are manifest/lock/SBOM/text files or project directories
+    (`format` for pip/conda list text); `matches` replays a saved
+    `inventory-match --json` result instead. Optional: `weights`
+    (criticality sidecar), `overrides` (operator tier overrides — shown in
+    the report, never silent), `sbom_in`+`sbom_out` (annotate the BOM with
+    cfe:futures_tier/score, cfe:py314_readiness, cfe:lts_status). A stale
+    PyPI downloads signal is OFFERED a Phase-P refresh, never executed.
+    Refuses when the atlas is >14 days old unless allow_stale."""
+    args = ["--json"]
+    args += list(inputs or [])
+    if format:
+        args += ["--format", format]
+    if matches:
+        args += ["--matches", matches]
+    if sbom_in:
+        args += ["--sbom-in", sbom_in]
+    if sbom_out:
+        args += ["--sbom-out", sbom_out]
+    if weights:
+        args += ["--weights", weights]
+    if overrides:
+        args += ["--overrides", overrides]
+    if allow_stale:
+        args.append("--allow-stale")
+    # scoring a large inventory re-queries the atlas per package
+    return json.dumps(_run_script(ATLAS_RECOMMEND_2027, args, timeout=600),
                       indent=2)
 
 
