@@ -4,7 +4,9 @@ part_id: seed-gap-suggesters
 display_name: seed-gap suggesters (CWE + SPDX)
 project_type_id: tooling
 date: 2026-07-06
-status: in-progress
+status: shipped
+implemented_by: conda-forge-expert v8.75.0
+shipped_ref: 6b23022a335bfce317b961937ce52fb2a4699464
 spec_updated: 2026-07-06
 ---
 
