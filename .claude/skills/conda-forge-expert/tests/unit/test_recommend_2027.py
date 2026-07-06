@@ -247,14 +247,39 @@ class TestReportAndParity:
         assert result["signal_ages"]["conda_downloads_age_days"] == 0
 
     def test_matches_replay_parity(self, r27, db, eol_client, tmp_path):
+        """Drives the REAL --matches path: load_matches over a written file
+        must yield the same scorecard as the in-memory rows."""
         rows = [_row("numpy", pinned="2.1.0"), _row("kevpkg", pinned="1.2")]
         direct = r27.run_recommend(db, rows, eol_client=eol_client, now=NOW)
-        # a --matches file is just the S5 JSON round-tripped
-        replay_rows = json.loads(json.dumps({"rows": rows}))["rows"]
-        replayed = r27.run_recommend(db, replay_rows, eol_client=eol_client, now=NOW)
+        matches_file = tmp_path / "matches.json"
+        matches_file.write_text(json.dumps(
+            {"generated_at": "x", "counts": {}, "rows": rows}))
+        replayed = r27.run_recommend(db, r27.load_matches(matches_file),
+                                     eol_client=eol_client, now=NOW)
         strip = ("generated_at",)
         assert {k: v for k, v in direct.items() if k not in strip} == \
                {k: v for k, v in replayed.items() if k not in strip}
+
+    def test_load_matches_rejects_wrong_shapes(self, r27, tmp_path):
+        bare_list = tmp_path / "list.json"
+        bare_list.write_text(json.dumps([{"name": "x"}]))
+        assert r27.load_matches(bare_list) is None       # no AttributeError
+        no_rows = tmp_path / "norows.json"
+        no_rows.write_text(json.dumps({"counts": {}}))
+        assert r27.load_matches(no_rows) is None
+
+    def test_rows_never_vanish_from_the_scorecard(self, r27, db, eol_client):
+        """scored + not_evaluated must PARTITION the input — a hand-edited
+        --matches row with a conda_name but an unscoreable bucket lands in
+        not_evaluated, never silently dropped."""
+        weird = [
+            {"name": "numpy", "conda_name": "numpy", "ecosystem": "pypi",
+             "bucket": "ADD", "signals_absent": []},          # contradictory shape
+            {"name": "numpy2", "conda_name": "numpy", "ecosystem": "pypi",
+             "bucket": "current", "signals_absent": []},      # case-skewed bucket
+        ]
+        result = r27.run_recommend(db, weird, eol_client=eol_client, now=NOW)
+        assert len(result["rows"]) + len(result["not_evaluated"]) == len(weird)
 
     def test_not_evaluated_listed(self, r27, db, eol_client):
         rows = [_row("numpy", pinned="2.1.0"),
@@ -267,6 +292,24 @@ class TestReportAndParity:
 
 
 class TestAnnotation:
+    def test_reannotation_idempotent(self, r27, db, eol_client, tmp_path):
+        """This run's --sbom-in is a prior run's --sbom-out: cfe:* properties
+        must be replaced, never stacked."""
+        bom = {"bomFormat": "CycloneDX", "specVersion": "1.6", "version": 1,
+               "components": [{"type": "library", "name": "django",
+                               "version": "5.2", "purl": "pkg:pypi/django@5.2"}]}
+        p = tmp_path / "in.cdx.json"
+        p.write_text(json.dumps(bom))
+        result = r27.run_recommend(db, [_row("django", pinned="5.2")],
+                                   eol_client=eol_client, now=NOW)
+        once = r27.annotate_sbom(p, result["rows"], result["built_at"])
+        p.write_text(json.dumps(once))
+        twice = r27.annotate_sbom(p, result["rows"], result["built_at"])
+        names = [x["name"] for x in twice["components"][0]["properties"]]
+        assert len(names) == len(set(names))          # no duplicates
+        meta_names = [x["name"] for x in twice["metadata"]["properties"]]
+        assert meta_names.count("cfe:atlas_built_at") == 1
+
     def test_bom_carries_all_cfe_properties(self, r27, db, eol_client, tmp_path):
         bom = {"bomFormat": "CycloneDX", "specVersion": "1.6", "version": 1,
                "components": [
@@ -329,6 +372,52 @@ class TestOverrides:
         ov.write_text(json.dumps({"x": {"tier": "yolo"}}))
         with pytest.raises(ValueError):
             r27.load_overrides_sidecar(ov)
+
+    def test_empty_notes_marker_no_crash(self, r27, db, eol_client, capsys):
+        # 'cfe:futures_tier=' with no value must warn, never IndexError
+        db.execute("UPDATE pypi_intelligence SET notes = 'cfe:futures_tier=' "
+                   "WHERE pypi_name = 'numpy'")
+        db.commit()
+        result = r27.run_recommend(db, [_row("numpy", pinned="2.1.0")],
+                                   eol_client=eol_client, now=NOW)
+        assert "override" not in result["rows"][0]
+        assert "override ignored" in capsys.readouterr().err
+
+    def test_punctuated_notes_tier_still_applies(self, r27, db, eol_client):
+        # 'cfe:futures_tier=replace.' — trailing punctuation must not
+        # silently drop the override
+        db.execute("UPDATE pypi_intelligence SET notes = "
+                   "'ops: cfe:futures_tier=replace. sunset planned' "
+                   "WHERE pypi_name = 'numpy'")
+        db.commit()
+        result = r27.run_recommend(db, [_row("numpy", pinned="2.1.0")],
+                                   eol_client=eol_client, now=NOW)
+        assert result["rows"][0]["futures_tier"] == "replace"
+
+    def test_unrecognized_notes_tier_warns(self, r27, db, eol_client, capsys):
+        db.execute("UPDATE pypi_intelligence SET notes = "
+                   "'cfe:futures_tier=yolo' WHERE pypi_name = 'numpy'")
+        db.commit()
+        result = r27.run_recommend(db, [_row("numpy", pinned="2.1.0")],
+                                   eol_client=eol_client, now=NOW)
+        assert "override" not in result["rows"][0]
+        assert "unrecognized futures tier" in capsys.readouterr().err
+
+    def test_override_exact_key_beats_fold_variant(self, r27, tmp_path):
+        # exact lowercase entries never clobbered by a fold-equivalent name
+        ov = tmp_path / "ov.json"
+        ov.write_text(json.dumps({"ruamel.yaml": {"tier": "keep"},
+                                  "ruamel_yaml": {"tier": "replace"}}))
+        overrides = r27.load_overrides_sidecar(ov)
+        rows = [
+            {"conda_name": "ruamel.yaml", "name": "ruamel.yaml",
+             "futures_tier": "watch", "futures_score": 50.0},
+            {"conda_name": "ruamel_yaml", "name": "ruamel_yaml",
+             "futures_tier": "watch", "futures_score": 50.0},
+        ]
+        r27.apply_overrides(rows, overrides)
+        assert rows[0]["futures_tier"] == "keep"
+        assert rows[1]["futures_tier"] == "replace"
 
 
 class TestPhasePOffer:

@@ -45,7 +45,12 @@ from pathlib import Path
 from typing import Any
 
 from export_purls import fold_name
-from library_futures import DEFAULT_WEIGHTS, EolClient, score_packages
+from library_futures import (
+    _SCOREABLE_BUCKETS,
+    DEFAULT_WEIGHTS,
+    EolClient,
+    score_packages,
+)
 from universe_sbom import StaleAtlasError, check_freshness
 
 
@@ -66,7 +71,11 @@ _VALID_TIERS = ("keep", "watch", "plan-migration", "replace")
 
 def load_overrides_sidecar(path: Path) -> dict[str, dict[str, Any]]:
     """--overrides <yaml|json>: `{name: {tier, reason}}` (non-Python channel).
-    Keys are folded so spelling variants match."""
+
+    Keyed by EXACT lowercase name (conda names are exact identifiers —
+    ruamel.yaml and ruamel_yaml are different packages); a PEP-503-folded
+    key is registered only as a spelling-variant FALLBACK and never
+    clobbers an exact entry."""
     text = path.read_text(encoding="utf-8")
     if path.suffix.lower() in (".yaml", ".yml"):
         import yaml  # type: ignore[import-untyped]
@@ -81,8 +90,9 @@ def load_overrides_sidecar(path: Path) -> dict[str, dict[str, Any]]:
             spec = {"tier": spec}
         if not isinstance(spec, dict) or spec.get("tier") not in _VALID_TIERS:
             raise ValueError(f"override for {name!r}: tier must be one of {_VALID_TIERS}")
-        out[fold_name(str(name))] = {"tier": spec["tier"],
-                                     "reason": spec.get("reason")}
+        entry = {"tier": spec["tier"], "reason": spec.get("reason")}
+        out[str(name).lower()] = entry
+        out.setdefault(fold_name(str(name)), entry)   # variant fallback only
     return out
 
 
@@ -103,19 +113,37 @@ def _notes_overrides(conn: sqlite3.Connection,
         notes_str = str(notes)
         if _NOTES_TIER_MARK not in notes_str:
             continue
-        tier = notes_str.split(_NOTES_TIER_MARK, 1)[1].split()[0].strip(",;")
+        tail = notes_str.split(_NOTES_TIER_MARK, 1)[1].split()
+        if not tail:
+            sys.stderr.write(f"  warn: {conda_name}: empty {_NOTES_TIER_MARK} "
+                             "marker in notes — override ignored\n")
+            continue
+        tier = tail[0].strip(".,;:!)")
         if tier in _VALID_TIERS:
-            out[fold_name(conda_name)] = {"tier": tier,
-                                          "reason": "pypi_intelligence.notes"}
+            # exact conda identifier — never folded (conda names are exact)
+            out[conda_name.lower()] = {"tier": tier,
+                                       "reason": "pypi_intelligence.notes"}
+        else:
+            # overrides are never SILENTLY dropped — an unparseable tier warns
+            sys.stderr.write(f"  warn: {conda_name}: unrecognized futures tier "
+                             f"{tier!r} in notes — override ignored\n")
     return out
 
 
 def apply_overrides(scored: list[dict[str, Any]],
                     overrides: dict[str, dict[str, Any]]) -> None:
-    """Override REPLACES futures_tier; the original stays visible."""
+    """Override REPLACES futures_tier; the original stays visible.
+    Lookup order: exact lowercase conda_name → exact lowercase name →
+    folded name (spelling-variant fallback only) — fold-equivalent conda
+    packages (ruamel.yaml vs ruamel_yaml) never cross-match on exact keys."""
     for r in scored:
-        key = fold_name(r.get("conda_name") or r.get("name") or "")
-        ov = overrides.get(key)
+        ov = None
+        for key in ((r.get("conda_name") or "").lower(),
+                    (r.get("name") or "").lower(),
+                    fold_name(r.get("conda_name") or r.get("name") or "")):
+            if key and key in overrides:
+                ov = overrides[key]
+                break
         if not ov:
             continue
         r["override"] = {"tier": ov["tier"], "reason": ov.get("reason"),
@@ -176,6 +204,15 @@ def detect_downloads_staleness(conn: sqlite3.Connection, now: int,
 
 # ── orchestration ────────────────────────────────────────────────────────────
 
+def load_matches(path: Path) -> list[dict[str, Any]] | None:
+    """Rows from a saved `inventory-match --json` result. None when the
+    file isn't that shape (bare list, missing `rows` — the friendly-error
+    path, not a traceback)."""
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    rows = doc.get("rows") if isinstance(doc, dict) else None
+    return rows if isinstance(rows, list) else None
+
+
 def run_recommend(
     conn: sqlite3.Connection,
     match_rows: list[dict[str, Any]],
@@ -187,11 +224,15 @@ def run_recommend(
     now = now if now is not None else int(time.time())
     scored = score_packages(conn, match_rows, weights=weights or DEFAULT_WEIGHTS,
                             eol_client=eol_client, now=now)
+    # EXACT complement of score_packages' filter — a row must land in
+    # exactly one of scored / not_evaluated. Hand-edited --matches files
+    # (or a future S5 bucket) must never vanish from the scorecard.
     not_evaluated = [
         {"name": r.get("name"), "ecosystem": r.get("ecosystem"),
          "bucket": r.get("bucket")}
         for r in match_rows
         if not r.get("conda_name")
+        or (r.get("bucket") and r["bucket"] not in _SCOREABLE_BUCKETS)
     ]
     all_overrides = _notes_overrides(conn, scored)
     all_overrides.update(overrides or {})   # sidecar beats notes
@@ -316,7 +357,13 @@ def annotate_sbom(sbom_path: Path, scored: list[dict[str, Any]],
                 or by_key.get(("conda", fold_name(name)))
         if row is None:
             continue
-        props = comp.setdefault("properties", [])
+        # idempotent: re-annotating a prior --sbom-out must not stack
+        # duplicate cfe:* properties
+        _CFE_PROPS = {"cfe:futures_tier", "cfe:futures_score",
+                      "cfe:py314_readiness", "cfe:lts_status", "cfe:eol_date"}
+        props = [p for p in comp.get("properties") or []
+                 if p.get("name") not in _CFE_PROPS]
+        comp["properties"] = props
         props.append({"name": "cfe:futures_tier", "value": str(row["futures_tier"])})
         if row.get("futures_score") is not None:
             props.append({"name": "cfe:futures_score", "value": str(row["futures_score"])})
@@ -324,8 +371,11 @@ def annotate_sbom(sbom_path: Path, scored: list[dict[str, Any]],
         props.append({"name": "cfe:lts_status", "value": str(row["lts_status"])})
         if row.get("eol_date"):
             props.append({"name": "cfe:eol_date", "value": str(row["eol_date"])})
-    meta_props = doc.setdefault("metadata", {}).setdefault("properties", [])
+    metadata = doc.setdefault("metadata", {})
+    meta_props = [p for p in metadata.get("properties") or []
+                  if p.get("name") != "cfe:atlas_built_at"]
     meta_props.append({"name": "cfe:atlas_built_at", "value": str(built_at)})
+    metadata["properties"] = meta_props
     return doc
 
 
@@ -387,9 +437,8 @@ def main() -> int:
     try:
         check_freshness(conn, args.allow_stale)
         if args.matches:
-            doc = json.loads(args.matches.read_text(encoding="utf-8"))
-            match_rows = doc.get("rows") if isinstance(doc, dict) else None
-            if not isinstance(match_rows, list):
+            match_rows = load_matches(args.matches)
+            if match_rows is None:
                 sys.stderr.write(f"--matches {args.matches}: no `rows` list "
                                  "(is this `inventory-match --json` output?)\n")
                 return 1
