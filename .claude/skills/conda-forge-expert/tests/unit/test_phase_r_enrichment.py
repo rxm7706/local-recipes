@@ -294,3 +294,22 @@ class TestPhaseR_Enrichment:
         assert "License :: OSI Approved :: MIT License" in json.loads(row["classifiers"])
         # Wheel platforms include 'any'
         assert "any" in json.loads(row["wheel_platforms"])
+
+
+class TestNormalizeLicenseSpdxPassThrough:
+    """Wave C local-gate finding: a literal SPDX id absent from the
+    common-form map (non-OSI ids like BUSL-1.1 — live case:
+    ragstack-ai-knowledge-store) must pass through case-corrected via the
+    vendored SPDX enum, so the S6 blocker reads `non-osi-license` instead
+    of `license-unknown`."""
+
+    def test_literal_non_osi_id_passes_through(self, atlas_mod):
+        assert atlas_mod._normalize_license_to_spdx("BUSL-1.1") == "BUSL-1.1"
+
+    def test_case_corrected(self, atlas_mod):
+        assert atlas_mod._normalize_license_to_spdx("busl-1.1") == "BUSL-1.1"
+        assert atlas_mod._normalize_license_to_spdx("elastic-2.0") == "Elastic-2.0"
+
+    def test_junk_still_none(self, atlas_mod):
+        assert atlas_mod._normalize_license_to_spdx("Business Source License") is None
+        assert atlas_mod._normalize_license_to_spdx("(FTL or GPLv2+) and BSD") is None
