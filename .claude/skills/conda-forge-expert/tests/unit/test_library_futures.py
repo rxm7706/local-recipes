@@ -12,6 +12,7 @@ fetcher or a synthetic EolClient.
 """
 from __future__ import annotations
 
+import datetime as dt
 import importlib.util
 import json
 import sys
@@ -57,7 +58,7 @@ def _stub_eol(lf, **kw):
     default.update(kw)
 
     class _Stub:
-        def lts_status(self, name, pinned_line=None):
+        def lts_status(self, name, pinned_line=None, pypi_name=None):
             return dict(default)
     return _Stub()
 
@@ -422,3 +423,78 @@ class TestScorePackages:
                                 now=NOW)
         assert out[0]["futures_tier"] == "keep"
         assert out[0]["py314_readiness"] == "py314-ready"
+
+
+# ── lts-like releases heuristic (Wave D local slice) ─────────────────────────
+
+class TestLtsLikeReleasesHeuristic:
+    """Decision 5(b) LAST-RESORT heuristic, implemented in the local wave:
+    patch releases on an OLDER major line after a newer line exists →
+    `lts-like` (labeled heuristic; consulted only when endoflife + registry
+    both miss and a pypi identity exists)."""
+
+    DAY = 86400
+
+    def _rel(self, ts):
+        iso = dt.datetime.fromtimestamp(ts, dt.timezone.utc).isoformat()
+        return [{"upload_time_iso_8601": iso}]
+
+    def test_old_line_recent_patch_fires(self, lf):
+        now = 1_800_000_000
+        releases = {"1.0": self._rel(now - 900 * self.DAY),
+                    "2.0": self._rel(now - 400 * self.DAY),
+                    "1.10.22": self._rel(now - 100 * self.DAY)}
+        assert lf.lts_like_from_releases(releases, now=now) is True
+
+    def test_old_line_patch_beyond_window_does_not_fire(self, lf):
+        now = 1_800_000_000
+        releases = {"1.0": self._rel(now - 900 * self.DAY),
+                    "2.0": self._rel(now - 700 * self.DAY),
+                    "1.9": self._rel(now - 600 * self.DAY)}
+        assert lf.lts_like_from_releases(releases, now=now) is False
+
+    def test_single_line_or_yanked_never_fires(self, lf):
+        now = 1_800_000_000
+        assert lf.lts_like_from_releases(
+            {"1.0": self._rel(now - 10 * self.DAY)}, now=now) is False
+        yanked = [{**f, "yanked": True} for f in self._rel(now - 10 * self.DAY)]
+        assert lf.lts_like_from_releases(
+            {"1.0": self._rel(now - 900 * self.DAY),
+             "2.0": self._rel(now - 400 * self.DAY),
+             "1.10": yanked}, now=now) is False
+
+    def test_lts_status_reaches_heuristic_only_on_double_miss(self, lf, tmp_path):
+        now = 1_800_000_000
+        releases = {"1.0": self._rel(now - 900 * self.DAY),
+                    "2.0": self._rel(now - 400 * self.DAY),
+                    "1.10": self._rel(now - 100 * self.DAY)}
+        client = lf.EolClient(cache_path=tmp_path / "c.json",
+                              fetcher=lambda slug: None, registry={},
+                              now=now, releases_fetcher=lambda n: releases)
+        out = client.lts_status("somepkg", pypi_name="somepkg")
+        assert out["lts_status"] == "lts-like"
+        assert out["source"] == "releases-heuristic"
+        # no pypi identity → heuristic skipped
+        out2 = client.lts_status("somepkg")
+        assert out2["lts_status"] == "unknown"
+
+    def test_endoflife_hit_takes_precedence(self, lf, tmp_path):
+        now = 1_800_000_000
+        cycles = [{"cycle": "5.2", "lts": True, "eol": "2028-04-30"}]
+        client = lf.EolClient(cache_path=tmp_path / "c.json",
+                              fetcher=lambda slug: cycles, registry={},
+                              now=now,
+                              releases_fetcher=lambda n: (_ for _ in ()).throw(
+                                  AssertionError("must not consult releases")))
+        out = client.lts_status("django", pypi_name="django")
+        assert out["source"] == "endoflife"
+        assert out["lts_status"] == "lts-available"
+
+    def test_fetch_failure_stays_unknown(self, lf, tmp_path):
+        client = lf.EolClient(cache_path=tmp_path / "c.json",
+                              fetcher=lambda slug: None, registry={},
+                              now=1_800_000_000,
+                              releases_fetcher=lambda n: (_ for _ in ()).throw(
+                                  OSError("offline")))
+        out = client.lts_status("somepkg", pypi_name="somepkg")
+        assert out["lts_status"] == "unknown"
