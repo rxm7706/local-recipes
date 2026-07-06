@@ -38,6 +38,20 @@ matching row here in the same change.
 | `poetry.lock` | ✅ | `[[package]]` `name` + `version` | Same shape as uv. Hash data ignored. |
 | `Pipfile.lock` (pipenv) | ✅ | `default` + `develop` sections; `==X.Y.Z` version strings stripped to bare version | Hash data ignored. |
 | `conda-lock.yml` (conda-lock 2.x) | ✅ | `package:` list — name, version, manager (conda→`conda` ecosystem, pip→`pypi`), platform | Per-platform entries dedup'd by (name, version, ecosystem). |
+| `pdm.lock` | ✅ | `[[package]]` `name` + `version` | S5a (v8.71.0). Same TOML shape as uv/poetry. **Policy tier: future.** |
+| `pylock.toml` (PEP 751) | ✅ | `[[packages]]` `name` + `version` (note the PLURAL key) | S5a (v8.71.0). **Policy tier: future.** |
+| `pip list` / `pip freeze` output (text or `--format=json`) | ✅ | freeze lines (`name==ver`), direct refs (`name @ url`), editable `-e …#egg=`, columnar table, JSON array | S5a (v8.71.0). No canonical filename — route via `inventory-match --format pip` (auto-sniffed for `.txt` inputs). **Policy tier: tool-supported.** |
+
+### Policy tiers (Python Dependency Policy, S5 input contract)
+
+Every format above carries a tier from the Dependency Policy write-up:
+**policy-supported** (the policy's CI formats: requirements.txt,
+pyproject.toml, environment.yaml, conda-lock, pixi.toml/lock,
+meta.yaml/recipe.yaml), **tool-supported** (the tool runs ahead of the
+policy: SBOMs, live envs, pip/conda list text, Pipfile), and **future**
+(parsers shipped, rows flagged `policy_tier: future`: uv.lock,
+poetry.lock, pdm.lock, pylock.toml). `inventory-match` stamps the tier on
+every row and the report flags `policy: future` rows explicitly.
 
 ---
 
@@ -48,8 +62,9 @@ matching row here in the same change.
 | `pixi.lock` | ✅ | Resolved conda + pypi packages, all envs | Always preferred over `pixi.toml` when both exist. Reads URL-form (`https://conda.anaconda.org/conda-forge/<subdir>/<name>-<version>-<build>.conda`) and extracts name+version via regex. |
 | `pixi.toml` | ✅ | `[dependencies]`, `[pypi-dependencies]`, `[feature.*.dependencies]`, `[feature.*.pypi-dependencies]` | Only when `pixi.lock` is absent (less precise — no resolved versions). |
 | `environment.yml` / `environment.yaml` | ✅ | conda `dependencies:` list + nested `pip:` block | Channel-prefixed (`conda-forge::pkg`) deps stripped to bare name. Pin specs preserved. |
-| `recipe.yaml` (v1) | ⚠️ | n/a (not parsed by scan_project; recipe authoring is the conda-forge-expert skill's other half) | This file is the recipe under `.claude/skills/conda-forge-expert/`'s OWN authoring tooling, not scan_project. |
-| `meta.yaml` (v0) | ⚠️ | Same as above | scan_project doesn't read recipe files; the cf_atlas builder reads them via Phase E from cf-graph cache. |
+| `recipe.yaml` (v1, as a dependency MANIFEST) | ✅ | `requirements:` build/host/run (top-level + per-output), incl. `if/then/else` conditionals; `${{ }}`-templated names skipped | S5a (v8.71.0): conda recipes ARE dependency manifests per the Dependency Policy. Bare versions = exact conda pins; `=1.2` fuzzy = range. **Policy tier: policy-supported.** (Recipe *authoring* remains the skill's other half.) |
+| `meta.yaml` (v0, as a dependency MANIFEST) | ✅ | `requirements:` build/host/run via a jinja-tolerant line parser (multi-output OK); `{{ compiler() }}`-templated names skipped; `run_constrained:` correctly NOT harvested | S5a (v8.71.0). **Policy tier: policy-supported.** |
+| `conda list` output (default / `--export` / `--explicit` / `--json`) | ✅ | name+version+build+channel columns; `name=ver=build`; `@EXPLICIT` URLs (`#<hash>` fragments stripped); JSON array | S5a (v8.71.0). Channel `pypi` rows tagged ecosystem=pypi. Route via `inventory-match --format conda-list` (auto-sniffed). **Policy tier: tool-supported.** |
 
 ---
 

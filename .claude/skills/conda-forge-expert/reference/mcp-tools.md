@@ -60,6 +60,10 @@ These tools wrap the cf_atlas data layer (~16 schema versions, 15 pipeline phase
 | `find_alternative` | Suggest healthier replacements for an archived/abandoned package. Ranks by keyword/summary/dependent/maintainer overlap × recency × downloads. |
 | `adoption_stage` | Lifecycle stage classifier — bleeding-edge / stable / mature / declining / silent — based on age + cadence + downloads. |
 | `scan_project` | Unified scanner: project paths / container images / SBOMs (CycloneDX 1.x + 1.6 + XML; SPDX 2.x JSON + 2.x tag-value + 3.0 JSON-LD; syft / trivy native JSON) / live conda envs / live Python venvs / Kubernetes manifests / Helm charts (rendered) / Kustomize overlays (built) / Argo CD Applications / Flux HelmReleases & Kustomizations / OCI archives. License compatibility check. SBOM emit with optional Phase G vuln annotations. |
+| `export_purls` | **cyclonedx-universe-inventory S1.** Export the six purl + mapping artifacts (conda purls with `?channel=conda-forge`, versioned purls, full-pypi-universe purls, conda↔pypi TSV with provenance, recipe exceptions, non-PyPI upstream TSV) from cf_atlas.db + recipes/. Read-only; regenerate after every atlas rebuild. |
+| `universe_sbom` | **cyclonedx-universe-inventory S3.** Full conda-forge + PyPI universe as a CycloneDX 1.6 (or SPDX 2.3) BOM. A mapped conda↔pypi pair is ONE conda component (`cfe:pypi_purl`/`cfe:match_*` properties); slices: `actionable_only` / `mapped_only` / `conda_only` / `pypi_only`; `with_vulns`. Refuses a >14-day-stale atlas unless `allow_stale`. |
+| `inventory_match` | **cyclonedx-universe-inventory S5.** Match a user inventory (manifests / locks / SBOMs / pip+conda list text / live envs) against the atlas: ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN buckets via the three-way version comparison, freshness percentile, `match_confidence` per row; optional `policy` CI gate (rc 2 = violations) + `weights` sidecar; `sbom_in`+`sbom_out` annotates the BOM with `cfe:gap_status`/`cfe:conda_purl`. |
+| `recommend_2027` | **cyclonedx-universe-inventory S8.** The 2027–2030 window scorecard: runs inventory-match then library-futures → `futures_score` (0-100) + `futures_tier` (keep / watch / plan-migration / replace) per matched package in ANY ecosystem, with per-signal breakdown, `signals_absent`, `py314_readiness`, `lts_status`/`eol_date`, and find-alternative suggestions on replace rows. Operator overrides shown never-silent; Phase-P refresh offered never-run; annotated BOM carries the five `cfe:*` properties. (The S7 `library-futures` scorer is CLI/pixi-only by design — not an MCP tool.) |
 
 ### Atlas tool selection cheatsheet
 
@@ -74,6 +78,9 @@ These tools wrap the cf_atlas data layer (~16 schema versions, 15 pipeline phase
 | "What can replace this archived dep?" | `find_alternative <archived-name>` |
 | "Show me the per-version downloads" | `version_downloads <pkg>` |
 | "Scan my pixi.lock / SBOM / Helm chart / live K8s cluster for CVEs" | `scan_project` (unified entry point) |
+| "Which of my deps aren't on conda-forge / are version-lagging?" | `inventory_match` (buckets + policy gate) |
+| "Which of my libraries — Python or not — survive 2027–2030?" | `recommend_2027` (tier scorecard) |
+| "Give me the whole universe as purls / an SBOM" | `export_purls` / `universe_sbom` |
 
 ## Special notes (not surfaced in tool docstrings)
 
