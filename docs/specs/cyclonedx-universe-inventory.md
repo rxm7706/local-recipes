@@ -89,7 +89,10 @@ spec_updated: 2026-07-05
   (transitive resolver, live channeldata cross-check, live eligible sets,
   `vulns.*` thresholds, container chain) and the S5 end-to-end smoke + S6
   live-enrichment gate PASSED (incl. a normalizer fix the S6 gate
-  surfaced); see § Wave C Dev Notes. Resume at **Wave D / S7**.
+  surfaced); see § Wave C Dev Notes. **Wave D S7 web slice shipped
+  2026-07-06** (branch `claude/wave-d-s7-library-futures` — library-futures
+  scorer + EolClient + lts-registry.yaml + adversarial patches; S8 and the
+  Wave D local gates remain). Resume at **Wave D / S8**.
 
 ### Execution-environment split (web pass)
 
@@ -141,6 +144,24 @@ grayskull cache) does **not** exist there, and `pixi` is not installed:
   covered by the web fixture tests. The extracted `phase_r_upsert_one` /
   `apply_readiness_scores(names=…)` helpers are the SAME write/score paths
   Phase R/S bulk use — no parallel scorer to drift.
+  **Wave D S7 local-only additions (recorded 2026-07-06, with the S7 web
+  slice):** the live `endoflife.date` fetch (the default `_http`-backed
+  fetcher over `resolve_endoflife_urls` with the `ENDOFLIFE_BASE_URL`
+  override — every web test injects a fake; run one dated live smoke
+  locally); the live-PyPI `lts-like` releases heuristic (shares S6's fetch
+  budget; web slice reaches `lts-like` only via registry `heuristic-seed`
+  entries); endoflife live `identifiers`/`aliases` slug-matching (web slug
+  resolution = registry aliases → bare name); and the measured
+  `futures_score` distribution / tier counts / wall time over the REAL
+  atlas (Wave D Dev Notes, dated — never estimated). Scoring notes pinned
+  with the slice: EPSS/CWE surface REPORT-ONLY per row
+  (`vuln_enrichment`, from the stale rollup) and never enter the
+  composite (the load-bearing vuln subscore reads
+  `v_current_version_vulns`); PyPI downloads are weight-0 (non-portable);
+  `py314-likely` requires a release within the 3.14 cycle (dated
+  `py314_cycle_start: 2025-10-07` in the weights dict); the 18-month
+  silence cap is its own dated constant (547 d), distinct from the
+  24-month adoption-stage `silent` class.
 
 ### Adjacent prefix.dev / nebari tooling (survey 2026-07-05, per user — the eighth amendment)
 
