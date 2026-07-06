@@ -51,6 +51,7 @@ import datetime as dt
 import functools
 import json
 import math
+import re
 import sqlite3
 import sys
 import time
@@ -189,12 +190,20 @@ class EolClient:
         registry: dict[str, Any] | None = None,
         ttl_days: int = 7,
         now: int | None = None,
+        releases_fetcher: Callable[[str], dict | None] | None = None,
     ) -> None:
         self.cache_path = cache_path
         self.fetcher = fetcher if fetcher is not None else _http_eol_fetcher
         self.registry = registry if registry is not None else load_lts_registry()
         self.ttl_seconds = ttl_days * 86400
         self.now = now if now is not None else int(time.time())
+        # decision 5(b) LAST-RESORT `lts-like` heuristic source (LOCAL wave):
+        # pypi releases JSON, consulted only when endoflife + registry both
+        # miss AND the caller supplies a pypi identity. Default is the live
+        # S6-shared fetcher; tests inject fakes or pass `False` to disable.
+        self.releases_fetcher = (_default_releases_fetcher
+                                 if releases_fetcher is None else
+                                 (releases_fetcher or None))
         self._cache = self._load_cache()
 
     def _load_cache(self) -> dict[str, Any]:
@@ -239,7 +248,8 @@ class EolClient:
             return cached["cycles"], "endoflife", True   # stale fallback
         return None, "cache-miss-offline", False
 
-    def lts_status(self, name: str, pinned_line: str | None = None) -> dict[str, Any]:
+    def lts_status(self, name: str, pinned_line: str | None = None,
+                   pypi_name: str | None = None) -> dict[str, Any]:
         result: dict[str, Any] = {
             "lts_status": "unknown", "eol_date": None,
             "product_fully_eol": False, "pinned_line_eol_before_window": False,
@@ -258,13 +268,31 @@ class EolClient:
 
         if not slug:
             result["source"] = "registry"
-            return result
+            return self._releases_heuristic(result, pypi_name)
 
         cycles, source, stale = self._cycles(slug)
         result["source"], result["stale"] = source, stale
         if not cycles:
-            return result       # unknown — no cap/floor, treated as absent
+            # unknown — no cap/floor; the releases heuristic is the last resort
+            return self._releases_heuristic(result, pypi_name)
         return self._from_cycles(cycles, pinned_line, window_start, result)
+
+    def _releases_heuristic(self, result: dict[str, Any],
+                            pypi_name: str | None) -> dict[str, Any]:
+        """Decision 5(b) LAST resort (local wave): patch releases observed on
+        an OLDER major line after a newer line exists → `lts-like`. Labeled
+        heuristic — never presented as policy; consulted only when endoflife
+        + registry both missed and a pypi identity exists."""
+        if not pypi_name or self.releases_fetcher is None:
+            return result
+        try:
+            releases = self.releases_fetcher(pypi_name)
+        except Exception:  # noqa: BLE001 — a fetch failure is never fatal
+            releases = None
+        if releases and lts_like_from_releases(releases, now=self.now):
+            result["lts_status"] = "lts-like"
+            result["source"] = "releases-heuristic"
+        return result
 
     def _is_eol(self, v: Any) -> bool:
         """endoflife `eol` is a bool OR a date; True / a date past the
@@ -354,6 +382,62 @@ def _http_eol_fetcher(slug: str) -> list | None:
         except Exception:
             continue
     return None
+
+
+# 18 months, the horizon family's dated recency constant (2026-07-06): an
+# old-line patch older than this no longer evidences ACTIVE parallel
+# maintenance for the 2027–2030 window.
+LTS_LIKE_RECENT_DAYS = 547
+
+
+def lts_like_from_releases(releases: dict[str, Any], *, now: int,
+                           recent_days: int = LTS_LIKE_RECENT_DAYS) -> bool:
+    """Decision 5(b) heuristic over a pypi releases map ({version: [files]}):
+    True iff a strictly-older MAJOR line received a non-yanked upload AFTER
+    the newest major line first appeared, and that old-line patch is recent
+    (within `recent_days` of `now`). Major-line granularity is deliberate —
+    finer lines (openssl 3.0/3.5) are endoflife.date's job, and this
+    heuristic never runs when endoflife covers the product."""
+    lines: dict[int, list[float]] = {}
+    for ver, files in releases.items():
+        if not files or not isinstance(files, list):
+            continue
+        if all(f.get("yanked") for f in files):
+            continue
+        m = re.match(r"(\d+)", str(ver))
+        if not m:
+            continue
+        stamps = []
+        for f in files:
+            raw = f.get("upload_time_iso_8601") or f.get("upload_time")
+            if not raw:
+                continue
+            try:
+                stamps.append(dt.datetime.fromisoformat(
+                    str(raw).replace("Z", "+00:00")).timestamp())
+            except ValueError:
+                continue
+        if stamps:
+            lines.setdefault(int(m.group(1)), []).append(max(stamps))
+    if len(lines) < 2:
+        return False
+    newest = max(lines)
+    first_new = min(lines[newest])
+    cutoff = now - recent_days * 86400
+    return any(ts > first_new and ts >= cutoff
+               for line, stamps in lines.items() if line < newest
+               for ts in stamps)
+
+
+@functools.lru_cache(maxsize=4096)
+def _default_releases_fetcher(pypi_name: str) -> dict[str, Any] | None:
+    """Live default for the lts-like heuristic — the SAME bounded pypi.org
+    JSON fetch S6 uses (shared budget; memoized per run)."""
+    try:
+        from inventory_match import _fetch_pypi_release_map
+    except Exception:  # noqa: BLE001
+        return None
+    return _fetch_pypi_release_map(pypi_name)
 
 
 # ── Python 3.14 readiness (pure) ────────────────────────────────────────────
@@ -780,7 +864,8 @@ def score_row(conn, row, weights, eol_client, now):
 
     # ── horizon signals ──
     pinned_line = _minor_line(row.get("pinned"))
-    lts = eol_client.lts_status(conda_name or row.get("name", ""), pinned_line) \
+    lts = eol_client.lts_status(conda_name or row.get("name", ""), pinned_line,
+                                pypi_name=(pkg or {}).get("pypi_name")) \
         if eol_client else {"lts_status": "unknown", "eol_date": None,
                             "product_fully_eol": False,
                             "pinned_line_eol_before_window": False, "stale": False}

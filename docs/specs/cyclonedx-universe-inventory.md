@@ -1,6 +1,6 @@
 ---
 status: in-progress
-spec_updated: 2026-07-05
+spec_updated: 2026-07-06
 ---
 
 # Tech Spec: CycloneDX Universe Inventory — full PyPI + full conda-forge, purl mapping, gap/version-lag matching, and 2027–2030 library recommendations
@@ -95,7 +95,7 @@ spec_updated: 2026-07-05
   S8 web slice shipped 2026-07-06** (branch
   `claude/wave-d-s8-recommend-2027` — recommend-2027 scorecard + MCP tool
   + the full calibration gate as fixture tests + the dated `kev_cap`
-  calibration amendment + v8.71.0; PRs #36+#37 merged 2026-07-06).
+  calibration amendment + v8.71.0; PRs #36+#37 merged 2026-07-06). **Wave D local slice + live gates shipped 2026-07-06 (local)** — the lts-like releases heuristic implemented + live-verified, endoflife live smoke, Phase-P freshness confirmed, measured distributions recorded; see § Wave D Dev Notes.
   **Wave E S9 docs shipped 2026-07-06** (branch `claude/wave-e-s9-docs` —
   mcp-tools/+4, SKILL.md CLI table +7, overview persona rows,
   cheatsheet, regen cadence, dependency-input-formats S5a re-grounding
@@ -805,6 +805,57 @@ New flags: `--offline`, `--no-resolve`, `--no-live-cf`, `--python-version`.
   estimate for approval; never run implicitly. Verified 2026-07-05: data is fresh
   (max fetched 2026-07-04; 818,868 `bigquery-public` + 32,491 `clickhouse-clickpy`
   rows) — no refresh needed at authoring time. MCP: `recommend_2027`.
+
+#### Wave D Dev Notes — local slice + live gates (2026-07-06; measured, not estimated)
+
+The S7/S8 web slices deferred four surfaces to local; three were RUN live and
+one (the decision-5(b) `lts-like` releases heuristic) was IMPLEMENTED here —
+like Wave C, the web slice could only reach `lts-like` via registry
+`heuristic-seed` entries; the live releases-based heuristic did not exist:
+
+1. **`lts_like_from_releases`** (new, pure + 6 offline tests): a strictly-older
+   MAJOR line with a non-yanked upload AFTER the newest line first appeared,
+   recent within the dated `LTS_LIKE_RECENT_DAYS = 547`. Wired as
+   `EolClient(releases_fetcher=…)` — the live default shares S6's bounded
+   pypi.org JSON fetcher (memoized); consulted ONLY when endoflife + registry
+   both miss AND a pypi identity exists. **Live verification (2026-07-06):**
+   `pydantic` → `lts-like` (1.10.26 uploaded 2025-12-18, 2.x first
+   2023-04-03 — active parallel maintenance, hand-verified);
+   `sqlalchemy` + `urllib3` correctly stay `unknown` (their old-line patches
+   fell outside the 18-month window).
+2. **Live endoflife.date fetch** (the default `_http` fetcher over
+   `resolve_endoflife_urls`): verified across the measured run — `openssl`
+   pinned-line EOL 2026-11-01 → plan-migration, `perl` line EOL 2023-06-20,
+   `django` lts-available with line EOL 2027-04-30 (in-window keep signal),
+   `oniguruma` product-fully-EOL. The TTL cache works: a cached 3-package
+   re-run is 1.2 s vs live fetching during the 323 s full run.
+3. **Phase-P real path**: `downloads_staleness: None`, all `signal_ages`
+   ≤ 1 day (downloads refreshed 2026-07-04, atlas built 2026-07-05) — the
+   § 13 cost-preflight offer correctly did NOT fire; no refresh executed.
+4. **Measured `futures_score` distribution** (repo pixi env, the Wave C
+   1,150-row resolved inventory; 1,149 scored + kedro-mcp not_evaluated
+   [ADD]): **wall 323 s** (incl. live endoflife + eligible-set fetches),
+   71 MB peak RSS. Tiers: **keep 996 · watch 143 · plan-migration 3 ·
+   replace 7** — a healthy spread, no recalibration needed. Scores:
+   min 61.4 · p25 77.0 · median 81.2 · p75 84.0 · max 95.6 (mean 80.8).
+   py314: 1,028 unknown (mostly non-Python rows — legitimately absent) ·
+   120 ready · 1 likely. LTS: 1,135 unknown · 5 lts-available · 9 none.
+
+**S8 real-inventory smoke (PASS):** hand-checked verdicts trace to real
+signals — `openssl`/`perl` (EOL floors, live dates), `blosc`/`pexpect`/`httpx`
+(>18 mo silence caps — httpx's last upstream release genuinely >18 mo old),
+`grpcio`/`libmamba`/`email_validator` (archived floors: `feedstock_archived=1`
+confirmed in the atlas; escalated to replace with alternatives — the
+`email_validator`→`email-validator` suggestion is exactly right), `numpy`
+keep/py314-ready. **Quality note (report-only, for the S-retro):**
+`find-alternative` suggestions on replace rows are mixed (`cherrypy` for
+`grpcio`) — a known similarity-scoring limitation, surfaced verbatim.
+The real-SBOM leg: the Wave B 50-component slice → 32 keep / 18 watch in
+17.1 s, `--sbom-out` annotated `cfe:futures_tier`/`cfe:futures_score`/
+`cfe:py314_readiness`/`cfe:lts_status` per component.
+
+Suite after the local slice: **2,119 passed / 2 known skips / 1 xpassed,
+102 s** (`pixi run -e local-recipes test`).
 
 ### Wave E — Closeout
 
