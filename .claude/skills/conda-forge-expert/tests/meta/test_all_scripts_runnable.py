@@ -52,6 +52,7 @@ SCRIPTS = [
     "pyver_breakdown.py",
     "recipe_editor.py",
     "recipe-generator.py",
+    "recommend_2027.py",
     "pypi_only_candidates.py",
     "pypi_intelligence.py",
     "recipe_optimizer.py",

@@ -91,8 +91,12 @@ spec_updated: 2026-07-05
   live-enrichment gate PASSED (incl. a normalizer fix the S6 gate
   surfaced); see § Wave C Dev Notes. **Wave D S7 web slice shipped
   2026-07-06** (branch `claude/wave-d-s7-library-futures` — library-futures
-  scorer + EolClient + lts-registry.yaml + adversarial patches; S8 and the
-  Wave D local gates remain). Resume at **Wave D / S8**.
+  scorer + EolClient + lts-registry.yaml + adversarial patches). **Wave D
+  S8 web slice shipped 2026-07-06** (branch
+  `claude/wave-d-s8-recommend-2027` — recommend-2027 scorecard + MCP tool
+  + the full calibration gate as fixture tests + the dated `kev_cap`
+  calibration amendment + v8.71.0; the Wave D local gates remain). Resume
+  at **Wave D local gates**, then **Wave E / S9**.
 
 ### Execution-environment split (web pass)
 
@@ -162,6 +166,18 @@ grayskull cache) does **not** exist there, and `pixi` is not installed:
   `py314_cycle_start: 2025-10-07` in the weights dict); the 18-month
   silence cap is its own dated constant (547 d), distinct from the
   24-month adoption-stage `silent` class.
+  **Wave D S8 local-only additions (recorded 2026-07-06, with the S8 web
+  slice):** the measured `futures_score` distribution / tier counts / wall
+  time over the REAL atlas per § Verification's "recorded from actual
+  runs with dates — never estimated" (the web slice ships NO measured
+  numbers); the real Phase-P downloads refresh execution (the web slice
+  only DETECTS >90 d staleness and prints the § 13 cost-preflight offer);
+  and a real-inventory `recommend-2027` smoke (this repo's pixi env +
+  one real SBOM, hand-checking a few tier verdicts against the per-signal
+  breakdown). The calibration gate itself is WEB (fixture DB + fake
+  endoflife fetcher — deterministic); a weights change that breaks the
+  spec's ranking fails the suite (verified by perturbation during the S8
+  adversarial review).
 
 ### Adjacent prefix.dev / nebari tooling (survey 2026-07-05, per user — the eighth amendment)
 
