@@ -212,11 +212,15 @@ this section instead of inline literals; re-verify with
     (TTL 7 d, offline-stale-OK), `pypi_conda_map.json`, `vdb/`, `cve/`.
     Git-tracked seeds: `cwe_categories_seed.json`, `lts-registry.yaml`,
     `spdx.schema.json`.
-*   **Write paths** — exactly 3 writers to `cf_atlas.db`:
+*   **Write paths** — exactly 6 writers to `cf_atlas.db`:
     `conda_forge_atlas.py` (including the shared `phase_r_upsert_one` /
     `apply_readiness_scores` helpers that `add-handoff` reuses — the
-    single-write-path property to preserve), `atlas_phase.py` TTL reset, and
-    the `mapping_gap.py` `g10_spelling` no-clobber writeback.
+    single-write-path property to preserve), `atlas_phase.py` TTL reset,
+    the `mapping_gap.py` `g10_spelling` no-clobber writeback, and the three
+    standalone vulnerability-scoring fetchers — `cisa_kev_fetcher.py`
+    (`cisa_kev`), `epss_fetcher.py` (`epss_scores`), and
+    `cwe_catalog_fetcher.py` (`cwe_categories`) — whose tables Phase G / G'
+    overlay at build time.
 *   **Freshness machinery**: `check_freshness` (`universe_sbom.py`,
     `STALE_AFTER_DAYS = 14`) consumed by 5 scripts; `*_fetched_at` columns +
     meta keys drive per-phase TTL gating; derived artifacts (`export-purls`,
@@ -523,7 +527,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 
 #### Story B1 — Port the conda-side backbone phases into Kedro nodes
 
-**Goal**: Refactor the foundational conda-forge enumeration + graph-building + VCS/health phases (B, B.5, B.6, C, C.5, E, E.5, F, H, J, K, L, M, N per § 3.3) into Kedro Nodes with declared inputs/outputs, split across the Core and VCS & Health pipelines of § 5.2.
+**Goal**: Refactor the foundational conda-forge enumeration + graph-building + VCS/health phases (B, B.5, B.6, E, E.5, F, J, K, L, M, N per § 3.3) into Kedro Nodes with declared inputs/outputs, split across the Core and VCS & Health pipelines of § 5.2.
 
 **Acceptance criteria**:
 - Each conda-side phase is a pure-function node with explicit inputs/outputs.
@@ -532,7 +536,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 
 #### Story B2 — Port the PyPI & Vulnerability pipelines
 
-**Goal**: Refactor the PyPI intelligence phases (D + O–S, including the shared `phase_r_upsert_one` / `apply_readiness_scores` single-write-path helpers that `add-handoff` reuses) and the vulnerability phases (G / G' — AppThreat VDB / CISA KEV) into their domain pipelines.
+**Goal**: Refactor the PyPI intelligence phases (C, C.5 mapping + D enumeration + H skew detection + O–S scoring per § 5.2, including the shared `phase_r_upsert_one` / `apply_readiness_scores` single-write-path helpers that `add-handoff` reuses) and the vulnerability phases (G / G' — AppThreat VDB / CISA KEV) into their domain pipelines.
 
 **Acceptance criteria**:
 - PyPI Intelligence and Vulnerability pipelines exist per § 5.2.
