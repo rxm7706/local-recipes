@@ -3,10 +3,13 @@ doc_type: integration-architecture
 project_name: local-recipes
 date: 2026-06-20
 parts_integrated: 4
-source_pin: 'conda-forge-expert v8.68.0'
+source_pin: 'conda-forge-expert v8.73.1'
 ---
 
 # Integration Architecture: How the Four Parts Connect
+
+> **Re-grounded 2026-07-06** (source_pin → v8.73.1; reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.73.1.
+
 
 The four parts of `local-recipes` are conceptually separable but **operationally interdependent**. This document is the contract sheet: what each part expects from the others, where data flows, where coupling lives, and where the cross-cutting concerns (auth, env vars, security) sit.
 
@@ -42,8 +45,8 @@ A rebuild that gets the parts right individually but misses these contracts will
                                               ▼ (atlas pipeline)          ▼ (MCP wire format)     │
                                 ┌──────────────────────────┐   ┌────────────────────────┐         │
                                 │   Part 2: cf_atlas        │   │  Part 3: MCP server     │         │
-                                │   - 22 phases (B → S)     │   │  - 42 tools             │         │
-                                │   - schema v28            │◀──│  - thin subprocess      │         │
+                                │   - 22 phases (B → S)     │   │  - 46 tools             │         │
+                                │   - schema v29            │◀──│  - thin subprocess      │         │
                                 │   - 19 CLIs               │   │    wrappers over Tier 1 │         │
                                 │   - S3/cf-graph offline   │   │  - auto-started by      │         │
                                 │     backends              │   │    Claude Code          │         │

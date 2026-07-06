@@ -2,10 +2,13 @@
 doc_type: deployment-guide
 project_name: local-recipes
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.68.0'
+source_pin: 'conda-forge-expert v8.73.1'
 ---
 
 # Deployment Guide
+
+> **Re-grounded 2026-07-06** (source_pin → v8.73.1; reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.73.1.
+
 
 How to deploy and operate `local-recipes` in enterprise, air-gapped, and JFrog Artifactory environments. This guide consolidates `docs/enterprise-deployment.md` with the deployment-relevant rules from `project-context.md` and the integration architecture's auth chain.
 

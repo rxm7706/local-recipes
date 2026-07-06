@@ -4,10 +4,13 @@ project_name: local-recipes
 date: 2026-06-20
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v8.68.0'
+source_pin: 'conda-forge-expert v8.73.1'
 ---
 
 # Project Overview: local-recipes
+
+> **Re-grounded 2026-07-06** (source_pin → v8.73.1; reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.73.1.
+
 
 **A semi-autonomous conda-forge packaging factory with an offline-tolerant package-intelligence layer, MCP tool surface, and BMAD multi-project planning infrastructure — all in a single pixi monorepo.**
 
@@ -36,8 +39,8 @@ source_pin: 'conda-forge-expert v8.68.0'
 `local-recipes` is **not a conda recipe project** — it's the **infrastructure that produces** conda-forge recipes, plus the offline intelligence and air-gap-tolerant tooling to maintain them at scale. A new contributor inheriting this repository would receive four conceptually-separable systems wrapped into one pixi monorepo:
 
 1. **conda-forge-expert** — a Claude Code skill that encodes the full conda-forge packaging lifecycle (generate → validate → build → submit). 10-step autonomous loop with one human-gated checkpoint at step 8b. Versions, schemas, and policies are pinned in code so the skill produces conda-forge-acceptable recipes on first authoring.
-2. **cf_atlas** — a 22-phase offline package-intelligence pipeline (`bootstrap-data`, `atlas-phase`) that builds and maintains a SQLite database (`cf_atlas.db`, schema v28) inventorying ~33k conda-actionable + ~806k PyPI directory packages with metadata, version skew, vulnerability surface, dependency graphs, staleness signals, and (v8.1.0+) per-PyPI-project enrichment scores plus (v8.5.3 / v8.6.0) CISA KEV / EPSS / CWE overlays on the vulnerability columns. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph (Phase H) offline backends. Three side tables: `packages` (working set, ~33k conda-actionable), `pypi_universe` (reference data, ~806k PyPI directory), `pypi_intelligence` (49-column enrichment side table joined on `pypi_name`, populated by the v8.1.0 Phase O/P/Q/R/S chain).
-3. **FastMCP server** — `.claude/tools/conda_forge_server.py` exposing 42 MCP tools that surface the skill's lifecycle, the atlas's intelligence, and project-scanning capabilities to Claude Code's MCP runtime. Auto-started at session boot.
+2. **cf_atlas** — a 22-phase offline package-intelligence pipeline (`bootstrap-data`, `atlas-phase`) that builds and maintains a SQLite database (`cf_atlas.db`, schema v29) inventorying ~33k conda-actionable + ~806k PyPI directory packages with metadata, version skew, vulnerability surface, dependency graphs, staleness signals, and (v8.1.0+) per-PyPI-project enrichment scores plus (v8.5.3 / v8.6.0) CISA KEV / EPSS / CWE overlays on the vulnerability columns. Air-gap-tolerant via S3-parquet (Phase F) and cf-graph (Phase H) offline backends. Three side tables: `packages` (working set, ~33k conda-actionable), `pypi_universe` (reference data, ~806k PyPI directory), `pypi_intelligence` (49-column enrichment side table joined on `pypi_name`, populated by the v8.1.0 Phase O/P/Q/R/S chain).
+3. **FastMCP server** — `.claude/tools/conda_forge_server.py` exposing 46 MCP tools that surface the skill's lifecycle, the atlas's intelligence, and project-scanning capabilities to Claude Code's MCP runtime. Auto-started at session boot.
 4. **BMAD infrastructure** — the BMAD-METHOD installer (`_bmad/`) plus a multi-project planning layout (`_bmad-output/projects/<slug>/`) with six-layer config merge, 65 installed skills, and `scripts/bmad-switch` for active-project resolution. Drives planning + dev + review + retro workflows for any project hosted in this repo.
 
 These four parts share a single pixi monorepo, a single skill data directory (`.claude/data/conda-forge-expert/`), and a single enterprise-deployment layer (`_http.py` + `*_BASE_URL` env-var resolution + JFrog integration).
@@ -80,7 +83,7 @@ local-recipes/                                  # pixi monorepo root
 │   ├── skills/                                 # 65 skills total (incl. BMAD installer skills)
 │   ├── scripts/conda-forge-expert/             # CLI wrapper layer (~30 thin subprocess wrappers)
 │   ├── tools/                                  # Part 3: FastMCP server lives here
-│   │   ├── conda_forge_server.py               # 42 MCP tools across 3 surfaces
+│   │   ├── conda_forge_server.py               # 46 MCP tools across 3 surfaces
 │   │   ├── gemini_server.py                    # auxiliary MCP server
 │   │   └── mcp_call.py                         # MCP helper utilities
 │   └── data/conda-forge-expert/                # mutable runtime state (gitignored)
@@ -182,7 +185,7 @@ See: `architecture-cf-atlas.md`
 **Pixi envs used:** depends on tool — most run in `local-recipes`
 **Purpose:** Expose Part 1 (recipe lifecycle) + Part 2 (atlas intelligence) + project-scanning capabilities as MCP tools that Claude Code can invoke directly. Auto-started by Claude Code at session boot.
 
-42 tools (verified by `grep -c @mcp.tool conda_forge_server.py`) across three surfaces:
+46 tools (verified by `grep -c @mcp.tool conda_forge_server.py`) across three surfaces:
 - **Recipe-authoring surface** (~15 tools): `generate_recipe_from_pypi`, `validate_recipe`, `edit_recipe`, `optimize_recipe`, `scan_for_vulnerabilities`, `trigger_build`, `get_build_summary`, `analyze_build_failure`, `prepare_submission_branch`, `submit_pr`, `migrate_to_v1`, `update_recipe_from_github`, etc.
 - **Atlas-intelligence surface** (~12 tools): `query_atlas`, `package_health`, `staleness_report`, `cve_watcher`, `behind_upstream`, `feedstock_health`, `whodepends`, `release_cadence`, `version_downloads`, `find_alternative`, `adoption_stage`, `my_feedstocks`, etc.
 - **Project-scanning surface** (~5 tools): `scan_project` (~28 input formats — manifests, lock files, SBOMs, container images, GitOps CRs with auto git-clone, K8s manifests, OCI archives, OCI registry probes).

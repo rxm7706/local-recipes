@@ -4,10 +4,13 @@ project_name: local-recipes
 date: 2026-06-20
 repository_type: monorepo
 parts: 4
-source_pin: 'conda-forge-expert v8.68.0'
+source_pin: 'conda-forge-expert v8.73.1'
 ---
 
 # Source Tree Analysis
+
+> **Re-grounded 2026-07-06** (source_pin → v8.73.1; reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.73.1.
+
 
 This document is the **path map**: every architecturally-significant directory and entry-point file. Architecture docs (parts 1-4) reference paths in this tree; this tree exists once.
 
@@ -78,7 +81,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 .claude/
 │
 ├── tools/                                   # ★★ Part 3: FastMCP server lives here
-│   ├── conda_forge_server.py                # 42 MCP tools (recipe-authoring + atlas-intelligence + project-scanning)
+│   ├── conda_forge_server.py                # 46 MCP tools (recipe-authoring + atlas-intelligence + project-scanning)
 │   ├── gemini_server.py                     # auxiliary MCP server (Gemini integration)
 │   ├── mcp_call.py                          # MCP helper utilities (used by scripts that bridge to MCP runtime)
 │   └── __pycache__/                         # (runtime artifact)
@@ -88,7 +91,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 ├── skills/                                  # 65 skills total (mix of BMAD-installer + repo-specific + auxiliary)
 │   │
 │   ├── conda-forge-expert/                  # ★★ Part 1 canonical source
-│   │   ├── SKILL.md                         # ★ primary spine: critical constraints, 10-step loop, gotchas G1–G98
+│   │   ├── SKILL.md                         # ★ primary spine: critical constraints, 10-step loop, gotchas G1–G99
 │   │   ├── INDEX.md                         # task→tool navigator
 │   │   ├── CHANGELOG.md                     # ★ release history with TL;DR (canonical drift-detection source)
 │   │   ├── MANIFEST.yaml                    # declares "standalone-portable" deployment (host-repo install.py target)
@@ -149,7 +152,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │   │   ├── name_resolver.py                  # PyPI→conda name resolution engine
 │   │   │   │
 │   │   │   ├── # ── cf_atlas pipeline (Part 2 core) ──
-│   │   │   ├── conda_forge_atlas.py              # ★ orchestrator: 22 phases B→N + O→S (v8.1.0 PyPI intel), schema v28, PHASES registry, run_single_phase
+│   │   │   ├── conda_forge_atlas.py              # ★ orchestrator: 22 phases B→N + O→S (v8.1.0 PyPI intel), schema v29, PHASES registry, run_single_phase
 │   │   │   ├── _cf_graph_versions.py             # Phase H cf-graph offline backend (v7.7.0)
 │   │   │   ├── _parquet_cache.py                 # Phase F S3 parquet cache layer (v7.6.0)
 │   │   │   ├── atlas_phase.py                    # single-phase CLI entrypoint
@@ -269,7 +272,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │
 └── data/                                    # ★★ Part 1 Tier 3 + Part 2 artifacts (gitignored)
     └── conda-forge-expert/
-        ├── cf_atlas.db                           # ★ Part 2 primary artifact (SQLite, schema v28; `packages` + `pypi_universe` + `pypi_intelligence` + cisa_kev/epss_scores/cwe_categories overlays + ~15 supporting tables)
+        ├── cf_atlas.db                           # ★ Part 2 primary artifact (SQLite, schema v29; `packages` + `pypi_universe` + `pypi_intelligence` + cisa_kev/epss_scores/cwe_categories overlays + ~15 supporting tables)
         ├── cf_atlas.db-shm                       # SQLite shared memory (WAL mode)
         ├── cf_atlas.db-wal                       # SQLite write-ahead log
         ├── cf_atlas_meta.json                    # atlas run metadata
@@ -477,7 +480,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | `.claude/skills/conda-forge-expert/CHANGELOG.md` | Part 1 | Canonical drift-detection source — every MINOR bump triggers a project-context re-sync |
 | `.claude/skills/conda-forge-expert/scripts/_http.py` | all (Parts 1+2+3) | Every outbound HTTP request routes through here. Contains the JFROG_API_KEY cross-host leak (mitigated via env-var hygiene; see deployment-guide.md) |
 | `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` | Part 2 | 22-phase pipeline orchestrator (B→N + v8.1.0 O→S) + schema migrations (v28) |
-| `.claude/tools/conda_forge_server.py` | Part 3 | 42 MCP tools — auto-started at Claude Code session boot |
+| `.claude/tools/conda_forge_server.py` | Part 3 | 46 MCP tools — auto-started at Claude Code session boot |
 | `_bmad-output/projects/local-recipes/project-context.md` | Part 4 | Foundational rules every BMAD agent reads on spawn (CFE-version-pinned) |
 | `_bmad/custom/.active-project` | Part 4 | Determines which project's `.bmad-config.toml` overlays apply |
 
@@ -504,17 +507,17 @@ These files are load-bearing — changing them affects the whole system, not jus
 | BMAD multi-projects | 3 (deckcraft, local-recipes, presenton-pixi-image) |
 | Atlas pipeline phases | 22 phase IDs (B, B.5, B.6, C, C.5, D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N) |
 | Atlas schema version | v28 (additive migrations only) |
-| Skill version (source_pin) | conda-forge-expert v8.68.0 |
+| Skill version (source_pin) | conda-forge-expert v8.73.1 |
 
 **Refresh notes (2026-06-20 vs. prior 2026-06-07 sync):**
 - Recipe corpus grew 1,415 → 1,602; CFE scripts 50 → 54, wrappers 41 → 46, tests 41 → 82.
-- MCP tools 35 → 42; cf_atlas schema v28 → v28; skill v8.11.1 → v8.39.0.
+- MCP tools 35 → 42; cf_atlas schema v29 → v28; skill v8.11.1 → v8.39.0.
 - `reference/` 11 → 17 (added `*-reference-full.md`, `abi3-matrix-collapse.md`, `atlas-phase-p-cost-model.md`); `guides/` 8 → 9 (added `feedstock-platform-expansion.md`).
 - `docs/specs/` 5 → 22; new project subdirs `planning-artifacts/change-history/` (8 files) + `implementation-artifacts/retros/` (22 files).
 - Removed: top-level `wagtail/` one-off recipe (no longer present); `_bmad/bmm/` phase subdirs (installer layout changed).
 
 **Refresh notes (2026-06-24 vs. prior 2026-06-21 sync):**
-- Skill v8.41.0 → v8.42.1 (MINOR + PATCH, additive). Recipe-Authoring Gotchas grew to G1–G55 (+G54–G55 source-selection: `sdist > GitHub-source > wheel` + build-backend-in-host; v8.42.1 a cfe-block convention clarification). No source-tree structural change: CFE scripts/wrappers/tests, atlas phases (22), schema (v28), MCP tools (42), `reference/` (17), `guides/` (9) all unchanged — v8.42.x is SKILL.md + CHANGELOG only.
+- Skill v8.41.0 → v8.42.1 (MINOR + PATCH, additive). Recipe-Authoring Gotchas grew to G1–G99 (+G54–G55 source-selection: `sdist > GitHub-source > wheel` + build-backend-in-host; v8.42.1 a cfe-block convention clarification). No source-tree structural change: CFE scripts/wrappers/tests, atlas phases (22), schema (v28), MCP tools (42), `reference/` (17), `guides/` (9) all unchanged — v8.42.x is SKILL.md + CHANGELOG only.
 
 **Refresh notes (2026-06-27 vs. prior 2026-06-24 sync):**
 - Skill v8.42.1 → v8.52.1 (langflow-suite closure + submission span). Recipe-Authoring Gotchas grew to **G1–G75** (G56–G75: multi-output-win/feedstock-check, submission-flow + run_constraints reconciliation, G71 win+py3.12 reactor gap, G72 fold-sibling-into-suite, G73 monorepo-tag-ships-no-frontend → cross-platform node-build, G74 atlas-membership-staleness, G75 lean-submission-clean). No source-tree structural change: scripts/wrappers/tests, atlas phases (22), schema (v28), MCP tools (42), `reference/` (17), `guides/` (9) all unchanged — SKILL.md + CHANGELOG only.
