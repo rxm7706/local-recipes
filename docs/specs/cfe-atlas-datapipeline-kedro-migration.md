@@ -25,7 +25,7 @@ spec_updated: 2026-07-06
 
 | Field | Value |
 |---|---|
-| Status | **v2 — re-grounded 2026-07-06 against live surface (main `0d6b2ff`, skill v8.73.1); ready for full BMAD execution intake.** 4 open questions (§ 11: Q1–Q4; Q5 resolved → Wave H), none v1-blocking. |
+| Status | **v2 — re-grounded 2026-07-06 against live surface (main `0d6b2ff`, skill v8.73.1); ready for full BMAD execution intake.** 5 open questions (§ 11: Q1–Q4 + Q6; Q5 resolved → Wave H), none v1-blocking. |
 | Owner | rxm7706 |
 | Track | BMAD Full Flow (includes separate PRD/architecture phases) |
 | Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~9,900 LOC, 22 registered phases) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. |
@@ -236,6 +236,48 @@ this section instead of inline literals; re-verify with
     (`_http.py`), the linear `PHASES` driver with `--skip`/`--only`, and the
     hand-maintained `_TTL_GATED` map.
 
+### 3.4 Out-of-pipeline data surfaces (the migration boundary)
+
+Inventory of every data surface the `conda-forge-expert` skill uses that the
+atlas pipeline does NOT build (verified against live code 2026-07-06). Three
+enter this migration's scope as **external-refresh assets** (§ 5.2, Story B5);
+the rest stay outside, each with the reason noted. This section fixes the
+scope boundary — anything not listed in § 3.3 or here is out of the
+migration's universe.
+
+**In scope — separately-built local data stores (become orchestrated refresh
+assets):**
+
+| Store | Refreshed by | Upstream source | Consumers |
+|---|---|---|---|
+| AppThreat vdb (`vdb/` + `vdb-cache/`, ~2.5 GB) | `vdb-refresh` pixi task (**vuln-db env**, `appthreat-vulnerability-db`) | NVD / GHSA / OSV / npm / Snyk feeds | Phases G / G' (**read-only**), `detail-cf-atlas`, `inventory-channel`, `scan-project` |
+| Offline OSV CVE store (`cve/`) | `update-cve-db` → `cve_manager.py` | osv.dev GCS bucket (`OSV_VULNS_BUCKET_URL`-overridable) | `vulnerability_scanner.py` offline mode |
+| `pypi_conda_map.json` flat mapping cache | `update-mapping-cache` → `mapping_manager.py` | regro/cf-graph (parselmouth) + conda-forge-metadata API | `name_resolver.py`, `recipe-generator.py`, `mapping_gap.py` — **independent of Phase C** (see Q6) |
+
+`bootstrap_data.py` already orchestrates the first two alongside the atlas
+build; the migrated pipeline must not regress below that coverage.
+
+**Out of scope (declared as inputs, never built by the pipeline):**
+
+*   **Static git-tracked seeds** — `lts-registry.yaml`,
+    `cwe_categories_seed.json`, `spdx.schema.json`, the legacy mapping seeds,
+    `config/skill-config.yaml`. Curated inputs; the Kedro catalog declares
+    them as versioned external datasets where the pipeline reads them.
+*   **Recipe template trees** (`templates/`, 14 language families) — Phase S
+    stores only the template *path string*; the files are read at
+    recipe-generation time by the authoring loop.
+*   **Live authoring-time fetches** — `recipe-generator.py` (PyPI metadata +
+    sdist SHA256 at generation moment), `dependency-checker.py` (live channel
+    repodata / Artifactory mirror), `pr_artifacts.py` (Azure DevOps API),
+    `submit_pr.py` + feedstock maintenance (`gh` CLI), npm/GitHub version
+    checkers. Transactional point-in-time operations of the recipe-authoring
+    loop (§ 12), not pipeline data.
+*   **User-supplied inputs** — the `recipes/` tree and the manifests / locks
+    / SBOMs / containers passed to `scan-project` / `inventory-match`;
+    per-invocation entry datasets (modeled as such in the catalog).
+*   **The skill knowledge base** (SKILL.md, `reference/`, `guides/`) —
+    documentation, not data.
+
 ---
 
 ## 4. Review & Optimization Strategy
@@ -328,8 +370,8 @@ The bespoke `_http.py` and SQLite `init_schema()` logic will be mapped to Kedro 
 The legacy phases will be refactored into domain-specific pipelines:
 
 1.  **Core Pipeline**: Foundational conda-forge enumeration and graph building.
-2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring.
-3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay.
+2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4).
+3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay. Includes the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5).
 4.  **VCS & Health Pipeline**: GitHub/GitLab live queries and upstream version tracking.
 5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. These manifests will be strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets.
 
@@ -439,7 +481,7 @@ DuckDB is the single engine for analytical compute, graph traversal (recursive C
 
 ### FR-6. Dagster orchestrates schedules + retries via `kedro-dagster`
 
-The Kedro DAG compiles to a Dagster repository. Daily/weekly schedules and retry logic move from cron+bash to Dagster Schedules; state is observable in the Dagster UI. (§ 4.4, § 5.4.)
+The Kedro DAG compiles to a Dagster repository. Daily/weekly schedules and retry logic move from cron+bash to Dagster Schedules; state is observable in the Dagster UI. The `bootstrap-data --fresh` entry point becomes the full-DAG Dagster job (the `__default__` Kedro pipeline); the script itself is retired at B4 parity along with the legacy orchestrator. (§ 4.4, § 5.4.)
 
 ### FR-7. MCP surface preserved via `kedro-mcp`
 
@@ -560,6 +602,17 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 **Acceptance criteria**:
 - A parity check compares Kedro Parquet outputs against legacy `cf_atlas.db` tables and reports zero material drift.
 - Parity evidence is recorded; only then is the legacy orchestrator marked for retirement.
+
+#### Story B5 — Port the external-refresh assets (§ 3.4)
+
+**Goal**: Wrap the three separately-built data stores — `vdb-refresh` (AppThreat vdb, vuln-db env), `update-cve-db` (offline OSV store), and `update-mapping-cache` (`pypi_conda_map.json`) — as scheduled external-refresh assets in their § 5.2 domain pipelines, preserving today's `bootstrap_data.py` orchestration coverage.
+
+**Acceptance criteria**:
+- Each refresh runs as a Dagster-scheduled asset with retries + observability; cadence matches the legacy tasks' TTLs.
+- Phases G / G' and `scan-project` offline mode consume the refreshed stores exactly as before — the pipeline never writes them outside the refresh assets.
+- The vuln-db environment dependency is a declared resource requirement, not an implicit shell-out.
+- Q6's decision is recorded before porting `update-mapping-cache` (consolidation may retire it instead).
+- Maps to FR-2, FR-6.
 
 ### Wave C — Orchestration & Visualization
 
@@ -744,6 +797,12 @@ Is GitHub Pages the committed static host for Parquet artifacts, or should this 
 
 **Resolution**: The Unity Knowledge Stack / AI Software Factory architecture (Wagtail CMS, Agno, Dagster, Karpathy Wiki) is explicitly **IN SCOPE** and must be delivered as Wave H.
 
+### Q6 — Consolidate the dual PyPI↔conda mapping sources (gates Story B5's mapping asset)
+
+The skill maintains two mapping surfaces: atlas Phase C (DB-resident parselmouth join, extended by C.5 and the `mapping-gap` g10_spelling writeback) and the flat `pypi_conda_map.json` cache (`update-mapping-cache`; read by `name_resolver.py` / `recipe-generator.py` at authoring time; sourced from regro/cf-graph + the conda-forge-metadata API — § 3.4). Should the migration port the flat cache as-is, or retire it by pointing the authoring-side consumers at the migrated Phase C dataset?
+
+**Default**: consolidate — make the migrated Phase C mapping (DuckDB) the single source and re-point `name_resolver.py` / `recipe-generator.py` at it; keep the flat-cache refresh only if authoring-time reads prove to need a standalone file artifact (offline / no-DB contexts). Whatever the decision, the `g10_spelling` provenance tier and the no-clobber writeback rule (sync chain, Wave A block) must survive.
+
 ---
 
 ## 12. Out of Scope
@@ -759,6 +818,8 @@ The following are deliberately excluded from this migration, with reason:
 | Enterprise Python Manifest (5k) generation as a deliverable | Downstream target state (§ 4.11) the graph *enables*; not built in this migration. |
 | New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set; new sources are out of scope. |
 | Rewriting the conda-forge recipe-authoring skill itself | This migration touches the `cf_atlas` intelligence layer, not the recipe-authoring loop. |
+| Static seeds + recipe template trees as pipeline *products* | Curated inputs (§ 3.4); the catalog declares them as versioned external datasets — the pipeline reads, never generates, them. |
+| Live authoring-time fetches (recipe-generator PyPI/sha256 pulls, `gh`/Azure DevOps, live channel repodata) | Transactional point-in-time operations of the recipe-authoring loop (§ 3.4); not pipeline data and not schedulable. |
 
 ---
 
@@ -803,7 +864,8 @@ bmad run bad-pipeline
 
 Wave 0 first (0.1 SKF legacy translation).
 Then Wave A (A1 nebi scaffold → A2 catalog → A3 IncrementalParquetDataset).
-Then Wave B (B1/B2 node ports → B3 kedro-mcp → B4 parity check — do NOT retire
+Then Wave B (B1/B2 node ports → B3 kedro-mcp → B4 parity check → B5
+external-refresh assets (resolve Q6 first) — do NOT retire
 the legacy orchestrator until B4 proves parity per Q1's default).
 
 Proceed wave by wave using the BAD execution engine (C orchestration+viz, D semantic layer+dashboards,
