@@ -132,7 +132,8 @@ def _other_impact(conn) -> int:
             "SELECT vuln_cwe_categories_json FROM packages "
             "WHERE vuln_cwe_categories_json IS NOT NULL"):
         try:
-            if int((json.loads(blob) or {}).get("Other", 0)) > 0:
+            data = json.loads(blob)
+            if isinstance(data, dict) and int(data.get("Other", 0)) > 0:
                 n += 1
         except (ValueError, TypeError):
             continue

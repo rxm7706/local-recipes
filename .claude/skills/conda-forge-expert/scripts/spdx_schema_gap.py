@@ -95,8 +95,13 @@ def load_upstream_spdx(
             cached = doc
     except (OSError, ValueError):
         cached = {}
-    if cached.get("ids") and (ref - cached.get("fetched_at", 0)) < ttl_days * 86400:
-        return list(cached["ids"]), "cache", False
+    # A hand-edited / corrupt cache (non-list ids, non-numeric fetched_at)
+    # must not break the "never raises" contract — type-guard both fields.
+    ids = cached.get("ids")
+    fetched_at = cached.get("fetched_at", 0)
+    if (isinstance(ids, list) and isinstance(fetched_at, (int, float))
+            and (ref - fetched_at) < ttl_days * 86400):
+        return list(ids), "cache", False
     fetched = None
     try:
         fetched = fetcher()
@@ -111,7 +116,7 @@ def load_upstream_spdx(
         except OSError:
             pass
         return fetched, "spdx", False
-    if cached.get("ids"):
+    if isinstance(cached.get("ids"), list):
         return list(cached["ids"]), "cache", True   # stale fallback
     return [], "unavailable", False
 
@@ -201,8 +206,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: cannot read --source-file: {exc}", file=sys.stderr)
             return 1
         if isinstance(doc, dict):
-            doc = [str(x["licenseId"]) for x in doc.get("licenses", [])
-                   if isinstance(x, dict) and x.get("licenseId")]
+            lics = doc.get("licenses")
+            doc = ([str(x["licenseId"]) for x in lics
+                    if isinstance(x, dict) and x.get("licenseId")]
+                   if isinstance(lics, list) else [])
         upstream_ids = [str(s) for s in doc] if isinstance(doc, list) else []
         source, stale = "file", False
     else:

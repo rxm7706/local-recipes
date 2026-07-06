@@ -104,6 +104,26 @@ def test_load_upstream_nothing(mod, tmp_path):
     assert ids == [] and source == "unavailable"
 
 
+def test_load_upstream_corrupt_cache_never_raises(mod, tmp_path):
+    # non-numeric fetched_at + non-list ids must not raise (PR #42; the
+    # docstring's "never raises" contract). Falls through to fetch.
+    cache = tmp_path / "spdx_license_list.json"
+    cache.write_text(json.dumps({"fetched_at": "yesterday", "ids": "MIT"}),
+                     encoding="utf-8")
+    ids, source, stale = mod.load_upstream_spdx(
+        fetcher=lambda: ["MIT", "X-1.0"], cache_path=cache, now=1000)
+    assert ids == ["MIT", "X-1.0"] and source == "spdx"   # ignored bad cache
+
+
+def test_source_file_null_licenses_no_crash(mod, fixture_db, tmp_path, capsys):
+    # {"licenses": null} must not crash iterating None (PR #42)
+    db_path = tmp_path / "cf_atlas.db"
+    src = tmp_path / "licenses.json"
+    src.write_text(json.dumps({"licenses": None}), encoding="utf-8")
+    rc = mod.main(["--db", str(db_path), "--source-file", str(src)])
+    assert rc == 1   # empty upstream → clean "no list available" error, no crash
+
+
 def test_cli_source_file_json_and_schema_untouched(mod, fixture_db, tmp_path, capsys):
     db_path = tmp_path / "cf_atlas.db"
     src = tmp_path / "licenses.json"
