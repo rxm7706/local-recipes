@@ -278,6 +278,29 @@ build; the migrated pipeline must not regress below that coverage.
 *   **The skill knowledge base** (SKILL.md, `reference/`, `guides/`) —
     documentation, not data.
 
+**Seed-freshness report nodes (read-only fan-out from the curated inputs).**
+The curated seeds above stay hand-owned (the pipeline reads, never writes
+them), but each now has a **read-only gap-suggester** that diffs the seed
+against live ground truth and *proposes* additions for git review — the
+maintenance loop that keeps a hand-curated input from silently drifting. The
+migrated pipeline models each as a terminal **report node** fanned out from
+its external seed dataset (analogous to the `mapping-gap` writeback, but
+report-only — these never mutate the atlas):
+
+| Suggester | Curated input | Ground-truth it diffs against | Report node reads |
+|---|---|---|---|
+| `lts-registry-gap` | `data/lts-registry.yaml` | endoflife.date `/api/all.json` | `v_actionable_packages` + the eol feed |
+| `cwe-seed-gap` | `cwe_categories_seed.json` | the MITRE `cwe_categories` catalog | `cwe_categories` (rows bucketed `Other`) |
+| `spdx-schema-gap` | `spdx.schema.json` (vendored enum) | the upstream SPDX license list | `v_actionable_packages.conda_license` |
+| `license-map-gap` | in-code `_LICENSE_TO_SPDX` | the vendored SPDX enum | `v_pypi_intelligence_valid.license_raw` (NULL `license_spdx`) |
+| `mapping-gap` | the PyPI↔conda mapping | `pypi_universe` + corroborators | `packages` (the one that *does* write back — `g10_spelling`, Wave A) |
+
+These are downstream of the atlas rebuild (they read its views), produce
+`derived`-layer report artifacts only, and — like the `export-purls` /
+`universe-sbom` regeneration cadence — should re-run after every rebuild so
+the freshness reports track the live universe. The prototype models them as a
+dedicated `seed_gaps` pipeline (`prototypes/cf-atlas-kedro-viz`).
+
 ---
 
 ## 4. Review & Optimization Strategy
