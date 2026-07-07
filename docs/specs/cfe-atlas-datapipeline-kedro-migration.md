@@ -278,6 +278,34 @@ build; the migrated pipeline must not regress below that coverage.
 *   **The skill knowledge base** (SKILL.md, `reference/`, `guides/`) —
     documentation, not data.
 
+**Seed-freshness report nodes (read-only fan-out from the curated inputs).**
+The curated seeds above stay hand-owned (the pipeline reads, never writes
+them), but each now has a **read-only gap-suggester** that diffs the seed
+against live ground truth and *proposes* additions for git review — the
+maintenance loop that keeps a hand-curated input from silently drifting. The
+migrated pipeline models the four suggesters below as terminal **report
+nodes** fanned out from their external seed datasets — report-only, they never
+mutate the atlas — **with the sole exception of `mapping-gap`, which writes
+back** (the pre-existing `g10_spelling` provenance UPDATE, Wave A) and is
+listed for completeness:
+
+| Suggester | Curated input | Ground-truth it diffs against | Node reads | Node behavior |
+|---|---|---|---|---|
+| `lts-registry-gap` | `data/lts-registry.yaml` | endoflife.date `/api/all.json` | `v_actionable_packages` + the eol feed | Report-only (derived-layer) |
+| `cwe-seed-gap` | `cwe_categories_seed.json` | the MITRE `cwe_categories` catalog | `cwe_categories` (rows bucketed `Other`) | Report-only (derived-layer) |
+| `spdx-schema-gap` | `spdx.schema.json` (vendored enum) | the upstream SPDX license list | `v_actionable_packages.conda_license` | Report-only (derived-layer) |
+| `license-map-gap` | in-code `_LICENSE_TO_SPDX` | the vendored SPDX enum | `v_pypi_intelligence_valid.license_raw` (NULL `license_spdx`) | Report-only (derived-layer) |
+| `mapping-gap` | the PyPI↔conda mapping | `pypi_universe` + corroborators | `packages` | **Write-back** (`g10_spelling`, Wave A) — not a report node |
+
+**Except for `mapping-gap` (which writes back to the core atlas)**, these are
+downstream of the atlas rebuild (they read its views), produce `derived`-layer
+report artifacts only, and — like the `export-purls` / `universe-sbom`
+regeneration cadence — should re-run after every rebuild so the freshness
+reports track the live universe. The prototype models the **four report-only**
+suggesters as a dedicated `seed_gaps` pipeline
+(`prototypes/cf-atlas-kedro-viz`); `mapping-gap` stays in the mapping / Phase-C
+layer (its writeback belongs with the mapping stage, not the report fan-out).
+
 ---
 
 ## 4. Review & Optimization Strategy
