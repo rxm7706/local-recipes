@@ -3,7 +3,7 @@
 
 [workspace]
 name = "staged-recipes"
-requires-pixi = ">=0.71"  # virtual-package platform entries (osx-arm64-macos14) need the 0.71+ manifest syntax
+requires-pixi = ">=0.70.2"  # lowered from >=0.71 for local 0.70.2; the osx-arm64 macOS-14.5 floor uses the pre-0.71 [system-requirements] table (see feature.local-recipes) rather than a 0.71+ virtual-package platform entry
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
@@ -11,14 +11,13 @@ license-file = "LICENSE.txt"
 authors = ["@conda-forge/core"]
 channels = ["conda-forge"]
 platforms = [
-    "linux-64", "win-64",
-    # The workspace's osx-arm64 subdir carries a universal macOS 14.5 (Sonoma)
-    # floor via this named virtual-package variant — required by mlx 0.31.2+
-    # (__osx >=14.5). pixi 0.71+ replaced the [system-requirements] table with
-    # virtual packages on platform entries, and a vp-bearing entry must be
-    # named distinctly from its subdir, so every osx-arm64 reference below
-    # uses the variant name `osx-arm64-macos14`.
-    { name = "osx-arm64-macos14", platform = "osx-arm64", macos = "14.5" },
+    "linux-64", "osx-arm64", "win-64",
+    # The osx-arm64 macOS 14.5 (Sonoma) floor — required by mlx 0.31.2+
+    # (__osx >=14.5) — is carried by the [feature.local-recipes.system-requirements]
+    # table below. pixi 0.71+ deprecates that table in favor of a virtual-package
+    # platform entry ({ name = "osx-arm64-macos14", platform = "osx-arm64",
+    # macos = "14.5" }), but that syntax needs 0.71+; kept on the 0.70.2-compatible
+    # [system-requirements] form for now.
     # TODO: add osx-64 / linux-aarch64 / win-arm64 (+ in the features below)
     # when the full dep set resolves on them.
 ]
@@ -50,14 +49,14 @@ rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build
 
 [feature.linux]
 # The linux feature runs on every platform that can run Docker.
-platforms = ["linux-64", "osx-arm64-macos14", "win-64"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
 [feature.linux.tasks.build-linux]
 description = "build for Linux inside a docker container"
 cmd = "python build-locally.py --filter 'linux*'"
 
 [feature.osx]
 # The osx env will run directly on the machine.
-platforms = ["osx-arm64-macos14"]
+platforms = ["osx-arm64"]
 [feature.osx.tasks.build-osx]
 description = "build directly on a MacOS host machine"
 cmd = "python build-locally.py --filter 'osx*'"
@@ -100,7 +99,7 @@ cmd = "conda-smithy recipe-lint --conda-forge recipes/*"
 
 [feature.shellcheck]
 # merge this with `conda-smithy` when available for `linux-ppc64le`
-platforms = ["linux-64", "osx-arm64-macos14", "win-64"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
 dependencies.shellcheck = ">=0.10.0"
 
 [feature.gcloud-sdk]
@@ -112,7 +111,7 @@ dependencies.shellcheck = ">=0.10.0"
 # automatically and you don't need the `gcloud` env again until you
 # want to refresh creds or switch projects.
 # Linux + macOS only — google-cloud-sdk isn't on conda-forge for win-64.
-platforms = ["linux-64", "osx-arm64-macos14"]
+platforms = ["linux-64", "osx-arm64"]
 dependencies.google-cloud-sdk = ">=573.0.0"
 
 [environments]
@@ -469,7 +468,7 @@ cmd = "python .claude/scripts/conda-forge-expert/release_cadence.py"
 # Subsequent refreshes are incremental.
 
 [feature.vuln-db]
-platforms = ["linux-64", "osx-arm64-macos14", "win-64"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
 
 [feature.vuln-db.dependencies]
 python = "3.14.*"                 # Python language interpreter
@@ -776,11 +775,14 @@ watchdog = ">=6.0.0"              # File system event monitoring (used for live-
 ## Primary value is on osx-arm64 (Metal-accelerated, 2-3x over llama.cpp for some workloads).
 ## On linux-64 mlx runs against libblas/lapack — usable for experimentation, no perf advantage over the existing pytorch path.
 ## macOS minimum bumped to 14.5 (Sonoma) — required by mlx 0.31.2+; M-series users are always above this.
+[feature.local-recipes.system-requirements]
+macos = "14.5"
+
 [feature.local-recipes.target.linux-64.dependencies]
 mlx = ">=0.31.2"                  # Apple's array framework (Linux build via libblas/lapack)
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
 
-[feature.local-recipes.target.osx-arm64-macos14.dependencies]
+[feature.local-recipes.target.osx-arm64.dependencies]
 mlx = ">=0.31.2"                  # Apple's array framework (Metal-accelerated on M-series)
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
 
