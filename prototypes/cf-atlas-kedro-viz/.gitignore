@@ -1,0 +1,4 @@
+# kedro-viz session store / run stats — regenerable output of `kedro viz` /
+# `kedro run`, never committed. (Also covered by the repo-root .gitignore; kept
+# here so this prototype stays self-contained.)
+.viz/
