@@ -1,23 +1,25 @@
 ---
 doc_type: implementation-readiness-report
 project_name: local-recipes
-date: 2026-06-21
-source_pin: 'conda-forge-expert v8.41.0'
-sync_note: 'Regenerated 2026-06-21 against current artifacts (PRD v1.6.0, epics v1.1.0, architecture set v1.0.0 — all pinned conda-forge-expert v8.41.0). Supersedes the 2026-05-12 v7.8.1-era gate. Fixed two stale internal defects carried from the prior report: the ~176/193-story baseline (now 232 stories / 14 epics) and the "12 XL remaining vs 0 XL remaining" contradiction (now 0 XL remaining, per epics.md frontmatter xl_stories_remaining: 0).'
+date: 2026-07-06
+source_pin: 'conda-forge-expert v8.75.0'
+sync_note: 'Regenerated 2026-06-21 against current artifacts (PRD v1.6.0, epics v1.1.0, architecture set v1.0.0 — all pinned conda-forge-expert v8.73.1). Supersedes the 2026-05-12 v7.8.1-era gate. Fixed two stale internal defects carried from the prior report: the ~176/193-story baseline (now 232 stories / 14 epics) and the "12 XL remaining vs 0 XL remaining" contradiction (now 0 XL remaining, per epics.md frontmatter xl_stories_remaining: 0).'
 artifacts_under_review:
-  - planning-artifacts/PRD.md (v1.6.0, approved, pin v8.41.0)
-  - planning-artifacts/architecture.md (v1.0.0, draft, pin v8.41.0)
-  - planning-artifacts/architecture-conda-forge-expert.md (pin v8.41.0)
-  - planning-artifacts/architecture-cf-atlas.md (pin v8.41.0)
-  - planning-artifacts/architecture-mcp-server.md (pin v8.41.0)
-  - planning-artifacts/architecture-bmad-infra.md (pin v8.41.0)
-  - planning-artifacts/integration-architecture.md (pin v8.41.0)
+  - planning-artifacts/PRD.md (v1.6.0, approved, pin v8.75.0)
+  - planning-artifacts/architecture.md (v1.0.0, draft, pin v8.75.0)
+  - planning-artifacts/architecture-conda-forge-expert.md (pin v8.75.0)
+  - planning-artifacts/architecture-cf-atlas.md (pin v8.75.0)
+  - planning-artifacts/architecture-mcp-server.md (pin v8.75.0)
+  - planning-artifacts/architecture-bmad-infra.md (pin v8.75.0)
+  - planning-artifacts/integration-architecture.md (pin v8.75.0)
   - planning-artifacts/epics.md (v1.1.0, draft, pin v8.41.0 — 14 epics / 232 stories / 0 XL)
   - project-context.md (last_synced_skill_version v8.41.0, 63 rules)
 validator: bmad-check-implementation-readiness (Path 3 hybrid)
-overall_verdict: CONDITIONAL_READY — capabilities coherently covered; 3 should-fix traceability/sync nits, 0 blocking gaps
+overall_verdict: CONDITIONAL_READY — capabilities coherently covered; SF1 CLOSED (FR-ID annotations landed 2026-06-21), SF2+SF3 persist (quality niceties, non-blocking); 0 blocking gaps (re-run 2026-07-07 @ v8.75.0)
 status: final
 verdict_history:
+  - { date: '2026-07-07', verdict: 'CONDITIONAL_READY', notes: 'Pin-forward per SYNC-RUNBOOK after PRs #41–#43 (CFE v8.73.1 → v8.75.0). NO material change to the reviewed artifacts: the three shipped surfaces (lts-registry-gap, cwe-seed-gap, spdx-schema-gap) are read-only seed-gap suggesters, CLI/pixi-only, no MCP tool, no schema/phase/count change — so the readiness inputs are unchanged and the gate verdict is unchanged (SF1 CLOSED; SF2/SF3 persist as non-blocking quality niceties). Fresh re-run confirms 0 blocking gaps. Pins bumped v8.73.1 → v8.75.0.' }
+  - { date: '2026-07-06', verdict: 'CONDITIONAL_READY', notes: 'Regenerated per SYNC-RUNBOOK after the shipped cyclonedx-universe-inventory effort. Artifact set re-grounded to v8.73.1 (living docs + context + plan + project-parts). SF1 (FR-ID citations in Epic 14/Epic 10 rows) verified CLOSED per the 2026-06-21 epics narrative re-sync; SF2 (explicit PRD §6 metric→story map) and SF3 (intra-epic Depends-on annotations) persist — quality niceties, non-blocking. NOTE: the shipped cyclonedx suite (7 CLIs / 4 MCP tools / schema v29) was delivered as a Tier-1 spec effort per the spec-first convention and is captured in the PRD/epics current-state re-ground, not as new epics — a future structural pass may retrofit an Epic 15 if the rebuild intent should cover it; recorded as informational, not a readiness gap.' }
   - initial: 'CONDITIONAL_READY (2026-05-12, v7.8.1 pin)'
   - after_must_fix: 'READY (2026-05-12 — MF1 confirmed, MF2-MF5 applied; 193 stories, 0 XL)'
   - regenerated: 'CONDITIONAL_READY (2026-06-21, v8.41.0 pin — 232 stories / 14 epics; new Epic 14 + FRs F2.13/F2.14/F3.9 verified covered; 3 non-blocking should-fix nits)'
@@ -222,7 +224,7 @@ The verdict is CONDITIONAL (not READY) solely because of **3 should-fix traceabi
 |---|---|---|---|
 | **SF1** | **Add explicit "Covers **F2.13** / **F2.14** / **F3.9**" annotations** to Epic 14 (S5–S12) and Epic 10 (S5b–S5h). Coverage exists; only the FR-ID traceability string is missing. | Step 3 / Step 5 | S (~15 min) |
 | **SF2** | **Add an explicit §6-success-metric → verification-story map** to Epic 12/13 (or per-metric AC). ~27 measures; capabilities are covered, mapping is implicit. | Step 2 | M (~30 min) |
-| **SF3** | **Add a "Depends on" column to each epic's story table** + reconcile the PRD/epics **edit-history narrative** wording ("v8.39.0") with the actual `source_pin` field (v8.41.0); tighten ~3–5 soft ACs. | Step 1 (I1) / Step 5 | M (~1 hr) |
+| **SF3** | **Add a "Depends on" column to each epic's story table** + reconcile the PRD/epics **edit-history narrative** wording ("v8.39.0") with the actual `source_pin` field (v8.73.1); tighten ~3–5 soft ACs. | Step 1 (I1) / Step 5 | M (~1 hr) |
 
 ### Informational (no action required)
 

@@ -1,211 +1,278 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "doc_type": "project-parts",
-  "project_name": "local-recipes",
-  "date": "2026-06-20",
-  "source_pin": "conda-forge-expert v8.68.0",
-  "shipped_spec_history": [
-    {
-      "version_target": "v8.6.0",
-      "spec_path": "docs/specs/atlas-appthreat-deep-signals.md",
-      "mirror_path": "_bmad-output/projects/local-recipes/implementation-artifacts/spec-appthreat-deep-signals.md",
-      "scope": "AppThreat deep signals — EPSS scores (FIRST.org CSV) + CWE category rollup (MITRE Research Concepts catalog) shipped via Waves A + B; Phase T blint hardening + Phase U EPSS overlay phase + withdrawn-advisory filter CANCELLED at Wave C verify-don't-assume verification (low signal / redundant / vdb pre-filters at ingest); schema v28 → v24 → v25 round-trip cleanup",
-      "version_bump_type": "MINOR (additive)",
-      "status": "shipped",
-      "shipped_date": "2026-05-24",
-      "shipped_commits": ["e4ba891cd2", "e22c531ac2", "592b18089a"],
-      "retro_path": "_bmad-output/projects/local-recipes/implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md",
-      "proposal_path": "_bmad-output/projects/local-recipes/planning-artifacts/sprint-change-proposal-2026-05-24-v8.6.0.md"
-    }
-  ],
-  "repository_type": "monorepo",
-  "parts": [
-    {
-      "part_id": "conda-forge-expert",
-      "display_name": "conda-forge-expert skill",
-      "project_type_id": "library",
-      "description": "Claude Code skill encoding the full conda-forge recipe lifecycle. 3-tier architecture: canonical scripts + CLI wrappers + data state. 10-step autonomous loop with one human-gated checkpoint at step 8b (prepare_submission_branch). Authoritative spine: SKILL.md.",
-      "root_paths": [
-        ".claude/skills/conda-forge-expert/",
-        ".claude/scripts/conda-forge-expert/"
-      ],
-      "key_tech": [
-        "Python 3.12",
-        "rattler-build",
-        "grayskull",
-        "conda-smithy",
-        "FastMCP (for tool exposure)"
-      ],
-      "pixi_envs": ["local-recipes", "grayskull", "conda-smithy", "vuln-db", "gcloud"],
-      "version_pin": "v8.68.0",
-      "subdirectories": {
-        "SKILL.md": "primary spine: critical constraints, 10-step autonomous loop, recipe authoring gotchas G1–G98",
-        "INDEX.md": "task→tool navigator",
-        "CHANGELOG.md": "release history with TL;DR section (canonical drift-detection source)",
-        "reference/": "15 deep-reference files (recipe-yaml-reference[-full], meta-yaml-reference, mcp-tools, python-min-policy, conda-forge-yml-reference[-full], pinning-reference, selectors-reference, jinja-functions, abi3-matrix-collapse, dependency-input-formats, atlas-phases-overview, atlas-phase-engineering, conda-forge-ecosystem)",
-        "guides/": "9 workflow guides (getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, feedstock-platform-expansion, testing-recipes, sdist-missing-license, atlas-operations)",
-        "quickref/": "2 quick-reference files (commands-cheatsheet, bot-commands)",
-        "scripts/": "54 canonical Python implementations (single source of truth for behavior); 46 thin CLI wrappers under .claude/scripts/conda-forge-expert/",
-        "templates/": "41 recipe scaffolding templates across 13 ecosystems (c-cpp, dotnet, fortran, go, java, multi-output, nodejs, perl, python, r, ruby, rust + conda-forge-yml/{staged-recipes,feedstock})",
-        "tests/": "82 test files (unit + integration + meta) — uses real fixtures, no network mocking"
-      }
-    },
-    {
-      "part_id": "cf-atlas",
-      "display_name": "cf_atlas data pipeline",
-      "project_type_id": "data",
-      "description": "Offline-tolerant package-intelligence pipeline that builds and maintains cf_atlas.db (SQLite, schema v28 as of 2026-06-20) inventorying conda-forge packages (32k working set) plus a separate pypi_universe side table (the full PyPI directory, ~800k rows) plus a pypi_intelligence side table (35-column enrichment layer indexed on pypi_name, 5 tiers) plus three external-catalog overlay tables: cisa_kev (CISA KEV catalogue, ~1,600 CVEs; v8.5.3+), epss_scores (FIRST.org EPSS daily CSV, ~334k CVEs; v8.6.0+), cwe_categories (MITRE CWE Research Concepts view with 67-entry cf_atlas seed mapping → 7 categories + 'Other'; v8.6.0+). 22 ordered phases (B→N + O/P/Q/R/S, with B.5/B.6/C.5/E.5/G' sub-phases) with TTL gates and checkpoint-aware resumption. Schema advanced v25 → v28 since the prior sync: v26 (pypi_downloads_daily, Phase P incremental BigQuery, v8.15.0), v27 (rolling 30/90d downloads + trend slope + per-platform/per-Python breakdown tables, Phase F Wave 2, v8.18.0), v28 (package_channel_downloads + platform/pyver/channel breakdown CLIs, Phase F Wave 3, v8.19.0). Air-gap-tolerant via S3-parquet (Phase F) and cf-graph offline (Phase H) backends. v7.9.0 actionable-scope audit closed phase-denominator drift across Phase H/J/M and split Phase D into daily-lean + TTL-gated universe upsert. v8.0.0 structural-enforcement + persona-profiles bundle ships schema v28's v_actionable_packages view (7 phase selectors refactored) + Phase H serial-aware eligible-rows gate (warm-daily ~5 min → ~30 s) + tests/meta/test_actionable_scope.py + bootstrap-data --profile {maintainer,admin,consumer} with gh-user + phase-L-sources auto-detection. v8.1.0 PyPI intelligence layer adds 5 new phases (O snapshot-based activity_band; P BigQuery downloads opt-in; Q cross-channel BOOLs; R per-project JSON enrichment for top-N candidate slice; S computed conda_forge_readiness + recommended_template), pypi-intelligence CLI + MCP tool, and the pypi_intelligence side table with v_pypi_candidates view. v8.5.3 (Path C) adds the cisa_kev overlay — DW13 close-out via direct CISA JSON pull (~2 MB / ~1,600 CVEs) instead of vdb --cache-os (which would have downloaded ~33 GB and still left vuln_kev_affecting_current=0 because appthreat-vulnerability-db hardcodes `kevc` in its DEFAULT_IGNORE_SOURCE_PATTERNS); Phase G + G' overlay loops OR vdb's per-CVE `kev` flag with the local KEV set. v8.5.3 (DW12) ships defense-in-depth rollup-staleness fix: new v_current_version_vulns query-time-correct view + _phase_g_sync_current_rollup pure-SQL tail step on Phase G'. v8.6.0 AppThreat Deep Signals release (3 waves shipped + Wave C cancelled): schema v28 → v24 → v25 round-trip cleanup adds epss_scores + cwe_categories side tables + 4 packages columns (vuln_max_epss_score, vuln_max_epss_percentile, vuln_cwe_top, vuln_cwe_categories_json) + 3 package_version_vulns columns; new fetch-epss + fetch-cwe-catalog CLIs (Path C pattern from v8.5.3 generalised); new _load_epss_scores + _load_cwe_categories helpers + shared _aggregate_v8_6_0_overlays pure function for Phase G/G' overlay loops; _phase_g_sync_current_rollup extended with COALESCE-to-existing review-fix on the new columns; 4 new flags across staleness-report / my-feedstocks / cve-watcher / detail-cf-atlas. Wave C (Phase T blint + Phase U EPSS overlay phase) cancelled pre-implementation at verify-don't-assume verification — Phase T low-signal in conda-forge's hermetic compile env (~0 hardening variance / ~150 GB download cost); Phase U redundant with Wave B's rollup-sync extension. Withdrawn-filter columns provisioned in v24 then dropped in v25 after verification showed vdb's OSV + GHSA sources skip withdrawn at ingest (appthreat-vulnerability-db/lib/osv.py:91 + gha.py:184-185). 5 parent-spec errors caught pre-implementation. Live: 213 EPSS-scored + 216 CWE-classified actionable feedstocks; CWE distribution Info-Disclosure 133 / DoS 24 / RCE 21 / Other 18 / Injection 9 / Traversal 5 / Auth-Bypass 4 / Memory-Safety 2.",
-      "root_paths": [
-        ".claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py",
-        ".claude/skills/conda-forge-expert/scripts/_cf_graph_versions.py",
-        ".claude/data/conda-forge-expert/cf_atlas.db"
-      ],
-      "key_tech": [
-        "Python 3.12",
-        "SQLite (WAL mode)",
-        "pyarrow (parquet)",
-        "AppThreat vdb (Phase G/G')",
-        "py-rattler (deliberately avoided — uses current_repodata.json instead)"
-      ],
-      "pixi_envs": ["local-recipes", "vuln-db"],
-      "pipeline_phases": ["B", "B.5", "B.6", "C", "C.5", "D", "O", "P", "Q", "R", "S", "E", "E.5", "F", "G", "G'", "H", "J", "K", "L", "M", "N"],
-      "phase_count": 22,
-      "schema_versions": 28,
-      "cli_count": 21,
-      "cancelled_phases_history": {
-        "T (blint hardening — local + admin top-N modes)": "CANCELLED 2026-05-23 pre-implementation (v8.6.0 Wave C verify-don't-assume): ~0 hardening variance in conda-forge's hermetic compile env; ~150 GB download cost in admin top-N mode; blint can't scan .conda archives directly; PyPI package name was wrong in parent spec (owasp-blint 404 vs blint).",
-        "U (EPSS overlay — pure-SQL tail step over Phase G')": "CANCELLED 2026-05-23 pre-implementation (v8.6.0 Wave C verify-don't-assume): redundant with Wave B's _phase_g_sync_current_rollup extension which already propagates vuln_max_epss_score with COALESCE-to-existing. A genuine standalone Phase U requires a per-package CVE list / new package_cves table (filed as DW19, separate spec)."
-      },
-      "ttl_gated_phases": ["F", "G", "H", "K"],
-      "checkpoint_table": "phase_state",
-      "data_artifacts": {
-        "cf_atlas.db": "primary artifact (+ -shm, -wal); schema v28 includes packages + pypi_universe + pypi_intelligence + cisa_kev + epss_scores + cwe_categories + pypi_downloads_daily (v26) + package_platform_downloads/package_python_downloads (v27) + package_channel_downloads (v28) side tables; ~21 tables total",
-        "cwe_categories_seed.json": "committed at .claude/skills/conda-forge-expert/data/cwe_categories_seed.json — 67-entry CWE→cf_atlas 7-category mapping (RCE / DoS / Info-Disclosure / Auth-Bypass / Memory-Safety / Traversal / Injection); unmapped CWEs default to 'Other'. Read by cwe_catalog_fetcher.py at upsert time.",
-        "cf_atlas_meta.json": "run metadata",
-        "cf-graph-countyfair.tar.gz": "cf-graph offline snapshot (used by Phase E/H/M)",
-        "pypi_conda_map.json": "PyPI→conda name mapping cache",
-        "vdb/, vdb-cache/": "AppThreat vulnerability database (OSV + GHSA via vdb --cache; deliberately NOT --cache-os, see CHANGELOG v8.5.3 entry for the 33 GB-crash rationale)",
-        "cve/": "CVE feed cache",
-        "cache/parquet/": "Phase F S3 monthly parquet cache (created on demand, ~13MB/month)",
-        "inventory_cache/": "scan_project inventory cache (created on demand)"
-      }
-    },
-    {
-      "part_id": "mcp-server",
-      "display_name": "FastMCP server",
-      "project_type_id": "backend",
-      "description": "FastMCP server exposing 42 MCP tools (verified by grep `@mcp.tool` 2026-06-20) across recipe-authoring, atlas-intelligence, and project-scanning surfaces. Since the prior sync added: pypi_intelligence (v8.1.0), platform_breakdown / pyver_breakdown / channel_split (v8.19.0 Wave-3 CLIs), download_pr_artifacts (v8.14.0 Azure DevOps), env_inspect. Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
-      "root_paths": [
-        ".claude/tools/conda_forge_server.py",
-        ".claude/tools/gemini_server.py",
-        ".claude/tools/mcp_call.py"
-      ],
-      "key_tech": [
-        "Python 3.12",
-        "FastMCP",
-        "MCP (Model Context Protocol)"
-      ],
-      "pixi_envs": ["local-recipes"],
-      "tool_surfaces": {
-        "recipe-authoring": "~15 tools: generate_recipe_from_pypi, validate_recipe, edit_recipe, optimize_recipe, scan_for_vulnerabilities, trigger_build, get_build_summary, analyze_build_failure, prepare_submission_branch, submit_pr, migrate_to_v1, update_recipe_from_github, update_recipe, update_cve_database, update_mapping_cache",
-        "atlas-intelligence": "~18 tools: query_atlas, package_health, staleness_report, cve_watcher, behind_upstream, feedstock_health, whodepends, release_cadence, version_downloads, find_alternative, adoption_stage, pypi_only_candidates, pypi_intelligence, platform_breakdown, pyver_breakdown, channel_split, my_feedstocks, lookup_feedstock, get_feedstock_context, enrich_from_feedstock, check_dependencies, check_github_version, get_conda_name",
-        "project-scanning": "~6 tools: scan_project (~28 input formats), run_system_health_check, env_inspect, download_pr_artifacts, get_build_summary, analyze_build_failure"
-      }
-    },
-    {
-      "part_id": "bmad-infra",
-      "display_name": "BMAD infrastructure",
-      "project_type_id": "infra",
-      "description": "BMAD-METHOD v6.6.0 installer + multi-project planning layout. Six-layer config merge, 65 installed skills, active-project resolution via bmad-switch. Hosts multiple BMAD projects (local-recipes + sibling projects) in a single repo.",
-      "root_paths": [
-        "_bmad/",
-        "_bmad-output/",
-        "scripts/bmad-switch"
-      ],
-      "key_tech": [
-        "BMAD-METHOD v6.6.0",
-        "Python 3.12",
-        "TOML (config layers)",
-        "Markdown (skill files)"
-      ],
-      "pixi_envs": [],
-      "config_layers": [
-        {"layer": 1, "path": "_bmad/config.toml", "scope": "installer team (regenerated)"},
-        {"layer": 2, "path": "_bmad/config.user.toml", "scope": "installer user (regenerated)"},
-        {"layer": 3, "path": "_bmad/custom/config.toml", "scope": "global custom team, all projects"},
-        {"layer": 4, "path": "_bmad/custom/config.user.toml", "scope": "global custom user, all projects"},
-        {"layer": 5, "path": "_bmad-output/projects/<slug>/.bmad-config.toml", "scope": "project team, active project only"},
-        {"layer": 6, "path": "_bmad-output/projects/<slug>/.bmad-config.user.toml", "scope": "project user, active project only"}
-      ],
-      "active_project_resolution_priority": [
-        "--project <slug> CLI flag",
-        "BMAD_ACTIVE_PROJECT env var",
-        "_bmad/custom/.active-project marker file",
-        "fallback: global config only"
-      ],
-      "installed_skills": 65,
-      "installed_skills_note": "Current repo state is 65 entries in .claude/skills/ but one (.claude/skills/data/) is a stray directory with no SKILL.md inside (contains only an old conda-forge-expert/ subdir). Real skill count is 64: 42 BMAD-installer + 21 engineering-practice + 1 repo-specific (conda-forge-expert). Rebuild target = 64 real skills; the stray is not recreated.",
-      "installed_skills_target_real": 64,
-      "installed_skills_breakdown": {
-        "bmad_installer": 42,
-        "engineering_practice": 21,
-        "repo_specific": 1
-      },
-      "current_active_project": "local-recipes"
-    }
-  ],
-  "integration_points": [
-    {
-      "from": "conda-forge-expert",
-      "to": "cf-atlas",
-      "type": "shared data directory",
-      "details": "Both parts read/write .claude/data/conda-forge-expert/ — cf_atlas.db is Part 2's primary artifact; Part 1's edit_recipe / scan_for_vulnerabilities / generate_recipe_from_pypi consume it via query helpers."
-    },
-    {
-      "from": "mcp-server",
-      "to": "conda-forge-expert",
-      "type": "thin-wrapper RPC",
-      "details": "Each MCP tool in conda_forge_server.py imports from .claude/skills/conda-forge-expert/scripts/<module>.py and forwards args. The MCP server is the wire format; the canonical implementation is Part 1's scripts."
-    },
-    {
-      "from": "mcp-server",
-      "to": "cf-atlas",
-      "type": "SQLite read",
-      "details": "Atlas-intelligence tools (query_atlas, package_health, staleness_report, etc.) read cf_atlas.db directly via the canonical scripts in Part 1."
-    },
-    {
-      "from": "bmad-infra",
-      "to": "conda-forge-expert",
-      "type": "skill invocation rule",
-      "details": "Every BMAD agent (planning, dev, review, retro) touching conda-forge work MUST invoke the conda-forge-expert skill via Skill tool. Codified in CLAUDE.md § 'BMAD ↔ conda-forge-expert integration'. The skill's 9-step loop + critical constraints override BMAD story instructions when they conflict."
-    },
-    {
-      "from": "bmad-infra",
-      "to": "conda-forge-expert",
-      "type": "retrospective closeout rule",
-      "details": "Every BMAD effort that did conda-forge work runs bmad-retrospective at closeout. Retro findings update SKILL.md, reference/*.md, guides/*.md, and CHANGELOG.md. Skill version bumps per semver (PATCH for fixes, MINOR for new gotchas, MAJOR for breaking workflow changes). Codified in CLAUDE.md § 'BMAD ↔ conda-forge-expert integration'."
-    },
-    {
-      "from": "all-parts",
-      "to": "enterprise-deployment-layer",
-      "type": "cross-cutting auth chain",
-      "details": "Every outbound HTTP request from Parts 1, 2, 3 routes through .claude/skills/conda-forge-expert/scripts/_http.py — truststore (native CA) + JFrog X-JFrog-Art-Api header (when JFROG_API_KEY set) + GitHub token + .netrc fallback. CRITICAL: JFROG_API_KEY leaks to every host when set; mitigation patterns in docs/enterprise-deployment.md § 2 Cross-host credential leak."
-    },
-    {
-      "from": "all-parts",
-      "to": "vuln-db env",
-      "type": "vulnerability source",
-      "details": "vuln-db pixi env provides AppThreat vulnerability database (NVD + GHSA + OSV + npm + Snyk). Part 1's scan_for_vulnerabilities and Part 2's Phase G/G' read from .claude/data/conda-forge-expert/vdb/. Separate env keeps the default local-recipes env lean (AppThreat pulls ~500MB).",
-      "env_var": "VDB_HOME = $PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb"
-    }
-  ],
-  "rebuild_dependencies": {
-    "build_order": [
-      "bmad-infra",
-      "conda-forge-expert",
-      "cf-atlas",
-      "mcp-server"
-    ],
-    "reasoning": "BMAD infra must exist for any planning to happen. The skill (Part 1) is foundational — Parts 2 and 3 are essentially extensions of it (Part 2 = the data pipeline encoded in the skill's scripts/; Part 3 = the MCP wire format over the skill's scripts/). Build order matches dependency order."
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "doc_type": "project-parts",
+ "project_name": "local-recipes",
+ "date": "2026-07-07",
+ "source_pin": "conda-forge-expert v8.75.0",
+ "shipped_spec_history": [
+  {
+   "version_target": "v8.6.0",
+   "spec_path": "docs/specs/atlas-appthreat-deep-signals.md",
+   "mirror_path": "_bmad-output/projects/local-recipes/implementation-artifacts/spec-appthreat-deep-signals.md",
+   "scope": "AppThreat deep signals — EPSS scores (FIRST.org CSV) + CWE category rollup (MITRE Research Concepts catalog) shipped via Waves A + B; Phase T blint hardening + Phase U EPSS overlay phase + withdrawn-advisory filter CANCELLED at Wave C verify-don't-assume verification (low signal / redundant / vdb pre-filters at ingest); schema v29 → v24 → v25 round-trip cleanup",
+   "version_bump_type": "MINOR (additive)",
+   "status": "shipped",
+   "shipped_date": "2026-05-24",
+   "shipped_commits": [
+    "e4ba891cd2",
+    "e22c531ac2",
+    "592b18089a"
+   ],
+   "retro_path": "_bmad-output/projects/local-recipes/implementation-artifacts/retro-appthreat-deep-signals-2026-05-24.md",
+   "proposal_path": "_bmad-output/projects/local-recipes/planning-artifacts/sprint-change-proposal-2026-05-24-v8.6.0.md"
   }
+ ],
+ "repository_type": "monorepo",
+ "parts": [
+  {
+   "part_id": "conda-forge-expert",
+   "display_name": "conda-forge-expert skill",
+   "project_type_id": "library",
+   "description": "Claude Code skill encoding the full conda-forge recipe lifecycle. 3-tier architecture: canonical scripts + CLI wrappers + data state. 10-step autonomous loop with one human-gated checkpoint at step 8b (prepare_submission_branch). Authoritative spine: SKILL.md.",
+   "root_paths": [
+    ".claude/skills/conda-forge-expert/",
+    ".claude/scripts/conda-forge-expert/"
+   ],
+   "key_tech": [
+    "Python 3.12",
+    "rattler-build",
+    "grayskull",
+    "conda-smithy",
+    "FastMCP (for tool exposure)"
+   ],
+   "pixi_envs": [
+    "local-recipes",
+    "grayskull",
+    "conda-smithy",
+    "vuln-db",
+    "gcloud"
+   ],
+   "version_pin": "v8.68.0",
+   "subdirectories": {
+    "SKILL.md": "primary spine: critical constraints, 10-step autonomous loop, recipe authoring gotchas G1–G99",
+    "INDEX.md": "task→tool navigator",
+    "CHANGELOG.md": "release history with TL;DR section (canonical drift-detection source)",
+    "reference/": "15 deep-reference files (recipe-yaml-reference[-full], meta-yaml-reference, mcp-tools, python-min-policy, conda-forge-yml-reference[-full], pinning-reference, selectors-reference, jinja-functions, abi3-matrix-collapse, dependency-input-formats, atlas-phases-overview, atlas-phase-engineering, conda-forge-ecosystem)",
+    "guides/": "9 workflow guides (getting-started, migration, ci-troubleshooting, cross-compilation, feedstock-maintenance, feedstock-platform-expansion, testing-recipes, sdist-missing-license, atlas-operations)",
+    "quickref/": "2 quick-reference files (commands-cheatsheet, bot-commands)",
+    "scripts/": "54 canonical Python implementations (single source of truth for behavior); 46 thin CLI wrappers under .claude/scripts/conda-forge-expert/",
+    "templates/": "41 recipe scaffolding templates across 13 ecosystems (c-cpp, dotnet, fortran, go, java, multi-output, nodejs, perl, python, r, ruby, rust + conda-forge-yml/{staged-recipes,feedstock})",
+    "tests/": "82 test files (unit + integration + meta) — uses real fixtures, no network mocking"
+   }
+  },
+  {
+   "part_id": "cf-atlas",
+   "display_name": "cf_atlas data pipeline",
+   "project_type_id": "data",
+   "description": "Offline-tolerant package-intelligence pipeline that builds and maintains cf_atlas.db (SQLite, schema v29 as of 2026-06-20) inventorying conda-forge packages (32k working set) plus a separate pypi_universe side table (the full PyPI directory, ~800k rows) plus a pypi_intelligence side table (35-column enrichment layer indexed on pypi_name, 5 tiers) plus three external-catalog overlay tables: cisa_kev (CISA KEV catalogue, ~1,600 CVEs; v8.5.3+), epss_scores (FIRST.org EPSS daily CSV, ~334k CVEs; v8.6.0+), cwe_categories (MITRE CWE Research Concepts view with 67-entry cf_atlas seed mapping → 7 categories + 'Other'; v8.6.0+). 22 ordered phases (B→N + O/P/Q/R/S, with B.5/B.6/C.5/E.5/G' sub-phases) with TTL gates and checkpoint-aware resumption. Schema advanced v25 → v28 since the prior sync: v26 (pypi_downloads_daily, Phase P incremental BigQuery, v8.15.0), v27 (rolling 30/90d downloads + trend slope + per-platform/per-Python breakdown tables, Phase F Wave 2, v8.18.0), v28 (package_channel_downloads + platform/pyver/channel breakdown CLIs, Phase F Wave 3, v8.19.0). Air-gap-tolerant via S3-parquet (Phase F) and cf-graph offline (Phase H) backends. v7.9.0 actionable-scope audit closed phase-denominator drift across Phase H/J/M and split Phase D into daily-lean + TTL-gated universe upsert. v8.0.0 structural-enforcement + persona-profiles bundle ships schema v29's v_actionable_packages view (7 phase selectors refactored) + Phase H serial-aware eligible-rows gate (warm-daily ~5 min → ~30 s) + tests/meta/test_actionable_scope.py + bootstrap-data --profile {maintainer,admin,consumer} with gh-user + phase-L-sources auto-detection. v8.1.0 PyPI intelligence layer adds 5 new phases (O snapshot-based activity_band; P BigQuery downloads opt-in; Q cross-channel BOOLs; R per-project JSON enrichment for top-N candidate slice; S computed conda_forge_readiness + recommended_template), pypi-intelligence CLI + MCP tool, and the pypi_intelligence side table with v_pypi_candidates view. v8.5.3 (Path C) adds the cisa_kev overlay — DW13 close-out via direct CISA JSON pull (~2 MB / ~1,600 CVEs) instead of vdb --cache-os (which would have downloaded ~33 GB and still left vuln_kev_affecting_current=0 because appthreat-vulnerability-db hardcodes `kevc` in its DEFAULT_IGNORE_SOURCE_PATTERNS); Phase G + G' overlay loops OR vdb's per-CVE `kev` flag with the local KEV set. v8.5.3 (DW12) ships defense-in-depth rollup-staleness fix: new v_current_version_vulns query-time-correct view + _phase_g_sync_current_rollup pure-SQL tail step on Phase G'. v8.6.0 AppThreat Deep Signals release (3 waves shipped + Wave C cancelled): schema v29 → v24 → v25 round-trip cleanup adds epss_scores + cwe_categories side tables + 4 packages columns (vuln_max_epss_score, vuln_max_epss_percentile, vuln_cwe_top, vuln_cwe_categories_json) + 3 package_version_vulns columns; new fetch-epss + fetch-cwe-catalog CLIs (Path C pattern from v8.5.3 generalised); new _load_epss_scores + _load_cwe_categories helpers + shared _aggregate_v8_6_0_overlays pure function for Phase G/G' overlay loops; _phase_g_sync_current_rollup extended with COALESCE-to-existing review-fix on the new columns; 4 new flags across staleness-report / my-feedstocks / cve-watcher / detail-cf-atlas. Wave C (Phase T blint + Phase U EPSS overlay phase) cancelled pre-implementation at verify-don't-assume verification — Phase T low-signal in conda-forge's hermetic compile env (~0 hardening variance / ~150 GB download cost); Phase U redundant with Wave B's rollup-sync extension. Withdrawn-filter columns provisioned in v24 then dropped in v25 after verification showed vdb's OSV + GHSA sources skip withdrawn at ingest (appthreat-vulnerability-db/lib/osv.py:91 + gha.py:184-185). 5 parent-spec errors caught pre-implementation. Live: 213 EPSS-scored + 216 CWE-classified actionable feedstocks; CWE distribution Info-Disclosure 133 / DoS 24 / RCE 21 / Other 18 / Injection 9 / Traversal 5 / Auth-Bypass 4 / Memory-Safety 2.",
+   "root_paths": [
+    ".claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py",
+    ".claude/skills/conda-forge-expert/scripts/_cf_graph_versions.py",
+    ".claude/data/conda-forge-expert/cf_atlas.db"
+   ],
+   "key_tech": [
+    "Python 3.12",
+    "SQLite (WAL mode)",
+    "pyarrow (parquet)",
+    "AppThreat vdb (Phase G/G')",
+    "py-rattler (deliberately avoided — uses current_repodata.json instead)"
+   ],
+   "pixi_envs": [
+    "local-recipes",
+    "vuln-db"
+   ],
+   "pipeline_phases": [
+    "B",
+    "B.5",
+    "B.6",
+    "C",
+    "C.5",
+    "D",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "E",
+    "E.5",
+    "F",
+    "G",
+    "G'",
+    "H",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N"
+   ],
+   "phase_count": 22,
+   "schema_versions": 28,
+   "cli_count": 21,
+   "cancelled_phases_history": {
+    "T (blint hardening — local + admin top-N modes)": "CANCELLED 2026-05-23 pre-implementation (v8.6.0 Wave C verify-don't-assume): ~0 hardening variance in conda-forge's hermetic compile env; ~150 GB download cost in admin top-N mode; blint can't scan .conda archives directly; PyPI package name was wrong in parent spec (owasp-blint 404 vs blint).",
+    "U (EPSS overlay — pure-SQL tail step over Phase G')": "CANCELLED 2026-05-23 pre-implementation (v8.6.0 Wave C verify-don't-assume): redundant with Wave B's _phase_g_sync_current_rollup extension which already propagates vuln_max_epss_score with COALESCE-to-existing. A genuine standalone Phase U requires a per-package CVE list / new package_cves table (filed as DW19, separate spec)."
+   },
+   "ttl_gated_phases": [
+    "F",
+    "G",
+    "H",
+    "K"
+   ],
+   "checkpoint_table": "phase_state",
+   "data_artifacts": {
+    "cf_atlas.db": "primary artifact (+ -shm, -wal); schema v29 includes packages + pypi_universe + pypi_intelligence + cisa_kev + epss_scores + cwe_categories + pypi_downloads_daily (v26) + package_platform_downloads/package_python_downloads (v27) + package_channel_downloads (v28) side tables; ~21 tables total",
+    "cwe_categories_seed.json": "committed at .claude/skills/conda-forge-expert/data/cwe_categories_seed.json — 67-entry CWE→cf_atlas 7-category mapping (RCE / DoS / Info-Disclosure / Auth-Bypass / Memory-Safety / Traversal / Injection); unmapped CWEs default to 'Other'. Read by cwe_catalog_fetcher.py at upsert time.",
+    "cf_atlas_meta.json": "run metadata",
+    "cf-graph-countyfair.tar.gz": "cf-graph offline snapshot (used by Phase E/H/M)",
+    "pypi_conda_map.json": "PyPI→conda name mapping cache",
+    "vdb/, vdb-cache/": "AppThreat vulnerability database (OSV + GHSA via vdb --cache; deliberately NOT --cache-os, see CHANGELOG v8.5.3 entry for the 33 GB-crash rationale)",
+    "cve/": "CVE feed cache",
+    "cache/parquet/": "Phase F S3 monthly parquet cache (created on demand, ~13MB/month)",
+    "inventory_cache/": "scan_project inventory cache (created on demand)"
+   }
+  },
+  {
+   "part_id": "mcp-server",
+   "display_name": "FastMCP server",
+   "project_type_id": "backend",
+   "description": "FastMCP server exposing 46 MCP tools (verified by grep `@mcp.tool` 2026-06-20) across recipe-authoring, atlas-intelligence, and project-scanning surfaces. Since the prior sync added: pypi_intelligence (v8.1.0), platform_breakdown / pyver_breakdown / channel_split (v8.19.0 Wave-3 CLIs), download_pr_artifacts (v8.14.0 Azure DevOps), env_inspect. Auto-started by Claude Code at session boot. Each tool is a thin wrapper around a Tier-1 canonical script from Part 1.",
+   "root_paths": [
+    ".claude/tools/conda_forge_server.py",
+    ".claude/tools/gemini_server.py",
+    ".claude/tools/mcp_call.py"
+   ],
+   "key_tech": [
+    "Python 3.12",
+    "FastMCP",
+    "MCP (Model Context Protocol)"
+   ],
+   "pixi_envs": [
+    "local-recipes"
+   ],
+   "tool_surfaces": {
+    "recipe-authoring": "~15 tools: generate_recipe_from_pypi, validate_recipe, edit_recipe, optimize_recipe, scan_for_vulnerabilities, trigger_build, get_build_summary, analyze_build_failure, prepare_submission_branch, submit_pr, migrate_to_v1, update_recipe_from_github, update_recipe, update_cve_database, update_mapping_cache",
+    "atlas-intelligence": "~18 tools: query_atlas, package_health, staleness_report, cve_watcher, behind_upstream, feedstock_health, whodepends, release_cadence, version_downloads, find_alternative, adoption_stage, pypi_only_candidates, pypi_intelligence, platform_breakdown, pyver_breakdown, channel_split, my_feedstocks, lookup_feedstock, get_feedstock_context, enrich_from_feedstock, check_dependencies, check_github_version, get_conda_name",
+    "project-scanning": "~6 tools: scan_project (~28 input formats), run_system_health_check, env_inspect, download_pr_artifacts, get_build_summary, analyze_build_failure"
+   }
+  },
+  {
+   "part_id": "bmad-infra",
+   "display_name": "BMAD infrastructure",
+   "project_type_id": "infra",
+   "description": "BMAD-METHOD v6.6.0 installer + multi-project planning layout. Six-layer config merge, 65 installed skills, active-project resolution via bmad-switch. Hosts multiple BMAD projects (local-recipes + sibling projects) in a single repo.",
+   "root_paths": [
+    "_bmad/",
+    "_bmad-output/",
+    "scripts/bmad-switch"
+   ],
+   "key_tech": [
+    "BMAD-METHOD v6.6.0",
+    "Python 3.12",
+    "TOML (config layers)",
+    "Markdown (skill files)"
+   ],
+   "pixi_envs": [],
+   "config_layers": [
+    {
+     "layer": 1,
+     "path": "_bmad/config.toml",
+     "scope": "installer team (regenerated)"
+    },
+    {
+     "layer": 2,
+     "path": "_bmad/config.user.toml",
+     "scope": "installer user (regenerated)"
+    },
+    {
+     "layer": 3,
+     "path": "_bmad/custom/config.toml",
+     "scope": "global custom team, all projects"
+    },
+    {
+     "layer": 4,
+     "path": "_bmad/custom/config.user.toml",
+     "scope": "global custom user, all projects"
+    },
+    {
+     "layer": 5,
+     "path": "_bmad-output/projects/<slug>/.bmad-config.toml",
+     "scope": "project team, active project only"
+    },
+    {
+     "layer": 6,
+     "path": "_bmad-output/projects/<slug>/.bmad-config.user.toml",
+     "scope": "project user, active project only"
+    }
+   ],
+   "active_project_resolution_priority": [
+    "--project <slug> CLI flag",
+    "BMAD_ACTIVE_PROJECT env var",
+    "_bmad/custom/.active-project marker file",
+    "fallback: global config only"
+   ],
+   "installed_skills": 65,
+   "installed_skills_note": "Current repo state is 65 entries in .claude/skills/ but one (.claude/skills/data/) is a stray directory with no SKILL.md inside (contains only an old conda-forge-expert/ subdir). Real skill count is 64: 42 BMAD-installer + 21 engineering-practice + 1 repo-specific (conda-forge-expert). Rebuild target = 64 real skills; the stray is not recreated.",
+   "installed_skills_target_real": 64,
+   "installed_skills_breakdown": {
+    "bmad_installer": 42,
+    "engineering_practice": 21,
+    "repo_specific": 1
+   },
+   "current_active_project": "local-recipes"
+  }
+ ],
+ "integration_points": [
+  {
+   "from": "conda-forge-expert",
+   "to": "cf-atlas",
+   "type": "shared data directory",
+   "details": "Both parts read/write .claude/data/conda-forge-expert/ — cf_atlas.db is Part 2's primary artifact; Part 1's edit_recipe / scan_for_vulnerabilities / generate_recipe_from_pypi consume it via query helpers."
+  },
+  {
+   "from": "mcp-server",
+   "to": "conda-forge-expert",
+   "type": "thin-wrapper RPC",
+   "details": "Each MCP tool in conda_forge_server.py imports from .claude/skills/conda-forge-expert/scripts/<module>.py and forwards args. The MCP server is the wire format; the canonical implementation is Part 1's scripts."
+  },
+  {
+   "from": "mcp-server",
+   "to": "cf-atlas",
+   "type": "SQLite read",
+   "details": "Atlas-intelligence tools (query_atlas, package_health, staleness_report, etc.) read cf_atlas.db directly via the canonical scripts in Part 1."
+  },
+  {
+   "from": "bmad-infra",
+   "to": "conda-forge-expert",
+   "type": "skill invocation rule",
+   "details": "Every BMAD agent (planning, dev, review, retro) touching conda-forge work MUST invoke the conda-forge-expert skill via Skill tool. Codified in CLAUDE.md § 'BMAD ↔ conda-forge-expert integration'. The skill's 9-step loop + critical constraints override BMAD story instructions when they conflict."
+  },
+  {
+   "from": "bmad-infra",
+   "to": "conda-forge-expert",
+   "type": "retrospective closeout rule",
+   "details": "Every BMAD effort that did conda-forge work runs bmad-retrospective at closeout. Retro findings update SKILL.md, reference/*.md, guides/*.md, and CHANGELOG.md. Skill version bumps per semver (PATCH for fixes, MINOR for new gotchas, MAJOR for breaking workflow changes). Codified in CLAUDE.md § 'BMAD ↔ conda-forge-expert integration'."
+  },
+  {
+   "from": "all-parts",
+   "to": "enterprise-deployment-layer",
+   "type": "cross-cutting auth chain",
+   "details": "Every outbound HTTP request from Parts 1, 2, 3 routes through .claude/skills/conda-forge-expert/scripts/_http.py — truststore (native CA) + JFrog X-JFrog-Art-Api header (when JFROG_API_KEY set) + GitHub token + .netrc fallback. CRITICAL: JFROG_API_KEY leaks to every host when set; mitigation patterns in docs/enterprise-deployment.md § 2 Cross-host credential leak."
+  },
+  {
+   "from": "all-parts",
+   "to": "vuln-db env",
+   "type": "vulnerability source",
+   "details": "vuln-db pixi env provides AppThreat vulnerability database (NVD + GHSA + OSV + npm + Snyk). Part 1's scan_for_vulnerabilities and Part 2's Phase G/G' read from .claude/data/conda-forge-expert/vdb/. Separate env keeps the default local-recipes env lean (AppThreat pulls ~500MB).",
+   "env_var": "VDB_HOME = $PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb"
+  }
+ ],
+ "rebuild_dependencies": {
+  "build_order": [
+   "bmad-infra",
+   "conda-forge-expert",
+   "cf-atlas",
+   "mcp-server"
+  ],
+  "reasoning": "BMAD infra must exist for any planning to happen. The skill (Part 1) is foundational — Parts 2 and 3 are essentially extensions of it (Part 2 = the data pipeline encoded in the skill's scripts/; Part 3 = the MCP wire format over the skill's scripts/). Build order matches dependency order."
+ }
 }

@@ -699,8 +699,13 @@ pixi run -e local-recipes inventory-match -- reqs.txt \
     --policy policy.toml --weights crit.csv                      # CI gate: rc 2 on violations
 pixi run -e local-recipes add-handoff -- --matches match.json    # ADD-bucket packaging worklist (bounded enrichment first)
 pixi run -e local-recipes library-futures -- --package numpy     # 2027–2030 survival score for one package
+pixi run -e local-recipes lts-registry-gap                       # propose lts-registry.yaml entries (read-only; git review decides)
+pixi run -e local-recipes lts-registry-gap -- --json --limit 20  # machine summary, capped per tier
 pixi run -e local-recipes recommend-2027 -- pixi.lock \
     --sbom-in bom.json --sbom-out scored.cdx.json                # THE window scorecard + annotated BOM
+pixi run -e local-recipes cwe-seed-gap                           # propose cwe_categories_seed.json entries (offline; git review decides)
+pixi run -e local-recipes spdx-schema-gap -- --json --drift      # propose spdx.schema.json enum adds + upstream staleness
+pixi run -e local-recipes license-map-gap                        # propose _LICENSE_TO_SPDX entries for unmapped PyPI licenses (git review decides)
 ```
 
 ### Maintenance & sync
