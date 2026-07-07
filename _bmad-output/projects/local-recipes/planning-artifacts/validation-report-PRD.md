@@ -4,10 +4,11 @@ project_name: local-recipes
 date: 2026-06-21
 prd_under_review: planning-artifacts/PRD.md
 validator: bmad-validate-prd (Path 3 hybrid)
-overall_verdict: APPROVED (re-validated 2026-07-06 @ v8.73.1 post-reconciler-loop; the prior residual count-drift SHOULD-FIX is CLOSED — current-state counts read schema v29 / 46 MCP tools / G1-G99 after the 2026-07-06 SYNC-RUNBOOK sweep. PRD structure/FRs unchanged; the shipped cyclonedx-universe-inventory capability cluster is recorded per the spec-first convention in docs/specs/ [Tier 1, status shipped] with the PRD current-state re-grounded. See verdict_history.)
+overall_verdict: APPROVED (re-validated 2026-07-07 @ v8.75.0 pin-forward — PRD body + FRs unchanged; the v8.74/v8.75 seed-gap suggesters are read-only CLI surfaces, no FR/NFR shift. Prior count-drift SHOULD-FIX remains CLOSED — current-state counts read schema v29 / 46 MCP tools / G1-G99 after the 2026-07-06 SYNC-RUNBOOK sweep. PRD structure/FRs unchanged; the shipped cyclonedx-universe-inventory capability cluster is recorded per the spec-first convention in docs/specs/ [Tier 1, status shipped] with the PRD current-state re-grounded. See verdict_history.)
 status: final
-source_pin: 'conda-forge-expert v8.73.1'
+source_pin: 'conda-forge-expert v8.75.0'
 verdict_history:
+  - { date: '2026-07-07 (re-validated post v8.75.0 pin-forward)', verdict: 'APPROVED', notes: 'Pin-forward per SYNC-RUNBOOK after PRs #41–#43 (CFE v8.73.1 → v8.75.0). The three shipped surfaces are read-only seed-gap suggesters (lts-registry-gap/cwe-seed-gap/spdx-schema-gap) — CLI/pixi-only, no MCP tool, no schema/phase/FR change — so the PRD inputs are unchanged and the verdict holds. No new REVISE findings.' }
   - { date: '2026-07-06 (re-validated post v8.73.1 reconciler loop)', verdict: 'APPROVED', notes: 'Regenerated fresh per SYNC-RUNBOOK after the cyclonedx-universe-inventory effort (CFE v8.69.0→v8.73.1). Prior SHOULD-FIX (stale current-state gotcha/tool counts) CLOSED by the 2026-07-06 living-doc sweep. Gate re-run also caught + repaired a sweep defect: blanket count replacement had touched 17 dated change-history lines in PRD/epics (anachronistic numbers); restored verbatim — future syncs must exclude dated history entries from count rewrites. No new REVISE findings; PRD body unchanged since v1.6.x.' }
   - { date: '2026-05-12 (initial)', verdict: 'REVISE', notes: 'Material issues across D3 / D5 / D6 / D7 / D9 / D10 on the v7.7-pinned draft PRD.' }
   - { date: '2026-05-12 (post tentative-decisions)', verdict: 'APPROVED', notes: 'PRD updated with tentative_decisions_applied; REVISE-rated dimensions addressed; status moved draft → approved.' }

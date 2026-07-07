@@ -2,8 +2,8 @@
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "doc_type": "project-parts",
  "project_name": "local-recipes",
- "date": "2026-07-06",
- "source_pin": "conda-forge-expert v8.73.1",
+ "date": "2026-07-07",
+ "source_pin": "conda-forge-expert v8.75.0",
  "shipped_spec_history": [
   {
    "version_target": "v8.6.0",
