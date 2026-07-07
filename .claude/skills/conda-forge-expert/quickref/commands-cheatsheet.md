@@ -700,6 +700,7 @@ pixi run -e local-recipes recommend-2027 -- pixi.lock \
     --sbom-in bom.json --sbom-out scored.cdx.json                # THE window scorecard + annotated BOM
 pixi run -e local-recipes cwe-seed-gap                           # propose cwe_categories_seed.json entries (offline; git review decides)
 pixi run -e local-recipes spdx-schema-gap -- --json --drift      # propose spdx.schema.json enum adds + upstream staleness
+pixi run -e local-recipes license-map-gap                        # propose _LICENSE_TO_SPDX entries for unmapped PyPI licenses (git review decides)
 ```
 
 ### Maintenance & sync

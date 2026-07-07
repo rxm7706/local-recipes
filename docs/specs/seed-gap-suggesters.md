@@ -1,16 +1,16 @@
 ---
 doc_type: spec
 part_id: seed-gap-suggesters
-display_name: seed-gap suggesters (CWE + SPDX)
+display_name: seed-gap suggesters (CWE + SPDX + license-map)
 project_type_id: tooling
 date: 2026-07-06
 status: shipped
-implemented_by: conda-forge-expert v8.75.0
+implemented_by: conda-forge-expert v8.75.0 (cwe/spdx) + v8.76.0 (license-map)
 shipped_ref: 6b23022a335bfce317b961937ce52fb2a4699464
 spec_updated: 2026-07-06
 ---
 
-# Spec: seed-gap suggesters — `cwe-seed-gap` + `spdx-schema-gap`
+# Spec: seed-gap suggesters — `cwe-seed-gap` + `spdx-schema-gap` + `license-map-gap`
 
 ## Goal
 
@@ -71,6 +71,33 @@ more external-data-asset maintenance loops for the kedro migration (§ below).
 - **Output**: ready-to-paste enum-ID additions (the `add-to-schema` tier) +
   the non-standard normalization list; `--json`; `--limit`; `--out`. Never
   writes `spdx.schema.json`.
+
+## `license-map-gap` (offline; atlas-grounded) — added v8.76.0
+
+The third family member targets an **in-code** curated map rather than a
+git-tracked seed: `conda_forge_atlas._LICENSE_TO_SPDX` (~36 lowercased
+free-text → canonical-SPDX entries; `_normalize_license_to_spdx` returns
+`None` on a miss, silently degrading the Phase R/S license-readiness score).
+
+- **Input**: `pypi_intelligence` — the discovery signal is `license_raw`
+  rows whose `license_spdx IS NULL` (the map missed), grouped with package
+  counts. Fully offline; also imports `_LICENSE_TO_SPDX` (exclusion +
+  coverage count) and `_sbom._spdx_id_enum` (vendored SPDX ID universe).
+- **Junk filter** (not single-map entries): empty / `unknown`; over-long
+  strings (>60 chars = a pasted full license text); `see …` / URL /
+  copyright forms; SPDX **expressions** (`AND`/`OR`/`WITH` or parens);
+  forms already keyed in `_LICENSE_TO_SPDX`.
+- **Conservative candidate hint**: the vendored SPDX ids whose lowercased id
+  is a **whole-token** match inside the lowercased form (never a substring —
+  `isc` won't match inside `basiclicense`; 2-char ids skipped). No fuzzy
+  matching — a wrong license map is a correctness bug.
+- **Two tiers**: `likely` = exactly one candidate → a ready-to-paste
+  `"<form>": "<SPDX-id>",` line (human still verifies); `report` = zero /
+  multiple candidates → the form + candidate set, ranked by package count,
+  for a human to pick the target.
+- **Output**: paste-ready `likely` lines + the ranked `report` list;
+  `--json`, `--limit` per tier, `--out`, `--db`. **Never writes
+  `conda_forge_atlas.py`** (no write path at all).
 
 ## Acceptance criteria
 
