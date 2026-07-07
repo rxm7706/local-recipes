@@ -61,6 +61,11 @@ raw_project_manifest: *raw
 raw_endoflife_eol: *raw
 handoff_request: *raw
 
+# --- curated external seeds (read-only inputs; git review owns them) ----------
+cwe_categories_seed: *raw
+spdx_schema: *raw
+license_to_spdx_map: *raw
+
 # --- atlas tables (today cf_atlas.db, tomorrow DuckDB parquet) ----------------
 packages: *atlas
 feedstock_outputs_map: *atlas
@@ -104,6 +109,11 @@ universe_sbom_bom: *derived
 inventory_report: *derived
 futures_scores: *derived
 recommend_2027_bom: *derived
+# seed-freshness reports (read-only *-gap suggesters; spec § 3.4)
+lts_registry_gap_report: *derived
+cwe_seed_gap_report: *derived
+spdx_schema_gap_report: *derived
+license_map_gap_report: *derived
 
 # --- read surface ---------------------------------------------------------------
 bsl_semantic_model: *read_surface

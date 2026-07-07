@@ -12,10 +12,14 @@ storage layers, rendered interactively by kedro-viz.
 ![Target-state cf_atlas DAG in kedro-viz](docs/target-state-dag.png)
 
 High-resolution capture (7800×5400 — zoomable to node-label level) of the
-static `kedro viz build` render: all 57 nodes / 60 datasets, the 5 storage
-layers top-to-bottom, sidebar node list + tag filters on the left. For actual
-navigation (pan, zoom, collapse pipelines, click-through metadata), run the
-interactive version below.
+static `kedro viz build` render, showing the 5 storage layers top-to-bottom,
+sidebar node list + tag filters on the left. For actual navigation (pan, zoom,
+collapse pipelines, click-through metadata), run the interactive version below.
+
+> **Note:** the PNG captures below predate the `seed_gaps` pipeline (added for
+> spec § 3.4 — the read-only seed-freshness report nodes). The live DAG is now
+> **64 nodes / 67 datasets across 7 pipelines**; regenerate the captures with
+> `kedro viz build` to refresh them.
 
 Per-pipeline captures (each is the same viz with one registered pipeline
 selected — far less dense, labels readable at 100%+):
@@ -27,6 +31,7 @@ selected — far less dense, labels readable at 100%+):
 | `pypi_intelligence` | [docs/pipeline-pypi_intelligence.png](docs/pipeline-pypi_intelligence.png) |
 | `vulnerability` | [docs/pipeline-vulnerability.png](docs/pipeline-vulnerability.png) |
 | `universal_sbom` | [docs/pipeline-universal_sbom.png](docs/pipeline-universal_sbom.png) |
+| `seed_gaps` | _(no capture yet — run `kedro viz`)_ |
 | `read_surface` | [docs/pipeline-read_surface.png](docs/pipeline-read_surface.png) |
 
 ## Run it
@@ -36,7 +41,7 @@ environment:
 
 ```bash
 pixi run -e local-recipes kedro-viz-proto   # interactive DAG in the browser
-pixi run -e local-recipes kedro-run-proto   # <1 s smoke run (57 stub tasks)
+pixi run -e local-recipes kedro-run-proto   # <1 s smoke run (64 stub tasks)
 ```
 
 Or from this directory with any env that has kedro + kedro-viz: `kedro viz`.
@@ -50,6 +55,7 @@ Or from this directory with any env that has kedro + kedro-viz: `kedro viz`.
 | `pypi_intelligence` | C, C.5, D, H, O→P→Q→R→S + add-handoff single-write-path | B2 |
 | `vulnerability` | KEV/EPSS/CWE fetchers, G, G' → `v_current_version_vulns` | B2 |
 | `universal_sbom` | export-purls, universe-sbom, inventory-match, library-futures, recommend-2027 | FR-13 + regen cadence |
+| `seed_gaps` | lts-registry-gap, cwe-seed-gap, spdx-schema-gap, license-map-gap → read-only seed-freshness reports | § 3.4 |
 | `read_surface` | BSL semantic model → Vizro dashboard + kedro-mcp tools | D1-D3, B3 |
 
 Dataset **layers** (kedro-viz left rail) model the storage tiers: `raw`
