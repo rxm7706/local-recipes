@@ -73,6 +73,8 @@ def test_is_junk(mod):
     assert mod._is_junk("UNKNOWN")
     assert mod._is_junk("See LICENSE")
     assert mod._is_junk("Apache-2.0 OR MIT")          # expression
+    assert mod._is_junk("mit or apache-2.0")          # lowercase operator (IGNORECASE)
+    assert mod._is_junk("gpl and classpath")          # lowercase "and"
     assert mod._is_junk("x" * 61)                     # too long
     assert mod._is_junk("https://opensource.org/MIT")
     assert not mod._is_junk("Zope Public License")
@@ -103,6 +105,18 @@ def test_classify_excludes_junk_and_mapped(mod, fixture_db):
     assert "Artistic License" in forms
 
 
+def test_whitespace_variant_grouped_and_trimmed(mod, fixture_db):
+    # a leading/trailing-whitespace variant must group under the TRIMmed key
+    fixture_db.execute("INSERT INTO pypi_intelligence (pypi_name, license_raw, "
+                       "license_spdx) VALUES ('pkg-ws', '  Zope Public License  ', NULL)")
+    fixture_db.execute("INSERT INTO pypi_universe (pypi_name) VALUES ('pkg-ws')")
+    fixture_db.commit()
+    counts = mod._unmapped_licenses(fixture_db)
+    assert "Zope Public License" in counts                # trimmed key
+    assert "  Zope Public License  " not in counts        # raw whitespace form gone
+    assert counts["Zope Public License"] == 3             # 2 base + whitespace variant
+
+
 def test_ranked_by_package_count(mod, fixture_db):
     proposals = mod.classify(mod._unmapped_licenses(fixture_db), ENUM, SEED)
     zpl = next(p for p in proposals if p["license_raw"] == "Zope Public License")
@@ -117,8 +131,9 @@ def test_tiering_likely_vs_report(mod):
     single = mod.classify({"licensed under ZPL-2.1": 3}, enum, {})
     assert single[0]["confidence"] == "likely"
     assert single[0]["suggested_spdx"] == "ZPL-2.1"
-    # two candidates → report, no committed target
-    multi = mod.classify({"Artistic-1.0 or Artistic-2.0 choose": 1}, enum, {})
+    # two candidates → report, no committed target (operator-free string, else
+    # the IGNORECASE expression filter would drop it as a compound expression)
+    multi = mod.classify({"Artistic-1.0 Artistic-2.0 combined": 1}, enum, {})
     assert multi[0]["confidence"] == "report"
     assert multi[0]["suggested_spdx"] is None
     assert set(multi[0]["candidates"]) == {"Artistic-1.0", "Artistic-2.0"}

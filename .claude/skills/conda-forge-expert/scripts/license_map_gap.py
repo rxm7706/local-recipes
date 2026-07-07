@@ -38,7 +38,21 @@ from conda_forge_atlas import open_db, _LICENSE_TO_SPDX  # noqa: E402
 from _sbom import _spdx_id_enum  # noqa: E402
 
 # SPDX expression (not a single-ID map entry) — same idea as spdx_schema_gap.
-_EXPRESSION_RE = re.compile(r"[()]|(?:^|\s)(?:AND|OR|WITH)(?:\s|$)")
+# IGNORECASE: PyPI license fields freely use lowercase operators ("mit or
+# apache-2.0"), which must still be caught as a compound expression.
+_EXPRESSION_RE = re.compile(r"[()]|(?:^|\s)(?:AND|OR|WITH)(?:\s|$)", re.IGNORECASE)
+# Compiled whole-token candidate patterns, keyed by lowercased SPDX id. The
+# vendored enum is ~811 ids and `_candidates` runs per unmapped form, so
+# compiling per (id, form) would thrash re's internal cache — build once, reuse.
+_CANDIDATE_PAT_CACHE: dict[str, "re.Pattern[str]"] = {}
+
+
+def _cand_pattern(lid: str) -> "re.Pattern[str]":
+    pat = _CANDIDATE_PAT_CACHE.get(lid)
+    if pat is None:
+        pat = re.compile(r"(?:^|[^0-9a-z])" + re.escape(lid) + r"(?:$|[^0-9a-z])")
+        _CANDIDATE_PAT_CACHE[lid] = pat
+    return pat
 # A non-word char (whitespace / punctuation) or string edge — for whole-token
 # candidate matching so "isc" doesn't match inside "basiclicense".
 _MAX_LEN = 60          # longer than this = a pasted full license text, not a form
@@ -63,9 +77,9 @@ def _unmapped_licenses(conn) -> dict[str, int]:
     non-orphaned intelligence rows only."""
     counts: dict[str, int] = {}
     for raw, n in conn.execute(
-            "SELECT license_raw, COUNT(*) FROM v_pypi_intelligence_valid "
+            "SELECT TRIM(license_raw), COUNT(*) FROM v_pypi_intelligence_valid "
             "WHERE license_spdx IS NULL AND license_raw IS NOT NULL "
-            "AND TRIM(license_raw) != '' GROUP BY license_raw"):
+            "AND TRIM(license_raw) != '' GROUP BY TRIM(license_raw)"):
         counts[str(raw)] = int(n)
     return counts
 
@@ -78,7 +92,7 @@ def _candidates(form: str, enum_by_lower: dict[str, str]) -> list[str]:
     for lid, canon in enum_by_lower.items():
         if len(lid) < 3:                     # skip 2-char ids (too noisy)
             continue
-        if re.search(r"(?:^|[^0-9a-z])" + re.escape(lid) + r"(?:$|[^0-9a-z])", low):
+        if _cand_pattern(lid).search(low):
             hits.append(canon)
     return sorted(set(hits))
 
