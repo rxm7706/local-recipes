@@ -209,6 +209,10 @@ cmd = "python .claude/scripts/conda-forge-expert/cisa_kev_fetcher.py"
 description = "Refresh the FIRST.org EPSS scores table in cf_atlas.db (v8.6.0 Wave A — AppThreat Deep Signals). Pulls ~3 MB gzipped CSV from https://epss.empiricalsecurity.com/epss_scores-current.csv.gz (Cyentia rebranded to Empirical Security; the older epss.cyentia.com host redirects). Columns: cve, epss, percentile (both 0.0-1.0 at source). Stored percentile is normalized to 0.0-100.0 to match CISA's published convention. Phase G / G' overlay this in Wave B alongside the CWE rollup. ~30 s end-to-end; ~334k CVEs. Pass --dry-run / --json / --db / --timeout."
 cmd = "python .claude/scripts/conda-forge-expert/epss_fetcher.py"
 
+[feature.local-recipes.tasks.lts-registry-gap]
+description = "Propose lts-registry.yaml entries by diffing the endoflife.date product list (/api/all.json, ENDOFLIFE_BASE_URL-routable, TTL-7d cache) against v_actionable_packages — the mapping-gap sibling for the LTS registry. READ-ONLY: emits ready-to-paste YAML snippets with exact/likely confidence tiers; accept/reject stays with git review; the registry file is never written. Pass --json / --limit N / --out FILE / --products-file FILE (offline)."
+cmd = "python .claude/scripts/conda-forge-expert/lts_registry_gap.py"
+
 [feature.local-recipes.tasks.kedro-viz-proto]
 description = "Serve the kedro-viz DAG of the TARGET-STATE cf_atlas pipeline (prototypes/cf-atlas-kedro-viz — illustrative stub model for docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.2 + § 3.4 seed-gap report nodes; 64 stub nodes / 67 datasets across 7 modular pipelines and 5 storage layers). Opens the interactive browser UI."
 cmd = "kedro viz"
@@ -222,6 +226,18 @@ cwd = "prototypes/cf-atlas-kedro-viz"
 [feature.local-recipes.tasks.fetch-cwe-catalog]
 description = "Refresh the MITRE CWE Research Concepts table in cf_atlas.db (v8.6.0 Wave B — AppThreat Deep Signals). Pulls ~640 KB zip from https://cwe.mitre.org/data/csv/1000.csv.zip (Research Concepts view — note: parent v8.6.0 spec incorrectly cited 2000.csv.zip which is the Architectural Concepts view). 944 CWEs. Applies a committed seed-mapping JSON at .claude/skills/conda-forge-expert/data/cwe_categories_seed.json (top-N well-known CWEs → 7 cf_atlas categories: RCE / DoS / Info-Disclosure / Auth-Bypass / Memory-Safety / Traversal / Injection). Anything not in the seed → 'Other'. Runs in seconds. Pass --dry-run / --json / --db / --timeout."
 cmd = "python .claude/scripts/conda-forge-expert/cwe_catalog_fetcher.py"
+
+[feature.local-recipes.tasks.cwe-seed-gap]
+description = "Propose cwe_categories_seed.json entries by keyword-classifying MITRE CWEs currently bucketed 'Other' in the cwe_categories table — the mapping-gap sibling for the CWE seed. Fully offline (reads cwe_categories, populated by fetch-cwe-catalog). READ-ONLY: emits ready-to-paste seed lines with strong/weak confidence tiers + an 'Other-bucket affects N packages' headline; accept/reject stays with git review; the seed is never written. Pass --json / --limit N / --out FILE."
+cmd = "python .claude/scripts/conda-forge-expert/cwe_seed_gap.py"
+
+[feature.local-recipes.tasks.spdx-schema-gap]
+description = "Propose spdx.schema.json enum additions by diffing the vendored SPDX enum against the upstream SPDX license list (spdx/license-list-data, GITHUB_RAW_BASE_URL-routable, TTL-7d cache), ranked by the licenses real packages carry (v_actionable_packages) — the mapping-gap sibling for the SPDX schema. READ-ONLY: add-to-schema (real upstream IDs on packages) vs non-standard (normalize) tiers; --drift for pure staleness; the schema is never written. Pass --json / --limit N / --out FILE / --source-file FILE (offline) / --drift."
+cmd = "python .claude/scripts/conda-forge-expert/spdx_schema_gap.py"
+
+[feature.local-recipes.tasks.license-map-gap]
+description = "Propose _LICENSE_TO_SPDX entries by ranking the raw PyPI license strings that currently normalize to nothing (pypi_intelligence.license_raw where license_spdx IS NULL), by how many packages carry each — the mapping-gap sibling for the in-code free-text→SPDX map. Fully offline. READ-ONLY: 'likely' (single conservative SPDX-id candidate → paste-ready line) vs 'report' (zero/multiple candidates → human picks) tiers; conda_forge_atlas.py is never written; accept/reject stays with git review. Pass --json / --limit N / --out FILE."
+cmd = "python .claude/scripts/conda-forge-expert/license_map_gap.py"
 
 [feature.local-recipes.tasks.scan-vulnerabilities]
 description = "Scan a recipe's dependencies for vulnerabilities using the local CVE database"

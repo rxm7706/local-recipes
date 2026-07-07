@@ -4,12 +4,15 @@ part_id: mcp-server
 display_name: FastMCP server
 project_type_id: backend
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.68.0'
+source_pin: 'conda-forge-expert v8.75.0'
 ---
 
 # Architecture: MCP Server (Part 3)
 
-The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 42 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
+> **Re-grounded 2026-07-06** (source_pin → v8.75.0 (2026-07-07 pin-forward); reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.75.0 (v8.74/v8.75 add 3 read-only seed-gap suggesters — `lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap` — CLI/pixi-only, no MCP tool; schema v29 / 46 MCP tools / 23 phases / G99 / 9 envs all unchanged).
+
+
+The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes 46 tools across three surfaces (recipe-authoring, atlas-intelligence, project-scanning), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.
 
 **Surface deltas (v8.11.1 → v8.41.0):** the atlas-intelligence surface added `pypi_intelligence` (v8.1.0; the rich filter chain `--score-min`, `--activity`, `--license-ok`, `--noarch-python-candidate`, `--min-downloads`, per-channel `--in-*`, `--sort-by score|downloads|serial|name`) and the Phase F+ Wave-3 reads `platform_breakdown` / `pyver_breakdown` / `channel_split` (v8.19.0); the recipe-authoring surface added `download_pr_artifacts` (v8.14.0 PR-artifact downloader). Total: **42**.
 
@@ -22,7 +25,7 @@ Without Part 3, every BMAD agent would have to invoke pixi tasks directly (slow,
 > **Expose Parts 1 + 2 as MCP tools so Claude Code and BMAD agents can invoke them with structured args + JSON responses without shell round-tripping.**
 
 Operationalized:
-- 42 tools registered via `@mcp.tool()` decorators on a single `FastMCP("conda-forge-expert")` instance.
+- 46 tools registered via `@mcp.tool()` decorators on a single `FastMCP("conda-forge-expert")` instance.
 - Each tool's body is a thin `_run_script(SCRIPT_PATH, args, ...)` invocation that subprocess-executes a Tier 1 script and parses JSON stdout.
 - Auto-discovered by Claude Code by path convention (`.claude/tools/*.py`); no `.mcp.json` registration currently (known gap, see Deferred Work below).
 
@@ -154,7 +157,7 @@ All read against `cf_atlas.db` (Part 2). All sync. `update_cve_database` is asyn
 
 ## Tool Implementation Pattern
 
-Every tool follows the same skeleton (~90% of the 42 tools are 5-10 lines of body code; the `env_inspect` dispatcher is ~30 lines because of the 8-mode flag mapping):
+Every tool follows the same skeleton (~90% of the 46 tools are 5-10 lines of body code; the `env_inspect` dispatcher is ~30 lines because of the 8-mode flag mapping):
 
 ```python
 @mcp.tool()
@@ -371,7 +374,7 @@ Captured from `docs/specs/claude-team-memory.md` Q13 and surfaced here so the re
 See `integration-architecture.md` for full cross-part contracts. Summary:
 
 - **← Part 1 (skill)**: every MCP tool wraps a Tier 1 canonical script. Part 1's `scripts/` is the implementation; Part 3 is the wire format.
-- **← Part 2 (cf_atlas)**: 22 of the 42 tools query `cf_atlas.db` directly (via Tier 1 scripts; v8.5.0's `env_inspect` adds atlas joins for the freshness/security/bus-factor/licenses modes; v8.19.0's `platform_breakdown` / `pyver_breakdown` / `channel_split` read the Phase F+ breakdown tables). Part 3 doesn't talk to the DB itself — it shells out.
+- **← Part 2 (cf_atlas)**: 22 of the 46 tools query `cf_atlas.db` directly (via Tier 1 scripts; v8.5.0's `env_inspect` adds atlas joins for the freshness/security/bus-factor/licenses modes; v8.19.0's `platform_breakdown` / `pyver_breakdown` / `channel_split` read the Phase F+ breakdown tables). Part 3 doesn't talk to the DB itself — it shells out.
 - **→ Part 4 (BMAD)**: every BMAD agent doing conda-forge work invokes tools via `mcp__conda_forge_server__*` per CLAUDE.md integration rules.
 - **→ Enterprise layer**: each tool's subprocess inherits the env (including `JFROG_API_KEY`); the leak mitigation lives at the launch-shell layer.
 

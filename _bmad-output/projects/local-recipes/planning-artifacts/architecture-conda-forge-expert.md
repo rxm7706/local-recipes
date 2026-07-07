@@ -4,10 +4,13 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.68.0'
+source_pin: 'conda-forge-expert v8.75.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
+
+> **Re-grounded 2026-07-06** (source_pin → v8.75.0 (2026-07-07 pin-forward); reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.75.0 (v8.74/v8.75 add 3 read-only seed-gap suggesters — `lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap` — CLI/pixi-only, no MCP tool; schema v29 / 46 MCP tools / 23 phases / G99 / 9 envs all unchanged).
+
 
 The `conda-forge-expert` skill is **the heart of the system** — a Claude Code skill that encodes every conda-forge packaging decision so an AI agent can author, validate, build, and submit recipes that pass conda-forge review on first land. Parts 2 (`cf_atlas`) and 3 (`mcp-server`) are extensions of this part: Part 2 is the data pipeline encoded in this skill's `scripts/`, and Part 3 is the MCP wire format over this skill's `scripts/`. Part 4 (BMAD) is independent infrastructure that invokes this skill per the integration rules in `CLAUDE.md`.
 
@@ -69,7 +72,7 @@ The `JFROG_API_KEY` cross-host leak (per `docs/enterprise-deployment.md` § 2 �
 │  Tier 3: DATA STATE  (.claude/data/conda-forge-expert/)
 │  → Mutable runtime artifacts (gitignored).
 │  → cf_atlas.db (Part 2 primary), vdb/ (vuln-db env), cve/, mapping caches.
-│  → Created/refreshed by Tier 1 scripts; consumed by Tier 1 + Tier 2 + Part 42 MCP tools.
+│  → Created/refreshed by Tier 1 scripts; consumed by Tier 1 + Tier 2 + Part 46 MCP tools.
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -289,7 +292,7 @@ Three doc layers, each loaded by the agent under different conditions:
 - Complementary Skills (which BMAD/practice skills compose with this one)
 - CI Infrastructure Reference (platform assignments, OS versions, compiler pins, bot commands)
 - Ecosystem Updates (May 2026)
-- Recipe Authoring Gotchas (G1–G98, all in SKILL.md; latest G98 — batch cfe-metadata edit discipline (parse-gate every write, \g<1> re.sub, provenance-check vs git) + purl conventions (conda channel qualifier; purl-spec pypi keeps dots) — added v8.68.0)
+- Recipe Authoring Gotchas (G1–G99, all in SKILL.md; latest G98 — batch cfe-metadata edit discipline (parse-gate every write, \g<1> re.sub, provenance-check vs git) + purl conventions (conda channel qualifier; purl-spec pypi keeps dots) — added v8.73.1)
 - conda-forge.yml universal pre-seed now emitted by default on every generator path (v8.61.0, via `scripts/_cfy_template.py`; pre-seeds the feedstock per G83)
 
 ### `INDEX.md` (task→tool navigator)
@@ -333,7 +336,7 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 
 ## Recipe Authoring Gotchas (SKILL.md § Recipe Authoring Gotchas)
 
-Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G98**, all promoted into SKILL.md (the table below shows the founding six; G7–G98 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
+Non-obvious failures that have bitten enough times to be enumerated. The catalog now spans **G1–G99**, all promoted into SKILL.md (the table below shows the founding six; G7–G98 are titled inline beneath it). Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
 
 | Code | Description | Lives where |
 |---|---|---|
@@ -442,7 +445,7 @@ This subsystem feeds:
 
 ## Activation Lifecycle (how Claude Code loads this skill)
 
-1. **Session boot**: Claude Code starts the FastMCP server at `.claude/tools/conda_forge_server.py` (Part 3); the 42 MCP tools become available.
+1. **Session boot**: Claude Code starts the FastMCP server at `.claude/tools/conda_forge_server.py` (Part 3); the 46 MCP tools become available.
 2. **Task entry**: when the user prompt or BMAD agent mentions "conda recipe / conda-forge / packaging / build failure," Claude Code activates this skill.
 3. **Skill load order** (frontmatter says `allowed-tools: [conda_forge_server]`):
    - Load `SKILL.md` fully (always)
