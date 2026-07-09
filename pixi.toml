@@ -39,14 +39,14 @@ rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build
 
 [feature.linux]
 # The linux feature runs on every platform that can run Docker.
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
 [feature.linux.tasks.build-linux]
 description = "build for Linux inside a docker container"
 cmd = "python build-locally.py --filter 'linux*'"
 
 [feature.osx]
 # The osx env will run directly on the machine.
-platforms = ["osx-64", "osx-arm64"]
+platforms = ["osx-arm64"]
 [feature.osx.tasks.build-osx]
 description = "build directly on a MacOS host machine"
 cmd = "python build-locally.py --filter 'osx*'"
@@ -89,7 +89,7 @@ cmd = "conda-smithy recipe-lint --conda-forge recipes/*"
 
 [feature.shellcheck]
 # merge this with `conda-smithy` when available for `linux-ppc64le`
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
 dependencies.shellcheck = ">=0.10.0"
 
 [feature.gcloud-sdk]
@@ -101,7 +101,7 @@ dependencies.shellcheck = ">=0.10.0"
 # automatically and you don't need the `gcloud` env again until you
 # want to refresh creds or switch projects.
 # Linux + macOS only — google-cloud-sdk isn't on conda-forge for win-64.
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64"]
+platforms = ["linux-64", "osx-arm64"]
 dependencies.google-cloud-sdk = ">=573.0.0"
 
 [environments]
@@ -424,7 +424,7 @@ TRUSTSTORE = "1"
 
 [feature.vuln-db.tasks.vdb-refresh]
 description = "Build/refresh the AppThreat multi-source vulnerability DB (~5-10 min first time, ~600MB at .claude/data/conda-forge-expert/vdb/). Sources: OSV + GHSA. NOTE on KEV: --cache-os was evaluated for DW13 to add AquaSource (which carries NVD + distro CVEs), but appthreat-vulnerability-db's aqua.py hardcodes `kevc` (CISA KEV) into DEFAULT_IGNORE_SOURCE_PATTERNS with no env-var override, so --cache-os would download ~33 GB and still leave vuln_kev_affecting_current=0. KEV is therefore pulled out-of-band via `fetch-cisa-kev` (Path C; <1 MB direct from cisa.gov) and Phase G / G' overlay the result onto vdb's per-CVE output."
-cmd = 'python -c "import truststore; truststore.inject_into_ssl(); from vdb.cli import main; main()" --cache'
+cmd = 'python -P -c "import truststore; truststore.inject_into_ssl(); from vdb.cli import main; main()" --cache'
 
 [feature.vuln-db.tasks.detail-cf-atlas]
 description = "Detail card with --vdb on by default (multi-source vulnerability summary: NVD + GHSA + OSV + Snyk + npm + …); add --version VER to scope the affecting-set to an arbitrary release. Pass --no-vdb to skip the vuln pass for a faster card."
