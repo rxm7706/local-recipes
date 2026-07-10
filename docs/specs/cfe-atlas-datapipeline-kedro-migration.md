@@ -434,7 +434,7 @@ To resolve these bottlenecks, we propose migrating the custom orchestrator to **
 ### 4.10 Universal SBOM Integration (CycloneDX)
 
 *   The legacy pipeline strictly tracks `meta.yaml` dependencies. The modernized pipeline will treat dependency extraction as a universal Software Bill of Materials (SBOM) ingestion problem.
-*   It will natively parse `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml` files and normalize them strictly into the **CycloneDX** standard format.
+*   **Tiered intake** (FR-13 + FR-17). Policy-supported core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. Extended tier (the formats the shipped `scan-project` / `inventory-match` tooling and `deptry-scanner.md`'s Manifest Resolution Engine already handle): `requirements.txt`, `environment.yml` (including nested `pip:` blocks), `conda-lock.yml`, `pdm.lock`, live venv / conda environments, container images, `pip freeze` / `conda list` text, and SBOM-in passthrough (CycloneDX/SPDX). Everything normalizes strictly into the **CycloneDX** standard format.
 *   This creates a unified, ecosystem-agnostic semantic graph in DuckDB, allowing operators to cross-reference PyPI constraints (`pyproject.toml`) against conda constraints (`recipe.yaml`) using a globally recognized specification.
 
 ### 4.11 Target State: Enterprise Python Manifest Generation
@@ -463,13 +463,15 @@ The bespoke `_http.py` and SQLite `init_schema()` logic will be mapped to Kedro 
 
 ### 5.2 Modular Pipelines
 
-The legacy phases will be refactored into domain-specific pipelines:
+The legacy phases will be refactored into seven domain-specific pipelines:
 
 1.  **Core Pipeline**: Foundational conda-forge enumeration and graph building.
-2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4).
-3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay. Includes the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5).
+2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4) — and the `mapping-gap` `g10_spelling` writeback (§ 3.4: the one gap tool that mutates the atlas belongs with the mapping stage).
+3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay. Includes the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5). Read nodes honor the § 3.3 vulnerability read-path contract (atlas `cisa_kev` KEV overlay + CVSS ScoreType coercion).
 4.  **VCS & Health Pipeline**: GitHub/GitLab live queries and upstream version tracking.
-5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. These manifests will be strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets.
+5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from the tiered intake of § 4.10, strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets. Grows four node families beyond parsing (FR-16/17/18): a **transitive-resolver node** (pip `--dry-run --report` for PyPI / py-rattler solve for conda; records depth + fan-out) that upgrades bare manifests to full dependency sets; the **inventory-match matching node** preserving the shipped six-bucket semantics (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN, three-way version comparison, channeldata-live recovery); a forward-looking **dependency-hygiene scan node** (deptry — unused / missing / misplaced deps; FR-16, Story F4); and the **unified CI policy gate** (FR-18) as the pipeline's terminal quality node.
+6.  **Seed-Gaps Pipeline**: The four report-only gap suggesters (`lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — § 3.4) as terminal report nodes fanned out from their external seed datasets, downstream of the atlas rebuild, producing `derived`-layer freshness reports only. Strictly read-only; `mapping-gap` is deliberately excluded (its writeback lives in pipeline 2). Ported by Story B6.
+7.  **Read-Surface / Derived-Artifacts Pipeline**: The post-rebuild regeneration nodes — `export-purls` (six purl/mapping artifacts) and `universe-sbom` (the ~856k-component full-universe CycloneDX BOM, a first-class `derived`-layer catalog dataset) — bound to every rebuild per the § 3.3 freshness machinery; the 14-day `check_freshness` gate (`STALE_AFTER_DAYS = 14`) becomes the dataset-level freshness contract the four derived-artifact consumers (`universe-sbom`, `inventory-match`, `library-futures`, `recommend-2027`) enforce.
 
 ### 5.3 Checkpointing & Idempotency
 
@@ -564,7 +566,7 @@ All API sources (GitHub, PyPI, Anaconda) and all Parquet outputs are declared as
 
 ### FR-2. Phases refactored into modular, DAG-resolved pipelines
 
-The 23 cataloged legacy phases (22 registered + Phase I) become Kedro Nodes with declared inputs/outputs grouped into the five domain pipelines of § 5.2. Execution order is resolved by Kedro from the DAG, not by procedural call order. (§ 4.1, § 5.2.)
+The 23 cataloged legacy phases (22 registered + Phase I) become Kedro Nodes with declared inputs/outputs grouped into the seven domain pipelines of § 5.2. Execution order is resolved by Kedro from the DAG, not by procedural call order. (§ 4.1, § 5.2.)
 
 ### FR-3. Custom `IncrementalParquetDataset` preserves TTL gating
 
@@ -608,7 +610,7 @@ Kedro nodes, Dagster runs, and DuckDB queries are instrumented with OpenLineage 
 
 ### FR-13. Universal SBOM ingestion normalized to CycloneDX
 
-A dedicated SBOM pipeline parses `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`, normalizing to CycloneDX before writing to DuckDB. (§ 4.10, § 5.2.)
+A dedicated SBOM pipeline parses the tiered intake of § 4.10 (core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, `meta.yaml`), normalizing to CycloneDX before writing to DuckDB. The normalizer preserves the `cfe:*` property namespace and the `?channel=conda-forge` purl qualifier (sync chain, Wave A block). FR-17 extends the intake and adds transitive resolution. (§ 4.10, § 5.2.)
 
 ### FR-14. WASM portability for the intelligence surface
 
@@ -617,6 +619,18 @@ The Vizro-AI dashboard and BSL layer compile to `duckdb-wasm`/Pyodide; Parquet a
 ### FR-15. Pixi-first, nebi-scaffolded toolchain (conda-forge only)
 
 Every component (Kedro, Dagster, DuckDB, Ibis, …) is sourced from conda-forge and managed in a single `pixi.toml`, scaffolded by `nebi`. No standalone binaries or JVM. (§ 2.3, § 4.9.)
+
+### FR-16. Dependency-hygiene scan node (deptry) in the Universal SBOM pipeline
+
+A hygiene node runs `deptry` over the § 4.10 tiered intake, classifying unused / missing / transitive-only / misplaced dependencies into a schema-validated findings artifact (`derived` layer). The node contract matches `deptry-scanner.md`'s `ComplianceReport` schema, so the planned promotion of `deptry_scanner` into the atlas surface (MCP tool + pixi CLI, consolidation with `scan-project` — the follow-on named in that spec) is a wiring change, not a redesign. The toolchain is conda-native (`recipes/deptry`, `recipes/osv-scanner` mirror now on main; `fawltydeps` / `pip-check-reqs` as candidate future engines). (§ 4.10, § 5.2 item 5, Story F4.)
+
+### FR-17. Transitive resolution + the universe BOM extend the SBOM intake
+
+(a) A transitive-resolver node (pip `--dry-run --report` for PyPI / py-rattler solve for conda; records resolution depth + fan-out) upgrades bare manifests to full dependency sets before CycloneDX normalization. (b) The intake accepts the full § 4.10 tiered format set. (c) The ~856k-component full-universe CycloneDX BOM is a first-class catalog dataset (`derived` layer, regenerated after every rebuild, guarded by the 14-day freshness contract — § 5.2 item 7). (d) The matching node preserves `inventory-match`'s six-bucket semantics, three-way version comparison, and channeldata-live recovery. Extends FR-13. (§ 5.2 items 5 + 7, Story B7.)
+
+### FR-18. Unified CI policy gate
+
+One terminal quality node converges `deptry-scanner.md`'s strict exit-code gate and `inventory-match --policy` (exit 0 pass / 1 policy-fail / 2 error; `max_critical` / `max_high` / KEV thresholds), emits a schema-validated `ComplianceReport` artifact into the `derived` layer, and halts Dagster on failure exactly like an FR-10 contract violation (raising the A2A alert). CI consumes the exit code. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
 
 ---
 
@@ -716,6 +730,28 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - Q6's decision is recorded before porting `update-mapping-cache` (consolidation may retire it instead).
 - Maps to FR-2, FR-6.
 
+#### Story B6 — Port the Seed-Gaps pipeline
+
+**Goal**: Port the four report-only gap suggesters (`lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap`) as the terminal report nodes of the Seed-Gaps Pipeline (§ 5.2 item 6), fanned out from their external seed datasets and downstream of the atlas rebuild.
+
+**Acceptance criteria**:
+- Each suggester is a report node reading exactly the inputs in the § 3.4 table, emitting a `derived`-layer freshness report.
+- The nodes are strictly read-only — the byte-identical-seed guarantee (fixture-enforced in the legacy test suite) survives as a pipeline test.
+- The pipeline re-runs after every rebuild, alongside the § 5.2 item 7 derived artifacts.
+- `mapping-gap` stays in the PyPI Intelligence pipeline with its `g10_spelling` no-clobber writeback (sync chain, Wave A block) — it is not a Seed-Gaps node.
+- Maps to FR-2.
+
+#### Story B7 — Extend the Universal SBOM intake (resolver, formats, universe BOM, buckets)
+
+**Goal**: Implement the transitive-resolver node, the widened § 4.10 tiered manifest intake, the universe-BOM catalog dataset, and the inventory-match matching node with its shipped bucket semantics (§ 5.2 item 5 + item 7).
+
+**Acceptance criteria**:
+- A bare `requirements.txt` resolves to a full transitive dependency set with resolution depth + fan-out recorded.
+- Every § 4.10 format normalizes to CycloneDX preserving the `cfe:*` property namespace and the `?channel=conda-forge` qualifier.
+- The full-universe CycloneDX BOM is a catalog dataset under the 14-day freshness contract; consumers refuse a stale atlas exactly as the legacy gate does.
+- A matching run reproduces the legacy six-bucket classification (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN) on a fixture inventory.
+- Maps to FR-13, FR-17.
+
 ### Wave C — Orchestration & Visualization
 
 #### Story C1 — Integrate `kedro-dagster` for scheduling + execution
@@ -813,6 +849,16 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - A similarity query over embedded artifacts returns ranked results from DuckDB.
 - Maps to FR-5.
 
+#### Story F4 — Dependency-hygiene node + unified CI policy gate
+
+**Goal**: Add the `deptry` hygiene scan node (FR-16) and the converged policy gate (FR-18) as the Universal SBOM pipeline's terminal quality stage, wired into the F2 validation machinery.
+
+**Acceptance criteria**:
+- An injected unused-dependency fixture yields a schema-valid hygiene finding in the `ComplianceReport` artifact.
+- A policy breach (e.g. `max_critical=0` violated, or a KEV-affecting-current hit) exits with the contract codes (1 policy-fail / 2 error), halts Dagster, and raises an A2A alert — identical failure semantics to an FR-10 contract violation.
+- The report schema matches `deptry-scanner.md`'s `ComplianceReport`, so the planned promotion (MCP tool + pixi CLI) requires no schema change.
+- Maps to FR-16, FR-18, FR-10.
+
 ### Wave G — WebAssembly Portability & Event-Driven Sensors
 
 #### Story G1 — Compile the intelligence layer to Pyodide / DuckDB-WASM
@@ -862,7 +908,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - **AC-3.** Dagster owns scheduling + retries; phase state is observable in the Dagster UI; `pixi run viz` renders the DAG.
 - **AC-4.** The 28 read CLIs (§ 3.3) are answerable from Vizro pages, plus a Vizro-AI NL field and `query_vizro_ai` MCP tool, all driven by the BSL.
 - **AC-5.** MCP + A2A surfaces let BMAD agents trigger pipelines, read datasets, and hand structured payloads to the `conda-forge-expert` agent.
-- **AC-6.** Great Expectations contracts halt bad data; OpenLineage + OpenTelemetry provide lineage + end-to-end tracing.
+- **AC-6.** Great Expectations contracts halt bad data; OpenLineage + OpenTelemetry provide lineage + end-to-end tracing; the unified policy gate (FR-18) preserves the deptry / `inventory-match --policy` exit-code contract (0/1/2).
 - **AC-7.** DuckDB is the single compute/graph/vector engine; cold-start is materially faster than the 3–4 h legacy baseline.
 - **AC-8.** The intelligence surface runs in-browser via DuckDB-WASM against statically-hosted Parquet; Dagster Sensors enable near-real-time ingestion.
 - **AC-9.** Every component is conda-forge-sourced and pixi-managed (`nebi`-scaffolded); no standalone binaries / JVM.
@@ -920,7 +966,8 @@ The following are deliberately excluded from this migration, with reason:
 | `spec-kit` as the agent framework | Explicitly rejected (§ 7.3); `bmad-method` governs the agent workforce. |
 | Standalone binaries / JVM dependencies | Pixi-first, conda-forge-only constraint (FR-15, § 4.9). |
 | Enterprise Python Manifest (5k) generation as a deliverable | Downstream target state (§ 4.11) the graph *enables*; not built in this migration. |
-| New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set; new sources are out of scope. |
+| New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set (which already includes endoflife.date, osv.dev, and the local deptry / osv-scanner toolchain — § 3.3 / § 3.4); genuinely new sources are out of scope. |
+| `deptry_scanner` v1 standalone build (`docs/specs/deptry-scanner.md`) | Built under its own spec as an internal-first library. This migration models only the *promoted* atlas surface (FR-16 / FR-18) — the hygiene node contract matches its `ComplianceReport` schema so consolidation with `scan-project` lands as wiring, not redesign. |
 | Rewriting the conda-forge recipe-authoring skill itself | This migration touches the `cf_atlas` intelligence layer, not the recipe-authoring loop. |
 | Static seeds + recipe template trees as pipeline *products* | Curated inputs (§ 3.4); the catalog declares them as versioned external datasets — the pipeline reads, never generates, them. |
 | Live authoring-time fetches (recipe-generator PyPI/sha256 pulls, `gh`/Azure DevOps, live channel repodata) | Transactional point-in-time operations of the recipe-authoring loop (§ 3.4); not pipeline data and not schedulable. |
@@ -937,6 +984,8 @@ The following are deliberately excluded from this migration, with reason:
 - `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md` — engineering patterns (rate limits, atomic writes, enterprise routing) that constrain the node ports.
 - `.claude/skills/conda-forge-expert/guides/atlas-operations.md` — the current operational process (bootstrap profiles, cron cadence table, recovery playbook, storage budget) that § 5.4 / FR-6 must reproduce.
 - `docs/specs/cfe-shipped-releases.md` Part 8 — the S3/parquet backend (Phase F Waves 1–3) whose datasets become Kedro catalog entries (§ 5.1).
+- `docs/specs/cyclonedx-universe-inventory.md` (shipped) — the 7-CLI suite, purl conventions, freshness gate, and bucket semantics FR-13/FR-17 preserve.
+- `docs/specs/deptry-scanner.md` (ready) — the `deptry_scanner` v1 build whose `ComplianceReport` schema + exit-code gate FR-16/FR-18 anticipate.
 - `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" — Rule 1 + Rule 2 governing this BMAD effort.
 
 ### External / ecosystem
@@ -948,6 +997,7 @@ The following are deliberately excluded from this migration, with reason:
 - Dagster (+ Sensors), OpenLineage, OpenTelemetry.
 - `nebi` (nebari-dev) for project scaffolding.
 - CycloneDX SBOM specification; `cdxgen`.
+- `deptry` + `osv-scanner` (conda-native: `recipes/deptry`, the `recipes/osv-scanner` mirror; `fawltydeps` / `pip-check-reqs` as ecosystem context) — the FR-16/FR-18 hygiene + gate toolchain.
 
 ---
 
@@ -970,12 +1020,18 @@ bmad run bad-pipeline
 Wave 0 first (0.1 SKF legacy translation).
 Then Wave A (A1 nebi scaffold → A2 catalog → A3 IncrementalParquetDataset).
 Then Wave B (B1/B2 node ports → B3 kedro-mcp → B4 parity check → B5
-external-refresh assets (resolve Q6 first) — do NOT retire
+external-refresh assets (resolve Q6 first) → B6 seed-gaps pipeline →
+B7 SBOM intake extensions — do NOT retire
 the legacy orchestrator until B4 proves parity per Q1's default).
 
 Proceed wave by wave using the BAD execution engine (C orchestration+viz, D semantic layer+dashboards,
-E A2A+observability, F DuckDB singularity, G WASM+sensors, H AI Software Factory). Resolve Q2/Q3/Q4
+E A2A+observability, F DuckDB singularity incl. F4 hygiene+policy gate, G WASM+sensors,
+H AI Software Factory). Resolve Q2/Q3/Q4
 at the start of their gating wave; default to the recommendations in § 11.
+
+Note: the kedro-viz prototype (prototypes/cf-atlas-kedro-viz) predates the
+seven-pipeline decomposition and the FR-16/17/18 nodes — refresh it as a
+follow-up, not as part of this spec's execution.
 
 Per CLAUDE.md Rule 1, the BAD Linker subagents must invoke the conda-forge-expert skill for any work that touches recipe code or atlas tooling. Per Rule 2, close with a CFE-skill retro + CHANGELOG entry.
 ```
