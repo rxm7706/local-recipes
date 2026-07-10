@@ -58,6 +58,25 @@ vdb is the dominant cost; the rest is < 5 minutes combined). Warm-daily
 under `--profile maintainer` runs ~3-5 min (Phase H drops ~5 min → ~30 s
 thanks to the schema v21 serial-aware eligible-rows gate).
 
+> **Known issue / follow-up — `--profile admin` can silently drop Phase
+> F/K/N (observed 2026-07-09).** The `cf_atlas_core` sub-step (every phase
+> *except* F/K/N) has a **HARD** 1800 s (30-min) wall-clock cap and, on
+> timeout, **aborts the remaining F/K/N sub-steps**. On a cold run this cap
+> is undersized: Phase R's first 5,000-candidate JSON pull alone is ~15 min
+> (+ Phase E ~5 min + Phase H ~6 min), so core blows past 30 min.
+> **Symptom:** the bootstrap summary reports `✗ cf-atlas-core` /
+> `✗ cf-atlas-build` and `cf_atlas_meta.json`'s `phases_run` is missing
+> F/K/N — even though the core phases actually *finished* (the atlas
+> process is an orphaned grandchild of the killed `pixi` wrapper, so it
+> completes and stamps the DB). **Workaround:** raise the cap —
+> `BOOTSTRAP_CF_ATLAS_CORE_TIMEOUT=5400 pixi run -e local-recipes
+> bootstrap-data --profile admin` — or run the dropped phases afterward
+> with `pixi run -e local-recipes atlas-phase F` / `atlas-phase K` /
+> `atlas-phase N` (note: `atlas-phase` writes the DB but does **not** update
+> `cf_atlas_meta.json`'s `phases_run`/`built_at`). **Fix candidates:** size
+> the cap from the cold Phase-R pull, or move Phase R (and E/H) into their
+> own SOFT-failure sub-steps so a slow enrichment can't abort F/K/N.
+
 ### Post-rebuild artifact regeneration (cyclonedx-universe-inventory)
 
 After every atlas rebuild, regenerate the derived purl/SBOM artifacts —

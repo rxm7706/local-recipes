@@ -167,6 +167,19 @@ _DEFAULT_TIMEOUTS: dict[str, int] = {
                                # C.5/D/O/P/Q/R/S/E/E.5/G/G'/H/J/L/M). 30 min cap;
                                # measured ~5-12 min on the 2026-06-13 admin run.
                                # HARD failure aborts the bootstrap.
+                               # FOLLOW-UP (observed 2026-07-09): this cap is
+                               # UNDERSIZED on a COLD run — Phase R's first
+                               # 5,000-candidate JSON pull alone is ~15 min
+                               # (+ E ~5 + H ~6), so core blows past 30 min and,
+                               # being a HARD-fail step, ABORTS F/K/N (they never
+                               # run; the meta's phases_run is missing them,
+                               # though the orphaned atlas process still finishes
+                               # core + stamps the DB). Workaround: raise via
+                               # BOOTSTRAP_CF_ATLAS_CORE_TIMEOUT=5400, or run the
+                               # dropped phases after with `atlas-phase F/K/N`.
+                               # FIX: size the cap from the cold Phase-R pull, or
+                               # move R (+E/H) into their own SOFT sub-steps so a
+                               # slow enrichment can't abort F/K/N.
     "cf_atlas_F":    7200,     # v8.22.0 — Phase F only (~83 min serial via
                                # anaconda.org API; seconds via s3-parquet).
                                # 2h cap. SOFT failure — report + continue.
