@@ -5,7 +5,7 @@ display_name: cfe-atlas-datapipeline Kedro Migration Spec
 project_type_id: data
 date: 2026-06-20
 status: ready
-spec_updated: 2026-07-06
+spec_updated: 2026-07-10
 ---
 
 # Spec: cfe-atlas-datapipeline Kedro Migration
@@ -25,14 +25,14 @@ spec_updated: 2026-07-06
 
 | Field | Value |
 |---|---|
-| Status | **v2 — re-grounded 2026-07-06 against live surface (main `0d6b2ff`, skill v8.73.1); ready for full BMAD execution intake.** 5 open questions (§ 11: Q1–Q4 + Q6; Q5 resolved → Wave H), none v1-blocking. |
+| Status | **v3 — re-grounded 2026-07-10 against live surface (main `de5462d`, skill v8.76.0); ready for full BMAD execution intake.** 5 open questions (§ 11: Q1–Q4 + Q6; Q5 resolved → Wave H), none v1-blocking. |
 | Owner | rxm7706 |
 | Track | BMAD Full Flow (includes separate PRD/architecture phases) |
-| Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~9,900 LOC, 22 registered phases) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. |
+| Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~10,000 LOC, 23 cataloged phases — 22 registered + Phase I) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. |
 | Target | The `cf_atlas` intelligence layer under `.claude/skills/conda-forge-expert/` (data pipeline + read CLIs + MCP tools). |
 | Tooling | Pixi-first; every component sourced from conda-forge and scaffolded via `nebi`. |
 | Lifetime | Forward-looking migration. Legacy orchestrator runs in parallel until dataset parity is proven (Wave B), then is retired. |
-| Predecessor | The existing 22-registered-phase `cf_atlas` pipeline (conda-side B → N incl. sub-phases + O–S PyPI intelligence; exact list in § 3.3) and its 24 read CLIs (17 atlas read CLIs + the 7-CLI cyclonedx suite). |
+| Predecessor | The existing 23-cataloged-phase `cf_atlas` pipeline (conda-side B → N incl. sub-phases + O–S PyPI intelligence; exact list in § 3.3) and its 28 read CLIs (17 atlas read CLIs + the 4 seed-gap suggesters + the 7-CLI cyclonedx suite). |
 
 > **Cross-spec sync (2026-07-05):** the CLI / MCP / phase / schema counts in this spec
 > are FROZEN at authoring time and already drift (live: 17+ CLIs, 30+ MCP tools). At
@@ -98,6 +98,40 @@ spec_updated: 2026-07-06
 > ranking fails CI) and must survive as a pipeline test; and `library-futures`
 > scoring is **in-memory / inventory-scoped by design** — there is no futures
 > DB column, so do not "migrate" a table for it.
+>
+> **Spec refresh v3 (2026-07-10):** re-grounded against main `de5462d` / skill
+> v8.76.0.
+> 1. *Literal sweep*: 22 → **23 cataloged phases** (Phase I — per-version
+>    download history, a side-effect of Phase F's anaconda-api path — is now
+>    cataloged in `atlas-phases-overview.md` but remains unregistered in
+>    `PHASES`); 24 → **28 read CLIs** (+4 seed-gap suggesters
+>    `lts-registry-gap` / `cwe-seed-gap` / `spdx-schema-gap` /
+>    `license-map-gap`, shipped v8.74.0–v8.76.0, CLI/pixi-only); 56→61
+>    canonical scripts, 53→57 wrappers, 88→92 pixi tasks, 81→85 unit tests,
+>    18→19 `resolve_*_urls`; 11→9 pixi environments (correction — 9 was
+>    always live); LOC ~10,000.
+> 2. *Operational ground truth*: the new `guides/atlas-operations.md` defines
+>    the process § 5.4 / FR-6 must reproduce — the three bootstrap profiles
+>    (maintainer / admin / consumer), the per-source cron cadence table, the
+>    recovery playbook, env-override precedence (`os.environ.setdefault`),
+>    and the ~3 GB storage budget. The `cf_atlas_core` 1800 s hard-timeout
+>    defect (a cold admin run silently drops Phase F/K/N) is recorded as
+>    FR-6's motivating failure.
+> 3. *New code facts to preserve*: Phase B.5's `_pick_feedstock`
+>    dedicated-feedstock attribution for split-out outputs; the
+>    `detail-cf-atlas --vdb-all` KEV overlay (`_load_kev_cves` reads the
+>    atlas `cisa_kev` table because vdb 6.6.2's own KEV flags are always
+>    False) + `_coerce_cvss_score` ScoreType unwrap.
+> 4. *Cross-spec intake*: `deptry-scanner.md` (ready) contributes the
+>    dependency-hygiene scan node (FR-16) and the unified CI policy gate
+>    (FR-18, converged with `inventory-match --policy`), plus its planned
+>    promoted MCP/CLI surface; `cyclonedx-universe-inventory.md` (shipped)
+>    residuals land as FR-17 (transitive resolver, widened tiered intake,
+>    the universe BOM as a first-class catalog dataset, inventory-match
+>    bucket semantics). § 5.2 grows to **seven** named pipelines
+>    (+ Seed-Gaps, + Read-Surface / Derived Artifacts); stories **B6 / B7 /
+>    F4** added. The dep-hygiene toolchain recipes (`deptry`, `fawltydeps`,
+>    `pip-check-reqs`, the `osv-scanner` mirror) are now on main.
 
 ---
 
@@ -134,7 +168,7 @@ To support this operational model, our entire platform ecosystem is defined in `
 ### 2.4 Planning & Translation Tools
 
 To execute this migration effectively, we utilize two crucial ecosystem extensions:
-*   **Skill Forge (SKF)**: For translating the ~9,900 lines of legacy code into an ingestible agent context skill (Wave 0) with provable provenance.
+*   **Skill Forge (SKF)**: For translating the ~10,000 lines of legacy code into an ingestible agent context skill (Wave 0) with provable provenance.
 *   **Creative Intelligence Suite (CIS)**: Utilizing the CIS planning agents (e.g., Carson the Brainstorming Coach and Maya the Design Thinking Coach) to explicitly define the downstream read surface (Vizro/Vizro-AI) and output the two-spine technical specs (`DESIGN.md` + `EXPERIENCE.md`) before writing frontend code.
 
 ### 2.5 BAD (BMAD Autonomous Development) Orchestration
@@ -154,24 +188,24 @@ To achieve true parallel execution across our 9 implementation waves, we execute
 
 ## 3. Deep Analysis: Current cf_atlas Pipeline
 
-The `cf_atlas` data pipeline currently operates as a bespoke, hand-rolled orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`) spanning ~9,900 lines of code (8,835 + 1,081 at skill v8.73.1).
+The `cf_atlas` data pipeline currently operates as a bespoke, hand-rolled orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`) spanning ~10,000 lines of code (8,860 + 1,094 at skill v8.76.0).
 
 ### 3.1 Current Architecture & Constraints
 
-*   **Orchestration**: 22 hardcoded phases (conda-side B → N incl. sub-phases, plus O–S PyPI intelligence; exact registry in § 3.3) executing in procedural order.
+*   **Orchestration**: 23 cataloged phases (22 registered + the Phase I side-effect; conda-side B → N incl. sub-phases, plus O–S PyPI intelligence; exact registry in § 3.3) executing in procedural order.
 *   **State Management**: Custom checkpointing via a `phase_state` SQLite table (tracking cursors and completion).
 *   **Incremental Processing**: Hand-rolled TTL gating using `*_fetched_at` timestamps on the primary `packages` table.
-*   **Data Lineage**: Implicit. Dependencies between phases (e.g., Phase J requiring D and E) exist purely in the developer's head and the procedural calling order.
-*   **Read Surface**: 24 bespoke CLIs — 17 atlas read CLIs (e.g., `staleness-report`, `behind-upstream`) plus the 7-CLI cyclonedx suite (§ 3.3) — that output text/JSON and require manual maintenance.
+*   **Data Lineage**: Implicit. Dependencies between phases (e.g., Phase J requiring D and E) exist purely in the developer's head and the procedural calling order. The extreme case is Phase I (per-version download history): it exists only as a side-effect of Phase F's anaconda-api path — never registered in `PHASES`, invisible to `--skip`/`--only` — yet `version-downloads` and `release-cadence` depend on it. The migration makes it an explicit node with declared outputs.
+*   **Read Surface**: 28 bespoke CLIs — 17 atlas read CLIs (e.g., `staleness-report`, `behind-upstream`), the 4 seed-gap suggesters, plus the 7-CLI cyclonedx suite (§ 3.3) — that output text/JSON and require manual maintenance.
 *   **Visualization**: None. The system relies entirely on terminal stdout/stderr for observability.
 
 ### 3.2 Identified Gaps
 
 *   **Maintainability bottleneck**: Adding a new phase requires manually wiring it into the `PHASES` registry, ensuring the SQL schema is migrated, and updating the orchestrator loop.
 *   **Opaque Execution**: When `--fresh` takes 3-4 hours, operators have no visual way to monitor the DAG, identify bottlenecks, or view intermediate dataset schemas.
-*   **Rigid Read Surface**: The 24 CLIs answer 24 specific questions. Ad-hoc questions require dropping into `sqlite3 cf_atlas.db` and writing manual JOINs.
+*   **Rigid Read Surface**: The 28 CLIs answer 28 specific questions. Ad-hoc questions require dropping into `sqlite3 cf_atlas.db` and writing manual JOINs.
 
-### 3.3 Live-Surface Snapshot (main `0d6b2ff`, skill v8.73.1, 2026-07-06)
+### 3.3 Live-Surface Snapshot (main `de5462d`, skill v8.76.0, 2026-07-10)
 
 The authoritative enumeration of the migration surface. Stories and FRs reference
 this section instead of inline literals; re-verify with
@@ -183,26 +217,38 @@ this section instead of inline literals; re-verify with
     `v_packages_enriched`, and `v_current_version_vulns` (the ONLY
     query-time-correct vuln source; the `packages.vuln_*` rollup is
     report-only). `trendshift-conda-forge.md` Phase T claims v29→v30.
-*   **Phases**: 22 registered in the `PHASES` list (`conda_forge_atlas.py`,
-    the single source of truth): B, B.5, B.6, C, C.5 (deferred), D, O, P, Q,
-    R, S, E, E.5, F, G, G', H, J, K, L, M, N. All of them write to
-    `cf_atlas.db`. Credentialed: P (ClickHouse `default` / BigQuery ADC),
-    E.5 / K / N (GitHub token), G / G' (vuln-db environment). TTL-gated set
-    (hand-maintained `atlas_phase._TTL_GATED` map): F, G, G', H, K, L.
-*   **Script surface**: 56 canonical scripts + 5 `_helpers` under
-    `.claude/skills/conda-forge-expert/scripts/`; 53 thin wrappers under
-    `.claude/scripts/conda-forge-expert/`; 88 local-recipes + 7 vuln-db pixi
+*   **Phases**: 23 cataloged — 22 registered in the `PHASES` list
+    (`conda_forge_atlas.py`, the single source of truth): B, B.5, B.6, C,
+    C.5 (deferred), D, O, P, Q, R, S, E, E.5, F, G, G', H, J, K, L, M, N —
+    plus **Phase I** (per-version download history), a side-effect of Phase
+    F's anaconda-api path, cataloged in `atlas-phases-overview.md` but never
+    registered (no independent scheduling; it ships with F and feeds
+    `version-downloads` / `release-cadence` / G'). The migration promotes it
+    to an explicit node. All of them write to `cf_atlas.db`. Credentialed: P
+    (ClickHouse `default` / BigQuery ADC), E.5 / K / N (GitHub token),
+    G / G' (vuln-db environment). TTL-gated set (hand-maintained
+    `atlas_phase._TTL_GATED` map): F, G, G', H, K, L. Phase B.5 resolves the
+    **dedicated feedstock** for split-out outputs via `_pick_feedstock`
+    (umbrella vs dedicated — e.g. `dbt-bigquery` → the `dbt-bigquery`
+    feedstock, not `dbt`) — attribution semantics every maintainer-scoped
+    CLI depends on; the node port must preserve them (Story B1).
+*   **Script surface**: 61 canonical scripts + 5 `_helpers` under
+    `.claude/skills/conda-forge-expert/scripts/`; 57 thin wrappers under
+    `.claude/scripts/conda-forge-expert/`; 92 local-recipes + 7 vuln-db pixi
     tasks. The three-place rule (canonical script + wrapper + pixi task +
     SCRIPTS meta entry) is meta-test-enforced.
-*   **Read CLIs (24)**: 17 atlas read CLIs (`detail-cf-atlas`,
+*   **Read CLIs (28)**: 17 atlas read CLIs (`detail-cf-atlas`,
     `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`,
-    `cve-watcher`, …) + the 7-CLI cyclonedx suite (`export-purls`,
+    `cve-watcher`, …) + the 4 seed-gap suggesters (`lts-registry-gap`,
+    `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — read-only,
+    v8.74.0–v8.76.0; § 3.4) + the 7-CLI cyclonedx suite (`export-purls`,
     `mapping-gap`, `universe-sbom`, `inventory-match`, `add-handoff`,
     `library-futures`, `recommend-2027`).
 *   **MCP**: 46 `@mcp.tool()` functions in `.claude/tools/conda_forge_server.py`
-    (23 atlas-relevant). `library-futures` and `add-handoff` are deliberately
-    CLI/pixi-only — do not add MCP tools for them during the port.
-*   **External endpoints**: 18 `resolve_*_urls` helpers in `_http.py`, each
+    (23 atlas-relevant). `library-futures`, `add-handoff`, and the 4 seed-gap
+    suggesters are deliberately CLI/pixi-only — do not add MCP tools for them
+    during the port.
+*   **External endpoints**: 19 `resolve_*_urls` helpers in `_http.py`, each
     overridable via `<HOST>_BASE_URL` for enterprise/JFrog mirror routing,
     plus `S3_PARQUET_BASE_URL` (Phase F parquet backend) and
     `ENDOFLIFE_BASE_URL` (EOL/LTS cache). These become external/API dataset
@@ -221,25 +267,46 @@ this section instead of inline literals; re-verify with
     (`cisa_kev`), `epss_fetcher.py` (`epss_scores`), and
     `cwe_catalog_fetcher.py` (`cwe_categories`) — whose tables Phase G / G'
     overlay at build time.
+*   **Vulnerability read-path contract**: `detail-cf-atlas --vdb-all` overlays
+    the atlas `cisa_kev` table onto vdb results via `_load_kev_cves` (vdb
+    6.6.2's own KEV flags are always False — aqua ignores `kevc/`), reporting
+    **KEV-affecting-current** to match Phase G's `vuln_kev_affecting_current`;
+    CVSS base scores pass through `_coerce_cvss_score` (unwraps the pydantic
+    `ScoreType` that vdb 6.6.2's partial `model_dump` leaves behind). Any
+    migrated vuln read surface must keep both behaviors (Story B2).
 *   **Freshness machinery**: `check_freshness` (`universe_sbom.py`,
     `STALE_AFTER_DAYS = 14`) consumed by 5 scripts; `*_fetched_at` columns +
     meta keys drive per-phase TTL gating; derived artifacts (`export-purls`,
     `universe-sbom`) regenerate after every atlas rebuild — model them as
     downstream nodes of the rebuild.
-*   **Environments / tests**: 11 pixi environments (local-recipes / vuln-db /
-    gcloud split); test suite of 81 unit + 4 integration + 8 meta files. The
+*   **Environments / tests**: 9 pixi environments (local-recipes / vuln-db /
+    gcloud split); test suite of 85 unit + 4 integration + 8 meta files. The
     meta tests pin the three-place rule and docs integrity — the migration
     keeps them green or explicitly retires them with the legacy path.
+*   **Operational profiles** (`guides/atlas-operations.md` — the operational
+    process the migration must reproduce): `bootstrap-data` ships three
+    profiles — `--profile maintainer` (daily default; Phase E + N auto-scoped
+    to `gh api user`), `--profile admin` (weekly channel-wide sweep), and
+    `--profile consumer` (air-gapped: Phase F = s3-parquet, Phase H =
+    cf-graph, no Phase N, no Phase D universe upsert) — with env-override
+    precedence (`os.environ.setdefault`: explicit env/flags always win over
+    profile defaults). The guide also fixes the per-source cron cadence
+    table, the per-phase recovery playbook, and the ~3 GB storage budget
+    (vdb dominates at 2.5 GB). Known legacy defect: the `cf_atlas_core`
+    sub-step's HARD 1800 s wall-clock cap silently drops Phase F/K/N on cold
+    admin runs (Phase R's first 5,000-candidate pull alone is ~15 min) — the
+    concrete failure FR-6's per-node timeouts eliminate.
 *   **Orchestration machinery this migration replaces**: `phase_state`
     checkpoint save/load, per-phase hardcoded `commit_every` values
     (200–5000), exponential/jittered backoff, the `atomic_writer` helper
-    (`_http.py`), the linear `PHASES` driver with `--skip`/`--only`, and the
-    hand-maintained `_TTL_GATED` map.
+    (`_http.py`), the linear `PHASES` driver with `--skip`/`--only`, the
+    hand-maintained `_TTL_GATED` map, and the `bootstrap_data.py` sub-step
+    driver with its single coarse `cf_atlas_core` timeout.
 
 ### 3.4 Out-of-pipeline data surfaces (the migration boundary)
 
 Inventory of every data surface the `conda-forge-expert` skill uses that the
-atlas pipeline does NOT build (verified against live code 2026-07-06). Three
+atlas pipeline does NOT build (verified against live code 2026-07-10). Three
 enter this migration's scope as **external-refresh assets** (§ 5.2, Story B5);
 the rest stay outside, each with the reason noted. This section fixes the
 scope boundary — anything not listed in § 3.3 or here is out of the
@@ -301,10 +368,11 @@ listed for completeness:
 downstream of the atlas rebuild (they read its views), produce `derived`-layer
 report artifacts only, and — like the `export-purls` / `universe-sbom`
 regeneration cadence — should re-run after every rebuild so the freshness
-reports track the live universe. The prototype models the **four report-only**
-suggesters as a dedicated `seed_gaps` pipeline
-(`prototypes/cf-atlas-kedro-viz`); `mapping-gap` stays in the mapping / Phase-C
-layer (its writeback belongs with the mapping stage, not the report fan-out).
+reports track the live universe. The four report-only suggesters are the
+dedicated **Seed-Gaps Pipeline** (§ 5.2 item 6, ported by Story B6); the
+kedro-viz prototype (`prototypes/cf-atlas-kedro-viz`) mirrors it as its
+`seed_gaps` pipeline. `mapping-gap` stays in the mapping / Phase-C layer (its
+writeback belongs with the mapping stage, not the report fan-out).
 
 ---
 
@@ -315,7 +383,7 @@ To resolve these bottlenecks, we propose migrating the custom orchestrator to **
 ### 4.1 Why Kedro?
 
 *   **Data Catalog (`catalog.yml`)**: Decouples data access from logic. S3 parquet files, APIs, and SQLite tables become declaratively configured datasets.
-*   **Modular Pipelines**: Transforms the 22 monolithic functions into explicit Nodes with declared inputs and outputs, automatically resolving the execution DAG.
+*   **Modular Pipelines**: Transforms the 23 cataloged phases (22 registered + Phase I) into explicit Nodes with declared inputs and outputs, automatically resolving the execution DAG.
 *   **Testability**: Nodes become pure Python functions testing `pandas.DataFrame` inputs/outputs, making unit testing trivial compared to mocking SQLite connections.
 
 ### 4.2 Why Kedro-Viz?
@@ -325,7 +393,7 @@ To resolve these bottlenecks, we propose migrating the custom orchestrator to **
 
 ### 4.3 Why Vizro & Vizro-AI?
 
-*   Replaces the 24 bespoke terminal CLIs (§ 3.3) with a high-quality, web-based dashboard application built explicitly for AI web agents (semantic DOM).
+*   Replaces the 28 bespoke terminal CLIs (§ 3.3) with a high-quality, web-based dashboard application built explicitly for AI web agents (semantic DOM).
 *   **Vizro-AI** introduces a natural language intelligence surface. Operators and BMAD agents can pass natural language queries (e.g., *"Plot the top 10 most downloaded packages that have critical CVEs and are unmaintained"*) which Vizro-AI compiles into pandas operations against the Kedro catalog and visualizes dynamically.
 
 ### 4.4 Why Dagster (`kedro-dagster`)?
@@ -366,7 +434,7 @@ To resolve these bottlenecks, we propose migrating the custom orchestrator to **
 ### 4.10 Universal SBOM Integration (CycloneDX)
 
 *   The legacy pipeline strictly tracks `meta.yaml` dependencies. The modernized pipeline will treat dependency extraction as a universal Software Bill of Materials (SBOM) ingestion problem.
-*   It will natively parse `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml` files and normalize them strictly into the **CycloneDX** standard format.
+*   **Tiered intake** (FR-13 + FR-17). Policy-supported core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. Extended tier (the formats the shipped `scan-project` / `inventory-match` tooling and `deptry-scanner.md`'s Manifest Resolution Engine already handle): `requirements.txt`, `environment.yml` (including nested `pip:` blocks), `conda-lock.yml`, `pdm.lock`, live venv / conda environments, container images, `pip freeze` / `conda list` text, and SBOM-in passthrough (CycloneDX/SPDX). Everything normalizes strictly into the **CycloneDX** standard format.
 *   This creates a unified, ecosystem-agnostic semantic graph in DuckDB, allowing operators to cross-reference PyPI constraints (`pyproject.toml`) against conda constraints (`recipe.yaml`) using a globally recognized specification.
 
 ### 4.11 Target State: Enterprise Python Manifest Generation
@@ -395,13 +463,15 @@ The bespoke `_http.py` and SQLite `init_schema()` logic will be mapped to Kedro 
 
 ### 5.2 Modular Pipelines
 
-The legacy phases will be refactored into domain-specific pipelines:
+The legacy phases will be refactored into seven domain-specific pipelines:
 
 1.  **Core Pipeline**: Foundational conda-forge enumeration and graph building.
-2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4).
-3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay. Includes the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5).
+2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4) — and the `mapping-gap` `g10_spelling` writeback (§ 3.4: the one gap tool that mutates the atlas belongs with the mapping stage).
+3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay. Includes the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5). Read nodes honor the § 3.3 vulnerability read-path contract (atlas `cisa_kev` KEV overlay + CVSS ScoreType coercion).
 4.  **VCS & Health Pipeline**: GitHub/GitLab live queries and upstream version tracking.
-5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. These manifests will be strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets.
+5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from the tiered intake of § 4.10, strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets. Grows four node families beyond parsing (FR-16/17/18): a **transitive-resolver node** (pip `--dry-run --report` for PyPI / py-rattler solve for conda; records depth + fan-out) that upgrades bare manifests to full dependency sets — resolution honors the `_http.py` mirror-routing contract (§ 3.3 external endpoints: `PYPI_BASE_URL`-style overrides for enterprise/JFrog mirrors) and degrades gracefully when offline (consumer profile: resolve from a provided lockfile or cached index, else skip resolution and mark the BOM `unresolved` rather than fail); the **inventory-match matching node** preserving the shipped six-bucket semantics (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN, three-way version comparison, channeldata-live recovery); a forward-looking **dependency-hygiene scan node** (deptry — unused / missing / misplaced deps; FR-16, Story F4); and the **unified CI policy gate** (FR-18) as the pipeline's terminal quality node.
+6.  **Seed-Gaps Pipeline**: The four report-only gap suggesters (`lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — § 3.4) as terminal report nodes fanned out from their external seed datasets, downstream of the atlas rebuild, producing `derived`-layer freshness reports only. Strictly read-only; `mapping-gap` is deliberately excluded (its writeback lives in pipeline 2). Ported by Story B6.
+7.  **Read-Surface / Derived-Artifacts Pipeline**: The post-rebuild regeneration nodes — `export-purls` (six purl/mapping artifacts) and `universe-sbom` (the ~856k-component full-universe CycloneDX BOM, a first-class `derived`-layer catalog dataset) — bound to every rebuild per the § 3.3 freshness machinery; the 14-day `check_freshness` gate (`STALE_AFTER_DAYS = 14`) becomes the dataset-level freshness contract the four derived-artifact consumers (`universe-sbom`, `inventory-match`, `library-futures`, `recommend-2027`) enforce.
 
 ### 5.3 Checkpointing & Idempotency
 
@@ -411,8 +481,11 @@ The legacy phases will be refactored into domain-specific pipelines:
 ### 5.4 Dagster Orchestration (`kedro-dagster`)
 
 *   The entire Kedro pipeline will be converted into a Dagster repository using the `kedro-dagster` plugin.
-*   Schedules (Daily for Phase N, Weekly for Phase F/G, etc.) will be defined as Dagster Schedules.
-*   Phase states and retries will be monitored via the Dagit/Dagster UI, complementing the structural view provided by `kedro-viz`.
+*   Schedules (Daily for Phase N, Weekly for Phase F/G, etc.) will be defined as Dagster Schedules. The per-source **cron cadence table in `guides/atlas-operations.md`** is the source of truth those Schedules encode (bootstrap weekly; F/H/K/L/E.5 + G-after-vdb daily; E/J/M every 6 h; N hourly per maintainer; vdb-refresh / update-cve-db / update-mapping-cache weekly). Phase N's hourly cadence is the guide's *measured* maintainer-scope cost (batched GraphQL, ~30 s for ~700 feedstocks) — the port inherits that rate-limit-aware batching, and the Dagster Schedule surfaces remaining-rate-limit as a resource so operators with larger portfolios can back the cadence off (4–6 h) instead of hitting the ceiling.
+*   The three **bootstrap profiles** (`maintainer` / `admin` / `consumer` — § 3.3 operational profiles) become named Dagster **job configurations** over the same DAG (phase subset + per-phase source selection), preserving the guide's override precedence: profile values are defaults (`os.environ.setdefault` semantics today); explicit run-config / env always wins.
+*   Phase states and retries will be monitored via the Dagit/Dagster UI, complementing the structural view provided by `kedro-viz`. The guide's per-phase **recovery playbook** (symptom → recovery) and TTL-reset recipes map to per-node retry policies and selective re-materialization; Phase N's checkpoint/resume becomes FR-4 resumability.
+*   **Timeouts are per-node**, replacing `bootstrap_data.py`'s single coarse `cf_atlas_core` cap — the 1800 s hard timeout that silently drops Phase F/K/N on cold admin runs (§ 3.3 known issue) cannot recur when each node carries its own budget and failure isolation.
+*   The ~3 GB storage budget (vdb 2.5 GB dominant) is declared as a resource constraint on the vulnerability pipeline's external-refresh assets.
 
 ### 5.5 MCP Exfiltration (`kedro-mcp`)
 
@@ -423,7 +496,7 @@ The legacy phases will be refactored into domain-specific pipelines:
 ### 5.6 Semantic Knowledge Graph (Boring Semantic Layer)
 
 *   We will implement the **Boring Semantic Layer (BSL)** on top of the Kedro Parquet datasets using Ibis (which natively compiles to DuckDB SQL).
-*   The schema and business logic currently trapped inside the 24 query CLIs (§ 3.3) will be extracted and declared as BSL dimensions and measures.
+*   The schema and business logic currently trapped inside the 28 query CLIs (§ 3.3) will be extracted and declared as BSL dimensions and measures.
 *   This semantic knowledge graph will serve as the trusted translation interface for Vizro-AI and BMAD agents.
 
 ### 5.7 A2A (Agent-to-Agent) Integration
@@ -493,7 +566,7 @@ All API sources (GitHub, PyPI, Anaconda) and all Parquet outputs are declared as
 
 ### FR-2. Phases refactored into modular, DAG-resolved pipelines
 
-The 22 legacy procedural phases become Kedro Nodes with declared inputs/outputs grouped into the five domain pipelines of § 5.2. Execution order is resolved by Kedro from the DAG, not by procedural call order. (§ 4.1, § 5.2.)
+The 23 cataloged legacy phases (22 registered + Phase I) become Kedro Nodes with declared inputs/outputs grouped into the seven domain pipelines of § 5.2. Execution order is resolved by Kedro from the DAG, not by procedural call order. (§ 4.1, § 5.2.)
 
 ### FR-3. Custom `IncrementalParquetDataset` preserves TTL gating
 
@@ -509,7 +582,7 @@ DuckDB is the single engine for analytical compute, graph traversal (recursive C
 
 ### FR-6. Dagster orchestrates schedules + retries via `kedro-dagster`
 
-The Kedro DAG compiles to a Dagster repository. Daily/weekly schedules and retry logic move from cron+bash to Dagster Schedules; state is observable in the Dagster UI. The `bootstrap-data --fresh` entry point becomes the full-DAG Dagster job (the `__default__` Kedro pipeline); the script itself is retired at B4 parity along with the legacy orchestrator. (§ 4.4, § 5.4.)
+The Kedro DAG compiles to a Dagster repository. Daily/weekly schedules and retry logic move from cron+bash to Dagster Schedules (cadence per the `guides/atlas-operations.md` table, § 5.4); state is observable in the Dagster UI. The `bootstrap-data --fresh` entry point becomes the full-DAG Dagster job (the `__default__` Kedro pipeline); the three bootstrap profiles become named job configurations; the script itself is retired at B4 parity along with the legacy orchestrator. Motivating failure: the legacy `cf_atlas_core` sub-step's HARD 1800 s cap silently drops Phase F/K/N on cold admin runs (§ 3.3) — per-node Dagster timeouts/retries make that class of failure structurally impossible. (§ 4.4, § 5.4.)
 
 ### FR-7. MCP surface preserved via `kedro-mcp`
 
@@ -517,11 +590,11 @@ The existing MCP tools in `.claude/tools/conda_forge_server.py` are audited and 
 
 ### FR-8. Boring Semantic Layer over the Kedro catalog (Ibis → DuckDB)
 
-The metrics and business logic currently embedded in the 24 read CLIs (§ 3.3) are declared as BSL dimensions and measures, serving as the trusted translation layer for Vizro-AI and agents. (§ 4.6, § 5.6.)
+The metrics and business logic currently embedded in the 28 read CLIs (§ 3.3) are declared as BSL dimensions and measures, serving as the trusted translation layer for Vizro-AI and agents. (§ 4.6, § 5.6.)
 
-### FR-9. Read surface migrates from 24 CLIs to a Vizro / Vizro-AI dashboard
+### FR-9. Read surface migrates from 28 CLIs to a Vizro / Vizro-AI dashboard
 
-The 24 bespoke CLIs (§ 3.3) become Vizro pages + a Vizro-AI natural-language query field, exposed both as a web dashboard and as an MCP tool. (§ 4.3, § 6.)
+The 28 bespoke CLIs (§ 3.3) become Vizro pages + a Vizro-AI natural-language query field, exposed both as a web dashboard and as an MCP tool. (§ 4.3, § 6.)
 
 ### FR-10. Data-quality contracts via Great Expectations halt bad data
 
@@ -537,7 +610,7 @@ Kedro nodes, Dagster runs, and DuckDB queries are instrumented with OpenLineage 
 
 ### FR-13. Universal SBOM ingestion normalized to CycloneDX
 
-A dedicated SBOM pipeline parses `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`, normalizing to CycloneDX before writing to DuckDB. (§ 4.10, § 5.2.)
+A dedicated SBOM pipeline parses the tiered intake of § 4.10 (core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, `meta.yaml`), normalizing to CycloneDX before writing to DuckDB. The normalizer preserves the `cfe:*` property namespace and the `?channel=conda-forge` purl qualifier (sync chain, Wave A block). FR-17 extends the intake and adds transitive resolution. (§ 4.10, § 5.2.)
 
 ### FR-14. WASM portability for the intelligence surface
 
@@ -546,6 +619,18 @@ The Vizro-AI dashboard and BSL layer compile to `duckdb-wasm`/Pyodide; Parquet a
 ### FR-15. Pixi-first, nebi-scaffolded toolchain (conda-forge only)
 
 Every component (Kedro, Dagster, DuckDB, Ibis, …) is sourced from conda-forge and managed in a single `pixi.toml`, scaffolded by `nebi`. No standalone binaries or JVM. (§ 2.3, § 4.9.)
+
+### FR-16. Dependency-hygiene scan node (deptry) in the Universal SBOM pipeline
+
+A hygiene node runs `deptry` over the § 4.10 tiered intake **when project source code accompanies the manifest** — deptry's analysis is AST/import-based, so for source-less inputs (bare manifests, lockfiles, SBOM passthrough) the node skips gracefully and the report records the reduced scope instead of failing. Findings (unused / missing / transitive-only / misplaced dependencies) land in a schema-validated artifact (`derived` layer). The node contract matches `deptry-scanner.md`'s `ComplianceReport` schema, so the planned promotion of `deptry_scanner` into the atlas surface (MCP tool + pixi CLI, consolidation with `scan-project` — the follow-on named in that spec) is a wiring change, not a redesign. The toolchain is conda-native (`recipes/deptry`, `recipes/osv-scanner` mirror now on main; `fawltydeps` / `pip-check-reqs` as candidate future engines). (§ 4.10, § 5.2 item 5, Story F4.)
+
+### FR-17. Transitive resolution + the universe BOM extend the SBOM intake
+
+(a) A transitive-resolver node (pip `--dry-run --report` for PyPI / py-rattler solve for conda; records resolution depth + fan-out) upgrades bare manifests to full dependency sets before CycloneDX normalization; it honors the `_http.py` mirror-routing overrides and degrades gracefully offline (lockfile/cached-index resolution, else an explicit `unresolved` marker) so the consumer profile keeps working air-gapped. (b) The intake accepts the full § 4.10 tiered format set. (c) The ~856k-component full-universe CycloneDX BOM is a first-class catalog dataset (`derived` layer, regenerated after every rebuild, guarded by the 14-day freshness contract — § 5.2 item 7). (d) The matching node preserves `inventory-match`'s six-bucket semantics, three-way version comparison, and channeldata-live recovery. Extends FR-13. (§ 5.2 items 5 + 7, Story B7.)
+
+### FR-18. Unified CI policy gate
+
+One terminal quality node converges `deptry-scanner.md`'s strict exit-code gate and `inventory-match --policy` (exit 0 pass / 1 policy-fail / 2 error; `max_critical` / `max_high` / KEV thresholds), emits a schema-validated `ComplianceReport` artifact into the `derived` layer, and halts Dagster on failure exactly like an FR-10 contract violation (raising the A2A alert). CI consumes the exit code. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
 
 ---
 
@@ -602,6 +687,8 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 **Acceptance criteria**:
 - Each conda-side phase is a pure-function node with explicit inputs/outputs.
 - The DAG resolves automatically (no procedural call order).
+- Phase B.5's `_pick_feedstock` dedicated-feedstock attribution (§ 3.3 — umbrella vs dedicated for split-out outputs, e.g. `dbt-bigquery`) survives the port; its unit tests carry over as node tests.
+- Phase I (per-version download history) becomes an explicit node with declared outputs — no longer an unregistered side-effect of Phase F.
 - Maps to FR-2.
 
 #### Story B2 — Port the PyPI & Vulnerability pipelines
@@ -612,6 +699,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - PyPI Intelligence and Vulnerability pipelines exist per § 5.2.
 - Each node is independently unit-testable on `pandas.DataFrame` IO.
 - The `add-handoff` single-write-path property (§ 3.3 write paths) and the `v_pypi_intelligence_valid` / `v_current_version_vulns` view contracts are preserved.
+- The vulnerability read-path contract (§ 3.3) is preserved: the atlas `cisa_kev` KEV overlay (vdb's own KEV flags are unusable) and the `_coerce_cvss_score` ScoreType unwrap survive in the migrated read surface.
 - Maps to FR-2.
 
 #### Story B3 — Integrate `kedro-mcp` to re-expose the data surface
@@ -633,7 +721,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 
 #### Story B5 — Port the external-refresh assets (§ 3.4)
 
-**Goal**: Wrap the three separately-built data stores — `vdb-refresh` (AppThreat vdb, vuln-db env), `update-cve-db` (offline OSV store), and `update-mapping-cache` (`pypi_conda_map.json`) — as scheduled external-refresh assets in their § 5.2 domain pipelines, preserving today's `bootstrap_data.py` orchestration coverage.
+**Goal**: Wrap the three separately-built data stores — `vdb-refresh` (AppThreat vdb, vuln-db env), `update-cve-db` (offline OSV store), and `update-mapping-cache` (`pypi_conda_map.json`) — as scheduled external-refresh assets in their § 5.2 domain pipelines, preserving today's `bootstrap_data.py` orchestration coverage across all three bootstrap profiles (§ 3.3 / `guides/atlas-operations.md` — the consumer profile must keep working air-gapped).
 
 **Acceptance criteria**:
 - Each refresh runs as a Dagster-scheduled asset with retries + observability; cadence matches the legacy tasks' TTLs.
@@ -642,6 +730,28 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - Q6's decision is recorded before porting `update-mapping-cache` (consolidation may retire it instead).
 - Maps to FR-2, FR-6.
 
+#### Story B6 — Port the Seed-Gaps pipeline
+
+**Goal**: Port the four report-only gap suggesters (`lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap`) as the terminal report nodes of the Seed-Gaps Pipeline (§ 5.2 item 6), fanned out from their external seed datasets and downstream of the atlas rebuild.
+
+**Acceptance criteria**:
+- Each suggester is a report node reading exactly the inputs in the § 3.4 **Seed-freshness report nodes** table (not the separately-built local-stores table), emitting a `derived`-layer freshness report.
+- The nodes are strictly read-only — the byte-identical-seed guarantee (fixture-enforced in the legacy test suite) survives as a pipeline test.
+- The pipeline re-runs after every rebuild, alongside the § 5.2 item 7 derived artifacts.
+- `mapping-gap` stays in the PyPI Intelligence pipeline with its `g10_spelling` no-clobber writeback (sync chain, Wave A block) — it is not a Seed-Gaps node.
+- Maps to FR-2.
+
+#### Story B7 — Extend the Universal SBOM intake (resolver, formats, universe BOM, buckets)
+
+**Goal**: Implement the transitive-resolver node, the widened § 4.10 tiered manifest intake, the universe-BOM catalog dataset, and the inventory-match matching node with its shipped bucket semantics (§ 5.2 item 5 + item 7).
+
+**Acceptance criteria**:
+- A bare `requirements.txt` resolves to a full transitive dependency set with resolution depth + fan-out recorded.
+- Every § 4.10 format normalizes to CycloneDX preserving the `cfe:*` property namespace and the `?channel=conda-forge` qualifier.
+- The full-universe CycloneDX BOM is a catalog dataset under the 14-day freshness contract; consumers refuse a stale atlas exactly as the legacy gate does.
+- A matching run reproduces the legacy six-bucket classification (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN) on a fixture inventory.
+- Maps to FR-13, FR-17.
+
 ### Wave C — Orchestration & Visualization
 
 #### Story C1 — Integrate `kedro-dagster` for scheduling + execution
@@ -649,8 +759,10 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 **Goal**: Compile the Kedro DAG into a Dagster repository; move daily/weekly schedules and retry logic off cron+bash.
 
 **Acceptance criteria**:
-- Schedules (daily Phase N, weekly Phase F/G, …) exist as Dagster Schedules.
+- Schedules exist as Dagster Schedules and encode the `guides/atlas-operations.md` cadence table (bootstrap weekly; F/H/K/L/E.5 daily; E/J/M every 6 h; N hourly per maintainer; refresh assets weekly).
+- The three bootstrap profiles (maintainer / admin / consumer) exist as named Dagster job configurations with the guide's override precedence (explicit run-config/env beats profile defaults).
 - Retries + phase state are observable in the Dagster UI.
+- Timeouts are per-node: a cold-run Phase R overrun can no longer abort Phase F/K/N (the legacy 1800 s `cf_atlas_core` defect, § 3.3/FR-6, is demonstrably retired).
 - Maps to FR-6.
 
 #### Story C2 — Integrate `kedro-viz` + expose a pixi task
@@ -665,20 +777,20 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 
 #### Story D1 — Define the Boring Semantic Layer (BSL) models
 
-**Goal**: Extract the metrics/business logic from the 24 read CLIs (§ 3.3) into BSL dimensions + measures on top of the Kedro catalog (Ibis → DuckDB).
+**Goal**: Extract the metrics/business logic from the 28 read CLIs (§ 3.3) into BSL dimensions + measures on top of the Kedro catalog (Ibis → DuckDB).
 
 **Acceptance criteria**:
 - BSL declares the core metrics (staleness, adoption stage, feedstock health, …).
 - The BSL layer is the single translation interface for downstream consumers.
 - Maps to FR-8.
 
-#### Story D2 — Build the Vizro dashboard + port the 24 CLIs to pages
+#### Story D2 — Build the Vizro dashboard + port the 28 CLIs to pages
 
-**Goal**: Build a Vizro app driven by the BSL models; reproduce the 24 read CLIs (§ 3.3) as Vizro pages.
+**Goal**: Build a Vizro app driven by the BSL models; reproduce the 28 read CLIs (§ 3.3) as Vizro pages.
 
 **Acceptance criteria**:
 - A Vizro dashboard serves the core KPIs currently locked in CLIs.
-- Each of the 24 legacy CLI questions is answerable from a Vizro page.
+- Each of the 28 legacy CLI questions is answerable from a Vizro page.
 - Maps to FR-9.
 
 #### Story D3 — Integrate Vizro-AI + expose the NL interface as an MCP tool
@@ -737,6 +849,16 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - A similarity query over embedded artifacts returns ranked results from DuckDB.
 - Maps to FR-5.
 
+#### Story F4 — Dependency-hygiene node + unified CI policy gate
+
+**Goal**: Add the `deptry` hygiene scan node (FR-16) and the converged policy gate (FR-18) as the Universal SBOM pipeline's terminal quality stage, wired into the F2 validation machinery.
+
+**Acceptance criteria**:
+- An injected unused-dependency fixture yields a schema-valid hygiene finding in the `ComplianceReport` artifact.
+- A policy breach (e.g. `max_critical=0` violated, or a KEV-affecting-current hit) exits with the contract codes (1 policy-fail / 2 error), halts Dagster, and raises an A2A alert — identical failure semantics to an FR-10 contract violation.
+- The report schema matches `deptry-scanner.md`'s `ComplianceReport`, so the planned promotion (MCP tool + pixi CLI) requires no schema change.
+- Maps to FR-16, FR-18, FR-10.
+
 ### Wave G — WebAssembly Portability & Event-Driven Sensors
 
 #### Story G1 — Compile the intelligence layer to Pyodide / DuckDB-WASM
@@ -784,9 +906,9 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - **AC-1.** The Kedro pipeline reproduces the legacy `cf_atlas` outputs with proven dataset parity (Story B4) before the legacy orchestrator is retired.
 - **AC-2.** The `phase_state` table and the hand-rolled `*_fetched_at` checks are gone; resumability is provided by Kedro runner + persisted Parquet + `IncrementalParquetDataset`.
 - **AC-3.** Dagster owns scheduling + retries; phase state is observable in the Dagster UI; `pixi run viz` renders the DAG.
-- **AC-4.** The 24 read CLIs (§ 3.3) are answerable from Vizro pages, plus a Vizro-AI NL field and `query_vizro_ai` MCP tool, all driven by the BSL.
+- **AC-4.** The 28 read CLIs (§ 3.3) are answerable from Vizro pages, plus a Vizro-AI NL field and `query_vizro_ai` MCP tool, all driven by the BSL.
 - **AC-5.** MCP + A2A surfaces let BMAD agents trigger pipelines, read datasets, and hand structured payloads to the `conda-forge-expert` agent.
-- **AC-6.** Great Expectations contracts halt bad data; OpenLineage + OpenTelemetry provide lineage + end-to-end tracing.
+- **AC-6.** Great Expectations contracts halt bad data; OpenLineage + OpenTelemetry provide lineage + end-to-end tracing; the unified policy gate (FR-18) preserves the deptry / `inventory-match --policy` exit-code contract (0/1/2).
 - **AC-7.** DuckDB is the single compute/graph/vector engine; cold-start is materially faster than the 3–4 h legacy baseline.
 - **AC-8.** The intelligence surface runs in-browser via DuckDB-WASM against statically-hosted Parquet; Dagster Sensors enable near-real-time ingestion.
 - **AC-9.** Every component is conda-forge-sourced and pixi-managed (`nebi`-scaffolded); no standalone binaries / JVM.
@@ -844,7 +966,8 @@ The following are deliberately excluded from this migration, with reason:
 | `spec-kit` as the agent framework | Explicitly rejected (§ 7.3); `bmad-method` governs the agent workforce. |
 | Standalone binaries / JVM dependencies | Pixi-first, conda-forge-only constraint (FR-15, § 4.9). |
 | Enterprise Python Manifest (5k) generation as a deliverable | Downstream target state (§ 4.11) the graph *enables*; not built in this migration. |
-| New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set; new sources are out of scope. |
+| New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set (which already includes endoflife.date, osv.dev, and the local deptry / osv-scanner toolchain — § 3.3 / § 3.4); genuinely new sources are out of scope. |
+| `deptry_scanner` v1 standalone build (`docs/specs/deptry-scanner.md`) | Built under its own spec as an internal-first library. This migration models only the *promoted* atlas surface (FR-16 / FR-18) — the hygiene node contract matches its `ComplianceReport` schema so consolidation with `scan-project` lands as wiring, not redesign. |
 | Rewriting the conda-forge recipe-authoring skill itself | This migration touches the `cf_atlas` intelligence layer, not the recipe-authoring loop. |
 | Static seeds + recipe template trees as pipeline *products* | Curated inputs (§ 3.4); the catalog declares them as versioned external datasets — the pipeline reads, never generates, them. |
 | Live authoring-time fetches (recipe-generator PyPI/sha256 pulls, `gh`/Azure DevOps, live channel repodata) | Transactional point-in-time operations of the recipe-authoring loop (§ 3.4); not pipeline data and not schedulable. |
@@ -859,7 +982,10 @@ The following are deliberately excluded from this migration, with reason:
 - `.claude/tools/conda_forge_server.py` — the FastMCP server whose tools are ported via `kedro-mcp` (FR-7).
 - `.claude/skills/conda-forge-expert/reference/atlas-phases-overview.md` — phase-indexed map of the current pipeline (source for § 5.2 pipeline decomposition).
 - `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md` — engineering patterns (rate limits, atomic writes, enterprise routing) that constrain the node ports.
+- `.claude/skills/conda-forge-expert/guides/atlas-operations.md` — the current operational process (bootstrap profiles, cron cadence table, recovery playbook, storage budget) that § 5.4 / FR-6 must reproduce.
 - `docs/specs/cfe-shipped-releases.md` Part 8 — the S3/parquet backend (Phase F Waves 1–3) whose datasets become Kedro catalog entries (§ 5.1).
+- `docs/specs/cyclonedx-universe-inventory.md` (shipped) — the 7-CLI suite, purl conventions, freshness gate, and bucket semantics FR-13/FR-17 preserve.
+- `docs/specs/deptry-scanner.md` (ready) — the `deptry_scanner` v1 build whose `ComplianceReport` schema + exit-code gate FR-16/FR-18 anticipate.
 - `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" — Rule 1 + Rule 2 governing this BMAD effort.
 
 ### External / ecosystem
@@ -871,6 +997,7 @@ The following are deliberately excluded from this migration, with reason:
 - Dagster (+ Sensors), OpenLineage, OpenTelemetry.
 - `nebi` (nebari-dev) for project scaffolding.
 - CycloneDX SBOM specification; `cdxgen`.
+- `deptry` + `osv-scanner` (conda-native: `recipes/deptry`, the `recipes/osv-scanner` mirror; `fawltydeps` / `pip-check-reqs` as ecosystem context) — the FR-16/FR-18 hygiene + gate toolchain.
 
 ---
 
@@ -893,12 +1020,18 @@ bmad run bad-pipeline
 Wave 0 first (0.1 SKF legacy translation).
 Then Wave A (A1 nebi scaffold → A2 catalog → A3 IncrementalParquetDataset).
 Then Wave B (B1/B2 node ports → B3 kedro-mcp → B4 parity check → B5
-external-refresh assets (resolve Q6 first) — do NOT retire
+external-refresh assets (resolve Q6 first) → B6 seed-gaps pipeline →
+B7 SBOM intake extensions — do NOT retire
 the legacy orchestrator until B4 proves parity per Q1's default).
 
 Proceed wave by wave using the BAD execution engine (C orchestration+viz, D semantic layer+dashboards,
-E A2A+observability, F DuckDB singularity, G WASM+sensors, H AI Software Factory). Resolve Q2/Q3/Q4
+E A2A+observability, F DuckDB singularity incl. F4 hygiene+policy gate, G WASM+sensors,
+H AI Software Factory). Resolve Q2/Q3/Q4
 at the start of their gating wave; default to the recommendations in § 11.
+
+Note: the kedro-viz prototype (prototypes/cf-atlas-kedro-viz) predates the
+seven-pipeline decomposition and the FR-16/17/18 nodes — refresh it as a
+follow-up, not as part of this spec's execution.
 
 Per CLAUDE.md Rule 1, the BAD Linker subagents must invoke the conda-forge-expert skill for any work that touches recipe code or atlas tooling. Per Rule 2, close with a CFE-skill retro + CHANGELOG entry.
 ```
