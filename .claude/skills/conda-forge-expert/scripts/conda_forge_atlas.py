@@ -1569,12 +1569,35 @@ def _download_feedstock_outputs_archive() -> dict[str, list[str]]:
     return mapping
 
 
+def _pick_feedstock(pkg_name: str, feedstocks: list[str]) -> str | None:
+    """Resolve the canonical feedstock for a conda output from its
+    feedstock-outputs 1:N list.
+
+    feedstock-outputs can list an output under >1 feedstock: the historical
+    umbrella feedstock AND the dedicated split-out one — e.g. dbt-bigquery ->
+    ['dbt', 'dbt-bigquery']. Prefer the dedicated feedstock whose name matches
+    the output name, so the dbt-* adapter family (and any similarly split
+    package) is attributed to its own feedstock instead of collapsing into the
+    umbrella. Single-entry lists (the common case, incl. genuine multi-output
+    feedstocks like cookiecutter-django -> ['cookiecutter-django-core']) return
+    that entry; a multi-entry list with no name match falls back to the first
+    entry (prior behavior for genuinely ambiguous outputs).
+    """
+    if not feedstocks:
+        return None
+    if len(feedstocks) > 1 and pkg_name in feedstocks:
+        return pkg_name
+    return feedstocks[0]
+
+
 def phase_b5_feedstock_outputs(conn: sqlite3.Connection) -> dict:
     """Phase B.5: download feedstock-outputs archive; populate feedstock_name.
 
-    For multi-output feedstocks, takes the first feedstock listed (typical
-    case is 1:1; multi-feedstock listings are rare and usually indicate a
-    package transition).
+    feedstock-outputs is 1:N. When an output lists >1 feedstock (the historical
+    umbrella feedstock plus a dedicated split-out one, e.g. dbt-bigquery ->
+    ['dbt','dbt-bigquery']), `_pick_feedstock` prefers the dedicated feedstock
+    whose name matches the output; single-entry lists (the common 1:1 case)
+    pass through unchanged.
 
     Also inserts placeholder rows for packages registered in feedstock-outputs
     but absent from current_repodata.json — these are likely yanked, deprecated,
@@ -1604,19 +1627,9 @@ def phase_b5_feedstock_outputs(conn: sqlite3.Connection) -> dict:
     processed = 0
     commit_every = 500
     for pkg_name, feedstocks in mapping.items():
-        # FOLLOW-UP (observed 2026-07-10): `feedstocks[0]` is WRONG when a
-        # package maps to >1 feedstock. feedstock-outputs lists BOTH the
-        # historical umbrella feedstock AND the dedicated one for split-out
-        # packages — e.g. dbt-bigquery -> ['dbt','dbt-bigquery'] — so [0] picks
-        # 'dbt' and collapses the whole dbt adapter family (dbt-bigquery/
-        # -postgres/-redshift/-snowflake) into one 'dbt' feedstock,
-        # mis-attributing ~5 real feedstocks (surfaced building the
-        # rxm7706/about sole-vs-co maintainer lists). FIX: when
-        # len(feedstocks) > 1, prefer the entry == pkg_name (the dedicated
-        # feedstock), else feedstocks[0]. Verified safe for the single-entry
-        # cases: dbt-core (['dbt']->'dbt') and the genuine multi-output
-        # feedstocks (cookiecutter-django -> ['cookiecutter-django-core']).
-        feedstock_name = feedstocks[0] if feedstocks else None
+        # 1:N resolution — prefer the dedicated feedstock over the historical
+        # umbrella when an output lists both (see _pick_feedstock).
+        feedstock_name = _pick_feedstock(pkg_name, feedstocks)
         if pkg_name in existing:
             conn.execute(
                 "UPDATE packages SET feedstock_name = ? WHERE conda_name = ?",
