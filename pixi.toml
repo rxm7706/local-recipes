@@ -24,12 +24,12 @@ platforms = [
 
 [feature.python.dependencies]
 python = ">=3.14.6,3.14.*"        # Python language interpreter
-pixi = ">=0.72.1"                 # Pixi package & environment manager
+pixi = ">=0.72.2"                 # Pixi package & environment manager
 gh = ">=2.96.0"                   # GitHub CLI for PR / issue / repo automation
 gitpython = ">=3.1.50"            # Pythonic Git wrapper for complex repo interactions
 nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
 bmad-method = ">=6.10.0"           # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=0.12.7"             # Spec-kit for spec-driven development
+spec-kit = ">=0.12.9"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
 # Additional Pins for Dependency resolution
@@ -474,7 +474,7 @@ platforms = ["linux-64", "osx-arm64", "win-64"]
 python = "3.14.*"                 # Python language interpreter
 conda-forge-metadata = ">=0.16.1"  # so --deep also works in this env
 apsw = ">=3.53.3.0"               # SQLite bindings for Python (vdb backend)
-appthreat-vulnerability-db = ">=6.6.2"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
+appthreat-vulnerability-db = ">=6.7.0"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
 #oras-py = ">=0.2.42"              # OCI registry client for Python (vdb backend) — ORAS-hosted CVE DB snapshots blocked by conda-forge-metadata -> conda-oci-mirror -> oras-py ==0.1.14 i
 # truststore lives in [feature.python.dependencies] — included via the python feature
 
@@ -557,13 +557,13 @@ cruft = ">=2.16.0"                # keep cookiecutter-generated projects in sync
 jinja2-ospath = ">=0.3.0"         # Jinja2 extension for filesystem path operations
 ## For Building Plain Python Projects
 # cibuildwheel = ">=3.2.1" # Dependency bashlex Failed for platform 'linux-aarch64'
-appthreat-vulnerability-db = ">=6.6.2"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
+appthreat-vulnerability-db = ">=6.7.0"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
 pip-audit = ">=2.10.1"            # Audit Python environments for known vulnerabilities
 bandit = ">=1.9.4"                # Security linter for Python code
 pip = ">=26.1.2"                  # Python package installer
 setuptools = ">=81.0.0"           # Python build backend (setup.py / pyproject.toml)
 setuptools-scm = ">=10.2.0"       # Version metadata from VCS tags
-hatchling = ">=1.30.1"            # Hatch build backend (PEP 517)
+hatchling = ">=1.31.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.5.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=6.2.0"                 # PyPI artifact uploader
 uv = ">=0.11.28"                  # Fast Rust-based Python package installer / resolver
@@ -577,7 +577,7 @@ conda-pypi = ">=0.11.0"           # Better PyPI interoperability for the conda e
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
 feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.72.1"                 # Pixi package & environment manager
+pixi = ">=0.72.2"                 # Pixi package & environment manager
 #pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
 rattler-build = ">=0.68.0"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.4.4"  # pixi build backend that delegates to rattler-build
@@ -609,10 +609,10 @@ nebi-cli = ">=0.13"               # Local-first workspace management for Pixi
 # See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines
 #pyarrow = ">=13.0.0"              # Apache Arrow Python bindings
 pyarrow-all = ">=21.0.0"          # PyArrow with all optional extras (parquet, datasets, …)
-dagster = ">=1.13.12"             # The data orchestration platform built for productivity.
-dagster-pipes = ">=1.13.12"       # Toolkit for Dagster integrations with transform logic outside of Dagster
-dagster-webserver = ">=1.13.12"   # Web UI for dagster.
-dask-core = ">=2026.6.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
+dagster = ">=1.13.13"             # The data orchestration platform built for productivity.
+dagster-pipes = ">=1.13.13"       # Toolkit for Dagster integrations with transform logic outside of Dagster
+dagster-webserver = ">=1.13.13"   # Web UI for dagster.
+dask-core = ">=2026.7.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
 #dbt-core = ">=1.11.11"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
 #dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
 #dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
@@ -671,7 +671,7 @@ pdf2image = ">=1.17.0"            # Convert PDF pages to PIL images (Poppler-bac
 pdfplumber = ">=0.11.10"          # Extract text, tables, and metadata from PDFs
 pillow = ">=12.3.0"               # Python imaging library (PIL fork)
 playwright-python = ">=1.61.0"    # Python bindings (the existing 'playwright' is the Node binary)
-plotly = ">=6.8.0"                # Interactive web-based plotting library
+plotly = ">=6.9.0"                # Interactive web-based plotting library
 poppler = ">=26.7.0"              # PDF rendering library (pdf2image backend)
 pydub = ">=0.25.1"                # Audio processing library for Python (used in speechrecognition for audio manipulation)
 pymupdf = ">=1.28.0"            # MuPDF Python bindings — fast PDF text/layout extraction
@@ -687,7 +687,7 @@ tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pyte
 transformers = ">=5.13.0"         # Hugging Face transformers (model hub + pipelines)
 xlrd = ">=2.0.2"                  # Excel .xls reader (used in markitdown's Excel loader)
 cocoindex = ">=1.0.16"            # Incremental engine for long horizon agents
-graphifyy = ">=0.9.9"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
+graphifyy = ">=0.9.11"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ## Data processing & conversion (ibis + adjacent ecosystem)
 google-cloud-bigquery = ">=3.42.1" # BigQuery client — cf_atlas Phase P (opt-in via PHASE_P_ENABLED=1; needs ADC creds via the `gcloud` env)
 ibis-duckdb = ">=12.0.0"          # Ibis backend for DuckDB
@@ -699,7 +699,7 @@ ibis-oracle = ">=12.0.0"          # Ibis backend for Oracle Database
 #pydantic = ">=2.13.4"             # type-hint-driven data validation
 ruff = ">=0.15.20"                # fast Rust-based Python linter + formatter
 pyright = ">=1.1.411"             # Microsoft's static type checker for Python
-mypy = ">=2.1.0"                  # static type checker for Python
+mypy = ">=2.2.0"                  # static type checker for Python
 pyrefly = ">=1.1.1"               # Meta's fast Rust-based Python type checker
 pytest = ">=9.1.1"                # Python test framework
 pytest-mock = ">=3.15.1"          # pytest fixture wrapper around `unittest.mock`
@@ -712,19 +712,19 @@ agno = ">=2.6.21"                 # Agno is a lightweight framework for building
 a2a-sdk = ">=1.1.0"               # Official Python SDK for the Agent2Agent (A2A) Protocol
 google-genai = ">=2.10.0"          # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
-claude-agent-acp = ">=0.57.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
+claude-agent-acp = ">=0.58.1"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 diffusers = ">=0.39.0"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
 fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A protocol
-fastmcp = ">=3.4.3"               # FastMCP framework for building MCP servers
-github-copilot-sdk =">=1.0.5"    # GitHub Copilot Python SDK
+fastmcp = ">=3.4.4"               # FastMCP framework for building MCP servers
+github-copilot-sdk =">=1.0.6"    # GitHub Copilot Python SDK
 langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
 langchain-mcp-adapters = ">=0.3.0"  # LangChain ↔ MCP tool/resource adapters
 lumen-ai-anthropic = ">=1.2.1"    # Lumen AI's Anthropic backend integration
 mcp = ">=1.28.1"                  # Official Model Context Protocol Python SDK
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=2.6.0"         # Pydantic-AI agent framework
-"llama.cpp" = ">=9851"            # llama.cpp local LLM inference engine
+"llama.cpp" = ">=9923"            # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
 #litellm = ">=1.83.14"             # NOT ADDED - Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
@@ -743,7 +743,7 @@ nbqa = ">=1.9.0"                  # apply Python linters / formatters to Jupyter
 sqlfluff = ">=4.2.2"              # SQL linter and formatter
 go-sops = ">=3.13.2"              # Mozilla SOPS encrypted-secret editor
 age = ">=1.3.1"                   # modern simple file encryption tool
-yarn = ">=4.17.0"                 # Node package manager (Berry)
+yarn = ">=4.17.1"                 # Node package manager (Berry)
 requests = ">=2.34.2"             # Python HTTP client library
 ## Visual Studio Code Extensions
 ## Visual Studio Code Extensions (vscodepy + adjacent Microsoft Azure ecosystem)
