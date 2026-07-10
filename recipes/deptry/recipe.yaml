@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.25.1"
+
+package:
+  name: deptry
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/deptry/deptry-${{ version }}.tar.gz
+  sha256: 45c8cd982c85cd4faae573ddff6920de7eec735336db6973f26a765ae7950f7d
+
+build:
+  number: 0
+  skip: match(python, "<3.10")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - deptry = deptry.cli:deptry
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - maturin >=1.5,<2.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0.0,<9
+    - colorama >=0.4.6
+    - packaging >=23.2
+    - requirements-parser >=0.11.0,<1
+    - tomli >=2.0.1
+
+tests:
+  - python:
+      imports:
+        - deptry
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - deptry --help
+
+about:
+  summary: A command line utility to check for unused, missing and transitive dependencies in a Python project.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/deptry/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
