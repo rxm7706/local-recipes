@@ -166,3 +166,39 @@ class TestBuildPhaseSelection:
         assert rc == 0
         all_names = [name for name, _ in atlas_mod.PHASES]
         assert invoked == all_names
+
+
+class TestPickFeedstock:
+    """`_pick_feedstock` resolves the 1:N feedstock-outputs mapping: prefer the
+    dedicated feedstock (name == output) over the historical umbrella when an
+    output lists more than one — the dbt-* adapter-family collapse fix."""
+
+    def test_empty_returns_none(self, atlas_mod):
+        assert atlas_mod._pick_feedstock("anything", []) is None
+
+    def test_single_entry_passes_through(self, atlas_mod):
+        # common 1:1 case + naming-divergence / genuine multi-output feedstocks
+        assert atlas_mod._pick_feedstock("numpy", ["numpy"]) == "numpy"
+        assert atlas_mod._pick_feedstock(
+            "cookiecutter-django", ["cookiecutter-django-core"]
+        ) == "cookiecutter-django-core"
+        # dbt-core is published only by the umbrella dbt feedstock
+        assert atlas_mod._pick_feedstock("dbt-core", ["dbt"]) == "dbt"
+
+    def test_multi_prefers_dedicated_matching_name(self, atlas_mod):
+        # dbt adapter family: dedicated feedstock wins over the 'dbt' umbrella
+        assert atlas_mod._pick_feedstock(
+            "dbt-bigquery", ["dbt", "dbt-bigquery"]
+        ) == "dbt-bigquery"
+        assert atlas_mod._pick_feedstock(
+            "dbt-snowflake", ["dbt", "dbt-snowflake"]
+        ) == "dbt-snowflake"
+
+    def test_multi_no_name_match_falls_back_to_first(self, atlas_mod):
+        # genuinely ambiguous: output not named after any listed feedstock
+        assert atlas_mod._pick_feedstock("foo", ["bar", "baz"]) == "bar"
+
+    def test_dedicated_pick_is_order_independent(self, atlas_mod):
+        assert atlas_mod._pick_feedstock(
+            "dbt-postgres", ["dbt-postgres", "dbt"]
+        ) == "dbt-postgres"
