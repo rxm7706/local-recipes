@@ -292,6 +292,32 @@ _CVSS_KEYS_TO_VERSION = {
 }
 
 
+def _coerce_cvss_score(val: Any) -> float | None:
+    """Coerce a CVSS baseScore to a float, or None.
+
+    appthreat-vulnerability-db 6.6.2's partial ``model_dump`` (the source of
+    the ``PydanticSerializationUnexpectedValue`` warnings) can leave the score
+    as a ``{'root': <float>}`` dict (serialized ``RootModel[float]``), a raw
+    pydantic ``RootModel`` object (``.root``), or a ``ScoreType`` Enum
+    (``.value``) rather than a plain number. ``float()`` on those throws
+    ``TypeError``, which crashed the ``--vdb-all`` CVE-list sort. Unwrap all
+    forms (plus plain str/float/None) before coercing.
+    """
+    if val is None:
+        return None
+    if isinstance(val, dict):
+        val = val.get("root", val)
+    val = getattr(val, "root", val)   # RootModel[float] -> float
+    val = getattr(val, "value", val)  # Enum -> its value
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        try:
+            return float(str(val))
+        except (TypeError, ValueError):
+            return None
+
+
 def _walk_for_cvss(obj: Any, depth: int = 0) -> dict[str, Any] | None:
     """Recursively walk a dict/list looking for CVSS metric blocks.
 
@@ -433,7 +459,7 @@ def _extract_vuln_fields(record: dict[str, Any]) -> dict[str, Any]:
 
     cvss = _walk_for_cvss(d)
     if cvss:
-        out["cvss_score"] = cvss["score"]
+        out["cvss_score"] = _coerce_cvss_score(cvss["score"])
         out["cvss_version"] = cvss["version"]
         out["cvss_vector"] = cvss.get("vector")
         if cvss["severity"]:
