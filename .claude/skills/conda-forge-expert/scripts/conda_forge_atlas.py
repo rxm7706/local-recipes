@@ -1604,6 +1604,18 @@ def phase_b5_feedstock_outputs(conn: sqlite3.Connection) -> dict:
     processed = 0
     commit_every = 500
     for pkg_name, feedstocks in mapping.items():
+        # FOLLOW-UP (observed 2026-07-10): `feedstocks[0]` is WRONG when a
+        # package maps to >1 feedstock. feedstock-outputs lists BOTH the
+        # historical umbrella feedstock AND the dedicated one for split-out
+        # packages — e.g. dbt-bigquery -> ['dbt','dbt-bigquery'] — so [0] picks
+        # 'dbt' and collapses the whole dbt adapter family (dbt-bigquery/
+        # -postgres/-redshift/-snowflake) into one 'dbt' feedstock,
+        # mis-attributing ~5 real feedstocks (surfaced building the
+        # rxm7706/about sole-vs-co maintainer lists). FIX: when
+        # len(feedstocks) > 1, prefer the entry == pkg_name (the dedicated
+        # feedstock), else feedstocks[0]. Verified safe for the single-entry
+        # cases: dbt-core (['dbt']->'dbt') and the genuine multi-output
+        # feedstocks (cookiecutter-django -> ['cookiecutter-django-core']).
         feedstock_name = feedstocks[0] if feedstocks else None
         if pkg_name in existing:
             conn.execute(

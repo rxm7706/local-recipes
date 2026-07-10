@@ -303,6 +303,16 @@ For cron cadence, TTL reset, and recovery playbooks, see
 - **What gets written.** `packages.feedstock_name`; placeholder INSERTs
   with `relationship='conda_only'` for rows missing from Phase B.
   Incremental commits every 500 rows survive partial runs.
+- **Known caveat (follow-up, 2026-07-10).** For an output published by >1
+  feedstock, `feedstock_name` is set to `feedstocks[0]`, which can be the
+  historical umbrella feedstock rather than the dedicated one — e.g.
+  `dbt-bigquery` maps to `['dbt','dbt-bigquery']` and is mis-attributed to
+  `dbt`, collapsing the whole `dbt-*` adapter family into one feedstock.
+  Fix (see the `FOLLOW-UP` note at the `feedstocks[0]` line in
+  `phase_b5_feedstock_outputs`): when `len(feedstocks) > 1`, prefer the entry
+  equal to the conda name. Affects feedstock-granular maintainer views only
+  (surfaced building the rxm7706/about sole-vs-co lists); ~1 in 810 for that
+  maintainer.
 - **Actionable intelligence.**
   - Canonical feedstock per conda name — backs every maintainer-scoped
     CLI (`staleness-report --maintainer`, `feedstock-health`,
