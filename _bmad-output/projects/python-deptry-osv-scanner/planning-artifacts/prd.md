@@ -19,7 +19,7 @@ vision:
   coreInsight: "Both jobs start from the same manifest parse; build ONE conda/pixi-native manifest front-door feeding two INDEPENDENT extraction paths (deptry: source-tree AST + import->distribution mapping; osv-scanner: versioned lockfiles), emit ONE schema-validated report behind ONE exit code."
   scope: "Python libraries across PyPI AND conda-forge (ecosystem-agnostic). PyPI path = delegate to engines' native parsers (deptry: pyproject PEP621/Poetry/PDM/uv/setuptools + requirements.txt; osv: requirements.txt/poetry.lock/pdm.lock/uv.lock/Pipfile.lock/pylock.toml). Conda/pixi path (the wedge) = E1 bridge for environment.yml/meta.yaml/recipe.yaml/pixi.toml (neither engine parses these). Grounded 2026-07-11, time-bound."
   hero: "extending deptry + osv-scanner to the conda/pixi formats neither parses natively (the differentiated wedge); one-gate unification across both ecosystems is the broad value"
-  beachhead: "sharpest UNSERVED gap = conda-feedstock + pixi-project maintainers (zero tools without lossy manual translation); but serves ANY Python library. platform-eng + DevSecOps = distribution channels (fleet deployers)"
+  beachhead: "sharpest UNSERVED gap = serves ANY Python project (scripts/apps/components/libraries), pip- or conda-sourced. platform-eng + DevSecOps = distribution channels (fleet deployers)"
   valueProp: "One lightweight, conda/pixi-native CI gate that unifies dependency-hygiene and known-vulnerability scanning into a single honest, schema-validated pass."
 prioritizedRefinements:
   v1_must:
@@ -60,7 +60,7 @@ workflowType: 'prd'
 
 **python-deptry-osv-scanner** is a non-interactive CI/CD quality-gate CLI that unifies **dependency hygiene** (unused / missing / transitive deps via `deptry`) and **known-vulnerability scanning** (CVEs via Google `osv-scanner`) into a single schema-validated pass behind **one exit code**, for **Python libraries sourced from either PyPI or conda-forge**. For PyPI-world projects both engines already work natively — deptry reads `pyproject.toml` (PEP 621 / Poetry / PDM / uv / setuptools) and `requirements.txt`; osv-scanner reads the lockfiles (`poetry.lock`, `pdm.lock`, `uv.lock`, `Pipfile.lock`, `pylock.toml`, `requirements.txt`) — so python-deptry-osv-scanner **orchestrates and unifies** them. Its differentiated wedge is **extending both engines to the conda/pixi formats neither parses natively** — `environment.yml`, v0 `meta.yaml`, v1 `recipe.yaml`, and `pixi.toml` — via a manifest-resolution bridge, making conda-forge-sourced Python projects first-class alongside PyPI ones. (See § Supported Dependency Managers & Lockfiles.)
 
-The tool is **ecosystem-agnostic**: one gate whether a project's dependencies resolve from PyPI or conda-forge. The segment with the sharpest *unserved* gap is **conda-feedstock and pixi-project maintainers** — who today cannot run either engine without a lossy manual translation of their recipe/manifest into a `requirements.txt` fiction (the majority still on v0 `meta.yaml`) — but the product serves any Python library. Platform-engineering and DevSecOps teams are **distribution channels** (who deploy the gate across a 20,000+ repo fleet). The irreducible promise: **one exit code you can trust, with honest coverage.**
+The tool is **ecosystem-agnostic**: one gate whether a project's dependencies resolve from PyPI or conda-forge. The segment with the sharpest *unserved* gap is **conda-feedstock and pixi-project maintainers** — who today cannot run either engine without a lossy manual translation of their recipe/manifest into a `requirements.txt` fiction (the majority still on v0 `meta.yaml`) — but the product serves **any Python developer shipping pip- or conda-sourced software** (scripts, applications, components, libraries). Platform-engineering and DevSecOps teams are **distribution channels** (who deploy the gate across a 20,000+ repo fleet). The irreducible promise: **one exit code you can trust, with honest coverage.**
 
 ### What Makes This Special
 
@@ -97,7 +97,7 @@ Two coverage paths, by where the dependencies are sourced:
 
 ### User Success
 
-- A **Python library maintainer — whether deps come from PyPI or conda-forge** — runs `python-deptry-osv-scanner` once and gets a unified hygiene + vulnerability verdict. PyPI projects: deptry + osv consolidated (no more two CI steps + `jq`). Conda/pixi projects: coverage they had **none** of before (no manual `requirements.txt` translation).
+- A **Python developer shipping pip- or conda-sourced software (scripts, applications, components, libraries)** — whether deps come from PyPI or conda-forge — runs `python-deptry-osv-scanner` once and gets a unified hygiene + vulnerability verdict. PyPI projects: deptry + osv consolidated (no more two CI steps + `jq`). Conda/pixi projects: coverage they had **none** of before (no manual `requirements.txt` translation).
 - Every finding is **actionable** (package + manifest location; or advisory ID + affected/fixed version); no theoretical noise.
 - A **platform engineer** wires it into a CI template once — deterministic exit 0 / non-zero across the fleet.
 - **Trust:** a green check never hides a crash or an unparsed manifest.
