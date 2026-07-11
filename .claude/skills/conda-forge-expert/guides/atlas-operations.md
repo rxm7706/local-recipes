@@ -77,17 +77,17 @@ thanks to the schema v21 serial-aware eligible-rows gate).
 > the cap from the cold Phase-R pull, or move Phase R (and E/H) into their
 > own SOFT-failure sub-steps so a slow enrichment can't abort F/K/N.
 
-> **Known issue / follow-up — split sub-steps clobber `phases_run`
-> (2026-07-10).** The same v8.22.0 split runs core / F / K / N as separate
-> `build --only <phase>` invocations, and `write_meta` **overwrites**
-> `cf_atlas_meta.json`'s `phases_run` on each, so after a full run the sidecar
-> shows only the last sub-step (`['N']`) even though every phase ran and wrote
-> its data. The atlas **data is complete** — only this provenance index is
-> wrong. **Verify F/K/N landed from row-level timestamps** (`Phase K`:
-> `upstream_versions.fetched_at`; `Phase N`: `packages.gh_status_fetched_at`;
-> `Phase F`: `downloads_90d` populated count), **not** `phases_run`. Fix: merge
-> `phases_run` (union, canonical order) in `write_meta`, or stamp the full set
-> once after all sub-steps.
+> **`phases_run` accumulates across the split sub-steps (fixed 2026-07-10).**
+> The v8.22.0 split runs core / F / K / N as separate `build --only <phase>`
+> invocations, each calling `write_meta`. `write_meta` now **merges**
+> `phases_run` (union, canonical order via `_merge_phases_run`) with the
+> existing meta value instead of overwriting, so a full run records the
+> complete `B…N` set rather than just the last sub-step (`['N']`). A `--fresh`
+> run wipes the meta first, so accumulation restarts cleanly. Note the
+> **row-level timestamps remain the ground truth** for "did a phase's data
+> land" (`Phase K`: `upstream_versions.fetched_at`; `Phase N`:
+> `packages.gh_status_fetched_at`; `Phase F`: `downloads_90d` populated count) —
+> `phases_run` records which phases *ran*, not per-row freshness.
 
 ### Post-rebuild artifact regeneration (cyclonedx-universe-inventory)
 

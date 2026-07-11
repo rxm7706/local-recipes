@@ -8612,20 +8612,52 @@ def phase_s_computed_scores(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _read_meta_phases_run(conn: sqlite3.Connection) -> list[str]:
+    """Return the current `phases_run` list from the meta table, or []."""
+    try:
+        row = conn.execute(
+            "SELECT value FROM meta WHERE key = 'phases_run'"
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return []
+    if not row or not row[0]:
+        return []
+    try:
+        val = json.loads(row[0])
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return [str(p) for p in val] if isinstance(val, list) else []
+
+
+def _merge_phases_run(existing: list[str], new: list[str]) -> list[str]:
+    """Union `existing` + `new`, ordered by the canonical PHASES sequence
+    (unknown names sorted alphabetically after the known ones).
+
+    Lets the v8.22.0 bootstrap split accumulate its sub-steps: core / F / K / N
+    run as separate `build --only <phase>` invocations, each calling
+    `write_meta`; without the union each would clobber `phases_run`, leaving
+    only the last sub-step (`['N']`).
+    """
+    order = {name: i for i, (name, _) in enumerate(PHASES)}
+    merged = set(existing) | set(new)
+    return sorted(merged, key=lambda p: (order.get(p, len(order)), p))
+
+
 def write_meta(conn: sqlite3.Connection, build_stats: dict) -> None:
-    """Write build provenance to meta table and JSON sidecar."""
-    # FOLLOW-UP (observed 2026-07-10): this OVERWRITES `phases_run` with only
-    # the phases in `build_stats`. The v8.22.0 bootstrap split runs core / F /
-    # K / N as separate `build --only <phase>` invocations, so each clobbers
-    # the field — after a full `--profile admin` run the sidecar shows just the
-    # LAST sub-step (`['N']`) even though every phase ran and wrote its data.
-    # FIX: merge `phases_run` with the existing meta value (union, preserving
-    # canonical order) before writing — or have bootstrap_data stamp the full
-    # set once after all sub-steps. Data is unaffected; only this provenance
-    # index is incomplete. (Distinct from the atlas-phase-doesn't-stamp-meta
-    # follow-up: this is the split sub-steps clobbering, not a no-op.)
+    """Write build provenance to meta table and JSON sidecar.
+
+    `phases_run` is MERGED (union, canonical order) with the existing meta
+    value rather than overwritten, so the v8.22.0 bootstrap split (core / F /
+    K / N as separate `build --only` invocations, each calling this) records
+    the full set instead of the last sub-step clobbering it. A `--fresh` run
+    wipes the meta first, so accumulation restarts cleanly.
+    """
     build_stats["schema_version"] = SCHEMA_VERSION
     build_stats["built_at"] = int(time.time())
+    if isinstance(build_stats.get("phases_run"), list):
+        build_stats["phases_run"] = _merge_phases_run(
+            _read_meta_phases_run(conn), build_stats["phases_run"]
+        )
     for key, value in build_stats.items():
         conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
                      (key, json.dumps(value) if not isinstance(value, str) else value))
