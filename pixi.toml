@@ -4,7 +4,10 @@
 [workspace]
 name = "staged-recipes"
 preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/packages/python-deptry-osv-scanner workspace member (Option B). Only unlocks [package]/build tables; does not change the rattler-build recipe workflow.
-requires-pixi = ">=0.72.2"  # the osx-arm64-min virtual-package platform entry (macOS floor) needs the 0.71+ workspace-platform syntax
+# NOTE: Gemini PR#49 suggested a `[workspace] members = [...]` key, but pixi
+# (through 0.72.2) has no such key — workspace members are declared via path
+# dependencies (see [feature.python-deptry-osv-scanner.dependencies]).
+requires-pixi = ">=0.72.2"  # matches installed pixi + the pixi-build preview backends. The [feature.local-recipes.system-requirements] macOS-14.5 table is the deprecated pre-0.71 form (pixi warns but still honors it); migrate to a virtual-package platform entry when convenient.
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
