@@ -5,7 +5,7 @@ display_name: cfe-atlas-datapipeline Kedro Migration Spec
 project_type_id: data
 date: 2026-06-20
 status: ready
-spec_updated: 2026-07-10
+spec_updated: 2026-07-11
 ---
 
 # Spec: cfe-atlas-datapipeline Kedro Migration
@@ -434,7 +434,7 @@ To resolve these bottlenecks, we propose migrating the custom orchestrator to **
 ### 4.10 Universal SBOM Integration (CycloneDX)
 
 *   The legacy pipeline strictly tracks `meta.yaml` dependencies. The modernized pipeline will treat dependency extraction as a universal Software Bill of Materials (SBOM) ingestion problem.
-*   **Tiered intake** (FR-13 + FR-17). Policy-supported core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. Extended tier (the formats the shipped `scan-project` / `inventory-match` tooling and `deptry-scanner.md`'s Manifest Resolution Engine already handle): `requirements.txt`, `environment.yml` (including nested `pip:` blocks), `conda-lock.yml`, `pdm.lock`, live venv / conda environments, container images, `pip freeze` / `conda list` text, and SBOM-in passthrough (CycloneDX/SPDX). Everything normalizes strictly into the **CycloneDX** standard format.
+*   **Tiered intake** (FR-13 + FR-17). Policy-supported core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. Extended tier (already handled by the shipped `scan-project` / `inventory-match` tooling — of which `requirements.txt` and `environment.yml` incl. nested `pip:` are also covered by `deptry-scanner.md`'s Manifest Resolution Engine): `requirements.txt`, `environment.yml` (including nested `pip:` blocks), `conda-lock.yml`, `pdm.lock`, live venv / conda environments, container images, `pip freeze` / `conda list` text, and SBOM-in passthrough (CycloneDX/SPDX). Everything normalizes strictly into the **CycloneDX** standard format.
 *   This creates a unified, ecosystem-agnostic semantic graph in DuckDB, allowing operators to cross-reference PyPI constraints (`pyproject.toml`) against conda constraints (`recipe.yaml`) using a globally recognized specification.
 
 ### 4.11 Target State: Enterprise Python Manifest Generation
@@ -622,7 +622,7 @@ Every component (Kedro, Dagster, DuckDB, Ibis, …) is sourced from conda-forge 
 
 ### FR-16. Dependency-hygiene scan node (deptry) in the Universal SBOM pipeline
 
-A hygiene node runs `deptry` over the § 4.10 tiered intake **when project source code accompanies the manifest** — deptry's analysis is AST/import-based, so for source-less inputs (bare manifests, lockfiles, SBOM passthrough) the node skips gracefully and the report records the reduced scope instead of failing. Findings (unused / missing / transitive-only / misplaced dependencies) land in a schema-validated artifact (`derived` layer). The node contract matches `deptry-scanner.md`'s `ComplianceReport` schema, so the planned promotion of `deptry_scanner` into the atlas surface (MCP tool + pixi CLI, consolidation with `scan-project` — the follow-on named in that spec) is a wiring change, not a redesign. The toolchain is conda-native (`recipes/deptry`, `recipes/osv-scanner` mirror now on main; `fawltydeps` / `pip-check-reqs` as candidate future engines). (§ 4.10, § 5.2 item 5, Story F4.)
+A hygiene node runs `deptry` over the § 4.10 tiered intake **when project source code accompanies the manifest** — deptry's analysis is AST/import-based, so for source-less inputs (bare manifests, lockfiles, SBOM passthrough) the node skips gracefully and the report records the reduced scope instead of failing. Findings (unused / missing / transitive-only / misplaced dependencies) populate the `hygiene` section of `deptry-scanner.md`'s `ComplianceReport` schema; the *complete* report — `hygiene` from this node plus a `security` section sourced from `inventory-match`/`cve` (the atlas does **not** re-invoke `osv-scanner`; standalone `deptry_scanner` v1 does) — is assembled and schema-validated at the FR-18 terminal gate (`derived` layer). Because the shared artifact is deptry-scanner's `ComplianceReport`, the planned promotion of `deptry_scanner` into the atlas surface (MCP tool + pixi CLI, consolidation with `scan-project` — the follow-on named in that spec) is a wiring change, not a redesign. The toolchain is conda-native (`recipes/deptry`, `recipes/osv-scanner` mirror now on main; `fawltydeps` / `pip-check-reqs` as candidate future engines). (§ 4.10, § 5.2 item 5, Story F4.)
 
 ### FR-17. Transitive resolution + the universe BOM extend the SBOM intake
 
@@ -630,7 +630,7 @@ A hygiene node runs `deptry` over the § 4.10 tiered intake **when project sourc
 
 ### FR-18. Unified CI policy gate
 
-One terminal quality node converges `deptry-scanner.md`'s strict exit-code gate and `inventory-match --policy` (exit 0 pass / 1 policy-fail / 2 error; `max_critical` / `max_high` / KEV thresholds), emits a schema-validated `ComplianceReport` artifact into the `derived` layer, and halts Dagster on failure exactly like an FR-10 contract violation (raising the A2A alert). CI consumes the exit code. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
+One terminal quality node assembles the full `ComplianceReport` — `hygiene` from the FR-16 node, `security` from `inventory-match`/`cve` — converging `deptry-scanner.md`'s strict exit-code gate with `inventory-match --policy` (exit 0 pass / 1 policy-fail / 2 error; `max_critical` / `max_high` / KEV thresholds), emits the schema-validated artifact into the `derived` layer, and halts Dagster on failure exactly like an FR-10 contract violation (raising the A2A alert). CI consumes the exit code. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
 
 ---
 
