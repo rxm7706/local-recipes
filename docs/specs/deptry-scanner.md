@@ -1,6 +1,6 @@
 ---
 status: ready
-spec_updated: 2026-07-10
+spec_updated: 2026-07-11
 ---
 # Tech Spec: `deptry_scanner`
 
@@ -405,7 +405,16 @@ the rationale survives; each drove a concrete change above.
   adding a CFE script touches the three canonical places (pixi.toml task +
   the `SCRIPTS` test list + a wrapper/allowlist entry), and CLAUDE.md
   Rules 1 & 2 engage — invoke the `conda-forge-expert` skill, and close
-  with a CFE-skill retro + CHANGELOG entry.
+  with a CFE-skill retro + CHANGELOG entry. The atlas-migration spec
+  (`cfe-atlas-datapipeline-kedro-migration.md`, FR-16 / FR-18, Story F4)
+  already models this promotion: the `hygiene` half becomes the `deptry`
+  scan node (FR-16); the `security` half converges with
+  `inventory-match --policy` at the unified CI gate (FR-18) — both emitting
+  this spec's `ComplianceReport` schema, so consolidation is wiring, not a
+  redesign. Note the security-source difference: standalone v1 runs
+  `osv-scanner` (E3), whereas the promoted atlas node sources the
+  `security` section from `inventory-match`/`cve` rather than re-invoking
+  it.
 - Alternate hygiene backends (`fawltydeps`, `pip-check-reqs` — both now in
   `recipes/`) behind a `--engine` flag.
 - SBOM (CycloneDX) emission, aligning with the repo's
