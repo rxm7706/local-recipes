@@ -39,6 +39,10 @@ export function useDeck() {
   // Keyboard shortcuts.
   useEffect(() => {
     const onKey = (e) => {
+      const target = e.target;
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/i.test(target.tagName))) {
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       switch (e.key) {
         case 'ArrowRight':

@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import Slide from './Slide.jsx';
 import { useFit } from './useFit.js';
 
+let presenterStartTime = null;
+
 function useTimer() {
-  const start = useRef(Date.now());
-  const [elapsed, setElapsed] = useState(0);
+  const start = useRef(presenterStartTime || (presenterStartTime = Date.now()));
+  const [elapsed, setElapsed] = useState(Date.now() - start.current);
   useEffect(() => {
     const id = setInterval(() => setElapsed(Date.now() - start.current), 1000);
     return () => clearInterval(id);
