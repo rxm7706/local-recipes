@@ -1,9 +1,0 @@
-# build artifacts (conda + wheel + sdist)
-/dist/
-/build/
-*.conda
-*.whl
-*.tar.gz
-*.egg-info/
-__pycache__/
-.pytest_cache/
