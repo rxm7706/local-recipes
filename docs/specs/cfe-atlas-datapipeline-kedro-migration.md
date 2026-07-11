@@ -122,7 +122,7 @@ spec_updated: 2026-07-11
 >    `detail-cf-atlas --vdb-all` KEV overlay (`_load_kev_cves` reads the
 >    atlas `cisa_kev` table because vdb 6.6.2's own KEV flags are always
 >    False) + `_coerce_cvss_score` ScoreType unwrap.
-> 4. *Cross-spec intake*: `deptry-scanner.md` (ready) contributes the
+> 4. *Cross-spec intake*: `python-deptry-osv-scanner.md` (ready) contributes the
 >    dependency-hygiene scan node (FR-16) and the unified CI policy gate
 >    (FR-18, converged with `inventory-match --policy`), plus its planned
 >    promoted MCP/CLI surface; `cyclonedx-universe-inventory.md` (shipped)
@@ -434,7 +434,7 @@ To resolve these bottlenecks, we propose migrating the custom orchestrator to **
 ### 4.10 Universal SBOM Integration (CycloneDX)
 
 *   The legacy pipeline strictly tracks `meta.yaml` dependencies. The modernized pipeline will treat dependency extraction as a universal Software Bill of Materials (SBOM) ingestion problem.
-*   **Tiered intake** (FR-13 + FR-17). Policy-supported core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. Extended tier (already handled by the shipped `scan-project` / `inventory-match` tooling — of which `requirements.txt` and `environment.yml` incl. nested `pip:` are also covered by `deptry-scanner.md`'s Manifest Resolution Engine): `requirements.txt`, `environment.yml` (including nested `pip:` blocks), `conda-lock.yml`, `pdm.lock`, live venv / conda environments, container images, `pip freeze` / `conda list` text, and SBOM-in passthrough (CycloneDX/SPDX). Everything normalizes strictly into the **CycloneDX** standard format.
+*   **Tiered intake** (FR-13 + FR-17). Policy-supported core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, and `meta.yaml`. Extended tier (already handled by the shipped `scan-project` / `inventory-match` tooling — of which `requirements.txt` and `environment.yml` incl. nested `pip:` are also covered by `python-deptry-osv-scanner.md`'s Manifest Resolution Engine): `requirements.txt`, `environment.yml` (including nested `pip:` blocks), `conda-lock.yml`, `pdm.lock`, live venv / conda environments, container images, `pip freeze` / `conda list` text, and SBOM-in passthrough (CycloneDX/SPDX). Everything normalizes strictly into the **CycloneDX** standard format.
 *   This creates a unified, ecosystem-agnostic semantic graph in DuckDB, allowing operators to cross-reference PyPI constraints (`pyproject.toml`) against conda constraints (`recipe.yaml`) using a globally recognized specification.
 
 ### 4.11 Target State: Enterprise Python Manifest Generation
@@ -622,7 +622,7 @@ Every component (Kedro, Dagster, DuckDB, Ibis, …) is sourced from conda-forge 
 
 ### FR-16. Dependency-hygiene scan node (deptry) in the Universal SBOM pipeline
 
-A hygiene node runs `deptry` over the § 4.10 tiered intake **when project source code accompanies the manifest** — deptry's analysis is AST/import-based, so for source-less inputs (bare manifests, lockfiles, SBOM passthrough) the node skips gracefully and the report records the reduced scope instead of failing. Findings (unused / missing / transitive-only / misplaced dependencies) populate the `hygiene` section of `deptry-scanner.md`'s `ComplianceReport` schema; the *complete* report — `hygiene` from this node plus a `security` section sourced from `inventory-match`/`cve` (the atlas does **not** re-invoke `osv-scanner`; standalone `deptry_scanner` v1 does) — is assembled and schema-validated at the FR-18 terminal gate (`derived` layer). Because the shared artifact is deptry-scanner's `ComplianceReport`, the planned promotion of `deptry_scanner` into the atlas surface (MCP tool + pixi CLI, consolidation with `scan-project` — the follow-on named in that spec) is a wiring change, not a redesign. The toolchain is conda-native (`recipes/deptry`, `recipes/osv-scanner` mirror now on main; `fawltydeps` / `pip-check-reqs` as candidate future engines). (§ 4.10, § 5.2 item 5, Story F4.)
+A hygiene node runs `deptry` over the § 4.10 tiered intake **when project source code accompanies the manifest** — deptry's analysis is AST/import-based, so for source-less inputs (bare manifests, lockfiles, SBOM passthrough) the node skips gracefully and the report records the reduced scope instead of failing. Findings (unused / missing / transitive-only / misplaced dependencies) populate the `hygiene` section of `python-deptry-osv-scanner.md`'s `ComplianceReport` schema; the *complete* report — `hygiene` from this node plus a `security` section sourced from `inventory-match`/`cve` (the atlas does **not** re-invoke `osv-scanner`; standalone `python_deptry_osv_scanner` v1 does) — is assembled and schema-validated at the FR-18 terminal gate (`derived` layer). Because the shared artifact is python-deptry-osv-scanner's `ComplianceReport`, the planned promotion of `python_deptry_osv_scanner` into the atlas surface (MCP tool + pixi CLI, consolidation with `scan-project` — the follow-on named in that spec) is a wiring change, not a redesign. The toolchain is conda-native (`recipes/deptry`, `recipes/osv-scanner` mirror now on main; `fawltydeps` / `pip-check-reqs` as candidate future engines). (§ 4.10, § 5.2 item 5, Story F4.)
 
 ### FR-17. Transitive resolution + the universe BOM extend the SBOM intake
 
@@ -630,7 +630,7 @@ A hygiene node runs `deptry` over the § 4.10 tiered intake **when project sourc
 
 ### FR-18. Unified CI policy gate
 
-One terminal quality node assembles the full `ComplianceReport` — `hygiene` from the FR-16 node, `security` from `inventory-match`/`cve` — converging `deptry-scanner.md`'s strict exit-code gate with `inventory-match --policy` (exit 0 pass / 1 policy-fail / 2 error; `max_critical` / `max_high` / KEV thresholds), emits the schema-validated artifact into the `derived` layer, and halts Dagster on failure exactly like an FR-10 contract violation (raising the A2A alert). CI consumes the exit code. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
+One terminal quality node assembles the full `ComplianceReport` — `hygiene` from the FR-16 node, `security` from `inventory-match`/`cve` — converging `python-deptry-osv-scanner.md`'s strict exit-code gate with `inventory-match --policy` (exit 0 pass / 1 policy-fail / 2 error; `max_critical` / `max_high` / KEV thresholds), emits the schema-validated artifact into the `derived` layer, and halts Dagster on failure exactly like an FR-10 contract violation (raising the A2A alert). CI consumes the exit code. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
 
 ---
 
@@ -856,7 +856,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 **Acceptance criteria**:
 - An injected unused-dependency fixture yields a schema-valid hygiene finding in the `ComplianceReport` artifact.
 - A policy breach (e.g. `max_critical=0` violated, or a KEV-affecting-current hit) exits with the contract codes (1 policy-fail / 2 error), halts Dagster, and raises an A2A alert — identical failure semantics to an FR-10 contract violation.
-- The report schema matches `deptry-scanner.md`'s `ComplianceReport`, so the planned promotion (MCP tool + pixi CLI) requires no schema change.
+- The report schema matches `python-deptry-osv-scanner.md`'s `ComplianceReport`, so the planned promotion (MCP tool + pixi CLI) requires no schema change.
 - Maps to FR-16, FR-18, FR-10.
 
 ### Wave G — WebAssembly Portability & Event-Driven Sensors
@@ -967,7 +967,7 @@ The following are deliberately excluded from this migration, with reason:
 | Standalone binaries / JVM dependencies | Pixi-first, conda-forge-only constraint (FR-15, § 4.9). |
 | Enterprise Python Manifest (5k) generation as a deliverable | Downstream target state (§ 4.11) the graph *enables*; not built in this migration. |
 | New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set (which already includes endoflife.date, osv.dev, and the local deptry / osv-scanner toolchain — § 3.3 / § 3.4); genuinely new sources are out of scope. |
-| `deptry_scanner` v1 standalone build (`docs/specs/deptry-scanner.md`) | Built under its own spec as an internal-first library. This migration models only the *promoted* atlas surface (FR-16 / FR-18) — the hygiene node contract matches its `ComplianceReport` schema so consolidation with `scan-project` lands as wiring, not redesign. |
+| `python_deptry_osv_scanner` v1 standalone build (`docs/specs/python-deptry-osv-scanner.md`) | Built under its own spec as an internal-first library. This migration models only the *promoted* atlas surface (FR-16 / FR-18) — the hygiene node contract matches its `ComplianceReport` schema so consolidation with `scan-project` lands as wiring, not redesign. |
 | Rewriting the conda-forge recipe-authoring skill itself | This migration touches the `cf_atlas` intelligence layer, not the recipe-authoring loop. |
 | Static seeds + recipe template trees as pipeline *products* | Curated inputs (§ 3.4); the catalog declares them as versioned external datasets — the pipeline reads, never generates, them. |
 | Live authoring-time fetches (recipe-generator PyPI/sha256 pulls, `gh`/Azure DevOps, live channel repodata) | Transactional point-in-time operations of the recipe-authoring loop (§ 3.4); not pipeline data and not schedulable. |
@@ -985,7 +985,7 @@ The following are deliberately excluded from this migration, with reason:
 - `.claude/skills/conda-forge-expert/guides/atlas-operations.md` — the current operational process (bootstrap profiles, cron cadence table, recovery playbook, storage budget) that § 5.4 / FR-6 must reproduce.
 - `docs/specs/cfe-shipped-releases.md` Part 8 — the S3/parquet backend (Phase F Waves 1–3) whose datasets become Kedro catalog entries (§ 5.1).
 - `docs/specs/cyclonedx-universe-inventory.md` (shipped) — the 7-CLI suite, purl conventions, freshness gate, and bucket semantics FR-13/FR-17 preserve.
-- `docs/specs/deptry-scanner.md` (ready) — the `deptry_scanner` v1 build whose `ComplianceReport` schema + exit-code gate FR-16/FR-18 anticipate.
+- `docs/specs/python-deptry-osv-scanner.md` (ready) — the `python_deptry_osv_scanner` v1 build whose `ComplianceReport` schema + exit-code gate FR-16/FR-18 anticipate.
 - `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" — Rule 1 + Rule 2 governing this BMAD effort.
 
 ### External / ecosystem

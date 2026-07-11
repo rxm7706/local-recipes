@@ -164,7 +164,7 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 | `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | Migrate the cf_atlas orchestrator from hand-rolled phases to a Kedro/Dagster/DuckDB stack (Waves A–G). Run via `bmad`. |
 | `docs/specs/claude-team-memory.md` | `.claude/memory/` team-shared memory layer + `team-memory` skill (10 waved stories). |
 | `docs/specs/copilot-bridge-vscode-extension.md` | Sideload-only VS Code extension wrapping the copilot-api bridge pattern (see `docs/copilot-to-api.md`). |
-| `docs/specs/deptry-scanner.md` | `deptry_scanner` unified dep-hygiene + vulnerability CLI orchestrating `deptry` + `osv-scanner` over Python/Conda/Pixi manifests (stdlib-only extraction, schema-validated `ComplianceReport` JSON + human report, CI exit-code gate). 4 epics (E1–E4); all decisions (OD1–OD6) resolved. osv-scanner consumed from the existing conda-forge feedstock (no new recipe). |
+| `docs/specs/python-deptry-osv-scanner.md` | `python_deptry_osv_scanner` unified dep-hygiene + vulnerability CLI orchestrating `deptry` + `osv-scanner` over Python/Conda/Pixi manifests (stdlib-only extraction, schema-validated `ComplianceReport` JSON + human report, CI exit-code gate). 4 epics (E1–E4); all decisions (OD1–OD6) resolved. osv-scanner consumed from the existing conda-forge feedstock (no new recipe). |
 
 **Timeless workflows (`workflow` — parameterized, re-runnable; per-case state appends to their Worked Examples):**
 
