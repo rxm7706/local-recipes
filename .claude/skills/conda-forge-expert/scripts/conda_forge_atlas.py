@@ -8614,6 +8614,16 @@ def phase_s_computed_scores(conn: sqlite3.Connection) -> dict:
 
 def write_meta(conn: sqlite3.Connection, build_stats: dict) -> None:
     """Write build provenance to meta table and JSON sidecar."""
+    # FOLLOW-UP (observed 2026-07-10): this OVERWRITES `phases_run` with only
+    # the phases in `build_stats`. The v8.22.0 bootstrap split runs core / F /
+    # K / N as separate `build --only <phase>` invocations, so each clobbers
+    # the field — after a full `--profile admin` run the sidecar shows just the
+    # LAST sub-step (`['N']`) even though every phase ran and wrote its data.
+    # FIX: merge `phases_run` with the existing meta value (union, preserving
+    # canonical order) before writing — or have bootstrap_data stamp the full
+    # set once after all sub-steps. Data is unaffected; only this provenance
+    # index is incomplete. (Distinct from the atlas-phase-doesn't-stamp-meta
+    # follow-up: this is the split sub-steps clobbering, not a no-op.)
     build_stats["schema_version"] = SCHEMA_VERSION
     build_stats["built_at"] = int(time.time())
     for key, value in build_stats.items():
