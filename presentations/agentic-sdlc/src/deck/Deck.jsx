@@ -16,6 +16,10 @@ export default function Deck() {
   // '?' toggles the shortcut cheat-sheet.
   useEffect(() => {
     const onKey = (e) => {
+      const target = e.target;
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/i.test(target.tagName))) {
+        return;
+      }
       if (e.key === '?') setShowHelp((v) => !v);
     };
     window.addEventListener('keydown', onKey);
