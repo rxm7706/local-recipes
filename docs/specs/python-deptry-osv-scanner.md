@@ -261,9 +261,9 @@ SBOM emission is a v1 deliverable (FR8), not a non-goal** (owner-elevated
 
 ### Technology stack
 
-- **Language:** Python 3.11+ (built-in `tomllib` for `pyproject.toml` /
-  `pixi.toml` parsing). Matches the conda-forge `python_min` floor policy
-  in this repo (G40/G41 — 3.11).
+- **Language:** Python 3.12+ (built-in `tomllib` for `pyproject.toml` /
+  `pixi.toml` parsing). A deliberate **3.12** baseline — one minor above the
+  repo's conda-forge `python_min` floor (G40/G41 — 3.11).
 - **CLI framework:** `argparse` (stdlib) — chosen over Typer/Click to keep
   third-party deps limited strictly to the scanning engines.
 - **Core dependencies:** `deptry` (Python package) and `osv-scanner` (Go
