@@ -3,7 +3,7 @@ build-backend = "hatchling.build"
 requires = ["hatchling"]
 
 [project]
-name = "deptry-scanner"
+name = "python-deptry-osv-scanner"
 version = "0.1.0"
 description = "Unified dependency-hygiene + vulnerability scanner orchestrating deptry and osv-scanner over Python/Conda/Pixi manifests."
 readme = "README.md"
@@ -16,7 +16,7 @@ authors = [{ name = "rxm7706" }]
 dependencies = []
 
 [project.scripts]
-deptry-scanner = "deptry_scanner.cli:main"
+python-deptry-osv-scanner = "python_deptry_osv_scanner.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/deptry_scanner"]
+packages = ["src/python_deptry_osv_scanner"]
