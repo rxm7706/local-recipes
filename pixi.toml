@@ -3,6 +3,7 @@
 
 [workspace]
 name = "staged-recipes"
+preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/packages/deptry-scanner workspace member (Option B). Only unlocks [package]/build tables; does not change the rattler-build recipe workflow.
 requires-pixi = ">=0.70.2"  # lowered from >=0.71 for local 0.70.2; the osx-arm64 macOS-14.5 floor uses the pre-0.71 [system-requirements] table (see feature.local-recipes) rather than a 0.71+ virtual-package platform entry
 description = "The entry point to conda-forge"
 version = "0.2.0"
@@ -130,6 +131,10 @@ conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
 vuln-db = ["python", "vuln-db"]
 gcloud = ["python", "gcloud-sdk"]
+# Lean standalone-tool env (NFR1/NFR2): no-default-feature excludes the fat
+# default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
+# carries only the built deptry-scanner package + its conda run-deps + pytest.
+deptry-scanner = { features = ["deptry-scanner"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
@@ -890,3 +895,39 @@ cmd = "python -m sentinel.knowledge.crews.summarization_crew"
 [feature.local-recipes.tasks.wiki-review]
 description = "Review wiki pages"
 cmd = "python -m sentinel.knowledge.crews.review_crew"
+
+# --- deptry-scanner: pixi build workspace member (Option B) -----------------
+# Source + package manifest live in ./src/shared/packages/deptry-scanner (its
+# own [package] table, no [workspace]) — the unity-data-stack src/shared/packages
+# convention. One hatchling pyproject is the single Python build backend:
+#   * conda pkg  -> pixi-build-python wraps the hatchling wheel  (deptry-scanner-build-conda)
+#   * wheel+sdist-> `python -m build` from the same pyproject     (deptry-scanner-build-dist)
+# The path dependency below builds the CONDA package and installs it (plus
+# run-deps) into the dedicated `deptry-scanner` env. Spec: docs/specs/deptry-scanner.md.
+[feature.deptry-scanner.dependencies]
+deptry-scanner = { path = "src/shared/packages/deptry-scanner" }  # -> built conda pkg
+hatchling = "*"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = "*"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = "*"                       # test runner
+
+[feature.deptry-scanner.tasks.deptry-scan]
+description = "Run the unified dependency-hygiene + vulnerability scan"
+cmd = "deptry-scanner"
+
+[feature.deptry-scanner.tasks.deptry-scanner-test]
+description = "Run the deptry_scanner test suite"
+cmd = "pytest src/shared/packages/deptry-scanner/tests -q"
+
+[feature.deptry-scanner.tasks.deptry-scanner-build-conda]
+description = "Build the conda package (.conda) via pixi-build-python"
+cmd = "pixi build"
+cwd = "src/shared/packages/deptry-scanner"
+
+[feature.deptry-scanner.tasks.deptry-scanner-build-dist]
+description = "Build the pypi wheel (.whl) + sdist (.tar.gz) via hatchling"
+cmd = "python -m build --no-isolation --outdir dist"
+cwd = "src/shared/packages/deptry-scanner"
+
+[feature.deptry-scanner.tasks.deptry-scanner-build]
+description = "Build all three artifacts: conda + wheel + sdist"
+depends-on = ["deptry-scanner-build-conda", "deptry-scanner-build-dist"]

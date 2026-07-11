@@ -38,6 +38,7 @@ spec_updated: 2026-07-11
 | Track | BMAD Quick Flow (tech-spec self-contained; no separate PRD/architecture phase required) |
 | Proposed project slug | `deptry-scanner` (BMAD artifacts → `_bmad-output/projects/deptry-scanner/`) |
 | Python package | module `deptry_scanner`; dist name `deptry-scanner` |
+| Source root | **In-repo pixi *build* workspace member** at `src/shared/packages/deptry-scanner/` (Option B; unity-data-stack `src/shared/packages` convention) — see § Repository layout |
 | Target users | Platform Engineers (CI/CD), DevSecOps Engineers (compliance / SBOM), Python + conda-feedstock maintainers |
 | Distribution | **Internal-first library** (v1); PyPI/conda-forge packaging decided at closeout (OD5) |
 | Lifetime | Long-running CI/CD quality gate |
@@ -194,6 +195,59 @@ existing `scan-project` intelligence layer; supporting `poetry.lock` /
 - **Data format:** a `ComplianceReport` JSON validated against a committed
   `report-schema.json` for CI/CD consumption, plus a structured
   human-readable summary on stdout. See § Report architecture below.
+
+### Repository layout (Option B — pixi build workspace member)
+
+The library lives **in-repo** as a first-class member of the root
+`staged-recipes` pixi workspace, under `src/shared/packages/` — the
+`unity-data-stack` monorepo convention for shared, cross-cutting libraries
+(sibling of its `src/shared/packages/common`; ADR-005). All deployable source
+lives under `src/`; `recipes/`, `docs/`, `scripts/` stay outside it. This
+aligns with the kedro migration's pixi-first / conda-forge-only end-state
+(FR-15).
+
+**Three artifacts from one source (Option B).** A single hatchling
+`pyproject.toml` is the only Python build backend; `pixi` produces all three
+distribution artifacts from it:
+
+| Artifact | Tool | pixi task |
+|---|---|---|
+| conda package (`.conda`) | `pixi-build-python` (wraps the hatchling wheel) | `deptry-scanner-build-conda` |
+| pypi wheel (`.whl`) | `python -m build` (hatchling) | `deptry-scanner-build-dist` |
+| sdist (`.tar.gz`) | `python -m build` (hatchling) | `deptry-scanner-build-dist` |
+
+`deptry-scanner-build` runs all three; the path dependency also builds+installs
+the conda package into the dev env on `pixi install`.
+
+```
+local-recipes/
+├─ pixi.toml                          # root [workspace]; preview = ["pixi-build"];
+│                                     #   [feature.deptry-scanner.*] + lean env + build tasks
+├─ src/
+│  ├─ sentinel/                       # existing in-repo app (wiki/knowledge)
+│  └─ shared/packages/deptry-scanner/ # the workspace MEMBER (no [workspace] table)
+│     ├─ pixi.toml                    #   [package] + [package.build.backend]=pixi-build-python
+│     ├─ pyproject.toml               #   hatchling; entry point deptry_scanner.cli:main
+│     ├─ src/deptry_scanner/          #   E1 extractor.py · E2/E3 runners · E4 report.py + cli.py
+│     ├─ report-schema.json           #   FR6 (E4)
+│     └─ tests/
+└─ docs/specs/deptry-scanner.md
+```
+
+- **Runtime engines** (`deptry`, `osv-scanner`) are the member's conda
+  `[package.run-dependencies]` (OD1) — never pip, never runtime `curl`.
+- **Dedicated lean env**: `[environments] deptry-scanner` uses
+  `no-default-feature = true`, so it excludes the repo's fat default toolchain
+  (python 3.14 + pixi + conda + pip + uv) and carries only the built package +
+  its run-deps + build/test tooling (NFR1/NFR2). Tasks: `deptry-scan`,
+  `deptry-scanner-test`, `deptry-scanner-build{,-conda,-dist}`.
+- **Preview flag**: the workspace opts into `preview = ["pixi-build"]` (still
+  experimental in pixi); it only unlocks the `[package]`/build tables and does
+  not affect the rattler-build recipe workflow.
+- **Right-sizing**: local-recipes adopts only `src/shared/packages/` now
+  (`src/apps/`, `src/platform/` as needed); it does **not** import unity's
+  `tech-domains/` apparatus (`DOMAIN.md`, `data_product.yaml`, 15 domains) —
+  that targets a multi-team data platform, not a recipe factory.
 
 ### Manifest extraction targets (E1 detail)
 
