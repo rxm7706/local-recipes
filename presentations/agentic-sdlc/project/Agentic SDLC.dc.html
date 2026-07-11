@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0B1626;}
+  *{box-sizing:border-box;}
+  a{color:#1E7FD6;} a:hover{color:#0E5FB0;}
+</style>
+<script src="./image-slot.js"></script>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%" data-uneditable="">
+
+<!-- ============ 01 · TITLE ============ -->
+<section data-label="Title" data-speaker-notes="Open here. This deck explains what agentic AI across the software development lifecycle actually looks like in practice, using the BMad Method as our concrete framework. Audience: working engineers. The arc runs in six acts: the case for change, spec-driven development, choosing a framework, the BMAD agent team, the four phases, and scaling plus the ecosystem." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;padding:110px 120px;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(1200px 600px at 78% 8%, rgba(46,155,238,.16), transparent 60%);"></div>
+    <div style="position:absolute;left:120px;right:120px;top:50%;height:1px;background:linear-gradient(90deg,transparent,rgba(46,155,238,.55) 12%,rgba(46,155,238,.9) 50%,rgba(46,155,238,.55) 88%,transparent);box-shadow:0 0 24px rgba(46,155,238,.5);transform:translateY(120px)"></div>
+    <div style="position:relative">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;letter-spacing:.28em;text-transform:uppercase;color:#5BB3F5;font-weight:500;display:flex;align-items:center;gap:16px">
+        <span style="width:12px;height:12px;background:#F4C233;display:inline-block"></span>A FIELD GUIDE FOR ENGINEERS
+      </div>
+      <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:132px;line-height:.98;letter-spacing:-.03em;margin:44px 0 0;max-width:1400px">Agentic AI across the software lifecycle</h1>
+      <p style="font-size:30px;line-height:1.5;color:rgba(246,244,238,.72);max-width:1020px;margin:40px 0 0;font-weight:400">Not autocomplete on steroids — a structured way to build software with AI agents as expert collaborators, from first idea to shipped code.</p>
+    </div>
+    <div style="position:absolute;left:120px;bottom:96px;display:flex;align-items:baseline;gap:18px">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;letter-spacing:.04em;color:#F4C233">BMAD METHOD</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.18em;color:rgba(246,244,238,.5)">GROUNDED IN AN OPEN-SOURCE FRAMEWORK</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTENTS ============ -->
+<section data-label="Contents" data-speaker-notes="The road map. Six acts. First, why the augmented SDLC most teams run isn't enough and what agentic means. Second, spec-driven development as the operating model. Third, the tool landscape and why we settle on BMAD. Fourth, how the BMAD agent team is structured. Fifth, a walk through the four phases end to end. Sixth, scaling the method, governing it, and the wider ecosystem. About forty minutes end to end; each act stands alone if you want to jump." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:88px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>CONTENTS</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:58px;line-height:1.04;letter-spacing:-.02em;margin:22px 0 0">The story arc, in six acts</h2>
+    <div style="margin-top:34px;border-top:1px solid rgba(14,28,48,.12)">
+      <div style="display:flex;align-items:baseline;gap:32px;padding:22px 0;border-bottom:1px solid rgba(14,28,48,.12)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#B78A00;font-weight:500;width:44px;flex:none">01</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;letter-spacing:-.01em;line-height:1.1">The case for change</div>
+          <div style="font-size:20px;color:rgba(14,28,48,.55);margin-top:5px">Why AI-augmented isn’t enough</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:rgba(14,28,48,.4);flex:none">p.03</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:32px;padding:22px 0;border-bottom:1px solid rgba(14,28,48,.12)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#B78A00;font-weight:500;width:44px;flex:none">02</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;letter-spacing:-.01em;line-height:1.1">Spec-driven development</div>
+          <div style="font-size:20px;color:rgba(14,28,48,.55);margin-top:5px">The operating model — docs as the brain</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:rgba(14,28,48,.4);flex:none">p.08</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:32px;padding:22px 0;border-bottom:1px solid rgba(14,28,48,.12)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#B78A00;font-weight:500;width:44px;flex:none">03</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;letter-spacing:-.01em;line-height:1.1">Choosing your framework</div>
+          <div style="font-size:20px;color:rgba(14,28,48,.55);margin-top:5px">The SDD landscape, and why BMAD</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:rgba(14,28,48,.4);flex:none">p.12</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:32px;padding:22px 0;border-bottom:1px solid rgba(14,28,48,.12)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#B78A00;font-weight:500;width:44px;flex:none">04</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;letter-spacing:-.01em;line-height:1.1">The BMAD agent team</div>
+          <div style="font-size:20px;color:rgba(14,28,48,.55);margin-top:5px">Roles, party mode &amp; file-based artifacts</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:rgba(14,28,48,.4);flex:none">p.16</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:32px;padding:22px 0;border-bottom:1px solid rgba(14,28,48,.12)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#B78A00;font-weight:500;width:44px;flex:none">05</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;letter-spacing:-.01em;line-height:1.1">The four phases</div>
+          <div style="font-size:20px;color:rgba(14,28,48,.55);margin-top:5px">Analysis → planning → solutioning → build</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:rgba(14,28,48,.4);flex:none">p.23</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:32px;padding:22px 0;border-bottom:1px solid rgba(14,28,48,.12)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#B78A00;font-weight:500;width:44px;flex:none">06</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;letter-spacing:-.01em;line-height:1.1">Scale, governance &amp; ecosystem</div>
+          <div style="font-size:20px;color:rgba(14,28,48,.55);margin-top:5px">Adapting the method &amp; extending it</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:rgba(14,28,48,.4);flex:none">p.34</div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">02 / 45</div>
+  </div>
+</section>
+
+<!-- ============ ACT I ============ -->
+<section data-label="Act I" data-speaker-notes="Act I opener: the problem framing." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;padding:120px;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE;display:flex;flex-direction:column;justify-content:center">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;letter-spacing:.3em;text-transform:uppercase;color:#5BB3F5;font-weight:500;display:flex;align-items:center;gap:16px"><span style="width:12px;height:12px;background:#F4C233;display:inline-block"></span>ACT I</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:104px;line-height:1;letter-spacing:-.03em;margin:32px 0 0;max-width:1520px">The case for change</h2>
+    <p style="font-size:30px;line-height:1.5;color:rgba(246,244,238,.72);max-width:1220px;margin:36px 0 0">Why the AI-augmented SDLC most teams already run isn&rsquo;t enough &mdash; and what <i>agentic</i> actually means.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.4)">03 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 02 · THE SHIFT ============ -->
+<section data-label="The shift" data-speaker-notes="Frame the problem. Most AI coding tools generate for you and leave you to sort out the mess. That works for a snippet and falls apart on a real system. The shift is from a tool that types to a collaborator that follows a process." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE SHIFT</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:72px;line-height:1.04;letter-spacing:-.02em;margin:30px 0 0;max-width:1300px">The problem isn't that AI writes bad code. It's that it makes decisions you never saw.</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:76px;border-top:1px solid rgba(14,28,48,.14)">
+      <div style="padding:44px 56px 0 0;border-right:1px solid rgba(14,28,48,.14)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.2em;color:rgba(14,28,48,.45);text-transform:uppercase">Prompt-and-pray</div>
+        <p style="font-size:27px;line-height:1.5;margin:22px 0 0;color:rgba(14,28,48,.72)">You describe a feature, the model produces average code from vague context, and the architectural choices are buried inside the output. Great for a snippet. Fragile for a system.</p>
+      </div>
+      <div style="padding:44px 0 0 56px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.2em;color:#1E7FD6;text-transform:uppercase">Agentic development</div>
+        <p style="font-size:27px;line-height:1.5;margin:22px 0 0;color:rgba(14,28,48,.82)">Specialized agents guide you through a real process — analysis, planning, design, build — producing decisions and documents you can read, review, and reuse.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">04 / 45</div>
+  </div>
+</section>
+
+<!-- ============ WHAT IS AI-SDLC ============ -->
+<section data-label="What is AI-SDLC" data-speaker-notes="Define the term before going further. The AI-SDLC is not a new lifecycle — it's the one you already know: analyze, plan, design, build, test, ship. What changes is who does the work and how state moves between phases. Specialized agents execute each phase, humans keep judgment and approval, and persistent specs — not meetings or chat memory — carry the state from one phase to the next." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>DEFINITION</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:72px;line-height:1.04;letter-spacing:-.02em;margin:30px 0 0;max-width:1300px">What is the agentic AI‑SDLC?</h2>
+    <p style="font-size:29px;line-height:1.55;color:rgba(14,28,48,.75);max-width:1360px;margin:34px 0 0">The software lifecycle you already know — <b style="color:#0E1C30">analyze, plan, design, build, test, ship</b> — with specialized AI agents doing the heavy lifting at every phase, coordinated through persistent specs, and humans owning judgment and approval.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:64px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 36px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">SAME PHASES</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:16px">The lifecycle survives</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">Decades of agile practice still apply — AI doesn’t replace the process, it runs inside it.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 36px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">NEW WORKERS</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:16px">Agents execute, humans direct</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">Specialist agents — analyst, PM, architect, developer — do each phase’s work; you review and decide.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 36px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">NEW CONTRACT</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:16px">Specs carry the state</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">Documents move context between phases — not meetings, not memory, not a chat scrollback.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">05 / 45</div>
+  </div>
+</section>
+
+<!-- ============ MATURITY SPECTRUM ============ -->
+<section data-label="Maturity spectrum" data-speaker-notes="Where does agentic sit relative to the AI-augmented SDLC most teams already have? It's a spectrum. Manual: humans do everything. AI-augmented: humans still execute every phase, AI assists inside each one — autocomplete, generated tests you curate, review hints. Agentic: agents execute the phases, humans direct and gate through specs — that's this deck. Autonomous: unattended loops where you set intent and review outcomes. The real jump from augmented to agentic: context moves out of your head and chat history into documents agents read and write." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE MATURITY SPECTRUM</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1450px">From AI-augmented to agentic: who executes the phase?</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:60px">
+      <div style="border:1px solid rgba(14,28,48,.14);padding:34px 30px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.45)">1 · MANUAL</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:16px">Humans do everything</div>
+        <p style="font-size:20px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">The classic SDLC — no AI in the loop.</p>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.14);padding:34px 30px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#1E7FD6">2 · AI-AUGMENTED</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:16px">Humans execute, AI assists</div>
+        <p style="font-size:20px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">Autocomplete, generated tests you curate, review hints. Plans and decisions stay in heads and meetings.</p>
+      </div>
+      <div style="border:2px solid #F4C233;padding:34px 30px;background:rgba(244,194,51,.08)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#F4C233">3 · AGENTIC <span style="color:rgba(14,28,48,.5)">— THIS DECK</span></div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:16px">Agents execute, humans direct</div>
+        <p style="font-size:20px;line-height:1.5;color:rgba(14,28,48,.75);margin:14px 0 0">Specialist agents run each phase; humans gate through specs and reviews.</p>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.14);padding:34px 30px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#F58B6E">4 · AUTONOMOUS</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:16px">Unattended loops</div>
+        <p style="font-size:20px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">Intent in, code out (dev-auto); humans set direction and review outcomes.</p>
+      </div>
+    </div>
+    <p style="font-size:26px;line-height:1.5;color:rgba(14,28,48,.7);max-width:1400px;margin:56px 0 0">The jump from 2 to 3 isn’t better models — it’s <b style="color:#0E1C30">where the context lives</b>: out of your head and chat history, into documents agents read and write.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">06 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 03 · CORE IDEA ============ -->
+<section data-label="Core idea" data-speaker-notes="The core idea in one line: agents are collaborators, not oracles. They pull your best thinking out through a structured process instead of doing the thinking for you. This is the whole philosophy." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30;display:flex;flex-direction:column;justify-content:center">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE CORE IDEA</div>
+    <p style="font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:60px;line-height:1.18;letter-spacing:-.015em;margin:40px 0 0;max-width:1560px">Traditional AI tools do the thinking <span style="color:rgba(14,28,48,.4)">for</span> you. Agentic workflows act as <span style="color:#0E1C30;border-bottom:5px solid #F4C233;padding-bottom:2px">expert collaborators</span> who bring the best thinking <span style="color:#1E7FD6">out</span> of you.</p>
+    <p style="font-size:28px;line-height:1.5;color:rgba(14,28,48,.6);max-width:1120px;margin:56px 0 0">The output isn't just code. It's a chain of reviewable artifacts — a brief, a spec, an architecture, a story — each one grounding the next.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">07 / 45</div>
+  </div>
+</section>
+
+<!-- ============ ACT II ============ -->
+<section data-label="Act II" data-speaker-notes="Act II opener: spec-driven development." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;padding:120px;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE;display:flex;flex-direction:column;justify-content:center">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;letter-spacing:.3em;text-transform:uppercase;color:#5BB3F5;font-weight:500;display:flex;align-items:center;gap:16px"><span style="width:12px;height:12px;background:#F4C233;display:inline-block"></span>ACT II</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:104px;line-height:1;letter-spacing:-.03em;margin:32px 0 0;max-width:1520px">Spec-driven development</h2>
+    <p style="font-size:30px;line-height:1.5;color:rgba(246,244,238,.72);max-width:1220px;margin:36px 0 0">The operating model: treat the documentation as the brain, agents as transient workers.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.4)">08 / 45</div>
+  </div>
+</section>
+
+<!-- ============ WHAT IS SPEC-DRIVEN DEVELOPMENT ============ -->
+<section data-label="What is SDD" data-speaker-notes="Define spec-driven development before we build on it. SDD means you write the specification first — a precise, versioned document stating behavior, constraints, and acceptance criteria — and the AI generates and validates code against it. Contrast that with vibe coding: prompt, get code, hope. In SDD the pipeline is intent → spec → human review → generate → validate. The spec is the contract; a bug means the contract was wrong or violated." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>DEFINITION</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:70px;line-height:1.04;letter-spacing:-.02em;margin:30px 0 0;max-width:1400px">What is spec‑driven development?</h2>
+    <p style="font-size:28px;line-height:1.55;color:rgba(14,28,48,.75);max-width:1380px;margin:32px 0 0">Write the specification <b style="color:#0E1C30">first</b> — a precise, versioned document of behavior, constraints, and acceptance criteria — then have AI generate and validate code <b style="color:#0E1C30">against it</b>. The spec is the contract; the code is its translation.</p>
+    <div style="display:flex;flex-direction:column;gap:20px;margin-top:56px">
+      <div style="display:grid;grid-template-columns:260px 1fr;gap:36px;align-items:center;background:#fff;border:1px solid rgba(197,48,48,.3);padding:28px 38px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.16em;color:#C53030">VIBE CODING</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:24px;color:rgba(14,28,48,.75)">prompt → code → <span style="color:#C53030">hope</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:260px 1fr;gap:36px;align-items:center;background:#0B1626;padding:28px 38px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.16em;color:#F4C233">SPEC-DRIVEN</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:24px;color:rgba(246,244,238,.9)">intent → spec → <span style="color:#5BB3F5">human review</span> → generate → validate</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:56px;margin-top:52px">
+      <div style="font-size:23px;color:rgba(14,28,48,.65);line-height:1.45;max-width:400px"><b style="color:#0E1C30">Written first.</b> Nothing is built that wasn’t specified.</div>
+      <div style="font-size:23px;color:rgba(14,28,48,.65);line-height:1.45;max-width:400px"><b style="color:#0E1C30">An executable contract.</b> Tests and reviews validate against the spec.</div>
+      <div style="font-size:23px;color:rgba(14,28,48,.65);line-height:1.45;max-width:400px"><b style="color:#0E1C30">Versioned in git.</b> Specs evolve by amendment, next to the code they govern.</div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">09 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 04 · SPEC-DRIVEN OPERATING MODEL ============ -->
+<section data-label="Spec-driven" data-speaker-notes="Spec-driven development is the universal operating model. Specs aren't paperwork — they're programmable infrastructure. Three payoffs: expertise becomes a permanent asset instead of living in one person's head; structured specs become machine-readable instructions agents can execute; and every document compounds — it's semantic context that makes the next agent run smarter. V6 shards work into atomic, versioned step-files to eliminate context drift." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE OPERATING MODEL</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:70px;line-height:1.04;letter-spacing:-.02em;margin:30px 0 0;max-width:1350px">Specs are code. Documentation is programmable infrastructure.</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:70px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:38px 36px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;color:#F4C233">01</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:16px">Institutionalize knowledge</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">Individual expertise becomes a permanent, accessible markdown asset — no key-person dependencies.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:38px 36px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;color:#F4C233">02</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:16px">Automate execution</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">Structured specs become machine-readable instructions that drive tasks, processes, and procedures.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:38px 36px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;color:#F4C233">03</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:16px">Compound intelligence</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:14px 0 0">Every document is clean semantic context — each agent run makes the next one smarter.</p>
+      </div>
+    </div>
+    <p style="font-size:24px;line-height:1.5;color:rgba(14,28,48,.6);max-width:1280px;margin:52px 0 0">Instead of sprawling monolithic documents, work is sharded into <b style="color:#0E1C30">modular, atomic, versioned step-files</b> in the repo — eliminating LLM context drift.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">10 / 45</div>
+  </div>
+</section>
+
+<!-- ============ MENTAL MODEL · DOCS ARE THE BRAIN ============ -->
+<section data-label="Mental model" data-speaker-notes="The mental model that makes all of this click: the documentation is the brain, and agents are transient workers who read from and write to it. Never rely on an LLM's leaky chat memory to hold the plan. And the SDLC isn't a loop — it's a funnel of increasing resolution: why, what, how, build. No agent writes code until the what and the how are frozen in a text file." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE MENTAL MODEL · CONTEXT ENGINEERING</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:68px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1450px">The documentation is the brain. Agents are transient workers.</h2>
+    <p style="font-size:26px;line-height:1.5;color:rgba(14,28,48,.7);max-width:1200px;margin:26px 0 0">Agents read from and write to persistent docs — nothing relies on an LLM’s leaky chat memory. The lifecycle is a funnel of increasing resolution:</p>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:48px">
+      <div style="width:100%;background:rgba(91,179,245,.14);border-left:5px solid #5BB3F5;padding:20px 32px;display:flex;align-items:baseline;gap:24px">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:#1E7FD6;min-width:110px">WHY</span>
+        <span style="font-size:23px;color:rgba(14,28,48,.85)">Analysis — stress-test the idea into a brief</span>
+      </div>
+      <div style="width:82%;background:rgba(244,194,51,.13);border-left:5px solid #F4C233;padding:20px 32px;display:flex;align-items:baseline;gap:24px">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:#F4C233;min-width:110px">WHAT</span>
+        <span style="font-size:23px;color:rgba(14,28,48,.85)">Planning — the PRD is the source of truth; if it’s not there, it doesn’t exist</span>
+      </div>
+      <div style="width:64%;background:rgba(79,209,166,.13);border-left:5px solid #4FD1A6;padding:20px 32px;display:flex;align-items:baseline;gap:24px">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:#4FD1A6;min-width:110px">HOW</span>
+        <span style="font-size:23px;color:rgba(14,28,48,.85)">Solutioning — architecture and tasks, frozen before code</span>
+      </div>
+      <div style="width:46%;background:rgba(245,139,110,.13);border-left:5px solid #F58B6E;padding:20px 32px;display:flex;align-items:baseline;gap:24px">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:#F58B6E;min-width:110px">BUILD</span>
+        <span style="font-size:23px;color:rgba(14,28,48,.85)">Implementation — translate the spec into syntax</span>
+      </div>
+    </div>
+    <p style="font-size:24px;line-height:1.5;color:rgba(14,28,48,.55);margin:40px 0 0;max-width:1280px">Each document becomes the input to the next, so every agent inherits the decisions already made — and no agent touches code until the <b style="color:#0E1C30">what</b> and the <b style="color:#0E1C30">how</b> are frozen in a text file.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">11 / 45</div>
+  </div>
+</section>
+
+<!-- ============ ACT III ============ -->
+<section data-label="Act III" data-speaker-notes="Act III opener: the tool landscape and the BMAD choice." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;padding:120px;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE;display:flex;flex-direction:column;justify-content:center">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;letter-spacing:.3em;text-transform:uppercase;color:#5BB3F5;font-weight:500;display:flex;align-items:center;gap:16px"><span style="width:12px;height:12px;background:#F4C233;display:inline-block"></span>ACT III</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:104px;line-height:1;letter-spacing:-.03em;margin:32px 0 0;max-width:1520px">Choosing your framework</h2>
+    <p style="font-size:30px;line-height:1.5;color:rgba(246,244,238,.72);max-width:1220px;margin:36px 0 0">The spec-driven landscape in 2026 &mdash; and why we settle on BMAD.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.4)">12 / 45</div>
+  </div>
+</section>
+
+<!-- ============ SDD TOOL LANDSCAPE ============ -->
+<section data-label="SDD landscape" data-speaker-notes="SDD is a category now, not one tool — 30+ frameworks by early 2026. Three broad buckets. Agent-team frameworks simulate a full agile team with role personas and file-based handoffs — BMAD is the archetype and what this deck follows. Spec-first scaffolding adds a specify-plan-tasks structure to a coding session — GitHub Spec Kit with its constitution, AWS Kiro baking specs into the IDE, GSD as the lightweight option. Living-spec tools treat the spec as the evolving source of truth — OpenSpec with delta specs for brownfield, Tessl betting on spec-as-source, Augment Intent writing changes back to the spec. Below all of these sits agent infrastructure — CrewAI, Agno, LangGraph, AutoGen — orchestration SDKs that provide multi-agent machinery, not a development methodology. Rules of thumb: complex greenfield with a paper trail, BMAD. Brownfield and lightweight, OpenSpec. Broad default, Spec Kit. AWS-native, Kiro." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:88px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE LANDSCAPE · 2026</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:58px;line-height:1.04;letter-spacing:-.02em;margin:26px 0 0;max-width:1400px">SDD is a category now — three families of tools</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);border-top:4px solid #F4C233;padding:30px 30px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5)">AGENT-TEAM FRAMEWORKS</div>
+        <div style="font-size:20px;color:rgba(14,28,48,.6);line-height:1.45;margin-top:12px">A simulated agile team — role personas, file-based handoffs, full lifecycle.</div>
+        <div style="margin-top:22px;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#0B1626;padding:18px 22px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;color:#F4C233">BMAD-METHOD</div>
+            <div style="font-size:18px;color:rgba(246,244,238,.7);margin-top:6px;line-height:1.4">The archetype — 12+ agents, MIT, this deck’s framework</div>
+          </div>
+          <div style="border:1px solid rgba(14,28,48,.12);padding:18px 22px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px">Agent OS</div>
+            <div style="font-size:18px;color:rgba(14,28,48,.55);margin-top:6px;line-height:1.4">Standards injection for house conventions</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);border-top:4px solid #1E7FD6;padding:30px 30px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5)">SPEC-FIRST SCAFFOLDING</div>
+        <div style="font-size:20px;color:rgba(14,28,48,.6);line-height:1.45;margin-top:12px">Specify → plan → tasks structure bolted onto a coding session.</div>
+        <div style="margin-top:22px;display:flex;flex-direction:column;gap:14px">
+          <div style="border:1px solid rgba(14,28,48,.12);padding:18px 22px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px">GitHub Spec Kit</div>
+            <div style="font-size:18px;color:rgba(14,28,48,.55);margin-top:6px;line-height:1.4">Constitution-driven; broadest agent support</div>
+          </div>
+          <div style="border:1px solid rgba(14,28,48,.12);padding:18px 22px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px">AWS Kiro</div>
+            <div style="font-size:18px;color:rgba(14,28,48,.55);margin-top:6px;line-height:1.4">Spec-native IDE; EARS requirements built in</div>
+          </div>
+          <div style="border:1px solid rgba(14,28,48,.12);padding:18px 22px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px">GSD</div>
+            <div style="font-size:18px;color:rgba(14,28,48,.55);margin-top:6px;line-height:1.4">Lightweight meta-prompting for solo work</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);border-top:4px solid #4FD1A6;padding:30px 30px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5)">LIVING SPECS</div>
+        <div style="font-size:20px;color:rgba(14,28,48,.6);line-height:1.45;margin-top:12px">The spec is the evolving source of truth, synced with the code.</div>
+        <div style="margin-top:22px;display:flex;flex-direction:column;gap:14px">
+          <div style="border:1px solid rgba(14,28,48,.12);padding:18px 22px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px">OpenSpec</div>
+            <div style="font-size:18px;color:rgba(14,28,48,.55);margin-top:6px;line-height:1.4">Delta specs; lightest fit for brownfield change</div>
+          </div>
+          <div style="border:1px solid rgba(14,28,48,.12);padding:18px 22px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px">Tessl</div>
+            <div style="font-size:18px;color:rgba(14,28,48,.55);margin-top:6px;line-height:1.4">Betting on spec-as-source</div>
+          </div>
+          <div style="border:1px solid rgba(14,28,48,.12);padding:18px 22px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px">Augment Intent</div>
+            <div style="font-size:18px;color:rgba(14,28,48,.55);margin-top:6px;line-height:1.4">Agents write changes back to the spec</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:26px;margin-top:26px;border-top:1px solid rgba(14,28,48,.14);padding-top:20px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5);white-space:nowrap">AGENT INFRASTRUCTURE</span>
+      <span style="font-size:20px;color:rgba(14,28,48,.65);line-height:1.5"><b style="color:#0E1C30">CrewAI · Agno · LangGraph · AutoGen</b> — orchestration SDKs, not methodologies. They provide the multi-agent machinery an SDD pipeline can be built on.</span>
+    </div>
+    <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.6);margin:22px 0 0;max-width:1500px">Rules of thumb: complex greenfield with a paper trail → <b style="color:#0E1C30">BMAD</b> · brownfield, lightweight → <b style="color:#0E1C30">OpenSpec</b> · broad default → <b style="color:#0E1C30">Spec Kit</b> · AWS-native IDE → <b style="color:#0E1C30">Kiro</b></p>
+    <div style="position:absolute;left:120px;bottom:48px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:48px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">13 / 45</div>
+  </div>
+</section>
+
+<!-- ============ BMAD + ORCHESTRATION SDKS ============ -->
+<section data-label="Method vs machinery" data-speaker-notes="Method and machinery are different layers, and engineers ask two questions when they see orchestration SDKs next to BMAD. First: do you need an SDK with BMAD? Usually not — BMAD installs as skills into your coding agent (Claude Code, Cursor, Codex), which is already the runtime: tool calling, files, context, with humans driving checkpoints. Reach for CrewAI or LangGraph only to build your own pipeline product — unattended CI loops, parallel story agents — where personas become crews or graph nodes and BMAD's artifacts stay the contracts. Second, the reverse: on an SDK already, do you need a method? For software, yes — orchestration SDKs are empty machinery with no roles, artifacts, or gates; borrow BMAD (personas become roles, artifacts the messages, gates the edges) or reinvent them. Not building software — research, bots, data pipelines? SDD is irrelevant. The relationship is asymmetric: method without SDK works out of the box; SDK without method only when you're not shipping software." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>METHOD × MACHINERY</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:62px;line-height:1.04;letter-spacing:-.02em;margin:26px 0 0;max-width:1420px">Method and machinery are different layers</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:46px">
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #F4C233;padding:34px 38px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#F4C233">NEED AN SDK <i>WITH</i> BMAD? &mdash; USUALLY NOT</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.74);margin:16px 0 0">BMAD installs as skills into Claude Code, Cursor, or Codex &mdash; the host is already the runtime (tool calling, files, context) and humans drive the checkpoints.</p>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.74);margin:14px 0 0">Reach for CrewAI or LangGraph only to build your own <b style="color:#0E1C30">pipeline product</b> &mdash; unattended CI loops, parallel story agents. Then personas become crews or nodes, and BMAD&rsquo;s artifacts stay the contracts.</p>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #5BB3F5;padding:34px 38px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">NEED A METHOD <i>WITH</i> AN SDK? &mdash; FOR SOFTWARE, YES</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.74);margin:16px 0 0">Orchestration SDKs are empty machinery &mdash; no roles, no artifacts, no gates. Building software? <b style="color:#0E1C30">Borrow</b> BMAD (personas&rarr;roles, artifacts&rarr;messages, gates&rarr;edges) or reinvent every piece.</p>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.74);margin:14px 0 0">Not building software &mdash; research crews, bots, data pipelines? SDD is irrelevant; the SDK plus your own workflow is all there is.</p>
+      </div>
+    </div>
+    <div style="margin-top:40px;background:rgba(244,194,51,.1);border:1px solid rgba(244,194,51,.35);padding:26px 34px;display:flex;align-items:baseline;gap:26px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:#F4C233;white-space:nowrap">THE ASYMMETRY</span>
+      <span style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.88);max-width:1300px">The methodology defines <b style="color:#F4C233">what</b> agents do and hand off; the SDK only changes <b style="color:#1E7FD6">where</b> they run. Method without SDK works out of the box &mdash; SDK without method only when you&rsquo;re not shipping software. The process layer is non-negotiable; the SDK is optional plumbing.</span>
+    </div>
+    <div style="position:absolute;left:120px;bottom:52px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:52px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">14 / 45</div>
+  </div>
+</section>
+
+<!-- ============ WHY BMAD ============ -->
+<section data-label="Why BMAD" data-speaker-notes="Why this framework and not another from the landscape? Four reasons. Structure without rigidity: phases are guardrails, not gates you can't skip — drop optional phases, load agents directly, reorder once you know the flow. Context persistence: every plan is a file in git — new chat, agents pick up where you left off; the whole team sees the same artifacts. Scale-domain-adaptive: it sizes the ceremony to the work — bug fix gets three commands, an enterprise system gets compliance and security reviews — and adapts to domain: a dating app and a medical device don't get the same planning. And it's 100% free, MIT, no gated content." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>WHY THIS FRAMEWORK</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1350px">Four reasons BMAD earns the choice</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:56px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 38px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">01</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:12px">Structure without rigidity</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:12px 0 0">Guardrails, not gates: skip optional phases, load agents directly, reorder workflows once you know the flow.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 38px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">02</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:12px">Context persistence</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:12px 0 0">Every plan is a file in git. Start a fresh chat and agents pick up where you left off; the whole team sees the same artifacts.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 38px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">03</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:12px">Scale-domain-adaptive</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:12px 0 0">A bug fix gets 3 commands; an enterprise system gets security &amp; compliance reviews. A dating app and a medical device don’t get the same planning.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 38px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">04</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;margin-top:12px">100% free &amp; open</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.65);margin:12px 0 0">MIT license. No paywalls, no gated content, no premium tiers — and an ecosystem of modules on top.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">15 / 45</div>
+  </div>
+</section>
+
+<!-- ============ COVER · FRAMEWORK ============ -->
+<section data-label="Cover · Framework" data-speaker-notes="Chapter break into the concrete half of the deck: the BMAD framework itself." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE">
+    <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/u0pbo16u36ywgrbym3eb.jpeg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(11,22,38,.5) 0%, rgba(11,22,38,.18) 34%, rgba(11,22,38,.5) 64%, rgba(11,22,38,.92) 100%)"></div>
+    <div style="position:absolute;left:120px;right:120px;bottom:132px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.26em;text-transform:uppercase;color:#F4C233;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>ACT IV</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:82px;line-height:1.02;letter-spacing:-.025em;margin:18px 0 0;max-width:1400px;text-shadow:0 2px 34px rgba(0,0,0,.6)">The BMAD agent team</h2>
+      <p style="font-size:27px;line-height:1.45;color:rgba(246,244,238,.9);margin:18px 0 0;max-width:1120px;text-shadow:0 2px 22px rgba(0,0,0,.7)">A team of named specialists &mdash; spec-driven, document-anchored, phase-gated.</p><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;letter-spacing:.05em;color:rgba(246,244,238,.9);margin:22px 0 0;text-shadow:0 2px 18px rgba(0,0,0,.85)">MIT &middot; 12+ agents &middot; 34+ workflows &middot; runs in your coding agent</div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.6)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.6)">16 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 06 · MEET THE AGENTS ============ -->
+<section data-label="The crew" data-speaker-notes="You don't talk to one monolithic AI. You talk to named agents, each anchored to a phase and a role, each with a persona and a menu of skills. Say 'Hey Mary, let's brainstorm' and she activates. The point: it feels like a team of specialists, not a slash-command menu." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE CREW · NAMED AGENTS</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0;max-width:1250px">A team of specialists, one per phase</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:60px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:34px 32px">
+        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px">Mary</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#1E7FD6;letter-spacing:.1em">ANALYSIS</span></div>
+        <div style="font-size:22px;color:rgba(14,28,48,.62);margin-top:10px">Business Analyst</div>
+        <div style="font-size:19px;color:rgba(14,28,48,.5);margin-top:14px;line-height:1.45">Brainstorming, research, briefs, PRFAQs</div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:34px 32px">
+        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px">Paige</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#1E7FD6;letter-spacing:.1em">ANALYSIS</span></div>
+        <div style="font-size:22px;color:rgba(14,28,48,.62);margin-top:10px">Technical Writer</div>
+        <div style="font-size:19px;color:rgba(14,28,48,.5);margin-top:14px;line-height:1.45">Docs, diagrams, doc validation</div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:34px 32px">
+        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px">John</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#B78A00;letter-spacing:.1em">PLANNING</span></div>
+        <div style="font-size:22px;color:rgba(14,28,48,.62);margin-top:10px">Product Manager</div>
+        <div style="font-size:19px;color:rgba(14,28,48,.5);margin-top:14px;line-height:1.45">PRDs, epics &amp; stories, readiness</div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:34px 32px">
+        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px">Sally</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#B78A00;letter-spacing:.1em">PLANNING</span></div>
+        <div style="font-size:22px;color:rgba(14,28,48,.62);margin-top:10px">UX Designer</div>
+        <div style="font-size:19px;color:rgba(14,28,48,.5);margin-top:14px;line-height:1.45">Experience &amp; design specs</div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:34px 32px">
+        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px">Winston</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#1F9E77;letter-spacing:.1em">SOLUTIONING</span></div>
+        <div style="font-size:22px;color:rgba(14,28,48,.62);margin-top:10px">System Architect</div>
+        <div style="font-size:19px;color:rgba(14,28,48,.5);margin-top:14px;line-height:1.45">Technical architecture, alignment</div>
+      </div>
+      <div style="background:#0B1626;border:1px solid #0B1626;padding:34px 32px">
+        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F6F4EE">Amelia</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#F58B6E;letter-spacing:.1em">IMPLEMENTATION</span></div>
+        <div style="font-size:22px;color:rgba(246,244,238,.7);margin-top:10px">Senior Engineer</div>
+        <div style="font-size:19px;color:rgba(246,244,238,.55);margin-top:14px;line-height:1.45">Story execution, code review, sprints</div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">17 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 16 · WHY NAMED AGENTS ============ -->
+<section data-label="Why named agents" data-speaker-notes="Why personas instead of a menu or a blank prompt? A menu makes you memorize where each capability lives. A blank prompt makes you guess the magic words. Named agents invert it: you say what you want, in your words, to a teammate who already knows the work and their menu is there as a fallback." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>WHY PERSONAS</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:60px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1280px">“Hey Mary, let’s brainstorm.” And she just gets on with it.</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:64px">
+      <div style="padding:34px 32px;background:#fff;border:1px solid rgba(14,28,48,.12)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.5)">MENU</div>
+        <div style="font-size:26px;font-weight:600;margin-top:14px;font-family:'Space Grotesk',sans-serif">You meet the tool halfway</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.6);margin:14px 0 0">Memorize that brainstorming is a skill on the analyst, not the PM.</p>
+      </div>
+      <div style="padding:34px 32px;background:#fff;border:1px solid rgba(14,28,48,.12)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.5)">BLANK PROMPT</div>
+        <div style="font-size:26px;font-weight:600;margin-top:14px;font-family:'Space Grotesk',sans-serif">You guess the magic words</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.6);margin:14px 0 0">Results depend on how you happened to phrase the ask.</p>
+      </div>
+      <div style="padding:34px 32px;background:#0B1626;border:1px solid #0B1626">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#F4C233">NAMED AGENT</div>
+        <div style="font-size:26px;font-weight:600;margin-top:14px;font-family:'Space Grotesk',sans-serif;color:#F6F4EE">You talk to a teammate</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(246,244,238,.65);margin:14px 0 0">Consistent persona, discoverable skills, menu as fallback.</p>
+      </div>
+    </div>
+    <p style="font-size:25px;line-height:1.5;color:rgba(14,28,48,.62);max-width:1240px;margin:48px 0 0">Identity is fixed, behavior is customizable — teams reshape an agent’s principles, integrations, and templates without forking the framework.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">18 / 45</div>
+  </div>
+</section>
+
+<!-- ============ PARTY MODE ============ -->
+<section data-label="Party mode" data-speaker-notes="One agent at a time is the default, but some decisions need several perspectives at once. Party mode brings multiple personas into one session and lets them respond in turn. Three canonical uses: a design review where UX, architect, and developer weigh in together; a troubleshooting session where dev, DevOps, and DBA triangulate a production issue; and architecture decisions where PM, architect, and security argue trade-offs before you commit. It's the whiteboard meeting, minus the scheduling." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>MULTI-AGENT COLLABORATION</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:66px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1400px">Party mode: the whiteboard meeting, minus the scheduling</h2>
+    <div style="margin-top:48px;background:#fff;border:1px solid rgba(14,28,48,.14);padding:34px 40px;font-family:'IBM Plex Mono',monospace;font-size:22px;line-height:2;color:rgba(14,28,48,.85)">
+      <div><span style="color:#1E7FD6">you:</span> bmad-party-mode PM, Architect, Security — we’re adding payments</div>
+      <div><span style="color:#F4C233">PM:</span> what payment methods do users actually expect?</div>
+      <div><span style="color:#4FD1A6">Architect:</span> Stripe for PCI scope; idempotent webhooks for reliability</div>
+      <div><span style="color:#F58B6E">Security:</span> never store raw cards; rate-limit and audit-log every transaction</div>
+    </div>
+    <div style="display:flex;gap:44px;margin-top:48px">
+      <div style="font-size:22px;color:rgba(14,28,48,.7);line-height:1.5;flex:1"><b style="color:#0E1C30">Design reviews</b> — UX, architect, and developer weigh a screen together.</div>
+      <div style="font-size:22px;color:rgba(14,28,48,.7);line-height:1.5;flex:1"><b style="color:#0E1C30">Troubleshooting</b> — dev, DevOps, and DBA triangulate a production issue.</div>
+      <div style="font-size:22px;color:rgba(14,28,48,.7);line-height:1.5;flex:1"><b style="color:#0E1C30">Architecture calls</b> — trade-offs argued from three seats before you commit.</div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">19 / 45</div>
+  </div>
+</section>
+
+<!-- ============ EXECUTION MATRIX ============ -->
+<section data-label="Execution matrix" data-speaker-notes="One reference slide before we walk the phases: the execution matrix. Each phase has a persona, an input artifact, and an output artifact. Each output becomes the anchor for the next persona — the handoff is a file, not a chat thread. Keep this in your head as we go phase by phase." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>QUICK REFERENCE</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0">The execution matrix</h2>
+    <div style="margin-top:56px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr 1.2fr;gap:24px;padding:0 0 18px;border-bottom:2px solid #0E1C30;font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.14em;color:rgba(14,28,48,.5)">
+        <div>PHASE</div><div>PERSONA</div><div>READS</div><div>PRODUCES</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr 1.2fr;gap:24px;padding:28px 0;border-bottom:1px solid rgba(14,28,48,.12);align-items:baseline">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px">Analysis</div>
+        <div style="font-size:24px;color:rgba(14,28,48,.72)">Analyst <span style="color:rgba(14,28,48,.45)">(Mary)</span></div>
+        <div style="font-size:23px;color:rgba(14,28,48,.6)">Raw idea · brain dump</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:#1E7FD6">brief.md</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr 1.2fr;gap:24px;padding:28px 0;border-bottom:1px solid rgba(14,28,48,.12);align-items:baseline">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px">Planning</div>
+        <div style="font-size:24px;color:rgba(14,28,48,.72)">Product Manager <span style="color:rgba(14,28,48,.45)">(John)</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:rgba(14,28,48,.55)">brief.md</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:#1E7FD6">prd.md</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr 1.2fr;gap:24px;padding:28px 0;border-bottom:1px solid rgba(14,28,48,.12);align-items:baseline">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px">Solutioning</div>
+        <div style="font-size:24px;color:rgba(14,28,48,.72)">Architect <span style="color:rgba(14,28,48,.45)">(Winston)</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:rgba(14,28,48,.55)">prd.md</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:#1E7FD6">architecture.md · epics &amp; stories</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr 1.2fr;gap:24px;padding:28px 0;border-bottom:1px solid rgba(14,28,48,.12);align-items:baseline">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px">Implementation</div>
+        <div style="font-size:24px;color:rgba(14,28,48,.72)">Developer <span style="color:rgba(14,28,48,.45)">(Amelia)</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:rgba(14,28,48,.55)">architecture.md · story files</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:#1E7FD6">source code + tests</div>
+      </div>
+    </div>
+    <p style="font-size:24px;line-height:1.5;color:rgba(14,28,48,.6);max-width:1240px;margin:44px 0 0">Each artifact is the anchor for the next persona. The handoff is a <b style="color:#0E1C30">file</b>, not a chat thread.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">20 / 45</div>
+  </div>
+</section>
+
+<!-- ============ SKILL ROSTER ============ -->
+<section data-label="Skill roster" data-speaker-notes="The full skill roster in the latest release, aligned to agents and phases. Every workflow ships as an installable skill — invoke it directly by its bmad- id, or through the owning agent's menu. Mary and Paige cover analysis, John and Sally planning, Winston solutioning, Amelia the whole implementation loop. And a set of cross-cutting skills — help, party-mode, customize, project-context generation — plus the quick-dev and dev-auto parallel track work across all phases." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:88px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE SKILL ROSTER · V6</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:58px;line-height:1.04;letter-spacing:-.02em;margin:24px 0 0">Every phase ships with skills, every skill has an owner</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:44px">
+      <div style="border:1px solid rgba(14,28,48,.14);border-top:4px solid #5BB3F5;padding:26px 26px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:#1E7FD6">01 ANALYSIS</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;margin-top:10px">Mary <span style="font-weight:400;color:rgba(14,28,48,.55);font-size:20px">Analyst</span> · Paige <span style="font-weight:400;color:rgba(14,28,48,.55);font-size:20px">Writer</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:17.5px;line-height:2;color:rgba(14,28,48,.78);margin-top:16px">brainstorming<br>forge-idea<br>market-research<br>domain-research<br>technical-research<br>product-brief<br>prfaq<br>document-project</div>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.14);border-top:4px solid #F4C233;padding:26px 26px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:#F4C233">02 PLANNING</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;margin-top:10px">John <span style="font-weight:400;color:rgba(14,28,48,.55);font-size:20px">PM</span> · Sally <span style="font-weight:400;color:rgba(14,28,48,.55);font-size:20px">UX</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:17.5px;line-height:2;color:rgba(14,28,48,.78);margin-top:16px">prd <span style="color:rgba(14,28,48,.45)">create · update · validate</span><br>ux <span style="color:rgba(14,28,48,.45)">DESIGN + EXPERIENCE</span></div>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.14);border-top:4px solid #4FD1A6;padding:26px 26px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:#4FD1A6">03 SOLUTIONING</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;margin-top:10px">Winston <span style="font-weight:400;color:rgba(14,28,48,.55);font-size:20px">Architect</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:17.5px;line-height:2;color:rgba(14,28,48,.78);margin-top:16px">architecture<br>create-epics-and-stories<br>check-implementation-<br>&nbsp;&nbsp;readiness</div>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.14);border-top:4px solid #F58B6E;padding:26px 26px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:#F58B6E">04 IMPLEMENTATION</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;margin-top:10px">Amelia <span style="font-weight:400;color:rgba(14,28,48,.55);font-size:20px">Developer</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:17.5px;line-height:2;color:rgba(14,28,48,.78);margin-top:16px">sprint-planning<br>create-story<br>dev-story<br>code-review<br>correct-course<br>sprint-status<br>retrospective<br>qa-generate-e2e-tests</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:28px;margin-top:30px;border-top:1px solid rgba(14,28,48,.14);padding-top:24px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5);white-space:nowrap">CROSS-CUTTING</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:17.5px;color:rgba(14,28,48,.75);line-height:1.7">help · party-mode · customize · generate-project-context · advanced-elicitation · <span style="color:#1E7FD6">quick-dev · dev-auto</span> <span style="color:rgba(14,28,48,.45)">(quick flow)</span></span>
+    </div>
+    <div style="position:absolute;left:120px;bottom:44px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">ALL SKILLS INVOKED AS <span style="color:#F4C233">bmad-*</span> — DIRECTLY, OR FROM AN AGENT'S MENU</div>
+    <div style="position:absolute;right:120px;bottom:44px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">21 / 45</div>
+  </div>
+</section>
+
+<!-- ============ REPO ARTIFACTS ============ -->
+<section data-label="Repo artifacts" data-speaker-notes="What this all physically looks like: two folders in your repo. _bmad holds the machinery — agent definitions, workflows, config. _bmad-output holds your artifacts, split in v6 into planning-artifacts (PRD, architecture, epics) and implementation-artifacts (sprint status), plus a project-context file. Four consequences: no context loss because a new chat picks up from the files; version control because plans live in git next to code; team visibility because everyone reads the same documents; and AI grounding because agents cite concrete files instead of hallucinating." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>IN YOUR REPO</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1350px">What it physically looks like: two folders</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:52px;align-items:start">
+      <div style="background:#0B1626;padding:38px 44px;font-family:'IBM Plex Mono',monospace;font-size:21px;line-height:1.95;color:rgba(246,244,238,.85)">
+        <div>your-project/</div>
+        <div>├─ <span style="color:#5BB3F5">_bmad/</span> <span style="color:rgba(246,244,238,.45)">← the machinery</span></div>
+        <div>│&nbsp;&nbsp; ├─ core/ &nbsp;bmm/ &nbsp;agents/ &nbsp;workflows/</div>
+        <div>└─ <span style="color:#F4C233">_bmad-output/</span> <span style="color:rgba(246,244,238,.45)">← your artifacts</span></div>
+        <div>&nbsp;&nbsp;&nbsp; ├─ <span style="color:#F4C233">planning-artifacts/</span></div>
+        <div>&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp; ├─ PRD.md</div>
+        <div>&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp; ├─ architecture.md</div>
+        <div>&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp; └─ epics/ &nbsp;<span style="color:rgba(246,244,238,.45)">stories</span></div>
+        <div>&nbsp;&nbsp;&nbsp; ├─ <span style="color:#F4C233">implementation-artifacts/</span></div>
+        <div>&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp; └─ sprint-status.yaml</div>
+        <div>&nbsp;&nbsp;&nbsp; └─ project-context.md</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:22px;padding-top:6px">
+        <div style="border-left:4px solid #F4C233;padding-left:26px"><div style="font-size:25px;font-weight:600;font-family:'Space Grotesk',sans-serif">No context loss</div><div style="font-size:21px;color:rgba(14,28,48,.6);margin-top:4px;line-height:1.45">Start a new chat — agents pick up from the files.</div></div>
+        <div style="border-left:4px solid #F4C233;padding-left:26px"><div style="font-size:25px;font-weight:600;font-family:'Space Grotesk',sans-serif">Version controlled</div><div style="font-size:21px;color:rgba(14,28,48,.6);margin-top:4px;line-height:1.45">Plans live in git, right next to the code they govern.</div></div>
+        <div style="border-left:4px solid #F4C233;padding-left:26px"><div style="font-size:25px;font-weight:600;font-family:'Space Grotesk',sans-serif">Team visibility</div><div style="font-size:21px;color:rgba(14,28,48,.6);margin-top:4px;line-height:1.45">Everyone — human or agent — reads the same artifacts.</div></div>
+        <div style="border-left:4px solid #F4C233;padding-left:26px"><div style="font-size:25px;font-weight:600;font-family:'Space Grotesk',sans-serif">AI grounding</div><div style="font-size:21px;color:rgba(14,28,48,.6);margin-top:4px;line-height:1.45">Agents reference concrete documents, not hallucinations.</div></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">22 / 45</div>
+  </div>
+</section>
+
+<!-- ============ COVER · PHASES ============ -->
+<section data-label="Cover · Phases" data-speaker-notes="Chapter break opening the phase walkthrough." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE">
+    <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/ih3d75uluo0vuuad29ok.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(11,22,38,.5) 0%, rgba(11,22,38,.18) 34%, rgba(11,22,38,.5) 64%, rgba(11,22,38,.92) 100%)"></div>
+    <div style="position:absolute;left:120px;right:120px;bottom:132px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.26em;text-transform:uppercase;color:#F4C233;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>ACT V</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:82px;line-height:1.02;letter-spacing:-.025em;margin:18px 0 0;max-width:1400px;text-shadow:0 2px 34px rgba(0,0,0,.6)">The four phases</h2>
+      <p style="font-size:27px;line-height:1.45;color:rgba(246,244,238,.9);margin:18px 0 0;max-width:1120px;text-shadow:0 2px 22px rgba(0,0,0,.7)">Analysis, planning, solutioning, implementation — how work flows from idea to shipped code.</p>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.6)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.6)">23 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 05 · THE 4-PHASE MAP ============ -->
+<section data-label="Phase map" data-speaker-notes="This is the map for the rest of the deck. Four phases: Analysis, Planning, Solutioning, Implementation. Each is a set of workflows that produce documents. We'll walk through each one. Phase 1 is optional; the real spine is Planning to Implementation." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE MAP</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:66px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0">Four phases, one throughline</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin-top:70px">
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #5BB3F5;padding:40px 34px;background:#fff">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:64px;color:rgba(91,179,245,.9);line-height:1">01</div>
+        <div style="font-size:32px;font-weight:600;margin-top:20px;font-family:'Space Grotesk',sans-serif">Analysis</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5);margin-top:6px">OPTIONAL</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.72);margin:22px 0 0">Explore the problem before committing.</p>
+        <div style="font-size:18px;color:rgba(14,28,48,.5);margin-top:20px;line-height:1.5">Brainstorm · Research · Brief · PRFAQ</div>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #F4C233;padding:40px 34px;background:#fff">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:64px;color:rgba(244,194,51,.95);line-height:1">02</div>
+        <div style="font-size:32px;font-weight:600;margin-top:20px;font-family:'Space Grotesk',sans-serif">Planning</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5);margin-top:6px">WHAT &amp; WHY</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.72);margin:22px 0 0">Define what to build, and for whom.</p>
+        <div style="font-size:18px;color:rgba(14,28,48,.5);margin-top:20px;line-height:1.5">PRD · UX spec</div>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #4FD1A6;padding:40px 34px;background:#fff">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:64px;color:rgba(79,209,166,.95);line-height:1">03</div>
+        <div style="font-size:32px;font-weight:600;margin-top:20px;font-family:'Space Grotesk',sans-serif">Solutioning</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5);margin-top:6px">HOW</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.72);margin:22px 0 0">Decide how, break work into stories.</p>
+        <div style="font-size:18px;color:rgba(14,28,48,.5);margin-top:20px;line-height:1.5">Architecture · Epics · Readiness</div>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #F58B6E;padding:40px 34px;background:#fff">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:64px;color:rgba(245,139,110,.95);line-height:1">04</div>
+        <div style="font-size:32px;font-weight:600;margin-top:20px;font-family:'Space Grotesk',sans-serif">Implementation</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.14em;color:rgba(14,28,48,.5);margin-top:6px">BUILD</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.72);margin:22px 0 0">Build it, one story at a time.</p>
+        <div style="font-size:18px;color:rgba(14,28,48,.5);margin-top:20px;line-height:1.5">Story · Dev · Review · Retro</div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">24 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 07 · PHASE 1 ANALYSIS ============ -->
+<section data-label="Phase 1 · Analysis" data-speaker-notes="Phase 1, Analysis, is optional but it makes everything downstream sharper. Four ways to think clearly before you build: brainstorm to generate, research to ground, brief to document, PRFAQ to stress-test. Skipping analysis means your PRD is built on assumptions." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="display:flex;align-items:center;gap:20px">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:#1E7FD6">PHASE 01</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.2em;color:rgba(14,28,48,.5)">OPTIONAL</span>
+    </div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:78px;line-height:1;letter-spacing:-.02em;margin:22px 0 0">Analysis</h2>
+    <p style="font-size:28px;line-height:1.5;color:rgba(14,28,48,.72);max-width:1160px;margin:24px 0 0">Think clearly about the product before committing to build it. Attack the idea from four angles.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:64px">
+      <div style="border-top:1px solid rgba(91,179,245,.6);padding-top:26px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#1E7FD6;letter-spacing:.1em">bmad-brainstorming</div>
+        <div style="font-size:26px;font-weight:600;margin-top:16px;font-family:'Space Grotesk',sans-serif">Brainstorm</div>
+        <p style="font-size:20px;line-height:1.45;color:rgba(14,28,48,.68);margin:14px 0 0">Coach-facilitated ideation. Pulls ideas out of you, not for you.</p>
+      </div>
+      <div style="border-top:1px solid rgba(91,179,245,.6);padding-top:26px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#1E7FD6;letter-spacing:.1em">bmad-*-research</div>
+        <div style="font-size:26px;font-weight:600;margin-top:16px;font-family:'Space Grotesk',sans-serif">Research</div>
+        <p style="font-size:20px;line-height:1.45;color:rgba(14,28,48,.68);margin:14px 0 0">Market, domain, and technical feasibility — grounded in reality.</p>
+      </div>
+      <div style="border-top:1px solid rgba(91,179,245,.6);padding-top:26px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#1E7FD6;letter-spacing:.1em">bmad-product-brief</div>
+        <div style="font-size:26px;font-weight:600;margin-top:16px;font-family:'Space Grotesk',sans-serif">Product brief</div>
+        <p style="font-size:20px;line-height:1.45;color:rgba(14,28,48,.68);margin:14px 0 0">A 1–2 page vision when your concept is already clear.</p>
+      </div>
+      <div style="border-top:1px solid rgba(91,179,245,.6);padding-top:26px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#1E7FD6;letter-spacing:.1em">bmad-prfaq</div>
+        <div style="font-size:26px;font-weight:600;margin-top:16px;font-family:'Space Grotesk',sans-serif">PRFAQ</div>
+        <p style="font-size:20px;line-height:1.45;color:rgba(14,28,48,.68);margin:14px 0 0">Working Backwards. Write the launch press release before the code.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">25 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 08 · CHOOSING ANALYSIS TOOL ============ -->
+<section data-label="Choosing a tool" data-speaker-notes="Practical guidance: which analysis tool fits your situation. Vague idea, brainstorm. Need market truth, research. Know what you want, brief. Want it stress-tested, PRFAQ. Both brief and PRFAQ feed the PRD — the difference is how much challenge you want." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>PHASE 01 · IN PRACTICE</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0">Which tool, when?</h2>
+    <div style="margin-top:56px;border-top:1px solid rgba(14,28,48,.14)">
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:40px;padding:30px 0;border-bottom:1px solid rgba(14,28,48,.1);align-items:center">
+        <div style="font-size:27px;color:rgba(14,28,48,.82)">“I have a vague idea, not sure where to start.”</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:27px;color:#0E1C30">Brainstorming</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:40px;padding:30px 0;border-bottom:1px solid rgba(14,28,48,.1);align-items:center">
+        <div style="font-size:27px;color:rgba(14,28,48,.82)">“I need to understand the market before deciding.”</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:27px;color:#0E1C30">Research</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:40px;padding:30px 0;border-bottom:1px solid rgba(14,28,48,.1);align-items:center">
+        <div style="font-size:27px;color:rgba(14,28,48,.82)">“I know what I want — just document it.”</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:27px;color:#0E1C30">Product Brief</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:40px;padding:30px 0;border-bottom:1px solid rgba(14,28,48,.1);align-items:center">
+        <div style="font-size:27px;color:rgba(14,28,48,.82)">“Make sure this is actually worth building.”</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:27px;color:#0E1C30">PRFAQ</div>
+      </div>
+    </div>
+    <p style="font-size:24px;line-height:1.5;color:rgba(14,28,48,.6);max-width:1240px;margin:44px 0 0">Brief and PRFAQ both feed the PRD. The brief is collaborative discovery; the PRFAQ is a gauntlet. Same destination — the PRFAQ tests whether your concept deserves to get there.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">26 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 09 · PHASE 2 PLANNING ============ -->
+<section data-label="Phase 2 · Planning" data-speaker-notes="Phase 2, Planning. This is where you define what to build and for whom. The PRD is the anchor — it answers what and why, and every downstream document inherits its clarity or its vagueness. UX runs alongside when experience matters." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="display:flex;align-items:center;gap:20px">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:#F4C233">PHASE 02</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.2em;color:rgba(14,28,48,.5)">WHAT &amp; WHY</span>
+    </div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:78px;line-height:1;letter-spacing:-.02em;margin:22px 0 0">Planning</h2>
+    <p style="font-size:28px;line-height:1.5;color:rgba(14,28,48,.72);max-width:1160px;margin:24px 0 0">Define what to build and for whom. Everything downstream inherits the clarity — or the vagueness — you set here.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:60px">
+      <div style="border:1px solid rgba(14,28,48,.16);border-left:4px solid #F4C233;padding:38px 40px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#F4C233;letter-spacing:.12em">bmad-prd</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:38px;margin-top:16px">Product Requirements</div>
+        <p style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.7);margin:18px 0 0">Facilitated discovery that produces functional &amp; non-functional requirements. One skill, three intents: <b style="color:#0E1C30;font-weight:600">create</b>, <b style="color:#0E1C30;font-weight:600">update</b>, <b style="color:#0E1C30;font-weight:600">validate</b>.</p>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.16);border-left:4px solid #F4C233;padding:38px 40px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#F4C233;letter-spacing:.12em">bmad-ux</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:38px;margin-top:16px">UX Design</div>
+        <p style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.7);margin:18px 0 0">When experience matters, a spine pair: <span style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#1E7FD6">DESIGN.md</span> for the visual, <span style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#1E7FD6">EXPERIENCE.md</span> for the behavioral.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">27 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 10 · PHASE 3 SOLUTIONING ============ -->
+<section data-label="Phase 3 · Solutioning" data-speaker-notes="Phase 3, Solutioning. Translate what into how. The architect makes technical decisions explicit, the PM breaks requirements into epics and stories, and a readiness gate decides pass, concerns, or fail before anyone writes code." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="display:flex;align-items:center;gap:20px">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:#4FD1A6">PHASE 03</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.2em;color:rgba(14,28,48,.5)">HOW → UNITS OF WORK</span>
+    </div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:78px;line-height:1;letter-spacing:-.02em;margin:22px 0 0">Solutioning</h2>
+    <p style="font-size:28px;line-height:1.5;color:rgba(14,28,48,.72);max-width:1200px;margin:24px 0 0">Decide how to build it, then break the work into implementable units.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:60px">
+      <div style="border-top:4px solid #4FD1A6;background:#fff;border:1px solid rgba(14,28,48,.14);border-top:4px solid #4FD1A6;padding:34px 32px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:rgba(79,209,166,.9)">STEP 1</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:32px;margin-top:14px">Architecture</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.68);margin:14px 0 0">Make technical decisions explicit so every agent builds consistently.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);border-top:4px solid #4FD1A6;padding:34px 32px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:rgba(79,209,166,.9)">STEP 2</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:32px;margin-top:14px">Epics &amp; stories</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.68);margin:14px 0 0">Break requirements into focused, implementable stories.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);border-top:4px solid #4FD1A6;padding:34px 32px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:rgba(79,209,166,.9)">GATE</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:32px;margin-top:14px">Readiness check</div>
+        <p style="font-size:21px;line-height:1.45;color:rgba(14,28,48,.68);margin:14px 0 0">A pass / concerns / fail decision before implementation begins.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">28 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 11 · WHY SOLUTIONING MATTERS ============ -->
+<section data-label="Why solutioning" data-speaker-notes="Concrete reason solutioning matters. Without shared architectural decisions, two agents on two epics pick REST and GraphQL independently, and integration becomes a nightmare. Decide once, up front, and everyone follows. Catching alignment issues here is 10x cheaper than during implementation." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1F9E77;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>WHY IT MATTERS</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:62px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1300px">Decide the hard things once — or agents decide them differently.</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:60px">
+      <div style="background:#fff;border:1px solid rgba(197,48,48,.35);padding:40px 42px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.16em;color:#C53030">WITHOUT SOLUTIONING</div>
+        <div style="margin-top:26px;font-family:'IBM Plex Mono',monospace;font-size:22px;line-height:1.9;color:rgba(14,28,48,.82)">
+          <div>Agent&nbsp;1 builds Epic&nbsp;1 → <span style="color:#C53030">REST</span></div>
+          <div>Agent&nbsp;2 builds Epic&nbsp;2 → <span style="color:#C53030">GraphQL</span></div>
+          <div style="color:rgba(14,28,48,.5);margin-top:10px">= inconsistent API, integration pain</div>
+        </div>
+      </div>
+      <div style="background:#0B1626;border:1px solid #0B1626;padding:40px 42px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.16em;color:#4FD1A6">WITH SOLUTIONING</div>
+        <div style="margin-top:26px;font-family:'IBM Plex Mono',monospace;font-size:22px;line-height:1.9;color:rgba(246,244,238,.85)">
+          <div>Architecture decides → <span style="color:#4FD1A6">GraphQL for all</span></div>
+          <div>Every agent follows the decision</div>
+          <div style="color:rgba(246,244,238,.55);margin-top:10px">= consistent build, clean integration</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:52px;display:flex;align-items:center;gap:22px">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:56px;color:#F4C233">10×</span>
+      <span style="font-size:26px;color:rgba(14,28,48,.7);max-width:900px;line-height:1.4">Catching alignment issues in solutioning is roughly ten times cheaper than discovering them mid-sprint.</span>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">29 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 12 · PHASE 4 IMPLEMENTATION ============ -->
+<section data-label="Phase 4 · Implementation" data-speaker-notes="Phase 4, Implementation. Build one story at a time. Each story carries complete, focused context so the dev agent isn't guessing. Sprint planning sequences the work once; then it's a tight loop per story." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="display:flex;align-items:center;gap:20px">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:#F58B6E">PHASE 04</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.2em;color:rgba(14,28,48,.5)">BUILD</span>
+    </div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:78px;line-height:1;letter-spacing:-.02em;margin:22px 0 0">Implementation</h2>
+    <p style="font-size:28px;line-height:1.5;color:rgba(14,28,48,.72);max-width:1220px;margin:24px 0 0">Build it, one story at a time — each with complete, focused context so the dev agent never guesses. Sprint planning sequences the cycle once; then you repeat the loop.</p>
+    <div style="display:flex;gap:16px;margin-top:70px;flex-wrap:wrap">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);padding:26px 30px;flex:1;min-width:220px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#F58B6E;letter-spacing:.1em">bmad-sprint-planning</div>
+        <div style="font-size:25px;font-weight:600;margin-top:12px;font-family:'Space Grotesk',sans-serif">Sequence work</div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);padding:26px 30px;flex:1;min-width:220px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#F58B6E;letter-spacing:.1em">bmad-create-story</div>
+        <div style="font-size:25px;font-weight:600;margin-top:12px;font-family:'Space Grotesk',sans-serif">Prep the story</div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);padding:26px 30px;flex:1;min-width:220px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#F58B6E;letter-spacing:.1em">bmad-dev-story</div>
+        <div style="font-size:25px;font-weight:600;margin-top:12px;font-family:'Space Grotesk',sans-serif">Working code + tests</div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);padding:26px 30px;flex:1;min-width:220px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#F58B6E;letter-spacing:.1em">bmad-code-review</div>
+        <div style="font-size:25px;font-weight:600;margin-top:12px;font-family:'Space Grotesk',sans-serif">Validate quality</div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">30 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 13 · THE DEV LOOP ============ -->
+<section data-label="The dev loop" data-speaker-notes="Zoom into the loop. Create story, implement, review, and on to the next — with correct-course to handle mid-sprint changes and a retrospective at the end of each epic. Human stays in the loop; you choose how tight. This is the heartbeat of implementation." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE HEARTBEAT · PER-STORY LOOP</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0">A tight loop, one story at a time</h2>
+    <div style="display:flex;align-items:stretch;gap:0;margin-top:72px">
+      <div style="flex:1;text-align:center;padding:38px 22px;background:#fff;border:1px solid rgba(14,28,48,.14)">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:40px;color:#F4C233">01</div>
+        <div style="font-size:27px;font-weight:600;margin-top:14px;font-family:'Space Grotesk',sans-serif">Create story</div>
+        <div style="font-size:19px;color:rgba(14,28,48,.55);margin-top:8px">focused context</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 12px;color:#F4C233;font-size:30px">→</div>
+      <div style="flex:1;text-align:center;padding:38px 22px;background:#fff;border:1px solid rgba(14,28,48,.14)">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:40px;color:#F4C233">02</div>
+        <div style="font-size:27px;font-weight:600;margin-top:14px;font-family:'Space Grotesk',sans-serif">Dev story</div>
+        <div style="font-size:19px;color:rgba(14,28,48,.55);margin-top:8px">code + tests</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 12px;color:#F4C233;font-size:30px">→</div>
+      <div style="flex:1;text-align:center;padding:38px 22px;background:#fff;border:1px solid rgba(14,28,48,.14)">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:40px;color:#F4C233">03</div>
+        <div style="font-size:27px;font-weight:600;margin-top:14px;font-family:'Space Grotesk',sans-serif">Code review</div>
+        <div style="font-size:19px;color:rgba(14,28,48,.55);margin-top:8px">approve / revise</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 12px;color:#0E1C30;font-size:30px">↻</div>
+      <div style="flex:1;text-align:center;padding:38px 22px;background:#0B1626;border:1px solid #0B1626">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:40px;color:#F58B6E">04</div>
+        <div style="font-size:27px;font-weight:600;margin-top:14px;font-family:'Space Grotesk',sans-serif;color:#F6F4EE">Retrospective</div>
+        <div style="font-size:19px;color:rgba(246,244,238,.55);margin-top:8px">at epic's end</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:44px;margin-top:52px">
+      <div style="font-size:24px;color:rgba(14,28,48,.68);line-height:1.5;max-width:640px"><b style="color:#0E1C30">correct-course</b> handles significant mid-sprint changes without derailing the plan.</div>
+      <div style="font-size:24px;color:rgba(14,28,48,.68);line-height:1.5;max-width:640px"><b style="color:#0E1C30">You choose the tightness</b> — review every story, or let the loop run further on its own.</div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">31 / 45</div>
+  </div>
+</section>
+
+<!-- ============ COVER · TESTING ============ -->
+<section data-label="Cover · Testing" data-speaker-notes="Chapter break introducing the TEA testing module." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE">
+    <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/6t0wbftde1briycf653f.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(11,22,38,.5) 0%, rgba(11,22,38,.18) 34%, rgba(11,22,38,.5) 64%, rgba(11,22,38,.92) 100%)"></div>
+    <div style="position:absolute;left:120px;right:120px;bottom:132px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.26em;text-transform:uppercase;color:#F4C233;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>ACT V &middot; SPECIAL FOCUS</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:82px;line-height:1.02;letter-spacing:-.025em;margin:18px 0 0;max-width:1400px;text-shadow:0 2px 34px rgba(0,0,0,.6)">Testing that doesn’t rot</h2>
+      <p style="font-size:27px;line-height:1.45;color:rgba(246,244,238,.9);margin:18px 0 0;max-width:1120px;text-shadow:0 2px 22px rgba(0,0,0,.7)">Why AI-generated tests decay, and how the Test Architect treats testing as an engineering discipline.</p>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.6)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.6)">32 / 45</div>
+  </div>
+</section>
+
+<!-- ============ TEA TESTING ============ -->
+<section data-label="TEA testing" data-speaker-notes="The complaint heard most from teams using AI for development: the tests are garbage. They pass, they look fine in review, and three sprints later half are flaky and nobody trusts the suite — because the AI had no testing strategy, it just wrote assertions matching current behavior. TEA, the Test Architect module, treats testing as an engineering discipline: risk-based test design scores probability times impact into P0 to P3 priorities, so the checkout flow gets deep coverage and the settings page gets a smoke test. Network-first patterns kill flaky waits. And the trace workflow maps tests to requirements and issues a release-gate decision: pass, concerns, fail, or waived." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#F58B6E;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>TESTING · TEA MODULE</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1400px">AI-generated tests rot. Test <i>architecture</i> doesn’t.</h2>
+    <p style="font-size:25px;line-height:1.5;color:rgba(14,28,48,.7);max-width:1300px;margin:26px 0 0">“Write tests for this” produces assertions that match current behavior — flaky in three sprints. TEA treats testing as engineering: strategy before generation.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:52px">
+      <div style="border:1px solid rgba(14,28,48,.14);border-top:4px solid #F58B6E;padding:34px 32px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#F58B6E">DESIGN FIRST</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:14px">Risk-based priorities</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.68);margin:14px 0 0">Probability × impact scores every scenario <span style="font-family:'IBM Plex Mono',monospace;color:#F4C233">P0–P3</span>. The payment flow gets depth; the theme toggle gets a smoke test.</p>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.14);border-top:4px solid #F58B6E;padding:34px 32px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#F58B6E">FLAKINESS KILLED</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:14px">Network-first patterns</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.68);margin:14px 0 0">Tests wait on real responses, not <span style="font-family:'IBM Plex Mono',monospace;font-size:18px">waitForTimeout(2000)</span>. Composable fixtures decouple tests from implementation.</p>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.14);border-top:4px solid #F58B6E;padding:34px 32px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#F58B6E">RELEASE GATE</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:14px">Traceability &amp; the gate</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.68);margin:14px 0 0">Tests map to requirements; the gate rules <span style="color:#4FD1A6">PASS</span> / <span style="color:#F4C233">CONCERNS</span> / <span style="color:#F58B6E">FAIL</span> / WAIVED with evidence — audit-trail ready.</p>
+      </div>
+    </div>
+    <p style="font-size:22px;color:rgba(14,28,48,.55);margin:44px 0 0;font-family:'IBM Plex Mono',monospace">bmad-tea → framework → test-design → automate — zero to a risk-planned suite in ~30 min</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">33 / 45</div>
+  </div>
+</section>
+
+<!-- ============ COVER · ECOSYSTEM ============ -->
+<section data-label="Cover · Ecosystem" data-speaker-notes="Chapter break opening the ecosystem section." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE">
+    <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/kvs7iq8i1o7cij2qg1oe.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(11,22,38,.5) 0%, rgba(11,22,38,.18) 34%, rgba(11,22,38,.5) 64%, rgba(11,22,38,.92) 100%)"></div>
+    <div style="position:absolute;left:120px;right:120px;bottom:132px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.26em;text-transform:uppercase;color:#F4C233;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>ACT VI</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:82px;line-height:1.02;letter-spacing:-.025em;margin:18px 0 0;max-width:1400px;text-shadow:0 2px 34px rgba(0,0,0,.6)">Scale, governance &amp; ecosystem</h2>
+      <p style="font-size:27px;line-height:1.45;color:rgba(246,244,238,.9);margin:18px 0 0;max-width:1120px;text-shadow:0 2px 22px rgba(0,0,0,.7)">The wider ecosystem — testing, game dev, creative intelligence, and your own custom agents.</p>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.6)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.6)">34 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 15 · SCALE-ADAPTIVE ============ -->
+<section data-label="Scale-adaptive" data-speaker-notes="BMad v6 offers three planning tracks, and bmad-help picks one for you. Quick Flow for bug fixes and clear-scope work (1-15 stories) produces just a tech-spec. BMad Method for products and platforms (10-50+ stories) produces a PRD, architecture, and UX. Enterprise for compliance and multi-tenant systems (30+ stories) adds security and DevOps. Story counts are guidance, not definitions — choose by planning need. Same primitives throughout, different depth. Quick flow for a bug fix, simple for a small feature, complex when solutioning is required, enterprise when governance is. The process adjusts to complexity instead of forcing one-size-fits-all." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>SCALE-ADAPTIVE</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0">Three tracks, sized to the work</h2>
+    <div style="margin-top:52px">
+      <div style="display:grid;grid-template-columns:0.8fr 1.3fr 1.2fr;gap:30px;padding:0 0 20px;border-bottom:1px solid rgba(14,28,48,.16);font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.14em;color:rgba(14,28,48,.5)">
+        <div>TRACK</div><div>BEST FOR</div><div>DOCUMENTS CREATED</div>
+      </div>
+      <div style="display:grid;grid-template-columns:0.8fr 1.3fr 1.2fr;gap:30px;padding:30px 0;border-bottom:1px solid rgba(14,28,48,.1);align-items:baseline">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:31px">Quick Flow</div>
+        <div style="font-size:24px;color:rgba(14,28,48,.72)">Bug fixes, clear scope <span style="color:rgba(14,28,48,.45)">· 1–15 stories</span></div>
+        <div style="font-size:23px;color:rgba(14,28,48,.82)">Tech-spec only</div>
+      </div>
+      <div style="display:grid;grid-template-columns:0.8fr 1.3fr 1.2fr;gap:30px;padding:30px 0;border-bottom:1px solid rgba(14,28,48,.1);align-items:baseline">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:31px">BMad Method</div>
+        <div style="font-size:24px;color:rgba(14,28,48,.72)">Products &amp; platforms <span style="color:rgba(14,28,48,.45)">· 10–50+ stories</span></div>
+        <div style="font-size:23px;color:rgba(14,28,48,.82)">PRD + Architecture + UX</div>
+      </div>
+      <div style="display:grid;grid-template-columns:0.8fr 1.3fr 1.2fr;gap:30px;padding:30px 0;align-items:baseline">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:31px">Enterprise</div>
+        <div style="font-size:24px;color:rgba(14,28,48,.72)">Compliance, multi-tenant <span style="color:rgba(14,28,48,.45)">· 30+ stories</span></div>
+        <div style="font-size:23px;color:rgba(14,28,48,.82)">+ Security + DevOps</div>
+      </div>
+    </div>
+    <p style="font-size:20px;line-height:1.5;color:rgba(14,28,48,.5);margin:34px 0 0;max-width:1300px">Story counts are guidance, not rules — pick the track by how much planning the work needs. <span style="color:rgba(14,28,48,.78);font-family:'IBM Plex Mono',monospace">bmad-help</span> recommends one if you&rsquo;re unsure.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">35 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 14 · QUICK FLOW ============ -->
+<section data-label="Quick flow" data-speaker-notes="Not everything needs four phases. For small, well-understood work there's a parallel track: quick-dev clarifies, plans, implements, reviews, and presents in one flow; dev-auto runs a single unattended iteration. Use the full method for the enterprise system, quick flow for the bug fix." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>PARALLEL TRACK</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0;max-width:1300px">Small, well-understood work skips the ceremony</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:60px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);border-top:4px solid #1E7FD6;padding:40px 42px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#1E7FD6;letter-spacing:.12em">bmad-quick-dev</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:36px;margin-top:16px">Quick Dev</div>
+        <p style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.68);margin:16px 0 0">One unified flow: clarify intent, plan, implement, review, and present. Skips phases 1–3.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);border-top:4px solid #1E7FD6;padding:40px 42px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#1E7FD6;letter-spacing:.12em">bmad-dev-auto</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:36px;margin-top:16px">Dev Auto</div>
+        <p style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.68);margin:16px 0 0">One unattended development-loop iteration — small intent in, code out.</p>
+      </div>
+    </div>
+    <p style="font-size:26px;line-height:1.5;color:rgba(14,28,48,.62);max-width:1240px;margin:50px 0 0">Rule of thumb: <b style="color:#0E1C30">if multiple epics could be built by different agents, you need the full method.</b> A single well-scoped change does not.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">36 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 19 · GOVERNANCE ============ -->
+<section data-label="Governance" data-speaker-notes="Pull the docs idea together and scale it. The documents aren't paperwork — they're the product's memory. A project-context file makes a dozen separate agent runs feel like one coherent team, and at enterprise scale it matures into a constitution: a single, versioned source of truth that supersedes ad-hoc practice. The interesting part: agents are empowered to enforce it — they audit every PR and cite the exact clause a change violates. Humans amend it through ADRs and sign-off. And a simplicity gate keeps complexity honest: YAGNI, with justification required." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE UNIFYING IDEA · AT SCALE</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:62px;line-height:1.05;letter-spacing:-.02em;margin:26px 0 0;max-width:1400px">The documents are the product&rsquo;s memory &mdash; at scale, a constitution</h2>
+    <p style="font-size:25px;line-height:1.5;color:rgba(14,28,48,.65);max-width:1320px;margin:22px 0 0">A <span style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:#1E7FD6">project-context.md</span> makes a dozen separate agent runs feel like one coherent team. At enterprise scale it hardens into a constitution:</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:38px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 38px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">SINGLE SOURCE OF TRUTH</div>
+        <p style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.75);margin:16px 0 0">The constitution supersedes ad-hoc practice. When conventions conflict, it wins — for humans and agents alike.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 38px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">AGENTS ENFORCE IT</div>
+        <p style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.75);margin:16px 0 0">Agents audit every PR against the mandates and report failures by citing the specific clause violated.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 38px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">HUMANS AMEND IT</div>
+        <p style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.75);margin:16px 0 0">Changes go through ADRs, team consensus, and versioned amendments — a living document, not a frozen one.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:36px 38px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">SIMPLICITY GATE</div>
+        <p style="font-size:23px;line-height:1.5;color:rgba(14,28,48,.75);margin:16px 0 0">YAGNI is codified: complexity requires documented justification, metrics, and a plan to remove it.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">37 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 20 · BUILD FOR AGENTS ============ -->
+<section data-label="Build for agents" data-speaker-notes="The flip side: it's not just about using agents to build — it's about building systems agents can operate. Three layers: interfaces with semantic structure and deterministic layouts, no vibe UI; APIs that are idempotent and self-documenting with errors clear enough for an agent to self-correct; and an agent harness — explicit tool exposure, strict guardrails, exhaustive run-trace logs." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE FLIP SIDE</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:68px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1400px">Don’t just build <i>with</i> agents. Build <i>for</i> them.</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:66px">
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #5BB3F5;padding:36px 34px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">INTERFACES</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:30px;margin-top:16px">Semantic structure</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.7);margin:16px 0 0">Clean DOM hierarchies, ARIA, deterministic layouts agents can navigate. No vibe UI.</p>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #5BB3F5;padding:36px 34px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">APIS</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:30px;margin-top:16px">Idempotent &amp; self-documenting</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.7);margin:16px 0 0">Strict OpenAPI schemas, retry-safe mutations, and errors actionable enough for an agent to self-correct mid-flight.</p>
+      </div>
+      <div style="border:1px solid rgba(14,28,48,.16);border-top:4px solid #5BB3F5;padding:36px 34px;background:#fff">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">THE HARNESS</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:30px;margin-top:16px">Guardrails &amp; traces</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.7);margin:16px 0 0">Tools explicitly exposed for LLM calling, schema validation on behavior, exhaustive run-trace logs for context.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">38 / 45</div>
+  </div>
+</section>
+
+<!-- ============ MODULE ECOSYSTEM ============ -->
+<section data-label="Module ecosystem" data-speaker-notes="BMAD isn't one thing — the core is a module in a wider ecosystem, and V6 leans hard into that. The core, BMM, is the 34+ workflow framework this deck walks through. On top of it, official modules extend the same scale-adaptive discipline into new domains, each installable during setup or any time after: BMad Builder to create your own agents and workflows; Test Architect (TEA) for risk-based test strategy; Game Dev Studio for Unity, Unreal, and Godot pipelines; and the Creative Intelligence Suite for brainstorming, innovation, and design-thinking facilitation. All MIT, all installed the same way. And when you're unsure what's next, the bmad-help skill tells you what to do and what's optional." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:88px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE MODULE ECOSYSTEM · V6</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:60px;line-height:1.04;letter-spacing:-.02em;margin:24px 0 0;max-width:1400px">One core, a growing family of modules</h2>
+    <div style="display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:22px;margin-top:44px">
+      <div style="background:rgba(244,194,51,.1);border:1px solid rgba(244,194,51,.4);padding:32px 34px;grid-row:span 2;display:flex;flex-direction:column">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#F4C233">CORE · BMM</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;margin-top:14px">BMad Method</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.72);margin:14px 0 0">The 34+ workflow framework this deck walks through — analysis, planning, architecture, implementation. Everything else builds on it.</p>
+        <div style="margin-top:auto;font-family:'IBM Plex Mono',monospace;font-size:16px;color:rgba(14,28,48,.5);padding-top:22px">npx bmad-method install</div>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);padding:28px 30px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.13em;color:#1E7FD6">BMB</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:25px;margin-top:10px">BMad Builder</div>
+        <p style="font-size:19px;line-height:1.42;color:rgba(14,28,48,.65);margin:10px 0 0">Create your own agents &amp; workflows.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);padding:28px 30px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.13em;color:#F58B6E">TEA</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:25px;margin-top:10px">Test Architect</div>
+        <p style="font-size:19px;line-height:1.42;color:rgba(14,28,48,.65);margin:10px 0 0">Risk-based test strategy &amp; automation.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);padding:28px 30px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.13em;color:#4FD1A6">BMGD</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:25px;margin-top:10px">Game Dev Studio</div>
+        <p style="font-size:19px;line-height:1.42;color:rgba(14,28,48,.65);margin:10px 0 0">Unity, Unreal &amp; Godot workflows.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.14);padding:28px 30px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.13em;color:#C79BF0">CIS</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:25px;margin-top:10px">Creative Intelligence</div>
+        <p style="font-size:19px;line-height:1.42;color:rgba(14,28,48,.65);margin:10px 0 0">Brainstorming, innovation, design thinking.</p>
+      </div>
+    </div>
+    <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.6);margin:34px 0 0;max-width:1450px">All MIT, all installed the same way — during setup or any time after. Stuck between steps? The <span style="font-family:'IBM Plex Mono',monospace;color:#F4C233">bmad-help</span> skill tells you what&rsquo;s next and what&rsquo;s optional.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">39 / 45</div>
+  </div>
+</section>
+
+<!-- ============ BMAD BUILDER ============ -->
+<section data-label="BMad Builder" data-speaker-notes="When the built-in agents don't cover your domain — HIPAA reviews, a house deployment process — BMad Builder creates your own. The packaging model: everything is a skill, a folder with a SKILL.md, following the open Agent Skills standard; agents, workflows, and utilities all ship the same way. Agents come in three types: stateless for single-session experts; memory agents that keep a persistent 'sanctum' of identity and knowledge files and greet you by name next session; and autonomous agents that add a PULSE file and wake on a schedule to work unattended. Builders run as guided conversations, then modules package skills for distribution on GitHub." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>EXTEND IT · BMAD BUILDER</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1400px">When the roster doesn’t cover your domain, build your own agent</h2>
+    <p style="font-size:24px;line-height:1.5;color:rgba(14,28,48,.65);max-width:1350px;margin:24px 0 0">Everything is a <b style="color:#0E1C30">skill</b> — a folder with a <span style="font-family:'IBM Plex Mono',monospace;font-size:21px;color:#1E7FD6">SKILL.md</span> (open Agent Skills standard). The builder walks you there by conversation, not configuration. Agents come in three types:</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:48px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:34px 34px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.5)">STATELESS</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:14px">Every session fresh</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.62);margin:12px 0 0">A persona and capabilities, no memory. Formatters, diagram generators, focused domain experts.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:34px 34px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#1E7FD6">MEMORY</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:14px">Remembers you</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.62);margin:12px 0 0">Keeps a persistent <i>sanctum</i> of identity &amp; knowledge files, re-read each launch. Coaches, writing partners, advisors.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:34px 34px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:#B78A00">AUTONOMOUS</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:28px;margin-top:14px">Works unattended</div>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.62);margin:12px 0 0">Adds a <span style="font-family:'IBM Plex Mono',monospace;font-size:18px">PULSE</span> file and wakes on a schedule — monitoring, curation, maintenance between sessions.</p>
+      </div>
+    </div>
+    <p style="font-size:22px;line-height:1.5;color:rgba(14,28,48,.6);margin:44px 0 0;max-width:1350px">Package skills into <b style="color:#0E1C30">modules</b>, validate them, and distribute via GitHub — the same mechanism that ships TEA, Game Dev Studio, and the Creative Intelligence Suite.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">40 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 21 · PLAN ANYWHERE / ECOSYSTEM ============ -->
+<section data-label="Plan anywhere" data-speaker-notes="The method isn't locked to one tool. Six planning coaches ship as web bundles you can install as ChatGPT Custom GPTs, Gemini Gems, or Microsoft Copilot agents — do the heavy planning on a flat-rate subscription, then bring the artifacts into your IDE for implementation. And a growing ecosystem of modules and community tools extends the same discipline to testing, game dev, automation, and more." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>THE WIDER ECOSYSTEM</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.05;letter-spacing:-.02em;margin:28px 0 0;max-width:1350px">Planning runs anywhere your LLM does</h2>
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:34px;margin-top:56px">
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:38px 40px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">WEB BUNDLES · 6 PLANNING COACHES</div>
+        <p style="font-size:22px;line-height:1.55;color:rgba(14,28,48,.75);margin:18px 0 0">Brainstorming · Product Brief · PRFAQ · PRD · UX · Market &amp; Industry Research — installable as <b>ChatGPT Custom GPTs</b>, <b>Gemini Gems</b>, or <b>Microsoft Copilot agents</b>.</p>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.55);margin:18px 0 0">Do the heavy planning on a flat-rate subscription; bring polished artifacts into the IDE for implementation.</p>
+      </div>
+      <div style="background:#fff;border:1px solid rgba(14,28,48,.12);padding:38px 40px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:#1E7FD6">MODULES &amp; COMMUNITY</div>
+        <p style="font-size:22px;line-height:1.55;color:rgba(14,28,48,.75);margin:18px 0 0">Builder (custom agents) · Test Architect (risk-based testing) · Game Dev Studio · Creative Intelligence Suite.</p>
+        <p style="font-size:21px;line-height:1.5;color:rgba(14,28,48,.55);margin:18px 0 0">Community: VS Code dashboard, GitHub Projects sync, n8n automation personas, and a growing skill marketplace.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">41 / 45</div>
+  </div>
+</section>
+
+<!-- ============ IN ACTION ============ -->
+<section data-label="In action" data-speaker-notes="Optional show-and-tell slide. Drop in your own screenshots to make the method concrete: the installer running in your terminal, a real workflow or party-mode session, and the generated artifacts in your editor or the docs site. Live captures land better than stock diagrams here — swap these three in before presenting. If you'd rather not use images, this slide can be removed." style="background:#F6F4EE">
+  <div style="position:relative;width:100%;height:100%;padding:88px 120px;font-family:'IBM Plex Sans',sans-serif;color:#0E1C30">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#1E7FD6;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>SEE IT IN ACTION</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:58px;line-height:1.04;letter-spacing:-.02em;margin:22px 0 0;max-width:1400px">From install to artifacts &mdash; drop in your own captures</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:34px;margin-top:52px">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="position:relative;width:100%;aspect-ratio:16/10;border:1px solid rgba(14,28,48,.16);background:#0B1626;overflow:hidden">
+          <image-slot id="shot-install" shape="rect" placeholder="Install &amp; kickoff"></image-slot>
+        </div>
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;color:#0E1C30">Install &amp; kickoff</div>
+          <div style="font-size:19px;color:rgba(14,28,48,.55);line-height:1.4;margin-top:4px">npx bmad-method install, then your first workflow prompt</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="position:relative;width:100%;aspect-ratio:16/10;border:1px solid rgba(14,28,48,.16);background:#0B1626;overflow:hidden">
+          <image-slot id="shot-session" shape="rect" placeholder="A live agent session"></image-slot>
+        </div>
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;color:#0E1C30">A live agent session</div>
+          <div style="font-size:19px;color:rgba(14,28,48,.55);line-height:1.4;margin-top:4px">Party mode or a phase workflow running in your IDE</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="position:relative;width:100%;aspect-ratio:16/10;border:1px solid rgba(14,28,48,.16);background:#0B1626;overflow:hidden">
+          <image-slot id="shot-artifacts" shape="rect" placeholder="The generated artifacts"></image-slot>
+        </div>
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;color:#0E1C30">The generated artifacts</div>
+          <div style="font-size:19px;color:rgba(14,28,48,.55);line-height:1.4;margin-top:4px">PRD, architecture &amp; stories in _bmad-output/ or the docs site</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:20px;color:rgba(14,28,48,.5);margin:44px 0 0">Drag an image onto any panel &mdash; it persists with the deck. Live captures read better here than stock diagrams.</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(14,28,48,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(14,28,48,.4)">42 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 18 · GET STARTED ============ -->
+<section data-label="Get started" data-speaker-notes="How to actually try it. One install command, open your AI IDE, and if you're ever unsure, ask bmad-help and it tells you what's next. It's free and open source. The fastest way to understand it is to run it once on something small." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#5BB3F5;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>TRY IT</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0">Three steps to your first run</h2>
+    <div style="margin-top:58px;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;align-items:center;gap:32px;background:#0B1626;padding:32px 40px">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;color:#F4C233">1</span>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;color:#F6F4EE"><span style="color:#5BB3F5">$</span> npx bmad-method install</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:32px;background:rgba(255,255,255,.03);border:1px solid rgba(246,244,238,.12);padding:32px 40px">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;color:#5BB3F5">2</span>
+        <div style="font-size:27px;color:rgba(246,244,238,.82)">Open your AI IDE — <b>Claude Code</b>, <b>Cursor</b>, <b>Codex</b> — in your project folder</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:32px;background:rgba(255,255,255,.03);border:1px solid rgba(246,244,238,.12);padding:32px 40px">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;color:#5BB3F5">3</span>
+        <div style="font-size:27px;color:rgba(246,244,238,.82)">Unsure what’s next? Ask <span style="font-family:'IBM Plex Mono',monospace;font-size:23px;color:#B78A00">bmad-help</span> — it tells you exactly what to do</div>
+      </div>
+    </div>
+    <p style="font-size:24px;color:rgba(246,244,238,.55);margin:44px 0 0">Prerequisites: Node.js 20.12+, Python 3.10+, uv. 100% free and open source (MIT).</p>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.4)">43 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 19 · PRINCIPLES ============ -->
+<section data-label="Principles" data-speaker-notes="The takeaways that transfer even if you never use this specific framework. Structure beats prompting. Documents are context. Decide the hard things once. Match ceremony to complexity. Keep a human in the loop. And when output is wrong, fix the upstream document and rerun — don't patch the code. These are the durable lessons of agentic development." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;padding:96px 120px;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#5BB3F5;font-weight:500;display:flex;align-items:center;gap:14px"><span style="width:10px;height:10px;background:#F4C233;display:inline-block"></span>WHAT TO REMEMBER</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:64px;line-height:1.04;letter-spacing:-.02em;margin:28px 0 0">Six principles that transfer to any tool</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 70px;margin-top:56px">
+      <div style="display:flex;gap:26px;padding:28px 0;border-bottom:1px solid rgba(246,244,238,.12)">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">01</span>
+        <div><div style="font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif">Structure beats prompting</div><div style="font-size:21px;color:rgba(246,244,238,.6);margin-top:6px">A process gets better output than a clever one-liner.</div></div>
+      </div>
+      <div style="display:flex;gap:26px;padding:28px 0;border-bottom:1px solid rgba(246,244,238,.12)">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">02</span>
+        <div><div style="font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif">Documents are context</div><div style="font-size:21px;color:rgba(246,244,238,.6);margin-top:6px">Each artifact grounds the next agent’s decisions.</div></div>
+      </div>
+      <div style="display:flex;gap:26px;padding:28px 0;border-bottom:1px solid rgba(246,244,238,.12)">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">03</span>
+        <div><div style="font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif">Decide hard things once</div><div style="font-size:21px;color:rgba(246,244,238,.6);margin-top:6px">Explicit architecture prevents agent conflicts.</div></div>
+      </div>
+      <div style="display:flex;gap:26px;padding:28px 0;border-bottom:1px solid rgba(246,244,238,.12)">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">04</span>
+        <div><div style="font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif">Match ceremony to scale</div><div style="font-size:21px;color:rgba(246,244,238,.6);margin-top:6px">Quick flow for small; full method for complex.</div></div>
+      </div>
+      <div style="display:flex;gap:26px;padding:28px 0;border-bottom:1px solid rgba(246,244,238,.12)">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">05</span>
+        <div><div style="font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif">Keep a human in the loop</div><div style="font-size:21px;color:rgba(246,244,238,.6);margin-top:6px">You choose how tight the automation runs.</div></div>
+      </div>
+      <div style="display:flex;gap:26px;padding:28px 0;border-bottom:1px solid rgba(246,244,238,.12)">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:#F4C233">06</span>
+        <div><div style="font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif">Fix the doc, not the code</div><div style="font-size:21px;color:rgba(246,244,238,.6);margin-top:6px">Wrong output is an upstream spec flaw — correct it and rerun.</div></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.16em;color:rgba(246,244,238,.4)">BMAD METHOD · AGENTIC SDLC</div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.4)">44 / 45</div>
+  </div>
+</section>
+
+<!-- ============ 20 · CLOSING ============ -->
+<section data-label="Closing" data-speaker-notes="Close. Agentic development isn't about handing off your judgment — it's about giving your judgment a structure to work in. Try it on something small this week. Resources on screen." style="background:#0B1626">
+  <div style="position:relative;width:100%;height:100%;padding:110px 120px;font-family:'IBM Plex Sans',sans-serif;color:#F6F4EE;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(1100px 560px at 20% 90%, rgba(46,155,238,.16), transparent 60%);"></div>
+    <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;letter-spacing:.28em;text-transform:uppercase;color:#5BB3F5;font-weight:500;display:flex;align-items:center;gap:16px"><span style="width:12px;height:12px;background:#F4C233;display:inline-block"></span>THE TAKEAWAY</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:92px;line-height:1.02;letter-spacing:-.025em;margin:36px 0 0;max-width:1500px">Don’t hand off your judgment. Give it a structure to work in.</h2>
+      <p style="font-size:29px;line-height:1.5;color:rgba(246,244,238,.7);max-width:1120px;margin:40px 0 0">Pick something small this week and run it end to end. The fastest way to understand agentic development is to do one full loop.</p>
+      <div style="display:flex;gap:56px;margin-top:64px;font-family:'IBM Plex Mono',monospace;font-size:19px;color:rgba(246,244,238,.65);letter-spacing:.04em">
+        <span><span style="color:#F4C233">↳</span> docs.bmad-method.org</span>
+        <span><span style="color:#F4C233">↳</span> github.com/bmad-code-org/BMAD-METHOD</span>
+        <span><span style="color:#F4C233">↳</span> bmadcode.com/web-bundles</span>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;bottom:56px;display:flex;align-items:baseline;gap:16px">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;letter-spacing:.04em;color:#F4C233">BMAD METHOD</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.4)">AGENTIC SDLC · A FIELD GUIDE</span>
+    </div>
+    <div style="position:absolute;right:120px;bottom:56px;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(246,244,238,.4)">45 / 45</div>
+  </div>
+</section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

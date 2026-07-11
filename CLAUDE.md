@@ -172,6 +172,7 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 |---|---|
 | `docs/specs/feedstock-platform-expansion.md` | Dual-goal per-feedstock workflow: refresh `recipes/<feedstock>/` to the latest CFE shape at the latest upstream version AND widen the build matrix (osx-arm64 / linux-aarch64) in the same PR. The procedural core both refresh specs delegate to; deep detail in `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md`. |
 | `docs/specs/feedstock-failure-remediation.md` | Red feedstock-PR remediation loop: triage FLAKE / REAL_FIX / BLOCKED (G32 signature catalog), execute-locally-first, maintainer-edit push to the bot fork, rerender-after-push. Worked example: the 2026-06-17/18 12-PR batch (G31–G34). |
+| `docs/specs/presentation-deck.md` | Reusable React+Vite slide-deck workflow: turn a Claude Design 1920×1080 `.dc.html` prototype into a self-contained deck via mechanical slide extraction → a small deck engine (fit-to-viewport, keyboard nav, URL-hash routing, overview grid, presenter view w/ notes+timer), a static offline-safe Vite bundle, and Marp + PPTX exports. Parameterized by topic (non-conda-forge). Worked Example 1 = the 45-slide *Agentic AI across the SDLC* / BMAD deck (`presentations/agentic-sdlc/`, PR #50). |
 
 **Shipped (historical record — evidence in each spec's `shipped_ref`):**
 
