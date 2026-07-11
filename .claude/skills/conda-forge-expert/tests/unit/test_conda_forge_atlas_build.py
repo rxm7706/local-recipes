@@ -202,3 +202,43 @@ class TestPickFeedstock:
         assert atlas_mod._pick_feedstock(
             "dbt-postgres", ["dbt-postgres", "dbt"]
         ) == "dbt-postgres"
+
+
+class TestMergePhasesRun:
+    """`_merge_phases_run` unions existing + new phases in canonical PHASES
+    order — lets the v8.22.0 bootstrap split accumulate core/F/K/N instead of
+    each `build --only` sub-step clobbering `phases_run`."""
+
+    def test_union_dedups(self, atlas_mod):
+        assert atlas_mod._merge_phases_run(["B", "C"], ["C", "F"]) == ["B", "C", "F"]
+
+    def test_orders_by_canonical_phases_not_insertion(self, atlas_mod):
+        # F comes after C in PHASES even though it's supplied first/second
+        assert atlas_mod._merge_phases_run(["F"], ["C", "B"]) == ["B", "C", "F"]
+
+    def test_empty_new_preserves_existing(self, atlas_mod):
+        assert atlas_mod._merge_phases_run(["N"], []) == ["N"]
+
+    def test_split_accumulation_reaches_full_set(self, atlas_mod):
+        # Simulate the split: core stamps B..M, then F / K / N each merge in.
+        core = ["B", "B.5", "B.6", "C", "C.5", "D", "O", "P", "Q", "R", "S",
+                "E", "E.5", "G", "G'", "H", "J", "L", "M"]
+        after_f = atlas_mod._merge_phases_run(core, ["F"])
+        after_k = atlas_mod._merge_phases_run(after_f, ["K"])
+        after_n = atlas_mod._merge_phases_run(after_k, ["N"])
+        full = [name for name, _ in atlas_mod.PHASES]
+        assert after_n == full  # every phase present, in canonical order
+        assert "F" in after_n and "K" in after_n and "N" in after_n
+
+    def test_unknown_phase_sorted_after_known(self, atlas_mod):
+        assert atlas_mod._merge_phases_run(["B"], ["ZZ"]) == ["B", "ZZ"]
+
+    def test_read_meta_phases_run_roundtrip(self, atlas_mod):
+        import json as _json, sqlite3 as _sq
+        conn = _sq.connect(":memory:")
+        conn.execute("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT)")
+        # absent -> []
+        assert atlas_mod._read_meta_phases_run(conn) == []
+        conn.execute("INSERT INTO meta(key, value) VALUES ('phases_run', ?)",
+                     (_json.dumps(["B", "F", "N"]),))
+        assert atlas_mod._read_meta_phases_run(conn) == ["B", "F", "N"]
