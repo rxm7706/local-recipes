@@ -50,7 +50,7 @@ spec_updated: 2026-07-11
 | Proposed project slug | `python-deptry-osv-scanner` (BMAD artifacts → `_bmad-output/projects/python-deptry-osv-scanner/`) |
 | Python package | module `python_deptry_osv_scanner`; dist name `python-deptry-osv-scanner` |
 | Source root | **In-repo pixi *build* workspace member** at `src/shared/packages/python-deptry-osv-scanner/` (Option B; unity-data-stack `src/shared/packages` convention) — see § Repository layout |
-| Target users | Platform Engineers (CI/CD), DevSecOps Engineers (compliance / SBOM), Python + conda-feedstock maintainers |
+| Target users | Platform Engineers (CI/CD), DevSecOps Engineers (compliance / SBOM), and **Python developers shipping pip- + conda-sourced software of any shape** (scripts, applications, components, libraries) |
 | Distribution | **Internal-first library** (v1); PyPI/conda-forge packaging decided at closeout (OD5) |
 | Lifetime | Long-running CI/CD quality gate |
 
@@ -72,7 +72,8 @@ understands those manifests (§ Engine-native support; time-bound, re-verify).
 
 - Platform Engineers managing CI/CD pipelines.
 - DevSecOps Engineers tracking organization-wide software compliance and SBOM data.
-- Python Developers maintaining Conda feedstocks and standard packages.
+- **Python developers** who build and ship pip- *and* conda-sourced Python
+  of any shape — scripts, applications, components, and libraries alike.
 
 **MVP idea.** A unified Python CLI (`python_deptry_osv_scanner`) that orchestrates
 both `deptry` and Google's `osv-scanner`. It resolves manifests across the
