@@ -1,0 +1,22 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "deptry-scanner"
+version = "0.1.0"
+description = "Unified dependency-hygiene + vulnerability scanner orchestrating deptry and osv-scanner over Python/Conda/Pixi manifests."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "rxm7706" }]
+# Intentionally empty: the scanning engines (deptry, osv-scanner) are conda
+# run-dependencies (see pixi.toml), and the library itself is stdlib-only
+# (argparse, tomllib, re) per NFR2. `jsonschema` is a test-only dep (FR6).
+dependencies = []
+
+[project.scripts]
+deptry-scanner = "deptry_scanner.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/deptry_scanner"]
