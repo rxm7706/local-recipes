@@ -1,0 +1,10 @@
+# build artifacts
+/dist/          # pypi: wheel + sdist (python -m build)
+/dist-conda/    # conda: .conda (pixi build --output-dir dist-conda)
+/build/
+*.conda
+*.whl
+*.tar.gz
+*.egg-info/
+__pycache__/
+.pytest_cache/

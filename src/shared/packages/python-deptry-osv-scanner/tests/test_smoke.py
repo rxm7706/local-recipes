@@ -5,12 +5,12 @@ tests across all five manifest types, runner tests, and report-schema
 validation.
 """
 
-import deptry_scanner
-from deptry_scanner.cli import main
+import python_deptry_osv_scanner
+from python_deptry_osv_scanner.cli import main
 
 
 def test_version_exposed():
-    assert deptry_scanner.__version__ == "0.1.0"
+    assert python_deptry_osv_scanner.__version__ == "0.1.0"
 
 
 def test_cli_entrypoint_returns_zero():
