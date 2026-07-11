@@ -15,45 +15,111 @@ source:
 build:
   number: 0
   skip: match(python, "<3.10")
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - deptry = deptry.cli:deptry
+  script:
+    content:
+      - if: win
+        then: |
+          set "CARGO_HOME=C:\cargo"
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+        else: |
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
 requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1.5,<2.0
   host:
-    - python ${{ python_min }}.*
+    - python
     - maturin >=1.5,<2.0
     - pip
   run:
-    - python >=${{ python_min }}
+    - python
     - click >=8.0.0,<9
-    - colorama >=0.4.6
     - packaging >=23.2
     - requirements-parser >=0.11.0,<1
     - tomli >=2.0.1
+    - if: win
+      then:
+        - colorama >=0.4.6
 
 tests:
   - python:
       imports:
         - deptry
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
   - requirements:
       run:
         - pip
-        - python
     script:
       - deptry --help
 
 about:
   summary: A command line utility to check for unused, missing and transitive dependencies in a Python project.
   license: MIT
-  license_file: LICENSE
-  homepage: https://pypi.org/project/deptry/
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://deptry.com/
+  repository: https://github.com/fpgmaas/deptry
+  documentation: https://deptry.com/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - Zeitsperre
+    - maresb
+    - fpgmaas
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: deptry
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: deptry
+  cfe-purls:
+    - pkg:conda/deptry@${{ version }}?channel=conda-forge
+    - pkg:pypi/deptry@${{ version }}
+  cfe-upstream-repo: https://github.com/fpgmaas/deptry
+  cfe-upstream-homepage: https://deptry.com/
+  cfe-import-names: [deptry]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/deptry-feedstock
+  cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-11T00:00:00Z
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: 2026-07-11T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-11T18:33:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Local v1 migration of conda-forge/deptry-feedstock (still v0 meta.yaml).
+#    # meta.yaml (deployed) kept alongside per keep-meta-until-migrated;
+#    # cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml records the owed migration.
+# build:
+#    # maturin/Rust (pulls the ruff crate) => per-Python compiled build; NOT noarch.
+#    # bare `python` in host/run (matrix-pinned); cargo-bundle-licenses -> THIRDPARTY.yml.
+#    # win keeps the CARGO_HOME=C:\cargo path-length workaround (deptry-feedstock#5).
+# requirements:
+#    # colorama is win-only upstream (sys_platform=='win32'); tomli is a <3.11 backport
+#    # kept unconditional (harmless for pip check; deptry ignores it on 3.11+).
+# tests:
+#    # per-Python compiled => simple imports+pip_check, NOT the CFEP-25 python_version
+#    # triad (its "*" leg would try to load a .so built for a different Python — G49).
+####
