@@ -273,7 +273,7 @@ per-case reality below.
 | `banners` | 4 dev.to article images (framework / phases / testing / ecosystem) → `public/assets/banners/*` |
 | `screenshot_slots` | slide 40 "In action" — 3 placeholder panels awaiting real screenshots |
 | `fonts` / `palette` | Space Grotesk + IBM Plex Sans/Mono; `#0B1626` / `#F6F4EE` / `#F4C233` / blues |
-| `branch` / `PR` | `claude/add-agentic-sdlc-deck` / **PR #50** (open, base `main`) |
+| `branch` / `PR` | `claude/add-agentic-sdlc-deck` / **PR #50** (merged 2026-07-11 → `main`, `4e7aabb0`) |
 | `exports` | `src/marp/agenticaisdlc.marp.md` · `src/pptx/agentic-ai-sdlc-2026-07-11.pptx` |
 | `sources` | Built from a Claude Design prototype + a Claude Code web session; the prototype is committed as the design source of truth |
 
