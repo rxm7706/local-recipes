@@ -464,6 +464,11 @@ PublishScripts/
 **/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
+# except our monorepo's first-party source packages under src/**/packages/
+# (unity-data-stack src/shared/packages convention) — these are tracked source,
+# NOT .NET/NuGet package caches. Re-include the member dirs + their contents.
+!src/**/packages/*/
+!src/**/packages/*/**
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
