@@ -20,6 +20,7 @@ name = "pixi-build-python"
 version = "0.*"
 
 [package.host-dependencies]
+python = ">=3.12"          # explicit build-time interpreter for pixi-build-python (Gemini PR#49)
 hatchling = "*"
 
 # Runtime engines are provisioned as conda packages (NFR1/NFR2) — never
@@ -27,6 +28,6 @@ hatchling = "*"
 # conda-forge feedstock; deptry likewise. The library code itself is
 # stdlib-only (argparse, tomllib, re).
 [package.run-dependencies]
-python = ">=3.11"
+python = ">=3.12"
 deptry = "*"
 osv-scanner = "*"
