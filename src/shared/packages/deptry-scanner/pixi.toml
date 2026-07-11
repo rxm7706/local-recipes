@@ -1,0 +1,32 @@
+# deptry-scanner — pixi build workspace member (Option B).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.deptry-scanner.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# The E1–E4 implementation (extractor, deptry/osv-scanner runners,
+# schema-validated ComplianceReport, argparse CLI + exit gate) is delivered by
+# bmad-quick-dev against docs/specs/deptry-scanner.md.
+
+[package]
+name = "deptry-scanner"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+hatchling = "*"
+
+# Runtime engines are provisioned as conda packages (NFR1/NFR2) — never
+# curl-fetched at runtime (OD1). osv-scanner is consumed from the existing
+# conda-forge feedstock; deptry likewise. The library code itself is
+# stdlib-only (argparse, tomllib, re).
+[package.run-dependencies]
+python = ">=3.11"
+deptry = "*"
+osv-scanner = "*"
