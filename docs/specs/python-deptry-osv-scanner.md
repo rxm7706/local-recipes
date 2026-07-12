@@ -53,6 +53,7 @@ The architecture phase (`_bmad-output/projects/python-deptry-osv-scanner/plannin
 7. **Story sharding (supersedes § Story sharding):** the breakdown is now **5 epics / 20 stories** in `_bmad-output/projects/python-deptry-osv-scanner/planning-artifacts/epics.md` (this header originally said ~4 epics / ~12–16 stories). § Story sharding below is historical intent only.
 8. **Repo layout detail:** `report-schema.json` lives at `src/python_deptry_osv_scanner/data/` (beside the bundled `conda_pypi_map.json`), not the package root.
 9. **Honest-adoption statement (new, load-bearing):** a bare `recipe.yaml` scan **exits non-zero by design** until the project locks (`pixi.lock`), waives (expiring, auditable), or runs `--warn-only` — that is the lock-nudge working, not a bug. The recommended **first contact** with the tool is a local `--warn-only` run at a developer terminal (see § Local / workstation mode), not a CI wiring.
+10. **Implementation execution model (2026-07-12, user decision "Option B"):** the 20 stories run **loop-driven** — `bmad-loop` orchestrating `bmad-dev-auto` sessions (`DEV → VERIFY → REVIEW → VERIFY → COMMIT`), per `docs/specs/bmad-loop-adoption.md`. Each story's Given/When/Then ACs are the contract the dev-auto spec conversion must preserve; the loop's deterministic `[verify]` command is the scanner's own pytest task (the 1.1a/1.1b harness + C0 gates thereby police every later story); gates graduate: `per-story-spec-approval` (1.1a/1.1b, the contract freeze) → `per-epic` (Epic 2+) → revisit `none` for the tail. Escalations resolve interactively via `bmad-loop-resolve`.
 
 ---
 
@@ -63,7 +64,7 @@ The architecture phase (`_bmad-output/projects/python-deptry-osv-scanner/plannin
 | Status | **In progress** — planning COMPLETE (PRD + architecture + readiness + **epics/stories: 5 epics / 20 stories**, committed); implementation next (Story 1.1a). All decisions resolved (§ Decisions + the reconciliation callout above) |
 | Scope | **Python only** — PyPI + conda-forge, 6 Python/conda manifest formats; non-Python ecosystems out of scope (see § Scope & naming in the intake note) |
 | Owner | rxm7706 |
-| Track | **Full BMAD** (PRD → architecture → epics/stories → dev) — planning artifacts under `_bmad-output/projects/python-deptry-osv-scanner/` |
+| Track | **Full BMAD** (PRD → architecture → epics/stories → **loop-driven dev**) — planning artifacts under `_bmad-output/projects/python-deptry-osv-scanner/`. Implementation runs via **bmad-loop v0.8.1 + bmad-dev-auto** (BMAD 6.10) per `docs/specs/bmad-loop-adoption.md` — graduated gates (per-story-spec-approval for 1.1a/1.1b → per-epic from Epic 2), deterministic verify gate = the scanner's own test suite |
 | Proposed project slug | `python-deptry-osv-scanner` (BMAD artifacts → `_bmad-output/projects/python-deptry-osv-scanner/`) |
 | Python package | module `python_deptry_osv_scanner`; dist name `python-deptry-osv-scanner` |
 | Source root | **In-repo pixi *build* workspace member** at `src/shared/packages/python-deptry-osv-scanner/` (Option B; unity-data-stack `src/shared/packages` convention) — see § Repository layout |
