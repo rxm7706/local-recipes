@@ -49,11 +49,11 @@ The architecture phase (`_bmad-output/projects/python-deptry-osv-scanner/plannin
 3. **Verdict lattice + exit enum (supersedes FR4/FR5's status list + exit codes):** the status enum gains **`indeterminate`** (above `warn`): `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`; the canonical token is `warn` (not `warnings`). Frozen exit enum **`{0, 1, 2, 130}`**; the 7→4 projection maps **`indeterminate` → exit 1** (decided 2026-07-12: exit 2 stays reserved for operational errors — an indeterminate run is trustworthy and honestly reports unproven cleanliness). Withheld / skipped / unresolved outcomes route to `indeterminate` → non-zero, **never** a silent 0.
 4. **Gate default (supersedes FR5's "critical CVE or KEV"):** v1 blocks on **CVSS-critical only**; the KEV tier is post-v1 (annotation-only if osv emits it natively at zero new data source).
 5. **Discovery (supersedes data-flow step 1's priority order):** **union coverage** — all discovered manifests are scanned and reported per-manifest; there is no single-winner priority chain.
-6. **osv input (supersedes step 2's `.scanner-temp-reqs.txt` + the "installed env" fallback):** the synthesized osv input is a temp file named **`requirements.txt`** (osv infers the parser from the basename; the `--lockfile=<parser>:<path>` override is to be verified in Story 1.3a); the "installed env" fallback is **dropped** (conflicts with the pre-build posture — never assume a version).
+6. **osv input (supersedes step 2's `.scanner-temp-reqs.txt` + the "installed env" fallback):** the synthesized osv input is a temp file named **`requirements.txt`** (osv infers the parser from the basename; the `--lockfile=<parser>:<path>` override is to be verified in Story 1.4); the "installed env" fallback is **dropped** (conflicts with the pre-build posture — never assume a version).
 7. **Story sharding (supersedes § Story sharding):** the breakdown is now **5 epics / 20 stories** in `_bmad-output/projects/python-deptry-osv-scanner/planning-artifacts/epics.md` (this header originally said ~4 epics / ~12–16 stories). § Story sharding below is historical intent only.
 8. **Repo layout detail:** `report-schema.json` lives at `src/python_deptry_osv_scanner/data/` (beside the bundled `conda_pypi_map.json`), not the package root.
 9. **Honest-adoption statement (new, load-bearing):** a bare `recipe.yaml` scan **exits non-zero by design** until the project locks (`pixi.lock`), waives (expiring, auditable), or runs `--warn-only` — that is the lock-nudge working, not a bug. The recommended **first contact** with the tool is a local `--warn-only` run at a developer terminal (see § Local / workstation mode), not a CI wiring.
-10. **Implementation execution model (2026-07-12, user decision "Option B"):** the 20 stories run **loop-driven** — `bmad-loop` orchestrating `bmad-dev-auto` sessions (`DEV → VERIFY → REVIEW → VERIFY → COMMIT`), per `docs/specs/bmad-loop-adoption.md`. Each story's Given/When/Then ACs are the contract the dev-auto spec conversion must preserve; the loop's deterministic `[verify]` command is the scanner's own pytest task (the 1.1a/1.1b harness + C0 gates thereby police every later story); gates graduate: `per-story-spec-approval` (1.1a/1.1b, the contract freeze) → `per-epic` (Epic 2+) → revisit `none` for the tail. Escalations resolve interactively via `bmad-loop-resolve`.
+10. **Implementation execution model (2026-07-12, user decision "Option B"):** the 20 stories run **loop-driven** — `bmad-loop` orchestrating `bmad-dev-auto` sessions (`DEV → VERIFY → REVIEW → VERIFY → COMMIT`), per `docs/specs/bmad-loop-adoption.md`. Each story's Given/When/Then ACs are the contract the dev-auto spec conversion must preserve; the loop's deterministic `[verify]` command is the scanner's own pytest task (the 1.1/1.2 harness + C0 gates thereby police every later story); gates graduate: `per-story-spec-approval` (1.1/1.2, the contract freeze) → `per-epic` (Epic 2+) → revisit `none` for the tail. Escalations resolve interactively via `bmad-loop-resolve`.
 
 ---
 
@@ -61,10 +61,10 @@ The architecture phase (`_bmad-output/projects/python-deptry-osv-scanner/plannin
 
 | Field | Value |
 |---|---|
-| Status | **In progress** — planning COMPLETE (PRD + architecture + readiness + **epics/stories: 5 epics / 20 stories**, committed); implementation next (Story 1.1a). All decisions resolved (§ Decisions + the reconciliation callout above) |
+| Status | **In progress** — planning COMPLETE (PRD + architecture + readiness + **epics/stories: 5 epics / 20 stories**, committed); implementation next (Story 1.1). All decisions resolved (§ Decisions + the reconciliation callout above) |
 | Scope | **Python only** — PyPI + conda-forge, 6 Python/conda manifest formats; non-Python ecosystems out of scope (see § Scope & naming in the intake note) |
 | Owner | rxm7706 |
-| Track | **Full BMAD** (PRD → architecture → epics/stories → **loop-driven dev**) — planning artifacts under `_bmad-output/projects/python-deptry-osv-scanner/`. Implementation runs via **bmad-loop v0.8.1 + bmad-dev-auto** (BMAD 6.10) per `docs/specs/bmad-loop-adoption.md` — graduated gates (per-story-spec-approval for 1.1a/1.1b → per-epic from Epic 2), deterministic verify gate = the scanner's own test suite |
+| Track | **Full BMAD** (PRD → architecture → epics/stories → **loop-driven dev**) — planning artifacts under `_bmad-output/projects/python-deptry-osv-scanner/`. Implementation runs via **bmad-loop v0.8.1 + bmad-dev-auto** (BMAD 6.10) per `docs/specs/bmad-loop-adoption.md` — graduated gates (per-story-spec-approval for 1.1/1.2 → per-epic from Epic 2), deterministic verify gate = the scanner's own test suite |
 | Proposed project slug | `python-deptry-osv-scanner` (BMAD artifacts → `_bmad-output/projects/python-deptry-osv-scanner/`) |
 | Python package | module `python_deptry_osv_scanner`; dist name `python-deptry-osv-scanner` |
 | Source root | **In-repo pixi *build* workspace member** at `src/shared/packages/python-deptry-osv-scanner/` (Option B; unity-data-stack `src/shared/packages` convention) — see § Repository layout |
@@ -606,7 +606,7 @@ Mechanically nothing changes (same argparse CLI, `--format text` default, TTY
 color auto-detection, zero prompts). **Local mode must not soften the gate** —
 same lattice, same exit codes, same fail-loud. The workstation-only deltas are
 story-owned: cold-start provisioning UX + the explicit online-vuln-query
-decision (Story 1.3a — offline stays the fleet default; any online mode is
+decision (Story 1.4 — offline stays the fleet default; any online mode is
 opt-in and never silent, per NFR-S2), and the workstation install story
 (Story 5.1 docs; `pixi global install` / the local channel now, conda-forge
 per OD5 later). A `doctor` self-check subcommand is re-ranked **v1-if-cheap**
@@ -619,7 +619,7 @@ pixi workspace** (`pixi.toml` + `pixi.lock`) — so `nebi pull <ws>:<tag>` →
 while the scanner is decision-deterministic (NFR-R3b), scanning two pulled
 versions yields **meaningfully diffable `ComplianceReport`s** ("did our env
 upgrade introduce CVEs?"). Distribution channels for the scanner env itself
-(named in Story 1.3a's decision record): `pixi global install` (online) ·
+(named in Story 1.4's decision record): `pixi global install` (online) ·
 **pixi-pack/unpack** (air-gapped single-archive bundles) · **nebi push/pull**
 for nebi-adopted teams (OCI registries; alpha — a candidate, not the
 recommended primary path for a security gate yet). The scanner stays
@@ -657,7 +657,7 @@ effort touches and the obligations they create:
    owned at the FR-18 implementation.
 2. **Two producers of `ComplianceReport`.** Kedro FR-16/FR-18 assemble this
    schema with a different security source (atlas vdb + CISA-KEV + EPSS —
-   not osv-scanner). Story 1.1a freezes the schema **producer-agnostically**:
+   not osv-scanner). Story 1.1 freezes the schema **producer-agnostically**:
    generic vuln-data provenance (`{source, snapshot_at, max_age_ok}`),
    optional KEV/EPSS slots (v1 never populates them), severity carrying tier
    + raw evidence.
