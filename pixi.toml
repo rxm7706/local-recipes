@@ -138,6 +138,10 @@ gcloud = ["python", "gcloud-sdk"]
 # default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
 # carries only the built python-deptry-osv-scanner package + its conda run-deps + pytest.
 python-deptry-osv-scanner = { features = ["python-deptry-osv-scanner"], no-default-feature = true }
+# BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
+# LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
+# mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
+bmad-ui = { features = ["bmad-ui"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
@@ -803,6 +807,31 @@ tmux = ">=3.4"                    # terminal multiplexer — bmad-loop spawns co
 tmux = ">=3.4"                    # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 mlx = ">=0.32.0"                  # Apple's array framework (Metal-accelerated on M-series)
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
+
+# --- bmad-ui: BMad Method UI dashboards (bmad-loop-adoption W4) ---------------
+# Consumes the locally-built consume-not-submit mirrors of staged-recipes#33513
+# (recipes/bmad-dashboard + recipes/mybmad-dashboard) from the local channel.
+# Rebuild via: pixi run -e local-recipes recipe-build recipes/<name>
+# One-time after install: `pixi run bmad-dashboard-install` wires the VS Code
+# extension into your editor; `pixi run mybmad up` starts the web dashboard
+# (provisions a per-user PostgreSQL; default http://localhost:3002).
+[feature.bmad-ui]
+# linux-64 only: the local channel holds linux-64 builds (mybmad-dashboard skips
+# win upstream; osx would need a Mac build). Widen when #33513 merges to cf.
+platforms = ["linux-64"]
+channels = ["./build_artifacts/linux64", "conda-forge"]
+
+[feature.bmad-ui.dependencies]
+bmad-dashboard = "*"               # VS Code extension bundle + bmad-dashboard-install CLI
+mybmad-dashboard = "*"             # MyBMAD web dashboard (Next.js standalone) + mybmad launcher
+
+[feature.bmad-ui.tasks.bmad-dashboard-install]
+description = "Install the BMAD Dashboard VS Code extension into the local editor (VS Code / Insiders / VSCodium / code-server); --list to confirm, --uninstall to remove"
+cmd = "bmad-dashboard-install"
+
+[feature.bmad-ui.tasks.mybmad]
+description = "MyBMAD web dashboard launcher: `up` starts (local PostgreSQL + web server on :3002), `stop` stops the DB, `promote-admin --email <you>` grants admin"
+cmd = "mybmad"
 
 [feature.local-recipes.pypi-dependencies]
 boring-semantic-layer = ">=0.3.15" # The Boring Semantic Layer (BSL) is a lightweight semantic layer based on Ibis.
