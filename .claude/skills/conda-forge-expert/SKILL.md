@@ -3497,6 +3497,109 @@ Also 2 near-miss classes from the same waves: the generator DOES emit `context.p
 
 **Case study**: cyclonedx-universe-inventory Wave B local gate (2026-07-05) — the S4 "validate the REAL full BOM" gate. First run killed at 75 min; the 10k benchmark misdiagnosed the cost as ~63 min linear; schema inspection found `uniqueItems`; the strip + O(n) exact check + 14-worker chunked walk validated all 856,766 components (VALID, 0 duplicate components) in 31 s wall.
 
+### G100. npm CLIs are per-arch recipes (openspec/bmalph pattern) — noarch + bash-wrapper + `__unix` cannot serve Windows and fights the symlink check
+
+**Symptom**: a `noarch: generic` npm CLI recipe needs three compensating hacks — replace npm's `bin/<name>` symlink with a bash wrapper (rattler rejects symlinks in noarch), strip `node_modules/.bin` (G6), and gate installation with `if: unix then: __unix` — and the result is still uninstallable on Windows (the bash wrapper cannot run there; a single noarch artifact cannot carry both unix symlinks and win `.cmd` shims).
+
+**Why**: npm lays down *platform-native* bin shims at install time (symlinks on unix, `.cmd`/`.ps1` on win), so the artifact is inherently per-platform even when the JS payload is portable. The two conda-forge-proven npm recipes in this repo — `openspec` (merged feedstock) and `bmalph` — are BOTH per-arch for exactly this reason.
+
+**Fix** — the per-arch npm CLI shape (no wrappers, no `.bin` stripping, no `__unix`):
+
+```yaml
+build:
+  number: 0        # NOT noarch
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - npm pack --ignore-scripts
+        - npm install -g ./<tgz-name>-${{ version }}.tgz
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc -g <tgz-name>-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+```
+
+(`call` on every `.cmd` shim per the build.bat rule; add the `pnpm install --prod` + `pnpm-licenses` pair on both branches when the package has runtime deps.) `noarch: generic` remains correct only for bin-less node **libraries** (pptxgenjs) and content bundles (skills collections) — nothing platform-native gets written.
+
+**Case study**: the 2026-07-12 win-64 sweep — caveman, ccusage, claude-mem, cdxgen, pi-coding-agent converted noarch→per-arch; codegraph authored per-arch from the start (its npm dist bundles per-platform native binaries, G101). The scoped-tarball pack names differ from the package name (`@cyclonedx/cdxgen` → `cyclonedx-cdxgen-<ver>.tgz`).
+
+---
+
+### G101. npm dists that are shims over per-platform Bun static binaries — detect via `optionalDependencies`; the native may segfault and CANNOT be built from source
+
+**Symptom**: an npm CLI's published tarball contains only a tiny `npm-shim.js`/`src/cli.js`, `dependencies` is empty, and `optionalDependencies` lists `@scope/<name>-<os>-<arch>` platform packages. The CLI either errors `"native binary is not available for <platform>"` (installed with `--omit=optional`) or — worse — the fetched native binary **segfaults** (exit 139) on some hosts, sometimes intermittently (a run that passed at build time crashed an hour later).
+
+**Why**: upstream compiles the app with **Bun** into static-PIE per-platform executables and publishes the JS package as a thin dispatcher. The binary is prebuilt and opaque: bun is not on conda-forge, so there is no source-build path; host-specific crashes (observed deterministic after intermittent) cannot be fixed at the recipe level — not by node version (24 and 26 both crash), `--jitless`, stack size, or disabling ASLR.
+
+**Fix**: (1) detect early — inspect the published tarball's `package.json` for platform-named `optionalDependencies` and a shim-sized payload; the REPO's package.json may look completely different (codegraph's repo showed `bin: dist/bin/codegraph.js` + 10 real deps; the published tarball had `bin: npm-shim.js` + 6 platform optionals). (2) The recipe must be per-arch (G100) so npm fetches the matching platform binary. (3) The CLI test must actually EXECUTE the binary (`<name> --version`) — file-existence tests would false-green a segfaulting native. (4) If the binary crashes on the build host, pin to the **last pure-JS, node-runnable version** and record the reason in `cfe-forge-blocker-list` (find it by walking npm versions for the newest one without platform optionalDeps).
+
+**Case study** (2026-07-12): codegraph 1.4.1 — native works, per-arch recipe bundles it, GREEN. ccusage — v20.0.17's `@ccusage/ccusage-linux-x64` Bun binary segfaulted 10/10 on the build host (earlier same-day passes were intermittent survivals); pinned to 19.0.3 (last pure-JS release, `bin: dist/cli.js`, zero deps) and the broken 20.0.17 uploads were removed from the personal channel.
+
+---
+
+### G102. The staged-recipes win-64 leg builds noarch recipes too — a unix-only build script renders EMPTY on Windows and dies as "No license files were copied"
+
+**Symptom**: a noarch recipe that is green on the linux/osx legs fails the staged-recipes win-64 leg with `Error: × No license files were copied` — even though `license_file` points at a file that exists in the source. The win log shows the build script ran as `IF "" == "" (call build_env.bat)` — i.e. nothing.
+
+**Why**: three stacked facts. (1) staged-recipes CI builds every recipe on all three platform legs, noarch included (`target_platform: noarch` on the win runner). (2) An inline `script: - if: unix then: [...]` with **no `else`** renders to an empty script on win — the build "succeeds" having installed nothing; similarly a recipe-dir `build.sh` with no `build.bat` runs nothing on win. (3) rattler copies license files only after packaging, and **one missing file in `license_file` aborts the whole copy** — a build-generated file (`third-party-licenses.txt` from pnpm-licenses) is the classic casualty, since the empty script never generated it.
+
+**Fix**: every recipe headed to staged-recipes needs exactly one of: a win `else:` branch (G100 shape, `call` + errorlevel checks), a `build.bat` next to `build.sh` (rattler auto-selects when no `script:` key is set — the bmad-utility-skills pattern), or an explicit `build: skip: - win` for deliberately unix-only tools (upstream errors on Windows, bash-orchestrator payloads). Related trap: npm tarballs often omit LICENSE (the `files` array excludes it) — vendor it from the repo tag as a second source with `file_name: LICENSE`, and remember "No license files were copied" also fires when ANY declared license file is missing, not just all of them.
+
+**Case study**: pptxgenjs on staged-recipes PR #34176 (2026-07-12) — linux legs green, win-64 leg dead at the license copy because the unix-only script never ran pnpm-licenses. Fixed with the full win branch; the same sweep audited every branch recipe (5 npm CLIs → per-arch, quarkdown gained the upstream `windows-x64.zip` source + build.bat, bmad-story-automator + bmad-autopilot got `skip: win`).
+
+---
+
+### G103. Don't copy npm `engines` version caps into conda run deps — the host nodejs run-export makes the combined constraint unsolvable
+
+**Symptom**: an npm recipe with `run: nodejs >=20,<25` (mirroring the package.json `engines` field) builds fine but its test env fails to solve: the artifact's run deps carry BOTH the explicit `nodejs >=20,<25` AND `nodejs >=26.5.0,<27.0a0` — an empty intersection.
+
+**Why**: conda-forge's `nodejs` has a `run_exports`, so whatever nodejs lands in `host:` pins a major-series run constraint into the artifact automatically. An explicit engines-derived cap in `run:` intersects with it; when the host solved a newer major than the engines cap allows, the package can never install. npm `engines` caps are advisory (upper bounds are routinely stale — tools run fine on newer majors).
+
+**Fix**: put the FLOOR (if any) on `host:` (which selects the variant and hence the run-export) and leave `run: nodejs` bare — or omit both and let the run-export do all the work. Only mirror an engines ceiling when upstream demonstrably breaks on newer node, and then constrain the HOST so the export matches.
+
+**Case study**: codegraph (2026-07-12) — `run: nodejs >=20,<25` from engines vs a nodejs-26.5 host export = unsolvable test env; fixed by dropping the explicit pin. Note the local variant config builds nodejs 24 AND 26 variants for bare-nodejs recipes — two artifacts, each tested against its own major (which is how the ccusage/G101 crash surfaced on the 24 variant).
+
+---
+
+### G104. Strict channel priority: ANY stale local-channel package shadows every conda-forge version of that name
+
+**Symptom**: a recipe's test env fails to solve with `package X is excluded because due to strict channel priority not using this option from 'conda-forge'` — even though conda-forge has exactly the version needed.
+
+**Why**: local builds solve with the local `build_artifacts` channel at top priority and **strict** channel priority: if the local channel contains ANY version of a package name, ALL conda-forge versions of that name are excluded from resolution. A years-old local recipe (portalocker 2.7.0) silently caps every downstream consumer's ceiling for that package.
+
+**Fix**: refresh the local recipe to the needed version and build it (the new artifact joins the old in the local channel — old versions stay resolvable for consumers pinned to them, e.g. `>=2.7,<2.8`). Loosening the consumer's floor to the stale version is usually the wrong direction — check the consumers (`grep -l <name> recipes/*/recipe.yaml`) before deciding which side moves.
+
+**Case study**: openkb (2026-07-12) needed `portalocker >=3.2.0`; conda-forge had 3.2.0 but the local channel's 2.7.0 shadowed it. Bumped the local portalocker recipe 2.7.0→3.2.0 (also fixing its unconditional pywin32 run dep → win-gated, and its stale PSF-2.0 license → BSD-3-Clause); the 2.7.0 artifact stays for the `<2.8`-pinned consumers.
+
+---
+
+### G105. rattler-build python tests run `pip check` BY DEFAULT — an omitted `pip_check:` means true, and the repo convention is explicit true + dual `python_version`
+
+**Symptom**: a python test block written without `pip_check:` fails at test time with e.g. `<pkg> requires <dep>, which is not installed` — the author believed pip check was opt-in.
+
+**Why**: in the v1 python test element, `pip_check` **defaults to true**. Separately, a single `python_version: ${{ python_min }}.*` only exercises the floor interpreter.
+
+**Fix** — the repo's canonical python test block:
+
+```yaml
+tests:
+  - python:
+      imports:
+        - <module>
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+```
+
+Downgrade to `pip_check: false` ONLY with a factual blocker, recorded twice — an inline comment above the line AND the `cfe-pip-check: "false:<reason-code>"` field. Confirmed blocker classes: upstream exact `==` pins that the loosened conda deps legitimately violate (openkb, hermes-agent); a PyPI shim dist with no conda dist-info (`dotenv` → python-dotenv); a dep satisfied by a non-Python conda package (ast-grep-cli → the `ast-grep` binary, headroom-ai); a transitive third-party METADATA skew the solver picks badly (pageindex's fix was raising the `openai-agents` floor so pip check PASSES — prefer fixing the pick over waiving).
+
+**Case study**: headroom-ai (2026-07-12) — first build failed at `pip check` (`ast-grep-cli … not installed`) precisely because the test block omitted `pip_check`, assuming off-by-default.
+
 ---
 
 ## Skill Automation
@@ -3535,6 +3638,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.77.0** (Jul 12, 2026) — **agent-tooling recipe-wave retro (Rule 2): 6 new gotchas G100–G105 (MINOR).** From the 35-recipe build+publish wave (SelfExplainML channel). **G100** npm CLIs are per-arch (openspec/bmalph pattern) — noarch+bash-wrapper+`__unix` can't serve win; **G101** Bun-native npm dists (shim + per-platform `optionalDependencies` static binaries; may segfault, no source build — pin to last pure-JS version; ccusage 19.0.3); **G102** staged-recipes win-64 leg builds noarch too — unix-only scripts render EMPTY and die at "No license files were copied" (PR #34176; win branch / build.bat / skip:win); **G103** don't copy npm `engines` caps into run deps (nodejs run-export conflict); **G104** strict channel priority — any stale local-channel package shadows ALL conda-forge versions (portalocker 2.7.0 vs openkb); **G105** rattler python tests run `pip check` by default + the canonical dual-`python_version` test block. See CHANGELOG.
 - **v8.76.1** (Jul 11, 2026) — **atlas + detail-card bug-fix bundle (PATCH — 4 fixes; no schema/CLI/phase/gotcha change).** From a direct atlas-operations session (admin refresh + `rxm7706/about` maintainer-list update). (1) **`detail-cf-atlas --vdb-all` ScoreType crash** — appthreat-vulnerability-db 6.6.2's partial `model_dump` leaves the CVSS `baseScore` as a `RootModel`/`ScoreType` object → the per-CVE sort's `float(cvss_score)` threw; new `_coerce_cvss_score()` unwraps it. (2) **`--vdb-all` KEV alignment** — the raw list read KEV from vdb's own flags (~always False; aqua ignores `kevc/`) → 0 KEV vs the Phase G card's real count; new `_load_kev_cves()` overlays the atlas `cisa_kev` catalog and reports KEV-affecting-current (matches Phase G). (3) **Phase B.5 dbt-collapse** — `feedstock_name` took `feedstocks[0]`; for a split-out output `feedstock-outputs` lists both the umbrella and the dedicated feedstock (`dbt-bigquery → ['dbt','dbt-bigquery']`), collapsing the `dbt-*` family into `dbt`; new `_pick_feedstock()` prefers the entry `== pkg_name` when `>1` (live: family splits into 18 feedstocks). (4) **`write_meta` `phases_run` overwrite** — the v8.22.0 split runs core/F/K/N as separate `build --only` calls each overwriting `phases_run` → a full admin run recorded only `['N']`; now MERGES (union, canonical order) via `_merge_phases_run` + `_read_meta_phases_run`. All verified live (`--fresh` + non-fresh admin reruns: F/K/N land, `phases_run == full B…N`). +11 unit tests. See CHANGELOG.
 - **v8.76.0** (Jul 6, 2026) — **`license-map-gap` — the 4th seed-gap suggester (MINOR — new CLI).** Targets the last un-automated curated asset: the **in-code** `conda_forge_atlas._LICENSE_TO_SPDX` free-text→SPDX map (~36 entries; `_normalize_license_to_spdx` returns `None` on a miss, silently degrading the Phase R/S license-readiness score). Offline: scans `pypi_intelligence` for `license_raw` rows whose `license_spdx IS NULL` (the map missed), ranks by package count, filters junk (empty/`unknown`, >60-char full-text pastes, `see …`/URL forms, SPDX expressions, already-mapped forms), and tiers each surviving form as `likely` (exactly one whole-token vendored-SPDX candidate → a paste-ready `"<form>": "<id>",` line) or `report` (zero/multiple candidates → human picks). No fuzzy matching — a wrong license map is a correctness bug; the candidate is a conservative hint only. **READ-ONLY** — no write path to `conda_forge_atlas.py` (a fixture test asserts the source is byte-identical across a full CLI run). Three-place rule; CLI/pixi-only. 7 fixture tests. Spec: `docs/specs/seed-gap-suggesters.md` (family spec, extended). See CHANGELOG.
 - **v8.75.0** (Jul 6, 2026) — **`cwe-seed-gap` + `spdx-schema-gap` suggesters (MINOR — two new CLIs).** The seed-gap family after v8.74.0 `lts-registry-gap`, extending the "push automation further" line to two more hand-curated `data/` assets. **`cwe-seed-gap`** (offline) scans `cwe_categories` rows still bucketed `Other`, keyword-classifies each `cwe_name` into the 7 real categories at `strong` (category-defining phrase) / `weak` (generic word) tiers via a fixed-precedence heuristic (so "OS Command Injection" → RCE, not Injection), and emits ready-to-paste seed lines + an "`Other`-bucket affects N packages" impact headline. **`spdx-schema-gap`** diffs the vendored 811-ID SPDX enum against the upstream SPDX license list (`spdx/license-list-data`, `GITHUB_RAW_BASE_URL`-routable, TTL-7d cache + offline-stale fallback) and partitions the license strings on `v_actionable_packages` the enum misses into `add-to-schema` (a real upstream SPDX ID → genuine staleness, package-count-ranked) vs `non-standard` (normalize, report-only); compound SPDX expressions are skipped; `--drift` lists the pure upstream-vs-vendored delta. **Both are READ-ONLY** — the seeds stay hand-curated, accept/reject is git review, and each fixture suite asserts its seed file is byte-identical across a full CLI run. Three-place rule per tool; CLI/pixi-only. 14 fixture tests. Spec: `docs/specs/seed-gap-suggesters.md`. Kedro reflection (three seed-gap loops as read-only report nodes) folded into the § 3.4 boundary + prototype branches once they land. See CHANGELOG.
