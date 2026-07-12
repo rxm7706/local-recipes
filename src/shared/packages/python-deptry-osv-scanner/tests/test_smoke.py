@@ -14,4 +14,5 @@ def test_version_exposed():
 
 
 def test_cli_entrypoint_returns_zero():
+    assert main() == 0
     assert main([]) == 0
