@@ -1,5 +1,5 @@
 ---
-status: ready
+status: in-progress
 spec_updated: 2026-07-11
 ---
 # Tech Spec: `python_deptry_osv_scanner` — Python dependency-hygiene + vulnerability gate
