@@ -45,11 +45,47 @@ spec_updated: 2026-07-12
 3. **dev-auto path assumptions** — upstream expects the standard `{output_folder}`; this repo resolves per-project. Fix belongs in customize layers, never by forking the skill.
 4. **bmad-loop maturity (v0.8.x)** — mitigated by the per-story gate mode for the pilot + the deterministic verify commands.
 
+## Execution log (2026-07-12)
+
+- **W1 DONE** (`792597d0d0` + provisioning `73f6d9a77b`): core+bmm 6.6.0→6.10.0; 46 skills
+  (new: `bmad-dev-auto`, `bmad-architecture`, `bmad-prd`, `bmad-spec`, `bmad-ux`,
+  `bmad-forge-idea`; old create-prd/-architecture/-ux/-validate-prd now DEPRECATED thin
+  wrappers — **update CLAUDE.md's skill table + the skill-disambiguation memory at the
+  next sync pass**). Risk #1 materialized exactly as predicted: the 6.10 stock
+  `resolve_config.py` drops the multi-project layers — **restored the repo-custom
+  version** (verified: `bmad-switch --current`, agents resolution, customization merge);
+  kept the new `resolve_customization.py` (upstream utf-8 fix). Custom overlays survived
+  (hash-verified). Drift-check: 0 integrity.
+- **W2 DONE** (`5da9175431`): init (hook + hooks in `.claude/settings.json` + 3 bundled
+  skills + policy); policy = per-story-spec-approval gates + the scanner pytest task as
+  the `[verify]` command. **Multi-project seam resolved via local symlinks**: root
+  `_bmad-output/{planning,implementation}-artifacts` → the active project's dirs
+  (gitignored; re-point when `bmad-switch`ing — follow-on: teach `scripts/bmad-switch`
+  to manage them). `bmad-loop validate`: all OK except the W3 sprint-status feed.
+- **One-time human step before any run:** launch `claude` once in the repo to accept
+  the newly-registered hooks (a pending approval dialog reads as a session timeout to
+  the loop).
+
+### Windows-without-WSL note (recorded 2026-07-12, user question)
+
+bmad-loop hard-depends on **tmux** (`TmuxMultiplexer` + `PosixProcessHost`) — no native
+Windows path exists upstream (declared support: Linux/macOS, "Windows via WSL"), and
+tmux has no win-64 build anywhere (it is fundamentally POSIX). Native-Windows
+contributors therefore: **(a)** run the *attended* flows, which are OS-agnostic —
+`bmad-dev-story` / `bmad-quick-dev` / even `bmad-dev-auto` invoked inline in a Claude
+Code session (it is the *orchestrator*, not the skills, that needs tmux); **(b)** use
+WSL2 (the upstream-supported path) or the pixi-docker/devcontainer route; **(c)** a
+tmux-free Windows adapter (e.g. a plain subprocess host) would be an upstream
+bmad-loop contribution — filed as a watch item, not this effort's scope. Note the
+distinction: this constrains only *dev-time orchestration in this factory* (linux-64 +
+osx-arm64 hosts); the **scanner product's** own Windows support is a separate question
+owned by its NFR-C1 OS-matrix decision.
+
 ## Definition of Done
 
-- [ ] W1: manifest reads 6.10.0; `bmad-dev-auto` present; custom layers verified; drift-check green (+ baseline restamp if needed).
-- [ ] W2: `bmad-loop` runs from the pixi env; init complete; config committed.
-- [ ] W3: pilot reaches the 1.1a spec-approval gate.
+- [x] W1: manifest reads 6.10.0; `bmad-dev-auto` present; custom layers verified; drift-check green.
+- [x] W2: `bmad-loop` runs from the pixi env; init complete; policy committed; validate green modulo the W3 feed.
+- [ ] W3: sprint-status feed generated (`bmad-sprint-planning` over the 20-story epics) + pilot reaches the 1.1a spec-approval gate.
 - [ ] `status: shipped` with `shipped_ref`.
 
 *CFE Rules 1/2: N/A (no recipe work) — unless the bmad-loop conda-forge packaging follow-on is taken up, which would engage them.*
