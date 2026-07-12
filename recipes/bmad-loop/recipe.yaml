@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.1"
+  python_min: "3.11"
+
+package:
+  name: bmad-loop
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-code-org/bmad-loop/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: b9aceb3feb1cc4251d309312cd2b93cc77e4cd33dfdb768f11b56bb7c6029ca8
+
+build:
+  noarch: python
+  number: 0
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - bmad-loop = bmad_loop.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling >=1.30
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pyyaml >=6.0
+    - psutil >=7.2.2
+    - textual >=8.0,<9
+    - tomlkit >=0.13
+    - pyte >=0.8.2
+
+tests:
+  - python:
+      imports:
+        - bmad_loop
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - bmad-loop --version
+      - bmad-loop --help
+
+about:
+  summary: Deterministic ralph-loop orchestrator for the BMAD implementation phase
+  description: |
+    bmad-loop drives the BMAD Method implementation phase as a
+    deterministic outer loop: for each story in the sprint plan it
+    dispatches DEV -> VERIFY -> REVIEW -> VERIFY -> COMMIT stages in
+    fresh agent sessions (tmux-multiplexed), gating progression on
+    configurable policy (.bmad-loop/policy.toml). Includes a Textual
+    TUI dashboard (`bmad-loop tui`) for live run monitoring.
+  homepage: https://github.com/bmad-code-org/bmad-loop
+  repository: https://github.com/bmad-code-org/bmad-loop
+  documentation: https://github.com/bmad-code-org/bmad-loop#readme
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-loop
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-loop
+  cfe-purls:
+    - pkg:conda/bmad-loop@${{ version }}?channel=conda-forge
+    - pkg:github/bmad-code-org/bmad-loop@v${{ version }}
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-loop
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-loop
+  cfe-import-names: [bmad_loop]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T16:00:14Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Not published on PyPI (upstream distributes via GitHub releases only),
+#    # so the source is the GitHub tag archive, not a pypi.org sdist URL.
+# context:
+#    # python_min 3.11 overrides the conda-forge 3.10 floor — upstream
+#    # pyproject declares requires-python >=3.11.
+# run:
+#    # psutil is a win32-only marker dep upstream (linux stays dep-free);
+#    # noarch:python has one artifact for all platforms, so it is flattened
+#    # to an unconditional run dep (harmless on linux/macos, required for
+#    # TUI liveness on win32).
+#    # textual/tomlkit/pyte are upstream's optional [tui] extra, included in
+#    # run because this repo consumes bmad-loop[tui] (the TUI dashboard is a
+#    # first-class feature); drop to a minimal core if ever submitted and a
+#    # reviewer objects.
+####

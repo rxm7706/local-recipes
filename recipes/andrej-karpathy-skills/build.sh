@@ -7,17 +7,17 @@ if [ ! -d "skills" ]; then
     exit 1
 fi
 
-SHARE="${PREFIX}/share/bmad-utility-skills"
+SHARE="${PREFIX}/share/andrej-karpathy-skills"
 mkdir -p "${SHARE}"
 cp -r skills "${SHARE}/"
 cp -r .claude-plugin "${SHARE}/"
-cp README.md "${SHARE}/"
+cp CLAUDE.md CURSOR.md EXAMPLES.md README.md "${SHARE}/"
 
-# Upstream does not yet ship a LICENSE file (tracked: hold submission).
+# Upstream does not ship a LICENSE file (plugin.json + README declare MIT).
 # Use the MIT LICENSE vendored alongside this recipe.
 cp "${RECIPE_DIR}/LICENSE" "${SHARE}/"
 
 # Cross-platform Python entry point
 mkdir -p "${PREFIX}/bin"
-cp "${RECIPE_DIR}/bmad_utility_skills_install.py" "${PREFIX}/bin/bmad-utility-skills-install"
-chmod +x "${PREFIX}/bin/bmad-utility-skills-install"
+cp "${RECIPE_DIR}/andrej_karpathy_skills_install.py" "${PREFIX}/bin/andrej-karpathy-skills-install"
+chmod +x "${PREFIX}/bin/andrej-karpathy-skills-install"

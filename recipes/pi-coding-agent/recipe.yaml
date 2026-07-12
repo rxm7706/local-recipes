@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.80.6"
+
+package:
+  name: pi-coding-agent
+  version: ${{ version }}
+
+source:
+  - url: https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-${{ version }}.tgz
+    sha256: 2a77634640b2d86d90d24087bb67559ecf2366e0fb52a42c55eed416147da411
+  # The npm tarball ships no LICENSE; take MIT from the monorepo tag.
+  - url: https://raw.githubusercontent.com/badlogic/pi-mono/v${{ version }}/LICENSE
+    sha256: 0457f5bcec3b3b211605dfb5d1a49042fd638f3686a410fe099c24a25af13c48
+    file_name: LICENSE
+
+build:
+  number: 1
+  # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
+  # platform's npm global install lays down its native bin shims (symlinks
+  # on unix, .cmd on win), which a single noarch artifact cannot provide.
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - pnpm install --ignore-scripts --prod
+        - npm pack --ignore-scripts
+        - npm install -g ./earendil-works-pi-coding-agent-${{ version }}.tgz
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm install --ignore-scripts --prod
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc -g earendil-works-pi-coding-agent-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  build:
+    - pnpm
+    - pnpm-licenses
+  host:
+    - nodejs >=22.19.0
+  run:
+    - nodejs >=22.19.0
+
+tests:
+  - script:
+      - pi --version
+      - pi --help
+  - if: unix
+    then:
+      script:
+        - test -f "${PREFIX}/lib/node_modules/@earendil-works/pi-coding-agent/package.json"
+
+about:
+  summary: pi - a minimal, hackable coding agent CLI from the pi AI agent toolkit
+  description: |
+    pi-coding-agent is the coding-agent CLI of badlogic's pi-mono AI agent
+    toolkit (unified LLM API, agent loop, TUI, coding agent). The ``pi``
+    command runs an interactive terminal coding agent with a provider-
+    agnostic model layer, extensions, and session management — small
+    enough to read, hack, and extend.
+  homepage: https://github.com/badlogic/pi-mono
+  repository: https://github.com/badlogic/pi-mono
+  documentation: https://github.com/badlogic/pi-mono#readme
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pi-coding-agent
+  cfe-upstream-registry: npm
+  cfe-upstream-name: "@earendil-works/pi-coding-agent"
+  cfe-purls:
+    - pkg:conda/pi-coding-agent@${{ version }}?channel=conda-forge
+    - pkg:npm/%40earendil-works/pi-coding-agent@${{ version }}
+  cfe-upstream-repo: https://github.com/badlogic/pi-mono
+  cfe-upstream-homepage: https://github.com/badlogic/pi-mono
+  cfe-import-names: []
+  cfe-source-kind: npm-registry-tarball
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T18:30:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T18:30:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T16:48:05Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request). Conda name pi-coding-agent (the
+#    # npm basename) — bare "pi" is far too generic a package name. The
+#    # old @mariozechner/pi scope on npm is STALE (0.70.x, bin renamed
+#    # pi-pods); @earendil-works is the current publisher, versions track
+#    # the pi-mono monorepo tags.
+# build:
+#    # 17 runtime npm deps bundled at build (pnpm-licenses disclaimer);
+#    # @silvia-odwyer/photon-node is WASM -> noarch-safe.
+####

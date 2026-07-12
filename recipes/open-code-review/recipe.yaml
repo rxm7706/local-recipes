@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.7"
+
+package:
+  name: open-code-review
+  version: ${{ version }}
+
+source:
+  url: https://github.com/alibaba/open-code-review/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: e0947e3059b73cd022f62f4ba902f5c81a84825b0900a2fc2ad2286ae4db22b1
+
+build:
+  number: 0
+  script:
+    - go-licenses save ./cmd/opencodereview --save_path=license-files
+    - go build -ldflags="-s -w" -o $PREFIX/bin/opencodereview ./cmd/opencodereview
+
+requirements:
+  build:
+    - ${{ compiler("go-nocgo") }}
+    - go-licenses
+
+tests:
+  - script:
+      - opencodereview --help
+
+about:
+  summary: Hybrid-architecture code review tool from Alibaba - deterministic pipelines + LLM agent, precise line-level comments
+  description: |
+    open-code-review is an open-source code review tool battle-tested at
+    Alibaba's scale: a hybrid architecture combining deterministic
+    analysis pipelines with an LLM agent for precise line-level review
+    comments, with a built-in fine-tuned ruleset (NPE, thread-safety,
+    XSS, SQL injection). OpenAI- and Anthropic-compatible; runs locally,
+    in CI (GitHub Action), or against staged changes.
+  homepage: https://github.com/alibaba/open-code-review
+  repository: https://github.com/alibaba/open-code-review
+  documentation: https://github.com/alibaba/open-code-review#readme
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - license-files/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: open-code-review
+  cfe-upstream-registry: github
+  cfe-upstream-name: alibaba/open-code-review
+  cfe-purls:
+    - pkg:conda/open-code-review@${{ version }}?channel=conda-forge
+    - pkg:github/alibaba/open-code-review@v${{ version }}
+  cfe-upstream-repo: https://github.com/alibaba/open-code-review
+  cfe-upstream-homepage: https://github.com/alibaba/open-code-review
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T17:10:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:10:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:44:56Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request). Binary name follows upstream's
+#    # Makefile BINARY_NAME (opencodereview); upstream also distributes an
+#    # npm wrapper (bin/ocr.js) — the Go source build is used instead.
+# build:
+#    # Upstream builds with CGO_ENABLED=0 (pure Go) -> compiler(go-nocgo),
+#    # no stdlib(c) needed per the go-nocgo exception. Version stamping
+#    # ldflags (-X main.version=...) are omitted — the binary may report a
+#    # dev version string; functional behavior is unaffected.
+####
