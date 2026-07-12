@@ -10,10 +10,16 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-# Intentionally empty: the scanning engines (deptry, osv-scanner) are conda
-# run-dependencies (see pixi.toml), and the library itself is stdlib-only
-# (argparse, tomllib, re) per NFR2. `jsonschema` is a test-only dep (FR6).
-dependencies = []
+# The scanning engines (deptry, osv-scanner) are conda run-dependencies (see
+# pixi.toml). The library uses a lean, targeted dependency set (revised
+# architecture: lean-not-stdlib-only) — pure-stdlib as fallback, no execution
+# of untrusted input (NFR-S1: yaml.safe_load only, no jinja-render).
+dependencies = [
+    "PyYAML",
+    "packaging",
+    "cyclonedx-python-lib",
+    "jsonschema",
+]
 
 [project.scripts]
 python-deptry-osv-scanner = "python_deptry_osv_scanner.cli:main"
