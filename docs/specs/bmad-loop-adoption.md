@@ -121,6 +121,27 @@ items:** `bmad-os-findings-triage` (if the post-loop review→triage flow
 feels thin) and `bmad-os-skill-to-bundle` (the day `conda-forge-expert` or
 team skills are distributed — `claude-team-memory` territory).
 
+**Third survey (same day, user question): "bmad-autopilot" on
+mcpmarket.com → an independent community *precursor*, no relationship.**
+The listing maps to `martin-janci/autopilot` (a thin skill shelling out to
+a bash orchestrator, epic-granular, created 2025-12-23 / dormant since
+2025-12-24; the name is crowded — ≥8 unrelated community repos, none from
+`bmad-code-org`). It uses **neither** `bmad-dev-auto` nor `bmad-loop` — it
+predates both; the officially-adopted stack is its architectural successor
+(deterministic Python gates vs bash+trust; fresh sessions per story vs one
+long session; story- vs epic-granular). **The one delta worth keeping —
+PR-lifecycle automation:** bmad-autopilot's loop covered
+create-PR → watch-CI → respond-to-review-comments → auto-merge, where
+`bmad-loop` deliberately stops at local commit/merge-back (its `[scm]`
+block does worktree/branch merging; no PR creation or CI monitoring).
+**Follow-on candidate (not this effort's scope):** if PR-per-epic
+automation is ever wanted on top of the loop, that is a real gap to fill —
+a small wrapper around `gh pr create` triggered at the existing
+`[gates] per-epic` boundary (plus CI-watch/auto-merge via `gh pr checks`
+/ `gh pr merge --auto`), or an upstream `bmad-loop` feature request.
+Revisit when the fleet-scale phase (or multi-epic parallel work) makes
+single-branch flow limiting.
+
 ## Definition of Done
 
 - [x] W1: manifest reads 6.10.0; `bmad-dev-auto` present; custom layers verified; drift-check green.
