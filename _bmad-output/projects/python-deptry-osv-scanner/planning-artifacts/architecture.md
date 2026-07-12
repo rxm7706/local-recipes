@@ -141,7 +141,7 @@ One internal model, projected into two independent emitted artifacts:
 ### E1 extraction strategy — **non-rendering parse-as-data + a supported-construct matrix**
 NFR-S1 forbids rendering untrusted Jinja, which rules out `conda-build MetaData`/grayskull/rattler-build on the runtime path (they *evaluate*), and rules out CRM/conda-souschef as the primary parser (G93: CRM crashes on odd comments → fails NFR-R1). E1 does a **bounded, non-rendering two-pass scrape**:
 - **Pass 1 — capture context without executing:** v0 → regex-capture `{% set K=V %}`; v1 → `safe_load` the `context:` block.
-- **Pass 2 — neutralize + `safe_load`:** v1 `recipe.yaml` is valid YAML → `safe_load` **directly**; v0 `meta.yaml` is not → capture `# [selector]` marks, strip `{% … %}` statement lines, substitute simple `{{ VAR|filter }}` via **our own safe-filter allowlist** (never a Jinja engine), then `safe_load`. Walk `requirements.{build,host,run,run_constrained|run_constraints}` + `test(s).requirements` + `outputs[].requirements`.
+- **Pass 2 — neutralize + `safe_load`:** v1 `recipe.yaml` is valid YAML → `safe_load` **directly**; v0 `meta.yaml` is not → capture `# [selector]` marks, strip `{% … %}` statement lines, substitute simple `{{ VAR|filter }}` via **our own safe-filter allowlist** (never a Jinja engine), then `safe_load`. Walk `requirements.{build,host,run}` + `test(s).requirements` + `outputs[].requirements`; `run_constrained`/`run_constraints` entries are **constraints, not dependencies** — excluded or flagged `provenance: constraint`, out of vuln matching + SBOM counts (corrected 2026-07-12; matches the shipped `scan_project` semantics).
 
 **Supported-construct matrix (the FR-flagged unowned deliverable — owned here):**
 
@@ -255,6 +255,7 @@ src/shared/packages/python-deptry-osv-scanner/
 │   │   ├── __init__.py         #   dispatch by format
 │   │   ├── _jinja.py           #   context capture + safe-filter allowlist + selector marking
 │   │   ├── recipe_v1.py  meta_v0.py  environment_yml.py  pixi.py
+│   │   ├── lockfiles.py            #   pixi.lock + conda-lock.yml → locked-closure (the vuln hero path; ownership added 2026-07-12)
 │   │   └── pyproject.py  requirements.py   # PyPI-delegate inputs
 │   ├── mapping.py              # bundled static conda→pypi map loader (v1 asset)
 │   ├── engines.py              # _engine_env() + deptry/osv runners (parallel) + output parse
