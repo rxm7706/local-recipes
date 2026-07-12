@@ -28,7 +28,7 @@ build:
         - if %ERRORLEVEL% neq 0 exit 1
         - call npm pack --ignore-scripts
         - if %ERRORLEVEL% neq 0 exit 1
-        - call npm install --userconfig nonexistentrc -g caveman-installer-0.1.0.tgz
+        - for %%f in (caveman-installer-*.tgz) do call npm install --userconfig nonexistentrc -g %%f
         - if %ERRORLEVEL% neq 0 exit 1
 
 requirements:

@@ -19,13 +19,9 @@ def main():
     )
     args = parser.parse_args()
 
-    prefix = os.environ.get("CONDA_PREFIX", "")
-    if not prefix:
-        print(
-            "Error: CONDA_PREFIX is not set. Activate your pixi/conda environment first.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    # sys.prefix always points at the running interpreter's env root
+    # (CONDA_PREFIX is unset in some subshells/IDE launches).
+    prefix = sys.prefix
 
     source = os.path.join(prefix, "share", "andrej-karpathy-skills", "skills")
     if not os.path.isdir(source):
@@ -41,8 +37,11 @@ def main():
         if not os.path.isdir(src):
             continue
         dst = os.path.join(dest, name)
-        if os.path.exists(dst):
-            shutil.rmtree(dst)
+        if os.path.lexists(dst):
+            if os.path.isdir(dst) and not os.path.islink(dst):
+                shutil.rmtree(dst)
+            else:
+                os.remove(dst)
         shutil.copytree(src, dst)
         installed.append(name)
 
