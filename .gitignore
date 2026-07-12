@@ -718,3 +718,5 @@ _bmad-output/projects/*/.bmad-config.user.toml
 
 # Junie: personal config (user-scoped) and per-developer artifacts.
 .junie/
+.bmad-loop/runs/
+.bmad-loop/cache/
