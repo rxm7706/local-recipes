@@ -612,6 +612,9 @@ py-rattler-build = ">=0.68.0"     # Python bindings for rattler-build
 ## Nebi - local-first workspace management for Pixi (CLI + Desktop)
 nebi-cli = ">=0.13"               # Local-first workspace management for Pixi
 #nebi-desktop = ">=0.11"           # Nebi desktop application - local-first workspace management for Pixi #NOTE webkit2gtk4.1 2.48.5 would require __glibc >=2.34,<3.0.a0, for which no candidates were found
+## BMAD Method + loop orchestration (docs/specs/bmad-loop-adoption.md)
+bmad-method = ">=6.10.0,<7"       # BMAD Method installer/CLI (upgrade from the 6.6.0 npx-era install; gains bmad-dev-auto)
+# tmux lives in the linux-64/osx-arm64 target tables (no win-64 build; bmad-loop is Linux/macOS — Windows via WSL)
 # Category 4: Data Processing & Transformation + Category 5: Workflow Orchestration
 # See: docs/reference/package-taxonomy.md#4-data-processing--transformation
 # See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines
@@ -794,14 +797,17 @@ macos = "14.5"
 [feature.local-recipes.target.linux-64.dependencies]
 mlx = ">=0.32.0"                  # Apple's array framework (Linux build via libblas/lapack)
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
+tmux = ">=3.4"                    # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 
 [feature.local-recipes.target.osx-arm64.dependencies]
+tmux = ">=3.4"                    # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 mlx = ">=0.32.0"                  # Apple's array framework (Metal-accelerated on M-series)
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
 
 [feature.local-recipes.pypi-dependencies]
 boring-semantic-layer = ">=0.3.15" # The Boring Semantic Layer (BSL) is a lightweight semantic layer based on Ibis.
 kedro-mcp = ">=0.1.2"              # MCP server with Kedro prompts and tools
+bmad-loop = { git = "https://github.com/bmad-code-org/bmad-loop", tag = "v0.8.1", extras = ["tui"] } # deterministic dev-loop orchestrator driving bmad-dev-auto (git-only; not on PyPI/conda-forge — CFE packaging is a follow-on candidate). Spec: docs/specs/bmad-loop-adoption.md
 #crewai = ">=1.14.7"                # Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.
 
 [dependencies]
