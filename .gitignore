@@ -714,6 +714,11 @@ Thumbs.db
 _bmad/config.user.toml
 _bmad/custom/.active-project
 _bmad-output/projects/*/implementation-artifacts/
+
+# bmad-loop / upstream-tooling seam: root artifact dirs are LOCAL symlinks to the
+# active project's dirs (re-point on `bmad-switch`; see docs/specs/bmad-loop-adoption.md)
+_bmad-output/planning-artifacts
+_bmad-output/implementation-artifacts
 _bmad-output/projects/*/.bmad-config.user.toml
 
 # Junie: personal config (user-scoped) and per-developer artifacts.
