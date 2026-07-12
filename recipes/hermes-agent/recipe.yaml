@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.18.2"
+  python_min: "3.11"
+
+package:
+  name: hermes-agent
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hermes-agent/hermes_agent-${{ version }}.tar.gz
+  sha256: 1cc7ccb6bca6e6d2aef448bbf9b79d4bc31247288a8bf549231fc148a343c678
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - hermes = hermes_cli.main:main
+      - hermes-agent = run_agent:main
+      - hermes-acp = acp_adapter.entry:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<3.14
+    - openai >=2.24.0
+    - certifi
+    - python-dotenv >=1.2.0
+    - fire >=0.7.1
+    - httpx >=0.28.1
+    - socksio
+    - rich >=14.0
+    - tenacity >=9.1
+    - pyyaml >=6.0
+    - ruamel.yaml >=0.18
+    - requests >=2.32
+    - jinja2 >=3.1
+    - pydantic >=2.13
+    - prompt-toolkit >=3.0.52
+    - croniter >=6.0
+    - packaging >=25
+    - markdown >=3.10
+    - pyjwt >=2.13
+    - cryptography >=46.0
+    - urllib3 >=2.7,<3
+    - psutil >=7.2
+    - websockets >=15.0
+    - pathspec >=1.1
+    - fastapi >=0.104.0,<1
+    - uvicorn >=0.24.0,<1
+    - python-multipart >=0.0.9,<1
+    - ptyprocess >=0.7.0,<1
+    - pillow >=12.0
+
+tests:
+  - python:
+      imports:
+        - hermes_cli
+      # pip_check stays off: the wheel METADATA carries upstream's exact
+      # == pins which the loosened conda deps legitimately violate — see
+      # cfe-pip-check reason code.
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - hermes --help
+
+about:
+  summary: Hermes Agent by Nous Research - the agent that grows with you
+  description: |
+    hermes-agent is Nous Research's open agent harness: a terminal-first
+    coding/assistant agent with persistent skills, scheduled jobs, an ACP
+    adapter for editor integration, and an OpenAI-compatible model
+    interface (built for Hermes models, works with any compatible
+    endpoint).
+  homepage: https://github.com/NousResearch/hermes-agent
+  repository: https://github.com/NousResearch/hermes-agent
+  documentation: https://github.com/NousResearch/hermes-agent#readme
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hermes-agent
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hermes-agent
+  cfe-purls:
+    - pkg:conda/hermes-agent@${{ version }}?channel=conda-forge
+    - pkg:pypi/hermes-agent@${{ version }}
+  cfe-upstream-repo: https://github.com/NousResearch/hermes-agent
+  cfe-upstream-homepage: https://github.com/NousResearch/hermes-agent
+  cfe-import-names: [hermes_cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:upstream-exact-pins-loosened-in-conda-deps"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T17:35:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:35:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:47:02Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request). PyPI version 0.18.2 (repo git
+#    # tags use a calendar scheme, v2026.7.7.2 — the sdist version is the
+#    # packaging contract).
+# run:
+#    # Upstream pins every dep exactly (==); loosened to >= floors per the
+#    # pin-loosening convention, hence pip_check off. httpx[socks] ->
+#    # httpx + socksio; PyJWT[crypto] -> pyjwt + cryptography (already a
+#    # direct dep). Windows-only marker deps (tzdata, pywinpty,
+#    # concurrent-log-handler) are omitted from this noarch recipe —
+#    # revisit if a win build is ever wanted. ptyprocess (unix marker) is
+#    # included unconditionally: pure-python, inert on win.
+#    # The [extras] (120 requires_dist entries) are not packaged — core
+#    # deps only per Simplicity First.
+####

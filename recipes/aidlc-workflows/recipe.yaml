@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.0"
+
+package:
+  name: aidlc-workflows
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/aidlc-workflows/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 3cd51f4cc428311499832b6914a3036fa999ee0d2ff810240365558d954eee89
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - aidlc-workflows-install --help
+          - test -d "${CONDA_PREFIX}/share/aidlc-workflows/dist/claude"
+          - test -d "${CONDA_PREFIX}/share/aidlc-workflows/dist/kiro"
+          - test -d "${CONDA_PREFIX}/share/aidlc-workflows/dist/codex"
+          - test -d "${CONDA_PREFIX}/share/aidlc-workflows/core"
+      - if: win
+        then:
+          - aidlc-workflows-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\aidlc-workflows\dist\claude" exit 1
+          - if not exist "%CONDA_PREFIX%\share\aidlc-workflows\core" exit 1
+
+about:
+  homepage: https://awslabs.github.io/aidlc-workflows/
+  repository: https://github.com/awslabs/aidlc-workflows
+  documentation: https://github.com/awslabs/aidlc-workflows/tree/v2/docs
+  license: MIT-0
+  license_file: LICENSE
+  summary: AI-DLC 2.0 - AI-Driven Development Life Cycle workflows for coding agents (Claude Code, Kiro, Codex)
+  description: |
+    AI-DLC Workflows 2.0 (awslabs) is a native implementation of the
+    AI-Driven Development Life Cycle methodology: 11 domain-expert agents
+    working through a 32-stage workflow with human approval gates, run
+    from one harness-neutral core and distributed to Claude Code, Kiro
+    IDE/CLI, and Codex CLI.
+
+    After installation, run ``aidlc-workflows-install --harness claude``
+    (or kiro / kiro-ide / codex) in a project directory to copy that
+    harness's distribution tree into the project. The workflows' hooks
+    and CLI tools run through **bun**, which is not packaged on
+    conda-forge — install bun separately (https://bun.sh).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aidlc-workflows
+  cfe-upstream-registry: github
+  cfe-upstream-name: awslabs/aidlc-workflows
+  cfe-purls:
+    - pkg:conda/aidlc-workflows@${{ version }}?channel=conda-forge
+    - pkg:github/awslabs/aidlc-workflows@v${{ version }}
+  cfe-upstream-repo: https://github.com/awslabs/aidlc-workflows
+  cfe-upstream-homepage: https://awslabs.github.io/aidlc-workflows/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T17:25:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:25:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:46:40Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request, the v2 branch line). Tag v2.3.0
+#    # is the latest v2.x release (the v2 branch README badge shows 2.3.4
+#    # unreleased). The npm package "aidlc" (aidlc-io/aidlc) is an
+#    # UNRELATED project — do not source from npm.
+#    # GA Preview: upstream warns interfaces/stage definitions/install
+#    # model are still evolving — pin known-good versions.
+# run:
+#    # bun is required at runtime by the workflows' hooks but is not on
+#    # conda-forge — documented as an external prerequisite (same
+#    # precedent as bmad-autopilot's claude CLI).
+####

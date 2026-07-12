@@ -2,7 +2,7 @@
 schema_version: 1
 context:
   name: ppt-master
-  version: "2.3.0"
+  version: "3.1.0"
 
 package:
   name: ${{ name }}
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/hugohe3/ppt-master/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: d333766a22d7b7615656362717f00df03591961cf367e0086750d7df010c4e58
+  sha256: 451dbe3fbc4e60e507d2d40564a5e496960d737546bf522c61679ffea25b5bab
 
 build:
   number: 0
@@ -28,6 +28,17 @@ requirements:
     - svglib >=1.5.0
     - pymupdf >=1.23.0
     - google-genai >=1.0.0
+    # v3 additions (upstream marks all skill deps optional; edge-tts is
+    # omitted — not on conda-forge — so audio narration degrades gracefully)
+    - mammoth >=1.6.0
+    - markdownify >=0.11.6
+    # upstream wants >=0.18; conda-forge tops out at 0.17 — loosened,
+    # TODO tighten when conda-forge catches up
+    - ebooklib >=0.17
+    - nbconvert >=7.0.0
+    - openpyxl >=3.1.0
+    - curl-cffi >=0.7.0
+    - flask >=3.0.0
 
 tests:
   - script:
