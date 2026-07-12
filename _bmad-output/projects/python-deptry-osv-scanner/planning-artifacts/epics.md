@@ -121,7 +121,11 @@ So that every later engine and format is a *producer* against a stable contract 
 
 **Given** the `Component` record, **When** it is defined, **Then** it carries the **full frozen field set** — `ecosystem` enum `{pypi,conda}` **closed** *(corrected 2026-07-12: pixi is a manifest format, not an ecosystem — the pixi fact lives in `provenance`)*, `provenance` a **list** of `(manifest,section)`, and `version|None`, `pypi_identity|None`, `identity_source`, `mapping_confidence`, `cve_match_level`, `extraction_mode`, `hygiene_covered`, `vuln_matchable`, `indeterminate_reason|None` all present with declared type + optionality. **And** every field's shape/type/optionality is frozen now; the two growable enums (`cve_match_level`, `WithholdReason`/`indeterminate_reason`) are declared with a conservative starter set (widening is additive, never a schema-break). **And** every non-clean status carries **`status.driver`** (axis + finding id) as part of the frozen report schema — an exit that can't say *why* is an incoherent contract (added 2026-07-12 per arch).
 
-**Given** the committed `ComplianceReport` JSON schema, **When** a minimal report is validated, **Then** it conforms; it carries `schema_version` and the exit enum is the frozen closed set `{0,1,2,130}` (folds NFR-I1/I2 — the dissolved 4.2 conformance assertion lives here).
+**Given** the report schema, **When** it is frozen, **Then** it is **producer-agnostic** (the Kedro FR-16/FR-18 atlas gate is this schema's second producer): vuln-data provenance is generic (`{source, snapshot_at, max_age_ok}` — never `osv_db_*`-named fields), **optional KEV/EPSS slots** exist (v1 never populates them; the atlas producer will), severity carries **both** a normalized tier and the raw evidence (CVSS vector string or database label), and findings/coverage are keyed by an **open `axis` mechanism** (`hygiene`/`vulnerability` now; a license/SAST axis lands additively, never a schema-break). *(Added 2026-07-12 per readiness Major 1.)*
+
+**Given** the finding model, **When** it is frozen, **Then** every finding carries a **stable, deterministic finding-ID** (scheme documented in the schema: `vuln:<advisory-id>:<pkg>@<ver>` · `hygiene:<DEP-code>:<module-or-pkg>` · `indeterminate:<reason>:<pkg>`) — waiver matching across runs (E3) depends on it — **And** the waiver-scope decision is recorded: **all three finding families are waivable-with-expiry** (an auditable, time-boxed acceptance; the graduated path for unscannable deps). *(Added 2026-07-12 per readiness Major 1.)*
+
+**Given** the committed `ComplianceReport` JSON schema, **When** a minimal report is validated, **Then** it conforms; it carries `schema_version` and the exit enum is the frozen closed set `{0,1,2,130}` (**FR28** — tagged 2026-07-12; folds NFR-I1/I2 — the dissolved 4.2 conformance assertion lives here).
 
 **Given** `verdict.py`, **When** C0a is tested against the projection **directly**, **Then** the projection is **total** over all 7 rungs (`error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`), every non-clean rung maps to non-zero (**`indeterminate` → exit 1**, pinned 2026-07-12; `error` → 2, reserved for operational failure), and an unknown/weaker `cve_match_level` projects **toward `indeterminate`, never `clean`** (the additive-growth safety rule). **And** a guard test asserts an all-clean inventory produces zero `indeterminate` (the socket is proven-total, not dead).
 
@@ -135,7 +139,7 @@ So that the skeleton runs `scan → report → deterministic exit` and every fut
 
 **Acceptance Criteria:**
 
-**Given** the completed scaffold, **When** `scan <trivial-dir>` runs with a **null engine**, **Then** it emits a schema-valid minimal `ComplianceReport` (from 1.1a) to stdout and exits per the projection. **And** `extract`/`routing`/`engine`/`vuln-strategy`/`Policy` exist as interfaces with the null engine as the only registered impl (**interface-first**).
+**Given** the completed scaffold, **When** `scan <trivial-dir>` runs with a **null engine**, **Then** it emits a schema-valid minimal `ComplianceReport` (from 1.1a) to stdout and exits per the projection. **And** `extract`/`routing`/`engine`/`vuln-strategy`/`Policy` exist as interfaces with the null engine as the only registered impl (**interface-first**). **And** a **trivial single-manifest discovery stub** ships here (enough for `scan <dir>` to locate one manifest) — completed/replaced by Story 1.6's full FR1 discovery (stub ownership noted 2026-07-12).
 
 **Given** `tests/conformance/`, **When** the harness runs, **Then** it has **2 PyPI fixtures** (one clean → green, one false-green sentinel → ≥1 finding) and asserts **0 uncaught exceptions + false-green=0 + exit-code-matches**. **And** the asset-loading plumbing + a stub `data/conda_pypi_map.json` exist. *(Both fixtures are PyPI — no conda fixture here, to avoid pulling 2.1's identity map into E1.)*
 
@@ -154,7 +158,7 @@ So that I get dependency-hygiene results from one command.
 
 **Given** deptry emits chatty/ANSI output, **When** captured, **Then** stdout stays a single valid JSON document (the pure-JSON stdout seam) and diagnostics go to stderr. **And** the ratchet mechanism (`unparseable_rate` baseline) is introduced.
 
-**Given** a project with a `[tool.deptry]` config, **When** scanned, **Then** those ignores are honored (FR9). **And** the C0c socket-deny gate holds (deptry runs with no egress).
+**Given** a project with a `[tool.deptry]` config, **When** scanned, **Then** those ignores are honored (FR9). **And** the C0c socket-deny gate holds (deptry runs with no egress). **And** DEP005's actual semantics are **verified against the pinned deptry range** (the pinned-contract label "unused-dev" may itself be wrong) and a DEP005 → `warn` row is added to the ConfigLoader hygiene policy table (added 2026-07-12).
 
 ### Story 1.3a: OSV-DB offline provisioning spike (decision + fixture DB)
 
@@ -246,11 +250,13 @@ So that vulnerability matching can't silently misfire on a name mismatch.
 
 **Acceptance Criteria:**
 
-**Given** the atlas `export-purls` conda↔pypi TSVs, **When** the map generator runs *(invoke `conda-forge-expert` — CFE Rule 1; runs as a **parallel read-only data task**, so 2.1 consumes a finished `data/conda_pypi_map.json`)*, **Then** a bundled map with a stable schema is produced.
+**Given** the atlas `export-purls` conda↔pypi TSVs, **When** the map generator runs *(invoke `conda-forge-expert` — CFE Rule 1; runs as a **parallel read-only data task**, so 2.1 consumes a finished `data/conda_pypi_map.json`)*, **Then** a bundled map with a stable schema is produced, **preserving the per-pair `match_source` + `match_confidence` columns** (never flattened to name→name — the DEP001-block and identity-trust rules read these provenance tiers: `parselmouth`/`recipe_source_url` → block-eligible/trusted, `name_coincidence` → warn, `none` → withheld); `prefix-dev/purl-associator` serves as a second corroborator (added 2026-07-12).
 
 **Given** a conda component, **When** its `pypi_identity` is resolved, **Then** it is taken from pixi.lock `pypi:` / explicit PyPI sections / the map (with a confidence value); an unmapped or `native-nonpypi` package resolves to `None` and is **withheld from osv** (never fed under the conda name) — closing the silent `pytorch`→`torch` false-green. **And** `vuln_matchable = (pypi_identity ≠ None) AND version==X.Y.Z`.
 
 **Given** a **low-confidence** identity (below the chosen threshold), **When** classified, **Then** it resolves to **`indeterminate`, not a silent clean** (ties the threshold decision back to 1.1a's lattice).
+
+**Given** a `pixi.lock` or `conda-lock.yml` (the **vuln hero path**), **When** extracted via `extract/lockfiles.py`, **Then** the **locked closure** lands in the inventory with exact `==` versions, manager-aware routing (conda vs pip rows → the correct ecosystem), `vuln_matchable=true` where `pypi_identity` resolves, and coverage marked `locked-closure`; fixtures include the **URL-basename pitfall** (a subdir segment must never be mis-captured as a package name — a documented shipped-parser regression). *(Ownership added 2026-07-12 per readiness Major 2 — previously unowned.)*
 
 ### Story 2.2a: Non-rendering extraction (common case) + differential-oracle
 
@@ -260,7 +266,7 @@ So that I can scan my source recipe pre-build with confidence it isn't silently 
 
 **Acceptance Criteria:**
 
-**Given** a common-case `recipe.yaml`/`meta.yaml`/`environment.yml`/`pixi.toml`, **When** extracted, **Then** it is **parse-as-data, never rendered** — the extract module imports no execution primitive and no `jinja2` (S1 AST-denylist) — and its deps land in the inventory. **And** the C0c socket-deny gate holds (extraction performs no egress — explicit NFR-S2 AC).
+**Given** a common-case `recipe.yaml`/`meta.yaml`/`environment.yml`/`pixi.toml`, **When** extracted, **Then** it is **parse-as-data, never rendered** — the extract module imports no execution primitive and no `jinja2` (S1 AST-denylist) — and its deps land in the inventory (**FR3** — tagged 2026-07-12). **And** pixi extraction covers the `[feature.*]` and `[target.*]` tables (provenance-tagged) beyond the base sections. **And** `run_constrained:`/`run_constraints:` entries are **constraints, not dependencies** — excluded or ingested as `provenance: constraint` (out of vuln matching + SBOM counts), matching the shipped `scan_project` semantics (added 2026-07-12). **And** the C0c socket-deny gate holds (extraction performs no egress — explicit NFR-S2 AC).
 
 **Given** the **differential-oracle**, **When** it runs on the fixture corpus, **Then** the non-rendering dep-set ⊇ the rattler-build/conda-build render (modulo name-only-marked), with 0 uncaught exceptions. **And** the oracle is **skip-if-renderer-unavailable** (fixture scale here; matured to corpus scale in 5.2) so 2.2a never hard-blocks on renderer provisioning.
 
@@ -285,6 +291,8 @@ So that a green check is trustworthy.
 **Given** a manifest where some deps resolve and some don't, **When** reported, **Then** coverage is **split** into hygiene vs vulnerability dimensions (FR15) and a partial result renders a **qualified verdict** ("clean at N%"), never bare "clean" (FR16). **And** the coverage marks `direct-only` vs `locked-closure` (a loose manifest lists direct deps only; transitive vulns invisible without a lockfile).
 
 **Given** a name-only / range / unmapped dep, **When** classified, **Then** it becomes `indeterminate` with a `WithholdReason` (`no-version`/`unmapped-ecosystem`/`native-nonpypi`/`range-only`) and is **never dropped or defaulted to clean** (C0b — FR13); the verdict exits **red-by-design** without needing E3's waivers. **And** an empty extraction is distinguished from "deps present but unresolved" (FR6).
+
+**Given** a manifest-only repo with **no adjacent Python source** (the fleet's majority shape — feedstocks), **When** the hygiene axis runs, **Then** hygiene coverage is honestly **`not-applicable`/skipped, the reduced scope recorded — never a 100%-DEP002 noise wall** — matching Kedro FR-16's already-specced semantics for this schema's second producer. *(Added 2026-07-12 per readiness Major 3.)*
 
 ### Story 2.4: Name-level CVE tier + stale-DB + cross-ecosystem non-merge
 
@@ -361,6 +369,8 @@ So that I can feed downstream supply-chain tooling.
 
 **Given** an adversarial component name (control chars, `</script>`, purl-reserved), **When** serialized, **Then** the schema-aware encoder neutralizes it (NFR-S7) — the tool is never an injection vector against a downstream consumer.
 
+**Given** the estate SBOM conventions, **When** the BOM is emitted, **Then** conda↔pypi identity is expressed via the **`cfe:*` property namespace** (`cfe:pypi_purl`, `cfe:match_source`, `cfe:match_confidence` on the conda component), purls follow **G98 normalization** (lowercase, `_`→`-`, dots preserved; `?channel=` qualifier on conda purls), and the **round-trip holds**: `scan-project --sbom-in <our-BOM>` ingests cleanly. *(Added 2026-07-12 per readiness/X7 — three SBOM producers share these conventions.)*
+
 ---
 
 ## Epic 5: Fleet-readiness & adoption on-ramp
@@ -389,8 +399,8 @@ So that it never flaps and I never have to disable it.
 
 **Acceptance Criteria:**
 
-**Given** the corpus-provisioning task (its **first** step — harvest + pin the ~1,950-file corpus so 5.2's gates aren't silently absorbing a fixture-harvesting spike), **When** it completes, **Then** the corpus is a committed, versioned fixture set.
+**Given** the corpus-provisioning task (its **first** step — harvest + pin the ~1,950-file corpus so 5.2's gates aren't silently absorbing a fixture-harvesting spike), **When** it completes, **Then** the corpus is a committed, versioned fixture set **augmented with a small adversarial out-of-repo recipe set** (exotic selectors, `{% for %}`, unicode, oversized files — the in-repo corpus is a friendly, CFE-curated distribution; added 2026-07-12).
 
-**Given** the two engines, **When** a scan runs, **Then** deptry + osv run **in parallel** with no shared mutable state, per-invocation cost O(project) not O(fleet), and our overhead ≤ ~2s p95 on the reference corpus (engines-stubbed) (NFR-P-warm/concurrency).
+**Given** the two engines, **When** a scan runs, **Then** deptry + osv run **in parallel** with no shared mutable state, per-invocation cost O(project) not O(fleet), and our overhead ≤ ~2s p95 on the reference corpus (engines-stubbed), **measured on a named reference machine recorded with the result** (NFR-P-warm/concurrency).
 
-**Given** the full corpus, **When** the regression gate runs, **Then** **0 uncaught exceptions**, a **committed ratcheted `unparseable_rate` baseline** (CI fails on regression), the **differential-oracle passes across all formats** at corpus scale, and twice-run is byte-identical in `--deterministic` (NFR-R1/R2/R3b). **And** an out-of-range engine version fails loud (NFR-C1).
+**Given** the full corpus, **When** the regression gate runs, **Then** **0 uncaught exceptions**, a **committed ratcheted `unparseable_rate` baseline** (CI fails on regression), the **differential-oracle passes across all formats** at corpus scale, and twice-run is byte-identical in `--deterministic` (NFR-R1/R2/R3b). **And** an out-of-range engine version fails loud (NFR-C1). **And** the **dogfood gate** holds (spec DoD): the tool runs clean on this repo's own `pixi.toml`/`pyproject.toml` via a committed `pixi run` task — exit 0 on the known-clean state, non-zero on a seeded-violation fixture (added 2026-07-12).
