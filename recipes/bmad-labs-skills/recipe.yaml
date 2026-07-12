@@ -19,7 +19,6 @@ source:
 build:
   number: 0
   noarch: generic
-  script: bash ${{ RECIPE_DIR }}/build.sh
 
 requirements:
   run:
@@ -35,6 +34,11 @@ tests:
           - test -d "${CONDA_PREFIX}/share/bmad-labs-skills/skills/ultrathink-protocol"
           - test -d "${CONDA_PREFIX}/share/bmad-labs-skills/skills/mcp-builder"
           - test -f "${CONDA_PREFIX}/share/bmad-labs-skills/.claude-plugin/marketplace.json"
+      - if: win
+        then:
+          - bmad-labs-skills-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\bmad-labs-skills\skills" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-labs-skills\.claude-plugin\marketplace.json" exit 1
 
 about:
   homepage: https://github.com/bmad-labs/skills
@@ -84,7 +88,7 @@ extra:
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T15:10:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T10:00:49Z"
+  cfe-local-build-datetime: "2026-07-12T16:00:22Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

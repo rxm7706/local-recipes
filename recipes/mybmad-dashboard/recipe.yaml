@@ -85,8 +85,10 @@ tests:
   - python:
       imports:
         - mybmad_dashboard
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - script:
       # All DB-free, so they run in CI without a Postgres cluster.
       - mybmad --help
@@ -157,7 +159,7 @@ extra:
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:24:56Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T14:32:18Z"
+  cfe-local-build-datetime: "2026-07-12T15:57:04Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

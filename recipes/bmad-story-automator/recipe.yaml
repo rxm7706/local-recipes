@@ -19,6 +19,10 @@ source:
 build:
   number: 0
   noarch: generic
+  # Upstream is deliberately unix-only (its bin script errors "Unsupported
+  # OS: Windows"); skip the win CI leg rather than produce an empty build.
+  skip:
+    - win
 
 requirements:
   run:
@@ -95,7 +99,7 @@ extra:
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T09:49:16Z"
+  cfe-local-build-datetime: "2026-07-12T16:51:00Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

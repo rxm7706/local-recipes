@@ -13,31 +13,36 @@ source:
   sha256: 94017e661f434f4a71e6c0210f261a0f327546b3d96f7be8bdd40c16951e74c3
 
 build:
-  number: 0
-  noarch: generic
-  script: bash ${{ RECIPE_DIR }}/build.sh
-
-requirements:
-  build:
-    - nodejs
-  host:
-    - nodejs
-  run:
-    - nodejs >=18
-    # The bin/caveman wrapper is a bash script (replaces npm's symlink, which
-    # noarch packages cannot ship). The selector is gated on `unix` because
-    # conda-forge's v1 linter forbids unconditional run selectors on noarch
-    # packages unless conda-forge.yml's noarch_platforms has >1 entries
-    # (which ours does: linux_64, osx_64, osx_arm64).
+  number: 1
+  # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
+  # platform's npm global install lays down its native bin shims (symlinks
+  # on unix, .cmd on win), which a single noarch artifact cannot provide.
+  script:
     - if: unix
       then:
-        - __unix
+        - export npm_config_prefix="${PREFIX}"
+        - npm pack --ignore-scripts
+        - npm install -g ./caveman-installer-*.tgz
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc -g caveman-installer-0.1.0.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  host:
+    - nodejs >=18
+  run:
+    - nodejs >=18
 
 tests:
+  - script:
+      - caveman --help
   - if: unix
     then:
       script:
-        - caveman --help
         - test -f "${PREFIX}/lib/node_modules/caveman-installer/package.json"
         - test -f "${PREFIX}/lib/node_modules/caveman-installer/dist/caveman.skill"
         - test -d "${PREFIX}/lib/node_modules/caveman-installer/skills"
@@ -77,7 +82,7 @@ extra:
   cfe-upstream-homepage: https://github.com/juliusbrussee/caveman
   cfe-import-names: []
   cfe-source-kind: github-tag
-  cfe-noarch: generic
+  cfe-noarch: compiled
   cfe-pip-check: "false:not-a-python-package"
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
@@ -87,7 +92,7 @@ extra:
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T15:45:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T10:08:12Z"
+  cfe-local-build-datetime: "2026-07-12T16:46:03Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -101,13 +106,13 @@ extra:
 # context:
 #    # Recipe version tracks the upstream RELEASE TAGS (v1.9.1 = the skill
 #    # version); package.json versions the installer independently (0.1.0)
-#    # — build.sh globs caveman-installer-*.tgz so bumps don't break it.
+#    # — the unix branch globs caveman-installer-*.tgz; the win branch
+#    # hardcodes 0.1.0, update it if the installer version ever bumps.
 # build:
 #    # Zero runtime npm deps (package.json dependencies is empty), so the
 #    # canonical pnpm-licenses third-party-disclaimer step is omitted —
 #    # nothing is bundled.
-#    # npm install --global creates bin/caveman as a symlink, which
-#    # rattler-build rejects for noarch (unsupported on Windows); build.sh
-#    # replaces it with a bash wrapper, hence the __unix gate (upstream's
-#    # native Windows path is `npx`/install.ps1, not this package).
+#    # Converted noarch->per-arch 2026-07-12 (win-64 buildability sweep):
+#    # per-arch lets npm lay down native shims per platform (openspec/
+#    # bmalph precedent) instead of the earlier bash-wrapper + __unix gate.
 ####

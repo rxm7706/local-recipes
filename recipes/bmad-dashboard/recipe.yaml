@@ -37,8 +37,10 @@ tests:
   - python:
       imports:
         - bmad_dashboard
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - script:
       - python -m bmad_dashboard.installer --print-vsix
       - python -m bmad_dashboard.installer --help
@@ -102,7 +104,7 @@ extra:
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:24:56Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T14:27:20Z"
+  cfe-local-build-datetime: "2026-07-12T15:53:18Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

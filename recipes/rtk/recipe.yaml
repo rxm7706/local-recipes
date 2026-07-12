@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.43.0"
+
+package:
+  name: rtk
+  version: ${{ version }}
+
+source:
+  url: https://github.com/rtk-ai/rtk/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 196bec9e9b438f0b8cd0198f68e05f072ccdfdec2c2655a3562d6ea357fa485b
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - cargo install --locked --root $PREFIX --path .
+    - rm $PREFIX/.crates.toml $PREFIX/.crates2.json
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+
+tests:
+  - script:
+      - rtk --help
+
+about:
+  summary: Rust Token Killer - CLI proxy that cuts LLM token consumption by 60-90% on common dev commands
+  description: |
+    rtk (Rust Token Killer) is a high-performance CLI proxy that minimizes
+    LLM token consumption: prefix common dev commands (git, ls, cat, grep,
+    test runners, ...) with ``rtk`` and it filters, deduplicates, and
+    compacts their output before it reaches the model context — 60-90%
+    fewer tokens on typical workflows. Single self-contained binary with a
+    built-in gain-tracking database.
+  homepage: https://www.rtk-ai.app
+  repository: https://github.com/rtk-ai/rtk
+  documentation: https://github.com/rtk-ai/rtk#readme
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rtk
+  cfe-upstream-registry: github
+  cfe-upstream-name: rtk-ai/rtk
+  cfe-purls:
+    - pkg:conda/rtk@${{ version }}?channel=conda-forge
+    - pkg:github/rtk-ai/rtk@v${{ version }}
+  cfe-upstream-repo: https://github.com/rtk-ai/rtk
+  cfe-upstream-homepage: https://www.rtk-ai.app
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T16:20:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T16:20:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:36:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request: token-usage reduction tooling).
+#    # Also on crates.io? Not checked/needed — GitHub release tags are the
+#    # upstream contract (default branch is `develop`; tags are releases).
+# build:
+#    # rusqlite uses the `bundled` feature (compiles SQLite C source), so
+#    # compiler(c) + stdlib(c) are load-bearing, not just the rust
+#    # C-ABI-constraint formality. MSRV 1.91 (Cargo.toml rust-version).
+# about:
+#    # Cargo.toml declares the malformed SPDX string "Apache 2.0"; the
+#    # repo LICENSE file is standard Apache-2.0 — about.license uses the
+#    # valid identifier.
+# tests:
+#    # --help only: clap's --version flag is not verified present in the
+#    # derive attributes; --help is always generated.
+####
