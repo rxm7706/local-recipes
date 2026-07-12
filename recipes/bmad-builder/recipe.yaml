@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-builder
-  version: "1.6.0"
+  version: "2.1.0"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-builder/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 2db72839546baa049b82e6ba9f2cf557467fd5684e8e1e9c071c5a03db01e4cc
+  sha256: 2cbd05ac049cd9c918a9cb15ca82bca868db29077e64cdbbc9a20883ce056b07
 
 build:
   number: 0
@@ -60,3 +60,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-builder
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-builder
+  cfe-purls:
+    - pkg:conda/bmad-builder@${{ version }}?channel=conda-forge
+    - pkg:github/bmad-code-org/bmad-builder@v${{ version }}
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-builder
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-builder
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33123
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T09:38:27Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Version bumped 1.6.0 -> 2.1.0 (latest upstream tag) in the
+#    # 2026-07-12 BMAD-recipe sweep.
+####

@@ -60,3 +60,40 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmalph
+  cfe-upstream-registry: npm
+  cfe-upstream-name: bmalph
+  cfe-purls:
+    - pkg:conda/bmalph@${{ version }}?channel=conda-forge
+    - pkg:npm/bmalph@${{ version }}
+  cfe-upstream-repo: https://github.com/LarsCowe/bmalph
+  cfe-upstream-homepage: https://github.com/LarsCowe/bmalph
+  cfe-import-names: []
+  cfe-source-kind: npm-registry-tarball
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33557
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T09:39:13Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Already current in the 2026-07-12 BMAD-recipe sweep: npm latest
+#    # is 2.11.0.
+# source:
+#    # cfe-source-kind uses npm-registry-tarball (the canonical npm
+#    # pattern source); not yet in the skill's source-kind enum —
+#    # flagged for the sweep retro.
+####
