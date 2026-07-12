@@ -68,7 +68,7 @@ The **resolved-inventory object** is the spine (this *is* Gap B): discovery + ex
 ### Technical Constraints & Dependencies
 - **stdlib-only library** (argparse / tomllib / re) — confirmed by the scaffold's empty `dependencies`; `jsonschema` test-only; engines (`deptry`, `osv-scanner`) as **conda run-deps** (provisioned, not fetched — OD1).
 - **Pinned engine contracts (2026-07-11):** deptry = no-severity + `--json-output`; osv = `--format json` (JSON→stdout, else→stderr) + exit `{0 clean, 1 vulns-found=EXPECTED, 127 error, 128 no-packages}`.
-- python ≥ 3.12; pixi ≥ 0.72.2; `pixi-build-python` packaging; never-writes-repo (NFR-R3a/S4); offline-first vuln data.
+- python ≥ 3.12; pixi ≥ 0.72.2 (**a build/dev-env floor — the tool never invokes pixi at runtime**; `pixi.lock` is `safe_load`-parsed; clarified 2026-07-12); `pixi-build-python` packaging; never-writes-repo (NFR-R3a/S4); offline-first vuln data.
 - **Open dependency question (D1):** the waiver YAML writer may pull one small YAML lib *or* emit-for-human-to-commit — resolved in Architectural Decisions.
 
 ### Cross-Cutting Concerns Identified
@@ -112,7 +112,7 @@ CLI tool — a **non-interactive, single-process, stdlib-only Python CLI**. No w
 ### Cross-cutting: the false-green triad (the acceptance invariant, non-negotiable)
 Three decisions are **only sound together** — fix one without the others and the cardinal-rule (never false-green) reopens:
 1. **New verdict state `indeterminate`** — added to the J9 lattice **above `warn`**: `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`. Gap-C's *withheld / skipped / unresolved* outcomes route here — **never** to `not-applicable`. A clean sibling axis can therefore never mask "we couldn't scan what existed." (`not-applicable` = *nothing existed to scan*; `indeterminate` = *something existed we could not/would not scan*.)
-2. **6→3 exit projection (locked):** exit **0** only when the vuln axis is `clean` **or** truly `not-applicable`. Mapping: `{clean, not-applicable, bypassed} → 0`; `warn → 0` (configurable); `policy-violation → 1`; `error → 2`; **`indeterminate` → non-zero / documented-loud** (never a silent 0). Status-severity and exit are deliberately different orderings.
+2. **7→4 exit projection (locked; `indeterminate` pinned 2026-07-12):** exit **0** only when the vuln axis is `clean` **or** truly `not-applicable`. Mapping: `{clean, not-applicable, bypassed} → 0`; `warn → 0` (configurable); `policy-violation → 1`; **`indeterminate` → 1** (a trustworthy run honestly reporting unproven cleanliness is a policy-family outcome — never a silent 0); `error → 2` (**exit 2 stays reserved for operational failure** — the run itself is untrustworthy — preserving J3's fleet routing `rc==2 → infra owner`); SIGINT → 130. Status-severity and exit are deliberately different orderings.
 3. **Gap-C withhold** — honest, but load-bearing on #1+#2.
 
 Every non-`clean` status carries **`status.driver`** (axis + finding id) — an exit-2 that can't say "critical CVE" vs "blocking DEP001" is an incoherent contract.
@@ -208,7 +208,7 @@ python_deptry_osv_scanner/
   errors.py         # exception hierarchy → error_kind → exit code
   determinism.py    # canonicalization + --deterministic pinning
 ```
-`tests/` mirrors it; fixtures in `tests/fixtures/{recipes,lockfiles,malicious}/`.
+`tests/` mirrors it; fixtures in `tests/fixtures/{recipes,lockfiles,malicious}/`. *(Where this list and § Project Structure's tree differ — e.g. `models.py` — the § Project Structure tree is authoritative.)*
 
 ### The single-source-of-truth rules (highest-conflict)
 - **ONE `Component` + `ResolvedInventory`** (frozen dataclasses in `inventory.py`) — every stage annotates the *same* objects; no stage re-defines a parallel shape. Identity + merge logic lives **only** here.

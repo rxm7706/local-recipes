@@ -1,6 +1,6 @@
 ---
 status: in-progress
-spec_updated: 2026-07-11
+spec_updated: 2026-07-12
 ---
 # Tech Spec: `python_deptry_osv_scanner` — Python dependency-hygiene + vulnerability gate
 
@@ -14,8 +14,9 @@ spec_updated: 2026-07-11
 > runs against this spec under the `python-deptry-osv-scanner` BMAD project
 > (`_bmad-output/projects/python-deptry-osv-scanner/`).
 >
-> Scope is ~4 epics (E1–E4) / ~12–16 stories, driven through the **full
-> BMAD** flow (not Quick Flow).
+> Scope: **5 epics / 20 stories** (see the reconciliation callout below —
+> originally scoped ~4 epics / ~12–16; `epics.md` supersedes), driven through
+> the **full BMAD** flow (not Quick Flow).
 >
 > **Conda-forge tie-in (Rules 1 & 2).** If the effort packages
 > `python_deptry_osv_scanner` (or any of its scanning engines) as a conda recipe, or
@@ -39,11 +40,27 @@ spec_updated: 2026-07-11
 
 ---
 
+## ⚠️ Post-architecture reconciliation (2026-07-11) + Phase-0 review pass (2026-07-12) — READ FIRST
+
+The architecture phase (`_bmad-output/projects/python-deptry-osv-scanner/planning-artifacts/architecture.md`, status: complete) and the 2026-07-12 Phase-0 deep review (full findings: gist `326be5f25e702e0fcce343046c70a6b2`) revised decisions this spec still states in their original form. **Where the body below conflicts, this list wins** — the PRD carries the same reconciliation callout; `architecture.md` § Core Architectural Decisions has the detail.
+
+1. **Library policy (supersedes NFR2 + OD3 + Story 1.1's "no pyyaml" AC):** extraction is no longer stdlib-only — the constraint is **"no *execution* of untrusted input"** (no eval/exec/subprocess-in-extractor, no Jinja render, `yaml.safe_load` only). Lean targeted runtime deps: PyYAML (`safe_load`/`safe_dump`), packaging, cyclonedx-python-lib, **jsonschema (runtime, not test-only** — FR14 report self-validation). v1 `recipe.yaml` is `safe_load`-parsed directly; v0 `meta.yaml` is neutralized then `safe_load`-parsed.
+2. **Execution model (supersedes OD6 + data-flow step 3):** the two engines run **in parallel** (NFR-P-concurrency), not sequentially.
+3. **Verdict lattice + exit enum (supersedes FR4/FR5's status list + exit codes):** the status enum gains **`indeterminate`** (above `warn`): `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`; the canonical token is `warn` (not `warnings`). Frozen exit enum **`{0, 1, 2, 130}`**; the 7→4 projection maps **`indeterminate` → exit 1** (decided 2026-07-12: exit 2 stays reserved for operational errors — an indeterminate run is trustworthy and honestly reports unproven cleanliness). Withheld / skipped / unresolved outcomes route to `indeterminate` → non-zero, **never** a silent 0.
+4. **Gate default (supersedes FR5's "critical CVE or KEV"):** v1 blocks on **CVSS-critical only**; the KEV tier is post-v1 (annotation-only if osv emits it natively at zero new data source).
+5. **Discovery (supersedes data-flow step 1's priority order):** **union coverage** — all discovered manifests are scanned and reported per-manifest; there is no single-winner priority chain.
+6. **osv input (supersedes step 2's `.scanner-temp-reqs.txt` + the "installed env" fallback):** the synthesized osv input is a temp file named **`requirements.txt`** (osv infers the parser from the basename; the `--lockfile=<parser>:<path>` override is to be verified in Story 1.3a); the "installed env" fallback is **dropped** (conflicts with the pre-build posture — never assume a version).
+7. **Story sharding (supersedes § Story sharding):** the breakdown is now **5 epics / 20 stories** in `_bmad-output/projects/python-deptry-osv-scanner/planning-artifacts/epics.md` (this header originally said ~4 epics / ~12–16 stories). § Story sharding below is historical intent only.
+8. **Repo layout detail:** `report-schema.json` lives at `src/python_deptry_osv_scanner/data/` (beside the bundled `conda_pypi_map.json`), not the package root.
+9. **Honest-adoption statement (new, load-bearing):** a bare `recipe.yaml` scan **exits non-zero by design** until the project locks (`pixi.lock`), waives (expiring, auditable), or runs `--warn-only` — that is the lock-nudge working, not a bug. The recommended **first contact** with the tool is a local `--warn-only` run at a developer terminal (see § Local / workstation mode), not a CI wiring.
+
+---
+
 ## Status
 
 | Field | Value |
 |---|---|
-| Status | **In progress** — full BMAD planning underway (PRD stage); all decisions resolved (§ Decisions) |
+| Status | **In progress** — planning COMPLETE (PRD + architecture + readiness + **epics/stories: 5 epics / 20 stories**, committed); implementation next (Story 1.1a). All decisions resolved (§ Decisions + the reconciliation callout above) |
 | Scope | **Python only** — PyPI + conda-forge, 6 Python/conda manifest formats; non-Python ecosystems out of scope (see § Scope & naming in the intake note) |
 | Owner | rxm7706 |
 | Track | **Full BMAD** (PRD → architecture → epics/stories → dev) — planning artifacts under `_bmad-output/projects/python-deptry-osv-scanner/` |
@@ -160,7 +177,9 @@ SBOM emission is a v1 deliverable (FR8), not a non-goal** (owner-elevated
   consumption) **and** a human-readable summary (for CI logs), covering
   hygiene (unused) + security (vulnerable) findings. The JSON carries the
   gate contract: `status` (`clean` | `warnings` | `policy-violation` |
-  `error` | `bypassed` | `not-applicable`), per-finding **severity** (CVSS
+  `error` | `bypassed` | `not-applicable`) *(status vocabulary superseded —
+  callout #3: + `indeterminate` above `warn`; canonical token `warn`)*,
+  per-finding **severity** (CVSS
   + KEV for CVEs; hygiene defaults to `warning`), per-manifest **coverage**,
   `error_kind` (FR10), and `review_required` / `bypass` (FR9).
 - **FR5.** **Severity-tiered CI gate.** The exit code encodes the policy
@@ -171,7 +190,9 @@ SBOM emission is a v1 deliverable (FR8), not a non-goal** (owner-elevated
   (FR10; non-relaxable except via the audited bypass). The **fail-threshold
   is configurable** — `--fail-on=<severity>`, or the atlas FR-18 knobs
   `max_critical` / `max_high` / KEV. **Default: block on any critical CVE or
-  KEV-affecting-current; warn on high/medium/low + all hygiene.** This
+  KEV-affecting-current; warn on high/medium/low + all hygiene.** *(Revised —
+  callout #4: the v1 default blocks on CVSS-critical only; KEV deferred
+  post-v1.)* This
   replaces a hard "any finding blocks" gate, which drives teams to disable
   the gate entirely (the NFR1 anti-goal).
 - **FR6.** The JSON report is **validated against a committed
@@ -438,10 +459,15 @@ The reporting design deliberately mirrors the proven pattern in
 
 ---
 
-## Story sharding (Product Owner)
+## Story sharding (Product Owner) — SUPERSEDED (historical)
 
-Story 1.1 is specified in full; the rest are seeded stubs the executing
-agent expands via `bmad-create-story` in the full BMAD flow.
+> **Superseded 2026-07-11** by the full breakdown in
+> `_bmad-output/projects/python-deptry-osv-scanner/planning-artifacts/epics.md`
+> (5 epics / 20 stories, roundtable-validated). Retained as historical intent;
+> Story 1.1's "no heavy external parser" AC is void per callout #1.
+
+Story 1.1 was specified in full; the rest were seeded stubs for
+`bmad-create-story` expansion.
 
 ### Story 1.1 — Core Manifest Extractor (E1)
 
@@ -533,7 +559,8 @@ the rationale survives; each drove a concrete change above.
   `re`/`tomllib` for v1, backed by an explicit fixture suite
   (Jinja-bearing `recipe.yaml`, nested `pip:` in `environment.yml`). An
   optional light YAML dep is deferred to § Future, taken up only if
-  fragility surfaces.
+  fragility surfaces. **[SUPERSEDED 2026-07-11 — callout #1: lean-lib policy;
+  `safe_load` is in; the constraint is no-execution, not stdlib-only.]**
 - **OD4 — relationship to `scan-project` → RESOLVED (standalone for v1,
   integrate after).** `python_deptry_osv_scanner` is a standalone tool for v1, not
   folded into the repo's `scan-project` infra; it cross-links
@@ -552,7 +579,93 @@ the rationale survives; each drove a concrete change above.
   finding blocks" gate (which drives teams to disable it). The coarse
   `--no-fail-on-*` flags are retired in favour of the threshold plus the
   auditable, expiring **bypass** (FR9). Typed `error` states (FR10) stay
-  exit-2, non-relaxable except via the recorded bypass.
+  exit-2, non-relaxable except via the recorded bypass. **[PARTIALLY
+  SUPERSEDED — callout #2/#3/#4: the engines now run in PARALLEL; the status
+  lattice gains `indeterminate` (→ exit 1); the v1 default blocks on
+  CVSS-critical only (KEV deferred).]**
+
+---
+
+## Local / workstation mode (P8 — added 2026-07-12)
+
+The primary consumer is a CI pipeline, but the tool has a **supported
+secondary mode: a developer at a terminal** (persona P8). Three local use
+cases are real and one is load-bearing:
+
+1. **Pre-push testing** — verify a fix clears a finding / trial the gate
+   before wiring CI (adoption realistically starts here — J6's warn-only
+   on-ramp begins at a terminal).
+2. **Waiver authoring — already local-only by design:** `--bypass` emits the
+   stanza *for the human to commit* (the tool never writes the repo, NFR-S4),
+   which CI cannot do.
+3. **Environment debugging** — reproducing an `engine-unavailable` exit 2
+   outside the runner image.
+
+Mechanically nothing changes (same argparse CLI, `--format text` default, TTY
+color auto-detection, zero prompts). **Local mode must not soften the gate** —
+same lattice, same exit codes, same fail-loud. The workstation-only deltas are
+story-owned: cold-start provisioning UX + the explicit online-vuln-query
+decision (Story 1.3a — offline stays the fleet default; any online mode is
+opt-in and never silent, per NFR-S2), and the workstation install story
+(Story 5.1 docs; `pixi global install` / the local channel now, conda-forge
+per OD5 later). A `doctor` self-check subcommand is re-ranked **v1-if-cheap**
+(it is FR21's engine/DB detection logic re-exposed).
+
+## Positioning vs the in-house gates (which tool when)
+
+This repo fields three (going on four) scanning/gating surfaces. The
+differentiation, stated once:
+
+| You have | Use |
+|---|---|
+| Any repo, any org, **no atlas**; need a CI/terminal gate on **your pinned deps** (hygiene + CVEs) | **python-deptry-osv-scanner** (this tool — the fleet edge; zero data estate) |
+| The atlas host; need gap/version-lag buckets (ADD/UPDATE/CURRENT), freshness-percentile policy, packaging worklists | `inventory-match --policy` (+ `add-handoff`) — CFE v8.71+ |
+| Anything exotic — containers, K8s, live envs, third-party SBOMs, non-Python ecosystems | `scan-project` (CFE) |
+| The migrated Kedro pipeline (future) | the FR-18 terminal gate — assembles **this tool's** `ComplianceReport` schema |
+
+Key non-overlap: `inventory-match`'s vuln signal reads atlas rollups for the
+**current conda-forge version** (`vuln_*_affecting_current`); this tool scans
+**your pinned/locked versions** via osv-scanner. Complementary, not redundant.
+
+## Cross-spec impact & sync (obligations owned by this effort)
+
+Per the repo's cross-spec sync discipline, the shared-contract facts this
+effort touches and the obligations they create:
+
+1. **Exit-code convergence (the sharpest).** This tool's frozen enum
+   `{0 pass, 1 policy-violation, 2 error, 130 SIGINT}` and the shipped
+   `inventory-match --policy` gate (`0 pass, 2 policy-violations, 1 error` —
+   cyclonedx-universe-inventory S5) are **inverted**. The Kedro FR-18 unified
+   gate is specced to the **this-tool convention** — so `inventory-match`
+   must flip its exit semantics at (or before) convergence, a breaking change
+   for its CI consumers needing a deprecation window. Recorded as an
+   amendment in `cyclonedx-universe-inventory.md` § Cross-spec impact & sync;
+   owned at the FR-18 implementation.
+2. **Two producers of `ComplianceReport`.** Kedro FR-16/FR-18 assemble this
+   schema with a different security source (atlas vdb + CISA-KEV + EPSS —
+   not osv-scanner). Story 1.1a freezes the schema **producer-agnostically**:
+   generic vuln-data provenance (`{source, snapshot_at, max_age_ok}`),
+   optional KEV/EPSS slots (v1 never populates them), severity carrying tier
+   + raw evidence.
+3. **Source-less hygiene semantics are shared.** Kedro FR-16 already specs
+   "deptry runs when project source accompanies the manifest; source-less
+   inputs skip gracefully, reduced scope recorded." This tool adopts the
+   identical semantic (hygiene axis `not-applicable`, honestly scoped) — the
+   fleet's majority repo shape (feedstocks) is source-less.
+4. **SBOM conventions.** The `cfe:*` property namespace (`cfe:pypi_purl`,
+   `cfe:match_source`, `cfe:match_confidence`) + G98 purl normalization
+   (lowercase, `_`→`-`, dots preserved, `?channel=` qualifier) are
+   estate-pinned; Story 4.1 adopts them (round-trip AC: `scan-project
+   --sbom-in` ingests our BOM).
+5. **The bundled conda→pypi map** is generated from the atlas `export-purls`
+   TSVs **preserving `match_source`/`match_confidence`** — the DEP001-block
+   confidence rule reads those tiers (parselmouth / recipe_source_url →
+   block-eligible; name_coincidence → warn; none → withheld).
+   `prefix-dev/purl-associator` is a second corroborator.
+6. **Parse-parity matrix (promotion prerequisite).** The Kedro "promotion is
+   wiring, not redesign" claim assumes E1 ↔ `scan_project` parser parity;
+   known deltas (selector-union vs skip; `run_constraints` handling) are
+   recorded, and a parity matrix is a retro obligation.
 
 ---
 
