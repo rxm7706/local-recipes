@@ -81,6 +81,27 @@ distinction: this constrains only *dev-time orchestration in this factory* (linu
 osx-arm64 hosts); the **scanner product's** own Windows support is a separate question
 owned by its NFR-C1 OS-matrix decision.
 
+## Adjacent-skills survey: `bmad-labs/skills` (2026-07-12, user question)
+
+**Verdict: nothing to include.** `bmad-labs/skills` is a **community skills
+marketplace** (MIT, unversioned, no stated relationship to `bmad-code-org` —
+a different trust/lifecycle tier than the installer-managed 6.10 skill set),
+carrying ~17 general-purpose Claude Code skills (TypeScript unit/e2e testing,
+slides, EPUB conversion, Jira/Confluence, Gemini multimodal, release-please,
+RCA reports, …). Screened against this effort: **zero overlap with the
+loop/dev-auto orchestration need**, and every near-candidate duplicates
+something the estate already has stronger in-method (`bmad-technical-research`
+/ `bmad-domain-research` over `software-research`; BMAD elicitation/party-mode
+over `trade-off-analysis`; the repo's own presentation-deck workflow over the
+slide skills; the FastMCP server over `mcp-builder`). Installing unmanaged
+third-party skills into `.claude/skills/` would also sit outside the
+installer/`customize.toml` lifecycle this effort just carefully preserved
+through the upgrade. **Watch item only:** `software-research`'s version-aware
+primary-source verification pattern rhymes with the CFE quantitative-claims
+discipline — revisit if the estate ever wants a general research-hardening
+skill; and note `npx skills add` as an install channel should a curated
+third-party skill ever be adopted deliberately.
+
 ## Definition of Done
 
 - [x] W1: manifest reads 6.10.0; `bmad-dev-auto` present; custom layers verified; drift-check green.
