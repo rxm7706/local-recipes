@@ -611,6 +611,19 @@ opt-in and never silent, per NFR-S2), and the workstation install story
 per OD5 later). A `doctor` self-check subcommand is re-ranked **v1-if-cheap**
 (it is FR21's engine/DB detection logic re-exposed).
 
+**nebi + prefix-ecosystem notes (2026-07-12 survey).** A
+[nebi](https://github.com/nebari-dev/nebi)-managed team environment **is a
+pixi workspace** (`pixi.toml` + `pixi.lock`) — so `nebi pull <ws>:<tag>` →
+`scan .` works with **zero new code**; and because nebi versions environments
+while the scanner is decision-deterministic (NFR-R3b), scanning two pulled
+versions yields **meaningfully diffable `ComplianceReport`s** ("did our env
+upgrade introduce CVEs?"). Distribution channels for the scanner env itself
+(named in Story 1.3a's decision record): `pixi global install` (online) ·
+**pixi-pack/unpack** (air-gapped single-archive bundles) · **nebi push/pull**
+for nebi-adopted teams (OCI registries; alpha — a candidate, not the
+recommended primary path for a security gate yet). The scanner stays
+**nebi-agnostic but nebi-compatible**.
+
 ## Positioning vs the in-house gates (which tool when)
 
 This repo fields three (going on four) scanning/gating surfaces. The
@@ -661,7 +674,11 @@ effort touches and the obligations they create:
    TSVs **preserving `match_source`/`match_confidence`** — the DEP001-block
    confidence rule reads those tiers (parselmouth / recipe_source_url →
    block-eligible; name_coincidence → warn; none → withheld).
-   `prefix-dev/purl-associator` is a second corroborator.
+   `prefix-dev/purl-associator` is a second corroborator, and the generator
+   supports a **parselmouth-direct refresh mode** (consume
+   `prefix-dev/parselmouth`'s published mapping artifacts — the same source
+   pixi's default `conda-pypi-map` uses) so the map is regenerable by orgs
+   **without** this repo's atlas (added 2026-07-12).
 6. **Parse-parity matrix (promotion prerequisite).** The Kedro "promotion is
    wiring, not redesign" claim assumes E1 ↔ `scan_project` parser parity;
    known deltas (selector-union vs skip; `run_constraints` handling) are
