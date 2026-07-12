@@ -40,5 +40,47 @@
   },
   "customInstructions": [
     "Always follow the behavioral guidelines outlined in CLAUDE.md: Think Before Coding, Simplicity First, Surgical Changes, and Goal-Driven Execution."
-  ]
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py SessionStart"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py Stop"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py SessionEnd"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py PreCompact"
+          }
+        ]
+      }
+    ]
+  }
 }
