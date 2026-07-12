@@ -75,6 +75,8 @@ releaseMode: single-release
 > 6. **Library policy** — NFR-P1 "stdlib-only" → **"lean, targeted conda-provisioned deps"** (PyYAML, packaging, cyclonedx-python-lib, jsonschema); NFR-S1 reframed to **"no *execution* of untrusted input"** (AST-denylist: no `eval`/`exec`/`subprocess`-in-extractor/**Jinja render**, `yaml.safe_load` only). The scaffold's `dependencies = []` becomes a targeted list. Every "stdlib-only extraction" phrasing below is superseded by "stdlib-lean + targeted safe libs."
 > 7. **E1 supported-construct matrix** is now an **owned deliverable** (grounded in the conda-forge-expert recipe-format refs): `compiler()`/`stdlib()` → build-tool-exclude; `pin_subpackage()` → internal-subpackage-exclude; `# [sel]`/`if-then-else` → union both branches + mark; expression logic → degrade to name-only+marked. *(D1/FR9 does **not** change — the waiver stays `.yaml` via `yaml.safe_dump`; the earlier TOML-reversal is withdrawn.)*
 
+> **⚠️ Phase-0 review corrections (2026-07-12) — second reconciliation pass.** A full-corpus review (findings: gist `326be5f25e702e0fcce343046c70a6b2`) landed these corrections: **(a)** the exit projection is pinned — **`indeterminate` → exit 1** (exit 2 stays reserved for operational error; FR20); **(b)** J1's "warn at minimum," FR16's "clean at N%," and the offline-DB state-machine cell predated the `indeterminate` state and are corrected inline; **(c)** **FR19 is repurposed** as the warn-only coverage guardrail (post-triad, any coverage gap already exits non-zero via `indeterminate`); **(d)** persona **P8 (local developer / workstation mode)** + Journey 10 added — the `--bypass`→commit flow is local-only by design; the primary consumer remains the pipeline; **(e)** "parallel execution" in Growth means *fleet/multi-manifest* parallelism — the two engines are parallel in v1 (NFR-P-concurrency).
+
 ## Executive Summary
 
 **python-deptry-osv-scanner** is a non-interactive CI/CD quality-gate CLI that unifies **dependency hygiene** (unused / missing / transitive deps via `deptry`) and **known-vulnerability scanning** (CVEs via Google `osv-scanner`) into a single schema-validated pass behind **one exit code**, for **Python libraries sourced from either PyPI or conda-forge**. For PyPI-world projects both engines already work natively — deptry reads `pyproject.toml` (PEP 621 / Poetry / PDM / uv / setuptools) and `requirements.txt`; osv-scanner reads the lockfiles (`poetry.lock`, `pdm.lock`, `uv.lock`, `Pipfile.lock`, `pylock.toml`, `requirements.txt`) — so python-deptry-osv-scanner **orchestrates and unifies** them. Its differentiated wedge is **extending both engines to the conda/pixi formats neither parses natively** — `environment.yml`, v0 `meta.yaml`, v1 `recipe.yaml`, and `pixi.toml` — via a manifest-resolution bridge, making conda-forge-sourced Python projects first-class alongside PyPI ones. (See § Supported Dependency Managers & Lockfiles.)
@@ -91,7 +93,7 @@ Differentiators: (1) **pre-build source-manifest resolution** across six formats
 
 ## Project Classification
 
-- **Type:** `cli_tool` — a non-interactive CI/CD policy/quality-gate CLI (primary consumer = pipeline). `report-schema.json` is the data contract (an output_formats concern); no public SDK/IDE surface.
+- **Type:** `cli_tool` — a non-interactive CI/CD policy/quality-gate CLI (primary consumer = pipeline). `report-schema.json` is the data contract (an output_formats concern); no public SDK/IDE surface. *(Corrected 2026-07-12: supported **secondary** consumer = a developer at a terminal — P8, workstation mode: pre-push testing, waiver authoring, environment debugging. Interactivity remains zero; local mode softens nothing.)*
 - **Domain:** DevSecOps / software supply-chain security.
 - **Complexity:** Medium engineering, **high stakes** (a missed CVE or a false-positive blocking builds propagates fleet-wide). Hotspots: **OD2** (osv-scanner input / version resolution) and **OD3** (stdlib parsing of v0 `meta.yaml` Jinja `{% set %}` / `{{ x|filter }}` / `{{ compiler() }}` / `# [sel]` selectors + v1 `recipe.yaml` `${{ }}` + `environment.yml`).
 - **Context:** Greenfield (complete intake spec + committed build scaffold at `src/shared/packages/python-deptry-osv-scanner/`; no running system).
@@ -153,7 +155,7 @@ Two coverage paths, by where the dependencies are sourced:
 
 ### Growth Features (Post-MVP)
 
-cf_atlas promotion (FR-16/FR-18 MCP tool + pixi CLI) · vuln-side waiver · surface more osv-native lockfiles · better conda↔PyPI name reconciliation · alternate hygiene backends (`fawltydeps`, `pip-check-reqs`) via `--engine` · parallel execution.
+cf_atlas promotion (FR-16/FR-18 MCP tool + pixi CLI) · vuln-side waiver · surface more osv-native lockfiles · better conda↔PyPI name reconciliation · alternate hygiene backends (`fawltydeps`, `pip-check-reqs`) via `--engine` · fleet/multi-manifest parallelism *(the two engines already run in parallel in v1 — NFR-P-concurrency; disambiguated 2026-07-12)*.
 
 ### Vision (Future)
 
@@ -173,6 +175,7 @@ Non-Python osv ecosystems + container/artifact scanning · default fleet supply-
 | **P4** | DevSecOps / security triage (*Alex*) | Distribution (fleet) | Triage a finding; decide accept-risk vs fix |
 | **P6** | Durable-evidence consumer / auditor | **Enterprise / post-v1** | Historical SBOM+report as audit evidence (sole human justification for the durability property; v1 *emits* the artifacts, retention is the CI system's job) |
 | **P7** | Schema / release owner (the CFE-skill owner here) | Maintainer | Owns report `schema_version`, severity mapping, pinned engine versions; the person "one exit code you can trust" actually depends on |
+| **P8** | Local developer at a terminal (workstation mode) | **Secondary consumer (v1, added 2026-07-12)** | Pre-push testing, waiver authoring (the `--bypass`→commit flow is local-only by design), environment debugging — same gate, zero prompts |
 | **M1** | The CI pipeline / cf_atlas | Machine consumer | A stable, self-describing data contract (schema report + SBOM) |
 
 *Cut from the roster (this is the gap where a "P5" would sit):* a standalone **risk-approver/EM** persona — in the beachhead a solo maintainer triages, authorizes, and audits one waiver in a single motion; the authorization *moment* is captured as a **waiver-schema field (`authorized_by` / `signed`)**, not a distinct person. The J4 authorization beat still proves the tool works whether those roles collapse to one human (beachhead) or split across three (enterprise). *Logged as a dependency risk, not a persona:* the upstream deptry/osv maintainers, whose output formats the tool's parsing contract is hostage to (absorbed by J3's engine-drift handling + FR10).
@@ -183,7 +186,7 @@ Non-Python osv ecosystems + container/artifact scanning · default fleet supply-
 
 **Rising action.** She adds one step: `python-deptry-osv-scanner scan .`. The manifest engine walks the repo, two-pass-evaluates the `recipe.yaml` `${{ }}` and the `meta.yaml` `{% set %}` / `{{ compiler() }}` / `# [sel]` selectors stdlib-only, and extracts the dependency set — feeding deptry a synthesized requirements front-door and osv the version-pinned set from `pixi.lock` (name-only + marked where no version resolves).
 
-**Climax — the payoff is the *honest* verdict, not the clean one.** Her mixed repo can't be fully resolved: some deps come through with versions, some degrade to name-only, one `meta.yaml` uses a Jinja construct the extractor can't evaluate. The report doesn't paper over it — it renders **`clean at 60% coverage`**, with the coverage split into **hygiene-coverage vs vulnerability-coverage** (a manifest can be 100% hygiene-covered yet 0% vuln-covered when every dep is name-only), and it names the 40% it *couldn't* see. Critically: **empty-findings-at-partial-coverage is never `clean` — it is `warn` at minimum.** Anyone can scan a clean `pixi.toml`; the wedge is trustworthy coverage on formats neither engine parses, and *this* is the demo that sells it.
+**Climax — the payoff is the *honest* verdict, not the clean one.** Her mixed repo can't be fully resolved: some deps come through with versions, some degrade to name-only, one `meta.yaml` uses a Jinja construct the extractor can't evaluate. The report doesn't paper over it — it renders **`clean at 60% coverage`**, with the coverage split into **hygiene-coverage vs vulnerability-coverage** (a manifest can be 100% hygiene-covered yet 0% vuln-covered when every dep is name-only), and it names the 40% it *couldn't* see. Critically: **the unresolved 40% routes to `indeterminate` (above `warn`) — the run exits non-zero by design** until Priya locks (`pixi.lock`), files a time-boxed waiver, or opts into `--warn-only`; empty-findings-at-partial-coverage is never `clean`. *(Corrected 2026-07-12 — the original "warn at minimum" predated the `indeterminate` state.)* Anyone can scan a clean `pixi.toml`; the wedge is trustworthy coverage on formats neither engine parses, and *this* is the demo that sells it.
 
 **Resolution.** Priya has the same one-command gate as her PyPI peers, first-class on conda/pixi — and a green that never hides what it didn't look at.
 
@@ -280,6 +283,18 @@ Every one of these is **exit 2, explicitly not clean** — the absence of an exp
 
 *Reveals:* verdict-composition precedence lattice; status-vs-exit separation; the crash-is-not-clean invariant. *Implies FR-NEW-E.*
 
+### Journey 10 — P8, the developer at a terminal: workstation mode *(secondary consumer; added 2026-07-12)*
+
+**Opening.** Before wiring CI, a developer trials the gate locally: install to the workstation (`pixi global install` / the local channel — Story 5.1 docs), then `python-deptry-osv-scanner scan . --warn-only` — the recommended first contact with the tool.
+
+**Rising action.** Cold start bites first: no offline DB on the laptop → a typed error with an **actionable nudge** (provision the DB / point `--db-path` / use the explicit online mode if Story 1.3a ships one — never a silent fetch, NFR-S2). A `doctor`-style self-check (FR21's detection logic re-exposed; v1-if-cheap) answers "is this machine even scan-capable?"
+
+**Climax.** They fix a finding, re-run, watch it clear — then hit the un-fixable one and author a waiver: `--bypass --reason …` emits the stanza **they commit** (the tool never writes the repo, NFR-S4). This loop *cannot run in CI* — waiver authoring is local-only by design, which is why P8 is a supported consumer, not an afterthought.
+
+**Resolution.** Same lattice, same exit codes, same zero prompts as CI — local mode softens nothing. The developer wires CI already knowing exactly what it will say.
+
+*Reveals:* the workstation install story (5.1); cold-start provisioning UX + the online-opt-in decision (1.3a); `doctor` re-ranked v1-if-cheap; the waiver-authoring loop as a local-first flow.
+
 ### Journey Requirements Summary
 
 The journeys resolve into these capability clusters, mapped to epics + the requirements they surface:
@@ -288,7 +303,7 @@ The journeys resolve into these capability clusters, mapped to epics + the requi
 - **Dual extraction + delegation (E2/E3)** — PyPI native delegation; conda/pixi bridge to deptry + osv *(J1, J2)*
 - **Honest report + severity gate (E4)** — schema'd `ComplianceReport`, split coverage, verdict-composition, typed error taxonomy + ownership routing, CycloneDX SBOM *(J2, J3, J5, J9)*
 - **Auditable expiring bypass (FR9)** — waivers-as-code, `authorized_by`, `review_required`, expiry re-block, untrusted-input trust boundary *(J4)*
-- **Adoption + fleet + machine contract** — warn-only on-ramp, deterministic exit matrix, `--allow-empty`, `schema_version` forward-compat, corpus regression gate, atlas seam *(J3, J6, J8, M1)*
+- **Adoption + fleet + machine contract** — warn-only on-ramp, deterministic exit matrix, `--allow-empty`, `schema_version` forward-compat, corpus regression gate, atlas seam, workstation on-ramp (install story, cold-start UX) *(J3, J6, J8, J10, M1)*
 
 **Requirements these journeys surface for Step 9 (Functional Requirements):**
 
@@ -415,7 +430,7 @@ The tool is a stable fleet gate as a **behavioral** commitment, not a governance
 
 ### State-Machine Behaviors (defined cells)
 - **No recognized manifest at the path (D2 — reconciles J3):** **fail-closed (exit 2) by default when Python signals are present but nothing parses** (the misconfiguration guard); exit-0 `not-applicable` only when the path has zero Python anything; `--allow-empty` downgrades the former.
-- **`--offline` + OSV DB unreachable:** the vuln dimension reports `coverage: skipped (offline, no local db)` — **never "0 vulns"**; default exit 0 (data, not failure); `--require-full-coverage` promotes it to failing.
+- **`--offline` + OSV DB unreachable:** the vuln dimension reports `coverage: skipped (offline, no local db)` — **never "0 vulns"**; per the triad, skipped routes to **`indeterminate` → exit 1** (never a silent 0; `--warn-only` downgrades). *(Corrected 2026-07-12 — "default exit 0 (data, not failure)" predated the `indeterminate` state; `--require-full-coverage` is subsumed on this path.)*
 - **One engine crashes, other succeeds:** verdict exit 2, **but the `ComplianceReport` is still emitted** with per-dimension status (clean / violation / error / skipped) — exit code ⊥ report emission.
 - **Stale/expired waiver matrix:** valid+matches → suppress; valid+matches-nothing → `stale-waiver` warn (no verdict change); expired+matches → finding **un-waived** (counts toward exit 1) + `waiver-expired` warn; expired+matches-nothing → `stale-waiver` warn.
 
@@ -453,7 +468,7 @@ The tool is a stable fleet gate as a **behavioral** commitment, not a governance
 - **CLI contract:** single `scan` verb; frozen exit enum `{0,1,2,130}`; dual-TOML config (`pyproject.toml` + `pixi.toml`, per-key precedence); stability-as-behavior (3 contract families); `--version` / `--help`.
 - **Offline-first vuln data** + mandatory DB provenance/staleness; **corpus-conformance test** (J8, ratcheted unparseable-rate, NFR3 twice-run).
 
-**Nice-to-Have / Deferred to post-v1** *(all previously approved — re-stated, not newly cut):* KEV gate tier (bundled snapshot) · SARIF output (`--format` value-space reserved) · cf_atlas promotion (FR-16/18) · P6 + J7 compliance-audit retrieval (enterprise) · waiver-at-scale / renewal · per-section (dev/test) severity policy · coverage-floor *default* policy (the `--fail-under-coverage` knob ships v1, default off) · deprecation lifecycle machinery · SBOM schema freeze · alternate hygiene backends (fawltydeps) · parallel execution · better conda↔PyPI reconciliation · EPSS.
+**Nice-to-Have / Deferred to post-v1** *(all previously approved — re-stated, not newly cut):* KEV gate tier (bundled snapshot) · SARIF output (`--format` value-space reserved) · cf_atlas promotion (FR-16/18) · P6 + J7 compliance-audit retrieval (enterprise) · waiver-at-scale / renewal · per-section (dev/test) severity policy · coverage-floor *default* policy (the `--fail-under-coverage` knob ships v1, default off) · deprecation lifecycle machinery · SBOM schema freeze · alternate hygiene backends (fawltydeps) · fleet/multi-manifest parallelism (engines are parallel in v1) · better conda↔PyPI reconciliation · EPSS.
 
 **Vision (future):** non-Python osv ecosystems · container/artifact scanning · default fleet supply-chain gate · optional external distribution (OD5).
 
@@ -502,13 +517,13 @@ The tool is a stable fleet gate as a **behavioral** commitment, not a governance
 ### D. Honest Coverage & Reporting
 - **FR14:** The tool can produce a **schema-validated** compliance report carrying explicit status, severity, **schema version**, per-manifest coverage, and typed error kind.
 - **FR15:** The tool can report coverage as **two distinct dimensions** — hygiene coverage and vulnerability coverage.
-- **FR16:** The tool can render a partial-coverage result as a **qualified verdict** ("clean at N%") and never as an unqualified "clean."
+- **FR16:** The tool can render a partial-coverage result as a **qualified verdict** — the coverage qualifier is always stated, and the governing status follows the FR20 lattice (partial vuln coverage ⇒ ≥1 `indeterminate` component ⇒ status `indeterminate`, non-zero) — never an unqualified "clean." *(The earlier "clean at N%" phrasing predated `indeterminate` — corrected 2026-07-12.)*
 - **FR17:** A user can obtain a human-readable summary and, on request, a machine-readable report, in which **every blocking finding is individually actionable** (package + manifest location + severity-that-tripped + remediation pointer).
 
 ### E. Policy Gate & Verdict
 - **FR18:** A user can gate a build on report **content + severity**, choosing the failing threshold. The **vuln axis** defaults to block on **critical** CVEs; the **hygiene axis is separate** — **DEP001 (missing dependency) blocks by default** (gated on conda↔pypi name-mapping confidence: high-confidence → block, ambiguous → `warn`), DEP002/3/4 → `warn`. Both policy tables (hygiene→status + CVSS thresholds) live in the FR30 `ConfigLoader`.
-- **FR19:** A user can gate on a **minimum coverage floor** (**default OFF**), generalizing the no-meaningful-scan guard.
-- **FR20:** The tool can compose many per-finding outcomes into **one status + one exit code** by a defined precedence in which an **error dominates**, a **waiver suppresses a finding unless expired or error-dominated**, and an **`indeterminate` outcome (withheld/skipped/unresolved) can never be masked by a clean sibling axis**, ingesting coverage-floor, engine-unavailable, and discovery-found-nothing as inputs. *(Precedence lattice `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable` + the separately-derived exit — any error→2, else un-waived policy-violation→1, **else `indeterminate`→non-zero (never a silent 0)**, else 0 — defined in Journey 9 / architecture.)*
+- **FR19:** A user can gate on a **minimum coverage floor** (**default OFF**). *(Repurposed 2026-07-12: post-triad, any coverage gap already exits non-zero via `indeterminate`, so the floor's remaining roles are (a) a guardrail **under `--warn-only`** — report-only, but never let coverage regress below N% — and (b) a ceiling on waived-away `indeterminate` surface once waivers apply.)*
+- **FR20:** The tool can compose many per-finding outcomes into **one status + one exit code** by a defined precedence in which an **error dominates**, a **waiver suppresses a finding unless expired or error-dominated**, and an **`indeterminate` outcome (withheld/skipped/unresolved) can never be masked by a clean sibling axis**, ingesting coverage-floor, engine-unavailable, and discovery-found-nothing as inputs. *(Precedence lattice `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable` + the separately-derived exit — any error→2, else un-waived policy-violation→1, **else `indeterminate`→exit 1 (pinned 2026-07-12; never a silent 0 — exit 2 stays reserved for operational error)**, else 0 — defined in Journey 9 / architecture.)*
 - **FR21:** The tool can **detect required-engine presence + version-compatibility** and distinguish, via **typed error kinds routed to an owner**, the failure classes (unparsable-manifest, engine-unavailable/incompatible, engine-output-unrecognized/-unparseable, engine-execution-failed, engine-timeout, config-error, internal-error) — a missing/incompatible engine **never yields a silent PASS**.
 - **FR22:** The tool can treat any run that did **not meaningfully scan** (empty extraction, expected-but-missing manifest, crashed engine, or skipped coverage) as **non-passing, never clean**.
 - **FR23:** A user can adopt the gate in a **non-blocking warn-only** mode.
