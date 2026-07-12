@@ -2,7 +2,7 @@
 
 [gates]
 # Pilot posture (docs/specs/bmad-loop-adoption.md W3): per-story spec approval for the
-# python-deptry-osv-scanner contract-freeze stories (1.1a/1.1b); relax to per-epic
+# python-deptry-osv-scanner contract-freeze stories (1.1/1.2); relax to per-epic
 # from Epic 2 once the conformance harness polices the loop, then consider none.
 mode = "per-story-spec-approval" # none | per-epic | per-story-spec-approval
 retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
@@ -21,7 +21,7 @@ cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1
 [verify]
 # Deterministic gates run by the orchestrator after a clean review, before commit.
 # The scanner's own test suite is the gate (grows per story: conformance harness,
-# C0a/C0c, meta-tests land in 1.1a/1.1b and police every later story).
+# C0a/C0c, meta-tests land in 1.1/1.2 and police every later story).
 commands = ["pixi run -e python-deptry-osv-scanner python-deptry-osv-scanner-test"]
 
 [notify]
