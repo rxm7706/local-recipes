@@ -15,10 +15,6 @@ xcopy /E /I /Q .claude-plugin "%SHARE%\.claude-plugin\"
 if errorlevel 1 exit /b 1
 copy README.md "%SHARE%\"
 if errorlevel 1 exit /b 1
-copy AGENTS.md "%SHARE%\"
-if errorlevel 1 exit /b 1
-copy CLAUDE.md "%SHARE%\"
-if errorlevel 1 exit /b 1
 copy "%RECIPE_DIR%\LICENSE" "%SHARE%\"
 if errorlevel 1 exit /b 1
 

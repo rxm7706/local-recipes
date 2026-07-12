@@ -11,7 +11,7 @@ SHARE="${PREFIX}/share/bmad-utility-skills"
 mkdir -p "${SHARE}"
 cp -r skills "${SHARE}/"
 cp -r .claude-plugin "${SHARE}/"
-cp README.md AGENTS.md CLAUDE.md "${SHARE}/"
+cp README.md "${SHARE}/"
 
 # Upstream does not yet ship a LICENSE file (tracked: hold submission).
 # Use the MIT LICENSE vendored alongside this recipe.

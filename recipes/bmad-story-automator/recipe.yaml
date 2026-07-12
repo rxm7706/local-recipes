@@ -3,10 +3,10 @@ schema_version: 1
 
 context:
   name: bmad-story-automator
-  version: "1.13.0"
+  version: "1.15.0"
   # Upstream repo (bmad-code-org/bmad-automator) has no release tags as of 2026-04-26.
   # Pinned to the latest main commit; bump both `version` and `commit` together.
-  commit: 15da072b0806e586db01ff5dc946150d96ff287f
+  commit: f332173a692ffbabb24734c31dedadfcf78b9ed1
 
 package:
   name: ${{ name }}
@@ -14,7 +14,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-automator/archive/${{ commit }}.tar.gz
-  sha256: 6aa973864c32b1b1d8205daaca5772268cada7917ee030521212fdc8fc15a7b2
+  sha256: 1e5338ba049b5f0dc5153500da7717bda2da0fd04942df3d5c7fa31adf54e26a
 
 build:
   number: 0
@@ -49,8 +49,8 @@ tests:
         - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/package.json"
         - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/bin/bmad-story-automator"
         - test -f "${PREFIX}/lib/node_modules/bmad-story-automator/install.sh"
-        - test -d "${PREFIX}/lib/node_modules/bmad-story-automator/payload"
-        - test -d "${PREFIX}/lib/node_modules/bmad-story-automator/source"
+        - test -d "${PREFIX}/lib/node_modules/bmad-story-automator/skills/bmad-story-automator"
+        - test -d "${PREFIX}/lib/node_modules/bmad-story-automator/docs"
 
 about:
   homepage: https://github.com/bmad-code-org/bmad-automator
@@ -71,3 +71,40 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-story-automator
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-automator
+  cfe-purls:
+    - pkg:conda/bmad-story-automator@${{ version }}?channel=conda-forge
+    - "pkg:github/bmad-code-org/bmad-automator@f332173a692ffbabb24734c31dedadfcf78b9ed1"
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-automator
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-automator
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33128
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T09:49:16Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Version bumped 1.13.0 -> 1.15.0 (upstream has no release tags;
+#    # pinned to latest main commit) in the 2026-07-12 BMAD-recipe sweep.
+#    # Upstream restructured between commits: payload/ and source/ were
+#    # replaced by skills/ + scripts/ + tests/; build.sh copy list and
+#    # the artifact-layout tests were updated to mirror the new
+#    # package.json `files` array (bin/ docs/ skills/ .claude-plugin/).
+####

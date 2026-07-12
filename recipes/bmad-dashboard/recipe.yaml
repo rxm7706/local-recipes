@@ -4,6 +4,7 @@ schema_version: 1
 context:
   version: "1.2.2.dev0"
   commit: "33b330ef113c62f58a77413a241ca30f4f0b8a99"
+  python_min: "3.9"
 
 package:
   name: bmad-dashboard
@@ -77,3 +78,42 @@ extra:
       tarball by commit SHA. The package version 1.2.2.dev0 reflects
       the version declared in upstream package.json with a PEP 440
       .dev0 suffix to mark this as a pre-release snapshot.
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-dashboard
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-method-ui
+  cfe-purls:
+    - pkg:conda/bmad-dashboard@${{ version }}?channel=conda-forge
+    - "pkg:github/bmad-code-org/bmad-method-ui@33b330ef113c62f58a77413a241ca30f4f0b8a99"
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-method-ui
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-method-ui
+  cfe-import-names: [bmad_dashboard]
+  cfe-source-kind: github-commit
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33513
+  cfe-last-checked: "2026-07-12T14:24:56Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:24:56Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T14:27:20Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # CONSUME-NOT-SUBMIT mirror of conda-forge/staged-recipes PR #33513
+#    # (author killua156; external PR — we consume, never compete; G58/db-gpt
+#    # precedent). Body kept a faithful verbatim mirror of the PR head
+#    # (killua156:add-bmad-dashboard-snapshot); all human comments preserved.
+# context:
+#    # python_min "3.9" is below the conda-forge 3.10 floor — kept as-is per
+#    # the faithful-mirror rule (the fix belongs to the external PR's review,
+#    # not this mirror). Local builds resolve fine.
+####
