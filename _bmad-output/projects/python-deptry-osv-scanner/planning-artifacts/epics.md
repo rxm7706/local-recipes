@@ -119,11 +119,11 @@ So that every later engine and format is a *producer* against a stable contract 
 
 **Acceptance Criteria:**
 
-**Given** the `Component` record, **When** it is defined, **Then** it carries the **full frozen field set** — `ecosystem` enum `{pypi,conda,pixi}` **closed**, `provenance` a **list** of `(manifest,section)`, and `version|None`, `pypi_identity|None`, `identity_source`, `mapping_confidence`, `cve_match_level`, `extraction_mode`, `hygiene_covered`, `vuln_matchable`, `indeterminate_reason|None` all present with declared type + optionality. **And** every field's shape/type/optionality is frozen now; the two growable enums (`cve_match_level`, `WithholdReason`/`indeterminate_reason`) are declared with a conservative starter set (widening is additive, never a schema-break).
+**Given** the `Component` record, **When** it is defined, **Then** it carries the **full frozen field set** — `ecosystem` enum `{pypi,conda}` **closed** *(corrected 2026-07-12: pixi is a manifest format, not an ecosystem — the pixi fact lives in `provenance`)*, `provenance` a **list** of `(manifest,section)`, and `version|None`, `pypi_identity|None`, `identity_source`, `mapping_confidence`, `cve_match_level`, `extraction_mode`, `hygiene_covered`, `vuln_matchable`, `indeterminate_reason|None` all present with declared type + optionality. **And** every field's shape/type/optionality is frozen now; the two growable enums (`cve_match_level`, `WithholdReason`/`indeterminate_reason`) are declared with a conservative starter set (widening is additive, never a schema-break). **And** every non-clean status carries **`status.driver`** (axis + finding id) as part of the frozen report schema — an exit that can't say *why* is an incoherent contract (added 2026-07-12 per arch).
 
 **Given** the committed `ComplianceReport` JSON schema, **When** a minimal report is validated, **Then** it conforms; it carries `schema_version` and the exit enum is the frozen closed set `{0,1,2,130}` (folds NFR-I1/I2 — the dissolved 4.2 conformance assertion lives here).
 
-**Given** `verdict.py`, **When** C0a is tested against the projection **directly**, **Then** the projection is **total** over all 7 rungs (`error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`), every non-clean rung maps to non-zero, and an unknown/weaker `cve_match_level` projects **toward `indeterminate`, never `clean`** (the additive-growth safety rule). **And** a guard test asserts an all-clean inventory produces zero `indeterminate` (the socket is proven-total, not dead).
+**Given** `verdict.py`, **When** C0a is tested against the projection **directly**, **Then** the projection is **total** over all 7 rungs (`error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`), every non-clean rung maps to non-zero (**`indeterminate` → exit 1**, pinned 2026-07-12; `error` → 2, reserved for operational failure), and an unknown/weaker `cve_match_level` projects **toward `indeterminate`, never `clean`** (the additive-growth safety rule). **And** a guard test asserts an all-clean inventory produces zero `indeterminate` (the socket is proven-total, not dead).
 
 **Given** the repo, **When** the **verdict.py sole-ownership guard** runs, **Then** CI fails if any module other than `verdict.py` references the exit literals `{1,2,130}` or the rung ordering (stories *feed* rungs; only `verdict.py` *projects*).
 
@@ -167,6 +167,8 @@ So that 1.3b, 2.4, and CI have a bounded, reproducible vulnerability-data substr
 **Given** the offline-first constraint (NFR-S2/S8), **When** the spike concludes, **Then** a **decision record** documents the chosen mechanism (bundled-conda-DB vs `--offline` + a provisioned local DB), how "stale" is defined (feeds FR12), and the trust-anchor/authenticity check (NFR-S8). **And** a **hermetic fixture DB** the conformance harness can consume offline is produced.
 
 **Given** the decision, **When** downstream stories consume it, **Then** it explicitly gates **1.3b** (osv engine) and **2.4** (stale-DB semantics) — and **not** 1.2 (deptry has no OSV surface).
+
+**Given** a workstation cold start (no DB provisioned — persona P8), **When** the spike decides the provisioning UX, **Then** the decision record also covers (added 2026-07-12): the fail-loud + **actionable-nudge** message (how to provision / `--db-path`); whether an explicit **online opt-in** query mode ships in v1 (the PRD's "opt-in, never silent" path — currently unowned) or v1 is offline-only-everywhere with trivial provisioning; the concrete **engine version ranges** to pin (NFR-C1) + the version-detection mechanism; reuse of the in-repo **`update-cve-db`** offline-OSV provisioning surface vs a new downloader; an env-var **mirror override** for the DB fetch (JFrog/air-gap discipline); and verification of osv's `--lockfile=<parser>:<path>` override (may remove the `requirements.txt` temp-name constraint).
 
 ### Story 1.3b: osv-scanner as the second engine (vulnerability findings)
 
@@ -228,7 +230,7 @@ So that a wrong-but-quiet manifest choice can never produce a false-green.
 
 **Given** the resolved scan set, **When** the report is emitted, **Then** it is a **first-class field** on `ResolvedInventory` (an operator sees *what was scanned*, never infers it).
 
-**Given** ambiguous or empty discovery, **When** it resolves, **Then** it becomes **`indeterminate`, never `clean`** — the load-bearing AC that makes discovery a gate, not cosmetics.
+**Given** discovery finds **nothing parseable while Python signals are present**, **When** it resolves, **Then** it is an **`error` (exit 2, per PRD D2 fail-closed)** routed to the developer; **Given** discovery is **ambiguous or partial** (candidates found, selection/parse uncertain), **Then** it becomes **`indeterminate` (exit 1), never `clean`** — the load-bearing AC that makes discovery a gate, not cosmetics. *(Split corrected 2026-07-12 to align with D2 — different failure classes, different owners.)*
 
 ---
 
@@ -327,7 +329,7 @@ So that I can ship without lying about the risk.
 
 **Given** `--bypass --reason "<text>"`, **When** run, **Then** a `.python-deptry-osv-scanner-waivers.yaml` stanza (reason + authorizer + expiry — FR24) is emitted via `safe_dump` for the human to commit — the tool **never writes the repo** (NFR-S4); the reason round-trips safely (no YAML injection). **And** a valid waiver → status `bypassed`, exit 0, `review_required: true`.
 
-**Given** a malformed or wildcard-over-broad waiver, **When** read, **Then** it is schema-validated and rejected (FR26); waivers are least-privilege (specific id+package+ecosystem) and every applied waiver is echoed in output (NFR-S3).
+**Given** a malformed or wildcard-over-broad waiver, **When** read, **Then** it is schema-validated and rejected (FR26); waivers are least-privilege (specific id+package+ecosystem) and every applied waiver is echoed in output (NFR-S3). **And** the waiver file carries an in-file **`version:`** key; an unknown/future version is rejected with a typed error, never guessed (added 2026-07-12 per PRD CLI § contract stability).
 
 ### Story 3.3: Waiver expiry + warn-only adoption on-ramp
 
@@ -373,9 +375,11 @@ So that I fix the finding instead of disabling the gate.
 
 **Acceptance Criteria:**
 
-**Given** any non-zero exit, **When** the human report is emitted, **Then** it names the offending package(s), the finding (advisory id + severity + fixed-version, or the hygiene rule), the source manifest + location, and a remediation path — surfaced via a concrete `--explain`/remediation capability, not a re-wrap of 1.5a's typed errors (NFR-U1 — "fail with a fix").
+**Given** any non-zero exit, **When** the human report is emitted, **Then** it names the offending package(s), the finding (advisory id + severity + fixed-version, or the hygiene rule), the source manifest + location, and a remediation path — surfaced as **concrete remediation content in the report/diagnostics**, not a re-wrap of 1.5a's typed errors and **not a new subcommand** (an `explain` verb stays post-v1 per the PRD; reworded 2026-07-12) (NFR-U1 — "fail with a fix").
 
 **Given** zero configuration, **When** the tool runs, **Then** the default posture is secure (block critical, expiring waivers, unknown-engine → fail-loud, air-gap explicit) paired with the warn-only on-ramp so day-one debt doesn't trigger a mass-disable (NFR-U2).
+
+**Given** a developer workstation (P8 — added 2026-07-12), **When** the adoption docs land, **Then** they cover the local install story (`pixi global install` / the local channel now; conda-forge per OD5), the recommended first contact (`scan . --warn-only` at a terminal — per the spec's honest-adoption statement), and the `doctor`-style self-check disposition (v1-if-cheap, reusing FR21's detection logic; else explicitly named post-v1).
 
 ### Story 5.2: Fleet-scale validation + corpus/oracle maturation
 
