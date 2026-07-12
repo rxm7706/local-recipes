@@ -103,6 +103,20 @@ spec_updated: 2026-07-12
   the whole loop for a manual reset). Follow-on option if timeouts recur: per-stage
   `[adapter.dev]` budget or `isolation = "worktree"` so attempts never touch the
   main checkout.
+- **Pilot learning #2 — all-or-nothing in-place attempts are the wrong execution
+  model (2026-07-12, user design review).** In-place mode (`isolation = "none"`),
+  any stopped attempt is either rolled back (work discarded up to the full session
+  budget — now 180 min) or pauses the whole loop for a manual reset; the loop
+  cannot roll FORWARD. Policy switched to `isolation = "worktree"` +
+  `branch_per = "story"` + `merge_strategy = "squash"` + `keep_failed = true`:
+  attempts live on per-story branches in separate worktrees, failed/timed-out
+  attempts are KEPT on their branch (plus a captured changes.patch) instead of
+  reverted, dev sessions may checkpoint with incremental WIP commits (squashed to
+  one story commit at merge), and the main checkout is never touched. Remaining
+  upstream gap (watch item / feature request for bmad-code-org/bmad-loop):
+  resume-on-timeout — on session timeout, resume the same CLI session
+  (`claude --resume`) instead of kill-and-retry; and a retry mode that seeds from
+  the preserved attempt branch instead of a clean baseline.
 
 ### Windows-without-WSL note (recorded 2026-07-12, user question)
 
