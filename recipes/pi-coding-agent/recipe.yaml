@@ -93,8 +93,8 @@ extra:
   cfe-source-kind: npm-registry-tarball
   cfe-noarch: compiled
   cfe-pip-check: "false:not-a-python-package"
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pi-coding-agent-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-last-checked: "2026-07-12T18:30:00Z"
@@ -112,6 +112,9 @@ extra:
 #    # old @mariozechner/pi scope on npm is STALE (0.70.x, bin renamed
 #    # pi-pods); @earendil-works is the current publisher, versions track
 #    # the pi-mono monorepo tags.
+#    # 2026-07-12: conda-forge feedstock EXISTS (created 2026-07-10, same
+#    # 0.80.6) — surfaced by the PR #52 linter; prefer consuming from
+#    # conda-forge; keep this local mirror for the SelfExplainML channel.
 # build:
 #    # 17 runtime npm deps bundled at build (pnpm-licenses disclaimer);
 #    # @silvia-odwyer/photon-node is WASM -> noarch-safe.
