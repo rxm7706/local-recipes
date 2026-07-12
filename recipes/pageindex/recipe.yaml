@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.0.dev3"
+
+package:
+  name: pageindex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pageindex/pageindex-${{ version }}.tar.gz
+  sha256: 93174bbfcd261c5e7d6c7d47f1be371ae21c1fe977ce706cf3c021f4932693bd
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - pypdf2 >=3.0.0
+    - httpx >=0.28.1
+    - socksio
+    - litellm >=1.83.0
+    - openai >=1.70.0
+    # Floor raised from upstream's >=0.1.0: old openai-agents (0.2.x) METADATA
+    # requires openai<2 + an mcp dep the conda package lacks, failing pip
+    # check; 0.17+ (what openkb pins) permits openai 2.x.
+    - openai-agents >=0.17
+    - pydantic >=2.5.0,<3.0.0
+    - pymupdf >=1.26.0
+    - python-dotenv >=1.0.0
+    - pyyaml >=6.0
+    - requests >=2.28.0
+    - typing-extensions >=4.9.0
+
+tests:
+  - python:
+      imports:
+        - pageindex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Document Index System for reasoning-based RAG - vectorless, hierarchical tree indexing for long documents
+  description: |
+    PageIndex builds a hierarchical "table-of-contents" tree index of long
+    PDF documents so LLMs can navigate to relevant sections by reasoning
+    instead of vector similarity — no embeddings, no vector database, no
+    chunking. It is the retrieval engine behind OpenKB.
+
+    This packages the 0.3.0.dev3 pre-release, the exact version OpenKB
+    0.4.4 requires.
+  homepage: https://github.com/VectifyAI/PageIndex
+  repository: https://github.com/VectifyAI/PageIndex
+  documentation: https://docs.pageindex.ai
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pageindex
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pageindex
+  cfe-purls:
+    - pkg:conda/pageindex@${{ version }}?channel=conda-forge
+    - pkg:pypi/pageindex@${{ version }}
+  cfe-upstream-repo: https://github.com/VectifyAI/PageIndex
+  cfe-upstream-homepage: https://docs.pageindex.ai
+  cfe-import-names: [pageindex]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T17:00:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:57:42Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 as the PREREQUISITE for the openkb recipe
+#    # (openkb pins pageindex==0.3.0.dev3 exactly). A .dev pre-release is
+#    # deliberately packaged because it is what upstream OpenKB rides.
+# run:
+#    # httpx[socks] extra is expanded to httpx + socksio (conda has no
+#    # extras); conda's socksio ships dist-info, so pip check passes.
+####

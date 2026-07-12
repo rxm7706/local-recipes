@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0.dev0"
+  # Upstream repo (multica-ai/andrej-karpathy-skills) has no release tags;
+  # pinned to the latest main commit. Bump `version` (from
+  # .claude-plugin/plugin.json) and `commit` together.
+  commit: 2c606141936f1eeef17fa3043a72095b4765b9c2
+
+package:
+  name: andrej-karpathy-skills
+  version: ${{ version }}
+
+source:
+  url: https://github.com/multica-ai/andrej-karpathy-skills/archive/${{ commit }}.tar.gz
+  sha256: 10d372aba5bf8d55993c5dfebb2e0475ad5e7eecfc498d782c0e6ccf13d97ea5
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - andrej-karpathy-skills-install --help
+          - test -d "${CONDA_PREFIX}/share/andrej-karpathy-skills/skills/karpathy-guidelines"
+          - test -f "${CONDA_PREFIX}/share/andrej-karpathy-skills/CLAUDE.md"
+          - test -f "${CONDA_PREFIX}/share/andrej-karpathy-skills/.claude-plugin/plugin.json"
+      - if: win
+        then:
+          - andrej-karpathy-skills-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\andrej-karpathy-skills\skills\karpathy-guidelines" exit 1
+          - if not exist "%CONDA_PREFIX%\share\andrej-karpathy-skills\CLAUDE.md" exit 1
+
+about:
+  homepage: https://github.com/multica-ai/andrej-karpathy-skills
+  repository: https://github.com/multica-ai/andrej-karpathy-skills
+  license: MIT
+  # Upstream repo does not ship a LICENSE file. .claude-plugin/plugin.json
+  # declares "license": "MIT" and the README's License section says MIT; the
+  # vendored LICENSE is standard MIT text with the declared author
+  # (forrestchang) as holder. HOLD SUBMISSION until upstream adds its own
+  # LICENSE file.
+  license_file: LICENSE
+  summary: Claude Code behavioral guidelines derived from Andrej Karpathy's observations on LLM coding pitfalls
+  description: |
+    A single CLAUDE.md file (and matching skill/Cursor rule) that improves
+    Claude Code behavior with four principles derived from Andrej
+    Karpathy's observations on LLM coding pitfalls: Think Before Coding,
+    Simplicity First, Surgical Changes, Goal-Driven Execution.
+
+    After installation, run ``andrej-karpathy-skills-install`` in your
+    project directory to copy the karpathy-guidelines skill into
+    ``.claude/skills/``; the canonical CLAUDE.md is installed at
+    ``$CONDA_PREFIX/share/andrej-karpathy-skills/CLAUDE.md`` for direct
+    use or merging into a project CLAUDE.md.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: andrej-karpathy-skills
+  cfe-upstream-registry: github
+  cfe-upstream-name: multica-ai/andrej-karpathy-skills
+  cfe-purls:
+    - pkg:conda/andrej-karpathy-skills@${{ version }}?channel=conda-forge
+    - "pkg:github/multica-ai/andrej-karpathy-skills@2c606141936f1eeef17fa3043a72095b4765b9c2"
+  cfe-upstream-repo: https://github.com/multica-ai/andrej-karpathy-skills
+  cfe-upstream-homepage: https://github.com/multica-ai/andrej-karpathy-skills
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - upstream ships no LICENSE file (plugin.json + README declare MIT; vendored MIT; hold submission until upstream adds one)
+  cfe-submission-pr: none
+  cfe-last-checked: "2026-07-12T16:30:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T16:30:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:36:12Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request). These four guidelines are the
+#    # same principles adopted in this repo's own CLAUDE.md Behavioral
+#    # Guidelines section — packaging closes the loop on their provenance.
+#    # Version 1.0.0.dev0 = plugin.json version (1.0.0) + .dev0 snapshot
+#    # marker, per the commit-pin convention (no upstream tags).
+####
