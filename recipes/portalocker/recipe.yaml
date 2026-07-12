@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.7.0"
+  version: "3.2.0"
 
 package:
   name: portalocker
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/portalocker/portalocker-${{ version }}.tar.gz
-  sha256: 032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51
+  sha256: 1f3002956a54a8c3730586c5c77bf18fae4149e07eaf1c29fc3faf4d5a3f89ac
 
 build:
   number: 0
@@ -21,25 +21,25 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - pywin32 # could replace pywin32-on-windows
     - if: win
-      then: pywin32-on-windows >=226
+      then: pywin32 >=226
 
 tests:
   - python:
       imports:
         - portalocker
-      pip_check: false
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
   homepage: https://github.com/WoLpH/portalocker
-  license: PSF-2.0
-  license_family: PSF
+  license: BSD-3-Clause
+  license_family: BSD
   license_file: LICENSE
   summary: Portalocker is a library to provide an easy API to file locking.
   documentation: http://portalocker.readthedocs.org

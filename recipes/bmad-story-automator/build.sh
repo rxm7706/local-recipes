@@ -11,7 +11,7 @@ INSTALL_DIR="${PREFIX}/lib/node_modules/${PKG_NAME}"
 mkdir -p "${INSTALL_DIR}"
 
 # Mirror the upstream package.json `files` array, plus package.json + LICENSE.
-cp -r bin docs payload source "${INSTALL_DIR}/"
+cp -r bin docs skills .claude-plugin "${INSTALL_DIR}/"
 cp install.sh package.json README.md ref.png LICENSE "${INSTALL_DIR}/"
 
 # install.sh is invoked with `bash install.sh ...` from the bin shim, but make

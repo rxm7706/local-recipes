@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.1.1"
+
+package:
+  name: superpowers
+  version: ${{ version }}
+
+source:
+  url: https://github.com/obra/superpowers/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 625911fa9bed8938eeb109d3aeeaefdf7466f6870290ac9138e123f2f85dac08
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - superpowers-install --help
+          - test -d "${CONDA_PREFIX}/share/superpowers/skills"
+          - test -d "${CONDA_PREFIX}/share/superpowers/hooks"
+          - test -f "${CONDA_PREFIX}/share/superpowers/.claude-plugin/plugin.json"
+      - if: win
+        then:
+          - superpowers-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\superpowers\skills" exit 1
+          - if not exist "%CONDA_PREFIX%\share\superpowers\.claude-plugin\plugin.json" exit 1
+
+about:
+  homepage: https://github.com/obra/superpowers
+  repository: https://github.com/obra/superpowers
+  documentation: https://blog.fsck.com/2025/10/09/superpowers/
+  license: MIT
+  license_file: LICENSE
+  summary: Core agentic skills library for Claude Code - TDD, debugging, collaboration patterns, and proven techniques
+  description: |
+    superpowers (Jesse Vincent) is an agentic skills framework and
+    software-development methodology for coding agents: a curated skills
+    library covering test-driven development, systematic debugging,
+    planning, code review, git workflows, and collaboration patterns,
+    plus the hooks that wire them into Claude Code (with Codex, Cursor,
+    Gemini, Kimi, and OpenCode plugin surfaces maintained upstream).
+
+    Upstream's primary install channel is the Claude Code plugin
+    marketplace; this package mirrors the content into
+    ``$CONDA_PREFIX/share/superpowers`` and provides
+    ``superpowers-install`` to copy the skills into a project's
+    ``.claude/skills/`` for marketplace-less setups.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: superpowers
+  cfe-upstream-registry: github
+  cfe-upstream-name: obra/superpowers
+  cfe-purls:
+    - pkg:conda/superpowers@${{ version }}?channel=conda-forge
+    - pkg:github/obra/superpowers@v${{ version }}
+  cfe-upstream-repo: https://github.com/obra/superpowers
+  cfe-upstream-homepage: https://github.com/obra/superpowers
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T17:50:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:50:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:47:21Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request). Version = git tag v6.1.1 ==
+#    # .claude-plugin/plugin.json version. Only the agent-facing content
+#    # (skills/ hooks/ .claude-plugin/ + docs/root guides) is packaged —
+#    # the per-harness plugin dirs (.codex-plugin, .cursor-plugin, ...)
+#    # and tests/ are upstream packaging surfaces, not install content.
+####

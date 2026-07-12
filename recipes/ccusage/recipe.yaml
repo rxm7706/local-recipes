@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  # PINNED <20: ccusage 20.x's npm dist is only a shim over prebuilt Bun
+  # native binaries (@ccusage/ccusage-<platform>, optionalDependencies)
+  # that segfault on this build host and cannot be built from source
+  # (bun is not on conda-forge). 19.0.3 is the last pure-JS,
+  # node-runnable release.
+  version: "19.0.3"
+
+package:
+  name: ccusage
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/ccusage/-/ccusage-${{ version }}.tgz
+  sha256: 103384865cef17a6e4df5d5f9154994b1c9d44dd0ef5240a0b4aa4a7d38c1e4c
+
+build:
+  number: 1
+  # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
+  # platform's npm global install lays down its native bin shims (symlinks
+  # on unix, .cmd on win), which a single noarch artifact cannot provide.
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - npm pack --ignore-scripts
+        - npm install -g ./ccusage-${{ version }}.tgz
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc -g ccusage-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  host:
+    - nodejs
+  run:
+    - nodejs
+
+tests:
+  - script:
+      - ccusage --version
+      - ccusage --help
+  - if: unix
+    then:
+      script:
+        - test -f "${PREFIX}/lib/node_modules/ccusage/package.json"
+
+about:
+  summary: Analyze your Claude Code token usage and costs from local JSONL files
+  description: |
+    ccusage is a CLI tool for analyzing Claude Code usage from local JSONL
+    files: daily/monthly/session/blocks reports, live monitoring, model
+    breakdowns, and cost estimates. The npm distribution is a
+    zero-dependency bundled build; this package installs it into the conda
+    environment and exposes the ``ccusage`` command.
+  homepage: https://ccusage.com
+  repository: https://github.com/ccusage/ccusage
+  documentation: https://ccusage.com
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ccusage
+  cfe-upstream-registry: npm
+  cfe-upstream-name: ccusage
+  cfe-purls:
+    - pkg:conda/ccusage@${{ version }}?channel=conda-forge
+    - pkg:npm/ccusage@${{ version }}
+  cfe-upstream-repo: https://github.com/ccusage/ccusage
+  cfe-upstream-homepage: https://ccusage.com
+  cfe-import-names: []
+  cfe-source-kind: npm-registry-tarball
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - pinned <20 - v20.x npm dist is a shim over prebuilt Bun native binaries (segfault on build host; bun not on conda-forge)
+  cfe-last-checked: "2026-07-12T19:20:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T16:20:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T16:59:14Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request: token-usage/cost observability
+#    # tooling). Upstream moved ryoppippi/ccusage -> ccusage/ccusage; the
+#    # GitHub repo's license shows NOASSERTION at the API level but the
+#    # LICENSE file and the npm metadata are plain MIT.
+# build:
+#    # Zero runtime npm deps (fully bundled dist), so the canonical
+#    # pnpm-licenses third-party-disclaimer step is omitted; the npm
+#    # symlink -> bash-wrapper replacement mirrors the caveman recipe
+#    # (noarch packages cannot ship symlinks), hence the __unix gate.
+####

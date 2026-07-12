@@ -61,3 +61,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-module-template
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-module-template
+  cfe-purls:
+    - pkg:conda/bmad-module-template@${{ version }}?channel=conda-forge
+    - "pkg:github/bmad-code-org/bmad-module-template@f1440ec80b9c8b13e0779dedd47487b74d634a02"
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-module-template
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-module-template
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33127
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:59:44Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Already current in the 2026-07-12 BMAD-recipe sweep: pinned commit
+#    # f1440ec80b9c is upstream's latest main (no release tags).
+####

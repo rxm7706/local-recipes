@@ -3,17 +3,18 @@ schema_version: 1
 
 context:
   name: openspec
-  npm_name: "@fission-ai/openspec"
-  npm_scope: fission-ai
-  version: "0.16.0"
+  version: "1.6.0"
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://registry.npmjs.org/${{ npm_name }}/-/${{ name }}-${{ version }}.tgz
-  sha256: d58717a3cb0d59a9ab09095ddf73c4fddc99affbf3d1d6515a9f1d9038e7cd60
+  # Scoped npm name (@fission-ai/openspec) written literally: a context
+  # variable whose value starts with '@' crashes the linter's jinja
+  # re-parse (rattler_build_conda_compat ScannerError).
+  url: https://registry.npmjs.org/@fission-ai/openspec/-/${{ name }}-${{ version }}.tgz
+  sha256: a80477767e98a62e956464ad09a44b28cacc4fcbfde23765f7b4ba598ee13859
 
 build:
   number: 0
@@ -74,9 +75,9 @@ extra:
   cfe-upstream-homepage: https://github.com/Fission-AI/OpenSpec
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openspec-feedstock
-  cfe-forge-recipe-updates-needed: none
+  cfe-forge-recipe-updates-needed: version-bump-to-1.6.0
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-07-12T17:30:00Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
 ####
