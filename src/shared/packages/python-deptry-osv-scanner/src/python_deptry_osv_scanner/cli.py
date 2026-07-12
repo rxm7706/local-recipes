@@ -14,6 +14,9 @@ import sys
 
 def main(argv: list[str] | None = None) -> int:
     """Placeholder entry point; returns 0 so the skeleton is CI-green."""
+    if argv is None:
+        # Console-script invocation path; the E4 CLI (Story 1.9) parses these.
+        argv = sys.argv[1:]
     print(
         "python-deptry-osv-scanner: Option B build skeleton wired. "
         "E1-E4 not yet implemented - see docs/specs/python-deptry-osv-scanner.md.",
