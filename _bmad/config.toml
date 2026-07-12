@@ -10,9 +10,14 @@
 # Those files are never touched by the installer.
 # ─────────────────────────────────────────────────────────────────
 
+[core]
+project_name = "local-recipes"
+document_output_language = "English"
+output_folder = "_bmad-output"
+
 [modules.bmm]
-planning_artifacts = "{project-root}/{output_folder}/planning-artifacts"
-implementation_artifacts = "{project-root}/{output_folder}/implementation-artifacts"
+planning_artifacts = "{project-root}/_bmad-output/planning-artifacts"
+implementation_artifacts = "{project-root}/_bmad-output/implementation-artifacts"
 project_knowledge = "{project-root}/docs"
 
 [agents.bmad-agent-analyst]
