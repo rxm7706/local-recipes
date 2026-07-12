@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.3.2"
+  version: "26.2"
 
 package:
   name: verlib2
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/v/verlib2/verlib2-${{ version }}.tar.gz
-  sha256: a0a6af9838d8d26c18225a30c8d57fb70714462e3cd29f2451e7982d5a51e21e
+  sha256: 0740a3b35755a9d8ebb933ffce989f3776113fe319ab62df5fa20f7c14343d58
 
 build:
   number: 0
