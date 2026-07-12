@@ -36,6 +36,18 @@ spec_updated: 2026-07-12
 
 - **W1 — upgrade BMAD 6.6.0 → 6.10.0.** Add pins → `pixi install` → run the installer's update flow (`bmad-method install`, non-interactive where possible) → **verify the repo-custom surfaces survived**: (a) `_bmad/scripts/resolve_config.py` — carries the repo-custom **multi-project layers 5/6** (`--project` / `BMAD_ACTIVE_PROJECT` / `.active-project` marker); if regenerated, restore the custom merge; (b) `_bmad/custom/*.toml` (team/user overlays — designed to survive); (c) `scripts/bmad-switch` (repo-root, untouched by installer); (d) `.claude/skills/bmad-*` regenerate — confirm `bmad-dev-auto` (+ any new 6.10 skills) appear and existing skill customize.tomls still resolve. Gate: `bmad-drift-check` integrity + the skill meta-tests green; re-stamp baseline if surface-changed.
 - **W2 — install + init bmad-loop.** Env-resident via the git pypi dep; `bmad-loop init` (installs its hooks/policy + bundled skills `bmad-loop-resolve/-sweep/-setup`); configure `[verify] commands` = this repo's pixi test tasks (scanner: `python-deptry-osv-scanner-test`), `[gates] mode = "per-story-spec-approval"`, review trigger `recommended`, claude CLI profile. Gate: `bmad-loop --help` + a dry `bmad-loop tui`/`run --story` smoke on a no-op.
+- **W4 — official BMad Method UI dashboards (added 2026-07-12, user request).** Leverage
+  `bmad-code-org/bmad-method-ui` via the **consume-not-submit** pattern (G58/db-gpt
+  precedent): staged-recipes **PR #33513** (OPEN, author killua156) ships two recipes —
+  `bmad-dashboard` (noarch: the VS Code extension .vsix + `bmad-dashboard-install` CLI)
+  and `mybmad-dashboard` (arch-specific: the Next.js web dashboard + `mybmad` launcher
+  managing a per-user PostgreSQL; skip win). Mirror both into `recipes/` (faithful body,
+  cfe metadata appended, `cfe-submission-pr` → #33513), build locally (rattler-build,
+  linux-64), and consume from the local channel via a lean `bmad-ui` pixi env
+  (`pixi run bmad-dashboard-install` / `pixi run mybmad up`). **Rule-2 flip:** this wave
+  touches `recipes/` — the effort's closeout now REQUIRES a CFE-skill retro (previously
+  N/A). Never submit or compete with #33513; when it merges + the packages land on the
+  channel (G66), swap the local-channel deps for conda-forge ones + re-stamp cfe-status.
 - **W3 — wire the scanner pilot.** Generate the story feed for `python-deptry-osv-scanner` (sprint-status via `bmad-sprint-planning`, or a typed `stories.yaml` pointing at the 20 epics.md stories); verify dev-auto's config resolution honors the **multi-project** `planning_artifacts` path (the likeliest friction — fix via its `customize.toml` layer if not); pilot on **Story 1.1** with per-story gates. Gate: the loop runs 1.1 to a spec-approval halt with a valid spec artifact.
 
 ## Risks
@@ -62,6 +74,19 @@ spec_updated: 2026-07-12
   `_bmad-output/{planning,implementation}-artifacts` → the active project's dirs
   (gitignored; re-point when `bmad-switch`ing — follow-on: teach `scripts/bmad-switch`
   to manage them). `bmad-loop validate`: all OK except the W3 sprint-status feed.
+- **W3 feed DONE** (`0ab9308d3f` + sprint-status): stories renumbered pure-numeric
+  (bmad-loop's parser ignores letter suffixes — 12/20 → 20/20 actionable);
+  `bmad-loop validate` **9/9 OK**. Remaining W3: the human hooks-approval + the 1.1
+  pilot run.
+- **W4 DONE (2026-07-12).** Both #33513 recipes mirrored (13 files, faithful body +
+  cfe blocks + schema headers), validated (conda-smithy lint clean), and **built
+  GREEN locally** (rattler-build, linux-64): `bmad-dashboard 1.2.2.dev0` (noarch,
+  3.8 MiB, ✔ all tests) + `mybmad-dashboard 0.1.0.dev0` (4 py-variants ~48 MiB,
+  4× ✔ all tests; `version_independent` lets any-python installs use one build).
+  Consumed via the new lean **`bmad-ui` pixi env** (linux-64-only feature; local
+  `./build_artifacts/linux64` channel + conda-forge): `pixi run -e bmad-ui
+  bmad-dashboard-install` (vsix resolves) and `mybmad --help`/`info` smoke-tested
+  GREEN. Parse-audit meta-test 5/5. **Rule-2 now ENGAGED** (recipes/ touched).
 - **One-time human step before any run:** launch `claude` once in the repo to accept
   the newly-registered hooks (a pending approval dialog reads as a session timeout to
   the loop).
@@ -146,7 +171,10 @@ single-branch flow limiting.
 
 - [x] W1: manifest reads 6.10.0; `bmad-dev-auto` present; custom layers verified; drift-check green.
 - [x] W2: `bmad-loop` runs from the pixi env; init complete; policy committed; validate green modulo the W3 feed.
-- [ ] W3: sprint-status feed generated (`bmad-sprint-planning` over the 20-story epics) + pilot reaches the 1.1 spec-approval gate.
+- [x] W3 (feed): sprint-status generated (20/20 actionable); `bmad-loop validate` 9/9 OK.
+- [ ] W3 (pilot): human hooks-approval + the Story-1.1 run reaches the spec-approval gate.
+- [x] W4: both staged-recipes **#33513** recipes mirrored + built GREEN locally + consumable via the `bmad-ui` pixi env (`bmad-dashboard-install`, `mybmad`).
+- [ ] Rule-2 CFE-skill retro at closeout (engaged by W4).
 - [ ] `status: shipped` with `shipped_ref`.
 
 *CFE Rules 1/2: N/A (no recipe work) — unless the bmad-loop conda-forge packaging follow-on is taken up, which would engage them.*
