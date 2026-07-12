@@ -90,6 +90,19 @@ spec_updated: 2026-07-12
 - **One-time human step before any run:** launch `claude` once in the repo to accept
   the newly-registered hooks (a pending approval dialog reads as a session timeout to
   the loop).
+- **Pilot learning #1 — size `session_timeout_min` to the heaviest story BEFORE
+  launching (2026-07-12, run `20260712-125315-0aaa`).** Story 1-1's first dev attempt
+  hit the default 90-min cap mid-work (killed while refactoring test fixtures) and
+  burned **25.8M tokens / 90 min of compute that a retry cannot reuse** — the loop's
+  retry contract restarts from a clean baseline and the fresh session re-derives
+  everything from the spec (the discarded attempt was backed up as a diff-reference
+  only). Cost was avoidable: 1-1 was *known* to be the keystone/heaviest story; the
+  pre-flight should estimate heaviest-story runtime and set the budget first.
+  Remediation applied: `session_timeout_min` 90→180 and `[scm]
+  rollback_on_failure = true` (stopped attempts now auto-recover instead of pausing
+  the whole loop for a manual reset). Follow-on option if timeouts recur: per-stage
+  `[adapter.dev]` budget or `isolation = "worktree"` so attempts never touch the
+  main checkout.
 
 ### Windows-without-WSL note (recorded 2026-07-12, user question)
 
