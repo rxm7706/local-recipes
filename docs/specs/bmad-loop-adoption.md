@@ -102,6 +102,25 @@ discipline — revisit if the estate ever wants a general research-hardening
 skill; and note `npx skills add` as an install channel should a curated
 third-party skill ever be adopted deliberately.
 
+**Second survey (same day, user question): "bmad-pro-skills" on
+claudepluginhub.com → the listing is a phantom.** No `bmad-pro-skills` repo
+exists in `bmad-code-org` (verified: full org enumeration + the official
+`bmad-plugins-marketplace` registry, which carries exactly 3 modules); the
+403-walled third-party directory entry is almost certainly a scraped
+repackaging of the official BMM skills — **already installed here at 6.10.0
+via the conda-forge `bmad-method` installer**. Rule recorded: third-party
+directory repackagings of BMAD content are untrusted duplicates; the
+installer is this repo's only skills channel. The survey's real find,
+**`bmad-code-org/bmad-utility-skills`** (BMad Certified, 10 maintainer
+skills), screens to **nothing-to-install**: `bmad-os-review-pr` duplicates
+the installed `bmad-code-review` layers; `bmad-os-audit-file-refs` is a
+generic `bmad-drift-check`; changelog/gh-triage/RCA lose to the CFE retro
+protocol, the FLAKE/REAL_FIX/BLOCKED remediation taxonomy, and the Build
+Failure Protocol respectively; Diataxis/translation N/A. **Two watch
+items:** `bmad-os-findings-triage` (if the post-loop review→triage flow
+feels thin) and `bmad-os-skill-to-bundle` (the day `conda-forge-expert` or
+team skills are distributed — `claude-team-memory` territory).
+
 ## Definition of Done
 
 - [x] W1: manifest reads 6.10.0; `bmad-dev-auto` present; custom layers verified; drift-check green.
