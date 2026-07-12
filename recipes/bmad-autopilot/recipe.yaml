@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0"
+
+package:
+  name: bmad-autopilot
+  version: ${{ version }}
+
+source:
+  url: https://github.com/martin-janci/autopilot/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 61ea36bb3428d638a1a207eab81cdcb8080d36b27e5e9ff27f3b2c895499e50f
+
+build:
+  number: 0
+  noarch: generic
+  script: bash ${{ RECIPE_DIR }}/build.sh
+
+requirements:
+  run:
+    # The orchestrator is a bash loop (scripts/bmad-autopilot.sh + install.sh)
+    # shelling out to these tools; the `claude` CLI is also required at runtime
+    # but is not packaged on conda-forge.
+    - git
+    - gh
+    - jq
+    - ripgrep
+    - zip
+    - if: unix
+      then:
+        - __unix
+
+tests:
+  - if: unix
+    then:
+      script:
+        - test -x "${PREFIX}/share/bmad-autopilot/install.sh"
+        - test -x "${PREFIX}/bin/bmad-autopilot-install"
+        - test -d "${PREFIX}/share/bmad-autopilot/skills/bmad-autopilot"
+        - test -d "${PREFIX}/share/bmad-autopilot/skills/gh-pr-handling"
+        - test -f "${PREFIX}/share/bmad-autopilot/commands/bmad-autopilot.md"
+        - test -f "${PREFIX}/share/bmad-autopilot/scripts/bmad-autopilot.sh"
+        - test -f "${PREFIX}/share/bmad-autopilot/VERSION"
+
+about:
+  homepage: https://github.com/martin-janci/autopilot
+  repository: https://github.com/martin-janci/autopilot
+  license: MIT
+  license_file: LICENSE
+  summary: Community BMAD autopilot — epic-granular bash orchestrator with PR-lifecycle automation
+  description: |
+    bmad-autopilot (upstream repo martin-janci/autopilot) is an independent
+    community orchestrator for BMAD implementation phases: a bash loop that
+    drives Claude Code through epic-granular story implementation and then
+    automates the PR lifecycle — create PR, watch CI, respond to review
+    comments, auto-merge (skills + commands + a GitHub auto-approve
+    workflow).
+
+    NOTE: no affiliation with bmad-code-org; it predates and is
+    architecturally superseded by the official bmad-loop / bmad-dev-auto
+    stack for story execution, but its PR-lifecycle coverage (create ->
+    CI-watch -> auto-merge) is a capability bmad-loop deliberately stops
+    short of.
+
+    After installation, run ``bmad-autopilot-install <target-project-dir>``
+    to deploy the skill bundle into a project (wraps the upstream
+    install.sh; requires the ``claude`` CLI at runtime).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-autopilot
+  cfe-upstream-registry: github
+  cfe-upstream-name: martin-janci/autopilot
+  cfe-purls:
+    - pkg:conda/bmad-autopilot@${{ version }}?channel=conda-forge
+    - pkg:github/martin-janci/autopilot@v${{ version }}
+  cfe-upstream-repo: https://github.com/martin-janci/autopilot
+  cfe-upstream-homepage: https://github.com/martin-janci/autopilot
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T15:10:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T15:10:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T10:00:52Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged for LOCAL convenience in the 2026-07-12 BMAD-recipe sweep
+#    # follow-up. The bmad-loop-adoption spec's adjacent-skills survey
+#    # (2026-07-12) identified this as an independent community PRECURSOR
+#    # to bmad-loop/bmad-dev-auto (dormant since 2025-12-24; epic-granular
+#    # bash+trust vs the successor's deterministic per-story gates) — kept
+#    # available locally for its one unique delta: PR-lifecycle automation
+#    # (create-PR -> watch-CI -> auto-merge), which bmad-loop deliberately
+#    # omits. No conda-forge submission planned.
+#    # Conda name bmad-autopilot (the skill/command name and the mcpmarket
+#    # listing name) rather than the upstream repo name "autopilot", which
+#    # is too generic for a package namespace (>=8 unrelated repos).
+# context:
+#    # Tag v0.1.0 (67f3cdcf) is the packaging contract; upstream main HEAD
+#    # (121cbef4) is 2 untagged commits ahead and the repo is dormant.
+# tests:
+#    # The installer is not executed in tests: upstream install.sh
+#    # prerequisite-checks for the `claude` CLI, which cannot be provisioned
+#    # in the test environment (not on conda-forge).
+####

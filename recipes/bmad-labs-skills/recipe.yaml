@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0.dev0"
+  # Upstream repo (bmad-labs/skills) has no release tags; pinned to the latest
+  # main commit. Bump `version` (from .claude-plugin/marketplace.json
+  # metadata.version) and `commit` together.
+  commit: 088a427df8b0f7065f5270104933064c2627d63a
+
+package:
+  name: bmad-labs-skills
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-labs/skills/archive/${{ commit }}.tar.gz
+  sha256: 604747ff3f552ed87ca41f31042f7db67e1e44d14dde31a9c6e925ec30f54822
+
+build:
+  number: 0
+  noarch: generic
+  script: bash ${{ RECIPE_DIR }}/build.sh
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - bmad-labs-skills-install --help
+          - test -d "${CONDA_PREFIX}/share/bmad-labs-skills/skills"
+          - test -d "${CONDA_PREFIX}/share/bmad-labs-skills/skills/software-research"
+          - test -d "${CONDA_PREFIX}/share/bmad-labs-skills/skills/ultrathink-protocol"
+          - test -d "${CONDA_PREFIX}/share/bmad-labs-skills/skills/mcp-builder"
+          - test -f "${CONDA_PREFIX}/share/bmad-labs-skills/.claude-plugin/marketplace.json"
+
+about:
+  homepage: https://github.com/bmad-labs/skills
+  repository: https://github.com/bmad-labs/skills
+  license: MIT
+  license_file: LICENSE
+  summary: Community BMAD skills marketplace for Claude Code (21 general-purpose skills)
+  description: |
+    bmad-labs-skills packages the bmad-labs/skills community marketplace — a
+    collection of 21 general-purpose Claude Code skills covering TypeScript
+    unit/e2e testing and clean code, MCP server development, slide and
+    presentation generation, EPUB/book conversion, Atlassian REST, Gemini
+    multimodal, release-please automation, RCA reports, software research,
+    trade-off analysis, multi-repo git ops, and more.
+
+    NOTE: this is a third-party community marketplace (owner thuantan2060);
+    it has no stated affiliation with bmad-code-org or the official BMad
+    Method skill set.
+
+    After installation, run ``bmad-labs-skills-install`` in your project
+    directory to copy the skills into ``.claude/skills/`` so Claude Code can
+    discover them (or pass an explicit destination directory).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-labs-skills
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-labs/skills
+  cfe-purls:
+    - pkg:conda/bmad-labs-skills@${{ version }}?channel=conda-forge
+    - "pkg:github/bmad-labs/skills@088a427df8b0f7065f5270104933064c2627d63a"
+  cfe-upstream-repo: https://github.com/bmad-labs/skills
+  cfe-upstream-homepage: https://github.com/bmad-labs/skills
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T15:10:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T15:10:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T10:00:49Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged for LOCAL convenience in the 2026-07-12 BMAD-recipe sweep
+#    # follow-up. The bmad-loop-adoption spec's adjacent-skills survey
+#    # (2026-07-12) screened this marketplace as nothing-to-adopt for the
+#    # loop effort (unversioned third-party trust tier; near-candidates
+#    # duplicate stronger in-method equivalents) — packaging makes it
+#    # installable on demand without endorsing blanket adoption. No
+#    # conda-forge submission planned.
+# context:
+#    # version 1.0.0.dev0 = marketplace.json metadata.version (1.0.0) + .dev0
+#    # snapshot marker, per the bmad-dashboard commit-pin precedent.
+# build:
+#    # Only skills/ + .claude-plugin/ + README.md are packaged; the repo's
+#    # _bmad/, _bmad-output/, books/, docs/, evaluations/, spec/, template/
+#    # dirs are upstream working files, not distributable skill content.
+####
