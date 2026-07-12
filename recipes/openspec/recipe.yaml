@@ -3,8 +3,6 @@ schema_version: 1
 
 context:
   name: openspec
-  npm_name: "@fission-ai/openspec"
-  npm_scope: fission-ai
   version: "1.6.0"
 
 package:
@@ -12,7 +10,10 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://registry.npmjs.org/${{ npm_name }}/-/${{ name }}-${{ version }}.tgz
+  # Scoped npm name (@fission-ai/openspec) written literally: a context
+  # variable whose value starts with '@' crashes the linter's jinja
+  # re-parse (rattler_build_conda_compat ScannerError).
+  url: https://registry.npmjs.org/@fission-ai/openspec/-/${{ name }}-${{ version }}.tgz
   sha256: a80477767e98a62e956464ad09a44b28cacc4fcbfde23765f7b4ba598ee13859
 
 build:

@@ -27,13 +27,9 @@ def main():
     )
     args = parser.parse_args()
 
-    prefix = os.environ.get("CONDA_PREFIX", "")
-    if not prefix:
-        print(
-            "Error: CONDA_PREFIX is not set. Activate your pixi/conda environment first.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    # sys.prefix always points at the running interpreter's env root
+    # (CONDA_PREFIX is unset in some subshells/IDE launches).
+    prefix = sys.prefix
 
     source = os.path.join(prefix, "share", "aidlc-workflows", "dist", args.harness)
     if not os.path.isdir(source):
@@ -48,8 +44,14 @@ def main():
         src = os.path.join(source, name)
         dst = os.path.join(dest, name)
         if os.path.isdir(src):
+            # clear a file/symlink occupying the dir's name; keep existing
+            # dirs (dirs_exist_ok merges into the project tree)
+            if os.path.lexists(dst) and not os.path.isdir(dst):
+                os.remove(dst)
             shutil.copytree(src, dst, dirs_exist_ok=True)
         else:
+            if os.path.isdir(dst) and not os.path.islink(dst):
+                shutil.rmtree(dst)
             shutil.copy2(src, dst)
         installed.append(name)
 
