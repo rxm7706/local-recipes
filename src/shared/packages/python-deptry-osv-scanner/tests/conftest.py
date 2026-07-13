@@ -44,14 +44,18 @@ def make_component(
     hygiene_covered: bool = True,
     vuln_matchable: bool | None = None,
 ) -> Component:
+    has_version = bool(version)  # "" is version-less, same as None
     if cve_match_level is None:
         cve_match_level = (
-            CveMatchLevel.EXACT if version is not None else CveMatchLevel.NAME_ONLY
+            CveMatchLevel.EXACT if has_version else CveMatchLevel.NAME_ONLY
         )
     if pypi_identity is _UNSET:
         pypi_identity = PypiIdentity(name=name, version=version)
     if vuln_matchable is None:
-        vuln_matchable = version is not None
+        # The Gap-C predicate (enforced by Component.__post_init__).
+        vuln_matchable = (
+            has_version and pypi_identity is not None and indeterminate_reason is None
+        )
     return Component(
         name=name,
         version=version,

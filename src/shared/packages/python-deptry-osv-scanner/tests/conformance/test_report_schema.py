@@ -353,9 +353,12 @@ def test_vuln_family_finding_with_hygiene_axis_rejected():
         validate(document)
 
 
-def test_key_equal_findings_differing_only_in_subject_serialize_identically():
-    """Two findings equal on (id, axis, message) but differing in subject
-    order deterministically — byte-identical across both feed orders."""
+def test_near_equal_findings_serialize_identically_across_feed_orders():
+    """Findings equal on (axis, message) but with distinct ids order
+    deterministically — byte-identical across both feed orders. (The original
+    same-id tie case is superseded: duplicate finding ids are now a
+    construction-time ValueError — follow-up review 2026-07-13 — so id is
+    always a total discriminator; see test_duplicate_finding_ids_rejected.)"""
     finding_a = Finding(
         id="hygiene:DEP002:leftpad",
         axis=AXIS_HYGIENE,
@@ -364,7 +367,7 @@ def test_key_equal_findings_differing_only_in_subject_serialize_identically():
         severity=None,
     )
     finding_b = Finding(
-        id="hygiene:DEP002:leftpad",
+        id="hygiene:DEP002:rightpad",
         axis=AXIS_HYGIENE,
         message="unused dependency",
         subject="bbb",

@@ -89,6 +89,22 @@ def _exit_call_aliases(tree: ast.Module) -> frozenset[str]:
     return frozenset(aliases)
 
 
+def _exit_module_aliases(tree: ast.Module) -> tuple[frozenset[str], frozenset[str]]:
+    """Names bound to the sys / os MODULES themselves — ``import sys as s``
+    makes ``s.exit(2)`` an exit call the attribute check must see."""
+    sys_names = {"sys"}
+    os_names = {"os"}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Import):
+            continue
+        for alias in node.names:
+            if alias.name == "sys":
+                sys_names.add(alias.asname or alias.name)
+            elif alias.name == "os":
+                os_names.add(alias.asname or alias.name)
+    return (frozenset(sys_names), frozenset(os_names))
+
+
 def _module_int_constants(tree: ast.Module) -> dict[str, int]:
     """Simple module-level ``NAME = <int literal>`` bindings (top level only —
     a best-effort constant table, not a dataflow analysis)."""
@@ -113,10 +129,17 @@ def _module_int_constants(tree: ast.Module) -> dict[str, int]:
     return constants
 
 
-def _is_exit_callable(func: ast.expr, exit_aliases: frozenset[str]) -> bool:
+def _is_exit_callable(
+    func: ast.expr,
+    exit_aliases: frozenset[str],
+    sys_names: frozenset[str],
+    os_names: frozenset[str],
+) -> bool:
     if isinstance(func, ast.Attribute):
         if isinstance(func.value, ast.Name):
-            if (func.value.id, func.attr) in {("sys", "exit"), ("os", "_exit")}:
+            if (func.value.id in sys_names and func.attr == "exit") or (
+                func.value.id in os_names and func.attr == "_exit"
+            ):
                 return True
         return func.attr == "SystemExit"
     return isinstance(func, ast.Name) and func.id in exit_aliases
@@ -124,11 +147,12 @@ def _is_exit_callable(func: ast.expr, exit_aliases: frozenset[str]) -> bool:
 
 def _exit_literal_violations(tree: ast.Module) -> list[int]:
     exit_aliases = _exit_call_aliases(tree)
+    sys_names, os_names = _exit_module_aliases(tree)
     constants = _module_int_constants(tree)
     violations: list[int] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not _is_exit_callable(
-            node.func, exit_aliases
+            node.func, exit_aliases, sys_names, os_names
         ):
             continue
         arguments = [*node.args, *(keyword.value for keyword in node.keywords)]
@@ -139,6 +163,10 @@ def _exit_literal_violations(tree: ast.Module) -> list[int]:
                 and not isinstance(arg.value, bool)
                 and arg.value in GUARDED_EXIT_LITERALS
             ):
+                violations.append(node.lineno)
+            elif isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                # sys.exit("message") exits with code 1 — a guarded value
+                # smuggled through a string arg. Only verdict.py projects.
                 violations.append(node.lineno)
             elif (
                 isinstance(arg, ast.Name)
@@ -200,20 +228,22 @@ def _sequence_element_token(element: ast.expr) -> str | None:
     return None
 
 
-def _ordered_status_tokens(node: ast.expr) -> list[str] | None:
-    """The in-order Status tokens of a List/Tuple literal or a Dict literal's
-    keys; ``None`` for any other node."""
+def _ordered_status_tokens(node: ast.expr) -> list[str | None] | None:
+    """The in-order element tokens of a List/Tuple literal or a Dict literal's
+    keys — non-Status elements map to ``None`` sentinels (NOT dropped: an
+    interleaved literal like ``["error", "desc", "policy-violation", ...]``
+    never spells the consecutive lattice and must not fire); ``None`` for any
+    other node."""
     if isinstance(node, (ast.List, ast.Tuple)):
         elements: list[ast.expr] = list(node.elts)
     elif isinstance(node, ast.Dict):
         elements = [key for key in node.keys if key is not None]
     else:
         return None
-    tokens = [_sequence_element_token(element) for element in elements]
-    return [token for token in tokens if token is not None]
+    return [_sequence_element_token(element) for element in elements]
 
 
-def _contains_run(sequence: list[str], run: tuple[str, ...]) -> bool:
+def _contains_run(sequence: list[str | None], run: tuple[str, ...]) -> bool:
     if len(sequence) < len(run):
         return False
     return any(
@@ -312,6 +342,31 @@ def test_exit_detector_sees_aliases_keywords_and_constants():
     assert _exit_literal_violations(ast.parse(constant)) == [3]
     benign = "import sys\nOK = 0\nsys.exit(OK)\nsys.exit(0)\n"
     assert _exit_literal_violations(ast.parse(benign)) == []
+
+
+def test_exit_detector_sees_module_aliases_and_string_args():
+    """Follow-up-review hardening: ``import sys as s`` module aliases and
+    string-arg exits (``sys.exit("msg")`` exits with code 1) both fire."""
+    module_alias = "import sys as s\ns.exit(2)\n"
+    assert _exit_literal_violations(ast.parse(module_alias)) == [2]
+    os_module_alias = "import os as o\no._exit(130)\n"
+    assert _exit_literal_violations(ast.parse(os_module_alias)) == [2]
+    string_arg = 'import sys\nsys.exit("fatal")\n'
+    assert _exit_literal_violations(ast.parse(string_arg)) == [2]
+    none_arg = "import sys\nsys.exit(None)\nsys.exit()\n"
+    assert _exit_literal_violations(ast.parse(none_arg)) == []
+
+
+def test_interleaved_status_tokens_do_not_fire():
+    """Follow-up-review fix for the guard's own false positive: tokens
+    interleaved with non-Status elements never spell the consecutive lattice
+    order and must not fire."""
+    interleaved = (
+        'X = ["error", "operational failure", "policy-violation", '
+        '"gate breach", "indeterminate", "unproven", "warn", "advisory", '
+        '"bypassed", "waived", "clean", "ok", "not-applicable", "empty"]\n'
+    )
+    assert _rung_ordering_literals(ast.parse(interleaved)) == []
 
 
 def test_private_detector_sees_verdict_module_aliases():
