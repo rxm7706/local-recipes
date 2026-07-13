@@ -464,6 +464,11 @@ PublishScripts/
 **/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
+# except our monorepo's first-party source packages under src/**/packages/
+# (unity-data-stack src/shared/packages convention) — these are tracked source,
+# NOT .NET/NuGet package caches. Re-include the member dirs + their contents.
+!src/**/packages/*/
+!src/**/packages/*/**
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
@@ -709,7 +714,14 @@ Thumbs.db
 _bmad/config.user.toml
 _bmad/custom/.active-project
 _bmad-output/projects/*/implementation-artifacts/
+
+# bmad-loop / upstream-tooling seam: root artifact dirs are LOCAL symlinks to the
+# active project's dirs (re-point on `bmad-switch`; see docs/specs/bmad-loop-adoption.md)
+_bmad-output/planning-artifacts
+_bmad-output/implementation-artifacts
 _bmad-output/projects/*/.bmad-config.user.toml
 
 # Junie: personal config (user-scoped) and per-developer artifacts.
 .junie/
+.bmad-loop/runs/
+.bmad-loop/cache/

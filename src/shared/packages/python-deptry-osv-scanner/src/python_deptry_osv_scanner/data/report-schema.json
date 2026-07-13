@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:python-deptry-osv-scanner:report-schema",
+  "title": "ComplianceReport",
+  "description": "The frozen, producer-agnostic report contract for python-deptry-osv-scanner (the atlas FR-16/FR-18 gate is this schema's second producer). Closed sets: status.value (7-rung lattice), exit_code {0,1,2,130}, errors[].kind. additionalProperties is deliberately left open everywhere: additive growth (a new axis, KEV/EPSS population, new optional fields) is never a schema break. Finding-ID scheme (stable + deterministic): vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg>. Waiver-scope decision (recorded): all three finding families are waivable-with-expiry — an auditable, time-boxed acceptance; the graduated path for unscannable deps.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool",
+    "status",
+    "exit_code",
+    "findings",
+    "coverage",
+    "vuln_data",
+    "inventory_count",
+    "resolved_scan_set",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.\\d+\\.\\d+$",
+      "description": "Core semver of the v1 report contract (no prerelease/build tags; decoupled from the tool version and the SBOM spec version)."
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "status": {
+      "type": "object",
+      "required": ["value", "driver"],
+      "properties": {
+        "value": {
+          "enum": [
+            "error",
+            "policy-violation",
+            "indeterminate",
+            "warn",
+            "bypassed",
+            "clean",
+            "not-applicable"
+          ],
+          "description": "The 7-rung verdict lattice (canonical token is 'warn', not 'warnings')."
+        },
+        "driver": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/statusDriver" }],
+          "description": "Why the verdict is what it is — an exit that can't say why is an incoherent contract."
+        }
+      },
+      "if": {
+        "required": ["value"],
+        "properties": {
+          "value": {
+            "enum": ["warn", "bypassed", "policy-violation", "indeterminate", "error"]
+          }
+        }
+      },
+      "then": {
+        "required": ["driver"],
+        "properties": {
+          "driver": { "$ref": "#/$defs/statusDriver" }
+        }
+      },
+      "description": "driver must be non-null for every non-clean status; null is permitted only for 'clean' and 'not-applicable' (no finding exists to point at, by definition)."
+    },
+    "exit_code": {
+      "enum": [0, 1, 2, 130],
+      "description": "The frozen, closed exit-code set — adding a code is a breaking change. 130 is the SIGINT signal-path constant, not a lattice rung."
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "coverage": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/axisCoverage" },
+      "description": "Keyed by the OPEN axis string ('hygiene'/'vulnerability' now; a license/SAST axis lands additively)."
+    },
+    "vuln_data": {
+      "type": "object",
+      "required": ["source", "snapshot_at", "max_age_ok"],
+      "properties": {
+        "source": { "type": ["string", "null"] },
+        "snapshot_at": { "type": ["string", "null"] },
+        "max_age_ok": { "type": ["boolean", "null"] }
+      },
+      "if": {
+        "required": ["max_age_ok"],
+        "properties": { "max_age_ok": { "type": "boolean" } }
+      },
+      "then": {
+        "properties": {
+          "source": { "type": "string" },
+          "snapshot_at": { "type": "string" }
+        },
+        "description": "A concrete max_age_ok verdict (true/false) implies vuln data WAS consulted, so its provenance (source + snapshot_at) must be stated."
+      },
+      "description": "Vulnerability-data provenance — generic names ONLY (never engine-named fields); nullable when no vuln data was consulted."
+    },
+    "inventory_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Post-merge component count; the root project is excluded."
+    },
+    "resolved_scan_set": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "properties": {
+          "path": { "type": "string" },
+          "kind": {
+            "type": "string",
+            "description": "Manifest-kind token; the vocabulary is owned by the discovery story (1.9) and is deliberately open here."
+          }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "owner", "message"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "unparsable-manifest",
+              "engine-unavailable",
+              "engine-output-unrecognized",
+              "engine-output-unparseable",
+              "engine-execution-failed",
+              "engine-timeout",
+              "config-parse",
+              "config-validation",
+              "internal-error"
+            ]
+          },
+          "owner": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": { "value": { "const": "error" } }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [2, 130] } },
+        "description": "status/exit coherence: error exits 2 (or 130 if interrupted)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": {
+              "value": { "enum": ["policy-violation", "indeterminate"] }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [1, 130] } },
+        "description": "status/exit coherence: policy-violation and indeterminate exit 1 (or 130 if interrupted)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": { "value": { "const": "warn" } }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [0, 1, 130] } },
+        "description": "status/exit coherence: warn exits 0, or 1 under the warn_is_error knob (or 130 if interrupted)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": {
+              "value": { "enum": ["clean", "not-applicable", "bypassed"] }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [0, 130] } },
+        "description": "status/exit coherence: the clean family exits 0 (or 130 if interrupted)."
+      }
+    }
+  ],
+  "$defs": {
+    "statusDriver": {
+      "type": "object",
+      "required": ["axis", "finding_id"],
+      "properties": {
+        "axis": { "type": "string" },
+        "finding_id": {
+          "type": "string",
+          "description": "References a findings[].id when the verdict is finding-driven. For operational-error verdicts the driver-ID grammar is owned by the typed-errors story (1.7), so this field is deliberately unconstrained here."
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": ["id", "axis", "message"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "anyOf": [
+            { "pattern": "^vuln:[^:\\n]+:[^\\n]+@[^\\n]+$" },
+            { "pattern": "^hygiene:[^:\\n]+:[^\\n]+$" },
+            { "pattern": "^indeterminate:[^:\\n]+:[^\\n]+$" }
+          ],
+          "description": "Stable, deterministic finding ID — one of the three families: vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg>. Waiver matching across runs depends on it; all three families are waivable-with-expiry."
+        },
+        "axis": { "type": "string" },
+        "message": { "type": "string" },
+        "subject": { "type": ["string", "null"] },
+        "severity": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["tier", "raw"],
+              "properties": {
+                "tier": {
+                  "enum": ["critical", "high", "medium", "low", "none", "unknown"]
+                },
+                "raw": {
+                  "type": ["string", "null"],
+                  "description": "Raw evidence: a CVSS vector string or a database severity label."
+                }
+              }
+            }
+          ]
+        },
+        "kev": {
+          "type": ["boolean", "null"],
+          "description": "Known-Exploited-Vulnerabilities slot — declared now, never populated by the v1 producer (the atlas producer will)."
+        },
+        "epss": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "EPSS score slot (a probability in [0, 1]) — declared now, never populated by the v1 producer (the atlas producer will)."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^vuln:" } }
+          },
+          "then": {
+            "properties": { "axis": { "const": "vulnerability" } }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^hygiene:" } }
+          },
+          "then": {
+            "properties": { "axis": { "const": "hygiene" } }
+          }
+        }
+      ]
+    },
+    "axisCoverage": {
+      "type": "object",
+      "required": [
+        "axis",
+        "manifests_found",
+        "manifests_parsed",
+        "deps_total",
+        "deps_assessed"
+      ],
+      "properties": {
+        "axis": { "type": "string" },
+        "manifests_found": { "type": "integer", "minimum": 0 },
+        "manifests_parsed": { "type": "integer", "minimum": 0 },
+        "deps_total": { "type": "integer", "minimum": 0 },
+        "deps_assessed": { "type": "integer", "minimum": 0 },
+        "resolution_depth": {
+          "enum": ["direct-only", "locked-closure", null],
+          "description": "The resolution-depth honesty claim: 'direct-only' vs 'locked-closure' (null when no claim is made)."
+        }
+      },
+      "description": "Coverage arithmetic (manifests_parsed <= manifests_found; deps_assessed <= deps_total) is enforced at the model layer (AxisCoverage.__post_init__) because JSON Schema cannot cross-compare sibling fields."
+    }
+  }
+}
