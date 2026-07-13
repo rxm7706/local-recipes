@@ -8,8 +8,11 @@ via a fixture window. The denial error class reaches this module via the
 ``socket_deny_error`` fixture (mirroring ``component_factory``) — never a
 cross-test-file import.
 
-Port 9 (discard) on 127.0.0.1 is used so that even if the guard were dead,
-no meaningful egress would occur.
+Every probe is harmless even if the guard were dead: connects target port
+9 (discard) on 127.0.0.1, and resolver probes use ``localhost`` — resolved
+from the hosts file, so a dead guard yields a local lookup, never a real
+DNS query (this suite must stay egress-free in air-gapped environments
+even while proving the guard broke).
 """
 
 from __future__ import annotations
@@ -21,9 +24,10 @@ import pytest
 # Import-time probe: conftest patches at IMPORT time, so egress attempted
 # while THIS module is still being imported must already be denied. The
 # denial class is only reachable via the fixture, so RuntimeError (its
-# base) is caught here; an OSError would mean REAL resolution was tried.
+# base) is caught here; any other outcome means the guard is dead (and
+# ``localhost`` keeps even that outcome off the wire — hosts file, no DNS).
 try:
-    socket.gethostbyname("harness-import-time-probe.invalid")
+    socket.gethostbyname("localhost")
 except RuntimeError:
     _DENIED_AT_IMPORT_TIME = True
 except OSError:  # pragma: no cover — would mean the guard is dead
@@ -81,6 +85,13 @@ def test_getaddrinfo_is_denied(socket_deny_error):
 def test_gethostbyname_is_denied(socket_deny_error):
     with pytest.raises(socket_deny_error):
         socket.gethostbyname("example.invalid")
+
+
+def test_getnameinfo_is_denied(socket_deny_error):
+    """Reverse DNS is resolver egress too — the fifth family member must
+    not be the guard's hole."""
+    with pytest.raises(socket_deny_error):
+        socket.getnameinfo(("127.0.0.1", 9), 0)
 
 
 def test_denial_error_carries_the_destination(socket_deny_error):

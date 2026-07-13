@@ -89,6 +89,17 @@ def test_register_engine_appends_in_deterministic_order(monkeypatch):
     assert names == ["null", "dummy"]
 
 
+def test_register_engine_is_idempotent_for_the_same_factory(monkeypatch):
+    """Re-registering the SAME factory (module re-import/reload) must not
+    make the engine run twice."""
+    monkeypatch.setattr(
+        engines_module, "_ENGINE_FACTORIES", [*engines_module._ENGINE_FACTORIES]
+    )
+    before = len(registered_engines())
+    register_engine(NullEngine)
+    assert len(registered_engines()) == before
+
+
 def test_null_engine_run_returns_the_empty_result(tmp_path):
     result = NullEngine().run(tmp_path, make_inventory())
     assert result.findings == ()
@@ -439,3 +450,120 @@ def test_component_name_with_crlf_sanitizes_deterministically(
     findings, _ = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert findings[0].id == "indeterminate:no-version:bad%0D%0Aname"
     assert findings[0].subject == "bad\r\nname"
+
+
+def test_sanitization_is_injective_for_literal_escape_sequences(
+    component_factory,
+):
+    """'foo\\nbar' and a literal 'foo%0Abar' are DISTINCT components and
+    must mint distinct finding ids (% escapes itself first) — otherwise
+    the second silently dedupes into the first and waiving one waives
+    both."""
+    inventory = make_inventory(
+        component_factory(
+            name="foo\nbar",
+            version=None,
+            pypi_identity=None,
+            indeterminate_reason=WithholdReason.NO_VERSION,
+        ),
+        component_factory(
+            name="foo%0Abar",
+            version=None,
+            pypi_identity=None,
+            indeterminate_reason=WithholdReason.NO_VERSION,
+        ),
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert sorted(f.id for f in findings) == [
+        "indeterminate:no-version:foo%0Abar",
+        "indeterminate:no-version:foo%250Abar",
+    ]
+    assert len(rungs) == 2
+
+
+def test_colon_in_component_name_sanitizes_in_the_id(component_factory):
+    """The id grammar is colon-delimited: a raw-malformed name embedding a
+    colon must not smuggle extra delimiters into the id."""
+    inventory = make_inventory(
+        component_factory(
+            name="odd:name",
+            version=None,
+            pypi_identity=None,
+            indeterminate_reason=WithholdReason.NO_VERSION,
+        )
+    )
+    findings, _ = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert findings[0].id == "indeterminate:no-version:odd%3Aname"
+    assert findings[0].subject == "odd:name"
+
+
+def test_empty_growable_reason_token_degrades_never_crashes(component_factory):
+    """An empty growable-enum token from a future producer must degrade to
+    a grammar-valid id ('unspecified'), never crash Finding construction
+    (the frozen Component deliberately does not coerce growable enums)."""
+    inventory = make_inventory(
+        component_factory(
+            name="oddball",
+            version=None,
+            pypi_identity=None,
+            indeterminate_reason="",  # constructible: growable, uncoerced
+        )
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert findings[0].id == "indeterminate:unspecified:oddball"
+    assert len(rungs) == 1
+    assert rungs[0][0] is Status.INDETERMINATE
+
+
+# --- hygiene axis is independent of the withhold reason ------------------------
+
+
+def test_withheld_and_uncovered_component_surfaces_both_axes(
+    component_factory,
+):
+    """The RAW_MALFORMED production path: indeterminate_reason set AND
+    hygiene_covered=False. The withhold reason describes only the
+    vulnerability axis — the hygiene axis must NOT go silent about its own
+    deficiency."""
+    inventory = make_inventory(
+        component_factory(
+            name="junk",
+            version=None,
+            pypi_identity=None,
+            hygiene_covered=False,
+            indeterminate_reason=WithholdReason.NO_VERSION,
+        )
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    by_id = {f.id: f for f in findings}
+    assert sorted(by_id) == [
+        "indeterminate:no-version:junk",
+        "indeterminate:uncovered:junk",
+    ]
+    assert by_id["indeterminate:no-version:junk"].axis == AXIS_VULNERABILITY
+    assert by_id["indeterminate:uncovered:junk"].axis == AXIS_HYGIENE
+    assert len(rungs) == 2
+    assert all(status is Status.INDETERMINATE for status, _ in rungs)
+    assert all(driver is not None for _, driver in rungs)
+
+
+# --- engine-error driver ids are sanitized --------------------------------------
+
+
+def test_engine_error_owner_segment_is_sanitized():
+    """A future engine owner embedding a newline/colon must not produce a
+    multi-line or extra-delimited driver id — same sanitization as every
+    component-derived segment."""
+    record = ErrorRecord(
+        kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+        owner="dep\ntry:x",
+        message="boom",
+    )
+    result = EngineResult(findings=(), errors=(record,), coverage=())
+    _, rungs = DefaultPolicy().evaluate(make_inventory(), [result])
+    ((_, driver),) = rungs
+    assert driver is not None
+    assert driver.finding_id == (
+        "error:engine-execution-failed:dep%0Atry%3Ax"
+    )
+    assert "\n" not in driver.finding_id

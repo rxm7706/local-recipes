@@ -4,26 +4,34 @@ NFR-S1: the extractor parses untrusted input as DATA, never executes it.
 This guard AST-scans every module under the installed package's ``extract/``
 and fails on:
 
-* any import of ``subprocess``, ``jinja2``, ``pty``, ``ctypes``, or
-  ``multiprocessing`` (any form);
+* any import of ``subprocess``, ``jinja2``, ``pty``, ``ctypes``,
+  ``multiprocessing``, ``pickle``, ``marshal``, ``shelve``, or ``runpy``
+  (any form) — the deserialization modules execute code on parse, the
+  canonical NFR-S1 violation for a module that reads untrusted files;
 * ``from os import <member>`` for any forbidden os member (``system``,
   ``popen``, the full ``exec*``/``spawn*`` families, ``posix_spawn``/
-  ``posix_spawnp``) and ``from builtins import
-  eval/exec/compile/__import__``;
+  ``posix_spawnp``, ``fork``/``forkpty``, ``startfile``) and
+  ``from builtins import eval/exec/compile/__import__``;
 * calls to ``eval``/``exec``/``compile``/``__import__`` — as bare names OR
   as attributes through any name bound to the ``builtins`` module
   (``import builtins; builtins.eval(...)``);
 * calls to any forbidden os member through any name bound to the os
   module, or unsafe ``yaml.load`` (through any name bound to the yaml
-  module; ``yaml.safe_load`` is legal).
+  module; ``yaml.safe_load`` is legal);
+* subprocess-without-``subprocess``: ``asyncio.create_subprocess_exec``/
+  ``create_subprocess_shell`` (bare, from-imported, or through any name
+  bound to asyncio) and ``ProcessPoolExecutor`` (bare, from-imported, or
+  as an attribute through ANY base — ``concurrent.futures.
+  ProcessPoolExecutor(...)`` included).
 
 Positively asserts the extract package exists and was scanned, and that the
 detectors fire on synthetic violations — the guard is alive, not vacuous.
 
 Bounds (stated, not aspirational): a best-effort STATIC check, like the 1.1
 sole-ownership guard — ``getattr`` indirection, ``importlib`` dynamic
-imports, and string-built attribute access are out of scope; the
-socket-deny harness and the conformance suite are the behavioral backstop.
+imports, string-built attribute access, and plain-assignment module
+aliasing (``x = os; x.system(...)``) are out of scope; the socket-deny
+harness and the conformance suite are the behavioral backstop.
 """
 
 from __future__ import annotations
@@ -41,7 +49,20 @@ if _PACKAGE_FILE is None:
 EXTRACT_DIR = Path(_PACKAGE_FILE).resolve().parent / "extract"
 
 FORBIDDEN_MODULES = frozenset(
-    {"subprocess", "jinja2", "pty", "ctypes", "multiprocessing"}
+    {
+        "subprocess",
+        "jinja2",
+        "pty",
+        "ctypes",
+        "multiprocessing",
+        # deserialization that executes code on parse — the canonical
+        # NFR-S1 violation for a module reading untrusted files
+        "pickle",
+        "marshal",
+        "shelve",
+        # executes Python source/modules by path
+        "runpy",
+    }
 )
 FORBIDDEN_OS_MEMBERS = frozenset(
     {
@@ -68,9 +89,20 @@ FORBIDDEN_OS_MEMBERS = frozenset(
         # posix_spawn proper
         "posix_spawn",
         "posix_spawnp",
+        # process creation without a command string
+        "fork",
+        "forkpty",
+        # Windows: executes the file's associated application
+        "startfile",
     }
 )
 FORBIDDEN_BUILTIN_CALLS = frozenset({"eval", "exec", "compile", "__import__"})
+# Subprocess-without-``subprocess``: asyncio's subprocess API and the
+# process-pool executor spawn processes without any denylisted import.
+FORBIDDEN_ASYNCIO_MEMBERS = frozenset(
+    {"create_subprocess_exec", "create_subprocess_shell"}
+)
+FORBIDDEN_BARE_CALLS = FORBIDDEN_ASYNCIO_MEMBERS | {"ProcessPoolExecutor"}
 
 
 def _extract_modules() -> list[Path]:
@@ -94,6 +126,7 @@ def _violations(tree: ast.Module) -> list[str]:
     os_names = _module_aliases(tree, "os")
     yaml_names = _module_aliases(tree, "yaml")
     builtins_names = _module_aliases(tree, "builtins")
+    asyncio_names = _module_aliases(tree, "asyncio")
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -123,25 +156,55 @@ def _violations(tree: ast.Module) -> list[str]:
                     for alias in node.names
                     if alias.name == "load"
                 )
+            elif top == "asyncio":
+                found.extend(
+                    f"from asyncio import {alias.name} (line {node.lineno})"
+                    for alias in node.names
+                    if alias.name in FORBIDDEN_ASYNCIO_MEMBERS
+                )
+            elif top == "concurrent":
+                found.extend(
+                    f"from {node.module} import {alias.name} "
+                    f"(line {node.lineno})"
+                    for alias in node.names
+                    if alias.name == "ProcessPoolExecutor"
+                )
         elif isinstance(node, ast.Call):
             func = node.func
-            if isinstance(func, ast.Name) and func.id in FORBIDDEN_BUILTIN_CALLS:
-                found.append(f"{func.id}() call (line {node.lineno})")
-            elif isinstance(func, ast.Attribute) and isinstance(
-                func.value, ast.Name
+            if isinstance(func, ast.Name) and func.id in (
+                FORBIDDEN_BUILTIN_CALLS | FORBIDDEN_BARE_CALLS
             ):
-                base = func.value.id
-                if base in os_names and func.attr in FORBIDDEN_OS_MEMBERS:
-                    found.append(f"os.{func.attr}() call (line {node.lineno})")
-                elif (
-                    base in builtins_names
-                    and func.attr in FORBIDDEN_BUILTIN_CALLS
-                ):
+                found.append(f"{func.id}() call (line {node.lineno})")
+            elif isinstance(func, ast.Attribute):
+                # ProcessPoolExecutor fires through ANY base, chained
+                # attribute access included (concurrent.futures.
+                # ProcessPoolExecutor(...)).
+                if func.attr == "ProcessPoolExecutor":
                     found.append(
-                        f"builtins.{func.attr}() call (line {node.lineno})"
+                        f"ProcessPoolExecutor() call (line {node.lineno})"
                     )
-                elif base in yaml_names and func.attr == "load":
-                    found.append(f"yaml.load() call (line {node.lineno})")
+                elif isinstance(func.value, ast.Name):
+                    base = func.value.id
+                    if base in os_names and func.attr in FORBIDDEN_OS_MEMBERS:
+                        found.append(
+                            f"os.{func.attr}() call (line {node.lineno})"
+                        )
+                    elif (
+                        base in builtins_names
+                        and func.attr in FORBIDDEN_BUILTIN_CALLS
+                    ):
+                        found.append(
+                            f"builtins.{func.attr}() call (line {node.lineno})"
+                        )
+                    elif base in yaml_names and func.attr == "load":
+                        found.append(f"yaml.load() call (line {node.lineno})")
+                    elif (
+                        base in asyncio_names
+                        and func.attr in FORBIDDEN_ASYNCIO_MEMBERS
+                    ):
+                        found.append(
+                            f"asyncio.{func.attr}() call (line {node.lineno})"
+                        )
     return found
 
 
@@ -236,3 +299,54 @@ def test_detector_fires_on_new_forbidden_imports():
     assert _violations(ast.parse("from multiprocessing import Process\n"))
     assert _violations(ast.parse("import multiprocessing.pool\n"))
     assert not _violations(ast.parse("import tomllib\nimport math\n"))
+
+
+def test_detector_fires_on_deserialization_and_runpy_imports():
+    """pickle/marshal/shelve execute code on parse; runpy executes modules
+    by path — every import form fires."""
+    assert _violations(ast.parse("import pickle\n"))
+    assert _violations(ast.parse("from pickle import loads\n"))
+    assert _violations(ast.parse("import marshal\n"))
+    assert _violations(ast.parse("from marshal import loads\n"))
+    assert _violations(ast.parse("import shelve\n"))
+    assert _violations(ast.parse("import runpy\n"))
+    assert _violations(ast.parse("from runpy import run_path\n"))
+    assert not _violations(ast.parse("import json\n"))
+
+
+def test_detector_fires_on_fork_and_startfile():
+    assert _violations(ast.parse("import os\nos.fork()\n"))
+    assert _violations(ast.parse("from os import fork\n"))
+    assert _violations(ast.parse("import os\nos.forkpty()\n"))
+    assert _violations(ast.parse("import os\nos.startfile(path)\n"))
+    assert _violations(ast.parse("from os import startfile\n"))
+
+
+def test_detector_fires_on_subprocess_without_subprocess():
+    """asyncio's subprocess API and ProcessPoolExecutor spawn processes
+    without any denylisted import — bare, from-imported, aliased, and
+    chained-attribute forms all fire."""
+    assert _violations(
+        ast.parse("import asyncio\nasyncio.create_subprocess_exec(x)\n")
+    )
+    assert _violations(
+        ast.parse("import asyncio as aio\naio.create_subprocess_shell(x)\n")
+    )
+    assert _violations(
+        ast.parse("from asyncio import create_subprocess_exec\n")
+    )
+    assert _violations(ast.parse("create_subprocess_exec(x)\n"))
+    assert _violations(
+        ast.parse("from concurrent.futures import ProcessPoolExecutor\n")
+    )
+    assert _violations(ast.parse("ProcessPoolExecutor()\n"))
+    assert _violations(
+        ast.parse(
+            "import concurrent.futures\n"
+            "concurrent.futures.ProcessPoolExecutor()\n"
+        )
+    )
+    assert not _violations(
+        ast.parse("from concurrent.futures import ThreadPoolExecutor\n")
+    )
+    assert not _violations(ast.parse("import asyncio\nasyncio.run(main())\n"))

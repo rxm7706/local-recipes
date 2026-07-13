@@ -28,8 +28,11 @@ _ENGINE_FACTORIES: list[Callable[[], Engine]] = []
 def register_engine(factory: Callable[[], Engine]) -> Callable[[], Engine]:
     """Register an engine factory (decorator-friendly: returns the factory).
 
-    Order of registration is the order ``registered_engines()`` yields."""
-    _ENGINE_FACTORIES.append(factory)
+    Order of registration is the order ``registered_engines()`` yields.
+    Re-registering the SAME factory is a no-op (idempotent): a module
+    re-import/reload must not make every engine run twice."""
+    if factory not in _ENGINE_FACTORIES:
+        _ENGINE_FACTORIES.append(factory)
     return factory
 
 

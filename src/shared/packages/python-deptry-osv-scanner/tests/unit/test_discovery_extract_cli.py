@@ -106,9 +106,12 @@ def test_discover_returns_empty_for_a_dir_without_manifest(tmp_path):
     assert discover(tmp_path) == ()
 
 
-def test_discover_ignores_a_pyproject_directory(tmp_path):
+def test_discover_fails_closed_on_a_pyproject_directory(tmp_path):
+    """A pyproject.toml that exists but is not a regular file is
+    found-but-refused: it must FAIL CLOSED, never read as absent."""
     (tmp_path / "pyproject.toml").mkdir()
-    assert discover(tmp_path) == ()
+    with pytest.raises(OSError, match="not a regular file"):
+        discover(tmp_path)
 
 
 def test_discover_treats_a_file_target_as_absent(tmp_path):
@@ -119,6 +122,24 @@ def test_discover_treats_a_file_target_as_absent(tmp_path):
     assert discover(file_target) == ()
 
 
+def test_discover_fails_closed_on_a_vanished_target(tmp_path):
+    """A nonexistent target directory is undeterminable manifest state
+    (the TOCTOU window: it passed the CLI gate, then vanished) — it must
+    fail closed, never read as "no manifest" → exit 0."""
+    with pytest.raises(OSError, match="vanished"):
+        discover(tmp_path / "gone")
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_discover_fails_closed_on_a_dangling_symlink(tmp_path):
+    """A dangling pyproject.toml symlink is visibly present but unreadable:
+    found-but-refused, never 'nothing existed'."""
+    (tmp_path / "pyproject.toml").symlink_to(tmp_path / "no-such-target")
+    with pytest.raises(OSError, match="dangling symlink"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
 def test_discover_propagates_unexpected_stat_errors(tmp_path):
     """Path.is_file() swallows OSError (permission-denied would read as "no
     manifest" → a false green); the explicit stat propagates it instead."""
@@ -201,6 +222,21 @@ def test_environment_markers_are_ignored(tmp_path):
     assert component.vuln_matchable is True
 
 
+def test_marker_conditional_dep_is_labeled_union_marked(tmp_path):
+    """Union semantics are extracted AND labeled: a marker-conditional dep
+    carries extraction_mode=union-marked (the frozen enum's slot for
+    exactly this case), staying distinguishable from an unconditional
+    one; an unconditional dep stays 'parsed'."""
+    marked, plain = extract_from(
+        tmp_path,
+        ["requests==2.31.0; python_version >= '3.8'", "urllib3==2.2.1"],
+    )
+    assert marked.extraction_mode == ExtractionMode.UNION_MARKED
+    assert plain.extraction_mode == ExtractionMode.PARSED
+    # honesty labeling must not weaken matchability: the pin is concrete
+    assert marked.vuln_matchable is True
+
+
 def test_arbitrary_equality_is_a_concrete_pin(tmp_path):
     """PEP 440 arbitrary equality (===) pins exactly one version — treated
     like ==, never withheld as range-only."""
@@ -216,6 +252,25 @@ def test_wildcard_equality_stays_range_only_beside_arbitrary_equality(tmp_path):
     (component,) = extract_from(tmp_path, ["pkg==1.2.*"])
     assert component.version is None
     assert component.indeterminate_reason == WithholdReason.RANGE_ONLY
+
+
+def test_wildcard_looking_arbitrary_equality_is_withheld_too(tmp_path):
+    """===1.2.* would flow a wildcard-looking token into CVE matching as a
+    'concrete' version — conservatively withheld (Gap-C: never guess)."""
+    (component,) = extract_from(tmp_path, ["pkg===1.2.*"])
+    assert component.version is None
+    assert component.vuln_matchable is False
+    assert component.indeterminate_reason == WithholdReason.RANGE_ONLY
+
+
+def test_invalid_utf8_manifest_is_unparsable_manifest(tmp_path):
+    """Invalid UTF-8 raises UnicodeDecodeError out of tomllib — a ValueError
+    subclass but NOT TOMLDecodeError. A wrong-encoding save is a broken
+    manifest, never an internal tool bug."""
+    path = tmp_path / "pyproject.toml"
+    path.write_bytes(b'[project]\nname = "x\xff\xfe"\ndependencies = []\n')
+    with pytest.raises(UnparsableManifestError):
+        PyprojectExtractor(DefaultRouter()).extract(path, MANIFEST)
 
 
 def test_identity_name_is_pep503_canonical_component_name_stays_raw(tmp_path):
@@ -427,17 +482,25 @@ def test_broken_pipe_in_text_mode_is_absorbed_too(monkeypatch, tmp_path):
 def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
     """A dependency name embedding a newline (valid TOML) must not crash
     Finding construction: the scan completes with the escaped form in the
-    finding id and the raw name in the subject."""
+    finding ids and the raw name in the subjects. The raw-malformed entry
+    surfaces BOTH deficiencies: withheld from vuln matching AND not
+    hygiene-covered (the hygiene axis never goes silent)."""
     write_pyproject(tmp_path, ["foo\nbar"])
     rc, document, _ = scan_json(capsys, tmp_path)
     assert rc == 1
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "indeterminate"
-    (finding,) = document["findings"]
-    assert finding["id"] == "indeterminate:no-version:foo%0Abar"
-    assert finding["subject"] == "foo\nbar"
+    assert sorted(f["id"] for f in document["findings"]) == [
+        "indeterminate:no-version:foo%0Abar",
+        "indeterminate:uncovered:foo%0Abar",
+    ]
+    assert all(f["subject"] == "foo\nbar" for f in document["findings"])
+    axes = {f["id"]: f["axis"] for f in document["findings"]}
+    assert axes["indeterminate:no-version:foo%0Abar"] == "vulnerability"
+    assert axes["indeterminate:uncovered:foo%0Abar"] == "hygiene"
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
 def test_unreadable_manifest_is_unparsable_manifest_not_a_crash(
     capsys, tmp_path
 ):
@@ -509,6 +572,7 @@ def test_internal_value_error_from_an_extractor_is_internal_error(
     )
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
 def test_permission_denied_discovery_is_an_error_report_not_a_false_green(
     capsys, tmp_path
 ):
@@ -531,3 +595,74 @@ def test_permission_denied_discovery_is_an_error_report_not_a_false_green(
     assert "errno" in error["message"]
     assert err != ""
     assert "no manifest found" not in err  # not the not-applicable notice
+
+
+# --- exit-path hardening rows --------------------------------------------------
+
+
+def test_unexpected_internal_exception_never_exits_one(
+    capsys, tmp_path, monkeypatch
+):
+    """The last-resort net: an unexpected exception (here render_json's
+    fail-loud path) returns exit_code_for(error) with stdout EMPTY — never
+    the interpreter's default exit 1, which would read as 'findings found'
+    to an exit-code-only CI consumer."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])
+
+    def exploding_render(report):
+        raise RuntimeError("sentinel render failure")
+
+    monkeypatch.setattr(cli, "render_json", exploding_render)
+    rc = main(["scan", str(tmp_path), "--format", "json"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert rc != 1  # never the interpreter's uncaught-exception code
+    assert captured.out == ""  # the invalid report never reached stdout
+    assert "internal error" in captured.err
+    assert "sentinel render failure" in captured.err
+
+
+def test_non_int_system_exit_code_projects_as_error(capsys, monkeypatch):
+    """argparse only exits with ints under this parser config; if a custom
+    action ever exits with a message string, the CLI projects it as the
+    error exit instead of crashing in int()."""
+
+    def exits_with_a_string(self, *args, **kwargs):
+        raise SystemExit("boom")
+
+    monkeypatch.setattr(argparse.ArgumentParser, "parse_args", exits_with_a_string)
+    rc = main(["scan", "."])
+    assert rc == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_dangling_manifest_symlink_is_an_error_report(capsys, tmp_path):
+    """A dangling pyproject.toml symlink must never scan green as
+    'no manifest found': discovery fails closed and the CLI emits an error
+    report (exit 2, report still emitted)."""
+    (tmp_path / "pyproject.toml").symlink_to(tmp_path / "no-such-target")
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "internal-error"
+    assert "dangling symlink" in error["message"]
+    assert "no manifest found" not in err
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_unstattable_target_is_could_not_stat_not_not_there(capsys, tmp_path):
+    """The target gate stats explicitly: a self-referential symlink loop
+    (ELOOP) is diagnosed 'cannot stat', never the false claim 'is not an
+    existing directory'."""
+    loop = tmp_path / "loop"
+    loop.symlink_to(loop)
+    rc = main(["scan", str(loop), "--format", "json"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert captured.out == ""  # early-fatal: no report exists to emit
+    assert "cannot stat" in captured.err
+    assert "not an existing directory" not in captured.err
