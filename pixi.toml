@@ -1,9 +1,9 @@
 #                             VVVVVV  minimum `pixi` version
-"$schema" = "https://pixi.sh/v0.70.2/schema/manifest/schema.json"
+"$schema" = "https://pixi.sh/v0.72.2/schema/manifest/schema.json"
 
 [workspace]
 name = "staged-recipes"
-requires-pixi = ">=0.70.2"  # lowered from >=0.71 for local 0.70.2; the osx-arm64 macOS-14.5 floor uses the pre-0.71 [system-requirements] table (see feature.local-recipes) rather than a 0.71+ virtual-package platform entry
+requires-pixi = ">=0.72.2"  # the osx-arm64-min virtual-package platform entry (macOS floor) needs the 0.71+ workspace-platform syntax
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
@@ -11,13 +11,16 @@ license-file = "LICENSE.txt"
 authors = ["@conda-forge/core"]
 channels = ["conda-forge", "SelfExplainML"]
 platforms = [
-    "linux-64", "osx-arm64", "win-64",
-    # The osx-arm64 macOS 14.5 (Sonoma) floor — required by mlx 0.31.2+
-    # (__osx >=14.5) — is carried by the [feature.local-recipes.system-requirements]
-    # table below. pixi 0.71+ deprecates that table in favor of a virtual-package
-    # platform entry ({ name = "osx-arm64-macos14", platform = "osx-arm64",
-    # macos = "14.5" }), but that syntax needs 0.71+; kept on the 0.70.2-compatible
-    # [system-requirements] form for now.
+    "linux-64", "win-64",
+    # "osx-arm64-min" = the osx-arm64 subdir with a declared minimum macOS
+    # (a virtual-package FLOOR, not a pin: it states the oldest Mac the lock
+    # must support; newer macOS always satisfies it). Currently 14.5 (Sonoma),
+    # the exact minimum demanded by mlx 0.31.2+ (__osx >=14.5); bump only when
+    # a dependency requires it. This named-entry form is the pixi 0.71+
+    # replacement for the deprecated [system-requirements] table; feature
+    # `platforms` lists must reference it by name — a plain "osx-arm64"
+    # entry would error.
+    { name = "osx-arm64-min", platform = "osx-arm64", macos = "14.5" },
     # TODO: add osx-64 / linux-aarch64 / win-arm64 (+ in the features below)
     # when the full dep set resolves on them.
 ]
@@ -49,14 +52,14 @@ rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build
 
 [feature.linux]
 # The linux feature runs on every platform that can run Docker.
-platforms = ["linux-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "osx-arm64-min", "win-64"]
 [feature.linux.tasks.build-linux]
 description = "build for Linux inside a docker container"
 cmd = "python build-locally.py --filter 'linux*'"
 
 [feature.osx]
 # The osx env will run directly on the machine.
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64-min"]
 [feature.osx.tasks.build-osx]
 description = "build directly on a MacOS host machine"
 cmd = "python build-locally.py --filter 'osx*'"
@@ -99,7 +102,7 @@ cmd = "conda-smithy recipe-lint --conda-forge recipes/*"
 
 [feature.shellcheck]
 # merge this with `conda-smithy` when available for `linux-ppc64le`
-platforms = ["linux-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "osx-arm64-min", "win-64"]
 dependencies.shellcheck = ">=0.10.0"
 
 [feature.gcloud-sdk]
@@ -111,7 +114,7 @@ dependencies.shellcheck = ">=0.10.0"
 # automatically and you don't need the `gcloud` env again until you
 # want to refresh creds or switch projects.
 # Linux + macOS only — google-cloud-sdk isn't on conda-forge for win-64.
-platforms = ["linux-64", "osx-arm64"]
+platforms = ["linux-64", "osx-arm64-min"]
 dependencies.google-cloud-sdk = ">=575.0.0"
 
 [environments]
@@ -468,18 +471,22 @@ cmd = "python .claude/scripts/conda-forge-expert/release_cadence.py"
 # Subsequent refreshes are incremental.
 
 [feature.vuln-db]
-platforms = ["linux-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "osx-arm64-min", "win-64"]
 
 [feature.vuln-db.dependencies]
 python = "3.14.*"                 # Python language interpreter
 conda-forge-metadata = ">=0.16.1"  # so --deep also works in this env
 apsw = ">=3.53.3.1"               # SQLite bindings for Python (vdb backend)
 appthreat-vulnerability-db = ">=6.7.0"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
+cyclonedx-bom = ">=7.3.0"         # CycloneDX Software Bill of Materials (SBOM) generation utility.
+cyclonedx-python-lib= ">=11.11.0"  # Python library for CycloneDX.
+#cdxgen = ">=12.7.1"               # Creates CycloneDX Bill of Materials (BOM) for projects and containers in 20+ languages and package managers
 #oras-py = ">=0.2.42"              # OCI registry client for Python (vdb backend) — ORAS-hosted CVE DB snapshots blocked by conda-forge-metadata -> conda-oci-mirror -> oras-py ==0.1.14 i
 # truststore lives in [feature.python.dependencies] — included via the python feature
 
 [feature.vuln-db.pypi-dependencies]
-appthreat-vulnerability-db = { version = "*", extras = ["all"] }  # multi-source CVE DB (NVD + GHSA + OSV + npm + Snyk)
+#appthreat-vulnerability-db = { version = "*", extras = ["all"] }  # multi-source CVE DB (NVD + GHSA + OSV + npm + Snyk)
+appthreat-vulnerability-db = { version = ">=6.7.0"}  # multi-source CVE DB (NVD + GHSA + OSV + npm + Snyk)
 
 [feature.vuln-db.activation.env]
 VDB_HOME = "$PIXI_PROJECT_ROOT/.claude/data/conda-forge-expert/vdb"
@@ -799,9 +806,8 @@ yo = ">=7.0.1"                     # CLI tool for running Yeoman generators
 ## (skip rule: "win or match(python,'<3.9') or (osx and x86_64)" — excludes Windows + Intel Mac).
 ## Primary value is on osx-arm64 (Metal-accelerated, 2-3x over llama.cpp for some workloads).
 ## On linux-64 mlx runs against libblas/lapack — usable for experimentation, no perf advantage over the existing pytorch path.
-## macOS minimum bumped to 14.5 (Sonoma) — required by mlx 0.31.2+; M-series users are always above this.
-[feature.local-recipes.system-requirements]
-macos = "14.5"
+## macOS minimum 14.5 (Sonoma) — required by mlx 0.31.2+ — is declared on the
+## `osx-arm64-min` workspace platform entry (see [workspace] platforms).
 
 [feature.local-recipes.target.linux-64.dependencies]
 mlx = ">=0.32.0"                  # Apple's array framework (Linux build via libblas/lapack)
