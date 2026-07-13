@@ -139,7 +139,7 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/developer-guide.md`** — Local testing and general recipe development guidelines.
 - **`docs/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.
-- **`docs/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency.
+- **`docs/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e local-recipes llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
 
 ### Intake specs (`docs/specs/` — Tier 1)
 

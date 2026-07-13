@@ -12,7 +12,12 @@
 
 ## To regenerate (any session): ask Claude Code:
 
-> Regenerate `docs/library-llms-full.md` from `pixi.toml`. Read all of `pixi.toml`, then rewrite the catalog keeping the same 18-section structure: envs table, version pins, per-category library entries with version floors + capabilities + platform caveats, the "explicitly NOT available" section from the commented-out deps, the import-name gotchas table, and the quick capability index. Update the Generated date.
+> Regenerate `docs/library-llms-full.md` from `pixi.toml`. Read all of `pixi.toml`, then rewrite the catalog keeping the same 18-section structure: envs table, version pins, per-category library entries with version floors + capabilities + platform caveats, the "explicitly NOT available" section from the commented-out deps, the import-name gotchas table, and the quick capability index. Update the Generated date. Verify with `pixi run -e local-recipes llms-full-check`.
+
+**Staleness detector:** `pixi run -e local-recipes llms-full-check` (script:
+`scripts/llms_full_check.py`) exits non-zero when this catalog drifts from `pixi.toml` —
+undocumented deps, ghost entries, or version-floor drift. Detector finds; the regeneration
+prompt above reconciles.
 
 ---
 
@@ -147,9 +152,10 @@ Shell/CI quality:
 
 All in `local-recipes`. These are CLIs invoked as `pixi-<name>` or `pixi <name>`.
 
-- **pixi-build-rattler-build / -cmake / -python / -rust** — pixi build backends: let a
-  `pixi.toml` `[package]` build conda packages from rattler-build recipes, CMake
-  projects, Python projects (PEP 517), or Cargo crates respectively.
+- **pixi-build-rattler-build / pixi-build-cmake / pixi-build-python / pixi-build-rust**
+  — pixi build backends: let a `pixi.toml` `[package]` build conda packages from
+  rattler-build recipes, CMake projects, Python projects (PEP 517), or Cargo crates
+  respectively.
 - **pixi-pack** (>=0.7.10) / **pixi-unpack** (>=0.7.10) — bundle a pixi environment into a
   single archive for offline/air-gapped machines, and unpack it there.
 - **pixi-to-conda-lock** (>=0.4.3) — convert `pixi.lock` → `conda-lock.yml` for tools
@@ -184,6 +190,11 @@ All in `local-recipes`.
   against known-vulnerability databases (OSV/PyPI advisory).
 - **bandit** (>=1.9.4) — static security linter for Python source (dangerous calls,
   injection patterns, weak crypto).
+- **deptry** (>=0.25.1) — dependency-hygiene checker: finds unused, missing, and
+  transitive dependencies in a Python project by comparing imports against the
+  declared manifest (core of the python-deptry-osv-scanner effort).
+- **osv-scanner** (>=2.4.0) — Google's OSV vulnerability scanner (Go binary): scans
+  lockfiles, manifests, SBOMs, and directories against the osv.dev database.
 - **appthreat-vulnerability-db** (>=6.7.0) — `import vdb`; AppThreat multi-source
   vulnerability database library (OSV + GHSA sources locally; CVE, EPSS, CWE data
   model). Present in BOTH `local-recipes` and `vuln-db`; the ~600MB local DB lives at
@@ -662,7 +673,8 @@ depending on them without adding them first:
 - Embeddings/RAG → **sentence-transformers** (+ **rank-bm25** for lexical)
 - Generate a conda recipe → **grayskull**; build v1 → **rattler-build**; build v0 → **conda-build**; lint → **conda-smithy**
 - Migrate recipe v0→v1 → **conda-recipe-manager** / **feedrattler**
-- Scan for CVEs → **pip-audit** (env), **bandit** (code), **appthreat-vulnerability-db** via `vuln-db` env (deps), or the `scan-project` task
+- Scan for CVEs → **pip-audit** (env), **osv-scanner** (lockfiles/SBOMs), **bandit** (code), **appthreat-vulnerability-db** via `vuln-db` env (deps), or the `scan-project` task
+- Find unused/missing deps → **deptry**
 - SBOMs → **cyclonedx-bom** / **cyclonedx-python-lib** (`vuln-db` env) or the `universe-sbom` task
 - Lock/bundle envs → **conda-lock**, **pixi-pack**/**pixi-unpack**, **conda-pack**
 - Drive a browser → **playwright-python**
