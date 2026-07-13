@@ -11,9 +11,10 @@ Ownership decisions recorded:
   and the other manifest formats arrive with later E1 stories).
 * The concrete-version forms are a single plain ``==X.Y.Z`` specifier
   without a ``.*`` suffix AND PEP 440 arbitrary equality ``===X`` (which
-  pins exactly one version by definition); multi-specifier sets and the
-  ``==1.2.*`` prefix match are conservatively withheld as ``range-only``
-  (never guess a version — Gap-C).
+  pins exactly one version by definition); multi-specifier sets, the
+  ``==1.2.*`` prefix match, AND a wildcard-looking ``===1.2.*`` are
+  conservatively withheld as ``range-only`` (never guess a version —
+  Gap-C).
 * A bare name (no specifier, or a URL requirement) withholds as
   ``no-version``.
 * An invalid PEP 508 entry is KEPT as ``extraction_mode=raw-malformed``
@@ -21,12 +22,17 @@ Ownership decisions recorded:
   withheld) — never dropped silently. Its withhold reason is ``no-version``
   (no version could be parsed; the closest honest token in the frozen enum).
 * Environment markers are ignored: the dep is extracted regardless (union
-  semantics — the honest superset).
-* ``tomllib.TOMLDecodeError`` (and structurally-corrupt ``[project]``
-  tables) raise ``UnparsableManifestError`` — the CLI catches EXACTLY that
-  class into ``ErrorRecord(kind=unparsable-manifest)`` (fail-loud, report
-  still emitted); any other ``ValueError`` out of this module is diagnosed
-  as an internal error, never as a manifest problem.
+  semantics — the honest superset), and labeled
+  ``extraction_mode=union-marked`` so a marker-conditional dep stays
+  distinguishable from an unconditional one (the frozen enum's slot for
+  exactly this case).
+* ``tomllib.TOMLDecodeError``, invalid UTF-8 bytes (``UnicodeDecodeError``
+  out of ``tomllib`` — a wrong-encoding save is a broken manifest, not a
+  tool bug), and structurally-corrupt ``[project]`` tables raise
+  ``UnparsableManifestError`` — the CLI catches EXACTLY that class into
+  ``ErrorRecord(kind=unparsable-manifest)`` (fail-loud, report still
+  emitted); any other ``ValueError`` out of this module is diagnosed as an
+  internal error, never as a manifest problem.
 * A PyPI-native declaration IS its own identity: ``identity_source=native``,
   ``pypi_identity`` carries the PEP-503-CANONICAL name
   (``inventory.canonical_name``) so the single-record path matches the
@@ -75,7 +81,10 @@ class PyprojectExtractor:
         try:
             with manifest_path.open("rb") as handle:
                 data = tomllib.load(handle)
-        except tomllib.TOMLDecodeError as exc:
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+            # UnicodeDecodeError is a ValueError subclass but NOT a
+            # TOMLDecodeError: without this clause a wrong-encoding save
+            # would be misdiagnosed as an internal tool bug.
             raise UnparsableManifestError(
                 f"unparsable manifest {manifest.path}: {exc}"
             ) from exc
@@ -133,6 +142,13 @@ class PyprojectExtractor:
         # The identity name is PEP-503-canonical (matches what the 1.1 merge
         # path would canonicalize to); Component.name keeps the raw spelling.
         identity_name = canonical_name(Ecosystem.PYPI, requirement.name)
+        # Marker-conditional deps are extracted under union semantics and
+        # honestly labeled with the frozen enum's slot for exactly that.
+        extraction_mode = (
+            ExtractionMode.UNION_MARKED
+            if requirement.marker is not None
+            else ExtractionMode.PARSED
+        )
         version = _exact_pin(requirement)
         if version is not None:
             return Component(
@@ -143,7 +159,7 @@ class PyprojectExtractor:
                 identity_source=IdentitySource.NATIVE,
                 mapping_confidence=None,
                 cve_match_level=CveMatchLevel.EXACT,
-                extraction_mode=ExtractionMode.PARSED,
+                extraction_mode=extraction_mode,
                 purl=derive_purl(ecosystem, requirement.name, version),
                 provenance=provenance,
                 hygiene_covered=True,
@@ -163,7 +179,7 @@ class PyprojectExtractor:
             identity_source=IdentitySource.NATIVE,
             mapping_confidence=None,
             cve_match_level=CveMatchLevel.NAME_ONLY,
-            extraction_mode=ExtractionMode.PARSED,
+            extraction_mode=extraction_mode,
             purl=derive_purl(ecosystem, requirement.name, None),
             provenance=provenance,
             hygiene_covered=True,
@@ -177,13 +193,17 @@ def _exact_pin(requirement: Requirement) -> str | None:
     a single plain ``==`` pin, or PEP 440 arbitrary equality ``===`` (which
     matches exactly one literal version string by definition).
 
-    ``==1.2.*`` is a PREFIX match (a range), not an exact pin — withheld."""
+    ``==1.2.*`` is a PREFIX match (a range), not an exact pin — withheld.
+    A wildcard-looking ``===1.2.*`` is conservatively withheld too: PEP 440
+    says ``===`` pins the literal string, but a ``.*``-suffixed token
+    flowing into CVE matching as a concrete version would be a guess
+    (Gap-C: never guess a version)."""
     specifiers = list(requirement.specifier)
     if len(specifiers) != 1:
         return None
     specifier = specifiers[0]
-    if specifier.operator == "===":
-        return specifier.version
-    if specifier.operator != "==" or specifier.version.endswith(".*"):
+    if specifier.version.endswith(".*"):
         return None
-    return specifier.version
+    if specifier.operator in ("==", "==="):
+        return specifier.version
+    return None

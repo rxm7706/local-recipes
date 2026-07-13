@@ -92,15 +92,32 @@ def component_factory():
 # "network is confined to the named engine subprocesses".
 #
 # Denied primitives: socket.socket.{connect, connect_ex, sendto, sendmsg},
-# socket.create_connection, and the resolver family socket.{getaddrinfo,
-# gethostbyname, gethostbyname_ex, gethostbyaddr} — name resolution is
-# egress too.
+# socket.create_connection, and the FULL resolver family socket.
+# {getaddrinfo, gethostbyname, gethostbyname_ex, gethostbyaddr,
+# getnameinfo} — name resolution (forward AND reverse) is egress too.
 #
-# Stated bounds (not aspirational): code reaching for the private
-# ``_socket`` C module directly bypasses these module-level patches and is
-# out of scope — the package imports only the public ``socket`` surface
-# (and 1.2 imports none at all). jsonschema/importlib.resources call none
-# of the denied primitives, so the suite stays offline-green.
+# Stated bounds (not aspirational):
+# * code reaching for the private ``_socket`` C module directly bypasses
+#   these module-level patches — the package imports only the public
+#   ``socket`` surface (and 1.2 imports none at all);
+# * a module imported BEFORE this conftest that captured a primitive by
+#   value (``from socket import create_connection``) holds the unpatched
+#   function — the patches rebind the module/class attributes, not
+#   pre-existing references;
+# * ``send``/``sendall`` on an ALREADY-ESTABLISHED socket (``fromfd`` on an
+#   inherited descriptor, ``socketpair`` IPC) are not denied: in-process
+#   connection ESTABLISHMENT is impossible under the connect/sendto
+#   denials, and inherited descriptors cross the process boundary this
+#   harness polices.
+# jsonschema/importlib.resources call none of the denied primitives, so
+# the suite stays offline-green.
+#
+# BLAST RADIUS (deliberate, process-global): any pytest invocation whose
+# collection imports this conftest denies egress for EVERY test that runs
+# afterwards in the same interpreter — including OTHER suites in this
+# monorepo (e.g. the conda-forge-expert suite's real-network tests). Run
+# this package's suite via its own pixi task (the loop's verify gate does);
+# do not collect it together with network-dependent suites in one process.
 #
 # The error deliberately subclasses RuntimeError, NOT OSError: code under
 # test that gracefully catches socket/OSError failures must NOT be able to
@@ -167,6 +184,11 @@ def _denied_gethostbyaddr(ip_address):
     raise SocketDenyError("socket.gethostbyaddr", ip_address)
 
 
+def _denied_getnameinfo(sockaddr, flags):
+    # Reverse DNS is resolver egress too — the fifth member of the family.
+    raise SocketDenyError("socket.getnameinfo", sockaddr)
+
+
 # Applied at IMPORT time; deliberately never unpatched (see block comment).
 socket.socket.connect = _denied_connect
 socket.socket.connect_ex = _denied_connect_ex
@@ -177,6 +199,7 @@ socket.getaddrinfo = _denied_getaddrinfo
 socket.gethostbyname = _denied_gethostbyname
 socket.gethostbyname_ex = _denied_gethostbyname_ex
 socket.gethostbyaddr = _denied_gethostbyaddr
+socket.getnameinfo = _denied_getnameinfo
 
 
 @pytest.fixture

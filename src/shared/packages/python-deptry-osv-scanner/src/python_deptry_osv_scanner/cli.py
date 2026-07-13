@@ -13,7 +13,15 @@ Ownership decisions recorded:
 * Exit codes come ONLY from ``verdict.exit_code_for`` / ``verdict.
   EXIT_SIGINT`` (the sole-ownership rule). argparse's own exits
   (``--version``/``--help`` → 0, usage errors → 2, never 0) surface via the
-  caught ``SystemExit``'s code — a variable, never a literal.
+  caught ``SystemExit``'s code — ``None`` → success, an int passes through,
+  and a non-int code (argparse never produces one under this parser config)
+  projects via ``exit_code_for(error)``, never ``int()``-crashes.
+* Last-resort net: any unexpected ``Exception`` escaping the scan (an
+  internal defect, ``render_json``'s fail-loud self-validation, a crashing
+  future engine hook) returns ``exit_code_for(error)`` with the traceback
+  on stderr — NEVER the interpreter's default exit 1, which would collide
+  with the ``indeterminate``/``policy-violation`` projection and read as
+  "scan completed, findings found" to an exit-code-only CI consumer.
 * ``--deterministic`` is accepted as a DOCUMENTED NO-OP: the 1.2 report
   carries no volatile fields, so default output is already byte-identical;
   volatile-field pinning arrives with ``determinism.py``.
@@ -21,17 +29,24 @@ Ownership decisions recorded:
   Path-normalize to ``"."`` and silently scan the CWD) or a nonexistent/
   undiscoverable target (not an existing directory) emits a stderr
   diagnostic and exits ``exit_code_for(error)`` with stdout EMPTY — no
-  report exists to emit. Every failure PAST that boundary still emits the
-  report: the exit code is orthogonal to emission.
+  report exists to emit. The gate stats EXPLICITLY (``Path.is_dir()``
+  swallows every ``OSError``): "could not look" (permission-denied parent,
+  ELOOP) is diagnosed as could-not-stat, never as "not there". Every
+  failure PAST that boundary still emits the report: the exit code is
+  orthogonal to emission (a ``render_json`` self-validation failure is the
+  recorded exception — an invalid report must not reach stdout, so the
+  last-resort net returns the error exit with stdout empty).
 * Error taxonomy (only genuine manifest problems are labeled
   ``unparsable-manifest``): a structurally-broken manifest raises
   ``UnparsableManifestError`` and an OS failure READING the manifest
   (chmod-000, TOCTOU deletion) is also a manifest problem (the OS error
   rides in the message). Everything else on the discovery/extract/routing
   path — an unknown manifest kind, an unexpected ``ValueError``, a
-  discovery ``OSError`` — is ``internal-error``. Each yields a typed
-  ``ErrorRecord`` + an error rung; the report is emitted (status
-  ``error``, exit ``exit_code_for(error)``).
+  discovery ``OSError`` — is ``internal-error``. A crashing engine
+  (``engine.run`` raising) is ``engine-execution-failed``. Each yields a
+  typed ``ErrorRecord`` + an error rung; the report is emitted (status
+  ``error``, exit ``exit_code_for(error)``). Error-driver id segments are
+  sanitized like component-derived segments (``_sanitize_id_segment``).
 * Error-status drivers use the ``error:<kind>:<subject>`` grammar and do
   NOT reference ``findings[]`` — the error report's driver is a dangling
   id by design (``findings`` may be empty; the report stays schema-valid).
@@ -41,7 +56,11 @@ Ownership decisions recorded:
   be consumed.
 * ``BrokenPipeError`` during stdout emission is absorbed (the consumer went
   away, e.g. ``| head``): the report's already-computed exit code is still
-  returned and no traceback contaminates stderr.
+  returned and no traceback contaminates stderr. Stdout is FLUSHED inside
+  the guarded region so a block-buffered pipe surfaces the error to the
+  absorber instead of exploding at interpreter-exit flush (CPython exit
+  120). Stderr diagnostics absorb ``OSError`` the same way (``_stderr``) —
+  a vanished stderr consumer must not replace the computed exit code.
 * Strictly non-interactive: no prompts, stdin is never read.
 """
 
@@ -49,14 +68,16 @@ from __future__ import annotations
 
 import argparse
 import os
+import stat as stat_module
 import sys
+import traceback
 from pathlib import Path
 
 from . import __version__
 from .discovery import discover
 from .engines import registered_engines
 from .extract import UnparsableManifestError, extractor_for
-from .interfaces import DefaultPolicy
+from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
 from .models import (
     AXIS_VULNERABILITY,
@@ -124,38 +145,66 @@ def main(argv: list[str] | None = None) -> int:
         except SystemExit as exc:
             # argparse exits itself: --version/--help -> 0, usage error -> 2
             # (never 0). Surface its code as a return value — a caught
-            # variable, never an exit literal.
-            return 0 if exc.code is None else int(exc.code)
+            # variable, never an exit literal of the scan projection. A
+            # non-int code (argparse never produces one under this parser
+            # config) projects as an error, never an int() crash.
+            if exc.code is None:
+                return 0
+            if isinstance(exc.code, int):
+                return exc.code
+            return exit_code_for(Status.ERROR)
         return _run_scan(args)
     except KeyboardInterrupt:
         # This handler wraps ALL of main — parse_args included — so no
         # interrupt window escapes as a traceback. Emission may already have
         # partially happened, so the honest claim is consumption guidance,
         # never "no report emitted".
-        print(
+        _stderr(
             f"{TOOL_NAME}: interrupted (SIGINT); any partial stdout must "
-            "not be consumed",
-            file=sys.stderr,
+            "not be consumed"
         )
         return EXIT_SIGINT
+    except Exception as exc:  # noqa: BLE001 — the last-resort net
+        # An internal defect must NEVER surface as the interpreter's default
+        # exit 1 (it collides with the indeterminate/policy-violation
+        # projection) or as an uncaught traceback. Diagnostics to stderr;
+        # stdout may hold a partial document, so the same consumption
+        # guidance as SIGINT applies.
+        _stderr("".join(traceback.format_exception(exc)).rstrip("\n"))
+        _stderr(
+            f"{TOOL_NAME}: internal error: {exc!r}; any partial stdout "
+            "must not be consumed"
+        )
+        return exit_code_for(Status.ERROR)
 
 
 def _run_scan(args: argparse.Namespace) -> int:
     if not args.path.strip():
         # "" Path-normalizes to "." — an empty/whitespace target must be
         # early-fatal, never a silent scan of the CWD.
-        print(
+        _stderr(
             f"{TOOL_NAME}: scan target {args.path!r} is empty — not an "
-            "existing directory",
-            file=sys.stderr,
+            "existing directory"
         )
         return exit_code_for(Status.ERROR)
     target = Path(args.path)
-    if not target.is_dir():
-        print(
+    # Explicit stat (is_dir() swallows every OSError): "could not look" is
+    # diagnosed as could-not-stat, never as "not there".
+    try:
+        target_stat = target.stat()
+    except (FileNotFoundError, NotADirectoryError):
+        _stderr(
             f"{TOOL_NAME}: scan target {args.path!r} is not an existing "
-            "directory",
-            file=sys.stderr,
+            "directory"
+        )
+        return exit_code_for(Status.ERROR)
+    except OSError as exc:
+        _stderr(f"{TOOL_NAME}: cannot stat scan target {args.path!r}: {exc}")
+        return exit_code_for(Status.ERROR)
+    if not stat_module.S_ISDIR(target_stat.st_mode):
+        _stderr(
+            f"{TOOL_NAME}: scan target {args.path!r} exists but is not a "
+            "directory"
         )
         return exit_code_for(Status.ERROR)
 
@@ -170,24 +219,21 @@ def _run_scan(args: argparse.Namespace) -> int:
         # target must never read as "no manifest" (a false green). Report
         # still emitted; the exit code is orthogonal to emission.
         manifests = ()
+        errno_note = f"[errno {exc.errno}] " if exc.errno is not None else ""
         _record_error(
             errors,
             rungs,
             kind=ErrorKind.INTERNAL_ERROR,
             owner="discovery",
             subject=args.path,
-            message=(
-                f"discovery failed under {args.path!r}: "
-                f"[errno {exc.errno}] {exc}"
-            ),
+            message=f"discovery failed under {args.path!r}: {errno_note}{exc}",
         )
     else:
         if not manifests:
             # The not-applicable path says so on stderr; stdout stays pure.
-            print(
+            _stderr(
                 f"{TOOL_NAME}: no manifest found under {args.path!r}; "
-                "nothing to scan",
-                file=sys.stderr,
+                "nothing to scan"
             )
     router = DefaultRouter()
     for manifest in manifests:
@@ -236,9 +282,30 @@ def _run_scan(args: argparse.Namespace) -> int:
         components=merge_components(components),
         resolved_scan_set=manifests,
     )
-    engine_results = tuple(
-        engine.run(target, inventory) for engine in registered_engines()
-    )
+    if manifests and manifests_parsed > 0 and not inventory.components:
+        # A parsed manifest that declares no dependencies is honest
+        # not-applicable, but it must be distinguishable on stderr from the
+        # empty-dir case (the coverage block already distinguishes them).
+        _stderr(
+            f"{TOOL_NAME}: manifest parsed but declares no dependencies "
+            f"under {args.path!r}; nothing to scan"
+        )
+    engine_results: list[EngineResult] = []
+    for engine in registered_engines():
+        try:
+            engine_results.append(engine.run(target, inventory))
+        except Exception as exc:  # noqa: BLE001 — the seam doctrine:
+            # a crashing engine must yield a typed ErrorRecord + error rung
+            # with the report STILL emitted, never a traceback with no
+            # report (KeyboardInterrupt, a BaseException, still propagates).
+            _record_error(
+                errors,
+                rungs,
+                kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+                owner=engine.name,
+                subject=engine.name,
+                message=f"engine {engine.name!r} crashed: {exc!r}",
+            )
     for result in engine_results:
         errors.extend(result.errors)
     findings, policy_rungs = DefaultPolicy().evaluate(inventory, engine_results)
@@ -260,6 +327,10 @@ def _run_scan(args: argparse.Namespace) -> int:
                 f"{TOOL_NAME}: status={report.status.value} "
                 f"exit_code={report.exit_code} findings={len(report.findings)}"
             )
+        # Flush INSIDE the guarded region: on a block-buffered pipe whose
+        # consumer vanished, the BrokenPipeError must surface HERE (absorbed
+        # below) — not at interpreter-exit flush (CPython exit 120).
+        sys.stdout.flush()
     except BrokenPipeError:
         _absorb_broken_pipe()
     return report.exit_code
@@ -277,17 +348,31 @@ def _record_error(
     """Surface one operational error: typed record + error rung + stderr
     diagnostic. The rung's driver id uses the ``error:<kind>:<subject>``
     grammar and deliberately does NOT reference ``findings[]`` (see the
-    module docstring; Story 1.7 owns the final grammar)."""
+    module docstring; Story 1.7 owns the final grammar). The subject
+    segment is sanitized like every component-derived id segment — the id
+    grammar is single-line by contract even when the subject is a
+    user-supplied path."""
     errors.append(ErrorRecord(kind=kind, owner=owner, message=message))
     rungs.append(
         (
             Status.ERROR,
             StatusDriver(
-                axis=AXIS_VULNERABILITY, finding_id=f"error:{kind}:{subject}"
+                axis=AXIS_VULNERABILITY,
+                finding_id=f"error:{kind}:{_sanitize_id_segment(subject)}",
             ),
         )
     )
-    print(f"{TOOL_NAME}: {message}", file=sys.stderr)
+    _stderr(f"{TOOL_NAME}: {message}")
+
+
+def _stderr(message: str) -> None:
+    """Print one stderr diagnostic, absorbing a vanished stderr consumer
+    (``BrokenPipeError``/``OSError``): a diagnostic stream failure must
+    never replace the computed exit code with a traceback."""
+    try:
+        print(message, file=sys.stderr)
+    except OSError:
+        pass
 
 
 def _absorb_broken_pipe() -> None:

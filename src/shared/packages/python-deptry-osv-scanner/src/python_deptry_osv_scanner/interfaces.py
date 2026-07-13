@@ -7,7 +7,15 @@ Ownership decisions recorded here:
   inheritance tax). Implementations live in their stage modules
   (``engines.py`` owns the engine registry, ``extract/`` the extractors,
   ``routing.py`` the router) and *conform* to these shapes; Stories
-  1.3/1.5/2.x implement the seams, never redesign them.
+  1.3/1.5/2.x implement the seams, never redesign them. ``DefaultPolicy``
+  is the RECORDED EXCEPTION to that layering rule: the fail-closed
+  inventory→verdict bridge lives WITH the seam it closes (no policy stage
+  module exists until Story 3.1's config/policy tables).
+* Engine findings PASS THROUGH without feeding rungs in 1.2 — mapping
+  engine findings to policy rungs (severity thresholds, axis policy) is
+  Story 1.3/1.6 scope by plan. The null engine emits no findings, so no
+  1.2 code path reaches a verdict through this gap; 1.3 MUST close it
+  when the first findings-producing engine registers.
 * ``DefaultPolicy`` is the fail-closed inventory→verdict bridge: a withheld
   component (``indeterminate_reason`` set) becomes an
   ``indeterminate:<reason>:<pkg>`` finding plus a driver-carrying
@@ -34,14 +42,23 @@ Ownership decisions recorded here:
   — and carries ``AXIS_VULNERABILITY``; Story 1.7 (typed errors / error
   grammar) owns the final grammar + axis choice.
 * Finding-id segments derived from component names (and growable-enum
-  tokens) are CR/LF-sanitized (``%0D``/``%0A``): the id grammar is
-  single-line by contract, while TOML happily embeds a newline inside a
-  dependency string. ``Finding.subject`` keeps the raw name.
+  tokens) are sanitized (``%`` -> ``%25`` FIRST — the escape scheme must
+  escape its own escape character to stay injective — then ``%0D``/
+  ``%0A``/``%3A``): the id grammar is single-line and colon-delimited by
+  contract, while TOML happily embeds newlines, colons, or a literal
+  ``%0A`` inside a dependency string. An empty segment (an empty growable
+  token from a future producer) degrades to ``unspecified``, never a
+  ``Finding`` construction crash. ``Finding.subject`` keeps the raw name.
 * A clean rung requires FULL coverage: a component with
   ``vuln_matchable=False`` or ``hygiene_covered=False`` — even with no
   withhold reason stated (constructible by future producers) — derives an
   ``indeterminate:unmatchable:<pkg>`` / ``indeterminate:uncovered:<pkg>``
-  finding + rung instead of ever feeding clean.
+  finding + rung instead of ever feeding clean. The hygiene check is
+  INDEPENDENT of the withhold reason (the reason describes the
+  vulnerability axis): a withheld component that is also
+  ``hygiene_covered=False`` (the RAW_MALFORMED production path) derives
+  BOTH the withheld finding and the hygiene-axis ``uncovered`` finding —
+  the hygiene axis never goes silent about a known deficiency.
 
 This module is pure composition: no I/O, no subprocess, no network.
 """
@@ -69,12 +86,24 @@ from .verdict import match_level_rung
 
 
 def _sanitize_id_segment(value: str) -> str:
-    """CR/LF-escape a value destined for a finding-id segment (``%0D`` /
-    ``%0A``; CR first so ``\\r\\n`` -> ``%0D%0A``). The finding-id grammar is
-    single-line by contract (waiver matching depends on it), while TOML
-    happily encodes a newline inside a dependency name. Deterministic, so
-    ids stay stable across runs; ``Finding.subject`` keeps the raw value."""
-    return value.replace("\r", "%0D").replace("\n", "%0A")
+    """Escape a value destined for a finding-id segment. ``%`` first (the
+    escape scheme must escape its own escape character, or ``foo\\nbar``
+    and a literal ``foo%0Abar`` would alias onto one id and silently
+    dedupe two distinct components — waiver matching depends on
+    injectivity), then CR/LF/colon (``%0D``/``%0A``/``%3A``): the id
+    grammar is single-line and colon-delimited by contract, while TOML
+    happily encodes any of them inside a dependency name. An empty value
+    (an empty growable token from a future producer) degrades to
+    ``unspecified`` instead of minting a grammar-violating id.
+    Deterministic, so ids stay stable across runs; ``Finding.subject``
+    keeps the raw value."""
+    escaped = (
+        value.replace("%", "%25")
+        .replace("\r", "%0D")
+        .replace("\n", "%0A")
+        .replace(":", "%3A")
+    )
+    return escaped if escaped else "unspecified"
 
 
 @dataclass(frozen=True)
@@ -155,12 +184,14 @@ class DefaultPolicy:
     * Each withheld component (``indeterminate_reason`` set) derives one
       ``indeterminate:<reason>:<pkg>`` finding (axis ``vulnerability``) and
       feeds an ``indeterminate`` rung whose driver references it.
-    * A component with NO withhold reason is clean-eligible only when BOTH
-      coverage booleans hold (constructible otherwise by future producers):
-      ``vuln_matchable=False`` derives ``indeterminate:unmatchable:<pkg>``
-      (axis ``vulnerability``) and ``hygiene_covered=False`` derives
-      ``indeterminate:uncovered:<pkg>`` (axis ``hygiene``) — the id
-      grammar's reason segment is free text, so no enum grows.
+    * A component is clean-eligible only when BOTH coverage booleans hold:
+      with no withhold reason, ``vuln_matchable=False`` derives
+      ``indeterminate:unmatchable:<pkg>`` (axis ``vulnerability``); and —
+      INDEPENDENT of the withhold reason, which describes only the
+      vulnerability axis — ``hygiene_covered=False`` derives
+      ``indeterminate:uncovered:<pkg>`` (axis ``hygiene``), so a withheld
+      RAW_MALFORMED component surfaces BOTH deficiencies. The id grammar's
+      reason segment is free text, so no enum grows.
     * A fully-covered component feeds ``match_level_rung(cve_match_level)``;
       a non-clean landing also derives an ``indeterminate:<match-level>:
       <pkg>`` finding + driver, so every non-clean rung this policy feeds
@@ -186,13 +217,17 @@ class DefaultPolicy:
             for record in result.errors:
                 # An engine failure must reach the verdict. Axis choice and
                 # the error:<kind>:<owner> driver grammar are finalized by
-                # the Story 1.7 error-grammar story.
+                # the Story 1.7 error-grammar story. The owner segment is
+                # sanitized like every id segment (single-line grammar).
                 rungs.append(
                     (
                         Status.ERROR,
                         StatusDriver(
                             axis=AXIS_VULNERABILITY,
-                            finding_id=f"error:{record.kind}:{record.owner}",
+                            finding_id=(
+                                f"error:{record.kind}:"
+                                f"{_sanitize_id_segment(record.owner)}"
+                            ),
                         ),
                     )
                 )
@@ -211,44 +246,46 @@ class DefaultPolicy:
                         f"matching ({component.indeterminate_reason})",
                     )
                 )
-            else:
-                if not component.vuln_matchable:
-                    derived.append(
-                        (
-                            Status.INDETERMINATE,
-                            "unmatchable",
-                            AXIS_VULNERABILITY,
-                            f"{component.name}: not vulnerability-matchable "
-                            "(no withhold reason stated) — cleanliness "
-                            "cannot be claimed",
-                        )
+            elif not component.vuln_matchable:
+                derived.append(
+                    (
+                        Status.INDETERMINATE,
+                        "unmatchable",
+                        AXIS_VULNERABILITY,
+                        f"{component.name}: not vulnerability-matchable "
+                        "(no withhold reason stated) — cleanliness "
+                        "cannot be claimed",
                     )
-                if not component.hygiene_covered:
-                    derived.append(
-                        (
-                            Status.INDETERMINATE,
-                            "uncovered",
-                            AXIS_HYGIENE,
-                            f"{component.name}: not hygiene-covered "
-                            "(no withhold reason stated) — cleanliness "
-                            "cannot be claimed",
-                        )
+                )
+            if not component.hygiene_covered:
+                # Independent of the withhold reason: the reason describes
+                # the VULNERABILITY axis; the hygiene axis must never go
+                # silent about a known deficiency (the RAW_MALFORMED
+                # production path carries both).
+                derived.append(
+                    (
+                        Status.INDETERMINATE,
+                        "uncovered",
+                        AXIS_HYGIENE,
+                        f"{component.name}: not hygiene-covered — "
+                        "hygiene-axis cleanliness cannot be claimed",
                     )
-                if not derived:
-                    rung = match_level_rung(component.cve_match_level)
-                    if rung is Status.CLEAN:
-                        rungs.append((rung, None))
-                        continue
-                    derived.append(
-                        (
-                            rung,
-                            _sanitize_id_segment(str(component.cve_match_level)),
-                            AXIS_VULNERABILITY,
-                            f"{component.name}: cve match level "
-                            f"{str(component.cve_match_level)!r} cannot "
-                            "prove cleanliness",
-                        )
+                )
+            if not derived:
+                rung = match_level_rung(component.cve_match_level)
+                if rung is Status.CLEAN:
+                    rungs.append((rung, None))
+                    continue
+                derived.append(
+                    (
+                        rung,
+                        _sanitize_id_segment(str(component.cve_match_level)),
+                        AXIS_VULNERABILITY,
+                        f"{component.name}: cve match level "
+                        f"{str(component.cve_match_level)!r} cannot "
+                        "prove cleanliness",
                     )
+                )
             for rung, token, axis, message in derived:
                 finding_id = f"indeterminate:{token}:{subject}"
                 if finding_id not in axis_by_id:

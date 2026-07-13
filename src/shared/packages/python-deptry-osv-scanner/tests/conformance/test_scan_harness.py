@@ -297,3 +297,53 @@ def test_erroring_engine_still_surfaces_its_findings(capsys, monkeypatch):
         "engine-output-unparseable"
     ]
     assert "hygiene:DEP002:requests" in {f["id"] for f in document["findings"]}
+
+
+class CrashingEngine:
+    name = "crashing"
+
+    def run(self, target, inventory) -> EngineResult:
+        raise RuntimeError("engine blew up mid-run")
+
+
+def test_crashing_engine_still_emits_the_report(capsys, monkeypatch):
+    """A RAISING engine (not one returning ErrorRecords — one that crashes)
+    must yield a typed engine-execution-failed record + the error verdict,
+    with the report STILL emitted — never a traceback with no report."""
+    register_engine_for_test(monkeypatch, CrashingEngine)
+    rc, out, err = run_scan(capsys, CLEAN)
+    document = parse_report(out)  # the report IS still emitted, schema-valid
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "engine-execution-failed"
+    assert "engine blew up mid-run" in error["message"]
+    assert document["status"]["driver"]["finding_id"] == (
+        "error:engine-execution-failed:crashing"
+    )
+    assert err != ""
+
+
+def test_zero_dependency_manifest_is_distinguishable_on_stderr(
+    capsys, tmp_path
+):
+    """A parsed manifest declaring no dependencies is honest not-applicable
+    (nothing existed to scan) but must be distinguishable from the
+    empty-dir case: a dedicated stderr notice, and coverage that records
+    the manifest as found+parsed."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = []\n',
+        encoding="utf-8",
+    )
+    rc, out, err = run_scan(capsys, tmp_path)
+    document = parse_report(out)
+    assert rc == 0
+    assert document["status"]["value"] == "not-applicable"
+    assert document["inventory_count"] == 0
+    assert "declares no dependencies" in err
+    assert "no manifest found" not in err  # NOT the empty-dir notice
+    for block in document["coverage"]:
+        assert block["manifests_found"] == 1
+        assert block["manifests_parsed"] == 1
+        assert block["deps_total"] == 0
