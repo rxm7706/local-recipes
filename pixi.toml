@@ -3,6 +3,7 @@
 
 [workspace]
 name = "staged-recipes"
+preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/packages/python-deptry-osv-scanner workspace member (Option B). Only unlocks [package]/build tables; does not change the rattler-build recipe workflow.
 requires-pixi = ">=0.72.2"  # the osx-arm64-min virtual-package platform entry (macOS floor) needs the 0.71+ workspace-platform syntax
 description = "The entry point to conda-forge"
 version = "0.2.0"
@@ -565,6 +566,8 @@ jinja2-ospath = ">=0.3.0"         # Jinja2 extension for filesystem path operati
 ## For Building Plain Python Projects
 # cibuildwheel = ">=3.2.1" # Dependency bashlex Failed for platform 'linux-aarch64'
 appthreat-vulnerability-db = ">=6.7.0"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
+deptry = ">=0.25.1"               # A command line utility to check for unused, missing and transitive dependencies in a Python project.
+osv-scanner = ">=2.4.0"           # Vulnerability scanner written in Go which uses the data provided by https://osv.dev
 pip-audit = ">=2.10.1"            # Audit Python environments for known vulnerabilities
 bandit = ">=1.9.4"                # Security linter for Python code
 pip = ">=26.1.2"                  # Python package installer
@@ -611,6 +614,9 @@ py-rattler-build = ">=0.68.0"     # Python bindings for rattler-build
 ## Nebi - local-first workspace management for Pixi (CLI + Desktop)
 nebi-cli = ">=0.13"               # Local-first workspace management for Pixi
 #nebi-desktop = ">=0.11"           # Nebi desktop application - local-first workspace management for Pixi #NOTE webkit2gtk4.1 2.48.5 would require __glibc >=2.34,<3.0.a0, for which no candidates were found
+## BMAD Method + loop orchestration (docs/specs/bmad-loop-adoption.md)
+bmad-method = ">=6.10.0,<7"       # BMAD Method installer/CLI (upgrade from the 6.6.0 npx-era install; gains bmad-dev-auto)
+# tmux lives in the linux-64/osx-arm64 target tables (no win-64 build; bmad-loop is Linux/macOS — Windows via WSL)
 # BMAD-METHOD: Agentic AI‑SDLC: AI Driven Agile Development
 bmad-builder = ">=2.1.0"          # BMAD module builder # PR #33123 # https://github.com/bmad-code-org/bmad-builder
 bmad-creative-intelligence-suite = ">=0.2.1"  # CIS module  bumped; PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
@@ -812,10 +818,12 @@ yo = ">=7.0.1"                     # CLI tool for running Yeoman generators
 [feature.local-recipes.target.linux-64.dependencies]
 mlx = ">=0.32.0"                  # Apple's array framework (Linux build via libblas/lapack)
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
+tmux = ">=3.4"                    # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 
 [feature.local-recipes.target.osx-arm64.dependencies]
 mlx = ">=0.32.0"                  # Apple's array framework (Metal-accelerated on M-series)
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
+tmux = ">=3.4"                    # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 
 [feature.local-recipes.pypi-dependencies]
 boring-semantic-layer = ">=0.3.15" # The Boring Semantic Layer (BSL) is a lightweight semantic layer based on Ibis.

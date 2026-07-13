@@ -47,6 +47,15 @@ do **not** live inside any framework's working tree.
   Cursor → `.cursor/`; etc.) and **reads the spec from `docs/specs/`**.
 - `implementation-artifacts/` is gitignored/local-only — **nothing there should be git-tracked.**
 
+## Library catalog (what's available to import/run)
+
+**`docs/library-llms-full.md`** is the llms-full-style catalog of every library, CLI, and
+framework available in this repo's pixi environments — per-library capabilities, version pins,
+import-name gotchas, environment membership, and what is deliberately NOT installed. It is
+derived from `pixi.toml` (the source of truth; regeneration prompt in its header). Consult it
+before importing a library or proposing a new dependency, and run all work through
+`pixi run -e local-recipes …`.
+
 ## How each tool discovers this
 
 | Tool | Entry file (thin pointer → this file + `docs/specs/`) |
