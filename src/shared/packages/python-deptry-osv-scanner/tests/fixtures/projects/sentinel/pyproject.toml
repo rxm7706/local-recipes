@@ -1,0 +1,11 @@
+# False-green sentinel (Story 1.2): one bare dep (withheld: no-version) and
+# one range-only dep (withheld: range-only). A pipeline that ever reports
+# this project green has regressed on C0 -- the harness asserts status
+# indeterminate, exit 1, >=1 indeterminate:* finding.
+[project]
+name = "sentinel-fixture"
+version = "1.0.0"
+dependencies = [
+    "leftpad",
+    "requests>=2.0",
+]
