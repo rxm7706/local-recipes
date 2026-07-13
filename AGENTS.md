@@ -54,7 +54,8 @@ framework available in this repo's pixi environments — per-library capabilitie
 import-name gotchas, environment membership, and what is deliberately NOT installed. It is
 derived from `pixi.toml` (the source of truth; regeneration prompt in its header). Consult it
 before importing a library or proposing a new dependency, and run all work through
-`pixi run -e local-recipes …`.
+`pixi run -e local-recipes …`. Staleness check: `pixi run -e local-recipes llms-full-check`
+exits non-zero when the catalog drifts from `pixi.toml`.
 
 ## How each tool discovers this
 
