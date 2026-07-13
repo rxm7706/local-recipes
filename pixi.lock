@@ -4274,11 +4274,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/yaspin-3.4.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zict-3.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - pypi: git+https://github.com/bmad-code-org/bmad-loop?tag=v0.8.1#9aefd40268e72edb492d6bc809dff8bf420953e6
       - pypi: https://files.pythonhosted.org/packages/18/8f/cdcf8c79f0da72be6b1c9cbb3d211b1937bcb6f54584dd60428e5cf8411d/boring_semantic_layer-0.3.15-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/59/d0/bb522283b90853afbf506cd5b71c650cf708829914efd0003d615cf426cd/pyte-0.8.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9c/63/3e0693f5ef7a005be8c557ba68dcddfb3871d097bf4fc0d976ddda6003d8/kedro_mcp-0.1.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
       p1:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.2.1-ha7a566d_0.conda
@@ -5315,11 +5312,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zope.interface-8.5-py314ha14b1ff_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314h9d33bd4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-      - pypi: git+https://github.com/bmad-code-org/bmad-loop?tag=v0.8.1#9aefd40268e72edb492d6bc809dff8bf420953e6
       - pypi: https://files.pythonhosted.org/packages/18/8f/cdcf8c79f0da72be6b1c9cbb3d211b1937bcb6f54584dd60428e5cf8411d/boring_semantic_layer-0.3.15-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/59/d0/bb522283b90853afbf506cd5b71c650cf708829914efd0003d615cf426cd/pyte-0.8.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9c/63/3e0693f5ef7a005be8c557ba68dcddfb3871d097bf4fc0d976ddda6003d8/kedro_mcp-0.1.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.2.1-ha7a566d_0.conda
@@ -6417,11 +6411,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zope.interface-8.5-py314hc5dbbe4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-      - pypi: git+https://github.com/bmad-code-org/bmad-loop?tag=v0.8.1#9aefd40268e72edb492d6bc809dff8bf420953e6
       - pypi: https://files.pythonhosted.org/packages/18/8f/cdcf8c79f0da72be6b1c9cbb3d211b1937bcb6f54584dd60428e5cf8411d/boring_semantic_layer-0.3.15-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/59/d0/bb522283b90853afbf506cd5b71c650cf708829914efd0003d615cf426cd/pyte-0.8.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9c/63/3e0693f5ef7a005be8c557ba68dcddfb3871d097bf4fc0d976ddda6003d8/kedro_mcp-0.1.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
   osx:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -6669,6 +6660,7 @@ environments:
   python-deptry-osv-scanner:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
+    - url: https://conda.anaconda.org/SelfExplainML/
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -6729,7 +6721,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: python-deptry-osv-scanner[8a951d78] @ src/shared/packages/python-deptry-osv-scanner
-      osx-arm64:
+      p1:
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-26.1.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/boolean.py-5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.6.17-hbd8a1cb_0.conda
@@ -41532,16 +41524,6 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.4.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.6.1.19-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
-- pypi: git+https://github.com/bmad-code-org/bmad-loop?tag=v0.8.1#9aefd40268e72edb492d6bc809dff8bf420953e6
-  name: bmad-loop
-  version: 0.8.1
-  requires_dist:
-  - pyyaml>=6.0
-  - textual>=8.0,<9 ; extra == 'tui'
-  - tomlkit>=0.13 ; extra == 'tui'
-  - pyte>=0.8.2 ; extra == 'tui'
-  - psutil>=7.2.2 ; extra == 'non-linux'
-  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/18/8f/cdcf8c79f0da72be6b1c9cbb3d211b1937bcb6f54584dd60428e5cf8411d/boring_semantic_layer-0.3.15-py3-none-any.whl
   name: boring-semantic-layer
   version: 0.3.15
@@ -41584,13 +41566,6 @@ packages:
   - plotly>=6.3.0 ; extra == 'viz-plotly'
   - xorq>=0.3.31 ; extra == 'xorq'
   requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/59/d0/bb522283b90853afbf506cd5b71c650cf708829914efd0003d615cf426cd/pyte-0.8.2-py3-none-any.whl
-  name: pyte
-  version: 0.8.2
-  sha256: 85db42a35798a5aafa96ac4d8da78b090b2c933248819157fc0e6f78876a0135
-  requires_dist:
-  - wcwidth
-  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/9c/63/3e0693f5ef7a005be8c557ba68dcddfb3871d097bf4fc0d976ddda6003d8/kedro_mcp-0.1.2-py3-none-any.whl
   name: kedro-mcp
   version: 0.1.2
@@ -41598,31 +41573,3 @@ packages:
   requires_dist:
   - fastmcp>=0.3
   requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
-  name: textual
-  version: 8.2.8
-  sha256: 267375fd402dc8d981457212efa71f0e3365fd17bba144ba9bb3ed7563cb374a
-  requires_dist:
-  - markdown-it-py[linkify]>=2.1.0
-  - mdit-py-plugins
-  - platformdirs>=3.6.0,<5
-  - pygments>=2.19.2,<3.0.0
-  - rich>=14.2.0
-  - tree-sitter>=0.25.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-bash>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-css>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-go>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-html>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-java>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-javascript>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-json>=0.24.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-markdown>=0.3.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-python>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-regex>=0.24.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-rust>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-sql>=0.3.11 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-toml>=0.6.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-xml>=0.7.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-yaml>=0.6.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - typing-extensions>=4.4.0,<5.0.0
-  requires_python: '>=3.9,<4.0'
