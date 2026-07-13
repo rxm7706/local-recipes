@@ -33,21 +33,21 @@ from enum import StrEnum
 AXIS_HYGIENE = "hygiene"
 AXIS_VULNERABILITY = "vulnerability"
 
-# Core semver of the v1 report contract (no prerelease/build tags).
-_SCHEMA_VERSION_RE = re.compile(r"^1\.\d+\.\d+$")
+# Core semver of the v1 report contract (no prerelease/build tags). Matched
+# with .fullmatch — "$" would accept a trailing newline (Python re).
+_SCHEMA_VERSION_RE = re.compile(r"1\.\d+\.\d+")
 
-# The three finding-ID families (see module docstring).
+# The three finding-ID families (see module docstring). Matched with
+# .fullmatch; "[^:\n]" (not "[^:]") so an ID can never embed a newline —
+# waiver matching depends on IDs being single-line stable strings.
 _FINDING_ID_FAMILIES = (
-    re.compile(r"^vuln:[^:]+:.+@.+$"),
-    re.compile(r"^hygiene:[^:]+:.+$"),
-    re.compile(r"^indeterminate:[^:]+:.+$"),
+    re.compile(r"vuln:[^:\n]+:.+@.+"),
+    re.compile(r"hygiene:[^:\n]+:.+"),
+    re.compile(r"indeterminate:[^:\n]+:.+"),
 )
 
 # The frozen, closed exit-code set (see verdict.py for the projection).
 _VALID_EXIT_CODES = frozenset({0, 1, 2, 130})
-
-# The resolution-depth honesty vocabulary.
-_VALID_RESOLUTION_DEPTHS = frozenset({None, "direct-only", "locked-closure"})
 
 
 class Status(StrEnum):
@@ -81,12 +81,17 @@ class ErrorKind(StrEnum):
 
 
 class WithholdReason(StrEnum):
-    """Why a component was withheld from vuln matching (growable, additive)."""
+    """Why a component was withheld from vuln matching (growable, additive).
+
+    ``ambiguous-identity`` (added 2026-07-13, sanctioned additive growth):
+    two records of one component resolved to DIFFERENT PyPI identities, so
+    the identity was withheld rather than guessed (Gap-C)."""
 
     NO_VERSION = "no-version"
     UNMAPPED_ECOSYSTEM = "unmapped-ecosystem"
     NATIVE_NONPYPI = "native-nonpypi"
     RANGE_ONLY = "range-only"
+    AMBIGUOUS_IDENTITY = "ambiguous-identity"
 
 
 class Ecosystem(StrEnum):
@@ -139,12 +144,43 @@ class SeverityTier(StrEnum):
     UNKNOWN = "unknown"
 
 
+class ResolutionDepth(StrEnum):
+    """The resolution-depth honesty vocabulary (closed): a loose manifest
+    proves direct deps only; a lockfile proves the transitive closure."""
+
+    DIRECT_ONLY = "direct-only"
+    LOCKED_CLOSURE = "locked-closure"
+
+
+# Legal exit codes per status — the schema's allOf coherence clauses, mirrored
+# at construction time so an incoherent report can never be BUILT (not merely
+# rejected at validation). 130 (SIGINT) is legal alongside every status: an
+# interrupt can land during any verdict. Keys are deliberately ALPHABETICAL —
+# the sole-ownership guard forbids materializing the lattice ORDER outside
+# verdict.py, and validation needs the pair set, not the ordering.
+_LEGAL_EXITS_BY_STATUS: dict[Status, frozenset[int]] = {
+    Status.BYPASSED: frozenset({0, 130}),
+    Status.CLEAN: frozenset({0, 130}),
+    Status.ERROR: frozenset({2, 130}),
+    Status.INDETERMINATE: frozenset({1, 130}),
+    Status.NOT_APPLICABLE: frozenset({0, 130}),
+    Status.POLICY_VIOLATION: frozenset({1, 130}),
+    Status.WARN: frozenset({0, 1, 130}),
+}
+
+
 @dataclass(frozen=True)
 class Severity:
     """Normalized tier + raw evidence (CVSS vector string or database label)."""
 
     tier: SeverityTier
     raw: str | None
+
+    def __post_init__(self) -> None:
+        # Coerce so a raw string tier either resolves to a member or fails
+        # loud HERE (StrEnum equality would otherwise let it through and
+        # crash later at .value during serialization).
+        object.__setattr__(self, "tier", SeverityTier(self.tier))
 
 
 @dataclass(frozen=True)
@@ -155,6 +191,18 @@ class VulnData:
     source: str | None
     snapshot_at: str | None
     max_age_ok: bool | None
+
+    def __post_init__(self) -> None:
+        # Mirrors the schema's if/then clause: a concrete max_age_ok verdict
+        # (true/false) implies vuln data WAS consulted, so its provenance
+        # must be stated.
+        if self.max_age_ok is not None and (
+            self.source is None or self.snapshot_at is None
+        ):
+            raise ValueError(
+                "a concrete max_age_ok verdict requires source and "
+                "snapshot_at to be stated (vuln-data provenance)"
+            )
 
 
 @dataclass(frozen=True)
@@ -183,18 +231,23 @@ class Finding:
     epss: float | None = None
 
     def __post_init__(self) -> None:
-        if not any(family.match(self.id) for family in _FINDING_ID_FAMILIES):
+        if not any(family.fullmatch(self.id) for family in _FINDING_ID_FAMILIES):
             raise ValueError(
                 f"finding id {self.id!r} matches none of the three families "
                 "(vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:"
                 "<module-or-pkg> | indeterminate:<reason>:<pkg>)"
             )
-        if self.epss is not None and (
-            not math.isfinite(self.epss) or not (0.0 <= self.epss <= 1.0)
-        ):
-            raise ValueError(
-                f"epss must be None or a finite number in [0, 1], got {self.epss!r}"
-            )
+        if self.epss is not None:
+            if isinstance(self.epss, bool) or not (
+                math.isfinite(self.epss) and 0.0 <= self.epss <= 1.0
+            ):
+                raise ValueError(
+                    f"epss must be None or a finite number in [0, 1], "
+                    f"got {self.epss!r}"
+                )
+            # Canonicalize -0.0 -> 0.0 (equal under comparison but rendering
+            # differently, which would break byte-identical serialization).
+            object.__setattr__(self, "epss", self.epss + 0.0)
 
 
 @dataclass(frozen=True)
@@ -218,8 +271,8 @@ class AxisCoverage:
             "deps_assessed",
         ):
             value = getattr(self, field_name)
-            if value < 0:
-                raise ValueError(f"{field_name} must be >= 0, got {value!r}")
+            if isinstance(value, bool) or value < 0:
+                raise ValueError(f"{field_name} must be an int >= 0, got {value!r}")
         if self.manifests_parsed > self.manifests_found:
             raise ValueError(
                 f"manifests_parsed ({self.manifests_parsed}) exceeds "
@@ -230,12 +283,18 @@ class AxisCoverage:
                 f"deps_assessed ({self.deps_assessed}) exceeds "
                 f"deps_total ({self.deps_total})"
             )
-        if self.resolution_depth not in _VALID_RESOLUTION_DEPTHS:
-            raise ValueError(
-                f"resolution_depth must be one of "
-                f"{sorted(d for d in _VALID_RESOLUTION_DEPTHS if d)} or None, "
-                f"got {self.resolution_depth!r}"
-            )
+        if self.resolution_depth is not None:
+            # Coerce through the closed vocabulary (StrEnum), then store the
+            # plain token — the field's frozen shape stays `str | None`.
+            try:
+                depth = ResolutionDepth(self.resolution_depth)
+            except ValueError:
+                raise ValueError(
+                    f"resolution_depth must be one of "
+                    f"{[member.value for member in ResolutionDepth]} or None, "
+                    f"got {self.resolution_depth!r}"
+                ) from None
+            object.__setattr__(self, "resolution_depth", depth.value)
 
 
 @dataclass(frozen=True)
@@ -245,6 +304,10 @@ class ErrorRecord:
     kind: ErrorKind
     owner: str
     message: str
+
+    def __post_init__(self) -> None:
+        # Coerce so a raw string kind fails loud here, not at serialization.
+        object.__setattr__(self, "kind", ErrorKind(self.kind))
 
 
 @dataclass(frozen=True)
@@ -273,10 +336,21 @@ class ComplianceReport:
     errors: tuple[ErrorRecord, ...]
 
     def __post_init__(self) -> None:
-        if self.exit_code not in _VALID_EXIT_CODES:
+        # Coerce so a raw string status ("warnings", or even "clean") either
+        # resolves to a Status member or fails loud HERE — StrEnum equality
+        # would otherwise admit it and crash later in to_json_dict.
+        object.__setattr__(self, "status", Status(self.status))
+        if isinstance(self.exit_code, bool) or self.exit_code not in _VALID_EXIT_CODES:
             raise ValueError(
                 f"exit_code must be one of {sorted(_VALID_EXIT_CODES)}, "
                 f"got {self.exit_code!r}"
+            )
+        if self.exit_code not in _LEGAL_EXITS_BY_STATUS[self.status]:
+            raise ValueError(
+                f"status {self.status.value!r} is incoherent with exit_code "
+                f"{self.exit_code!r} — legal exits: "
+                f"{sorted(_LEGAL_EXITS_BY_STATUS[self.status])} (the schema's "
+                "coherence clauses, enforced at construction)"
             )
         if (
             self.status not in (Status.CLEAN, Status.NOT_APPLICABLE)
@@ -286,11 +360,11 @@ class ComplianceReport:
                 f"status {self.status.value!r} requires a status_driver — an "
                 "exit that can't say why is an incoherent contract"
             )
-        if self.inventory_count < 0:
+        if isinstance(self.inventory_count, bool) or self.inventory_count < 0:
             raise ValueError(
-                f"inventory_count must be >= 0, got {self.inventory_count!r}"
+                f"inventory_count must be an int >= 0, got {self.inventory_count!r}"
             )
-        if not _SCHEMA_VERSION_RE.match(self.schema_version):
+        if not _SCHEMA_VERSION_RE.fullmatch(self.schema_version):
             raise ValueError(
                 f"schema_version must match '1.<minor>.<patch>' (core semver "
                 f"of the v1 contract), got {self.schema_version!r}"
@@ -298,6 +372,15 @@ class ComplianceReport:
         axes = [c.axis for c in self.coverage]
         if len(axes) != len(set(axes)):
             raise ValueError(f"coverage axes must be unique, got {axes!r}")
+        finding_ids = [f.id for f in self.findings]
+        if len(finding_ids) != len(set(finding_ids)):
+            duplicates = sorted(
+                {fid for fid in finding_ids if finding_ids.count(fid) > 1}
+            )
+            raise ValueError(
+                f"finding ids must be unique (waiver matching and by-id "
+                f"consumers depend on it), duplicated: {duplicates!r}"
+            )
         for finding in self.findings:
             if finding.id.startswith("vuln:") and finding.axis != AXIS_VULNERABILITY:
                 raise ValueError(

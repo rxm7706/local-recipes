@@ -230,9 +230,9 @@
         "id": {
           "type": "string",
           "anyOf": [
-            { "pattern": "^vuln:[^:]+:.+@.+$" },
-            { "pattern": "^hygiene:[^:]+:.+$" },
-            { "pattern": "^indeterminate:[^:]+:.+$" }
+            { "pattern": "^vuln:[^:\\n]+:[^\\n]+@[^\\n]+$" },
+            { "pattern": "^hygiene:[^:\\n]+:[^\\n]+$" },
+            { "pattern": "^indeterminate:[^:\\n]+:[^\\n]+$" }
           ],
           "description": "Stable, deterministic finding ID — one of the three families: vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg>. Waiver matching across runs depends on it; all three families are waivable-with-expiry."
         },

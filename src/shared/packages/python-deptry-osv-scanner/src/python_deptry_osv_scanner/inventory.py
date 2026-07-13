@@ -22,6 +22,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
+from urllib.parse import quote
 
 from .models import (
     CveMatchLevel,
@@ -34,14 +35,27 @@ from .models import (
 
 _PEP503_RUNS = re.compile(r"[-_.]+")
 
+# Withhold reasons the FOLD resolves (they existed only because the bare
+# record had no concrete version); every other reason survives a fold.
+_VERSION_DRIVEN_REASONS = frozenset(
+    {WithholdReason.NO_VERSION, WithholdReason.RANGE_ONLY}
+)
+
 
 @dataclass(frozen=True)
 class PypiIdentity:
     """A component's resolved PyPI identity (Gap-C: resolved only from
-    trustworthy provenance — lock, explicit PyPI section, or the bundled map)."""
+    trustworthy provenance — lock, explicit PyPI section, or the bundled map).
+
+    An empty-string version normalizes to ``None`` at construction, so
+    ``("torch", "")`` and ``("torch", None)`` are one identity."""
 
     name: str
     version: str | None
+
+    def __post_init__(self) -> None:
+        if self.version == "":
+            object.__setattr__(self, "version", None)
 
 
 @dataclass(frozen=True)
@@ -75,6 +89,43 @@ class Component:
     hygiene_covered: bool
     vuln_matchable: bool
     indeterminate_reason: WithholdReason | None
+
+    def __post_init__(self) -> None:
+        # Closed enums coerce (a raw string either resolves to a member or
+        # fails loud at construction); the two GROWABLE enums
+        # (cve_match_level, indeterminate_reason) are deliberately NOT
+        # coerced — an unknown future token must degrade downstream
+        # (match_level_rung -> indeterminate), never raise here.
+        object.__setattr__(self, "ecosystem", Ecosystem(self.ecosystem))
+        object.__setattr__(
+            self, "identity_source", IdentitySource(self.identity_source)
+        )
+        object.__setattr__(
+            self, "extraction_mode", ExtractionMode(self.extraction_mode)
+        )
+        if not self.name:
+            raise ValueError("Component.name must be a non-empty string")
+        if self.version == "":
+            object.__setattr__(self, "version", None)
+        if self.vuln_matchable and (
+            self.pypi_identity is None or self.version is None
+        ):
+            raise ValueError(
+                "vuln_matchable=True requires a resolved pypi_identity AND a "
+                "concrete version (the Gap-C predicate) — got "
+                f"pypi_identity={self.pypi_identity!r}, version={self.version!r}"
+            )
+        if self.vuln_matchable and self.indeterminate_reason is not None:
+            raise ValueError(
+                "vuln_matchable=True contradicts indeterminate_reason="
+                f"{self.indeterminate_reason!r} (the reason says this component "
+                "was withheld from vuln matching)"
+            )
+        if self.cve_match_level == CveMatchLevel.EXACT and self.version is None:
+            raise ValueError(
+                "cve_match_level 'exact' claims an exact-version match but "
+                "version is None"
+            )
 
 
 def canonical_name(ecosystem: Ecosystem, name: str) -> str:
@@ -111,18 +162,25 @@ def derive_purl(ecosystem: Ecosystem, name: str, version: str | None) -> str:
     """Derive the canonical purl (no qualifiers): ``pkg:<eco>/<name>[@<version>]``.
 
     The purl name is the ecosystem's canonical purl form — pypi: PEP 503
-    (runs of ``-_.`` -> ``-``, lowercased); conda: lowercased with ``_`` ->
-    ``-`` and dots preserved. A ``None`` or empty-string version omits the
-    ``@<version>`` suffix. Comparisons against externally-sourced purls must
-    go through ``strip_purl_qualifiers`` first.
+    (runs of ``-_.`` -> ``-``, lowercased); conda: VERBATIM (conda names are
+    already canonical in the channel index, and mutating them can name a
+    DIFFERENT real package — ``typing_extensions`` and ``typing-extensions``
+    are distinct conda-forge packages; external conda purl producers, incl.
+    this repo's cfe-purls, use the name verbatim). Name and version segments
+    are percent-encoded per the purl spec, so a malformed (RAW_MALFORMED)
+    name can never smuggle a ``@``/``?``/``#``/``/`` into the purl syntax. A
+    ``None`` or empty-string version omits the ``@<version>`` suffix.
+    Comparisons against externally-sourced purls must go through
+    ``strip_purl_qualifiers`` first.
     """
     if ecosystem is Ecosystem.PYPI:
         purl_name = _PEP503_RUNS.sub("-", name).lower()
     else:
-        purl_name = name.lower().replace("_", "-")
+        purl_name = name
+    purl_name = quote(purl_name, safe="")
     if not version:
         return f"pkg:{ecosystem.value}/{purl_name}"
-    return f"pkg:{ecosystem.value}/{purl_name}@{version}"
+    return f"pkg:{ecosystem.value}/{purl_name}@{quote(version, safe='')}"
 
 
 def strip_purl_qualifiers(purl: str) -> str:
@@ -174,10 +232,9 @@ def merge_components(components: Iterable[Component]) -> tuple[Component, ...]:
     * Bare ``(name, None)`` folds into a concrete version ONLY when exactly one
       concrete version of the same ``(ecosystem, name)`` exists; with zero or
       ≥2 concrete versions it stays a distinct indeterminate component — never
-      guess-attribute a version. A fold unions provenance ONLY; the concrete
-      component's other fields win (the bare record's deficiencies —
-      ``no-version`` withholding, unmatchability — were version-driven, and
-      the fold resolves the version).
+      guess-attribute a version. The fold resolves ONLY the bare record's
+      version-driven deficiencies; every non-version-driven signal merges as
+      conservatively as a same-identity merge (see ``_fold_bare``).
     * Distinct versions of the same ``(ecosystem, name)`` stay distinct (honest
       count inflation, stated).
     """
@@ -201,12 +258,7 @@ def merge_components(components: Iterable[Component]) -> tuple[Component, ...]:
                 target = concrete_keys[0]
                 # Folded into the sole concrete version below (when reached).
                 folded = result.get(target, merged[target])
-                result[target] = replace(
-                    folded,
-                    provenance=_union_provenance(
-                        folded.provenance, component.provenance
-                    ),
-                )
+                result[target] = _fold_bare(folded, component)
                 continue
         existing = result.get(key)
         if existing is not None:
@@ -248,15 +300,21 @@ def _merge_group(group: list[Component]) -> Component:
       (determinism, not semantics).
     * ``extraction_mode`` — the most degraded on the ladder
       ``parsed < union-marked < name-only < raw-malformed``.
-    * ``pypi_identity`` — two or more DISTINCT non-None identities → ``None``
-      with ``identity_source=none`` and ``mapping_confidence=None``
-      (ambiguity is withheld, never guessed); exactly one distinct non-None
-      → kept, with the LEAST trustworthy ``identity_source`` among the
-      records carrying it and their unanimous ``mapping_confidence`` (else
-      ``None`` — the vocabulary is owned by Story 2.1 and cannot be ranked
-      here).
+    * ``pypi_identity`` — two or more identities DISTINCT after
+      canonicalization (PEP-503 name, ``""``→``None`` version) → ``None``
+      with ``identity_source=none``, ``mapping_confidence=None``,
+      ``vuln_matchable=False``, and ``indeterminate_reason``
+      ``ambiguous-identity`` (ambiguity is withheld, never guessed — and a
+      component whose identity was just withheld can never stay matchable,
+      the Gap-C predicate); exactly one canonical identity → kept in its
+      canonical spelling, with the LEAST trustworthy ``identity_source``
+      among the records carrying it and their unanimous
+      ``mapping_confidence`` (else ``None`` — the vocabulary is owned by
+      Story 2.1 and cannot be ranked here).
     """
     if len(group) == 1:
+        # Singletons are already normalized: Component.__post_init__ owns the
+        # ""->None version normalization, so no group-path divergence exists.
         return group[0]
     first = group[0]
     ecosystem = first.ecosystem
@@ -265,16 +323,25 @@ def _merge_group(group: list[Component]) -> Component:
     name = first.name if len(names) == 1 else canonical_name(ecosystem, first.name)
     purls = {component.purl for component in group}
     purl = first.purl if len(purls) == 1 else derive_purl(ecosystem, name, version)
-    pypi_identity, identity_source, mapping_confidence = _merge_group_pypi_identity(
-        group
-    )
-    reasons = sorted(
-        {
-            component.indeterminate_reason
-            for component in group
-            if component.indeterminate_reason is not None
-        },
-        key=str,
+    (
+        pypi_identity,
+        identity_source,
+        mapping_confidence,
+        identity_withheld,
+    ) = _merge_group_pypi_identity(group)
+    reason_set = {
+        component.indeterminate_reason
+        for component in group
+        if component.indeterminate_reason is not None
+    }
+    if identity_withheld:
+        reason_set.add(WithholdReason.AMBIGUOUS_IDENTITY)
+    reasons = sorted(reason_set, key=str)
+    # Gap-C: no resolved identity, no vuln matching — a withheld identity can
+    # never leave the merged record matchable.
+    vuln_matchable = (
+        all(component.vuln_matchable for component in group)
+        and pypi_identity is not None
     )
     provenance_union = {
         entry for component in group for entry in component.provenance
@@ -299,24 +366,39 @@ def _merge_group(group: list[Component]) -> Component:
             sorted(provenance_union, key=lambda p: (p.manifest, p.section))
         ),
         hygiene_covered=all(component.hygiene_covered for component in group),
-        vuln_matchable=all(component.vuln_matchable for component in group),
+        vuln_matchable=vuln_matchable,
         indeterminate_reason=reasons[0] if reasons else None,
+    )
+
+
+def _canonical_identity_key(pypi_identity: PypiIdentity) -> tuple[str, str | None]:
+    """Canonical comparison key for a PyPI identity: PEP-503-canonical name +
+    ``""``→``None``-normalized version — ``PyYAML`` vs ``pyyaml`` is ONE
+    identity, never a false ambiguity."""
+    return (
+        _PEP503_RUNS.sub("-", pypi_identity.name).lower(),
+        pypi_identity.version if pypi_identity.version else None,
     )
 
 
 def _merge_group_pypi_identity(
     group: list[Component],
-) -> tuple[PypiIdentity | None, IdentitySource, str | None]:
-    identities = {
-        component.pypi_identity
+) -> tuple[PypiIdentity | None, IdentitySource, str | None, bool]:
+    """Resolve the group's PyPI identity; the fourth element reports whether
+    ambiguity forced a withhold (the caller must degrade matchability)."""
+    by_key = {
+        _canonical_identity_key(component.pypi_identity): component.pypi_identity
         for component in group
         if component.pypi_identity is not None
     }
-    if len(identities) > 1:
+    if len(by_key) > 1:
         # Distinct resolved identities: ambiguity is withheld, never guessed.
-        return (None, IdentitySource.NONE, None)
-    if len(identities) == 1:
-        resolved = next(iter(identities))
+        return (None, IdentitySource.NONE, None, True)
+    if len(by_key) == 1:
+        key = next(iter(by_key))
+        # Keep the canonical spelling (identity IS canonical; deterministic
+        # regardless of which raw spelling was fed).
+        resolved = PypiIdentity(name=key[0], version=key[1])
         carriers = [c for c in group if c.pypi_identity is not None]
     else:
         resolved = None
@@ -327,7 +409,73 @@ def _merge_group_pypi_identity(
     )
     confidences = {component.mapping_confidence for component in carriers}
     confidence = next(iter(confidences)) if len(confidences) == 1 else None
-    return (resolved, source, confidence)
+    return (resolved, source, confidence, False)
+
+
+def _fold_bare(concrete: Component, bare: Component) -> Component:
+    """Fold a bare (version-less) record into the sole concrete version.
+
+    The fold resolves ONLY the bare record's version-driven deficiencies —
+    the missing version itself, its ``no-version``/``range-only``
+    withholding, and the unmatchability/weak match level they caused. Every
+    non-version-driven signal merges as conservatively as a same-identity
+    merge (C0: a fold never upgrades confidence):
+
+    * ``provenance`` — union.
+    * ``hygiene_covered`` — AND (a bare record hygiene never covered stays
+      uncovered after the fold).
+    * ``extraction_mode`` — the most degraded of the two.
+    * ``pypi_identity`` — a bare-side identity whose canonical pypi NAME
+      conflicts with the concrete side's is withheld exactly like a
+      same-identity conflict (``None``/``none``/``None`` +
+      ``vuln_matchable=False`` + ``ambiguous-identity``); an absent or
+      name-agreeing bare identity keeps the concrete side's.
+    * ``indeterminate_reason`` — the bare side's version-driven reasons
+      (``no-version``, ``range-only``) are resolved by the fold and dropped;
+      any other surviving reason forces ``vuln_matchable=False`` (smallest
+      token wins for determinism).
+    """
+    hygiene_covered = concrete.hygiene_covered and bare.hygiene_covered
+    extraction_mode = max(
+        (concrete.extraction_mode, bare.extraction_mode),
+        key=_EXTRACTION_DEGRADATION.__getitem__,
+    )
+    pypi_identity = concrete.pypi_identity
+    identity_source = concrete.identity_source
+    mapping_confidence = concrete.mapping_confidence
+    vuln_matchable = concrete.vuln_matchable
+    reason_set: set[WithholdReason] = set()
+    if concrete.indeterminate_reason is not None:
+        reason_set.add(concrete.indeterminate_reason)
+    if (
+        bare.indeterminate_reason is not None
+        and bare.indeterminate_reason not in _VERSION_DRIVEN_REASONS
+    ):
+        reason_set.add(bare.indeterminate_reason)
+    if (
+        bare.pypi_identity is not None
+        and concrete.pypi_identity is not None
+        and _canonical_identity_key(bare.pypi_identity)[0]
+        != _canonical_identity_key(concrete.pypi_identity)[0]
+    ):
+        pypi_identity = None
+        identity_source = IdentitySource.NONE
+        mapping_confidence = None
+        vuln_matchable = False
+        reason_set.add(WithholdReason.AMBIGUOUS_IDENTITY)
+    if reason_set:
+        vuln_matchable = False
+    return replace(
+        concrete,
+        pypi_identity=pypi_identity,
+        identity_source=identity_source,
+        mapping_confidence=mapping_confidence,
+        hygiene_covered=hygiene_covered,
+        vuln_matchable=vuln_matchable,
+        extraction_mode=extraction_mode,
+        indeterminate_reason=min(reason_set, key=str) if reason_set else None,
+        provenance=_union_provenance(concrete.provenance, bare.provenance),
+    )
 
 
 def _union_provenance(

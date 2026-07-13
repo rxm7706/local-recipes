@@ -70,11 +70,14 @@ def test_error_kind_tokens_exact():
 
 
 def test_withhold_reason_starter_set():
+    # ambiguous-identity added 2026-07-13 (follow-up review) — sanctioned
+    # additive growth of the growable enum.
     assert {member.value for member in WithholdReason} == {
         "no-version",
         "unmapped-ecosystem",
         "native-nonpypi",
         "range-only",
+        "ambiguous-identity",
     }
 
 
@@ -357,3 +360,170 @@ def test_hygiene_family_finding_with_vulnerability_axis_raises():
     )
     with pytest.raises(ValueError, match="must carry axis"):
         dataclasses.replace(_sample_report(), findings=(finding,))
+
+
+# --- Follow-up review (2026-07-13) regression suite ---------------------------
+
+
+def test_raw_string_status_fails_at_construction():
+    """StrEnum equality must not admit raw strings that crash later at
+    serialization — construction coerces and fails loud."""
+    with pytest.raises(ValueError):
+        dataclasses.replace(_sample_report(), status="warnings")
+    # A VALID raw token coerces to the member and renders fine.
+    report = dataclasses.replace(_sample_report(), status="clean")
+    assert report.status is Status.CLEAN
+    assert report.to_json_dict()["status"]["value"] == "clean"
+
+
+def test_raw_string_error_kind_and_severity_tier_coerce_or_raise():
+    assert ErrorRecord(kind="engine-timeout", owner="infra", message="m").kind is (
+        ErrorKind.ENGINE_TIMEOUT
+    )
+    with pytest.raises(ValueError):
+        ErrorRecord(kind="engine-explosion", owner="infra", message="m")
+    assert Severity(tier="high", raw=None).tier is SeverityTier.HIGH
+    with pytest.raises(ValueError):
+        Severity(tier="catastrophic", raw=None)
+
+
+@pytest.mark.parametrize(
+    ("status", "exit_code"),
+    [
+        (Status.CLEAN, 2),
+        (Status.ERROR, 0),
+        (Status.ERROR, 1),
+        (Status.POLICY_VIOLATION, 0),
+        (Status.INDETERMINATE, 0),
+        (Status.BYPASSED, 1),
+    ],
+)
+def test_incoherent_status_exit_pairs_fail_at_construction(status, exit_code):
+    driver = (
+        None
+        if status in (Status.CLEAN, Status.NOT_APPLICABLE)
+        else StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-x:p@1.0")
+    )
+    with pytest.raises(ValueError, match="incoherent"):
+        dataclasses.replace(
+            _sample_report(), status=status, status_driver=driver, exit_code=exit_code
+        )
+
+
+def test_sigint_exit_is_coherent_with_every_status():
+    """130 (SIGINT) is legal alongside any status — an interrupt can land
+    during any verdict (mirrors the schema's coherence clauses)."""
+    for status in Status:
+        driver = (
+            None
+            if status in (Status.CLEAN, Status.NOT_APPLICABLE)
+            else StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-x:p@1.0")
+        )
+        report = dataclasses.replace(
+            _sample_report(), status=status, status_driver=driver, exit_code=130
+        )
+        assert report.exit_code == 130
+
+
+def test_duplicate_finding_ids_rejected():
+    finding = Finding(
+        id="hygiene:DEP002:leftpad",
+        axis=AXIS_HYGIENE,
+        message="unused",
+        subject=None,
+        severity=None,
+    )
+    twin = dataclasses.replace(finding, message="unused (different message)")
+    with pytest.raises(ValueError, match="unique"):
+        dataclasses.replace(_sample_report(), findings=(finding, twin))
+
+
+def test_bool_rejected_by_numeric_guards():
+    with pytest.raises(ValueError, match="exit_code"):
+        dataclasses.replace(_sample_report(), exit_code=True)
+    with pytest.raises(ValueError, match="inventory_count"):
+        dataclasses.replace(_sample_report(), inventory_count=True)
+    with pytest.raises(ValueError, match="epss"):
+        Finding(
+            id="vuln:GHSA-x:p@1.0",
+            axis=AXIS_VULNERABILITY,
+            message="m",
+            subject=None,
+            severity=None,
+            epss=True,
+        )
+    with pytest.raises(ValueError, match="manifests_found"):
+        AxisCoverage(
+            axis=AXIS_HYGIENE,
+            manifests_found=True,
+            manifests_parsed=0,
+            deps_total=0,
+            deps_assessed=0,
+            resolution_depth=None,
+        )
+
+
+def test_vuln_data_concrete_verdict_requires_provenance():
+    with pytest.raises(ValueError, match="provenance"):
+        VulnData(source=None, snapshot_at=None, max_age_ok=True)
+    with pytest.raises(ValueError, match="provenance"):
+        VulnData(source="osv-offline", snapshot_at=None, max_age_ok=False)
+    assert VulnData(
+        source="osv-offline", snapshot_at="2026-07-10", max_age_ok=True
+    ).max_age_ok is True
+
+
+def test_trailing_and_embedded_newlines_rejected():
+    with pytest.raises(ValueError, match="schema_version"):
+        dataclasses.replace(_sample_report(), schema_version="1.0.0\n")
+    with pytest.raises(ValueError, match="finding id"):
+        Finding(
+            id="hygiene:DEP002:leftpad\n",
+            axis=AXIS_HYGIENE,
+            message="m",
+            subject=None,
+            severity=None,
+        )
+    with pytest.raises(ValueError, match="finding id"):
+        Finding(
+            id="vuln:GH\nSA:p@1.0",
+            axis=AXIS_VULNERABILITY,
+            message="m",
+            subject=None,
+            severity=None,
+        )
+
+
+def test_negative_zero_epss_canonicalizes():
+    finding = Finding(
+        id="vuln:GHSA-x:p@1.0",
+        axis=AXIS_VULNERABILITY,
+        message="m",
+        subject=None,
+        severity=None,
+        epss=-0.0,
+    )
+    import math
+
+    assert math.copysign(1.0, finding.epss) == 1.0  # -0.0 became 0.0
+
+
+def test_resolution_depth_closed_vocabulary():
+    coverage = AxisCoverage(
+        axis=AXIS_VULNERABILITY,
+        manifests_found=1,
+        manifests_parsed=1,
+        deps_total=3,
+        deps_assessed=3,
+        resolution_depth="locked-closure",
+    )
+    assert coverage.resolution_depth == "locked-closure"
+    with pytest.raises(ValueError):
+        AxisCoverage(
+            axis=AXIS_VULNERABILITY,
+            manifests_found=1,
+            manifests_parsed=1,
+            deps_total=3,
+            deps_assessed=3,
+            resolution_depth="locked-clsoure",
+        )

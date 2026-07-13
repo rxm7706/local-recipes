@@ -24,6 +24,7 @@ from python_deptry_osv_scanner.inventory import (
 from python_deptry_osv_scanner.models import (
     CveMatchLevel,
     Ecosystem,
+    ExtractionMode,
     IdentitySource,
     ScannedManifest,
     WithholdReason,
@@ -95,6 +96,107 @@ def test_fold_keeps_the_concrete_sides_fields(component_factory):
         assert merged[0].vuln_matchable is True
 
 
+def test_fold_never_upgrades_non_version_driven_confidence(component_factory):
+    """Follow-up review fix (C0): the fold resolves ONLY version-driven
+    deficiencies — a bare record's hygiene gap and degraded extraction mode
+    survive the fold, exactly as a same-identity merge would keep them."""
+    bare = component_factory(
+        version=None,
+        provenance=(("environment.yml", "dependencies"),),
+        indeterminate_reason=WithholdReason.NO_VERSION,
+        hygiene_covered=False,
+        extraction_mode=ExtractionMode.RAW_MALFORMED,
+    )
+    concrete = component_factory(provenance=(("pixi.lock", "pypi"),))
+    for feed in ([bare, concrete], [concrete, bare]):
+        merged = merge_components(feed)
+        assert len(merged) == 1
+        assert merged[0].version == "2.31.0"
+        assert merged[0].hygiene_covered is False
+        assert merged[0].extraction_mode is ExtractionMode.RAW_MALFORMED
+        # ... while the version-driven withholding IS resolved by the fold.
+        assert merged[0].indeterminate_reason is None
+
+
+def test_fold_withholds_conflicting_bare_side_identity(component_factory):
+    """A bare record carrying a DIFFERENT resolved pypi name conflicts with
+    the concrete side exactly like a same-identity conflict — withheld,
+    unmatchable, reason recorded (follow-up review fix)."""
+    bare = component_factory(
+        ecosystem=Ecosystem.CONDA,
+        name="pytorch",
+        version=None,
+        pypi_identity=PypiIdentity(name="pytorch", version=None),
+        identity_source=IdentitySource.MAP,
+        provenance=(("meta.yaml", "run"),),
+    )
+    concrete = component_factory(
+        ecosystem=Ecosystem.CONDA,
+        name="pytorch",
+        version="2.3.0",
+        pypi_identity=PypiIdentity(name="torch", version="2.3.0"),
+        identity_source=IdentitySource.LOCK,
+        provenance=(("pixi.lock", "conda"),),
+    )
+    for feed in ([bare, concrete], [concrete, bare]):
+        merged = merge_components(feed)
+        assert len(merged) == 1
+        assert merged[0].version == "2.3.0"
+        assert merged[0].pypi_identity is None
+        assert merged[0].identity_source is IdentitySource.NONE
+        assert merged[0].vuln_matchable is False
+        assert merged[0].indeterminate_reason is WithholdReason.AMBIGUOUS_IDENTITY
+
+
+def test_fold_keeps_non_version_driven_withhold_reason(component_factory):
+    """A bare-side reason that is NOT version-driven (e.g. native-nonpypi)
+    survives the fold and keeps the component unmatchable."""
+    bare = component_factory(
+        ecosystem=Ecosystem.CONDA,
+        name="openssl",
+        version=None,
+        pypi_identity=None,
+        identity_source=IdentitySource.NONE,
+        indeterminate_reason=WithholdReason.NATIVE_NONPYPI,
+        provenance=(("meta.yaml", "host"),),
+    )
+    concrete = component_factory(
+        ecosystem=Ecosystem.CONDA,
+        name="openssl",
+        version="3.6.0",
+        pypi_identity=None,
+        identity_source=IdentitySource.NONE,
+        vuln_matchable=False,
+        provenance=(("pixi.lock", "conda"),),
+    )
+    for feed in ([bare, concrete], [concrete, bare]):
+        merged = merge_components(feed)
+        assert len(merged) == 1
+        assert merged[0].vuln_matchable is False
+        assert merged[0].indeterminate_reason is WithholdReason.NATIVE_NONPYPI
+
+
+def test_component_construction_invariants(component_factory):
+    """Component.__post_init__ (follow-up review fix): the Gap-C predicate,
+    reason/matchability coherence, exact-needs-version, non-empty name, and
+    the ""->None version normalization are enforced at construction."""
+    with pytest.raises(ValueError, match="Gap-C"):
+        component_factory(version=None, vuln_matchable=True)
+    with pytest.raises(ValueError, match="Gap-C"):
+        component_factory(pypi_identity=None, vuln_matchable=True)
+    with pytest.raises(ValueError, match="contradicts"):
+        component_factory(
+            indeterminate_reason=WithholdReason.RANGE_ONLY, vuln_matchable=True
+        )
+    with pytest.raises(ValueError, match="exact"):
+        component_factory(version=None, cve_match_level=CveMatchLevel.EXACT)
+    with pytest.raises(ValueError, match="non-empty"):
+        component_factory(name="")
+    normalized = component_factory(version="")
+    assert normalized.version is None
+    assert identity(normalized)[2] is None
+
+
 def test_bare_alone_stays_distinct_indeterminate(component_factory):
     bare = component_factory(
         version=None, indeterminate_reason=WithholdReason.NO_VERSION
@@ -159,10 +261,29 @@ def test_derive_purl_uses_canonical_purl_names():
         derive_purl(Ecosystem.PYPI, "typing_extensions", "4.12")
         == "pkg:pypi/typing-extensions@4.12"
     )
-    # conda: lowercase, _ -> -, dots preserved.
+    # conda: VERBATIM — channel-index names are already canonical, and
+    # typing_extensions vs typing-extensions are DISTINCT real conda packages
+    # (folding them would name a different package; follow-up review fix).
     assert derive_purl(Ecosystem.CONDA, "ruamel.yaml", "0.18") == "pkg:conda/ruamel.yaml@0.18"
-    assert derive_purl(Ecosystem.CONDA, "typing_extensions", "4.12") == "pkg:conda/typing-extensions@4.12"
-    assert derive_purl(Ecosystem.CONDA, "PyYAML", "6.0") == "pkg:conda/pyyaml@6.0"
+    assert derive_purl(Ecosystem.CONDA, "typing_extensions", "4.12") == "pkg:conda/typing_extensions@4.12"
+    assert derive_purl(Ecosystem.CONDA, "PyYAML", "6.0") == "pkg:conda/PyYAML@6.0"
+
+
+def test_derive_purl_agrees_with_identity_for_conda():
+    """Distinct conda identities must derive distinct purls (purl is
+    identity-derived; two inventory components never share one purl)."""
+    a = derive_purl(Ecosystem.CONDA, "importlib_metadata", "8.0")
+    b = derive_purl(Ecosystem.CONDA, "importlib-metadata", "8.0")
+    assert a != b
+
+
+def test_derive_purl_percent_encodes_reserved_characters():
+    """A RAW_MALFORMED name/version can never smuggle purl syntax."""
+    purl = derive_purl(Ecosystem.PYPI, "foo @ git+https://evil", "1.0?x=1#y")
+    assert purl == (
+        "pkg:pypi/foo%20%40%20git%2Bhttps%3A%2F%2Fevil@1.0%3Fx%3D1%23y"
+    )
+    assert strip_purl_qualifiers(purl) == purl  # no raw ? or # survives
 
 
 def test_derive_purl_empty_version_omits_at():
@@ -278,6 +399,37 @@ def test_merge_withholds_ambiguous_pypi_identity(component_factory):
         assert merged[0].pypi_identity is None
         assert merged[0].identity_source is IdentitySource.NONE
         assert merged[0].mapping_confidence is None
+        # Gap-C: a component whose identity was just withheld can never stay
+        # matchable, and the withhold must say why (follow-up review fix).
+        assert merged[0].vuln_matchable is False
+        assert merged[0].indeterminate_reason is WithholdReason.AMBIGUOUS_IDENTITY
+
+
+def test_pep503_equivalent_pypi_identities_are_not_ambiguous(component_factory):
+    """PyYAML vs pyyaml agree modulo PEP-503 canonicalization — ONE identity,
+    never a false ambiguity (follow-up review fix); the kept identity is the
+    canonical spelling."""
+    a = component_factory(
+        ecosystem=Ecosystem.CONDA,
+        name="pyyaml",
+        pypi_identity=PypiIdentity(name="PyYAML", version="6.0"),
+        identity_source=IdentitySource.MAP,
+        version="6.0",
+    )
+    b = component_factory(
+        ecosystem=Ecosystem.CONDA,
+        name="pyyaml",
+        pypi_identity=PypiIdentity(name="pyyaml", version="6.0"),
+        identity_source=IdentitySource.LOCK,
+        version="6.0",
+        provenance=(("pixi.lock", "conda"),),
+    )
+    for feed in ([a, b], [b, a]):
+        merged = merge_components(feed)
+        assert len(merged) == 1
+        assert merged[0].pypi_identity == PypiIdentity(name="pyyaml", version="6.0")
+        assert merged[0].vuln_matchable is True
+        assert merged[0].indeterminate_reason is None
 
 
 def test_merge_keeps_single_sided_pypi_identity(component_factory):
