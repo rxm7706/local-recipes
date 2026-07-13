@@ -22,7 +22,12 @@ cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1
 # Deterministic gates run by the orchestrator after a clean review, before commit.
 # The scanner's own test suite is the gate (grows per story: conformance harness,
 # C0a/C0c, meta-tests land in 1.1/1.2 and police every later story).
-commands = ["pixi run -e python-deptry-osv-scanner python-deptry-osv-scanner-test"]
+# --frozen: an unfrozen re-solve in a bmad-loop worktree panics pixi-build-python
+# 0.8.3 (path-length underflow at ~250-char workDirectory) and, when it does
+# succeed, rewrites pixi.lock with worktree-absolute file:// channel paths that
+# the squash-merge would commit. Frozen mode uses the tracked lock as-is
+# (deferred-work.md, story 1.1).
+commands = ["pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test"]
 
 [notify]
 desktop = true               # notify-send, best-effort
@@ -112,7 +117,15 @@ max_parallel = 1             # units in flight at once (parallel fan-out unbuilt
 # (claude -> .mcp.json/.claude/settings.json, codex -> .codex/config.toml, etc.)
 # into the worktree; worktree_seed adds extra project-specific gitignored paths.
 seed_adapter_defaults = true # seed each loaded adapter's default gitignored configs into worktrees
-worktree_seed = []           # extra gitignored files to copy into each worktree, on top of adapter defaults
+# Both entries below are gitignored, so fresh worktrees lack them: without the
+# implementation-artifacts dir the engine's verify step crashes reading
+# sprint-status.yaml (run 20260712-164312-6c0c), and without the .active-project
+# marker BMAD config resolution in the worktree loses the project layers.
+# Literal paths only (no globs) — update the project slug on bmad-switch.
+worktree_seed = [
+  "_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts",
+  "_bmad/custom/.active-project",
+]
 
 [plugins]
 # Plugin trust allowlist. A plugin dropped under .bmad-loop/plugins/<name>/ loads
