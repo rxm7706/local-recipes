@@ -49,7 +49,7 @@ trigger = "recommended"
 
 [adapter]
 name = "claude"              # claude | codex | gemini | <custom .bmad-loop/profiles/*.toml>
-model = ""                   # empty = CLI default model
+model = "opus"               # pinned 2026-07-13: story 1.2's dev + review sessions hit the Fable 5 usage limit (empty = CLI default = Fable 5). Opus for the whole adapter (dev + review) so a mid-run usage cap can't stall the loop. Revisit if Fable 5 headroom returns.
 cleanup_session_on_finish = true  # kill the run's tmux session when it finishes (false keeps it for inspection)
 # extra_args replaces the profile's default permission-bypass flags when set:
 # extra_args = ["--permission-mode", "bypassPermissions"]

@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.6.0",
+  "id": "PDOS-FIXTURE-0001",
+  "modified": "2026-01-01T00:00:00Z",
+  "published": "2026-01-01T00:00:00Z",
+  "aliases": [],
+  "summary": "Synthetic CRITICAL vulnerability in pdos-vuln-fixture 1.0.0 (test fixture).",
+  "details": "Deterministic, hermetic OSV advisory used only by the python-deptry-osv-scanner test suite. It affects the synthetic PyPI package `pdos-vuln-fixture` at the single explicit version 1.0.0. There is no such real package; the record exists so the offline osv-scanner proof test (Story 1.4) can detect a seeded advisory with zero network and version-exact matching that never depends on real-world PyPI state. Fixed version 2.0.0 is deliberately clean.",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "PyPI",
+        "name": "pdos-vuln-fixture",
+        "purl": "pkg:pypi/pdos-vuln-fixture"
+      },
+      "versions": ["1.0.0"],
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "database_specific": {
+        "source": "python-deptry-osv-scanner test fixture (Story 1.4); not a real advisory"
+      }
+    }
+  ],
+  "references": [],
+  "database_specific": {
+    "source": "python-deptry-osv-scanner test fixture (Story 1.4); not a real advisory"
+  }
+}
