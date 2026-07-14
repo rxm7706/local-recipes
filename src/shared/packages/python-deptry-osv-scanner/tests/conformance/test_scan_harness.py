@@ -38,6 +38,10 @@ from python_deptry_osv_scanner.models import (
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "projects"
 CLEAN = FIXTURES / "clean"
 SENTINEL = FIXTURES / "sentinel"
+DEPTRY_MISSING = FIXTURES / "deptry_missing"
+DEPTRY_UNUSED = FIXTURES / "deptry_unused"
+DEPTRY_STDLIB = FIXTURES / "deptry_stdlib"
+DEPTRY_IGNORE = FIXTURES / "deptry_ignore"
 
 
 def load_schema() -> dict:
@@ -77,19 +81,20 @@ def test_clean_fixture_is_green(capsys):
     ]
 
 
-def test_clean_fixture_coverage_is_honest_under_the_null_engine(capsys):
+def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     _, out, _ = run_scan(capsys, CLEAN)
     document = parse_report(out)
-    assert {block["axis"] for block in document["coverage"]} == {
-        "hygiene",
-        "vulnerability",
-    }
-    for block in document["coverage"]:
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert set(by_axis) == {"hygiene", "vulnerability"}
+    for block in by_axis.values():
         assert block["manifests_found"] == 1
         assert block["manifests_parsed"] == 1
         assert block["deps_total"] == 2
-        assert block["deps_assessed"] == 0  # nothing assessed by an engine
         assert block["resolution_depth"] == "direct-only"
+    # Story 1.3: deptry assessed all declared deps for hygiene; the
+    # vulnerability axis has no engine yet (Story 1.5), so it stays 0.
+    assert by_axis["hygiene"]["deps_assessed"] == 2
+    assert by_axis["vulnerability"]["deps_assessed"] == 0
 
 
 def test_sentinel_fixture_never_false_greens(capsys):
@@ -304,20 +309,24 @@ class FindingAndErrorEngine:
         )
 
 
-def test_findings_only_engine_never_false_greens(capsys, monkeypatch):
-    """THE false-green seam row: an engine returning findings WITHOUT
-    errors is publicly reachable via ``register_engine`` today, and a
-    finding-carrying report must never compose clean/exit 0 (C0c). The
-    conservative backstop rung makes it indeterminate; Story 1.3/1.6
-    replace the backstop with the real severity mapping (tighten-only).
-    Both prior review passes documented this exact blind spot — this row
-    is the mechanical gate that keeps it closed."""
+def test_findings_only_engine_surfaces_its_finding_and_never_greens(
+    capsys, monkeypatch
+):
+    """THE false-green seam row: an engine returning findings WITHOUT errors
+    is publicly reachable via ``register_engine`` today, and a
+    finding-carrying report must never compose ``clean`` (C0c). Story 1.3
+    routes the hygiene axis through its real default table: a DEP002 finding
+    maps to ``warn`` (its real ceiling) — the finding is surfaced and the
+    status is ``warn``, NOT ``clean``. ``warn`` projects to exit 0 by policy
+    (``warn_is_error`` is Story 1.6); the C0 property is that the status is
+    never ``clean`` while a finding stands, which holds."""
     register_engine_for_test(monkeypatch, FindingsOnlyEngine)
     rc, out, err = run_scan(capsys, CLEAN)
     document = parse_report(out)
-    assert rc == 1
+    assert document["status"]["value"] == "warn"
+    assert document["status"]["value"] != "clean"  # the C0 property
+    assert rc == 0
     assert rc == document["exit_code"]
-    assert document["status"]["value"] == "indeterminate"
     finding_ids = {f["id"] for f in document["findings"]}
     assert "hygiene:DEP002:requests" in finding_ids
     driver = document["status"]["driver"]
@@ -465,3 +474,127 @@ def test_zero_dependency_manifest_is_distinguishable_on_stderr(
         assert block["manifests_found"] == 1
         assert block["manifests_parsed"] == 1
         assert block["deps_total"] == 0
+
+
+# --- deptry end-to-end fixtures (the first real engine) ----------------------
+
+
+def _one_hygiene_finding(document: dict, finding_id: str) -> dict:
+    """Assert exactly one finding with ``finding_id`` (axis hygiene) exists
+    and return it."""
+    matches = [f for f in document["findings"] if f["id"] == finding_id]
+    present = [f["id"] for f in document["findings"]]
+    assert matches, f"expected {finding_id!r} among {present}"
+    assert len(matches) == 1
+    assert matches[0]["axis"] == AXIS_HYGIENE
+    return matches[0]
+
+
+def test_deptry_missing_dependency_is_a_policy_violation(capsys):
+    """DEP001 (imported-but-undeclared) is high-confidence for a PyPI-native
+    project -> policy-violation, exit 1, driver on the hygiene axis."""
+    rc, out, err = run_scan(capsys, DEPTRY_MISSING)
+    document = parse_report(out)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "policy-violation"
+    finding = _one_hygiene_finding(
+        document, "hygiene:DEP001:totally_absent_pkg_xyz"
+    )
+    assert finding["subject"] == "totally_absent_pkg_xyz"
+    driver = document["status"]["driver"]
+    assert driver["axis"] == "hygiene"
+    assert driver["finding_id"] == "hygiene:DEP001:totally_absent_pkg_xyz"
+    assert document["errors"] == []
+
+
+def test_deptry_unused_dependency_is_a_warning(capsys):
+    """DEP002 (declared-but-unused) maps to warn -> exit 0."""
+    rc, out, err = run_scan(capsys, DEPTRY_UNUSED)
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "warn"
+    _one_hygiene_finding(document, "hygiene:DEP002:requests")
+    assert document["errors"] == []
+
+
+def test_deptry_stdlib_dependency_is_a_warning(capsys):
+    """DEP005 is a STDLIB dependency (verified against deptry 0.25.1), not
+    'unused-dev' -> warn, exit 0."""
+    rc, out, err = run_scan(capsys, DEPTRY_STDLIB)
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "warn"
+    finding = _one_hygiene_finding(document, "hygiene:DEP005:argparse")
+    assert "standard library" in finding["message"]
+    assert document["errors"] == []
+
+
+def test_deptry_ignore_config_is_honored_natively(capsys):
+    """FR9: the project's own [tool.deptry] ignore suppresses DEP002 natively
+    -> no hygiene finding -> a clean scan. We do not re-implement ignores."""
+    rc, out, err = run_scan(capsys, DEPTRY_IGNORE)
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "clean"
+    assert document["findings"] == []
+    assert document["errors"] == []
+
+
+def test_deptry_output_never_leaks_onto_our_streams(capsys):
+    """AC2: deptry's chatty stdout/stderr are captured to the seam's
+    diagnostics sink — our stdout stays exactly one schema-valid JSON doc and
+    our stderr carries no deptry chatter (a clean run needs no diagnostics)."""
+    rc, out, err = run_scan(capsys, DEPTRY_UNUSED)
+    parse_report(out)  # exactly one schema-valid JSON document on stdout
+    assert "Scanning" not in err
+    assert "deptry" not in err.lower()
+
+
+def test_deptry_corpus_unparseable_rate_is_within_baseline():
+    """NFR-R2 ratchet: every record deptry emits over the real fixture corpus
+    must map cleanly -- unparseable_rate <= UNPARSEABLE_RATE_BASELINE (which
+    may only ever DECREASE)."""
+    from python_deptry_osv_scanner.engines import _engine_env
+    from python_deptry_osv_scanner.hygiene import (
+        UNPARSEABLE_RATE_BASELINE,
+        parse_deptry_output,
+    )
+
+    corpus = [
+        CLEAN,
+        DEPTRY_MISSING,
+        DEPTRY_UNUSED,
+        DEPTRY_STDLIB,
+        DEPTRY_IGNORE,
+        SENTINEL,
+    ]
+    for fixture in corpus:
+        text, error = _engine_env(
+            lambda output_path: ["deptry", ".", "-o", output_path, "--no-ansi"],
+            owner="deptry",
+            cwd=fixture,
+        )
+        assert error is None, f"deptry failed on {fixture.name}: {error}"
+        assert text is not None
+        parse = parse_deptry_output(text)
+        assert parse.output_parsed, f"deptry output unparsed on {fixture.name}"
+        assert parse.records_unparseable == 0, fixture.name
+        assert parse.unparseable_rate <= UNPARSEABLE_RATE_BASELINE, fixture.name
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [DEPTRY_MISSING, DEPTRY_UNUSED, DEPTRY_STDLIB],
+    ids=lambda p: p.name,
+)
+def test_deptry_fixture_twice_run_is_byte_identical(capsys, fixture):
+    """Real-finding determinism: two scans of a deptry fixture emit
+    byte-identical stdout."""
+    rc_one, out_one, _ = run_scan(capsys, fixture)
+    rc_two, out_two, _ = run_scan(capsys, fixture)
+    assert rc_one == rc_two
+    assert out_one.encode("utf-8") == out_two.encode("utf-8")
