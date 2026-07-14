@@ -25,7 +25,7 @@ pinnedEngineContracts:  # grounded 2026-07-11 — the wrapped-engine contracts t
     docs: https://google.github.io/osv-scanner/output/
     json: "--format json → JSON to stdout, all else to stderr; results[].packages[].{package{name,version,ecosystem}, vulnerabilities[]{id,aliases,...Full OSV}, groups[]{ids}}"
     severity: "CVSS inside Full-OSV severity field; NO CISA-KEV flag (confirms KEV-deferral — must join ourselves)"
-    exitCodes: "0 no-vulns / 1 vulns-found (EXPECTED, not error) / 127 general-error / 128 no-packages-found"
+    exitCodes: "0 no-vulns / 1 vulns-found (EXPECTED, not error) / 127 DB-load/coverage error (MULTIPLEXED: DB-absent|corrupt-zip|missing -L file|unknown parser) / 128 no-packages-found. Reconciled by the Story-1.4 spike: a DB-absent/empty 127 and 128 are COVERAGE GAPS -> indeterminate, not exit-2; any OTHER 127 -> error"
 workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
@@ -67,7 +67,7 @@ The **resolved-inventory object** is the spine (this *is* Gap B): discovery + ex
 
 ### Technical Constraints & Dependencies
 - **stdlib-only library** (argparse / tomllib / re) — confirmed by the scaffold's empty `dependencies`; `jsonschema` test-only; engines (`deptry`, `osv-scanner`) as **conda run-deps** (provisioned, not fetched — OD1).
-- **Pinned engine contracts (2026-07-11):** deptry = no-severity + `--json-output`; osv = `--format json` (JSON→stdout, else→stderr) + exit `{0 clean, 1 vulns-found=EXPECTED, 127 error, 128 no-packages}`.
+- **Pinned engine contracts (2026-07-11):** deptry = no-severity + `--json-output`; osv = `--format json` (JSON→stdout, else→stderr) + exit `{0 clean, 1 vulns-found=EXPECTED, 127 DB-load/coverage error, 128 no-packages}` — Story-1.4-reconciled: 127 is multiplexed and a DB-absent/empty 127 → `indeterminate` (coverage gap, gated by the content pre-flight below), other 127 → `error`; 128 → `indeterminate`.
 - python ≥ 3.12; pixi ≥ 0.72.2 (**a build/dev-env floor — the tool never invokes pixi at runtime**; `pixi.lock` is `safe_load`-parsed; clarified 2026-07-12); `pixi-build-python` packaging; never-writes-repo (NFR-R3a/S4); offline-first vuln data.
 - **Open dependency question (D1):** the waiver YAML writer may pull one small YAML lib *or* emit-for-human-to-commit — resolved in Architectural Decisions.
 
@@ -132,10 +132,10 @@ One internal model, projected into two independent emitted artifacts:
 
 ### GAP C — osv input contract + offline DB → **ecosystem-identity predicate + name-level tier + provisioned DB**
 - **osv has no conda ecosystem** — it keys advisories by `(ecosystem, name, version)` over PyPI/npm/Go/… so a conda dep is parsed as **PyPI**. A pinned-but-differently-named conda pkg (`pytorch`→`torch`, native `openssl`) fed to osv matches the *wrong* PyPI identity → **silent false-green**. So `vuln_matchable = (pypi_identity ≠ None) AND (version resolved to ==X.Y.Z)`. `pypi_identity` is resolved **only** from trustworthy provenance: pixi.lock `pypi:` entries · explicit PyPI sections (`[pypi-dependencies]`, `environment.yml` `- pip:`) · a **bundled static conda→pypi map** (the CLI is offline — it cannot call the MCP `get_conda_name` mapper; regenerable from the atlas `export-purls` TSVs **or parselmouth-direct** — prefix-dev's published mapping, for non-atlas orgs; added 2026-07-12). Unmapped → `None`. Conda `=1.2` is a *prefix* (`1.2.*`), **not** an exact match → withheld as `range-only`.
-- **Withhold reason enum:** `no-version | unmapped-ecosystem | native-nonpypi | range-only`. osv's temp input file **must be named literally `requirements.txt`** (osv infers the parser from the basename).
+- **Withhold reason enum:** `no-version | unmapped-ecosystem | native-nonpypi | range-only`. ~~osv's temp input file must be named literally `requirements.txt`~~ — **REMOVED (Story 1.4):** the `-L <parser>:<path>` override forces the parser, so osv's temp input may use any secure name (parser id is `requirements.txt`).
 - **Name-level CVE tier (rescues beachhead value):** for a mapped-but-unversioned dep, query the DB "does this package carry *any* critical CVE across any version?" → `indeterminate: carries known critical CVEs — pin/lock to prove immunity` (a ranked worry-list + lock-nudge, not a dead "12%"). **Guardrail: coverage improves ONLY by resolving (read the lock) or name-level flagging — NEVER by assuming a version.**
-- **osv exit codes read as content, never as the gate** (pinned: `0` no-vulns, `1` vulns-found=EXPECTED, `127` engine-error→exit 2, `128` no-packages→the vuln `coverage: skipped`→`indeterminate`). Absence of an expected field is an error, not a zero.
-- **Offline DB:** pre-provisioned as a conda package (`{ecosystem}/all.zip`), run **full `--offline`** (not `--offline-vulnerabilities` — that egresses on transitive resolution); **trust-anchor = conda package integrity** (the DB ships integrity-checked); **staleness from the DB package build-date** (`--db-max-age`, default 7d → stale ⇒ degrade/fail-loud, never confident-clean).
+- **osv exit codes read as content, never as the gate** (Story-1.4-reconciled): `0` no-vulns, `1` vulns-found=EXPECTED, `127` **multiplexed** — a DB-absent/empty/corrupt `127` is a *coverage gap* → `indeterminate` (gated by the DB content pre-flight, not the exit code alone), any **other** `127` (osv crashing with a valid DB) → `error`; `128` no-packages → `coverage: skipped` → `indeterminate`; any exit code **outside {0,1,127,128}** → `error`. Absence of an expected field is an error, not a zero.
+- **Offline DB:** pre-provisioned as a conda package (`{ecosystem}/all.zip`), run **full `--offline`** (not `--offline-vulnerabilities` — that egresses on transitive resolution); **trust-anchor = conda package integrity** (the DB ships integrity-checked); **staleness from the DB package build-date** (`--db-max-age`, default 7d → stale ⇒ degrade/fail-loud, never confident-clean). **DB content pre-flight (INVARIANT, Story 1.4):** a present-but-EMPTY or content-corrupt `all.zip` makes osv exit **0** with an empty body — a false-green that neither the exit code nor a namelist count catches. The loader MUST run a **content** pre-flight (parse + validate the OSV advisory shape, advisory-count ≥ 1, at osv's case-sensitive `PyPI` dir segment) before trusting a clean; a **provenance-less** DB (`snapshot_at=None`) routes to `indeterminate`, never `clean`.
 - **Resolution-depth honesty:** the coverage block states **`direct-only` vs `locked-closure`** (a loose manifest lists direct deps only; transitive vulns are invisible without a lockfile) — prefer a lockfile input, downgrade the coverage claim for a loose manifest.
 
 ### E1 extraction strategy — **non-rendering parse-as-data + a supported-construct matrix**
@@ -221,7 +221,7 @@ python_deptry_osv_scanner/
 ### Security invariants (enforced as code rules + meta-tests)
 - **Extractor modules import no execution primitive** — no `eval`/`exec`/`compile`/`__import__`/`os.system`/`subprocess`/**`jinja2`**; `yaml.safe_load` only. Enforced by an AST-denylist meta-test over `extract/` (mirrors the CFE `test_actionable_scope` pattern).
 - **Engine calls only via `_engine_env()`** — file-output to system-temp (never the scanned tree), `NO_COLOR=1`, `stdin=DEVNULL`, argv lists (**never `shell=True`**, never manifest-data as flags), explicit utf-8 decode → undecodable = typed error.
-- **Temp files via `tempfile.mkstemp`/`mkdtemp`** (`0600`/`0700`); the osv input file basename is literally `requirements.txt`.
+- **Temp files via `tempfile.mkstemp`/`mkdtemp`** (`0600`/`0700`); ~~the osv input file basename is literally `requirements.txt`~~ — the osv input may use any secure temp name via the `-L requirements.txt:<path>` parser override (Story 1.4).
 - **Serialize only through a schema-aware encoder** (cyclonedx-python-lib for SBOM; `json.dumps` for the report) — never string-concatenate input-derived values (S7).
 
 ### Determinism discipline (NFR-R3b)

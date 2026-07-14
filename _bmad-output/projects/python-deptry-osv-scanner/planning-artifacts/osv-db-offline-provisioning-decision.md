@@ -382,8 +382,12 @@ two tracked planning artifacts agree (this spike does **not** edit
   → indeterminate`. This record follows the Gap-C line (`128 → indeterminate`);
   the correct-course should resolve the architecture's own two conflicting lines.
 
-**Owner:** a `bmad-correct-course` on `architecture.md` (or Story 1.5 folds the
-reconciliation into its architecture-touch). Filed here so it is not lost.
+**APPLIED 2026-07-14** via `bmad-correct-course`: all four items reconciled into
+`architecture.md` (frontmatter exitCodes, the pinned-engine-contracts line, Gap-C
+osv-exit-codes + withhold-reason temp-name, the Offline-DB content-pre-flight
+invariant, and the security-invariants temp-name line — each carries a
+`Story-1.4-reconciled` marker). This decision record remains the authoritative
+source; architecture.md now agrees.
 
 ## The Story-1.5 seam hand-off (three changes, not one)
 
