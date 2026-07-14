@@ -397,7 +397,7 @@ per-case reality below.
 - **Declined Gemini finding:** the spaced prototype filename `Warden Deck.dc.html`
   was kept (extractor reads via `path.join()`, git quotes it) — consistent with
   Example 1's `Agentic SDLC.dc.html`.
-- **Shared-engine hardening (branch `claude/deck-engine-hardening`):** the four
+- **Shared-engine hardening (PR #61, branch `claude/deck-engine-hardening`):** the four
   Gemini medium findings raised on the scaffold PR (#59) were fixed in the engine
   and applied to **both** `agentic-sdlc` and `pyforge-warden` in one change, keeping
   the copies byte-identical: `document.exitFullscreen?.()` guard (iOS Safari),
