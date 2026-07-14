@@ -2,7 +2,7 @@
 marp: true
 paginate: true
 size: 16:9
-title: PyForge-Warden — Infographic
+title: Warden — Infographic
 style: |
   section { background:#f3f2f2; color:#201e1d; font-family:'Archivo',Arial,Helvetica,sans-serif; font-size:24px; }
   h1 { letter-spacing:-0.02em; color:#201e1d; }
@@ -26,11 +26,11 @@ style: |
 
 BMAD-METHOD Tech Spec · Full agentic AI-SDLC · Status: in progress, planning complete
 
-# PyForge-Warden
+# Warden
 
 `pyforge-warden`
 
-One CLI that guards both Python ecosystems — the **PyPI** world of applications and libraries, and the **conda / conda-forge** world of scientific computing, analytics and ML/AI data platforms. PyForge-Warden runs pluggable engines across **six axes** — hygiene, security, license, currency, provenance and maintenance — and returns **one consolidated report**.
+One CLI that guards both Python ecosystems — the **PyPI** world of applications and libraries, and the **conda / conda-forge** world of scientific computing, analytics and ML/AI data platforms. Warden runs pluggable engines across **six axes** — hygiene, security, license, currency, provenance and maintenance — and returns **one consolidated report**.
 
 SCA · not SAST · CI/CD quality gate · family naming `<language>-<hygiene-engines>-<security-engines>`
 
@@ -42,7 +42,7 @@ SCA · not SAST · CI/CD quality gate · family naming `<language>-<hygiene-engi
 | --- | --- | --- | --- | --- |
 | Reuben Mathew | Python 3.12+ | argparse · stdlib | 5 epics · 20 stories | PyPI + conda-forge |
 
-### Why PyForge-Warden — one gate, both ecosystems, six axes of dependency trust
+### Why Warden — one gate, both ecosystems, six axes of dependency trust
 
 **01** Hygiene · **02** Security · **03** License · **04** Currency · **05** Provenance · **06** Maintenance
 
@@ -67,11 +67,11 @@ Dependency hygiene and security compliance across enterprise infrastructure requ
 
 ## 02 · Two ecosystems, one gate
 
-Python isn't one ecosystem. PyForge-Warden is built for both — and treats the scanning engines as **pluggable**, not fixed.
+Python isn't one ecosystem. Warden is built for both — and treats the scanning engines as **pluggable**, not fixed.
 
 **Ecosystem 1 · PyPI — Application Python** — ~850K packages, open upload, any license. 20% of footprint: ~400 shipped apps ≈ 2–3K libraries. Manifests (`pyproject.toml`, `requirements.txt`, lockfiles) read **natively**.
 
-**Ecosystem 2 · conda-forge — Scientific & Data Python** — ~30K feedstocks, curated FOSS-only. 80% of footprint: ~10 platforms ≈ 7–8K libraries. Manifests (`environment.yml`, `meta.yaml`, `recipe.yaml`, `pixi.toml`) — which **no engine parses**; PyForge-Warden's manifest engine bridges them.
+**Ecosystem 2 · conda-forge — Scientific & Data Python** — ~30K feedstocks, curated FOSS-only. 80% of footprint: ~10 platforms ≈ 7–8K libraries. Manifests (`environment.yml`, `meta.yaml`, `recipe.yaml`, `pixi.toml`) — which **no engine parses**; Warden's manifest engine bridges them.
 
 ---
 
@@ -154,7 +154,7 @@ Running it today
 
 ## ◎ Three rings — scan the whole supply chain
 
-PyForge-Warden runs at three depths. The further out it scans, the more it **prevents** rather than reports.
+Warden runs at three depths. The further out it scans, the more it **prevents** rather than reports.
 
 - **Public upstream** *(vision)* — scan PyPI & conda-forge themselves: malicious packages, typosquats, name-squatting, stale/abandoned feedstocks. → *blocklists*
 - **Registry perimeter** *(v1.x)* — turn that intel into block / allow lists on Artifactory / JFrog; quarantine bad packages so they never cross the firewall. A census of everything that enters. → *clean pulls*
@@ -188,11 +188,11 @@ Local mode never softens the gate — same verdict lattice, same exit codes, TTY
 
 ## 10 · Which tool, when
 
-PyForge-Warden is the fleet edge — one of several scanning surfaces. It complements, not replaces, the atlas and container tooling.
+Warden is the fleet edge — one of several scanning surfaces. It complements, not replaces, the atlas and container tooling.
 
 | What you have | Reach for |
 | --- | --- |
-| Any repo, no atlas — a CI or terminal gate on pinned deps (hygiene + CVEs) | **PyForge-Warden** (this tool) |
+| Any repo, no atlas — a CI or terminal gate on pinned deps (hygiene + CVEs) | **Warden** (this tool) |
 | The atlas host — gap / version-lag buckets, freshness-percentile policy, worklists | `inventory-match --policy` |
 | Exotic — containers, K8s, live envs, third-party SBOMs, non-Python | `scan-project` |
 | The migrated Kedro pipeline (future) | the FR-18 unified gate |
@@ -243,7 +243,7 @@ Vision · fleet & ecosystem
 
 ## 12 · The control plane
 
-Governing a Python OSS footprint across thousands of repos needs more than a per-repo gate. PyForge-Warden's report contract is the feed for a fleet-wide control plane.
+Governing a Python OSS footprint across thousands of repos needs more than a per-repo gate. Warden's report contract is the feed for a fleet-wide control plane.
 
 - **Fleet intelligence** — central estate dashboard · cross-repo dependency graph · risk-trend tracking · KEV/EPSS enrichment · peer benchmarking · historical SBOM diff · fix-at-source ledger · license-mix dashboard · sponsorship candidates.
 - **Policy & governance** — policy-as-code · golden-path catalog · waiver governance · typosquat detection · GRC sync · EOL calendar · establish an OSPO · license allow/deny families · outbound-OSS policy.
@@ -260,7 +260,7 @@ Governing a Python OSS footprint across thousands of repos needs more than a per
 
 ## 13 · Open-source policy, governance & sustainability
 
-Consuming OSS at scale is a stewardship responsibility, not just a risk to gate. PyForge-Warden feeds the OSPO's practice.
+Consuming OSS at scale is a stewardship responsibility, not just a risk to gate. Warden feeds the OSPO's practice.
 
 - **Policy (OSPO)** — usage & contribution policy · license allow/deny families · new-dependency intake review.
 - **Governance (compliance)** — license-obligation tracking · stewardship ownership · export-control & provenance.
@@ -343,8 +343,8 @@ Adoption starts at a terminal, not a pipeline. Three steps from first run to fle
 
 Honest by design — no false greens
 
-# PyForge-Warden refuses to fake a pass.
+# Warden refuses to fake a pass.
 
 If it can't prove your dependencies are safe, it fails — until you pin them, formally accept the risk, or explicitly run `--warn-only`. An honest "not verified" beats a false "all clear."
 
-**PyForge-Warden** · module `pyforge.warden` · dist `pyforge-warden` · docs/specs/pyforge-warden.md
+**Warden** · module `pyforge.warden` · dist `pyforge-warden` · docs/specs/pyforge-warden.md

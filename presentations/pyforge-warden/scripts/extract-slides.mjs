@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 // The Claude Design handoff export for this deck — drop it in ./project/ and
 // rename this to match (or rename the export to `PyForge-Warden.dc.html`).
-const SRC = join(root, 'project', 'PyForge-Warden.dc.html');
+const SRC = join(root, 'project', 'Warden Deck.dc.html');
 const FRAG_DIR = join(root, 'src', 'slides', 'fragments');
 const MANIFEST = join(root, 'src', 'slides', 'manifest.json');
 
