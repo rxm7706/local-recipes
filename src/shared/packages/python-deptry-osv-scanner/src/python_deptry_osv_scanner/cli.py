@@ -482,9 +482,16 @@ def _stderr(message: str) -> None:
     handlers (the SIGINT/SystemExit/last-resort nets), where a raise would
     escape ``main`` as an uncaught traceback with interpreter exit 1 —
     the exact exit-1 collision the module docstring forbids. A diagnostic
-    stream failure must never replace the computed exit code."""
+    stream failure must never replace the computed exit code.
+
+    ``sys.stderr is None`` (pythonw / GUI / embedded hosts) is guarded
+    explicitly: ``print(..., file=None)`` falls back to ``sys.stdout`` and
+    would leak the diagnostic onto the contract stdout (NFR-I3) WITHOUT
+    raising, so the try/except cannot catch it — drop the diagnostic
+    instead."""
     try:
-        print(message, file=sys.stderr)
+        if sys.stderr is not None:
+            print(message, file=sys.stderr)
     except Exception:  # noqa: BLE001 — see docstring: absorb everything
         pass
 
@@ -515,9 +522,10 @@ def _absorb_broken_pipe() -> None:
                 os.dup2(devnull, stream.fileno())
             finally:
                 os.close(devnull)
-        except (OSError, ValueError):
-            # No usable descriptor behind the stream: nothing will flush
-            # at interpreter exit, nothing to do.
+        except (OSError, ValueError, AttributeError):
+            # No usable descriptor behind the stream (AttributeError = a
+            # fileno-less stream object aliased onto sys.__stdout__): nothing
+            # will flush at interpreter exit, nothing to do.
             pass
         return
     try:

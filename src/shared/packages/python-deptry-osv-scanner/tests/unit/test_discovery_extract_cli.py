@@ -807,6 +807,18 @@ def test_poetry_only_deps_scan_as_not_applicable_KNOWN_GAP(capsys, tmp_path):
     # be rewritten to expect indeterminate/exit-1 (the deferred-work fix).
 
 
+def test_stderr_helper_drops_diagnostic_when_stderr_is_none(monkeypatch):
+    """NFR-I3 (Gemini review): when sys.stderr is None (pythonw / GUI /
+    embedded host), print(..., file=None) falls back to sys.stdout WITHOUT
+    raising — so a diagnostic would silently corrupt the JSON contract
+    stream. _stderr must guard on None and drop the diagnostic instead."""
+    fake_stdout = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", fake_stdout)
+    monkeypatch.setattr(sys, "stderr", None)
+    cli._stderr("diagnostic that must not reach stdout")
+    assert fake_stdout.getvalue() == ""  # nothing leaked onto the contract
+
+
 def test_unexpected_extractor_exception_still_emits_the_report(
     capsys, tmp_path, monkeypatch
 ):
