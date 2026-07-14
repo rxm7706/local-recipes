@@ -55,9 +55,11 @@ from pathlib import Path
 # The DOS/zip timestamp epoch — the earliest value a ZIP entry can carry, so
 # the substrate is reproducible and never leaks a wall-clock time.
 _FIXED_DATE_TIME = (1980, 1, 1, 0, 0, 0)
-# 0o644 (rw-r--r--) in the high 16 bits, as a regular file, so the attribute
-# bytes are stable across machines.
-_FIXED_EXTERNAL_ATTR = 0o644 << 16
+# 0o100644 (S_IFREG | rw-r--r--) in the high 16 bits — the file-type bit
+# S_IFREG (0o100000) marks a regular file so strict zip extractors recognize the
+# entry, plus fixed permissions so the attribute bytes are stable across
+# machines (Gemini PR #55).
+_FIXED_EXTERNAL_ATTR = 0o100644 << 16
 # Store uncompressed: DEFLATE output is a function of the host zlib build and
 # is NOT guaranteed byte-identical across zlib versions / CI platforms; for a
 # tiny fixture DB, ZIP_STORED is truly portable-deterministic at no cost.
