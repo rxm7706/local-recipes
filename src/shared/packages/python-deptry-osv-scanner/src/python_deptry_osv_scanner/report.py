@@ -33,6 +33,7 @@ from importlib import resources
 import jsonschema
 
 from . import __version__
+from .interfaces import EngineResult
 from .inventory import ResolvedInventory
 from .models import (
     AXIS_HYGIENE,
@@ -72,6 +73,7 @@ def assemble_report(
     errors: Sequence[ErrorRecord],
     manifests_found: int,
     manifests_parsed: int,
+    engine_results: Sequence[EngineResult] = (),
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -79,22 +81,32 @@ def assemble_report(
     projects it. ``ComplianceReport.__post_init__`` then enforces the
     status/exit/driver coherence invariants at construction.
 
-    Coverage ownership (recorded): the 1.2 report's coverage is
-    ORCHESTRATOR-derived here — ``deps_assessed=0`` because nothing was
-    assessed under the null engine. ``EngineResult.coverage`` claims are
-    deliberately NOT consumed at this site until Story 1.3 wires real
-    engine coverage in (see ``interfaces.EngineResult``)."""
+    Coverage ownership (recorded): manifest counts and ``deps_total`` are
+    ORCHESTRATOR-derived here. ``deps_assessed`` is per-axis: Story 1.3
+    consumes an engine's ``EngineResult.coverage`` when it reports one for
+    that axis (deptry raises the hygiene axis to ``deps_assessed ==
+    inventory.count`` on a successful run), clamped to ``deps_total``; an
+    axis with no engine coverage claim (the vulnerability axis until Story
+    1.5) stays ``deps_assessed=0`` — the truthful "nothing assessed"."""
     status, driver = compose(rungs)
     resolution_depth = (
         ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
     )
+    # Highest per-axis deps_assessed any engine claims (honest max coverage).
+    assessed_by_axis: dict[str, int] = {}
+    for result in engine_results:
+        for engine_coverage in result.coverage:
+            assessed_by_axis[engine_coverage.axis] = max(
+                assessed_by_axis.get(engine_coverage.axis, 0),
+                engine_coverage.deps_assessed,
+            )
     coverage = tuple(
         AxisCoverage(
             axis=axis,
             manifests_found=manifests_found,
             manifests_parsed=manifests_parsed,
             deps_total=inventory.count,
-            deps_assessed=0,
+            deps_assessed=min(assessed_by_axis.get(axis, 0), inventory.count),
             resolution_depth=resolution_depth,
         )
         for axis in _REPORT_AXES
