@@ -39,11 +39,13 @@ this hermetically (`--offline`, in-repo JSON, no network, no download):
 | Version matching | `affected[].versions: ["1.0.0"]` (an explicit list) matches **without** a `ranges` block. The fixture carries no `ranges` and still matches version-exact. |
 | `-L` / `--lockfile` parser override | present in 2.4.0 as `-L <parser>:<path>` (repeatable). The pip-requirements parser id is **`requirements.txt`**. A file NOT named `requirements.txt` is parsed correctly when the parser is forced this way. |
 | JSON output flag | `--output` is **DEPRECATED in 2.4.0 in favor of `--output-file`** (emits a stderr deprecation warning). The proof test + Story 1.5 use `--output-file`. `--format json` + `--output-file <path>` writes a pure JSON document to the file. |
-| Observed exit codes | **0** = no vulnerabilities (clean); **1** = vulnerabilities found (expected non-error); **127** = engine could-not-load / DB error (see § 4 — **multiplexed**: DB-absent, corrupt/truncated zip, missing `-L` file, unknown parser id); **128** = no package sources found in the manifest. **`{0,1,127,128}` is the observed set, NOT a closed contract — 1.5 maps any unlisted code → `error`.** |
+| Observed exit codes | **0** = no vulnerabilities (clean); **1** = vulnerabilities found (expected non-error); **127** = engine could-not-load / DB error (see § 4 — **multiplexed**: DB-absent, **container**-corrupt/truncated zip, missing `-L` file, unknown parser id — but NOT a *content*-corrupt zip, which exits 0); **128** = no package sources found in the manifest. **`{0,1,127,128}` is the observed set, NOT a closed contract — 1.5 maps any unlisted code → `error`.** |
 | **DB-absent + `--offline`** (cold start) | exit **127**; stderr: `could not load db for PyPI ecosystem: unable to fetch OSV database: no offline version of the OSV database is available`; the JSON output file **is written** with **`results: []`** — a body the proof test asserts is **byte-for-byte identical to a real clean scan**. Only the **exit code (127)** honestly distinguishes it; the stderr text is INFO chatter, **not** a stable contract. |
-| **⚠ Present-but-EMPTY `all.zip`** (partial download / mis-provisioned) | exit **0**, body **`results: []`** — **NEITHER exit code NOR body distinguishes it from a real clean scan.** This is the cardinal false-green (distinct from empty *directory*, which → 127). Only a **non-emptiness pre-flight** (§ 4) catches it. A **present-but-corrupt** zip → exit **127** with a `results: []` body still written (caught by the non-emptiness pre-flight OR by surfacing the exit code, not by an existence check). An empty cache **directory** → 127 (safe); an empty *zip file* → 0 (dangerous) — the two are NOT equivalent. |
+| **⚠ Present-but-EMPTY `all.zip`** (0-entry zip; partial download / mis-provisioned) | exit **0**, body **`results: []`** — **NEITHER exit code NOR body distinguishes it from a real clean scan.** The cardinal false-green (distinct from an empty *directory*, which → 127). A **non-emptiness** check (zip has ≥1 `<id>.json` entry) catches THIS one — but it is only a subset of the § 4 **content** pre-flight the next row shows is needed. |
+| **⚠⚠ Present-but-CONTENT-CORRUPT `all.zip`** (valid zip container; entry is `{}` / malformed JSON / truncated / shape-invalid advisory) | exit **0**, body **`results: []`** on a **KNOWN-VULNERABLE** input — osv **loads** the zip and silently matches nothing. **Caught by NEITHER the exit code (0) NOR a namelist non-emptiness check** (the `<id>.json` entry IS present). Only a **content pre-flight** — parse each entry + validate the OSV advisory shape (§ 4) — catches it. **This refutes the earlier "present-but-corrupt zip → 127" claim: that 127 holds ONLY for *container* corruption** (measured: `{}`, `{ not json ]`, and a truncated advisory all → exit 0). |
+| **Present-but-CONTAINER-CORRUPT `all.zip`** (damaged bytes / truncated central directory) | exit **127** — osv cannot open the archive. This IS the corruption class surfacing the exit code catches. Summary: empty cache **directory** → 127 (safe), container-corrupt zip → 127 (safe); empty *zip* → 0 and content-corrupt zip → 0 (dangerous, need the content pre-flight). |
 | **No packages + `--offline`** | exit **128**; stderr `No package sources found, --help for usage information.`; **no output file is written** (distinct from the DB-absent 127 above). The architecture's no-packages → coverage-skipped path → `indeterminate`. |
-| Determinism | the builder writes `all.zip` **stored uncompressed** (`ZIP_STORED`) with a fixed DOS-epoch mtime (`1980-01-01`) + fixed attrs → **twice-run byte-identical on any machine** (DEFLATE output is zlib-build-dependent, so compression is dropped for cross-platform reproducibility; the fixture is tiny). Asserted by the proof test. |
+| Determinism | the builder writes `all.zip` **stored uncompressed** (`ZIP_STORED`) with a fixed DOS-epoch mtime (`1980-01-01`) + fixed attrs → **twice-run byte-identical on the same interpreter** (DEFLATE output is zlib-build-dependent, so compression is dropped for reproducibility; the fixture is tiny). `zipfile`'s create/extract-version header bytes are not pinned, so cross-CPython-version byte-identity is intended but not tested (see Residual risks). Asserted by the proof test. |
 
 The exact offline invocation that works (argv + env), as the proof test runs it:
 
@@ -83,12 +85,24 @@ the osv runner.
 timestamp (conda package build-date, or a recorded manifest timestamp for the
 mirror path; NOT `datetime.now()` at scan). Two boundary rules Story 2.4 MUST
 honor so staleness cannot become a false-green:
-- **Unknown / absent provenance ⇒ `indeterminate`, never clean-eligible.** The
-  osv-native `--download-offline-databases` path (a primary v1 path, §§ 1/5/10)
-  carries **no** `snapshot_at`. The frozen schema forces `max_age_ok=None` when
-  `snapshot_at` is None; 2.4 must treat `max_age_ok=None` (provenance-less DB) as
-  **not clean-eligible** (route to `indeterminate`), NOT as clean — otherwise an
-  ancient or provenance-less DB yields a confident clean.
+- **Unknown / absent provenance ⇒ `indeterminate`, never clean-eligible — but
+  disambiguate "not consulted" from "consulted, provenance-less".** `max_age_ok`
+  is `None` in **two** distinct states the frozen model both permit, and 2.4
+  MUST NOT collapse them:
+  - `source is None` (with `snapshot_at` and `max_age_ok` also None) = **the vuln
+    axis was NOT consulted** — a hygiene-only / vuln-not-requested run;
+    `VulnData(None, None, None)` is legal (verified in `models.__post_init__`:
+    only a *concrete* `max_age_ok` requires provenance). This is **not** a
+    staleness concern and must **NOT** force `indeterminate`.
+  - `source` is **set** but `snapshot_at is None` = the axis WAS consulted
+    against a **provenance-less DB** (the osv-native `--download-offline-databases`
+    path — a primary v1 path, §§ 1/5/10 — carries no `snapshot_at`; the frozen
+    schema then forces `max_age_ok=None`). THIS is the case that is **not
+    clean-eligible** → route to `indeterminate`, never a confident clean.
+
+  The rule is therefore "**`source` set AND `snapshot_at`/`max_age_ok` unknown ⇒
+  `indeterminate`**", **not** a blanket "`max_age_ok is None ⇒ indeterminate`"
+  (which would wrongly force every deptry-only scan to `indeterminate`).
 - **Future-dated `snapshot_at`** (clock skew / bad mirror clock → negative age)
   is treated as **unknown provenance ⇒ `indeterminate`**, never "fresh."
 
@@ -125,7 +139,7 @@ unverifiable/empty DB) + Story 5.1 (documents the channel trust model).
 **skipped → `indeterminate`** (exit 1), **never** a confident `clean`. Emit a
 stderr **actionable nudge**, draft:
 
-> No usable local OSV database found (absent or empty). Point
+> No usable local OSV database found (absent, empty, or content-corrupt). Point
 > `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` (or the `--db-path` wrapper flag) at an
 > existing offline cache, install a conda OSV-DB package, or — **on a connected
 > machine only** — run `osv-scanner --download-offline-databases` to provision
@@ -147,10 +161,11 @@ verbatim reuse would read the cold start as clean.
 
 **Disposition (deterministic pre-flight, NOT stderr parsing):** Story 1.5 must
 detect an untrustworthy DB **before trusting the scan** with a deterministic
-pre-flight. **The pre-flight is a NON-EMPTINESS check, not an existence check**
-— an `os.path.exists(all.zip)` test is INSUFFICIENT and reopens the false-green
-this record exists to close (see the **empty/incomplete-DB** hazard below). The
-pre-flight MUST:
+pre-flight. **The pre-flight is a CONTENT check, not an existence check and not a
+mere namelist count** — an `os.path.exists(all.zip)` test AND a
+"namelist-has-an-entry" test are both INSUFFICIENT and reopen the false-green
+this record exists to close (see the **empty/content-corrupt-DB** hazard below).
+The pre-flight MUST:
 
 1. Resolve the on-disk path using osv's **exact case-sensitive ecosystem
    segment** — `PyPI` (not the lowercase `pypi` `Ecosystem` enum value): the
@@ -158,27 +173,44 @@ pre-flight MUST:
    enum makes the pre-flight always miss a real DB (feature dead → permanent
    `indeterminate`); provisioning at lowercase to match the enum makes osv
    itself never load it. Keep a canonical enum→osv-dir map (`pypi` → `PyPI`).
-2. Confirm the zip **exists AND opens AND contains ≥1 `<id>.json` advisory
-   entry** (a valid `zipfile` with a non-empty namelist). A present-but-empty
-   or corrupt/truncated `all.zip` FAILS this check.
+2. Confirm the zip **exists, opens, AND contains ≥1 entry that PARSES as JSON
+   and satisfies the minimal OSV advisory shape** — an `id` plus an `affected[]`
+   entry targeting the ecosystem with a package name and a concrete
+   `versions`/`ranges` spec. This is a **content** check: reuse the builder's
+   `_entry_for_record` validator on the LOADED entries. osv-scanner's own loader
+   does **NOT** validate advisory shape at load time — empirically it accepts
+   `{}`, malformed JSON, and a truncated advisory and still exits **0** on a
+   vulnerable input (measured) — so the wrapper must. A present-but-empty
+   (0-entry) OR present-but-content-corrupt (`{}` / malformed / truncated /
+   shape-invalid entry) `all.zip` FAILS this check.
 
-Missing / empty / corrupt / unreadable DB → route to **`indeterminate`**
+Missing / empty / content-corrupt / unreadable DB → route to **`indeterminate`**
 (coverage-skipped, exit 1) + emit the nudge, *without* trusting a scan result.
 Do **not** branch security control-flow on the stderr string — it is INFO
-chatter a 2.x patch can reword (§ 6 pins `<3` precisely because flags/text shift
-within 2.x). **The exit code IS required, not merely corroborating** (H2
-correction): a present-but-*corrupt* zip passes an existence check and exits
-**127** while writing a clean-looking `results: []` body, so surfacing osv's
-exit code (seam change #3) is load-bearing — the pre-flight alone does NOT keep
-every bad-DB state off the clean path. This reconciles the architecture conflict
-flagged below: a DB-absent/empty 127 is a *coverage gap* → `indeterminate`, not
-the blanket `127 → error → exit 2` the architecture's pinned-engine table
-assumes; note **127 is multiplexed** (osv emits it for DB-absent, corrupt zip,
-a missing `-L` file, and an unknown parser id) so 1.5 maps **any 127 → the
-coverage-skipped/error family after the non-emptiness pre-flight has run**, and
-any exit code **outside {0,1,127,128} → `error`** (never a content-read that
-could bottom out at clean). **Owner:** Story 1.5 (pre-flight + mapping + nudge),
-Story 3.1 (`--db-path`).
+chatter a 2.x patch can reword (not a stable contract). **The content pre-flight
+and the exit code are BOTH required and complementary** (H2 correction,
+revised) — they catch DISJOINT corruption classes:
+
+- a **content-corrupt** zip (valid container; `{}` / malformed / truncated /
+  shape-invalid entry) is *loaded* by osv and exits **0** with `results: []` on
+  a vulnerable input (measured) → caught **ONLY** by the content pre-flight,
+  **never** by the exit code or a namelist count;
+- a **container-corrupt** zip (damaged bytes / truncated central directory) osv
+  cannot open → exit **127** → caught by surfacing the exit code (seam change
+  #3), which the pre-flight's `zipfile.open` also rejects.
+
+Neither defense alone keeps every bad-DB state off the clean path; the earlier
+"present-but-corrupt zip → 127, so surfacing the exit code is the load-bearing
+defense" framing was **empirically wrong** — *content* corruption exits 0. This
+reconciles the architecture conflict flagged below: a DB-absent / empty /
+container-corrupt 127 is a *coverage gap* → `indeterminate`, not the blanket
+`127 → error → exit 2` the architecture's pinned-engine table assumes; note
+**127 is multiplexed** (osv emits it for DB-absent, container-corrupt zip, a
+missing `-L` file, and an unknown parser id) so 1.5 maps **any 127 → the
+coverage-skipped/error family after the content pre-flight has run**, and any
+exit code **outside {0,1,127,128} → `error`** (never a content-read that could
+bottom out at clean). **Owner:** Story 1.5 (content pre-flight + mapping +
+nudge), Story 3.1 (`--db-path`).
 
 ## 5. Online opt-in disposition
 
@@ -197,9 +229,12 @@ nothing for v1. **Owner:** deferred (post-v1); documented here as out-of-scope s
 ## 6. Engine version ranges (NFR-C1) + detection
 
 **Recommendation:** pin **`osv-scanner >=2.4.0,<3`** (the 2.x line embeds
-scalibr and the exit-code/flag contract proven here; 3.x may move the exit codes
-or rename flags — note `--output`→`--output-file` already shifted *within* 2.x)
-and **`deptry >=0.25.1,<1`** (pre-1.0 minors can move DEP codes). Detection:
+scalibr and the whole exit-code/flag contract proven here is measured on exactly
+2.4.0; 3.x may move the exit codes or rename flags. The `--output`→`--output-file`
+change *within* 2.x is a deprecation-with-warning, **not** a break — `--output`
+still works — so it is context, not evidence for the ceiling; the ceiling rests
+on "the contract is measured only on 2.4.0") and **`deptry >=0.25.1,<1`**
+(pre-1.0 minors can move DEP codes). Detection:
 parse `<engine> --version` at run start; out-of-range → **fail loud** (a typed
 error, not a silent best-effort) — note this requires capturing the engine's
 **stdout**, which the current `_engine_env` discards, so it is a further seam
@@ -246,10 +281,13 @@ applies to any fetch that reuses `_http.make_request`.
 
 ## 9. `-L <parser>:<path>` override — removes the temp-name constraint
 
-**Recommendation:** Story 1.5 writes its synthesized manifest to **any** secure
-temp name and forces the parser with `-L requirements.txt:<path>` — the historic
+**Recommendation:** Story 1.5 writes its synthesized manifest to a secure temp
+name and forces the parser with `-L requirements.txt:<path>` — the historic
 "osv temp input must literally be named `requirements.txt`" constraint (noted in
-the architecture pinned-engine table) is **removed**. The exact parser id is
+the architecture pinned-engine table) is **removed**; forcing the parser makes
+the file's **extension irrelevant** (verified for a `.txt`-suffixed
+non-`requirements.txt` name; a no-extension / other-suffix name is expected to
+behave identically but is not separately exercised). The exact parser id is
 **`requirements.txt`**.
 
 **Evidence:** the proof test's non-`requirements.txt`-name row: a file named
@@ -279,11 +317,16 @@ vulnerability-data fixture that **Story 1.5 / 2.5 / CI** consume:
 - the deterministic builder `tests/fixtures/osv_db_builder.py`
   (`build_offline_db(records_dir, cache_root) -> cache_root`, writing
   `<cache_root>/osv-scanner/PyPI/all.zip` **stored uncompressed** for
-  cross-machine byte-identity, fixed mtime, entries `<id>.json`; **fails loud**
-  (always `ValueError`) on an empty records dir, a case-variant `.JSON` record,
-  a non-object/wrong-type record, or a record with no `PyPI` `affected` entry
-  carrying a package name AND a concrete matchable spec (`versions`/`ranges`) —
-  never a silent empty, mis-shelved, or **unmatchable** DB);
+  same-interpreter byte-identity, fixed mtime, entries `<id>.json`; **fails
+  loud** (always `ValueError`) on a non-directory or empty records dir, a
+  case-variant `.JSON` record or a record nested under a subdirectory, a
+  non-object/wrong-type record, or a record with no `PyPI` `affected` entry
+  carrying a package name AND a concrete matchable spec (a non-empty `versions`
+  string or a `ranges` entry with `events`) — never a silent empty, mis-shelved,
+  or **unmatchable** DB. The builder guards the in-repo **fixture** only;
+  validating an externally-provisioned DB (osv-native download / conda package /
+  mirror) at load time is Story 1.5's **content pre-flight** (§ 4), since
+  osv-scanner's loader accepts malformed advisory content and still exits 0);
 - vulnerable / clean pins under `tests/fixtures/lockfiles/osv-{vulnerable,clean}/`;
 - the proof test `tests/conformance/test_osv_offline_db_spike.py`.
 
@@ -292,14 +335,16 @@ package) to stand up its offline DB; new advisories are added by dropping a
 readable JSON record beside `PDOS-FIXTURE-0001.json` and rebuilding.
 
 **Evidence:** observed exit codes recorded above — vuln **1**, clean **0**,
-db-absent **127**, no-packages **128** — all asserted by the test, along with
-the builder's empty-records-dir fail-loud and byte-identical output. **Owner:**
-Story 1.5 (reuse), 2.5 (more fixtures), CI (the loop verify gate already collects it).
+db-absent **127**, container-corrupt **127**, present-but-empty **0**,
+content-corrupt **0** (the last two are false-greens the content pre-flight
+catches), no-packages **128** — all asserted by the test, along with the
+builder's fail-loud guards and byte-identical output. **Owner:** Story 1.5
+(reuse), 2.5 (more fixtures), CI (the loop verify gate already collects it).
 
 ## 12. Gating
 
 This record **gates Story 1.5** (osv engine: mechanism, `-L` parser id,
-`--output-file`, DB-absent→`indeterminate` via a cache pre-flight, the
+`--output-file`, bad-DB→`indeterminate` via a **content** pre-flight, the
 three-part `_engine_env` seam hand-off) and **Story 2.4** (stale-DB verdict
 degrade via `max_age_ok`). It **does NOT gate Story 1.3** (deptry has no OSV
 surface). Secondary hand-offs: **1.7** (pin application + version guard), **3.1**
@@ -324,12 +369,14 @@ two tracked planning artifacts agree (this spike does **not** edit
   that osv's temp input be named literally `requirements.txt`. The `-L
   <parser>:<path>` override (§ 9) **removes** that constraint; the line should be
   updated.
-- **Empty/incomplete-DB fail-loud.** The architecture's Gap-C describes a
-  DB-absent path but not the present-but-empty/corrupt/incomplete-DB false-green
-  (exit 0 + empty body). The correct-course should add, to `verdict.py`/`errors.py`
-  and the Gap-C narrative, that a DB pre-flight is a **non-emptiness** guard
-  (advisory-count ≥ 1) and that a provenance-less DB routes to `indeterminate` —
-  so the guard is an architectural invariant, not just a 1.5 implementation note.
+- **Empty/incomplete/content-corrupt-DB fail-loud.** The architecture's Gap-C
+  describes a DB-absent path but not the present-but-empty / content-corrupt /
+  incomplete-DB false-green (exit 0 + empty body, which osv's loader does not
+  reject). The correct-course should add, to `verdict.py`/`errors.py` and the
+  Gap-C narrative, that the DB pre-flight is a **content** guard (≥1 entry that
+  parses as a shape-valid OSV advisory — **NOT** a mere existence check or
+  namelist count) and that a provenance-less DB routes to `indeterminate` — so
+  the guard is an architectural invariant, not just a 1.5 implementation note.
 - **128 internal inconsistency.** `architecture.md` maps `128 → typed errors` in
   the pinned-engine table while its Gap-C narrative maps `128 → coverage-skipped
   → indeterminate`. This record follows the Gap-C line (`128 → indeterminate`);
@@ -351,19 +398,23 @@ therefore **three** changes:
 
 1. **Inject env** — thread `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` (an optional
    `extra_env` on `_engine_env`, or an osv-specific wrapper).
-2. **DB non-emptiness pre-flight** (§ 4) — the primary bad-DB detector. It needs
-   no seam change (1.5 controls the cache path) but it is a **non-emptiness**
-   check (zip opens + ≥1 `<id>.json` entry, resolved at osv's case-sensitive
-   `PyPI` segment), NOT a plain `os.path.exists`. An existence check passes for a
-   present-but-empty zip and reopens the cardinal false-green.
+2. **DB content pre-flight** (§ 4) — the primary bad-DB detector. It needs no
+   seam change (1.5 controls the cache path) but it is a **content** check (zip
+   opens + ≥1 entry that parses as a shape-valid OSV advisory, resolved at osv's
+   case-sensitive `PyPI` segment; reuse the builder's `_entry_for_record`), NOT
+   a plain `os.path.exists` and NOT a mere namelist count. An existence check
+   passes for a present-but-empty zip, and a namelist count passes for a
+   present-but-content-corrupt zip — both reopen the cardinal false-green.
 3. **Surface the exit code** (and, if version-detection per § 6 is wired, the
    engine's **stdout**) from `_engine_env` so osv's `1` / `127` / `128` are
    distinguishable content — today they are not observable through the seam.
-   **This is REQUIRED, not optional**: a present-but-*corrupt* zip passes an
-   existence check and (depending on corruption) can exit 127 with a
-   clean-looking body; (2) and (3) are complementary — neither alone keeps every
-   bad-DB state off the clean path (the earlier "regardless of (3)" framing was
-   wrong).
+   **This is REQUIRED, not optional**: a *container*-corrupt zip exits **127**
+   (the pre-flight's `zipfile.open` rejects it too), and `1` / `128` must be
+   distinguished from `0`. (2) and (3) catch DISJOINT corruption classes —
+   *content*-corrupt → exit **0** (only (2) catches it), *container*-corrupt →
+   **127** (both catch it) — so neither alone keeps every bad-DB state off the
+   clean path (the earlier "corrupt zip → 127, so the exit code is the defense"
+   framing was empirically wrong: content corruption exits 0).
 
 This spike deliberately did **not** extend `_engine_env` (production code is
 frozen for 1.4); the three changes are Story 1.5's to make. **Do not** read the
@@ -387,13 +438,17 @@ undercounts the work and reintroduces the cold-start false-green.
   pin `pdos-vuln-fixture==1.0.0`; PEP-503 name-normalization and PEP-440
   version-equivalence matching are Story 1.5 / 2.1 concerns (filed in
   `deferred-work.md`).
-- **Incomplete-but-FRESH DB reads as clean.** A valid, in-date DB that is
-  content-incomplete (empty / trimmed / partial download / wrong-ecosystem
-  shelved) produces `results: []` → clean — a false-green that **staleness-by-age
-  cannot detect** (the DB is fresh). This is the risk class behind the § 4
-  non-emptiness pre-flight and the H1/H2 review findings; the pre-flight
-  (advisory-count ≥ 1) is the only defense, and it is now a mandated 1.5
-  deliverable + a correct-course architectural invariant. A partial *manifest*
+- **Incomplete/corrupt-but-FRESH DB reads as clean.** A valid, in-date DB that
+  is content-incomplete OR content-corrupt (empty 0-entry zip / trimmed /
+  partial download / wrong-ecosystem shelved / a `{}` / malformed / truncated /
+  shape-invalid advisory entry) produces `results: []` → clean — a false-green
+  that **staleness-by-age cannot detect** (the DB is fresh) and that
+  osv-scanner's own loader does not reject (it accepts malformed advisory
+  content and still exits 0, measured). This is the risk class behind the § 4
+  **content** pre-flight and the H1/H2/F1 review findings; a content pre-flight
+  (≥1 entry that parses as a shape-valid OSV advisory — **NOT** a mere namelist
+  count) is the only in-tool defense, and it is now a mandated 1.5 deliverable +
+  a correct-course architectural invariant. A partial *manifest*
   parse (osv silently drops unparseable requirements lines; a mixed valid/malformed
   file scans only the valid subset and can exit 0) is the analogous input-side
   gap — Story 1.5/1.9 must surface dropped-line counts into coverage rather than
