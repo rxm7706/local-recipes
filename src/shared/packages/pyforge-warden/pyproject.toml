@@ -1,0 +1,28 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "pyforge-warden"
+version = "0.1.0"
+description = "Unified dependency-hygiene + vulnerability scanner orchestrating deptry and osv-scanner over Python/Conda/Pixi manifests."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "rxm7706" }]
+# The scanning engines (deptry, osv-scanner) are conda run-dependencies (see
+# pixi.toml). The library uses a lean, targeted dependency set (revised
+# architecture: lean-not-stdlib-only) — pure-stdlib as fallback, no execution
+# of untrusted input (NFR-S1: yaml.safe_load only, no jinja-render).
+dependencies = [
+    "PyYAML",
+    "packaging",
+    "cyclonedx-python-lib",
+    "jsonschema",
+]
+
+[project.scripts]
+warden = "pyforge.warden.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyforge"]

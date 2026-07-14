@@ -7,7 +7,7 @@ spec_updated: 2026-07-12
 > **Intake spec** (executed directly, 2026-07-12). Upgrade the repo's BMAD
 > Method install 6.6.0 → 6.10.0 (gains the `bmad-dev-auto` unattended
 > implementation skill) and adopt **bmad-loop** (the deterministic
-> dev-orchestration companion) so the `python-deptry-osv-scanner`
+> dev-orchestration companion) so the `pyforge-warden`
 > implementation can run loop-driven with code-based gates ("Option B",
 > user-selected 2026-07-12). Enables graduated autonomy:
 > `per-story-spec-approval` gates for the contract-freeze stories
@@ -35,7 +35,7 @@ spec_updated: 2026-07-12
 ## Waves
 
 - **W1 — upgrade BMAD 6.6.0 → 6.10.0.** Add pins → `pixi install` → run the installer's update flow (`bmad-method install`, non-interactive where possible) → **verify the repo-custom surfaces survived**: (a) `_bmad/scripts/resolve_config.py` — carries the repo-custom **multi-project layers 5/6** (`--project` / `BMAD_ACTIVE_PROJECT` / `.active-project` marker); if regenerated, restore the custom merge; (b) `_bmad/custom/*.toml` (team/user overlays — designed to survive); (c) `scripts/bmad-switch` (repo-root, untouched by installer); (d) `.claude/skills/bmad-*` regenerate — confirm `bmad-dev-auto` (+ any new 6.10 skills) appear and existing skill customize.tomls still resolve. Gate: `bmad-drift-check` integrity + the skill meta-tests green; re-stamp baseline if surface-changed.
-- **W2 — install + init bmad-loop.** Env-resident via the git pypi dep; `bmad-loop init` (installs its hooks/policy + bundled skills `bmad-loop-resolve/-sweep/-setup`); configure `[verify] commands` = this repo's pixi test tasks (scanner: `python-deptry-osv-scanner-test`), `[gates] mode = "per-story-spec-approval"`, review trigger `recommended`, claude CLI profile. Gate: `bmad-loop --help` + a dry `bmad-loop tui`/`run --story` smoke on a no-op.
+- **W2 — install + init bmad-loop.** Env-resident via the git pypi dep; `bmad-loop init` (installs its hooks/policy + bundled skills `bmad-loop-resolve/-sweep/-setup`); configure `[verify] commands` = this repo's pixi test tasks (scanner: `pyforge-warden-test`), `[gates] mode = "per-story-spec-approval"`, review trigger `recommended`, claude CLI profile. Gate: `bmad-loop --help` + a dry `bmad-loop tui`/`run --story` smoke on a no-op.
 - **W4 — official BMad Method UI dashboards (added 2026-07-12, user request).** Leverage
   `bmad-code-org/bmad-method-ui` via the **consume-not-submit** pattern (G58/db-gpt
   precedent): staged-recipes **PR #33513** (OPEN, author killua156) ships two recipes —
@@ -48,7 +48,7 @@ spec_updated: 2026-07-12
   touches `recipes/` — the effort's closeout now REQUIRES a CFE-skill retro (previously
   N/A). Never submit or compete with #33513; when it merges + the packages land on the
   channel (G66), swap the local-channel deps for conda-forge ones + re-stamp cfe-status.
-- **W3 — wire the scanner pilot.** Generate the story feed for `python-deptry-osv-scanner` (sprint-status via `bmad-sprint-planning`, or a typed `stories.yaml` pointing at the 20 epics.md stories); verify dev-auto's config resolution honors the **multi-project** `planning_artifacts` path (the likeliest friction — fix via its `customize.toml` layer if not); pilot on **Story 1.1** with per-story gates. Gate: the loop runs 1.1 to a spec-approval halt with a valid spec artifact.
+- **W3 — wire the scanner pilot.** Generate the story feed for `pyforge-warden` (sprint-status via `bmad-sprint-planning`, or a typed `stories.yaml` pointing at the 20 epics.md stories); verify dev-auto's config resolution honors the **multi-project** `planning_artifacts` path (the likeliest friction — fix via its `customize.toml` layer if not); pilot on **Story 1.1** with per-story gates. Gate: the loop runs 1.1 to a spec-approval halt with a valid spec artifact.
 
 ## Risks
 

@@ -960,19 +960,19 @@ re-verified **at the retro**. Full-tree impact analysis (all 13 specs, 2026-07-0
   42 MCP tools / 22 phases) are re-grounded via the documented sync loop
   (`bmad-groundtruth` → reconciler skills → `-- --write-baseline`), never hand-edited.
 
-**Post-ship amendment (2026-07-12, from the python-deptry-osv-scanner Phase-0
+**Post-ship amendment (2026-07-12, from the pyforge-warden Phase-0
 review):** the S5 `inventory-match --policy` exit-code convention shipped as
 `0 = pass, 2 = policy violations, 1 = error` — **inverted** relative to
-`python-deptry-osv-scanner.md`'s frozen enum (`0` pass / **`1` policy-violation** /
+`pyforge-warden.md`'s frozen enum (`0` pass / **`1` policy-violation** /
 **`2` error** / `130` SIGINT) and to the kedro-migration **FR-18 unified gate**,
-which is specced to the python-deptry-osv-scanner convention while naming
+which is specced to the pyforge-warden convention while naming
 `inventory-match --policy` as a co-source. `rc==2` therefore means "block the
 merge" here and "operational error, page the platform owner" there. **Obligation
 (owned at the FR-18 implementation, or earlier if a shared CI template lands):**
-flip `inventory-match --policy` to the python-deptry-osv-scanner convention with
+flip `inventory-match --policy` to the pyforge-warden convention with
 a deprecation window for existing consumers (e.g. honor an
 `INVENTORY_MATCH_LEGACY_EXIT=1` env for one release). Cross-ref:
-`python-deptry-osv-scanner.md` § Cross-spec impact & sync item 1; full analysis
+`pyforge-warden.md` § Cross-spec impact & sync item 1; full analysis
 in gist `326be5f25e702e0fcce343046c70a6b2` (finding X1).
 
 **Retro-time tasks (S-retro):** the closing all-specs sync sweep — re-verify both

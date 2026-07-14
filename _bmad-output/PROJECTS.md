@@ -49,7 +49,7 @@ loaded when an active project resolves.
 | `local-recipes`        | active | Primary project — conda-forge recipe authoring monorepo (this repo's main purpose).                                                                                                |
 | `presenton-pixi-image` | active | Air-gapped, conda-forge-native repackaging of the Presenton AI deck-generation app for OpenShift Container Platform deployment in regulated-enterprise environments.                |
 | `deckcraft`            | active | Air-gapped, conda-forge-native AI pipeline for generating editable PowerPoint, Marp markdown, infographics, and images. Multi-surface (Claude Skill, MCP for Copilot/MS365, CLI). Complements `presenton-pixi-image` (built from primitives, not a repackage).                |
-| `python-deptry-osv-scanner`       | active | Unified dependency-hygiene + vulnerability scanner (deptry + osv-scanner) over Python/Conda/Pixi manifests — schema-validated ComplianceReport + strict CI exit-code gate. In-repo pixi build workspace member at `src/shared/packages/python-deptry-osv-scanner/` (conda+wheel+sdist). Spec: `docs/specs/python-deptry-osv-scanner.md`. |
+| `pyforge-warden`       | active | Unified dependency-hygiene + vulnerability scanner (deptry + osv-scanner) over Python/Conda/Pixi manifests — schema-validated ComplianceReport + strict CI exit-code gate. In-repo pixi build workspace member at `src/shared/packages/pyforge-warden/` (conda+wheel+sdist). Spec: `docs/specs/pyforge-warden.md`. |
 
 ## Adding a new project
 
