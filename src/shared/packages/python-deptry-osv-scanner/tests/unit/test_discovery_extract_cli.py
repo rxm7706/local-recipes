@@ -399,15 +399,18 @@ def test_keyboard_interrupt_returns_sigint_with_no_report(
 
 
 def test_text_format_emits_one_non_contract_summary_line(capsys, tmp_path):
+    # A declared-but-never-imported dependency (this fixture ships no source)
+    # is flagged DEP002 by deptry (Story 1.3) -> status warn, one finding,
+    # exit 0. The text format still emits exactly ONE summary line.
     write_pyproject(tmp_path, ["requests==2.31.0"])
     rc = main(["scan", str(tmp_path)])  # text is the default format
     captured = capsys.readouterr()
     assert rc == 0
     assert captured.out.count("\n") == 1
     line = captured.out.strip()
-    assert "status=clean" in line
+    assert "status=warn" in line
     assert "exit_code=0" in line
-    assert "findings=0" in line
+    assert "findings=1" in line
 
 
 def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):
@@ -492,7 +495,9 @@ def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
     Finding construction: the scan completes with the escaped form in the
     finding ids and the raw name in the subjects. The raw-malformed entry
     surfaces BOTH deficiencies: withheld from vuln matching AND not
-    hygiene-covered (the hygiene axis never goes silent)."""
+    hygiene-covered (the hygiene axis never goes silent). deptry handles the
+    odd name gracefully (no finding, no error), so the extractor's
+    indeterminate verdict stands."""
     write_pyproject(tmp_path, ["foo\nbar"])
     rc, document, _ = scan_json(capsys, tmp_path)
     assert rc == 1
@@ -784,13 +789,14 @@ def test_nul_byte_scan_target_is_early_fatal_not_internal_error(capsys):
     assert "Traceback" not in captured.err
 
 
-def test_poetry_only_deps_scan_as_not_applicable_KNOWN_GAP(capsys, tmp_path):
-    """CHARACTERIZATION (not an endorsement): a Poetry/PDM manifest whose
-    dependencies live outside [project].dependencies currently scans as
-    not-applicable/exit-0 — a residual false-green for exit-code-only CI.
-    Section-aware discovery (the D2 split) is owned by Story 1.9; this test
-    PINS the current behavior so 1.9 must consciously flip it. Tracked in
-    deferred-work.md (follow-up Opus review, 2026-07-13)."""
+def test_poetry_only_deps_are_covered_by_deptry_natively(capsys, tmp_path):
+    """CHARACTERIZATION: our OWN extractor reads only [project].dependencies,
+    so a Poetry/PDM manifest yields zero components (inventory_count 0) — the
+    section-aware D2 split is still Story 1.9's. BUT deptry reads
+    [tool.poetry.dependencies] NATIVELY (FR9), so the unused `requests`
+    surfaces as a DEP002 warn: exit 0 but NOT the silent not-applicable
+    false-green the pre-1.3 pipeline produced. When 1.9 lands section-aware
+    discovery the inventory (and vuln axis) will cover it too."""
     (tmp_path / "pyproject.toml").write_text(
         "[tool.poetry]\n"
         'name = "demo"\n'
@@ -802,9 +808,9 @@ def test_poetry_only_deps_scan_as_not_applicable_KNOWN_GAP(capsys, tmp_path):
     )
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 0
-    assert document["status"]["value"] == "not-applicable"
-    # When 1.9 lands section-aware discovery, this assertion SHOULD fail and
-    # be rewritten to expect indeterminate/exit-1 (the deferred-work fix).
+    assert document["status"]["value"] == "warn"
+    assert document["inventory_count"] == 0  # our extractor found nothing
+    assert "hygiene:DEP002:requests" in {f["id"] for f in document["findings"]}
 
 
 def test_stderr_helper_drops_diagnostic_when_stderr_is_none(monkeypatch):
