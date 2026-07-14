@@ -5,7 +5,13 @@ import { useFit } from './useFit.js';
 let presenterStartTime = null;
 
 function useTimer() {
-  const start = useRef(presenterStartTime || (presenterStartTime = Date.now()));
+  const start = useRef(null);
+  if (start.current === null) {
+    if (presenterStartTime === null) {
+      presenterStartTime = Date.now();
+    }
+    start.current = presenterStartTime;
+  }
   const [elapsed, setElapsed] = useState(Date.now() - start.current);
   useEffect(() => {
     const id = setInterval(() => setElapsed(Date.now() - start.current), 1000);

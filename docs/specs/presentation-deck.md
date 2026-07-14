@@ -1,6 +1,6 @@
 ---
 status: workflow
-spec_updated: 2026-07-11
+spec_updated: 2026-07-14
 ---
 # Tech Spec: Design-to-Deck — reusable React/Vite presentation workflow (parameterized)
 
@@ -45,6 +45,61 @@ spec_updated: 2026-07-11
 5. **Verify** against [Acceptance criteria](#acceptance-criteria).
 6. **Append a new Worked Example** recording the concrete parameters, slide
    count, act structure, and the PR/commit refs. That becomes a permanent record.
+
+---
+
+## Claude Design ↔ repo handoff (operating playbook)
+
+The friction in this workflow is the boundary between a **Claude Design** session
+(where slides are authored) and the **local repo** (where they're wired, built,
+and shipped). This is the concrete hand-off, learned across Worked Examples 1–2.
+
+**What a Claude Design session hands off (per deck):**
+- **One `.dc.html` prototype** — the React deck's source of truth and the *only*
+  input to `extract`. Its name is whatever Design exported (`Agentic SDLC.dc.html`,
+  `Warden Deck.dc.html`); **spaces are fine** (see gotchas — don't rename it).
+- **Zero or more standalone Marp `.md` decks** — a main deck plus optional
+  companions (e.g. an **executive summary** and an **infographic**). These are
+  **parallel exports** authored in Marp — *not* derived from the prototype and
+  *not* consumed by `extract`. They live in `src/marp/` and ship as-is.
+- **An optional `.pptx`** — a dated PowerPoint export → `src/pptx/`.
+
+**Wiring it in the repo (the exact steps):**
+1. **Scaffold** (first time for a deck): copy the engine + glue verbatim from an
+   existing deck (`presentations/agentic-sdlc/`); stub the `index.html` title,
+   README, and `package.json` name. This can land as its own PR
+   (`claude/add-<slug>-deck`) *before* the content exists.
+2. **Drop the prototype** into `project/<Deck>.dc.html`.
+3. **Point the extractor:** set `SRC = join(root, 'project', '<Deck>.dc.html')`
+   and `BANNER_MAP = {}` (or map each remote image) in `scripts/extract-slides.mjs`.
+4. **Drop the Marp exports** into `src/marp/<slug>-*.md` (main + any companions)
+   and the `.pptx` into `src/pptx/<slug>-YYYY-MM-DD.pptx`.
+5. **Install + unblock the toolchain:** `npm install`, then **approve esbuild's
+   install script** — modern npm (11+) blocks it by default:
+   `npm approve-scripts esbuild && npm rebuild esbuild`. Commit the resulting
+   `package.json` `allowScripts` entry + `package-lock.json` so the next clone
+   installs reproducibly. Skipping this makes `dev`/`build` fail — but `extract`
+   still runs (it's plain Node, no esbuild).
+6. **Extract → build:** `npm run extract` (→ N fragments + manifest),
+   `npm run build` (→ offline `dist/`). This can land as `claude/wire-<slug>-slides`.
+
+**Branding — display brand vs. slug.** When the product's *display* brand differs
+from its package/repo *slug* (e.g. display **Warden** vs. distribution
+**pyforge-warden**), slide **content** carries the display brand while **file and
+directory names** use the slug. Don't rebrand the prototype/marp copy to the slug —
+keep the display name in the words on the slides.
+
+**The engine is a shared asset — keep every copy byte-identical.** Every deck
+copies `src/deck/*` (+ glue) verbatim, so an engine fix (a Gemini finding, a
+browser-compat guard) must be applied to **every** deck copy in the same change,
+or the copies drift. Verify with
+`diff -q presentations/<a>/src/deck/<f> presentations/<b>/src/deck/<f>` before and
+after.
+
+**Shipping a `presentations/` PR.** It's a non-recipe change → add the
+`maintenance` + `documentation` labels (the `maintenance`-gated lint is what
+otherwise reds the staged-recipes linter) and confirm `environment.yaml` is in
+sync with `pixi.toml`. See auto-memory `feedback_non_recipe_pr_linter_gates`.
 
 ---
 
@@ -193,6 +248,11 @@ starts on first open and persists across `S` toggles within a session
 (resets on full reload).
 
 ### 4. Build & export
+- **First-time prerequisite (npm 11+):** `npm install` leaves esbuild's install
+  script blocked by allow-scripts, so `dev`/`build` fail until you
+  `npm approve-scripts esbuild && npm rebuild esbuild`. Commit the `allowScripts`
+  entry it adds to `package.json` so future clones install cleanly. (`extract`
+  needs none of this.)
 - `npm run build` → static `dist/` (relative `base`, self-contained, offline-safe;
   open `dist/index.html` from disk or host anywhere). **Print to PDF** from the
   browser to export (deck chrome hidden in print).
@@ -245,9 +305,23 @@ The reference theme (swap per topic):
   ampersands in labels (see the Act VI fix in `restructure-deck.mjs`).
 - **`restructure-deck.mjs` is per-deck and one-shot** — run it once against the
   raw prototype; it is not idempotent and `extract` consumes its output.
-- **Engine files are the reusable asset.** When starting a new deck, copy
-  `src/deck/*`, `src/slides/index.js`, `vite.config.js`, `package.json` verbatim;
-  change only the prototype, `index.html` title, README, and generated slides.
+- **Engine files are the reusable asset — and must stay byte-identical across
+  decks.** When starting a new deck, copy `src/deck/*`, `src/slides/index.js`,
+  `vite.config.js`, `package.json` verbatim; change only the prototype,
+  `index.html` title, README, and generated slides. Because the copies are
+  identical, any engine fix must be applied to **every** deck in the same change
+  (see the handoff playbook) — `diff -q` the copies to prove they didn't drift.
+- **esbuild's install script is blocked by default (npm 11+).** After
+  `npm install`, run `npm approve-scripts esbuild && npm rebuild esbuild`, then
+  commit the `allowScripts` entry it writes to `package.json` (+ `package-lock.json`)
+  for reproducible installs. `dev`/`build` fail without it; `extract` doesn't care.
+- **Spaced prototype filenames are fine — don't fight the Design export name.**
+  `Warden Deck.dc.html` / `Agentic SDLC.dc.html` work: the extractor reads the
+  path via `path.join()` (never a shell), and git tracks/quotes it. Renaming to
+  hyphenate just churns the `SRC` line and diverges from what Design handed off.
+- **Display brand vs. slug.** Slide *content* uses the product's display brand;
+  *file/dir* names use the repo slug (e.g. **Warden** on the slides,
+  `pyforge-warden` in paths). Keep the display name in the prototype/marp copy.
 - **`.pptx` is a binary blob** — git can't diff it; updates replace the whole
   file. Date the filename so revisions are distinguishable.
 - **Not a conda recipe.** This deck lives under `presentations/`, unrelated to
@@ -290,3 +364,43 @@ per-case reality below.
   mismatched quotes.
 - `spec_updated` reflects when this workflow spec was back-filled (2026-07-11)
   from the shipped effort; the deck itself predates the spec.
+
+### Example 2 — PyForge-Warden, the multi-axis dependency compliance gate · PRs #59, #60
+
+| Field | Value |
+|---|---|
+| `topic` | **Warden** — a pluggable multi-axis Python dependency **compliance gate** (hygiene · security · license · currency) that never false-greens |
+| `slug` / `output_dir` | `pyforge-warden` / `presentations/pyforge-warden/` |
+| `slide_count` | 28 |
+| `acts` | 6 — the false-green problem → one report + verdict lattice → the two v1 engines (deptry/osv) → deterministic, deny-by-default runs → the six-axis vision (KEV/EPSS, license, currency) → gate-in-CI; + cover & personas appendix |
+| `prototype` | `project/Warden Deck.dc.html` (Claude Design handoff; **spaces in the name kept**) |
+| `banners` | none — the prototype references **zero** remote images, so `BANNER_MAP = {}` and `dist/` is fully offline (bar Google Fonts) |
+| `fonts` / `palette` | **Archivo** display; light `#f3f2f2`, dark `#201e1d`, red accents `#c22a10` / `#ec3013` (from the prototype) |
+| `branches` / `PRs` | scaffold `claude/add-pyforge-warden-deck` → **PR #59** (`b90e3aab69`); wire `claude/wire-pyforge-warden-slides` → **PR #60** (`ef5fd000d0`) |
+| `exports` | **three standalone Marp decks** — `src/marp/pyforge-warden-deck.md`, `-executive-summary.md`, `-infographic.md` — plus `src/pptx/pyforge-warden-deck-2026-07-14.pptx` |
+| `sources` | Claude Design prototype + Marp exports; the prototype is committed as the design source of truth |
+
+**Notes / deltas from the generic workflow:**
+- **Two-phase landing:** the scaffold shipped first (PR #59, engine + glue copied
+  verbatim from `agentic-sdlc`, empty `manifest.json`), then the prototype was
+  dropped and wired in a second PR (PR #60). No `restructure-deck.mjs` was needed —
+  the prototype arrived already act-structured across 28 clean `<section>`s.
+- **Marp-native companions:** unlike Example 1 (one Marp mirror), this deck shipped
+  **three** standalone Marp decks (main + executive-summary + infographic) as
+  first-class parallel exports — none derived from the `.dc.html`.
+- **Display brand ≠ slug:** slide copy reads **Warden** (the product display name);
+  files/dirs use `pyforge-warden` (the distribution). Kept the display name in the
+  prototype and Marp copy.
+- **esbuild allow-scripts** first bit here: `npm install` blocked esbuild's
+  postinstall (npm 11), so `build` failed until `npm approve-scripts esbuild`; the
+  `allowScripts` entry is committed for reproducibility.
+- **Declined Gemini finding:** the spaced prototype filename `Warden Deck.dc.html`
+  was kept (extractor reads via `path.join()`, git quotes it) — consistent with
+  Example 1's `Agentic SDLC.dc.html`.
+- **Shared-engine hardening (PR #61, branch `claude/deck-engine-hardening`):** the four
+  Gemini medium findings raised on the scaffold PR (#59) were fixed in the engine
+  and applied to **both** `agentic-sdlc` and `pyforge-warden` in one change, keeping
+  the copies byte-identical: `document.exitFullscreen?.()` guard (iOS Safari),
+  `setMode` added to the `useDeck` keyboard-effect deps, lazy `useRef` init for the
+  presenter timer (Strict-Mode safe), and an explicit `Escape`-closes-help handler
+  in `Deck.jsx`. Both decks rebuilt green (69 / 86 modules).

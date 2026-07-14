@@ -21,6 +21,7 @@ export default function Deck() {
         return;
       }
       if (e.key === '?') setShowHelp((v) => !v);
+      if (e.key === 'Escape') setShowHelp(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
