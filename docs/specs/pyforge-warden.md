@@ -394,8 +394,14 @@ silent pass.)*
   2026-07-14).** The multi-axis expansion adds **exactly one** runtime dep:
   **`license-expression`**. The currency (endoflife.date) + security-KEV/EPSS
   data are **fetched-and-cached feeds**, not runtime libraries — **offline is
-  the default; any online query is opt-in and never silent** (NFR-S2). The
-  unchanged runtime set stays PyYAML (`safe_load` only) / `packaging` /
+  the default; any online query is opt-in and never silent** (NFR-S2). When
+  online provisioning IS opted into (or for pre-provisioning), the feed fetch
+  MUST respect a **configured mirror / base-URL override** (the same air-gap
+  discipline as the OSV DB's `OSV_VULNS_BUCKET_URL` + the `_http.py`
+  JFrog/`.netrc`/truststore auth chain) — never a hardcoded public endpoint
+  only, so enterprise/air-gapped fleets provision endoflife.date + KEV + EPSS
+  from an internal mirror (Gemini PR #58). The unchanged runtime set stays
+  PyYAML (`safe_load` only) / `packaging` /
   `cyclonedx-python-lib` / `jsonschema` + stdlib `tomllib` / `re` /
   `importlib.metadata`; engines `deptry` + `osv-scanner` remain declared
   conda/pixi run-deps. The binding constraint is **no execution of untrusted
@@ -740,14 +746,29 @@ the rationale survives; each drove a concrete change above.
   central (verdict owns projection; axes only feed rungs) and makes each new
   axis additive to the frozen contract, never an editor.
 - **OD8 — License source strategy (metadata, not source scan).** Resolve
-  licenses from **package/recipe metadata only** — conda recipe `about:
-  license:` (+ `license_family`) and PyPI metadata via stdlib
-  `importlib.metadata` (PEP 639 `License-Expression`, legacy `License`,
-  `Classifier: License ::` trove) — and normalize to SPDX via the one new
-  runtime dep **`license-expression`** (nexB/AboutCode). **No source
+  licenses from **package/recipe metadata only** and normalize to SPDX via the
+  one new runtime dep **`license-expression`** (nexB/AboutCode). **No source
   scanning**: ScanCode Toolkit deep-scan is deferred (post-v1.x) as it would
-  break the lean-deps + fast-fleet posture (NFR1/NFR5). Unresolvable →
-  `unknown` → `indeterminate` (never a silent allow).
+  break the lean-deps + fast-fleet posture (NFR1/NFR5). Two sources, with
+  **different availability** — this is the same "coverage improves only by
+  resolving, never by assuming" guardrail the security/currency axes use, and
+  it keeps the pre-build posture honest (Gemini PR #58):
+  - **conda** — `about: license:` (+ `license_family`) is carried **in the
+    recipe manifest itself**, so it resolves **pre-build**, no install needed.
+  - **PyPI** — resolved from **installed distribution metadata** via
+    `importlib.metadata` (PEP 639 `License-Expression`, legacy `License`,
+    `Classifier: License ::` trove). This requires the component to be
+    **present in an environment Warden can inspect** — a resolved/installed
+    tree, a `pixi.lock`/lockfile-provisioned env, or Warden run inside the
+    target env. **A bare, uninstalled PyPI manifest** (`pyproject.toml` /
+    `requirements.txt` whose deps are not installed) cannot yield license
+    metadata offline, so those components are **`unknown` → `indeterminate`**
+    (honest coverage gap + lock-nudge, exactly like an unversioned dep on the
+    vuln axis) — **never a silent `allowed`**. Filling that gap by resolving
+    (install / lock) or via an **optional bundled/cached license map** (same
+    provisioning pattern as the conda→pypi map, offline; a PyPI JSON-metadata
+    fetch is opt-in-online-only, per OD9/OD10 mirror policy) is a documented
+    coverage lever, never an assumption.
 - **OD9 — Currency source strategy (endoflife.date + lag).** Compute
   supportability from **endoflife.date** (cached offline; opt-in online,
   never silent) plus **version-lag** of the resolved set, for each dependency
