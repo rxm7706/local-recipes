@@ -1,0 +1,20 @@
+<div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">03</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">False-green #2 — the unassessable dependency</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1.1fr 1fr; gap:64px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">The stock engines don't parse conda &amp; pixi manifests. A naïve pipeline <b>silently skips what it can't read</b> — and silence scores as clean.</p>
+        <p style="font-size:26px; line-height:1.45; margin:28px 0 0; color:rgba(32,30,29,.72);">A conda-heavy ML repo passes while most of its dependency graph was <b>never seen</b>. Warden's manifest engine reads all six formats — and marks anything it genuinely can't resolve <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">indeterminate</span>, not clean.</p>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace; border:2px solid #201e1d;">
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span>pyproject.toml</span><span style="color:#1a7a3c; font-weight:600;">seen</span></div>
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span>requirements.txt</span><span style="color:#1a7a3c; font-weight:600;">seen</span></div>
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; border-bottom:2px solid #d3d0cf; font-size:24px; background:#fce4de;"><span>environment.yml</span><span style="color:#c22a10; font-weight:600;">skipped</span></div>
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; border-bottom:2px solid #d3d0cf; font-size:24px; background:#fce4de;"><span>meta.yaml</span><span style="color:#c22a10; font-weight:600;">skipped</span></div>
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; font-size:24px; background:#fce4de;"><span>pixi.toml</span><span style="color:#c22a10; font-weight:600;">skipped</span></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT I · 05</span>
+    </div>
