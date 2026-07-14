@@ -116,8 +116,10 @@ def _engine_env(
                 message=f"could not create a temp output file: {exc.__class__.__name__}",
             ),
         )
-    os.close(handle)  # the child reopens the path for writing
     try:
+        os.close(handle)  # the child reopens the path for writing — inside the
+        #                    try so the finally's unlink runs even if close
+        #                    raises (Gemini PR #54: no temp-file leak).
         env = dict(os.environ)
         env["NO_COLOR"] = "1"
         try:
