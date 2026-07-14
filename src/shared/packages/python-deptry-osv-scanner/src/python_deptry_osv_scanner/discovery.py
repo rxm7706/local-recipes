@@ -10,12 +10,16 @@ determinism invariant), and the kind token is ``"pyproject.toml"``.
 Stat-error honesty: existence is determined via an EXPLICIT ``stat`` —
 ``Path.is_file()`` swallows every ``OSError`` (returns ``False``), which
 would read a permission-denied target as "no manifest" and green-light a
-scan that never looked (a false green). ``NotADirectoryError`` means
-genuinely absent; a ``FileNotFoundError`` is disambiguated before it may
-claim absence — a dangling ``pyproject.toml`` symlink (visibly present,
-target missing) and a scan target that vanished or was replaced mid-scan
-(TOCTOU) both FAIL CLOSED with an ``OSError`` instead of reading as "no
-manifest" → exit 0. A ``pyproject.toml`` that exists but is not a regular
+scan that never looked (a false green). ``NotADirectoryError`` FAILS
+CLOSED: on a POSIX host it is the errno a scan target REPLACED BY A FILE
+mid-scan produces (the CLI's gate proved a directory at scan start, so
+ENOTDIR here is the TOCTOU state — or a direct API caller passed a
+non-directory; either way the manifest state is undeterminable, never
+"genuinely absent"). A ``FileNotFoundError`` is disambiguated before it
+may claim absence — a dangling ``pyproject.toml`` symlink (visibly
+present, target missing) and a scan target that is gone at discovery time
+(vanished mid-scan, or never existed for a direct API caller) FAIL CLOSED
+with an ``OSError`` instead of reading as "no manifest" → exit 0. A ``pyproject.toml`` that exists but is not a regular
 file (directory, FIFO, socket) also fails closed: found-but-refused must
 never be reported as "nothing existed". Every propagated ``OSError``
 surfaces as an ``internal-error`` report in the CLI, exit via
@@ -43,15 +47,21 @@ def discover(target: Path) -> tuple[ScannedManifest, ...]:
     (the empty-dir case: nothing existed to scan). A stat failure other
     than absence (e.g. ``PermissionError``) propagates — "could not look"
     must never be reported as "nothing there" — and found-but-refused
-    states (dangling symlink, non-regular file, vanished/replaced target)
-    fail closed the same way."""
+    states (dangling symlink, non-regular file, non-directory/replaced/
+    vanished target) fail closed the same way."""
     candidate = target / PYPROJECT_KIND
     try:
         result = candidate.stat()
-    except NotADirectoryError:
-        # ``target`` (or a path component) is a file: <file>/pyproject.toml
-        # is genuinely absent, not an error.
-        return ()
+    except NotADirectoryError as exc:
+        # ``target`` (or a path component under it) is not a directory. The
+        # CLI's gate proved a directory at scan start, so ENOTDIR here means
+        # the target was REPLACED mid-scan (TOCTOU) — or a direct API caller
+        # passed a file. Manifest state undeterminable: FAIL CLOSED, never
+        # "no manifest" → exit 0.
+        raise OSError(
+            f"scan target {target} is not a directory (replaced mid-scan, "
+            "or a non-directory was passed); manifest state undeterminable"
+        ) from exc
     except FileNotFoundError as exc:
         if candidate.is_symlink():
             # Visibly present but its target is missing: found-but-refused,
@@ -63,9 +73,12 @@ def discover(target: Path) -> tuple[ScannedManifest, ...]:
         try:
             target_result = target.stat()
         except FileNotFoundError:
+            # Indistinguishable states from here: vanished after the CLI
+            # gate (TOCTOU) or never existed (direct API caller) — claim
+            # neither as fact.
             raise OSError(
-                f"scan target {target} vanished mid-scan; manifest state "
-                "undeterminable"
+                f"scan target {target} vanished mid-scan or never existed; "
+                "manifest state undeterminable"
             ) from exc
         if not stat.S_ISDIR(target_result.st_mode):
             raise OSError(

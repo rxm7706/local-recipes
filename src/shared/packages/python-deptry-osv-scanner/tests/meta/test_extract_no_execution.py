@@ -19,10 +19,25 @@ and fails on:
   module, or unsafe ``yaml.load`` (through any name bound to the yaml
   module; ``yaml.safe_load`` is legal);
 * subprocess-without-``subprocess``: ``asyncio.create_subprocess_exec``/
-  ``create_subprocess_shell`` (bare, from-imported, or through any name
-  bound to asyncio) and ``ProcessPoolExecutor`` (bare, from-imported, or
+  ``create_subprocess_shell`` (bare, from-imported, through any name
+  bound to asyncio — chained ``asyncio.subprocess.create_subprocess_exec``
+  included) plus the ``asyncio.subprocess`` submodule import itself
+  (``import asyncio.subprocess`` and ``from asyncio import subprocess``,
+  aliased or not) and ``ProcessPoolExecutor`` (bare, from-imported, or
   as an attribute through ANY base — ``concurrent.futures.
-  ProcessPoolExecutor(...)`` included).
+  ProcessPoolExecutor(...)`` included);
+* star imports of any sensitive module (``from os import *`` binds
+  ``system`` as a bare name the call-site checks cannot see — denied
+  wholesale for os/builtins/asyncio, every forbidden module, and every
+  network module);
+* any import of a NETWORK module (``socket``, ``ssl``, ``http``,
+  ``urllib`` — ``urllib.parse`` included, deliberately overbroad —
+  ``ftplib``/``smtplib``/``poplib``/``imaplib``/``telnetlib``/``xmlrpc``
+  and the third-party ``requests``/``httpx``/``urllib3``/``aiohttp``):
+  NFR-S2's no-egress claim for the parse zone was previously enforced
+  only by the TEST-scope socket-deny harness; this is the static
+  production-side backstop (the extract zone parses DATA — it has no
+  legitimate network use).
 
 Positively asserts the extract package exists and was scanned, and that the
 detectors fire on synthetic violations — the guard is alive, not vacuous.
@@ -103,6 +118,34 @@ FORBIDDEN_ASYNCIO_MEMBERS = frozenset(
     {"create_subprocess_exec", "create_subprocess_shell"}
 )
 FORBIDDEN_BARE_CALLS = FORBIDDEN_ASYNCIO_MEMBERS | {"ProcessPoolExecutor"}
+# NFR-S2 static backstop: the parse zone has NO legitimate network use.
+# Top-level match, so ``urllib.parse`` is denied with the rest of urllib —
+# deliberately overbroad (carve out only with a recorded decision).
+FORBIDDEN_NETWORK_MODULES = frozenset(
+    {
+        "socket",
+        "ssl",
+        "http",
+        "urllib",
+        "ftplib",
+        "smtplib",
+        "poplib",
+        "imaplib",
+        "telnetlib",
+        "xmlrpc",
+        # third-party clients (should also fail at import, but the guard
+        # must not depend on the env lacking them)
+        "requests",
+        "httpx",
+        "urllib3",
+        "aiohttp",
+    }
+)
+# Modules whose star import would bind forbidden members as bare names the
+# call-site checks cannot see.
+STAR_IMPORT_DENIED = (
+    FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES | {"os", "builtins", "asyncio"}
+)
 
 
 def _extract_modules() -> list[Path]:
@@ -121,6 +164,15 @@ def _module_aliases(tree: ast.Module, module: str) -> frozenset[str]:
     return frozenset(names)
 
 
+def _attr_root(func: ast.Attribute) -> str | None:
+    """The base ``Name`` of a (possibly chained) attribute access —
+    ``asyncio.subprocess.create_subprocess_exec`` roots at ``asyncio``."""
+    node: ast.expr = func.value
+    while isinstance(node, ast.Attribute):
+        node = node.value
+    return node.id if isinstance(node, ast.Name) else None
+
+
 def _violations(tree: ast.Module) -> list[str]:
     found: list[str] = []
     os_names = _module_aliases(tree, "os")
@@ -130,11 +182,29 @@ def _violations(tree: ast.Module) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name.split(".")[0] in FORBIDDEN_MODULES:
+                if alias.name.split(".")[0] in (
+                    FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES
+                ):
+                    found.append(f"import {alias.name} (line {node.lineno})")
+                elif alias.name == "asyncio.subprocess" or alias.name.startswith(
+                    "asyncio.subprocess."
+                ):
+                    # The canonical stdlib spelling of the asyncio
+                    # subprocess API: the submodule import itself is the
+                    # capability.
                     found.append(f"import {alias.name} (line {node.lineno})")
         elif isinstance(node, ast.ImportFrom):
             top = (node.module or "").split(".")[0]
-            if top in FORBIDDEN_MODULES:
+            if (
+                any(alias.name == "*" for alias in node.names)
+                and top in STAR_IMPORT_DENIED
+            ):
+                # A star import binds forbidden members as bare names the
+                # call-site checks cannot see: denied wholesale.
+                found.append(
+                    f"from {node.module} import * (line {node.lineno})"
+                )
+            if top in FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES:
                 found.append(
                     f"from {node.module} import ... (line {node.lineno})"
                 )
@@ -160,7 +230,11 @@ def _violations(tree: ast.Module) -> list[str]:
                 found.extend(
                     f"from asyncio import {alias.name} (line {node.lineno})"
                     for alias in node.names
-                    if alias.name in FORBIDDEN_ASYNCIO_MEMBERS
+                    # ``from asyncio import subprocess [as x]`` imports the
+                    # submodule — the capability itself, whatever it's
+                    # bound to (it even shadows the name ``subprocess``
+                    # without tripping the module denylist).
+                    if alias.name in FORBIDDEN_ASYNCIO_MEMBERS | {"subprocess"}
                 )
             elif top == "concurrent":
                 found.extend(
@@ -183,6 +257,16 @@ def _violations(tree: ast.Module) -> list[str]:
                     found.append(
                         f"ProcessPoolExecutor() call (line {node.lineno})"
                     )
+                elif (
+                    func.attr in FORBIDDEN_ASYNCIO_MEMBERS
+                    and _attr_root(func) in asyncio_names
+                ):
+                    # Chain-rooted: covers both asyncio.create_subprocess_*
+                    # and the canonical asyncio.subprocess.create_subprocess_*
+                    # spelling (any alias of asyncio as the root).
+                    found.append(
+                        f"asyncio.{func.attr}() call (line {node.lineno})"
+                    )
                 elif isinstance(func.value, ast.Name):
                     base = func.value.id
                     if base in os_names and func.attr in FORBIDDEN_OS_MEMBERS:
@@ -198,13 +282,6 @@ def _violations(tree: ast.Module) -> list[str]:
                         )
                     elif base in yaml_names and func.attr == "load":
                         found.append(f"yaml.load() call (line {node.lineno})")
-                    elif (
-                        base in asyncio_names
-                        and func.attr in FORBIDDEN_ASYNCIO_MEMBERS
-                    ):
-                        found.append(
-                            f"asyncio.{func.attr}() call (line {node.lineno})"
-                        )
     return found
 
 
@@ -350,3 +427,71 @@ def test_detector_fires_on_subprocess_without_subprocess():
         ast.parse("from concurrent.futures import ThreadPoolExecutor\n")
     )
     assert not _violations(ast.parse("import asyncio\nasyncio.run(main())\n"))
+
+
+def test_detector_fires_on_asyncio_subprocess_submodule_forms():
+    """The canonical stdlib spellings of the asyncio subprocess API — the
+    submodule import itself and the chained-attribute call — must fire
+    (previously only the top-level asyncio attribute forms did)."""
+    assert _violations(ast.parse("import asyncio.subprocess\n"))
+    assert _violations(
+        ast.parse(
+            "import asyncio\nasyncio.subprocess.create_subprocess_exec(x)\n"
+        )
+    )
+    assert _violations(
+        ast.parse(
+            "import asyncio.subprocess\n"
+            "asyncio.subprocess.create_subprocess_exec(x)\n"
+        )
+    )
+    assert _violations(ast.parse("from asyncio import subprocess\n"))
+    assert _violations(ast.parse("from asyncio import subprocess as asp\n"))
+    assert _violations(
+        ast.parse(
+            "import asyncio as aio\n"
+            "aio.subprocess.create_subprocess_shell(x)\n"
+        )
+    )
+    assert not _violations(
+        ast.parse("import asyncio\nasyncio.get_event_loop()\n")
+    )
+
+
+def test_detector_fires_on_star_imports_of_sensitive_modules():
+    """``from os import *`` binds ``system`` as a bare name the call-site
+    checks cannot see: star imports of sensitive modules are denied
+    wholesale."""
+    assert _violations(ast.parse("from os import *\nsystem('ls')\n"))
+    assert _violations(ast.parse("from os import *\n"))
+    assert _violations(ast.parse("from asyncio import *\n"))
+    assert _violations(ast.parse("from builtins import *\n"))
+    assert _violations(ast.parse("from subprocess import *\n"))
+    assert _violations(ast.parse("from socket import *\n"))
+    assert not _violations(ast.parse("from pathlib import *\n"))
+
+
+def test_detector_fires_on_network_module_imports():
+    """NFR-S2 static backstop: the parse zone has no legitimate network
+    use — every import form of a network module fires (the socket-deny
+    harness only covers TEST-time behavior; this covers the production
+    source)."""
+    assert _violations(ast.parse("import socket\n"))
+    assert _violations(ast.parse("import socket as s\n"))
+    assert _violations(ast.parse("from socket import create_connection\n"))
+    assert _violations(ast.parse("import ssl\n"))
+    assert _violations(ast.parse("import urllib.request\n"))
+    assert _violations(ast.parse("from urllib.request import urlopen\n"))
+    assert _violations(ast.parse("import http.client\n"))
+    assert _violations(ast.parse("from http.client import HTTPConnection\n"))
+    assert _violations(ast.parse("import ftplib\n"))
+    assert _violations(ast.parse("import smtplib\n"))
+    assert _violations(ast.parse("import xmlrpc.client\n"))
+    assert _violations(ast.parse("import requests\n"))
+    assert _violations(ast.parse("import httpx\n"))
+    assert _violations(ast.parse("import urllib3\n"))
+    assert _violations(ast.parse("import aiohttp\n"))
+    # urllib.parse is deliberately overbroad-denied (top-level match).
+    assert _violations(ast.parse("from urllib.parse import quote\n"))
+    assert not _violations(ast.parse("import json\nimport tomllib\n"))
+    assert not _violations(ast.parse("from packaging.requirements import Requirement\n"))

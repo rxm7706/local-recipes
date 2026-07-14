@@ -11,11 +11,15 @@ Ownership decisions recorded here:
   is the RECORDED EXCEPTION to that layering rule: the fail-closed
   inventory→verdict bridge lives WITH the seam it closes (no policy stage
   module exists until Story 3.1's config/policy tables).
-* Engine findings PASS THROUGH without feeding rungs in 1.2 — mapping
-  engine findings to policy rungs (severity thresholds, axis policy) is
-  Story 1.3/1.6 scope by plan. The null engine emits no findings, so no
-  1.2 code path reaches a verdict through this gap; 1.3 MUST close it
-  when the first findings-producing engine registers.
+* Engine findings pass through into the report AND each feeds one
+  conservative ``indeterminate`` rung whose driver references it — the
+  FALSE-GREEN BACKSTOP: ``register_engine`` is a public seam, so a
+  findings-only engine result is reachable today, and a report carrying
+  findings must never compose ``clean``/exit 0 (C0c). The finding→severity
+  policy mapping (which findings escalate to ``policy-violation``) is
+  Story 1.3/1.6 scope by plan; they REPLACE the backstop with the real
+  mapping and may only tighten (toward ``policy-violation``), never
+  loosen (toward ``clean``).
 * ``DefaultPolicy`` is the fail-closed inventory→verdict bridge: a withheld
   component (``indeterminate_reason`` set) becomes an
   ``indeterminate:<reason>:<pkg>`` finding plus a driver-carrying
@@ -173,7 +177,11 @@ class DefaultPolicy:
     * Engine findings pass through with deterministic engine-vs-engine
       dedupe: identical ids across (or within) ``EngineResult``s keep the
       FIRST occurrence in engine-registration order — finding-id uniqueness
-      is a report construction invariant, never a crash site.
+      is a report construction invariant, never a crash site. Each unique
+      engine finding ALSO feeds one conservative ``indeterminate`` rung
+      (driver = that finding) — the false-green backstop: a finding-carrying
+      report never composes ``clean``. Story 1.3/1.6 replace the backstop
+      with the real severity mapping (tighten-only).
     * Engine ``ErrorRecord``s feed ``(error, driver)`` rungs: an engine
       failure must reach the verdict (composition yields status ``error`` →
       ``exit_code_for`` gives the error exit), while the report is still
@@ -214,6 +222,17 @@ class DefaultPolicy:
                     continue
                 findings.append(finding)
                 axis_by_id[finding.id] = finding.axis
+                # The false-green backstop: a finding-carrying report must
+                # never compose clean/exit 0 (C0c) — one conservative
+                # indeterminate rung per engine finding until Story 1.3/1.6's
+                # severity mapping replaces it (tighten-only: toward
+                # policy-violation, never toward clean).
+                rungs.append(
+                    (
+                        Status.INDETERMINATE,
+                        StatusDriver(axis=finding.axis, finding_id=finding.id),
+                    )
+                )
             for record in result.errors:
                 # An engine failure must reach the verdict. Axis choice and
                 # the error:<kind>:<owner> driver grammar are finalized by

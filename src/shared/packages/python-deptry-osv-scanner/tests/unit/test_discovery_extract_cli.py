@@ -14,6 +14,8 @@ deterministic unit test here.
 from __future__ import annotations
 
 import argparse
+import errno
+import io
 import json
 import os
 import sys
@@ -114,19 +116,25 @@ def test_discover_fails_closed_on_a_pyproject_directory(tmp_path):
         discover(tmp_path)
 
 
-def test_discover_treats_a_file_target_as_absent(tmp_path):
-    """<file>/pyproject.toml stats NotADirectoryError — genuinely absent,
-    not an error."""
+def test_discover_fails_closed_on_a_file_target(tmp_path):
+    """<file>/pyproject.toml stats NotADirectoryError. The CLI's gate
+    proved a directory at scan start, so ENOTDIR at discovery time means
+    the target was REPLACED by a file mid-scan (TOCTOU) — or a direct API
+    caller passed a file. Either way: FAIL CLOSED, never 'no manifest' →
+    exit 0 (this was previously read as genuine absence, the exact TOCTOU
+    false green the module docstring forbids)."""
     file_target = tmp_path / "somefile"
     file_target.write_text("", encoding="utf-8")
-    assert discover(file_target) == ()
+    with pytest.raises(OSError, match="not a directory"):
+        discover(file_target)
 
 
 def test_discover_fails_closed_on_a_vanished_target(tmp_path):
     """A nonexistent target directory is undeterminable manifest state
-    (the TOCTOU window: it passed the CLI gate, then vanished) — it must
-    fail closed, never read as "no manifest" → exit 0."""
-    with pytest.raises(OSError, match="vanished"):
+    (vanished after the CLI gate, or never existed for a direct API
+    caller — the message claims neither as fact) — it must fail closed,
+    never read as "no manifest" → exit 0."""
+    with pytest.raises(OSError, match="vanished mid-scan or never existed"):
         discover(tmp_path / "gone")
 
 
@@ -521,7 +529,13 @@ def test_unreadable_manifest_is_unparsable_manifest_not_a_crash(
     (error,) = document["errors"]
     assert error["kind"] == "unparsable-manifest"
     assert "unreadable manifest" in error["message"]
-    assert "Permission denied" in error["message"]  # the OS error is stated
+    # The errno is stated SYMBOLICALLY: locale-independent (glibc renders
+    # strerror in the session locale) and free of the absolute path that
+    # OSError.__str__ embeds (report bytes must not vary by locale or
+    # scan location).
+    assert "EACCES" in error["message"]
+    assert "PermissionError" in error["message"]
+    assert str(tmp_path) not in error["message"]  # no absolute path leak
     assert document["status"]["driver"]["finding_id"] == (
         "error:unparsable-manifest:pyproject.toml"
     )
@@ -666,3 +680,109 @@ def test_unstattable_target_is_could_not_stat_not_not_there(capsys, tmp_path):
     assert captured.out == ""  # early-fatal: no report exists to emit
     assert "cannot stat" in captured.err
     assert "not an existing directory" not in captured.err
+
+
+def test_system_exit_from_the_scan_region_projects_as_error(
+    capsys, tmp_path, monkeypatch
+):
+    """sys.exit raised INSIDE the scan region (a sole-ownership violation
+    by a component) must never exit the process with its carried code —
+    sys.exit(0) mid-scan would read as a green gate with no report. It is
+    projected to exit_code_for(error), stdout stays empty."""
+
+    def exiting_discover(target):
+        raise SystemExit(0)
+
+    monkeypatch.setattr(cli, "discover", exiting_discover)
+    rc = main(["scan", str(tmp_path), "--format", "json"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert rc != 0  # the carried code is never trusted
+    assert captured.out == ""
+    assert "SystemExit" in captured.err
+    assert "sole-ownership" in captured.err
+
+
+def test_closed_stderr_does_not_escape_the_exception_nets(
+    monkeypatch, tmp_path
+):
+    """_stderr runs INSIDE the exception handlers; print on a CLOSED
+    stderr raises ValueError (not OSError). Unabsorbed, the handler itself
+    would escape main() as an uncaught traceback with interpreter exit 1 —
+    the exact exit-1 collision the module docstring forbids."""
+
+    def exploding_discover(target):
+        raise RuntimeError("sentinel internal failure")
+
+    monkeypatch.setattr(cli, "discover", exploding_discover)
+    closed = io.StringIO()
+    closed.close()
+    monkeypatch.setattr(sys, "stderr", closed)
+    rc = main(["scan", str(tmp_path), "--format", "json"])
+    assert rc == 2  # returned, not raised — and never the interpreter's 1
+
+
+def test_non_epipe_stdout_failure_keeps_the_computed_exit_code(
+    monkeypatch, tmp_path, capsys
+):
+    """A non-EPIPE stdout failure (ENOSPC full disk, EIO) is environmental:
+    the computed verdict must survive — never replaced by the error exit,
+    never misdiagnosed as an internal error."""
+    write_pyproject(tmp_path, ["requests>=2.0"])  # range-only → exit 1
+
+    class FullDiskStdout:
+        def write(self, data):
+            raise OSError(errno.ENOSPC, "No space left on device")
+
+        def flush(self):
+            pass
+
+    monkeypatch.setattr(sys, "stdout", FullDiskStdout())
+    rc = main(["scan", str(tmp_path), "--format", "json"])
+    captured = capsys.readouterr()
+    assert rc == 1  # the indeterminate verdict's code, not error's 2
+    assert "stdout emission failed" in captured.err
+    assert "internal error" not in captured.err
+
+
+def test_unexpected_extractor_exception_still_emits_the_report(
+    capsys, tmp_path, monkeypatch
+):
+    """The extractor seam gets the same doctrine as the engine seam: ANY
+    unexpected exception out of an extractor (a 1.3+ implementation bug —
+    here a TypeError, which the old ValueError-only net let escape to the
+    no-report catch-all) yields a typed internal-error record with the
+    report STILL emitted."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])
+
+    class ExplodingExtractor:
+        def extract(self, manifest_path, manifest):
+            raise TypeError("sentinel type failure")
+
+    monkeypatch.setattr(
+        cli, "extractor_for", lambda kind, router: ExplodingExtractor()
+    )
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "internal-error"
+    assert "sentinel type failure" in error["message"]
+    assert document["status"]["driver"]["finding_id"] == (
+        "error:internal-error:pyproject.toml"
+    )
+
+
+def test_extractor_recursion_error_is_unparsable_manifest(tmp_path):
+    """Hostile nesting overflows tomllib recursively (RecursionError, a
+    RuntimeError — neither TOMLDecodeError nor ValueError): still a
+    structurally-broken manifest, so the extractor folds it into
+    UnparsableManifestError (the CLI-level row lives in conformance)."""
+    (tmp_path / "pyproject.toml").write_text(
+        "x = " + "[" * 8000 + "]" * 8000 + "\n", encoding="utf-8"
+    )
+    with pytest.raises(UnparsableManifestError):
+        PyprojectExtractor(DefaultRouter()).extract(
+            tmp_path / "pyproject.toml", MANIFEST
+        )

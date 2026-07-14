@@ -188,8 +188,42 @@ def test_engine_findings_pass_through(component_factory):
     )
     result = EngineResult(findings=(engine_finding,), errors=(), coverage=())
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
-    findings, _ = DefaultPolicy().evaluate(inventory, [result])
+    findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
+    # The false-green backstop: the finding also feeds a conservative
+    # indeterminate rung carrying ITS axis and id (1.3/1.6 replace this
+    # with the real severity mapping — tighten-only).
+    assert (
+        Status.INDETERMINATE,
+        StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:leftpad"),
+    ) in rungs
+
+
+def test_findings_only_engine_result_never_feeds_only_clean(component_factory):
+    """A findings-only EngineResult (no errors) over an otherwise-clean
+    inventory must produce at least one NON-CLEAN rung — a finding-carrying
+    report composing clean/exit 0 is the exact false-green class C0
+    forbids, and ``register_engine`` makes this input publicly reachable
+    today (the gap both prior review passes documented at the seam)."""
+    engine_finding = Finding(
+        id="hygiene:DEP002:requests",
+        axis=AXIS_HYGIENE,
+        message="unused dependency",
+        subject="requests",
+        severity=None,
+    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=())
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    findings, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert engine_finding in findings
+    non_clean = [
+        (status, driver) for status, driver in rungs if status is not Status.CLEAN
+    ]
+    assert non_clean, "findings-only engine result fed only clean rungs"
+    assert all(driver is not None for _, driver in non_clean)
+    assert any(
+        driver.finding_id == engine_finding.id for _, driver in non_clean
+    )
 
 
 def test_assessable_exact_component_feeds_a_clean_rung(component_factory):
@@ -413,9 +447,14 @@ def test_reused_engine_finding_id_keeps_that_findings_axis(component_factory):
         )
     )
     _, rungs = DefaultPolicy().evaluate(inventory, [result])
-    ((_, driver),) = rungs
-    assert driver.finding_id == engine_finding.id
-    assert driver.axis == AXIS_HYGIENE
+    # Two rungs reference the one finding: the engine finding's backstop
+    # rung and the withheld component's rung reusing the id — BOTH drivers
+    # must carry THAT finding's axis.
+    assert len(rungs) == 2
+    for _, driver in rungs:
+        assert driver is not None
+        assert driver.finding_id == engine_finding.id
+        assert driver.axis == AXIS_HYGIENE
 
 
 # --- id sanitization (P2) ------------------------------------------------------

@@ -2,9 +2,13 @@
 
 Every module in this package parses untrusted input as DATA: ``tomllib`` +
 ``packaging.requirements`` only; no ``eval``/``exec``/``subprocess``/
-``os.system``/``jinja2``, no YAML load. The AST-denylist meta-test
-(``tests/meta/test_extract_no_execution.py``) enforces it over the whole
-package, present and future.
+``os.system``/``jinja2``, no YAML load — and no NETWORK modules (NFR-S2:
+the parse zone has no legitimate egress; ``socket``/``urllib``/``http``/
+third-party clients are denied at import). The AST-denylist meta-test
+(``tests/meta/test_extract_no_execution.py``) enforces both axes over the
+whole package, present and future (a denylist backstop for the "only"
+convention stated here — the socket-deny harness covers test-time
+behavior; the denylist covers production source).
 
 Error taxonomy ownership: only a GENUINE manifest problem may be labeled
 ``unparsable-manifest`` — extractors raise ``UnparsableManifestError``

@@ -226,6 +226,42 @@ def register_engine_for_test(monkeypatch, engine_cls) -> None:
     )
 
 
+class FindingsOnlyEngine:
+    name = "findings-only"
+
+    def run(self, target, inventory) -> EngineResult:
+        return EngineResult(
+            findings=(
+                Finding(
+                    id="hygiene:DEP002:requests",
+                    axis=AXIS_HYGIENE,
+                    message="unused dependency",
+                    subject="requests",
+                    severity=None,
+                ),
+            ),
+            errors=(),
+            coverage=(),
+        )
+
+
+class SysExitEngine:
+    name = "sys-exit"
+
+    def run(self, target, inventory) -> EngineResult:
+        raise SystemExit(0)
+
+
+class CrashingFactory:
+    name = "crashing-factory"
+
+    def __init__(self) -> None:
+        raise RuntimeError("factory blew up at instantiation")
+
+    def run(self, target, inventory) -> EngineResult:
+        raise AssertionError("unreachable: the constructor always raises")
+
+
 class ErrorsOnlyEngine:
     name = "errors-only"
 
@@ -266,6 +302,84 @@ class FindingAndErrorEngine:
             ),
             coverage=(),
         )
+
+
+def test_findings_only_engine_never_false_greens(capsys, monkeypatch):
+    """THE false-green seam row: an engine returning findings WITHOUT
+    errors is publicly reachable via ``register_engine`` today, and a
+    finding-carrying report must never compose clean/exit 0 (C0c). The
+    conservative backstop rung makes it indeterminate; Story 1.3/1.6
+    replace the backstop with the real severity mapping (tighten-only).
+    Both prior review passes documented this exact blind spot — this row
+    is the mechanical gate that keeps it closed."""
+    register_engine_for_test(monkeypatch, FindingsOnlyEngine)
+    rc, out, err = run_scan(capsys, CLEAN)
+    document = parse_report(out)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    finding_ids = {f["id"] for f in document["findings"]}
+    assert "hygiene:DEP002:requests" in finding_ids
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] in finding_ids
+    assert document["errors"] == []
+
+
+def test_sys_exit_engine_cannot_dictate_the_gate(capsys, monkeypatch):
+    """An engine calling sys.exit(0) — an exit-code sole-ownership
+    violation — must not exit the process green with no report: the seam
+    guard converts the SystemExit to engine-execution-failed with the
+    report STILL emitted and the error exit returned."""
+    register_engine_for_test(monkeypatch, SysExitEngine)
+    rc, out, err = run_scan(capsys, CLEAN)
+    document = parse_report(out)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "engine-execution-failed"
+    assert "SystemExit" in error["message"]
+
+
+def test_crashing_engine_factory_still_emits_the_report(capsys, monkeypatch):
+    """Instantiation is part of the seam: a factory that crashes in its
+    constructor (a misconfigured 1.3/1.5 runner) yields a typed
+    engine-unavailable record with the report STILL emitted — never a
+    traceback with no report."""
+    register_engine_for_test(monkeypatch, CrashingFactory)
+    rc, out, err = run_scan(capsys, CLEAN)
+    document = parse_report(out)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "engine-unavailable"
+    assert "factory blew up at instantiation" in error["message"]
+    assert document["status"]["driver"]["finding_id"].startswith(
+        "error:engine-unavailable:"
+    )
+    assert err != ""
+
+
+def test_deeply_nested_toml_is_unparsable_manifest_not_a_crash(
+    capsys, tmp_path
+):
+    """Hostile nesting overflows tomllib's recursive parser with
+    RecursionError (not TOMLDecodeError): still a structurally-broken
+    manifest — unparsable-manifest, report emitted, error exit; never a
+    traceback with no report and never 'internal error'."""
+    (tmp_path / "pyproject.toml").write_text(
+        "x = " + "[" * 8000 + "]" * 8000 + "\n", encoding="utf-8"
+    )
+    rc, out, err = run_scan(capsys, tmp_path)
+    document = parse_report(out)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "unparsable-manifest"
+    assert err != ""
 
 
 def test_errors_only_engine_yields_an_error_report(capsys, monkeypatch):
@@ -341,7 +455,11 @@ def test_zero_dependency_manifest_is_distinguishable_on_stderr(
     assert rc == 0
     assert document["status"]["value"] == "not-applicable"
     assert document["inventory_count"] == 0
-    assert "declares no dependencies" in err
+    # The notice names WHAT was scanned ([project].dependencies) instead of
+    # claiming "declares no dependencies" — a poetry-style manifest with
+    # deps only outside that section hits this path too, and the old
+    # wording was a false claim for it (section-aware discovery is 1.9's).
+    assert "no dependencies found in [project].dependencies" in err
     assert "no manifest found" not in err  # NOT the empty-dir notice
     for block in document["coverage"]:
         assert block["manifests_found"] == 1
