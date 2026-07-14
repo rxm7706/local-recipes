@@ -74,7 +74,7 @@ export function useDeck() {
           break;
         case 'f':
         case 'F':
-          if (document.fullscreenElement) document.exitFullscreen();
+          if (document.fullscreenElement) document.exitFullscreen?.();
           else document.documentElement.requestFullscreen?.();
           break;
         case 'Escape':
@@ -86,7 +86,7 @@ export function useDeck() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev, goto]);
+  }, [next, prev, goto, setMode]);
 
   return {
     slides,
