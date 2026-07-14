@@ -271,18 +271,26 @@ def test_db_absent_offline_is_not_silently_a_clean_scan(tmp_path, offline_cache)
     # be impossible (it is vulnerable), so compare against the true clean run.
     clean = _run_osv_offline(tmp_path, offline_cache, LOCKFILE_CLEAN)
 
-    # The cold-start exit is the general-error code (127), explicitly NOT 0 and
-    # NOT the same as a real clean scan — the exit code is the honest signal.
+    # The honest distinguisher is the EXIT CODE: a real clean scan exits 0, the
+    # cold start exits 127 (osv's DB-load-failure code, NOT the shell "general
+    # error"). Asserting clean == 0 makes the `absent != clean` cross-check
+    # load-bearing instead of tautological (review F9/F10).
+    assert clean.exit_code == 0, clean.stderr
     assert absent.exit_code == 127, absent.stderr
-    assert absent.exit_code != 0
     assert absent.exit_code != clean.exit_code
     # An output file IS written on the DB-absent path (not merely skipped)...
     assert absent.raw_output is not None
     assert clean.raw_output is not None
-    # ...and it is BYTE-FOR-BYTE identical to the clean scan's output — this is
-    # the trap the record documents: the JSON body cannot distinguish the two.
-    assert absent.raw_output == clean.raw_output
+    # ...and its PARSED BODY is empty, indistinguishable from a real clean scan —
+    # the trap the record documents (the JSON body cannot tell the two apart).
+    # This SEMANTIC invariant is the durable, load-bearing proof (review F5/EC7).
     assert absent.document is not None and absent.document.get("results") == []
+    assert clean.document is not None and clean.document.get("results") == []
+    # In osv-scanner 2.4.0 the bodies are additionally byte-for-byte identical;
+    # kept as a stronger-but-version-bound observation (a future 2.x that echoed
+    # a scanned path/timestamp could break byte-identity while the semantic body
+    # invariant above still holds — that is the contract Story 1.5 relies on).
+    assert absent.raw_output == clean.raw_output
     # NB: we deliberately do NOT assert on osv's stderr text — the decision
     # record labels it volatile INFO chatter a 2.x patch can reword, and Story
     # 1.5 must not branch on it. The exit code (127) above is the only contract
@@ -383,11 +391,112 @@ def test_present_but_empty_db_false_greens_and_a_nonemptiness_preflight_catches_
     assert advisory_entries == []  # the non-emptiness pre-flight fires here
 
 
+@pytest.mark.parametrize(
+    "corrupt_entry, why",
+    [
+        (b"{}", "empty object (no id, no affected)"),
+        (b"{ not valid json ]", "malformed JSON"),
+        (b'{"id": "PDOS-FIXTURE-0001"}', "valid JSON but no affected[] (truncated advisory)"),
+    ],
+)
+def test_present_but_content_corrupt_db_false_greens_and_a_content_preflight_catches_it(
+    tmp_path, corrupt_entry, why
+):
+    """F1 (the follow-up review's cardinal finding). A VALID zip CONTAINER whose
+    ``<id>.json`` entry is **content-corrupt** — empty ``{}``, malformed JSON, or
+    a shape-invalid/truncated advisory — is LOADED by osv-scanner and exits
+    **0** with ``results: []`` on a KNOWN-VULNERABLE input. This false-green
+    defeats BOTH defenses the record previously mandated:
+
+      * the **exit code is 0** — NOT the 127 the record wrongly attributed to a
+        "present-but-corrupt zip" (that 127 holds only for *container*
+        corruption, pinned by the next test); and
+      * a **namelist non-emptiness** pre-flight PASSES — the ``<id>.json`` entry
+        IS present.
+
+    The ONLY defense that fires is a **content** pre-flight: parse each entry and
+    validate the minimal OSV advisory shape. Story 1.5 reuses the builder's own
+    ``_entry_for_record`` on the LOADED DB (osv's loader does NOT validate
+    advisory shape — empirically it accepts all three of these). Measured
+    against osv-scanner 2.4.0; pins the ground truth decision record § 4 now
+    mandates."""
+    import zipfile
+
+    # Externally provision a present-but-CONTENT-CORRUPT DB (bypass the builder,
+    # exactly as a partial download / encoding-mangled / schema-drifted advisory
+    # would leave one).
+    db_dir = tmp_path / "cache" / "osv-scanner" / "PyPI"
+    db_dir.mkdir(parents=True)
+    corrupt_zip = db_dir / "all.zip"
+    with zipfile.ZipFile(corrupt_zip, "w") as zf:
+        zf.writestr(f"{FIXTURE_ADVISORY_ID}.json", corrupt_entry)
+
+    run = _run_osv_offline(tmp_path, tmp_path / "cache", LOCKFILE_VULNERABLE)
+
+    # The false-green: a KNOWN-vulnerable pin reads as clean / exit-0. NEITHER
+    # the exit code NOR the JSON body distinguishes it from a real clean scan.
+    assert run.exit_code == 0, f"{why}: {run.stderr}"
+    assert run.vulnerability_ids() == []
+    assert run.document is not None and run.document.get("results") == []
+
+    # Defense (1) — a namelist non-emptiness pre-flight (the empty-DB defense)
+    # PASSES here: the <id>.json entry is present. It is therefore INSUFFICIENT.
+    with zipfile.ZipFile(corrupt_zip) as zf:
+        advisory_entries = [n for n in zf.namelist() if n.endswith(".json")]
+    assert advisory_entries == [f"{FIXTURE_ADVISORY_ID}.json"]  # non-emptiness passes
+
+    # Defense (2) — the CONTENT pre-flight FIRES. Reuse the builder's validator
+    # as the reference Story 1.5 applies to the loaded entries; each corruption
+    # class trips a distinct shape check (missing id / bad JSON / no affected).
+    builder = _load_builder()
+    with zipfile.ZipFile(corrupt_zip) as zf:
+        raw = zf.read(f"{FIXTURE_ADVISORY_ID}.json")
+    with pytest.raises(ValueError):
+        builder._entry_for_record(raw, Path(f"{FIXTURE_ADVISORY_ID}.json"), "PyPI")
+
+
+def test_container_corrupt_db_exits_127_the_only_corruption_the_exit_code_catches(
+    tmp_path,
+):
+    """F1 corollary. The record's "corrupt zip -> 127" holds ONLY for CONTAINER
+    corruption (damaged zip structure osv cannot open) — this is the corruption
+    class the exit-code surfacing (seam change #3) genuinely catches, in
+    contrast to the CONTENT corruption above which exits 0. Pins the corrected
+    empirical distinction in decision record § 4."""
+    db_dir = tmp_path / "cache" / "osv-scanner" / "PyPI"
+    db_dir.mkdir(parents=True)
+    # Garbage bytes where a valid zip container should be — the central
+    # directory is unreadable, so osv cannot open the DB at all.
+    (db_dir / "all.zip").write_bytes(b"not a zip file at all\x00\x01\x02")
+
+    run = _run_osv_offline(tmp_path, tmp_path / "cache", LOCKFILE_VULNERABLE)
+    # DB-load failure -> 127 (caught by the exit code), NOT the exit-0 false-green
+    # a content-corrupt entry produces.
+    assert run.exit_code == 127, run.stderr
+
+
+def _is_case_insensitive_fs(base: Path) -> bool:
+    """Probe whether ``base``'s filesystem is case-insensitive (macOS APFS/HFS+
+    and Windows default) — the M1 test below relocates ``PyPI`` -> ``pypi`` and
+    is only meaningful where the two are distinct directories (review F4/EC6)."""
+    probe = base / "CaseProbe.tmp"
+    probe.mkdir()
+    try:
+        return (base / "caseprobe.tmp").exists()
+    finally:
+        probe.rmdir()
+
+
 def test_osv_requires_case_sensitive_PyPI_dir(tmp_path):
     """M1: osv-scanner's on-disk ecosystem segment is case-sensitive ``PyPI``,
     NOT the lowercase ``pypi`` Ecosystem enum value. A DB provisioned at
     lowercase is never loaded — Story 1.5's pre-flight must resolve the osv
     casing, not interpolate the enum."""
+    if _is_case_insensitive_fs(tmp_path):
+        pytest.skip(
+            "case-insensitive filesystem: PyPI and pypi are the same directory, "
+            "so the lowercase-relocation this test exercises cannot occur here"
+        )
     builder = _load_builder()
     # Build a real DB, then relocate all.zip to a LOWERCASE `pypi/` dir.
     root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
@@ -448,4 +557,64 @@ def test_builder_rejects_case_variant_json_extension(tmp_path):
     # ...plus a case-variant one it would silently skip.
     (records / "PDOS-0002.JSON").write_text("{}", encoding="utf-8")
     with pytest.raises(ValueError, match="non-canonical .json"):
+        builder.build_offline_db(records, tmp_path / "db")
+
+
+def test_builder_rejects_non_directory_records_dir(tmp_path):
+    """EC3: a records_dir that does not exist (or is a regular file) must fail
+    loud as a ``ValueError`` — matching the module's always-ValueError contract
+    — not surface as a bare FileNotFoundError/NotADirectoryError a
+    ValueError-catching caller would miss."""
+    builder = _load_builder()
+    missing = tmp_path / "does-not-exist"
+    with pytest.raises(ValueError, match="not an existing directory"):
+        builder.build_offline_db(missing, tmp_path / "db")
+
+    a_file = tmp_path / "a-file.json"
+    a_file.write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="not an existing directory"):
+        builder.build_offline_db(a_file, tmp_path / "db")
+
+
+def test_builder_rejects_record_nested_under_subdirectory(tmp_path):
+    """EC5: a valid record nested under a subdirectory is skipped by the
+    non-recursive glob — a partial-coverage false-clean. Fail loud rather than
+    silently drop it."""
+    builder = _load_builder()
+    records = tmp_path / "records"
+    (records / "sub").mkdir(parents=True)
+    # A valid top-level record the glob WOULD pick up...
+    shutil.copy(
+        OSV_RECORDS_DIR / f"{FIXTURE_ADVISORY_ID}.json",
+        records / f"{FIXTURE_ADVISORY_ID}.json",
+    )
+    # ...plus one nested a level down that the non-recursive glob would skip.
+    shutil.copy(
+        OSV_RECORDS_DIR / f"{FIXTURE_ADVISORY_ID}.json",
+        records / "sub" / "PDOS-NESTED.json",
+    )
+    with pytest.raises(ValueError, match="nested under a subdirectory"):
+        builder.build_offline_db(records, tmp_path / "db")
+
+
+def test_builder_rejects_non_concrete_version_spec(tmp_path):
+    """EC2: ``versions: [""]`` is present-but-unmatchable (osv could never match
+    an empty version string) — it must NOT count as a concrete spec, else the
+    record is shelved yet silently false-clean, the same hole an absent spec
+    opens."""
+    builder = _load_builder()
+    records = tmp_path / "records"
+    records.mkdir()
+    (records / "PDOS-EMPTY-VERSION.json").write_text(
+        json.dumps(
+            {
+                "id": "PDOS-EMPTY-VERSION",
+                "affected": [
+                    {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": [""]}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="concrete version spec"):
         builder.build_offline_db(records, tmp_path / "db")

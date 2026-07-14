@@ -10,26 +10,37 @@ reproducing the tree its own ``--download-offline-databases`` writes, and by
 matching a seeded advisory offline — see
 ``planning-artifacts/osv-db-offline-provisioning-decision.md`` § 11).
 
-The build is **deterministic and portable**: every zip entry is **stored
-uncompressed** (``ZIP_STORED``) with a fixed DOS-epoch timestamp
-(``1980-01-01``) and fixed permission/attribute bits, entries emitted in sorted
-order. No ``datetime.now()`` and no DEFLATE — so the bytes never depend on the
-host's zlib build and two builds over the same records produce a
-**byte-identical** ``all.zip`` on any machine (the fixture is tiny; compression
-buys nothing and would forfeit cross-zlib reproducibility). This is the
-hermetic vulnerability-data substrate Story 1.5 / 2.5 / CI reuse; it is
-intentionally side-effect free apart from writing ``all.zip`` under
+The build is **deterministic**: every zip entry is **stored uncompressed**
+(``ZIP_STORED``) with a fixed DOS-epoch timestamp (``1980-01-01``) and fixed
+permission/attribute bits, entries emitted in sorted order. No ``datetime.now()``
+and no DEFLATE — so the bytes never depend on the host's zlib build and two
+builds over the same records **on the same interpreter** produce a
+**byte-identical** ``all.zip`` (the fixture is tiny; compression buys nothing and
+would forfeit cross-zlib reproducibility). ``zipfile``'s create/extract-version
+header bytes are NOT pinned, so cross-CPython-version byte-identity is the design
+intent, not a tested guarantee (see the decision record's determinism residual
+risk). This is the hermetic vulnerability-data substrate Story 1.5 / 2.5 / CI
+reuse; it is intentionally side-effect free apart from writing ``all.zip`` under
 ``cache_root``.
 
 The builder is **fail-loud** (always ``ValueError``, never ``AttributeError``):
-an empty ``records_dir``, a case-variant ``.JSON`` record the exact glob would
-skip, a record whose top level / ``affected`` / ``package`` is the wrong JSON
-type, a missing/non-string ``id``, an ``id`` that is not a safe bare filename,
-or a record with no ``affected`` entry that targets the requested ``ecosystem``
-**with a package name AND a concrete matchable spec** (``versions``/``ranges``)
-all raise ``ValueError`` rather than silently producing an empty, mis-shelved,
-or **unmatchable** DB. A DB that osv-scanner loads but can never match reads as
-a clean scan — the exact false-green this whole project exists to prevent.
+a ``records_dir`` that is not an existing directory, an empty ``records_dir``, a
+case-variant ``.JSON`` record or a record nested under a subdirectory that the
+exact non-recursive glob would skip, a record whose top level / ``affected`` /
+``package`` is the wrong JSON type, a missing/non-string ``id``, an ``id`` that
+is not a safe bare filename, or a record with no ``affected`` entry that targets
+the requested ``ecosystem`` **with a package name AND a concrete matchable spec**
+(a non-empty ``versions`` string, or a ``ranges`` entry with ``events``) all
+raise ``ValueError`` rather than silently producing an empty, mis-shelved, or
+**unmatchable** DB. A DB that osv-scanner loads but can never match reads as a
+clean scan — the exact false-green this whole project exists to prevent.
+
+Scope: this builder guards the in-repo **fixture** substrate only. An
+externally-provisioned DB (osv-native ``--download-offline-databases``, a conda
+package, or a mirror) is out of its reach — validating THAT at load time is
+Story 1.5's **content pre-flight** (decision record § 4), which reuses the same
+``_entry_for_record`` shape checks on the loaded entries, since osv-scanner's
+own loader accepts malformed/empty advisory content and still exits 0.
 
 This module is a *test fixture helper*, importable by tests; it imports no
 production ``python_deptry_osv_scanner`` code and does no network I/O.
@@ -114,8 +125,17 @@ def _entry_for_record(raw: bytes, record_path: Path, ecosystem: str) -> str:
         name = package.get("name")
         versions = entry.get("versions")
         ranges = entry.get("ranges")
-        has_versions = isinstance(versions, list) and len(versions) > 0
-        has_ranges = isinstance(ranges, list) and len(ranges) > 0
+        # A CONCRETE spec means at least one non-empty version STRING, or a
+        # range that carries `events`. `versions: [""]` / `[123]` / `ranges:
+        # [{}]` are present-but-unmatchable (osv could never match them) and
+        # must NOT count — else the record is shelved yet silently false-clean,
+        # the same hole an absent spec opens (review F3/EC2).
+        has_versions = isinstance(versions, list) and any(
+            isinstance(v, str) and v for v in versions
+        )
+        has_ranges = isinstance(ranges, list) and any(
+            isinstance(r, dict) and r.get("events") for r in ranges
+        )
         if isinstance(name, str) and name and (has_versions or has_ranges):
             matchable = True
     if not matchable:
@@ -153,11 +173,18 @@ def build_offline_db(
     records_dir = Path(records_dir)
     cache_root = Path(cache_root)
 
+    # EC3: fail loud (ValueError, per the module contract) if records_dir is not
+    # an existing directory — a non-existent path or a file passed by mistake
+    # must not surface as a bare FileNotFoundError/NotADirectoryError that a
+    # ValueError-catching caller (Story 1.5) would miss.
+    if not records_dir.is_dir():
+        raise ValueError(f"records_dir {records_dir} is not an existing directory")
+
     # L5: glob("*.json") is case-sensitive + non-recursive on POSIX, so a record
-    # dropped as `PDOS-0002.JSON` / `.Json` (or under a subdir) would be silently
-    # skipped — a partial-drop coverage hole (some records present, one missing).
-    # Fail loud on a file whose extension is .json only by case, so the § 11
-    # "drop a JSON record and rebuild" workflow (Story 2.5) can't lose a record.
+    # dropped as `PDOS-0002.JSON` / `.Json` would be silently skipped — a
+    # partial-drop coverage hole (some records present, one missing). Fail loud
+    # on a file whose extension is .json only by case, so the § 11 "drop a JSON
+    # record and rebuild" workflow (Story 2.5) can't lose a record.
     case_variant = sorted(
         p.name
         for p in records_dir.iterdir()
@@ -168,6 +195,21 @@ def build_offline_db(
             f"OSV record file(s) with a non-canonical .json extension would be "
             f"silently skipped by the builder: {case_variant} — rename to a "
             "lowercase '.json' extension so they are included"
+        )
+    # EC5: the same non-recursive glob also skips a record nested under a
+    # subdirectory. The old comment CLAIMED to guard "under a subdir" but the
+    # case-variant check above only inspects the top level — a nested record was
+    # silently dropped (partial-coverage false-clean). Detect and fail loud.
+    nested = sorted(
+        str(p.relative_to(records_dir))
+        for p in records_dir.rglob("*.json")
+        if p.is_file() and p.parent != records_dir
+    )
+    if nested:
+        raise ValueError(
+            f"OSV record file(s) nested under a subdirectory would be silently "
+            f"skipped by the non-recursive builder glob: {nested} — move them "
+            "directly under the records dir so they are included"
         )
 
     # Collect (entry-name, raw-bytes) pairs, keyed on the record id, sorted for
