@@ -80,8 +80,10 @@ def test_clean_output_is_empty_and_decidable():
 
 
 def test_default_policy_table_is_exactly_the_five_dep_codes():
+    # DEP001 is WARN in 1.3 (its Gap-A block is gated on Story 2.1's
+    # name-mapping confidence — follow-up Opus review, 2026-07-14).
     assert DEFAULT_HYGIENE_POLICY == {
-        "DEP001": Status.POLICY_VIOLATION,
+        "DEP001": Status.WARN,
         "DEP002": Status.WARN,
         "DEP003": Status.WARN,
         "DEP004": Status.WARN,
@@ -92,7 +94,7 @@ def test_default_policy_table_is_exactly_the_five_dep_codes():
 @pytest.mark.parametrize(
     "code,expected",
     [
-        ("DEP001", Status.POLICY_VIOLATION),
+        ("DEP001", Status.WARN),  # gated block deferred to Story 2.1
         ("DEP002", Status.WARN),
         ("DEP003", Status.WARN),
         ("DEP004", Status.WARN),
@@ -112,7 +114,10 @@ def test_unknown_code_degrades_to_indeterminate_never_clean():
 # --- rung derivation ---------------------------------------------------------
 
 
-def test_hygiene_rung_for_dep001_is_policy_violation():
+def test_hygiene_rung_for_dep001_is_warn():
+    # DEP001 warns in 1.3 (Gap-A block gated on Story 2.1's name-mapping
+    # confidence; deptry DEP001 false-positives on guarded optional imports
+    # would otherwise produce a benign false-red). Follow-up Opus review.
     finding = Finding(
         id="hygiene:DEP001:foo",
         axis=AXIS_HYGIENE,
@@ -121,7 +126,7 @@ def test_hygiene_rung_for_dep001_is_policy_violation():
         severity=None,
     )
     status, driver = hygiene_rung(finding)
-    assert status is Status.POLICY_VIOLATION
+    assert status is Status.WARN
     assert driver == StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:foo")
 
 
@@ -304,3 +309,59 @@ def test_deptry_parse_is_frozen():
     assert isinstance(parse, DeptryParse)
     with pytest.raises(dataclasses.FrozenInstanceError):
         parse.records_total = 5  # type: ignore[misc]
+
+
+# --- Follow-up Opus review (2026-07-14) regression suite ---------------------
+
+
+def _deptry_record(code: str, module: str, message: str = "m") -> dict:
+    return {"error": {"code": code, "message": message}, "module": module}
+
+
+def test_empty_output_is_reported_distinctly_not_as_invalid_json():
+    """deptry wrote nothing to its -o file (version/flag skew) — the
+    diagnostic must say 'no output', not 'invalid JSON' (which masks the real
+    cause)."""
+    for raw in ("", "   ", "\n\t "):
+        parse = parse_deptry_output(raw)
+        assert parse.output_parsed is False
+        (err,) = parse.errors
+        assert err.kind is ErrorKind.ENGINE_OUTPUT_UNPARSEABLE
+        assert "no machine output" in err.message
+        assert "not valid JSON" not in err.message
+
+
+def test_colon_bearing_code_is_unrecognized_not_a_mangled_finding():
+    """A code carrying a colon (namespaced fork/future code) would make the
+    hygiene:<code>:<module> id non-injective; it is UNRECOGNIZED (counted +
+    reported), never a silently-mangled indeterminate finding."""
+    parse = parse_deptry_output(json.dumps([_deptry_record("DEP:001", "foo")]))
+    assert parse.output_parsed is True
+    assert parse.findings == ()
+    assert parse.records_unparseable == 1
+    (err,) = parse.errors
+    assert err.kind is ErrorKind.ENGINE_OUTPUT_UNRECOGNIZED
+
+
+def test_well_formed_unknown_code_still_becomes_a_graceful_finding():
+    """A future well-formed code (DEP006) is grammar-safe, so it is a finding
+    that degrades to indeterminate — NOT unrecognized (the graceful path)."""
+    parse = parse_deptry_output(json.dumps([_deptry_record("DEP006", "foo")]))
+    assert parse.records_unparseable == 0
+    (finding,) = parse.findings
+    assert finding.id == "hygiene:DEP006:foo"
+    status, _ = hygiene_rung(finding)
+    assert status is Status.INDETERMINATE
+
+
+def test_unrecognized_record_message_has_no_array_index():
+    """The unrecognized-record error must not bake deptry's array position
+    into its message — deptry's ordering is not stable, and an index would
+    break twice-run byte-identical (NFR-I3). Two malformed records at
+    different positions yield identical error text."""
+    raw = json.dumps([{"bad": 1}, _deptry_record("DEP002", "ok"), "not-a-dict"])
+    parse = parse_deptry_output(raw)
+    assert parse.records_unparseable == 2
+    messages = {e.message for e in parse.errors}
+    assert len(messages) == 1  # position-free → identical, dedupes to one
+    assert not any(ch.isdigit() for ch in next(iter(messages)))

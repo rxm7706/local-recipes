@@ -9,9 +9,15 @@ scans this module).
 
 Ownership decisions recorded:
 
-* ``DEFAULT_HYGIENE_POLICY`` is a MODULE DEFAULT: DEP001 (a missing/undeclared
-  import — high-confidence for a PyPI-native project) blocks
-  (``policy-violation``); DEP002/003/004/005 warn. An UNKNOWN DEP code
+* ``DEFAULT_HYGIENE_POLICY`` is a MODULE DEFAULT: DEP001–005 all ``warn``.
+  DEP001 (missing/undeclared import) is DELIBERATELY ``warn`` (not
+  ``policy-violation``) in 1.3: architecture Gap-A requires DEP001 blocking
+  to be GATED on conda↔PyPI name-mapping confidence ("a mapping miss must
+  not become a false-red disable-driver"), and that confidence signal needs
+  Story 2.1's conda→pypi map, which does not exist yet. Until 2.1 can gate
+  it, DEP001 warns — deptry's DEP001 has inherent false-positives (guarded
+  optional imports) and an ungated block would produce benign false-reds.
+  Story 2.1 UPGRADES DEP001 to block-on-high-confidence. An UNKNOWN DEP code
   degrades to ``indeterminate`` (never a false-green — a new deptry code we
   have not classified must not silently pass). Story 3.1 lifts this default
   into an overridable config table; 1.3 keeps it here.
@@ -55,11 +61,12 @@ from .models import (
 # The owner label every deptry-sourced error/finding carries.
 _OWNER = "deptry"
 
-# The default hygiene policy: DEP-code → Status. DEP001 blocks; the rest warn.
+# The default hygiene policy: DEP-code → Status. All warn in 1.3 (DEP001's
+# block is gated on Story 2.1's name-mapping confidence — see module docstring).
 # Keys are deptry DEP codes (NOT Status tokens), so the sole-ownership
 # rung-ordering guard does not fire on this literal.
 DEFAULT_HYGIENE_POLICY: dict[str, Status] = {
-    "DEP001": Status.POLICY_VIOLATION,
+    "DEP001": Status.WARN,  # 2.1 upgrades to block-on-high-confidence (Gap-A)
     "DEP002": Status.WARN,
     "DEP003": Status.WARN,
     "DEP004": Status.WARN,
@@ -124,7 +131,26 @@ def parse_deptry_output(raw: str) -> DeptryParse:
     the raw module as ``subject`` and deptry's message verbatim. Anything
     else is counted and reported (``engine-output-unrecognized``), never
     dropped. Undecodable/non-array top-level output fails the whole parse
-    (``engine-output-unparseable``)."""
+    (``engine-output-unparseable``). An EMPTY output (deptry wrote nothing to
+    its ``-o`` file — a version/flag skew, not garbage) is reported distinctly,
+    not as 'invalid JSON'."""
+    if not raw.strip():
+        return DeptryParse(
+            findings=(),
+            errors=(
+                ErrorRecord(
+                    kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
+                    owner=_OWNER,
+                    message=(
+                        "deptry produced no machine output (empty -o file) — "
+                        "check the installed deptry version supports -o/--no-ansi"
+                    ),
+                ),
+            ),
+            records_total=0,
+            records_unparseable=0,
+            output_parsed=False,
+        )
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, ValueError):
@@ -161,7 +187,7 @@ def parse_deptry_output(raw: str) -> DeptryParse:
     findings: list[Finding] = []
     errors: list[ErrorRecord] = []
     records_unparseable = 0
-    for index, record in enumerate(data):
+    for record in data:
         finding = _record_to_finding(record)
         if finding is None:
             records_unparseable += 1
@@ -169,9 +195,14 @@ def parse_deptry_output(raw: str) -> DeptryParse:
                 ErrorRecord(
                     kind=ErrorKind.ENGINE_OUTPUT_UNRECOGNIZED,
                     owner=_OWNER,
+                    # No array index in the message: deptry's record ordering
+                    # is not stable across runs, so an index would break the
+                    # NFR-I3 twice-run byte-identical contract. The count is
+                    # carried in records_unparseable / unparseable_rate.
                     message=(
-                        f"deptry record {index} is unrecognized "
-                        "(missing string 'error.code' or 'module')"
+                        "a deptry record is unrecognized "
+                        "(missing string 'error.code' or 'module', or a "
+                        "grammar-breaking code)"
                     ),
                 )
             )
@@ -202,6 +233,16 @@ def _record_to_finding(record: object) -> Finding | None:
         return None
     if not isinstance(module, str) or not module:
         return None
+    # The code is the id's own delimited segment, so it must be grammar-safe
+    # on its own — a colon/newline/percent would make `hygiene:<code>:<module>`
+    # non-injective (`hygiene_rung` reads the code back via split(":",2)[1] and
+    # would recover the wrong token). Sanitizing the code SILENTLY would mint a
+    # mangled-but-valid finding; instead a code that is not already grammar-safe
+    # is UNRECOGNIZED (counted + reported by the caller). A well-formed but
+    # unknown code (a future DEP006) is grammar-safe, so it still becomes a
+    # finding and degrades to `indeterminate` via status_for_code — graceful.
+    if _sanitize_id_segment(code) != code:
+        return None
     message = error.get("message")
     if not isinstance(message, str):
         message = f"{code} (deptry provided no message)"
@@ -215,6 +256,7 @@ def _record_to_finding(record: object) -> Finding | None:
             severity=None,
         )
     except ValueError:
-        # A code carrying a colon/newline would violate the frozen id
-        # grammar; treat it as unrecognized rather than crash the parse.
+        # Belt-and-suspenders: with code grammar-checked and module sanitized
+        # the id is always valid, but never let a Finding-invariant raise crash
+        # the parse — treat as unrecognized.
         return None

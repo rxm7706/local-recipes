@@ -152,6 +152,27 @@ def test_engine_env_missing_binary_is_engine_unavailable(monkeypatch, tmp_path):
     assert not os.path.exists(captured["out_path"])
 
 
+def test_engine_env_vanished_cwd_is_not_misreported_as_missing_binary(
+    monkeypatch, tmp_path
+):
+    """subprocess raises FileNotFoundError for BOTH a missing binary AND a
+    missing cwd (failed pre-exec chdir). A target dir that vanished after
+    discovery (TOCTOU) must report engine-execution-failed, NOT
+    engine-unavailable ('binary not found on PATH') — the seam Story 1.5's
+    osv runner reuses. Follow-up Opus review, 2026-07-14."""
+    gone = tmp_path / "vanished"  # never created
+
+    def fake_run(argv, **kwargs):
+        raise FileNotFoundError(gone)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    text, error = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=gone)
+    assert text is None
+    assert error.kind is ErrorKind.ENGINE_EXECUTION_FAILED
+    assert "not an existing directory" in error.message
+    assert "not found on PATH" not in error.message
+
+
 def test_engine_env_undecodable_output_is_output_unparseable(
     monkeypatch, tmp_path
 ):

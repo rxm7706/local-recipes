@@ -132,6 +132,24 @@ def _engine_env(
                 check=False,  # exit code is content, never the gate
             )
         except FileNotFoundError:
+            # subprocess raises FileNotFoundError for BOTH a missing executable
+            # AND a missing cwd (the pre-exec chdir fails). Disambiguate so a
+            # target dir that vanished after discovery (TOCTOU) is not
+            # misreported as "engine not installed" — this seam is reused
+            # verbatim by Story 1.5's osv runner.
+            if not os.path.isdir(cwd):
+                return (
+                    None,
+                    ErrorRecord(
+                        kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+                        owner=owner,
+                        message=(
+                            f"scan target {str(cwd)!r} is not an existing "
+                            f"directory when engine {owner!r} ran (vanished "
+                            "after discovery?)"
+                        ),
+                    ),
+                )
             return (
                 None,
                 ErrorRecord(

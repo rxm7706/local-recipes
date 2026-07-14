@@ -490,14 +490,19 @@ def _one_hygiene_finding(document: dict, finding_id: str) -> dict:
     return matches[0]
 
 
-def test_deptry_missing_dependency_is_a_policy_violation(capsys):
-    """DEP001 (imported-but-undeclared) is high-confidence for a PyPI-native
-    project -> policy-violation, exit 1, driver on the hygiene axis."""
+def test_deptry_missing_dependency_is_a_warning(capsys):
+    """DEP001 (imported-but-undeclared) WARNS in 1.3 (exit 0), not blocks:
+    Gap-A requires DEP001's block to be gated on name-mapping confidence,
+    which needs Story 2.1's conda->pypi map; deptry's DEP001 false-positives
+    (guarded optional imports) would otherwise produce a benign false-red.
+    The finding is still surfaced with a driver on the hygiene axis (never a
+    false-green) — 2.1 upgrades it to block-on-high-confidence. Follow-up
+    Opus review, 2026-07-14."""
     rc, out, err = run_scan(capsys, DEPTRY_MISSING)
     document = parse_report(out)
-    assert rc == 1
+    assert rc == 0
     assert rc == document["exit_code"]
-    assert document["status"]["value"] == "policy-violation"
+    assert document["status"]["value"] == "warn"
     finding = _one_hygiene_finding(
         document, "hygiene:DEP001:totally_absent_pkg_xyz"
     )
