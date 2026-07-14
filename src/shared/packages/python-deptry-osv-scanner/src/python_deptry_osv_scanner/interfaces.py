@@ -232,6 +232,11 @@ class DefaultPolicy:
     def evaluate(
         self, inventory: ResolvedInventory, engine_results: Sequence[EngineResult]
     ) -> tuple[tuple[Finding, ...], tuple[tuple[Status, StatusDriver | None], ...]]:
+        # Lazy import breaks the interfaces<->hygiene cycle (hygiene.py imports
+        # _sanitize_id_segment from here); by the time evaluate() runs, both
+        # modules are fully loaded.
+        from .hygiene import hygiene_rung
+
         findings: list[Finding] = []
         rungs: list[tuple[Status, StatusDriver | None]] = []
         axis_by_id: dict[str, str] = {}
@@ -242,17 +247,26 @@ class DefaultPolicy:
                     continue
                 findings.append(finding)
                 axis_by_id[finding.id] = finding.axis
-                # The false-green backstop: a finding-carrying report must
-                # never compose clean/exit 0 (C0c) — one conservative
-                # indeterminate rung per engine finding until Story 1.3/1.6's
-                # severity mapping replaces it (tighten-only: toward
-                # policy-violation, never toward clean).
-                rungs.append(
-                    (
-                        Status.INDETERMINATE,
-                        StatusDriver(axis=finding.axis, finding_id=finding.id),
+                if finding.axis == AXIS_HYGIENE:
+                    # Story 1.3: hygiene-axis engine findings route through the
+                    # real default hygiene->status table (DEP001 blocks;
+                    # DEP002-005 warn; an unknown DEP code still degrades to
+                    # indeterminate). This REPLACES the 1.2 indeterminate
+                    # backstop for the hygiene axis only — never mapping a
+                    # finding to clean (C0 preserved).
+                    rungs.append(hygiene_rung(finding))
+                else:
+                    # The false-green backstop still governs every other axis:
+                    # a finding-carrying report must never compose clean/exit 0
+                    # (C0c). One conservative indeterminate rung per engine
+                    # finding until that axis's producer story supplies a real
+                    # mapping (Story 2.4 for vulnerability; tighten-only).
+                    rungs.append(
+                        (
+                            Status.INDETERMINATE,
+                            StatusDriver(axis=finding.axis, finding_id=finding.id),
+                        )
                     )
-                )
             for record in result.errors:
                 # An engine failure must reach the verdict. Axis choice and
                 # the error:<kind>:<owner> driver grammar are finalized by

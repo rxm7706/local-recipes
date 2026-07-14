@@ -59,11 +59,12 @@ def make_inventory(*components) -> ResolvedInventory:
 # --- registry + null engine --------------------------------------------------
 
 
-def test_registry_has_exactly_the_null_engine():
+def test_registry_holds_the_null_and_deptry_engines():
+    """Story 1.3 registers the real deptry engine alongside the retained
+    no-op null engine, in deterministic registration order."""
     engines = registered_engines()
-    assert len(engines) == 1
+    assert [engine.name for engine in engines] == ["null", "deptry"]
     assert isinstance(engines[0], NullEngine)
-    assert engines[0].name == "null"
 
 
 def test_registered_engines_returns_fresh_instances():
@@ -86,7 +87,7 @@ def test_register_engine_appends_in_deterministic_order(monkeypatch):
     returned = register_engine(DummyEngine)
     assert returned is DummyEngine  # decorator-friendly
     names = [engine.name for engine in registered_engines()]
-    assert names == ["null", "dummy"]
+    assert names == ["null", "deptry", "dummy"]
 
 
 def test_register_engine_is_idempotent_for_the_same_factory(monkeypatch):
@@ -190,11 +191,11 @@ def test_engine_findings_pass_through(component_factory):
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
-    # The false-green backstop: the finding also feeds a conservative
-    # indeterminate rung carrying ITS axis and id (1.3/1.6 replace this
-    # with the real severity mapping — tighten-only).
+    # Story 1.3: a hygiene DEP002 finding now feeds a WARN rung — the real
+    # default hygiene mapping replaced the 1.2 indeterminate backstop for the
+    # hygiene axis (DEP002 -> warn), carrying the finding's axis and id.
     assert (
-        Status.INDETERMINATE,
+        Status.WARN,
         StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:leftpad"),
     ) in rungs
 
