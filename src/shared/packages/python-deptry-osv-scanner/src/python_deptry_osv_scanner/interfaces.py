@@ -88,25 +88,45 @@ from .models import (
 )
 from .verdict import match_level_rung
 
+# Every character str.splitlines() treats as a line boundary, mapped to a
+# percent-escape. All are str.isspace()-true, so an interior one survives the
+# entry .strip() and would otherwise reach a finding-id segment and split it
+# for a line-oriented consumer. CR/LF keep their historical %0D/%0A forms; the
+# astral separators (U+2028/U+2029) use a %uXXXX form to stay unambiguous
+# against the 2-hex escapes.
+_LINE_BOUNDARY_ESCAPES: dict[str, str] = {
+    "\r": "%0D",
+    "\n": "%0A",
+    "\x0b": "%0B",
+    "\x0c": "%0C",
+    "\x1c": "%1C",
+    "\x1d": "%1D",
+    "\x1e": "%1E",
+    "\x85": "%85",
+    " ": "%u2028",
+    " ": "%u2029",
+}
+
 
 def _sanitize_id_segment(value: str) -> str:
     """Escape a value destined for a finding-id segment. ``%`` first (the
     escape scheme must escape its own escape character, or ``foo\\nbar``
     and a literal ``foo%0Abar`` would alias onto one id and silently
     dedupe two distinct components — waiver matching depends on
-    injectivity), then CR/LF/colon (``%0D``/``%0A``/``%3A``): the id
-    grammar is single-line and colon-delimited by contract, while TOML
-    happily encodes any of them inside a dependency name. An empty value
-    (an empty growable token from a future producer) degrades to
-    ``unspecified`` instead of minting a grammar-violating id.
+    injectivity), then EVERY Python line-boundary character (the full
+    ``_LINE_BOUNDARY_ESCAPES`` set that ``str.splitlines`` splits on,
+    each ``str.isspace``-true, so an interior one survives the entry
+    ``.strip()`` and reaches a ``RAW_MALFORMED`` name) plus the colon
+    delimiter: the id grammar is single-line and colon-delimited by
+    contract, while TOML happily encodes any of them inside a dependency
+    name. An empty value (an empty growable token from a future producer)
+    degrades to ``unspecified`` instead of minting a grammar-violating id.
     Deterministic, so ids stay stable across runs; ``Finding.subject``
     keeps the raw value."""
-    escaped = (
-        value.replace("%", "%25")
-        .replace("\r", "%0D")
-        .replace("\n", "%0A")
-        .replace(":", "%3A")
-    )
+    escaped = value.replace("%", "%25")
+    for char, replacement in _LINE_BOUNDARY_ESCAPES.items():
+        escaped = escaped.replace(char, replacement)
+    escaped = escaped.replace(":", "%3A")
     return escaped if escaped else "unspecified"
 
 

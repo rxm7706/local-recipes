@@ -94,6 +94,20 @@ def test_getnameinfo_is_denied(socket_deny_error):
         socket.getnameinfo(("127.0.0.1", 9), 0)
 
 
+def test_gethostbyname_ex_is_denied(socket_deny_error):
+    """conftest patches gethostbyname_ex too; the aliveness suite must probe
+    it or a dropped patch line silently re-opens forward DNS egress."""
+    with pytest.raises(socket_deny_error):
+        socket.gethostbyname_ex("example.invalid")
+
+
+def test_gethostbyaddr_is_denied(socket_deny_error):
+    """gethostbyaddr (reverse DNS) is patched in conftest; probe it so the
+    guard-alive suite covers every resolver primitive the harness denies."""
+    with pytest.raises(socket_deny_error):
+        socket.gethostbyaddr("127.0.0.1")
+
+
 def test_denial_error_carries_the_destination(socket_deny_error):
     with pytest.raises(socket_deny_error) as excinfo:
         socket.create_connection(("127.0.0.1", 9))

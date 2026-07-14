@@ -227,6 +227,14 @@ def _run_scan(args: argparse.Namespace) -> int:
             "directory"
         )
         return exit_code_for(Status.ERROR)
+    except ValueError as exc:
+        # A path with an embedded NUL (or otherwise unrepresentable to the OS)
+        # raises ValueError, not OSError — a user-input error, not an internal
+        # defect. Diagnose it here, not via main's last-resort traceback net.
+        _stderr(
+            f"{TOOL_NAME}: scan target {args.path!r} is not a valid path: {exc}"
+        )
+        return exit_code_for(Status.ERROR)
     except OSError as exc:
         _stderr(f"{TOOL_NAME}: cannot stat scan target {args.path!r}: {exc}")
         return exit_code_for(Status.ERROR)
@@ -417,12 +425,19 @@ def _run_scan(args: argparse.Namespace) -> int:
         sys.stdout.flush()
     except BrokenPipeError:
         _absorb_broken_pipe()
-    except OSError as exc:
-        # A non-EPIPE stdout failure (ENOSPC full disk, EIO hung-up
-        # terminal) is environmental, not an internal defect: the verdict
-        # is already computed and must not be replaced by the error exit
-        # or misdiagnosed as an internal error. Stdout may hold a partial
-        # document — same consumption guidance as SIGINT.
+    except (OSError, ValueError) as exc:
+        # A non-EPIPE stdout failure is environmental, not an internal defect:
+        # the verdict is already computed and must NOT be replaced by the
+        # error exit or misdiagnosed as an internal error. Two families:
+        #   * OSError (ENOSPC full disk, EIO hung-up terminal), and
+        #   * ValueError ("I/O operation on closed file") — an in-process
+        #     embedder that closed/replaced sys.stdout, the exact swapped-
+        #     stream case _absorb_broken_pipe supports. CPython raises
+        #     ValueError, not OSError, for a closed stream, so it must be
+        #     caught here or it escapes to main's last-resort net and
+        #     overrides the verdict with exit 2 (exit-code sole-ownership
+        #     violation). Stdout may hold a partial document — same
+        #     consumption guidance as SIGINT.
         _stderr(
             f"{TOOL_NAME}: stdout emission failed "
             f"({exc.__class__.__name__}); any partial stdout must not be "
