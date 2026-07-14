@@ -2,7 +2,7 @@
 marp: true
 paginate: true
 size: 16:9
-title: PyForge-Warden — never false-green
+title: Warden — never false-green
 style: |
   section { background:#f3f2f2; color:#201e1d; font-family:'Archivo',Arial,Helvetica,sans-serif; font-size:26px; }
   h1 { letter-spacing:-0.03em; color:#201e1d; }
@@ -22,15 +22,15 @@ style: |
 
 <!-- _class: lead -->
 
-PYFORGE-WARDEN · Dependency-trust gate · BMAD Tech Spec `pyforge-warden`
+WARDEN · Dependency-trust gate · BMAD Tech Spec `pyforge-warden`
 
 # never false-green
 
 A CI dependency-trust gate for **both Python ecosystems** — PyPI applications and the conda / conda-forge world of scientific, analytics & ML/AI computing.
 
-Brand **PyForge-Warden** · dist `pyforge-warden` · import `pyforge.warden` · CLI `warden`
+Brand **Warden** · dist `pyforge-warden` · import `pyforge.warden` · CLI `warden`
 
-<!-- The thesis in three words: never false-green. A green check must mean the dependencies were actually assessed and found safe. PyForge-Warden is a CI gate for BOTH Python ecosystems: pip/PyPI apps and the conda/conda-forge scientific and ML/AI world. -->
+<!-- The thesis in three words: never false-green. A green check must mean the dependencies were actually assessed and found safe. Warden is a CI gate for BOTH Python ecosystems: pip/PyPI apps and the conda/conda-forge scientific and ML/AI world. -->
 
 ---
 
@@ -40,7 +40,7 @@ Brand **PyForge-Warden** · dist `pyforge-warden` · import `pyforge.warden` · 
 
 # The green check that lies
 
-An exit-code gate can pass while your dependencies are unassessed, unparsed, or unsafe. That's the failure PyForge-Warden exists to end.
+An exit-code gate can pass while your dependencies are unassessed, unparsed, or unsafe. That's the failure Warden exists to end.
 
 <!-- Act I frames the problem. The danger isn't a red X — it's a green check that never actually looked. -->
 
@@ -53,7 +53,7 @@ A gate reduces to one number. **0 merges, non-zero blocks.** But exit 0 quietly 
 - **exit 0 — assessed & clean** — the tool looked hard and found nothing.
 - **exit 0 — never looked** — the tool found nothing because it couldn't check.
 
-Traditional gates can't tell these apart. PyForge-Warden refuses to collapse them — an unproven result is **never** reported as clean.
+Traditional gates can't tell these apart. Warden refuses to collapse them — an unproven result is **never** reported as clean.
 
 <!-- Exit 0 conflates 'I checked and it's clean' with 'I didn't really check.' A scanner that finds nothing returns 0 whether it looked or not. -->
 
@@ -63,9 +63,9 @@ Traditional gates can't tell these apart. PyForge-Warden refuses to collapse the
 
 A vulnerability scanner is only as honest as its database. If the OSV feed is **missing, empty, corrupt, or stale**, a naïve scanner queries it, gets zero hits, and reports *clean*.
 
-`db.records = 0` → naïve scanner: `verdict: clean ✓` → PyForge-Warden: **`verdict: indeterminate`**
+`db.records = 0` → naïve scanner: `verdict: clean ✓` → Warden: **`verdict: indeterminate`**
 
-PyForge-Warden **content-pre-flights the database** — record count, freshness, and integrity — before it trusts a single result. No proof of assessment, no green.
+Warden **content-pre-flights the database** — record count, freshness, and integrity — before it trusts a single result. No proof of assessment, no green.
 
 <!-- If the OSV database failed to download, is empty, or stale, a naive scanner gets zero hits and reports clean — a green check that means the opposite of safe. -->
 
@@ -83,7 +83,7 @@ The stock engines don't parse conda & pixi manifests. A naïve pipeline **silent
 | `meta.yaml` | **skipped** |
 | `pixi.toml` | **skipped** |
 
-A conda-heavy ML repo passes while most of its graph was **never seen**. PyForge-Warden marks what it can't resolve `indeterminate`, not clean.
+A conda-heavy ML repo passes while most of its graph was **never seen**. Warden marks what it can't resolve `indeterminate`, not clean.
 
 <!-- deptry and osv-scanner don't parse conda meta.yaml/recipe.yaml/environment.yml/pixi.toml. A conda-heavy ML repo scans 'clean' while most deps were never seen. -->
 
@@ -99,7 +99,7 @@ A conda-heavy ML repo passes while most of its graph was **never seen**. PyForge
 ~30K feedstocks · curated · FOSS-only
 **80%** of footprint — ~1% of apps ≈ 7–8K libraries
 
-<!-- Python is two ecosystems. Applications are 20% of footprint; the ML/AI/data stack is a tiny slice of apps but 80% of distinct libraries. PyForge-Warden covers both. -->
+<!-- Python is two ecosystems. Applications are 20% of footprint; the ML/AI/data stack is a tiny slice of apps but 80% of distinct libraries. Warden covers both. -->
 
 ---
 
@@ -111,7 +111,7 @@ A conda-heavy ML repo passes while most of its graph was **never seen**. PyForge
 
 One report schema. One verdict lattice. One exit enum. Honesty encoded as a data structure.
 
-<!-- PyForge-Warden's answer to false-green is a single, frozen, machine-readable contract. Nothing downstream has to guess. -->
+<!-- Warden's answer to false-green is a single, frozen, machine-readable contract. Nothing downstream has to guess. -->
 
 ---
 
@@ -176,7 +176,7 @@ Four values, no drift — CI wires against these forever. Every operational fail
 
 Pluggable engines behind one report — six manifests read natively, isolated behind a hardened seam, across three supply-chain rings.
 
-<!-- PyForge-Warden orchestrates deptry and osv-scanner behind one report, reads six manifest formats natively, isolates each engine, and scans at three concentric rings. -->
+<!-- Warden orchestrates deptry and osv-scanner behind one report, reads six manifest formats natively, isolates each engine, and scans at three concentric rings. -->
 
 ---
 
@@ -204,13 +204,13 @@ Google's OSV database checked against the resolved dependency set. The database 
 - **Pre-flighted** — record count, freshness & integrity verified **before** any result is trusted.
 - **Fails honest** — a bad DB yields `indeterminate`, not a false clean.
 
-<!-- Axis 2 ships in v1 with osv-scanner. The DB is a declared dependency (never a runtime curl) and PyForge-Warden pre-flights it before trusting a result. That's the fix for false-green #1. -->
+<!-- Axis 2 ships in v1 with osv-scanner. The DB is a declared dependency (never a runtime curl) and Warden pre-flights it before trusting a result. That's the fix for false-green #1. -->
 
 ---
 
 ## 10 · The hardened subprocess seam
 
-Engines are external binaries. PyForge-Warden runs each behind a strict seam so a misbehaving engine can't corrupt a verdict.
+Engines are external binaries. Warden runs each behind a strict seam so a misbehaving engine can't corrupt a verdict.
 
 - no shell — explicit **argv**
 - timeouts + resource caps
@@ -219,7 +219,7 @@ Engines are external binaries. PyForge-Warden runs each behind a strict seam so 
 
 Each maps to a distinct typed error and `exit 2` — never a silent pass.
 
-<!-- PyForge-Warden isolates each engine behind a hardened subprocess seam. A misbehaving engine becomes a typed error and exit 2 — never a silent pass. -->
+<!-- Warden isolates each engine behind a hardened subprocess seam. A misbehaving engine becomes a typed error and exit 2 — never a silent pass. -->
 
 ---
 
@@ -236,19 +236,19 @@ The manifest engine is the wedge — no engine parses conda / pixi. No untrusted
 | `meta.yaml` v0 | jinja + `# [selector]` | neutralize → safe_load |
 | `recipe.yaml` v1 | requirements: run: | safe_load |
 
-<!-- Neither stock engine parses conda/pixi. PyForge-Warden reads all six formats; meta.yaml v0 needs jinja/selector neutralization. safe_load only — no untrusted input executed. -->
+<!-- Neither stock engine parses conda/pixi. Warden reads all six formats; meta.yaml v0 needs jinja/selector neutralization. safe_load only — no untrusted input executed. -->
 
 ---
 
 ## 12 · Three rings — scan the whole supply chain
 
-The further out PyForge-Warden scans, the more it **prevents** rather than reports.
+The further out Warden scans, the more it **prevents** rather than reports.
 
 - **Public upstream** *(vision)* — scan PyPI & conda-forge: malicious, typosquat, name-squat & stale feedstocks. → *blocklists*
 - **Registry perimeter** *(v1.x)* — block / allow lists on Artifactory / JFrog; a census of everything that enters. → *clean pulls*
 - **Consumption edge** *(today)* — scan repos, desktops & CI: the axes on what apps actually pull.
 
-<!-- PyForge-Warden runs at three depths. Edge is today; registry perimeter (JFrog blocklists) is v1.x and the star; public upstream scanning is the vision. -->
+<!-- Warden runs at three depths. Edge is today; registry perimeter (JFrog blocklists) is v1.x and the star; public upstream scanning is the vision. -->
 
 ---
 
@@ -260,7 +260,7 @@ The further out PyForge-Warden scans, the more it **prevents** rather than repor
 
 Deny-by-default egress, deterministic runs, a pre-flighted database. Trust that survives the air gap.
 
-<!-- Enterprise Python often runs where the internet doesn't reach. PyForge-Warden is built for that. -->
+<!-- Enterprise Python often runs where the internet doesn't reach. Warden is built for that. -->
 
 ---
 
@@ -277,7 +277,7 @@ A scan makes **no network calls**. Database and engines are provisioned ahead of
 
 Any online behavior is opt-in and explicit — never silent. Safe by construction in regulated and air-gapped estates.
 
-<!-- PyForge-Warden makes no network calls during a scan by default. Any online behavior is opt-in and explicit, never silent. -->
+<!-- Warden makes no network calls during a scan by default. Any online behavior is opt-in and explicit, never silent. -->
 
 ---
 
@@ -297,7 +297,7 @@ Record count, freshness & integrity checked first. A scan becomes **evidence you
 
 ```console
 $ warden scan . --warn-only
-PyForge-Warden 1.0  ·  offline  ·  OSV db 2026-07-10 (312,004 records ✓)
+Warden 1.0  ·  offline  ·  OSV db 2026-07-10 (312,004 records ✓)
 discovered 6 manifests · resolved 312 packages
 ✓ hygiene     clean
 ✗ security    1 critical — numpy 1.22.0 · GHSA-xxxx
@@ -341,7 +341,7 @@ Six axes of dependency trust, pluggable behind one report — hygiene & security
 
 ## 17 · KEV + EPSS — prioritize by exploitability `v1.x`
 
-Not every CVE matters equally. PyForge-Warden enriches each finding so the gate blocks on **what's actually dangerous** — not theoretical noise.
+Not every CVE matters equally. Warden enriches each finding so the gate blocks on **what's actually dangerous** — not theoretical noise.
 
 - **CISA KEV — exploited in the wild** — the known-exploited catalog; a boolean that outranks a raw severity score.
 - **FIRST EPSS — probability it will be** — a 0–1 exploit-prediction score for triage; gate with `--min-epss`.
@@ -406,13 +406,13 @@ No empty database, no skipped manifest, no false green.
 
 A bare `recipe.yaml` scan exits non-zero by design — until you lock, waive, or run `--warn-only`. That's the lock-nudge working, not a bug.
 
-PyForge-Warden · pyforge-warden · pyforge.warden · docs/specs/pyforge-warden.md
+Warden · pyforge-warden · pyforge.warden · docs/specs/pyforge-warden.md
 
 <!-- The close: a green check means it was actually checked. A bare recipe.yaml scan exits non-zero by design until you lock, waive, or warn-only. -->
 
 ---
 
-## Appendix · Who PyForge-Warden serves
+## Appendix · Who Warden serves
 
 - **CISO — provable risk posture:** exploitability-prioritized findings (KEV/EPSS) and audit-grade, reproducible evidence.
 - **Chief Dev Experience — a gate devs trust:** runs locally first, one command, no false alarms — so it doesn't cry wolf.

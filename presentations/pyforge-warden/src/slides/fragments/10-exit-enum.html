@@ -1,0 +1,24 @@
+<div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">07</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">A frozen exit enum &amp; typed errors</h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:48px;">
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-left:2px solid #d3d0cf; font-family:'IBM Plex Mono',monospace;">
+        <div style="border-right:2px solid #d3d0cf; padding:0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; color:#1a7a3c; line-height:1;">0</div><div style="font-size:22px; margin-top:10px;">success · clean / warn</div></div>
+        <div style="border-right:2px solid #d3d0cf; padding:0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; color:#ec3013; line-height:1;">1</div><div style="font-size:22px; margin-top:10px;">policy-violation / indeterminate</div></div>
+        <div style="border-right:2px solid #d3d0cf; padding:0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; color:#ec3013; line-height:1;">2</div><div style="font-size:22px; margin-top:10px;">operational error</div></div>
+        <div style="padding:0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; color:rgba(32,30,29,.5); line-height:1;">130</div><div style="font-size:22px; margin-top:10px;">interrupted (SIGINT)</div></div>
+      </div>
+      <div>
+        <div style="font-size:24px; color:rgba(32,30,29,.6); margin-bottom:18px;">Every operational failure is a <b style="color:#201e1d;">typed error with a named owner</b> —</div>
+        <div style="display:flex; flex-wrap:wrap; gap:14px; font-family:'IBM Plex Mono',monospace;">
+          <span style="border:2px solid #201e1d; padding:12px 20px; font-size:24px;">unparsable-manifest</span>
+          <span style="border:2px solid #201e1d; padding:12px 20px; font-size:24px;">engine-unavailable</span>
+          <span style="border:2px solid #201e1d; padding:12px 20px; font-size:24px;">engine-crash</span>
+          <span style="border:2px solid #201e1d; padding:12px 20px; font-size:24px;">internal-error</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT II · 10</span>
+    </div>

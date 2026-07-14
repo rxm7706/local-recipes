@@ -1,0 +1,18 @@
+<div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">02</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">False-green #1 — the empty database</h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:44px;">
+      <p style="font-size:32px; line-height:1.45; font-weight:500; margin:0; max-width:1500px;">A vulnerability scanner is only as honest as its database. If the OSV feed is <b>missing, empty, corrupt, or stale</b>, a naïve scanner queries it, gets zero hits, and reports <span style="color:#1a7a3c; font-weight:700;">clean</span>.</p>
+      <div style="display:flex; align-items:stretch; gap:0; font-family:'IBM Plex Mono',monospace;">
+        <div style="flex:1; border:2px solid #201e1d; padding:28px 30px;"><div style="font-size:16px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Input</div><div style="font-size:26px; font-weight:600; margin-top:10px;">db.records = 0</div></div>
+        <div style="display:flex; align-items:center; padding:0 24px; font-size:36px; color:#ec3013; font-weight:800;">→</div>
+        <div style="flex:1; border:2px solid #201e1d; padding:28px 30px;"><div style="font-size:16px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Naïve scanner</div><div style="font-size:26px; font-weight:600; margin-top:10px; color:#1a7a3c;">verdict: clean ✓</div></div>
+        <div style="display:flex; align-items:center; padding:0 24px; font-size:36px; color:#ec3013; font-weight:800;">→</div>
+        <div style="flex:1; border:2px solid #ec3013; background:#ec3013; color:#f3f2f2; padding:28px 30px;"><div style="font-size:16px; letter-spacing:0.06em; text-transform:uppercase; opacity:.8;">Warden</div><div style="font-size:26px; font-weight:600; margin-top:10px;">verdict: indeterminate</div></div>
+      </div>
+      <p style="font-size:26px; line-height:1.45; margin:0; max-width:1500px; color:rgba(32,30,29,.72);">Warden <b>content-pre-flights the database</b> — record count, freshness, and integrity — before it trusts a single result. No proof of assessment, no green.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT I · 04</span>
+    </div>

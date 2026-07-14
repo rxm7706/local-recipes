@@ -2,7 +2,7 @@
 marp: true
 paginate: true
 size: 16:9
-title: PyForge-Warden — Executive Summary
+title: Warden — Executive Summary
 style: |
   section { background:#f3f2f2; color:#201e1d; font-family:'Archivo',Arial,Helvetica,sans-serif; font-size:26px; }
   h1 { letter-spacing:-0.02em; color:#201e1d; }
@@ -21,7 +21,7 @@ style: |
 
 <!-- _class: lead -->
 
-PYFORGE-WARDEN · `pyforge-warden`
+WARDEN · `pyforge-warden`
 **Six-axis dependency governance gate**
 
 # Catch risky dependencies before they ship.
@@ -30,7 +30,7 @@ PYFORGE-WARDEN · `pyforge-warden`
 
 A single CI gate for both Python worlds — **PyPI** applications and the **conda / conda-forge** scientific, analytics and ML/AI data stacks. It checks every dependency across six axes — from unused code to unpatched CVEs, risky licenses and unmaintained upstreams — and blocks risky merges automatically.
 
-<!-- Executive one-slide summary. PyForge-Warden is a CI dependency-trust gate covering both Python ecosystems. -->
+<!-- Executive one-slide summary. Warden is a CI dependency-trust gate covering both Python ecosystems. -->
 
 ---
 
@@ -62,8 +62,8 @@ Schema-validated reports and expiring, recorded waivers across a 20,000+ repo fl
 
 ## Honest by design — no false greens
 
-PyForge-Warden refuses to fake a pass. If it can't prove your dependencies are safe, it fails — until you pin them, formally accept the risk, or explicitly run `--warn-only`.
+Warden refuses to fake a pass. If it can't prove your dependencies are safe, it fails — until you pin them, formally accept the risk, or explicitly run `--warn-only`.
 
 **An honest "not verified" beats a false "all clear."**
 
-PyForge-Warden · module `pyforge.warden` · dist `pyforge-warden`
+Warden · module `pyforge.warden` · dist `pyforge-warden`

@@ -1,1 +1,170 @@
-[]
+[
+  {
+    "id": "01-cover",
+    "label": "Cover",
+    "notes": "Warden. The thesis in three words: never false-green. A green check must mean something — that the dependencies were actually assessed and found safe. Warden is a CI gate for BOTH Python ecosystems: pip/PyPI apps and the conda/conda-forge scientific and ML/AI world.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "02-act-i",
+    "label": "Act I",
+    "notes": "Act I frames the problem. A CI gate's whole job is to answer one question honestly: is this safe to merge? The danger isn't a red X — it's a green check that never actually looked.",
+    "bg": "#ec3013"
+  },
+  {
+    "id": "03-exit-0-safe",
+    "label": "Exit 0 ≠ safe",
+    "notes": "Every CI gate reduces to an exit code. 0 merges, non-zero blocks. But exit 0 conflates two very different states: 'I checked and it's clean' and 'I didn't really check.' A scanner that finds nothing returns 0 whether it looked hard or not at all.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "04-false-green-empty-db",
+    "label": "False-green: empty DB",
+    "notes": "First false-green mode: the empty or corrupt vulnerability database. If the OSV database failed to download, is empty, or is stale, a naive scanner queries it, gets zero hits, and reports clean. You get a green check that means the opposite of safe.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "05-false-green-unassessable",
+    "label": "False-green: unassessable",
+    "notes": "Second false-green mode: the unassessable dependency. deptry and osv-scanner don't parse conda meta.yaml, recipe.yaml, environment.yml, or pixi.toml. A naive pipeline silently skips what it can't read — so a conda-heavy ML repo scans 'clean' while most of its dependencies were never seen.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "06-two-ecosystems",
+    "label": "Two ecosystems",
+    "notes": "The blind spot has structure. Python is really two ecosystems: PyPI — 850K packages, open upload, any license — and conda-forge — 30K curated, FOSS-only feedstocks. Applications are 20% of the enterprise footprint; the ML/AI/data stack is a tiny slice of apps but 80% of the distinct libraries. Warden covers both.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "07-act-ii",
+    "label": "Act II",
+    "notes": "Act II: the contract. Warden's answer to false-green is a single, frozen, machine-readable contract — one report schema, one verdict lattice, one exit enum. Nothing downstream has to guess.",
+    "bg": "#ec3013"
+  },
+  {
+    "id": "08-one-report",
+    "label": "One report",
+    "notes": "Everything flows into one artifact: the ComplianceReport, validated against a committed JSON Schema. Both engines, all axes, coverage, and provenance merge here. It's producer-agnostic and the single source of truth — the human summary is just a rendering of it.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "09-verdict-lattice",
+    "label": "Verdict lattice",
+    "notes": "The verdict lattice — seven rungs, highest wins. error and policy-violation and indeterminate all block; warn, bypassed, clean, not-applicable all pass. The key design move: indeterminate sits ABOVE the pass line. An unproven result blocks, it never slides to clean.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "10-exit-enum",
+    "label": "Exit enum",
+    "notes": "The exit enum is frozen: 0 success, 1 policy violation or indeterminate, 2 operational error, 130 interrupted. Four values, no drift. CI wires against these forever. And every operational failure is a typed error with a named owner — unparsable-manifest, engine-unavailable, engine-crash, internal-error — so a failure routes to whoever can fix it.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "11-act-iii",
+    "label": "Act III",
+    "notes": "Act III: the engines and how they run. Warden orchestrates deptry and osv-scanner behind one report, reads six manifest formats natively, isolates each engine behind a hardened subprocess seam, and scans at three concentric rings of the supply chain.",
+    "bg": "#ec3013"
+  },
+  {
+    "id": "12-deptry-hygiene",
+    "label": "deptry — hygiene",
+    "notes": "Axis 1, hygiene, ships in v1 with deptry. It does AST import analysis and cross-checks against declared dependencies, emitting DEP001 through DEP005: missing, unused, transitive, misplaced-dev, and duplicate. It honors existing tool.deptry ignore config so teams keep their tuning.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "13-osv-scanner-security",
+    "label": "osv-scanner — security",
+    "notes": "Axis 2, security, ships in v1 with Google's osv-scanner checked against the OSV database. Crucially the database is provisioned as a declared conda/pixi dependency — never a runtime curl — and Warden pre-flights it for freshness and integrity before trusting a result. That's the fix for false-green #1.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "14-subprocess-seam",
+    "label": "Subprocess seam",
+    "notes": "The engines are external binaries, so Warden isolates each behind a hardened subprocess seam: no shell, explicit argv, timeouts and resource caps, captured stdout/stderr, and a distinction between an engine that's unavailable versus one that crashed. A misbehaving engine becomes a typed error and exit 2 — never a silent pass.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "15-six-manifests",
+    "label": "Six manifests",
+    "notes": "The manifest engine is the wedge: neither stock engine parses conda or pixi. Warden reads all six formats — pyproject.toml and pixi.toml via tomllib, requirements.txt by line-parse, environment.yml, meta.yaml v0 with jinja/selector neutralization, and recipe.yaml v1 — all via yaml.safe_load. No untrusted input is ever executed.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "16-three-rings",
+    "label": "Three rings",
+    "notes": "Warden runs at three depths, and the further out it scans, the more it prevents rather than reports. Consumption edge — repos, desktops, CI — is today. Registry perimeter — block/allow lists on Artifactory/JFrog — is v1.x and the star: a census of everything that enters. Public upstream — scanning PyPI and conda-forge for malicious and typosquat packages — is the vision.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "17-act-iv",
+    "label": "Act IV",
+    "notes": "Act IV: offline and air-gap trust. Enterprise Python often runs where the internet doesn't reach. Warden is built for that: deny-by-default egress, deterministic runs, and a database it verifies before it trusts.",
+    "bg": "#ec3013"
+  },
+  {
+    "id": "18-deny-by-default-egress",
+    "label": "Deny-by-default egress",
+    "notes": "Warden makes no network calls during a scan by default. The database and engines are provisioned ahead of time as declared dependencies. Any online behavior is opt-in and explicit, never silent. That's what makes runs safe in regulated and air-gapped environments.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "19-deterministic-runs",
+    "label": "Deterministic runs",
+    "notes": "Two properties make Warden auditable. Determinism: pinned engines and a pinned database mean the same inputs give the same verdict, every time, on any machine. And the pre-flight: Warden verifies the database's record count, freshness, and integrity before trusting it. Together these turn a scan into evidence you can defend in an audit.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "20-first-contact",
+    "label": "First contact",
+    "notes": "Adoption starts at a terminal, not a pipeline. warden scan . --warn-only runs locally, shows real findings, and exits 0 so nobody is blocked on day one. This is the on-ramp — see it work on your own machine before you ever touch CI.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "21-act-v",
+    "label": "Act V",
+    "notes": "Act V: from a gate to a governance platform. The same contract extends across six axes of dependency trust — and the engines are pluggable, so new signals slot in behind the same report and the same lattice.",
+    "bg": "#ec3013"
+  },
+  {
+    "id": "22-six-axes",
+    "label": "Six axes",
+    "notes": "Six axes, each a different question. Hygiene: is it used? Security: is it vulnerable? These ship in v1. License: is it allowed? Currency: is it patchable / supported? These complete the v1.x gate. Provenance: is it authentic? Maintenance: is it maintained? These are the vision. All behind one report, one lattice.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "23-kev-epss",
+    "label": "KEV / EPSS",
+    "notes": "v1.x enriches the security axis to prioritize by real-world exploitability. Not every CVE matters equally. CISA KEV tells you it's being exploited in the wild right now. FIRST EPSS gives a probability it will be. Together they let the gate block on what's actually dangerous — critical, KEV-listed, or high-EPSS — instead of drowning teams in theoretical findings.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "24-license-currency",
+    "label": "License & currency",
+    "notes": "Two more axes complete the v1.x gate. License: read SPDX expressions from PyPI metadata and conda recipe about-license via license-expression, and gate on allow/deny lists — an unreadable license is indeterminate, not clean. Currency: use endoflife.date plus version-lag to flag EOL and out-of-date dependencies, and the Python runtime itself against LTS / N / N-1. Only current things get patched.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "25-act-vi",
+    "label": "Act VI",
+    "notes": "Act VI: the payoff. Everything reduces to one command with one trustworthy exit code. Wire it into CI and the same honest verdict runs fleet-wide.",
+    "bg": "#ec3013"
+  },
+  {
+    "id": "26-gate-in-ci",
+    "label": "Gate in CI",
+    "notes": "Here's the same command as a CI check. It blocks the merge with exit 1 on a KEV-listed critical, and the check surfaces the exact finding and the report artifact. Green is earned — by locking, waiving with an expiring reason, or fixing — never faked.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "27-never-false-green",
+    "label": "Never false-green",
+    "notes": "The close. A bare recipe.yaml scan exits non-zero by design until you lock, waive, or run warn-only. That's the lock-nudge working, not a bug. Warden's promise is simple: a green check means it was actually checked.",
+    "bg": "#ec3013"
+  },
+  {
+    "id": "28-appendix-personas",
+    "label": "Appendix · Personas",
+    "notes": "Appendix: who Warden serves at the executive level. The CISO gets exploitability-prioritized risk and audit evidence. The Chief Developer Experience Officer gets a gate that runs locally first and doesn't cry wolf. The CIO gets fleet-wide standardization and offline compliance. The Chief Data & Analytics Officer gets coverage of the conda/ML footprint that stock tools miss.",
+    "bg": "#f3f2f2"
+  }
+]

@@ -1,0 +1,15 @@
+<div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">17</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">KEV + EPSS — prioritize by exploitability <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; color:#f3f2f2; background:#201e1d; padding:4px 14px; font-weight:600; vertical-align:middle;">v1.x</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:40px;">
+      <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0; max-width:1520px;">Not every CVE matters equally. Warden enriches each finding so the gate blocks on <b>what's actually dangerous</b> — not theoretical noise.</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:40px;">
+        <div style="border:2px solid #201e1d; padding:36px 40px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:20px; letter-spacing:.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">CISA KEV</div><div style="font-size:32px; font-weight:800; margin-top:12px;">Exploited in the wild</div><p style="font-size:23px; line-height:1.4; margin:16px 0 0; color:rgba(32,30,29,.72);">The known-exploited catalog — a boolean that outranks a raw severity score.</p></div>
+        <div style="border:2px solid #201e1d; padding:36px 40px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:20px; letter-spacing:.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">FIRST EPSS</div><div style="font-size:32px; font-weight:800; margin-top:12px;">Probability it will be</div><p style="font-size:23px; line-height:1.4; margin:16px 0 0; color:rgba(32,30,29,.72);">A 0–1 exploit-prediction score for triage — gate with <span style="font-family:'IBM Plex Mono',monospace;">--min-epss</span>.</p></div>
+      </div>
+      <div style="border:2px solid #ec3013; background:#fce4de; padding:22px 30px; font-size:24px; line-height:1.4; font-family:'IBM Plex Mono',monospace;"><span style="color:#c22a10; font-weight:600;">--fail-on-kev</span> &nbsp;·&nbsp; <span style="color:#c22a10; font-weight:600;">--min-epss 0.5</span> &nbsp;—&nbsp; block on real-world risk, warn on the rest.</div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT V · 23</span>
+    </div>
