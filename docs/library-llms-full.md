@@ -75,7 +75,7 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **pixi** (>=0.72.2) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
   `[package]`/build tables for workspace members like
-  `src/shared/packages/python-deptry-osv-scanner`).
+  `src/shared/packages/pyforge-warden`).
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
 - **pip** (>=26.1.2) — standard Python installer (prefer `uv` for speed).
@@ -192,7 +192,7 @@ All in `local-recipes`.
   injection patterns, weak crypto).
 - **deptry** (>=0.25.1) — dependency-hygiene checker: finds unused, missing, and
   transitive dependencies in a Python project by comparing imports against the
-  declared manifest (core of the python-deptry-osv-scanner effort).
+  declared manifest (core of the pyforge-warden effort).
 - **osv-scanner** (>=2.4.0) — Google's OSV vulnerability scanner (Go binary): scans
   lockfiles, manifests, SBOMs, and directories against the osv.dev database.
 - **appthreat-vulnerability-db** (>=6.7.0) — `import vdb`; AppThreat multi-source

@@ -1,0 +1,12 @@
+# Project-scoped BMAD config for `pyforge-warden` (unified dependency-hygiene +
+# vulnerability scanner). Loaded as resolver layer 5 (team, committed) when this
+# project is active.
+
+# Override the global output_folder so this project's artifacts land under its own subdir.
+output_folder = "_bmad-output/projects/pyforge-warden"
+
+# Project metadata (informational; not consumed by skills today, but useful for tooling).
+[project]
+slug = "pyforge-warden"
+description = "Unified dependency-hygiene + vulnerability scanner orchestrating deptry + osv-scanner over Python/Conda/Pixi manifests; schema-validated ComplianceReport + strict CI exit-code gate. In-repo pixi build workspace member at src/shared/packages/pyforge-warden (builds conda + wheel + sdist). Intake spec: docs/specs/pyforge-warden.md."
+status = "active"

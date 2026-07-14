@@ -3,10 +3,10 @@
 
 [workspace]
 name = "staged-recipes"
-preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/packages/python-deptry-osv-scanner workspace member (Option B). Only unlocks [package]/build tables; does not change the rattler-build recipe workflow.
+preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/packages/pyforge-warden workspace member (Option B). Only unlocks [package]/build tables; does not change the rattler-build recipe workflow.
 # NOTE: Gemini PR#49 suggested a `[workspace] members = [...]` key, but pixi
 # (through 0.72.2) has no such key — workspace members are declared via path
-# dependencies (see [feature.python-deptry-osv-scanner.dependencies]).
+# dependencies (see [feature.pyforge-warden.dependencies]).
 requires-pixi = ">=0.72.2"  # matches installed pixi + the pixi-build preview backends. The [feature.local-recipes.system-requirements] macOS-14.5 table is the deprecated pre-0.71 form (pixi warns but still honors it); migrate to a virtual-package platform entry when convenient.
 description = "The entry point to conda-forge"
 version = "0.2.0"
@@ -139,8 +139,8 @@ vuln-db = ["python", "vuln-db"]
 gcloud = ["python", "gcloud-sdk"]
 # Lean standalone-tool env (NFR1/NFR2): no-default-feature excludes the fat
 # default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
-# carries only the built python-deptry-osv-scanner package + its conda run-deps + pytest.
-python-deptry-osv-scanner = { features = ["python-deptry-osv-scanner"], no-default-feature = true }
+# carries only the built pyforge-warden package + its conda run-deps + pytest.
+pyforge-warden = { features = ["pyforge-warden"], no-default-feature = true }
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
@@ -965,38 +965,38 @@ cmd = "python -m sentinel.knowledge.crews.summarization_crew"
 description = "Review wiki pages"
 cmd = "python -m sentinel.knowledge.crews.review_crew"
 
-# --- python-deptry-osv-scanner: pixi build workspace member (Option B) -----------------
-# Source + package manifest live in ./src/shared/packages/python-deptry-osv-scanner (its
+# --- pyforge-warden (Warden): pixi build workspace member (Option B) -----------------
+# Source + package manifest live in ./src/shared/packages/pyforge-warden (its
 # own [package] table, no [workspace]) — the unity-data-stack src/shared/packages
 # convention. One hatchling pyproject is the single Python build backend:
-#   * conda pkg  -> pixi-build-python wraps the hatchling wheel  (python-deptry-osv-scanner-build-conda)
-#   * wheel+sdist-> `python -m build` from the same pyproject     (python-deptry-osv-scanner-build-dist)
+#   * conda pkg  -> pixi-build-python wraps the hatchling wheel  (pyforge-warden-build-conda)
+#   * wheel+sdist-> `python -m build` from the same pyproject     (pyforge-warden-build-dist)
 # The path dependency below builds the CONDA package and installs it (plus
-# run-deps) into the dedicated `python-deptry-osv-scanner` env. Spec: docs/specs/python-deptry-osv-scanner.md.
-[feature.python-deptry-osv-scanner.dependencies]
-python-deptry-osv-scanner = { path = "src/shared/packages/python-deptry-osv-scanner" }  # -> built conda pkg
+# run-deps) into the dedicated `pyforge-warden` env. Spec: docs/specs/pyforge-warden.md.
+[feature.pyforge-warden.dependencies]
+pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # -> built conda pkg
 hatchling = "*"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = "*"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = "*"                       # test runner
 
-[feature.python-deptry-osv-scanner.tasks.python-deptry-osv-scan]
-description = "Run the unified dependency-hygiene + vulnerability scan"
-cmd = "python-deptry-osv-scanner"
+[feature.pyforge-warden.tasks.warden-scan]
+description = "Run the Warden multi-axis dependency gate (hygiene + security [+ license/currency v1.x])"
+cmd = "warden"
 
-[feature.python-deptry-osv-scanner.tasks.python-deptry-osv-scanner-test]
-description = "Run the python_deptry_osv_scanner test suite"
-cmd = "pytest src/shared/packages/python-deptry-osv-scanner/tests -q"
+[feature.pyforge-warden.tasks.pyforge-warden-test]
+description = "Run the pyforge.warden test suite"
+cmd = "pytest src/shared/packages/pyforge-warden/tests -q"
 
-[feature.python-deptry-osv-scanner.tasks.python-deptry-osv-scanner-build-conda]
+[feature.pyforge-warden.tasks.pyforge-warden-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
 cmd = "pixi build --output-dir dist-conda"
-cwd = "src/shared/packages/python-deptry-osv-scanner"
+cwd = "src/shared/packages/pyforge-warden"
 
-[feature.python-deptry-osv-scanner.tasks.python-deptry-osv-scanner-build-dist]
+[feature.pyforge-warden.tasks.pyforge-warden-build-dist]
 description = "Build the pypi wheel (.whl) + sdist (.tar.gz) via hatchling"
 cmd = "python -m build --no-isolation --outdir dist"
-cwd = "src/shared/packages/python-deptry-osv-scanner"
+cwd = "src/shared/packages/pyforge-warden"
 
-[feature.python-deptry-osv-scanner.tasks.python-deptry-osv-scanner-build]
+[feature.pyforge-warden.tasks.pyforge-warden-build]
 description = "Build all three artifacts: conda + wheel + sdist"
-depends-on = ["python-deptry-osv-scanner-build-conda", "python-deptry-osv-scanner-build-dist"]
+depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
