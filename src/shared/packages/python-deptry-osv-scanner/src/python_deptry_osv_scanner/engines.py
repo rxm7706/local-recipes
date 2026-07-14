@@ -28,16 +28,34 @@ _ENGINE_FACTORIES: list[Callable[[], Engine]] = []
 def register_engine(factory: Callable[[], Engine]) -> Callable[[], Engine]:
     """Register an engine factory (decorator-friendly: returns the factory).
 
-    Order of registration is the order ``registered_engines()`` yields.
-    Re-registering the SAME factory is a no-op (idempotent): a module
-    re-import/reload must not make every engine run twice."""
+    Order of registration is the order ``engine_factories()`` /
+    ``registered_engines()`` yields. Re-registering the SAME factory object
+    is a no-op — a defensive guard against a double ``register_engine``
+    call. It CANNOT protect across ``importlib.reload(engines)``: reload
+    re-executes this module, which RESETS the registry and silently
+    discards every previously registered factory (and re-registers a fresh
+    ``NullEngine`` class object) — reloading this module is unsupported."""
     if factory not in _ENGINE_FACTORIES:
         _ENGINE_FACTORIES.append(factory)
     return factory
 
 
+def engine_factories() -> tuple[Callable[[], Engine], ...]:
+    """The registered factories, in deterministic (registration) order.
+
+    The CLI instantiates each factory individually under its own seam
+    guard: a crashing constructor must yield a typed
+    ``engine-unavailable`` ``ErrorRecord`` with the report still emitted,
+    never abort the scan (instantiation is part of the seam)."""
+    return tuple(_ENGINE_FACTORIES)
+
+
 def registered_engines() -> tuple[Engine, ...]:
-    """Fresh engine instances, in deterministic (registration) order."""
+    """Fresh engine instances, in deterministic (registration) order.
+
+    Instantiates EAGERLY and unguarded — direct/test use. The CLI goes
+    through ``engine_factories()`` instead so a crashing constructor is
+    contained per-factory."""
     return tuple(factory() for factory in _ENGINE_FACTORIES)
 
 

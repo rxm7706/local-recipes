@@ -28,7 +28,9 @@ Ownership decisions recorded:
   exactly this case).
 * ``tomllib.TOMLDecodeError``, invalid UTF-8 bytes (``UnicodeDecodeError``
   out of ``tomllib`` — a wrong-encoding save is a broken manifest, not a
-  tool bug), and structurally-corrupt ``[project]`` tables raise
+  tool bug), parser recursion overflow (``RecursionError`` on hostile
+  nesting — structurally broken, same taxonomy), and structurally-corrupt
+  ``[project]`` tables raise
   ``UnparsableManifestError`` — the CLI catches EXACTLY that class into
   ``ErrorRecord(kind=unparsable-manifest)`` (fail-loud, report still
   emitted); any other ``ValueError`` out of this module is diagnosed as an
@@ -81,10 +83,18 @@ class PyprojectExtractor:
         try:
             with manifest_path.open("rb") as handle:
                 data = tomllib.load(handle)
-        except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+        except (
+            tomllib.TOMLDecodeError,
+            UnicodeDecodeError,
+            RecursionError,
+        ) as exc:
             # UnicodeDecodeError is a ValueError subclass but NOT a
             # TOMLDecodeError: without this clause a wrong-encoding save
             # would be misdiagnosed as an internal tool bug.
+            # RecursionError: hostile/corrupt nesting (thousands of nested
+            # arrays/inline tables) overflows tomllib's recursive parser —
+            # a structurally-broken manifest, not a tool bug; without this
+            # clause it would skip report emission entirely.
             raise UnparsableManifestError(
                 f"unparsable manifest {manifest.path}: {exc}"
             ) from exc

@@ -22,6 +22,10 @@ Ownership decisions recorded:
   on stderr — NEVER the interpreter's default exit 1, which would collide
   with the ``indeterminate``/``policy-violation`` projection and read as
   "scan completed, findings found" to an exit-code-only CI consumer.
+  ``SystemExit`` raised INSIDE the scan region (a component calling
+  ``sys.exit`` — a sole-ownership violation, even ``sys.exit(0)``) is
+  likewise projected to ``exit_code_for(error)``: nothing inside the scan
+  may dictate the gate's exit, so its carried code is never trusted.
 * ``--deterministic`` is accepted as a DOCUMENTED NO-OP: the 1.2 report
   carries no volatile fields, so default output is already byte-identical;
   volatile-field pinning arrives with ``determinism.py``.
@@ -39,14 +43,20 @@ Ownership decisions recorded:
 * Error taxonomy (only genuine manifest problems are labeled
   ``unparsable-manifest``): a structurally-broken manifest raises
   ``UnparsableManifestError`` and an OS failure READING the manifest
-  (chmod-000, TOCTOU deletion) is also a manifest problem (the OS error
-  rides in the message). Everything else on the discovery/extract/routing
-  path — an unknown manifest kind, an unexpected ``ValueError``, a
-  discovery ``OSError`` — is ``internal-error``. A crashing engine
-  (``engine.run`` raising) is ``engine-execution-failed``. Each yields a
-  typed ``ErrorRecord`` + an error rung; the report is emitted (status
-  ``error``, exit ``exit_code_for(error)``). Error-driver id segments are
-  sanitized like component-derived segments (``_sanitize_id_segment``).
+  (chmod-000, TOCTOU deletion) is also a manifest problem (the errno is
+  stated SYMBOLICALLY — ``EACCES`` — because strerror text is
+  locale-dependent and ``OSError.__str__`` embeds the absolute path;
+  report bytes must not vary by locale or scan location). Everything else
+  on the discovery/extract/routing path — an unknown manifest kind, ANY
+  unexpected exception out of an extractor (the extractor seam gets the
+  same catch-all doctrine as the engine seam: 1.3+ plug implementations
+  in), a discovery ``OSError`` — is ``internal-error``. A crashing engine
+  constructor (instantiation is part of the seam) is
+  ``engine-unavailable``; a crashing ``engine.run`` is
+  ``engine-execution-failed``. Each yields a typed ``ErrorRecord`` + an
+  error rung; the report is emitted (status ``error``, exit
+  ``exit_code_for(error)``). Error-driver id segments are sanitized like
+  component-derived segments (``_sanitize_id_segment``).
 * Error-status drivers use the ``error:<kind>:<subject>`` grammar and do
   NOT reference ``findings[]`` — the error report's driver is a dangling
   id by design (``findings`` may be empty; the report stays schema-valid).
@@ -59,14 +69,21 @@ Ownership decisions recorded:
   returned and no traceback contaminates stderr. Stdout is FLUSHED inside
   the guarded region so a block-buffered pipe surfaces the error to the
   absorber instead of exploding at interpreter-exit flush (CPython exit
-  120). Stderr diagnostics absorb ``OSError`` the same way (``_stderr``) —
-  a vanished stderr consumer must not replace the computed exit code.
+  120). Any OTHER stdout ``OSError`` (ENOSPC, EIO) is environmental, not
+  an internal defect: absorbed with a stderr notice, computed exit code
+  preserved. Stderr diagnostics absorb every write failure the same way
+  (``_stderr`` — including ``ValueError`` on a CLOSED stderr, which
+  ``print`` raises instead of ``OSError``; ``_stderr`` runs inside
+  exception handlers, where a raise would escape ``main`` as interpreter
+  exit 1) — a vanished diagnostic stream must not replace the computed
+  exit code.
 * Strictly non-interactive: no prompts, stdin is never read.
 """
 
 from __future__ import annotations
 
 import argparse
+import errno as errno_module
 import os
 import stat as stat_module
 import sys
@@ -75,7 +92,7 @@ from pathlib import Path
 
 from . import __version__
 from .discovery import discover
-from .engines import registered_engines
+from .engines import engine_factories
 from .extract import UnparsableManifestError, extractor_for
 from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
@@ -164,6 +181,18 @@ def main(argv: list[str] | None = None) -> int:
             "not be consumed"
         )
         return EXIT_SIGINT
+    except SystemExit:
+        # Exit-code sole ownership: argparse's own exits were already
+        # handled at parse_args, so a SystemExit reaching here was raised
+        # INSIDE the scan region — a component calling sys.exit (even
+        # sys.exit(0)) must never dictate the gate's verdict. Its carried
+        # code is not trusted; projected as an internal error.
+        _stderr(
+            f"{TOOL_NAME}: internal error: SystemExit raised inside the "
+            "scan (exit-code sole-ownership violation); any partial "
+            "stdout must not be consumed"
+        )
+        return exit_code_for(Status.ERROR)
     except Exception as exc:  # noqa: BLE001 — the last-resort net
         # An internal defect must NEVER surface as the interpreter's default
         # exit 1 (it collides with the indeterminate/policy-violation
@@ -219,14 +248,23 @@ def _run_scan(args: argparse.Namespace) -> int:
         # target must never read as "no manifest" (a false green). Report
         # still emitted; the exit code is orthogonal to emission.
         manifests = ()
-        errno_note = f"[errno {exc.errno}] " if exc.errno is not None else ""
+        # An OS-minted errno is stated SYMBOLICALLY (locale-independent,
+        # no strerror text, no OSError.__str__ absolute path); discovery's
+        # own fail-closed OSErrors carry no errno and their crafted message
+        # is already deterministic.
+        detail = (
+            f"[errno {errno_module.errorcode.get(exc.errno, str(exc.errno))}] "
+            f"{exc.__class__.__name__}"
+            if exc.errno is not None
+            else str(exc)
+        )
         _record_error(
             errors,
             rungs,
             kind=ErrorKind.INTERNAL_ERROR,
             owner="discovery",
             subject=args.path,
-            message=f"discovery failed under {args.path!r}: {errno_note}{exc}",
+            message=f"discovery failed under {args.path!r}: {detail}",
         )
     else:
         if not manifests:
@@ -253,26 +291,42 @@ def _run_scan(args: argparse.Namespace) -> int:
             )
         except OSError as exc:
             # Reading the manifest failed (chmod-000, TOCTOU deletion): a
-            # genuine manifest problem, with the OS error stated.
+            # genuine manifest problem. The errno is stated SYMBOLICALLY
+            # (EACCES) — strerror text is locale-dependent and
+            # OSError.__str__ embeds the absolute path; report bytes must
+            # not vary by locale or scan location.
+            code = (
+                errno_module.errorcode.get(exc.errno, str(exc.errno))
+                if exc.errno is not None
+                else exc.__class__.__name__
+            )
             _record_error(
                 errors,
                 rungs,
                 kind=ErrorKind.UNPARSABLE_MANIFEST,
                 owner="extract",
                 subject=manifest.path,
-                message=f"unreadable manifest {manifest.path}: {exc}",
+                message=(
+                    f"unreadable manifest {manifest.path}: [errno {code}] "
+                    f"{exc.__class__.__name__}"
+                ),
             )
-        except ValueError as exc:
-            # Anything else out of the extract/routing path is NOT a
-            # manifest problem — never misdiagnose an internal bug as a
-            # broken user manifest.
+        except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
+            # doctrine applies to the EXTRACTOR seam exactly as to the
+            # engine seam (1.3+ plug implementations into both): any other
+            # exception out of the extract/routing path — unknown manifest
+            # kind (ValueError), a 1.3+ extractor bug (TypeError,
+            # KeyError), even a sys.exit — is NOT a manifest problem;
+            # typed internal-error record, report STILL emitted, never a
+            # traceback with no report (KeyboardInterrupt still
+            # propagates).
             _record_error(
                 errors,
                 rungs,
                 kind=ErrorKind.INTERNAL_ERROR,
                 owner="extract",
                 subject=manifest.path,
-                message=f"internal error extracting {manifest.path}: {exc}",
+                message=f"internal error extracting {manifest.path}: {exc!r}",
             )
         else:
             components.extend(extracted)
@@ -283,28 +337,58 @@ def _run_scan(args: argparse.Namespace) -> int:
         resolved_scan_set=manifests,
     )
     if manifests and manifests_parsed > 0 and not inventory.components:
-        # A parsed manifest that declares no dependencies is honest
+        # A parsed manifest with nothing extractable is honest
         # not-applicable, but it must be distinguishable on stderr from the
         # empty-dir case (the coverage block already distinguishes them).
+        # The wording names WHAT was scanned: a manifest whose deps live
+        # only outside [project].dependencies (poetry table, extras,
+        # dependency-groups) hits this path too, and "declares no
+        # dependencies" would be a false claim for it (section-aware
+        # discovery is Story 1.9's D2).
         _stderr(
-            f"{TOOL_NAME}: manifest parsed but declares no dependencies "
+            f"{TOOL_NAME}: manifest parsed but no dependencies found in "
+            f"[project].dependencies (the only section scanned in 1.2) "
             f"under {args.path!r}; nothing to scan"
         )
     engine_results: list[EngineResult] = []
-    for engine in registered_engines():
+    for factory in engine_factories():
+        try:
+            engine = factory()
+        except (SystemExit, Exception) as exc:  # noqa: BLE001 —
+            # instantiation is PART of the seam: a crashing constructor (a
+            # misconfigured 1.3/1.5 runner) is the engine-unavailable
+            # class — typed record + error rung, report STILL emitted,
+            # never a traceback with no report.
+            factory_name = getattr(factory, "__name__", repr(factory))
+            _record_error(
+                errors,
+                rungs,
+                kind=ErrorKind.ENGINE_UNAVAILABLE,
+                owner="engines",
+                subject=factory_name,
+                message=(
+                    f"engine factory {factory_name!r} crashed at "
+                    f"instantiation: {exc!r}"
+                ),
+            )
+            continue
         try:
             engine_results.append(engine.run(target, inventory))
-        except Exception as exc:  # noqa: BLE001 — the seam doctrine:
-            # a crashing engine must yield a typed ErrorRecord + error rung
-            # with the report STILL emitted, never a traceback with no
-            # report (KeyboardInterrupt, a BaseException, still propagates).
+        except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
+            # doctrine: a crashing engine must yield a typed ErrorRecord +
+            # error rung with the report STILL emitted, never a traceback
+            # with no report — and a sys.exit-calling engine must never
+            # dictate the process exit (sole ownership; SystemExit is
+            # caught HERE so the report survives). KeyboardInterrupt still
+            # propagates.
+            engine_name = getattr(engine, "name", engine.__class__.__name__)
             _record_error(
                 errors,
                 rungs,
                 kind=ErrorKind.ENGINE_EXECUTION_FAILED,
-                owner=engine.name,
-                subject=engine.name,
-                message=f"engine {engine.name!r} crashed: {exc!r}",
+                owner=engine_name,
+                subject=engine_name,
+                message=f"engine {engine_name!r} crashed: {exc!r}",
             )
     for result in engine_results:
         errors.extend(result.errors)
@@ -333,6 +417,17 @@ def _run_scan(args: argparse.Namespace) -> int:
         sys.stdout.flush()
     except BrokenPipeError:
         _absorb_broken_pipe()
+    except OSError as exc:
+        # A non-EPIPE stdout failure (ENOSPC full disk, EIO hung-up
+        # terminal) is environmental, not an internal defect: the verdict
+        # is already computed and must not be replaced by the error exit
+        # or misdiagnosed as an internal error. Stdout may hold a partial
+        # document — same consumption guidance as SIGINT.
+        _stderr(
+            f"{TOOL_NAME}: stdout emission failed "
+            f"({exc.__class__.__name__}); any partial stdout must not be "
+            "consumed"
+        )
     return report.exit_code
 
 
@@ -366,29 +461,55 @@ def _record_error(
 
 
 def _stderr(message: str) -> None:
-    """Print one stderr diagnostic, absorbing a vanished stderr consumer
-    (``BrokenPipeError``/``OSError``): a diagnostic stream failure must
-    never replace the computed exit code with a traceback."""
+    """Print one stderr diagnostic, absorbing ANY stream failure — a
+    vanished consumer raises ``OSError``, but a CLOSED stderr raises
+    ``ValueError`` from ``print``. This helper runs INSIDE exception
+    handlers (the SIGINT/SystemExit/last-resort nets), where a raise would
+    escape ``main`` as an uncaught traceback with interpreter exit 1 —
+    the exact exit-1 collision the module docstring forbids. A diagnostic
+    stream failure must never replace the computed exit code."""
     try:
         print(message, file=sys.stderr)
-    except OSError:
+    except Exception:  # noqa: BLE001 — see docstring: absorb everything
         pass
 
 
 def _absorb_broken_pipe() -> None:
     """The stdout consumer vanished mid-emission (e.g. ``| head``): the
     verdict's exit code is already computed, so the pipe error is absorbed —
-    never a traceback. Stdout is re-pointed at ``os.devnull`` so the
-    interpreter's exit-time flush cannot raise a second BrokenPipeError."""
-    try:
-        devnull = os.open(os.devnull, os.O_WRONLY)
+    never a traceback.
+
+    Process-stream path (``sys.stdout`` IS ``sys.__stdout__``): fd 1 is
+    re-pointed at ``os.devnull`` so the interpreter's exit-time flush
+    cannot raise a second BrokenPipeError (CPython exit 120). This is a
+    PROCESS-GLOBAL redirect — correct for the console script (about to
+    exit) and documented for in-process embedders sharing the real stream:
+    their pipe is equally dead, and the redirect trades EPIPE-on-every-
+    later-write for silence.
+
+    Swapped-stream path (test captures, embedders that replaced
+    ``sys.stdout``): the broken stream OBJECT is closed instead — fd 1 is
+    left alone, exit-time flush skips a closed stream, and a later write
+    through the object fails LOUD (``ValueError``) rather than vanishing
+    into a silent process-wide devnull redirect."""
+    stream = sys.stdout
+    if stream is sys.__stdout__:
         try:
-            os.dup2(devnull, sys.stdout.fileno())
-        finally:
-            os.close(devnull)
-    except (OSError, ValueError):
-        # No real file descriptor behind sys.stdout (e.g. an in-memory test
-        # capture): nothing will flush at interpreter exit, nothing to do.
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            try:
+                os.dup2(devnull, stream.fileno())
+            finally:
+                os.close(devnull)
+        except (OSError, ValueError):
+            # No usable descriptor behind the stream: nothing will flush
+            # at interpreter exit, nothing to do.
+            pass
+        return
+    try:
+        stream.close()
+    except Exception:  # noqa: BLE001 — best effort: the absorber must
+        # never raise (a fake test stream may lack close(), or close's
+        # final flush re-raises the pipe error).
         pass
 
 
