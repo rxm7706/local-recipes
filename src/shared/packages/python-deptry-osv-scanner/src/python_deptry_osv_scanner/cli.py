@@ -359,7 +359,12 @@ def _run_scan(args: argparse.Namespace) -> int:
             f"under {args.path!r}; nothing to scan"
         )
     engine_results: list[EngineResult] = []
-    for factory in engine_factories():
+    # The engine seam runs only when a manifest actually parsed: with nothing
+    # extractable (empty dir, or a manifest that failed to parse) there is no
+    # project for a subprocess engine (deptry) to assess, and running it on an
+    # absent/malformed manifest would only double the extractor's own error.
+    engines_to_run = engine_factories() if manifests_parsed > 0 else ()
+    for factory in engines_to_run:
         try:
             engine = factory()
         except (SystemExit, Exception) as exc:  # noqa: BLE001 —
@@ -410,6 +415,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         errors=tuple(errors),
         manifests_found=len(manifests),
         manifests_parsed=manifests_parsed,
+        engine_results=engine_results,
     )
     try:
         if args.format == "json":
