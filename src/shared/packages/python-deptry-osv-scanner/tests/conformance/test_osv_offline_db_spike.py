@@ -69,13 +69,6 @@ FIXTURE_ADVISORY_ID = "PDOS-FIXTURE-0001"
 FIXTURE_PACKAGE = "pdos-vuln-fixture"
 FIXTURE_CVSS_VECTOR = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
 
-# osv-scanner's stderr signature when offline with no local database (recorded
-# in the decision record § 4). This is INFO chatter, not a stable contract —
-# the test anchors the cold-start on exit 127 (below) and only additionally
-# checks this substring; Story 1.5 must NOT branch security control-flow on it.
-NO_OFFLINE_DB_SIGNAL = "no offline version of the OSV database is available"
-
-
 def _osv_scanner_bin() -> str:
     """Return the ``osv-scanner`` path, HARD-FAILING (never skipping) if it is
     not on PATH — the engine is a provisioned conda run-dep (NFR-C1)."""
@@ -290,9 +283,10 @@ def test_db_absent_offline_is_not_silently_a_clean_scan(tmp_path, offline_cache)
     # the trap the record documents: the JSON body cannot distinguish the two.
     assert absent.raw_output == clean.raw_output
     assert absent.document is not None and absent.document.get("results") == []
-    # The stderr additionally carries the no-offline-db signal (advisory only —
-    # the exit code above is the anchor; stderr text is not a stable contract).
-    assert NO_OFFLINE_DB_SIGNAL in absent.stderr
+    # NB: we deliberately do NOT assert on osv's stderr text — the decision
+    # record labels it volatile INFO chatter a 2.x patch can reword, and Story
+    # 1.5 must not branch on it. The exit code (127) above is the only contract
+    # anchor for this row (follow-up review L1).
 
 
 # --- (e) no packages in the manifest -> exit 128, no output file -------------
@@ -347,3 +341,111 @@ def test_builder_refuses_empty_records_dir(tmp_path):
     empty_records.mkdir()
     with pytest.raises(ValueError, match="no OSV records"):
         builder.build_offline_db(empty_records, tmp_path / "db")
+
+
+# --- (g) follow-up Opus review: the empty/hollow-DB false-green (H1) ----------
+
+
+def test_present_but_empty_db_false_greens_and_a_nonemptiness_preflight_catches_it(
+    tmp_path,
+):
+    """H1 (the cardinal false-green the inline review missed): the BUILDER
+    refuses to make an empty DB, but an EXTERNAL provisioner (a partial download
+    or a mis-populated cache) can leave a present-but-empty ``all.zip``. Against
+    it, osv-scanner exits **0** with ``results: []`` on a VULNERABLE input —
+    NEITHER the exit code NOR the body distinguishes it from a real clean scan.
+    This pins the hazard empirically and proves the ONLY defense the decision
+    record now mandates for Story 1.5: a **non-emptiness pre-flight** (the zip
+    opens AND has >=1 ``<id>.json`` entry), resolved at osv's case-sensitive
+    ``PyPI`` segment."""
+    import zipfile
+
+    # Externally provision a present-but-EMPTY DB (bypass the builder's guard).
+    db_dir = tmp_path / "cache" / "osv-scanner" / "PyPI"
+    db_dir.mkdir(parents=True)
+    empty_zip = db_dir / "all.zip"
+    with zipfile.ZipFile(empty_zip, "w"):
+        pass  # a valid zip with zero entries
+
+    run = _run_osv_offline(tmp_path, tmp_path / "cache", LOCKFILE_VULNERABLE)
+
+    # The false-green: a KNOWN-vulnerable pin reads as clean/exit-0 — the exit
+    # code and the body are both indistinguishable from a real clean scan.
+    assert run.exit_code == 0, run.stderr
+    assert run.vulnerability_ids() == []
+    assert run.document is not None and run.document.get("results") == []
+
+    # The mandated Story-1.5 defense: a non-emptiness pre-flight catches it,
+    # where a plain os.path.exists() (the pre-review disposition) would NOT.
+    assert empty_zip.exists()  # an existence check PASSES — insufficient
+    with zipfile.ZipFile(empty_zip) as zf:
+        advisory_entries = [n for n in zf.namelist() if n.endswith(".json")]
+    assert advisory_entries == []  # the non-emptiness pre-flight fires here
+
+
+def test_osv_requires_case_sensitive_PyPI_dir(tmp_path):
+    """M1: osv-scanner's on-disk ecosystem segment is case-sensitive ``PyPI``,
+    NOT the lowercase ``pypi`` Ecosystem enum value. A DB provisioned at
+    lowercase is never loaded — Story 1.5's pre-flight must resolve the osv
+    casing, not interpolate the enum."""
+    builder = _load_builder()
+    # Build a real DB, then relocate all.zip to a LOWERCASE `pypi/` dir.
+    root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
+    good = root / "osv-scanner" / "PyPI" / "all.zip"
+    lower_dir = root / "osv-scanner" / "pypi"
+    lower_dir.mkdir()
+    good.rename(lower_dir / "all.zip")
+    (root / "osv-scanner" / "PyPI").rmdir()
+
+    run = _run_osv_offline(tmp_path, root, LOCKFILE_VULNERABLE)
+    # osv does NOT find the lowercase DB → cold-start 127 (never a match), which
+    # is why 1.5 must provision + pre-flight at the exact `PyPI` casing.
+    assert run.exit_code == 127, run.stderr
+
+
+# --- (h) follow-up Opus review: builder fail-loud hardening (M5/M6/L5) --------
+
+
+def test_builder_non_object_json_raises_valueerror_not_attributeerror(tmp_path):
+    """M5: a record whose top level is a JSON array/string/number is MALFORMED
+    (ValueError), never an AttributeError from ``.get`` on a non-dict."""
+    builder = _load_builder()
+    records = tmp_path / "records"
+    records.mkdir()
+    (records / "bad.json").write_text('["not", "an", "object"]', encoding="utf-8")
+    with pytest.raises(ValueError, match="top level"):
+        builder.build_offline_db(records, tmp_path / "db")
+
+
+def test_builder_rejects_unmatchable_record(tmp_path):
+    """M6/L4: a record with a valid id + PyPI ecosystem but no matchable spec
+    (no ``versions``/``ranges``) would be shelved yet never match — a silent
+    false-clean coverage hole. It must fail loud."""
+    builder = _load_builder()
+    records = tmp_path / "records"
+    records.mkdir()
+    (records / "PDOS-UNMATCHABLE.json").write_text(
+        json.dumps(
+            {
+                "id": "PDOS-UNMATCHABLE",
+                "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="concrete version spec"):
+        builder.build_offline_db(records, tmp_path / "db")
+
+
+def test_builder_rejects_case_variant_json_extension(tmp_path):
+    """L5: a record dropped as ``.JSON`` would be silently skipped by the
+    case-sensitive glob — a partial-drop coverage hole. Fail loud."""
+    builder = _load_builder()
+    records = tmp_path / "records"
+    records.mkdir()
+    # A valid record the exact glob WOULD pick up...
+    shutil.copy(OSV_RECORDS_DIR / f"{FIXTURE_ADVISORY_ID}.json", records / f"{FIXTURE_ADVISORY_ID}.json")
+    # ...plus a case-variant one it would silently skip.
+    (records / "PDOS-0002.JSON").write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="non-canonical .json"):
+        builder.build_offline_db(records, tmp_path / "db")
