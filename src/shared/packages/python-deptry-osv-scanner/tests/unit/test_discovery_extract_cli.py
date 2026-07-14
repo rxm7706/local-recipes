@@ -745,6 +745,68 @@ def test_non_epipe_stdout_failure_keeps_the_computed_exit_code(
     assert "internal error" not in captured.err
 
 
+def test_closed_stdout_keeps_the_computed_exit_code(monkeypatch, tmp_path, capsys):
+    """A closed/replaced sys.stdout raises ValueError ('I/O operation on
+    closed file'), NOT OSError — the emit guard must absorb it too, or it
+    escapes to the last-resort net and overrides the verdict with error-2
+    (an exit-code sole-ownership violation). Regression for the follow-up
+    Opus review; the ENOSPC (OSError) sibling is above."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])  # clean → exit 0
+
+    class ClosedStdout:
+        def write(self, data):
+            raise ValueError("I/O operation on closed file")
+
+        def flush(self):
+            pass
+
+    monkeypatch.setattr(sys, "stdout", ClosedStdout())
+    rc = main(["scan", str(tmp_path), "--format", "json"])
+    captured = capsys.readouterr()
+    assert rc == 0  # the clean verdict's code — NOT error's 2
+    assert "stdout emission failed" in captured.err
+    assert "internal error" not in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_nul_byte_scan_target_is_early_fatal_not_internal_error(capsys):
+    """A path with an embedded NUL raises ValueError (not OSError) from
+    stat() — a user-input error, diagnosed at the boundary, never routed to
+    the internal-error traceback net. Regression for the follow-up Opus
+    review."""
+    capsys.readouterr()
+    rc = main(["scan", "bad\x00path", "--format", "json"])
+    captured = capsys.readouterr()
+    assert rc == 2  # exit_code_for(Status.ERROR); no {1,2,130} literal in src
+    assert captured.out == ""  # stdout stays empty in json mode
+    assert "not a valid path" in captured.err
+    assert "internal error" not in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_poetry_only_deps_scan_as_not_applicable_KNOWN_GAP(capsys, tmp_path):
+    """CHARACTERIZATION (not an endorsement): a Poetry/PDM manifest whose
+    dependencies live outside [project].dependencies currently scans as
+    not-applicable/exit-0 — a residual false-green for exit-code-only CI.
+    Section-aware discovery (the D2 split) is owned by Story 1.9; this test
+    PINS the current behavior so 1.9 must consciously flip it. Tracked in
+    deferred-work.md (follow-up Opus review, 2026-07-13)."""
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.poetry]\n"
+        'name = "demo"\n'
+        "\n"
+        "[tool.poetry.dependencies]\n"
+        'python = "^3.12"\n'
+        'requests = "^2.31"\n',
+        encoding="utf-8",
+    )
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 0
+    assert document["status"]["value"] == "not-applicable"
+    # When 1.9 lands section-aware discovery, this assertion SHOULD fail and
+    # be rewritten to expect indeterminate/exit-1 (the deferred-work fix).
+
+
 def test_unexpected_extractor_exception_still_emits_the_report(
     capsys, tmp_path, monkeypatch
 ):

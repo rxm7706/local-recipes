@@ -124,6 +124,8 @@ FORBIDDEN_BARE_CALLS = FORBIDDEN_ASYNCIO_MEMBERS | {"ProcessPoolExecutor"}
 FORBIDDEN_NETWORK_MODULES = frozenset(
     {
         "socket",
+        "_socket",  # the C accelerator behind socket — a direct `import
+        #             _socket` bypasses the public-module denial otherwise
         "ssl",
         "http",
         "urllib",
