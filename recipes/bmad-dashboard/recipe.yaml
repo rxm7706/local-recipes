@@ -4,7 +4,6 @@ schema_version: 1
 context:
   version: "1.2.2.dev0"
   commit: "33b330ef113c62f58a77413a241ca30f4f0b8a99"
-  python_min: "3.9"
 
 package:
   name: bmad-dashboard
@@ -115,7 +114,16 @@ extra:
 #    # precedent). Body kept a faithful verbatim mirror of the PR head
 #    # (killua156:add-bmad-dashboard-snapshot); all human comments preserved.
 # context:
-#    # python_min "3.9" is below the conda-forge 3.10 floor — kept as-is per
-#    # the faithful-mirror rule (the fix belongs to the external PR's review,
-#    # not this mirror). Local builds resolve fine.
+#    # DELIBERATE DIVERGENCE from the mirrored PR head (operator decision
+#    # 2026-07-14): PR #33513 declares python_min "3.9", below the conda-forge
+#    # 3.10 floor. That line is dropped here so conda-forge-pinning supplies the
+#    # floor (SKILL.md § Python Version Policy item 6 — python_min belongs in
+#    # context ONLY to override the default upward).
+#    # This is the one point where the faithful-mirror rule is knowingly broken.
+#    # Rationale: the repo's test_no_redundant_python_min meta-test fails fast on
+#    # any below-floor python_min and refuses allowlist entries by design, so the
+#    # mirror could not stay faithful AND keep the suite green. The 3.9 was
+#    # inert here anyway — the cf matrix starts at 3.10, so nothing ever built
+#    # against it. The real fix still belongs to PR #33513's review; if that PR
+#    # lands with a corrected floor, re-mirror and delete this note.
 ####
