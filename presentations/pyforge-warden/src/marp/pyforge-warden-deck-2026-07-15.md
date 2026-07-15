@@ -243,10 +243,10 @@ The manifest engine is the wedge — no engine parses conda / pixi. No untrusted
 The further out Warden scans, the more it **prevents** rather than reports.
 
 - **Public upstream** *(vision)* — scan PyPI & conda-forge: malicious, typosquat, name-squat & stale feedstocks. → *blocklists*
-- **Registry perimeter** *(v2)* — block / allow lists on Artifactory / JFrog; a census of everything that enters. → *clean pulls*
+- **Registry perimeter** *(v1.x)* — block / allow lists on Artifactory / JFrog; a census of everything that enters. → *clean pulls*
 - **Consumption edge** *(v1 · today)* — scan repos, desktops & CI: the four axes on what apps actually pull.
 
-<!-- Warden runs at three depths. Edge is v1 (today); registry perimeter (JFrog blocklists) is v2 and the star; public upstream scanning is the vision. -->
+<!-- Warden runs at three depths. Edge is v1 (today); registry perimeter (JFrog blocklists) is v1.x and the star; public upstream scanning is the vision. -->
 
 ---
 

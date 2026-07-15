@@ -157,7 +157,7 @@ Running it today
 Warden runs at three depths. The further out it scans, the more it **prevents** rather than reports.
 
 - **Public upstream** *(vision)* — scan PyPI & conda-forge themselves: malicious packages, typosquats, name-squatting, stale/abandoned feedstocks. → *blocklists*
-- **Registry perimeter** *(v2)* — turn that intel into block / allow lists on Artifactory / JFrog; quarantine bad packages so they never cross the firewall. A census of everything that enters. → *clean pulls*
+- **Registry perimeter** *(v1.x)* — turn that intel into block / allow lists on Artifactory / JFrog; quarantine bad packages so they never cross the firewall. A census of everything that enters. → *clean pulls*
 - **Consumption edge** *(today)* — scan repos, desktops & CI: the six axes on what apps actually pull. Precise per-project, but only sees what you scan.
 
 Scan the **edge** and you report what you found; scan the **supply** and you prevent what enters.
@@ -219,7 +219,7 @@ Roadmap · not yet shipped. Everything from here down is roadmap and vision — 
 
 ## 11 · Beyond v1 (cont.)
 
-**NEXT · v2 — the governance layer**
+**NEXT · v1.x (later) — the governance layer**
 - **Registry perimeter** — block / allow lists on Artifactory / JFrog; the strongest enforcement point (quarantine before the firewall).
 - **Pluggable scanners** — multiple security backends behind one report; engine-swappability.
 - **Allowlist enforcement** — check every dep against an approved-library registry; client provisioner.
