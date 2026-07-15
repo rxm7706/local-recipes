@@ -98,10 +98,14 @@ so conda components carry real license/currency verdicts in v1. (Decision D4,
 conditional on D5 — see § Release map.)
 
 **Runtime-dependency policy (lean; precise).** ADD **exactly one** runtime
-dep: **`license-expression`**. LTS registry + endoflife.date + KEV + EPSS are
-**fetched-and-cached data feeds** — **offline stays the default**; any online
-query is **opt-in and never silent** (NFR-S2), and respects a configured
-mirror / base-URL override (the `_http.py` JFrog/`.netrc`/truststore chain).
+dep: **`license-expression`**. The **LTS registry ships as bundled static data
+in the package** (`src/pyforge/warden/data/lts-registry.yaml`, loaded via
+`importlib.resources` — never the dev-workspace `.claude/` copy, which is not
+distributed) — this is the "**bundled tiers, zero data estate**" of D11's edge
+mode. endoflife.date + KEV + EPSS are **fetched-and-cached data feeds** —
+**offline stays the default**; any online query is **opt-in and never silent**
+(NFR-S2), and respects a configured mirror / base-URL override (the `_http.py`
+JFrog/`.netrc`/truststore chain).
 Unchanged runtime deps: PyYAML (`safe_load` only), `packaging`,
 `cyclonedx-python-lib`, `jsonschema`; stdlib `tomllib`, `re`,
 `importlib.metadata`. Engines `deptry` + `osv-scanner` stay declared
@@ -403,10 +407,16 @@ unproven-yet-gated axis routes to `indeterminate`, never a silent pass.)*
   clean; copyleft & unknown-license exposure surface here, not by omission.
 - **FR-C1 — Currency / supportability axis (Axis 4, v1 enrichment /
   `gating: false`).** For every resolved component **and the Python runtime**,
-  compute currency tiered: **LTS registry** (the shipped
-  `.claude/skills/conda-forge-expert/data/lts-registry.yaml`) →
-  **endoflife.date** (`resolve_endoflife_urls()`) → **N/N-1 from conda
-  channel data** → `unknown`. Emit `latest`, `lag` (releases/versions
+  compute currency tiered: **LTS registry** (a **bundled**
+  `src/pyforge/warden/data/lts-registry.yaml`, loaded via
+  `importlib.resources` — the same in-package bundle-and-regenerate pattern as
+  `conda_pypi_map.json` / `report-schema.json`; regenerated from the CFE
+  `.claude/skills/conda-forge-expert/data/lts-registry.yaml`, which is the
+  **source**, not the runtime path — `.claude/` never ships in the wheel/conda
+  package nor exists on a scanned repo) → **endoflife.date** (the same
+  URL-resolution + mirror-override pattern as `_http.py`'s
+  `resolve_endoflife_urls()`; a fetched-and-cached feed, offline default) →
+  **N/N-1 from conda channel data** → `unknown`. Emit `latest`, `lag` (releases/versions
   behind), `eol_date`, and a verdict `supported | eol | unknown`;
   `runtime_python` currency is a first-class field. Additionally emit an
   **availability-at-N/N-1 finding** — whether a newer supported release
@@ -781,10 +791,12 @@ the rationale survives; each drove a concrete change above.
     coverage lever, never an assumption.
 - **OD9 — Currency source strategy → REFINED 2026-07-15 (D9/D10; tiered +
   availability).** Compute supportability **tiered**: **LTS registry**
-  (the shipped `lts-registry.yaml`) → **endoflife.date**
-  (`resolve_endoflife_urls()`, cached offline; opt-in online, never silent) →
-  **N/N-1 from conda channel data** → `unknown`, for each dependency **and the
-  Python runtime**. Emit the currency verdict **plus a distinct
+  (a **bundled** `src/pyforge/warden/data/lts-registry.yaml` loaded via
+  `importlib.resources`, regenerated from the CFE
+  `.claude/…/lts-registry.yaml` source — never `.claude/` at runtime) →
+  **endoflife.date** (the `_http.py` `resolve_endoflife_urls()` pattern; cached
+  offline; opt-in online, never silent) → **N/N-1 from conda channel data** →
+  `unknown`, for each dependency **and the Python runtime**. Emit the currency verdict **plus a distinct
   availability-at-N/N-1 finding** (is a newer supported release available at
   the estate's policy tier) — the **ADD/UPDATE** signal. This is **wiring, not
   new construction**: `inventory-match --policy` already emits
