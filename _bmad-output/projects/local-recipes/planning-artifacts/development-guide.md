@@ -2,12 +2,12 @@
 doc_type: development-guide
 project_name: local-recipes
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.76.0'
+source_pin: 'conda-forge-expert v8.78.0'
 ---
 
 # Development Guide
 
-> **Re-grounded 2026-07-06** (source_pin → v8.76.0 (2026-07-07 pin-forward); reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G99**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.76.0 (v8.74–v8.76 add 4 read-only seed-gap suggesters — `lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — CLI/pixi-only, no MCP tool; schema v29 / 46 MCP tools / 23 phases / G99 / 9 envs all unchanged).
+> **Re-grounded 2026-07-06** (source_pin → v8.76.0 (2026-07-07 pin-forward); reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G106**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.76.0 (v8.74–v8.76 add 4 read-only seed-gap suggesters — `lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — CLI/pixi-only, no MCP tool; schema v29 / 46 MCP tools / 23 phases / G99 / 9 envs all unchanged).
 
 
 How to set up, build, test, debug, and contribute to `local-recipes` locally. This guide is for **humans** operating the system — agents read `project-context.md` and `SKILL.md` instead. Air-gapped / enterprise setup lives in `deployment-guide.md`.
@@ -412,7 +412,7 @@ GitHub Actions (`.github/workflows/`) handles:
 | Cross-compile question | `.claude/skills/conda-forge-expert/guides/cross-compilation.md` |
 | Atlas operations | `.claude/skills/conda-forge-expert/guides/atlas-operations.md` |
 | Air-gap setup | `docs/enterprise-deployment.md` (or `deployment-guide.md` in this set) |
-| Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1–G99) |
+| Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1–G106) |
 | BMAD multi-project | `_bmad-output/PROJECTS.md` |
 | Project-specific rules | `_bmad-output/projects/local-recipes/project-context.md` |
 | Recent changes | `.claude/skills/conda-forge-expert/CHANGELOG.md` TL;DR |
