@@ -8,10 +8,26 @@ the BMAD config resolver loads (layers 5–6). This script writes the slug to
 mechanisms (--project flag on resolve_config.py, BMAD_ACTIVE_PROJECT env var)
 take precedence over the marker file.
 
+Switching also re-points the two gitignored compatibility symlinks:
+
+    _bmad-output/planning-artifacts       -> projects/<slug>/planning-artifacts
+    _bmad-output/implementation-artifacts -> projects/<slug>/implementation-artifacts
+
+These are load-bearing: `_bmad/bmm/config.yaml` hard-codes
+`planning_artifacts: "{project-root}/_bmad-output/planning-artifacts"`, which does
+NOT compose with a project's `output_folder` override — so every BMAD skill that
+writes planning artifacts resolves THROUGH these symlinks. Before 2026-07-14 this
+script wrote only the marker and left the symlinks wherever they last pointed, so
+`bmad-switch <other> && <run a BMAD write-skill>` silently wrote into the PREVIOUS
+project's artifacts. (Observed: a 10h desync — symlinks on pyforge-warden while the
+marker said local-recipes — which would have clobbered pyforge-warden's PRD/epics
+during a local-recipes re-sync.) The marker is written LAST, so a failed re-point
+aborts before the marker can disagree with the links.
+
 Usage:
-    bmad-switch <slug>          # set active project
+    bmad-switch <slug>          # set active project (marker + symlinks)
     bmad-switch --list          # list known projects under _bmad-output/projects/
-    bmad-switch --current       # print the currently active project
+    bmad-switch --current       # print the active project (warns on marker/symlink desync)
     bmad-switch --clear         # remove the marker (no active project)
 
 The slug must be lowercase alphanumeric + hyphens/underscores. The corresponding
@@ -19,11 +35,16 @@ project directory `_bmad-output/projects/<slug>/` must exist.
 """
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
 
 _SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+# Gitignored compatibility symlinks under _bmad-output/ that must track the
+# active project. Order matters only for deterministic error reporting.
+_ARTIFACT_LINKS = ("planning-artifacts", "implementation-artifacts")
 
 
 def repo_root() -> Path:
@@ -40,6 +61,85 @@ def repo_root() -> Path:
 
 def marker_path(root: Path) -> Path:
     return root / "_bmad" / "custom" / ".active-project"
+
+
+def link_path(root: Path, name: str) -> Path:
+    return root / "_bmad-output" / name
+
+
+def read_link_slugs(root: Path) -> dict[str, str | None]:
+    """Map each artifact symlink to the project slug it currently points at.
+
+    A value of None means the path is missing, is not a symlink, or points
+    somewhere that isn't `projects/<slug>/<name>`.
+    """
+    slugs: dict[str, str | None] = {}
+    for name in _ARTIFACT_LINKS:
+        path = link_path(root, name)
+        if not path.is_symlink():
+            slugs[name] = None
+            continue
+        parts = Path(os.readlink(path)).parts
+        # expected: ("projects", "<slug>", "<name>")
+        slugs[name] = parts[1] if len(parts) == 3 and parts[0] == "projects" else None
+    return slugs
+
+
+def link_slug(root: Path) -> str | None:
+    """The single slug all artifact symlinks agree on, else None."""
+    values = set(read_link_slugs(root).values())
+    return values.pop() if len(values) == 1 else None
+
+
+def desync_warning(root: Path) -> str | None:
+    """Describe a marker/symlink disagreement, or None when consistent."""
+    marker = read_marker(root)
+    links = read_link_slugs(root)
+    if all(slug == marker for slug in links.values()):
+        return None
+    detail = ", ".join(f"{name} -> {slug or '(unresolved)'}" for name, slug in links.items())
+    return (
+        f"marker says {marker or '(none)'} but symlinks point elsewhere: {detail}\n"
+        f"BMAD skills resolve planning artifacts THROUGH these symlinks, so a write-skill "
+        f"would target the wrong project. Re-run: bmad-switch {marker or '<slug>'}"
+    )
+
+
+def repoint_links(root: Path, slug: str) -> int:
+    """Atomically re-point the artifact symlinks at `slug`.
+
+    Refuses to touch a path that exists and is not a symlink — that would mean
+    destroying real artifacts rather than moving a pointer.
+    """
+    for name in _ARTIFACT_LINKS:
+        path = link_path(root, name)
+        if path.exists() and not path.is_symlink():
+            sys.stderr.write(
+                f"error: {path} is a real directory, not a symlink — refusing to replace it.\n"
+                f"Move it aside manually if it should be a symlink to projects/{slug}/{name}.\n"
+            )
+            return 4
+        target_dir = root / "_bmad-output" / "projects" / slug / name
+        if not target_dir.is_dir():
+            sys.stderr.write(f"error: symlink target does not exist: {target_dir}\n")
+            return 5
+
+    for name in _ARTIFACT_LINKS:
+        path = link_path(root, name)
+        target = Path("projects") / slug / name  # relative to _bmad-output/
+        tmp = path.with_name(f".{name}.tmp-{os.getpid()}")
+        try:
+            if tmp.is_symlink() or tmp.exists():
+                tmp.unlink()
+            os.symlink(target, tmp)
+            os.replace(tmp, path)  # atomic; replaces the old symlink in place
+        except OSError as error:
+            if tmp.is_symlink():
+                tmp.unlink(missing_ok=True)
+            sys.stderr.write(f"error: failed to re-point {path} -> {target}: {error}\n")
+            return 6
+        print(f"symlink: _bmad-output/{name} -> {target}")
+    return 0
 
 
 def list_projects(root: Path) -> list[str]:
@@ -62,6 +162,9 @@ def cmd_list(root: Path) -> int:
         print(f"\nactive: {current}")
     else:
         print("\nactive: (none)")
+    warning = desync_warning(root)
+    if warning:
+        sys.stderr.write(f"\nwarning: {warning}\n")
     return 0
 
 
@@ -79,10 +182,15 @@ def read_marker(root: Path) -> str | None:
 
 def cmd_current(root: Path) -> int:
     current = read_marker(root)
+    warning = desync_warning(root)
     if current:
         print(current)
+        if warning:
+            sys.stderr.write(f"warning: {warning}\n")
         return 0
     sys.stderr.write("no active project (marker file empty or missing)\n")
+    if warning:
+        sys.stderr.write(f"warning: {warning}\n")
     return 1
 
 
@@ -111,6 +219,13 @@ def cmd_switch(root: Path, slug: str) -> int:
             f"or run with --list to see known projects.\n"
         )
         return 3
+    # Re-point the symlinks FIRST: they are the failure-prone half, and the
+    # marker must never advance past them (that desync is the bug this guards).
+    status = repoint_links(root, slug)
+    if status:
+        sys.stderr.write("aborted: marker left unchanged so it cannot disagree with the symlinks.\n")
+        return status
+
     path = marker_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(slug + "\n", encoding="utf-8")

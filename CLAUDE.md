@@ -42,6 +42,15 @@ This repository uses a single BMAD installation to drive multiple projects. Each
 3. `_bmad/custom/.active-project` marker file (managed by `scripts/bmad-switch`, gitignored).
 4. None — only global config layers resolve; skills fall back to repo-root `_bmad-output/`.
 
+**The marker is only half the switch — two gitignored symlinks are the other half:**
+
+```
+_bmad-output/planning-artifacts       -> projects/<slug>/planning-artifacts
+_bmad-output/implementation-artifacts -> projects/<slug>/implementation-artifacts
+```
+
+`_bmad/bmm/config.yaml` hard-codes `planning_artifacts: "{project-root}/_bmad-output/planning-artifacts"`, and that key does **NOT** compose with a project's `output_folder` override — so **every BMAD skill that writes planning artifacts resolves through these symlinks**, not through the marker. Marker and symlinks must always agree; when they disagree, a write-skill silently targets the *other* project. **Always switch with `scripts/bmad-switch <slug>`** (since 2026-07-14 it re-points the symlinks atomically and writes the marker last, so a failed re-point can't desync); never hand-edit the marker. `scripts/bmad-switch --current` / `--list` warn on a desync — heed it before running any BMAD write-skill. Live near-miss (2026-07-14): the symlinks sat on `pyforge-warden` while the marker said `local-recipes`, so a local-recipes doc re-sync would have overwritten pyforge-warden's PRD/epics/architecture.
+
 **Six-layer config merge** (highest priority last):
 
 | Layer | Path                                                         | Scope                                |
