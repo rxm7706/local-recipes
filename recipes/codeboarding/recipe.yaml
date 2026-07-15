@@ -123,7 +123,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - trustcall not on conda-forge yet (local recipe; staged-recipes PR #33938 open)
+    - "trustcall not on conda-forge yet (local recipe; staged-recipes PR #33938 open)"
     - langchain-cerebras not on conda-forge (local recipes/langchain-cerebras/ provides it)
   cfe-last-checked: "2026-07-12T17:10:00Z"
   cfe-generated-by-version: 8.76.0
