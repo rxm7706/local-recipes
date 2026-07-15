@@ -1,0 +1,7 @@
+# Marp decks embed a `style: |` YAML frontmatter block. Some prettier/markdown
+# formatters collapse that multi-line block (observed: 22 lines → the token
+# `span`), which silently breaks rendering while leaving the body intact.
+# Keep presentation markdown out of any prettier run. NOTE: this only guards
+# contributors who run prettier in-repo — it cannot change a local editor's
+# own format-on-save; fix that in the editor config.
+presentations/**/*.md
