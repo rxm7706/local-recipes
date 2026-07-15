@@ -267,6 +267,29 @@ SBOM emission is a v1 deliverable (FR8), not a non-goal** (owner-elevated
 
 ## Requirements (PM PRD)
 
+> **⚠️ Requirement-ID conventions (read first) — three FR spaces are in play.**
+> The `FRn` labels **in this section are intake-spec working labels**, not the
+> binding contract. The canonical, binding space is **`FR1`–`FR31` in
+> `_bmad-output/projects/pyforge-warden/planning-artifacts/prd.md`** § Functional
+> Requirements, which states the rule itself (`prd.md:484`: *"FR1–FR31 in this
+> section are canonical and binding"*). **The two spaces collide — same IDs,
+> different requirements** — so an unqualified "FR9" is ambiguous:
+>
+> | Label | In **this spec** it means | In the **PRD** (canonical) it means |
+> |---|---|---|
+> | `FR2` | execute `deptry` + parse its output | classify each dependency *source section* (conda vs PyPI) and dispatch it |
+> | `FR9` | the auditable, expiring **bypass** (waivers-as-code) | honor a project's existing `[tool.deptry]` hygiene-ignore config |
+>
+> (Waivers are **FR24–FR26** in the canonical space.) Two labels are
+> unambiguous and safe to cite bare: the **scope-change FRs**
+> (`FR-K1`/`FR-L1`/`FR-L2`/`FR-C1`/`FR-C2` — suffixed, colliding with neither
+> space), and **`FR-15`–`FR-18`**, which belong to
+> `docs/specs/cfe-atlas-datapipeline-kedro-migration.md`, **not** to Warden —
+> § Cross-spec impact cites them as that spec's IDs.
+>
+> **When editing:** keep this section as narrative intent; land contract changes
+> in the PRD's canonical space. Reconciling the two is **story 0.1**.
+
 ### Functional Requirements
 
 - **FR1.** Detect and parse `pyproject.toml`, `requirements.txt`,
