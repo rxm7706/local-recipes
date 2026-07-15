@@ -162,7 +162,7 @@ change stays `1.x` (it should) or widens the pattern.
 1. **Library policy (supersedes NFR2 + OD3 + Story 1.1's "no pyyaml" AC):** the constraint is **"no *execution* of untrusted input"** (no eval/exec/subprocess-in-extractor, no Jinja render, `yaml.safe_load` only), **not** stdlib-only. Lean targeted runtime deps per the policy above; `jsonschema` is a **runtime** dep (FR14 self-validation). v1 `recipe.yaml` is `safe_load`-parsed; v0 `meta.yaml` is neutralized then `safe_load`-parsed.
 2. **Execution model (supersedes OD6 + data-flow step 3):** the axes run **in parallel** (NFR-P-concurrency), not sequentially.
 3. **Verdict lattice + exit enum (FROZEN — do not regress):** `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable` (canonical token `warn`, not `warnings`); exit enum **`{0, 1, 2, 130}`**; **`indeterminate` → exit 1** (exit 2 reserved for operational errors). On **gating** axes, withheld/skipped/unresolved outcomes route to `indeterminate` → non-zero, never a silent 0 (the shipped C0 property). On **non-gating** axes (v1 license/currency), unproven outcomes route to **`warn`** — visible in the status channel, exit 0 — never to a silent `clean`; they escalate to `indeterminate` when that axis's gate activates (v1.x). *(Amended by the 2026-07-15 intent-coverage pass — supersedes the earlier "always `indeterminate`" wording, which contradicted the v1 `gating: false` mechanism; see review §4.1.)*
-4. **Gate default (updated by D3 — KEV now v1):** v1 blocks on **CVSS-critical** CVEs **and** any **CISA-KEV**-listed advisory on a pinned version; high/med/low + all hygiene warn; axes 3+4 do not gate in v1 (`gating: false`, unknown → `warn`). **KEV feed absence is never silent:** under a KEV-blocking policy (including this default), an absent or stale KEV snapshot feeds an `indeterminate` rung with a KEV-provenance driver — the gate cannot silently no-op offline. EPSS + the axis-3/4 gates land v1.x.
+4. **Gate default (updated by D3 — KEV now v1):** v1 blocks on **CVSS-critical** CVEs **and** any **CISA-KEV**-listed advisory on a pinned version; high/med/low warn; hygiene per the DEP001 table (**DEP001 missing-dependency blocks by default** on a high-confidence mapping, DEP002–005 warn — owner-confirmed 2026-07-15, aligning this spec to epics story 1.6); axes 3+4 do not gate in v1 (`gating: false`, unknown → `warn`). **KEV feed absence is never silent:** under a KEV-blocking policy (including this default), an absent or stale KEV snapshot feeds an `indeterminate` rung with a KEV-provenance driver — the gate cannot silently no-op offline. EPSS + the axis-3/4 gates land v1.x.
 5. **Discovery (supersedes data-flow step 1's priority order):** **union coverage** — all discovered manifests are scanned and reported per-manifest; no single-winner priority chain.
 6. **osv input (supersedes step 2's `.scanner-temp-reqs.txt` + "installed env" fallback):** the synthesized osv input is a temp file named **`requirements.txt`** (osv infers the parser from the basename); the "installed env" fallback is **dropped** (never assume a version).
 7. **Repo layout detail:** `report-schema.json` lives at `src/pyforge/warden/data/` (beside the bundled `conda_pypi_map.json`), not the package root.
@@ -186,7 +186,7 @@ retro + CHANGELOG entry (see § Definition of Done).
 
 | Field | Value |
 |---|---|
-| Status | **In progress — spec-first replan (2026-07-15).** This spec is the sole source of truth; the PRD + architecture + epics (5 epics / 20 stories, hygiene+security shape) and both readiness reports are **SUPERSEDED** — story 0.1 is upgraded to a full **replan**: rebuild PRD + epics from this spec's v1 / v1.x / vision tiering, then re-run readiness. Shipped code (stories 1.1–1.4) is an input, not a constraint. Decisions resolved through D11 + the 2026-07-15 intent-coverage pass (§ Reconciliation) |
+| Status | **In progress — story-0.1 replan EXECUTED 2026-07-15.** This spec is the sole source of truth; the PRD (FR1–FR38 + NFR-S9), architecture (§ Multi-axis reconciliation), and epics (**6 epics / 26 stories** — Epic 6 = multi-axis expansion 6.1–6.6) were rebuilt from this spec's v1 / v1.x / vision tiering and are authoritative **downstream** of it; readiness re-run 2026-07-15 → READY-WITH-CONDITIONS (re-run `bmad-sprint-planning` before loop execution). Decisions resolved through D11 + the 2026-07-15 intent-coverage pass (§ Reconciliation) |
 | Scope | **Python only** — PyPI + conda-forge, 6 Python/conda manifest formats; non-Python ecosystems out of scope (see § Scope & naming in the intake note) |
 | Owner | rxm7706 |
 | Track | **Full BMAD** (PRD → architecture → epics/stories → **loop-driven dev**) — planning artifacts under `_bmad-output/projects/pyforge-warden/`. Implementation runs via **bmad-loop v0.8.1 + bmad-dev-auto** (BMAD 6.10) per `docs/specs/bmad-loop-adoption.md` — graduated gates (per-story-spec-approval for 1.1/1.2 → per-epic from Epic 2), deterministic verify gate = the scanner's own test suite |
@@ -357,7 +357,7 @@ non-goal** (owner-elevated 2026-07-11).
   (FR10; non-relaxable except via the audited bypass). The **fail-threshold
   is configurable** — `--fail-on=<severity>`, or the atlas FR-18 knobs
   `max_critical` / `max_high` / KEV. **Default: block on any critical CVE or
-  KEV-affecting-current; warn on high/medium/low + all hygiene.** *(Per
+  KEV-affecting-current; warn on high/medium/low; hygiene per the DEP001 table — DEP001 blocks by default, DEP002–005 warn (owner-confirmed 2026-07-15).** *(Per
   § Reconciliation D3: the **v1** default blocks on CVSS-critical **and** any
   CISA-KEV-listed advisory on a pinned version; EPSS (`--min-epss`) is
   v1.x.)* This
@@ -587,14 +587,14 @@ vision).
 **Story map (indicative — the authoritative breakdown is produced by the
 story-0.1 replan):**
 
-- **0.1 — REPLAN (upgraded 2026-07-15, the hard gate):** rebuild the PRD and
-  epics **from this spec** (v1 / v1.x / vision tiering above); the prior
-  PRD/architecture/epics and both readiness reports are superseded inputs,
-  not authorities; shipped stories 1.1–1.4 are facts on the ground the replan
-  incorporates. Must assign owners for: the engine version-range story
-  (NFR-C1), KEV feed provisioning/cache/max-age (FR-K1), the story-6.1
-  amendment scope (below), and the baseline-ratchet story. Re-run readiness
-  afterwards.
+- **0.1 — REPLAN: EXECUTED 2026-07-15.** The PRD (canonical FR32–FR38 +
+  NFR-S9), architecture (§ Multi-axis reconciliation), and epics (Epic 6,
+  stories 6.1–6.6) were rebuilt from this spec; readiness re-ran the same day
+  (READY-WITH-CONDITIONS). Ownership assigned: engine version-range → story
+  6.6; KEV feed provisioning/cache/max-age → 6.4; the schema amendment → 6.1;
+  warn-rung wiring → 6.5; baseline ratchet → v1.x (Growth, unscheduled).
+  Remaining condition: re-run `bmad-sprint-planning` (26 stories) before any
+  bmad-loop execution.
 - **6.1** — the versioned `ComplianceReport` schema amendment, **one paid
   amendment** covering: per-axis `gating` bool · `license`/`currency`
   sections (+ per-section coverage/provenance incl. bundled-data
@@ -605,7 +605,8 @@ story-0.1 replan):**
 - Epic 1 (Spine + PyPI engine), Epic 2 (conda/pixi wedge), Epic 3 (policy +
   waivers + warn-only), Epic 4 (machine contract + CycloneDX), Epic 5
   (fleet-readiness + adoption) carry forward as **value groupings**; the
-  license, currency, and KEV work threads through them under the 0.1 replan.
+  license, currency, and KEV work is **Epic 6** (epics.md, added by the 0.1
+  replan) — delivery order E1 → E2 → E3/E4 → E6 → E5.
 
 ---
 
