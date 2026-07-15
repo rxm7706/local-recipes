@@ -40,7 +40,7 @@ SCA · not SAST · CI/CD quality gate · family naming `<language>-<hygiene-engi
 
 | Owner | Language | CLI | Scope | Ecosystem |
 | --- | --- | --- | --- | --- |
-| Reuben Mathew | Python 3.12+ | argparse · stdlib | 5 epics · 20 stories | PyPI + conda-forge |
+| rxm7706 | Python 3.12+ | argparse · stdlib | 5 epics · 20 stories | PyPI + conda-forge |
 
 ### Why Warden — one gate, both ecosystems, six axes of dependency trust
 
@@ -288,44 +288,57 @@ The same report feeds executive scorecards — each measured on a different outc
 
 ---
 
-## 15 · Integration surface — the pluggable ecosystem
+## 15 · Integration surface — engines
 
-A producer-agnostic report contract lets tools slot in as an **engine**, an **enrichment feed**, or a downstream **consumer**.
+A producer-agnostic report contract (purl + CycloneDX) lets tools slot in as an **engine**, a **data / enrichment feed**, an **actuator**, or a downstream **consumer**.
 
-| Tool / source | Category | Integration slot | Status |
+| Tool / source | Category | Slot | Status |
 | --- | --- | --- | --- |
-| `deptry` | Dependency hygiene | Hygiene engine | Current |
-| `osv-scanner` | Vulnerability scanner | Vuln engine | Current |
-| `OSV.dev` | Advisory database | Vuln data source | Current |
-| `CycloneDX` | SBOM | SBOM emission | Current |
-| `fawltydeps` / `pip-check-reqs` | Dependency hygiene | Hygiene engine (`--engine`) | Candidate |
-| `pip-audit` | Dep → advisory | Corroborating vuln check | Candidate |
-| `Trivy` / `Grype` / OWASP Dep-Check | Vulnerability scanner | Pluggable vuln engine | Candidate |
-| `NVD / CVE (MITRE)` / GHSA | Advisory database | Enrichment feed | Planned |
-| `CISA KEV` | Exploit intelligence | v1.x gate tier + enrichment | Candidate |
-| `FIRST EPSS` | Exploit intelligence | Prioritization enrichment | Planned |
+| `deptry` | Hygiene | Hygiene engine | **Current** |
+| `fawltydeps` · `pip-check-reqs` · `vulture` | Hygiene | Hygiene engine (`--engine`) | Candidate |
+| `uv` (Astral) | Resolver / lockfile | Manifest & lock source | Candidate |
+| `osv-scanner` | Vulnerability | Vuln engine | **Current** |
+| `osv-scalibr` · `vdb` · `Trivy` · `Grype` · `pip-audit` · `Capslock` | Vulnerability | Pluggable vuln engine | Candidate |
+| **`Basilisk` (prefix.dev)** | conda-forge advisory · OSV-compatible API | Conda-native vuln source (E2) | Candidate |
+| **`parselmouth` (prefix.dev)** | PyPI ↔ conda mapping | Conda purl bridge (unlocks OSV/vdb for E2) | Candidate |
+| `CycloneDX` | SBOM | SBOM emission | **Current** |
+| `cdxgen` · `Syft` | SBOM + reachability | SBOM engine · reachability · signing | Candidate |
+| `rattler-build` / `rattler` (prefix.dev) | conda build + metadata | Manifest / metadata source (E2) | Candidate |
 
 ---
 
-## 15 · Integration surface (cont.)
+## 15 · Integration surface — data & feeds
 
-| Tool / source | Category | Integration slot | Status |
+| Tool / source | Category | Slot | Status |
 | --- | --- | --- | --- |
-| `Sonatype OSS Index` / `deps.dev` | Advisory / metadata | Enrichment feed | Candidate |
-| `endoflife.date` | EOL data | Deprecation feed | Planned |
-| `license-expression` | License (SPDX) | v1 license engine | Candidate |
-| `conda about:` + `importlib.metadata` | License data source | v1 license inputs (no scan) | Candidate |
-| `ScanCode Toolkit` | License detection | Deep source scan (later) | Planned |
-| `Syft` | SBOM | SBOM generation | Candidate |
-| OpenSSF Package Analysis / `GuardDog` | Malware | Malicious-pkg feed/engine | Planned |
-| `Sigstore / SLSA` | Provenance | Signing & provenance | Planned |
-| OpenSSF Scorecard | Health / sustainability | Health scoring feed | Planned |
-| Libraries.io / Ecosyste.ms | Metadata / health | Health & sponsorship feed | Candidate |
-| Tidelift | Funding | Sponsorship integration | Planned |
-| Black Duck · Snyk · Nexus IQ · Mend · JFrog Xray | Commercial SCA | SBOM / VEX consumer | Consumer |
-| Wiz · Prisma Cloud | CNAPP | SBOM / finding consumer | Consumer |
-| GitHub Adv. Security / Dependabot | Platform-native | SARIF / consumer | Consumer |
-| Endor Labs · Semgrep Supply Chain | Commercial SCA | Engine or consumer | Consumer |
+| `OSV.dev` | Advisory DB | Vuln data source | **Current** |
+| `VulnerableCode` (AboutCode) | Open purl-native vuln DB | Vuln data source (offline) | Candidate |
+| `PyPA Advisory DB` | PyPI advisory | Enrichment feed (OSV-format) | Candidate |
+| `NVD / CVE (MITRE)` · GHSA · CWE | Advisory DB / taxonomy | Enrichment feed | Planned / Candidate |
+| `EUVD` (ENISA) | EU vulnerability DB | Enrichment feed | Planned |
+| `CISA KEV` | Exploit intel | **v1 gate tier** + enrichment | Candidate |
+| `FIRST EPSS` · `VulnCheck` | Exploit intel | Prioritization enrichment | Candidate / Planned |
+| `license-expression` · SPDX list | License (SPDX) | v1.x license engine + data | Candidate |
+| `conda about:` + `importlib.metadata` | License data | v1.x license inputs (no scan) | Candidate |
+| `OSS Review Toolkit (ORT)` · `ClearlyDefined` · `ScanCode` | License + policy | Engine / feed / deep scan | Candidate / Planned |
+| `endoflife.date` · `Repology` | Currency / EOL | Currency feed | Planned |
+| OpenSSF Scorecard · criticality_score · Libraries.io · Tidelift | Health / sustainability | Health & sponsorship feed | Candidate / Planned |
+| `Sigstore / SLSA` · `in-toto / GUAC` · PyPI Trusted Publishing (PEP 740) · `model-transparency` | Provenance | Signing · attestation · graph | Planned |
+| Google Assured OSS · Anaconda Defaults | Vetted base | Trusted base + provenance | Planned |
+| OpenSSF Package Analysis · GuardDog | Malware | Malicious-pkg feed / engine | Planned |
+
+---
+
+## 15 · Integration surface — actuators, consumers & standards
+
+**Actuators & platforms:** Renovate (fix-PR actuator) · Allstar (org security-policy enforcement) · OWASP Dependency-Track (CycloneDX monitoring) · DefectDojo (vuln management) · `cf_atlas` (internal enrichment producer/consumer — shares CycloneDX + `cfe:*` purls).
+
+**Consumers (SCA / CNAPP):** Black Duck · Snyk · Nexus IQ · Mend · JFrog Xray · Wiz · Prisma Cloud · GitHub Advanced Security / Dependabot · Endor Labs · Semgrep Supply Chain.
+
+**Standards Warden speaks — the contracts that make it pluggable:**
+`purl` · `vers` · `OSV schema` · **CycloneDX** · `SPDX` · `OpenVEX / CSAF` · `SARIF` · `CVE 5.x` · `CVSS` · `EPSS` · `PEP 740` · `PEP 639` · `SLSA` · `in-toto`
+
+> **Ecosystem support** is tracked per source in the infographic matrix — each tagged **pip** · **conda** · **pixi** (conda-native: Basilisk, parselmouth, rattler-build, Anaconda Defaults).
 
 ---
 
