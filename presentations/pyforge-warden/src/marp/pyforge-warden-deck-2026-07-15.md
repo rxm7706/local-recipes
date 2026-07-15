@@ -92,14 +92,12 @@ A conda-heavy ML repo passes while most of its graph was **never seen**. Warden 
 ## 04 · Two ecosystems, one blind spot
 
 **Ecosystem 1 · PyPI — Application Python**
-~850K packages · open upload · any license
-**20%** of footprint — ~400 shipped apps ≈ 2–3K libraries
+open upload · any license · read natively by the engines
 
 **Ecosystem 2 · conda-forge — Scientific & Data Python**
-~30K feedstocks · curated · FOSS-only
-**80%** of footprint — ~1% of apps ≈ 7–8K libraries
+curated · FOSS-only · no engine parses its manifests — Warden's engine bridges them
 
-<!-- Python is two ecosystems. Applications are 20% of footprint; the ML/AI/data stack is a tiny slice of apps but 80% of distinct libraries. Warden covers both. -->
+<!-- Python is two ecosystems: application Python on PyPI, and the scientific / ML / AI / data stack on conda-forge. Warden covers both. -->
 
 ---
 
@@ -245,10 +243,10 @@ The manifest engine is the wedge — no engine parses conda / pixi. No untrusted
 The further out Warden scans, the more it **prevents** rather than reports.
 
 - **Public upstream** *(vision)* — scan PyPI & conda-forge: malicious, typosquat, name-squat & stale feedstocks. → *blocklists*
-- **Registry perimeter** *(v1.x)* — block / allow lists on Artifactory / JFrog; a census of everything that enters. → *clean pulls*
-- **Consumption edge** *(today)* — scan repos, desktops & CI: the axes on what apps actually pull.
+- **Registry perimeter** *(v2)* — block / allow lists on Artifactory / JFrog; a census of everything that enters. → *clean pulls*
+- **Consumption edge** *(v1 · today)* — scan repos, desktops & CI: the four axes on what apps actually pull.
 
-<!-- Warden runs at three depths. Edge is today; registry perimeter (JFrog blocklists) is v1.x and the star; public upstream scanning is the vision. -->
+<!-- Warden runs at three depths. Edge is v1 (today); registry perimeter (JFrog blocklists) is v2 and the star; public upstream scanning is the vision. -->
 
 ---
 
@@ -318,7 +316,7 @@ Adoption starts at a terminal, not a pipeline — see it work on your own machin
 
 # From a gate to governance
 
-Six axes of dependency trust, pluggable behind one report — hygiene & security today, four more on the roadmap.
+Six axes of dependency trust, pluggable behind one report — four axes in v1 (hygiene + security gate; license + currency enrich), two more (provenance + maintenance) on the roadmap.
 
 <!-- The same contract extends across six axes. Engines are pluggable, so new signals slot in behind the same report and lattice. -->
 
@@ -328,41 +326,41 @@ Six axes of dependency trust, pluggable behind one report — hygiene & security
 
 | Axis | Question | Engine | Maturity |
 | --- | --- | --- | --- |
-| 1 · Hygiene | Is it used? | deptry | **v1** |
-| 2 · Security | Is it vulnerable? | osv-scanner + KEV/EPSS | **v1** |
-| 3 · License | Is it allowed? | license-expression | v1.x |
-| 4 · Currency | Is it patchable? | endoflife.date | v1.x |
+| 1 · Hygiene | Is it used? | deptry | **v1 gate** |
+| 2 · Security | Is it vulnerable / exploited? | osv-scanner + CISA KEV | **v1 gate** |
+| 3 · License | Is it allowed? | license-expression | **v1 enrich** · gate v1.1 |
+| 4 · Currency | Is it patchable? | LTS · endoflife.date · N/N-1 | **v1 enrich** · gate v1.1 |
 | 5 · Provenance | Is it authentic? | Sigstore / SLSA | vision |
 | 6 · Maintenance | Is it maintained? | OpenSSF Scorecard | vision |
 
-<!-- Six axes, each a different question. Hygiene + security ship v1; license + currency complete the v1.x gate; provenance + maintenance are the vision. -->
+<!-- Six axes, each a different question. v1 runs all four: hygiene + security gate (incl. KEV); license + currency enrich (gates v1.1). Provenance + maintenance are the vision. -->
 
 ---
 
-## 17 · KEV + EPSS — prioritize by exploitability `v1.x`
+## 17 · KEV + EPSS — prioritize by exploitability
 
 Not every CVE matters equally. Warden enriches each finding so the gate blocks on **what's actually dangerous** — not theoretical noise.
 
-- **CISA KEV — exploited in the wild** — the known-exploited catalog; a boolean that outranks a raw severity score.
-- **FIRST EPSS — probability it will be** — a 0–1 exploit-prediction score for triage; gate with `--min-epss`.
+- **CISA KEV — exploited in the wild** `v1` — the known-exploited catalog; a boolean that outranks a raw severity score. The `--fail-on-kev` gate ships **v1**.
+- **FIRST EPSS — probability it will be** `v1.1` — a 0–1 exploit-prediction score for triage; the `--min-epss` gate lands **v1.1**.
 
-`--fail-on-kev` · `--min-epss 0.5` — block on real-world risk, warn on the rest.
+`--fail-on-kev` (v1) · `--min-epss 0.5` (v1.1) — block on real-world risk, warn on the rest.
 
-<!-- v1.x enriches the security axis. KEV = exploited now; EPSS = probability it will be. Together they block on what's actually dangerous. -->
+<!-- KEV enrichment + gate ship v1; EPSS gating is v1.1. KEV = exploited now; EPSS = probability it will be. -->
 
 ---
 
-## 18 · License & currency complete the gate `v1.x`
+## 18 · License & currency — enrich in `v1`, gate in `v1.1`
+
+Both axes ship in **v1 as enrichment** (`gating: false`) — reported in every run, not blocking; conda `about: license` resolves **pre-build**, so conda components carry real verdicts on day one. Their **gates** turn on in **v1.1**.
 
 **Axis 3 · License — is it allowed?**
-SPDX from PyPI metadata + conda `about: license`, normalized via **license-expression**. Gate on allow / deny lists.
-`--allow-licenses` · `--deny-licenses`
+SPDX from PyPI metadata + conda `about: license`, normalized via **license-expression**. `v1.1` gate: `--allow-licenses` · `--deny-licenses` — denied → policy-violation, unknown → indeterminate.
 
 **Axis 4 · Currency — is it patchable?**
-**endoflife.date** + version-lag flag EOL & stale deps — and the Python runtime against LTS / N / N-1. Only current things get patched.
-`--max-lag` · `--require-lts` · `--fail-on-eol`
+Tiered **LTS registry → endoflife.date → N/N-1** flag EOL & stale deps — and the Python runtime — plus an **availability-at-N/N-1** (ADD/UPDATE) finding. `v1.1` gate: `--max-lag` · `--require-lts` · `--fail-on-eol`.
 
-<!-- License: read SPDX via license-expression, gate on allow/deny — unreadable is indeterminate. Currency: endoflife.date + version-lag flag EOL and out-of-date deps. -->
+<!-- License + currency ship v1 as enrichment (reported, not blocking); their gates land v1.1. Conda about:license resolves pre-build. -->
 
 ---
 
@@ -417,6 +415,6 @@ Warden · pyforge-warden · pyforge.warden · docs/specs/pyforge-warden.md
 - **CISO — provable risk posture:** exploitability-prioritized findings (KEV/EPSS) and audit-grade, reproducible evidence.
 - **Chief Dev Experience — a gate devs trust:** runs locally first, one command, no false alarms — so it doesn't cry wolf.
 - **CIO — standardized & offline:** one gate fleet-wide, deterministic and air-gap-ready for regulated estates.
-- **Chief Data & Analytics — the ML footprint, covered:** conda / conda-forge coverage — the 80% of libraries stock tools never see.
+- **Chief Data & Analytics — the ML footprint, covered:** conda / conda-forge coverage — the scientific / ML library estate that stock PyPI-only tools never parse.
 
 <!-- Executive personas: CISO, Chief Developer Experience Officer, CIO, Chief Data & Analytics Officer. -->

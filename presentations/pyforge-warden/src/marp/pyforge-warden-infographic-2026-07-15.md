@@ -32,7 +32,7 @@ BMAD-METHOD Tech Spec · Full agentic AI-SDLC · Status: in progress, planning c
 
 One CLI that guards both Python ecosystems — the **PyPI** world of applications and libraries, and the **conda / conda-forge** world of scientific computing, analytics and ML/AI data platforms. Warden runs pluggable engines across **six axes** — hygiene, security, license, currency, provenance and maintenance — and returns **one consolidated report**.
 
-SCA · not SAST · CI/CD quality gate · family naming `<language>-<hygiene-engines>-<security-engines>`
+SCA · not SAST · CI/CD quality gate · family naming `<language>-<hygiene-engine>-<vuln-engine>`
 
 ---
 
@@ -69,9 +69,9 @@ Dependency hygiene and security compliance across enterprise infrastructure requ
 
 Python isn't one ecosystem. Warden is built for both — and treats the scanning engines as **pluggable**, not fixed.
 
-**Ecosystem 1 · PyPI — Application Python** — ~850K packages, open upload, any license. 20% of footprint: ~400 shipped apps ≈ 2–3K libraries. Manifests (`pyproject.toml`, `requirements.txt`, lockfiles) read **natively**.
+**Ecosystem 1 · PyPI — Application Python** — open upload, any license. Manifests (`pyproject.toml`, `requirements.txt`, lockfiles) read **natively** by the engines.
 
-**Ecosystem 2 · conda-forge — Scientific & Data Python** — ~30K feedstocks, curated FOSS-only. 80% of footprint: ~10 platforms ≈ 7–8K libraries. Manifests (`environment.yml`, `meta.yaml`, `recipe.yaml`, `pixi.toml`) — which **no engine parses**; Warden's manifest engine bridges them.
+**Ecosystem 2 · conda-forge — Scientific & Data Python** — curated FOSS-only. Manifests (`environment.yml`, `meta.yaml`, `recipe.yaml`, `pixi.toml`) — which **no engine parses**; Warden's manifest engine bridges them.
 
 ---
 
@@ -79,14 +79,14 @@ Python isn't one ecosystem. Warden is built for both — and treats the scanning
 
 | Axis | Engine | Question | Maturity |
 | --- | --- | --- | --- |
-| 1 · Hygiene | `deptry` | Is it actually used? | v1 |
-| 2 · Security | `osv-scanner` | Any known CVE? | v1 |
-| 3 · License | `license-expression` | Legally allowed? | v1.x |
-| 4 · Currency | `endoflife.date` | Supported / patchable? | v1.x |
+| 1 · Hygiene | `deptry` | Is it actually used? | **v1 gate** |
+| 2 · Security | `osv-scanner` + CISA KEV | Any known / exploited CVE? | **v1 gate** |
+| 3 · License | `license-expression` | Legally allowed? | **v1 enrich** · gate v1.1 |
+| 4 · Currency | LTS · `endoflife.date` · N/N-1 | Supported / patchable? | **v1 enrich** · gate v1.1 |
 | 5 · Provenance | `Sigstore / SLSA` | Authentic & untampered? | vision |
 | 6 · Maintenance | `OpenSSF Scorecard` | Alive, funded, resilient? | vision |
 
-Engines are pluggable. **v1 ships hygiene + security**; **license & currency** complete the v1.x gate; **provenance & maintenance** extend it.
+Engines are pluggable. **v1 runs all four axes** — hygiene + security **gate** (incl. the CISA-KEV tier); license + currency ship **enrichment** (`gating: false`, reported not blocking). Their **gates** land **v1.1**; provenance + maintenance are **vision**.
 
 ---
 
@@ -128,7 +128,7 @@ The manifest engine is the wedge: neither scanning engine parses conda/pixi mani
 
 **Verdict lattice — highest wins:** `error` (exit 2) › `policy-violation` (exit 1, blocks) › `indeterminate` (exit 1, unproven) › `warn` › `bypassed` › `clean` › `not-applicable` (all exit 0). Frozen exit enum: `0` `1` `2` `130`.
 
-- **Default policy** — v1 blocks on CVSS-critical CVEs only; high/med/low + all hygiene warn. **v1.x adds a KEV tier** — any CISA-KEV-listed advisory on a pinned version blocks regardless of CVSS. Configurable via `--fail-on`, `max_critical`, `--fail-on-kev`.
+- **Default policy** — v1 blocks on CVSS-critical CVEs **and the CISA-KEV tier** (any KEV-listed advisory on a pinned version blocks regardless of CVSS); high/med/low + all hygiene warn; license + currency enrich (don't block). Configurable via `--fail-on`, `max_critical`, `--fail-on-kev`. **v1.1 adds** `--min-epss` + the license/currency gates.
 - **Waivers as code** — `--bypass --reason` emits an expiring stanza (default 14 days) the team commits. The tool reads it, never writes the repo.
 - **Typed errors** — `unparsable-manifest` · `engine-unavailable` · `engine-crash` · `internal-error`.
 
@@ -157,7 +157,7 @@ Running it today
 Warden runs at three depths. The further out it scans, the more it **prevents** rather than reports.
 
 - **Public upstream** *(vision)* — scan PyPI & conda-forge themselves: malicious packages, typosquats, name-squatting, stale/abandoned feedstocks. → *blocklists*
-- **Registry perimeter** *(v1.x)* — turn that intel into block / allow lists on Artifactory / JFrog; quarantine bad packages so they never cross the firewall. A census of everything that enters. → *clean pulls*
+- **Registry perimeter** *(v2)* — turn that intel into block / allow lists on Artifactory / JFrog; quarantine bad packages so they never cross the firewall. A census of everything that enters. → *clean pulls*
 - **Consumption edge** *(today)* — scan repos, desktops & CI: the six axes on what apps actually pull. Precise per-project, but only sees what you scan.
 
 Scan the **edge** and you report what you found; scan the **supply** and you prevent what enters.
@@ -209,27 +209,27 @@ Roadmap · not yet shipped. Everything from here down is roadmap and vision — 
 
 ## 11 · Beyond v1 — now, next & later
 
-**NOW · v1.x — completes the four axes**
-- **License compliance** (Axis 3) — metadata-based SPDX via `license-expression`, gated by allowed families; unknown → indeterminate, written to SBOM.
-- **Currency & supportability** (Axis 4) — is each dep and the runtime on a supported line: LTS · N / N-1 · not EOL?
-- **Baseline & grandfathering** — accept existing debt, gate only **new** findings.
-- **Automated fix PRs** — open remediation PRs, not just findings.
+**NOW · v1.1 — activate the axis gates**
+- **License gate** (Axis 3) — the axis already ships v1 as enrichment (SPDX via `license-expression`, reported); v1.1 turns on `--allow-licenses`/`--deny-licenses` — denied → policy-violation, unknown → indeterminate.
+- **Currency gate** (Axis 4) — v1 enriches (LTS · N / N-1 · endoflife); v1.1 turns on `--max-lag`/`--require-lts`/`--fail-on-eol`.
+- **EPSS prioritization** — `--min-epss` joins the v1 KEV gate on the security axis.
+- **Baseline & grandfathering** — accept existing debt, gate only **new** findings; **automated fix PRs** — open remediation PRs, not just findings.
 
 ---
 
 ## 11 · Beyond v1 (cont.)
 
 **NEXT · v2 — the governance layer**
-- **Pluggable scanners** — multiple security backends behind one report.
-- **Allowlist enforcement** — check every dep against an approved-library registry.
-- **Maintenance & health** (Axis 6) — cadence, bus-factor, abandonment risk; feeds the OSS give-back loop.
+- **Registry perimeter** — block / allow lists on Artifactory / JFrog; the strongest enforcement point (quarantine before the firewall).
+- **Pluggable scanners** — multiple security backends behind one report; engine-swappability.
+- **Allowlist enforcement** — check every dep against an approved-library registry; client provisioner.
 - **Vendor-support backlog** — auto-generate tracked work items (fix CVE, upgrade to 3.14 LTS, drop EOL deps).
 
 **LATER · Vision**
-- **Reachability analysis** — flag a CVE only when vulnerable code is actually called.
-- **Malicious-package detection** (Axis 5 · provenance) — install-script/behavior signals, signing & attestation.
-- **Alternate-library suggestions** — vetted replacements for unused/risky/unmaintained deps.
-- **Sibling ecosystems** — `js-depcheck-osv`, `go-<tool>-osv` share osv-scanner + the report schema.
+- **Provenance** (Axis 5) — Sigstore / SLSA signing & attestation: is the artifact authentic and untampered?
+- **Maintenance & health** (Axis 6) — cadence, bus-factor, abandonment risk (OpenSSF Scorecard); feeds the OSS give-back loop.
+- **Malicious-package detection** — install-script / behavior signals, typosquat & name-squat catches (distinct from Axis 5 attestation).
+- **Reachability analysis** — flag a CVE only when vulnerable code is actually called. **Alternate-library suggestions**; **sibling ecosystems** (`js-depcheck-osv`, `go-<tool>-osv` share osv-scanner + the report schema).
 
 ---
 
@@ -318,8 +318,8 @@ A producer-agnostic report contract (purl + CycloneDX) lets tools slot in as an 
 | `EUVD` (ENISA) | EU vulnerability DB | Enrichment feed | Planned |
 | `CISA KEV` | Exploit intel | **v1 gate tier** + enrichment | Candidate |
 | `FIRST EPSS` · `VulnCheck` | Exploit intel | Prioritization enrichment | Candidate / Planned |
-| `license-expression` · SPDX list | License (SPDX) | v1.x license engine + data | Candidate |
-| `conda about:` + `importlib.metadata` | License data | v1.x license inputs (no scan) | Candidate |
+| `license-expression` · SPDX list | License (SPDX) | v1 license engine + data (enrich) | Candidate |
+| `conda about:` + `importlib.metadata` | License data | v1 license inputs (no scan) | Candidate |
 | `OSS Review Toolkit (ORT)` · `ClearlyDefined` · `ScanCode` | License + policy | Engine / feed / deep scan | Candidate / Planned |
 | `endoflife.date` · `Repology` | Currency / EOL | Currency feed | Planned |
 | OpenSSF Scorecard · criticality_score · Libraries.io · Tidelift | Health / sustainability | Health & sponsorship feed | Candidate / Planned |

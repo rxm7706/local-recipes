@@ -1,6 +1,6 @@
 ---
 status: in-progress
-spec_updated: 2026-07-14
+spec_updated: 2026-07-15
 ---
 # Tech Spec: `pyforge.warden` (**Warden**) — Python dependency **compliance gate** (multi-axis)
 
@@ -16,28 +16,38 @@ spec_updated: 2026-07-14
 > preserved as a historical note under the Warden brand.
 
 > **BMAD intake document.** **Warden** is a **pluggable, multi-axis Python
-> dependency compliance gate.** v1 orchestrates `deptry` (hygiene) and
-> Google's `osv-scanner` (security) over Python / Conda / Pixi manifests;
-> v1.x adds a **license** axis and a **currency / supportability** axis and
-> **KEV/EPSS** enrichment on the security axis (see the Post-scope-change
-> reconciliation callout below). Written to be self-contained: it folds
-> the Analyst brief, PM PRD, Architect design, and story sharding into one
-> file as the self-contained source of truth for the **full BMAD** chain.
+> dependency compliance gate.** v1 runs **four axes** over Python / Conda /
+> Pixi manifests — hygiene (`deptry`), security (`osv-scanner` + the CISA
+> **KEV** gate), license, and currency — and returns one consolidated
+> `ComplianceReport`. Axes 3 (license) and 4 (currency) ship **v1 as
+> enrichment** (`gating: false`): they report `allowed | denied | unknown`
+> and `supported | eol | unknown` and surface via the `warn` rung (visible,
+> exit 0) without blocking; their **gates** land v1.x. See the single
+> Reconciliation note below for the exact axis-by-axis release split. Written to be self-contained: it folds the Analyst brief,
+> PM PRD, Architect design, and story sharding into one file as the source of
+> truth for the **full BMAD** chain.
 >
 > The full BMAD planning chain (PRD → architecture → epics/stories → dev)
 > runs against this spec under the `pyforge-warden` BMAD project
 > (`_bmad-output/projects/pyforge-warden/`).
 >
-> Scope: **5 epics / 20 stories** (see the reconciliation callout below —
-> originally scoped ~4 epics / ~12–16; `epics.md` supersedes), driven through
-> the **full BMAD** flow (not Quick Flow).
+> Scope: `epics.md` currently encodes **5 epics / 20 stories** (a
+> hygiene+security shape). The v1 axis expansion (axes 3+4 enrichment + KEV
+> gate) grows that set; the PRD/architecture/epics reconciliation is **story
+> 0.1** (this spec's Reconciliation note describes the deltas; story 6.1
+> executes the schema amendment). Driven through the **full BMAD** flow (not
+> Quick Flow).
 >
-> **Conda-forge tie-in (Rules 1 & 2).** If the effort packages
-> `pyforge.warden` (or any of its scanning engines) as a conda recipe, or
-> touches anything under `recipes/`, the executing agent **must** invoke the
-> `conda-forge-expert` skill first (CLAUDE.md Rule 1) and close with a
-> CFE-skill retrospective + CHANGELOG entry (Rule 2). Pure library/CLI work
-> that never touches `recipes/` is exempt from those two rules.
+> **Conda-forge tie-in (Rules 1 & 2 — now ENGAGED).** The engines are already
+> packaged as conda recipes in-tree (`recipes/deptry`, `recipes/osv-scanner`)
+> and v1 distribution (D6) ships them, so the condition is met: the executing
+> agent **must** invoke the `conda-forge-expert` skill first (CLAUDE.md Rule 1)
+> and close the effort with a CFE-skill retrospective + CHANGELOG entry
+> (Rule 2). Note `recipes/deptry` + `recipes/osv-scanner` currently have **no**
+> CHANGELOG entries — that retro is **owed** (§ Definition of Done). *(This doc
+> edit + the deck edits touch neither `recipes/` nor engine code, so they do
+> not themselves trigger a recipe build; the obligation attaches to the
+> implementation effort.)*
 >
 > **Scope & naming (Python-only, by design).** This tool covers **Python
 > dependency hygiene + vulnerability scanning only** — the six Python/conda
@@ -54,74 +64,121 @@ spec_updated: 2026-07-14
 
 ---
 
-## ⚠️⚠️ Post-scope-change reconciliation (2026-07-14) — READ FIRST (WINS over the whole body)
+## ⚠️ Reconciliation (2026-07-15) — READ FIRST (WINS over the whole body)
 
-The effort was **reframed from a two-engine scanner into a pluggable,
-multi-axis compliance gate** and **renamed to Warden**. Where anything below
-still says "two engines (deptry + osv-scanner)" or "hygiene + vulnerability
-only," **this callout wins.** The PRD (`prd.md`), architecture, and epics
-carry the same reframe.
+This single note supersedes the two earlier stacked reconciliation callouts
+(2026-07-14 scope-change + 2026-07-11/12 architecture pass). The effort is a
+**pluggable, multi-axis compliance gate** named **Warden**. Where anything in
+the body below still says "two engines (deptry + osv-scanner)" or "hygiene +
+vulnerability only," or dates a decision to a release this note re-sequences,
+**this note wins.**
 
-**The axes and their exact tools / data sources:**
+**Intent-coverage pass (2026-07-15, evening — spec-first replan).** Per owner
+direction, this spec is now the **sole source of truth**: it must capture the
+full intent and feature surface of the Warden infographic/deck (Parts I–IV),
+tiered into exactly three release buckets — **v1 / v1.x / vision** (the former
+v1.1 and v2 buckets fold into **v1.x**, with v1.1 as its first milestone).
+The current PRD/architecture/epics are **superseded, not authorities**: story
+0.1 is upgraded from "reconcile" to **"replan — rebuild PRD + epics from this
+spec"** (see § Status and § Release map). The absorbed feature catalog lives
+in § Release map + § Vision catalog; the adversarial-review evidence behind
+the semantics fixes below is
+`_bmad-output/projects/pyforge-warden/planning-artifacts/adversarial-review-pyforge-warden-spec-2026-07-15.md`.
 
-| Axis | Ships | Engine / source |
-|---|---|---|
-| **1 — Hygiene** | **v1** | `deptry` |
-| **2 — Security** | **v1** | `osv-scanner` (Google OSV) — **+ v1.x enrichment:** CISA **KEV** catalog + FIRST **EPSS** score |
-| **3 — License** | **v1.x (NEW)** | normalizer **`license-expression`** (nexB/AboutCode); sources = conda recipe `about: license:` (+ `license_family`) and PyPI package metadata via stdlib `importlib.metadata` (PEP 639 `License-Expression`, legacy `License`, `Classifier: License ::` trove). **No source scanning**; ScanCode Toolkit deep-scan is **deferred (post-v1.x)**. |
-| **4 — Currency / Supportability** | **v1.x (NEW)** | **endoflife.date** + version-lag of the resolved set; covers each dependency **and** the Python runtime (LTS / N / N-1 / not-EOL). |
-| **5 — Provenance** | vision (name only) | Sigstore / SLSA attestation. |
-| **6 — Maintenance** | vision (name only) | OpenSSF Scorecard. |
+**The axes, their tools, and the release each ships in:**
 
-**Release sequencing (stated in every artifact):**
-- **v1** = Axis 1 (hygiene) + Axis 2 (security).
-- **v1.x** = + Axis 3 (license via `license-expression`) + Axis 4 (currency via endoflife.date) + KEV/EPSS enrichment on Axis 2.
-- **Provenance + Maintenance = future (vision)** — out of scope now.
+| Axis | Engine / source | v1 | v1.x | vision |
+|---|---|:--:|:--:|:--:|
+| **1 — Hygiene** | `deptry` | **gate** | alternate engines (`--engine`) | |
+| **2 — Security** | `osv-scanner` (Google OSV) + **CISA KEV** gate | **gate** | +EPSS `--min-epss` · pluggable vuln backends | |
+| **3 — License** | `license-expression` (nexB/AboutCode) — SPDX from conda `about: license:` (pre-build) + PyPI `importlib.metadata`; **no source scanning** | **enrich (`gating: false`, unknown → `warn`)** | gate (`--allow/--deny-licenses`) | |
+| **4 — Currency** | LTS registry → `endoflife.date` → N/N-1 from channel data → `unknown` (deps **and** `runtime_python`) | **enrich (`gating: false`, unknown → `warn`)** | gate (`--max-lag`/`--require-lts`/`--fail-on-eol`) | |
+| **Registry perimeter** | JFrog/Artifactory block/allow lists · quarantine · client provisioner | | **✓ (later 1.x)** | |
+| **5 — Provenance** | Sigstore / SLSA attestation | | | ✓ |
+| **6 — Maintenance** | OpenSSF Scorecard | | | ✓ |
+
+**Why axes 3+4 ship as enrichment, not gates, in v1 (`gating: false`) — and
+why `unknown` still surfaces.** A gate on an axis that reports `unknown` for
+the common first-run input is the false-red that kills adoption: OD8 concedes
+a bare uninstalled `pyproject.toml` yields `unknown` license for every PyPI
+component. But an `unknown` that is *invisible in the exit-code channel* is a
+false green wearing a flag (adversarial review T2). The resolution uses the
+rung the lattice already has: on a non-gating axis, **`unknown` (and any
+denied/eol verdict) feeds a `warn` rung** — status token `warn` (not `clean`),
+driver names the axis, **exit 0 preserved** — and `--warn-as-error` gives
+strict shops the gate for free from day one. First-run adoption survives; the
+status channel never fakes a pass; the blocking gates land v1.x, at which
+point unknown escalates `warn` → `indeterminate`. The conda beachhead:
+`about: license:` resolves **pre-build**, so conda components carry real
+*license* verdicts in v1 (currency coverage per mode — see the OD9 tier
+matrix). (Decision D4 as amended by this pass, conditional on D5.)
 
 **Runtime-dependency policy (lean; precise).** ADD **exactly one** runtime
-dep: **`license-expression`**. endoflife.date + KEV + EPSS are
-**fetched-and-cached data feeds** — **offline stays the default**; any online
-query is **opt-in and never silent** (NFR-S2). Unchanged runtime deps: PyYAML
-(`safe_load` only), `packaging`, `cyclonedx-python-lib`, `jsonschema`; stdlib
-`tomllib`, `re`, `importlib.metadata`. Engines `deptry` + `osv-scanner` stay
-declared conda/pixi run-deps (never pip, never runtime `curl`).
+dep: **`license-expression`**. The **LTS registry ships as bundled static data
+in the package** (`src/pyforge/warden/data/lts-registry.yaml`, loaded via
+`importlib.resources` — never the dev-workspace `.claude/` copy, which is not
+distributed) — this is the "**bundled tiers, zero data estate**" of D11's edge
+mode. endoflife.date + KEV + EPSS are **fetched-and-cached data feeds** —
+**offline stays the default**; any online query is **opt-in and never silent**
+(NFR-S2), and respects a configured mirror / base-URL override (the `_http.py`
+JFrog/`.netrc`/truststore chain).
+Unchanged runtime deps: PyYAML (`safe_load` only), `packaging`,
+`cyclonedx-python-lib`, `jsonschema`; stdlib `tomllib`, `re`,
+`importlib.metadata`. Engines `deptry` + `osv-scanner` stay declared
+conda/pixi run-deps (never pip, never runtime `curl`).
 
-**New CLI flags** (specced in FR-L*/FR-C*/FR-K* below):
-- License: `--allow-licenses <SPDX,…>` · `--deny-licenses <SPDX,…>`
-- Currency: `--max-lag <n>` · `--require-lts` · `--fail-on-eol`
-- Security: `--fail-on-kev` · `[--min-epss <0..1>]`
+**New CLI (specced in FR-L*/FR-C*/FR-K* below).** v1 adds **`--warn-only`**
+(the first-contact on-ramp — already specced) and **`warden scan --doctor`**
+(D8 — a *flag*, not a verb, so the frozen "one verb; no interactive
+subcommands" contract holds). Axis gate flags land v1.x: license
+`--allow-licenses`/`--deny-licenses`; currency
+`--max-lag`/`--require-lts`/`--fail-on-eol`; security `--min-epss`. The
+security `--fail-on-kev` gate ships **v1**.
 
-**`ComplianceReport` / `report-schema.json` — additive, VERSIONED** (bump
-`schema_version`; `validate_report.py` + fixtures updated so the contract
-can't silently drift):
-- **security** findings gain `kev` (bool), `kev_date`, `epss {score, percentile}`.
-- new **`license`** section: per-component `spdx_expression`, `license_family`, `source`, `allowed | denied | unknown`.
-- new **`currency`** section: per-component `latest`, `lag`, `eol_date`, `supported | eol | unknown`; **+ `runtime_python`** currency.
-- **coverage** + **provenance** (`{source, snapshot_at}`) for the new axes, same as security.
+**`ComplianceReport` / `report-schema.json` — additive, VERSIONED, executed in
+story 6.1.** The producer is **closed** (`Component` is exact-tested
+`len(declared) == 13` at `tests/unit/test_models.py:212`; `ComplianceReport`
+has `inventory_count: int` and **no** `components` array), so axes 3+4 force
+one deliberate, versioned schema amendment — paid **once**, not four times by
+accident. The `Finding` fields for KEV/EPSS already exist (subset-tested,
+`{"kev","epss"} <= field_names` at `test_models.py:224`) — the **KEV gate's
+bare `kev` bool needs no schema amendment** (its `kev_date`/`epss`-object/
+provenance completions ride the 6.1 amendment — see below). The amendment
+(bump `schema_version`; add
+per-axis `gating` bool + `license`/`currency` sections + coverage/provenance;
+update the runtime self-validation in `report.py` + the schema + fixtures —
+note there is **no** standalone `validate_report.py`; self-validation lives at
+`report.py:130-143`) is **described here and executed in story 6.1** — not by
+this doc edit. The amendment also carries the FR-K1 field completions: the
+bare `kev` bool is free (subset-tested), but `kev_date` is a **new** `Finding`
+field and `epss {score, percentile}` **replaces the scalar `epss` slot** —
+both are part of this one versioned amendment, not free riders. Note `_SCHEMA_VERSION_RE =
+re.compile(r"1\.\d+\.\d+")` (`models.py:38`, matched with `fullmatch`) cannot
+express `2.0.0`; the story-6.1 amendment must decide whether the additive
+change stays `1.x` (it should) or widens the pattern.
 
-**PRESERVED (do not regress):** the verdict lattice `error > policy-violation
-> indeterminate > warn > bypassed > clean > not-applicable`; exit enum
-`{0,1,2,130}`. **Unproven license/currency → `indeterminate` (non-zero),
-never a silent pass.** Honest-adoption posture (no false greens);
-producer-agnostic report; "no execution of untrusted input." Do NOT touch
-`recipes/` (CLAUDE.md Rules 1 & 2 stay disengaged).
+**Load-bearing decisions carried forward (2026-07-11/12) — still authoritative:**
 
----
+1. **Library policy (supersedes NFR2 + OD3 + Story 1.1's "no pyyaml" AC):** the constraint is **"no *execution* of untrusted input"** (no eval/exec/subprocess-in-extractor, no Jinja render, `yaml.safe_load` only), **not** stdlib-only. Lean targeted runtime deps per the policy above; `jsonschema` is a **runtime** dep (FR14 self-validation). v1 `recipe.yaml` is `safe_load`-parsed; v0 `meta.yaml` is neutralized then `safe_load`-parsed.
+2. **Execution model (supersedes OD6 + data-flow step 3):** the axes run **in parallel** (NFR-P-concurrency), not sequentially.
+3. **Verdict lattice + exit enum (FROZEN — do not regress):** `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable` (canonical token `warn`, not `warnings`); exit enum **`{0, 1, 2, 130}`**; **`indeterminate` → exit 1** (exit 2 reserved for operational errors). On **gating** axes, withheld/skipped/unresolved outcomes route to `indeterminate` → non-zero, never a silent 0 (the shipped C0 property). On **non-gating** axes (v1 license/currency), unproven outcomes route to **`warn`** — visible in the status channel, exit 0 — never to a silent `clean`; they escalate to `indeterminate` when that axis's gate activates (v1.x). *(Amended by the 2026-07-15 intent-coverage pass — supersedes the earlier "always `indeterminate`" wording, which contradicted the v1 `gating: false` mechanism; see review §4.1.)*
+4. **Gate default (updated by D3 — KEV now v1):** v1 blocks on **CVSS-critical** CVEs **and** any **CISA-KEV**-listed advisory on a pinned version; high/med/low + all hygiene warn; axes 3+4 do not gate in v1 (`gating: false`, unknown → `warn`). **KEV feed absence is never silent:** under a KEV-blocking policy (including this default), an absent or stale KEV snapshot feeds an `indeterminate` rung with a KEV-provenance driver — the gate cannot silently no-op offline. EPSS + the axis-3/4 gates land v1.x.
+5. **Discovery (supersedes data-flow step 1's priority order):** **union coverage** — all discovered manifests are scanned and reported per-manifest; no single-winner priority chain.
+6. **osv input (supersedes step 2's `.scanner-temp-reqs.txt` + "installed env" fallback):** the synthesized osv input is a temp file named **`requirements.txt`** (osv infers the parser from the basename); the "installed env" fallback is **dropped** (never assume a version).
+7. **Repo layout detail:** `report-schema.json` lives at `src/pyforge/warden/data/` (beside the bundled `conda_pypi_map.json`), not the package root.
+8. **Honest-adoption statement (load-bearing):** a bare `recipe.yaml` scan **exits non-zero by design** until the project locks (`pixi.lock`), waives (expiring, auditable), or runs `--warn-only` — the lock-nudge working, not a bug. Recommended **first contact** is a local `--warn-only` run at a terminal (§ Local / workstation mode), not CI wiring.
+9. **Implementation execution model ("Option B"):** the stories run **loop-driven** — `bmad-loop` orchestrating `bmad-dev-auto` (`DEV → VERIFY → REVIEW → VERIFY → COMMIT`), per `docs/specs/bmad-loop-adoption.md`. Each story's Given/When/Then ACs are the contract; the deterministic `[verify]` command is the scanner's own pytest task; gates graduate `per-story-spec-approval` (1.1/1.2) → `per-epic` (Epic 2+) → `none` for the tail. Escalations resolve via `bmad-loop-resolve`.
 
-## ⚠️ Post-architecture reconciliation (2026-07-11) + Phase-0 review pass (2026-07-12) — READ FIRST
-
-The architecture phase (`_bmad-output/projects/pyforge-warden/planning-artifacts/architecture.md`, status: complete) and the 2026-07-12 Phase-0 deep review (full findings: gist `326be5f25e702e0fcce343046c70a6b2`) revised decisions this spec still states in their original form. **Where the body below conflicts, this list wins** — the PRD carries the same reconciliation callout; `architecture.md` § Core Architectural Decisions has the detail.
-
-1. **Library policy (supersedes NFR2 + OD3 + Story 1.1's "no pyyaml" AC):** extraction is no longer stdlib-only — the constraint is **"no *execution* of untrusted input"** (no eval/exec/subprocess-in-extractor, no Jinja render, `yaml.safe_load` only). Lean targeted runtime deps: PyYAML (`safe_load`/`safe_dump`), packaging, cyclonedx-python-lib, **jsonschema (runtime, not test-only** — FR14 report self-validation). v1 `recipe.yaml` is `safe_load`-parsed directly; v0 `meta.yaml` is neutralized then `safe_load`-parsed.
-2. **Execution model (supersedes OD6 + data-flow step 3):** the two engines run **in parallel** (NFR-P-concurrency), not sequentially.
-3. **Verdict lattice + exit enum (supersedes FR4/FR5's status list + exit codes):** the status enum gains **`indeterminate`** (above `warn`): `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`; the canonical token is `warn` (not `warnings`). Frozen exit enum **`{0, 1, 2, 130}`**; the 7→4 projection maps **`indeterminate` → exit 1** (decided 2026-07-12: exit 2 stays reserved for operational errors — an indeterminate run is trustworthy and honestly reports unproven cleanliness). Withheld / skipped / unresolved outcomes route to `indeterminate` → non-zero, **never** a silent 0.
-4. **Gate default (supersedes FR5's "critical CVE or KEV"):** v1 blocks on **CVSS-critical only**; the KEV tier is post-v1 (annotation-only if osv emits it natively at zero new data source).
-5. **Discovery (supersedes data-flow step 1's priority order):** **union coverage** — all discovered manifests are scanned and reported per-manifest; there is no single-winner priority chain.
-6. **osv input (supersedes step 2's `.scanner-temp-reqs.txt` + the "installed env" fallback):** the synthesized osv input is a temp file named **`requirements.txt`** (osv infers the parser from the basename; the `--lockfile=<parser>:<path>` override is to be verified in Story 1.4); the "installed env" fallback is **dropped** (conflicts with the pre-build posture — never assume a version).
-7. **Story sharding (supersedes § Story sharding):** the breakdown is now **5 epics / 20 stories** in `_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md` (this header originally said ~4 epics / ~12–16 stories). § Story sharding below is historical intent only.
-8. **Repo layout detail:** `report-schema.json` lives at `src/pyforge/warden/data/` (beside the bundled `conda_pypi_map.json`), not the package root.
-9. **Honest-adoption statement (new, load-bearing):** a bare `recipe.yaml` scan **exits non-zero by design** until the project locks (`pixi.lock`), waives (expiring, auditable), or runs `--warn-only` — that is the lock-nudge working, not a bug. The recommended **first contact** with the tool is a local `--warn-only` run at a developer terminal (see § Local / workstation mode), not a CI wiring.
-10. **Implementation execution model (2026-07-12, user decision "Option B"):** the 20 stories run **loop-driven** — `bmad-loop` orchestrating `bmad-dev-auto` sessions (`DEV → VERIFY → REVIEW → VERIFY → COMMIT`), per `docs/specs/bmad-loop-adoption.md`. Each story's Given/When/Then ACs are the contract the dev-auto spec conversion must preserve; the loop's deterministic `[verify]` command is the scanner's own pytest task (the 1.1/1.2 harness + C0 gates thereby police every later story); gates graduate: `per-story-spec-approval` (1.1/1.2, the contract freeze) → `per-epic` (Epic 2+) → revisit `none` for the tail. Escalations resolve interactively via `bmad-loop-resolve`.
+**PRESERVED (do not regress):** honest-adoption posture (no false greens);
+producer-agnostic report; "no execution of untrusted input." Distribution is
+**no longer deferred** (D6/OD5 reversed — internal JFrog ships v1 behind the
+**engine version-range story** (a v1 story the replan must assign: replace
+`pixi.toml`'s `deptry = "*"` / `osv-scanner = "*"` with tested **ranges** per
+canonical NFR-C1 — a range, not an exact pin; the review found no existing
+story owns this); public PyPI/conda-forge is v1.x. Because v1 now packages
+the engines as conda recipes (`recipes/deptry`, `recipes/osv-scanner`),
+**CLAUDE.md Rules 1 & 2 are engaged** — the closeout owes a `conda-forge-expert`
+retro + CHANGELOG entry (see § Definition of Done).
 
 ---
 
@@ -129,7 +186,7 @@ The architecture phase (`_bmad-output/projects/pyforge-warden/planning-artifacts
 
 | Field | Value |
 |---|---|
-| Status | **In progress** — planning COMPLETE (PRD + architecture + readiness + **epics/stories: 5 epics / 20 stories**, committed); implementation next (Story 1.1). All decisions resolved (§ Decisions + the reconciliation callout above) |
+| Status | **In progress — spec-first replan (2026-07-15).** This spec is the sole source of truth; the PRD + architecture + epics (5 epics / 20 stories, hygiene+security shape) and both readiness reports are **SUPERSEDED** — story 0.1 is upgraded to a full **replan**: rebuild PRD + epics from this spec's v1 / v1.x / vision tiering, then re-run readiness. Shipped code (stories 1.1–1.4) is an input, not a constraint. Decisions resolved through D11 + the 2026-07-15 intent-coverage pass (§ Reconciliation) |
 | Scope | **Python only** — PyPI + conda-forge, 6 Python/conda manifest formats; non-Python ecosystems out of scope (see § Scope & naming in the intake note) |
 | Owner | rxm7706 |
 | Track | **Full BMAD** (PRD → architecture → epics/stories → **loop-driven dev**) — planning artifacts under `_bmad-output/projects/pyforge-warden/`. Implementation runs via **bmad-loop v0.8.1 + bmad-dev-auto** (BMAD 6.10) per `docs/specs/bmad-loop-adoption.md` — graduated gates (per-story-spec-approval for 1.1/1.2 → per-epic from Epic 2), deterministic verify gate = the scanner's own test suite |
@@ -137,7 +194,7 @@ The architecture phase (`_bmad-output/projects/pyforge-warden/planning-artifacts
 | Python package | module `pyforge.warden`; dist name `pyforge-warden` |
 | Source root | **In-repo pixi *build* workspace member** at `src/shared/packages/pyforge-warden/` (Option B; unity-data-stack `src/shared/packages` convention) — see § Repository layout |
 | Target users | Platform Engineers (CI/CD), DevSecOps Engineers (compliance / SBOM), and **Python developers shipping pip- + conda-sourced software of any shape** (scripts, applications, components, libraries) |
-| Distribution | **Internal-first library** (v1); PyPI/conda-forge packaging decided at closeout (OD5) |
+| Distribution | **Internal JFrog** (PyPI + conda) ships **v1**, behind the engine version-range story (replan-assigned; NFR-C1: tested range, not exact pin) (D6/OD5 reversed — no longer deferred); public PyPI/conda-forge is **v1.x** |
 | Lifetime | Long-running CI/CD quality gate |
 
 ---
@@ -200,13 +257,16 @@ This spec is not authored in a vacuum. Three facts materially shape it:
 
 ## Goals
 
-*(Scope-change 2026-07-14: the goals below frame the v1 hygiene+security core;
-the v1.x axes — license, currency, KEV/EPSS — extend G1's "single consolidated
-report" and G3's "strict gate" to all axes. See the top callout.)*
+*(The goals below were authored for the hygiene+security core; per
+§ Reconciliation, v1 now spans all four axes — license + currency ship as
+enrichment (`gating: false`) and KEV as a gate. G1's "single consolidated
+report" and G3's "strict gate" apply across all four; the axis-3/4 *gates* are
+v1.x.)*
 
 - **G1.** One CLI (`warden`) that produces a single consolidated **multi-axis**
-  compliance report (v1: hygiene + security; v1.x: + license + currency) from
-  one invocation at a repo root.
+  compliance report (v1: hygiene + security gates, license + currency
+  enrichment via the visible `warn` rung; v1.x: the license + currency gates) from one invocation at a
+  repo root.
 - **G2.** Native, zero-heavy-parser manifest resolution across the six
   formats: `pyproject.toml`, `requirements.txt`, `environment.yml`,
   `meta.yaml` (v0), `recipe.yaml` (v1), and `pixi.toml`.
@@ -226,12 +286,40 @@ ecosystems (npm / Go / Rust / …) and its container/artifact scanning
 (Python across PyPI + conda-forge only). Note: PyPI lockfiles (`poetry.lock`
 / `pdm.lock` / `uv.lock` / `Pipfile.lock` / `pylock.toml`) ARE covered via
 `osv-scanner`'s native delegation (§ Engine-native support), and **CycloneDX
-SBOM emission is a v1 deliverable (FR8), not a non-goal** (owner-elevated
-2026-07-11).
+SBOM emission is a v1 deliverable (working-FR8 = canonical FR27), not a
+non-goal** (owner-elevated 2026-07-11).
 
 ---
 
 ## Requirements (PM PRD)
+
+> **⚠️ Requirement-ID conventions (read first) — three FR spaces are in play.**
+> The `FRn` labels **in this section are intake-spec working labels**, not the
+> binding contract. The canonical, binding space is **`FR1`–`FR31` in
+> `_bmad-output/projects/pyforge-warden/planning-artifacts/prd.md`** § Functional
+> Requirements, which states the rule itself (`prd.md:484`: *"FR1–FR31 in this
+> section are canonical and binding"*). **The two spaces collide — same IDs,
+> different requirements** — so an unqualified "FR9" is ambiguous:
+>
+> | Label | In **this spec** it means | In the **PRD** (canonical) it means |
+> |---|---|---|
+> | `FR2` | execute `deptry` + parse its output | classify each dependency *source section* (conda vs PyPI) and dispatch it |
+> | `FR9` | the auditable, expiring **bypass** (waivers-as-code) | honor a project's existing `[tool.deptry]` hygiene-ignore config |
+>
+> (Waivers are **FR24–FR26** in the canonical space.) Two labels are
+> unambiguous and safe to cite bare: the **scope-change FRs**
+> (`FR-K1`/`FR-L1`/`FR-L2`/`FR-C1`/`FR-C2` — suffixed, colliding with neither
+> space), and **`FR-15`–`FR-18`**, which belong to
+> `docs/specs/cfe-atlas-datapipeline-kedro-migration.md`, **not** to Warden —
+> § Cross-spec impact cites them as that spec's IDs.
+>
+> **When editing (updated 2026-07-15 — spec-first):** this spec is now the
+> sole source of truth; land contract changes **here**. The PRD's canonical
+> FR1–FR31 space is superseded and will be **re-derived from this spec** by
+> the story-0.1 replan (which owns minting the next canonical numbering).
+> Until then, cite this section's working labels with the `working-FR`
+> qualifier when ambiguity is possible; the full working-label → old-canonical
+> map is at `prd.md:486`.
 
 ### Functional Requirements
 
@@ -269,17 +357,22 @@ SBOM emission is a v1 deliverable (FR8), not a non-goal** (owner-elevated
   (FR10; non-relaxable except via the audited bypass). The **fail-threshold
   is configurable** — `--fail-on=<severity>`, or the atlas FR-18 knobs
   `max_critical` / `max_high` / KEV. **Default: block on any critical CVE or
-  KEV-affecting-current; warn on high/medium/low + all hygiene.** *(Revised —
-  callout #4: the v1 default blocks on CVSS-critical only; KEV deferred
-  post-v1.)* This
+  KEV-affecting-current; warn on high/medium/low + all hygiene.** *(Per
+  § Reconciliation D3: the **v1** default blocks on CVSS-critical **and** any
+  CISA-KEV-listed advisory on a pinned version; EPSS (`--min-epss`) is
+  v1.x.)* This
   replaces a hard "any finding blocks" gate, which drives teams to disable
-  the gate entirely (the NFR1 anti-goal). *(Scope-change 2026-07-14: the gate
-  is **multi-axis**. Additional v1.x knobs — security `--fail-on-kev` /
-  `--min-epss` (FR-K1); license `--allow-licenses` / `--deny-licenses`
-  (FR-L2); currency `--max-lag` / `--require-lts` / `--fail-on-eol` (FR-C2).
-  A **denied** license or an EOL/over-lag component → `policy-violation`
-  (exit 1); an **unknown/unproven** license or currency → `indeterminate`
-  (exit 1), never a silent clean.)*
+  the gate entirely (the NFR1 anti-goal). *(Per § Reconciliation: the gate is
+  **multi-axis but staged**. **v1** gates: hygiene, security CVSS-critical,
+  and `--fail-on-kev` (FR-K1). Axes 3+4 ship v1 **enrichment-only**
+  (`gating: false`) — a denied license or EOL/over-lag component is
+  **reported** (`denied` / `eol` verdict) and, like an `unknown`, **feeds a
+  `warn` rung** — status `warn`, exit 0, driver naming the axis — never a
+  silent `clean` (2026-07-15 amendment; review T2). The blocking gates —
+  license `--allow-licenses` / `--deny-licenses` (FR-L2), currency
+  `--max-lag` / `--require-lts` / `--fail-on-eol` (FR-C2), security
+  `--min-epss` — land **v1.x**, at which point denied → `policy-violation`
+  and unknown escalates `warn` → `indeterminate`.)*
 - **FR6.** The JSON report is **validated against a committed
   `report-schema.json`** (JSON Schema); a `validate_report.py` validator
   ships alongside it (the analogue of Cloudflare's `validate-findings.cjs`
@@ -299,7 +392,8 @@ SBOM emission is a v1 deliverable (FR8), not a non-goal** (owner-elevated
   coverage < 100%, never a silently-complete-looking one). Emission is
   stdlib-only (NFR2), validated against a committed CycloneDX schema, and
   follows the repo's `cyclonedx-universe-inventory` purl conventions + the
-  kedro migration's CycloneDX normalization (FR-17). Optional synergy: the
+  kedro migration's CycloneDX normalization (kedro **FR-13**; FR-17 extends
+  it with transitive resolution). Optional synergy: the
   emitted BOM can feed `osv-scanner`'s SBOM-scan path.
 - **FR9.** **Auditable, expiring bypass (waivers-as-code).** A break-glass
   risk-acceptance path so application teams can merge and proceed without a
@@ -336,43 +430,86 @@ SBOM emission is a v1 deliverable (FR8), not a non-goal** (owner-elevated
   masquerade as failures. Errors are observable across the fleet by
   `error_kind` (NFR4).
 
-*(New FRs for the multi-axis scope — 2026-07-14. FR1–FR10 above are the v1
-hygiene+security core; the axes below ship v1.x. All feed the same
-`ComplianceReport` + verdict lattice; unproven → `indeterminate`, never a
-silent pass.)*
+*(FRs for the multi-axis scope. FR1–FR10 above are the hygiene+security core.
+Per § Reconciliation: KEV enrichment **and** its gate (FR-K1) ship **v1**; the
+license (FR-L1) and currency (FR-C1) axes ship **v1 as enrichment**
+(`gating: false`) — present, reported, and **visible**: unknown/denied/eol on
+a non-gating axis feeds a `warn` rung (exit 0, never a silent `clean`); their
+gates (FR-L2 / FR-C2) and EPSS gating land **v1.x**, at which point an
+unproven-yet-gated axis routes to `indeterminate`, never a silent pass.)*
 
-- **FR-K1 — KEV/EPSS enrichment (Axis 2, v1.x).** Enrich each security
-  finding with the **CISA KEV** flag (`kev`, `kev_date`) and the **FIRST
-  EPSS** score (`epss {score, percentile}`), from cached data feeds (offline
-  default; opt-in online, never silent). New gate knobs: `--fail-on-kev`
-  (block when a matched advisory is KEV-listed) and optional `--min-epss
-  <0..1>` (block at/above an EPSS threshold). Absent enrichment data → the
-  slots stay null and the finding gates on CVSS as before (never a false
-  clean).
-- **FR-L1 — License axis (Axis 3, v1.x).** For every resolved component,
+- **FR-K1 — KEV/EPSS enrichment (Axis 2).** Enrich each security finding with
+  the **CISA KEV** flag (`kev`, `kev_date`) and the **FIRST EPSS** score
+  (`epss {score, percentile}`), from cached data feeds (offline default;
+  opt-in online, never silent). **v1:** KEV enrichment + the `--fail-on-kev`
+  gate (block when a matched advisory is KEV-listed). **v1.x:** the optional
+  `--min-epss <0..1>` gate (block at/above an EPSS threshold). **Feed-absence
+  semantics (2026-07-15 amendment; review T1):** when **no KEV policy** is in
+  effect, absent enrichment data leaves the slots null and the finding gates
+  on CVSS as before. When a **KEV-blocking policy is in effect** (including
+  the v1 default), an absent or stale KEV snapshot → an **`indeterminate`**
+  rung with a KEV-provenance driver — the gate never silently no-ops. The
+  report carries **per-feed KEV provenance** (`{source, snapshot_at,
+  max_age_ok}` — the `VulnData` pattern), so `kev: null` = "feed absent" is
+  distinguishable from "assessed, not KEV-listed". KEV feed provisioning,
+  cache location/lifecycle, and max-age policy are a named v1 story
+  (replan-assigned — the OSV-DB provisioning story is the template). Schema
+  cost, stated exactly: the bare `kev` bool rides free (subset-tested);
+  `kev_date` + the `epss` object + KEV provenance are part of the **story-6.1
+  amendment** (see § Reconciliation).
+- **FR-L1 — License axis (Axis 3, v1 enrichment / `gating: false`).** For every resolved component,
   determine its license: normalize to an **SPDX expression** via
   `license-expression` from (a) the conda recipe `about: license:` (+
   `license_family`) and (b) PyPI metadata via stdlib `importlib.metadata`
   (PEP 639 `License-Expression`, legacy `License`, `Classifier: License ::`
   trove classifiers). **No source scanning** (ScanCode is deferred). Emit a
   per-component `license` finding: `spdx_expression`, `license_family`,
-  `source`, and a verdict `allowed | denied | unknown`.
-- **FR-L2 — License policy gate.** `--allow-licenses <SPDX,…>` /
+  `source`, and a verdict `allowed | denied | unknown`. In **v1** the axis is
+  `gating: false` — these verdicts are **reported**, not blocking.
+- **FR-L2 — License policy gate (v1.x).** `--allow-licenses <SPDX,…>` /
   `--deny-licenses <SPDX,…>` set the allow/deny sets (SPDX ids/expressions).
-  A **denied** license → `policy-violation` (exit 1). An **unknown /
-  unresolvable** license → **`indeterminate`** (exit 1) — never a silent
-  clean; copyleft & unknown-license exposure surface here, not by omission.
-- **FR-C1 — Currency / supportability axis (Axis 4, v1.x).** For every
-  resolved component **and the Python runtime**, compute
-  currency from **endoflife.date** + version-lag of the resolved set: emit
-  `latest`, `lag` (releases/versions behind), `eol_date`, and a verdict
-  `supported | eol | unknown` (LTS / N / N-1 / not-EOL classification).
-  `runtime_python` currency is a first-class field.
-- **FR-C2 — Currency policy gate.** `--max-lag <n>` (block when a component's
-  lag exceeds `n`), `--require-lts` (block on non-LTS runtimes/deps where an
-  LTS exists), `--fail-on-eol` (block on an EOL component or runtime). An
-  **unknown** currency (no endoflife.date coverage / no resolved version) →
-  **`indeterminate`**, never a silent pass.
+  Once active, a **denied** license → `policy-violation` (exit 1); an
+  **unknown / unresolvable** license → **`indeterminate`** (exit 1) — never a
+  silent clean; copyleft & unknown-license exposure surface here, not by
+  omission. (In v1, pre-gate, the same verdicts feed `warn` — see FR5.)
+- **FR-C1 — Currency / supportability axis (Axis 4, v1 enrichment /
+  `gating: false`).** For every resolved component **and the Python runtime**,
+  compute currency tiered: **LTS registry** (a **bundled**
+  `src/pyforge/warden/data/lts-registry.yaml`, loaded via
+  `importlib.resources` — the same in-package bundle-and-regenerate pattern as
+  `conda_pypi_map.json` / `report-schema.json`; regenerated from the CFE
+  `.claude/skills/conda-forge-expert/data/lts-registry.yaml`, which is the
+  **source**, not the runtime path — `.claude/` never ships in the wheel/conda
+  package nor exists on a scanned repo) → **endoflife.date** (the same
+  URL-resolution + mirror-override pattern as `_http.py`'s
+  `resolve_endoflife_urls()`; a fetched-and-cached feed, offline default) →
+  **N/N-1 from conda channel data** → `unknown`. Emit `latest`, `lag` (releases/versions
+  behind), `eol_date`, and a verdict `supported | eol | unknown`;
+  `runtime_python` currency is a first-class field. **Per-mode tier
+  availability (2026-07-15 amendment; review T4/T6):** in **edge mode** (no
+  atlas, offline default) the live tiers are the bundled LTS registry and any
+  locally-cached endoflife.date snapshot; the N/N-1 tier requires channel
+  data (cached repodata/channeldata or the estate) and **degrades to
+  `unknown` — visibly, via the `warn` rung — when absent**. Every currency
+  verdict carries **data-age provenance**: bundled data reports its
+  build-time `snapshot_at` plus a `max_age_ok` verdict against a configurable
+  max-age (default 180 days) — a stale bundled registry can never silently
+  report `supported`, and the v1.x `--fail-on-eol`/`--require-lts` gates
+  **require fresh registry data as a precondition** (stale → `indeterminate`,
+  not pass). Additionally emit an **availability-at-N/N-1 finding** — whether
+  a newer supported release exists at the estate's N/N-1 policy tier — the
+  ADD/UPDATE signal that feeds the `inventory-match --policy` →
+  `add-handoff` → `feedstock-refresh.md` loop (§ Reconciliation D9/D10;
+  edge-detector **wiring**, not new construction). The ADD/UPDATE finding is
+  **fleet-mode**: in edge mode it is omitted with a coverage note (no estate
+  policy tier to compare against). In **v1** the axis is `gating: false` —
+  reported via `warn`, not blocking.
+- **FR-C2 — Currency policy gate (v1.x).** `--max-lag <n>` (block when a
+  component's lag exceeds `n`), `--require-lts` (block on non-LTS
+  runtimes/deps where an LTS exists), `--fail-on-eol` (block on an EOL
+  component or runtime). Once active, an **unknown** currency (no coverage /
+  no resolved version) → **`indeterminate`**, never a silent pass — and the
+  gates precondition on registry freshness (see FR-C1 data-age provenance).
 
 ### Non-Functional Requirements
 
@@ -411,12 +548,160 @@ silent pass.)*
 
 ## Epics
 
-| Epic | Title | Description |
+> The four-epic table that stood here (E1 Manifest Resolution / E2 Deptry /
+> E3 OSV / E4 Reporting) was the original ~4-epic seed. The live breakdown is
+> **`_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md`**
+> (5 epics / 20 stories, hygiene+security shape). That set does **not** yet
+> encode axes 3+4 or the KEV gate — reconciling it to the § Reconciliation
+> scope is **story 0.1 (upgraded to a full replan — see § Status)**. See
+> § Release map below for the current v1 / v1.x / vision shape and the story map.
+
+---
+
+## Release map (v1 / v1.x / vision)
+
+The confirmed release split (decisions D1–D11 + the 2026-07-15 intent-coverage
+pass). Exactly **three buckets** (owner-directed): **v1** is the gate;
+**v1.x** is scheduled roadmap (v1.1 is its first milestone; the former v2
+items are its tail); **vision** is direction. Everything below v1 is roadmap
+and does not dilute the contract. This table is the **complete absorbed
+feature surface** of the Warden infographic/deck — nothing ships that is not
+on this map, and nothing on the infographic is missing from it (§ Vision
+catalog holds the Part III–IV detail).
+
+| Release | Ships | Gates |
 |---|---|---|
-| **E1** | Manifest Resolution Engine | Dynamically detect and extract dependencies from standard, Conda, and Pixi manifests natively (stdlib-only). |
-| **E2** | Deptry Integration | Wrapper logic to drive `deptry` over the project and capture structured violations. |
-| **E3** | OSV-Scanner Integration | Feed each project's native lockfile (PyPI) or a synthesized version-pinned requirements file (conda/pixi) into `osv-scanner` and parse vulnerability data (OD2). |
-| **E4** | Unified Reporting & CLI | `argparse` CLI + schema-validated `ComplianceReport` JSON **and** human report consolidating E2 and E3, with the CI exit-code gate. |
+| **v1** | Axes 1–4 (hygiene, security, license, currency) + KEV gate (incl. feed provenance + absent-feed `indeterminate` semantics, FR-K1) + full conda/pixi source-manifest resolution (the wedge) + policy/waivers/`--warn-only` + CycloneDX SBOM + polished local client (`scan --doctor`) + **internal JFrog** distribution (behind the engine version-range story, NFR-C1) | hygiene · security CVSS-critical · `--fail-on-kev`. Axes 3+4 are **enrichment (`gating: false`)** — unknown/denied/eol feed **`warn`** (visible, exit 0), never a silent clean |
+| **v1.x — early (v1.1)** | Axis 3/4 **gates** (`--allow-licenses`/`--deny-licenses` · `--max-lag`/`--require-lts`/`--fail-on-eol`, preconditioned on registry freshness) · EPSS `--min-epss` · public PyPI + conda-forge publish · **baseline & grandfathering** (the baseline ratchet, formerly "corpus ratchet": a committed baseline file accepts existing debt; the gate blocks **new** findings only; baseline entries expire like waivers — the J6 adoption on-ramp at fleet scale) · channel/index-provenance axis (mechanism must read pixi config layers, not just the lock — mirror-mode locks record canonical URLs; see § Positioning) | axis-3/4 gates activate: denied → `policy-violation`, unknown escalates `warn` → `indeterminate` |
+| **v1.x — later** | **Automated fix PRs** (Renovate-style remediation actuator: open upgrade/removal PRs from findings, never write the scanned repo in-run — NFR3 holds) · **SARIF output** (code-scanning consumers) · **vendor-support backlog** (auto-generate tracked work items from findings: fix CVE, upgrade LTS, drop EOL) · **registry perimeter** (JFrog/Artifactory block/allow lists + quarantine — the strongest enforcement point) · engine-swappability (`--engine`: fawltydeps/pip-check-reqs; pluggable vuln backends) · client provisioner (perimeter-integrated env creation — re-opens the § nebi survey refusal *only* at perimeter scope, where provenance is decidable) · `vers` version-range standard in report/SBOM | perimeter block/allow lists |
+| **vision** | Axis 5 provenance (Sigstore/SLSA attestation, PEP 740 trusted publishing, in-toto/GUAC) · Axis 6 maintenance (OpenSSF Scorecard, criticality_score, sustainability/give-back) · **malicious-package detection** incl. **typosquat & name-squat** (OpenSSF Package Analysis / GuardDog-class signals) · **public-upstream ring** (scan PyPI/conda-forge themselves → blocklists feeding the perimeter) · reachability analysis · **alternate-library suggestions** (cf_atlas `find-alternative` surfaced at the edge) · OpenVEX/CSAF exchange · TUI · IDE · fleet **control plane** + OSPO + leader scorecards + ~60-tool integration surface (§ Vision catalog) | — |
+
+**Two modes, one identity (D11).** **Edge mode** (v1, no atlas at runtime,
+bundled LTS/endoflife tiers — the bundle is an atlas *snapshot*, carrying
+build-time `snapshot_at` + `max_age_ok`) is the differentiator — "the fleet
+edge, zero data estate at runtime." **Fleet mode** (v1.x) is estate-backed via
+`inventory-match`. FR-18 already converges the two; the deck's "three rings"
+is this picture (edge = today; perimeter = v1.x-later; public upstream =
+vision).
+
+**Story map (indicative — the authoritative breakdown is produced by the
+story-0.1 replan):**
+
+- **0.1 — REPLAN (upgraded 2026-07-15, the hard gate):** rebuild the PRD and
+  epics **from this spec** (v1 / v1.x / vision tiering above); the prior
+  PRD/architecture/epics and both readiness reports are superseded inputs,
+  not authorities; shipped stories 1.1–1.4 are facts on the ground the replan
+  incorporates. Must assign owners for: the engine version-range story
+  (NFR-C1), KEV feed provisioning/cache/max-age (FR-K1), the story-6.1
+  amendment scope (below), and the baseline-ratchet story. Re-run readiness
+  afterwards.
+- **6.1** — the versioned `ComplianceReport` schema amendment, **one paid
+  amendment** covering: per-axis `gating` bool · `license`/`currency`
+  sections (+ per-section coverage/provenance incl. bundled-data
+  `snapshot_at`/`max_age_ok`) · `kev_date` + `epss {score, percentile}` +
+  per-feed KEV provenance · runtime self-validation update in `report.py`
+  (there is no standalone `validate_report.py`) + fixtures + the exact-13
+  `Component` test + `_REPORT_AXES` in `report.py:57`.
+- Epic 1 (Spine + PyPI engine), Epic 2 (conda/pixi wedge), Epic 3 (policy +
+  waivers + warn-only), Epic 4 (machine contract + CycloneDX), Epic 5
+  (fleet-readiness + adoption) carry forward as **value groupings**; the
+  license, currency, and KEV work threads through them under the 0.1 replan.
+
+---
+
+## Vision catalog (Parts III–IV of the infographic/deck, absorbed 2026-07-15)
+
+Everything here is **vision** (or the named v1.x item it points to) — recorded
+so the full intent no longer lives only in the presentation artifacts. None of
+it dilutes the v1 contract; the 0.1 replan tiers nothing out of this section
+into v1 without an owner decision.
+
+### The three rings (supply-chain depth)
+
+1. **Consumption edge — v1 (today):** scan repos, desktops & CI — the axes on
+   what applications actually pull. Precise per-project; sees only what you
+   scan.
+2. **Registry perimeter — v1.x (later):** block/allow lists + quarantine on
+   Artifactory/JFrog; a census of everything that enters; "clean pulls."
+3. **Public upstream — vision:** scan PyPI & conda-forge themselves —
+   malicious packages, **typosquats, name-squatting**, stale/abandoned
+   feedstocks — producing **blocklists** that feed the perimeter.
+
+### The control plane (fleet & ecosystem — vision)
+
+Warden's report contract is the feed for a fleet-wide control plane:
+
+- **Fleet intelligence** — central estate dashboard · cross-repo dependency
+  graph · risk-trend tracking · KEV/EPSS enrichment · peer benchmarking ·
+  historical SBOM diff · fix-at-source ledger · license-mix dashboard ·
+  sponsorship candidates.
+- **Policy & governance** — policy-as-code · golden-path catalog · waiver
+  governance · typosquat detection · GRC sync · EOL calendar · establish an
+  OSPO · license allow/deny families · outbound-OSS policy.
+- **Supply-chain integrity** — SBOM registry + VEX · provenance & signing ·
+  private-index enforcement · registry/Artifactory gate · upstream intel →
+  blocklists · maintainer-risk signals · auditor evidence packs · data
+  residency · repackaging patch provenance · source-fix registry · patch
+  attribution & upstreaming.
+- **Scale & operations** — incremental PR-diff scans · fleet-wide
+  auto-remediation · SIEM/ticketing (Jira, ServiceNow, Splunk, Slack) ·
+  SSO/RBAC + evidence (SOC 2 / ISO, air-gapped DB) · API + webhooks +
+  Terraform · notification routing · PyPI ↔ conda-forge tracking · auto
+  NOTICE/attribution in CI · contribute-back PR automation.
+- **Program management** — remediation SLAs & MTTR · ownership & chargeback ·
+  campaign mode · auto-enrollment · conda-forge onboarding · Python 3.14
+  support · stewardship ownership · sponsorship & funding budget ·
+  contribution OKRs & burn-down.
+
+### OSS policy, governance & sustainability (OSPO — vision)
+
+Consuming OSS at scale is a stewardship responsibility, not just a risk to
+gate. Warden feeds: **policy** (usage & contribution policy, license
+allow/deny families, new-dependency intake review), **governance**
+(license-obligation tracking, stewardship ownership, export-control &
+provenance), **sustainability** (upstream funding — Tidelift / GitHub
+Sponsors / Open Collective — maintainer & community health, contribute-back
+tracking).
+
+### Leader scorecards (vision)
+
+One report feeding eight executive outcomes: **CISO** (fleet risk score &
+heatmap, MTTR/SLA, audit evidence, zero-day readiness) · **CDXO**
+(gate-friction, shift-left ergonomics, auto-fix throughput, time-to-green) ·
+**CIO** (OSS portfolio inventory, modernization, cost & consolidation, policy
+conformance) · **CDAO** (data/ML dependency governance, model & pipeline SBOM
+lineage, diffable env reports) · **DevSecOps Lead** (runner provisioning,
+rollout config-as-code, gate tuning, engine upkeep) · **General Counsel**
+(license-obligation register, copyleft/unknown exposure, outbound clearance,
+audit trail) · **CRO** (aggregated risk posture, third-party/acquired-code
+risk, regulatory mapping, risk-acceptance governance) · **OSPO Lead**
+(stewardship, funding & contribute-back, source-fix ledger, community
+health).
+
+### Integration surface (producer-agnostic contract — status per tool)
+
+A purl + CycloneDX report contract lets tools slot in as **engine**,
+**data/enrichment feed**, **actuator**, or **consumer**. Current: `deptry`
+(hygiene engine) · `osv-scanner` (vuln engine) · OSV.dev (advisory DB) ·
+CycloneDX (SBOM). Candidates/planned (all vision unless a v1.x row above
+names them): hygiene engines `fawltydeps`/`pip-check-reqs`/`vulture`; resolver
+`uv`; vuln engines `osv-scalibr`/`vdb`/Trivy/Grype/`pip-audit`/Capslock;
+conda-native **Basilisk** (OSV-compatible advisory API) + **parselmouth**
+(PyPI↔conda purl bridge) + `rattler-build`/`rattler` (prefix.dev); SBOM
+`cdxgen`/Syft; vuln data VulnerableCode (AboutCode) · PyPA Advisory DB ·
+NVD/CVE/GHSA/CWE · EUVD (ENISA) · FIRST EPSS · VulnCheck; license
+`license-expression`+SPDX (v1) · ORT · ClearlyDefined · ScanCode (deep-scan,
+deferred); currency `endoflife.date` (v1 tier) · Repology; health OpenSSF
+Scorecard · criticality_score · Libraries.io · Tidelift; provenance
+Sigstore/SLSA · in-toto/GUAC · PyPI Trusted Publishing (PEP 740) ·
+model-transparency; vetted-base Google Assured OSS · Anaconda Defaults;
+malware OpenSSF Package Analysis · GuardDog. Actuators: Renovate (fix-PR) ·
+Allstar · OWASP Dependency-Track · DefectDojo · `cf_atlas` (shares CycloneDX
++ `cfe:*` purls). Consumers: Black Duck · Snyk · Nexus IQ · Mend · JFrog
+Xray · Wiz · Prisma Cloud · GitHub Advanced Security/Dependabot · Endor
+Labs · Semgrep Supply Chain. **Standards spoken** (tiered): v1 — purl ·
+OSV schema · CycloneDX · SPDX · CVE 5.x · CVSS · PEP 639; v1.x — `vers` ·
+SARIF · EPSS; vision — OpenVEX/CSAF · SLSA · in-toto · PEP 740.
 
 ---
 
@@ -469,7 +754,7 @@ local-recipes/
 │     ├─ pixi.toml                    #   [package] + [package.build.backend]=pixi-build-python
 │     ├─ pyproject.toml               #   hatchling; entry point pyforge.warden.cli:main
 │     ├─ src/pyforge/warden/          #   E1 extractor.py · E2/E3 runners · E4 report.py + cli.py
-│     ├─ report-schema.json           #   FR6 (E4)
+│     ├─ report-schema.json           #   working-FR6 = canonical FR14 (E4)
 │     └─ tests/
 └─ docs/specs/pyforge-warden.md
 ```
@@ -531,14 +816,19 @@ osv ecosystems + container/artifact scanning are out of v1 scope.
 
 ### System data flow
 
-1. **Discovery.** Invoked at the repo root; scans for manifests in priority
-   order (`pixi.toml` → `environment.yml` → `recipe.yaml` → `meta.yaml` →
-   `pyproject.toml`, with `requirements.txt` as a fallback). `recipe.yaml`
-   (v1) is preferred over `meta.yaml` (v0) when a feedstock has both
-   mid-migration.
+1. **Discovery (union coverage per § Reconciliation #5 — superseding the
+   priority-order chain below).** Invoked at the repo root; **all** discovered
+   manifests are scanned and reported per-manifest (no single winner). The
+   original priority list (`pixi.toml` → `environment.yml` → `recipe.yaml` →
+   `meta.yaml` → `pyproject.toml`, `requirements.txt` fallback) is retained
+   only as the report's display ordering.
 2. **Extraction.** The Manifest Engine flattens dependencies and writes an
-   ephemeral `.scanner-temp-reqs.txt`.
-3. **Execution (sequential in v1 — OD6; both signals gate):**
+   ephemeral temp file named **`requirements.txt`** (per § Reconciliation #6 —
+   osv infers the parser from the basename; the "installed env" fallback is
+   dropped).
+3. **Execution (axes run in PARALLEL per § Reconciliation #2, superseding the
+   original OD6 "sequential"; all v1 axes feed the report — hygiene + security
+   gate, license + currency enrich):**
    - **Branch A (Hygiene).** `deptry` is run against the project source to
      detect unused declared dependencies. (Note: `deptry` performs AST
      import analysis on the *source tree* and reads declared deps itself;
@@ -565,15 +855,16 @@ The reporting design deliberately mirrors the proven pattern in
 - **Machine-readable `ComplianceReport` JSON** — the canonical artifact.
   Top-level shape: `run` metadata (tool version, timestamp, resolved
   manifest, target path), `hygiene` (unused-dependency findings from E2),
-  `security` (advisory findings from E3 — **v1.x:** each with `kev`/`kev_date`/
-  `epss`), and a `summary` (counts + overall pass/fail). *(Scope-change
-  2026-07-14: the report is axis-sectioned — **v1.x adds** a `license` section
-  (per-component `spdx_expression` / `license_family` / `source` /
-  `allowed|denied|unknown`) and a `currency` section (per-component `latest` /
-  `lag` / `eol_date` / `supported|eol|unknown`, plus `runtime_python`), each
-  with its own `coverage` + `provenance {source, snapshot_at}`. The schema
-  carries a **`schema_version`** bumped on this additive change; the additions
-  are backward-compatible — `additionalProperties` stays open and the frozen
+  `security` (advisory findings from E3 — **v1:** each with `kev`/`kev_date`;
+  `epss` surfaced v1.x), and a `summary` (counts + overall pass/fail). *(Per
+  § Reconciliation: **v1** adds a `license` section (per-component
+  `spdx_expression` / `license_family` / `source` / `allowed|denied|unknown`)
+  and a `currency` section (per-component `latest` / `lag` / `eol_date` /
+  `supported|eol|unknown`, plus `runtime_python`), each with a per-axis
+  `gating` bool (`false` in v1 — enrichment) and its own `coverage` +
+  `provenance {source, snapshot_at}`. Story 6.1 bumps `schema_version` on this
+  additive change; the additions are backward-compatible —
+  `additionalProperties` stays open and the frozen
   keys are unchanged.)*
 - **Committed `report-schema.json`** (JSON Schema 2020-12) — the report is
   validated against it, and a standalone `validate_report.py` ships as the
@@ -586,7 +877,7 @@ The reporting design deliberately mirrors the proven pattern in
 - **Parallel human-readable summary** on stdout — the CI-log view (the
   analogue of the harness's `REPORT.md`): a compact, scannable rollup of
   the same data, never the source of truth.
-- **Actionable findings only (FR7).** Each finding is concrete and
+- **Actionable findings only (working-FR7 = canonical FR17).** Each finding is concrete and
   attributable (package + manifest location, or advisory ID + affected /
   fixed version). Theoretical or non-applicable entries are suppressed —
   the harness's "only report what you can act on / no 'theoretically'"
@@ -609,84 +900,7 @@ The reporting design deliberately mirrors the proven pattern in
 
 ---
 
-## Story sharding (Product Owner) — SUPERSEDED (historical)
-
-> **Superseded 2026-07-11** by the full breakdown in
-> `_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md`
-> (5 epics / 20 stories, roundtable-validated). Retained as historical intent;
-> Story 1.1's "no heavy external parser" AC is void per callout #1.
-
-Story 1.1 was specified in full; the rest were seeded stubs for
-`bmad-create-story` expansion.
-
-### Story 1.1 — Core Manifest Extractor (E1)
-
-> **Context.** Before scanning with Deptry or OSV, we need a unified
-> interface to read dependencies without external parsers, keeping the
-> runner lightweight.
->
-> **Implementation guidance.**
-> - Create `pyforge/warden/extractor.py`.
-> - `extract_pixi(filepath)` and `extract_pyproject(filepath)` using `tomllib`.
-> - `extract_conda_env(filepath)`, `extract_meta_yaml(filepath)`, and
->   `extract_recipe_yaml(filepath)` using `re` — the `dependencies:` block
->   (`environment.yml`); the `requirements: run:` (+ `outputs:`) block of v0
->   `meta.yaml` (`{% set %}` vars + `{{ … }}` incl. `|filter`s +
->   `compiler()`/`stdlib()` → name-only, `# [selector]` lines); the
->   `requirements: run:` block of v1 `recipe.yaml` (`${{ … }}` tokens).
-> - Return a standardized, de-duplicated `List[str]` of package names,
->   explicitly filtering base packages (`python`, `pip`, and virtual/`__*` packages).
-> - **Two-path role:** `extract_pyproject`/requirements-text parsing exists to
->   synthesize the **osv-scanner input when a PyPI project has no native
->   lockfile** — it does NOT replace the engines' native parsing (deptry reads
->   `pyproject.toml`/`requirements.txt` natively; osv reads native lockfiles).
->   The conda/pixi extractors are the primary bridge (§ Engine-native support).
->
-> **Acceptance criteria.**
-> - Unit tests pass for all six target file types (`pixi.toml`,
->   `environment.yml`, `meta.yaml`, `recipe.yaml`, `pyproject.toml`,
->   `requirements.txt`).
-> - No heavy external parser (e.g. `pyyaml`) is imported in this module.
-> - Output is de-duplicated and base-package-filtered; unresolvable Jinja
->   (`compiler()`, cross-ref vars) degrades to name-only + marked.
-> - Fixtures include a `{% set %}`/`|filter`/`# [selector]`-bearing v0
->   `meta.yaml`, a Jinja-bearing v1 `recipe.yaml`, and an `environment.yml`
->   with a nested `pip:` list.
-
-### Story 1.2 — Discovery & priority resolution (E1)
-Detect which manifest(s) exist at the root; apply the documented priority
-order; expose the chosen manifest in the report. AC: deterministic
-selection; multi-manifest repos resolve predictably.
-
-### Story 2.1 — Deptry runner + output parser (E2)
-Invoke `deptry` via `subprocess`, honor `[tool.deptry]` config, parse its
-JSON output into structured violations. AC: unused-dep violations captured;
-non-zero deptry exit handled without crashing the wrapper.
-
-### Story 3.1 — OSV-scanner runner + parser (E3)
-Provision-check `osv-scanner` on `$PATH`; run it over the resolved input
-(per OD2 resolution); parse advisories into structured findings. AC:
-clear, actionable error when the binary is absent; CVE list parsed.
-
-### Story 4.1 — `ComplianceReport` + schema + CLI + exit gate (E4)
-`argparse` CLI; merge E2+E3 into a `ComplianceReport`; emit
-schema-validated JSON **and** a human-readable stdout summary; implement
-the FR5 exit-code gate with `--no-fail-on-unused` / `--no-fail-on-vulns`.
-AC:
-- Exit 0 on a clean tree / non-zero when findings exist.
-- A committed `report-schema.json` (JSON Schema 2020-12) plus a
-  `validate_report.py` validator; the emitted JSON validates against it in
-  the test suite, and `--validate` re-checks at runtime. `jsonschema` is
-  allowed as a **test-only** dependency (runtime stays limited to the two
-  engines).
-- Findings are actionable (FR7): package + manifest location for hygiene;
-  advisory ID + affected/fixed version for security.
-- Ephemeral files cleaned via `try/finally` on both success and failure
-  (NFR3).
-
----
-
-## Decisions (resolved 2026-07-10; OD2 refined 2026-07-11)
+## Decisions (resolved 2026-07-10; OD2 refined 2026-07-11; D1–D11 2026-07-15)
 
 The forks the source design left implicit, now decided. Recorded here so
 the rationale survives; each drove a concrete change above.
@@ -717,34 +931,47 @@ the rationale survives; each drove a concrete change above.
   `reference/dependency-input-formats.md` so manifest-input behavior stays
   consistent. **Post-v1, promotion into the conda-forge-atlas / CFE scope
   is a planned follow-on (§ Future).**
-- **OD5 — distribution → RESOLVED (internal-first).** Build the library
-  internal-first; decide PyPI / conda-forge packaging at closeout. If
-  conda-forge is chosen, Rules 1 & 2 (conda-forge-expert skill + retro)
-  engage then.
+- **OD5 — distribution → RE-DECIDED 2026-07-15 (D6; no longer deferred).**
+  The internal-first build stands, but distribution is now **scheduled, not
+  deferred to an unspecified closeout**: **internal JFrog** (PyPI + conda)
+  ships **v1**, gated on the replan-assigned engine version-range story
+  (per canonical NFR-C1 a tested **range**, not an exact pin; the 2026-07-15
+  review found no existing story owns this) constraining the engine run-deps (`deptry` /
+  `osv-scanner` are `"*"` today — publishing before the pins go live would
+  ship the fleet-wide false-error the pins exist to prevent). **Public PyPI +
+  conda-forge publish is v1.x.** Because v1 packages the engines as conda
+  recipes (`recipes/deptry`, `recipes/osv-scanner` already exist), **Rules 1
+  & 2 are engaged now** (conda-forge-expert skill + closeout retro +
+  CHANGELOG) — see § Definition of Done.
 - **OD6 — execution model + gate → RESOLVED (sequential; severity-tiered
   gate + audited bypass) [refined 2026-07-11].** Sequential branches in v1
   (simpler, still lightweight for NFR1). The gate is **severity-tiered**
   (FR5: exit 0/1/2; `--fail-on=<severity>` / `max_critical` / `max_high` /
-  KEV; default block-on-critical-or-KEV) — **not** the original hard "any
+  KEV; default block-on-critical-or-KEV; canonical **FR18**) — **not** the original hard "any
   finding blocks" gate (which drives teams to disable it). The coarse
   `--no-fail-on-*` flags are retired in favour of the threshold plus the
-  auditable, expiring **bypass** (FR9). Typed `error` states (FR10) stay
-  exit-2, non-relaxable except via the recorded bypass. **[PARTIALLY
-  SUPERSEDED — callout #2/#3/#4: the engines now run in PARALLEL; the status
-  lattice gains `indeterminate` (→ exit 1); the v1 default blocks on
-  CVSS-critical only (KEV deferred).]**
+  auditable, expiring **bypass** (working-FR9 = canonical **FR24**). Typed
+  `error` states (working-FR10 = canonical **FR21**) stay exit-2,
+  non-relaxable except via the recorded bypass. **[PARTIALLY SUPERSEDED —
+  callout #2/#3/#4: the engines now run in PARALLEL; the status lattice gains
+  `indeterminate` (→ exit 1); the v1 default blocks on CVSS-critical **and
+  KEV** (D3 pulled the KEV gate into v1 — this bracket previously said "KEV
+  deferred", a stale contradiction fixed 2026-07-15).]**
 
-**New Core Architectural Decisions (2026-07-14 scope change — multi-axis gate):**
+**Core Architectural Decisions (multi-axis gate):**
 
-- **OD7 — Axis-plugin model.** Warden is one report + one verdict lattice
-  fed by **pluggable axis strategies** (a small `Axis` interface: `assess()
-  → findings + coverage + provenance`), each independently enable/disable-able
-  and each composing into the same `ComplianceReport` and the same exit
-  projection. v1 registers **hygiene** (deptry) + **security** (osv-scanner);
-  v1.x registers **license** + **currency**; provenance/maintenance are
-  reserved axis slots (vision). This keeps the never-false-green invariant
-  central (verdict owns projection; axes only feed rungs) and makes each new
-  axis additive to the frozen contract, never an editor.
+- **OD7 — Axis-plugin model → RETIRED as a new abstraction 2026-07-15.** The
+  spec proposed a small `Axis` interface (`assess() → findings + coverage +
+  provenance`) as new work. **It is a phantom:** the shipped code is already
+  axis-generic — `AxisCoverage.axis` is a plain string and engines pass
+  `axis=AXIS_HYGIENE` / `axis=finding.axis` (`engines.py`, `hygiene.py`), with
+  no `Axis` protocol class. License and currency register by **reusing the
+  existing `Engine` shape with a new axis string** — **no new protocol, no new
+  interface work.** What survives is the *invariant*, not the abstraction: one
+  report + one verdict lattice, the verdict owns exit projection, axes only
+  feed rungs (never-false-green stays central); the new per-axis `gating`
+  bool (v1 enrichment vs gate) is the one additive field. Retiring OD7's
+  interface **deletes work**.
 - **OD8 — License source strategy (metadata, not source scan).** Resolve
   licenses from **package/recipe metadata only** and normalize to SPDX via the
   one new runtime dep **`license-expression`** (nexB/AboutCode). **No source
@@ -762,24 +989,46 @@ the rationale survives; each drove a concrete change above.
     tree, a `pixi.lock`/lockfile-provisioned env, or Warden run inside the
     target env. **A bare, uninstalled PyPI manifest** (`pyproject.toml` /
     `requirements.txt` whose deps are not installed) cannot yield license
-    metadata offline, so those components are **`unknown` → `indeterminate`**
-    (honest coverage gap + lock-nudge, exactly like an unversioned dep on the
-    vuln axis) — **never a silent `allowed`**. Filling that gap by resolving
+    metadata offline, so those components are **`unknown`** — feeding the
+    **`warn`** rung in v1 (non-gating) and escalating to **`indeterminate`**
+    once the FR-L2 gate activates (honest coverage gap + lock-nudge, exactly
+    like an unversioned dep on the vuln axis) — **never a silent `allowed`**. Filling that gap by resolving
     (install / lock) or via an **optional bundled/cached license map** (same
     provisioning pattern as the conda→pypi map, offline; a PyPI JSON-metadata
     fetch is opt-in-online-only, per OD9/OD10 mirror policy) is a documented
     coverage lever, never an assumption.
-- **OD9 — Currency source strategy (endoflife.date + lag).** Compute
-  supportability from **endoflife.date** (cached offline; opt-in online,
-  never silent) plus **version-lag** of the resolved set, for each dependency
-  **and the Python runtime** (LTS / N / N-1 / not-EOL). No endoflife.date
-  coverage or no resolved version → `unknown` → `indeterminate`.
-- **OD10 — KEV/EPSS enrichment (cached feeds, annotate + optionally gate).**
-  Enrich osv findings with **CISA KEV** + **FIRST EPSS** from cached data
-  feeds (offline default). v1.x annotates every security finding and adds
-  `--fail-on-kev` / `--min-epss` gate knobs; absent feed data leaves the
-  slots null and gates on CVSS (never a false clean). This is the producer
-  populating the KEV/EPSS slots Story 1.1 froze into the schema empty.
+- **OD9 — Currency source strategy → REFINED 2026-07-15 (D9/D10; tiered +
+  availability).** Compute supportability **tiered**: **LTS registry**
+  (a **bundled** `src/pyforge/warden/data/lts-registry.yaml` loaded via
+  `importlib.resources`, regenerated from the CFE
+  `.claude/…/lts-registry.yaml` source — never `.claude/` at runtime) →
+  **endoflife.date** (the `_http.py` `resolve_endoflife_urls()` pattern; cached
+  offline; opt-in online, never silent) → **N/N-1 from conda channel data** →
+  `unknown`, for each dependency **and the Python runtime**. Emit the currency verdict **plus a distinct
+  availability-at-N/N-1 finding** (is a newer supported release available at
+  the estate's policy tier) — the **ADD/UPDATE** signal. This is **wiring, not
+  new construction**: `inventory-match --policy` already emits
+  ADD/UPDATE/CURRENT, `add-handoff` builds worklists, and `feedstock-refresh.md`
+  executes them across 769 feedstocks; Warden's currency finding is the **edge
+  detector feeding that loop** (ADD/UPDATE is fleet-mode; edge mode omits it
+  with a coverage note — see FR-C1). In v1 the axis is `gating: false`
+  (unknown/eol feed `warn`); from v1.x a gated `unknown` → `indeterminate`.
+  Bundled tiers carry build-time `snapshot_at` + a `max_age_ok` verdict so
+  registry staleness is always visible (FR-C1 data-age provenance).
+- **OD10 — KEV/EPSS enrichment → SPLIT 2026-07-15 (D3).** Enrich osv findings
+  with **CISA KEV** + **FIRST EPSS** from cached data feeds (offline default).
+  **v1:** KEV enrichment on every security finding **and** the `--fail-on-kev`
+  gate — cheap at the *bool* level (the `kev`/`epss` `Finding` fields are
+  already present, subset-tested); `kev_date`, the `epss` object, and KEV
+  provenance ride the story-6.1 amendment. **v1.x:** EPSS enrichment
+  surfacing + `--min-epss` gate. Feed-absence semantics per FR-K1: with no
+  KEV policy, null slots gate on CVSS; **under a KEV-blocking policy an
+  absent/stale snapshot → `indeterminate`, never a silent no-op** (2026-07-15
+  amendment; review T1).
+
+**Confirmation decisions (D1–D11, 2026-07-15 — the reshape):**
+
+- **D1** — full reshape around the deck's Parts I–IV, vision tiered after the contract (Parts III–IV absorbed into § Vision catalog, 2026-07-15). **D2** — registry perimeter → **v1.x (later)** (the strongest enforcement point, not the weakest; formerly "v2" — re-bucketed by the 2026-07-15 three-tier taxonomy). **D3** — KEV gate → **v1** (the bare `kev` bool is amendment-free; `kev_date`/EPSS-object/provenance ride 6.1; feed absence under a KEV policy → `indeterminate`, never a silent no-op). **D4** — axes 1–4 in **v1**, conditional on the `gating: false` mechanism **as amended**: unknown/denied/eol on a non-gating axis feeds `warn`, never a silent clean. **D5** — axis 3/4 **gates** → **v1.x** (what makes D4 survivable). **D6** — packaging in v1 (internal JFrog) + public v1.x, both behind the replan-assigned engine version-range story (NFR-C1). **D7** — TUI/IDE → vision. **D8** — local client = install + output + **`scan --doctor`** (a flag, not a verb — `prd.md:396` freezes "one verb; no interactive subcommands"; the replan defines its exit-code/output contract against the frozen `{0,1,2,130}` enum). **D9** — currency tiered LTS → endoflife → N/N-1 → unknown, with per-mode tier availability + bundled-data age provenance. **D10** — availability-at-N/N-1 as a distinct ADD/UPDATE finding (fleet-mode; edge omits with a coverage note). **D11** — Warden owns edge **and** fleet as **two modes, one identity** (edge = v1 no-atlas-at-runtime; fleet = v1.x estate-backed; FR-18 converges them).
 
 ---
 
@@ -804,9 +1053,12 @@ same lattice, same exit codes, same fail-loud. The workstation-only deltas are
 story-owned: cold-start provisioning UX + the explicit online-vuln-query
 decision (Story 1.4 — offline stays the fleet default; any online mode is
 opt-in and never silent, per NFR-S2), and the workstation install story
-(Story 5.1 docs; `pixi global install` / the local channel now, conda-forge
-per OD5 later). A `doctor` self-check subcommand is re-ranked **v1-if-cheap**
-(it is FR21's engine/DB detection logic re-exposed).
+(Story 5.1 docs; `pixi global install` / the local channel + internal JFrog
+now, public conda-forge v1.x per OD5/D6). The self-check ships **v1 as
+`warden scan --doctor`** (D8) — a **flag on the one frozen verb, not a
+`doctor` subcommand** (`prd.md:396` freezes "one verb; no interactive
+subcommands"; `doctor` isn't even on the post-v1 subcommand list). It
+re-exposes FR21's engine/DB detection logic.
 
 **nebi + prefix-ecosystem notes (2026-07-12 survey).** A
 [nebi](https://github.com/nebari-dev/nebi)-managed team environment **is a
@@ -824,11 +1076,15 @@ recommended primary path for a security gate yet). The scanner stays
 ## Positioning vs the in-house gates (which tool when)
 
 This repo fields three (going on four) scanning/gating surfaces. The
-differentiation, stated once:
+differentiation, stated once. **Warden is two modes, one identity (D11):**
+**edge mode** (v1, no atlas at runtime, bundled LTS/endoflife tiers — "the
+fleet edge, zero data estate at runtime"; the bundle is an atlas snapshot
+with visible age) and **fleet mode** (v1.x, estate-backed via
+`inventory-match`); FR-18 converges them. The row below is edge mode:
 
 | You have | Use |
 |---|---|
-| Any repo, any org, **no atlas**; need a CI/terminal gate on **your pinned deps** (hygiene + CVEs) | **pyforge-warden** (this tool — the fleet edge; zero data estate) |
+| Any repo, any org, **no atlas**; need a CI/terminal gate on **your pinned deps** (hygiene + CVEs + license/currency enrichment) | **pyforge-warden edge mode** (this tool — the fleet edge; zero data estate) |
 | The atlas host; need gap/version-lag buckets (ADD/UPDATE/CURRENT), freshness-percentile policy, packaging worklists | `inventory-match --policy` (+ `add-handoff`) — CFE v8.71+ |
 | Anything exotic — containers, K8s, live envs, third-party SBOMs, non-Python ecosystems | `scan-project` (CFE) |
 | The migrated Kedro pipeline (future) | the FR-18 terminal gate — assembles **this tool's** `ComplianceReport` schema |
@@ -855,8 +1111,8 @@ effort touches and the obligations they create:
    schema with a different security source (atlas vdb + CISA-KEV + EPSS —
    not osv-scanner). Story 1.1 freezes the schema **producer-agnostically**:
    generic vuln-data provenance (`{source, snapshot_at, max_age_ok}`),
-   optional KEV/EPSS slots (v1 never populates them), severity carrying tier
-   + raw evidence.
+   KEV/EPSS slots (**v1 populates KEV** and gates on it; EPSS surfacing is
+   v1.x), severity carrying tier + raw evidence.
 3. **Source-less hygiene semantics are shared.** Kedro FR-16 already specs
    "deptry runs when project source accompanies the manifest; source-less
    inputs skip gracefully, reduced scope recorded." This tool adopts the
@@ -880,41 +1136,80 @@ effort touches and the obligations they create:
    wiring, not redesign" claim assumes E1 ↔ `scan_project` parser parity;
    known deltas (selector-union vs skip; `run_constraints` handling) are
    recorded, and a parity matrix is a retro obligation.
+7. **Currency axis feeds the refresh loop (D9/D10).** Warden's
+   availability-at-N/N-1 (ADD/UPDATE) finding is the edge detector for the
+   loop `feedstock-refresh.md` already runs (`inventory-match --policy` →
+   `add-handoff` → per-feedstock refresh). Obligation: a reciprocal note in
+   **`docs/specs/feedstock-refresh.md`** that Warden's currency finding is an
+   additional worklist source — recorded here, **owned at the currency-axis
+   implementation** (not this doc edit), mirroring item 1's pattern.
+8. **Env scaffolding is nebi's, not Warden's (why no provisioner).** "Ensure
+   envs source from approved channels" is a **verification** property, not a
+   provisioning one; a provisioner governs only what it creates and is bypassed
+   by `pixi add --channel`, and pixi mirrors are transparent by design (a
+   fully-mirrored JFrog estate's `pixi.lock` still records
+   `conda.anaconda.org/conda-forge/…`, so a lock-reading axis would misreport).
+   pixi 0.72.2 already ships `pixi import --format {conda-env,pypi-txt}`, `uv`
+   covers the venv case, and `cfe-atlas-datapipeline-kedro-migration.md`
+   already assigns env scaffolding to **nebi**. Warden builds **no
+   provisioner**; the read-only channel-provenance axis is **v1.x** (its
+   mechanism must read the pixi config layers, not just the lock — mirror-mode
+   locks record canonical URLs), and `doctor --fix` is foreclosed by the
+   one-verb contract (accepted risk — the registry perimeter's first job,
+   v1.x-later). Obligation: a reciprocal note in
+   the kedro spec that Warden defers env scaffolding to nebi — recorded here,
+   owned at that convergence.
 
 ---
 
 ## Definition of Done
 
-- [x] All decisions (OD1–OD6) resolved (§ Decisions); `status: ready`.
-      Next transition: `in-progress` when a dev agent picks it up.
+- [x] All decisions resolved through **D11** (§ Decisions + § Reconciliation).
+- [ ] **Story 0.1** — PRD/architecture/epics reconciled to the § Reconciliation
+      scope (axes 3+4 enrichment + KEV gate); both readiness reports re-run.
 - [ ] E1–E4 stories implemented with passing unit tests (all six manifest types).
 - [ ] `pyforge.warden` runs clean on this repo's own `pixi.toml` /
       `pyproject.toml` and exits 0 on a known-clean fixture, non-zero on a
       seeded-violation fixture.
-- [ ] Committed `report-schema.json` + `validate_report.py`; emitted JSON
-      validates against the schema in the test suite; human stdout view
-      verified in a CI log (FR4/FR6).
+- [ ] Committed `report-schema.json` + runtime self-validation in `report.py`
+      (no standalone `validate_report.py` exists); emitted JSON validates
+      against the schema in the test suite; human stdout view verified in a
+      CI log (working-FR4/FR6 = canonical FR14/FR17 territory).
 - [ ] NFR3 verified: no host/source mutation; ephemeral files removed on
       both success and failure paths.
-- [ ] If packaged for conda-forge (OD5): recipe authored via
+- [ ] **CFE Rules 1 & 2 (engaged, not conditional — D6):** the engine recipes
+      (`recipes/deptry`, `recipes/osv-scanner`) are maintained via
       `conda-forge-expert`, and the effort closes with a CFE-skill retro +
-      CHANGELOG entry (CLAUDE.md Rules 1 & 2).
+      CHANGELOG entry. Both recipes currently lack CHANGELOG entries — that
+      retro is owed at closeout.
 - [ ] `status: shipped` with `implemented_by:` + `shipped_ref:` set.
 
-**v1.x DoD (multi-axis scope, 2026-07-14):**
-- [ ] **KEV/EPSS enrichment (FR-K1):** security findings carry `kev`/`kev_date`/
-      `epss`; `--fail-on-kev` / `--min-epss` gate; cached feeds, offline default.
-- [ ] **License axis (FR-L1/L2):** SPDX via `license-expression` (the one new
-      runtime dep) from conda `about:` + PyPI `importlib.metadata`; `license`
-      report section; `--allow-licenses` / `--deny-licenses`; denied →
-      policy-violation, unknown → indeterminate. No source scanning.
-- [ ] **Currency axis (FR-C1/C2):** endoflife.date + lag for deps **and**
-      `runtime_python`; `currency` report section; `--max-lag` / `--require-lts`
-      / `--fail-on-eol`; EOL → policy-violation, unknown → indeterminate.
-- [ ] **Schema versioned:** `schema_version` bumped; `validate_report.py` +
-      fixtures updated for the new sections; the frozen v1 keys unchanged.
-- [ ] Release sequencing honored: v1 shipped hygiene+security; v1.x adds the
-      above; provenance + maintenance remain vision (unbuilt).
+**v1 multi-axis DoD (§ Reconciliation scope):**
+- [ ] **KEV gate (FR-K1, v1):** security findings carry `kev`/`kev_date`;
+      `--fail-on-kev` blocks; cached feeds, offline default. No schema
+      amendment (the `Finding` fields already exist).
+- [ ] **License axis enrichment (FR-L1, v1, `gating: false`):** SPDX via
+      `license-expression` (the one new runtime dep) from conda `about:` +
+      PyPI `importlib.metadata`; `license` report section with
+      `allowed | denied | unknown` **reported, not blocking**. No source scanning.
+- [ ] **Currency axis enrichment (FR-C1, v1, `gating: false`):** tiered LTS →
+      endoflife.date → N/N-1 for deps **and** `runtime_python`; `currency`
+      report section + the availability-at-N/N-1 (ADD/UPDATE) finding;
+      reported, not blocking.
+- [ ] **Schema versioned (story 6.1):** `schema_version` bumped; per-axis
+      `gating` bool + `license`/`currency` sections added; `validate_report.py`
+      + fixtures updated; the frozen v1 keys + `Component` (13 fields) unchanged.
+
+**v1.x DoD (the axis gates, first milestone):**
+- [ ] License gate (FR-L2): `--allow-licenses` / `--deny-licenses`; denied →
+      policy-violation, unknown → indeterminate.
+- [ ] Currency gate (FR-C2): `--max-lag` / `--require-lts` / `--fail-on-eol`;
+      EOL → policy-violation, unknown → indeterminate.
+- [ ] EPSS: `epss {score, percentile}` surfaced + `--min-epss` gate.
+- [ ] Public PyPI + conda-forge publish (behind the engine version-range
+      story, NFR-C1).
+- [ ] Release sequencing honored: registry perimeter = v1.x (later);
+      provenance + maintenance remain vision (unbuilt).
 
 ---
 
