@@ -1,0 +1,16 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -51,13 +51,6 @@
+ [tool.hatch.envs.default]
+ installer = "uv"
+ 
+-[[tool.hatch.build.hooks.build-scripts.scripts]]
+-commands = [
+-  "bun install --cwd src/js",
+-  "bun build src/js/src/index.ts --outfile src/reactpy_router/static/bundle.js --minify",
+-]
+-artifacts = []
+-
+ #############################
+ # >>> Hatch Test Runner <<< #
+ #############################

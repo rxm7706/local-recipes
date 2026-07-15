@@ -2,63 +2,143 @@
 schema_version: 1
 
 context:
-  name: reactpy-router
-  version: "1.0.0"
+  version: "3.0.0b1"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: reactpy-router
   version: ${{ version }}
 
 source:
-  - url: https://github.com/reactive-python/reactpy-router/archive/${{ version }}.tar.gz
-    sha256: 1bbe4c9ddb017cdb9075e26fd6c8b3984eef7fcf196e4a460147d9ded8329cf2
+  url: https://pypi.org/packages/source/r/reactpy-router/reactpy_router-${{ version }}.tar.gz
+  sha256: 94961560d6887721a6adf4d565de7e1c8da97844cf8e26398f132ff72f80f82e
+  patches:
+    - patches/0001-use-prebuilt-js-bundle.patch
 
 build:
   number: 0
   noarch: python
-  script:
-    - nodeenv --node=18.16.0 .env
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - ${{ compiler("cxx") }}
-    - ${{ compiler("c") }}
-    #- ${{ stdlib("c") }}
-    - python ${{ python_min }}.*
-    - nodejs >18.0,<19.0
-    - nodeenv
   host:
     - python ${{ python_min }}.*
-    - hatchling
-    - hatch-build-scripts
-    - hatch-nodejs-version
     - pip
-    - setuptools
-    - wheel
-    - twine
-    - nodejs >18.0,<19.0
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
-    - reactpy >=1.1.0,<2.0.0
+    - python >=${{ python_min }}
+    - reactpy >=2.0.0b12,<3.0.0
     - typing_extensions
-    - nodejs >18.0,<19.0
-    - setuptools
+    - asgiref
+    - asgi-tools
+    - servestatic
+    - orjson
 
 tests:
   - python:
       imports:
         - reactpy_router
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - package_contents:
+      site_packages:
+        - reactpy_router/static/bundle.js
 
 about:
-  summary: A URL router for ReactPy.
+  summary: A URL router for ReactPy
+  description: |
+    reactpy-router provides URL routing for ReactPy applications. It offers a
+    browser router along with route, link, and navigate components, plus hooks
+    for reading the current location and route parameters, in a form modelled
+    on React Router.
   license: MIT
   license_file: LICENSE.md
   repository: https://github.com/reactive-python/reactpy-router
   homepage: https://reactive-python.github.io/reactpy-router/latest/
+  documentation: https://reactive-python.github.io/reactpy-router/latest/
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: reactpy-router
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: reactpy-router
+  cfe-purls:
+    - pkg:conda/reactpy-router@${{ version }}?channel=conda-forge
+    - pkg:pypi/reactpy-router@${{ version }}
+  cfe-upstream-repo: https://github.com/reactive-python/reactpy-router
+  cfe-upstream-homepage: https://reactive-python.github.io/reactpy-router/latest/
+  cfe-import-names: [reactpy_router]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: local-only-pending-submission-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "3.0.0b1 is a PRE-RELEASE that hard-pins reactpy>=2.0.0b12 -- also a pre-release. It cannot be submitted until reactpy 2.x is on the conda-forge channel, which is itself deliberately withheld (see the reactpy recipe's blocker). Stable reactpy-router 2.0.0 is NOT a substitute: it pins reactpy<2.0.0, i.e. the v1 line."
+    - "transitively blocked on asgi-tools + http-router, neither of which is on conda-forge (http-router additionally ships no license file anywhere)."
+  cfe-last-checked: 2026-07-14T00:00:00Z
+  cfe-generated-by-version: 8.77.0
+  cfe-generated-at-datetime: 2026-07-14T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-14T20:15:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    LOCAL-ONLY. Middle link of the reactpy v2 chain:
+#    http-router -> asgi-tools -> reactpy-router 3.0.0b1 -> reactpy-django 6.0.0b1.
+#    Authored fresh; the prior local recipe was at 1.0.0 (nodeenv + c/cxx
+#    compilers + twine + reactpy<2.0.0) and was ignored per operator direction.
+#    The version is forced: reactpy-django 6.0.0b1 pins reactpy-router>=3.0.0b1,
+#    and stable 2.0.0 pins reactpy<2.0.0, so only the 3.x beta works with v2.
+# context:
+#  python_min:
+#    3.11 -- upstream requires-python is ">=3.11", above the conda-forge 3.10
+#    floor, so it is declared rather than omitted.
+# source:
+#    PyPI sdist, verified usable per G54: ships 7 .py files AND the prebuilt
+#    static/bundle.js, so no fallback to a GitHub tag or the wheel is needed.
+#  patches:
+#    0001-use-prebuilt-js-bundle.patch removes the build-scripts hook, whose
+#    commands are `bun install --cwd src/js` + `bun build ... --minify`. The
+#    sdist already ships that hook's output (src/reactpy_router/static/bundle.js,
+#    matching the 36,708-byte bundle.js in upstream's own published wheel), so
+#    running bun would only reproduce a file we already have while dragging a JS
+#    toolchain into the build.
+#    Safe to remove precisely BECAUSE this hook declares `artifacts = []`: with an
+#    empty artifacts spec, hatch-build-scripts' default clean_artifacts=True
+#    matches nothing and deletes nothing, so the prebuilt bundle survives. That is
+#    the key difference from the sibling reactpy recipe, whose hook DOES declare
+#    artifacts and therefore DID delete its prebuilt wheel -- see that patch.
+#    bundle.js is gitignored, but the wheel target's
+#    artifacts=["/src/reactpy_router/static/"] un-excludes it.
+#    hatch-build-scripts is consequently NOT in host: with the hook config gone
+#    hatchling never loads the plugin (pip does not enforce [build-system].requires
+#    under --no-build-isolation).
+# requirements:
+#  run:
+#    THE FLATTEN (G25). Upstream declares `reactpy[asgi]>=2.0.0b12,<3.0.0`, but
+#    conda has no extras mechanism -- the reactpy conda package is built once,
+#    without extras, so a bare `reactpy` dep does NOT drag the asgi extra in.
+#    This recipe therefore carries reactpy's asgi extra members directly:
+#      asgiref + asgi-tools + servestatic + orjson
+#    (read from reactpy 2.0.0b13's [project.optional-dependencies].asgi; all
+#    unpinned upstream, so unpinned here). Not optional bookkeeping: pip_check
+#    reads this package's wheel METADATA, sees the reactpy[asgi] marker, and
+#    FAILS if the extra's members are absent. asgi-tools was the only member
+#    missing from conda-forge -- the entire reason the http-router + asgi-tools
+#    recipes in this repo exist.
+# tests:
+#    package_contents guards bundle.js for the same reason as the reactpy recipe:
+#    the JS bundle is the point of the package, yet `import reactpy_router` and
+#    pip_check both pass without it (G73). Asserting it makes a dropped bundle
+#    fail loudly at packaging time.
+####
