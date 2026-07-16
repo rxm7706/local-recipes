@@ -49,7 +49,8 @@ trigger = "recommended"
 
 [adapter]
 name = "claude"              # claude | codex | gemini | <custom .bmad-loop/profiles/*.toml>
-model = "opus"               # pinned 2026-07-13: story 1.2's dev + review sessions hit the Fable 5 usage limit (empty = CLI default = Fable 5). Opus for the whole adapter (dev + review) so a mid-run usage cap can't stall the loop. Revisit if Fable 5 headroom returns.
+model = "sonnet"              # baseline (2026-07-15): per-stage tiering below sets dev/review/triage independently; unset stages inherit this.
+# SUPERSEDED 2026-07-15 (see [adapter.dev]/[adapter.review]/[adapter.triage] below): pinned 2026-07-13: story 1.2's dev + review sessions hit the Fable 5 usage limit (empty = CLI default = Fable 5). Opus for the whole adapter (dev + review) so a mid-run usage cap can't stall the loop. Revisit if Fable 5 headroom returns.
 cleanup_session_on_finish = true  # kill the run's tmux session when it finishes (false keeps it for inspection)
 # extra_args replaces the profile's default permission-bypass flags when set:
 # extra_args = ["--permission-mode", "bypassPermissions"]
@@ -64,14 +65,28 @@ cleanup_session_on_finish = true  # kill the run's tmux session when it finishes
 # switches client falls back to that profile's defaults instead (model and
 # extra_args are client-specific). Stage tables must come after the [adapter]
 # keys above.
-# [adapter.dev]
-# model = "opus"
-# [adapter.review]
-# name = "codex"
-# model = "gpt-5-codex"
-# stop_without_result_nudges = 5     # e.g. a multi-turn review needs more nudges than dev
-# [adapter.triage]
-# model = "opus"
+#
+# HARD-STORY BATCH PROCEDURE: the loop has no per-story model key (policy is
+# per-run) — escalate by editing this file between batches. Before running any
+# of the hard stories — 6.10 (amendment design spike), 6.1 (5-surface schema
+# amendment, HARD gate), 2.2 + 2.3 (extraction construct matrix), 6.5 (two-mode
+# policy semantics), 6.9 (actuator egress carve-out) — flip [adapter.dev]
+# model to "opus" (or "fable" when headroom allows). After the hard batch,
+# revert [adapter.dev] to "sonnet" for the mechanical batches: 1.5–1.9,
+# 2.4–2.6, 3.1–3.3, 4.1, 5.1–5.2, 6.2–6.4, 6.6–6.8.
+[adapter.dev]
+model = "sonnet"    # default DEV tier — post-BMAD-refinement ACs are transcription-
+                    # precise, and VERIFY (pixi run --frozen -e pyforge-warden
+                    # pyforge-warden-test) is a deterministic, free backstop
+
+[adapter.review]
+model = "fable"     # strongest model where it pays: review misses are what ship
+                    # false-greens (Warden's C0 invariant). If Fable hits its usage
+                    # cap mid-run, drop this one key to "opus" — do NOT re-pin the
+                    # whole adapter
+
+[adapter.triage]
+model = "sonnet"    # sweep triage is classification, not design
 
 [sweep]
 # Deferred-work sweep: triage + execute open deferred-work.md entries.
