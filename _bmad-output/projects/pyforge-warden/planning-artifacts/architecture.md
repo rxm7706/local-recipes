@@ -49,7 +49,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements (31, 8 areas) — architecturally, a 7-stage pipeline over one shared object:**
+**Functional Requirements (40, 12 areas A–L — re-based 2026-07-16 per D12) — architecturally, a 7-stage pipeline over one shared object:**
 
 ```
 Discover(FR1) → Route-per-section(FR2) → Extract(FR3–7) → ┬─ Axis 1 Hygiene: deptry (FR8–9)
@@ -67,7 +67,7 @@ The **resolved-inventory object** is the spine (this *is* Gap B): discovery + ex
 - **C0 (never false-green)** is the shaping force → fail-loud everywhere; verdict on report **content**, never an engine exit code; typed errors; no-meaningful-scan guards. Every module inherits it.
 - **Security S1–S8** split the design into a **stdlib-only, execution-free extractor** (AST-denylist, ReDoS line-bound, no template render) vs. a **hardened engine-runner** (input purity, secure temp, `_engine_env` normalization) vs. a **schema-aware serializer** (S7 output neutralization).
 - **NFR-R3b determinism** → report assembly canonicalizes (sort, pin volatile fields, `--deterministic` mode).
-- **NFR-P** → the two engines run **in parallel**; stdlib-only; offline DB. **NFR-I1/I3** → schema-validated report + CycloneDX 1.6 + pure-JSON stdout.
+- **NFR-P** → all v1 axes run **in parallel**; stdlib-lean; offline DB + cached KEV/EPSS/endoflife feeds. **NFR-I1/I3** → schema-validated report + CycloneDX 1.6 + pure-JSON stdout.
 
 ### Scale & Complexity
 - **Medium engineering, high stakes.** Single-process CLI — no service, database, network server, or UI. Domain: DevSecOps supply-chain tooling.
@@ -134,7 +134,7 @@ The spec re-tiered the product to a four-axis v1 (`docs/specs/pyforge-warden.md`
 - **One sanctioned schema amendment (6.1, FR38):** additive `schema_version` bump — per-axis `gating` bool · `license`/`currency` sections with per-section coverage/provenance (incl. bundled-data `snapshot_at`/`max_age_ok`, NFR-S9) · `kev_date` + `epss {score,percentile}` + per-feed KEV provenance. Coordinated set: `report-schema.json` · `models.py` · `report.py` (self-validation + `_REPORT_AXES`) · the exact-13 `Component` test (+ Gap-B merge/fold semantics for each new field) · fixtures. The producer re-closes behind it.
 - **Two-mode policy (FR37 + FR33/FR35 — D12, 2026-07-16):** on an axis whose policy flags are **unconfigured**, `unknown`/`denied`/`eol` feeds a `warn` rung (driver names the axis) — visible in status, exit 0; `--warn-as-error` escalates. **Configuring any axis policy flag activates that axis's gate in v1**: denied/eol → `policy-violation`, unknown → `indeterminate` — a policy-table flip, never a producer change. Tighten-only vs `DefaultPolicy`; C0 and the verdict.py sole-ownership guard hold unchanged.
 - **Baseline & grandfathering (FR39, story 6.8 — D12):** `baseline.py` reads the committed, schema-validated `.warden-baseline.yaml`; suppression is keyed on the stable finding-ID grammar (the waiver key); expiry = waiver semantics; applied entries echo in the report; the gate blocks NEW findings only. Read-only (NFR-R3a); `--baseline-emit` prints, never writes.
-- **Fix-PR actuator (FR40, story 6.9 — D12):** `actuator.py` is the ONLY module permitted forge-API egress — opt-in (`--open-fix-prs`), env-credentialed, strictly post-verdict; the scanned tree is never written; a failed PR-open surfaces as a typed warning, never altering the verdict. `--fix-prs-dry-run` emits machine-readable intent under NFR-I3 rules.
+- **Fix-PR actuator (FR40, story 6.9 — D12):** `actuator.py` is the ONLY module permitted forge-API egress — opt-in (`--open-fix-prs`), env-credentialed, strictly post-verdict; the scanned tree is never written; a failed PR-open is recorded in the post-verdict `actuation` report section + stderr (outside status/exit composition — it never feeds an FR20 rung). `--fix-prs-dry-run` emits machine-readable intent under NFR-I3 rules. **Carve-out rule (binding):** the C0c socket-deny harness change is scoped to `actuator.py` under the flag and lands IN story 6.9 — never a global loosening; every other module keeps deny-by-default, asserted by the harness.
 - **Feed-cache layer (stories 6.3/6.4/6.7):** KEV + **EPSS** + endoflife.date are cached feeds under the NFR-S2 posture (offline default, opt-in online never silent, `_http.py` mirror chain); absent/stale KEV or EPSS under an active KEV/`--min-epss` policy → `indeterminate` (review-T1; D12). Bundled data (LTS registry, conda→pypi map) carries build-time age provenance (NFR-S9, review-T4).
 - **Distribution gate (6.6):** engine run-deps move from `"*"` to tested version ranges (NFR-C1 — range, not pin); v1 JFrog / v1.x public publish block on it (review-T-a).
 
@@ -313,13 +313,13 @@ src/shared/packages/pyforge-warden/
 ### Epic → structure mapping
 | Epic | Modules | FRs |
 |---|---|---|
-| **E1 — manifest bridge** | `discovery` · `routing` · `extract/*` · `mapping` · `inventory` | FR1–FR7 |
-| **E2 — hygiene** | `engines`(deptry) · `hygiene` | FR8–FR9 |
-| **E3 — vulnerability** | `engines`(osv) · `vuln` | FR10–FR13 |
-| **E4 — report + gate** | `report` · `sbom` · `verdict` · `waiver` · `cli` · `config` · `determinism` · `errors` | FR14–FR31 + C0 |
-| **E5 — multi-axis expansion** *(2026-07-15/16; = epics.md Epic 6)* | `license` · `currency` · `feeds` · `baseline` · `actuator` · `engines`(new producers) · `report`(6.1 amendment) · `models` | FR32–FR40 + NFR-S9 |
+| **Manifest bridge** *(delivery: epics.md E1/E2)* | `discovery` · `routing` · `extract/*` · `mapping` · `inventory` | FR1–FR7 |
+| **Hygiene axis** *(delivery: E1)* | `engines`(deptry) · `hygiene` | FR8–FR9 |
+| **Vulnerability axis** *(delivery: E1/E2)* | `engines`(osv) · `vuln` | FR10–FR13 |
+| **Report + gate** *(delivery: E1/E3/E4)* | `report` · `sbom` · `verdict` · `waiver` · `cli` · `config` · `determinism` · `errors` | FR14–FR31 + C0 |
+| **Multi-axis expansion** *(delivery: epics.md Epic 6, 2026-07-15/16)* | `license` · `currency` · `feeds` · `baseline` · `actuator` · `engines`(new producers) · `report`(6.1 amendment) · `models` | FR32–FR40 + NFR-S9 |
 
-*(This table's E-numbers are the architecture's capability groupings; epics.md's delivery epics differ — its Epic 6 maps to this table's E5 row.)*
+*(Rows are capability groupings, deliberately un-numbered since 2026-07-16 — the earlier architecture-local E-numbers collided with epics.md's delivery-epic numbers; each row cites its delivery epics inline.)*
 
 ### Data flow
 `cli` → `config` → `discovery` → `routing` → `extract/*` → **`inventory`** → (`engines`: deptry ‖ osv ‖ license ‖ currency in parallel — all four axes, 2026-07-15) → `hygiene`/`vuln`/`license`/`currency` annotate inventory → `report` + `sbom` (projections) + `verdict` (lattice → status + exit) → `cli` emits report (stdout) + exit code. Errors surface as typed `ErrorKind` at the CLI boundary; `--bypass` routes through `waiver`.
@@ -327,10 +327,10 @@ src/shared/packages/pyforge-warden/
 ## Architecture Validation Results
 
 ### Coherence Validation ✅
-Decisions cohere: the 7-stage pipeline, the single `ResolvedInventory` spine, the two-axis verdict, the false-green triad, the library policy, and the non-rendering E1 all fit without contradiction. The one live tension — `indeterminate` vs `not-applicable` masking a clean sibling axis — was resolved by the roundtable (the new state sits above `warn`). Patterns support the decisions (one model, canonical enums, security/determinism invariants as meta-tests); the structure realizes them (extract = no-execution zone; engines = sole subprocess site; verdict = sole exit-code owner).
+Decisions cohere: the 7-stage pipeline, the single `ResolvedInventory` spine, the multi-axis verdict (four v1 axes, one lattice), the false-green triad, the library policy, and the non-rendering E1 all fit without contradiction. The one live tension — `indeterminate` vs `not-applicable` masking a clean sibling axis — was resolved by the roundtable (the new state sits above `warn`). Patterns support the decisions (one model, canonical enums, security/determinism invariants as meta-tests); the structure realizes them (extract = no-execution zone; engines = sole subprocess site; verdict = sole exit-code owner).
 
 ### Requirements Coverage Validation ✅
-- **FR1–FR31** each map to a module (Epic→structure table). No orphaned FR.
+- **FR1–FR40** each map to a module (capability→structure table; FR32–FR40 → the multi-axis row). No orphaned FR.
 - **NFRs:** C0 → verdict + guard suite; S1–S8 → extract-no-exec / engine-runner / schema-aware serializer boundaries; NFR-R3b → `determinism.py` + `--deterministic`; NFR-P → parallel axes + offline DB; NFR-S9 → `feeds.py`/bundled-data age provenance (2026-07-15); NFR-I1/I3 → `report-schema.json` + cyclonedx-python-lib + pure-JSON stdout; NFR-U1/U2 → actionable diagnostics + warn-only.
 - **The 3 blocking Gaps (A/B/C) are resolved**; the connective-tissue open questions (discovery/routing/reconciliation/coverage-floor) are decided.
 
@@ -357,10 +357,10 @@ The false-green triad + the Gap-C ecosystem-identity predicate + the E1 non-rend
 **Project Structure** — [x] complete tree · [x] component boundaries · [x] integration points · [x] requirements→structure mapping
 
 ### Architecture Readiness Assessment
-**Overall Status: READY WITH MINOR GAPS** — all 16 checklist axes covered and no Critical Gaps; downgraded from fully-ready by the 4 bounded first-story items + the pending PRD reconciliation.
+**Overall Status: READY WITH MINOR GAPS** *(re-affirmed 2026-07-16 post-D12: the multi-axis expansion is additive to the spine — same lattice, same inventory, one sanctioned schema amendment)* — all 16 checklist axes covered and no Critical Gaps; the original 4 bounded first-story items are closed or story-owned (map → 2.1 · confidence threshold → FR18 · denominator → 1.9 · OSV DB → the 1.4 decision record); remaining minor gap = the actuator socket-deny carve-out (story 6.9, reviewed per-epic).
 **Confidence: HIGH** — the design was adversarially stress-tested (two roundtable rounds) and the sharpest defect (beachhead false-green) was caught and fixed before ratification.
 **Key strengths:** the never-false-green acceptance spine (C0 → triad → guards); the single-model + canonical-enum discipline; the non-rendering-by-construction security posture; the honest coverage contract grounded in real engine + recipe-format facts.
-**Future enhancement:** KEV gate tier · SARIF · cf_atlas promotion · full conda↔PyPI reconciliation · the baseline ratchet (all deferred-Growth).
+**Future enhancement (re-tiered 2026-07-16 per D12 — KEV/EPSS gates + the baseline ratchet moved INTO v1):** SARIF · registry perimeter · engine-swappability · cf_atlas promotion (backlog) · full conda↔PyPI reconciliation.
 
 ### Implementation Handoff
 **AI agent guidelines:** follow § Core Architectural Decisions + § Implementation Patterns exactly; use the single `ResolvedInventory` + canonical enums; keep `extract/` execution-free; route all subprocesses through `_engine_env()`; sort before every emit.
