@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.2)'
   - 'docs/specs/bmad-loop-adoption.md'
@@ -27,7 +27,11 @@ source_verification: true
 
 ## Research Overview
 
-[Research overview and methodology will be appended here]
+Technical research (2026-07-16) resolving the tension between the cf_atlas Kedro migration's ambitious tech stack (spec v5.2: Kedro/Dagster/DuckDB/Ibis-BSL/Vizro, waves 0 + A–H, 21 FRs) and maximal use of the repo's adopted autonomous execution machinery (bmad-method 6.10, bmad-loop v0.8.1, bmad-dev-auto, TEA, the bmad-ui dashboards) — within pixi-first / py3.14 / worktree / spec-first conventions and CLAUDE.md Rules 1–2.
+
+**Conclusion**: the two ambitions compose via **graduated autonomy with verify-first sequencing** — Waves 0/A attended/dev-auto build the deterministic gates, Wave B runs loop-driven under per-story-spec-approval with TEA-generated fixture gates, autonomy relaxes to per-epic through C–E, F–H run mixed. ~19 of 30 stories are loop-drivable; all 4 attended events are schedulable batch boundaries. Verified capability corrections along the way: bmad-loop is sequential-only (`max_parallel = 1`), the dashboards observe artifacts not loop sessions, kedro-mcp is guidance-scoped, and `llms-full.txt` lacks the autonomy docs. Two new risks surfaced and mitigated: the worktree × multi-project-symlink seam (Wave-0 bootstrap + A3 smoke) and worktree pixi-env materialization cost (lean env from A1).
+
+Method: internal grounding (loop policy/hooks, adoption-spec pilot learnings, pixi task inventory) + live external verification (official bmad-code-org sources, dev-auto reference, TEA docs, agentic-SDLC practice). Full detail: the drivability map (step 5), the architecture options (step 4), and the synthesis + hand-off at the end of this document.
 
 ---
 
