@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments: []
 workflowType: 'research'
 lastStep: 1
@@ -215,3 +215,61 @@ Two live licensing surfaces for the pipeline: (1) **Anaconda ToS (Jul 15, 2025)*
 | Anaconda ToS enforcement against bulk data sourcing | Low–Medium | High (Phase F/B data supply) | S3-parquet + OCI-mirror fallbacks (already § 3.3); monitor ToS changes |
 | CVE program disruption degrades all downstream feeds | Medium | High | Multi-feed redundancy (OSV+GHSA+EUVD+Vulnrichment) — § 13 matrix swappability |
 | GDPR complaint over maintainer-identity processing | Low | Low | Public-source-only, minimization, legitimate-interest documentation |
+
+## Technical Trends and Innovation
+
+### Emerging Technologies
+
+- **Agent-facing data surfaces (MCP)** are the defining 2026 pattern: every major warehouse ships an official MCP server; semantic layers repositioned as "the agent interface"; Vizro-MCP generates dashboards as *validated config* rather than free-form code — exactly the § 2.1 "build for autonomous agents" philosophy, now industry mainstream. _Sources: https://chatforest.com/reviews/data-warehouse-lakehouse-mcp-servers/ ; https://cube.dev/articles/semantic-layer-for-ai-agents-2026_
+- **In-browser analytics is production-grade**: duckdb-wasm tracks native DuckDB at version parity (1.5.4) and now supports Iceberg REST catalogs in-browser — FR-14's zero-backend bet has moved from adventurous to mainstream. _Source: https://duckdb.org/docs/current/clients/wasm/overview_
+- **Rust-toolchain packaging** (pixi/rattler-build/py-rattler) is remaking conda tooling; conda-forge v1 builds now run through the py-rattler-build Python API. _Source: https://conda.org/blog/2026-05-20-may-releases/_
+- **Exploit-intelligence-first security**: BOD 26-04's KEV×automatability matrix, VulnCheck's earlier/wider KEV, EPSS everywhere — severity scores are yielding to exploitation evidence as the gating signal. _Source: https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk_
+
+### Digital Transformation
+
+The triad's transformation story is **consolidation + agentification**: orchestrators merging (Prefect+Dagster) while agent tooling (FastMCP) becomes the strategic asset; Anaconda pivoting from distribution to AI platform; SCA vendors pivoting to AI-code security; data validation and semantic layers repositioning around LLM consumers. For pipelines like cf_atlas, the practical consequence: **machine-readable, config-first, MCP-exposed surfaces are no longer differentiators — they're baseline expectations.** _Sources: https://www.businesswire.com/news/home/20260713065285/en/Prefect-Acquires-Dagster-Uniting-the-Two-Leading-Modern-Orchestrators ; https://www.anaconda.com/blog/anaconda-acquires-kilo-code_
+
+### Innovation Patterns — committed-bet verdicts (deep dive)
+
+*Live-verified health of every § 13.2 committed component (PyPI + GitHub, 2026-07-16):*
+
+| Component | Verdict | Evidence |
+|---|---|---|
+| kedro 1.5.0 (2026-06-29) | ✅ **Safe** — LF AI & Data Graduate, 158 open issues, daily pushes | _https://pypi.org/project/kedro/ ; https://lfaidata.foundation/projects/kedro/_ |
+| duckdb 1.5.4 (+1.4 LTS line) | ✅ **Safest** — Foundation-owned, no VC, 594 issues @ 39.5k stars | _https://github.com/duckdb/duckdb_ |
+| vizro 0.1.59 / vizro-ai 0.4.1 | ✅ Safe (McKinsey-backed) / ⚠️ slow sidecar cadence (7-month gaps) | _https://pypi.org/project/vizro-ai/#history_ |
+| dagster 1.13.13 (2026-07-09) | ⚠️ **Healthy code, uncertain owner** — Prefect acquisition 3 days old; Apache-2.0 reaffirmed; founder departing | _https://dagster.io/blog/prefect-is-acquiring-dagster_ |
+| kedro-dagster 0.7.0 | 🔴 **Bus factor ≈ 1** — sole maintainer (consultancy), 23 stars, `dagster <2.0` pin, community-plugin status only | _https://github.com/stateful-y/kedro-dagster_ |
+| kedro-mcp 0.1.2 (2025-11-06) | 🔴 **Early/stale, wrong scope** — 14 commits, ~5 months quiet; serves AI *guidance*, not pipeline-trigger access | _https://github.com/kedro-org/kedro-mcp_ |
+| boring-semantic-layer 0.3.15 | ⚠️ **Young** — 13 months, two-person core, 0.x churn, ~14k dl/mo; squarely on-trend (Ibis+MCP) | _https://github.com/boringdata/boring-semantic-layer_ |
+| ibis-framework 12.0.0 (2026-02-07) | ⚠️ Healthy but **watch cadence** — one stable release in 2026 vs 12 in 2025; post-Voltron independent governance | _https://pypi.org/project/ibis-framework/#history_ |
+| **great-expectations 1.19.0** | 🔴 **BLOCKED on py3.14** — `requires_python: <3.14,>=3.10` (verified PyPI JSON 2026-07-16); cannot install on the repo's Python 3.14 envs | _https://pypi.org/pypi/great-expectations/json_ |
+| pandera 0.32.1 | ✅ Compatible (`>=3.10`, no cap) | _https://pypi.org/pypi/pandera/json_ |
+| openlineage-python 1.51.0 | ✅ Compatible (`>=3.10`) | _https://pypi.org/pypi/openlineage-python/json_ |
+
+### Future Outlook
+
+- **12–24 months**: Dagster 2.0 under Prefect ownership is the pivotal unknown (kedro-dagster pins `<2.0`); recipe v1 adoption on trajectory toward the majority of new feedstocks; CEP-63 likely lands, making conda purls official; CRA full application (Dec 2027) makes SBOM emission table stakes; TEA/Project Koala may standardize per-package SBOM publishing. _Sources: https://github.com/conda/ceps ; https://github.com/CycloneDX/transparency-exchange-api_
+- **Watch items**: GX Core's py3.14 support timeline; kedro-org's MCP direction (kedro-mcp vs the maintainer's separate kedro-mcp-agent experiment); DuckLake vs Iceberg as the small-lakehouse format; the conda-forge security SIG's community CVE-mapping proposal (potential Basilisk complement or successor). _Sources: https://prefix.dev/blog/securing-the-supply-chain ; https://github.com/DimedS/kedro-mcp-agent_
+
+### Implementation Opportunities
+
+1. **Pandera-first data quality** (FR-10): pandera inline schemas are py3.14-clean today; GX joins later (separate env or once 3.14 lands) — the spec's § 5.8 already bans the stale kedro-GE plugin, so the pivot is small. 2. **The recipe-v1 signal** (seed): ingest `feedstock-stats.toml` daily (or compute natively from cf-graph's `conda_build_tool` field) — per-feedstock v1 state joins the migration-readiness family (FR-21 pattern). 3. **BOD 26-04-style gate tiers** for FR-18 (KEV × EPSS-automatability × exposure). 4. **NVD-gap plugging** via CISA Vulnrichment ADP ingestion. 5. **MCP-surface leverage**: vizro-mcp + dbt-style semantic-layer-as-agent-interface validate FR-7/FR-8's architecture; plan to wrap/extend kedro-mcp rather than depend on it. _Sources: as cited above_
+
+### Challenges and Risks
+
+The glue is the risk, not the pillars: kedro-dagster (bus factor 1) and kedro-mcp (immature) sit exactly at the spec's integration seams; Dagster's 2027 roadmap is acquisition-dependent; GX is version-blocked; BSL is two people. Mitigations are structural, not heroic — foundation-governed pillars (Kedro/DuckDB), swappable feeds (§ 13 matrix), bridge treated as replaceable (Dagster Components as the native fallback), validation via pandera now.
+
+## Recommendations
+
+### Technology Adoption Strategy
+
+1. **Proceed with the Kedro + DuckDB + Vizro core** — all foundation/enterprise-backed, verified healthy. 2. **Keep Dagster but write the exit ramp into the spec** (Q2 gains an acquisition-watch dimension; Dagster Components or Prefect-native as fallbacks; revisit at Wave C start). 3. **Treat kedro-dagster as replaceable glue** — vendor it mentally: pin hard, contribute fixes upstream, keep the compiled-DAG interface thin. 4. **Pivot FR-10 to pandera-first**, GX-when-3.14. 5. **Wrap kedro-mcp, don't depend on it** — FR-7's pipeline-trigger surface needs custom tools regardless (kedro-mcp's scope is guidance). 6. **Pin BSL exactly** and isolate behind an internal semantic-layer interface.
+
+### Innovation Roadmap
+
+Near (Wave B): recipe-v1 signal + Vulnrichment + VulnCheck KEV + MAL-records ingestion (all OSV/TOML-native, minimal format cost). Mid (Waves C–E): BOD-26-04-style tiered gate; EUVD alignment before Sep 2026; TEA/Koala watch for SBOM publishing. Far (Waves F–H): duckdb-wasm surface (de-risked), semantic-layer-as-agent-interface maturation, conda-forge security SIG participation (the community CVE mapping is this pipeline's natural ally).
+
+### Risk Mitigation
+
+Multi-feed redundancy (CVE-program fragility); per-host credential scoping (already FR-1); S3-parquet/OCI fallbacks for the Anaconda ToS surface (already § 3.3); single-maintainer feeds ingested by *method* not just artifact (are-we-recipe-v1-yet → cf-graph-native computation option); quarterly § 13-matrix sustainability review at wave boundaries.
