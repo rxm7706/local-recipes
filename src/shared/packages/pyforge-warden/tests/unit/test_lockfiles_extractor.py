@@ -59,7 +59,11 @@ def write_conda_lock(directory: Path, body: str) -> Path:
 # --- pixi.lock conda rows -----------------------------------------------------
 
 
-def test_pixi_lock_conda_row_ordinary_url_is_unmapped_ecosystem():
+def test_pixi_lock_conda_row_ordinary_url_is_unmapped_ecosystem(monkeypatch):
+    # The real bundled map (Story 2.1) now maps "numpy" -- monkeypatch to a
+    # deterministic empty map so this test keeps exercising the true-miss
+    # path regardless of the bundled map's contents.
+    monkeypatch.setattr(lockfiles, "load_conda_pypi_map", lambda: {})
     path = FIXTURES / "pixi_lock_basic" / "pixi.lock"
     components = _pixi_lock_extractor().extract(path, PIXI_LOCK_MANIFEST)
     numpy = next(c for c in components if c.name == "numpy")
@@ -74,6 +78,57 @@ def test_pixi_lock_conda_row_ordinary_url_is_unmapped_ecosystem():
     assert [(p.manifest, p.section) for p in numpy.provenance] == [
         ("pixi.lock", PIXI_LOCK_CONDA_SECTION)
     ]
+
+
+def test_pixi_lock_conda_row_verified_map_hit_resolves_pypi_identity(monkeypatch):
+    """A verified-confidence map hit sets pypi_identity + vuln_matchable
+    (Story 2.1 AC2)."""
+    monkeypatch.setattr(
+        lockfiles,
+        "load_conda_pypi_map",
+        lambda: {
+            "numpy": {
+                "pypi_name": "numpy",
+                "match_source": "parselmouth",
+                "match_confidence": "verified",
+            }
+        },
+    )
+    path = FIXTURES / "pixi_lock_basic" / "pixi.lock"
+    components = _pixi_lock_extractor().extract(path, PIXI_LOCK_MANIFEST)
+    numpy = next(c for c in components if c.name == "numpy")
+    assert numpy.pypi_identity is not None
+    assert numpy.pypi_identity.name == "numpy"
+    assert numpy.pypi_identity.version == "1.26.0"
+    assert numpy.identity_source is IdentitySource.MAP
+    assert numpy.mapping_confidence == "verified"
+    assert numpy.vuln_matchable is True
+    assert numpy.indeterminate_reason is None
+
+
+def test_pixi_lock_conda_row_low_confidence_map_hit_withholds(monkeypatch):
+    """A "likely"-confidence map hit withholds identity as
+    UNMAPPED_ECOSYSTEM (Story 2.1 AC3) -- never a silent clean/match --
+    but the raw confidence tier survives on mapping_confidence."""
+    monkeypatch.setattr(
+        lockfiles,
+        "load_conda_pypi_map",
+        lambda: {
+            "numpy": {
+                "pypi_name": "numpy",
+                "match_source": "name_coincidence",
+                "match_confidence": "likely",
+            }
+        },
+    )
+    path = FIXTURES / "pixi_lock_basic" / "pixi.lock"
+    components = _pixi_lock_extractor().extract(path, PIXI_LOCK_MANIFEST)
+    numpy = next(c for c in components if c.name == "numpy")
+    assert numpy.pypi_identity is None
+    assert numpy.identity_source is IdentitySource.NONE
+    assert numpy.mapping_confidence == "likely"
+    assert numpy.vuln_matchable is False
+    assert numpy.indeterminate_reason is WithholdReason.UNMAPPED_ECOSYSTEM
 
 
 def test_url_basename_pitfall_regression():
@@ -204,7 +259,11 @@ def test_lockfile_within_bounds_still_parses(tmp_path, monkeypatch):
 # --- conda-lock.yml rows -------------------------------------------------------
 
 
-def test_conda_lock_manager_conda_row_is_unmapped_ecosystem():
+def test_conda_lock_manager_conda_row_is_unmapped_ecosystem(monkeypatch):
+    # The real bundled map (Story 2.1) now maps "numpy" -- monkeypatch to a
+    # deterministic empty map so this test keeps exercising the true-miss
+    # path regardless of the bundled map's contents.
+    monkeypatch.setattr(lockfiles, "load_conda_pypi_map", lambda: {})
     path = FIXTURES / "conda_lock_basic" / "conda-lock.yml"
     components = _conda_lock_extractor().extract(path, CONDA_LOCK_MANIFEST)
     numpy = next(c for c in components if c.name == "numpy")

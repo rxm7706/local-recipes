@@ -80,10 +80,10 @@ def test_clean_output_is_empty_and_decidable():
 
 
 def test_default_policy_table_is_exactly_the_five_dep_codes():
-    # DEP001 is WARN in 1.3 (its Gap-A block is gated on Story 2.1's
-    # name-mapping confidence — follow-up Opus review, 2026-07-14).
+    # DEP001 blocks by default (Story 2.1, Gap-A); hygiene_rung's
+    # dep001_trusted gate is what downgrades it to warn on ambiguity.
     assert DEFAULT_HYGIENE_POLICY == {
-        "DEP001": Status.WARN,
+        "DEP001": Status.POLICY_VIOLATION,
         "DEP002": Status.WARN,
         "DEP003": Status.WARN,
         "DEP004": Status.WARN,
@@ -91,10 +91,17 @@ def test_default_policy_table_is_exactly_the_five_dep_codes():
     }
 
 
+def test_default_policy_never_maps_to_clean():
+    """Structural guard (deferred-work.md, actionable once this module is
+    touched): the default hygiene policy must never contain Status.CLEAN --
+    an unclassified/degraded finding must never silently pass."""
+    assert Status.CLEAN not in DEFAULT_HYGIENE_POLICY.values()
+
+
 @pytest.mark.parametrize(
     "code,expected",
     [
-        ("DEP001", Status.WARN),  # gated block deferred to Story 2.1
+        ("DEP001", Status.POLICY_VIOLATION),
         ("DEP002", Status.WARN),
         ("DEP003", Status.WARN),
         ("DEP004", Status.WARN),
@@ -114,10 +121,9 @@ def test_unknown_code_degrades_to_indeterminate_never_clean():
 # --- rung derivation ---------------------------------------------------------
 
 
-def test_hygiene_rung_for_dep001_is_warn():
-    # DEP001 warns in 1.3 (Gap-A block gated on Story 2.1's name-mapping
-    # confidence; deptry DEP001 false-positives on guarded optional imports
-    # would otherwise produce a benign false-red). Follow-up Opus review.
+def test_hygiene_rung_for_dep001_is_policy_violation_when_trusted():
+    # DEP001 blocks by default (Story 2.1, Gap-A) when dep001_trusted is
+    # True (the default) -- no positive ambiguous-mapping signal.
     finding = Finding(
         id="hygiene:DEP001:foo",
         axis=AXIS_HYGIENE,
@@ -126,6 +132,22 @@ def test_hygiene_rung_for_dep001_is_warn():
         severity=None,
     )
     status, driver = hygiene_rung(finding)
+    assert status is Status.POLICY_VIOLATION
+    assert driver == StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:foo")
+
+
+def test_hygiene_rung_for_dep001_downgrades_to_warn_when_untrusted():
+    # dep001_trusted=False (a "likely"-confidence conda component somewhere
+    # in the scan's inventory) downgrades DEP001 to warn -- a mapping miss
+    # must not become a false-red disable-driver (Gap-A).
+    finding = Finding(
+        id="hygiene:DEP001:foo",
+        axis=AXIS_HYGIENE,
+        message="missing",
+        subject="foo",
+        severity=None,
+    )
+    status, driver = hygiene_rung(finding, dep001_trusted=False)
     assert status is Status.WARN
     assert driver == StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:foo")
 

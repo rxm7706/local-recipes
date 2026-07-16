@@ -57,7 +57,6 @@ from .models import (
     AXIS_HYGIENE,
     AXIS_VULNERABILITY,
     AxisCoverage,
-    Ecosystem,
     ErrorKind,
     ErrorRecord,
     Finding,
@@ -378,8 +377,9 @@ class OsvEngine:
     """The second real engine: vulnerability matching via ``osv-scanner``,
     fully offline (Story 1.5), widened with two honesty tiers (Story 2.5).
 
-    Feeds ``vuln_matchable`` ``Ecosystem.PYPI`` components (``candidates`` —
-    Epic 2 wires conda) through the real ``osv-scanner`` subprocess, AND
+    Feeds ``vuln_matchable`` components (``candidates`` — any ecosystem with
+    a resolved ``pypi_identity``, Story 2.1) through the real ``osv-scanner``
+    subprocess, AND
     separately, mapped-but-unversioned PyPI components (``pypi_identity``
     resolved, ``version is None`` — ``name_level_candidates``) through a
     direct, offline, in-process read of the SAME resolved DB zip (FR13 —
@@ -419,17 +419,20 @@ class OsvEngine:
     name: str = "osv-scanner"
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
+        # Ecosystem-agnostic (Story 2.1): a resolved pypi_identity is the
+        # matchable signal, not the component's own (conda/pypi) ecosystem —
+        # otherwise a correctly-mapped conda component would be silently
+        # invisible to osv-scanner (the pytorch->torch false-green Gap C
+        # closes only when this filter admits it).
         candidates = [
             component
             for component in inventory.components
-            if component.ecosystem is Ecosystem.PYPI and component.vuln_matchable
+            if component.pypi_identity is not None and component.vuln_matchable
         ]
         name_level_candidates = [
             component
             for component in inventory.components
-            if component.ecosystem is Ecosystem.PYPI
-            and component.pypi_identity is not None
-            and component.version is None
+            if component.pypi_identity is not None and component.version is None
         ]
         if not candidates and not name_level_candidates:
             return EngineResult(findings=(), errors=(), coverage=())
