@@ -1,0 +1,71 @@
+# Validation Report — pyforge-warden PRD
+
+- **PRD:** `_bmad-output/projects/pyforge-warden/planning-artifacts/prd.md`
+- **Rubric:** `.claude/skills/bmad-prd/assets/prd-validation-checklist.md`
+- **Run at:** 2026-07-16T02:45:00Z (bmad-prd update intent, headless; Reviewer Gate = rubric walker + adversarial-general, both Fable subagents)
+- **Grade:** **Poor at review → Good after same-pass triage** (2 critical + 3 high adversarial findings existed at review time; all critical/high/medium findings were autofixed in this pass — see Disposition)
+
+## Overall verdict
+
+An unusually rigorous, testable PRD (FR1–FR40 contract, dated decision records, honest
+reversals); the rubric judged it **strong / build-ready** on six of seven dimensions
+(downstream-usability adequate), with the risk concentrated in **navigational debt from three
+stacked supersession layers**, not substantive gaps. The adversarial reviewer, however, showed
+that debt was not merely navigational: it found **live, unmarked contradictions in exactly the
+sections devs build from** — two of them yielding different exit-code state machines depending
+on which paragraph you trust (the pre-D3 KEV deferral surviving in Technical Success; the
+pre-reconciliation Gap-A recommendation surviving in an "architect must decide" register that
+FR18 had already decided the other way). The stale-DB outcome was specified three incompatible
+ways. All of it is characteristic of surgical-pass drift: every fix was correct where applied
+and incomplete somewhere else.
+
+## Dimension verdicts (rubric walker)
+
+- Decision-readiness — strong
+- Substance over theater — strong
+- Strategic coherence — strong
+- Done-ness clarity — strong
+- Scope honesty — strong
+- Downstream usability — adequate
+- Shape fit — strong
+
+## Findings by severity
+
+### Critical (2) — both FIXED this pass
+**[Adversarial C1]** — Technical Success still deferred KEV post-v1 (§ Success Criteria)
+Live unmarked text contradicting FR18/FR36/D12, citing a Domain section that now says the opposite.
+Fix applied: bullet re-based to "block on critical CVE or CISA-KEV-listed; `--min-epss` v1 (D12)".
+
+**[Adversarial C2 / Rubric high]** — Gap A double-decided (§ Architecture Open Questions vs FR18)
+The "architect must decide" register still *recommended* the hygiene-separate-warn-axis model FR18 had owner-confirmed the other way (DEP001 blocks). Different exit-code state machines.
+Fix applied: register re-stamped post-architecture — Gaps A/B/C + multi-manifest precedence moved to "Resolved" with deciding references; stale recommendations struck.
+
+### High (3) — all FIXED this pass
+**[Adversarial H3]** — `· EPSS` still ended the deferred list whose own preamble said EPSS left it (fix: token deleted).
+**[Adversarial H4]** — stale vuln-DB outcome specified three incompatible ways (Domain loud-`warn`/exit-0 vs FR12 "degrade" vs NFR-S8 fail-loud vs C0). Fix: Domain + FR12 aligned to **`indeterminate` → exit 1 with a typed staleness driver** (matching NFR-S8 + C0 and the FR36 feed-absence rule).
+**[Adversarial H5]** — "vuln-side waiver" deferred to Growth while flagship J4 waives an osv CVE via FR24 in v1. Fix: struck from the PRD Growth row and from the spec's v1.x row (which this pass had itself propagated); waivers cover vuln findings in v1.
+
+### Medium (9 across both reviewers) — all FIXED this pass
+J1's bolded "`clean at 60% coverage`" (outlawed by FR16) → coverage-qualified `indeterminate`; J1 Reveals `warn`-not-`clean` → `indeterminate`-not-`clean` · `--require-full-coverage` behaviorless post-triad → residual role defined (re-escalation under `--warn-only`) · exit-matrix outcome missing `indeterminate → 1` → full projection enumerated (incl. 130) · FR22 absolutes vs `--allow-empty`/`--warn-only` → restated in status-vs-exit channel terms · FR40 "typed warning" unplaceable → post-verdict `actuation` report section + stderr, outside status/exit composition · MVP framing not re-argued post-D12 → bounding paragraph added (zero-config path unchanged; actuator inert) · no glossary + axis/dimension drift → 8-term glossary added, dimension declared a synonym to normalize · EPSS-in-deferred (rubric duplicate of H3) · unowned coverage-defining artifacts → left recorded in "Owners still to assign" (deliberate, visible).
+
+### Low (8 across both reviewers) — 6 fixed, 2 deferred with rationale
+Fixed: `stdlib-only` in three binding statements → `stdlib-lean (NFR-S1)` · DEP002/3/4 vs DEP002–005 drift → aligned · cf_atlas promotion mis-tiered in Growth → moved to backlog framing · two-axis phrasing in User Success + Core insight → four-axis (D12) · frontmatter v1_must KEV pointer → marked REVERSED · byte-identical determinism unqualified → opt-in `--deterministic` qualifier added.
+Deferred: narrative FR-label rewrite to canonical IDs (crosswalk + inline clarifiers judged sufficient; a mechanical rewrite risks new drift) · `[ASSUMPTION]`-index roundtrip (function served by the Resolved-assumptions register; noted for downstream tooling).
+
+## Mechanical notes (rubric)
+- FR1–FR40 contiguous, no gaps/duplicates; NFR ID families consistent.
+- Corpus figures used consistently across five sections.
+- FR21 `config-error` vs `config-parse`/`config-validation` split correctly parked as open question 10.
+- Frontmatter `prioritizedRefinements` are disclaimed historical labels; downstream tooling should read only the canonical FR block.
+
+## Disposition
+
+All critical, high, and medium findings were fixed in-place during this pass (bmad-prd update
+intent, headless — each change memlogged); two lows deferred with recorded rationale. The
+adversarial register-vs-FR18 catch and the tri-spec stale-DB conflict are the pass's
+highest-value outcomes: both were invisible to the earlier direct-authoring sweeps and to the
+first gap-extraction subagent.
+
+## Reviewer files
+- `review-rubric.md`
+- `review-adversarial-general.md`
