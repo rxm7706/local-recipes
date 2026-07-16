@@ -1,0 +1,32 @@
+---
+stepsCompleted: []
+inputDocuments:
+  - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.2)'
+  - 'docs/specs/bmad-loop-adoption.md'
+  - '_bmad-output/projects/local-recipes/planning-artifacts/research/domain-cf-atlas-domain-triad-research-2026-07-16.md'
+workflowType: 'research'
+lastStep: 1
+research_type: 'technical'
+research_topic: 'Executing the cfe-atlas-datapipeline Kedro migration (v5.2) as an autonomous agentic SDLC — bmad-method 6.10 + bmad-loop + bmad-dev-auto + bmad-ui/dashboards used to the fullest, within the repo tech stack and operating conventions'
+research_goals: 'Resolve the tension between the migration spec ambitious tech stack (Kedro/Dagster/DuckDB/Ibis-BSL/Vizro, waves 0+A-H, 21 FRs) and maximal use of the adopted autonomous execution machinery (bmad-method 6.10 core+bmm, bmad-loop v0.8.1, bmad-dev-auto, TEA, bmad-ui dashboards): determine what an autonomous agentic SDLC for THIS effort concretely looks like — which waves/stories are loop-drivable vs attended, what verify-gates the loop needs (tests, drift-check, llms-full-check, parity checks), how the dashboards observe the run, where the CFE Rules 1&2 hooks fire — while staying inside pixi-first / py3.14 / worktree-isolation / spec-first conventions. Deliver an execution-architecture recommendation ready to encode in the spec § 2.5/§ 14 and the Tier-2 planning intake.'
+user_name: 'Rxm7706'
+date: '2026-07-16'
+web_research_enabled: true
+source_verification: true
+---
+
+# Research Report: technical
+
+**Date:** 2026-07-16
+**Author:** Rxm7706
+**Research Type:** technical
+
+---
+
+## Research Overview
+
+[Research overview and methodology will be appended here]
+
+---
+
+<!-- Content will be appended sequentially through research workflow steps -->
