@@ -299,3 +299,22 @@ def test_feature_and_target_names_never_baked_into_the_routing_key(tmp_path):
     components = _extractor().extract(path, MANIFEST)
     sections = sorted(p.section for c in components for p in c.provenance)
     assert sections == ["feature.a.dependencies", "feature.b.dependencies"]
+
+
+# --- follow-up review (2026-07-16) -------------------------------------------
+
+
+def test_compatible_release_conda_value_never_yields_a_corrupted_exact(
+    tmp_path,
+):
+    """`numpy = "~=1.26"` in a conda `[dependencies]` table used to come
+    back with the RANGE `'~=1.26'` baked in as a confident EXACT version
+    (verified live before the fix). numpy is verified-mapped, so the
+    withhold reason is honestly RANGE_ONLY, not no-version."""
+    from pyforge.warden.models import WithholdReason
+
+    path = write_pixi_toml(tmp_path, '[dependencies]\nnumpy = "~=1.26"\n')
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.version is None
+    assert component.indeterminate_reason is WithholdReason.RANGE_ONLY

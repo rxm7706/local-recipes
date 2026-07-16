@@ -408,6 +408,30 @@ def test_deptry_engine_always_appends_requirements_files_flag(
     assert "--requirements-files" in argv
     input_path = argv[argv.index("--requirements-files") + 1]
     assert input_path != ""
+    # No requirements.txt at the scan root: the flag carries ONLY the
+    # synthesized temp file (follow-up review, 2026-07-16).
+    assert "," not in input_path
+
+
+def test_deptry_engine_reappends_the_projects_own_requirements_txt(
+    monkeypatch, tmp_path, component_factory
+):
+    """Follow-up review (2026-07-16): --requirements-files REPLACES deptry's
+    own native default requirements source (`requirements.txt`) rather than
+    merging with it (verified live against deptry 0.25.1) -- so a scan root
+    carrying its own requirements.txt must have it re-appended to the
+    flag's comma-list, or every pip-declared dep there becomes a false
+    DEP001."""
+    (tmp_path / "requirements.txt").write_text("requests\n", encoding="utf-8")
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    inventory = make_inventory(component_factory(name="numpy", version="1.26.0"))
+    DeptryEngine().run(tmp_path, inventory)
+    argv = captured["argv"]
+    value = argv[argv.index("--requirements-files") + 1]
+    synth_path, _, reappended = value.partition(",")
+    assert synth_path  # the synthesized front-door always comes first
+    assert reappended == "requirements.txt"
 
 
 def test_deptry_engine_frontdoor_content_matches_synthesized_lines(

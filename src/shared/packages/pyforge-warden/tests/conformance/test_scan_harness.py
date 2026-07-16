@@ -643,6 +643,37 @@ def test_deptry_frontdoor_flag_is_a_genuine_no_op_against_real_deptry(capsys):
     assert with_frontdoor_ids == without_frontdoor_ids == {"hygiene:DEP002:requests"}
 
 
+def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
+    capsys, tmp_path
+):
+    """Follow-up review (2026-07-16), real deptry, no mocks:
+    ``--requirements-files`` REPLACES deptry's own native default
+    requirements source (``requirements.txt``) rather than merging with it
+    -- verified live: ``deptry .`` over a requirements.txt project is clean,
+    ``deptry . --requirements-files <other>`` reports DEP001 for every dep
+    the project's own requirements.txt declares. Before the merge fix, a
+    conda-sourced scan (this is a NEW 2.2 scan class -- pre-2.2 such a
+    project was not-applicable and deptry never ran) with a sibling
+    requirements.txt therefore false-DEP001'd all its pip-declared deps.
+    The scan root's requirements.txt is now re-appended to the flag's
+    comma-list; same no-skip-guard convention as the no-op test above."""
+    (tmp_path / "environment.yml").write_text(
+        "dependencies:\n  - numpy=1.20\n", encoding="utf-8"
+    )
+    (tmp_path / "requirements.txt").write_text("requests\n", encoding="utf-8")
+    (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
+    rc, out, _err = run_scan(capsys, tmp_path)
+    document = parse_report(out)
+    hygiene_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+    # requests is declared by the project's OWN requirements.txt -- merged,
+    # so no false DEP001; numpy (declared via the conda front-door, never
+    # imported) still surfaces deptry's real signal for this fixture.
+    assert "hygiene:DEP001:requests" not in hygiene_ids
+    assert "hygiene:DEP002:numpy" in hygiene_ids
+
+
 @pytest.mark.parametrize(
     "fixture",
     [DEPTRY_MISSING, DEPTRY_UNUSED, DEPTRY_STDLIB],

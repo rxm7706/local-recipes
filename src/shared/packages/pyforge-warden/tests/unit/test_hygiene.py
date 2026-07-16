@@ -465,6 +465,34 @@ def test_frontdoor_excludes_unsafe_token_names(component_factory):
     assert synthesized.excluded == (component,)
 
 
+def test_frontdoor_excludes_pep440_invalid_lines_that_would_crash_deptry(
+    component_factory,
+):
+    """Follow-up review (2026-07-16): deptry parses each front-door line
+    with ``packaging``'s own ``Requirement`` grammar and CRASHES the whole
+    run (exit 1, no output file -- verified live against deptry 0.25.x) on
+    the first invalid line. A conda-legal but PEP-440-illegal exact version
+    (``1.20rc1x``) and a PEP-508-illegal trailing-hyphen name both pass the
+    charset-only safe-token guard, so they used to be written raw and take
+    the ENTIRE hygiene axis down with them."""
+    from pyforge.warden.inventory import PypiIdentity
+
+    bad_version = component_factory(
+        name="numpy",
+        version="1.20rc1x",
+        pypi_identity=PypiIdentity(name="numpy", version="1.20rc1x"),
+    )
+    bad_name = component_factory(
+        name="pkg-",
+        version="1.0.0",
+        pypi_identity=PypiIdentity(name="pkg-", version="1.0.0"),
+    )
+    good = component_factory(name="requests", version="2.31.0")
+    synthesized = _synthesize_deptry_frontdoor([bad_version, bad_name, good])
+    assert synthesized.lines == ("requests==2.31.0",)
+    assert synthesized.excluded == (bad_version, bad_name)
+
+
 # --- Fix 6 (2026-07-16 review): the NFR-S6-excluded finding, hygiene axis ---
 
 

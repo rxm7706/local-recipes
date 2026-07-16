@@ -74,7 +74,7 @@ from pathlib import Path
 
 from ..interfaces import Router
 from ..inventory import Component, Provenance
-from ..models import Ecosystem, ScannedManifest
+from ..models import Ecosystem, ScannedManifest, WithholdReason
 from . import UnparsableManifestError
 from ._identity import (
     _conda_component,
@@ -257,8 +257,15 @@ class PixiTomlExtractor:
         components: list[Component] = []
         for name, value in sorted(table.items()):
             specifier = _conda_specifier_from_value(value)
-            exact, _reason = classify_conda_specifier(specifier)
-            components.append(_conda_component(name, exact, provenance))
+            exact, reason = classify_conda_specifier(specifier)
+            components.append(
+                _conda_component(
+                    name,
+                    exact,
+                    provenance,
+                    no_version_reason=reason or WithholdReason.NO_VERSION,
+                )
+            )
         return components
 
     def _walk_pypi_table(

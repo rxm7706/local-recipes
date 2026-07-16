@@ -33,8 +33,10 @@ Ownership decisions recorded:
   doesn't recognize.
 * **Sections walked**: ``requirements.{build,host,run}`` +
   ``tests[].requirements.{build,run}`` (v1's list-valued test entries) +
-  ``outputs[].requirements`` (multi-output, same ``{build,host,run}``
-  shape as the top level). ``requirements.run_constraints`` is recognized
+  ``outputs[].requirements`` AND ``outputs[].tests[]`` (multi-output — the
+  per-output tests analog walked since 2026-07-16; it previously produced
+  no components while its top-level twin did).
+  ``requirements.run_constraints`` is recognized
   ONLY by never appearing in the walked ``sections`` tuple — excluded
   entirely, never a ``Component`` (no schema change, no
   ``provenance: constraint`` field — the Boundaries' explicit call).
@@ -77,7 +79,7 @@ import yaml
 
 from ..interfaces import Router
 from ..inventory import Component, Provenance
-from ..models import Ecosystem, ExtractionMode, ScannedManifest
+from ..models import Ecosystem, ExtractionMode, ScannedManifest, WithholdReason
 from . import UnparsableManifestError
 from ._identity import (
     _conda_component,
@@ -156,23 +158,45 @@ def _quote_yaml_single(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
+# A trailing YAML comment after the last `}}` of a brace expression about to
+# be defensively quoted -- stripped BEFORE quoting so a selector comment on a
+# templated dep line (`- {{ nv }}  # [linux]`) is never baked INTO the quoted
+# string content as a garbage "version" (fixed 2026-07-16; mirrors
+# `meta_v0.py`'s identical `_strip_trailing_yaml_comment` -- same duplication
+# rationale as `strip_jinja_comments` below). Comments on UN-quoted lines are
+# untouched: YAML's own comment handling strips those.
+_TRAILING_COMMENT_RE = re.compile(r"\s#.*$")
+
+
+def _strip_trailing_yaml_comment(expr: str) -> str:
+    idx = expr.rfind("}}")
+    if idx == -1:
+        return expr
+    tail = expr[idx + 2 :]
+    match = _TRAILING_COMMENT_RE.search(tail)
+    if match:
+        return expr[: idx + 2 + match.start()].rstrip()
+    return expr
+
+
 def neutralize_bare_braces(text: str) -> str:
     """Defensively single-quote any list-item/mapping-value line whose
     content starts with a BARE (un-``$``-prefixed) ``{{`` (Fix 2) -- the one
     shape that breaks ``yaml.safe_load`` if left unquoted (a plain scalar
-    starting with ``{`` triggers YAML flow-mapping detection). Mirrors
-    ``meta_v0.py``'s identical ``neutralize_unquoted_braces`` (duplicated,
-    not imported -- same one-directional-dependency reason as
-    ``strip_jinja_comments`` above). The quoting only affects YAML
-    structure, never the string's own content -- the quoted text is handed
-    to the SAME bare-var-substitution + degrade path as every other entry
-    once parsed."""
+    starting with ``{`` triggers YAML flow-mapping detection). Any trailing
+    YAML comment after the expression's last ``}}`` is stripped BEFORE
+    quoting (see ``_TRAILING_COMMENT_RE``). Mirrors ``meta_v0.py``'s
+    identical ``neutralize_unquoted_braces`` (duplicated, not imported --
+    same one-directional-dependency reason as ``strip_jinja_comments``
+    above). The quoting only affects YAML structure, never the string's own
+    content -- the quoted text is handed to the SAME bare-var-substitution +
+    degrade path as every other entry once parsed."""
     lines: list[str] = []
     for line in text.split("\n"):
         match = _LIST_ITEM_BRACE_RE.match(line) or _MAPPING_VALUE_BRACE_RE.match(line)
         if match:
             prefix, expr = match.group(1), match.group(2)
-            line = prefix + _quote_yaml_single(expr)
+            line = prefix + _quote_yaml_single(_strip_trailing_yaml_comment(expr))
         lines.append(line)
     return "\n".join(lines)
 
@@ -192,14 +216,25 @@ def substitute_bare_vars(text: str, context: Mapping[str, str]) -> str:
 
 
 def best_effort_name(raw: str) -> str | None:
-    """The text before the first remaining template marker, stripped — the
+    """The FIRST TOKEN of the text before the first remaining template
+    marker, with any trailing comparison-operator debris stripped — the
     Design Notes' "raw-text name scrape" for a degraded entry. ``None``
     when nothing usable precedes the marker (or the marker is at
-    position 0)."""
+    position 0). Taking the whole prefix verbatim used to turn the
+    canonical conda-forge templated-pin shape (``python >=${{ python_min
+    }}`` — ``python_min`` is a variant variable, never in ``context:``, so
+    this hits essentially every real noarch v1 recipe) into a component
+    literally named ``"python >="`` — a garbage token that can never hit
+    the conda->pypi map (fixed 2026-07-16): the name is the first
+    whitespace-token only, and a trailing operator fragment (the contiguous
+    ``numpy>=${{ v }}`` form) is stripped from it."""
     marker = _TEMPLATE_MARKER_RE.search(raw)
     prefix = raw[: marker.start()] if marker else raw
     prefix = prefix.strip()
-    return prefix or None
+    if not prefix:
+        return None
+    token = prefix.split()[0].rstrip("<>=!~,")
+    return token or None
 
 
 def context_map(document: Mapping[str, object]) -> dict[str, str]:
@@ -249,8 +284,13 @@ def requirement_component(
     if split is None:
         return _raw_malformed(ecosystem, raw, provenance)
     name, specifier = split
-    exact, _reason = classify_conda_specifier(specifier)
-    return _conda_component(name, exact, provenance)
+    exact, reason = classify_conda_specifier(specifier)
+    return _conda_component(
+        name,
+        exact,
+        provenance,
+        no_version_reason=reason or WithholdReason.NO_VERSION,
+    )
 
 
 def walk_requirements(
@@ -268,7 +308,15 @@ def walk_requirements(
     doesn't recognize (Story 2.3 owns the full construct matrix)."""
     if not isinstance(requirements, dict):
         return []
+    # fail-loud gate: asserted (not just called for its side effect) so a
+    # future `_ROUTES` edit is caught HERE rather than silently continuing to
+    # hardcode CONDA via `requirement_component`'s success path -- mirrors
+    # `extract/pixi.py`/`environment_yml.py`'s identical Fix 7 (completed for
+    # this walker 2026-07-16; the first pass patched only 2 of the 4
+    # extractors). Holds for BOTH kinds routed through this shared walker
+    # (recipe.yaml and meta.yaml both map (kind, "requirements") to CONDA).
     ecosystem = router.route(manifest.kind, RECIPE_V1_REQUIREMENTS_SECTION)
+    assert ecosystem is Ecosystem.CONDA
     components: list[Component] = []
     for section in sections:
         entries = requirements.get(section)
@@ -328,7 +376,12 @@ class RecipeV1Extractor:
         return tuple(components)
 
     def _walk_tests(
-        self, tests: object, context: Mapping[str, str], manifest: ScannedManifest
+        self,
+        tests: object,
+        context: Mapping[str, str],
+        manifest: ScannedManifest,
+        *,
+        prefix: str = "tests",
     ) -> list[Component]:
         if not isinstance(tests, list):
             return []
@@ -338,7 +391,7 @@ class RecipeV1Extractor:
                 continue
             components += walk_requirements(
                 test.get("requirements"),
-                f"tests[{index}].requirements",
+                f"{prefix}[{index}].requirements",
                 context,
                 manifest,
                 self._router,
@@ -361,5 +414,16 @@ class RecipeV1Extractor:
                 context,
                 manifest,
                 self._router,
+            )
+            # A multi-output recipe's PER-OUTPUT test deps
+            # (`outputs[].tests[]`, same list-valued v1 shape as the top
+            # level) -- walked since 2026-07-16: the top-level `tests[]` was
+            # walked but its per-output analog silently produced no
+            # components.
+            components += self._walk_tests(
+                output.get("tests"),
+                context,
+                manifest,
+                prefix=f"outputs[{index}].tests",
             )
         return components

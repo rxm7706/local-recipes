@@ -43,8 +43,10 @@ Ownership decisions recorded:
   form alongside v1's ``${{ VAR }}``).
 * **Sections walked**: ``requirements.{build,host,run}`` + the v0
   SINGULAR ``test.requires`` (a flat list, no per-test entries) +
-  ``outputs[].requirements`` (multi-output, same ``{build,host,run}``
-  shape). ``requirements.run_constrained`` (v0's spelling) is recognized
+  ``outputs[].requirements`` AND ``outputs[].test.requires`` (multi-output
+  — the per-output test analog walked since 2026-07-16; it previously
+  produced no components while its top-level twin did).
+  ``requirements.run_constrained`` (v0's spelling) is recognized
   ONLY by never appearing in the walked ``sections`` tuple — excluded
   entirely, never a ``Component``.
 * NFR-S5: mirrors ``recipe_v1.py``/``extract/lockfiles.py`` via the shared
@@ -69,7 +71,7 @@ import yaml
 
 from ..interfaces import Router
 from ..inventory import Component, Provenance
-from ..models import ScannedManifest
+from ..models import Ecosystem, ScannedManifest
 from . import UnparsableManifestError
 from ._identity import read_bounded_text
 from .recipe_v1 import requirement_component, walk_requirements
@@ -118,10 +120,19 @@ def _parse_set_literal(raw: str) -> str | None:
     string or a bare number) — ``None`` for anything else (a function
     call, concatenation, ...), which is simply not captured (the line is
     still blanked by the caller regardless, so it never reaches
-    ``yaml.safe_load`` as raw Jinja)."""
+    ``yaml.safe_load`` as raw Jinja). A first-char==last-char quote check
+    alone is NOT enough: a conditional EXPRESSION like
+    ``"1.0" if unix else "2.0"`` both starts and ends with a quote, and
+    capturing its raw text used to yield a corrupted
+    ``'1.0" if unix else "2.0'`` "literal" silently treated as a resolved
+    exact version (fixed 2026-07-16) — so any RHS whose INTERIOR contains
+    the quote character is rejected as not-a-bare-literal too."""
     text = raw.strip()
     if len(text) >= 2 and text[0] == text[-1] and text[0] in ("'", '"'):
-        return text[1:-1]
+        inner = text[1:-1]
+        if text[0] in inner:
+            return None
+        return inner
     try:
         float(text)
     except ValueError:
@@ -135,15 +146,28 @@ def strip_jinja_statements(text: str) -> tuple[str, dict[str, str]]:
     statement tag AND every ``{# ... #}`` comment span too (none of the three
     are valid YAML on their own) — wherever on a line they appear, however
     many share one line (Fixes 1 and 3, 2026-07-16; see ``_JINJA_SPAN_RE``'s
-    own docstring comment)."""
+    own docstring comment).
+
+    A name ``{% set %}``-assigned MORE than once is AMBIGUOUS — the extra
+    assignments live under ``{% if %}`` branches this parse-as-data module
+    never evaluates (Story 2.3 owns control flow), so last-wins capture used
+    to silently report the wrong branch's value as a confidently-resolved
+    literal (fixed 2026-07-16). A re-assigned name is dropped from the
+    captured context entirely: its uses degrade per-entry
+    (``NAME_ONLY``/``RAW_MALFORMED``), never guess a branch."""
     context: dict[str, str] = {}
+    seen: set[str] = set()
 
     def _replace(match: re.Match[str]) -> str:
         name = match.group("name")
         if name is not None:
-            value = _parse_set_literal(match.group("value"))
-            if value is not None:
-                context[name] = value
+            if name in seen:
+                context.pop(name, None)
+            else:
+                seen.add(name)
+                value = _parse_set_literal(match.group("value"))
+                if value is not None:
+                    context[name] = value
         return ""
 
     stripped = _JINJA_SPAN_RE.sub(_replace, text)
@@ -154,20 +178,43 @@ def _quote_yaml_single(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
+# A trailing YAML comment (whitespace + `#` + rest-of-line) AFTER the last
+# `}}` of a brace expression about to be defensively quoted. Quoting to
+# end-of-line would otherwise bake the comment INTO the string content
+# (YAML can no longer strip what is now inside quotes), so a selector
+# comment on a templated dep line (`- {{ nv }}  # [linux]`) used to end up
+# as a component "version" of `# [linux]` (fixed 2026-07-16). Comments on
+# UN-quoted lines are untouched — YAML's own comment handling strips those.
+_TRAILING_COMMENT_RE = re.compile(r"\s#.*$")
+
+
+def _strip_trailing_yaml_comment(expr: str) -> str:
+    idx = expr.rfind("}}")
+    if idx == -1:
+        return expr
+    tail = expr[idx + 2 :]
+    match = _TRAILING_COMMENT_RE.search(tail)
+    if match:
+        return expr[: idx + 2 + match.start()].rstrip()
+    return expr
+
+
 def neutralize_unquoted_braces(text: str) -> str:
     """Pass 2 (Design Notes): defensively single-quote any remaining
     list-item/mapping-value line whose content starts with a bare ``{{`` —
     a leftover unresolved construct (``{{ pin_compatible(...) }}`` etc.)
-    would otherwise be misparsed as YAML flow-mapping syntax. The quoted
-    text is handed to the SAME bare-var-substitution + degrade path as
-    every other entry once parsed (the quoting only affects YAML
-    structure, not the string's own content)."""
+    would otherwise be misparsed as YAML flow-mapping syntax. Any trailing
+    YAML comment after the expression's last ``}}`` is stripped BEFORE
+    quoting (see ``_TRAILING_COMMENT_RE``). The quoted text is handed to
+    the SAME bare-var-substitution + degrade path as every other entry once
+    parsed (the quoting only affects YAML structure, not the string's own
+    content)."""
     lines: list[str] = []
     for line in text.split("\n"):
         match = _LIST_ITEM_BRACE_RE.match(line) or _MAPPING_VALUE_BRACE_RE.match(line)
         if match:
             prefix, expr = match.group(1), match.group(2)
-            line = prefix + _quote_yaml_single(expr)
+            line = prefix + _quote_yaml_single(_strip_trailing_yaml_comment(expr))
         lines.append(line)
     return "\n".join(lines)
 
@@ -216,15 +263,27 @@ class MetaV0Extractor:
         return tuple(components)
 
     def _walk_test(
-        self, test: object, context: Mapping[str, str], manifest: ScannedManifest
+        self,
+        test: object,
+        context: Mapping[str, str],
+        manifest: ScannedManifest,
+        *,
+        section: str = "test.requires",
     ) -> list[Component]:
         if not isinstance(test, dict):
             return []
         requires = test.get("requires")
         if not isinstance(requires, list):
             return []
+        # fail-loud gate: asserted (not just called for its side effect) so a
+        # future `_ROUTES` edit is caught HERE rather than silently continuing
+        # to hardcode CONDA via `requirement_component`'s success path --
+        # mirrors `extract/pixi.py`/`environment_yml.py`'s identical Fix 7
+        # (completed for this walker 2026-07-16; the first pass patched only
+        # 2 of the 4 extractors).
         ecosystem = self._router.route(manifest.kind, META_V0_REQUIREMENTS_SECTION)
-        provenance = (Provenance(manifest=manifest.path, section="test.requires"),)
+        assert ecosystem is Ecosystem.CONDA
+        provenance = (Provenance(manifest=manifest.path, section=section),)
         return [
             requirement_component(entry, context, provenance, ecosystem)
             for entry in requires
@@ -245,5 +304,15 @@ class MetaV0Extractor:
                 context,
                 manifest,
                 self._router,
+            )
+            # A multi-output recipe's PER-OUTPUT test deps (`outputs[].test.
+            # requires`, same singular v0 shape as the top level) -- walked
+            # since 2026-07-16: the top-level `test.requires` was walked but
+            # its per-output analog silently produced no components.
+            components += self._walk_test(
+                output.get("test"),
+                context,
+                manifest,
+                section=f"outputs[{index}].test.requires",
             )
         return components

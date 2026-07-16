@@ -323,7 +323,13 @@ class DeptryEngine:
     unconditionally, never conditionally detected: deptry's own native
     ``pyproject.toml`` detection takes priority when present, so this is a
     no-op for every pre-2.2 pyproject-native scan and a real signal for a
-    conda-sourced one. The synthesized input file uses the SAME
+    conda-sourced one. Because the flag REPLACES (not merges with) deptry's
+    own default ``requirements.txt`` source, a ``requirements.txt`` present
+    at the scan root is re-appended to the flag's comma-list so its
+    pip-declared deps stay visible to deptry (fixed 2026-07-16 — verified
+    live: without this, such a scan reports false DEP001s for every dep the
+    project's own requirements.txt declares). The synthesized input file
+    uses the SAME
     ``tempfile.mkstemp``/``finally: os.unlink`` idiom as ``OsvEngine.run``'s
     own input file (NFR-S4). Any component the NFR-S6 purity guard excludes
     from that front-door surfaces as one ``indeterminate:unsafe-identity:
@@ -370,6 +376,19 @@ class DeptryEngine:
             if content:
                 content += "\n"
             Path(input_path).write_text(content, encoding="utf-8")
+            # Passing --requirements-files REPLACES deptry's own native
+            # default requirements source (`requirements.txt`) rather than
+            # merging with it (verified live against deptry 0.25.1) -- so a
+            # conda-sourced scan with a sibling requirements.txt would lose
+            # every pip-declared dep there to false DEP001s. Re-appending
+            # deptry's own default (comma syntax per `deptry --help`;
+            # relative, resolved against cwd=target exactly as deptry's
+            # native detection would) keeps that behavior intact (fixed
+            # 2026-07-16). Still a genuine no-op for pyproject-native scans:
+            # deptry ignores the flag entirely there.
+            requirements_files = input_path
+            if (target / "requirements.txt").is_file():
+                requirements_files = f"{input_path},requirements.txt"
             # exit_code is ignored: deptry's 0/1 stay content-only (Story 1.5
             # widened the seam for osv's own operational-exit-code needs).
             text, error, _exit_code = _engine_env(
@@ -380,7 +399,7 @@ class DeptryEngine:
                     output_path,
                     "--no-ansi",
                     "--requirements-files",
-                    input_path,
+                    requirements_files,
                 ],
                 owner=self.name,
                 cwd=target,

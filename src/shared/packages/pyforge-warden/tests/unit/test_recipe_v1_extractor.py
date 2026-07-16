@@ -126,6 +126,20 @@ def test_best_effort_name_scrapes_the_prefix_before_the_marker():
     assert best_effort_name("   ") is None
 
 
+def test_best_effort_name_strips_trailing_operator_debris():
+    """`python >=${{ python_min }}` is the canonical conda-forge templated
+    pin (`python_min` is a variant variable, never in `context:`) -- the
+    whole prefix used to become a component literally named `'python >='`,
+    a garbage token that can never hit the conda->pypi map (verified live
+    before the fix). The name is the first token with operator debris
+    stripped."""
+    assert best_effort_name("python >=${{ python_min }}") == "python"
+    assert best_effort_name("numpy>=${{ v }}") == "numpy"
+    assert best_effort_name("numpy <${{ v }}") == "numpy"
+    assert best_effort_name("numpy 1.2.${{ v }}") == "numpy"
+    assert best_effort_name(">=${{ v }}") is None
+
+
 def test_context_map_excludes_non_scalar_and_bool_values():
     document = {
         "context": {
@@ -369,6 +383,86 @@ def test_manifest_within_bounds_still_parses(tmp_path, monkeypatch):
 
 
 # --- routing ---------------------------------------------------------------
+
+
+# --- follow-up review (2026-07-16) -------------------------------------------
+
+
+def test_canonical_python_min_pin_degrades_to_a_usable_python_name(tmp_path):
+    """End-to-end: the fleet's most common templated shape (`python >=${{
+    python_min }}`) must yield a NAME_ONLY component named `python`, never
+    `'python >='`."""
+    body = (
+        "requirements:\n"
+        "  run:\n"
+        "    - python >=${{ python_min }}\n"
+    )
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "python"
+    assert component.version is None
+    assert component.extraction_mode is ExtractionMode.NAME_ONLY
+
+
+def test_range_specifier_withholds_as_range_only_not_no_version(tmp_path):
+    """`classify_conda_specifier`'s computed withhold reason used to be
+    discarded at every conda call site, so a range-declared dep dishonestly
+    reported `no-version` (RANGE_ONLY was unreachable for conda
+    components)."""
+    body = (
+        "requirements:\n"
+        "  run:\n"
+        "    - numpy >=1.20\n"
+    )
+    path = write_recipe(tmp_path, body)
+    (ranged,) = _extractor().extract(path, MANIFEST)
+    assert ranged.indeterminate_reason is WithholdReason.RANGE_ONLY
+
+    # A genuinely bare dep (same verified-mapped name, so UNMAPPED
+    # precedence doesn't mask the version reason) still reports NO_VERSION.
+    path = write_recipe(tmp_path, "requirements:\n  run:\n    - numpy\n")
+    (bare,) = _extractor().extract(path, MANIFEST)
+    assert bare.indeterminate_reason is WithholdReason.NO_VERSION
+
+
+def test_selector_comment_on_a_bare_brace_line_never_becomes_a_version(
+    tmp_path,
+):
+    """The defensive quoting of a bare `{{ ... }}` line used to swallow a
+    trailing selector comment INTO the quoted string -- mirrors
+    `meta_v0.py`'s identical fix (2026-07-16)."""
+    body = (
+        "context:\n"
+        "  nv: numpy\n"
+        "requirements:\n"
+        "  run:\n"
+        "    - {{ nv }}  # [linux]\n"
+    )
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.version is None
+
+
+def test_per_output_tests_are_walked(tmp_path):
+    """`outputs[].tests[]` (the multi-output analog of the top-level
+    `tests[]`) used to produce no components at all while its top-level
+    twin was walked."""
+    body = (
+        "outputs:\n"
+        "  - package:\n"
+        "      name: sub-a\n"
+        "    tests:\n"
+        "      - requirements:\n"
+        "          run:\n"
+        "            - pytest\n"
+    )
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "pytest"
+    assert [p.section for p in component.provenance] == [
+        "outputs[0].tests[0].requirements.run"
+    ]
 
 
 def test_router_routes_recipe_v1_requirements_to_conda():

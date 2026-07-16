@@ -290,3 +290,93 @@ def test_manifest_within_bounds_still_parses(tmp_path, monkeypatch):
 def test_router_routes_meta_v0_requirements_to_conda():
     ecosystem = DefaultRouter().route(META_YAML_KIND, META_V0_REQUIREMENTS_SECTION)
     assert ecosystem is Ecosystem.CONDA
+
+
+# --- follow-up review (2026-07-16) -------------------------------------------
+
+
+def test_conditional_expression_set_rhs_is_never_captured_as_a_literal():
+    """`{% set version = "1.0" if unix else "2.0" %}` starts AND ends with a
+    quote, so the old first-char==last-char check captured the raw interior
+    (`1.0" if unix else "2.0`) as a "resolved literal" -- a corrupted value
+    silently reported as a PARSED exact version (verified live before the
+    fix). A conditional expression is not a bare literal: it must degrade."""
+    _, context = strip_jinja_statements(
+        '{% set version = "1.0" if unix else "2.0" %}\n'
+    )
+    assert context == {}
+
+
+def test_a_reassigned_set_name_is_ambiguous_and_degrades_its_uses(tmp_path):
+    """Two `{% set version %}` tags under `{% if %}`/`{% else %}` branches
+    used to collapse last-wins, confidently reporting the wrong branch's
+    value as PARSED (verified live before the fix). This parse-as-data
+    module never evaluates control flow (Story 2.3 owns it), so a
+    re-assigned name is dropped from the context and its uses degrade."""
+    body = (
+        "{% if win %}\n"
+        '{% set version = "1.0.0" %}\n'
+        "{% else %}\n"
+        '{% set version = "2.0.0" %}\n'
+        "{% endif %}\n"
+        "requirements:\n"
+        "  run:\n"
+        "    - otherpkg =={{ version }}\n"
+    )
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "otherpkg"
+    assert component.version is None
+    assert component.extraction_mode is ExtractionMode.NAME_ONLY
+
+
+def test_a_singly_set_name_still_resolves(tmp_path):
+    body = (
+        '{% set version = "1.2.3" %}\n'
+        "requirements:\n"
+        "  run:\n"
+        "    - otherpkg =={{ version }}\n"
+    )
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.version == "1.2.3"
+    assert component.extraction_mode is ExtractionMode.PARSED
+
+
+def test_selector_comment_on_a_templated_dep_line_never_becomes_a_version(
+    tmp_path,
+):
+    """`- {{ nv }}  # [linux]` -- the defensive quoting used to swallow the
+    selector comment INTO the quoted string (YAML can no longer strip what
+    is inside quotes), so the component came back with the corrupted EXACT
+    version `'# [linux]'` (verified live before the fix)."""
+    body = (
+        '{% set nv = "numpy" %}\n'
+        "requirements:\n"
+        "  run:\n"
+        "    - {{ nv }}  # [linux]\n"
+    )
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.version is None
+    assert component.extraction_mode is ExtractionMode.PARSED
+
+
+def test_per_output_test_requires_is_walked(tmp_path):
+    """`outputs[].test.requires` (the multi-output analog of the top-level
+    singular `test.requires`) used to produce no components at all while
+    its top-level twin was walked."""
+    body = (
+        "outputs:\n"
+        "  - name: sub-a\n"
+        "    test:\n"
+        "      requires:\n"
+        "        - pytest\n"
+    )
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "pytest"
+    assert [p.section for p in component.provenance] == [
+        "outputs[0].test.requires"
+    ]

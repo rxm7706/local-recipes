@@ -52,12 +52,24 @@ decisions are unchanged, see their own docstrings):
   "version" (``===1.2.3`` -> ``=1.2.3``), a corrupted value that must
   never be reported as a confident exact match (fixed 2026-07-16 —
   live-verified: ``classify_conda_specifier('===1.2.3')`` used to return
-  ``('=1.2.3', None)``).
+  ``('=1.2.3', None)``). Generalized (follow-up review, 2026-07-16): the
+  same never-a-corrupted-exact discipline is now enforced POSITIVELY via
+  ``_EXACT_VERSION_RE`` -- an accepted exact version must fit conda's own
+  version grammar, so ``~=`` compatible-release ranges (now a recognized
+  operator), ``==``-values with embedded ``=``/whitespace, and
+  post-substitution garbage tokens all withhold instead of poisoning CVE
+  matching -- and the classic v0 3-token ``name version build`` spec
+  yields its exact version part with the build string dropped, never a
+  ``"1.2.11 h470a237_3"`` "version".
 * ``split_conda_dep_string`` handles BOTH whitespace-separated
   (``numpy >=1.20``, common in recipe.yaml/meta.yaml/environment.yml) and
   contiguous (``python=3.11``, common in environment.yml) matchspec
   strings via one regex -- real conda tooling accepts both forms
-  interchangeably.
+  interchangeably. A ``channel::`` prefix is stripped (channel routing is
+  not part of the package name); a name-less, operator-leading spec
+  returns ``None`` (unidentifiable -- the caller degrades it) rather than
+  fabricating a component name out of operator text (both fixed
+  2026-07-16).
 * ``pep508_pypi_component`` mirrors
   ``pyproject.py::PyprojectExtractor._component``'s shape exactly
   (``identity_source=NATIVE`` -- a PyPI-native declaration IS its own
@@ -164,6 +176,7 @@ def _conda_component(
     provenance: tuple[Provenance, ...],
     *,
     extraction_mode: ExtractionMode = ExtractionMode.PARSED,
+    no_version_reason: WithholdReason = WithholdReason.NO_VERSION,
 ) -> Component:
     """Build a conda-ecosystem ``Component``, consulting the conda->pypi map
     (see ``_resolve_conda_pypi_identity``). Only a ``verified``-confidence
@@ -176,7 +189,16 @@ def _conda_component(
     caller's unchanged behavior): the 4 new format extractors pass
     ``NAME_ONLY`` here for a best-effort name recovered from an unresolved
     template construct, so it flows through the SAME identity-resolution
-    path as a literal dependency rather than a parallel one."""
+    path as a literal dependency rather than a parallel one.
+
+    ``no_version_reason`` (default ``NO_VERSION`` -- every pre-2.2
+    caller's unchanged behavior, lockfile rows genuinely have no
+    specifier): the version-withhold reason to record when ``version`` is
+    ``None``. The 4 format extractors thread
+    ``classify_conda_specifier``'s computed reason through here (fixed
+    2026-07-16 -- previously it was discarded at every conda call site, so
+    ``RANGE_ONLY`` was unreachable for conda components and a
+    range-declared dep dishonestly reported "no version declared")."""
     mapped = _resolve_conda_pypi_identity(name)
     if mapped is None:
         return _unmapped_conda_component(
@@ -201,7 +223,7 @@ def _conda_component(
         provenance=provenance,
         hygiene_covered=True,
         vuln_matchable=bool(version),
-        indeterminate_reason=None if version else WithholdReason.NO_VERSION,
+        indeterminate_reason=None if version else no_version_reason,
     )
 
 
@@ -271,27 +293,66 @@ def _raw_malformed(
 
 # --- new in Story 2.2: conda matchspec syntax --------------------------------
 
-# `name` stops at the first whitespace or operator character; `op` is one of
-# the 7 conda/PEP-440-ish comparison tokens (2-char forms tried first so
-# ">=" never partially matches as ">"); `version` is everything after,
+# `name` stops at the first whitespace or operator character (`~` included:
+# conda names never contain it, and excluding it is what lets the contiguous
+# `numpy~=1.20` form split correctly instead of yielding a corrupted
+# `numpy~` name -- fixed 2026-07-16); `op` is one of the 8 conda/
+# PEP-440-ish comparison tokens (2-char forms tried first so ">=" never
+# partially matches as ">", and `~=` recognized at all -- previously it fell
+# through to the bare-version path and a RANGE was silently classified as a
+# confident EXACT version, fixed 2026-07-16); `version` is everything after,
 # trimmed. No nested unbounded quantifiers (NFR-S5).
 _CONDA_SPEC_RE = re.compile(
-    r"^(?P<name>[^\s=<>!]+)\s*(?P<op>>=|<=|!=|==|=|>|<)?\s*(?P<version>.*)$"
+    r"^(?P<name>[^\s=<>!~]+)\s*(?P<op>~=|>=|<=|!=|==|=|>|<)?\s*(?P<version>.*)$"
 )
+
+# The strict shape an EXACT conda version value must have -- conda's own
+# version grammar (alphanumerics, `.`, `_`, epoch `!`, local `+`). Any
+# candidate outside this charset (whitespace, `=`, `#`, `~`, `*`, ...) is a
+# corrupted or complex form that must NEVER be reported as a confident
+# exact match -- it falls through to the same conservative RANGE_ONLY
+# withhold as an unrecognized operator (the Fix-4 `===` precedent,
+# generalized 2026-07-16: previously `numpy ~=1.20`'s specifier, a v0
+# `version build` pair, and a post-substitution garbage token were all baked
+# into "exact" versions and fed to CVE matching). Subsumes the `.*`-wildcard
+# check (`*` is outside the charset). No nested unbounded quantifiers
+# (NFR-S5).
+_EXACT_VERSION_RE = re.compile(r"^[A-Za-z0-9._+!]+$")
+# A conda build-string token (the classic v0 3-token `name version build`
+# spec, e.g. `zlib 1.2.11 h470a237_3`): letters/digits/`_`/`.` plus `*`
+# (build globs). Used ONLY to recognize -- and drop -- the build string so
+# the (exact) version part isn't corrupted by it.
+_BUILD_STRING_RE = re.compile(r"^[A-Za-z0-9._*]+$")
 
 
 def split_conda_dep_string(text: str) -> tuple[str, str | None] | None:
     """Split a conda matchspec-syntax dependency STRING (``name op version``,
     whitespace-separated OR contiguous, e.g. ``numpy >=1.20``,
-    ``python=3.11``, bare ``python``) into ``(name, raw-specifier|None)``.
-    ``None`` when ``text`` is empty/whitespace-only (a structurally empty
-    entry -- the caller degrades it, never crashes)."""
+    ``python=3.11``, bare ``python``, channel-prefixed
+    ``conda-forge::numpy=1.20``) into ``(name, raw-specifier|None)``.
+    ``None`` when ``text`` is empty/whitespace-only OR name-less (leads with
+    an operator, e.g. ``==1.2.3`` -- previously the whole spec became a
+    fabricated component NAME, fixed 2026-07-16): a structurally
+    unidentifiable entry the caller degrades, never crashes on."""
     stripped = text.strip()
     if not stripped:
         return None
+    # A `channel::name spec` / `channel/subdir::name spec` prefix (standard
+    # environment.yml syntax) is channel routing, not part of the package
+    # name -- previously it stayed baked into the name (`conda-forge::numpy`)
+    # and guaranteed a conda->pypi map miss (fixed 2026-07-16). The channel
+    # itself is not modeled (no Component field for it); identity correctness
+    # wins.
+    if "::" in stripped:
+        stripped = stripped.rsplit("::", 1)[-1].strip()
+        if not stripped:
+            return None
     match = _CONDA_SPEC_RE.match(stripped)
-    if match is None:  # pragma: no cover -- the pattern is total over any
-        return (stripped, None)  # non-empty string; defensive fallback only.
+    if match is None:
+        # The pattern requires at least one leading name character, so an
+        # operator-leading (name-less) spec doesn't match: unidentifiable,
+        # degrade (never fabricate a name out of the operator text).
+        return None
     name = match.group("name")
     op = match.group("op") or ""
     version = match.group("version").strip()
@@ -310,7 +371,7 @@ def classify_conda_specifier(
     if specifier is None or specifier.strip() in ("", "*"):
         return (None, WithholdReason.NO_VERSION)
     text = specifier.strip()
-    for op in ("==", ">=", "<=", "!=", ">", "<", "="):
+    for op in ("~=", "==", ">=", "<=", "!=", ">", "<", "="):
         if text.startswith(op):
             version = text[len(op) :].strip()
             # `===` (3+ leading equals) is NOT standard conda matchspec
@@ -321,16 +382,37 @@ def classify_conda_specifier(
             # silently treated as a confident exact match. Never guess:
             # an unrecognized 3+-equals shape falls through to the SAME
             # conservative RANGE_ONLY withhold as every other non-exact
-            # operator below.
+            # operator (`~=` compatible-release included -- it is a RANGE,
+            # recognized in the tuple above since 2026-07-16 precisely so
+            # it lands here and never in the bare-token path below). The
+            # `_EXACT_VERSION_RE` shape gate is the generalized version of
+            # the same discipline: an `==`-prefixed value carrying
+            # whitespace, an embedded `=` (`==1.20=py39`), a wildcard, or
+            # any other out-of-grammar character is withheld, never baked
+            # into a confident exact version.
             if op == "==" and version and not version.startswith("="):
-                if not version.endswith(".*"):
+                if _EXACT_VERSION_RE.match(version):
                     return (version, None)
             return (None, WithholdReason.RANGE_ONLY)
-    # No operator prefix at all: a bare version token -- exact unless it is
-    # itself a wildcard (mirrors pyproject's `==1.2.*`-is-a-range precedent).
-    if text.endswith(".*"):
-        return (None, WithholdReason.RANGE_ONLY)
-    return (text, None)
+    # No operator prefix at all: a bare version token -- exact only when it
+    # fits conda's own version grammar (`_EXACT_VERSION_RE`; subsumes the
+    # `==1.2.*`-is-a-range pyproject precedent, since `*` is outside the
+    # charset). The classic v0 3-token `name version build` spec
+    # (`zlib 1.2.11 h470a237_3`) is recognized as its (exact) version part
+    # with the build string DROPPED -- previously the whole
+    # `1.2.11 h470a237_3` pair was baked into one corrupted "exact" version
+    # (fixed 2026-07-16). Anything else (a post-substitution garbage token,
+    # a 3+-part spec) is conservatively withheld.
+    parts = text.split()
+    if (
+        len(parts) == 2
+        and _EXACT_VERSION_RE.match(parts[0])
+        and _BUILD_STRING_RE.match(parts[1])
+    ):
+        return (parts[0], None)
+    if _EXACT_VERSION_RE.match(text):
+        return (text, None)
+    return (None, WithholdReason.RANGE_ONLY)
 
 
 # --- new in Story 2.2: PEP 508 syntax (pixi.toml [pypi-dependencies], -------

@@ -51,7 +51,18 @@ Ownership decisions recorded:
   time. The NFR-S6 safe-token purity guard (``_is_safe_token``/
   ``_SAFE_TOKEN_CHARS``) is DUPLICATED here rather than imported from
   ``vuln.py`` — a small, security-relevant guard stays locally auditable
-  in each producing module rather than cross-module-coupled.
+  in each producing module rather than cross-module-coupled. (The inert
+  ``SynthesizedInput`` carrier dataclass IS imported from ``vuln.py``:
+  it is a pure data shape with no guard logic, so sharing it is not the
+  coupling the guard-duplication rationale avoids.) Beyond the charset
+  guard, every line is also validated against ``packaging``'s OWN
+  ``Requirement`` grammar before it is written (2026-07-16): deptry
+  parses each front-door line with that same grammar and CRASHES the
+  whole run (exit 1, no output file — verified live against deptry
+  0.25.x) on the first invalid line, so one
+  conda-legal-but-PEP-440-illegal identity (``numpy==1.20rc1x``) used to
+  take the ENTIRE hygiene axis down with it. An invalid line is excluded
+  + surfaced exactly like a charset failure, never written.
 * ``unsafe_identity_finding`` (Fix 6, 2026-07-16): ``SynthesizedInput.
   excluded`` (the NFR-S6-guard-excluded components above) was computed but
   then silently discarded by ``engines.DeptryEngine.run`` — unlike
@@ -86,6 +97,8 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass
+
+from packaging.requirements import InvalidRequirement, Requirement
 
 from .interfaces import _sanitize_id_segment
 from .inventory import Component
@@ -144,6 +157,22 @@ def _is_safe_token(value: str) -> bool:
     )
 
 
+def _is_valid_requirement_line(line: str) -> bool:
+    """deptry parses each ``--requirements-files`` line with ``packaging``'s
+    own ``Requirement`` grammar and CRASHES the whole run (exit 1, no output
+    file — verified live against deptry 0.25.x) on the first invalid line,
+    taking the entire hygiene axis down with it. A conda-legal but
+    PEP-508/440-illegal identity (``numpy==1.20rc1x``, a trailing-hyphen
+    name) passes the charset-only ``_is_safe_token`` guard, so every
+    synthesized line must ALSO parse under that same grammar before it is
+    written (fixed 2026-07-16)."""
+    try:
+        Requirement(line)
+    except InvalidRequirement:
+        return False
+    return True
+
+
 def _synthesize_deptry_frontdoor(components: Sequence[Component]) -> SynthesizedInput:
     """Turn every hygiene-covered, identified component into a sorted,
     de-duplicated pip-requirements-style line for deptry's
@@ -155,8 +184,10 @@ def _synthesize_deptry_frontdoor(components: Sequence[Component]) -> Synthesized
     deliberately NOT ``vuln_matchable`` (see module docstring): a
     range-only or unversioned-but-mapped conda dependency still deserves a
     hygiene signal. A component whose resolved name/version fails the
-    NFR-S6 safe-token purity guard is excluded (never written raw) and
-    reported back via ``SynthesizedInput.excluded``."""
+    NFR-S6 safe-token purity guard — or whose synthesized line fails
+    ``packaging``'s own ``Requirement`` grammar, which would crash deptry
+    itself (see ``_is_valid_requirement_line``) — is excluded (never
+    written raw) and reported back via ``SynthesizedInput.excluded``."""
     lines: list[str] = []
     excluded: list[Component] = []
     for component in components:
@@ -170,9 +201,13 @@ def _synthesize_deptry_frontdoor(components: Sequence[Component]) -> Synthesized
             if not _is_safe_token(identity.version):
                 excluded.append(component)
                 continue
-            lines.append(f"{identity.name}=={identity.version}")
+            line = f"{identity.name}=={identity.version}"
         else:
-            lines.append(identity.name)
+            line = identity.name
+        if not _is_valid_requirement_line(line):
+            excluded.append(component)
+            continue
+        lines.append(line)
     return SynthesizedInput(lines=tuple(sorted(set(lines))), excluded=tuple(excluded))
 
 
@@ -220,8 +255,8 @@ def unsafe_identity_finding(component: Component) -> Finding:
         "unsafe-identity",
         component,
         f"{component.name}: excluded from the deptry front-door input — its "
-        "resolved pypi identity does not satisfy the safe-token purity "
-        "guard (NFR-S6)",
+        "resolved pypi identity is not a safely-writable requirements line "
+        "(NFR-S6 safe-token purity guard / PEP 508 requirement grammar)",
     )
 
 

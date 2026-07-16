@@ -104,6 +104,64 @@ def test_range_conda_dep_is_withheld(tmp_path):
     assert component.version is None
 
 
+# --- follow-up review (2026-07-16) -------------------------------------------
+
+
+def test_compatible_release_conda_dep_never_yields_a_corrupted_exact(tmp_path):
+    """`- numpy ~=1.26` used to come back with the RANGE `'~=1.26'` baked in
+    as a confident EXACT version (and the contiguous form corrupted the
+    name to `numpy~`) -- verified live before the fix. numpy is
+    verified-mapped, so the withhold reason is honestly RANGE_ONLY, not
+    no-version."""
+    path = write_env(tmp_path, "dependencies:\n  - numpy ~=1.26\n")
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.version is None
+    assert component.indeterminate_reason is WithholdReason.RANGE_ONLY
+    path = write_env(tmp_path, "dependencies:\n  - numpy~=1.26\n")
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.version is None
+
+
+def test_channel_prefixed_dep_keeps_its_real_package_name(tmp_path):
+    """`- conda-forge::numpy=1.20` is standard environment.yml syntax -- the
+    channel used to stay baked into the name (`conda-forge::numpy`),
+    guaranteeing a conda->pypi map miss for a verified-mapped package."""
+    path = write_env(tmp_path, "dependencies:\n  - conda-forge::numpy=1.20\n")
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.pypi_identity is not None
+    assert component.indeterminate_reason is WithholdReason.RANGE_ONLY
+
+
+def test_v0_style_version_build_dep_yields_the_version_only(tmp_path):
+    """`- numpy 1.20.0 py39h123_0` (version + build string) used to bake the
+    whole pair into one corrupted EXACT version, which then also produced a
+    spurious unsafe-identity finding downstream (the space fails the NFR-S6
+    charset)."""
+    path = write_env(tmp_path, "dependencies:\n  - numpy 1.20.0 py39h123_0\n")
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.version == "1.20.0"
+    assert component.cve_match_level is CveMatchLevel.EXACT
+
+
+def test_null_pip_key_means_no_pip_deps_not_corruption(tmp_path):
+    """A `- pip:` key with nothing under it (a common authoring leftover)
+    used to fail the WHOLE manifest as unparsable, discarding every conda
+    dep along with it."""
+    path = write_env(tmp_path, "dependencies:\n  - python\n  - pip:\n")
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "python"
+
+
+def test_nameless_operator_leading_conda_dep_degrades(tmp_path):
+    path = write_env(tmp_path, "dependencies:\n  - '==1.2.3'\n")
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
+
+
 # --- pip list: PEP 508 parsing --------------------------------------------------
 
 

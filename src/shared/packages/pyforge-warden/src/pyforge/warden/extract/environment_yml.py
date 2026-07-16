@@ -55,7 +55,7 @@ import yaml
 
 from ..interfaces import Router
 from ..inventory import Component, Provenance
-from ..models import Ecosystem, ScannedManifest
+from ..models import Ecosystem, ScannedManifest, WithholdReason
 from . import UnparsableManifestError
 from ._identity import (
     _conda_component,
@@ -159,8 +159,13 @@ class EnvironmentYmlExtractor:
         if split is None:
             return _raw_malformed(ecosystem, entry, provenance)
         name, specifier = split
-        exact, _reason = classify_conda_specifier(specifier)
-        return _conda_component(name, exact, provenance)
+        exact, reason = classify_conda_specifier(specifier)
+        return _conda_component(
+            name,
+            exact,
+            provenance,
+            no_version_reason=reason or WithholdReason.NO_VERSION,
+        )
 
     def _pip_components(
         self,
@@ -168,6 +173,14 @@ class EnvironmentYmlExtractor:
         provenance: tuple[Provenance, ...],
         manifest: ScannedManifest,
     ) -> list[Component]:
+        if pip_list is None:
+            # A `- pip:` key with nothing under it (a common authoring
+            # leftover) parses as a null YAML node: semantically "no pip
+            # deps", NOT structural corruption -- treating it as the latter
+            # used to discard the whole manifest's conda deps along with it
+            # (fixed 2026-07-16). A pip: value of any OTHER wrong type still
+            # fails structurally below.
+            return []
         if not isinstance(pip_list, list) or not all(
             isinstance(entry, str) for entry in pip_list
         ):
