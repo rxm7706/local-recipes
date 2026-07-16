@@ -158,7 +158,11 @@ spec_updated: 2026-07-16
 > Health pipeline) with Wave B story **B10** and a second § 12
 > external-source exception. Fetched via the existing
 > `resolve_github_raw_urls` helper — no new endpoint helper; mirror
-> routing inherited. § 15 ledger gains the audit row.
+> routing inherited. § 15 ledger gains the audit row. Same-day source
+> evaluation: the prefix.dev GraphQL API is recorded as evaluated-not-
+> promoted (§ 12 row — no vuln types, metadata duplicates repodata;
+> future hook: `variants.yankedReason` for Phase B.6's deferred full
+> yanked detection, noted on Story B1).
 
 ---
 
@@ -749,6 +753,8 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - Phase I (per-version download history) becomes an explicit node with declared outputs — no longer an unregistered side-effect of Phase F.
 - Maps to FR-2.
 
+Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `latest_status`), which is all parity requires. Its deferred full per-version yanked detection has a recorded cheaper candidate path — prefix.dev GraphQL `variants.yankedReason` targeted queries instead of the ~1 GB repodata diff the legacy docstring priced (§ 12 evaluation row). Optional follow-on, not part of this story.
+
 #### Story B2 — Port the PyPI & Vulnerability pipelines
 
 **Goal**: Refactor the PyPI intelligence phases (C, C.5 mapping + D enumeration + H skew detection + O–S scoring per § 5.2, including the shared `phase_r_upsert_one` / `apply_readiness_scores` single-write-path helpers that `add-handoff` reuses) and the vulnerability phases (G / G' — AppThreat VDB / CISA KEV) into their domain pipelines.
@@ -1067,6 +1073,7 @@ The following are deliberately excluded from this migration, with reason:
 | Standalone binaries / JVM dependencies | Pixi-first, conda-forge-only constraint (FR-15, § 4.9). |
 | Enterprise Python Manifest (5k) generation as a deliverable | Downstream target state (§ 4.11) the graph *enables*; not built in this migration. |
 | New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set (which already includes endoflife.date, osv.dev, and the local deptry / osv-scanner toolchain — § 3.3 / § 3.4). **Two promoted exceptions (2026-07-16): `api.basilisk.prefix.dev`** (v4 — FR-19 / Story B8, from § 15's live-validated analysis) **and the `conda-forge/conda-forge-bot-data` `status/` datasets** (v4.1 — FR-21 / Story B10; raw GitHub content via the existing `resolve_github_raw_urls`, so no new endpoint class). Further new sources remain out of scope. |
+| prefix.dev GraphQL API (`prefix.dev/api/graphql`) as an additional metadata backend | Evaluated 2026-07-16, not promoted: no vulnerability types (Basilisk REST stays the FR-19 surface); package/variant metadata duplicates repodata, which the atlas already sources with `repo.prefix.dev` as its first public mirror (§ 3.3 fallback chain — prefix.dev-as-infrastructure is already in the source set); and the per-package query model is unfit for bulk enumeration vs one repodata fetch. **One recorded future hook**: `variants.yankedReason` gives per-version yanked status + reason via targeted no-auth queries — the cheap candidate path for Phase B.6's deferred "true v2" full yanked detection (legacy alternative: ~1 GB patched-vs-unpatched repodata diff). See the Story B1 note. |
 | `pyforge.warden` v1 standalone build (`docs/specs/pyforge-warden.md`) | Built under its own spec as an internal-first library. This migration models only the *promoted* atlas surface (FR-16 / FR-18) — the hygiene node contract matches its `ComplianceReport` schema so consolidation with `scan-project` lands as wiring, not redesign. |
 | Rewriting the conda-forge recipe-authoring skill itself | This migration touches the `cf_atlas` intelligence layer, not the recipe-authoring loop. |
 | Static seeds + recipe template trees as pipeline *products* | Curated inputs (§ 3.4); the catalog declares them as versioned external datasets — the pipeline reads, never generates, them. |
@@ -1100,6 +1107,7 @@ The following are deliberately excluded from this migration, with reason:
 - `deptry` + `osv-scanner` (conda-native: `recipes/deptry`, the `recipes/osv-scanner` mirror; `fawltydeps` / `pip-check-reqs` as ecosystem context) — the FR-16/FR-18 hygiene + gate toolchain.
 - `api.basilisk.prefix.dev` — the OSV-compatible, conda-native vulnerability API (FR-19); conda PURLs per CEP 63.
 - `conda-forge/conda-forge-bot-data` `status/` tree — category lists (`regular_status.json` / `longterm_status.json` / `closed_status.json` / `paused_status.json` / `total_status.json`) + per-migration `migration_json/<name>.json`; the data behind `conda-forge.org/status/#migrations` (FR-21).
+- prefix.dev GraphQL API (`prefix.dev/api/graphql` — public queries, no auth) — evaluated, not promoted (§ 12); recorded hook: `variants.yankedReason` for Phase B.6's deferred full yanked detection.
 - Live-analytics evidence for FR-19/FR-20 (§ 15 disposition ledger): `gist.github.com/rxm7706/76eb84093c3408b26ed6156b037c6d80` (v1) and `gist.github.com/rxm7706/73db2b7ab8935f95ea6e549ed994c778` (v2, adds Basilisk).
 
 ---
