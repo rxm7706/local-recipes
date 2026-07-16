@@ -246,12 +246,28 @@ class DefaultPolicy:
     def evaluate(
         self, inventory: ResolvedInventory, engine_results: Sequence[EngineResult]
     ) -> tuple[tuple[Finding, ...], tuple[tuple[Status, StatusDriver | None], ...]]:
-        # Lazy imports break the interfaces<->hygiene and interfaces<->vuln
-        # cycles (both hygiene.py and vuln.py import _sanitize_id_segment
-        # from here); by the time evaluate() runs, all modules are fully
-        # loaded.
+        # Lazy imports break the interfaces<->hygiene, interfaces<->vuln, and
+        # interfaces<->extract.lockfiles cycles (extract.lockfiles imports
+        # Router from here); by the time evaluate() runs, all modules are
+        # fully loaded.
+        from .extract.lockfiles import TRUSTED_MATCH_CONFIDENCE
         from .hygiene import hygiene_rung
         from .vuln import vuln_rung
+
+        # Story 2.1, Gap-A: DEP001 is trusted (blocks) unless the inventory
+        # carries a positive ambiguous-mapping signal — a "likely"-confidence
+        # conda component — anywhere. Computed once per scan, not per
+        # finding (see hygiene.hygiene_rung's docstring for why). A total
+        # map miss (mapping_confidence is None) does NOT count as ambiguous:
+        # most conda packages are legitimately non-Python/native and will
+        # NEVER have a pypi_identity, so treating every miss as a distrust
+        # signal would make this gate false almost universally — only a
+        # POSITIVE untrusted candidate (a "likely" hit) is evidence the
+        # mapping pipeline actually saw ambiguity for this scan.
+        dep001_trusted = all(
+            component.mapping_confidence in (None, TRUSTED_MATCH_CONFIDENCE)
+            for component in inventory.components
+        )
 
         findings: list[Finding] = []
         rungs: list[tuple[Status, StatusDriver | None]] = []
@@ -270,7 +286,7 @@ class DefaultPolicy:
                     # indeterminate). This REPLACES the 1.2 indeterminate
                     # backstop for the hygiene axis only — never mapping a
                     # finding to clean (C0 preserved).
-                    rungs.append(hygiene_rung(finding))
+                    rungs.append(hygiene_rung(finding, dep001_trusted=dep001_trusted))
                 elif finding.axis == AXIS_VULNERABILITY:
                     # Story 1.6: vulnerability-axis engine findings route
                     # through the real default severity->status table

@@ -183,10 +183,16 @@ def test_malformed_toml_still_emits_an_error_report(capsys, tmp_path):
     assert err != ""  # the diagnostic went to stderr, not stdout
 
 
-def test_conda_pypi_map_stub_is_an_empty_mapping():
-    """The asset-loading plumbing works and the stub map is {} (the real
-    shape + generation are Story 2.1's)."""
-    assert load_conda_pypi_map() == {}
+def test_conda_pypi_map_is_populated_and_correctly_shaped():
+    """The asset-loading plumbing works and the bundled map is populated
+    (Story 2.1) with the {pypi_name, match_source, match_confidence} shape
+    per entry — never flattened to name->name."""
+    mapping = load_conda_pypi_map()
+    assert mapping
+    entry = mapping["numpy"]
+    assert isinstance(entry, dict)
+    assert entry.keys() == {"pypi_name", "match_source", "match_confidence"}
+    assert entry["pypi_name"] == "numpy"
 
 
 def test_empty_scan_set_emits_a_stderr_notice_in_both_formats(capsys, tmp_path):
@@ -495,19 +501,17 @@ def _one_hygiene_finding(document: dict, finding_id: str) -> dict:
     return matches[0]
 
 
-def test_deptry_missing_dependency_is_a_warning(capsys):
-    """DEP001 (imported-but-undeclared) WARNS in 1.3 (exit 0), not blocks:
-    Gap-A requires DEP001's block to be gated on name-mapping confidence,
-    which needs Story 2.1's conda->pypi map; deptry's DEP001 false-positives
-    (guarded optional imports) would otherwise produce a benign false-red.
-    The finding is still surfaced with a driver on the hygiene axis (never a
-    false-green) — 2.1 upgrades it to block-on-high-confidence. Follow-up
-    Opus review, 2026-07-14."""
+def test_deptry_missing_dependency_blocks_by_default(capsys):
+    """DEP001 (imported-but-undeclared) BLOCKS (exit 1) by default (Story
+    2.1, Gap-A): a pure-PyPI project has no conda-mapping ambiguity in its
+    inventory, so the scan-wide dep001_trusted gate stays True and DEP001's
+    upgraded default (policy-violation) applies. The finding is still
+    surfaced with a driver on the hygiene axis (never a false-green)."""
     rc, out, err = run_scan(capsys, DEPTRY_MISSING)
     document = parse_report(out)
-    assert rc == 0
+    assert rc == 1
     assert rc == document["exit_code"]
-    assert document["status"]["value"] == "warn"
+    assert document["status"]["value"] == "policy-violation"
     finding = _one_hygiene_finding(
         document, "hygiene:DEP001:totally_absent_pkg_xyz"
     )

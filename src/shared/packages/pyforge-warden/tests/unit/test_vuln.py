@@ -306,6 +306,55 @@ def test_synthesize_requirements_emits_sorted_safe_lines(component_factory):
     assert result.excluded == ()
 
 
+def test_synthesize_requirements_writes_the_mapped_name_for_a_renamed_conda_component(
+    component_factory,
+):
+    """Story 2.1's marquee rename fidelity: a conda component whose name
+    differs from its resolved pypi_identity (conda ``pytorch`` → PyPI
+    ``torch``) must reach osv-scanner under the MAPPED name — the conda
+    spelling appearing in the synthesized input would re-open the exact
+    wrong-package matching Gap C exists to close."""
+    component = component_factory(
+        name="pytorch",
+        version="2.1.0",
+        ecosystem=Ecosystem.CONDA,
+        pypi_identity=PypiIdentity(name="torch", version="2.1.0"),
+        mapping_confidence="verified",
+        vuln_matchable=True,
+    )
+    result = _synthesize_requirements([component])
+    assert result.lines == ("torch==2.1.0",)
+    assert result.excluded == ()
+
+
+def test_synthesize_requirements_deduplicates_components_sharing_one_identity(
+    component_factory,
+):
+    """Two components legitimately resolving to the same identity (a conda
+    package and its pip twin in one lockfile, Story 2.1) synthesize ONE
+    ``name==version`` line, not a duplicate."""
+    components = [
+        component_factory(
+            name="pytorch",
+            version="2.1.0",
+            ecosystem=Ecosystem.CONDA,
+            pypi_identity=PypiIdentity(name="torch", version="2.1.0"),
+            mapping_confidence="verified",
+            vuln_matchable=True,
+        ),
+        component_factory(
+            name="torch",
+            version="2.1.0",
+            ecosystem=Ecosystem.PYPI,
+            pypi_identity=PypiIdentity(name="torch", version="2.1.0"),
+            vuln_matchable=True,
+        ),
+    ]
+    result = _synthesize_requirements(components)
+    assert result.lines == ("torch==2.1.0",)
+    assert result.excluded == ()
+
+
 def test_synthesize_requirements_excludes_leading_dash_name():
     from pyforge.warden.inventory import Component, Provenance
     from pyforge.warden.models import CveMatchLevel, ExtractionMode, IdentitySource
