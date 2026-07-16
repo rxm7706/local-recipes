@@ -30,7 +30,7 @@ spec_updated: 2026-07-16
 
 | Field | Value |
 |---|---|
-| Status | **v5.1 — clean re-authoring (reset) + full docs-corpus sync, 2026-07-16; grounded on live surface main `58a6dcc` / skill v8.78.0; ready for full BMAD execution intake.** 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
+| Status | **v5.2 — clean re-authoring (reset) + docs-corpus sync + domain-research fold, 2026-07-16; grounded on live surface main `58a6dcc` / skill v8.78.0; ready for full BMAD execution intake.** 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
 | Owner | rxm7706 |
 | Track | BMAD Full Flow (includes separate PRD/architecture phases) |
 | Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~10,000 LOC, 23 cataloged phases) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. Includes three committed new-signal sources (FR-19 Basilisk vulnerabilities, FR-20 release velocity, FR-21 migration readiness). |
@@ -416,11 +416,12 @@ To resolve the § 3.2 bottlenecks, we migrate the custom orchestrator to **Kedro
 *   Replaces the legacy cron + bash script orchestration of `bootstrap-data`.
 *   Provides a production-grade orchestration engine to handle retry logic, resource constraints, and complex pipeline schedules.
 *   The `kedro-dagster` plugin allows seamless compilation of the Kedro DAG into a Dagster graph, giving the best of both worlds (Kedro for authoring, Dagster for running).
+*   **Risk posture** (2026-07-16 domain research): Prefect announced its acquisition of Dagster Labs on 2026-07-13 — Apache-2.0 and the Dagster roadmap are publicly reaffirmed, but the 2027 roadmap carries acquisition uncertainty. And `kedro-dagster` is bus-factor ≈ 1 (sole maintainer at a small consultancy; `dagster <2.0` pin; community-plugin status). Both are therefore treated as **replaceable glue, not foundations**: the Kedro DAG stays the source of truth, the compiled-orchestrator interface stays thin, and the declared exit ramps are Dagster-native authoring (Dagster Components) or Kedro's officially supported Prefect deployer. Re-evaluate at Wave C start (Q2).
 
-### 4.5 Why MCP Integration (`kedro-mcp`)?
+### 4.5 Why MCP Integration?
 
 *   Maintains the critical requirement that BMAD agents can interrogate and interact with the pipeline via the Model Context Protocol.
-*   By leveraging `kedro-mcp`, we can expose Kedro pipelines and catalog reads directly as MCP tools, replacing the need for bespoke subprocess wrappers in `FastMCP`.
+*   **Build the MCP surface over Kedro's Python APIs; wrap `kedro-mcp`, don't depend on it.** As of 2026-07-16, `kedro-mcp` 0.1.2 is early (14 commits, quiet since Feb 2026) and scoped to AI *guidance* (project conversion, migration advice, best practices) — not the pipeline-trigger + dataset-read surface FR-7 requires. The atlas MCP tools are therefore authored directly against Kedro's session/catalog APIs (the same FastMCP patterns the legacy server uses), incorporating `kedro-mcp` where its scope genuinely helps and contributing upstream where practical.
 
 ### 4.6 Why Boring Semantic Layer (BSL)?
 
@@ -438,7 +439,7 @@ To resolve the § 3.2 bottlenecks, we migrate the custom orchestrator to **Kedro
 *   **Unified Engine**: The legacy SQLite database and fragmented compute proposals (Polars, Neo4j, Kùzu, LanceDB) will be completely replaced by **DuckDB**.
 *   **Parquet Native**: DuckDB natively reads S3 Parquet and executes multi-core analytical queries, drastically reducing the 3-4 hour cold start time.
 *   **All-in-One**: DuckDB handles graph traversals natively via recursive CTEs and handles RAG embeddings via the Vector Similarity Search (`vss`) extension.
-*   **Data Quality Guardrails**: Integrating **Great Expectations** ensures we catch malformed API data (e.g., PyPI JSON missing version fields) mid-pipeline, preventing poisoned data from entering the database.
+*   **Data Quality Guardrails**: Inline **Pandera** schema contracts catch malformed API data (e.g., PyPI JSON missing version fields) mid-pipeline, preventing poisoned data from entering the database; **Great Expectations** joins as the boundary-validation layer once it supports Python 3.14 (§ 5.8).
 
 ### 4.9 WebAssembly (WASM), Pixi-Native Portability & `nebi` Scaffolding
 
@@ -482,7 +483,7 @@ The legacy phases refactor into seven domain-specific pipelines:
 
 1.  **Core Pipeline**: Foundational conda-forge enumeration and graph building.
 2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4) — and the `mapping-gap` `g10_spelling` writeback (§ 3.3 mapping contract: the one gap tool that mutates the atlas belongs with the mapping stage).
-3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay; the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5); and the **Basilisk ingestion node family** (FR-19, Story B8) — a batch-query node (`POST /v1/querybatch`, ≤1,000 queries/request) writing the `basilisk_vulns` dataset keyed by conda PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP 63) plus a bounded detail-fetch node (`GET /v1/vulns/{id}`), a second, conda-native vulnerability identity axis complementary to the PyPI-keyed vdb. Read nodes honor the § 3.3 vulnerability read-path contract (atlas `cisa_kev` KEV overlay + CVSS ScoreType coercion).
+3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay; the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5); and the **Basilisk ingestion node family** (FR-19, Story B8) — a batch-query node (`POST /v1/querybatch`, ≤1,000 queries/request) writing the `basilisk_vulns` dataset keyed by conda PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP-63 draft form) plus a bounded detail-fetch node (`GET /v1/vulns/{id}`), a second, conda-native vulnerability identity axis complementary to the PyPI-keyed vdb. Read nodes honor the § 3.3 vulnerability read-path contract (atlas `cisa_kev` KEV overlay + CVSS ScoreType coercion).
 4.  **VCS & Health Pipeline**: GitHub/GitLab live queries and upstream version tracking; the **release-to-availability velocity columns** (FR-20, Story B9) on the Phase H join — `release_lag_hours` + `release_lag_qualifies`, computed only where the upstream release is ≤90 days old (the rebuild-cadence-artifact guard); and the **migration-readiness nodes** (FR-21, Story B10) — external datasets over `conda-forge/conda-forge-bot-data` `status/` (category lists + per-migration `migration_json/<name>.json`, partitioned by active migration) plus a classification node joining them against the feedstock set and Phase B's `conda_noarch`.
 5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from the tiered intake of § 4.10, strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets. Four node families beyond parsing (FR-16/17/18): a **transitive-resolver node** (pip `--dry-run --report` for PyPI / py-rattler solve for conda; records depth + fan-out) that upgrades bare manifests to full dependency sets — resolution honors the `_http.py` mirror-routing contract (§ 3.3 external endpoints) and degrades gracefully when offline (consumer profile: resolve from a provided lockfile or cached index, else skip resolution and mark the BOM `unresolved` rather than fail); the **inventory-match matching node** preserving the shipped six-bucket semantics (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN, three-way version comparison, channeldata-live recovery); a forward-looking **dependency-hygiene scan node** (deptry — unused / missing / misplaced deps; FR-16, Story F4); and the **unified CI policy gate** (FR-18) as the pipeline's terminal quality node.
 6.  **Seed-Gaps Pipeline**: The four report-only gap suggesters (`lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — § 3.4) as terminal report nodes fanned out from their external seed datasets, downstream of the atlas rebuild, producing `derived`-layer freshness reports only. Strictly read-only; `mapping-gap` is deliberately excluded (its writeback lives in pipeline 2). Ported by Story B6.
@@ -502,10 +503,10 @@ The legacy phases refactor into seven domain-specific pipelines:
 *   **Timeouts are per-node**, replacing `bootstrap_data.py`'s single coarse `cf_atlas_core` cap — the 1800 s hard timeout that silently drops Phase F/K/N on cold admin runs (§ 3.3 known issue) cannot recur when each node carries its own budget and failure isolation.
 *   The ~3 GB storage budget (vdb 2.5 GB dominant) is declared as a resource constraint on the vulnerability pipeline's external-refresh assets.
 
-### 5.5 MCP Exfiltration (`kedro-mcp`)
+### 5.5 MCP Surface
 
 *   The existing 46 MCP tools hosted in `.claude/tools/conda_forge_server.py` (23 atlas-relevant, § 3.3) will be audited and ported; the non-atlas recipe-authoring tools stay on the FastMCP server.
-*   `kedro-mcp` will expose datasets and pipeline triggers to Claude Code.
+*   The atlas MCP tools are authored directly over Kedro's session/catalog APIs (FastMCP patterns), exposing datasets and pipeline triggers to Claude Code; `kedro-mcp` is wrapped where its guidance scope helps, never load-bearing (§ 4.5).
 *   BMAD Agents will trigger specific pipelines (e.g., `run_vulnerability_pipeline`) and read the resulting datasets natively via MCP.
 
 ### 5.6 Semantic Knowledge Graph (Boring Semantic Layer)
@@ -520,10 +521,10 @@ The legacy phases refactor into seven domain-specific pipelines:
 *   This will allow the `cf_atlas` analytical agent (which uses BSL to formulate insights) to exchange structured payloads directly with the `conda-forge-expert` recipe-authoring agent.
 *   The A2A interface will support publish/subscribe or direct-messaging protocols, providing an architectural foundation for autonomous, multi-agent remediation pipelines (e.g., Agent A finds a CVE via BSL, Agent B authors the fix).
 
-### 5.8 Data Quality Guardrails (Great Expectations & Pandera)
+### 5.8 Data Quality Guardrails (Pandera-first; Great Expectations when py3.14-compatible)
 
-*   We will define strict data contracts using Great Expectations and Pandera. The outdated `kedro-great-expectations` and `kedro-pandera` plugins are blocked/banned.
-*   We will write custom Kedro `AfterNodeRunHook` classes to run Great Expectations validations, and use inline Pandera schema assertions inside nodes.
+*   **Pandera is the primary contract layer** — inline schema assertions inside nodes (pandera 0.32.1 verified py3.14-compatible, `requires_python >=3.10`). The outdated `kedro-great-expectations` and `kedro-pandera` plugins are blocked/banned.
+*   **Great Expectations is version-blocked on the repo's Python 3.14 floor** (GX 1.19.0 declares `requires_python <3.14,>=3.10` — verified against PyPI 2026-07-16, same failure class as litellm). When GX ships 3.14 support (or if a dedicated no-default-feature env is judged worth it), it joins as the boundary-validation layer via a custom Kedro `AfterNodeRunHook`; until then the hook architecture is built pandera-backed so the GX addition is a wiring change.
 *   Dagster will halt nodes upon validation failures (which raise exceptions in Kedro), triggering A2A alerts for agentic investigation before bad data is persisted.
 
 ### 5.9 Event-Driven Sensors, Lineage & Observability
@@ -599,9 +600,9 @@ DuckDB is the single engine for analytical compute, graph traversal (recursive C
 
 The Kedro DAG compiles to a Dagster repository. Daily/weekly schedules and retry logic move from cron+bash to Dagster Schedules (cadence per the `guides/atlas-operations.md` table, § 5.4); state is observable in the Dagster UI. The `bootstrap-data --fresh` entry point becomes the full-DAG Dagster job (the `__default__` Kedro pipeline); the three bootstrap profiles become named job configurations; the script itself is retired at B4 parity along with the legacy orchestrator. Motivating failure: the legacy `cf_atlas_core` sub-step's HARD 1800 s cap silently drops Phase F/K/N on cold admin runs (§ 3.3) — per-node Dagster timeouts/retries make that class of failure structurally impossible. (§ 4.4, § 5.4.)
 
-### FR-7. MCP surface preserved via `kedro-mcp`
+### FR-7. MCP surface preserved (Kedro-API-native tools; kedro-mcp wrapped, not load-bearing)
 
-The existing MCP tools in `.claude/tools/conda_forge_server.py` are audited and ported so BMAD agents retain pipeline-trigger + dataset-read access via MCP. (§ 4.5, § 5.5.)
+The existing MCP tools in `.claude/tools/conda_forge_server.py` are audited and ported so BMAD agents retain pipeline-trigger + dataset-read access via MCP. The tools are authored directly over Kedro's session/catalog APIs; `kedro-mcp` (0.1.2 — early, guidance-scoped) is incorporated only where its scope helps and is never a load-bearing dependency. (§ 4.5, § 5.5.)
 
 ### FR-8. Boring Semantic Layer over the Kedro catalog (Ibis → DuckDB)
 
@@ -611,9 +612,9 @@ The metrics and business logic currently embedded in the 28 read CLIs (§ 3.3) a
 
 The 28 bespoke CLIs (§ 3.3) become Vizro pages + a Vizro-AI natural-language query field, exposed both as a web dashboard and as an MCP tool. (§ 4.3, § 6.)
 
-### FR-10. Data-quality contracts via Great Expectations halt bad data
+### FR-10. Data-quality contracts halt bad data (pandera-first)
 
-Great Expectations contracts are wired into Kedro nodes; Dagster halts on contract violation and raises an A2A alert before bad data is persisted. (§ 4.8, § 5.8.)
+Inline pandera schema contracts are wired into Kedro nodes; Dagster halts on contract violation and raises an A2A alert before bad data is persisted. Great Expectations — currently uninstallable on the repo's Python 3.14 floor (`requires_python <3.14` at GX 1.19.0) — joins as the boundary-validation layer behind the same hook architecture when it gains 3.14 support; the contract semantics (halt + alert) are identical either way. (§ 4.8, § 5.8.)
 
 ### FR-11. A2A interface for inter-agent collaboration
 
@@ -649,11 +650,13 @@ A hygiene node runs `deptry` over the § 4.10 tiered intake **when project sourc
 
 One terminal quality node assembles the full four-axis `ComplianceReport` (FR-16) and converges `pyforge-warden.md`'s strict exit-code gate with `inventory-match --policy` (`max_critical` / `max_high` / KEV thresholds), emits the schema-validated artifact into the `derived` layer, and halts Dagster on failure exactly like an FR-10 contract violation (raising the A2A alert). CI consumes the exit code.
 
-The gate lands on pyforge-warden's **frozen convention** — exit 0 pass / 1 policy-fail / 2 error (full enum {0, 1, 2, 130}; verdict lattice `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`, `indeterminate` → exit 1). **Reconciliation obligation**: the shipped `inventory-match --policy` enum is inverted (0 = pass, **2 = policy-violation, 1 = error**) — FR-18 flips it to the frozen convention with a deprecation window (`INVENTORY_MATCH_LEGACY_EXIT=1` restores the legacy codes for one release) so existing CI consumers migrate deliberately rather than break silently. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
+The gate lands on pyforge-warden's **frozen convention** — exit 0 pass / 1 policy-fail / 2 error (full enum {0, 1, 2, 130}; verdict lattice `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable`, `indeterminate` → exit 1). **Reconciliation obligation**: the shipped `inventory-match --policy` enum is inverted (0 = pass, **2 = policy-violation, 1 = error**) — FR-18 flips it to the frozen convention with a deprecation window (`INVENTORY_MATCH_LEGACY_EXIT=1` restores the legacy codes for one release) so existing CI consumers migrate deliberately rather than break silently.
+
+Recorded future option (not committed): a **risk-tiered threshold mode** modeled on CISA BOD 26-04's four-variable matrix — KEV status × automatability (EPSS as proxy) × exposure × technical impact, with tiered response windows — as an evolution of the flat `max_critical`/`max_high`/KEV thresholds. The pipeline already ingests every input the matrix needs. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
 
 ### FR-19. Conda-native vulnerability source: Basilisk (prefix.dev)
 
-The Vulnerability Pipeline gains a second, conda-native identity axis: `api.basilisk.prefix.dev` — a live, no-auth, OSV-compatible REST API matched against the actual conda-forge PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP 63 form) — complementary to the PyPI-keyed vdb of Phase G. It catches advisories on packages the PyPI-keyed pipeline structurally cannot see because they were never PyPI packages (live-validated over the full 21,163-package Python population: confirmed advisories on `libuuid` — 203M downloads, CVE-2026-3184 — `libtiff`, `libarchive`, `perl`, all non-Python C/system libraries riding as transitive Python-environment dependencies).
+The Vulnerability Pipeline gains a second, conda-native identity axis: `api.basilisk.prefix.dev` — a live, no-auth, OSV-compatible REST API matched against the actual conda-forge PURL (`pkg:conda/conda-forge/<name>@<version>`, per the **in-flight CEP-63 proposal** — not yet an accepted CEP; purl itself is the formal standard, ECMA-427) — complementary to the PyPI-keyed vdb of Phase G. Sustainability note: Basilisk is **pre-announcement** (no public docs/repo as of 2026-07-16; the API was live-validated by this project on 2026-07-15) — the offline-skip behavior and `BASILISK_BASE_URL` override below are the designed hedges, and the proposed conda-forge security SIG's community CVE mapping is the watch-item successor/complement. It catches advisories on packages the PyPI-keyed pipeline structurally cannot see because they were never PyPI packages (live-validated over the full 21,163-package Python population: confirmed advisories on `libuuid` — 203M downloads, CVE-2026-3184 — `libtiff`, `libarchive`, `perl`, all non-Python C/system libraries riding as transitive Python-environment dependencies).
 
 Ingestion is two nodes (§ 5.2 item 3): a **batch-query node** — `POST /v1/querybatch`, documented cap 1,000 queries/request (live run: 85 requests of 250 over the full population, zero errors) — writing the `basilisk_vulns` dataset in the lightweight batch shape (`conda_name`, `advisory_id`, `modified`); and a **bounded detail-fetch node** — `GET /v1/vulns/{id}` for full OSV detail (severity, `affected[].ranges[].events`) — a separate follow-up pass (live: all 765 unique advisory IDs in one pass, no further batching).
 
@@ -758,13 +761,14 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - Phase H's serial gate ports without re-including the pypi-only denominator (§ 3.3 engineering contracts); EPSS percentiles stay normalized 0–100; `pypi_intelligence.notes` operator overrides survive Phase S re-runs.
 - Maps to FR-2.
 
-#### Story B3 — Integrate `kedro-mcp` to re-expose the data surface
+#### Story B3 — Re-expose the data surface as Kedro-API-native MCP tools
 
-**Goal**: Audit the 46 existing MCP tools (23 atlas-relevant, § 3.3) and re-expose datasets + pipeline triggers to Claude Code / BMAD agents via `kedro-mcp`; non-atlas recipe-authoring tools stay on the FastMCP server. Keep `library-futures` / `add-handoff` CLI-only.
+**Goal**: Audit the 46 existing MCP tools (23 atlas-relevant, § 3.3) and re-expose datasets + pipeline triggers to Claude Code / BMAD agents via MCP tools authored over Kedro's session/catalog APIs (FR-7); non-atlas recipe-authoring tools stay on the FastMCP server. Keep `library-futures` / `add-handoff` CLI-only.
 
 **Acceptance criteria**:
 - BMAD agents can trigger a named pipeline (e.g., `run_vulnerability_pipeline`) via MCP.
 - BMAD agents can read a resulting dataset natively via MCP.
+- `kedro-mcp` is not a load-bearing dependency of the trigger/read surface (it may be wrapped for its guidance scope) — the surface works with it absent.
 - Maps to FR-7.
 
 #### Story B4 — Verify dataset parity against the legacy orchestrator
@@ -924,13 +928,14 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - Cold-start time is materially below the legacy 3–4 h baseline.
 - Maps to FR-5.
 
-#### Story F2 — Implement direct Data Validation Hook and inline Pandera checks
+#### Story F2 — Implement the data-validation hook and inline Pandera contracts
 
-**Goal**: Wire Great Expectations validations into a custom Kedro `AfterNodeRunHook` and implement inline `pandera` assertions within nodes.
+**Goal**: Implement inline `pandera` schema assertions within nodes as the primary contract layer, behind a custom Kedro `AfterNodeRunHook` architecture designed so Great Expectations can slot in as the boundary layer once it supports Python 3.14 (FR-10).
 
 **Acceptance criteria**:
 - A validation failure (e.g., PyPI JSON missing a version field or schema checks failing) halts execution by raising a native Python exception.
 - The failure propagates to Dagster, halting the pipeline and raising an A2A alert.
+- The hook interface is validator-agnostic: swapping/adding the GX backend requires no node changes (fixture-proven with a stub second validator).
 - Maps to FR-10.
 
 #### Story F3 — Implement Vector Similarity Search (RAG) via DuckDB `vss`
@@ -1002,7 +1007,7 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - **AC-3.** Dagster owns scheduling + retries; phase state is observable in the Dagster UI; `pixi run viz` renders the DAG.
 - **AC-4.** The 28 read CLIs (§ 3.3) are answerable from Vizro pages, plus a Vizro-AI NL field and `query_vizro_ai` MCP tool, all driven by the BSL.
 - **AC-5.** MCP + A2A surfaces let BMAD agents trigger pipelines, read datasets, and hand structured payloads to the `conda-forge-expert` agent.
-- **AC-6.** Great Expectations contracts halt bad data; OpenLineage + OpenTelemetry provide lineage + end-to-end tracing; the unified policy gate (FR-18) preserves the deptry / `inventory-match --policy` exit-code contract (0/1/2).
+- **AC-6.** Data-quality contracts (pandera-first, FR-10) halt bad data; OpenLineage + OpenTelemetry provide lineage + end-to-end tracing; the unified policy gate (FR-18) preserves the frozen exit-code contract (0/1/2).
 - **AC-7.** DuckDB is the single compute/graph/vector engine; cold-start is materially faster than the 3–4 h legacy baseline.
 - **AC-8.** The intelligence surface runs in-browser via DuckDB-WASM against statically-hosted Parquet; Dagster Sensors enable near-real-time ingestion.
 - **AC-9.** Every component is conda-forge-sourced and pixi-managed (`nebi`-scaffolded); no standalone binaries / JVM.
@@ -1022,11 +1027,13 @@ What counts as "zero material drift" when comparing Kedro Parquet outputs to leg
 
 **Default**: exact row-count + value parity on the actionable views; document any timestamp/ordering-only diffs as benign.
 
-### Q2 — Dagster deployment footprint (gates Wave C)
+### Q2 — Dagster deployment footprint + acquisition watch (gates Wave C)
 
 Does Dagster run as a long-lived local daemon, or only on-demand for scheduled runs? The legacy path was cron+bash. A persistent Dagster daemon adds an always-on process to the operator's machine.
 
-**Default**: on-demand / scheduled invocation locally; revisit a persistent daemon only if Sensors (Wave G) require it.
+Added dimension (2026-07-16): **re-verify the Dagster bet itself at Wave C start** — Prefect's acquisition of Dagster Labs (2026-07-13) makes the 2027 OSS roadmap uncertain despite public Apache-2.0 commitments. Check: Dagster release cadence under Prefect, `kedro-dagster` compatibility with the then-current Dagster, and whether Dagster Components or the Prefect deployer has become the lower-risk path (§ 4.4 risk posture).
+
+**Default**: on-demand / scheduled invocation locally; revisit a persistent daemon only if Sensors (Wave G) require it. On the acquisition: proceed with Dagster while the health signals hold; switch only on concrete deterioration, not headlines.
 
 ### Q3 — Vizro-AI LLM backend (gates D3)
 
@@ -1111,41 +1118,54 @@ deliberately not ingested (reason in § 12 or the row).
 
 ### 13.1 Data sources & feeds
 
-| Source / feed | Category | Slot (§ 5.2) | Override | Status |
-| --- | --- | --- | --- | --- |
-| conda-forge repodata + channeldata (mirror chain: JFrog → `repo.prefix.dev` → `conda.anaconda.org`) | Channel metadata | Core (Phases B/B.5/B.6) | `CONDA_FORGE_BASE_URL` chain | **Current** |
-| anaconda.org channel API | Downloads + channel data | Core / Read-surface (Phases F/I; `detail-cf-atlas` build matrix) | `ANACONDA_CHANNEL_BASE_URL` / `ANACONDA_API_BASE` | **Current** |
-| S3 download-stats parquet | Downloads backend (consumer profile) | Core (Phase F alt-source) | `S3_PARQUET_BASE_URL` | **Current** |
-| PyPI JSON + simple APIs | Package metadata | PyPI Intelligence (Phases D/H/O/R) | `PYPI_JSON_BASE_URL` / `PYPI_SIMPLE_BASE_URL` | **Current** |
-| ClickHouse `default` + BigQuery ADC | PyPI download stats (credentialed) | PyPI Intelligence (Phase P) | connection config | **Current** |
-| GitHub REST + GraphQL APIs | VCS liveness / maintainer scope (credentialed) | VCS & Health (Phases E.5/K/N) | `GITHUB_API_BASE_URL` | **Current** |
-| GitLab / Codeberg APIs | VCS liveness | VCS & Health (Phase K) | `GITLAB_API_BASE_URL` / `CODEBERG_API_BASE_URL` | **Current** |
-| regro/cf-graph (parselmouth) + conda-forge-metadata API | PyPI↔conda mapping | PyPI Intelligence (Phase C + `update-mapping-cache`, Q6) | `GITHUB_RAW_BASE_URL` | **Current** |
-| npm / CRAN / CPAN / LuaRocks / crates.io / RubyGems / Maven / NuGet registries | Cross-ecosystem names | VCS & Health (Phase L) | per-registry `*_BASE_URL` | **Current** |
-| NVD / GHSA / OSV / npm / Snyk feeds (via AppThreat vdb build) | Vulnerability DB | Vulnerability (vdb refresh asset, Story B5; read by G/G') | vdb-refresh (vuln-db env) | **Current** |
-| osv.dev GCS bucket | Offline OSV store | Vulnerability (`update-cve-db` asset, Story B5) | `OSV_VULNS_BUCKET_URL` | **Current** |
-| CISA KEV | Exploit intel | Vulnerability (`cisa_kev` fetcher; G/G' overlay + read-path contract) | fetcher URL | **Current** |
-| FIRST EPSS (`epss_scores-current.csv.gz`) | Exploit-probability intel | Vulnerability (`epss_scores` fetcher) | fetcher URL | **Current** |
-| MITRE CWE catalog | Weakness taxonomy | Vulnerability (`cwe_categories` fetcher) + Seed-Gaps (`cwe-seed-gap`) | fetcher URL | **Current** |
-| endoflife.date (`/api/all.json` + per-product) | EOL / LTS currency | PyPI Intelligence scoring + Seed-Gaps (`lts-registry-gap`) | `ENDOFLIFE_BASE_URL` | **Current** |
-| upstream SPDX license list | License enum ground truth | Seed-Gaps (`spdx-schema-gap` / `license-map-gap`) | — | **Current** |
-| `api.basilisk.prefix.dev` (`/v1/querybatch`, `/v1/vulns/{id}`) | Conda-native OSV advisory API | Vulnerability (Basilisk nodes, FR-19 / Story B8) | `BASILISK_BASE_URL` (new, 20th helper) | **Committed** |
-| `conda-forge/conda-forge-bot-data` `status/` (category lists + `migration_json/<name>.json`) | Migration tracker | VCS & Health (readiness nodes, FR-21 / Story B10) | `GITHUB_RAW_BASE_URL` (existing) | **Committed** |
-| prefix.dev GraphQL API (`prefix.dev/api/graphql`) | Channel/package metadata | (none — hook: `variants.yankedReason` for Phase B.6 full yanked detection, Story B1 note) | — | Candidate |
-| GitHub Trending HTML + GitHub Search API fallback | Trending discovery | VCS & Health (Phase T nodes — only if trendshift ships first; § 3.3 conditional surface) | existing `_http.py` GitHub helpers | Conditional |
-| `conda-forge-bot-data` `version_status.v2.json` | Bot version-update queue | — (atlas measures currency itself: Phases H/K) | — | Excluded |
-| Spreadsheet tabs / GitHub Projects boards | Inventory prep | — (export to a § 4.10 format) | — | Excluded |
+*Sustainability grades (2026-07-16 domain research): 🟢 institution-backed · 🟡 startup/grant/goodwill-dependent · 🔴 single-maintainer.*
+
+| Source / feed | Category | Slot (§ 5.2) | Override | Status | Sust. |
+| --- | --- | --- | --- | --- | --- |
+| conda-forge repodata + channeldata (mirror chain: JFrog → `repo.prefix.dev` → `conda.anaconda.org`) | Channel metadata | Core (Phases B/B.5/B.6) | `CONDA_FORGE_BASE_URL` chain | **Current** | 🟢 |
+| anaconda.org channel API | Downloads + channel data | Core / Read-surface (Phases F/I; `detail-cf-atlas` build matrix) | `ANACONDA_CHANNEL_BASE_URL` / `ANACONDA_API_BASE` | **Current** | 🟢 ToS-gated |
+| S3 download-stats parquet | Downloads backend (consumer profile) | Core (Phase F alt-source) | `S3_PARQUET_BASE_URL` | **Current** | 🟡 (Anaconda goodwill) |
+| PyPI JSON + simple APIs | Package metadata | PyPI Intelligence (Phases D/H/O/R) | `PYPI_JSON_BASE_URL` / `PYPI_SIMPLE_BASE_URL` | **Current** | 🟢 |
+| BigQuery PyPI public dataset (ADC) | PyPI download stats (credentialed) | PyPI Intelligence (Phase P — admin opt-in) | connection config | **Current** | 🟢 |
+| GitHub REST + GraphQL APIs | VCS liveness / maintainer scope (credentialed) | VCS & Health (Phases E.5/K/N) | `GITHUB_API_BASE_URL` | **Current** | 🟢 |
+| GitLab / Codeberg APIs | VCS liveness | VCS & Health (Phase K) | `GITLAB_API_BASE_URL` / `CODEBERG_API_BASE_URL` | **Current** | 🟢 |
+| regro/cf-graph (parselmouth) + conda-forge-metadata API | PyPI↔conda mapping + dep graph | PyPI Intelligence (Phase C + `update-mapping-cache`, Q6) | `GITHUB_RAW_BASE_URL` | **Current** | 🟢 (bot-operated, load-bearing) |
+| npm / CRAN / CPAN / LuaRocks / crates.io / RubyGems / Maven / NuGet registries | Cross-ecosystem names | VCS & Health (Phase L) | per-registry `*_BASE_URL` | **Current** | 🟢 |
+| NVD / GHSA / OSV / npm / Snyk feeds (via AppThreat vdb build) | Vulnerability DB | Vulnerability (vdb refresh asset, Story B5; read by G/G'). **NVD caveat**: since 2026-04-15 NVD enriches only KEV/federal/critical CVEs (~15–20% of volume) — audit vdb's NVD-derived fields | vdb-refresh (vuln-db env) | **Current** | 🟡 (AppThreat OSS) |
+| osv.dev GCS bucket | Offline OSV store | Vulnerability (`update-cve-db` asset, Story B5) | `OSV_VULNS_BUCKET_URL` | **Current** | 🟢 |
+| CISA KEV | Exploit intel | Vulnerability (`cisa_kev` fetcher; G/G' overlay + read-path contract) | fetcher URL | **Current** | 🟢 (federal budget) |
+| FIRST EPSS (`epss_scores-current.csv.gz`) | Exploit-probability intel | Vulnerability (`epss_scores` fetcher) | fetcher URL | **Current** | 🟢 |
+| MITRE CWE catalog | Weakness taxonomy | Vulnerability (`cwe_categories` fetcher) + Seed-Gaps (`cwe-seed-gap`) | fetcher URL | **Current** | 🟢 |
+| endoflife.date (`/api/all.json` + per-product) | EOL / LTS currency | PyPI Intelligence scoring + Seed-Gaps (`lts-registry-gap`) | `ENDOFLIFE_BASE_URL` | **Current** | 🟡 (community) |
+| upstream SPDX license list | License enum ground truth | Seed-Gaps (`spdx-schema-gap` / `license-map-gap`) | — | **Current** | 🟢 |
+| `api.basilisk.prefix.dev` (`/v1/querybatch`, `/v1/vulns/{id}`) | Conda-native OSV advisory API | Vulnerability (Basilisk nodes, FR-19 / Story B8) | `BASILISK_BASE_URL` (new, 20th helper) | **Committed** | 🟡 (pre-announcement — no public docs/repo as of 2026-07-16; API live-validated 2026-07-15; offline-skip is the hedge) |
+| `conda-forge/conda-forge-bot-data` `status/` (category lists + `migration_json/<name>.json`) | Migration tracker | VCS & Health (readiness nodes, FR-21 / Story B10) | `GITHUB_RAW_BASE_URL` (existing) | **Committed** | 🟢 |
+| Recipe-v1 adoption signal — `are-we-recipe-v1-yet` `feedstock-stats.toml` (daily, per-feedstock `recipe_type`/`last_changed`/downloads; 21.3% v1 on 2026-07-16) OR computed natively from cf-graph `conda_build_tool` | Format-migration readiness | VCS & Health (readiness family, beside FR-21) | `GITHUB_RAW_BASE_URL` | Candidate | 🔴 artifact / 🟢 method |
+| CISA Vulnrichment (ADP containers, CVE 5.x JSON) | SSVC + CWE + CVSS enrichment filling the NVD gap | Vulnerability | `GITHUB_RAW_BASE_URL` | Candidate | 🟢 (federal budget) |
+| VulnCheck KEV (community tier) | >130% more exploited-vulns than CISA KEV, ~27 days earlier | Vulnerability (KEV-gate widening) | REST (sign-up) | Candidate | 🟡 (free tier could change) |
+| OpenSSF malicious-packages (`MAL-` records) | Malware axis, already OSV-format via osv.dev — check the OSV ingestion does not filter MAL- IDs | Vulnerability | via existing OSV paths | Candidate | 🟢 |
+| EUVD (ENISA) — search/latest/exploited/critical endpoints | EU-official aggregation; CRA reporting hub from Sep 2026 | Vulnerability | REST (`euvd.enisa.europa.eu`) | Candidate | 🟢 (NIS2-mandated) |
+| VulnerableCode V3 (aboutcode) | purl-native cross-check/dedup layer | Vulnerability | `public.vulnerablecode.io` (V3; V1/V2 deprecated) | Candidate | 🟡 (grant-dependent) |
+| parselmouth hourly mapping API (`conda-mapping.prefix.dev`: `pypi-to-conda-v1`, `hash-v0/{sha256}`, `relations-v1`) | Direct mapping API (hourly; fresher than the cf-graph copy) | PyPI Intelligence (Q6 consolidation input) | endpoint override | Candidate | 🟡 (prefix.dev) |
+| PyPI Integrity API (PEP 740 attestations) | Provenance/attestation signal per release | PyPI Intelligence (Phase R enrichment) | `PYPI_JSON_BASE_URL` family | Candidate | 🟢 |
+| prefix.dev GraphQL API (`prefix.dev/api/graphql`) | Channel/package metadata | (none — hook: `variants.yankedReason` for Phase B.6 full yanked detection, Story B1 note) | — | Candidate | 🟡 |
+| GitHub Trending HTML + GitHub Search API fallback | Trending discovery | VCS & Health (Phase T nodes — only if trendshift ships first; § 3.3 conditional surface) | existing `_http.py` GitHub helpers | Conditional | 🟢 |
+| `conda-forge-bot-data` `version_status.v2.json` | Bot version-update queue | — (atlas measures currency itself: Phases H/K) | — | Excluded | — |
+| Spreadsheet tabs / GitHub Projects boards | Inventory prep | — (export to a § 4.10 format) | — | Excluded | — |
 
 ### 13.2 Engines & toolchain
 
 | Tool | Category | Slot | Status |
 | --- | --- | --- | --- |
-| Kedro (+ `kedro-viz`, `kedro-dagster`, `kedro-mcp`) | Pipeline framework | Authoring, DAG, viz, orchestration bridge, MCP surface (FR-1/2/6/7) | **Committed** |
-| Dagster (+ Sensors) | Orchestrator | Schedules, retries, per-node timeouts, profiles-as-job-configs (FR-6, § 5.4) | **Committed** |
+| Kedro (+ `kedro-viz`) | Pipeline framework | Authoring, DAG, viz (FR-1/2) — LF AI & Data Graduate | **Committed** |
+| `kedro-dagster` | Orchestration bridge | Kedro DAG → Dagster compilation (FR-6) — **replaceable glue** (bus factor ≈ 1, `dagster <2.0` pin; § 4.4 risk posture; exit ramps: Dagster Components / Prefect deployer) | **Committed** (thin) |
+| `kedro-mcp` | MCP guidance sidecar | Wrapped where helpful — never load-bearing (FR-7, § 4.5) | Candidate |
+| Dagster (+ Sensors) | Orchestrator | Schedules, retries, per-node timeouts, profiles-as-job-configs (FR-6, § 5.4) — acquisition watch per Q2 (Prefect, 2026-07-13) | **Committed** |
 | DuckDB (+ `vss`) + Ibis | Compute / graph / vector engine | Single engine over partitioned Parquet (FR-5, Wave F) | **Committed** |
 | Boring Semantic Layer | Semantic layer | Metrics/dimensions over the catalog (FR-8, Story D1) | **Committed** |
 | Vizro + Vizro-AI | Read surface | Dashboard + NL query + `query_vizro_ai` MCP tool (FR-9, Wave D) | **Committed** |
-| Great Expectations + Pandera | Data-quality contracts | `AfterNodeRunHook` + inline assertions (FR-10, Story F2); the `kedro-great-expectations` / `kedro-pandera` plugins are **banned** (outdated) | **Committed** |
+| Pandera | Data-quality contracts (primary) | Inline node assertions behind the validator-agnostic hook (FR-10, Story F2); py3.14-verified | **Committed** |
+| Great Expectations | Data-quality contracts (boundary layer) | Joins via the same hook when it supports py3.14 (GX 1.19.0: `requires_python <3.14` — § 5.8); the `kedro-great-expectations` / `kedro-pandera` plugins are **banned** (outdated) | Deferred (py3.14-blocked) |
 | OpenLineage + OpenTelemetry | Lineage / observability | Node/run/query instrumentation (FR-12, Story E2) | **Committed** |
 | `nebi` (nebari-dev) | Scaffolding | Project + pixi ecosystem scaffold (FR-15, Story A1) | **Committed** |
 | duckdb-wasm / Pyodide | Portability runtime | In-browser intelligence surface (FR-14, Wave G) | **Committed** |
@@ -1168,10 +1188,12 @@ Python 3.14 floor govern any change (FR-15).
 
 ### 13.3 Standards & contracts
 
-`purl` (conda form per **CEP 63**, `?channel=conda-forge` qualifier) ·
-**CycloneDX** (+ the `cfe:*` property namespace, § 3.3 contracts) · OSV
-schema · SPDX · PEP 440 · `ComplianceReport` (pyforge-warden schema,
-FR-16/FR-18) · MCP · A2A · OpenLineage / OTel semantics.
+`purl` (**ECMA-427**, Dec 2025; conda form per the in-flight **CEP-63**
+proposal; `?channel=conda-forge` qualifier) · **CycloneDX** (1.7 =
+**ECMA-424 2nd ed.**; + the `cfe:*` property namespace, § 3.3 contracts) ·
+OSV schema (v1.8+: severity-source provenance) · SPDX · PEP 440 · PEP 740
+(attestations) · `ComplianceReport` (pyforge-warden schema, FR-16/FR-18) ·
+MCP · A2A · OpenLineage / OTel semantics.
 
 ### 13.4 Internal references
 
@@ -1190,6 +1212,7 @@ FR-16/FR-18) · MCP · A2A · OpenLineage / OTel semantics.
 - `docs/specs/bmad-loop-adoption.md` — the adopted execution stack § 2.5 runs on.
 - `docs/specs/trendshift-conda-forge.md` — the conditional Phase T surface (§ 3.3).
 - `presentations/pyforge-warden/src/marp/pyforge-warden-infographic-2026-07-15.md` — the integration-surface slot/status matrix pattern §§ 13.1–13.3 adopt.
+- `_bmad-output/projects/local-recipes/planning-artifacts/research/domain-cf-atlas-domain-triad-research-2026-07-16.md` — the live-sourced domain research (packaging / orchestration / supply-chain) behind the v5.2 fold: tool-bet verdicts, signal census + sustainability grades, regulatory timelines, and the evidence for the § 4.4/§ 4.5/§ 5.8 risk postures.
 
 ---
 
@@ -1254,6 +1277,7 @@ log:
 | 2026-07-16 | **v5 reset**: this clean re-authoring. No scope change — FR/story/AC/Q numbering preserved. |
 | 2026-07-16 | § 13 restructured as the slot/status **integration-surface matrix** (pattern adopted from the pyforge-warden infographic §§ 14–15): every source/feed/engine gets Category · Slot · Status (Current / Committed / Candidate / Conditional / Excluded), so source churn is a one-row edit. No scope change. |
 | 2026-07-16 | **Docs-corpus sync (v5.1)** — full read of the 17 sibling specs + `docs/`, findings integrated in place: § 2 execution stack corrected (bmad-method 6.10 + bmad-loop v0.8.1 + bmad-dev-auto; no "BAD module"; deprecated skill names dropped); FR-18 exit-code reconciliation added (the shipped `inventory-match --policy` enum is inverted vs pyforge-warden's frozen convention); `ComplianceReport` updated to its four-axis D12 shape (FR-16/F4); Phase P precision (BigQuery-only, `PHASE_P_ENABLED=1` admin opt-in — § 3.3/§ 5.4/B2); FR-15/A1 reframed (stack already in-env; `llms-full-check` + py3.14 gates; the pixi/uv `[pypi-config]` second routing layer); § 3.3 gains the per-phase engineering contracts, the maintainer-universe data-quality gap, and the conditional Phase T surface; FR-1 gains the per-host credential-scoping fix; FR-3 per-dataset TTLs; § 3.4 live-verify freshness boundary; Q3 bounds; B1/B2/D1/D2/F4 ACs extended; § 12.1 candidate-signals table added. **No new committed scope.** |
+| 2026-07-16 | **Domain-research fold (v5.2)** — six evidence-graded deltas from the live-sourced triad research (§ 13.4 reference): FR-10 pivoted **pandera-first** (GX 1.19.0 blocked on the py3.14 floor — verified) with a validator-agnostic F2 hook; § 4.4/Q2 gain the **Dagster acquisition watch + exit ramps** (Prefect acquired Dagster Labs 2026-07-13) and the kedro-dagster replaceable-glue stance; FR-7/§ 4.5/§ 5.5/B3 corrected — MCP tools authored over Kedro APIs, **kedro-mcp wrapped, never load-bearing**; § 13.1 gains a sustainability-grade column + seven Candidate feeds (recipe-v1 signal, CISA Vulnrichment, VulnCheck KEV, OpenSSF MAL- records, EUVD, VulnerableCode V3, parselmouth hourly API, PyPI Integrity/PEP 740) + the NVD-retreat caveat on the vdb row; FR-18 records the **BOD-26-04-style tier option**; FR-19 corrected (CEP-63 in-flight, purl = ECMA-427; Basilisk pre-announcement hedge note); § 13.3 standards line updated (ECMA-424/427). **MR (market research) deferred — trigger: any outward-facing productization of the intelligence surface** (public dashboard, community CVE-mapping feed, positioning vs Anaconda PSM). No new committed scope. |
 
 **Evidence** (live, multi-stage ecosystem analysis backing FR-19/FR-20/FR-21
 and the § 12 deferrals; every number measured against the live atlas + live
