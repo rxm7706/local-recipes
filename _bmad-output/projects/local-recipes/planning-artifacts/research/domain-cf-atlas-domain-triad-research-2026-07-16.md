@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments: []
 workflowType: 'research'
 lastStep: 1
@@ -273,3 +273,71 @@ Near (Wave B): recipe-v1 signal + Vulnrichment + VulnCheck KEV + MAL-records ing
 ### Risk Mitigation
 
 Multi-feed redundancy (CVE-program fragility); per-host credential scoping (already FR-1); S3-parquet/OCI fallbacks for the Anaconda ToS surface (already § 3.3); single-maintainer feeds ingested by *method* not just artifact (are-we-recipe-v1-yet → cf-graph-native computation option); quarterly § 13-matrix sustainability review at wave boundaries.
+
+---
+
+# Research Synthesis: The cf_atlas Domain Triad — Packaging, Orchestration, Supply-Chain Security
+
+## Executive Summary
+
+This research examined the three domains the cf_atlas Kedro migration lives in — the conda/PyPI packaging ecosystem, data-pipeline orchestration, and software supply-chain security — broad-scan first, then deep dives, with every material claim verified against live sources on 2026-07-16. The timing proved fortunate: the research week itself contained a domain-reshaping event (**Prefect's acquisition of Dagster Labs, announced July 13**) and landed weeks after two others (**NVD's April 15 abandonment of universal CVE enrichment**; **CISA BOD 26-04's June 10 pivot to exploitation-based patching**) and weeks before a fourth (**EU CRA exploited-vulnerability reporting goes live September 11**).
+
+Three strategic conclusions emerge. **First, the migration's architectural bets are directionally validated but unevenly healthy**: the pillars (Kedro — LF AI & Data Graduate; DuckDB — foundation-owned; Vizro — enterprise-backed) are the strongest components in their categories, while the risk concentrates precisely in the glue — kedro-dagster (bus factor ≈1), kedro-mcp (immature and mis-scoped), boring-semantic-layer (two-person core), and one outright blocker: great-expectations cannot install on the repo's Python 3.14 floor (`requires_python <3.14`, verified). **Second, the pipeline's niche is now a contested lane**: Anaconda sells curated conda-forge CVE association commercially, prefix.dev is standing up an open community CVE mapping, and generic SCA (JFrog Xray) just gained conda support — cf_atlas's differentiation is being open, local, offline-capable, and purl-normalized to the now-formal standards (CycloneDX = ECMA-424, purl = ECMA-427). **Third, the signal economy the atlas ingests is expanding faster than any one spec can track** — ~25 feeds were cataloged with sustainability grades, and the durable pattern is the one the spec already institutionalized: slot/status matrix governance, OSV-format-native additions first, and ingestion of *methods* (computable from cf-graph) over third-party artifacts where the feed is single-maintainer.
+
+**Key findings:**
+- Prefect+Dagster consolidation (Jul 13, 2026) — Apache-2.0 reaffirmed; exit-ramp needed, not exit (§ Competitive Landscape, § Technical Trends).
+- great-expectations 1.19.0 blocked on py3.14; pandera + openlineage verified compatible → pandera-first FR-10 (§ Technical Trends).
+- NVD enrichment retreat + BOD 26-04 + CRA Sep-2026 reporting make exploitation-evidence feeds (KEV/VulnCheck/EPSS/Vulnrichment/EUVD) the highest-value ingestion class (§ Regulatory, § Signal census).
+- The conda-CVE-mapping three-way race (Anaconda PSM / prefix.dev / cf_atlas); Basilisk is live but publicly untraceable — pre-announcement (§ Competitive Landscape).
+- Recipe v1 at 21.3% (6,270/29,374, daily-tracked) — the seed signal generalizes into a migration-readiness family alongside FR-21 (§ Industry Analysis).
+- Ecosystem-control concentration: Anaconda's CDN + mirroring-restrictive ToS is the single biggest structural dependency; hedges exist and are already specced (§ Competitive Landscape, § Regulatory).
+
+**Strategic recommendations (top 5):**
+1. Adopt the pandera-first FR-10 pivot and the Dagster exit-ramp assumption into the migration spec now — both are one-paragraph edits with validated evidence.
+2. Gate in the cheap, format-native feed additions (recipe-v1 TOML, CISA Vulnrichment, VulnCheck KEV, OpenSSF MAL- records, EUVD) via the § 15 promotion pattern as a Wave-B-adjacent batch.
+3. Treat kedro-dagster and kedro-mcp as replaceable glue: thin interfaces, hard pins, upstream contributions; re-evaluate at Wave C start against Dagster-2.0-under-Prefect reality.
+4. Align the FR-18 gate's tiering with BOD 26-04's four-variable matrix (KEV × EPSS-automatability × exposure × impact) — federal validation of the design, nearly free to encode.
+5. Engage the conda-forge security SIG / community CVE mapping early — it is the pipeline's natural ally and the best long-term hedge on both Basilisk and Anaconda's commercial curation.
+
+## Table of Contents (this document)
+
+1. Domain Research Scope Confirmation
+2. Industry Analysis — triad market size, dynamics, structure, trends; the Signal Economy census; Regulatory Snapshot
+3. Competitive Landscape — players, the conda-CVE-mapping race, strategies, business models, ecosystem control
+4. Regulatory Requirements — CRA/BOD 26-04/TR-03183/CERT-In, privacy, licensing, implementation, risk table
+5. Technical Trends and Innovation — emerging tech, committed-bet verdicts, future outlook, opportunities
+6. Recommendations — adoption strategy, innovation roadmap, risk mitigation
+7. Research Synthesis (this section) — executive summary, strategic insights, hand-off
+
+## Strategic Insights — Cross-Domain Synthesis
+
+**Market–technology convergence**: the same week that consolidated the orchestrator market (Prefect+Dagster) also consolidated agent tooling (FastMCP under Prefect) — orchestration and agent-interfaces are becoming one market. The migration's § 2.1 agent-first philosophy and FR-7/FR-8 surfaces sit exactly on that convergence, ahead of it rather than behind.
+
+**Regulatory–strategic alignment**: regulation is converging on the pipeline's existing outputs — exploited-vulnerability signals (CRA Art. 14 reporting, BOD 26-04, KEV gates) and machine-readable purl-keyed SBOMs (CRA Dec-2027, BSI TR-03183, CERT-In). The pipeline doesn't need to chase compliance; it needs only to keep emitting what it already emits, at current standards versions.
+
+**Competitive positioning**: cf_atlas cannot and should not compete with Anaconda's paid curation or Chainguard's rebuilds. Its defensible position is the *open, self-hosted, conda-native intelligence layer* — the thing an enterprise runs behind its own JFrog mirror (a configuration the spec's mirror-routing contract uniquely serves) and the thing a community SIG can adopt. Every deep-dive finding reinforces investing in: purl-correct identity, multi-feed redundancy, offline capability, and method-over-artifact ingestion.
+
+**The glue principle** (the research's most transferable engineering insight): across all three domains, risk concentrated in integration components (kedro-dagster, kedro-mcp, single-maintainer feeds, the CVE program's contract chain) while foundation-governed primitives stayed healthy. The spec's architecture should minimize load-bearing glue: thin bridges, swappable feeds, declared exit ramps.
+
+## Implementation Hand-off (research → spec)
+
+Concrete spec deltas this research justifies (for gating at the next spec refinement, per the § 15 promotion pattern):
+- **FR-10**: pandera-first rewording + GX py3.14 blocker note (validated, HIGH).
+- **FR-6/Q2**: Dagster acquisition-watch + exit-ramp assumption (Dagster Components / Prefect-native fallbacks); kedro-dagster "replaceable glue" stance (validated, HIGH).
+- **FR-7**: kedro-mcp scope correction — wrap/extend, don't depend (validated, HIGH).
+- **§ 12.1 / § 13.1 candidates**: recipe-v1 adoption signal (daily TOML or cf-graph-native); CISA Vulnrichment; VulnCheck KEV; OpenSSF MAL- records; EUVD exploited/critical; VulnerableCode V3; parselmouth hourly API row-update; PyPI Integrity (PEP 740) attestation signal.
+- **FR-18**: BOD-26-04-style tier option (recorded, promote when designed).
+- **FR-19**: CEP-63 status correction (in-flight, not accepted) + Basilisk pre-announcement sustainability note.
+- **§ 13 matrix hygiene**: sustainability-grade column (🟢🟡🔴) adopted from this research's census; ecosyste.ms CC BY-SA share-alike license flag.
+
+## Research Methodology and Source Verification
+
+**Scope**: three domains, broad-scan → deep-dive, per the confirmed § Scope. **Method**: three parallel web-research agents (packaging / orchestration / supply-chain), direct raw-endpoint fetches (feedstock-stats.toml, PyPI JSON API for requires_python verification), and targeted gap-closing searches (BOD 26-04, Anaconda PSM, Tidelift, GX/pandera/openlineage) — ~180 tool invocations across agents. **Verification standard**: primary sources preferred (regulators, vendors' own announcements, live APIs, PyPI/GitHub metadata); confidence flags (HIGH/MEDIUM/LOW) on every contested figure; conflicting analyst sizings presented as ranges, never averaged. **Known limitations**: pypistats.org rate-limiting blocked head-to-head orchestrator download comparisons; PEP 740 current coverage % unretrievable (JS-rendered tracker); noarch-share % underivable from public aggregates (computable from repodata — noted as an atlas-native opportunity); Basilisk's public status unverifiable (offset by this project's own live API validation of 2026-07-15).
+
+## Research Conclusion
+
+The triad research validates the migration's direction, sharpens six specific edits, and converts the user's seed observation — "sources, feeds and tools come and go" — into an operating doctrine with evidence: **govern the integration surface as a matrix, prefer standards-anchored identities, ingest methods over artifacts, and keep the glue thin.** The domains are converging on exactly the architecture the spec describes; the work is to land it before the ecosystem's consolidation wave moves the ground again.
+
+**Research Completion Date:** 2026-07-16
+**Source Verification:** every material claim cited inline; confidence-flagged
+**Confidence Level:** HIGH on the decision-driving findings (acquisition, GX blocker, regulatory dates, adoption numbers); MEDIUM/LOW flagged inline where applicable
