@@ -59,11 +59,12 @@ def make_inventory(*components) -> ResolvedInventory:
 # --- registry + null engine --------------------------------------------------
 
 
-def test_registry_holds_the_null_and_deptry_engines():
-    """Story 1.3 registers the real deptry engine alongside the retained
-    no-op null engine, in deterministic registration order."""
+def test_registry_holds_the_null_deptry_and_osv_engines():
+    """Story 1.3 registers the real deptry engine, Story 1.5 the osv-scanner
+    engine, alongside the retained no-op null engine, in deterministic
+    registration order."""
     engines = registered_engines()
-    assert [engine.name for engine in engines] == ["null", "deptry"]
+    assert [engine.name for engine in engines] == ["null", "deptry", "osv-scanner"]
     assert isinstance(engines[0], NullEngine)
 
 
@@ -87,7 +88,7 @@ def test_register_engine_appends_in_deterministic_order(monkeypatch):
     returned = register_engine(DummyEngine)
     assert returned is DummyEngine  # decorator-friendly
     names = [engine.name for engine in registered_engines()]
-    assert names == ["null", "deptry", "dummy"]
+    assert names == ["null", "deptry", "osv-scanner", "dummy"]
 
 
 def test_register_engine_is_idempotent_for_the_same_factory(monkeypatch):
