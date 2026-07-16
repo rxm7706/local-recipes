@@ -316,7 +316,7 @@ Adoption starts at a terminal, not a pipeline — see it work on your own machin
 
 # From a gate to governance
 
-Six axes of dependency trust, pluggable behind one report — four axes in v1 (hygiene + security gate; license + currency enrich), two more (provenance + maintenance) on the roadmap.
+Six axes of dependency trust, pluggable behind one report — four axes in v1 (hygiene + security gate by default; license + currency gates flag-activated), two more (provenance + maintenance) on the roadmap.
 
 <!-- The same contract extends across six axes. Engines are pluggable, so new signals slot in behind the same report and lattice. -->
 

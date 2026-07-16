@@ -791,7 +791,9 @@ local-recipes/
 │     ├─ pixi.toml                    #   [package] + [package.build.backend]=pixi-build-python
 │     ├─ pyproject.toml               #   hatchling; entry point pyforge.warden.cli:main
 │     ├─ src/pyforge/warden/          #   E1 extractor.py · E2/E3 runners · E4 report.py + cli.py
-│     ├─ report-schema.json           #   working-FR6 = canonical FR14 (E4)
+│     │   └─ data/
+│     │       ├─ report-schema.json   #   working-FR6 = canonical FR14 (E4); ships in-package
+│     │       └─ conda_pypi_map.json  #   bundled static conda→pypi map
 │     └─ tests/
 └─ docs/specs/pyforge-warden.md
 ```
