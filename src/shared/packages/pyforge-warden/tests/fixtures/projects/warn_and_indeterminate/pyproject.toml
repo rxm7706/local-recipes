@@ -1,0 +1,15 @@
+# indeterminate-outranks-warn fixture (Story 1.6, AC2): requests==2.31.0 is
+# declared but never imported by the source -> deptry emits a real DEP002
+# (unused dependency), which the default hygiene policy maps to warn.
+# leftpad has no version pin at all -> withheld from vuln matching at
+# extraction (WithholdReason.NO_VERSION) -> a real
+# indeterminate:no-version:leftpad finding. Composed in ONE project, this
+# proves indeterminate outranks a live warn rung in the composed verdict,
+# end to end (not just the unit-level rung derivation).
+[project]
+name = "warn-and-indeterminate-fixture"
+version = "1.0.0"
+dependencies = [
+    "requests==2.31.0",
+    "leftpad",
+]
