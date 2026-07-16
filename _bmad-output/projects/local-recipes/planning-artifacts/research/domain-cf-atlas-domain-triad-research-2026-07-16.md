@@ -247,7 +247,7 @@ The triad's transformation story is **consolidation + agentification**: orchestr
 | kedro-mcp 0.1.2 (2025-11-06) | 🔴 **Early/stale, wrong scope** — 14 commits, ~5 months quiet; serves AI *guidance*, not pipeline-trigger access | _https://github.com/kedro-org/kedro-mcp_ |
 | boring-semantic-layer 0.3.15 | ⚠️ **Young** — 13 months, two-person core, 0.x churn, ~14k dl/mo; squarely on-trend (Ibis+MCP) | _https://github.com/boringdata/boring-semantic-layer_ |
 | ibis-framework 12.0.0 (2026-02-07) | ⚠️ Healthy but **watch cadence** — one stable release in 2026 vs 12 in 2025; post-Voltron independent governance | _https://pypi.org/project/ibis-framework/#history_ |
-| **great-expectations 1.19.0** | 🔴 **BLOCKED on py3.14** — `requires_python: <3.14,>=3.10` (verified PyPI JSON 2026-07-16); cannot install on the repo's Python 3.14 envs | _https://pypi.org/pypi/great-expectations/json_ |
+| **great-expectations 1.19.0** | 🔴→⚠️ **CORRECTED (same day)**: upstream PyPI declares `requires_python <3.14,>=3.10` — but the **conda-forge build (1.18.2) installs and imports on the repo's Python 3.14.6** (live-env verified post-publication). Real status: version-capped at 1.18.2, upstream-unsupported on 3.14 — not uninstallable. Verification lesson: check the conda-forge build in the live env, not PyPI declarations alone | _https://pypi.org/pypi/great-expectations/json ; live `pixi run -e local-recipes python -c "import great_expectations"` 2026-07-16_ |
 | pandera 0.32.1 | ✅ Compatible (`>=3.10`, no cap) | _https://pypi.org/pypi/pandera/json_ |
 | openlineage-python 1.51.0 | ✅ Compatible (`>=3.10`) | _https://pypi.org/pypi/openlineage-python/json_ |
 

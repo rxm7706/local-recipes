@@ -4,6 +4,8 @@ inputDocuments:
   - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.2)'
   - 'docs/specs/bmad-loop-adoption.md'
   - '_bmad-output/projects/local-recipes/planning-artifacts/research/domain-cf-atlas-domain-triad-research-2026-07-16.md'
+  - '.claude/docs/bmad-method-llms-full.txt (local mirror of https://docs.bmad-method.org/llms-full.txt — user-designated primary BMAD reference)'
+  - 'docs/library-llms-full.md (vetted single-env package catalog — the in-stack constraint)'
 workflowType: 'research'
 lastStep: 1
 research_type: 'technical'
