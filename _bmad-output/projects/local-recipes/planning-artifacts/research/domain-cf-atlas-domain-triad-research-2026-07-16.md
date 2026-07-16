@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1]
+stepsCompleted: [1, 2, 3]
 inputDocuments: []
 workflowType: 'research'
 lastStep: 1
@@ -136,3 +136,82 @@ EU CRA phase-in: notification bodies Jun 11, 2026 → **exploited-vuln/incident 
 ### Quality Assessment
 
 HIGH-confidence backbone (live fetches, primary sources): feedstock counts, adoption numbers, release/health data on all ten committed packages, ECMA/CRA/NVD facts, the Prefect-Dagster acquisition. MEDIUM: analyst market sizings (definition-dependent), vendor revenue claims, pixi adoption figures. LOW/unverified: Basilisk's public status (no public trace — but the API is live per this project's own validated batch runs of 2026-07-15; treat as pre-announcement), Snyk take-private numbers, noarch-share percentage (gap — derivable from repodata). Research gaps carried forward: head-to-head PyPI download comparison for orchestrators (pypistats rate limits), current PEP 740 coverage percentage.
+
+## Competitive Landscape
+
+*Analyzed at two altitudes: (a) the players within each domain, and (b) — the actionable lens — who competes with or adjacently to a conda/PyPI package-intelligence pipeline like cf_atlas.*
+
+### Key Players and Market Leaders
+
+_Packaging:_ conda-forge (community, 24-member core) is the de-facto scientific-Python channel; Anaconda Inc. controls distribution (CDN) and monetizes curation; prefix.dev owns the modern toolchain narrative (pixi/rattler-build); QuantCo and Quansight/QuantStack are the heavyweight community contributors. _Sources: https://conda-forge.org/community/governance/ ; https://prefix.dev/ ; https://tech.quantco.com/blog/conda-regulation-support/_
+_Orchestration:_ Airflow (Apache; 46.1k stars, 80k+ orgs claimed) remains the incumbent; **Prefect+Dagster (one company as of 2026-07-13)** consolidates the "modern orchestrator" challenger lane; Temporal ($5B) owns durable execution; Kedro (LF AI & Data Graduate) is the framework-neutral authoring layer. _Sources: https://www.prefect.io/prefect-acquires-dagster ; https://lfaidata.foundation/projects/kedro/_
+_Supply-chain security:_ 2026 Gartner MQ Leaders — JFrog, Black Duck, Checkmarx, Chainguard, Sonatype; challengers Socket ($1B) and Endor Labs (reachability); the free-data commons (OSV.dev/Google, GHSA/GitHub, CISA, FIRST) underpins all of them. _Source: https://jfrog.com/gartner-magic-quadrant/_
+
+### Market Share and Competitive Positioning — the conda-CVE-mapping race (the pipeline's own lane)
+
+A three-way race now exists for exactly the capability cf_atlas builds (conda-native vulnerability intelligence):
+
+| Player | Approach | Model |
+|---|---|---|
+| **Anaconda Package Security Manager** | Human-curated CVE data + **"CVE Association for conda-forge packages"**; explicitly marketed as filling the NVD-enrichment gap | Commercial (PSM cloud/on-prem, air-gap capable) |
+| **prefix.dev** | Basilisk OSV-compatible API (live, pre-announcement) + proposed **conda-forge security SIG** with an open community CVE mapping (seeking NumFOCUS/Alpha-Omega funding) | Open/community (VC-startup-sponsored) |
+| **cf_atlas (this project)** | Local, offline-capable pipeline: vdb + KEV/EPSS overlay + Basilisk conda-PURL axis (FR-19), CycloneDX/purl-normalized | Open, self-hosted |
+
+_Sources: https://www.anaconda.com/blog/new-cve-association-for-conda-forge-packages-helps-secure-your-software-supply-chain ; https://www.anaconda.com/blog/securing-the-open-source-pipeline-with-anaconda-cve-curation ; https://prefix.dev/blog/securing-the-supply-chain_
+Adjacent positioning: **JFrog Xray added conda support** (Catalog, Curation, Compliant Version Selection; vulnerability coverage via binary scanning) — the enterprise-artifact-manager lane now overlaps conda; **Chainguard Libraries for Python** (GA; ~10k projects rebuilt from source, SLSA L3, 98% malware-block in testing, free until June 30, 2026) defines the "replace the intelligence problem with a trusted source" lane; **Tidelift (acquired by Sonar, Dec 2024)** sells maintainer-validated practice data — the human-attestation lane. _Sources: https://docs.jfrog.com/security/docs/supported-technologies-xray ; https://www.chainguard.dev/unchained/chainguard-libraries-for-python-now-generally-available-with-cve-remediation-and-malware-protection ; https://www.sonarsource.com/company/press-releases/sonar-to-acquire-tidelift/_
+
+### Competitive Strategies and Differentiation
+
+_Cost leadership:_ the free-feed commons (OSV, GHSA, KEV, EPSS, Vulnrichment, deps.dev, ecosyste.ms) — differentiation impossible, sustainability variable. _Differentiation:_ curation quality (Anaconda, Black Duck BDSA post-NVD), reachability (Endor, Mend/Atom), rebuild-from-source (Chainguard), earlier/wider exploit intel (VulnCheck: >130% more KEV entries, ~27 days earlier). _Focus/niche:_ conda-native intelligence is a genuine niche — only Anaconda, prefix.dev, and cf_atlas address conda identity properly (the OSV ecosystem-tag gotcha this project validated is exactly why generic SCA misses conda). _Innovation:_ AI-code security (Socket, Endor, Mend), agent-facing surfaces (MCP everywhere), attestation/provenance (PEP 740, CEP-27, Sigstore). _Sources: https://www.vulncheck.com/kev ; https://www.blackduck.com/blog/nist-nvd-policy-shift-2026.html_
+
+### Business Models and Value Propositions
+
+_Packaging:_ Anaconda — paid distribution licensing (>200-employee orgs) + PSM curation + AI platform (Outerbounds, Kilo Code); prefix.dev — channel hosting GA (Apr 2026) + OSS goodwill; conda-forge — volunteer + sponsored CI, distribution costs borne by Anaconda's CDN. _Orchestration:_ open-core cloud (Dagster+/Prefect Cloud, now merged; Astronomer for Airflow); foundations (Kedro, DuckDB) monetize nothing — adjacent companies do (MotherDuck for DuckDB). _Supply-chain:_ per-developer SaaS (Snyk), curated-feed subscription (BDSA, VulnCheck), safe-source subscription (Chainguard), maintainer-revenue-share (Tidelift/Sonar). _Sources: https://www.anaconda.com/products/package-security-manager ; https://motherduck.com/blog/announcing-ducklake-1-0-on-motherduck/_
+
+### Competitive Dynamics and Entry Barriers
+
+_Barriers:_ for feeds — trust and coverage accumulation (OSV's aggregation moat, GHSA's review throughput of 6,000+ decisions/month); for conda intelligence — the name-mapping problem (PyPI↔conda identity, which parselmouth/cf-graph/G10-spelling solve piecemeal) is the real technical moat. _Consolidation:_ Prefect+Dagster, Fivetran+Tobiko+dbt, Sonar+Tidelift, Black Duck PE carve-out, possible Snyk take-private — mid-size independents are merging; foundation-governed assets appreciate. _Switching costs:_ low for feeds (OSV-format normalization makes them swappable — the § 13 slot/status matrix's premise), high for orchestrators (pipeline-code lock-in — mitigated in the spec by Kedro's framework-neutral authoring). _Sources: https://github.blog/security/supply-chain-security/inside-the-advisory-database-and-what-happens-when-vulnerability-volume-breaks-records/ ; https://www.datagravity.dev/p/fivetran-acquires-tobiko-data-to_
+
+### Ecosystem and Partnership Analysis (who controls the value chain)
+
+_Distribution control:_ Anaconda's CDN carries conda-forge's 1B+/month downloads under a mirroring-restrictive ToS — the single most concentrated control point in the triad; hedges: repo.prefix.dev mirror, the QuantStack OCI mirror (grant concluded), JFrog private mirrors. _Identity control:_ purl (now ECMA-427) + the community mapping layers (parselmouth hourly API, cf-graph) — no single owner, which favors open pipelines. _Advisory control:_ CVE program (CISA-funded, structurally fragile) → CNAs/ADP enrichment (CISA Vulnrichment) → aggregators (OSV, GHSA, EUVD); redundancy across these is the resilience strategy. _Agent-interface control:_ MCP is vendor-neutral and ubiquitous (FastMCP itself now Prefect-owned — a quiet consolidation of the agent-tooling layer). _Sources: https://www.anaconda.com/legal/terms/terms-of-service ; https://ecma-international.org/publications-and-standards/standards/ecma-427/ ; https://www.businesswire.com/news/home/20260713065285/en/Prefect-Acquires-Dagster-Uniting-the-Two-Leading-Modern-Orchestrators_
+
+## Regulatory Requirements
+
+### Applicable Regulations
+
+- **EU Cyber Resilience Act (Regulation 2024/2847)** — in force, phasing in: conformity-body notification Jun 11, 2026 → **exploited-vulnerability & severe-incident reporting Sep 11, 2026** (24 h early warning / 72 h notification / 14 d–1 mo final report, to ENISA + CSIRTs) → **full application incl. the SBOM obligation Dec 11, 2027** (machine-readable SBOM of at minimum top-level dependencies in technical documentation). _Source: https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act_
+- **CRA open-source roles**: "open-source **stewards**" (Art. 24 — foundations/companies providing sustained support without monetizing the software) get a light-touch regime — documented cybersecurity policy, cooperation with authorities, reporting of known-exploited vulnerabilities; exempt from administrative fines (Art. 64(10)). Non-monetized individual maintainers are out of scope. The Eclipse-hosted ORC WG publishes the de-facto steward guidance. _Sources: https://orcwg.org/cra/ ; https://openssf.org/public-policy/eu-cyber-resilience-act/_
+- **US (weakening then re-shaping)**: OMB **M-26-05 (Jan 23, 2026) rescinded** the M-22-18/M-23-16 secure-software attestation collection; CISA **BOD 26-04 (June 10, 2026)** supersedes BOD 22-01/19-02 — federal patching now follows a four-variable risk matrix (public exposure × KEV status × automatability × technical impact) with 3/14/60-day tiers, replacing CVSS-deadline patching. _Sources: https://www.insidegovernmentcontracts.com/2026/02/omb-rescinds-the-common-form-secure-software-attestation-requirement/ ; https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk ; https://www.tenable.com/blog/cisa-bod-26-04-FAQ-vulnerability-remediation-impact_
+- **Germany**: BSI TR-03183-2 v2.1.0 — machine-readable SBOMs in **CycloneDX ≥1.6 or SPDX ≥3.0.1** only. _Source: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2_v2_1_0.html_
+- **India**: CERT-In Technical Guidelines v2.0 (Jul 9, 2025) — SBOM/QBOM/CBOM/**AIBOM**/HBOM for government, essential services, and exporters; RBI/SEBI SBOM mandates in BFSI. _Source: https://www.cert-in.org.in/PDF/TechnicalGuidelines-on-SBOM,QBOM&CBOM,AIBOM_and_HBOM_ver2.0.pdf_
+
+### Industry Standards and Best Practices
+
+**CycloneDX 1.7 = ECMA-424 2nd ed.** (Dec 2025; Citations/provenance, deeper CBOM) and **purl = ECMA-427** (Dec 10, 2025; ISO fast-track) are now formal standards — the pipeline's exact identity/format bets. OSV schema v1.8.0 (Jul 2026) adds severity-source provenance. VEX is bifurcated by design: CSAF 2.x (regulated/vendor-grade) vs OpenVEX (lightweight emission) — OpenSSF's Jan 2026 review blesses coexistence. PEP 740 attestations GA on PyPI (Trusted Publishing); CEP-27 live on prefix.dev; **CEP-63 (conda purl) still in-flight**. Transparency Exchange API (Project Koala, Ecma TC54 TG1) in Beta 2 — the likely future standard for *publishing* per-package SBOM/VEX. _Sources: https://ecma-international.org/publications-and-standards/standards/ecma-427/ ; https://openssf.org/blog/2026/01/08/signal-in-the-noise-an-industry-wide-perspective-on-the-state-of-vex/ ; https://github.com/CycloneDX/transparency-exchange-api ; https://github.com/conda/ceps_
+
+### Compliance Frameworks
+
+SSDF (NIST SP 800-218) remains the US practice baseline even after M-26-05 (agencies shift to risk-based approaches, may still use the common form voluntarily); SLSA provenance levels anchor build-integrity claims (Chainguard markets SLSA L3 rebuilds); CRA harmonized standards (Type A due Aug 30, 2026; B/C Oct 30, 2026 — MEDIUM confidence) will operationalize CE-marking for software. _Sources: https://www.cisa.gov/secure-software-attestation-form ; https://orcwg.org/cra/_
+
+### Data Protection and Privacy
+
+The pipeline processes **public developer identity data** (maintainer usernames from cf-graph/GitHub). Under GDPR this is personal data; the applicable basis is **legitimate interest** (research/ecosystem-maintenance purposes are the standard grounds; GitHub itself processes on legitimate-interest grounds), with the usual conditions: data minimization (role data only, no enrichment beyond public sources), purpose limitation, and honoring erasure where feasible. No special-category data is involved; risk is low but non-zero (the maintainer-universe tables are redistributable artifacts). _Sources: https://www.freeprivacypolicy.com/blog/open-source-projects-gdpr/ ; https://iapp.org/news/a/how-gdpr-changes-the-rules-for-research ; https://docs.github.com/site-policy/privacy-policies/github-privacy-statement_
+
+### Licensing and Certification
+
+Two live licensing surfaces for the pipeline: (1) **Anaconda ToS (Jul 15, 2025)** — mirroring the platform or offerings without authorization is prohibited; >200-employee orgs need paid licenses for Anaconda-built packages (conda-forge channel remains free) — binding on how Phase F/B source data at scale; (2) **upstream license compliance** — the pipeline's own SPDX normalization + license-map/seed-gap machinery is the compliance tooling, and BSI TR-03183 makes license fields part of conformant SBOMs. Feed-license hygiene: ecosyste.ms data is CC BY-SA 4.0 (share-alike — check before redistribution); OSV/GHSA/KEV/EPSS are openly licensed for reuse. _Sources: https://www.anaconda.com/legal/terms/terms-of-service ; https://ecosyste.ms/_
+
+### Implementation Considerations
+
+1. **CRA alignment is nearly free for this pipeline**: KEV/EPSS/Basilisk ingestion already produces the "actively exploited" signal class the Sep 2026 reporting regime turns on; emitting CycloneDX ≥1.6 with purls satisfies TR-03183-conformant SBOM expectations for downstream consumers. 2. **BOD 26-04's four-variable matrix** (KEV × automatability × exposure × impact) is a ready-made template for evolving the FR-18 policy gate's thresholds beyond max_critical/KEV — EPSS supplies the automatability proxy. 3. **NVD-gap hedging is a compliance issue too**: CRA-grade reporting needs enrichment NVD no longer provides — CISA Vulnrichment + CNA-native CVE 5.x fields are the free path. 4. Keep the pipeline's role honest: it is a *consumer/steward-support* tool, not a manufacturer — no CE-marking obligations attach to it. _Sources: https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act ; https://github.com/cisagov/vulnrichment_
+
+### Risk Assessment
+
+| Regulatory risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| CRA obligations misread as applying to the pipeline itself | Low | Low | § role clarity: consumer/steward-support tool; document the steward analysis |
+| Downstream users demand CRA/TR-03183-grade SBOMs the pipeline can't emit | Medium | Medium | Already mitigated: CycloneDX 1.6+ w/ purls (FR-13); track 1.7 Citations adoption |
+| Anaconda ToS enforcement against bulk data sourcing | Low–Medium | High (Phase F/B data supply) | S3-parquet + OCI-mirror fallbacks (already § 3.3); monitor ToS changes |
+| CVE program disruption degrades all downstream feeds | Medium | High | Multi-feed redundancy (OSV+GHSA+EUVD+Vulnrichment) — § 13 matrix swappability |
+| GDPR complaint over maintainer-identity processing | Low | Low | Public-source-only, minimization, legitimate-interest documentation |
