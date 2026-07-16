@@ -1,7 +1,9 @@
 """Unit tests — the vulnerability engine's non-subprocess logic (Story 1.5):
 DB-cache resolution, the CONTENT pre-flight, ``name==version`` input
 synthesis (NFR-S6 purity guard), the CVSS-tier mapping table, and
-``parse_osv_output``.
+``parse_osv_output``. Story 1.6 adds the severity->rung composition
+(``DEFAULT_VULN_SEVERITY_POLICY``, ``status_for_severity_tier``,
+``vuln_rung``), unit-tested here alongside the pre-existing coverage.
 
 Synthetic osv JSON / hand-built zips in, ``Finding``s + booleans out — no
 real subprocess (``OsvEngine`` itself is exercised in
@@ -22,8 +24,18 @@ from pathlib import Path
 import pytest
 
 from pyforge.warden.inventory import PypiIdentity
-from pyforge.warden.models import AXIS_VULNERABILITY, Ecosystem, ErrorKind, SeverityTier
+from pyforge.warden.models import (
+    AXIS_VULNERABILITY,
+    Ecosystem,
+    ErrorKind,
+    Finding,
+    Severity,
+    SeverityTier,
+    Status,
+    StatusDriver,
+)
 from pyforge.warden.vuln import (
+    DEFAULT_VULN_SEVERITY_POLICY,
     OSV_DB_CACHE_ENV_VAR,
     OsvParse,
     SynthesizedInput,
@@ -35,7 +47,9 @@ from pyforge.warden.vuln import (
     offline_db_unavailable_finding,
     parse_osv_output,
     resolve_cache_dir,
+    status_for_severity_tier,
     unsafe_identity_finding,
+    vuln_rung,
 )
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
@@ -563,3 +577,98 @@ def test_parse_osv_output_deduplicates_by_finding_id():
     )
     parse = parse_osv_output(raw)
     assert len(parse.findings) == 1
+
+
+# --- Story 1.6: the default vuln-severity policy table -----------------------
+
+
+def test_default_vuln_severity_policy_table_is_exactly_critical_plus_four_warns():
+    # CRITICAL is the only tier that blocks (policy-violation, FR18's default
+    # gate); HIGH/MEDIUM/LOW/NONE all warn (mirrors 1.3's DEP001-005 ceiling).
+    # UNKNOWN is deliberately ABSENT -- an out-of-range/unparseable CVSS score
+    # degrades to indeterminate via status_for_severity_tier's fallback,
+    # never a silent warn.
+    assert DEFAULT_VULN_SEVERITY_POLICY == {
+        SeverityTier.CRITICAL: Status.POLICY_VIOLATION,
+        SeverityTier.HIGH: Status.WARN,
+        SeverityTier.MEDIUM: Status.WARN,
+        SeverityTier.LOW: Status.WARN,
+        SeverityTier.NONE: Status.WARN,
+    }
+    assert SeverityTier.UNKNOWN not in DEFAULT_VULN_SEVERITY_POLICY
+
+
+def test_default_vuln_severity_policy_never_maps_to_clean():
+    """C0c structural guard: a finding-carrying report must never compose
+    clean. Pins the invariant directly (not just today's literal table), so
+    a future edit mapping any tier to clean fails here even if the golden
+    literal above were updated to match."""
+    assert Status.CLEAN not in DEFAULT_VULN_SEVERITY_POLICY.values()
+
+
+@pytest.mark.parametrize(
+    "tier,expected",
+    [
+        (SeverityTier.CRITICAL, Status.POLICY_VIOLATION),
+        (SeverityTier.HIGH, Status.WARN),
+        (SeverityTier.MEDIUM, Status.WARN),
+        (SeverityTier.LOW, Status.WARN),
+        (SeverityTier.NONE, Status.WARN),
+    ],
+)
+def test_status_for_known_severity_tier(tier, expected):
+    assert status_for_severity_tier(tier) is expected
+
+
+def test_unknown_severity_tier_degrades_to_indeterminate_never_clean():
+    """An out-of-range/unparseable CVSS score (SeverityTier.UNKNOWN) must
+    never false-green."""
+    assert status_for_severity_tier(SeverityTier.UNKNOWN) is Status.INDETERMINATE
+
+
+# --- Story 1.6: vuln_rung -----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "tier,expected_status",
+    [
+        (SeverityTier.CRITICAL, Status.POLICY_VIOLATION),
+        (SeverityTier.HIGH, Status.WARN),
+        (SeverityTier.MEDIUM, Status.WARN),
+        (SeverityTier.LOW, Status.WARN),
+        (SeverityTier.NONE, Status.WARN),
+        (SeverityTier.UNKNOWN, Status.INDETERMINATE),
+    ],
+)
+def test_vuln_rung_for_each_severity_tier(tier, expected_status):
+    finding = Finding(
+        id="vuln:GHSA-xxxx:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-xxxx",
+        subject="foo",
+        severity=Severity(tier=tier, raw="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"),
+    )
+    status, driver = vuln_rung(finding)
+    assert status is expected_status
+    assert driver == StatusDriver(
+        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:foo@1.0.0"
+    )
+
+
+def test_vuln_rung_with_no_severity_is_indeterminate():
+    """A vulnerability-axis finding with severity=None (the axis's own
+    indeterminate: withhold findings -- no-version, unsafe-identity,
+    offline-db-unavailable) still routes to indeterminate, unchanged from
+    the pre-1.6 backstop."""
+    finding = Finding(
+        id="indeterminate:no-version:leftpad",
+        axis=AXIS_VULNERABILITY,
+        message="withheld",
+        subject="leftpad",
+        severity=None,
+    )
+    status, driver = vuln_rung(finding)
+    assert status is Status.INDETERMINATE
+    assert driver == StatusDriver(
+        axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:leftpad"
+    )

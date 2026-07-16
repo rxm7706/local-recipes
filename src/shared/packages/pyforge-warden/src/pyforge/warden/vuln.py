@@ -45,6 +45,19 @@ Ownership decisions recorded:
   ``severity[0].score`` (a CVSS VECTOR string, read from the sibling
   ``vulnerabilities[]`` array) — the two fields are read from different
   parts of the document by design, never conflated.
+* ``DEFAULT_VULN_SEVERITY_POLICY`` is a MODULE DEFAULT (Story 1.6): mirrors
+  ``hygiene.DEFAULT_HYGIENE_POLICY``'s shape exactly, one tier lower down the
+  lattice. ``CRITICAL`` -> ``policy-violation`` (FR18's default gate: block
+  on critical CVEs); ``HIGH``/``MEDIUM``/``LOW``/``NONE`` -> ``warn`` (the
+  same ceiling 1.3 already gave DEP001-005). ``UNKNOWN`` is DELIBERATELY
+  ABSENT from the table: an out-of-range/unparseable CVSS score is malformed
+  data, not evidence of a low-severity vulnerability (see
+  ``_cvss_score_to_tier``'s own docstring), so it degrades to
+  ``indeterminate`` via ``status_for_severity_tier``'s
+  ``.get(tier, Status.INDETERMINATE)`` fallback — never a silent downgrade
+  (the same shape as ``hygiene.status_for_code``'s unknown-DEP-code
+  fallback). Story 3.1 lifts this default into an overridable config table;
+  1.6 keeps it here, hardcoded, like ``DEFAULT_HYGIENE_POLICY``.
 
 This module parses JSON and zip archives as DATA: no subprocess, no
 network, no exec.
@@ -71,6 +84,8 @@ from .models import (
     Finding,
     Severity,
     SeverityTier,
+    Status,
+    StatusDriver,
 )
 
 # osv-scanner's own env var selecting the offline DB cache root (no CLI flag
@@ -507,3 +522,51 @@ def parse_osv_output(raw: str) -> OsvParse:
                 by_id.setdefault(finding.id, finding)
     ordered = tuple(sorted(by_id.values(), key=lambda f: f.id))
     return OsvParse(findings=ordered, errors=())
+
+
+# --- Story 1.6: severity -> rung composition ---------------------------------
+
+# The default vuln policy: SeverityTier -> Status. Mirrors
+# hygiene.DEFAULT_HYGIENE_POLICY's shape exactly: CRITICAL blocks (FR18's
+# default gate), HIGH/MEDIUM/LOW/NONE all warn (1.3's DEP001-005 ceiling).
+# UNKNOWN is deliberately absent (see module docstring). Keys are
+# SeverityTier members (NOT Status tokens), so the sole-ownership
+# rung-ordering guard does not fire on this literal.
+DEFAULT_VULN_SEVERITY_POLICY: dict[SeverityTier, Status] = {
+    SeverityTier.CRITICAL: Status.POLICY_VIOLATION,
+    SeverityTier.HIGH: Status.WARN,
+    SeverityTier.MEDIUM: Status.WARN,
+    SeverityTier.LOW: Status.WARN,
+    SeverityTier.NONE: Status.WARN,
+}
+
+
+def status_for_severity_tier(tier: SeverityTier) -> Status:
+    """The default status for a CVSS severity tier — ``UNKNOWN`` (the only
+    tier absent from the table) degrades to ``indeterminate`` (never a
+    false-green): an unassessable severity is never treated as safely
+    non-blocking."""
+    return DEFAULT_VULN_SEVERITY_POLICY.get(tier, Status.INDETERMINATE)
+
+
+def vuln_rung(finding: Finding) -> tuple[Status, StatusDriver]:
+    """Derive the ``(Status, StatusDriver)`` rung for one vulnerability-axis
+    finding.
+
+    A real ``vuln:`` finding carries a populated ``Finding.severity``, whose
+    ``.tier`` is looked up via ``status_for_severity_tier``. A finding with no
+    severity at all — the axis's own ``indeterminate:`` withhold findings
+    (no-version, unsafe-identity, offline-db-unavailable, ...) — yields
+    ``Status.INDETERMINATE`` directly, exactly as it did under the pre-1.6
+    backstop; this mirrors how ``hygiene_rung`` already handles a stray
+    ``indeterminate:`` id on the hygiene axis the same way. The driver
+    carries the finding's own axis and id."""
+    status = (
+        status_for_severity_tier(finding.severity.tier)
+        if finding.severity is not None
+        else Status.INDETERMINATE
+    )
+    return (
+        status,
+        StatusDriver(axis=finding.axis, finding_id=finding.id),
+    )
