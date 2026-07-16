@@ -58,6 +58,25 @@ Ownership decisions recorded:
   (the same shape as ``hygiene.status_for_code``'s unknown-DEP-code
   fallback). Story 3.1 lifts this default into an overridable config table;
   1.6 keeps it here, hardcoded, like ``DEFAULT_HYGIENE_POLICY``.
+* Story 2.5 adds two independent honesty tiers, both consumed by
+  ``engines.OsvEngine.run`` (this module owns no clock/subprocess of its
+  own): ``is_db_stale``/``stale_vuln_data_finding`` (FR12 — the offline DB's
+  own ``snapshot_at`` degrades the WHOLE vulnerability axis to
+  ``indeterminate`` when stale or future-dated, per the decision record's
+  strict-inequality boundary rule) and ``cvss_v31_base_score`` +
+  ``name_level_critical_advisory_ids``/``name_level_critical_cve_finding``
+  (FR13 — "does this mapped-but-unversioned package carry any known
+  CRITICAL advisory at ANY version?", a direct offline zip read, never a
+  second ``osv-scanner`` subprocess: osv has no "any version" query mode).
+  The raw OSV DB stores a CVSS VECTOR string (``severity[].score``), never
+  osv-scanner's own numeric ``max_severity`` OUTPUT aggregate (which only
+  exists after a real version-matched scan) — ``cvss_v31_base_score``
+  computes the CVSS v3.1 §7.2 BASE score from the vector directly, BASE
+  metrics only (``AV/AC/PR/UI/S/C/I/A``); CVSS v2/v4 and any temporal/
+  environmental metric make the vector unparsable (``None``), which feeds
+  ``_cvss_score_to_tier`` as ``SeverityTier.UNKNOWN`` — never counted
+  critical, the same conservative-degrade convention every other function
+  in this module already follows.
 
 This module parses JSON and zip archives as DATA: no subprocess, no
 network, no exec.
@@ -71,11 +90,11 @@ import os
 import zipfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from .interfaces import _sanitize_id_segment
-from .inventory import Component
+from .inventory import Component, canonical_name
 from .models import (
     AXIS_VULNERABILITY,
     Ecosystem,
@@ -321,6 +340,58 @@ def offline_db_unavailable_finding(component: Component) -> Finding:
     )
 
 
+# --- Story 2.5 (FR12): stale-DB honesty --------------------------------------
+
+# The offline DB's own `snapshot_at` must be fresher than this many days, or
+# the WHOLE vulnerability axis routes to `indeterminate` via
+# `stale_vuln_data_finding()` (decision record § 2). Hardcoded like
+# `OSV_TIMEOUT_SECONDS`/`DEPTRY_TIMEOUT_SECONDS` -- a config surface
+# (`--db-max-age`) is Story 3.1's, never this story's.
+DB_MAX_AGE_DAYS = 7
+
+
+def is_db_stale(snapshot_at: str | None, max_age_days: int, *, now: datetime) -> bool:
+    """Decision record § 2's staleness rule: stale = ``snapshot_at``
+    STRICTLY older than ``now - max_age_days`` (exactly-at-the-boundary is
+    NOT stale — a non-strict inequality would false-positive the boundary
+    case); a future-dated ``snapshot_at`` (clock skew) is ALSO treated as
+    stale, never "fresh". Degrades conservatively on anything unparsable or
+    unexpected: a missing, unparsable, or naive (no UTC offset — unsafe to
+    compare against an aware ``now`` without guessing a timezone) timestamp
+    is treated as stale (never fresh, never raises)."""
+    if snapshot_at is None:
+        return True
+    try:
+        parsed = datetime.fromisoformat(snapshot_at)
+    except ValueError:
+        return True
+    if parsed.tzinfo is None:
+        return True
+    age = now - parsed
+    if age < timedelta(0):
+        return True  # future-dated: clock skew, never "fresh"
+    return age > timedelta(days=max_age_days)
+
+
+def stale_vuln_data_finding() -> Finding:
+    """The single whole-axis ``indeterminate:vuln-data-stale:vuln-database``
+    finding: forces the ENTIRE vulnerability axis to ``indeterminate`` when
+    the offline DB is stale or future-dated (decision record § 2) — never a
+    trusted ``clean``/unqualified ``policy-violation`` off untrustworthy
+    data, even when the underlying match would otherwise be clean."""
+    return Finding(
+        id="indeterminate:vuln-data-stale:vuln-database",
+        axis=AXIS_VULNERABILITY,
+        message=(
+            "the offline OSV vulnerability database is stale (its snapshot "
+            f"is older than {DB_MAX_AGE_DAYS} days) or future-dated — the "
+            "vulnerability axis cannot be trusted for this scan"
+        ),
+        subject="vuln-database",
+        severity=None,
+    )
+
+
 # --- CVSS v3.1 §5 qualitative severity-rating bands --------------------------
 
 _CVSS_BANDS: tuple[tuple[float, SeverityTier], ...] = (
@@ -352,6 +423,248 @@ def _cvss_score_to_tier(raw_score: object) -> SeverityTier:
         if score < threshold:
             return tier
     return SeverityTier.CRITICAL
+
+
+# --- Story 2.5 (FR13): CVSS v3.1 BASE-metrics-only score calculator ----------
+#
+# The raw OSV DB stores a CVSS VECTOR string (severity[].score), never a
+# numeric base score — group.max_severity (which _cvss_score_to_tier consumes
+# above) is osv-scanner's own OUTPUT aggregate, computed only after a real
+# version-matched scan and absent from a stored advisory. The name-level tier
+# has no version-matched scan to read that aggregate from, so it computes the
+# score itself, directly from the vector, per the official CVSS v3.1 §7.2
+# formulas, using ONLY the 8 BASE metrics (AV/AC/PR/UI/S/C/I/A) — CVSS v2, v4,
+# and any temporal/environmental metric (E, RL, RC, MAV, ...) are OUT OF
+# SCOPE and make the vector unparsable (-> None -> SeverityTier.UNKNOWN via
+# _cvss_score_to_tier, never counted critical).
+
+_CVSS_V31_PREFIX = "CVSS:3.1"
+
+_CVSS_AV_WEIGHTS = {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}
+_CVSS_AC_WEIGHTS = {"L": 0.77, "H": 0.44}
+_CVSS_UI_WEIGHTS = {"N": 0.85, "R": 0.62}
+_CVSS_PR_WEIGHTS_UNCHANGED = {"N": 0.85, "L": 0.62, "H": 0.27}
+_CVSS_PR_WEIGHTS_CHANGED = {"N": 0.85, "L": 0.68, "H": 0.5}
+_CVSS_CIA_WEIGHTS = {"H": 0.56, "L": 0.22, "N": 0.0}
+
+# The 8 BASE metrics + their legal single-letter values — a vector carrying
+# any other key (a temporal/environmental metric, or CVSS v2's distinct
+# metric set) is unparsable; so is one missing or duplicating any of these 8.
+_CVSS_BASE_METRIC_VALUES: dict[str, frozenset[str]] = {
+    "AV": frozenset(_CVSS_AV_WEIGHTS),
+    "AC": frozenset(_CVSS_AC_WEIGHTS),
+    "PR": frozenset(_CVSS_PR_WEIGHTS_UNCHANGED),
+    "UI": frozenset(_CVSS_UI_WEIGHTS),
+    "S": frozenset("UC"),
+    "C": frozenset(_CVSS_CIA_WEIGHTS),
+    "I": frozenset(_CVSS_CIA_WEIGHTS),
+    "A": frozenset(_CVSS_CIA_WEIGHTS),
+}
+
+
+def _parse_cvss_v31_base_metrics(vector: object) -> dict[str, str] | None:
+    """Parse a CVSS v3.1 vector string into its 8 BASE metrics — ``None`` on
+    anything unparsable: a non-``CVSS:3.1``-prefixed vector, a missing or
+    duplicated BASE metric, an unrecognized metric key (a temporal/
+    environmental metric, or a CVSS v2/v4 shape), or an unrecognized value
+    for a known metric. Tolerant by construction: never raises."""
+    if not isinstance(vector, str) or not vector:
+        return None
+    parts = vector.split("/")
+    if parts[0] != _CVSS_V31_PREFIX:
+        return None
+    metrics: dict[str, str] = {}
+    for part in parts[1:]:
+        segment = part.split(":", 1)
+        if len(segment) != 2:
+            return None
+        key, value = segment
+        legal_values = _CVSS_BASE_METRIC_VALUES.get(key)
+        if legal_values is None or key in metrics or value not in legal_values:
+            return None
+        metrics[key] = value
+    if metrics.keys() != _CVSS_BASE_METRIC_VALUES.keys():
+        return None
+    return metrics
+
+
+def _round_up(value: float) -> float:
+    """CVSS v3.1's own float-epsilon-safe roundup: round to the nearest
+    1e-5 FIRST (killing binary-float noise like ``4.999999999999999``), then
+    ceil to one decimal place — the official reference calculator's own
+    algorithm, not a naive ``ceil(x * 10) / 10``."""
+    scaled = round(value * 100_000)
+    if scaled % 10_000 == 0:
+        return scaled / 100_000
+    return (scaled // 10_000 + 1) / 10
+
+
+def cvss_v31_base_score(vector: object) -> float | None:
+    """Compute the CVSS v3.1 BASE score (§7.2's official formula) from a raw
+    vector string — ``None`` on anything unparsable (see
+    ``_parse_cvss_v31_base_metrics``), never a guessed/partial score.
+    Regression-pinned against the two fixture vectors this story documents:
+    ``PDOS-FIXTURE-0001``'s vector -> 9.8 (critical), ``PDOS-FIXTURE-0002``'s
+    -> 8.8 (high). Feed the result (as a string) straight into the existing
+    ``_cvss_score_to_tier`` — no parallel banding table."""
+    metrics = _parse_cvss_v31_base_metrics(vector)
+    if metrics is None:
+        return None
+    scope = metrics["S"]
+    c = _CVSS_CIA_WEIGHTS[metrics["C"]]
+    i = _CVSS_CIA_WEIGHTS[metrics["I"]]
+    a = _CVSS_CIA_WEIGHTS[metrics["A"]]
+    iss = 1 - (1 - c) * (1 - i) * (1 - a)
+    changed = scope == "C"
+    impact = 7.52 * (iss - 0.029) - 3.25 * (iss - 0.02) ** 15 if changed else 6.42 * iss
+    if impact <= 0:
+        return 0.0
+    pr_weights = _CVSS_PR_WEIGHTS_CHANGED if changed else _CVSS_PR_WEIGHTS_UNCHANGED
+    exploitability = (
+        8.22
+        * _CVSS_AV_WEIGHTS[metrics["AV"]]
+        * _CVSS_AC_WEIGHTS[metrics["AC"]]
+        * pr_weights[metrics["PR"]]
+        * _CVSS_UI_WEIGHTS[metrics["UI"]]
+    )
+    combined = impact + exploitability
+    if changed:
+        return _round_up(min(1.08 * combined, 10.0))
+    return _round_up(min(combined, 10.0))
+
+
+# --- Story 2.5 (FR13): the name-level "any version" offline DB scan ---------
+
+
+def _advisory_top_level_cvss_v3_vector(record: dict) -> str | None:
+    """The advisory's OWN top-level ``severity[0].score`` (first
+    ``type == "CVSS_V3"`` entry) — the raw DB has no ``group.max_severity``
+    (osv-scanner's own OUTPUT aggregate); ``None`` on anything absent or
+    malformed, never raises."""
+    severity_list = record.get("severity")
+    if not isinstance(severity_list, list):
+        return None
+    for entry in severity_list:
+        if isinstance(entry, dict) and entry.get("type") == "CVSS_V3":
+            score = entry.get("score")
+            if isinstance(score, str) and score:
+                return score
+    return None
+
+
+def _advisory_targets_pypi_name(
+    record: dict,
+    osv_ecosystem: str,
+    canonical_target: str,
+    ecosystem: Ecosystem = Ecosystem.PYPI,
+) -> bool:
+    """Mirrors ``_is_valid_osv_advisory``'s tolerant per-entry ``affected[]``
+    loop, but matches on a PEP-503-canonicalized package NAME instead of
+    merely checking a matchable spec is present. ``ecosystem`` canonicalizes
+    the entry's OWN name the SAME way ``canonical_target`` was derived (never
+    hardcoded to PyPI) — inert today (``_OSV_ECOSYSTEM_DIR`` only maps PyPI,
+    so no other ecosystem reaches this function yet), but load-bearing once
+    Epic 2 registers conda: ``canonical_name`` leaves conda names verbatim,
+    so hardcoding PyPI here would PEP-503-fold a conda name it must not."""
+    affected = record.get("affected")
+    if not isinstance(affected, list):
+        return False
+    for entry in affected:
+        if not isinstance(entry, dict):
+            continue
+        package = entry.get("package")
+        if not isinstance(package, dict):
+            continue
+        if package.get("ecosystem") != osv_ecosystem:
+            continue
+        name = package.get("name")
+        if not isinstance(name, str) or not name:
+            continue
+        if canonical_name(ecosystem, name) == canonical_target:
+            return True
+    return False
+
+
+def name_level_critical_advisory_ids(
+    zip_path: Path, pypi_name: str, ecosystem: Ecosystem = Ecosystem.PYPI
+) -> tuple[str, ...]:
+    """FR13's name-level CVE tier: does ``pypi_name`` carry >=1 CRITICAL
+    advisory in the offline OSV DB at ANY affected version? A direct,
+    offline, in-process zip read — osv-scanner has no "any version" query
+    mode, so this is never a second subprocess. Tolerant per-entry parse
+    (mirrors ``_db_has_valid_advisory``'s own zip-walking loop): one
+    malformed zip entry never aborts the scan of the rest of the archive.
+    Severity comes from the advisory's OWN top-level ``severity[]`` (osv's
+    ``max_severity`` GROUP aggregate does not exist on a raw stored
+    advisory); an unparsable CVSS vector degrades to ``SeverityTier.
+    UNKNOWN`` via ``cvss_v31_base_score`` + ``_cvss_score_to_tier``, never
+    counted critical. Returns a SORTED, deduplicated tuple of matching
+    advisory ids (empty when the zip cannot even be opened, or on no
+    critical match)."""
+    osv_ecosystem = _OSV_ECOSYSTEM_DIR.get(ecosystem)
+    if osv_ecosystem is None:
+        return ()
+    target = canonical_name(ecosystem, pypi_name)
+    matches: set[str] = set()
+    try:
+        with zipfile.ZipFile(zip_path) as archive:
+            for name in archive.namelist():
+                if not name.endswith(".json"):
+                    continue
+                try:
+                    record = json.loads(archive.read(name))
+                except (
+                    KeyError,
+                    OSError,
+                    zipfile.BadZipFile,
+                    json.JSONDecodeError,
+                    UnicodeDecodeError,
+                    # See _db_has_valid_advisory's own comment: an encrypted
+                    # or unsupported-compression entry must not abort the
+                    # scan of the rest of the archive either.
+                    RuntimeError,
+                    NotImplementedError,
+                ):
+                    continue
+                if not isinstance(record, dict):
+                    continue
+                if not _advisory_targets_pypi_name(
+                    record, osv_ecosystem, target, ecosystem
+                ):
+                    continue
+                vector = _advisory_top_level_cvss_v3_vector(record)
+                if vector is None:
+                    continue
+                score = cvss_v31_base_score(vector)
+                if score is None:
+                    continue
+                if _cvss_score_to_tier(str(score)) is not SeverityTier.CRITICAL:
+                    continue
+                record_id = record.get("id")
+                if isinstance(record_id, str) and record_id:
+                    matches.add(record_id)
+    except (OSError, zipfile.BadZipFile):
+        return ()
+    return tuple(sorted(matches))
+
+
+def name_level_critical_cve_finding(
+    component: Component, advisory_ids: Sequence[str]
+) -> Finding:
+    """FR13's name-level enrichment: a mapped-but-unversioned component
+    (resolved ``pypi_identity``, ``version=None``) whose name carries >=1
+    CRITICAL advisory in the offline DB at SOME version. ADDS this finding
+    ON TOP OF the baseline ``indeterminate:no-version|range-only:<pkg>``
+    finding ``DefaultPolicy`` already derives for a withheld component —
+    never replaces or suppresses it (the distinct reason token,
+    ``name-level-critical-cve``, keeps the two ids from colliding)."""
+    ids = ", ".join(sorted(advisory_ids))
+    return _indeterminate_finding(
+        "name-level-critical-cve",
+        component,
+        f"{component.name}: carries a CRITICAL advisory ({ids}) at some "
+        "version but is unpinned — resolve a version or waive explicitly",
+    )
 
 
 def _own_severity_raw(vuln_record: object) -> str | None:
