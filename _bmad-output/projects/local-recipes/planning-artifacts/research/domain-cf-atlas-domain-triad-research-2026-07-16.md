@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments: []
 workflowType: 'research'
 lastStep: 1
@@ -22,7 +22,11 @@ source_verification: true
 
 ## Research Overview
 
-[Research overview and methodology will be appended here]
+This document is a comprehensive, live-sourced domain research report on the **cf_atlas domain triad** — the conda/PyPI packaging ecosystem, data-pipeline orchestration, and software supply-chain security — conducted 2026-07-16 to ground the `cfe-atlas-datapipeline-kedro-migration.md` spec (v5.1) in current ecosystem evidence, hunt systematically for uncaptured external signals, and validate the committed tool bets. Method: broad scan → deep dives; three parallel web-research agents plus direct raw-endpoint and PyPI-metadata fetches; every material claim cited inline with HIGH/MEDIUM/LOW confidence flags.
+
+The research window itself was eventful: Prefect's acquisition of Dagster Labs (Jul 13), NVD's enrichment retreat (Apr 15), CISA BOD 26-04 (Jun 10), and the EU CRA's Sep 11 reporting go-live all bear directly on the spec. Decision-driving findings: the migration's pillars (Kedro, DuckDB, Vizro) verified healthy while risk concentrates in the glue (kedro-dagster, kedro-mcp, BSL); great-expectations is version-blocked on the repo's Python 3.14 floor (pandera-first pivot recommended); conda-native CVE intelligence is now a contested three-way lane; and a ~25-feed signal census with sustainability grades generalizes the *are-we-recipe-v1-yet* seed signal into an ingestion doctrine — govern the surface as a matrix, prefer standards-anchored identities (ECMA-424/427), ingest methods over artifacts, keep glue thin.
+
+The full executive summary, strategic insights, and the six-item research→spec hand-off live in the **Research Synthesis** section at the end of this document.
 
 ---
 
