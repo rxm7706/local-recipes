@@ -30,7 +30,7 @@ spec_updated: 2026-07-16
 
 | Field | Value |
 |---|---|
-| Status | **v5.2 — clean re-authoring (reset) + docs-corpus sync + domain-research fold, 2026-07-16; grounded on live surface main `58a6dcc` / skill v8.78.0; ready for full BMAD execution intake.** 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
+| Status | **v5.3 — clean re-authoring (reset) + docs-corpus sync + domain- & technical-research folds, 2026-07-16; grounded on live surface main `58a6dcc` / skill v8.78.0; ready for full BMAD execution intake.** 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
 | Owner | rxm7706 |
 | Track | BMAD Full Flow (includes separate PRD/architecture phases) |
 | Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~10,000 LOC, 23 cataloged phases) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. Includes three committed new-signal sources (FR-19 Basilisk vulnerabilities, FR-20 release velocity, FR-21 migration readiness). |
@@ -83,9 +83,15 @@ To execute this migration effectively, we utilize two crucial ecosystem extensio
 *   **Skill Forge (SKF)**: For translating the ~10,000 lines of legacy code into an ingestible agent context skill (Wave 0) with provable provenance.
 *   **Creative Intelligence Suite (CIS)**: Utilizing the CIS planning agents (e.g., Carson the Brainstorming Coach and Maya the Design Thinking Coach) to explicitly define the downstream read surface (Vizro/Vizro-AI) and output the two-spine technical specs (`DESIGN.md` + `EXPERIENCE.md`) before writing frontend code.
 
-### 2.5 Autonomous Execution (bmad-loop + bmad-dev-auto)
+### 2.5 Autonomous Execution (bmad-loop + bmad-dev-auto, graduated autonomy)
 
-To achieve parallel, unattended execution across our 9 implementation waves, this spec runs on the repo's adopted loop stack (`docs/specs/bmad-loop-adoption.md`):
+This spec runs on the repo's adopted loop stack (`docs/specs/bmad-loop-adoption.md`) under **graduated autonomy with verify-first sequencing** (execution architecture from the 2026-07-16 technical research, § 13.4). Two verified facts shape the model: bmad-loop v0.8.1 executes stories **sequentially** (`max_parallel = 1` — fan-out is not a shipped capability), and the loop's power lives entirely in its deterministic verify gates — which for this effort are themselves early-wave deliverables. Therefore:
+
+*   **Graduated autonomy by wave**: Waves 0 + A run attended / `bmad-dev-auto`-inline (they *build the harness* — verify tasks, catalog, fixtures); Wave B runs loop-driven under `per-story-spec-approval` with TEA `atdd`-generated fixture gates; Waves C–E relax toward `per-epic`; Waves F–H run mixed. ~19 of the 30 stories are loop-drivable; the 4 attended events (B4 parity, F1 benchmark, C1 bring-up, D3 backend) are scheduled wave-boundary events, never emergencies.
+*   **Verify-first sequencing**: every wave's first deliverable is its own deterministic gate (`kedro-test` at A1, `kedro-catalog-check` at A2, the `parity-diff` harness through B1–B4, `dagster-dryrun` at C1, `bsl-metric-check` at D1, `wasm-smoke` at G1); the loop never enters a wave whose gate doesn't exist. All gates are fixture-based (never credentialed live endpoints; fixtures live in the tracked test tree, not `.claude/data/`) and run `--frozen`.
+*   **Loop preconditions** (before any run): one-time hooks approval; `scripts/bmad-switch local-recipes`; the **worktree bootstrap** for the gitignored multi-project symlinks (validated by Story A3 — the designated first loop story and worktree smoke); heaviest-story budget review (B1/B2/F1 are keystones — pre-flight `session_timeout_min`/token raises per the pyforge pilot learnings).
+
+The loop stack itself:
 
 *   **`bmad-loop` v0.8.1** — the deterministic Python orchestrator (DEV → VERIFY → REVIEW → VERIFY → COMMIT in fresh tmux sessions), provisioned as a pixi git dependency pinned to tag v0.8.1 (`tui` extra) alongside conda-forge `bmad-method >=6.10.0,<7` + `tmux >=3.4`. Policy: `per-story-spec-approval` gates, worktree isolation with branch-per-story and squash merges, `rollback_on_failure`. Loop-driven runs are linux-64 / osx-arm64 only (tmux); attended flows are OS-agnostic.
 *   **`bmad-dev-auto`** — 6.10's unattended single-story implementation skill (clarify-route → plan → implement → review), for stories where a full loop is overkill.
@@ -688,7 +694,9 @@ Everything is raw GitHub content fetched via the **existing** `resolve_github_ra
 
 ## 9. User Stories
 
-The implementation waves (0 + A–H) decompose into the stories below. Each wave depends on the prior wave's deliverables. Stories within a wave may proceed in parallel where noted. Within Wave B, stories **B8/B9/B10 are additive new-signal stories, not parity-gated** — Story B4's parity check compares legacy-surface outputs only.
+The implementation waves (0 + A–H) decompose into the stories below. Each wave depends on the prior wave's deliverables. Within Wave B, stories **B8/B9/B10 are additive new-signal stories, not parity-gated** — Story B4's parity check compares legacy-surface outputs only.
+
+Execution modes per the § 2.5 graduated-autonomy architecture (full story-by-story drivability map: the 2026-07-16 technical research, § 13.4): Waves 0/A attended/dev-auto (harness-building), Wave B loop-driven with per-story spec approval, C–E loop with per-epic gates, F–H mixed. Loop execution is **sequential** (one story at a time); the Tier-2 epics/stories carry each story's mode.
 
 ### Wave 0 — Legacy Translation via Skill Forge (SKF)
 
@@ -711,6 +719,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - The FR-15 stack resolves at its pins on Python 3.14 (all conda-forge, no standalone binaries / JVM); `pixi run` activates cleanly.
 - `pixi run -e local-recipes llms-full-check` passes after any dependency change (the library catalog is updated in the same PR).
 - Air-gapped provisioning is documented for both routing layers — `.pixi/config.toml` `[pypi-config]` (enterprise-deployment § 4) and the `_http.py` overrides.
+- The scaffolded project ships its own **lean pixi env** (loop verifies in worktrees must never materialize the fat `local-recipes` env — § 2.5) and the **`kedro-test`** verify task, Wave A's deterministic gate.
 - Maps to FR-15.
 
 #### Story A2 — Define the Data Catalog for all sources + outputs
@@ -720,6 +729,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 **Acceptance criteria**:
 - All current `_http.py` / `init_schema()` data access is represented declaratively in `catalog.yml`.
 - No data-access logic remains inline in (future) node functions.
+- A **`kedro-catalog-check`** verify task exists (catalog resolves, no inline IO) — a § 2.5 loop gate.
 - Maps to FR-1.
 
 #### Story A3 — Implement `IncrementalParquetDataset` for TTL gating
@@ -730,6 +740,8 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - `IncrementalParquetDataset` exists and round-trips TTL state.
 - A unit test proves stale rows are re-fetched and fresh rows are skipped.
 - Maps to FR-3.
+
+Note: A3 is the designated **first loop-driven story and worktree smoke** (§ 2.5 preconditions): it validates the multi-project-symlink worktree bootstrap and measures worktree env-materialization cost before Wave B commits to loop execution.
 
 ### Wave B — Pipeline Node Porting & MCP Integration
 
@@ -777,6 +789,7 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 
 **Acceptance criteria**:
 - A parity check compares Kedro Parquet outputs against legacy `cf_atlas.db` tables and reports zero material drift.
+- The harness is a fixture-based, loop-callable **`parity-diff`** pixi task (built incrementally through B1–B3); the full credentialed parity run is an **attended wave-boundary event** with human sign-off per Q1 (§ 2.5).
 - Parity evidence is recorded; only then is the legacy orchestrator marked for retirement.
 
 #### Story B5 — Port the external-refresh assets (§ 3.4)
@@ -858,6 +871,7 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - The three bootstrap profiles (maintainer / admin / consumer) exist as named Dagster job configurations with the guide's override precedence (explicit run-config/env beats profile defaults).
 - Retries + phase state are observable in the Dagster UI.
 - Timeouts are per-node: a cold-run Phase R overrun can no longer abort Phase F/K/N (the legacy 1800 s `cf_atlas_core` defect, § 3.3/FR-6, is demonstrably retired).
+- A **`dagster-dryrun`** verify task exists (definitions load, schedules enumerate — no live execution); the schedule bring-up itself is an attended event (Q2).
 - Maps to FR-6.
 
 #### Story C2 — Integrate `kedro-viz` + expose a pixi task
@@ -878,6 +892,7 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - BSL declares the core metrics (staleness, adoption stage, feedstock health, …).
 - Maintainer-role facts (`package_maintainers ⋈ maintainers`) are first-class BSL dimensions — the raw-SQL JOINs live consumers write today (feedstock-refresh's sole/co-maintainer split) become declared queries.
 - The BSL layer is the single translation interface for downstream consumers.
+- A **`bsl-metric-check`** verify task exists: metric-parity fixtures proving BSL answers match the legacy CLI outputs for the core metrics.
 - Maps to FR-8.
 
 #### Story D2 — Build the Vizro dashboard + port the 28 CLIs to pages
@@ -966,6 +981,7 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 
 **Acceptance criteria**:
 - The dashboard loads and queries run client-side in the browser with no backend.
+- A **`wasm-smoke`** verify task exists (Playwright headless load-and-query against the built artifact — Chromium is pre-provisioned in this factory).
 - Maps to FR-14.
 
 #### Story G2 — Emit Parquet artifacts to a static web host
@@ -1213,6 +1229,7 @@ MCP · A2A · OpenLineage / OTel semantics.
 - `docs/specs/trendshift-conda-forge.md` — the conditional Phase T surface (§ 3.3).
 - `presentations/pyforge-warden/src/marp/pyforge-warden-infographic-2026-07-15.md` — the integration-surface slot/status matrix pattern §§ 13.1–13.3 adopt.
 - `_bmad-output/projects/local-recipes/planning-artifacts/research/domain-cf-atlas-domain-triad-research-2026-07-16.md` — the live-sourced domain research (packaging / orchestration / supply-chain) behind the v5.2 fold: tool-bet verdicts, signal census + sustainability grades, regulatory timelines, and the evidence for the § 4.4/§ 4.5/§ 5.8 risk postures.
+- `_bmad-output/projects/local-recipes/planning-artifacts/research/technical-agentic-sdlc-kedro-migration-execution-research-2026-07-16.md` — the technical research behind the v5.3 fold: the § 2.5 graduated-autonomy execution architecture, the 30-story drivability map (modes + gates), the verify-command growth plan, the worktree-seam and env-materialization risks, and the upstream bmad-loop feature requests (resume-on-timeout, retry-from-preserved-attempt, PR-lifecycle hook).
 
 ---
 
@@ -1225,14 +1242,27 @@ MCP · A2A · OpenLineage / OTel semantics.
 @bmad-create-epics-and-stories
 ```
 
-**Phase 2: Execution via bmad-loop**
+**Phase 2: Execution via bmad-loop (graduated autonomy, § 2.5)**
 ```
 # bmad-method 6.10 (core+bmm) + TEA + CIS are already installed
 # (bmad-loop-adoption W1); bmad-loop v0.8.1 is pixi-provisioned.
 
-# Drive the generated stories with the adopted loop orchestrator
-# (per-story-spec-approval gates, worktree isolation, branch-per-story,
-# squash merges); use bmad-dev-auto for stories where a loop is overkill.
+# WAVE-0 PRECONDITIONS (once, before any loop run):
+#   hooks approval · bmad-switch local-recipes · worktree symlink
+#   bootstrap (validated by Story A3) · heaviest-story budget review
+#   (B1/B2/F1) · policy.toml [verify] additions for the wave.
+
+# PER-WAVE OPERATING LOOP:
+#   1. drain the wave's Q-gates; bmad-sprint-planning for the wave;
+#      TEA test-design + atdd per pipeline story (red-phase fixtures
+#      ARE the verify assets); append the wave's verify commands.
+#   2. loop runs the wave's stories sequentially (supervised for the
+#      first two, overnight-eligible after); dev-auto-inline stories
+#      interleave; DW entries accumulate.
+#   3. wave close: attended boundary event (parity / benchmark /
+#      bring-up as applicable) -> bmad-loop-sweep triage -> test-all +
+#      bmad-drift-check + llms-full-check -> review squashed story
+#      commits -> push -> PR per wave -> Rule-2 obligations tracked.
 
 Wave 0 first (0.1 SKF legacy translation).
 Then Wave A (A1 nebi scaffold → A2 catalog → A3 IncrementalParquetDataset).
@@ -1279,6 +1309,7 @@ log:
 | 2026-07-16 | **Docs-corpus sync (v5.1)** — full read of the 17 sibling specs + `docs/`, findings integrated in place: § 2 execution stack corrected (bmad-method 6.10 + bmad-loop v0.8.1 + bmad-dev-auto; no "BAD module"; deprecated skill names dropped); FR-18 exit-code reconciliation added (the shipped `inventory-match --policy` enum is inverted vs pyforge-warden's frozen convention); `ComplianceReport` updated to its four-axis D12 shape (FR-16/F4); Phase P precision (BigQuery-only, `PHASE_P_ENABLED=1` admin opt-in — § 3.3/§ 5.4/B2); FR-15/A1 reframed (stack already in-env; `llms-full-check` + py3.14 gates; the pixi/uv `[pypi-config]` second routing layer); § 3.3 gains the per-phase engineering contracts, the maintainer-universe data-quality gap, and the conditional Phase T surface; FR-1 gains the per-host credential-scoping fix; FR-3 per-dataset TTLs; § 3.4 live-verify freshness boundary; Q3 bounds; B1/B2/D1/D2/F4 ACs extended; § 12.1 candidate-signals table added. **No new committed scope.** |
 | 2026-07-16 | **Domain-research fold (v5.2)** — six evidence-graded deltas from the live-sourced triad research (§ 13.4 reference): FR-10 pivoted **pandera-first** with a validator-agnostic F2 hook; § 4.4/Q2 gain the **Dagster acquisition watch + exit ramps** (Prefect acquired Dagster Labs 2026-07-13) and the kedro-dagster replaceable-glue stance; FR-7/§ 4.5/§ 5.5/B3 corrected — MCP tools authored over Kedro APIs, **kedro-mcp wrapped, never load-bearing**; § 13.1 gains a sustainability-grade column + seven Candidate feeds (recipe-v1 signal, CISA Vulnrichment, VulnCheck KEV, OpenSSF MAL- records, EUVD, VulnerableCode V3, parselmouth hourly API, PyPI Integrity/PEP 740) + the NVD-retreat caveat on the vdb row; FR-18 records the **BOD-26-04-style tier option**; FR-19 corrected (CEP-63 in-flight, purl = ECMA-427; Basilisk pre-announcement hedge note); § 13.3 standards line updated (ECMA-424/427). **MR (market research) deferred — trigger: any outward-facing productization of the intelligence surface** (public dashboard, community CVE-mapping feed, positioning vs Anaconda PSM). No new committed scope. |
 | 2026-07-16 | **v5.2 correction (same day)** — the research's "GX uninstallable on py3.14" verdict was PyPI-only; live-env verification shows conda-forge `great-expectations 1.18.2` (already in `pixi.toml`) installs and imports on Python 3.14.6. FR-10/§ 5.8/§ 13.2 corrected: GX is **Committed, version-capped at 1.18.2** (upstream declares `<3.14` at 1.19.0 — no ≥1.19 features until upstream supports 3.14); pandera remains the primary inline layer; the validator-agnostic hook stands. Lesson encoded: verify version constraints against the **conda-forge build in the live env**, not PyPI declarations alone. |
+| 2026-07-16 | **Technical-research fold (v5.3)** — execution architecture from the agentic-SDLC technical research (§ 13.4 reference): § 2.5 rewritten to **graduated autonomy + verify-first sequencing** (bmad-loop is sequential, `max_parallel = 1` — the old "parallel waves" framing retired); § 14 gains the Wave-0 preconditions checklist + per-wave operating loop (Q-drain → atdd → loop → sweep → boundary event → PR per wave); six verify tasks become named story deliverables (`kedro-test` A1, `kedro-catalog-check` A2, `parity-diff` B4, `dagster-dryrun` C1, `bsl-metric-check` D1, `wasm-smoke` G1); A1 gains the lean-env AC (worktree economics); A3 designated first loop story + worktree smoke (the multi-project-symlink seam); B4's credentialed parity run marked an attended boundary event; § 9 preamble carries the mode mapping. No new committed scope. |
 
 **Evidence** (live, multi-stage ecosystem analysis backing FR-19/FR-20/FR-21
 and the § 12 deferrals; every number measured against the live atlas + live
