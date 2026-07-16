@@ -462,7 +462,7 @@ The tool is a stable fleet gate as a **behavioral** commitment, not a governance
 
 ## Project Scoping
 
-*Release mode: **single-release** (one committed v1 = **6 epics / 29 stories** — E1–E5 + the E6 multi-axis expansion; Growth/Vision are a documented backlog, not committed phases). Deferrals below were approved in Steps 4–7 and re-tiered by D12 (2026-07-16) — nothing user-specified is silently de-scoped.*
+*Release mode: **single-release** (one committed v1 = **6 epics / 31 stories** — E1–E5 + the E6 multi-axis expansion; Growth/Vision are a documented backlog, not committed phases). Deferrals below were approved in Steps 4–7 and re-tiered by D12 (2026-07-16) — nothing user-specified is silently de-scoped.*
 
 ### Strategy & Philosophy
 **Approach:** **problem-solving MVP** — the minimum that makes the beachhead (P1 conda/pixi maintainer) say "this is useful": a working hygiene + vulnerability gate on the source manifests neither engine parses, behind one honest exit code. **Resource requirements:** small — a stdlib-lean CLI wrapping existing engines; the cost center is the E1 extractor + the corpus-conformance rig, not infrastructure. **Why the D12-enlarged v1 is still the beachhead minimum (2026-07-16):** the flag-activated gates keep P1's zero-config path byte-identical to the pre-D12 product (unconfigured axes only add visible `warn` context); KEV/EPSS ride the security axis that already exists; baseline & grandfathering is what lets the beachhead's debt-laden repos adopt the gate at all; and the actuator is inert without opt-in — the additions widen what a *configured* fleet can enforce without moving the first-run bar.
