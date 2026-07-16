@@ -39,6 +39,25 @@ name is checked directly against the SAME resolved DB zip, never a second
 ``not candidates and not name_level_candidates`` so a scan with ONLY
 name-level candidates still reaches the pre-flight instead of bailing out
 empty.
+
+Story 2.2 widens ``DeptryEngine.run`` with an UNCONDITIONAL synthesized
+front-door (FR8's conda half): ``hygiene._synthesize_deptry_frontdoor``
+turns the inventory into a sorted ``name[==version]`` temp file, written
+via the SAME ``tempfile.mkstemp``/``finally: os.unlink`` idiom
+``OsvEngine.run`` uses for its own input file (NFR-S4), and
+``--requirements-files <path>`` is ALWAYS appended to deptry's argv. This
+is safe unconditionally — never conditionally detected — because deptry's
+own documented rule ("if a pyproject.toml with ``[project]``/
+``[tool.poetry.dependencies]`` is found, this argument is ignored") makes
+the addition a no-op for every existing pyproject-native scan; duplicating
+that sniffing logic here would be a second, driftable source of truth. Any
+component the NFR-S6 purity guard excludes from that front-door
+(``SynthesizedInput.excluded``) surfaces via ``hygiene.
+unsafe_identity_finding`` (imported here as ``hygiene_unsafe_identity_
+finding`` — ``vuln.py`` already exports an ``unsafe_identity_finding`` of
+its own into this module's namespace) — Fix 6 (2026-07-16): previously
+computed and silently discarded, unlike every other exclusion path in this
+module.
 """
 
 from __future__ import annotations
@@ -50,7 +69,11 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .hygiene import parse_deptry_output
+from .hygiene import (
+    _synthesize_deptry_frontdoor,
+    parse_deptry_output,
+    unsafe_identity_finding as hygiene_unsafe_identity_finding,
+)
 from .interfaces import Engine, EngineResult
 from .inventory import Component, ResolvedInventory
 from .models import (
@@ -292,31 +315,93 @@ class DeptryEngine:
     seam: deptry's own chatter never touches our streams). deptry's exit code
     is ignored; the DEP001–DEP005 records become ``hygiene:<code>:<module>``
     findings, and on a successful run the hygiene axis reports
-    ``deps_assessed == inventory.count``."""
+    ``deps_assessed == inventory.count``.
+
+    Story 2.2 (FR8's conda half) ALWAYS additionally synthesizes a
+    ``--requirements-files <tempfile>`` front-door from the inventory (see
+    ``hygiene._synthesize_deptry_frontdoor`` and the module docstring) —
+    unconditionally, never conditionally detected: deptry's own native
+    ``pyproject.toml`` detection takes priority when present, so this is a
+    no-op for every pre-2.2 pyproject-native scan and a real signal for a
+    conda-sourced one. The synthesized input file uses the SAME
+    ``tempfile.mkstemp``/``finally: os.unlink`` idiom as ``OsvEngine.run``'s
+    own input file (NFR-S4). Any component the NFR-S6 purity guard excludes
+    from that front-door surfaces as one ``indeterminate:unsafe-identity:
+    <pkg>`` finding via ``hygiene.unsafe_identity_finding`` (Fix 6,
+    2026-07-16) — computed up front and merged into EVERY return path below,
+    mirroring ``OsvEngine.run``'s own never-silently-dropped handling of its
+    parallel-shaped ``excluded_findings``."""
 
     name: str = "deptry"
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
-        # exit_code is ignored: deptry's 0/1 stay content-only (Story 1.5
-        # widened the seam for osv's own operational-exit-code needs).
-        text, error, _exit_code = _engine_env(
-            lambda output_path: [
-                "deptry",
-                ".",
-                "-o",
-                output_path,
-                "--no-ansi",
-            ],
-            owner=self.name,
-            cwd=target,
+        synthesized = _synthesize_deptry_frontdoor(inventory.components)
+        excluded_findings = tuple(
+            sorted(
+                (
+                    hygiene_unsafe_identity_finding(c)
+                    for c in synthesized.excluded
+                ),
+                key=lambda f: f.id,
+            )
         )
+        try:
+            handle, input_path = tempfile.mkstemp(
+                suffix=".txt", prefix="pdos-deptry-frontdoor-"
+            )
+        except OSError as exc:
+            return EngineResult(
+                findings=excluded_findings,
+                errors=(
+                    ErrorRecord(
+                        kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+                        owner=self.name,
+                        message=(
+                            "could not create a temp deptry front-door "
+                            f"input file: {exc.__class__.__name__}"
+                        ),
+                    ),
+                ),
+                coverage=(),
+            )
+        try:
+            os.close(handle)
+            content = "\n".join(synthesized.lines)
+            if content:
+                content += "\n"
+            Path(input_path).write_text(content, encoding="utf-8")
+            # exit_code is ignored: deptry's 0/1 stay content-only (Story 1.5
+            # widened the seam for osv's own operational-exit-code needs).
+            text, error, _exit_code = _engine_env(
+                lambda output_path: [
+                    "deptry",
+                    ".",
+                    "-o",
+                    output_path,
+                    "--no-ansi",
+                    "--requirements-files",
+                    input_path,
+                ],
+                owner=self.name,
+                cwd=target,
+            )
+        finally:
+            try:
+                os.unlink(input_path)
+            except OSError:
+                pass
         if error is not None:
-            return EngineResult(findings=(), errors=(error,), coverage=())
+            return EngineResult(
+                findings=excluded_findings, errors=(error,), coverage=()
+            )
         parse = parse_deptry_output(text or "")
         if not parse.output_parsed:
             # Top-level garbage (undecodable/non-array): fail loud, no
-            # coverage claim (nothing was assessed).
-            return EngineResult(findings=(), errors=parse.errors, coverage=())
+            # coverage claim (nothing was assessed) — the purity guard's own
+            # findings still survive (never silently dropped).
+            return EngineResult(
+                findings=excluded_findings, errors=parse.errors, coverage=()
+            )
         coverage = (
             AxisCoverage(
                 axis=AXIS_HYGIENE,
@@ -327,8 +412,11 @@ class DeptryEngine:
                 resolution_depth=None,
             ),
         )
+        findings = tuple(
+            sorted((*excluded_findings, *parse.findings), key=lambda f: f.id)
+        )
         return EngineResult(
-            findings=parse.findings,
+            findings=findings,
             errors=parse.errors,
             coverage=coverage,
         )

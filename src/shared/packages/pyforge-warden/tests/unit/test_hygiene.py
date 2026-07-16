@@ -16,9 +16,11 @@ from pyforge.warden.hygiene import (
     DEFAULT_HYGIENE_POLICY,
     UNPARSEABLE_RATE_BASELINE,
     DeptryParse,
+    _synthesize_deptry_frontdoor,
     hygiene_rung,
     parse_deptry_output,
     status_for_code,
+    unsafe_identity_finding,
 )
 from pyforge.warden.models import (
     AXIS_HYGIENE,
@@ -26,6 +28,7 @@ from pyforge.warden.models import (
     Finding,
     Status,
     StatusDriver,
+    WithholdReason,
 )
 
 
@@ -387,3 +390,91 @@ def test_unrecognized_record_message_has_no_array_index():
     messages = {e.message for e in parse.errors}
     assert len(messages) == 1  # position-free → identical, dedupes to one
     assert not any(ch.isdigit() for ch in next(iter(messages)))
+
+
+# --- Story 2.2: the deptry front-door synthesis ------------------------------
+
+
+def test_frontdoor_writes_exact_version_when_known(component_factory):
+    component = component_factory(name="numpy", version="1.26.0")
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ("numpy==1.26.0",)
+    assert synthesized.excluded == ()
+
+
+def test_frontdoor_writes_bare_name_when_version_unknown(component_factory):
+    """Deliberately BROADER than vuln._synthesize_requirements's
+    vuln_matchable pre-filter: a hygiene-covered, identified-but-unversioned
+    component still deserves a hygiene signal (module docstring)."""
+    from pyforge.warden.inventory import PypiIdentity
+
+    component = component_factory(
+        name="numpy",
+        version=None,
+        pypi_identity=PypiIdentity(name="numpy", version=None),
+        indeterminate_reason=WithholdReason.RANGE_ONLY,
+        vuln_matchable=False,
+    )
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ("numpy",)
+
+
+def test_frontdoor_excludes_components_with_no_pypi_identity(component_factory):
+    component = component_factory(
+        name="somepkg", version=None, pypi_identity=None, vuln_matchable=False
+    )
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ()
+    assert synthesized.excluded == ()  # never considered, not "excluded"
+
+
+def test_frontdoor_excludes_components_not_hygiene_covered(component_factory):
+    component = component_factory(
+        name="numpy", version="1.26.0", hygiene_covered=False
+    )
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ()
+
+
+def test_frontdoor_deduplicates_and_sorts_lines(component_factory):
+    a = component_factory(
+        name="numpy",
+        version="1.26.0",
+        provenance=(("pyproject.toml", "dependencies"),),
+    )
+    b = component_factory(
+        name="numpy",
+        version="1.26.0",
+        provenance=(("recipe.yaml", "requirements.run"),),
+    )
+    c = component_factory(name="aardvark", version="1.0.0")
+    synthesized = _synthesize_deptry_frontdoor([a, b, c])
+    assert synthesized.lines == ("aardvark==1.0.0", "numpy==1.26.0")
+
+
+def test_frontdoor_excludes_unsafe_token_names(component_factory):
+    from pyforge.warden.inventory import PypiIdentity
+
+    component = component_factory(
+        name="evil",
+        version="1.0.0",
+        pypi_identity=PypiIdentity(name="-rf /", version="1.0.0"),
+    )
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ()
+    assert synthesized.excluded == (component,)
+
+
+# --- Fix 6 (2026-07-16 review): the NFR-S6-excluded finding, hygiene axis ---
+
+
+def test_unsafe_identity_finding_id_grammar(component_factory):
+    """Mirrors ``vuln.unsafe_identity_finding``'s id family exactly
+    (``indeterminate:unsafe-identity:<pkg>``) but carries ``AXIS_HYGIENE``,
+    not ``AXIS_VULNERABILITY`` -- a finding produced by this module must
+    roll up into the hygiene axis's own verdict."""
+    component = component_factory(name="-rf", version="1.0")
+    finding = unsafe_identity_finding(component)
+    assert finding.id == "indeterminate:unsafe-identity:-rf@1.0"
+    assert finding.axis == AXIS_HYGIENE
+    assert finding.subject == "-rf"

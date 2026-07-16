@@ -600,6 +600,49 @@ def test_deptry_corpus_unparseable_rate_is_within_baseline():
         assert parse.unparseable_rate <= UNPARSEABLE_RATE_BASELINE, fixture.name
 
 
+def test_deptry_frontdoor_flag_is_a_genuine_no_op_against_real_deptry(capsys):
+    """Fix 8 regression (2026-07-16 review): the only existing test proving
+    the Story 2.2 front-door flag is a no-op for a native-pyproject.toml
+    target (test_deptry_engine_frontdoor_is_a_no_op_when_native_pyproject_
+    present, tests/unit/test_engine_env_deptry.py) fully mocks
+    subprocess.run -- it proves only that OUR OWN code always appends
+    --requirements-files, never that the REAL deptry binary actually still
+    ignores it. This runs the REAL production pipeline (``cli.main``, which
+    unconditionally synthesizes the front-door and passes the flag -- Story
+    2.2) against DEPTRY_UNUSED, and separately invokes real deptry with NO
+    --requirements-files flag at all (the pre-2.2 argv shape) over the SAME
+    fixture -- the two must report the IDENTICAL hygiene finding, a genuine
+    regression pin on deptry's own documented -rf-ignoring behavior (never
+    just our own argv construction). deptry is a provisioned conda run-dep
+    of this package (unlike test_extraction_oracle.py's renderers, which are
+    test-only): a missing/failing binary here is a broken environment, so
+    this mirrors this file's own no-skip-guard convention (see
+    test_deptry_corpus_unparseable_rate_is_within_baseline above) rather
+    than test_extraction_oracle.py's explicit skip-if-unavailable one."""
+    from pyforge.warden.engines import _engine_env
+    from pyforge.warden.hygiene import parse_deptry_output
+
+    rc, out, err = run_scan(capsys, DEPTRY_UNUSED)
+    document = parse_report(out)
+    assert rc == 0
+    with_frontdoor_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+
+    text, error, _exit_code = _engine_env(
+        lambda output_path: ["deptry", ".", "-o", output_path, "--no-ansi"],
+        owner="deptry",
+        cwd=DEPTRY_UNUSED,
+    )
+    assert error is None, f"deptry failed: {error}"
+    assert text is not None
+    parse = parse_deptry_output(text)
+    assert parse.output_parsed
+    without_frontdoor_ids = {f.id for f in parse.findings}
+
+    assert with_frontdoor_ids == without_frontdoor_ids == {"hygiene:DEP002:requests"}
+
+
 @pytest.mark.parametrize(
     "fixture",
     [DEPTRY_MISSING, DEPTRY_UNUSED, DEPTRY_STDLIB],

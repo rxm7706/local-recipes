@@ -392,3 +392,193 @@ def test_deptry_engine_malformed_record_is_counted_and_reported(
     assert [f.id for f in result.findings] == ["hygiene:DEP002:requests"]
     (error,) = result.errors
     assert error.kind is ErrorKind.ENGINE_OUTPUT_UNRECOGNIZED
+
+
+# --- Story 2.2: the unconditional synthesized front-door --------------------
+
+
+def test_deptry_engine_always_appends_requirements_files_flag(
+    monkeypatch, tmp_path, component_factory
+):
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    inventory = make_inventory(component_factory(name="numpy", version="1.26.0"))
+    DeptryEngine().run(tmp_path, inventory)
+    argv = captured["argv"]
+    assert "--requirements-files" in argv
+    input_path = argv[argv.index("--requirements-files") + 1]
+    assert input_path != ""
+
+
+def test_deptry_engine_frontdoor_content_matches_synthesized_lines(
+    monkeypatch, tmp_path, component_factory
+):
+    """The temp input file's content is read INSIDE the fake subprocess
+    call, before this test's own cleanup assertion — the file must
+    genuinely carry the synthesized `name==version` line."""
+    captured: dict = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        input_path = argv[argv.index("--requirements-files") + 1]
+        captured["frontdoor_content"] = Path(input_path).read_text(encoding="utf-8")
+        out_path = argv[argv.index("-o") + 1]
+        Path(out_path).write_text("[]", encoding="utf-8")
+        return types.SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    inventory = make_inventory(component_factory(name="numpy", version="1.26.0"))
+    DeptryEngine().run(tmp_path, inventory)
+    assert captured["frontdoor_content"] == "numpy==1.26.0\n"
+
+
+def test_deptry_engine_cleans_up_the_frontdoor_input_file(
+    monkeypatch, tmp_path, component_factory
+):
+    captured: dict = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        captured["input_path"] = argv[argv.index("--requirements-files") + 1]
+        out_path = argv[argv.index("-o") + 1]
+        Path(out_path).write_text("[]", encoding="utf-8")
+        return types.SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    inventory = make_inventory(component_factory(name="numpy", version="1.26.0"))
+    DeptryEngine().run(tmp_path, inventory)
+    assert not os.path.exists(captured["input_path"])
+
+
+def test_deptry_engine_frontdoor_survives_an_empty_inventory(
+    monkeypatch, tmp_path
+):
+    """No candidates at all: the flag is STILL passed (unconditional), with
+    an empty input file — never skipped, never a crash."""
+    captured: dict = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        input_path = argv[argv.index("--requirements-files") + 1]
+        captured["frontdoor_content"] = Path(input_path).read_text(encoding="utf-8")
+        out_path = argv[argv.index("-o") + 1]
+        Path(out_path).write_text("[]", encoding="utf-8")
+        return types.SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = DeptryEngine().run(tmp_path, make_inventory())
+    assert "--requirements-files" in captured["argv"]
+    assert captured["frontdoor_content"] == ""
+    assert result.findings == ()
+
+
+def test_deptry_engine_frontdoor_mkstemp_failure_yields_typed_error(
+    monkeypatch, tmp_path, component_factory
+):
+    def fake_mkstemp(*args, **kwargs):
+        raise OSError("no space left on device")
+
+    monkeypatch.setattr(tempfile, "mkstemp", fake_mkstemp)
+    inventory = make_inventory(component_factory(name="numpy", version="1.26.0"))
+    result = DeptryEngine().run(tmp_path, inventory)
+    assert result.findings == ()
+    (error,) = result.errors
+    assert error.kind is ErrorKind.ENGINE_EXECUTION_FAILED
+    assert result.coverage == ()
+
+
+def test_deptry_engine_surfaces_a_finding_for_an_unsafe_identity_component(
+    monkeypatch, tmp_path, component_factory
+):
+    """Fix 6 (2026-07-16 review): a component whose resolved pypi identity
+    fails the NFR-S6 safe-token purity guard used to just vanish from the
+    front-door synthesis with ZERO surfaced record --
+    `_synthesize_deptry_frontdoor`'s `.excluded` was computed but never
+    wired into `DeptryEngine.run`'s returned findings, unlike every other
+    withhold/exclusion path in this codebase (e.g. `OsvEngine.run`'s
+    identically-shaped `excluded_findings`)."""
+    from pyforge.warden.inventory import PypiIdentity
+
+    captured: dict = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        input_path = argv[argv.index("--requirements-files") + 1]
+        captured["frontdoor_content"] = Path(input_path).read_text(encoding="utf-8")
+        out_path = argv[argv.index("-o") + 1]
+        Path(out_path).write_text("[]", encoding="utf-8")
+        return types.SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    unsafe = component_factory(
+        name="evil",
+        version="1.0.0",
+        pypi_identity=PypiIdentity(name="-rf /", version="1.0.0"),
+    )
+    safe = component_factory(name="requests", version="2.31.0")
+    inventory = make_inventory(unsafe, safe)
+
+    result = DeptryEngine().run(tmp_path, inventory)
+
+    assert [f.id for f in result.findings] == [
+        "indeterminate:unsafe-identity:evil@1.0.0"
+    ]
+    assert result.findings[0].axis == AXIS_HYGIENE
+    assert result.errors == ()
+    # The safe component still made it into the synthesized front-door --
+    # the unsafe one was excluded, never written raw (NFR-S6).
+    assert captured["frontdoor_content"] == "requests==2.31.0\n"
+
+
+def test_deptry_engine_merges_unsafe_identity_findings_with_parsed_findings(
+    monkeypatch, tmp_path, component_factory
+):
+    """The excluded-component finding survives ALONGSIDE a real deptry
+    finding from the SAME run, sorted together (never one clobbering the
+    other)."""
+    from pyforge.warden.inventory import PypiIdentity
+
+    captured: dict = {}
+    record = {
+        "error": {"code": "DEP002", "message": "unused"},
+        "module": "requests",
+    }
+    monkeypatch.setattr(
+        subprocess, "run", _fake_run_writing(json.dumps([record]), captured)
+    )
+    unsafe = component_factory(
+        name="evil",
+        version="1.0.0",
+        pypi_identity=PypiIdentity(name="-rf /", version="1.0.0"),
+    )
+    inventory = make_inventory(unsafe)
+
+    result = DeptryEngine().run(tmp_path, inventory)
+
+    assert [f.id for f in result.findings] == [
+        "hygiene:DEP002:requests",
+        "indeterminate:unsafe-identity:evil@1.0.0",
+    ]
+
+
+def test_deptry_engine_frontdoor_is_a_no_op_when_native_pyproject_present(
+    monkeypatch, tmp_path, component_factory
+):
+    """Regression for the Boundaries' central claim: the flag is added
+    UNCONDITIONALLY, never conditionally detected — this test proves our
+    OWN code never skips it based on target contents (the claim that REAL
+    deptry then silently ignores it for a native pyproject.toml target is
+    deptry's own documented behavior, empirically confirmed live against
+    deptry 0.25.1: `deptry . --requirements-files <nonexistent-path>` exits
+    0 with no error when a `[project].dependencies`-bearing pyproject.toml
+    is present)."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "demo"\nversion = "0.0.1"\n'
+        'dependencies = ["requests"]\n',
+        encoding="utf-8",
+    )
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    DeptryEngine().run(tmp_path, inventory)
+    assert "--requirements-files" in captured["argv"]
