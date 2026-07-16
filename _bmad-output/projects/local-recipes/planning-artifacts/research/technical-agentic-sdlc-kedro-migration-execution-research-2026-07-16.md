@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.2)'
   - 'docs/specs/bmad-loop-adoption.md'
@@ -173,3 +173,78 @@ Three data domains with different loop-visibility: **(1) artifacts** (`_bmad-out
 ### Deployment and Operations Architecture
 
 Operator posture per run: launch via `bmad-loop run` (TUI attached or `tui` separately), desktop-notify + ATTENTION file as the interrupt channel, `bmad-dashboard` (bmad-ui env) for story/sprint state, journals in the run dir as the audit trail. Cadence recommendation: **supervised runs first** (operator present for Wave B's early stories), overnight unattended only after two clean supervised stories in a row; sweeps operator-invoked at wave ends (`auto = never` stays). One-time preconditions checklist: hooks approval, `bmad-switch local-recipes` (symlinks live), worktree-bootstrap smoke, heaviest-story budget review. _Sources for this section: all step-2/3 citations; pilot learnings (adoption spec); Ralph/Claude-Code best-practice docs (cited above)_
+
+## Implementation Approaches and Technology Adoption
+
+### The wave-by-wave drivability map (all stories, spec v5.2)
+
+*Mode legend: **LOOP-S** = bmad-loop, per-story-spec-approval · **LOOP-E** = bmad-loop, per-epic · **AUTO** = dev-auto invoked inline (attended session, unattended skill) · **ATT** = attended · ⚿ = Q-gate or credentialed event.*
+
+| Story | Mode | Deterministic gate (verify command class) |
+|---|---|---|
+| 0.1 SKF legacy skill | AUTO | skill artifact exists + query smoke |
+| A1 nebi scaffold | AUTO | `verify-env` + `llms-full-check` + new `kedro-test` smoke |
+| A2 data catalog | AUTO | new `kedro-catalog-check` (catalog resolves, no inline IO) |
+| A3 IncrementalParquetDataset | **LOOP-S** (first loop story — doubles as the worktree smoke) | new unit tests (TTL round-trip) |
+| B1 backbone ports | LOOP-S (≥180 min budget) | node tests + per-phase engineering-contract fixtures (K token-bucket, F provenance) |
+| B2 PyPI/vuln ports | LOOP-S (≥180 min) | node tests + view-contract fixtures + Phase-P cost-gate fixture (`test_no_thirty_gb_lie` port) |
+| B3 MCP tools | LOOP-S | tool-callable smoke + kedro-mcp-absent test |
+| B4 parity | **ATT** ⚿ (Q1 sign-off; credentialed full run) | loop-built parity-diff harness, human judges drift |
+| B5 refresh assets | LOOP-S ⚿ (Q6 first) | vdb/cve/mapping fixture gates; consumer-profile offline fixture |
+| B6 seed-gaps | LOOP-E-able | byte-identical-seed fixture + report snapshots |
+| B7 SBOM intake | LOOP-S | format fixtures (NBSP, six buckets, offline resolver) |
+| B8 Basilisk | LOOP-S ⚿ (Q7 first) | ecosystem-tag + tri-state + offline-skip fixtures |
+| B9 velocity | LOOP-E-able | 90-day-gate fixture + baseline-shape check |
+| B10 migration-readiness | LOOP-E-able | bucket fixtures + not-in-tracker labeling test |
+| C1 kedro-dagster | AUTO + **ATT** ⚿ (schedule bring-up, Q2 re-verify) | `dagster-dryrun` (definitions load, schedules enumerate) |
+| C2 kedro-viz | LOOP-E | headless viz-build smoke (`pixi run viz --dry`/build) |
+| D1 BSL models | LOOP-S | metric-parity fixtures vs legacy CLI outputs (the 28-CLI answers) |
+| D2 Vizro dashboard | AUTO (visual judgment) | page-config validation tests (Vizro = validated config — machine-checkable) |
+| D3 Vizro-AI | **ATT** ⚿ (Q3 backend) | NL-query smoke once backend chosen |
+| E1 A2A | AUTO (design) → LOOP-E (impl) | payload-schema round-trip fixtures |
+| E2 OTel/OpenLineage | LOOP-E | emitted-span/lineage-event fixtures |
+| F1 DuckDB swap | LOOP-S + ATT perf benchmark (AC-7 cold-start claim) | full `test-all` + fixture parity re-run |
+| F2 validation hooks | LOOP-S | validator-agnostic hook fixture (stub second validator) |
+| F3 vss/RAG | LOOP-E | ranked-similarity fixture |
+| F4 hygiene + gate | LOOP-S | exit-code contract (0/1/2 + legacy flip) + four-axis schema fixtures |
+| G1 WASM | AUTO | Playwright headless load-and-query check (Chromium is pre-provisioned in this factory) |
+| G2 static host | LOOP-E (emitter) + ATT (publish creds) | emitted-artifact layout fixture |
+| G3 sensors | AUTO ⚿ (Q2 daemon revisit) | simulated-event trigger test |
+| H1–H4 factory | H1 LOOP-E; H2 AUTO; H3 LOOP-E; H4 LOOP-E | scaffold-layout test; crew smoke; REST-sync fixtures (mock Wagtail); asset dry-run |
+
+Net: **~19 of 30 stories are loop-drivable** (10 at spec-approval, 9 relaxable to per-epic), 7 dev-auto-inline, 4 attended-with-loop-built-harness. Every ⚿ is a predictable, schedulable human event — none is an emergency.
+
+### Development workflow (the operating loop per wave)
+
+1. Wave opens: resolve the wave's Q-gates; run `bmad-sprint-planning` for the wave's stories; TEA `test-design` for the wave, `atdd` per pipeline story (red-phase fixtures = the verify assets); append the wave's verify commands to `[verify] commands`.
+2. Loop runs the wave's LOOP stories sequentially (supervised for the first two, then overnight-eligible); AUTO stories interleave in attended sessions; DW entries accumulate.
+3. Wave closes: attended boundary event (parity/benchmark/bring-up as applicable) → `bmad-loop-sweep` triage → full `test-all` + `bmad-drift-check` + `llms-full-check` → squashed story commits reviewed → push → **PR per wave** → CFE Rule-2 check (retro obligations tracked; final retro at effort closeout).
+
+### Testing and QA (the verify-command growth plan)
+
+New pixi tasks to create (each is a story deliverable, per verify-first sequencing): `kedro-test` (A1), `kedro-catalog-check` (A2), `parity-diff` (B4 harness, built by B1/B2 stories incrementally), `dagster-dryrun` (C1), `bsl-metric-check` (D1), `wasm-smoke` (G1). All run `--frozen`; all fixture-based; `[verify] commands` grows per wave and never shrinks. In-loop gates stay scoped (changed-unit tests + the story's fixtures); `test-all` runs at wave boundaries only.
+
+### Cost and resource management
+
+Token: 2M/story ceiling with explicit pre-flight raises for B1/B2/F1 (the keystones); the pilot's 25.8M single-attempt burn is the cautionary anchor — budget-raise beats timeout-retry every time. Time: session 180 min baseline; `dev_stall_grace_s = 600` covers slow background test runs (raise for F1's benchmark story). Disk: lean dedicated pipeline env (A1) keeps worktree materialization cheap; failed-attempt branches (`keep_failed`) pruned at sweep.
+
+### Risk assessment and mitigation (implementation-specific)
+
+| Risk | Mitigation |
+|---|---|
+| Worktree × symlink seam strands artifacts | Wave-0 bootstrap fix + A3 as the designated smoke story |
+| Worktree env materialization slows every story | Lean env from A1; shared pixi cache; measure in the A3 smoke |
+| Long test runs read as stalled sessions | `dev_stall_grace_s` tuned per wave; background-run pattern in story specs |
+| Adversarial-review over-engineering across ~19 loop stories | Review checklist constrained to correctness + contract fixtures; `trigger = recommended` stays |
+| Dagster 2.0 lands mid-effort (breaks `kedro-dagster <2.0` pin) | Q2 wave-C re-verify; thin-bridge principle; Components exit ramp |
+| Gate rot (fixtures drift from live behavior) | Wave-boundary attended events re-anchor fixtures against live runs (B4, F1 benchmark) |
+| Loop maturity (v0.8.x) regressions | Pin bmad-loop tag; upgrade only at wave boundaries; keep Option C fallback warm |
+
+## Technical Research Recommendations
+
+1. **Adopt Option B (graduated autonomy) as the execution architecture** — encode the drivability map's mode column into the Tier-2 epics/stories and the spec's § 14 invocation.
+2. **Make verify-first sequencing explicit in the spec** (§ 2.5): every wave's first deliverable is its gate; the six new pixi verify tasks are story deliverables with named owners (A1/A2/B-harness/C1/D1/G1).
+3. **Run the Wave-0 preconditions checklist before any loop run**: hooks approval; `bmad-switch local-recipes`; **worktree-bootstrap fix + A3 smoke story** (the symlink seam); heaviest-story budget review; policy.toml wave-B block (`[verify]` additions, B1/B2 budget raises).
+4. **Keep the human surface scheduled, not reactive**: Q-gates drained at wave opens; parity/benchmark/bring-up as named wave-boundary events; PR per wave; Rule-2 retro at closeout.
+5. **File the three upstream requests now** (they mature on bmad-loop's timeline, not ours): resume-on-timeout; retry-seeded-from-preserved-attempt; PR-lifecycle hook at the per-epic gate. Watch `max_parallel` — if fan-out ships, Waves C–E are the safe place to use it first.
+6. **Fold the § 2.5/§ 14 updates into the spec at the next refinement** (with this report as the cited evidence), alongside the § 12.1 candidate-signals batch from the domain research — one consolidated v5.3.
