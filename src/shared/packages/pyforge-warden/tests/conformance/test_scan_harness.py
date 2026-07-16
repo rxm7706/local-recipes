@@ -42,6 +42,9 @@ DEPTRY_MISSING = FIXTURES / "deptry_missing"
 DEPTRY_UNUSED = FIXTURES / "deptry_unused"
 DEPTRY_STDLIB = FIXTURES / "deptry_stdlib"
 DEPTRY_IGNORE = FIXTURES / "deptry_ignore"
+VULN_CRITICAL = FIXTURES / "vuln_critical"
+VULN_HIGH = FIXTURES / "vuln_high"
+WARN_AND_INDETERMINATE = FIXTURES / "warn_and_indeterminate"
 
 
 def load_schema() -> dict:
@@ -601,6 +604,108 @@ def test_deptry_corpus_unparseable_rate_is_within_baseline():
 def test_deptry_fixture_twice_run_is_byte_identical(capsys, fixture):
     """Real-finding determinism: two scans of a deptry fixture emit
     byte-identical stdout."""
+    rc_one, out_one, _ = run_scan(capsys, fixture)
+    rc_two, out_two, _ = run_scan(capsys, fixture)
+    assert rc_one == rc_two
+    assert out_one.encode("utf-8") == out_two.encode("utf-8")
+
+
+# --- Story 1.6: severity gate + verdict composition end-to-end ---------------
+
+
+def test_critical_vuln_fixture_composes_policy_violation(capsys):
+    """AC1: a real cli.main() scan of a pin matching the seeded CRITICAL OSV
+    advisory (PDOS-FIXTURE-0001) composes policy-violation end to end -- the
+    severity gate, not just the unit-level vuln_rung."""
+    rc, out, err = run_scan(capsys, VULN_CRITICAL)
+    document = parse_report(out)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "policy-violation"
+    finding_id = "vuln:PDOS-FIXTURE-0001:pdos-vuln-fixture@1.0.0"
+    matches = [f for f in document["findings"] if f["id"] == finding_id]
+    assert len(matches) == 1
+    finding = matches[0]
+    assert finding["axis"] == "vulnerability"
+    assert finding["severity"]["tier"] == "critical"
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == finding_id
+    assert driver["axis"] == "vulnerability"
+    assert err == ""
+    # The fixture's own comment: the fictitious dependency is also flagged
+    # DEP002 (unused) by deptry -- policy-violation still outranks warn in
+    # the composed verdict. Verify that concurrent finding actually exists,
+    # not just that the top-level status survived it.
+    _one_hygiene_finding(document, "hygiene:DEP002:pdos-vuln-fixture")
+
+
+def test_high_severity_vuln_fixture_composes_warn(capsys):
+    """A real (non-critical) osv-scanner match must NOT block by default
+    (FR18: critical + KEV only) -- proves the warn side of the severity
+    gate through the real osv-scanner subprocess, not just a hand-built
+    Finding in the unit tests."""
+    rc, out, err = run_scan(capsys, VULN_HIGH)
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "warn"
+    finding_id = "vuln:PDOS-FIXTURE-0002:pdos-vuln-fixture-high@1.0.0"
+    matches = [f for f in document["findings"] if f["id"] == finding_id]
+    assert len(matches) == 1
+    finding = matches[0]
+    assert finding["axis"] == "vulnerability"
+    assert finding["severity"]["tier"] == "high"
+    # Two equal-rank warn rungs land here (this vuln: finding + deptry's own
+    # DEP002 on the same fictitious, never-imported dependency below) --
+    # verdict.compose's deterministic tie-break picks the smallest
+    # (axis, finding_id), and "hygiene" < "vulnerability" lexicographically.
+    _one_hygiene_finding(document, "hygiene:DEP002:pdos-vuln-fixture-high")
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == "hygiene:DEP002:pdos-vuln-fixture-high"
+    assert driver["axis"] == "hygiene"
+    assert err == ""
+
+
+def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
+    """AC2: one project composing a real hygiene warn rung (DEP002 on
+    requests) alongside a real vulnerability-axis indeterminate rung
+    (no-version withhold on leftpad) -- indeterminate outranks warn in the
+    composed verdict, end to end."""
+    rc, out, err = run_scan(capsys, WARN_AND_INDETERMINATE)
+    document = parse_report(out)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    warn_finding = _one_hygiene_finding(document, "hygiene:DEP002:requests")
+    assert warn_finding["axis"] == "hygiene"
+    # The fixture's own comment: leftpad is ALSO unused, so it carries its
+    # own hygiene:DEP002 finding independent of its vulnerability-axis
+    # withhold -- both must coexist on the same package name.
+    _one_hygiene_finding(document, "hygiene:DEP002:leftpad")
+    indeterminate_finding_id = "indeterminate:no-version:leftpad"
+    matches = [
+        f for f in document["findings"] if f["id"] == indeterminate_finding_id
+    ]
+    assert len(matches) == 1
+    assert matches[0]["axis"] == "vulnerability"
+    assert len(document["findings"]) == 3
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == indeterminate_finding_id
+    assert driver["axis"] == "vulnerability"
+    assert err == ""
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [VULN_CRITICAL, VULN_HIGH, WARN_AND_INDETERMINATE],
+    ids=lambda p: p.name,
+)
+def test_severity_gate_fixture_twice_run_is_byte_identical(capsys, fixture):
+    """Determinism (NFR-I3), same standard every other real-finding fixture
+    in this module is held to."""
     rc_one, out_one, _ = run_scan(capsys, fixture)
     rc_two, out_two, _ = run_scan(capsys, fixture)
     assert rc_one == rc_two

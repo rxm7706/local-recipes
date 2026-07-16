@@ -40,6 +40,8 @@ from pyforge.warden.models import (
     ErrorRecord,
     Finding,
     ScannedManifest,
+    Severity,
+    SeverityTier,
     Status,
     StatusDriver,
     WithholdReason,
@@ -198,6 +200,121 @@ def test_engine_findings_pass_through(component_factory):
     assert (
         Status.WARN,
         StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:leftpad"),
+    ) in rungs
+
+
+# --- Story 1.6: vulnerability-axis severity -> rung composition -------------
+
+
+def test_critical_vuln_finding_feeds_a_policy_violation_rung(component_factory):
+    engine_finding = Finding(
+        id="vuln:GHSA-xxxx:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-xxxx (severity critical)",
+        subject="foo",
+        severity=Severity(
+            tier=SeverityTier.CRITICAL,
+            raw="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        ),
+    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=())
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    findings, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert engine_finding in findings
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+@pytest.mark.parametrize(
+    "tier",
+    [SeverityTier.HIGH, SeverityTier.MEDIUM, SeverityTier.LOW, SeverityTier.NONE],
+)
+def test_non_critical_vuln_finding_feeds_a_warn_rung(component_factory, tier):
+    engine_finding = Finding(
+        id="vuln:GHSA-yyyy:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-yyyy",
+        subject="foo",
+        severity=Severity(tier=tier, raw=None),
+    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=())
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    findings, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert engine_finding in findings
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+def test_unknown_tier_vuln_finding_still_feeds_indeterminate(component_factory):
+    """UNKNOWN is deliberately absent from the default policy table -- an
+    unassessable severity must never silently downgrade to warn (the
+    backstop preserved for this case)."""
+    engine_finding = Finding(
+        id="vuln:GHSA-zzzz:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-zzzz",
+        subject="foo",
+        severity=Severity(tier=SeverityTier.UNKNOWN, raw=None),
+    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=())
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    findings, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert engine_finding in findings
+    assert (
+        Status.INDETERMINATE,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+def test_severity_less_vuln_axis_finding_still_feeds_indeterminate(
+    component_factory,
+):
+    """The vulnerability axis's own indeterminate: withhold findings
+    (severity=None) still route to indeterminate through vuln_rung -- the
+    pre-1.6 backstop's result is preserved for this case even though a real
+    severity mapping now governs the axis."""
+    engine_finding = Finding(
+        id="indeterminate:offline-db-unavailable:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: not checked",
+        subject="foo",
+        severity=None,
+    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=())
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    findings, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert engine_finding in findings
+    assert (
+        Status.INDETERMINATE,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+def test_hypothetical_future_axis_still_hits_the_backstop(component_factory):
+    """Now that BOTH v1 axes (hygiene, vulnerability) have real mappings, the
+    generic backstop is reachable only by a finding whose axis is neither —
+    a hypothetical future axis with no mapping of its own yet. Without this
+    test that branch would be completely unexercised by the suite (a
+    regression there, e.g. mapping it to clean, would go undetected)."""
+    engine_finding = Finding(
+        id="indeterminate:license-issue:foo",
+        axis="license",  # AXIS_HYGIENE/AXIS_VULNERABILITY is an OPEN string
+        # mechanism (see models.py) — a future axis lands additively.
+        message="a hypothetical future axis",
+        subject="foo",
+        severity=None,
+    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=())
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    findings, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert engine_finding in findings
+    assert (
+        Status.INDETERMINATE,
+        StatusDriver(axis="license", finding_id=engine_finding.id),
     ) in rungs
 
 

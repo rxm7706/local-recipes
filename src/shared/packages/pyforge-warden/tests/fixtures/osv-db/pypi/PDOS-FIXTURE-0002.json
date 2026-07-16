@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.6.0",
+  "id": "PDOS-FIXTURE-0002",
+  "modified": "2026-01-01T00:00:00Z",
+  "published": "2026-01-01T00:00:00Z",
+  "aliases": [],
+  "summary": "Synthetic HIGH vulnerability in pdos-vuln-fixture-high 1.0.0 (test fixture).",
+  "details": "Deterministic, hermetic OSV advisory used only by the pyforge-warden (Warden) test suite to prove Story 1.6's severity gate HIGH-severity -> warn/exit-0 composition path end to end through a real osv-scanner run (as opposed to PDOS-FIXTURE-0001's CRITICAL -> policy-violation/exit-1 path). Affects the synthetic PyPI package `pdos-vuln-fixture-high` at the single explicit version 1.0.0. There is no such real package. The CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H vector empirically computes to base score 8.8 (osv-scanner 2.4.0, verified against the real binary) -- inside this project's HIGH band [7.0, 9.0).",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "PyPI",
+        "name": "pdos-vuln-fixture-high",
+        "purl": "pkg:pypi/pdos-vuln-fixture-high"
+      },
+      "versions": ["1.0.0"],
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "database_specific": {
+        "source": "pyforge-warden test fixture (Story 1.6); not a real advisory"
+      }
+    }
+  ],
+  "references": [],
+  "database_specific": {
+    "source": "pyforge-warden test fixture (Story 1.6); not a real advisory"
+  }
+}

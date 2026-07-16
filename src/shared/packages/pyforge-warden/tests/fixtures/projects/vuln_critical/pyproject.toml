@@ -1,0 +1,17 @@
+# Critical-CVE fixture (Story 1.6): pdos-vuln-fixture==1.0.0 matches the
+# seeded OSV advisory PDOS-FIXTURE-0001 (CVSS CRITICAL,
+# tests/fixtures/osv-db/pypi/PDOS-FIXTURE-0001.json), which is auto-loaded
+# into every test's ambient offline OSV DB (tests/conftest.py's autouse
+# _osv_ambient_db_env fixture) -- so a real cli.main() scan of this fixture
+# produces a genuine critical vuln: finding with zero extra plumbing,
+# proving the severity gate composes policy-violation end to end (AC1).
+#
+# The source imports nothing, so deptry also flags this fictitious dependency
+# as DEP002 (unused) -- harmless: policy-violation outranks warn in the
+# lattice, so it does not interfere with the property under test.
+[project]
+name = "vuln-critical-fixture"
+version = "1.0.0"
+dependencies = [
+    "pdos-vuln-fixture==1.0.0",
+]
