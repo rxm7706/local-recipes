@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.2)'
   - 'docs/specs/bmad-loop-adoption.md'
@@ -248,3 +248,30 @@ Token: 2M/story ceiling with explicit pre-flight raises for B1/B2/F1 (the keysto
 4. **Keep the human surface scheduled, not reactive**: Q-gates drained at wave opens; parity/benchmark/bring-up as named wave-boundary events; PR per wave; Rule-2 retro at closeout.
 5. **File the three upstream requests now** (they mature on bmad-loop's timeline, not ours): resume-on-timeout; retry-seeded-from-preserved-attempt; PR-lifecycle hook at the per-epic gate. Watch `max_parallel` — if fan-out ships, Waves C–E are the safe place to use it first.
 6. **Fold the § 2.5/§ 14 updates into the spec at the next refinement** (with this report as the cited evidence), alongside the § 12.1 candidate-signals batch from the domain research — one consolidated v5.3.
+
+---
+
+# Research Synthesis: Autonomous Agentic SDLC for the cf_atlas Kedro Migration
+
+## Executive Summary
+
+The question this research answered: **can the ambitious migration and the ambitious execution machinery compose — and what does "using bmad-method/loop/dashboards to the fullest" concretely mean here?** The answer is yes, with a precise shape. "To the fullest" does **not** mean maximal gate removal — the verified reality (bmad-loop v0.8.1 is sequential-only, the loop's power lives entirely in deterministic verify gates, and the migration's gates don't exist yet) means the fullest use of the machinery is **graduated autonomy with verify-first sequencing**: attended/dev-auto sessions build the harness in Waves 0/A, the loop drives Wave B under per-story-spec-approval with TEA-generated fixture gates, autonomy relaxes to per-epic as gates prove out (C–E), and F–H run mixed. Under this architecture ~19 of 30 stories are loop-drivable and every human touchpoint is a scheduled batch-boundary event.
+
+The research also hardened the plan against five concrete failure modes found along the way: the **worktree × multi-project-symlink seam** (untested; could strand spec artifacts — fixed by a Wave-0 bootstrap + the A3 smoke story), **worktree pixi-env materialization cost** (solved by a lean dedicated env from A1), **keystone-story budget blowouts** (the pilot's 25.8M-token lesson — pre-flight budget raises for B1/B2/F1), **long test runs reading as stalled sessions** (`dev_stall_grace_s` tuning), and **adversarial-review over-engineering** (correctness-constrained review checklists). Three upstream bmad-loop gaps worth filing now: resume-on-timeout, retry-from-preserved-attempt, and a PR-lifecycle hook.
+
+**Verified capability corrections that reshape assumptions**: `max_parallel = 1` (parallel-wave imagery is aspirational); kedro-mcp and the BMAD dashboards observe *artifacts*, not loop sessions (the TUI is the only run observer — but the dashboards work during runs for free via the artifact tree); `llms-full.txt` lacks the autonomy docs (use `/reference/dev-auto/` + the TEA site); and the repo's loop policy is already stricter than upstream defaults, with pilot learnings pre-paid on pyforge-warden.
+
+## Hand-off (research → spec v5.3 + Tier-2 intake)
+
+1. § 2.5: encode graduated autonomy + verify-first sequencing (replacing the residual "parallel worktrees" framing with the sequential-story reality).
+2. § 14: the per-wave operating loop (Q-drain → atdd → loop → sweep → boundary event → PR per wave) + the Wave-0 preconditions checklist.
+3. Tier-2 epics/stories: carry the drivability map's mode column + the six verify-task deliverables (kedro-test, kedro-catalog-check, parity-diff, dagster-dryrun, bsl-metric-check, wasm-smoke); A3 = first loop story/worktree smoke.
+4. `.bmad-loop/policy.toml`: wave-B `[verify]` additions; B1/B2/F1 budget raises; per-stage adapter overrides as needed.
+5. Upstream: file the three bmad-loop feature requests; watch `max_parallel`.
+
+## Methodology & Source Verification
+
+Internal grounding: `.bmad-loop/policy.toml` + hook relay + `.claude/settings.json`, `docs/specs/bmad-loop-adoption.md` (incl. pilot learnings), `pixi.toml` task inventory, CLAUDE.md conventions, spec v5.2. External verification (web agent + direct fetches, 2026-07-16): official bmad-loop README (bmad-code-org), the `/reference/dev-auto/` page, TEA docs, dashboard marketplace/repo pages, `llms-full.txt` keyword probe, Claude Code best-practices, the Ralph-technique source. Confidence: HIGH on all repo configs and official docs; MEDIUM where single-sourced (dashboard versions, org-adoption inference) or reasoned-not-reproduced (the worktree seam — hence the mandated smoke test).
+
+**Research Completion Date:** 2026-07-16
+**Confidence Level:** HIGH on the decision-driving findings (sequential clamp, gate inventory, pilot learnings, dev-auto contract); flagged inline elsewhere.
