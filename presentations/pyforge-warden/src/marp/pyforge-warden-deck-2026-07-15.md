@@ -328,12 +328,12 @@ Six axes of dependency trust, pluggable behind one report — four axes in v1 (h
 | --- | --- | --- | --- |
 | 1 · Hygiene | Is it used? | deptry | **v1 gate** |
 | 2 · Security | Is it vulnerable / exploited? | osv-scanner + CISA KEV | **v1 gate** |
-| 3 · License | Is it allowed? | license-expression | **v1 enrich** · gate v1.1 |
-| 4 · Currency | Is it patchable? | LTS · endoflife.date · N/N-1 | **v1 enrich** · gate v1.1 |
+| 3 · License | Is it allowed? | license-expression | **v1 gate** (flag-activated) |
+| 4 · Currency | Is it patchable? | LTS · endoflife.date · N/N-1 | **v1 gate** (flag-activated) |
 | 5 · Provenance | Is it authentic? | Sigstore / SLSA | vision |
 | 6 · Maintenance | Is it maintained? | OpenSSF Scorecard | vision |
 
-<!-- Six axes, each a different question. v1 runs all four: hygiene + security gate (incl. KEV); license + currency enrich (gates v1.1). Provenance + maintenance are the vision. -->
+<!-- Six axes, each a different question. v1 runs all four with their gates: hygiene + security gate by default (incl. KEV + EPSS); license + currency gates are flag-activated (unconfigured -> visible warn). Provenance + maintenance are the vision. -->
 
 ---
 
@@ -342,25 +342,25 @@ Six axes of dependency trust, pluggable behind one report — four axes in v1 (h
 Not every CVE matters equally. Warden enriches each finding so the gate blocks on **what's actually dangerous** — not theoretical noise.
 
 - **CISA KEV — exploited in the wild** `v1` — the known-exploited catalog; a boolean that outranks a raw severity score. The `--fail-on-kev` gate ships **v1**.
-- **FIRST EPSS — probability it will be** `v1.1` — a 0–1 exploit-prediction score for triage; the `--min-epss` gate lands **v1.1**.
+- **FIRST EPSS — probability it will be** `v1` — a 0–1 exploit-prediction score for triage; the `--min-epss` gate ships **v1** (re-baselined 2026-07-16).
 
-`--fail-on-kev` (v1) · `--min-epss 0.5` (v1.1) — block on real-world risk, warn on the rest.
+`--fail-on-kev` · `--min-epss 0.5` — both **v1** — block on real-world risk, warn on the rest.
 
-<!-- KEV enrichment + gate ship v1; EPSS gating is v1.1. KEV = exploited now; EPSS = probability it will be. -->
+<!-- KEV + EPSS enrichment and both gates ship v1. KEV = exploited now; EPSS = probability it will be. -->
 
 ---
 
-## 18 · License & currency — enrich in `v1`, gate in `v1.1`
+## 18 · License & currency — full gates in `v1`, flag-activated
 
-Both axes ship in **v1 as enrichment** (`gating: false`) — reported in every run, not blocking; conda `about: license` resolves **pre-build**, so conda components carry real verdicts on day one. Their **gates** turn on in **v1.1**.
+Both axes ship in **v1 with their full gates, flag-activated** — unconfigured, every verdict is reported and surfaces as a visible `warn` (never a silent pass); configure a policy and the axis blocks. conda `about: license` resolves **pre-build**, so conda components carry real verdicts on day one.
 
 **Axis 3 · License — is it allowed?**
-SPDX from PyPI metadata + conda `about: license`, normalized via **license-expression**. `v1.1` gate: `--allow-licenses` · `--deny-licenses` — denied → policy-violation, unknown → indeterminate.
+SPDX from PyPI metadata + conda `about: license`, normalized via **license-expression**. `v1` gate (flag-activated): `--allow-licenses` · `--deny-licenses` — denied → policy-violation, unknown → indeterminate.
 
 **Axis 4 · Currency — is it patchable?**
-Tiered **LTS registry → endoflife.date → N/N-1** flag EOL & stale deps — and the Python runtime — plus an **availability-at-N/N-1** (ADD/UPDATE) finding. `v1.1` gate: `--max-lag` · `--require-lts` · `--fail-on-eol`.
+Tiered **LTS registry → endoflife.date → N/N-1** flag EOL & stale deps — and the Python runtime — plus an **availability-at-N/N-1** (ADD/UPDATE) finding. `v1` gate (flag-activated): `--max-lag` · `--require-lts` · `--fail-on-eol`.
 
-<!-- License + currency ship v1 as enrichment (reported, not blocking); their gates land v1.1. Conda about:license resolves pre-build. -->
+<!-- License + currency ship v1 with flag-activated gates (unconfigured -> visible warn). Conda about:license resolves pre-build. -->
 
 ---
 

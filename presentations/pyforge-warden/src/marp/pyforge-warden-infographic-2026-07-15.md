@@ -81,12 +81,12 @@ Python isn't one ecosystem. Warden is built for both — and treats the scanning
 | --- | --- | --- | --- |
 | 1 · Hygiene | `deptry` | Is it actually used? | **v1 gate** |
 | 2 · Security | `osv-scanner` + CISA KEV | Any known / exploited CVE? | **v1 gate** |
-| 3 · License | `license-expression` | Legally allowed? | **v1 enrich** · gate v1.1 |
-| 4 · Currency | LTS · `endoflife.date` · N/N-1 | Supported / patchable? | **v1 enrich** · gate v1.1 |
+| 3 · License | `license-expression` | Legally allowed? | **v1 gate** (flag-activated) |
+| 4 · Currency | LTS · `endoflife.date` · N/N-1 | Supported / patchable? | **v1 gate** (flag-activated) |
 | 5 · Provenance | `Sigstore / SLSA` | Authentic & untampered? | vision |
 | 6 · Maintenance | `OpenSSF Scorecard` | Alive, funded, resilient? | vision |
 
-Engines are pluggable. **v1 runs all four axes** — hygiene + security **gate** (incl. the CISA-KEV tier); license + currency ship **enrichment** (`gating: false`, reported not blocking). Their **gates** land **v1.1**; provenance + maintenance are **vision**.
+Engines are pluggable. **v1 runs all four axes with their gates** — hygiene + security gate by default (incl. the CISA-KEV **and EPSS** tiers); license + currency gates are **flag-activated** (unconfigured, their verdicts surface as visible `warn` — never a silent pass); provenance + maintenance are **vision**.
 
 ---
 
@@ -128,7 +128,7 @@ The manifest engine is the wedge: neither scanning engine parses conda/pixi mani
 
 **Verdict lattice — highest wins:** `error` (exit 2) › `policy-violation` (exit 1, blocks) › `indeterminate` (exit 1, unproven) › `warn` › `bypassed` › `clean` › `not-applicable` (all exit 0). Frozen exit enum: `0` `1` `2` `130`.
 
-- **Default policy** — v1 blocks on CVSS-critical CVEs **and the CISA-KEV tier** (any KEV-listed advisory on a pinned version blocks regardless of CVSS); high/med/low + all hygiene warn; license + currency enrich (don't block). Configurable via `--fail-on`, `max_critical`, `--fail-on-kev`. **v1.1 adds** `--min-epss` + the license/currency gates.
+- **Default policy** — v1 blocks on CVSS-critical CVEs **and the CISA-KEV tier** (any KEV-listed advisory on a pinned version blocks regardless of CVSS); high/med/low warn (DEP001 missing-dependency blocks on a confident mapping); license + currency gate **when configured** (`--allow/--deny-licenses` · `--max-lag`/`--require-lts`/`--fail-on-eol`), else surface as `warn`. Configurable via `--fail-on`, `max_critical`, `--fail-on-kev`, `--min-epss` — **all v1**.
 - **Waivers as code** — `--bypass --reason` emits an expiring stanza (default 14 days) the team commits. The tool reads it, never writes the repo.
 - **Typed errors** — `unparsable-manifest` · `engine-unavailable` · `engine-crash` · `internal-error`.
 
@@ -209,11 +209,14 @@ Roadmap · not yet shipped. Everything from here down is roadmap and vision — 
 
 ## 11 · Beyond v1 — now, next & later
 
-**NOW · v1.1 — activate the axis gates**
-- **License gate** (Axis 3) — the axis already ships v1 as enrichment (SPDX via `license-expression`, reported); v1.1 turns on `--allow-licenses`/`--deny-licenses` — denied → policy-violation, unknown → indeterminate.
-- **Currency gate** (Axis 4) — v1 enriches (LTS · N / N-1 · endoflife); v1.1 turns on `--max-lag`/`--require-lts`/`--fail-on-eol`.
-- **EPSS prioritization** — `--min-epss` joins the v1 KEV gate on the security axis.
-- **Baseline & grandfathering** — accept existing debt, gate only **new** findings; **automated fix PRs** — open remediation PRs, not just findings.
+**SHIPPED IN v1 (re-baselined 2026-07-16)**
+- **License gate** (Axis 3) — SPDX via `license-expression`; `--allow-licenses`/`--deny-licenses` activate it — denied → policy-violation, unknown → indeterminate (unconfigured → visible `warn`).
+- **Currency gate** (Axis 4) — LTS · N / N-1 · endoflife; `--max-lag`/`--require-lts`/`--fail-on-eol` activate it (freshness-preconditioned).
+- **EPSS prioritization** — `--min-epss` joins the KEV gate on the security axis.
+- **Baseline & grandfathering** — accept existing debt, gate only **new** findings; **automated fix PRs** — opt-in `--open-fix-prs` opens remediation PRs via the forge API.
+
+**NOW · v1.x**
+- **Public PyPI + conda-forge publish** · **channel/index-provenance axis** · **SARIF output** · **vendor-support backlog**.
 
 ---
 

@@ -29,6 +29,7 @@ pinnedEngineContracts:  # grounded 2026-07-11 — the wrapped-engine contracts t
 axisDataContracts:  # added 2026-07-15 (story-0.1 replan) — the axis-3/4 + KEV data surfaces the design pins against
   license-expression: "nexB/AboutCode SPDX normalizer (the ONE new runtime dep); inputs = conda about:license (pre-build) + importlib.metadata (PEP 639/legacy/trove); no source scanning (FR32)"
   cisa-kev: "cached JSON feed; offline default, opt-in online never silent; per-feed provenance {source, snapshot_at, max_age_ok}; absent/stale under a KEV policy → indeterminate (FR36; cache/lifecycle owned by story 6.4)"
+  first-epss: "cached FIRST.org feed (D12 2026-07-16 — v1); same posture + provenance as cisa-kev; absent/stale under an active --min-epss policy → indeterminate (FR36; story 6.7; shared feeds.py layer)"
   endoflife-date: "cached feed via the _http.py resolve_endoflife_urls() mirror pattern (FR34)"
   lts-registry: "bundled src/pyforge/warden/data/lts-registry.yaml via importlib.resources; build-time snapshot_at + max_age_ok on every derived verdict (NFR-S9)"
 workflowType: 'architecture'
@@ -131,8 +132,10 @@ The spec re-tiered the product to a four-axis v1 (`docs/specs/pyforge-warden.md`
 
 - **Axis registry = the open string mechanism that already shipped.** No `Axis` protocol exists or is needed (OD7 retired): license/currency producers register behind the existing `Engine` seam with `axis="license"` / `axis="currency"`. The one hard-coded seam is `report.py`'s `_REPORT_AXES` tuple — grown in the 6.1 amendment, without which a new axis's coverage claim is silently dropped.
 - **One sanctioned schema amendment (6.1, FR38):** additive `schema_version` bump — per-axis `gating` bool · `license`/`currency` sections with per-section coverage/provenance (incl. bundled-data `snapshot_at`/`max_age_ok`, NFR-S9) · `kev_date` + `epss {score,percentile}` + per-feed KEV provenance. Coordinated set: `report-schema.json` · `models.py` · `report.py` (self-validation + `_REPORT_AXES`) · the exact-13 `Component` test (+ Gap-B merge/fold semantics for each new field) · fixtures. The producer re-closes behind it.
-- **Warn-rung policy (FR37, review-T2):** on a `gating: false` axis, `unknown`/`denied`/`eol` feeds a `warn` rung (driver names the axis) — visible in status, exit 0; `--warn-as-error` escalates; the v1.x gate activation is a policy-table flip, not a producer change. Tighten-only vs `DefaultPolicy`; C0 and the verdict.py sole-ownership guard hold unchanged.
-- **Feed-cache layer (stories 6.3/6.4):** KEV + endoflife.date are cached feeds under the NFR-S2 posture (offline default, opt-in online never silent, `_http.py` mirror chain); absent/stale KEV under a KEV-blocking policy → `indeterminate` (review-T1). Bundled data (LTS registry, conda→pypi map) carries build-time age provenance (NFR-S9, review-T4).
+- **Two-mode policy (FR37 + FR33/FR35 — D12, 2026-07-16):** on an axis whose policy flags are **unconfigured**, `unknown`/`denied`/`eol` feeds a `warn` rung (driver names the axis) — visible in status, exit 0; `--warn-as-error` escalates. **Configuring any axis policy flag activates that axis's gate in v1**: denied/eol → `policy-violation`, unknown → `indeterminate` — a policy-table flip, never a producer change. Tighten-only vs `DefaultPolicy`; C0 and the verdict.py sole-ownership guard hold unchanged.
+- **Baseline & grandfathering (FR39, story 6.8 — D12):** `baseline.py` reads the committed, schema-validated `.warden-baseline.yaml`; suppression is keyed on the stable finding-ID grammar (the waiver key); expiry = waiver semantics; applied entries echo in the report; the gate blocks NEW findings only. Read-only (NFR-R3a); `--baseline-emit` prints, never writes.
+- **Fix-PR actuator (FR40, story 6.9 — D12):** `actuator.py` is the ONLY module permitted forge-API egress — opt-in (`--open-fix-prs`), env-credentialed, strictly post-verdict; the scanned tree is never written; a failed PR-open surfaces as a typed warning, never altering the verdict. `--fix-prs-dry-run` emits machine-readable intent under NFR-I3 rules.
+- **Feed-cache layer (stories 6.3/6.4/6.7):** KEV + **EPSS** + endoflife.date are cached feeds under the NFR-S2 posture (offline default, opt-in online never silent, `_http.py` mirror chain); absent/stale KEV or EPSS under an active KEV/`--min-epss` policy → `indeterminate` (review-T1; D12). Bundled data (LTS registry, conda→pypi map) carries build-time age provenance (NFR-S9, review-T4).
 - **Distribution gate (6.6):** engine run-deps move from `"*"` to tested version ranges (NFR-C1 — range, not pin); v1 JFrog / v1.x public publish block on it (review-T-a).
 
 ### GAP A — deptry-severity → verdict → **two-axis, per-rule ceiling**
@@ -221,7 +224,9 @@ pyforge/warden/
   hygiene.py        # deptry per-code join
   license.py        # Axis 3 producer — SPDX via license-expression (FR32; 6.2)   [2026-07-15]
   currency.py       # Axis 4 producer — LTS/endoflife/N-1 tiers + runtime_python (FR34; 6.3)   [2026-07-15]
-  feeds.py          # KEV + endoflife cached-feed layer: cache, max-age, provenance (FR36; 6.4)   [2026-07-15]
+  feeds.py          # KEV + EPSS + endoflife cached-feed layer: cache, max-age, provenance (FR36; 6.4/6.7)   [2026-07-15/16]
+  baseline.py       # FR39 baseline & grandfathering — read-only, finding-ID-keyed, expiring (6.8)   [2026-07-16]
+  actuator.py       # FR40 fix-PR actuator — sole forge-egress module, opt-in, post-verdict (6.9)   [2026-07-16]
   report.py         # ComplianceReport assembly + jsonschema validation
   sbom.py           # CycloneDX 1.6 via cyclonedx-python-lib
   verdict.py        # J9 lattice + 6→3 exit projection + status.driver
@@ -312,7 +317,7 @@ src/shared/packages/pyforge-warden/
 | **E2 — hygiene** | `engines`(deptry) · `hygiene` | FR8–FR9 |
 | **E3 — vulnerability** | `engines`(osv) · `vuln` | FR10–FR13 |
 | **E4 — report + gate** | `report` · `sbom` · `verdict` · `waiver` · `cli` · `config` · `determinism` · `errors` | FR14–FR31 + C0 |
-| **E5 — multi-axis expansion** *(2026-07-15; = epics.md Epic 6)* | `license` · `currency` · `feeds` · `engines`(new producers) · `report`(6.1 amendment) · `models` | FR32–FR38 + NFR-S9 |
+| **E5 — multi-axis expansion** *(2026-07-15/16; = epics.md Epic 6)* | `license` · `currency` · `feeds` · `baseline` · `actuator` · `engines`(new producers) · `report`(6.1 amendment) · `models` | FR32–FR40 + NFR-S9 |
 
 *(This table's E-numbers are the architecture's capability groupings; epics.md's delivery epics differ — its Epic 6 maps to this table's E5 row.)*
 
