@@ -25,7 +25,7 @@ spec_updated: 2026-07-16
 
 | Field | Value |
 |---|---|
-| Status | **v3 — re-grounded 2026-07-10 against live surface (main `de5462d`, skill v8.76.0); ready for full BMAD execution intake.** 5 open questions (§ 11: Q1–Q4 + Q6; Q5 resolved → Wave H), none v1-blocking. |
+| Status | **v4 — re-grounded 2026-07-16 against live surface (main `58a6dcc`, skill v8.78.0); § 15 live-analytics candidates gated and promoted (FR-19/FR-20 → Stories B8/B9); ready for full BMAD execution intake.** 6 open questions (§ 11: Q1–Q4 + Q6–Q7; Q5 resolved → Wave H), none v1-blocking. |
 | Owner | rxm7706 |
 | Track | BMAD Full Flow (includes separate PRD/architecture phases) |
 | Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~10,000 LOC, 23 cataloged phases — 22 registered + Phase I) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. |
@@ -132,6 +132,23 @@ spec_updated: 2026-07-16
 >    (+ Seed-Gaps, + Read-Surface / Derived Artifacts); stories **B6 / B7 /
 >    F4** added. The dep-hygiene toolchain recipes (`deptry`, `fawltydeps`,
 >    `pip-check-reqs`, the `osv-scanner` mirror) are now on main.
+>
+> **Spec refresh v4 (2026-07-16):** re-grounded against main `58a6dcc` / skill
+> v8.78.0. *Literal drift since v3* (everything else in § 3.3 re-verified
+> unchanged): pixi tasks 92 → **93** (+`llms-full-check`), pixi environments
+> 9 → **11** (+ the standalone `pyforge-warden` and `bmad-ui` envs, both
+> no-default-feature), atlas LOC 8,860 → **8,902**. *Gating pass*: the § 15
+> live-analytics recommendations (added 2026-07-16 at `58a6dcc`) are
+> **promoted** — FR-19 (Basilisk conda-native vulnerability source) and
+> FR-20 (release-to-availability velocity + rebuild-cadence guard) are now
+> committed FRs with Wave B stories **B8 / B9**, a new landing-decision
+> question **Q7**, and an amended § 12 out-of-scope row (the
+> `api.basilisk.prefix.dev` exception). The multi-format manifest-parsing
+> observation is RESOLVED — already covered by
+> `dependency-input-formats.md` (S5a, v8.71.0) except non-breaking-space-
+> padded paste variants, folded into Story B7's ACs as a fixture case. The
+> ecosystem-composition observation is deferred (not migration surface);
+> § 15 is reduced to the disposition ledger recording all four outcomes.
 
 ---
 
@@ -188,7 +205,7 @@ To achieve true parallel execution across our 9 implementation waves, we execute
 
 ## 3. Deep Analysis: Current cf_atlas Pipeline
 
-The `cf_atlas` data pipeline currently operates as a bespoke, hand-rolled orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`) spanning ~10,000 lines of code (8,860 + 1,094 at skill v8.76.0).
+The `cf_atlas` data pipeline currently operates as a bespoke, hand-rolled orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`) spanning ~10,000 lines of code (8,902 + 1,094 at skill v8.78.0).
 
 ### 3.1 Current Architecture & Constraints
 
@@ -205,7 +222,7 @@ The `cf_atlas` data pipeline currently operates as a bespoke, hand-rolled orches
 *   **Opaque Execution**: When `--fresh` takes 3-4 hours, operators have no visual way to monitor the DAG, identify bottlenecks, or view intermediate dataset schemas.
 *   **Rigid Read Surface**: The 28 CLIs answer 28 specific questions. Ad-hoc questions require dropping into `sqlite3 cf_atlas.db` and writing manual JOINs.
 
-### 3.3 Live-Surface Snapshot (main `de5462d`, skill v8.76.0, 2026-07-10)
+### 3.3 Live-Surface Snapshot (main `58a6dcc`, skill v8.78.0, 2026-07-16)
 
 The authoritative enumeration of the migration surface. Stories and FRs reference
 this section instead of inline literals; re-verify with
@@ -234,7 +251,7 @@ this section instead of inline literals; re-verify with
     CLI depends on; the node port must preserve them (Story B1).
 *   **Script surface**: 61 canonical scripts + 5 `_helpers` under
     `.claude/skills/conda-forge-expert/scripts/`; 57 thin wrappers under
-    `.claude/scripts/conda-forge-expert/`; 92 local-recipes + 7 vuln-db pixi
+    `.claude/scripts/conda-forge-expert/`; 93 local-recipes + 7 vuln-db pixi
     tasks. The three-place rule (canonical script + wrapper + pixi task +
     SCRIPTS meta entry) is meta-test-enforced.
 *   **Read CLIs (28)**: 17 atlas read CLIs (`detail-cf-atlas`,
@@ -279,8 +296,9 @@ this section instead of inline literals; re-verify with
     meta keys drive per-phase TTL gating; derived artifacts (`export-purls`,
     `universe-sbom`) regenerate after every atlas rebuild — model them as
     downstream nodes of the rebuild.
-*   **Environments / tests**: 9 pixi environments (local-recipes / vuln-db /
-    gcloud split); test suite of 85 unit + 4 integration + 8 meta files. The
+*   **Environments / tests**: 11 pixi environments (local-recipes / vuln-db /
+    gcloud split, plus the standalone no-default-feature `pyforge-warden`
+    and `bmad-ui` envs); test suite of 85 unit + 4 integration + 8 meta files. The
     meta tests pin the three-place rule and docs integrity — the migration
     keeps them green or explicitly retires them with the legacy path.
 *   **Operational profiles** (`guides/atlas-operations.md` — the operational
@@ -467,8 +485,8 @@ The legacy phases will be refactored into seven domain-specific pipelines:
 
 1.  **Core Pipeline**: Foundational conda-forge enumeration and graph building.
 2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4) — and the `mapping-gap` `g10_spelling` writeback (§ 3.4: the one gap tool that mutates the atlas belongs with the mapping stage).
-3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay. Includes the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5). Read nodes honor the § 3.3 vulnerability read-path contract (atlas `cisa_kev` KEV overlay + CVSS ScoreType coercion).
-4.  **VCS & Health Pipeline**: GitHub/GitLab live queries and upstream version tracking.
+3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay. Includes the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5). Read nodes honor the § 3.3 vulnerability read-path contract (atlas `cisa_kev` KEV overlay + CVSS ScoreType coercion). Grows the **Basilisk ingestion node family** (FR-19, Story B8): a batch-query node (`POST /v1/querybatch`, ≤1,000 queries/request) writing the `basilisk_vulns` dataset keyed by conda PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP 63) plus a bounded detail-fetch node (`GET /v1/vulns/{id}`) — a second, conda-native vulnerability identity axis complementary to the PyPI-keyed vdb.
+4.  **VCS & Health Pipeline**: GitHub/GitLab live queries and upstream version tracking. Gains the **release-to-availability velocity columns** (FR-20, Story B9) on the Phase H join — `release_lag_hours` + `release_lag_qualifies`, computed only where the upstream release is ≤90 days old (the rebuild-cadence-artifact guard).
 5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from the tiered intake of § 4.10, strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets. Grows four node families beyond parsing (FR-16/17/18): a **transitive-resolver node** (pip `--dry-run --report` for PyPI / py-rattler solve for conda; records depth + fan-out) that upgrades bare manifests to full dependency sets — resolution honors the `_http.py` mirror-routing contract (§ 3.3 external endpoints: `PYPI_BASE_URL`-style overrides for enterprise/JFrog mirrors) and degrades gracefully when offline (consumer profile: resolve from a provided lockfile or cached index, else skip resolution and mark the BOM `unresolved` rather than fail); the **inventory-match matching node** preserving the shipped six-bucket semantics (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN, three-way version comparison, channeldata-live recovery); a forward-looking **dependency-hygiene scan node** (deptry — unused / missing / misplaced deps; FR-16, Story F4); and the **unified CI policy gate** (FR-18) as the pipeline's terminal quality node.
 6.  **Seed-Gaps Pipeline**: The four report-only gap suggesters (`lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — § 3.4) as terminal report nodes fanned out from their external seed datasets, downstream of the atlas rebuild, producing `derived`-layer freshness reports only. Strictly read-only; `mapping-gap` is deliberately excluded (its writeback lives in pipeline 2). Ported by Story B6.
 7.  **Read-Surface / Derived-Artifacts Pipeline**: The post-rebuild regeneration nodes — `export-purls` (six purl/mapping artifacts) and `universe-sbom` (the ~856k-component full-universe CycloneDX BOM, a first-class `derived`-layer catalog dataset) — bound to every rebuild per the § 3.3 freshness machinery; the 14-day `check_freshness` gate (`STALE_AFTER_DAYS = 14`) becomes the dataset-level freshness contract the four derived-artifact consumers (`universe-sbom`, `inventory-match`, `library-futures`, `recommend-2027`) enforce.
@@ -632,6 +650,26 @@ A hygiene node runs `deptry` over the § 4.10 tiered intake **when project sourc
 
 One terminal quality node assembles the full `ComplianceReport` — `hygiene` from the FR-16 node, `security` from `inventory-match`/`cve` — converging `pyforge-warden.md`'s strict exit-code gate with `inventory-match --policy` (exit 0 pass / 1 policy-fail / 2 error; `max_critical` / `max_high` / KEV thresholds), emits the schema-validated artifact into the `derived` layer, and halts Dagster on failure exactly like an FR-10 contract violation (raising the A2A alert). CI consumes the exit code. (§ 5.2 item 5 terminal node, § 5.8, Story F4.)
 
+### FR-19. Conda-native vulnerability source: Basilisk (prefix.dev)
+
+The Vulnerability Pipeline gains a second, conda-native identity axis: `api.basilisk.prefix.dev` — a live, no-auth, OSV-compatible REST API matched against the actual conda-forge PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP 63 form) — complementary to the PyPI-keyed vdb of Phase G. It catches advisories on packages the PyPI-keyed pipeline structurally cannot see because they were never PyPI packages (live-validated over the full 21,163-package Python population: confirmed advisories on `libuuid` — 203M downloads, CVE-2026-3184 — `libtiff`, `libarchive`, `perl`, all non-Python C/system libraries riding as transitive Python-environment dependencies).
+
+Ingestion is two nodes (§ 5.2 item 3): a **batch-query node** — `POST /v1/querybatch`, documented cap 1,000 queries/request (live run: 85 requests of 250 over the full population, zero errors) — writing the `basilisk_vulns` dataset in the lightweight batch shape (`conda_name`, `advisory_id`, `modified`); and a **bounded detail-fetch node** — `GET /v1/vulns/{id}` for full OSV detail (severity, `affected[].ranges[].events`) — a separate follow-up pass (live: all 765 unique advisory IDs in one pass, no further batching).
+
+Constraints hardened by the live analysis, all binding on the implementation:
+
+*   **Match by package name, never by the OSV ecosystem tag** — the raw `affected[]` entries retain their *original* source ecosystem (typically `PyPI`), never `conda-forge`; an ecosystem-field consumer silently finds nothing (hit and fixed during the live run).
+*   **Version currency ≠ security currency** — 113 of the 348 confirmed-match packages are classified `current` by `behind-upstream`'s lag logic; no read surface may render a `current` verdict as "unaffected."
+*   **`fix_available` is tri-state** (`true` / `false` / `unknown`) — ~48% of advisories carry no structured fix-version data (enumerated `versions` list only, a data-completeness gap in the upstream OSV records); `unknown` must never collapse to `false`. The derived signal is cheap and high-value: name-matched, `packaging.version`-compared cross-referencing of `affected[].ranges[].events[].fixed` against the current installed version live-resolved **85.3% of 5,101 (package, advisory) matches as upgrade-resolvable** — mostly a packaging-currency problem, not an open security-research one. Join at query time against `behind_upstream`'s upstream-version data (same join key Phase H already requires).
+
+The endpoint gets a `resolve_basilisk_urls` helper + `BASILISK_BASE_URL` override per the § 3.3 mirror-routing convention (19 → 20 `resolve_*_urls`). Landing point (Kedro-only vs interim legacy Phase U) is Q7 (§ 11). (§ 5.2 item 3, Story B8; promoted from § 15, 2026-07-16.)
+
+### FR-20. Release-to-availability velocity signal (with the rebuild-cadence guard)
+
+The VCS & Health pipeline derives the previously-unmeasured rate metric "how long does conda-forge take to publish a matching build after upstream releases": a `release_lag_hours` + `release_lag_qualifies` column pair on the existing Phase H join. **No new external source** — Phase H's PyPI JSON fetch already carries `upload_time_iso_8601` per release and currently discards it after extracting `info.version`; the node simply retains it.
+
+Hard constraint the live analysis validated the expensive way: a naive `latest_conda_upload − pypi_upload_time` delta is **not** a lag measurement — conda-forge periodically rebuilds long-stable, version-unchanged packages (migrations, ABI/compiler bumps, Python-matrix expansion), so `latest_conda_upload` reflects the *most recent rebuild*, not *first availability*. A naive full-population run produced a false "47% more than 10 days behind" headline; 83.7% of that bucket had a PyPI release itself over a year old. The computation MUST therefore restrict to packages whose upstream release is ≤90 days old (`release_lag_qualifies` — threshold cross-validated live at both a 5,000-package downloads-biased sample and the full 19,726-feedstock population, landing within 1 percentage point of each other). Live baseline the migrated signal should reproduce: **median 8.9 h, 72.4% within 24 h, 83.7% within 72 h**. (§ 5.2 item 4, Story B9; promoted from § 15, 2026-07-16.)
+
 ---
 
 ## 9. User Stories
@@ -750,7 +788,30 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - Every § 4.10 format normalizes to CycloneDX preserving the `cfe:*` property namespace and the `?channel=conda-forge` qualifier.
 - The full-universe CycloneDX BOM is a catalog dataset under the 14-day freshness contract; consumers refuse a stale atlas exactly as the legacy gate does.
 - A matching run reproduces the legacy six-bucket classification (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN) on a fixture inventory.
+- Pasted `conda list` / `pip list` text padded with non-breaking spaces parses identically to its ASCII-space form (fixture case — the S5a parsers cover these formats but not this whitespace variant today; § 15 disposition).
 - Maps to FR-13, FR-17.
+
+#### Story B8 — Basilisk conda-native vulnerability ingestion
+
+**Goal**: Implement the two Basilisk ingestion nodes (FR-19) in the Vulnerability Pipeline — `POST /v1/querybatch` → `basilisk_vulns` dataset, plus the bounded `GET /v1/vulns/{id}` detail fetch — with the derived tri-state `fix_available` column joined at query time against `behind_upstream`. B8 is additive new-signal work, not parity-gated: Story B4's parity check compares legacy-surface outputs only. Record Q7's landing decision (§ 11) before implementation.
+
+**Acceptance criteria**:
+- A batch run over the full Python population writes `basilisk_vulns` (`conda_name`, `advisory_id`, `modified`) via `POST /v1/querybatch` at ≤1,000 queries per request.
+- Matching is by package name: a fixture proves an advisory whose `affected[]` ecosystem tag reads `PyPI` still matches its conda package (the ecosystem-tag gotcha, FR-19).
+- `fix_available` is tri-state: a fixture advisory carrying only an enumerated `versions` list yields `unknown`, never `false`.
+- No read surface conflates version currency with security currency — a package can be `current` per `behind-upstream` AND carry a Basilisk advisory (fixture-proven).
+- `BASILISK_BASE_URL` routes the endpoint per the § 3.3 mirror-routing convention; offline (consumer profile) the nodes skip gracefully and mark the dataset stale rather than failing.
+- Maps to FR-19.
+
+#### Story B9 — Release-to-availability velocity columns
+
+**Goal**: Retain Phase H's per-release `upload_time_iso_8601` and derive `release_lag_hours` + `release_lag_qualifies` (FR-20) on the Phase H join, with the 90-day recency gate. Additive like B8; not parity-gated.
+
+**Acceptance criteria**:
+- The column pair exists on the Phase H join dataset; no new external fetch is introduced.
+- The rebuild-cadence guard is fixture-enforced: a version-unchanged package whose upstream release is >90 days old is excluded (`release_lag_qualifies = false`) — the false "47% behind" classification (FR-20) cannot recur.
+- A population run reproduces the live baseline shape (median ≈ 9 h, ~72% within 24 h) within reasonable drift, recorded as a calibration reference (not a hard gate).
+- Maps to FR-20.
 
 ### Wave C — Orchestration & Visualization
 
@@ -912,6 +973,7 @@ The implementation waves (0 + A–H) decompose into the stories below. Each wave
 - **AC-7.** DuckDB is the single compute/graph/vector engine; cold-start is materially faster than the 3–4 h legacy baseline.
 - **AC-8.** The intelligence surface runs in-browser via DuckDB-WASM against statically-hosted Parquet; Dagster Sensors enable near-real-time ingestion.
 - **AC-9.** Every component is conda-forge-sourced and pixi-managed (`nebi`-scaffolded); no standalone binaries / JVM.
+- **AC-10.** The two promoted live-analytics signals are live in the migrated surface: the `basilisk_vulns` dataset (conda-PURL identity axis, tri-state `fix_available`) and the release-velocity column pair (90-day-gated), per FR-19 / FR-20 (Stories B8 / B9).
 
 ---
 
@@ -953,6 +1015,12 @@ The skill maintains two mapping surfaces: atlas Phase C (DB-resident parselmouth
 
 **Default**: consolidate — make the migrated Phase C mapping (DuckDB) the single source and re-point `name_resolver.py` / `recipe-generator.py` at it; keep the flat-cache refresh only if authoring-time reads prove to need a standalone file artifact (offline / no-DB contexts). Whatever the decision, the `g10_spelling` provenance tier and the no-clobber writeback rule (sync chain, Wave A block) must survive.
 
+### Q7 — Basilisk landing point: Kedro-native only, or an interim legacy Phase U (gates Story B8)
+
+FR-19 can land either exclusively as Kedro Vulnerability-Pipeline nodes (this migration, Story B8), or first as a legacy-orchestrator **Phase U** (the next letter after trendshift's Phase T, claiming the schema bump after its v30) if conda-native vulnerability coverage is wanted before Wave B completes.
+
+**Default**: build once, as Kedro nodes in Wave B — avoid a double implementation. Pull a legacy Phase U forward only if the trendshift effort's timeline leaves a pre-migration window long enough for the interim coverage to matter; if that happens, the Phase U port then folds into Story B8 like every other § 3.3 phase.
+
 ---
 
 ## 12. Out of Scope
@@ -966,7 +1034,7 @@ The following are deliberately excluded from this migration, with reason:
 | `spec-kit` as the agent framework | Explicitly rejected (§ 7.3); `bmad-method` governs the agent workforce. |
 | Standalone binaries / JVM dependencies | Pixi-first, conda-forge-only constraint (FR-15, § 4.9). |
 | Enterprise Python Manifest (5k) generation as a deliverable | Downstream target state (§ 4.11) the graph *enables*; not built in this migration. |
-| New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set (which already includes endoflife.date, osv.dev, and the local deptry / osv-scanner toolchain — § 3.3 / § 3.4); genuinely new sources are out of scope. |
+| New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set (which already includes endoflife.date, osv.dev, and the local deptry / osv-scanner toolchain — § 3.3 / § 3.4). **One promoted exception (v4, 2026-07-16): `api.basilisk.prefix.dev`** — gated in as FR-19 / Story B8 from § 15's live-validated analysis. Further new sources remain out of scope. |
 | `pyforge.warden` v1 standalone build (`docs/specs/pyforge-warden.md`) | Built under its own spec as an internal-first library. This migration models only the *promoted* atlas surface (FR-16 / FR-18) — the hygiene node contract matches its `ComplianceReport` schema so consolidation with `scan-project` lands as wiring, not redesign. |
 | Rewriting the conda-forge recipe-authoring skill itself | This migration touches the `cf_atlas` intelligence layer, not the recipe-authoring loop. |
 | Static seeds + recipe template trees as pipeline *products* | Curated inputs (§ 3.4); the catalog declares them as versioned external datasets — the pipeline reads, never generates, them. |
@@ -998,6 +1066,8 @@ The following are deliberately excluded from this migration, with reason:
 - `nebi` (nebari-dev) for project scaffolding.
 - CycloneDX SBOM specification; `cdxgen`.
 - `deptry` + `osv-scanner` (conda-native: `recipes/deptry`, the `recipes/osv-scanner` mirror; `fawltydeps` / `pip-check-reqs` as ecosystem context) — the FR-16/FR-18 hygiene + gate toolchain.
+- `api.basilisk.prefix.dev` — the OSV-compatible, conda-native vulnerability API (FR-19); conda PURLs per CEP 63.
+- Live-analytics evidence for FR-19/FR-20 (§ 15 disposition ledger): `gist.github.com/rxm7706/76eb84093c3408b26ed6156b037c6d80` (v1) and `gist.github.com/rxm7706/73db2b7ab8935f95ea6e549ed994c778` (v2, adds Basilisk).
 
 ---
 
@@ -1021,7 +1091,9 @@ Wave 0 first (0.1 SKF legacy translation).
 Then Wave A (A1 nebi scaffold → A2 catalog → A3 IncrementalParquetDataset).
 Then Wave B (B1/B2 node ports → B3 kedro-mcp → B4 parity check → B5
 external-refresh assets (resolve Q6 first) → B6 seed-gaps pipeline →
-B7 SBOM intake extensions — do NOT retire
+B7 SBOM intake extensions → B8 Basilisk ingestion (resolve Q7 first) →
+B9 release-velocity columns — B8/B9 are additive new-signal stories,
+not parity-gated: B4 compares legacy-surface outputs only. Do NOT retire
 the legacy orchestrator until B4 proves parity per Q1's default).
 
 Proceed wave by wave using the BAD execution engine (C orchestration+viz, D semantic layer+dashboards,
@@ -1038,34 +1110,19 @@ Per CLAUDE.md Rule 1, the BAD Linker subagents must invoke the conda-forge-exper
 
 ---
 
-## 15. Recommendations from Live Analytics (2026-07-16)
+## 15. Live-Analytics Recommendations — Disposition Ledger (gated 2026-07-16, v4)
 
-*Not yet gated or reviewed — proposed additions surfaced by a live, multi-stage ecosystem analysis (fleet-wide freshness sampling + a new external vulnerability source), reported in full at
+*Surfaced by a live, multi-stage ecosystem analysis (fleet-wide freshness
+sampling + a new external vulnerability source); full reports at
 `gist.github.com/rxm7706/76eb84093c3408b26ed6156b037c6d80` (v1) and
 `gist.github.com/rxm7706/73db2b7ab8935f95ea6e549ed994c778` (v2, adds Basilisk).
-Every number below is from a live run against the current atlas + live external APIs, not estimated. These are candidates for Wave B (new data-pipeline sources) — promote to real FRs/stories at BMAD intake, do not treat as committed scope.*
+Every number was measured against the live atlas + live external APIs, not
+estimated. Gated at the v4 refinement (2026-07-16); each item's disposition:*
 
-### FR-19 (candidate) — Conda-native vulnerability source: Basilisk (prefix.dev)
+| Item | Disposition |
+|---|---|
+| Basilisk conda-native vulnerability source | **PROMOTED → FR-19 + Story B8** (+ landing-decision Q7; § 12 out-of-scope row amended). All live-validated constraints — the ecosystem-tag matching gotcha, current ≠ unaffected, the tri-state `fix_available` column, the querybatch cap — are encoded in the FR, which is now the authoritative statement. |
+| Release-to-availability velocity + rebuild-cadence-artifact guard | **PROMOTED → FR-20 + Story B9.** The 90-day recency gate and the false-"47% behind" failure mode are encoded as hard constraints in the FR. |
+| Ecosystem-composition-by-language report | **DEFERRED — not promoted.** A channel-health *report* concern, not migration surface. The load-bearing measured fact is preserved here for whoever builds it: the atlas's cross-ecosystem columns (`npm_name`, `cran_name`, `cpan_name`, `luarocks_name`, `maven_coord`) are almost entirely unpopulated at scale (136 of 11,602 non-Python packages matched `npm_name`; 0 for CRAN/CPAN) — an accurate composition report must key on conda-forge naming-convention prefixes instead (`r-*` alone is 11.6% of the entire channel, the real second-largest ecosystem). Candidate for a future feedstock-health / Vizro page. |
+| Multi-format manifest parsing (pasted `conda list` / `pip list` / mixed dumps) | **RESOLVED — already covered.** `dependency-input-formats.md` (S5a, v8.71.0) parses `pip list` / `pip freeze` (text + JSON, freeze lines, direct refs, editable installs, columnar tables) and `conda list` (default / `--export` / `--explicit` / JSON) — verified against live code 2026-07-16. One residual gap: **non-breaking-space-padded** paste variants are unhandled (`inventory_match.py` / `scan_project.py` contain no NBSP normalization) — folded into Story B7's acceptance criteria as a fixture case, not a new FR. |
 
-**Why**: Phase G's vulnerability data is PyPI-identity-matched (vdb, keyed by the bundled conda↔pypi map). `api.basilisk.prefix.dev` is a live, no-auth, OSV-compatible REST API that matches against the actual conda-forge PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP 63 form) — a different, complementary identity axis that catches vulnerabilities in packages Phase G's PyPI-keyed pipeline cannot see at all, because they were never PyPI packages: a live batch query of the full 21,163-package Python population found confirmed advisories on `libuuid` (203M downloads, CVE-2026-3184), `libtiff` (135M downloads), `libarchive` (57M downloads), `perl` (33M downloads) — all non-Python C/system libraries riding as transitive Python-environment dependencies.
-
-**What it would add**: `POST /v1/querybatch` (documented cap: 1,000 queries/request; a live run used 85 requests of 250 each against 21,163 packages with zero errors) as a new Phase (candidate: Phase U, next after Phase T) writing a `basilisk_vulns` table (conda_name, advisory_id, modified) — the lightweight batch shape (`{id, modified}` pairs only). `GET /v1/vulns/{id}` for full OSV detail (severity, `affected[].ranges[].events`) is a separate, boundedly-sized follow-up fetch (a live run pulled all 765 unique advisory IDs surfaced by the full-population batch query in one pass, no further batching needed).
-
-**Validated findings worth preserving in the implementation**:
-- Only 1.6% of packages (348/21,163) carry a confirmed match — but of those, **113 are already classified "current" by the existing `behind-upstream` lag logic**. Version-string currency and security currency are different measurements; a `current` verdict must not be read as "unaffected."
-- The raw OSV `affected[]` entries retain their **original** source ecosystem tag (typically `PyPI`), never `conda-forge` — any consumer matching by ecosystem field instead of by package name will silently find nothing. This was hit and fixed during the live analysis; document it as a gotcha for whoever builds the node.
-- A derived "fix-availability" signal is cheap and high-value: cross-referencing each advisory's `affected[].ranges[].events[].fixed` (name-matched, `packaging.version`-compared) against the package's current installed version found **85.3% of the 5,101 (package, advisory) matches are resolvable by upgrading to a version that already exists** — i.e. most of this signal is a scheduling/packaging-currency problem, not an open security-research problem. Recommend this as a `basilisk_vulns.fix_available` derived boolean column, joined at query time against `behind_upstream`'s upstream-version data (same join key, same package identity already required for Phase H).
-- ~48% of advisories carry no structured fix-version data at all (enumerated `versions` list only) — this is a data-completeness gap in the upstream OSV records, not proof no fix exists; the derived column must have a third state (`fix_available: unknown`), never collapse to `false`.
-
-### FR-20 (candidate) — Release-to-availability velocity + the rebuild-cadence-artifact guard
-
-**Why**: The atlas answers "is this package behind" (categorical, via `behind-upstream`'s lag classification) but not "how long does it typically take conda-forge to publish a matching build after upstream releases" (a rate/velocity metric). A live full-population sample (one representative package per feedstock, 19,726 of 19,765 feedstocks) found: **median 8.9 hours, 72.4% within 24h, 83.7% within 72h** — a strong, previously-unmeasured signal about conda-forge's actual release-pickup speed.
-
-**The gotcha this FR must encode, found the hard way**: a naive `latest_conda_upload - pypi_upload_time` delta is **not** a valid lag measurement on its own — conda-forge periodically rebuilds long-stable, version-unchanged packages for unrelated reasons (migrations, ABI/compiler bumps, Python-version-matrix expansion), and `latest_conda_upload` reflects the *most recent rebuild*, not *first availability*. A raw full-population sample showed 47% of packages "more than 10 days behind" on this naive metric; **83.7% of that ">10 day" bucket turned out to have a PyPI release itself over a year old** — the rebuild-artifact, not a real backlog. **Any implementation of this signal must restrict the "time to catch up" computation to packages whose upstream release is itself ≤90 days old** (the threshold validated live, at both a 5,000-package downloads-biased sample and the full 19,726-feedstock population — both landed within 1 percentage point of each other, cross-validating the threshold isn't an artifact of sample choice). Skipping this filter will silently reproduce a false 47%-behind headline.
-
-**What it would add**: a new derived column pair on the existing Phase H join (`release_lag_hours`, `release_lag_qualifies` where the 90-day recency gate passes) — no new external data source required, since this reuses Phase H's own PyPI JSON fetch (`upload_time_iso_8601` per release), just retaining a field Phase H currently discards after extracting `info.version`.
-
-### Smaller, lower-priority observations from the same analysis
-
-- **Ecosystem-composition-by-language** (Admin / Channel Health persona): of the 32,765 live conda-forge packages, R/CRAN (`r-*` naming convention) is 11.6% of the *entire channel* — the real second-largest ecosystem, not a rounding error — with Perl, Rust, Go, OCaml, Lua, Julia, Node.js core, and Haskell each under 1%. The atlas's existing cross-ecosystem columns (`npm_name`, `cran_name`, `cpan_name`, `luarocks_name`, `maven_coord`) were checked live and found almost entirely unpopulated at scale (136 of 11,602 non-Python packages matched `npm_name`; 0 for CRAN/CPAN) — a channel-health "composition by ecosystem" report would need conda-forge's naming-convention prefixes, not those columns, to be accurate.
-- **Multi-format manifest parsing**: building a "scope" population from 7 heterogeneous raw environment/manifest dumps required disambiguating pip `name==version`, bare-name-with-extras, conda-YAML `- name[version='...']`, verbose `conda list`/`pip list` output (including non-breaking-space-padded variants), and single-`=` conda specs — sometimes mixed within one file. Worth checking whether `scan_project.py` / `dependency-input-formats.md` already covers pasted raw-terminal-output formats (`conda list`, `pip list`); if not, this is a tested, reusable parser worth porting rather than re-deriving.
