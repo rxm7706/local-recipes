@@ -102,6 +102,7 @@ from .models import (
     ErrorRecord,
     Status,
     StatusDriver,
+    VulnData,
 )
 from .report import TOOL_NAME, assemble_report, render_json
 from .routing import DefaultRouter
@@ -408,6 +409,14 @@ def _run_scan(args: argparse.Namespace) -> int:
     findings, policy_rungs = DefaultPolicy().evaluate(inventory, engine_results)
     rungs.extend(policy_rungs)
 
+    # The first non-None vuln_data across engine results, in engine-
+    # registration order (Story 1.5: OsvEngine populates it on a completed
+    # 0/1 run; every other engine/path leaves it None) — else an all-None
+    # VulnData (no vulnerability-axis DB was consulted at all).
+    vuln_data = next(
+        (result.vuln_data for result in engine_results if result.vuln_data is not None),
+        VulnData(source=None, snapshot_at=None, max_age_ok=None),
+    )
     report = assemble_report(
         inventory=inventory,
         findings=findings,
@@ -415,6 +424,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         errors=tuple(errors),
         manifests_found=len(manifests),
         manifests_parsed=manifests_parsed,
+        vuln_data=vuln_data,
         engine_results=engine_results,
     )
     try:
