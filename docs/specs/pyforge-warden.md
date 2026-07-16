@@ -191,7 +191,7 @@ retro + CHANGELOG entry (see § Definition of Done).
 
 | Field | Value |
 |---|---|
-| Status | **In progress — story-0.1 replan EXECUTED 2026-07-15; v1 RE-BASELINED 2026-07-16 (D12).** This spec is the sole source of truth; the PRD (FR1–**FR40** + NFR-S9), architecture (§ Multi-axis reconciliation), and epics (**6 epics / 30 stories** — Epic 6 = multi-axis expansion 6.1–6.10) were rebuilt from this spec's v1 / v1.x / vision tiering and are authoritative **downstream** of it; **D12 pulled the axis gates (flag-activated), EPSS, baseline & grandfathering, and the fix-PR actuator into v1**; readiness re-run 2026-07-16 → READY-WITH-CONDITIONS (re-run `bmad-sprint-planning` before loop execution). Decisions resolved through **D12** (§ Reconciliation + § Decisions) |
+| Status | **In progress — story-0.1 replan EXECUTED 2026-07-15; v1 RE-BASELINED 2026-07-16 (D12).** This spec is the sole source of truth; the PRD (FR1–**FR40** + NFR-S9), architecture (§ Multi-axis reconciliation), and epics (**6 epics / 31 stories** — Epic 6 = multi-axis expansion 6.1–6.10; story 2.6 split from 2.1) were rebuilt from this spec's v1 / v1.x / vision tiering and are authoritative **downstream** of it; **D12 pulled the axis gates (flag-activated), EPSS, baseline & grandfathering, and the fix-PR actuator into v1**; readiness re-run 2026-07-16 → READY-WITH-CONDITIONS (re-run `bmad-sprint-planning` before loop execution). Decisions resolved through **D12** (§ Reconciliation + § Decisions) |
 | Scope | **Python only** — PyPI + conda-forge, 6 Python/conda manifest formats; non-Python ecosystems out of scope (see § Scope & naming in the intake note) |
 | Owner | rxm7706 |
 | Track | **Full BMAD** (PRD → architecture → epics/stories → **loop-driven dev**) — planning artifacts under `_bmad-output/projects/pyforge-warden/`. Implementation runs via **bmad-loop v0.8.1 + bmad-dev-auto** (BMAD 6.10) per `docs/specs/bmad-loop-adoption.md` — graduated gates (per-story-spec-approval for 1.1/1.2 → per-epic from Epic 2), deterministic verify gate = the scanner's own test suite |
@@ -629,7 +629,7 @@ story-0.1 replan):**
   engine version-range → story 6.6; KEV feed → 6.4; **EPSS feed + `--min-epss`
   → 6.7; baseline & grandfathering → 6.8; fix-PR actuator → 6.9** (all v1 per
   D12); the schema amendment → 6.1; gate-flag activation → 6.2/6.3/6.5.
-  Remaining condition: re-run `bmad-sprint-planning` (30 stories) before any
+  Remaining condition: re-run `bmad-sprint-planning` (31 stories) before any
   bmad-loop execution.
 - **6.1** — the versioned `ComplianceReport` schema amendment, **one paid
   amendment** covering: per-axis `gating` bool · `license`/`currency`
