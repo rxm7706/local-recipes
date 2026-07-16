@@ -91,10 +91,12 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
         assert block["manifests_parsed"] == 1
         assert block["deps_total"] == 2
         assert block["resolution_depth"] == "direct-only"
-    # Story 1.3: deptry assessed all declared deps for hygiene; the
-    # vulnerability axis has no engine yet (Story 1.5), so it stays 0.
+    # Story 1.3: deptry assessed all declared deps for hygiene. Story 1.5:
+    # osv-scanner ran against the ambient test-session offline DB (conftest)
+    # and assessed both vuln-matchable deps too — a genuinely clean scan,
+    # not the pre-1.5 "no engine ever consulted" stub 0.
     assert by_axis["hygiene"]["deps_assessed"] == 2
-    assert by_axis["vulnerability"]["deps_assessed"] == 0
+    assert by_axis["vulnerability"]["deps_assessed"] == 2
 
 
 def test_sentinel_fixture_never_false_greens(capsys):
@@ -578,7 +580,7 @@ def test_deptry_corpus_unparseable_rate_is_within_baseline():
         SENTINEL,
     ]
     for fixture in corpus:
-        text, error = _engine_env(
+        text, error, _exit_code = _engine_env(
             lambda output_path: ["deptry", ".", "-o", output_path, "--no-ansi"],
             owner="deptry",
             cwd=fixture,
