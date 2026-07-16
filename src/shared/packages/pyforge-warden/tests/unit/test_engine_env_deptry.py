@@ -1,10 +1,13 @@
 """Unit tests — the ``_engine_env`` subprocess-normalization seam + the
-``DeptryEngine`` runner (Story 1.3), exercised with INJECTED FAKES only.
+``DeptryEngine`` runner (Story 1.3; ``extra_env``/exit-code widening Story
+1.5), exercised with INJECTED FAKES only.
 
 ``subprocess.run`` is monkeypatched: no real deptry, no real network, no real
 sleep. The seam's load-bearing invariants (argv list, temp-file output in
-system temp, ``NO_COLOR=1``, ``stdin=DEVNULL``, cleanup, typed errors for
-timeout / unavailable / undecodable) are all proven against fakes.
+system temp, ``NO_COLOR=1`` + ``extra_env`` merging, ``stdin=DEVNULL``,
+cleanup, typed errors for timeout / unavailable / undecodable, and the
+exit-code contract — ``None`` on every early-return path, the real
+``returncode`` once the child completes) are all proven against fakes.
 """
 
 from __future__ import annotations
@@ -70,10 +73,11 @@ def test_engine_env_uses_argv_list_temp_file_no_color_and_devnull(
 ):
     captured: dict = {}
     monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
-    text, error = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
+    text, error, exit_code = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
 
     assert error is None
     assert text == "[]"
+    assert exit_code == 1  # _fake_run_writing's default returncode, surfaced
     argv = captured["argv"]
     assert isinstance(argv, list)
     assert argv[0] == "deptry"
@@ -128,11 +132,12 @@ def test_engine_env_timeout_is_a_typed_engine_timeout(monkeypatch, tmp_path):
         raise subprocess.TimeoutExpired(cmd=argv, timeout=kwargs.get("timeout"))
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    text, error = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
+    text, error, exit_code = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
     assert text is None
     assert error is not None
     assert error.kind is ErrorKind.ENGINE_TIMEOUT
     assert error.owner == "deptry"
+    assert exit_code is None  # the child's outcome is unknown (timed out)
     # cleaned up even on the failure path.
     assert not os.path.exists(captured["out_path"])
 
@@ -145,10 +150,11 @@ def test_engine_env_missing_binary_is_engine_unavailable(monkeypatch, tmp_path):
         raise FileNotFoundError("deptry")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    text, error = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
+    text, error, exit_code = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
     assert text is None
     assert error.kind is ErrorKind.ENGINE_UNAVAILABLE
     assert error.owner == "deptry"
+    assert exit_code is None  # the child never ran (binary not found)
     assert not os.path.exists(captured["out_path"])
 
 
@@ -166,11 +172,12 @@ def test_engine_env_vanished_cwd_is_not_misreported_as_missing_binary(
         raise FileNotFoundError(gone)
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    text, error = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=gone)
+    text, error, exit_code = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=gone)
     assert text is None
     assert error.kind is ErrorKind.ENGINE_EXECUTION_FAILED
     assert "not an existing directory" in error.message
     assert "not found on PATH" not in error.message
+    assert exit_code is None  # the child never ran
 
 
 def test_engine_env_undecodable_output_is_output_unparseable(
@@ -179,12 +186,110 @@ def test_engine_env_undecodable_output_is_output_unparseable(
     captured: dict = {}
     # Invalid UTF-8 bytes written to the machine-output file.
     monkeypatch.setattr(
-        subprocess, "run", _fake_run_writing(b"\xff\xfe\x00garbage", captured)
+        subprocess,
+        "run",
+        _fake_run_writing(b"\xff\xfe\x00garbage", captured, returncode=0),
     )
-    text, error = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
+    text, error, exit_code = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
     assert text is None
     assert error.kind is ErrorKind.ENGINE_OUTPUT_UNPARSEABLE
+    # The child DID complete (it wrote undecodable bytes) — its real exit
+    # code is still surfaced even though the output is unusable.
+    assert exit_code == 0
     assert not os.path.exists(captured["out_path"])
+
+
+def test_engine_env_surfaces_exit_code_on_unreadable_output_file(
+    monkeypatch, tmp_path
+):
+    """The second post-completion decode-failure path (an OSError reading
+    the output file, distinct from UnicodeDecodeError) also carries the
+    child's real exit code."""
+    captured: dict = {}
+
+    def fake_run(argv, **kwargs):
+        captured["out_path"] = argv[argv.index("-o") + 1]
+        # Unlink the output file out from under _engine_env's own read —
+        # forces the OSError-reading-output path (engine-execution-failed),
+        # not the UnicodeDecodeError path.
+        os.unlink(captured["out_path"])
+        return types.SimpleNamespace(returncode=3, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    text, error, exit_code = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
+    assert text is None
+    assert error.kind is ErrorKind.ENGINE_EXECUTION_FAILED
+    assert exit_code == 3
+
+
+def test_engine_env_mkstemp_failure_yields_typed_error_and_no_exit_code(
+    monkeypatch, tmp_path
+):
+    """The earliest early-return path: the temp output file could not even
+    be created, so the child never spawned — exit_code is None."""
+
+    def fake_mkstemp(*args, **kwargs):
+        raise OSError("no space left on device")
+
+    monkeypatch.setattr(tempfile, "mkstemp", fake_mkstemp)
+    text, error, exit_code = _engine_env(DEPTRY_ARGV, owner="deptry", cwd=tmp_path)
+    assert text is None
+    assert error.kind is ErrorKind.ENGINE_EXECUTION_FAILED
+    assert exit_code is None
+
+
+# --- extra_env merging (Story 1.5's osv-scanner runner needs this) -----------
+
+
+def test_engine_env_merges_extra_env_over_the_copied_os_environ(
+    monkeypatch, tmp_path
+):
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    monkeypatch.setenv("PDOS_PREEXISTING", "from-os-environ")
+    _engine_env(
+        DEPTRY_ARGV,
+        owner="deptry",
+        cwd=tmp_path,
+        extra_env={"OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY": "/some/cache"},
+    )
+    env = captured["kwargs"]["env"]
+    # The parent's own environment is still present (a COPY, not a replace)...
+    assert env["PDOS_PREEXISTING"] == "from-os-environ"
+    # ...NO_COLOR is still forced...
+    assert env["NO_COLOR"] == "1"
+    # ...and extra_env is merged in on top.
+    assert env["OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"] == "/some/cache"
+
+
+def test_engine_env_extra_env_can_override_no_color(monkeypatch, tmp_path):
+    """extra_env is merged OVER the NO_COLOR default (last-write-wins) —
+    documents the actual precedence rather than asserting NO_COLOR is
+    unconditionally un-overridable."""
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    _engine_env(
+        DEPTRY_ARGV,
+        owner="deptry",
+        cwd=tmp_path,
+        extra_env={"NO_COLOR": "0"},
+    )
+    assert captured["kwargs"]["env"]["NO_COLOR"] == "0"
+
+
+def test_engine_env_none_extra_env_behaves_like_deptrys_default_call(
+    monkeypatch, tmp_path
+):
+    """extra_env=None (the default) must not change DeptryEngine's existing
+    behavior — no KeyError, no spurious env keys."""
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    text, error, exit_code = _engine_env(
+        DEPTRY_ARGV, owner="deptry", cwd=tmp_path, extra_env=None
+    )
+    assert error is None
+    assert text == "[]"
+    assert captured["kwargs"]["env"]["NO_COLOR"] == "1"
 
 
 # --- DeptryEngine wiring on top of _engine_env -------------------------------

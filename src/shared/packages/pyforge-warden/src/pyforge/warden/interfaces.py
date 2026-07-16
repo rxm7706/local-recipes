@@ -85,6 +85,7 @@ from .models import (
     ScannedManifest,
     Status,
     StatusDriver,
+    VulnData,
 )
 from .verdict import match_level_rung
 
@@ -140,11 +141,20 @@ class EngineResult:
     starting Story 1.3 — the 1.2 orchestrator deliberately discards them
     and derives the report's coverage itself (``report.assemble_report``,
     ``deps_assessed=0`` under the null engine). The field exists now so the
-    seam's shape is frozen, not because 1.2 reads it."""
+    seam's shape is frozen, not because 1.2 reads it.
+
+    ``vuln_data`` (Story 1.5, additive/defaulted — ``NullEngine``/
+    ``DeptryEngine`` unaffected): populated ONLY by a vulnerability-axis
+    engine that successfully consulted a provenance-bearing DB
+    (``OsvEngine`` on a completed 0/1 osv-scanner run); ``None`` on every
+    other engine result, including osv's own DB-unavailable/error paths.
+    ``cli.py`` threads the first non-``None`` value across ``engine_results``
+    into ``report.assemble_report``."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
     coverage: tuple[AxisCoverage, ...]
+    vuln_data: VulnData | None = None
 
 
 @runtime_checkable
