@@ -275,3 +275,55 @@ def test_router_routes_conda_and_pip_sections():
         router.route(ENVIRONMENT_YML_KIND, ENVIRONMENT_YML_PIP_SECTION)
         is Ecosystem.PYPI
     )
+
+
+# --- strict YAML loading (fixed 2026-07-16) -----------------------------------
+
+
+def test_alias_expansion_is_rejected_never_amplified(tmp_path):
+    """A tiny nested-anchors/aliases environment.yml ("billion laughs")
+    passes the raw-byte NFR-S5 caps trivially and then amplifies
+    exponentially INSIDE plain safe_load (verified live: a 434-byte file
+    drove hundreds of MB of RSS and an 86-million-char component name).
+    The strict loader refuses alias expansion outright -- a typed
+    whole-manifest error, never an OOM."""
+    path = write_env(
+        tmp_path,
+        "x0: &a0 [x, x, x, x, x, x, x, x]\n"
+        "x1: &a1 [*a0, *a0, *a0, *a0, *a0, *a0, *a0, *a0]\n"
+        "dependencies:\n"
+        "  - *a1\n",
+    )
+    with pytest.raises(UnparsableManifestError, match="alias"):
+        _extractor().extract(path, MANIFEST)
+
+
+def test_duplicate_top_level_keys_fail_closed(tmp_path):
+    path = write_env(
+        tmp_path,
+        "dependencies:\n  - numpy\ndependencies:\n  - scipy\n",
+    )
+    with pytest.raises(UnparsableManifestError, match="duplicate mapping key"):
+        _extractor().extract(path, MANIFEST)
+
+
+# --- bracket-form matchspec selectors (fixed 2026-07-16) ----------------------
+
+
+def test_bracket_matchspec_keeps_a_clean_name_and_withholds_the_version(
+    tmp_path,
+):
+    """`numpy[subdir=linux-64]` (valid conda bracket-matchspec syntax) used
+    to split at the bracket's inner `=` and bake `numpy[subdir` into the
+    component name -- a guaranteed conda->pypi map miss for a real, mappable
+    package, silently costing its vuln coverage (verified live before the
+    fix). The name is now clean; the bracket selector is conservatively
+    withheld, never a fabricated version."""
+    path = write_env(
+        tmp_path,
+        "dependencies:\n  - numpy[subdir=linux-64]\n",
+    )
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.version is None
+    assert component.indeterminate_reason is WithholdReason.RANGE_ONLY

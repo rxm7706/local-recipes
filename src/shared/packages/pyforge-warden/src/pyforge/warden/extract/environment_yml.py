@@ -12,16 +12,19 @@ Ownership decisions recorded:
   homogeneous array): plain STRING entries are conda matchspec syntax
   (``extract/_identity.py::split_conda_dep_string`` +
   ``classify_conda_specifier``, mirroring ``pyproject.py::_exact_pin``'s
-  discipline); exactly one nested ``{pip: [...]}`` mapping entry's list is
+  discipline); EVERY nested ``{pip: [...]}`` mapping entry's list is
   PEP 508 syntax (``extract/_identity.py::pep508_pypi_component``,
   mirroring ``pyproject.py``'s own component-building shape exactly —
-  ``identity_source=NATIVE``). An entry that is neither a string nor a
-  recognized ``{pip: [...]}`` mapping (a stray int/bool/list, or an
-  unrecognized dict shape) degrades to one conda-ecosystem
-  ``RAW_MALFORMED`` component — kept, marked, never dropped, never a
-  crash (this is a content-level degeneracy per entry, not treated as a
-  whole-manifest structural failure, since the top-level ``dependencies:``
-  list is not homogeneous by design).
+  ``identity_source=NATIVE``). Real files carry at most one ``pip:``
+  entry, but each one present is processed — none is deduplicated or
+  rejected (docstring corrected 2026-07-16; it previously claimed
+  "exactly one", contradicting the loop below). An entry that is neither
+  a string nor a recognized ``{pip: [...]}`` mapping (a stray
+  int/bool/list, or an unrecognized dict shape) degrades to one
+  conda-ecosystem ``RAW_MALFORMED`` component — kept, marked, never
+  dropped, never a crash (this is a content-level degeneracy per entry,
+  not treated as a whole-manifest structural failure, since the top-level
+  ``dependencies:`` list is not homogeneous by design).
 * A ``pip:`` list entry that is present but not a list of strings (wrong
   TYPE at the ``pip:`` key) IS a structural problem (mirrors
   ``pyproject.py``'s own "the whole array must be strings" precedent) —
@@ -64,6 +67,8 @@ from ._identity import (
     pep508_pypi_component,
     read_bounded_text,
     split_conda_dep_string,
+    truncate_for_name,
+    yaml_safe_load_strict,
 )
 
 # The 2 synthetic (kind, section) routing tokens this format needs (mirrors
@@ -92,7 +97,12 @@ class EnvironmentYmlExtractor:
             max_line_bytes=_MAX_LINE_BYTES,
         )
         try:
-            document = yaml.safe_load(text)
+            # yaml_safe_load_strict (not plain safe_load): alias expansion is
+            # refused -- a tiny anchors/aliases file otherwise amplifies
+            # exponentially inside the parser, past the raw-byte NFR-S5 caps
+            # (verified live, fixed 2026-07-16) -- and duplicate mapping keys
+            # fail closed instead of silently last-wins-dropping a subtree.
+            document = yaml_safe_load_strict(text)
         except yaml.YAMLError as exc:
             raise UnparsableManifestError(
                 f"unparsable manifest {manifest.path}: {exc}"
@@ -148,7 +158,14 @@ class EnvironmentYmlExtractor:
                 # ONE entry (the list itself is not homogeneous by design),
                 # kept RAW_MALFORMED rather than failing the whole manifest.
                 components.append(
-                    _raw_malformed(conda_ecosystem, str(entry), conda_provenance)
+                    # truncate_for_name: str() of a parsed YAML structure is
+                    # unbounded by the raw-byte caps -- never let it become a
+                    # multi-MB "name".
+                    _raw_malformed(
+                        conda_ecosystem,
+                        truncate_for_name(str(entry)),
+                        conda_provenance,
+                    )
                 )
         return tuple(components)
 

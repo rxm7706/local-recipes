@@ -73,7 +73,7 @@ from ..interfaces import Router
 from ..inventory import Component, Provenance
 from ..models import Ecosystem, ScannedManifest
 from . import UnparsableManifestError
-from ._identity import read_bounded_text
+from ._identity import read_bounded_text, yaml_safe_load_strict
 from .recipe_v1 import requirement_component, walk_requirements
 
 # The single static routing token this format ever needs (mirrors
@@ -115,6 +115,20 @@ _LIST_ITEM_BRACE_RE = re.compile(r"^(\s*-\s+)(\{\{.*)$")
 _MAPPING_VALUE_BRACE_RE = re.compile(r"^(\s*[^\s:#][^:]*:\s+)(\{\{.*)$")
 
 
+# The two bare NUMERIC literal shapes a `{% set %}` RHS may take. Jinja
+# evaluates a numeric literal through Python's own int/float semantics and
+# renders it back via str(), so the render of `{% set version = 2.10 %}` is
+# '2.1' -- NOT the source spelling '2.10'. Capturing the raw text used to
+# feed the never-rendered spelling to CVE matching as a confident exact
+# version while the real conda-build render disagreed (verified live, fixed
+# 2026-07-16). Deliberately narrow: exponents (`1e3`), `inf`/`nan` (which
+# jinja treats as NAMES, not literals), underscores, and leading `+` are all
+# rejected -> not captured -> the uses degrade (never guess). No nested
+# unbounded quantifiers (NFR-S5).
+_INT_LITERAL_RE = re.compile(r"^-?\d+$")
+_FLOAT_LITERAL_RE = re.compile(r"^-?\d+\.\d+$")
+
+
 def _parse_set_literal(raw: str) -> str | None:
     """A ``{% set NAME = RHS %}``'s RHS, if it is a bare literal (a quoted
     string or a bare number) — ``None`` for anything else (a function
@@ -126,18 +140,24 @@ def _parse_set_literal(raw: str) -> str | None:
     capturing its raw text used to yield a corrupted
     ``'1.0" if unix else "2.0'`` "literal" silently treated as a resolved
     exact version (fixed 2026-07-16) — so any RHS whose INTERIOR contains
-    the quote character is rejected as not-a-bare-literal too."""
+    the quote character is rejected as not-a-bare-literal too.
+
+    A bare NUMERIC literal is captured as Jinja itself would RENDER it
+    (``str(int(...))``/``str(float(...))`` — Python semantics), not as its
+    source spelling: ``{% set version = 2.10 %}`` renders ``2.1`` in the
+    real conda-build pass, so ``2.1`` is the honest capture (see
+    ``_INT_LITERAL_RE``/``_FLOAT_LITERAL_RE``; fixed 2026-07-16)."""
     text = raw.strip()
     if len(text) >= 2 and text[0] == text[-1] and text[0] in ("'", '"'):
         inner = text[1:-1]
         if text[0] in inner:
             return None
         return inner
-    try:
-        float(text)
-    except ValueError:
-        return None
-    return text
+    if _INT_LITERAL_RE.match(text):
+        return str(int(text))
+    if _FLOAT_LITERAL_RE.match(text):
+        return str(float(text))
+    return None
 
 
 def strip_jinja_statements(text: str) -> tuple[str, dict[str, str]]:
@@ -238,7 +258,15 @@ class MetaV0Extractor:
         stripped_text, context = strip_jinja_statements(raw_text)
         neutralized_text = neutralize_unquoted_braces(stripped_text)
         try:
-            document = yaml.safe_load(neutralized_text)
+            # yaml_safe_load_strict (not plain safe_load): duplicate mapping
+            # keys are REJECTED -- after `{% if %}`/`{% else %}` blanking,
+            # the classic v0 duplicated-key branch idiom would otherwise
+            # last-wins-DROP one branch's whole dependency subtree with no
+            # degrade marker at all (verified live, fixed 2026-07-16); it
+            # fails closed as a typed whole-manifest error instead (branch-
+            # union semantics are Story 2.3's control-flow work). Alias
+            # amplification is refused by the same loader (NFR-S5).
+            document = yaml_safe_load_strict(neutralized_text)
         except yaml.YAMLError as exc:
             raise UnparsableManifestError(
                 f"unparsable manifest {manifest.path}: {exc}"

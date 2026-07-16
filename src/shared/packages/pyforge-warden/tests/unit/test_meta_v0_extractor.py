@@ -380,3 +380,86 @@ def test_per_output_test_requires_is_walked(tmp_path):
     assert [p.section for p in component.provenance] == [
         "outputs[0].test.requires"
     ]
+
+
+# --- numeric {% set %} literals mirror jinja's own coercion (2026-07-16) -----
+
+
+def test_numeric_set_literal_is_captured_as_jinja_would_render_it():
+    """Jinja evaluates a numeric literal through Python int/float semantics
+    and renders it via str(): `{% set version = 2.10 %}` renders '2.1', NOT
+    the source spelling '2.10' (verified live against real jinja2 AND the
+    conda-build renderer). Capturing the raw text used to report a
+    confident exact version the real render disagrees with."""
+    _, ctx = strip_jinja_statements(
+        '{% set version = 2.10 %}{% set build = 3 %}{% set neg = -1.50 %}'
+    )
+    assert ctx == {"version": "2.1", "build": "3", "neg": "-1.5"}
+
+
+def test_non_plain_numeric_set_rhs_is_not_captured():
+    """Exponents, inf/nan (jinja NAMES, not literals), underscores, and
+    leading `+` are all outside the plain-decimal shapes -- not captured,
+    so their uses degrade rather than guess."""
+    _, ctx = strip_jinja_statements(
+        "{% set a = 1e3 %}{% set b = nan %}{% set c = 1_000 %}{% set d = +1.2 %}"
+    )
+    assert ctx == {}
+
+
+def test_numeric_set_version_resolves_to_the_render_value(tmp_path):
+    path = write_meta(
+        tmp_path,
+        "{% set version = 2.10 %}\n"
+        "requirements:\n"
+        "  run:\n"
+        "    - otherpkg =={{ version }}\n",
+    )
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "otherpkg"
+    # '2.1' is what the real conda-build render emits for this document.
+    assert component.version == "2.1"
+
+
+# --- duplicate keys after {% if %}/{% else %} blanking (fixed 2026-07-16) ----
+
+
+def test_duplicated_key_branches_fail_closed_never_silently_drop_one(tmp_path):
+    """The classic v0 platform-conditional idiom duplicates a key across
+    `{% if %}`/`{% else %}` branches; after statement blanking PyYAML's
+    last-wins semantics silently kept ONLY the else branch -- `winpkg`
+    produced no component at all: not NAME_ONLY, not RAW_MALFORMED, just
+    gone (verified live before the fix). The strict loader now rejects the
+    duplicate key: a typed whole-manifest error (never a silent
+    false-green); real branch-union semantics are Story 2.3's control-flow
+    work."""
+    path = write_meta(
+        tmp_path,
+        "{% if win %}\n"
+        "requirements:\n"
+        "  run:\n"
+        "    - winpkg ==1.0\n"
+        "{% else %}\n"
+        "requirements:\n"
+        "  run:\n"
+        "    - linuxpkg ==2.0\n"
+        "{% endif %}\n",
+    )
+    with pytest.raises(UnparsableManifestError, match="duplicate mapping key"):
+        _extractor().extract(path, MANIFEST)
+
+
+def test_branch_entries_inside_one_list_still_union(tmp_path):
+    """The same-list form (no duplicated keys) keeps its union behavior --
+    the fail-closed guard above is scoped to the duplicate-KEY shape only."""
+    path = write_meta(
+        tmp_path,
+        "requirements:\n"
+        "  run:\n"
+        "    - alwayspkg ==1.0\n"
+        "{% if win %}\n"
+        "    - winpkg ==1.0\n"
+        "{% endif %}\n",
+    )
+    components = _extractor().extract(path, MANIFEST)
+    assert {c.name for c in components} == {"alwayspkg", "winpkg"}

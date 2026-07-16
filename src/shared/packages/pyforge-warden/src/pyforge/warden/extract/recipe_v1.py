@@ -87,6 +87,8 @@ from ._identity import (
     classify_conda_specifier,
     read_bounded_text,
     split_conda_dep_string,
+    truncate_for_name,
+    yaml_safe_load_strict,
 )
 
 # The single static routing token this format ever needs (recipe.yaml has
@@ -227,22 +229,54 @@ def best_effort_name(raw: str) -> str | None:
     literally named ``"python >="`` — a garbage token that can never hit
     the conda->pypi map (fixed 2026-07-16): the name is the first
     whitespace-token only, and a trailing operator fragment (the contiguous
-    ``numpy>=${{ v }}`` form) is stripped from it."""
+    ``numpy>=${{ v }}`` form) is stripped from it.
+
+    A marker that ABUTS the name token itself (``mypkg-data-${{ version
+    }}`` — a templated-SUFFIX name, no whitespace and no operator between
+    the token and the marker) means the NAME is templated, not the
+    version: no truncation of it can be honest (``mypkg-data-`` is an
+    impossible conda name presented as a plausible component, and
+    stripping further would fabricate a DIFFERENT package's identity), so
+    it returns ``None`` and the entry degrades to ``RAW_MALFORMED``
+    (fixed 2026-07-16)."""
     marker = _TEMPLATE_MARKER_RE.search(raw)
     prefix = raw[: marker.start()] if marker else raw
-    prefix = prefix.strip()
-    if not prefix:
+    stripped = prefix.strip()
+    if not stripped:
         return None
-    token = prefix.split()[0].rstrip("<>=!~,")
-    return token or None
+    raw_token = stripped.split()[0]
+    token = raw_token.rstrip("<>=!~,")
+    if not token:
+        return None
+    if (
+        marker is not None
+        and len(stripped.split()) == 1
+        and prefix == prefix.rstrip()
+        and token == raw_token
+    ):
+        # The single pre-marker token runs straight into the marker with no
+        # operator debris between them: the name itself is templated.
+        return None
+    return token
 
 
 def context_map(document: Mapping[str, object]) -> dict[str, str]:
-    """Extract ``context:``'s bare string/number scalars into a
+    """Extract ``context:``'s bare string/integer scalars into a
     ``dict[str, str]`` — non-scalar values (lists/mappings) are not "a
     literal string/number already captured" (Boundaries), so they are
     excluded from substitution entirely (a use of such a var degrades that
-    entry, never crashes)."""
+    entry, never crashes).
+
+    FLOAT-typed values are excluded too (fixed 2026-07-16): YAML has
+    already destroyed the source spelling by the time this runs
+    (``version: 1.20`` parses as the float ``1.2``), while the real
+    rattler-build renderer preserves the raw text (verified live: the
+    identical document renders ``==1.20``) — so ``str(value)`` would
+    fabricate a confidently-wrong exact version (``'1.2'``) and feed it to
+    CVE matching, the exact C0 corrupted-version class the exactness shape
+    gate exists to prevent. An un-capturable value's uses degrade to
+    ``NAME_ONLY`` (never guess); integers round-trip unambiguously and stay
+    captured."""
     context = document.get("context")
     if not isinstance(context, dict):
         return {}
@@ -252,7 +286,7 @@ def context_map(document: Mapping[str, object]) -> dict[str, str]:
             continue
         if isinstance(value, bool):
             continue  # bool is an int subtype pitfall — never a dep token
-        if isinstance(value, (str, int, float)):
+        if isinstance(value, (str, int)):
             result[key] = str(value)
     return result
 
@@ -271,7 +305,9 @@ def requirement_component(
     usable best-effort name survives) or ``RAW_MALFORMED`` (nothing usable
     at all) — never a crash, never a guessed version."""
     if not isinstance(raw, str):
-        return _raw_malformed(ecosystem, str(raw), provenance)
+        # truncate_for_name: str() of a parsed YAML structure is unbounded
+        # by the raw-byte caps -- never let it become a multi-MB "name".
+        return _raw_malformed(ecosystem, truncate_for_name(str(raw)), provenance)
     substituted = substitute_bare_vars(raw, context)
     if _TEMPLATE_MARKER_RE.search(substituted):
         name = best_effort_name(substituted)
@@ -350,7 +386,7 @@ class RecipeV1Extractor:
         text = strip_jinja_comments(text)
         text = neutralize_bare_braces(text)
         try:
-            document = yaml.safe_load(text)
+            document = yaml_safe_load_strict(text)
         except yaml.YAMLError as exc:
             raise UnparsableManifestError(
                 f"unparsable manifest {manifest.path}: {exc}"

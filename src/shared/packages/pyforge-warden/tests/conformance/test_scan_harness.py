@@ -674,6 +674,39 @@ def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
     assert "hygiene:DEP002:numpy" in hygiene_ids
 
 
+def test_deptry_frontdoor_merges_config_declared_requirements_files(
+    capsys, tmp_path
+):
+    """Second review pass (2026-07-16), real deptry, no mocks: deptry's
+    requirements source is its ``[tool.deptry].requirements_files`` config
+    when declared -- the flag REPLACES that setting too, not just the
+    ``requirements.txt`` default, so a conda-first project keeping pip deps
+    at a configured path false-DEP001'd every dep it declares (verified
+    live: bare ``deptry .`` green, with the flag red). The configured list
+    is now what gets re-appended; same no-skip-guard convention as the
+    other real-deptry tests."""
+    (tmp_path / "environment.yml").write_text(
+        "dependencies:\n  - numpy=1.20\n", encoding="utf-8"
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.deptry]\nrequirements_files = ["reqs/base.txt"]\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "reqs").mkdir()
+    (tmp_path / "reqs" / "base.txt").write_text("requests\n", encoding="utf-8")
+    (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
+    rc, out, _err = run_scan(capsys, tmp_path)
+    document = parse_report(out)
+    hygiene_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+    # requests is declared by the config-declared reqs/base.txt -- merged,
+    # so no false DEP001; numpy (declared via the conda front-door, never
+    # imported) still surfaces deptry's real signal.
+    assert "hygiene:DEP001:requests" not in hygiene_ids
+    assert "hygiene:DEP002:numpy" in hygiene_ids
+
+
 @pytest.mark.parametrize(
     "fixture",
     [DEPTRY_MISSING, DEPTRY_UNUSED, DEPTRY_STDLIB],

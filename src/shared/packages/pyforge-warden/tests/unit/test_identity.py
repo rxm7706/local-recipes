@@ -145,3 +145,92 @@ def test_split_degrades_a_nameless_operator_leading_spec():
     fabricated component NAME (`'==1.2.3'`); now it is unidentifiable and
     the caller degrades it."""
     assert split_conda_dep_string("==1.2.3") is None
+
+
+# --- bracket-form matchspec selectors (fixed 2026-07-16) ---------------------
+
+
+def test_split_stops_the_name_at_a_bracket_selector():
+    """`numpy[subdir=linux-64]` is valid conda bracket-matchspec syntax --
+    the name used to split at the bracket's INNER `=` and bake
+    `numpy[subdir` into the component name, guaranteeing a conda->pypi map
+    miss for a real, mappable package (verified live before the fix). The
+    name now stops at `[`; the bracket remainder is a specifier the shape
+    gate withholds conservatively."""
+    assert split_conda_dep_string("numpy[subdir=linux-64]") == (
+        "numpy",
+        "[subdir=linux-64]",
+    )
+    assert split_conda_dep_string("numpy[version='>=1.20',build=*mkl]") == (
+        "numpy",
+        "[version='>=1.20',build=*mkl]",
+    )
+
+
+def test_bracket_selector_specifier_is_withheld_never_exact():
+    assert classify_conda_specifier("[subdir=linux-64]") == (
+        None,
+        WithholdReason.RANGE_ONLY,
+    )
+    assert classify_conda_specifier("=1.20[build=*]") == (
+        None,
+        WithholdReason.RANGE_ONLY,
+    )
+
+
+def test_split_degrades_a_bracket_leading_spec():
+    """A name-less, bracket-leading entry is unidentifiable -- degrade,
+    never fabricate a name out of selector text."""
+    assert split_conda_dep_string("[subdir=linux-64]") is None
+
+
+# --- strict YAML loading (fixed 2026-07-16) ----------------------------------
+
+
+def test_strict_loader_rejects_duplicate_mapping_keys():
+    """PyYAML's silent last-wins semantics would drop every earlier
+    duplicate's subtree -- for meta.yaml that silently lost one `{% if %}`
+    branch's whole dependency set (verified live before the fix). Fail
+    closed instead."""
+    import pytest
+    import yaml
+
+    from pyforge.warden.extract._identity import yaml_safe_load_strict
+
+    with pytest.raises(yaml.YAMLError, match="duplicate mapping key"):
+        yaml_safe_load_strict("requirements:\n  run: [a]\nrequirements:\n  run: [b]\n")
+    with pytest.raises(yaml.YAMLError, match="duplicate mapping key"):
+        yaml_safe_load_strict("requirements:\n  run: [a]\n  run: [b]\n")
+
+
+def test_strict_loader_refuses_alias_expansion():
+    """A tiny nested-anchors/aliases file ("billion laughs") passes the
+    raw-byte NFR-S5 caps trivially and then amplifies exponentially INSIDE
+    the parser (verified live: a 434-byte environment.yml drove hundreds of
+    MB of RSS through plain safe_load). Aliases are refused outright."""
+    import pytest
+    import yaml
+
+    from pyforge.warden.extract._identity import yaml_safe_load_strict
+
+    with pytest.raises(yaml.YAMLError, match="alias"):
+        yaml_safe_load_strict("a: &x [1, 2]\nb: *x\n")
+
+
+def test_strict_loader_accepts_anchor_definitions_and_normal_documents():
+    from pyforge.warden.extract._identity import yaml_safe_load_strict
+
+    # An anchor DEFINITION with no alias use is harmless.
+    assert yaml_safe_load_strict("a: &x 1\nb: 2\n") == {"a": 1, "b": 2}
+    assert yaml_safe_load_strict("requirements:\n  run:\n    - python\n") == {
+        "requirements": {"run": ["python"]}
+    }
+
+
+def test_truncate_for_name_bounds_stringified_entries():
+    from pyforge.warden.extract._identity import truncate_for_name
+
+    assert truncate_for_name("short") == "short"
+    bounded = truncate_for_name("x" * 5000)
+    assert len(bounded) < 250
+    assert bounded.endswith("…[truncated]")

@@ -468,3 +468,59 @@ def test_per_output_tests_are_walked(tmp_path):
 def test_router_routes_recipe_v1_requirements_to_conda():
     ecosystem = DefaultRouter().route(RECIPE_YAML_KIND, RECIPE_V1_REQUIREMENTS_SECTION)
     assert ecosystem is Ecosystem.CONDA
+
+
+# --- float-typed context values (fixed 2026-07-16) ---------------------------
+
+
+def test_context_map_drops_float_values():
+    """YAML has already destroyed the source spelling by the time
+    `context_map` runs (`version: 1.20` parses as the float 1.2), while the
+    real rattler-build renderer preserves the raw text (verified live: the
+    identical document renders `==1.20`) -- so `str(value)` fabricated a
+    confidently-wrong exact version (`'1.2'`) and fed it to CVE matching.
+    Floats are now excluded from capture; integers round-trip and stay."""
+    ctx = context_map({"context": {"version": 1.20, "python_min": 3.10, "n": 1}})
+    assert ctx == {"n": "1"}
+
+
+def test_float_context_use_degrades_to_name_only_never_a_wrong_version(
+    tmp_path,
+):
+    path = write_recipe(
+        tmp_path,
+        "context:\n"
+        "  version: 1.20\n"
+        "requirements:\n"
+        "  run:\n"
+        "    - otherpkg ==${{ version }}\n",
+    )
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "otherpkg"
+    assert component.version is None
+    assert component.extraction_mode is ExtractionMode.NAME_ONLY
+
+
+# --- a marker abutting the name token itself (fixed 2026-07-16) ---------------
+
+
+def test_best_effort_name_returns_none_when_the_marker_abuts_the_name():
+    """`mypkg-data-${{ version }}` is a templated-SUFFIX name: the pre-marker
+    text used to become a component literally named `mypkg-data-` -- an
+    impossible conda name presented as a plausible component (and stripping
+    further would fabricate a DIFFERENT package's identity). The entry
+    degrades to RAW_MALFORMED instead."""
+    assert best_effort_name("mypkg-data-${{ version }}") is None
+    assert best_effort_name("mypkg.${{ ver }}") is None
+    # Operator-abutting and whitespace-separated forms keep their clean name.
+    assert best_effort_name("numpy>=${{ v }}") == "numpy"
+    assert best_effort_name("python >=${{ python_min }}") == "python"
+
+
+def test_templated_suffix_name_degrades_to_raw_malformed(tmp_path):
+    path = write_recipe(
+        tmp_path,
+        "requirements:\n  run:\n    - mypkg-data-${{ version }}\n",
+    )
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.RAW_MALFORMED

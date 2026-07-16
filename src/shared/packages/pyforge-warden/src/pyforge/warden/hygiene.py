@@ -70,10 +70,13 @@ Ownership decisions recorded:
   ``.excluded`` list into one ``indeterminate:unsafe-identity:<pkg>``
   finding per component via ``vuln.unsafe_identity_finding``. This module's
   own ``unsafe_identity_finding``/``_indeterminate_finding`` mirror that
-  shape exactly but hardcode ``AXIS_HYGIENE`` (duplicated, not imported —
-  same reasoning as ``_is_safe_token`` above: a wrong-axis import would
-  silently roll the finding into the vulnerability axis's verdict instead
-  of hygiene's).
+  shape but hardcode ``AXIS_HYGIENE`` and use the DISTINCT reason segment
+  ``unsafe-identity-hygiene`` (duplicated, not imported — same reasoning as
+  ``_is_safe_token`` above: a wrong-axis import would silently roll the
+  finding into the vulnerability axis's verdict instead of hygiene's; and a
+  shared id family would collide in ``DefaultPolicy.evaluate``'s id-keyed
+  dedupe when one component is excluded by BOTH front-doors, silently
+  dropping the vuln-axis record — fixed 2026-07-16).
 * A malformed/unmappable record (not a dict, or missing ``error.code`` /
   ``module``, or one whose finding id would violate the frozen id grammar)
   is COUNTED toward ``unparseable_rate`` AND surfaces a typed
@@ -248,11 +251,20 @@ def unsafe_identity_finding(component: Component) -> Finding:
     entirely for this front-door, so such a component just vanished from the
     hygiene axis's input with zero surfaced record — unlike
     ``vuln.unsafe_identity_finding``, which ``OsvEngine.run`` always turns
-    into a finding for its own (parallel-shaped) exclusion list. Same id
-    family (``indeterminate:unsafe-identity:<pkg>``) as that vuln-axis
-    counterpart, but ``AXIS_HYGIENE`` — see ``_indeterminate_finding``."""
+    into a finding for its own (parallel-shaped) exclusion list.
+
+    The reason segment is ``unsafe-identity-hygiene`` — deliberately NOT the
+    vuln-axis counterpart's ``unsafe-identity`` (fixed 2026-07-16): a
+    component excluded by BOTH front-doors would otherwise mint two findings
+    with the IDENTICAL id on different axes, and ``DefaultPolicy.evaluate``'s
+    id-keyed engine-vs-engine dedupe (first registration wins) silently
+    dropped the vulnerability-axis record — destroying exactly the per-axis
+    attribution this module's duplicated helpers exist to protect (verified
+    live). A distinct id family keeps both axes' exclusion records and rung
+    drivers alive; ``hygiene_rung`` still degrades the unknown code to
+    ``indeterminate`` identically."""
     return _indeterminate_finding(
-        "unsafe-identity",
+        "unsafe-identity-hygiene",
         component,
         f"{component.name}: excluded from the deptry front-door input — its "
         "resolved pypi identity is not a safely-writable requirements line "

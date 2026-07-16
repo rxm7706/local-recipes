@@ -497,12 +497,15 @@ def test_frontdoor_excludes_pep440_invalid_lines_that_would_crash_deptry(
 
 
 def test_unsafe_identity_finding_id_grammar(component_factory):
-    """Mirrors ``vuln.unsafe_identity_finding``'s id family exactly
-    (``indeterminate:unsafe-identity:<pkg>``) but carries ``AXIS_HYGIENE``,
-    not ``AXIS_VULNERABILITY`` -- a finding produced by this module must
-    roll up into the hygiene axis's own verdict."""
+    """Mirrors ``vuln.unsafe_identity_finding``'s id SHAPE but with the
+    DISTINCT reason segment ``unsafe-identity-hygiene`` and ``AXIS_HYGIENE``
+    -- a finding produced by this module must roll up into the hygiene
+    axis's own verdict, and a component excluded by BOTH front-doors must
+    mint two DIFFERENT ids (DefaultPolicy's id-keyed engine-vs-engine dedupe
+    would otherwise silently drop the vuln-axis record -- fixed
+    2026-07-16)."""
     component = component_factory(name="-rf", version="1.0")
     finding = unsafe_identity_finding(component)
-    assert finding.id == "indeterminate:unsafe-identity:-rf@1.0"
+    assert finding.id == "indeterminate:unsafe-identity-hygiene:-rf@1.0"
     assert finding.axis == AXIS_HYGIENE
     assert finding.subject == "-rf"

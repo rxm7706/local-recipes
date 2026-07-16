@@ -65,6 +65,7 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
+import tomllib
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -305,6 +306,66 @@ class NullEngine:
         return EngineResult(findings=(), errors=(), coverage=())
 
 
+def _deptry_requirements_sources(target: Path) -> list[str]:
+    """The requirements-file paths deptry itself would read for ``target`` —
+    what the unconditional ``--requirements-files`` front-door flag must
+    RE-APPEND to remain behavior-preserving (the flag REPLACES deptry's
+    requirements-source setting, it never merges — verified live against
+    deptry 0.25.1).
+
+    Deptry's source list is its ``[tool.deptry].requirements_files`` config
+    when declared (a string or list of strings in the scan root's
+    ``pyproject.toml``), else its documented default ``requirements.txt`` —
+    re-appending only the literal default used to false-DEP001 every dep a
+    config-declared file carries (fixed 2026-07-16; the parallel
+    ``requirements_files_dev`` setting needs no handling — we never pass its
+    flag, so deptry's own config/default for it stays live). Unreadable/
+    malformed config degrades to the default: deptry's own run against the
+    same file will surface the real problem loudly.
+
+    Existence filtering is stat-honest (``discovery.py``'s doctrine —
+    ``Path.is_file()`` swallows every ``OSError``): a definitively-absent
+    path is dropped (deptry crashes outright on a nonexistent
+    ``--requirements-files`` entry, unlike its tolerant native default), but
+    an AMBIGUOUS stat failure (EACCES, ...) keeps the path — deptry then
+    fails loudly into a typed engine error, matching its native behavior on
+    the same unreadable file, rather than silently false-DEP001ing every dep
+    the file declares. A path containing ``,`` or a newline is skipped: the
+    flag's own comma-list syntax cannot express it."""
+    configured: object = None
+    try:
+        with (target / "pyproject.toml").open("rb") as stream:
+            data = tomllib.load(stream)
+    except (OSError, tomllib.TOMLDecodeError):
+        data = None
+    if isinstance(data, dict):
+        tool = data.get("tool")
+        if isinstance(tool, dict):
+            deptry_config = tool.get("deptry")
+            if isinstance(deptry_config, dict):
+                configured = deptry_config.get("requirements_files")
+    if isinstance(configured, str):
+        candidates = [configured]
+    elif isinstance(configured, list) and all(
+        isinstance(item, str) for item in configured
+    ):
+        candidates = list(configured)
+    else:
+        candidates = ["requirements.txt"]
+    sources: list[str] = []
+    for candidate in candidates:
+        if not candidate or "," in candidate or "\n" in candidate:
+            continue
+        try:
+            os.stat(target / candidate)
+        except (FileNotFoundError, NotADirectoryError):
+            continue
+        except OSError:
+            pass  # ambiguous: keep — deptry fails loud, never silently
+        sources.append(candidate)
+    return sources
+
+
 class DeptryEngine:
     """The first real engine: dependency-hygiene via ``deptry`` (Story 1.3).
 
@@ -324,19 +385,23 @@ class DeptryEngine:
     ``pyproject.toml`` detection takes priority when present, so this is a
     no-op for every pre-2.2 pyproject-native scan and a real signal for a
     conda-sourced one. Because the flag REPLACES (not merges with) deptry's
-    own default ``requirements.txt`` source, a ``requirements.txt`` present
-    at the scan root is re-appended to the flag's comma-list so its
-    pip-declared deps stay visible to deptry (fixed 2026-07-16 — verified
-    live: without this, such a scan reports false DEP001s for every dep the
-    project's own requirements.txt declares). The synthesized input file
-    uses the SAME
+    own requirements-source setting — the config-declared
+    ``[tool.deptry].requirements_files`` list when present, else the
+    ``requirements.txt`` default — deptry's own effective source list is
+    re-appended to the flag's comma-list so its pip-declared deps stay
+    visible to deptry (fixed 2026-07-16 — verified live: without this, such
+    a scan reports false DEP001s for every dep those files declare; see
+    ``_deptry_requirements_sources`` for the config-read + stat-honest
+    existence rules). The synthesized input file uses the SAME
     ``tempfile.mkstemp``/``finally: os.unlink`` idiom as ``OsvEngine.run``'s
     own input file (NFR-S4). Any component the NFR-S6 purity guard excludes
-    from that front-door surfaces as one ``indeterminate:unsafe-identity:
-    <pkg>`` finding via ``hygiene.unsafe_identity_finding`` (Fix 6,
-    2026-07-16) — computed up front and merged into EVERY return path below,
-    mirroring ``OsvEngine.run``'s own never-silently-dropped handling of its
-    parallel-shaped ``excluded_findings``."""
+    from that front-door surfaces as one ``indeterminate:unsafe-identity-
+    hygiene:<pkg>`` finding via ``hygiene.unsafe_identity_finding`` (Fix 6,
+    2026-07-16; the reason segment is deliberately distinct from the
+    vuln-axis twin's so the policy layer's id-keyed dedupe can never drop
+    one axis's record) — computed up front and merged into EVERY return
+    path below, mirroring ``OsvEngine.run``'s own never-silently-dropped
+    handling of its parallel-shaped ``excluded_findings``."""
 
     name: str = "deptry"
 
@@ -376,19 +441,23 @@ class DeptryEngine:
             if content:
                 content += "\n"
             Path(input_path).write_text(content, encoding="utf-8")
-            # Passing --requirements-files REPLACES deptry's own native
-            # default requirements source (`requirements.txt`) rather than
-            # merging with it (verified live against deptry 0.25.1) -- so a
-            # conda-sourced scan with a sibling requirements.txt would lose
-            # every pip-declared dep there to false DEP001s. Re-appending
-            # deptry's own default (comma syntax per `deptry --help`;
-            # relative, resolved against cwd=target exactly as deptry's
-            # native detection would) keeps that behavior intact (fixed
-            # 2026-07-16). Still a genuine no-op for pyproject-native scans:
-            # deptry ignores the flag entirely there.
-            requirements_files = input_path
-            if (target / "requirements.txt").is_file():
-                requirements_files = f"{input_path},requirements.txt"
+            # Passing --requirements-files REPLACES deptry's own
+            # requirements-source setting (config-declared
+            # `[tool.deptry].requirements_files` OR its `requirements.txt`
+            # default) rather than merging with it (verified live against
+            # deptry 0.25.1) -- so a conda-sourced scan would lose every
+            # pip-declared dep those files carry to false DEP001s.
+            # Re-appending deptry's own effective source list (comma syntax
+            # per `deptry --help`; relative, resolved against cwd=target
+            # exactly as deptry itself would -- see
+            # `_deptry_requirements_sources`) keeps that behavior intact
+            # (fixed 2026-07-16; originally only the literal default
+            # `requirements.txt` was re-appended, which still clobbered a
+            # config-declared file list). Still a genuine no-op for
+            # pyproject-native scans: deptry ignores the flag entirely there.
+            requirements_files = ",".join(
+                [input_path, *_deptry_requirements_sources(target)]
+            )
             # exit_code is ignored: deptry's 0/1 stay content-only (Story 1.5
             # widened the seam for osv's own operational-exit-code needs).
             text, error, _exit_code = _engine_env(

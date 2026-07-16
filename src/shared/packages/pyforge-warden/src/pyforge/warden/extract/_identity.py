@@ -80,8 +80,13 @@ decisions are unchanged, see their own docstrings):
   higher-level extractor's internals.
 * ``read_bounded_text`` NFR-S5-bounds total size AND per-line length
   BEFORE any parser (YAML or TOML) sees the bytes -- a hostile manifest
-  can never hang or OOM the parser. No compiled pattern here carries a
-  nested unbounded quantifier.
+  can never hang or OOM the parser. The raw-byte caps alone did NOT keep
+  that promise for YAML (a tiny anchors/aliases "billion laughs" file
+  amplifies exponentially INSIDE the parser -- verified live, 2026-07-16),
+  so the three YAML extractors load via ``yaml_safe_load_strict`` (below):
+  alias expansion refused, duplicate mapping keys rejected, both failing
+  closed as ``UnparsableManifestError``. No compiled pattern here carries
+  a nested unbounded quantifier.
 
 This module parses/classifies DATA only: no ``jinja2`` import, no
 execution primitive, no network module (NFR-S1/S2 -- the ``extract/``
@@ -91,8 +96,10 @@ AST-denylist meta-test covers this file automatically).
 from __future__ import annotations
 
 import re
+from collections.abc import Hashable
 from pathlib import Path
 
+import yaml
 from packaging.requirements import InvalidRequirement, Requirement
 
 from ..inventory import (
@@ -296,14 +303,20 @@ def _raw_malformed(
 # `name` stops at the first whitespace or operator character (`~` included:
 # conda names never contain it, and excluding it is what lets the contiguous
 # `numpy~=1.20` form split correctly instead of yielding a corrupted
-# `numpy~` name -- fixed 2026-07-16); `op` is one of the 8 conda/
-# PEP-440-ish comparison tokens (2-char forms tried first so ">=" never
-# partially matches as ">", and `~=` recognized at all -- previously it fell
-# through to the bare-version path and a RANGE was silently classified as a
-# confident EXACT version, fixed 2026-07-16); `version` is everything after,
-# trimmed. No nested unbounded quantifiers (NFR-S5).
+# `numpy~` name -- fixed 2026-07-16; `[` likewise: a bracket-form matchspec
+# selector -- `numpy[subdir=linux-64]`, `numpy[version='>=1.20']` -- used to
+# split at the bracket's INNER `=` and bake `numpy[subdir` into the name,
+# guaranteeing a conda->pypi map miss for a real, mappable package, fixed
+# 2026-07-16: the name now stops at `[` too, and the whole bracket remainder
+# lands in `version`, where the `_EXACT_VERSION_RE` shape gate withholds it
+# conservatively -- honest name, no fabricated version); `op` is one of the
+# 8 conda/PEP-440-ish comparison tokens (2-char forms tried first so ">="
+# never partially matches as ">", and `~=` recognized at all -- previously it
+# fell through to the bare-version path and a RANGE was silently classified
+# as a confident EXACT version, fixed 2026-07-16); `version` is everything
+# after, trimmed. No nested unbounded quantifiers (NFR-S5).
 _CONDA_SPEC_RE = re.compile(
-    r"^(?P<name>[^\s=<>!~]+)\s*(?P<op>~=|>=|<=|!=|==|=|>|<)?\s*(?P<version>.*)$"
+    r"^(?P<name>[^\s=<>!~\[]+)\s*(?P<op>~=|>=|<=|!=|==|=|>|<)?\s*(?P<version>.*)$"
 )
 
 # The strict shape an EXACT conda version value must have -- conda's own
@@ -527,3 +540,85 @@ def read_bounded_text(
         raise UnparsableManifestError(
             f"unparsable manifest {manifest.path}: {exc}"
         ) from exc
+
+
+# --- new in Story 2.2 (review hardening, 2026-07-16): strict YAML loading ---
+
+
+class _StrictSafeLoader(yaml.SafeLoader):
+    """``yaml.SafeLoader`` restricted FURTHER (never expanded): (a) alias
+    (``*ref``) resolution is REFUSED — a tiny file of nested anchors/aliases
+    ("billion laughs") otherwise passes ``read_bounded_text``'s raw-byte caps
+    trivially and then materializes an exponentially-amplified structure
+    INSIDE the parser (verified live: a 434-byte ``environment.yml`` drove
+    hundreds of MB of RSS through ``yaml.safe_load``, defeating the NFR-S5
+    "can never hang or OOM the parser" guarantee this module claims);
+    (b) duplicate mapping keys are REJECTED — PyYAML's silent last-wins
+    semantics otherwise DROP every earlier duplicate's subtree, which for
+    ``meta_v0.py`` means the classic v0 ``{% if win %}…{% else %}…{% endif %}``
+    duplicated-key idiom silently lost one branch's dependencies with no
+    degrade marker at all after statement blanking (verified live). Real
+    conda/pixi manifests use neither construct; both now fail closed as a
+    whole-manifest ``yaml.YAMLError`` → ``UnparsableManifestError`` (a typed
+    error record, never a silent false-green; Story 2.3's control-flow work
+    owns any richer branch-union semantics). An anchor DEFINITION with no
+    alias use is harmless and stays legal."""
+
+    def compose_node(
+        self, parent: yaml.nodes.Node | None, index: int
+    ) -> yaml.nodes.Node | None:
+        if self.check_event(yaml.events.AliasEvent):
+            raise yaml.YAMLError(
+                "YAML alias expansion is not allowed in a scanned manifest "
+                "(NFR-S5 amplification guard)"
+            )
+        return super().compose_node(parent, index)
+
+    def construct_mapping(
+        self, node: yaml.nodes.MappingNode, deep: bool = False
+    ) -> dict[Hashable, object]:
+        seen: set[object] = set()
+        for key_node, _value_node in node.value:
+            key = self.construct_object(key_node, deep=True)
+            try:
+                duplicate = key in seen
+            except TypeError:
+                continue  # unhashable key: the base constructor raises its own
+            if duplicate:
+                raise yaml.YAMLError(
+                    f"duplicate mapping key {key!r} — YAML last-wins semantics "
+                    "would silently drop the earlier subtree"
+                )
+            seen.add(key)
+        return super().construct_mapping(node, deep)
+
+
+def yaml_safe_load_strict(text: str) -> object:
+    """``yaml.safe_load`` with alias expansion refused and duplicate mapping
+    keys rejected (see ``_StrictSafeLoader``) — the loading path for all
+    three YAML-based Story 2.2 extractors. Driven through the loader
+    protocol directly (construct → ``get_single_data`` → ``dispose``, which
+    is exactly ``yaml.load``'s own body) rather than ``yaml.load(...,
+    Loader=...)``: the ``extract/`` AST-denylist meta-test bans the generic
+    ``yaml.load`` entry point outright, and this helper is a RESTRICTION of
+    ``SafeLoader``, never a widening — anything this loads, ``safe_load``
+    would also have loaded. Raises ``yaml.YAMLError`` exactly like
+    ``safe_load`` (callers' existing except-wrapping is unchanged)."""
+    loader = _StrictSafeLoader(text)
+    try:
+        return loader.get_single_data()
+    finally:
+        loader.dispose()
+
+
+def truncate_for_name(text: str, *, limit: int = 200) -> str:
+    """Bound a stringified manifest ENTRY before it becomes a
+    ``RAW_MALFORMED`` component name — ``str(entry)`` on a parsed YAML
+    structure is otherwise unbounded by the raw-byte caps (a 5 MB flow
+    collection stringifies to a multi-MB component "name"). Callers that
+    stringify PARSED objects (not raw manifest lines) apply this; the raw
+    line-based lockfile paths stay byte-identical to their pre-2.2
+    behavior."""
+    if len(text) <= limit:
+        return text
+    return text[:limit] + "…[truncated]"

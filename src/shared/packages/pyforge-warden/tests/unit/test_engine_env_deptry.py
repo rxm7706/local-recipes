@@ -545,7 +545,7 @@ def test_deptry_engine_surfaces_a_finding_for_an_unsafe_identity_component(
     result = DeptryEngine().run(tmp_path, inventory)
 
     assert [f.id for f in result.findings] == [
-        "indeterminate:unsafe-identity:evil@1.0.0"
+        "indeterminate:unsafe-identity-hygiene:evil@1.0.0"
     ]
     assert result.findings[0].axis == AXIS_HYGIENE
     assert result.errors == ()
@@ -581,7 +581,7 @@ def test_deptry_engine_merges_unsafe_identity_findings_with_parsed_findings(
 
     assert [f.id for f in result.findings] == [
         "hygiene:DEP002:requests",
-        "indeterminate:unsafe-identity:evil@1.0.0",
+        "indeterminate:unsafe-identity-hygiene:evil@1.0.0",
     ]
 
 
@@ -606,3 +606,70 @@ def test_deptry_engine_frontdoor_is_a_no_op_when_native_pyproject_present(
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     DeptryEngine().run(tmp_path, inventory)
     assert "--requirements-files" in captured["argv"]
+
+
+def test_deptry_engine_reappends_config_declared_requirements_files(
+    monkeypatch, tmp_path, component_factory
+):
+    """Second review pass (2026-07-16): --requirements-files REPLACES
+    deptry's requirements-source SETTING -- which is the config-declared
+    `[tool.deptry].requirements_files` list when present, not always the
+    literal default `requirements.txt`. Re-appending only the default
+    false-DEP001'd every dep a config-declared file carries (verified live
+    against real deptry 0.25.1: bare `deptry .` green, with the flag red).
+    The config list replaces the default in the re-append too."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.deptry]\nrequirements_files = ["reqs/base.txt"]\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "reqs").mkdir()
+    (tmp_path / "reqs" / "base.txt").write_text("requests\n", encoding="utf-8")
+    # A sibling requirements.txt must NOT be re-appended once config
+    # declares its own list -- deptry itself would not read it natively.
+    (tmp_path / "requirements.txt").write_text("flask\n", encoding="utf-8")
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    inventory = make_inventory(component_factory(name="numpy", version="1.26.0"))
+    DeptryEngine().run(tmp_path, inventory)
+    argv = captured["argv"]
+    value = argv[argv.index("--requirements-files") + 1]
+    synth_path, _, reappended = value.partition(",")
+    assert synth_path
+    assert reappended == "reqs/base.txt"
+
+
+def test_deptry_engine_skips_a_missing_configured_requirements_file(
+    monkeypatch, tmp_path, component_factory
+):
+    """A configured path that definitively does not exist is dropped from
+    the re-append (deptry crashes outright on a nonexistent
+    --requirements-files entry, unlike its tolerant native default)."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.deptry]\nrequirements_files = ["missing.txt"]\n',
+        encoding="utf-8",
+    )
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    inventory = make_inventory(component_factory(name="numpy", version="1.26.0"))
+    DeptryEngine().run(tmp_path, inventory)
+    argv = captured["argv"]
+    value = argv[argv.index("--requirements-files") + 1]
+    assert "," not in value
+
+
+def test_deptry_engine_malformed_pyproject_degrades_to_the_default(
+    monkeypatch, tmp_path, component_factory
+):
+    """An unreadable/malformed pyproject.toml degrades the config read to
+    deptry's default source list -- the engine still runs; deptry's own run
+    against the same file surfaces the real problem loudly."""
+    (tmp_path / "pyproject.toml").write_text("not = [valid toml", encoding="utf-8")
+    (tmp_path / "requirements.txt").write_text("requests\n", encoding="utf-8")
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    inventory = make_inventory(component_factory(name="numpy", version="1.26.0"))
+    DeptryEngine().run(tmp_path, inventory)
+    argv = captured["argv"]
+    value = argv[argv.index("--requirements-files") + 1]
+    _synth, _, reappended = value.partition(",")
+    assert reappended == "requirements.txt"
