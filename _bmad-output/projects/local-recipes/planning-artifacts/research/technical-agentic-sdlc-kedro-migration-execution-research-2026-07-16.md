@@ -33,6 +33,8 @@ Technical research (2026-07-16) resolving the tension between the cf_atlas Kedro
 
 Method: internal grounding (loop policy/hooks, adoption-spec pilot learnings, pixi task inventory) + live external verification (official bmad-code-org sources, dev-auto reference, TEA docs, agentic-SDLC practice). Full detail: the drivability map (step 5), the architecture options (step 4), and the synthesis + hand-off at the end of this document.
 
+**Erratum 2 (2026-07-16, adversarial review)**: this document's story arithmetic is off — § 9 of the spec contains **32** stories, not 30, and the drivability map's own rows sum to ~21 loop-drivable (11 LOOP-S + ~10 LOOP-E), not "19 (10+9)"; the spec (v5.4) carries the corrected numbers.
+
 **Erratum (2026-07-16, post-publication)**: where this document echoes the domain research's "GX blocked on py3.14" finding, apply the spec's v5.2 correction — conda-forge `great-expectations 1.18.2` (already in `pixi.toml`) imports cleanly on py3.14.6 (live-verified); GX is Committed but version-capped at 1.18.2, pandera remains the primary inline layer, and the validator-agnostic F2 hook stands unchanged.
 
 ---
