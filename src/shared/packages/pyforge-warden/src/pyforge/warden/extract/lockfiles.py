@@ -31,12 +31,11 @@ Ownership decisions recorded:
   ecosystem-mixed per file (unlike ``pyproject.toml``'s one-shot section),
   so the extractor never assigns ``Ecosystem`` directly (every existing
   extractor calls the router; this stays precedent-consistent).
-* A conda-ecosystem row with no PyPI identity calls
-  ``mapping.load_conda_pypi_map()`` (today an empty ``{}`` stub pending
-  Story 2.1) and, finding nothing, withholds as ``UNMAPPED_ECOSYSTEM`` —
-  never guessed, never dropped. Once 2.1 populates the map, a hit resolves
-  richer (``IdentitySource.MAP`` + the map's own confidence tier) with no
-  change to this module's call site.
+* A conda-ecosystem row consults ``mapping.load_conda_pypi_map()`` (the
+  real bundled map since Story 2.1): only a ``verified``-confidence hit
+  resolves (``IdentitySource.MAP`` + the map's own confidence tier); a
+  ``likely``/untrusted hit or an outright miss withholds as
+  ``UNMAPPED_ECOSYSTEM`` — never guessed, never dropped.
 * Scope: the flat top-level ``packages:``/``package:`` list only (every
   package the file ever resolved, across all environments/platforms) — no
   per-environment/per-platform selection. Mirrors this repo's own sibling

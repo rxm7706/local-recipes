@@ -501,7 +501,7 @@ def _one_hygiene_finding(document: dict, finding_id: str) -> dict:
     return matches[0]
 
 
-def test_deptry_missing_dependency_is_a_warning(capsys):
+def test_deptry_missing_dependency_blocks_by_default(capsys):
     """DEP001 (imported-but-undeclared) BLOCKS (exit 1) by default (Story
     2.1, Gap-A): a pure-PyPI project has no conda-mapping ambiguity in its
     inventory, so the scan-wide dep001_trusted gate stays True and DEP001's

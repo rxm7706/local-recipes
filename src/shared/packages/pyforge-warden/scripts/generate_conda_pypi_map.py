@@ -41,10 +41,12 @@ _CONFIDENCE_RANK = {"likely": 0, "verified": 1}
 
 
 def _purl_name(purl: str) -> str:
-    """The bare package name from a ``pkg:<type>/<name>[@version][?qualifiers]`` purl."""
-    without_qualifiers = purl.split("?", 1)[0]
+    """The bare package name from a
+    ``pkg:<type>/<name>[@version][?qualifiers][#subpath]`` purl."""
+    without_subpath = purl.split("#", 1)[0]
+    without_qualifiers = without_subpath.split("?", 1)[0]
     without_version = without_qualifiers.split("@", 1)[0]
-    return without_version.rsplit("/", 1)[-1]
+    return without_version.rsplit("/", 1)[-1].strip()
 
 
 def convert(tsv_path: Path) -> dict[str, dict[str, str]]:
@@ -53,13 +55,18 @@ def convert(tsv_path: Path) -> dict[str, dict[str, str]]:
     Only rows with a real ``pypi_purl`` (``match_source != "none"``) are
     included -- an absent key is already the correct "no candidate" signal,
     so there is no need to bundle the miss rows. A row that is structurally
-    malformed (missing a required column, a short/truncated row, an
-    unrecognized ``match_confidence`` tier, or an empty extracted name) is
-    skipped and counted -- never guessed, never a crash. On a duplicate
-    ``conda_name``, the higher-trust row wins.
+    malformed (missing a required column, a short/truncated row, an empty
+    ``match_source``, an unrecognized ``match_confidence`` tier, a purl not
+    of the expected ``pkg:conda/``/``pkg:pypi/`` type, or an empty extracted
+    name) is skipped and counted -- never guessed, never a crash. On a
+    duplicate ``conda_name``, the higher-trust row wins; an equal-trust
+    duplicate carrying a DIFFERENT ``pypi_name`` keeps the first-seen row
+    but is reported to stderr as a conflict (an upstream data-integrity
+    alarm that must never be swallowed silently).
     """
     entries: dict[str, dict[str, str]] = {}
     skipped = 0
+    conflicts: list[str] = []
     with tsv_path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f, delimiter="\t")
         header = set(reader.fieldnames or ())
@@ -75,8 +82,18 @@ def convert(tsv_path: Path) -> dict[str, dict[str, str]]:
             match_source = row["match_source"]
             if match_source == "none":
                 continue
+            if not match_source:
+                skipped += 1  # empty source is malformed, not a miss marker
+                continue
             match_confidence = row["match_confidence"]
             if match_confidence not in _CONFIDENCE_RANK:
+                skipped += 1
+                continue
+            # A cell that is not a purl of the expected type (a transposed
+            # column, "N/A", an http URL) must never become an identity.
+            if not row["conda_purl"].startswith("pkg:conda/") or not row[
+                "pypi_purl"
+            ].startswith("pkg:pypi/"):
                 skipped += 1
                 continue
             conda_name = _purl_name(row["conda_purl"])
@@ -89,6 +106,15 @@ def convert(tsv_path: Path) -> dict[str, dict[str, str]]:
                 _CONFIDENCE_RANK[existing["match_confidence"]]
                 >= _CONFIDENCE_RANK[match_confidence]
             ):
+                if (
+                    _CONFIDENCE_RANK[existing["match_confidence"]]
+                    == _CONFIDENCE_RANK[match_confidence]
+                    and existing["pypi_name"] != pypi_name
+                ):
+                    conflicts.append(
+                        f"{conda_name}: kept {existing['pypi_name']!r}, "
+                        f"ignored equal-confidence {pypi_name!r}"
+                    )
                 continue
             entries[conda_name] = {
                 "pypi_name": pypi_name,
@@ -97,6 +123,8 @@ def convert(tsv_path: Path) -> dict[str, dict[str, str]]:
             }
     if skipped:
         print(f"skipped {skipped} malformed/unrecognized row(s)", file=sys.stderr)
+    for conflict in conflicts:
+        print(f"conflict: {conflict}", file=sys.stderr)
     return dict(sorted(entries.items()))
 
 

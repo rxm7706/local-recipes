@@ -380,8 +380,9 @@ class OsvEngine:
     Feeds ``vuln_matchable`` components (``candidates`` — any ecosystem with
     a resolved ``pypi_identity``, Story 2.1) through the real ``osv-scanner``
     subprocess, AND
-    separately, mapped-but-unversioned PyPI components (``pypi_identity``
-    resolved, ``version is None`` — ``name_level_candidates``) through a
+    separately, mapped-but-unversioned components (``pypi_identity``
+    resolved, ``version is None`` — ``name_level_candidates``, likewise any
+    ecosystem since Story 2.1) through a
     direct, offline, in-process read of the SAME resolved DB zip (FR13 —
     osv-scanner has no "any version" query mode, so this is never a second
     subprocess). The candidate guard is widened to cover BOTH: a scan with

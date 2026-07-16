@@ -263,11 +263,17 @@ def _is_safe_token(value: str) -> bool:
 
 
 def _synthesize_requirements(components: Sequence[Component]) -> SynthesizedInput:
-    """Turn vuln-matchable ``Ecosystem.PYPI`` components into sorted
-    ``name==version`` lines. Callers are expected to have already filtered
-    to ``ecosystem is Ecosystem.PYPI and component.vuln_matchable`` (this
-    function trusts that pre-filter and only re-validates TOKEN safety, not
-    vuln-matchability, so it stays a pure data-projection step)."""
+    """Turn vuln-matchable components into sorted, de-duplicated
+    ``name==version`` lines from their resolved ``pypi_identity`` (any
+    ecosystem — Story 2.1 widened the caller's filter from
+    ``ecosystem is Ecosystem.PYPI`` to ``pypi_identity is not None``, so
+    a verified-mapped conda component flows through here too, under its
+    MAPPED PyPI name). Callers are expected to have already filtered to
+    ``component.vuln_matchable`` (this function trusts that pre-filter and
+    only re-validates TOKEN safety, not vuln-matchability, so it stays a
+    pure data-projection step). Lines are de-duplicated: two components may
+    legitimately resolve to the same identity (a conda package and its pip
+    twin in one lockfile)."""
     lines: list[str] = []
     excluded: list[Component] = []
     for component in components:
@@ -284,7 +290,9 @@ def _synthesize_requirements(components: Sequence[Component]) -> SynthesizedInpu
             lines.append(f"{identity.name}=={identity.version}")
         else:
             excluded.append(component)
-    return SynthesizedInput(lines=tuple(sorted(lines)), excluded=tuple(excluded))
+    return SynthesizedInput(
+        lines=tuple(sorted(set(lines))), excluded=tuple(excluded)
+    )
 
 
 def _indeterminate_finding(reason: str, component: Component, message: str) -> Finding:

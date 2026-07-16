@@ -18,8 +18,10 @@ This module reads a packaged asset only: no network, no subprocess.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from functools import lru_cache
 from importlib import resources
+from types import MappingProxyType
 
 _CONDA_PYPI_MAP_ASSET = "conda_pypi_map.json"
 
@@ -31,17 +33,19 @@ def _packaged_json(asset_name: str) -> object:
 
 
 @lru_cache(maxsize=1)
-def load_conda_pypi_map() -> dict[str, object]:
+def load_conda_pypi_map() -> Mapping[str, object]:
     """The bundled conda→pypi identity map (Story 2.1).
 
     Cached (the asset is immutable for the process lifetime and, at
     ~12K entries, re-parsing it per conda component built during a scan
     would be a real cost — Story 2.1 replaced the 1.2 stub with the real,
-    populated map)."""
+    populated map). The cache makes the return value process-global shared
+    state, so it is wrapped read-only: a caller mutating it would silently
+    poison identity resolution for every later lookup in the process."""
     mapping = _packaged_json(_CONDA_PYPI_MAP_ASSET)
     if not isinstance(mapping, dict):
         raise ValueError(
             f"packaged {_CONDA_PYPI_MAP_ASSET} must be a JSON object, "
             f"got {type(mapping).__name__}"
         )
-    return mapping
+    return MappingProxyType(mapping)

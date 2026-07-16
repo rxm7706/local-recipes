@@ -11,6 +11,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 from pyforge.warden.mapping import load_conda_pypi_map
 
 _SCRIPT_PATH = (
@@ -45,6 +47,15 @@ def test_bundled_map_never_flattened_to_name_to_name():
     mapping = load_conda_pypi_map()
     for entry in mapping.values():
         assert isinstance(entry, dict)
+
+
+def test_bundled_map_is_read_only():
+    """The lru_cache makes the returned map process-global shared state; a
+    caller mutating it would silently poison identity resolution for every
+    later lookup in the process, so the top level is a read-only proxy."""
+    mapping = load_conda_pypi_map()
+    with pytest.raises(TypeError):
+        mapping["poisoned"] = {"pypi_name": "poisoned"}  # type: ignore[index]
 
 
 def test_bundled_map_has_no_none_match_source_entries():
@@ -205,6 +216,82 @@ def test_converter_duplicate_conda_name_upgrades_to_a_later_more_trusted_row(tmp
             "match_confidence": "verified",
         }
     }
+
+
+def test_converter_reports_equal_confidence_conflicts_and_keeps_first(
+    tmp_path, capsys
+):
+    """Two equal-trust rows for one conda name with DIFFERENT pypi names tie
+    on rank: the first-seen row is kept (deterministic for a given TSV) and
+    the conflict is reported to stderr — an upstream data-integrity alarm
+    that must never be swallowed silently."""
+    converter = _load_converter()
+    tsv = tmp_path / "purls.tsv"
+    tsv.write_text(
+        "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"
+        "pkg:conda/numpy?channel=conda-forge\tpkg:pypi/numpy\tparselmouth\tverified\n"
+        "pkg:conda/numpy?channel=conda-forge\tpkg:pypi/numpy-imposter\tparselmouth\tverified\n",
+        encoding="utf-8",
+    )
+
+    entries = converter.convert(tsv)
+
+    assert entries["numpy"]["pypi_name"] == "numpy"
+    err = capsys.readouterr().err
+    assert "conflict" in err
+    assert "numpy-imposter" in err
+
+
+def test_converter_skips_cells_that_are_not_purls_of_the_expected_type(tmp_path):
+    """A transposed/garbage cell ("N/A", an http URL, a swapped column) must
+    never become a bundled identity — the exact wrong-package matching this
+    map exists to prevent."""
+    converter = _load_converter()
+    tsv = tmp_path / "purls.tsv"
+    tsv.write_text(
+        "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"
+        "pkg:conda/foo?channel=conda-forge\tN/A\tparselmouth\tverified\n"
+        "https://example.com/bar\tpkg:pypi/bar\tparselmouth\tverified\n"
+        "pkg:pypi/swapped\tpkg:conda/swapped\tparselmouth\tverified\n",
+        encoding="utf-8",
+    )
+
+    entries = converter.convert(tsv)
+
+    assert entries == {}
+
+
+def test_converter_skips_an_empty_match_source(tmp_path):
+    """An empty match_source is malformed (only the literal "none" marks a
+    deliberate miss row) — never bundled."""
+    converter = _load_converter()
+    tsv = tmp_path / "purls.tsv"
+    tsv.write_text(
+        "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"
+        "pkg:conda/foo?channel=conda-forge\tpkg:pypi/foo\t\tverified\n",
+        encoding="utf-8",
+    )
+
+    entries = converter.convert(tsv)
+
+    assert entries == {}
+
+
+def test_converter_handles_subpath_and_whitespace_purl_edges(tmp_path):
+    """A purl #subpath never leaks into the extracted name, and a
+    whitespace-only name is skipped, not bundled as an unmatchable key."""
+    converter = _load_converter()
+    assert converter._purl_name("pkg:pypi/foo#src/bar") == "foo"
+    tsv = tmp_path / "purls.tsv"
+    tsv.write_text(
+        "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"
+        "pkg:conda/ ?channel=conda-forge\tpkg:pypi/foo\tparselmouth\tverified\n",
+        encoding="utf-8",
+    )
+
+    entries = converter.convert(tsv)
+
+    assert entries == {}
 
 
 def test_converter_output_is_sorted_by_key(tmp_path):
