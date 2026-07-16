@@ -434,6 +434,10 @@ def classify(path: Path) -> str:
         return f"tracked:{TRACKED_CAT[rel]}"
     if rel.startswith("planning-artifacts/change-history/"):
         return "archive:change-history"
+    if re.fullmatch(r"planning-artifacts/research/(domain|market|technical)-.*-research-\d{4}-\d{2}-\d{2}\.md", rel):
+        # BMAD research reports (bmad-domain/market/technical-research skills):
+        # dated point-in-time snapshots — never re-grounded, so no pin gating.
+        return "archive:research"
     if rel.startswith("implementation-artifacts/retros/"):
         return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":
