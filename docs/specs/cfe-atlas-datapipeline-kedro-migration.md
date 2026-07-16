@@ -990,9 +990,77 @@ The following are deliberately excluded from this migration, with reason:
 
 ---
 
-## 13. References
+## 13. Integration Surface & References
 
-### Internal
+Sources, feeds, and tools come and go. This section is the spec's
+**slot/status matrix** (format adopted from the pyforge-warden infographic's
+integration-surface sections): every external dependency gets a **Category**,
+a **Slot** (which § 5.2 pipeline / node family consumes it), and a
+**Status** — so swapping a source is a one-row edit, not a prose rewrite.
+
+**Status vocabulary**: **Current** = live legacy surface, ported as-is ·
+**Committed** = new in this migration (FR-19/20/21) · **Candidate** =
+evaluated, recorded hook, not committed · **Excluded** = deliberately not
+ingested (reason in § 12 or the row).
+
+### 13.1 Data sources & feeds
+
+| Source / feed | Category | Slot (§ 5.2) | Override | Status |
+| --- | --- | --- | --- | --- |
+| conda-forge repodata + channeldata (mirror chain: JFrog → `repo.prefix.dev` → `conda.anaconda.org`) | Channel metadata | Core (Phases B/B.5/B.6) | `CONDA_FORGE_BASE_URL` chain | **Current** |
+| anaconda.org channel API | Downloads + channel data | Core / Read-surface (Phases F/I) | `ANACONDA_CHANNEL_BASE_URL` | **Current** |
+| S3 download-stats parquet | Downloads backend (consumer profile) | Core (Phase F alt-source) | `S3_PARQUET_BASE_URL` | **Current** |
+| PyPI JSON + simple APIs | Package metadata | PyPI Intelligence (Phases D/H/O/R) | `PYPI_JSON_BASE_URL` / `PYPI_SIMPLE_BASE_URL` | **Current** |
+| ClickHouse `default` + BigQuery ADC | PyPI download stats (credentialed) | PyPI Intelligence (Phase P) | connection config | **Current** |
+| GitHub REST + GraphQL APIs | VCS liveness / maintainer scope (credentialed) | VCS & Health (Phases E.5/K/N) | `GITHUB_API_BASE_URL` | **Current** |
+| GitLab / Codeberg APIs | VCS liveness | VCS & Health (Phase K) | `GITLAB_API_BASE_URL` / `CODEBERG_API_BASE_URL` | **Current** |
+| regro/cf-graph (parselmouth) + conda-forge-metadata API | PyPI↔conda mapping | PyPI Intelligence (Phase C + `update-mapping-cache`, Q6) | `GITHUB_RAW_BASE_URL` | **Current** |
+| npm / CRAN / CPAN / LuaRocks / crates.io / RubyGems / Maven / NuGet registries | Cross-ecosystem names | VCS & Health (Phase L) | per-registry `*_BASE_URL` | **Current** |
+| NVD / GHSA / OSV / npm / Snyk feeds (via AppThreat vdb build) | Vulnerability DB | Vulnerability (vdb refresh asset, Story B5; read by G/G') | vdb-refresh (vuln-db env) | **Current** |
+| osv.dev GCS bucket | Offline OSV store | Vulnerability (`update-cve-db` asset, Story B5) | `OSV_VULNS_BUCKET_URL` | **Current** |
+| CISA KEV | Exploit intel | Vulnerability (`cisa_kev` fetcher; G/G' overlay + read-path contract) | fetcher URL | **Current** |
+| FIRST EPSS (`epss_scores-current.csv.gz`) | Exploit-probability intel | Vulnerability (`epss_scores` fetcher) | fetcher URL | **Current** |
+| MITRE CWE catalog | Weakness taxonomy | Vulnerability (`cwe_categories` fetcher) + Seed-Gaps (`cwe-seed-gap`) | fetcher URL | **Current** |
+| endoflife.date (`/api/all.json` + per-product) | EOL / LTS currency | PyPI Intelligence scoring + Seed-Gaps (`lts-registry-gap`) | `ENDOFLIFE_BASE_URL` | **Current** |
+| upstream SPDX license list | License enum ground truth | Seed-Gaps (`spdx-schema-gap` / `license-map-gap`) | — | **Current** |
+| `api.basilisk.prefix.dev` (`/v1/querybatch`, `/v1/vulns/{id}`) | Conda-native OSV advisory API | Vulnerability (Basilisk nodes, FR-19 / Story B8) | `BASILISK_BASE_URL` (new, 20th helper) | **Committed** |
+| `conda-forge/conda-forge-bot-data` `status/` (category lists + `migration_json/<name>.json`) | Migration tracker | VCS & Health (readiness nodes, FR-21 / Story B10) | `GITHUB_RAW_BASE_URL` (existing) | **Committed** |
+| prefix.dev GraphQL API (`prefix.dev/api/graphql`) | Channel/package metadata | (none — hook: `variants.yankedReason` for Phase B.6 full yanked detection, Story B1 note) | — | Candidate |
+| `conda-forge-bot-data` `version_status.v2.json` | Bot version-update queue | — (atlas measures currency itself: Phases H/K) | — | Excluded |
+| Spreadsheet tabs / GitHub Projects boards | Inventory prep | — (export to a § 4.10 format) | — | Excluded |
+
+### 13.2 Engines & toolchain
+
+| Tool | Category | Slot | Status |
+| --- | --- | --- | --- |
+| Kedro (+ `kedro-viz`, `kedro-dagster`, `kedro-mcp`) | Pipeline framework | Authoring, DAG, viz, orchestration bridge, MCP surface (FR-1/2/6/7) | **Committed** |
+| Dagster (+ Sensors) | Orchestrator | Schedules, retries, per-node timeouts, profiles-as-job-configs (FR-6, § 5.4) | **Committed** |
+| DuckDB (+ `vss`) + Ibis | Compute / graph / vector engine | Single engine over partitioned Parquet (FR-5, Wave F) | **Committed** |
+| Boring Semantic Layer | Semantic layer | Metrics/dimensions over the catalog (FR-8, Story D1) | **Committed** |
+| Vizro + Vizro-AI | Read surface | Dashboard + NL query + `query_vizro_ai` MCP tool (FR-9, Wave D) | **Committed** |
+| Great Expectations + Pandera | Data-quality contracts | `AfterNodeRunHook` + inline assertions (FR-10, Story F2); the `kedro-great-expectations` / `kedro-pandera` plugins are **banned** (outdated) | **Committed** |
+| OpenLineage + OpenTelemetry | Lineage / observability | Node/run/query instrumentation (FR-12, Story E2) | **Committed** |
+| `nebi` (nebari-dev) | Scaffolding | Project + pixi ecosystem scaffold (FR-15, Story A1) | **Committed** |
+| duckdb-wasm / Pyodide | Portability runtime | In-browser intelligence surface (FR-14, Wave G) | **Committed** |
+| `cdxgen` | SBOM engine | Universal SBOM parsing (§ 5.2 item 5) | **Committed** |
+| `deptry` (conda-native: `recipes/deptry`) | Hygiene engine | Dependency-hygiene node (FR-16, Story F4) | **Committed** |
+| `fawltydeps` · `pip-check-reqs` | Hygiene engine | Pluggable future engines for the FR-16 node | Candidate |
+| `osv-scanner` (mirror: `recipes/osv-scanner`) | Vulnerability engine | **Not invoked by the atlas** — standalone `pyforge.warden` v1 runs it; the atlas sources `security` from `inventory-match`/`cve` (FR-16/FR-18) | Excluded (by design) |
+| pip `--dry-run --report` / py-rattler solve | Transitive resolvers | Resolver node (FR-17, Story B7) | **Committed** |
+| `packaging.version` | PEP 440 comparison | Velocity + fix-availability computations (FR-19/FR-20) | **Committed** |
+| Wagtail + django-lasuite + `agno` | Knowledge-base stack | AI Software Factory (Wave H) | **Committed** |
+| Skill Forge (SKF) · CIS · BAD | BMAD execution tooling | Wave 0 translation · planning · orchestration (§ 2.4/2.5) | **Committed** |
+| Neo4j · Kùzu · LanceDB · Polars | Compute engines | — (superseded by DuckDB, § 4.8) | Excluded |
+| `spec-kit` | Agent framework | — (rejected, § 7.3) | Excluded |
+
+### 13.3 Standards & contracts
+
+`purl` (conda form per **CEP 63**, `?channel=conda-forge` qualifier) ·
+**CycloneDX** (+ the `cfe:*` property namespace, § 3.3 contracts) · OSV
+schema · SPDX · PEP 440 · `ComplianceReport` (pyforge-warden schema,
+FR-16/FR-18) · MCP · A2A · OpenLineage / OTel semantics.
+
+### 13.4 Internal references
 
 - `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` + `bootstrap_data.py` — the legacy orchestrator being migrated.
 - `.claude/tools/conda_forge_server.py` — the FastMCP server whose tools are ported via `kedro-mcp` (FR-7).
@@ -1003,20 +1071,7 @@ The following are deliberately excluded from this migration, with reason:
 - `docs/specs/cyclonedx-universe-inventory.md` (shipped) — the 7-CLI suite, purl conventions, freshness gate, and bucket semantics FR-13/FR-17 preserve.
 - `docs/specs/pyforge-warden.md` (in-progress) — the `pyforge.warden` v1 build whose `ComplianceReport` schema + exit-code gate FR-16/FR-18 anticipate.
 - `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" — Rule 1 + Rule 2 governing this BMAD effort.
-
-### External / ecosystem
-
-- Kedro + `kedro-viz` + `kedro-dagster` + `kedro-mcp` plugins (all managed via Pixi/conda-forge per FR-15).
-- Great Expectations + Pandera (for native data quality validation).
-- DuckDB (+ `vss` extension), Ibis, Boring Semantic Layer.
-- Vizro + Vizro-AI.
-- Dagster (+ Sensors), OpenLineage, OpenTelemetry.
-- `nebi` (nebari-dev) for project scaffolding.
-- CycloneDX SBOM specification; `cdxgen`.
-- `deptry` + `osv-scanner` (conda-native: `recipes/deptry`, the `recipes/osv-scanner` mirror; `fawltydeps` / `pip-check-reqs` as ecosystem context) — the FR-16/FR-18 hygiene + gate toolchain.
-- `api.basilisk.prefix.dev` — the OSV-compatible, conda-native vulnerability API (FR-19); conda PURLs per CEP 63.
-- `conda-forge/conda-forge-bot-data` `status/` tree — category lists (`regular_status.json` / `longterm_status.json` / `closed_status.json` / `paused_status.json` / `total_status.json`) + per-migration `migration_json/<name>.json`; the data behind `conda-forge.org/status/#migrations` (FR-21).
-- prefix.dev GraphQL API (`prefix.dev/api/graphql` — public queries, no auth) — evaluated, not promoted (§ 12); recorded hook: `variants.yankedReason` for Phase B.6's deferred full yanked detection.
+- `presentations/pyforge-warden/src/marp/pyforge-warden-infographic-2026-07-15.md` — the integration-surface slot/status matrix pattern §§ 13.1–13.3 adopt.
 
 ---
 
@@ -1076,6 +1131,7 @@ compact decision log:
 | 2026-07-16 | v4.1: reproducibility audit of the v2 report → **FR-21** (conda-forge-bot-data migration-status datasets) + Story B10. |
 | 2026-07-16 | prefix.dev GraphQL API evaluated, not promoted (§ 12 row; `yankedReason` hook noted on Story B1). |
 | 2026-07-16 | **v5 reset**: this clean re-authoring. No scope change — FR/story/AC/Q numbering preserved. |
+| 2026-07-16 | § 13 restructured as the slot/status **integration-surface matrix** (pattern adopted from the pyforge-warden infographic §§ 14–15): every source/feed/engine gets Category · Slot · Status (Current / Committed / Candidate / Excluded), so source churn is a one-row edit. No scope change. |
 
 **Evidence** (live, multi-stage ecosystem analysis backing FR-19/FR-20/FR-21
 and the § 12 deferrals; every number measured against the live atlas + live
