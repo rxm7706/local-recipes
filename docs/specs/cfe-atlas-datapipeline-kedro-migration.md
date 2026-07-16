@@ -30,7 +30,7 @@ spec_updated: 2026-07-16
 
 | Field | Value |
 |---|---|
-| Status | **v5.4 — reset + corpus sync + research folds + adversarial-review fixes (27 findings) + BMAD-dashboard delta, 2026-07-16; grounded on live surface main `58a6dcc` / skill v8.78.0; ready for full BMAD execution intake.** 22 FRs; 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
+| Status | **v5.5 — reset + corpus sync + research folds + adversarial review + PRFAQ kill-test folds, 2026-07-16; grounded on live surface main `58a6dcc` / skill v8.78.0; ANALYSIS PHASE CLOSED — ready for full BMAD execution intake.** 22 FRs; 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
 | Owner | rxm7706 |
 | Track | BMAD Full Flow (includes separate PRD/architecture phases) |
 | Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~10,000 LOC, 23 cataloged phases) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. Includes three committed new-signal sources (FR-19 Basilisk vulnerabilities, FR-20 release velocity, FR-21 migration readiness). |
@@ -120,7 +120,7 @@ The `cf_atlas` data pipeline currently operates as a bespoke, hand-rolled orches
 
 ### 3.2 Identified Gaps
 
-*   **Maintainability bottleneck**: Adding a new phase requires manually wiring it into the `PHASES` registry, ensuring the SQL schema is migrated, and updating the orchestrator loop.
+*   **Maintainability tax (chronic and compounding, not acute)**: adding a new phase requires manually wiring the `PHASES` registry, migrating the SQL schema, and re-implementing checkpoint/TTL/backoff machinery per phase. The legacy pattern demonstrably ships (23 phases; ~10 releases in two months) — the cost is per-phase re-implementation plus agent-hostile procedural state, and it compounds with every § 12.1/§ 13.1 candidate. The PRFAQ kill-test (2026-07-16, § 13.4) priced this honestly against the ~5-story null alternative and rests the migration's justification on **agent-maintainability**, not urgency.
 *   **Opaque Execution**: When `--fresh` takes 3-4 hours, operators have no visual way to monitor the DAG, identify bottlenecks, or view intermediate dataset schemas.
 *   **Rigid Read Surface**: The 28 CLIs answer 28 specific questions. Ad-hoc questions require dropping into `sqlite3 cf_atlas.db` and writing manual JOINs.
 
@@ -434,6 +434,7 @@ To resolve the § 3.2 bottlenecks, we migrate the custom orchestrator to **Kedro
 *   Provides a lightweight, developer-native semantic layer built on top of Ibis to bridge the gap between `cf_atlas.db` and AI agents.
 *   Allows us to formally define business metrics (e.g., "staleness", "adoption stage") and dimensions as first-class nodes in a semantic graph, ensuring that LLMs (via Vizro-AI or MCP) generate accurate, consistent queries.
 *   Preserves the structural knowledge of `cf_atlas.db` as a reusable semantic knowledge graph rather than relying on raw SQL prompts.
+*   **Severability ramp (PRFAQ kill-test, 2026-07-16)**: the read-surface value (BSL + Vizro, Waves D/G) is architecturally severable from the orchestration track — Ibis's SQLite backend could serve the BSL against the legacy store in extremis, so an orchestration-track stall (§ 4.4 risk posture) does not forfeit the agent-facing surface. Recorded as a **fallback, not a plan**: building the semantic layer on the legacy schema would ossify exactly the store being retired, and the write-side contracts (FR-10/FR-18) need the node model.
 
 ### 4.7 Why A2A (Agent-to-Agent) Integration?
 
@@ -443,7 +444,7 @@ To resolve the § 3.2 bottlenecks, we migrate the custom orchestrator to **Kedro
 ### 4.8 The DuckDB Singularity (Compute, Graph & Vector)
 
 *   **Unified Engine**: The legacy SQLite database and fragmented compute proposals (Polars, Neo4j, Kùzu, LanceDB) will be completely replaced by **DuckDB**.
-*   **Parquet Native**: DuckDB natively reads S3 Parquet and executes multi-core analytical queries, drastically reducing the 3-4 hour cold start time.
+*   **Parquet Native**: DuckDB natively reads S3 Parquet and executes multi-core analytical queries — the compute-side win. Honest scoping (PRFAQ kill-test): the 3–4 h cold rebuild is **network-bound**, so the wall-clock win comes from Kedro's incremental re-materialization (only affected nodes re-run), query-time analytics, and Phase-F parquet reads — not from the engine swap alone.
 *   **All-in-One**: DuckDB handles graph traversals natively via recursive CTEs and handles RAG embeddings via the Vector Similarity Search (`vss`) extension.
 *   **Data Quality Guardrails**: Inline **Pandera** schema contracts catch malformed API data (e.g., PyPI JSON missing version fields) mid-pipeline, preventing poisoned data from entering the database; **Great Expectations** (conda-forge 1.18.2, version-capped — § 5.8) serves as the boundary-validation layer.
 
@@ -948,7 +949,7 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 
 **Acceptance criteria**:
 - No SQLite read or write path remains anywhere in the migrated surface (grep-gated: no `sqlite3` import outside the retired legacy tree).
-- Cold-start time is measured materially below the legacy 3–4 h baseline (attended benchmark — a § 2.5 wave-boundary event; evidence recorded).
+- The attended F1 benchmark (§ 2.5 wave-boundary event) records both a **warm incremental refresh** (the headline claim — only affected nodes re-run) and the **cold full-build** wall-clock vs the legacy 3–4 h network-bound baseline; evidence recorded, per AC-7's honest scoping.
 - Maps to FR-5.
 
 #### Story F2 — Implement the data-validation hook and inline Pandera contracts
@@ -1048,7 +1049,7 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - **AC-4.** The 28 read CLIs (§ 3.3) are answerable from Vizro pages, plus a Vizro-AI NL field and `query_vizro_ai` MCP tool, all driven by the BSL.
 - **AC-5.** MCP + A2A surfaces let BMAD agents trigger pipelines, read datasets, and hand structured payloads to the `conda-forge-expert` agent.
 - **AC-6.** Data-quality contracts (pandera-first, FR-10) halt bad data; OpenLineage + OpenTelemetry provide lineage + end-to-end tracing; the unified policy gate (FR-18) preserves the frozen exit-code contract (full enum {0, 1, 2, 130}, verdict lattice per FR-18).
-- **AC-7.** DuckDB is the single compute/graph/vector engine; cold-start is materially faster than the 3–4 h legacy baseline.
+- **AC-7.** DuckDB is the single compute/graph/vector engine; **warm incremental refreshes are materially faster than the legacy full-rebuild pattern** (only affected nodes re-run), and the cold full-build wall-clock is honestly benchmarked against the 3–4 h network-bound baseline (F1) rather than promised.
 - **AC-8.** The intelligence surface runs in-browser via DuckDB-WASM against statically-hosted Parquet; Dagster Sensors enable near-real-time ingestion.
 - **AC-9.** Every component is conda-forge-sourced and pixi-managed (`nebi`-scaffolded); no standalone binaries / JVM.
 - **AC-10.** The three new-signal sources are live in the migrated surface: the `basilisk_vulns` dataset (conda-PURL identity axis, tri-state `fix_available`), the release-velocity column pair (90-day-gated), and the migration-readiness datasets + classification (per-migration partitioning, inferred `not-in-tracker` labeling), per FR-19 / FR-20 / FR-21 (Stories B8 / B9 / B10). Together they make the v2 ecosystem-health analysis (§ 15 evidence) reproducible from the pipeline for its Sections 2–6; Section 1's composition-by-language classifier stays deferred per § 12.
@@ -1260,6 +1261,7 @@ MCP · A2A · OpenLineage / OTel semantics.
 - `docs/specs/bmad-loop-adoption.md` — the adopted execution stack § 2.5 runs on.
 - `docs/specs/trendshift-conda-forge.md` — the conditional Phase T surface (§ 3.3).
 - `presentations/pyforge-warden/src/marp/pyforge-warden-infographic-2026-07-15.md` — the integration-surface slot/status matrix pattern §§ 13.1–13.3 adopt.
+- `_bmad-output/projects/local-recipes/planning-artifacts/prfaq-cfe-atlas-kedro-migration.md` (+ `-distillate.md`) — the premise kill-test (CONDITIONAL PASS): the null alternative fairly priced (~5 stories), the agent-maintainability justification isolated, the AC-7/§ 3.2 re-scopes and the § 4.6 severability ramp trace here; the distillate feeds `bmad-prd`.
 - `_bmad-output/projects/local-recipes/planning-artifacts/research/corpus-gap-analysis-research-2026-07-16.md` — the docs-corpus gap analysis behind the v5.1 fold (backfilled distillation of the 4-agent sweep; evidence trail for the exit-code inversion, four-axis ComplianceReport, per-phase engineering contracts, maintainer-universe gap, and the Tier-3/4 items).
 - `_bmad-output/projects/local-recipes/planning-artifacts/research/domain-cf-atlas-domain-triad-research-2026-07-16.md` — the live-sourced domain research (packaging / orchestration / supply-chain) behind the v5.2 fold: tool-bet verdicts, signal census + sustainability grades, regulatory timelines, and the evidence for the § 4.4/§ 4.5/§ 5.8 risk postures.
 - `_bmad-output/projects/local-recipes/planning-artifacts/research/technical-agentic-sdlc-kedro-migration-execution-research-2026-07-16.md` — the technical research behind the v5.3 fold: the § 2.5 graduated-autonomy execution architecture, the story-by-story drivability map (modes + gates; 32 stories), the verify-command growth plan, the worktree-seam and env-materialization risks, and the upstream bmad-loop feature requests (resume-on-timeout, retry-from-preserved-attempt, PR-lifecycle hook).
@@ -1344,6 +1346,7 @@ log:
 | 2026-07-16 | **v5.2 correction (same day)** — the research's "GX uninstallable on py3.14" verdict was PyPI-only; live-env verification shows conda-forge `great-expectations 1.18.2` (already in `pixi.toml`) installs and imports on Python 3.14.6. FR-10/§ 5.8/§ 13.2 corrected: GX is **Committed, version-capped at 1.18.2** (upstream declares `<3.14` at 1.19.0 — no ≥1.19 features until upstream supports 3.14); pandera remains the primary inline layer; the validator-agnostic hook stands. Lesson encoded: verify version constraints against the **conda-forge build in the live env**, not PyPI declarations alone. |
 | 2026-07-16 | **Technical-research fold (v5.3)** — execution architecture from the agentic-SDLC technical research (§ 13.4 reference): § 2.5 rewritten to **graduated autonomy + verify-first sequencing** (bmad-loop is sequential, `max_parallel = 1` — the old "parallel waves" framing retired); § 14 gains the Wave-0 preconditions checklist + per-wave operating loop (Q-drain → atdd → loop → sweep → boundary event → PR per wave); six verify tasks become named story deliverables (`kedro-test` A1, `kedro-catalog-check` A2, `parity-diff` B4, `dagster-dryrun` C1, `bsl-metric-check` D1, `wasm-smoke` G1); A1 gains the lean-env AC (worktree economics); A3 designated first loop story + worktree smoke (the multi-project-symlink seam); B4's credentialed parity run marked an attended boundary event; § 9 preamble carries the mode mapping. No new committed scope. |
 | 2026-07-16 | **Adversarial-review fixes + dashboard delta (v5.4)** — all 27 findings of the same-day cynical review applied: GX-correction ripples completed (§ 4.8, Story F2, § 5.8 heading); story count corrected 30→**32** (~21 loop-drivable); surviving relics purged ("BAD execution engine", npx install, n8n-BMAD, "Architecture Suite Expansion Pack"); kedro-mcp contradictions aligned to wrapped-sidecar (§ 13.4, § 14, FR-15); **FR-22 + ACs/modes for Wave H** and **AC-11** added; FR-4 gains owners (A3/B4); 0.1/C2 mappings; Phase-H ownership clarified (PyPI Intelligence produces, VCS & Health consumes); C1 gains G-after-vdb; AC-6 states the full exit enum; FR-9/D2 gain the three non-read-CLI exceptions; F1 rewritten as DuckDB-consolidation residue + attended benchmark; § 7.4 storage conda-forge-provisioned; ecosyste.ms (CC BY-SA flag) + OpenSSF Scorecard added to § 13.1; the FR-20 83.7% coincidence flagged for B9 re-verification; § 12.1/§ 15/§ 2.5 dangling pointers fixed; CLAUDE.md trendshift row corrected (v29→v30). **Dashboard delta**: dev-time = the installed bmad-dashboard/MyBMAD pair (W4); final website = a Vizro "factory status" page (new D2 AC — in-stack, WASM-compatible); community dashboards (abeldotam/bmad-viewer, lorenzogm/bmad-ui) recorded as Candidates in § 13.2. |
+| 2026-07-16 | **PRFAQ kill-test folds (v5.5) — analysis phase closed.** The premise kill-test (CONDITIONAL PASS — `planning-artifacts/prfaq-cfe-atlas-kedro-migration.md`) ran with the null alternative fairly priced (~5 stories: legacy Phases U/V/W + timeout fix); its three carried touches folded: § 3.2 reframed acute→chronic (justification = agent-maintainability); AC-7/§ 4.8/F1 re-scoped (cold rebuild is network-bound; the win is incremental re-materialization); § 4.6 gains the D/G-wave severability ramp (fallback, not plan). Analysis instruments discharged: corpus gap analysis, domain research, technical research, adversarial review (27 findings), PRFAQ kill-test; MR deferred with recorded trigger. |
 
 **Evidence** (live, multi-stage ecosystem analysis backing FR-19/FR-20/FR-21
 and the § 12 deferrals; every number measured against the live atlas + live
