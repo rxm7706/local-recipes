@@ -31,12 +31,11 @@ Ownership decisions recorded:
   ecosystem-mixed per file (unlike ``pyproject.toml``'s one-shot section),
   so the extractor never assigns ``Ecosystem`` directly (every existing
   extractor calls the router; this stays precedent-consistent).
-* A conda-ecosystem row with no PyPI identity calls
-  ``mapping.load_conda_pypi_map()`` (today an empty ``{}`` stub pending
-  Story 2.1) and, finding nothing, withholds as ``UNMAPPED_ECOSYSTEM`` —
-  never guessed, never dropped. Once 2.1 populates the map, a hit resolves
-  richer (``IdentitySource.MAP`` + the map's own confidence tier) with no
-  change to this module's call site.
+* A conda-ecosystem row consults ``mapping.load_conda_pypi_map()`` (the
+  real bundled map since Story 2.1): only a ``verified``-confidence hit
+  resolves (``IdentitySource.MAP`` + the map's own confidence tier); a
+  ``likely``/untrusted hit or an outright miss withholds as
+  ``UNMAPPED_ECOSYSTEM`` — never guessed, never dropped.
 * Scope: the flat top-level ``packages:``/``package:`` list only (every
   package the file ever resolved, across all environments/platforms) — no
   per-environment/per-platform selection. Mirrors this repo's own sibling
@@ -152,13 +151,17 @@ def _optional_str_field(
     return value
 
 
+# The one confidence tier trusted enough to set pypi_identity (Story 2.1
+# AC3). Exported (not module-private) so interfaces.py's dep001_trusted
+# gate reuses this exact value instead of a disconnected copy.
+TRUSTED_MATCH_CONFIDENCE = "verified"
+
+
 def _resolve_conda_pypi_identity(
     name: str,
 ) -> tuple[PypiIdentity, str | None] | None:
-    """Consult the (today-stub) conda→pypi map for ``name`` — ``None`` on a
-    miss (today ALWAYS, since the bundled asset is ``{}`` pending Story
-    2.1). The value shape a populated map entry carries is Story 2.1's to
-    finalize; this defensively reads the two columns epics.md's own AC text
+    """Consult the conda→pypi map (Story 2.1) for ``name`` — ``None`` on a
+    miss. This defensively reads the two columns epics.md's own AC text
     names (``pypi_name`` and ``match_confidence``) and falls back to a miss
     on anything else — never guessed, never crashes."""
     entry = load_conda_pypi_map().get(name)
@@ -174,30 +177,48 @@ def _resolve_conda_pypi_identity(
     )
 
 
+def _unmapped_conda_component(
+    name: str,
+    version: str | None,
+    provenance: tuple[Provenance, ...],
+    mapping_confidence: str | None,
+) -> Component:
+    """The shared withhold shape for both a map miss and an
+    untrusted-confidence hit (see ``_conda_component``) — only
+    ``mapping_confidence`` differs between the two callers, so both share
+    one ``Component`` construction rather than drifting independently."""
+    return Component(
+        name=name,
+        version=version,
+        ecosystem=Ecosystem.CONDA,
+        pypi_identity=None,
+        identity_source=IdentitySource.NONE,
+        mapping_confidence=mapping_confidence,
+        cve_match_level=CveMatchLevel.NONE,
+        extraction_mode=ExtractionMode.PARSED,
+        purl=derive_purl(Ecosystem.CONDA, name, version),
+        provenance=provenance,
+        hygiene_covered=True,
+        vuln_matchable=False,
+        indeterminate_reason=WithholdReason.UNMAPPED_ECOSYSTEM,
+    )
+
+
 def _conda_component(
     name: str, version: str | None, provenance: tuple[Provenance, ...]
 ) -> Component:
     """Build a conda-ecosystem ``Component``, consulting the conda→pypi map
-    (see ``_resolve_conda_pypi_identity``); a miss withholds as
-    ``UNMAPPED_ECOSYSTEM`` (never guessed)."""
+    (see ``_resolve_conda_pypi_identity``). Only a ``verified``-confidence
+    hit is trusted enough to set ``pypi_identity`` (Story 2.1 AC3) — a
+    ``likely``/untrusted hit or an outright miss both withhold as
+    ``UNMAPPED_ECOSYSTEM`` (never guessed), though a low-confidence hit's
+    raw tier is still recorded on ``mapping_confidence`` for observability."""
     mapped = _resolve_conda_pypi_identity(name)
     if mapped is None:
-        return Component(
-            name=name,
-            version=version,
-            ecosystem=Ecosystem.CONDA,
-            pypi_identity=None,
-            identity_source=IdentitySource.NONE,
-            mapping_confidence=None,
-            cve_match_level=CveMatchLevel.NONE,
-            extraction_mode=ExtractionMode.PARSED,
-            purl=derive_purl(Ecosystem.CONDA, name, version),
-            provenance=provenance,
-            hygiene_covered=True,
-            vuln_matchable=False,
-            indeterminate_reason=WithholdReason.UNMAPPED_ECOSYSTEM,
-        )
+        return _unmapped_conda_component(name, version, provenance, None)
     identity, confidence = mapped
+    if confidence != TRUSTED_MATCH_CONFIDENCE:
+        return _unmapped_conda_component(name, version, provenance, confidence)
     identity = PypiIdentity(name=identity.name, version=version)
     return Component(
         name=name,

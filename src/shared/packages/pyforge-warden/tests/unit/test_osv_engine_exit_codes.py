@@ -19,7 +19,12 @@ import pytest
 
 from pyforge.warden.engines import OsvEngine
 from pyforge.warden.inventory import PypiIdentity, ResolvedInventory
-from pyforge.warden.models import AXIS_VULNERABILITY, ErrorKind, ScannedManifest
+from pyforge.warden.models import (
+    AXIS_VULNERABILITY,
+    Ecosystem,
+    ErrorKind,
+    ScannedManifest,
+)
 from pyforge.warden.vuln import OSV_DB_CACHE_ENV_VAR
 
 TESTS_ROOT = Path(__file__).resolve().parent.parent
@@ -138,6 +143,39 @@ def test_unexpected_exit_code_is_typed_engine_execution_failed(
     assert "3" in error.message
     assert result.coverage == ()
     assert result.vuln_data is None
+
+
+def test_conda_ecosystem_candidate_with_resolved_identity_is_scanned(
+    monkeypatch, tmp_path, offline_cache, component_factory
+):
+    """Story 2.1: a CONDA-ecosystem component with a resolved pypi_identity
+    and vuln_matchable=True reaches the osv-scanner candidate set -- before
+    the fix the ecosystem==PYPI filter made it invisible (the
+    pytorch->torch false-green gap). Exit 128 ("no packages found") is
+    osv-scanner's own signal, reachable only once the engine actually tried
+    to run it -- proving the conda component was not filtered out
+    pre-flight."""
+    monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
+    monkeypatch.setattr(subprocess, "run", _fake_run_exit(128))
+    conda_component = component_factory(
+        name="numpy-conda-name",
+        version=FIXTURE_VERSION,
+        ecosystem=Ecosystem.CONDA,
+        pypi_identity=PypiIdentity(name=FIXTURE_PACKAGE, version=FIXTURE_VERSION),
+        vuln_matchable=True,  # the critical precondition this test exercises
+    )
+    inventory = ResolvedInventory(
+        components=(conda_component,), resolved_scan_set=(MANIFEST,)
+    )
+
+    result = OsvEngine().run(tmp_path, inventory)
+
+    assert result.errors == ()
+    (finding,) = result.findings
+    assert finding.id == (
+        f"indeterminate:offline-db-unavailable:numpy-conda-name@{FIXTURE_VERSION}"
+    )
+    assert finding.axis == AXIS_VULNERABILITY
 
 
 @pytest.mark.parametrize("returncode", [127, 128, 3])

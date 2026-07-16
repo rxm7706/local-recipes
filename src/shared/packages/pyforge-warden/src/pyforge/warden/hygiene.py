@@ -9,18 +9,21 @@ scans this module).
 
 Ownership decisions recorded:
 
-* ``DEFAULT_HYGIENE_POLICY`` is a MODULE DEFAULT: DEP001–005 all ``warn``.
-  DEP001 (missing/undeclared import) is DELIBERATELY ``warn`` (not
-  ``policy-violation``) in 1.3: architecture Gap-A requires DEP001 blocking
-  to be GATED on conda↔PyPI name-mapping confidence ("a mapping miss must
-  not become a false-red disable-driver"), and that confidence signal needs
-  Story 2.1's conda→pypi map, which does not exist yet. Until 2.1 can gate
-  it, DEP001 warns — deptry's DEP001 has inherent false-positives (guarded
-  optional imports) and an ungated block would produce benign false-reds.
-  Story 2.1 UPGRADES DEP001 to block-on-high-confidence. An UNKNOWN DEP code
+* ``DEFAULT_HYGIENE_POLICY`` is a MODULE DEFAULT: DEP001 is
+  ``policy-violation`` (Story 2.1), DEP002–005 stay ``warn``. Architecture
+  Gap-A required DEP001 blocking to be GATED on conda↔PyPI name-mapping
+  confidence ("a mapping miss must not become a false-red disable-driver");
+  that gate is ``dep001_trusted`` (computed once per scan in
+  ``DefaultPolicy.evaluate()`` from ``inventory.components`` and threaded
+  through ``hygiene_rung`` — see its docstring). deptry's ``module`` field is
+  an import name, not a distribution name, so it can't be reliably
+  correlated to one component without Story 2.2's synthesized front-door
+  (not yet built); the trust gate is therefore scan-wide, not per-finding —
+  false only when the inventory shows a positive ambiguous-mapping signal
+  (a ``"likely"``-confidence conda component) anywhere. An UNKNOWN DEP code
   degrades to ``indeterminate`` (never a false-green — a new deptry code we
   have not classified must not silently pass). Story 3.1 lifts this default
-  into an overridable config table; 1.3 keeps it here.
+  into an overridable config table; 1.3/2.1 keep it here.
 * **DEP005 = stdlib dependency** (verified against deptry 0.25.1, 2026-07-13:
   ``'argparse' is defined as a dependency but it is included in the Python
   standard library.``). The architecture's pinned "unused-dev" label was
@@ -61,12 +64,14 @@ from .models import (
 # The owner label every deptry-sourced error/finding carries.
 _OWNER = "deptry"
 
-# The default hygiene policy: DEP-code → Status. All warn in 1.3 (DEP001's
-# block is gated on Story 2.1's name-mapping confidence — see module docstring).
-# Keys are deptry DEP codes (NOT Status tokens), so the sole-ownership
-# rung-ordering guard does not fire on this literal.
+# The default hygiene policy: DEP-code → Status. DEP001 blocks by default
+# (Story 2.1, Gap-A); hygiene_rung downgrades it to warn on a per-scan
+# untrusted-mapping signal (dep001_trusted=False — see module docstring).
+# DEP002-005 stay warn (deptry false-positive-prone, unrelated to mapping
+# confidence). Keys are deptry DEP codes (NOT Status tokens), so the
+# sole-ownership rung-ordering guard does not fire on this literal.
 DEFAULT_HYGIENE_POLICY: dict[str, Status] = {
-    "DEP001": Status.WARN,  # 2.1 upgrades to block-on-high-confidence (Gap-A)
+    "DEP001": Status.POLICY_VIOLATION,
     "DEP002": Status.WARN,
     "DEP003": Status.WARN,
     "DEP004": Status.WARN,
@@ -109,16 +114,34 @@ def status_for_code(code: str) -> Status:
     return DEFAULT_HYGIENE_POLICY.get(code, Status.INDETERMINATE)
 
 
-def hygiene_rung(finding: Finding) -> tuple[Status, StatusDriver]:
+def hygiene_rung(
+    finding: Finding, *, dep001_trusted: bool = True
+) -> tuple[Status, StatusDriver]:
     """Derive the ``(Status, StatusDriver)`` rung for one hygiene finding.
 
     The DEP code is the id's middle segment (``hygiene:<code>:<subject>``);
     a hygiene-axis finding that is not hygiene-family (an ``indeterminate:``
     id carrying the hygiene axis) yields an unknown code → ``indeterminate``.
-    The driver carries the finding's own axis and id."""
+    The driver carries the finding's own axis and id.
+
+    ``dep001_trusted`` (Story 2.1, Gap-A) gates DEP001's block: when False
+    (the scan's inventory carries a ``"likely"``-confidence conda component
+    — an ambiguous mapping somewhere), a DEP001 finding downgrades to
+    ``warn`` regardless of the default policy, rather than risk a false-red
+    off an untrustworthy mapping. Every other code is unaffected.
+
+    The default is ``True`` (trusted): C0's standing bias is toward MORE
+    scrutiny, not less (an unknown DEP code degrades to ``indeterminate``,
+    never a silent pass), so an un-wired caller failing to the block, not
+    the warn, matches every other default in this module. The sole
+    production caller (``DefaultPolicy.evaluate()``) always computes and
+    passes the real per-scan value explicitly."""
     code = finding.id.split(":", 2)[1] if finding.id.count(":") >= 2 else ""
+    status = status_for_code(code)
+    if code == "DEP001" and not dep001_trusted:
+        status = Status.WARN
     return (
-        status_for_code(code),
+        status,
         StatusDriver(axis=finding.axis, finding_id=finding.id),
     )
 
