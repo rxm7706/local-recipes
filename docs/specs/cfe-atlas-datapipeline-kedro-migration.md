@@ -18,6 +18,11 @@ spec_updated: 2026-07-16
 > ```
 > run bmad — implement the intent in docs/specs/cfe-atlas-datapipeline-kedro-migration.md
 > ```
+>
+> This is the **v5 reset** of the spec — a clean re-authoring (2026-07-16)
+> that states every standing decision once, in place. The v1–v4.1 layered
+> evolution lives in this file's git history; § 15 carries the compact
+> decision log and evidence pointers.
 
 ---
 
@@ -25,144 +30,20 @@ spec_updated: 2026-07-16
 
 | Field | Value |
 |---|---|
-| Status | **v4.1 — re-grounded 2026-07-16 against live surface (main `58a6dcc`, skill v8.78.0); § 15 live-analytics candidates gated and promoted (FR-19/FR-20 → Stories B8/B9), plus FR-21 migration-readiness source (→ Story B10) from the same-day gap audit; ready for full BMAD execution intake.** 6 open questions (§ 11: Q1–Q4 + Q6–Q7; Q5 resolved → Wave H), none v1-blocking. |
+| Status | **v5 (reset) — clean re-authoring 2026-07-16, grounded on live surface main `58a6dcc` / skill v8.78.0; ready for full BMAD execution intake.** 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
 | Owner | rxm7706 |
 | Track | BMAD Full Flow (includes separate PRD/architecture phases) |
-| Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~10,000 LOC, 23 cataloged phases — 22 registered + Phase I) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. |
+| Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~10,000 LOC, 23 cataloged phases) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. Includes three committed new-signal sources (FR-19 Basilisk vulnerabilities, FR-20 release velocity, FR-21 migration readiness). |
 | Target | The `cf_atlas` intelligence layer under `.claude/skills/conda-forge-expert/` (data pipeline + read CLIs + MCP tools). |
 | Tooling | Pixi-first; every component sourced from conda-forge and scaffolded via `nebi`. |
-| Lifetime | Forward-looking migration. Legacy orchestrator runs in parallel until dataset parity is proven (Wave B), then is retired. |
-| Predecessor | The existing 23-cataloged-phase `cf_atlas` pipeline (conda-side B → N incl. sub-phases + O–S PyPI intelligence; exact list in § 3.3) and its 28 read CLIs (17 atlas read CLIs + the 4 seed-gap suggesters + the 7-CLI cyclonedx suite). |
+| Lifetime | Forward-looking migration. Legacy orchestrator runs in parallel until dataset parity is proven (Story B4), then is retired. |
+| Predecessor | The existing 23-cataloged-phase `cf_atlas` pipeline (22 registered + Phase I; exact registry in § 3.3) and its 28 read CLIs. |
 
-> **Cross-spec sync (2026-07-05):** the CLI / MCP / phase / schema counts in this spec
-> are FROZEN at authoring time and already drift (live: 17+ CLIs, 30+ MCP tools). At
-> BMAD intake, **re-enumerate the migration surface from live groundtruth**
-> (`bmad-groundtruth`, SKILL.md § Atlas Intelligence Layer) — per the standing rule
-> that `docs/specs/` stays mutually in sync. In particular,
-> `cyclonedx-universe-inventory.md` (ready) adds up to **+5 read CLIs**
-> (`export-purls`, `mapping-gap`, `universe-sbom`, `inventory-match`,
-> `recommend-2027`), **+4 MCP tools**, **+1 view** `v_pypi_intelligence_valid`
-> (schema **v28→v29**; its consumers must read the view — a constraint this migration
-> must preserve), a `library-futures` scoring module, and an external
-> **endoflife.date** EOL/LTS cache — all migration surface if it ships first.
-> `trendshift-conda-forge.md` Phase T now claims **v29→v30**.
->
-> **Wave A SHIPPED (2026-07-05, web slice — the pinned S2 implementation-time
-> sync):** `export-purls` + `mapping-gap` + the v29 view are now live code.
-> Two facts this migration must preserve: (1) the **`mapping-gap` writeback**
-> — `packages.pypi_name` rows written with `match_source='g10_spelling'` and
-> `match_confidence` `verified`/`likely` (the pinned no-clobber UPDATE never
-> touches `parselmouth`/`recipe_source_url` provenance) — any Kedro/Dagster
-> re-implementation of the mapping layer must keep `g10_spelling` as a valid
-> provenance tier; (2) the **purl conventions** — the `cfe:*` property
-> namespace and the `?channel=conda-forge` qualifier on conda purls (G98) —
-> **FR-13's CycloneDX normalizer must preserve both** (never strip the
-> channel qualifier or the `cfe:` prefix during normalization).
-> Trendshift's base-version conditional (its Story A1: base = v29 once
-> cyclonedx Wave A ships, else v28) is re-confirmed and now resolves to
-> **base = v29**.
->
-> **Waves B–D SHIPPED (2026-07-05/06 — the S9 closing sync):** the "up to
-> +5 read CLIs / +4 MCP tools" above is now **live surface**, plus two
-> Wave C/D additions the enumeration missed: `add-handoff` (S6 — writes
-> `pypi_intelligence` through the SAME `phase_r_upsert_one` /
-> `apply_readiness_scores(names=…)` helpers Phase R/S bulk use; the
-> migration must keep that single-write-path property) and
-> `library-futures` (S7 — CLI/pixi-only by design, no MCP tool). Further
-> migration-surface facts to preserve: the **derived-artifact regeneration
-> cadence** (`export-purls` + `universe-sbom` re-run after every atlas
-> rebuild; decision 6's 14-day freshness gate is the enforcement — any
-> orchestrated pipeline should model them as downstream nodes of the
-> rebuild); the **`v_current_version_vulns` view** as the ONLY
-> query-time-correct vuln source (S7's load-bearing subscore reads it;
-> the stale `packages.vuln_*` rollup is report-only); and the
-> **endoflife.date cache** (`eol_cache.json`, TTL 7 d, offline-stale-OK,
-> `ENDOFLIFE_BASE_URL` mirror routing) + the git-tracked
-> `data/lts-registry.yaml` slug map as external-data nodes.
->
-> **EFFORT CLOSED / spec re-grounded (2026-07-06):** cyclonedx-universe-inventory
-> shipped end-to-end (S-retro v8.73.0 `cd42d34`; post-merge Gemini sweep v8.73.1
-> merged via PR #39 → main `0d6b2ff`). The FROZEN-counts caveat at the top of
-> this chain is **discharged**: the body of this spec is now re-derived from
-> live groundtruth at that commit — **§ 3.3 is the single authoritative
-> live-surface snapshot** that all stories and FRs reference; re-verify with
-> `bmad-groundtruth` at BMAD intake rather than trusting any inline literal.
-> Final migration-surface facts from the closing waves: `recommend-2027` stamps
-> five `cfe:*` BOM properties (`futures_tier`, `futures_score`,
-> `py314_readiness`, `lts_status`, `eol_date`) + `cfe:atlas_built_at` — the
-> FR-13 normalizer must preserve them like the rest of the `cfe:` namespace;
-> operator tier overrides travel via a `cfe:futures_tier=<tier>` marker in
-> `pypi_intelligence.notes` plus a `--overrides` sidecar file — any migrated
-> store must keep that notes-marker channel readable; the S8 **calibration
-> gate** is fixture-test-enforced (a weights change that reorders the pinned
-> ranking fails CI) and must survive as a pipeline test; and `library-futures`
-> scoring is **in-memory / inventory-scoped by design** — there is no futures
-> DB column, so do not "migrate" a table for it.
->
-> **Spec refresh v3 (2026-07-10):** re-grounded against main `de5462d` / skill
-> v8.76.0.
-> 1. *Literal sweep*: 22 → **23 cataloged phases** (Phase I — per-version
->    download history, a side-effect of Phase F's anaconda-api path — is now
->    cataloged in `atlas-phases-overview.md` but remains unregistered in
->    `PHASES`); 24 → **28 read CLIs** (+4 seed-gap suggesters
->    `lts-registry-gap` / `cwe-seed-gap` / `spdx-schema-gap` /
->    `license-map-gap`, shipped v8.74.0–v8.76.0, CLI/pixi-only); 56→61
->    canonical scripts, 53→57 wrappers, 88→92 pixi tasks, 81→85 unit tests,
->    18→19 `resolve_*_urls`; 11→9 pixi environments (correction — 9 was
->    always live); LOC ~10,000.
-> 2. *Operational ground truth*: the new `guides/atlas-operations.md` defines
->    the process § 5.4 / FR-6 must reproduce — the three bootstrap profiles
->    (maintainer / admin / consumer), the per-source cron cadence table, the
->    recovery playbook, env-override precedence (`os.environ.setdefault`),
->    and the ~3 GB storage budget. The `cf_atlas_core` 1800 s hard-timeout
->    defect (a cold admin run silently drops Phase F/K/N) is recorded as
->    FR-6's motivating failure.
-> 3. *New code facts to preserve*: Phase B.5's `_pick_feedstock`
->    dedicated-feedstock attribution for split-out outputs; the
->    `detail-cf-atlas --vdb-all` KEV overlay (`_load_kev_cves` reads the
->    atlas `cisa_kev` table because vdb 6.6.2's own KEV flags are always
->    False) + `_coerce_cvss_score` ScoreType unwrap.
-> 4. *Cross-spec intake*: `pyforge-warden.md` (ready) contributes the
->    dependency-hygiene scan node (FR-16) and the unified CI policy gate
->    (FR-18, converged with `inventory-match --policy`), plus its planned
->    promoted MCP/CLI surface; `cyclonedx-universe-inventory.md` (shipped)
->    residuals land as FR-17 (transitive resolver, widened tiered intake,
->    the universe BOM as a first-class catalog dataset, inventory-match
->    bucket semantics). § 5.2 grows to **seven** named pipelines
->    (+ Seed-Gaps, + Read-Surface / Derived Artifacts); stories **B6 / B7 /
->    F4** added. The dep-hygiene toolchain recipes (`deptry`, `fawltydeps`,
->    `pip-check-reqs`, the `osv-scanner` mirror) are now on main.
->
-> **Spec refresh v4 (2026-07-16):** re-grounded against main `58a6dcc` / skill
-> v8.78.0. *Literal drift since v3* (everything else in § 3.3 re-verified
-> unchanged): pixi tasks 92 → **93** (+`llms-full-check`), pixi environments
-> 9 → **11** (+ the standalone `pyforge-warden` and `bmad-ui` envs, both
-> no-default-feature), atlas LOC 8,860 → **8,902**. *Gating pass*: the § 15
-> live-analytics recommendations (added 2026-07-16 at `58a6dcc`) are
-> **promoted** — FR-19 (Basilisk conda-native vulnerability source) and
-> FR-20 (release-to-availability velocity + rebuild-cadence guard) are now
-> committed FRs with Wave B stories **B8 / B9**, a new landing-decision
-> question **Q7**, and an amended § 12 out-of-scope row (the
-> `api.basilisk.prefix.dev` exception). The multi-format manifest-parsing
-> observation is RESOLVED — already covered by
-> `dependency-input-formats.md` (S5a, v8.71.0) except non-breaking-space-
-> padded paste variants, folded into Story B7's ACs as a fixture case. The
-> ecosystem-composition observation is deferred (not migration surface);
-> § 15 is reduced to the disposition ledger recording all four outcomes.
->
-> **v4.1 (2026-07-16, same day):** a reproducibility audit of the full v2
-> analytics report against this spec found one uncovered section — Python
-> 3.14 migration readiness, which the report built from a live
-> `conda-forge-bot-data` pull no atlas phase ingests. Promoted as **FR-21**
-> (migration-readiness external datasets + classification node, VCS &
-> Health pipeline) with Wave B story **B10** and a second § 12
-> external-source exception. Fetched via the existing
-> `resolve_github_raw_urls` helper — no new endpoint helper; mirror
-> routing inherited. § 15 ledger gains the audit row. Same-day source
-> evaluation: the prefix.dev GraphQL API is recorded as evaluated-not-
-> promoted (§ 12 row — no vuln types, metadata duplicates repodata;
-> future hook: `variants.yankedReason` for Phase B.6's deferred full
-> yanked detection, noted on Story B1).
+**Groundtruth rule**: the counts and literals in this spec are a snapshot of
+§ 3.3's grounding commit. At BMAD intake, **re-enumerate the migration
+surface from live groundtruth** (`pixi run -e local-recipes bmad-groundtruth`,
+SKILL.md § Atlas Intelligence Layer) rather than trusting any inline literal —
+per the standing rule that `docs/specs/` stays mutually in sync.
 
 ---
 
@@ -217,7 +98,7 @@ To achieve true parallel execution across our 9 implementation waves, we execute
 
 ---
 
-## 3. Deep Analysis: Current cf_atlas Pipeline
+## 3. Current State: the cf_atlas Pipeline
 
 The `cf_atlas` data pipeline currently operates as a bespoke, hand-rolled orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`) spanning ~10,000 lines of code (8,902 + 1,094 at skill v8.78.0).
 
@@ -262,8 +143,11 @@ this section instead of inline literals; re-verify with
     **dedicated feedstock** for split-out outputs via `_pick_feedstock`
     (umbrella vs dedicated — e.g. `dbt-bigquery` → the `dbt-bigquery`
     feedstock, not `dbt`) — attribution semantics every maintainer-scoped
-    CLI depends on; the node port must preserve them (Story B1).
-*   **Script surface**: 61 canonical scripts + 5 `_helpers` under
+    CLI depends on; the node port must preserve them (Story B1). Phase B.6
+    yanked detection is deliberately **lite** (presence-in-current-repodata
+    → `latest_status`); its full per-version variant is a recorded future
+    hook, not current behavior (see the Story B1 note and § 12).
+*   **Script surface**: 61 canonical scripts + 5 `_`-prefixed helpers under
     `.claude/skills/conda-forge-expert/scripts/`; 57 thin wrappers under
     `.claude/scripts/conda-forge-expert/`; 93 local-recipes + 7 vuln-db pixi
     tasks. The three-place rule (canonical script + wrapper + pixi task +
@@ -271,10 +155,10 @@ this section instead of inline literals; re-verify with
 *   **Read CLIs (28)**: 17 atlas read CLIs (`detail-cf-atlas`,
     `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`,
     `cve-watcher`, …) + the 4 seed-gap suggesters (`lts-registry-gap`,
-    `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — read-only,
-    v8.74.0–v8.76.0; § 3.4) + the 7-CLI cyclonedx suite (`export-purls`,
-    `mapping-gap`, `universe-sbom`, `inventory-match`, `add-handoff`,
-    `library-futures`, `recommend-2027`).
+    `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — read-only;
+    § 3.4) + the 7-CLI cyclonedx suite (`export-purls`, `mapping-gap`,
+    `universe-sbom`, `inventory-match`, `add-handoff`, `library-futures`,
+    `recommend-2027`).
 *   **MCP**: 46 `@mcp.tool()` functions in `.claude/tools/conda_forge_server.py`
     (23 atlas-relevant). `library-futures`, `add-handoff`, and the 4 seed-gap
     suggesters are deliberately CLI/pixi-only — do not add MCP tools for them
@@ -283,7 +167,11 @@ this section instead of inline literals; re-verify with
     overridable via `<HOST>_BASE_URL` for enterprise/JFrog mirror routing,
     plus `S3_PARQUET_BASE_URL` (Phase F parquet backend) and
     `ENDOFLIFE_BASE_URL` (EOL/LTS cache). These become external/API dataset
-    nodes in the Kedro catalog (FR-1).
+    nodes in the Kedro catalog (FR-1). FR-19 adds a 20th helper
+    (`resolve_basilisk_urls` + `BASILISK_BASE_URL`); FR-21 rides the
+    existing `resolve_github_raw_urls` — no new helper. `repo.prefix.dev`
+    is already the first public mirror in the repodata fallback chain
+    (JFrog → prefix.dev → conda.anaconda.org).
 *   **Data files** — runtime (gitignored, `.claude/data/conda-forge-expert/`):
     `cf_atlas.db`, `purl-export/`, `universe-sbom/`, `eol_cache.json`
     (TTL 7 d, offline-stale-OK), `pypi_conda_map.json`, `vdb/`, `cve/`.
@@ -293,11 +181,19 @@ this section instead of inline literals; re-verify with
     `conda_forge_atlas.py` (including the shared `phase_r_upsert_one` /
     `apply_readiness_scores` helpers that `add-handoff` reuses — the
     single-write-path property to preserve), `atlas_phase.py` TTL reset,
-    the `mapping_gap.py` `g10_spelling` no-clobber writeback, and the three
-    standalone vulnerability-scoring fetchers — `cisa_kev_fetcher.py`
-    (`cisa_kev`), `epss_fetcher.py` (`epss_scores`), and
-    `cwe_catalog_fetcher.py` (`cwe_categories`) — whose tables Phase G / G'
-    overlay at build time.
+    the `mapping_gap.py` `g10_spelling` no-clobber writeback (see the
+    mapping contract below), and the three standalone vulnerability-scoring
+    fetchers — `cisa_kev_fetcher.py` (`cisa_kev`), `epss_fetcher.py`
+    (`epss_scores`), and `cwe_catalog_fetcher.py` (`cwe_categories`) —
+    whose tables Phase G / G' overlay at build time.
+*   **Mapping / purl contracts**: `packages.pypi_name` rows written by
+    `mapping-gap` carry `match_source='g10_spelling'` with
+    `match_confidence` `verified`/`likely`, and the no-clobber UPDATE never
+    touches `parselmouth`/`recipe_source_url` provenance — any
+    re-implementation of the mapping layer must keep `g10_spelling` as a
+    valid provenance tier and preserve the no-clobber rule. Exported purls
+    use the `cfe:*` property namespace and the `?channel=conda-forge`
+    qualifier on conda purls (G98) — FR-13's normalizer preserves both.
 *   **Vulnerability read-path contract**: `detail-cf-atlas --vdb-all` overlays
     the atlas `cisa_kev` table onto vdb results via `_load_kev_cves` (vdb
     6.6.2's own KEV flags are always False — aqua ignores `kevc/`), reporting
@@ -305,6 +201,18 @@ this section instead of inline literals; re-verify with
     CVSS base scores pass through `_coerce_cvss_score` (unwraps the pydantic
     `ScoreType` that vdb 6.6.2's partial `model_dump` leaves behind). Any
     migrated vuln read surface must keep both behaviors (Story B2).
+*   **Scoring / report contracts**: `recommend-2027` stamps six `cfe:*` BOM
+    properties (`futures_tier`, `futures_score`, `py314_readiness`,
+    `lts_status`, `eol_date`, `atlas_built_at`) — the FR-13 normalizer
+    preserves them like the rest of the `cfe:` namespace. Operator tier
+    overrides travel via a `cfe:futures_tier=<tier>` marker in
+    `pypi_intelligence.notes` plus a `--overrides` sidecar file — any
+    migrated store must keep that notes-marker channel readable. The
+    `library-futures` calibration gate is fixture-test-enforced (a weights
+    change that reorders the pinned ranking fails CI) and must survive as a
+    pipeline test. `library-futures` scoring is **in-memory /
+    inventory-scoped by design** — there is no futures DB column; do not
+    "migrate" a table for it.
 *   **Freshness machinery**: `check_freshness` (`universe_sbom.py`,
     `STALE_AFTER_DAYS = 14`) consumed by 5 scripts; `*_fetched_at` columns +
     meta keys drive per-phase TTL gating; derived artifacts (`export-purls`,
@@ -312,9 +220,10 @@ this section instead of inline literals; re-verify with
     downstream nodes of the rebuild.
 *   **Environments / tests**: 11 pixi environments (local-recipes / vuln-db /
     gcloud split, plus the standalone no-default-feature `pyforge-warden`
-    and `bmad-ui` envs); test suite of 85 unit + 4 integration + 8 meta files. The
-    meta tests pin the three-place rule and docs integrity — the migration
-    keeps them green or explicitly retires them with the legacy path.
+    and `bmad-ui` envs); test suite of 85 unit + 4 integration + 8 meta
+    files. The meta tests pin the three-place rule and docs integrity — the
+    migration keeps them green or explicitly retires them with the legacy
+    path.
 *   **Operational profiles** (`guides/atlas-operations.md` — the operational
     process the migration must reproduce): `bootstrap-data` ships three
     profiles — `--profile maintainer` (daily default; Phase E + N auto-scoped
@@ -338,7 +247,7 @@ this section instead of inline literals; re-verify with
 ### 3.4 Out-of-pipeline data surfaces (the migration boundary)
 
 Inventory of every data surface the `conda-forge-expert` skill uses that the
-atlas pipeline does NOT build (verified against live code 2026-07-10). Three
+atlas pipeline does NOT build (verified against live code 2026-07-16). Three
 enter this migration's scope as **external-refresh assets** (§ 5.2, Story B5);
 the rest stay outside, each with the reason noted. This section fixes the
 scope boundary — anything not listed in § 3.3 or here is out of the
@@ -379,13 +288,13 @@ build; the migrated pipeline must not regress below that coverage.
 
 **Seed-freshness report nodes (read-only fan-out from the curated inputs).**
 The curated seeds above stay hand-owned (the pipeline reads, never writes
-them), but each now has a **read-only gap-suggester** that diffs the seed
+them), but each has a **read-only gap-suggester** that diffs the seed
 against live ground truth and *proposes* additions for git review — the
 maintenance loop that keeps a hand-curated input from silently drifting. The
 migrated pipeline models the four suggesters below as terminal **report
 nodes** fanned out from their external seed datasets — report-only, they never
 mutate the atlas — **with the sole exception of `mapping-gap`, which writes
-back** (the pre-existing `g10_spelling` provenance UPDATE, Wave A) and is
+back** (the `g10_spelling` provenance UPDATE, § 3.3 mapping contract) and is
 listed for completeness:
 
 | Suggester | Curated input | Ground-truth it diffs against | Node reads | Node behavior |
@@ -394,23 +303,23 @@ listed for completeness:
 | `cwe-seed-gap` | `cwe_categories_seed.json` | the MITRE `cwe_categories` catalog | `cwe_categories` (rows bucketed `Other`) | Report-only (derived-layer) |
 | `spdx-schema-gap` | `spdx.schema.json` (vendored enum) | the upstream SPDX license list | `v_actionable_packages.conda_license` | Report-only (derived-layer) |
 | `license-map-gap` | in-code `_LICENSE_TO_SPDX` | the vendored SPDX enum | `v_pypi_intelligence_valid.license_raw` (NULL `license_spdx`) | Report-only (derived-layer) |
-| `mapping-gap` | the PyPI↔conda mapping | `pypi_universe` + corroborators | `packages` | **Write-back** (`g10_spelling`, Wave A) — not a report node |
+| `mapping-gap` | the PyPI↔conda mapping | `pypi_universe` + corroborators | `packages` | **Write-back** (`g10_spelling`) — not a report node |
 
 **Except for `mapping-gap` (which writes back to the core atlas)**, these are
 downstream of the atlas rebuild (they read its views), produce `derived`-layer
 report artifacts only, and — like the `export-purls` / `universe-sbom`
-regeneration cadence — should re-run after every rebuild so the freshness
-reports track the live universe. The four report-only suggesters are the
-dedicated **Seed-Gaps Pipeline** (§ 5.2 item 6, ported by Story B6); the
-kedro-viz prototype (`prototypes/cf-atlas-kedro-viz`) mirrors it as its
-`seed_gaps` pipeline. `mapping-gap` stays in the mapping / Phase-C layer (its
-writeback belongs with the mapping stage, not the report fan-out).
+regeneration cadence — re-run after every rebuild so the freshness reports
+track the live universe. The four report-only suggesters are the dedicated
+**Seed-Gaps Pipeline** (§ 5.2 item 6, ported by Story B6); the kedro-viz
+prototype (`prototypes/cf-atlas-kedro-viz`) mirrors it as its `seed_gaps`
+pipeline. `mapping-gap` stays in the mapping / Phase-C layer (its writeback
+belongs with the mapping stage, not the report fan-out).
 
 ---
 
-## 4. Review & Optimization Strategy
+## 4. Target Architecture: Why These Choices
 
-To resolve these bottlenecks, we propose migrating the custom orchestrator to **Kedro**, an open-source framework for building reproducible, maintainable, and modular data science code.
+To resolve the § 3.2 bottlenecks, we migrate the custom orchestrator to **Kedro**, an open-source framework for building reproducible, maintainable, and modular data science code.
 
 ### 4.1 Why Kedro?
 
@@ -495,13 +404,13 @@ The bespoke `_http.py` and SQLite `init_schema()` logic will be mapped to Kedro 
 
 ### 5.2 Modular Pipelines
 
-The legacy phases will be refactored into seven domain-specific pipelines:
+The legacy phases refactor into seven domain-specific pipelines:
 
 1.  **Core Pipeline**: Foundational conda-forge enumeration and graph building.
-2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4) — and the `mapping-gap` `g10_spelling` writeback (§ 3.4: the one gap tool that mutates the atlas belongs with the mapping stage).
-3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay. Includes the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5). Read nodes honor the § 3.3 vulnerability read-path contract (atlas `cisa_kev` KEV overlay + CVSS ScoreType coercion). Grows the **Basilisk ingestion node family** (FR-19, Story B8): a batch-query node (`POST /v1/querybatch`, ≤1,000 queries/request) writing the `basilisk_vulns` dataset keyed by conda PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP 63) plus a bounded detail-fetch node (`GET /v1/vulns/{id}`) — a second, conda-native vulnerability identity axis complementary to the PyPI-keyed vdb.
-4.  **VCS & Health Pipeline**: GitHub/GitLab live queries and upstream version tracking. Gains the **release-to-availability velocity columns** (FR-20, Story B9) on the Phase H join — `release_lag_hours` + `release_lag_qualifies`, computed only where the upstream release is ≤90 days old (the rebuild-cadence-artifact guard) — and the **migration-readiness nodes** (FR-21, Story B10): external datasets over `conda-forge/conda-forge-bot-data` `status/` (category lists + per-migration `migration_json/<name>.json`, partitioned by active migration) plus a classification node joining them against the feedstock set and Phase B's `conda_noarch`.
-5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from the tiered intake of § 4.10, strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets. Grows four node families beyond parsing (FR-16/17/18): a **transitive-resolver node** (pip `--dry-run --report` for PyPI / py-rattler solve for conda; records depth + fan-out) that upgrades bare manifests to full dependency sets — resolution honors the `_http.py` mirror-routing contract (§ 3.3 external endpoints: `PYPI_BASE_URL`-style overrides for enterprise/JFrog mirrors) and degrades gracefully when offline (consumer profile: resolve from a provided lockfile or cached index, else skip resolution and mark the BOM `unresolved` rather than fail); the **inventory-match matching node** preserving the shipped six-bucket semantics (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN, three-way version comparison, channeldata-live recovery); a forward-looking **dependency-hygiene scan node** (deptry — unused / missing / misplaced deps; FR-16, Story F4); and the **unified CI policy gate** (FR-18) as the pipeline's terminal quality node.
+2.  **PyPI Intelligence Pipeline**: PyPI mapping, skew detection, and scoring. Also hosts the `pypi_conda_map.json` refresh (`update-mapping-cache`) as an external-refresh asset — pending Q6's consolidation decision (§ 11; the asset itself is inventoried in § 3.4) — and the `mapping-gap` `g10_spelling` writeback (§ 3.3 mapping contract: the one gap tool that mutates the atlas belongs with the mapping stage).
+3.  **Vulnerability Pipeline**: AppThreat VDB and CISA KEV ingestion and overlay; the external-refresh assets for the AppThreat vdb (`vdb-refresh`, vuln-db env) and the offline OSV store (`update-cve-db`) per § 3.4 — today orchestrated by `bootstrap_data.py`, tomorrow Dagster-scheduled (Story B5); and the **Basilisk ingestion node family** (FR-19, Story B8) — a batch-query node (`POST /v1/querybatch`, ≤1,000 queries/request) writing the `basilisk_vulns` dataset keyed by conda PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP 63) plus a bounded detail-fetch node (`GET /v1/vulns/{id}`), a second, conda-native vulnerability identity axis complementary to the PyPI-keyed vdb. Read nodes honor the § 3.3 vulnerability read-path contract (atlas `cisa_kev` KEV overlay + CVSS ScoreType coercion).
+4.  **VCS & Health Pipeline**: GitHub/GitLab live queries and upstream version tracking; the **release-to-availability velocity columns** (FR-20, Story B9) on the Phase H join — `release_lag_hours` + `release_lag_qualifies`, computed only where the upstream release is ≤90 days old (the rebuild-cadence-artifact guard); and the **migration-readiness nodes** (FR-21, Story B10) — external datasets over `conda-forge/conda-forge-bot-data` `status/` (category lists + per-migration `migration_json/<name>.json`, partitioned by active migration) plus a classification node joining them against the feedstock set and Phase B's `conda_noarch`.
+5.  **Universal SBOM Pipeline**: A dedicated pipeline utilizing native parsers and tools (e.g., `cdxgen`) to extract dependencies from the tiered intake of § 4.10, strictly normalized into the **CycloneDX** specification before being written to DuckDB Parquet datasets. Four node families beyond parsing (FR-16/17/18): a **transitive-resolver node** (pip `--dry-run --report` for PyPI / py-rattler solve for conda; records depth + fan-out) that upgrades bare manifests to full dependency sets — resolution honors the `_http.py` mirror-routing contract (§ 3.3 external endpoints) and degrades gracefully when offline (consumer profile: resolve from a provided lockfile or cached index, else skip resolution and mark the BOM `unresolved` rather than fail); the **inventory-match matching node** preserving the shipped six-bucket semantics (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN, three-way version comparison, channeldata-live recovery); a forward-looking **dependency-hygiene scan node** (deptry — unused / missing / misplaced deps; FR-16, Story F4); and the **unified CI policy gate** (FR-18) as the pipeline's terminal quality node.
 6.  **Seed-Gaps Pipeline**: The four report-only gap suggesters (`lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — § 3.4) as terminal report nodes fanned out from their external seed datasets, downstream of the atlas rebuild, producing `derived`-layer freshness reports only. Strictly read-only; `mapping-gap` is deliberately excluded (its writeback lives in pipeline 2). Ported by Story B6.
 7.  **Read-Surface / Derived-Artifacts Pipeline**: The post-rebuild regeneration nodes — `export-purls` (six purl/mapping artifacts) and `universe-sbom` (the ~856k-component full-universe CycloneDX BOM, a first-class `derived`-layer catalog dataset) — bound to every rebuild per the § 3.3 freshness machinery; the 14-day `check_freshness` gate (`STALE_AFTER_DAYS = 14`) becomes the dataset-level freshness contract the four derived-artifact consumers (`universe-sbom`, `inventory-match`, `library-futures`, `recommend-2027`) enforce.
 
@@ -563,7 +472,7 @@ The read-surface migration will decouple the data layer from the intelligence la
 
 ## 7. The AI Software Factory Architecture
 
-To seamlessly merge our `cf_atlas` data layer with the enterprise's overarching autonomous goals, the system maps perfectly onto the **4-Layer AI Software Factory Blueprint**.
+To seamlessly merge our `cf_atlas` data layer with the enterprise's overarching autonomous goals, the system maps onto the **4-Layer AI Software Factory Blueprint**. This layer is **in scope** and delivered as Wave H.
 
 ### 7.1 Layer 1 — LA SUITE DOCS (Presentation - The Human UI)
 
@@ -642,7 +551,7 @@ Kedro nodes, Dagster runs, and DuckDB queries are instrumented with OpenLineage 
 
 ### FR-13. Universal SBOM ingestion normalized to CycloneDX
 
-A dedicated SBOM pipeline parses the tiered intake of § 4.10 (core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, `meta.yaml`), normalizing to CycloneDX before writing to DuckDB. The normalizer preserves the `cfe:*` property namespace and the `?channel=conda-forge` purl qualifier (sync chain, Wave A block). FR-17 extends the intake and adds transitive resolution. (§ 4.10, § 5.2.)
+A dedicated SBOM pipeline parses the tiered intake of § 4.10 (core tier: `pixi.toml`, `pixi.lock`, `pyproject.toml`, `recipe.yaml`, `meta.yaml`), normalizing to CycloneDX before writing to DuckDB. The normalizer preserves the `cfe:*` property namespace — including the `recommend-2027` property set (§ 3.3 scoring contracts) — and the `?channel=conda-forge` purl qualifier; it never strips either during normalization. FR-17 extends the intake and adds transitive resolution. (§ 4.10, § 5.2.)
 
 ### FR-14. WASM portability for the intelligence surface
 
@@ -654,7 +563,7 @@ Every component (Kedro, Dagster, DuckDB, Ibis, …) is sourced from conda-forge 
 
 ### FR-16. Dependency-hygiene scan node (deptry) in the Universal SBOM pipeline
 
-A hygiene node runs `deptry` over the § 4.10 tiered intake **when project source code accompanies the manifest** — deptry's analysis is AST/import-based, so for source-less inputs (bare manifests, lockfiles, SBOM passthrough) the node skips gracefully and the report records the reduced scope instead of failing. Findings (unused / missing / transitive-only / misplaced dependencies) populate the `hygiene` section of `pyforge-warden.md`'s `ComplianceReport` schema; the *complete* report — `hygiene` from this node plus a `security` section sourced from `inventory-match`/`cve` (the atlas does **not** re-invoke `osv-scanner`; standalone `pyforge.warden` v1 does) — is assembled and schema-validated at the FR-18 terminal gate (`derived` layer). Because the shared artifact is pyforge-warden's `ComplianceReport`, the planned promotion of `pyforge.warden` into the atlas surface (MCP tool + pixi CLI, consolidation with `scan-project` — the follow-on named in that spec) is a wiring change, not a redesign. The toolchain is conda-native (`recipes/deptry`, `recipes/osv-scanner` mirror now on main; `fawltydeps` / `pip-check-reqs` as candidate future engines). (§ 4.10, § 5.2 item 5, Story F4.)
+A hygiene node runs `deptry` over the § 4.10 tiered intake **when project source code accompanies the manifest** — deptry's analysis is AST/import-based, so for source-less inputs (bare manifests, lockfiles, SBOM passthrough) the node skips gracefully and the report records the reduced scope instead of failing. Findings (unused / missing / transitive-only / misplaced dependencies) populate the `hygiene` section of `pyforge-warden.md`'s `ComplianceReport` schema; the *complete* report — `hygiene` from this node plus a `security` section sourced from `inventory-match`/`cve` (the atlas does **not** re-invoke `osv-scanner`; standalone `pyforge.warden` v1 does) — is assembled and schema-validated at the FR-18 terminal gate (`derived` layer). Because the shared artifact is pyforge-warden's `ComplianceReport`, the planned promotion of `pyforge.warden` into the atlas surface (MCP tool + pixi CLI, consolidation with `scan-project`) is a wiring change, not a redesign. The toolchain is conda-native (`recipes/deptry`, `recipes/osv-scanner` mirror on main; `fawltydeps` / `pip-check-reqs` as candidate future engines). (§ 4.10, § 5.2 item 5, Story F4.)
 
 ### FR-17. Transitive resolution + the universe BOM extend the SBOM intake
 
@@ -676,29 +585,29 @@ Constraints hardened by the live analysis, all binding on the implementation:
 *   **Version currency ≠ security currency** — 113 of the 348 confirmed-match packages are classified `current` by `behind-upstream`'s lag logic; no read surface may render a `current` verdict as "unaffected."
 *   **`fix_available` is tri-state** (`true` / `false` / `unknown`) — ~48% of advisories carry no structured fix-version data (enumerated `versions` list only, a data-completeness gap in the upstream OSV records); `unknown` must never collapse to `false`. The derived signal is cheap and high-value: name-matched, `packaging.version`-compared cross-referencing of `affected[].ranges[].events[].fixed` against the current installed version live-resolved **85.3% of 5,101 (package, advisory) matches as upgrade-resolvable** — mostly a packaging-currency problem, not an open security-research one. Join at query time against `behind_upstream`'s upstream-version data (same join key Phase H already requires).
 
-The endpoint gets a `resolve_basilisk_urls` helper + `BASILISK_BASE_URL` override per the § 3.3 mirror-routing convention (19 → 20 `resolve_*_urls`). Landing point (Kedro-only vs interim legacy Phase U) is Q7 (§ 11). (§ 5.2 item 3, Story B8; promoted from § 15, 2026-07-16.)
+The endpoint gets a `resolve_basilisk_urls` helper + `BASILISK_BASE_URL` override per the § 3.3 mirror-routing convention (19 → 20 `resolve_*_urls`). Landing point (Kedro-only vs interim legacy Phase U) is Q7 (§ 11). (§ 5.2 item 3, Story B8.)
 
 ### FR-20. Release-to-availability velocity signal (with the rebuild-cadence guard)
 
 The VCS & Health pipeline derives the previously-unmeasured rate metric "how long does conda-forge take to publish a matching build after upstream releases": a `release_lag_hours` + `release_lag_qualifies` column pair on the existing Phase H join. **No new external source** — Phase H's PyPI JSON fetch already carries `upload_time_iso_8601` per release and currently discards it after extracting `info.version`; the node simply retains it.
 
-Hard constraint the live analysis validated the expensive way: a naive `latest_conda_upload − pypi_upload_time` delta is **not** a lag measurement — conda-forge periodically rebuilds long-stable, version-unchanged packages (migrations, ABI/compiler bumps, Python-matrix expansion), so `latest_conda_upload` reflects the *most recent rebuild*, not *first availability*. A naive full-population run produced a false "47% more than 10 days behind" headline; 83.7% of that bucket had a PyPI release itself over a year old. The computation MUST therefore restrict to packages whose upstream release is ≤90 days old (`release_lag_qualifies` — threshold cross-validated live at both a 5,000-package downloads-biased sample and the full 19,726-feedstock population, landing within 1 percentage point of each other). Live baseline the migrated signal should reproduce: **median 8.9 h, 72.4% within 24 h, 83.7% within 72 h**. (§ 5.2 item 4, Story B9; promoted from § 15, 2026-07-16.)
+Hard constraint, validated the expensive way: a naive `latest_conda_upload − pypi_upload_time` delta is **not** a lag measurement — conda-forge periodically rebuilds long-stable, version-unchanged packages (migrations, ABI/compiler bumps, Python-matrix expansion), so `latest_conda_upload` reflects the *most recent rebuild*, not *first availability*. A naive full-population run produced a false "47% more than 10 days behind" headline; 83.7% of that bucket had a PyPI release itself over a year old. The computation MUST therefore restrict to packages whose upstream release is ≤90 days old (`release_lag_qualifies` — threshold cross-validated live at both a 5,000-package downloads-biased sample and the full 19,726-feedstock population, landing within 1 percentage point of each other). Live baseline the migrated signal should reproduce: **median 8.9 h, 72.4% within 24 h, 83.7% within 72 h**. (§ 5.2 item 4, Story B9.)
 
 ### FR-21. Migration-readiness source: conda-forge-bot-data status datasets
 
-The VCS & Health pipeline ingests the data behind `conda-forge.org/status/#migrations` — the `conda-forge/conda-forge-bot-data` repo's `status/` tree — closing the one section of the v2 analytics report (§ 15 ledger, audit row) the pipeline could not reproduce:
+The VCS & Health pipeline ingests the data behind `conda-forge.org/status/#migrations` — the `conda-forge/conda-forge-bot-data` repo's `status/` tree:
 
 *   **Category-list datasets** — `status/regular_status.json`, `longterm_status.json`, `closed_status.json`, `paused_status.json` (+ `total_status.json` as the summary) enumerate the active/closed/paused migrations; they drive the partitioning, so the surface generalizes beyond any single hardcoded migration (python314 today, python315 tomorrow — no code change).
 *   **Per-migration detail datasets** — `status/migration_json/<name>.json`, partitioned by active migration, carrying the per-feedstock buckets the status page renders: `done`, `in-pr`, `awaiting-pr`, `awaiting-parents`, `not-solvable`, `bot-error`.
-*   **A readiness-classification node** joins a migration's detail against the atlas feedstock set and Phase B's `conda_noarch` column, reproducing the report's four-way readiness split (noarch / rebuild-done / confirmed-pending / not-in-tracker) and blocker labels; the downloads join (Phase F) yields the top-unmigrated-by-volume ranking. **The `not-in-tracker` bucket is an inference, not tracker data** — feedstocks absent from the migration JSON are *assumed* unmigrated; the classification must label the bucket as such (the report's own caveat), never present it as confirmed status.
+*   **A readiness-classification node** joins a migration's detail against the atlas feedstock set and Phase B's `conda_noarch` column, producing a four-way readiness split (noarch / rebuild-done / confirmed-pending / not-in-tracker) and blocker labels; the downloads join (Phase F) yields the top-unmigrated-by-volume ranking. **The `not-in-tracker` bucket is an inference, not tracker data** — feedstocks absent from the migration JSON are *assumed* unmigrated; the classification must label the bucket as such, never present it as confirmed status.
 
-Everything is raw GitHub content fetched via the **existing** `resolve_github_raw_urls` helper — no new `resolve_*_urls` helper, and enterprise/JFrog mirror routing is inherited (§ 3.3 external endpoints). Deliberately excluded: `version_status.v2.json` (the bot's version-update queue) — the atlas measures version currency itself (Phases H/K, `behind-upstream`) and does not mirror the bot's view of the same signal. (§ 5.2 item 4, Story B10; promoted 2026-07-16 v4.1 from the reproducibility audit.)
+Everything is raw GitHub content fetched via the **existing** `resolve_github_raw_urls` helper — no new `resolve_*_urls` helper, and enterprise/JFrog mirror routing is inherited (§ 3.3 external endpoints). Deliberately excluded: `version_status.v2.json` (the bot's version-update queue) — the atlas measures version currency itself (Phases H/K, `behind-upstream`) and does not mirror the bot's view of the same signal. (§ 5.2 item 4, Story B10.)
 
 ---
 
 ## 9. User Stories
 
-The implementation waves (0 + A–H) decompose into the stories below. Each wave depends on the prior wave's deliverables. Stories within a wave may proceed in parallel where noted.
+The implementation waves (0 + A–H) decompose into the stories below. Each wave depends on the prior wave's deliverables. Stories within a wave may proceed in parallel where noted. Within Wave B, stories **B8/B9/B10 are additive new-signal stories, not parity-gated** — Story B4's parity check compares legacy-surface outputs only.
 
 ### Wave 0 — Legacy Translation via Skill Forge (SKF)
 
@@ -802,7 +711,7 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - Each suggester is a report node reading exactly the inputs in the § 3.4 **Seed-freshness report nodes** table (not the separately-built local-stores table), emitting a `derived`-layer freshness report.
 - The nodes are strictly read-only — the byte-identical-seed guarantee (fixture-enforced in the legacy test suite) survives as a pipeline test.
 - The pipeline re-runs after every rebuild, alongside the § 5.2 item 7 derived artifacts.
-- `mapping-gap` stays in the PyPI Intelligence pipeline with its `g10_spelling` no-clobber writeback (sync chain, Wave A block) — it is not a Seed-Gaps node.
+- `mapping-gap` stays in the PyPI Intelligence pipeline with its `g10_spelling` no-clobber writeback (§ 3.3 mapping contract) — it is not a Seed-Gaps node.
 - Maps to FR-2.
 
 #### Story B7 — Extend the Universal SBOM intake (resolver, formats, universe BOM, buckets)
@@ -814,24 +723,24 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - Every § 4.10 format normalizes to CycloneDX preserving the `cfe:*` property namespace and the `?channel=conda-forge` qualifier.
 - The full-universe CycloneDX BOM is a catalog dataset under the 14-day freshness contract; consumers refuse a stale atlas exactly as the legacy gate does.
 - A matching run reproduces the legacy six-bucket classification (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN) on a fixture inventory.
-- Pasted `conda list` / `pip list` text padded with non-breaking spaces parses identically to its ASCII-space form (fixture case — the S5a parsers cover these formats but not this whitespace variant today; § 15 disposition).
+- Pasted `conda list` / `pip list` text padded with non-breaking spaces parses identically to its ASCII-space form (fixture case — the S5a parsers cover these formats but not this whitespace variant today; § 15 decision log).
 - Maps to FR-13, FR-17.
 
 #### Story B8 — Basilisk conda-native vulnerability ingestion
 
-**Goal**: Implement the two Basilisk ingestion nodes (FR-19) in the Vulnerability Pipeline — `POST /v1/querybatch` → `basilisk_vulns` dataset, plus the bounded `GET /v1/vulns/{id}` detail fetch — with the derived tri-state `fix_available` column joined at query time against `behind_upstream`. B8 is additive new-signal work, not parity-gated: Story B4's parity check compares legacy-surface outputs only. Record Q7's landing decision (§ 11) before implementation.
+**Goal**: Implement the two Basilisk ingestion nodes (FR-19) in the Vulnerability Pipeline — `POST /v1/querybatch` → `basilisk_vulns` dataset, plus the bounded `GET /v1/vulns/{id}` detail fetch — with the derived tri-state `fix_available` column joined at query time against `behind_upstream`. Record Q7's landing decision (§ 11) before implementation.
 
 **Acceptance criteria**:
 - A batch run over the full Python population writes `basilisk_vulns` (`conda_name`, `advisory_id`, `modified`) via `POST /v1/querybatch` at ≤1,000 queries per request.
 - Matching is by package name: a fixture proves an advisory whose `affected[]` ecosystem tag reads `PyPI` still matches its conda package (the ecosystem-tag gotcha, FR-19).
 - `fix_available` is tri-state: a fixture advisory carrying only an enumerated `versions` list yields `unknown`, never `false`.
 - No read surface conflates version currency with security currency — a package can be `current` per `behind-upstream` AND carry a Basilisk advisory (fixture-proven).
-- `BASILISK_BASE_URL` routes the endpoint per the § 3.3 mirror-routing convention; offline (consumer profile) the nodes skip gracefully and mark the dataset stale rather than failing.
+- `BASILISK_BASE_URL` routes the endpoint per the mirror-routing convention; offline (consumer profile) the nodes skip gracefully and mark the dataset stale rather than failing.
 - Maps to FR-19.
 
 #### Story B9 — Release-to-availability velocity columns
 
-**Goal**: Retain Phase H's per-release `upload_time_iso_8601` and derive `release_lag_hours` + `release_lag_qualifies` (FR-20) on the Phase H join, with the 90-day recency gate. Additive like B8; not parity-gated.
+**Goal**: Retain Phase H's per-release `upload_time_iso_8601` and derive `release_lag_hours` + `release_lag_qualifies` (FR-20) on the Phase H join, with the 90-day recency gate.
 
 **Acceptance criteria**:
 - The column pair exists on the Phase H join dataset; no new external fetch is introduced.
@@ -841,11 +750,11 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 
 #### Story B10 — Migration-readiness datasets + classification node
 
-**Goal**: Ingest the `conda-forge-bot-data` `status/` category lists and per-migration `migration_json/<name>.json` detail as external datasets (FR-21), partitioned by active migration, and implement the readiness-classification node over the feedstock set + `conda_noarch`. Additive like B8/B9; not parity-gated.
+**Goal**: Ingest the `conda-forge-bot-data` `status/` category lists and per-migration `migration_json/<name>.json` detail as external datasets (FR-21), partitioned by active migration, and implement the readiness-classification node over the feedstock set + `conda_noarch`.
 
 **Acceptance criteria**:
 - The category-list datasets enumerate active migrations and drive the per-migration partitioning — adding a new migration upstream requires no code change.
-- For a live migration (python314 at authoring time), the classification node reproduces the four-way readiness split (noarch / rebuild-done / confirmed-pending / not-in-tracker) and surfaces the per-feedstock blocker buckets (`in-pr`, `awaiting-pr`, `awaiting-parents`, `not-solvable`, `bot-error`).
+- For a live migration (python314 at authoring time), the classification node produces the four-way readiness split (noarch / rebuild-done / confirmed-pending / not-in-tracker) and surfaces the per-feedstock blocker buckets (`in-pr`, `awaiting-pr`, `awaiting-parents`, `not-solvable`, `bot-error`).
 - The `not-in-tracker` bucket is labeled as inferred, never as confirmed tracker status (fixture-proven in the report output).
 - The downloads join yields a top-unmigrated-by-volume ranking.
 - All fetches route through `resolve_github_raw_urls` (mirror routing inherited); offline (consumer profile) the nodes skip gracefully and mark the datasets stale rather than failing.
@@ -1011,11 +920,15 @@ Note: Phase B.6 ports with its **lite** semantics (presence-in-repodata → `lat
 - **AC-7.** DuckDB is the single compute/graph/vector engine; cold-start is materially faster than the 3–4 h legacy baseline.
 - **AC-8.** The intelligence surface runs in-browser via DuckDB-WASM against statically-hosted Parquet; Dagster Sensors enable near-real-time ingestion.
 - **AC-9.** Every component is conda-forge-sourced and pixi-managed (`nebi`-scaffolded); no standalone binaries / JVM.
-- **AC-10.** The three promoted live-analytics signals are live in the migrated surface: the `basilisk_vulns` dataset (conda-PURL identity axis, tri-state `fix_available`), the release-velocity column pair (90-day-gated), and the migration-readiness datasets + classification (per-migration partitioning, inferred `not-in-tracker` labeling), per FR-19 / FR-20 / FR-21 (Stories B8 / B9 / B10). Together they make the v2 ecosystem-health analysis (§ 15 evidence gists) reproducible from the pipeline for Sections 2–6; Section 1's composition-by-language classifier stays deferred per the § 15 ledger.
+- **AC-10.** The three new-signal sources are live in the migrated surface: the `basilisk_vulns` dataset (conda-PURL identity axis, tri-state `fix_available`), the release-velocity column pair (90-day-gated), and the migration-readiness datasets + classification (per-migration partitioning, inferred `not-in-tracker` labeling), per FR-19 / FR-20 / FR-21 (Stories B8 / B9 / B10). Together they make the v2 ecosystem-health analysis (§ 15 evidence) reproducible from the pipeline for its Sections 2–6; Section 1's composition-by-language classifier stays deferred per § 12.
 
 ---
 
 ## 11. Open Questions
+
+Numbering is stable across spec versions (other artifacts cross-reference it);
+Q5 was resolved and retired — its outcome (the § 7 AI Software Factory layer
+is in scope as Wave H) is stated in the body, not re-asked here.
 
 ### Q1 — Dataset-parity tolerance for legacy retirement (gates B4 → legacy retirement)
 
@@ -1041,17 +954,11 @@ Is GitHub Pages the committed static host for Parquet artifacts, or should this 
 
 **Default**: GitHub Pages for the public path; keep the artifact emitter host-agnostic so an enterprise mirror can be substituted.
 
-### Q5 — Scope of the AI Software Factory layer (§ 7) in this migration (RESOLVED)
-
-§ 7 (LA SUITE DOCS / Wagtail CMS / Karpathy Wiki) describes a broader factory blueprint. Is the Wagtail/CMS knowledge-base layer in scope for *this* migration, or a follow-on effort once the Kedro+Dagster+DuckDB core lands?
-
-**Resolution**: The Unity Knowledge Stack / AI Software Factory architecture (Wagtail CMS, Agno, Dagster, Karpathy Wiki) is explicitly **IN SCOPE** and must be delivered as Wave H.
-
 ### Q6 — Consolidate the dual PyPI↔conda mapping sources (gates Story B5's mapping asset)
 
 The skill maintains two mapping surfaces: atlas Phase C (DB-resident parselmouth join, extended by C.5 and the `mapping-gap` g10_spelling writeback) and the flat `pypi_conda_map.json` cache (`update-mapping-cache`; read by `name_resolver.py` / `recipe-generator.py` at authoring time; sourced from regro/cf-graph + the conda-forge-metadata API — § 3.4). Should the migration port the flat cache as-is, or retire it by pointing the authoring-side consumers at the migrated Phase C dataset?
 
-**Default**: consolidate — make the migrated Phase C mapping (DuckDB) the single source and re-point `name_resolver.py` / `recipe-generator.py` at it; keep the flat-cache refresh only if authoring-time reads prove to need a standalone file artifact (offline / no-DB contexts). Whatever the decision, the `g10_spelling` provenance tier and the no-clobber writeback rule (sync chain, Wave A block) must survive.
+**Default**: consolidate — make the migrated Phase C mapping (DuckDB) the single source and re-point `name_resolver.py` / `recipe-generator.py` at it; keep the flat-cache refresh only if authoring-time reads prove to need a standalone file artifact (offline / no-DB contexts). Whatever the decision, the `g10_spelling` provenance tier and the no-clobber writeback rule (§ 3.3 mapping contract) must survive.
 
 ### Q7 — Basilisk landing point: Kedro-native only, or an interim legacy Phase U (gates Story B8)
 
@@ -1072,8 +979,10 @@ The following are deliberately excluded from this migration, with reason:
 | `spec-kit` as the agent framework | Explicitly rejected (§ 7.3); `bmad-method` governs the agent workforce. |
 | Standalone binaries / JVM dependencies | Pixi-first, conda-forge-only constraint (FR-15, § 4.9). |
 | Enterprise Python Manifest (5k) generation as a deliverable | Downstream target state (§ 4.11) the graph *enables*; not built in this migration. |
-| New external data sources beyond the current GitHub/PyPI/Anaconda set | Migration preserves the existing source set (which already includes endoflife.date, osv.dev, and the local deptry / osv-scanner toolchain — § 3.3 / § 3.4). **Two promoted exceptions (2026-07-16): `api.basilisk.prefix.dev`** (v4 — FR-19 / Story B8, from § 15's live-validated analysis) **and the `conda-forge/conda-forge-bot-data` `status/` datasets** (v4.1 — FR-21 / Story B10; raw GitHub content via the existing `resolve_github_raw_urls`, so no new endpoint class). Further new sources remain out of scope. |
-| prefix.dev GraphQL API (`prefix.dev/api/graphql`) as an additional metadata backend | Evaluated 2026-07-16, not promoted: no vulnerability types (Basilisk REST stays the FR-19 surface); package/variant metadata duplicates repodata, which the atlas already sources with `repo.prefix.dev` as its first public mirror (§ 3.3 fallback chain — prefix.dev-as-infrastructure is already in the source set); and the per-package query model is unfit for bulk enumeration vs one repodata fetch. **One recorded future hook**: `variants.yankedReason` gives per-version yanked status + reason via targeted no-auth queries — the cheap candidate path for Phase B.6's deferred "true v2" full yanked detection (legacy alternative: ~1 GB patched-vs-unpatched repodata diff). See the Story B1 note. |
+| New external data sources beyond the committed set | The committed source set is: the legacy GitHub/PyPI/Anaconda set (already including endoflife.date, osv.dev, and the local deptry / osv-scanner toolchain — § 3.3 / § 3.4), plus `api.basilisk.prefix.dev` (FR-19) and the `conda-forge/conda-forge-bot-data` `status/` datasets (FR-21). Anything beyond that set is out of scope. |
+| prefix.dev GraphQL API (`prefix.dev/api/graphql`) as an additional metadata backend | Evaluated 2026-07-16, not promoted: no vulnerability types (Basilisk REST is the FR-19 surface); package/variant metadata duplicates repodata, which the atlas already sources with `repo.prefix.dev` as its first public mirror; the per-package query model is unfit for bulk enumeration vs one repodata fetch. **Recorded future hook**: `variants.yankedReason` gives per-version yanked status + reason via targeted no-auth queries — the cheap candidate path for Phase B.6's deferred full yanked detection (legacy alternative: ~1 GB patched-vs-unpatched repodata diff). See the Story B1 note. |
+| Ecosystem-composition-by-language report | A channel-health *report* concern, not migration surface (deferred from the 2026-07-16 live analysis; candidate for a future feedstock-health / Vizro page). Measured facts preserved for whoever builds it: the atlas's cross-ecosystem columns (`npm_name`, `cran_name`, `cpan_name`, `luarocks_name`, `maven_coord`) are almost entirely unpopulated at scale (136 of 11,602 non-Python packages matched `npm_name`; 0 for CRAN/CPAN) — an accurate composition report must key on conda-forge naming-convention prefixes instead (`r-*` alone is 11.6% of the entire channel, the real second-largest ecosystem). |
+| Spreadsheet (`.ods`/`.xlsx`) tabs and GitHub Projects boards as SBOM-intake formats | Analysis-prep conveniences, not manifests; export to any § 4.10 supported format instead. |
 | `pyforge.warden` v1 standalone build (`docs/specs/pyforge-warden.md`) | Built under its own spec as an internal-first library. This migration models only the *promoted* atlas surface (FR-16 / FR-18) — the hygiene node contract matches its `ComplianceReport` schema so consolidation with `scan-project` lands as wiring, not redesign. |
 | Rewriting the conda-forge recipe-authoring skill itself | This migration touches the `cf_atlas` intelligence layer, not the recipe-authoring loop. |
 | Static seeds + recipe template trees as pipeline *products* | Curated inputs (§ 3.4); the catalog declares them as versioned external datasets — the pipeline reads, never generates, them. |
@@ -1092,7 +1001,7 @@ The following are deliberately excluded from this migration, with reason:
 - `.claude/skills/conda-forge-expert/guides/atlas-operations.md` — the current operational process (bootstrap profiles, cron cadence table, recovery playbook, storage budget) that § 5.4 / FR-6 must reproduce.
 - `docs/specs/cfe-shipped-releases.md` Part 8 — the S3/parquet backend (Phase F Waves 1–3) whose datasets become Kedro catalog entries (§ 5.1).
 - `docs/specs/cyclonedx-universe-inventory.md` (shipped) — the 7-CLI suite, purl conventions, freshness gate, and bucket semantics FR-13/FR-17 preserve.
-- `docs/specs/pyforge-warden.md` (ready) — the `pyforge.warden` v1 build whose `ComplianceReport` schema + exit-code gate FR-16/FR-18 anticipate.
+- `docs/specs/pyforge-warden.md` (in-progress) — the `pyforge.warden` v1 build whose `ComplianceReport` schema + exit-code gate FR-16/FR-18 anticipate.
 - `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" — Rule 1 + Rule 2 governing this BMAD effort.
 
 ### External / ecosystem
@@ -1108,7 +1017,6 @@ The following are deliberately excluded from this migration, with reason:
 - `api.basilisk.prefix.dev` — the OSV-compatible, conda-native vulnerability API (FR-19); conda PURLs per CEP 63.
 - `conda-forge/conda-forge-bot-data` `status/` tree — category lists (`regular_status.json` / `longterm_status.json` / `closed_status.json` / `paused_status.json` / `total_status.json`) + per-migration `migration_json/<name>.json`; the data behind `conda-forge.org/status/#migrations` (FR-21).
 - prefix.dev GraphQL API (`prefix.dev/api/graphql` — public queries, no auth) — evaluated, not promoted (§ 12); recorded hook: `variants.yankedReason` for Phase B.6's deferred full yanked detection.
-- Live-analytics evidence for FR-19/FR-20 (§ 15 disposition ledger): `gist.github.com/rxm7706/76eb84093c3408b26ed6156b037c6d80` (v1) and `gist.github.com/rxm7706/73db2b7ab8935f95ea6e549ed994c778` (v2, adds Basilisk).
 
 ---
 
@@ -1134,17 +1042,17 @@ Then Wave B (B1/B2 node ports → B3 kedro-mcp → B4 parity check → B5
 external-refresh assets (resolve Q6 first) → B6 seed-gaps pipeline →
 B7 SBOM intake extensions → B8 Basilisk ingestion (resolve Q7 first) →
 B9 release-velocity columns → B10 migration-readiness datasets —
-B8/B9/B10 are additive new-signal stories, not parity-gated: B4 compares
-legacy-surface outputs only. Do NOT retire
+B8/B9/B10 are additive new-signal stories, not parity-gated. Do NOT retire
 the legacy orchestrator until B4 proves parity per Q1's default).
 
-Proceed wave by wave using the BAD execution engine (C orchestration+viz, D semantic layer+dashboards,
-E A2A+observability, F DuckDB singularity incl. F4 hygiene+policy gate, G WASM+sensors,
-H AI Software Factory). Resolve Q2/Q3/Q4
-at the start of their gating wave; default to the recommendations in § 11.
+Proceed wave by wave using the BAD execution engine (C orchestration+viz,
+D semantic layer+dashboards, E A2A+observability, F DuckDB singularity
+incl. F4 hygiene+policy gate, G WASM+sensors, H AI Software Factory).
+Resolve Q2/Q3/Q4 at the start of their gating wave; default to the
+recommendations in § 11.
 
 Note: the kedro-viz prototype (prototypes/cf-atlas-kedro-viz) predates the
-seven-pipeline decomposition and the FR-16/17/18 nodes — refresh it as a
+seven-pipeline decomposition and the FR-16..FR-21 nodes — refresh it as a
 follow-up, not as part of this spec's execution.
 
 Per CLAUDE.md Rule 1, the BAD Linker subagents must invoke the conda-forge-expert skill for any work that touches recipe code or atlas tooling. Per Rule 2, close with a CFE-skill retro + CHANGELOG entry.
@@ -1152,20 +1060,26 @@ Per CLAUDE.md Rule 1, the BAD Linker subagents must invoke the conda-forge-exper
 
 ---
 
-## 15. Live-Analytics Recommendations — Disposition Ledger (gated 2026-07-16, v4)
+## 15. Provenance & Decision Log
 
-*Surfaced by a live, multi-stage ecosystem analysis (fleet-wide freshness
-sampling + a new external vulnerability source); full reports at
-`gist.github.com/rxm7706/76eb84093c3408b26ed6156b037c6d80` (v1) and
-`gist.github.com/rxm7706/73db2b7ab8935f95ea6e549ed994c778` (v2, adds Basilisk).
-Every number was measured against the live atlas + live external APIs, not
-estimated. Gated at the v4 refinement (2026-07-16); each item's disposition:*
+This spec is a **v5 clean reset** (2026-07-16). The layered v1–v4.1 document —
+with its per-refresh sync-chain annotations — lives in this file's git
+history; everything binding from it is integrated into the body above. The
+compact decision log:
 
-| Item | Disposition |
+| Date | Decision |
 |---|---|
-| Basilisk conda-native vulnerability source | **PROMOTED → FR-19 + Story B8** (+ landing-decision Q7; § 12 out-of-scope row amended). All live-validated constraints — the ecosystem-tag matching gotcha, current ≠ unaffected, the tri-state `fix_available` column, the querybatch cap — are encoded in the FR, which is now the authoritative statement. |
-| Release-to-availability velocity + rebuild-cadence-artifact guard | **PROMOTED → FR-20 + Story B9.** The 90-day recency gate and the false-"47% behind" failure mode are encoded as hard constraints in the FR. |
-| Ecosystem-composition-by-language report | **DEFERRED — not promoted.** A channel-health *report* concern, not migration surface. The load-bearing measured fact is preserved here for whoever builds it: the atlas's cross-ecosystem columns (`npm_name`, `cran_name`, `cpan_name`, `luarocks_name`, `maven_coord`) are almost entirely unpopulated at scale (136 of 11,602 non-Python packages matched `npm_name`; 0 for CRAN/CPAN) — an accurate composition report must key on conda-forge naming-convention prefixes instead (`r-*` alone is 11.6% of the entire channel, the real second-largest ecosystem). Candidate for a future feedstock-health / Vizro page. |
-| Multi-format manifest parsing (pasted `conda list` / `pip list` / mixed dumps) | **RESOLVED — already covered.** `dependency-input-formats.md` (S5a, v8.71.0) parses `pip list` / `pip freeze` (text + JSON, freeze lines, direct refs, editable installs, columnar tables) and `conda list` (default / `--export` / `--explicit` / JSON) — verified against live code 2026-07-16. One residual gap: **non-breaking-space-padded** paste variants are unhandled (`inventory_match.py` / `scan_project.py` contain no NBSP normalization) — folded into Story B7's acceptance criteria as a fixture case, not a new FR. |
-| **Reproducibility audit (v4.1 follow-up, same day)** — can the specced pipeline reproduce the full v2 report? | Sections 2 (currency), 4 (velocity, FR-20), 5 (scope-population lag, FR-13/17 intake + FR-20), and 6 (Basilisk, FR-19) — **yes**. Section 3 (py3.14 migration readiness) was the one uncovered section: the report pulled `conda-forge-bot-data` `status/migration_json/python314.json` live, and no atlas phase ingests it (verified by code sweep; the `conda_noarch` half IS atlas data) — **PROMOTED → FR-21 + Story B10**. Section 1 raw counts — yes via BSL; its composition classifier stays DEFERRED (row above). Scope-assembly conveniences (.ods tabs, GitHub Projects board) stay out of the § 4.10 intake — analysis prep, exported to a supported format. |
+| 2026-06-20 | v1 authored (Kedro/Dagster/DuckDB migration, waves 0 + A–G; § 7 factory layer as open question). |
+| 2026-07-02…-06 | cyclonedx-universe-inventory shipped; its surface (7-CLI suite, purl conventions, freshness gate, bucket semantics) folded in as preserved contracts; § 5.2 grew to seven pipelines; stories B6/B7/F4 + FR-16/17/18 added; Q5 resolved → the AI Software Factory is in scope as Wave H. |
+| 2026-07-10 | v3 re-grounding (main `de5462d`, skill v8.76.0): Phase I cataloged; `atlas-operations.md` operational ground truth adopted into § 5.4/FR-6 (profiles, cadence table, the 1800 s `cf_atlas_core` defect as FR-6's motivating failure); seed-gap suggesters + pyforge-warden cross-intake. |
+| 2026-07-16 | v4: live-analytics gating — **FR-19** (Basilisk) + **FR-20** (release velocity) promoted with Stories B8/B9 + Q7; ecosystem-composition report deferred (§ 12); manifest parsing found already covered (S5a) except the NBSP paste variant → Story B7 AC. Re-grounded on main `58a6dcc` / skill v8.78.0. |
+| 2026-07-16 | v4.1: reproducibility audit of the v2 report → **FR-21** (conda-forge-bot-data migration-status datasets) + Story B10. |
+| 2026-07-16 | prefix.dev GraphQL API evaluated, not promoted (§ 12 row; `yankedReason` hook noted on Story B1). |
+| 2026-07-16 | **v5 reset**: this clean re-authoring. No scope change — FR/story/AC/Q numbering preserved. |
 
+**Evidence** (live, multi-stage ecosystem analysis backing FR-19/FR-20/FR-21
+and the § 12 deferrals; every number measured against the live atlas + live
+external APIs):
+
+- `gist.github.com/rxm7706/76eb84093c3408b26ed6156b037c6d80` (v1)
+- `gist.github.com/rxm7706/73db2b7ab8935f95ea6e549ed994c778` (v2, adds Basilisk — the report whose Sections 2–6 AC-10 makes pipeline-reproducible)
