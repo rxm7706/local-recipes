@@ -1,0 +1,26 @@
+[workspace]
+name = "myproject"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = ">=3.11"
+numpy = ">=1.20"
+
+[pypi-dependencies]
+requests = "==2.31.0"
+
+[feature.test.dependencies]
+pytest = "*"
+
+[feature.test.pypi-dependencies]
+coverage = ">=7.0"
+
+[target.linux-64.dependencies]
+compilers = "*"
+
+[target.linux-64.pypi-dependencies]
+psutil = ">=5.9"
+
+[environments]
+default = ["test"]

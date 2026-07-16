@@ -600,6 +600,113 @@ def test_deptry_corpus_unparseable_rate_is_within_baseline():
         assert parse.unparseable_rate <= UNPARSEABLE_RATE_BASELINE, fixture.name
 
 
+def test_deptry_frontdoor_flag_is_a_genuine_no_op_against_real_deptry(capsys):
+    """Fix 8 regression (2026-07-16 review): the only existing test proving
+    the Story 2.2 front-door flag is a no-op for a native-pyproject.toml
+    target (test_deptry_engine_frontdoor_is_a_no_op_when_native_pyproject_
+    present, tests/unit/test_engine_env_deptry.py) fully mocks
+    subprocess.run -- it proves only that OUR OWN code always appends
+    --requirements-files, never that the REAL deptry binary actually still
+    ignores it. This runs the REAL production pipeline (``cli.main``, which
+    unconditionally synthesizes the front-door and passes the flag -- Story
+    2.2) against DEPTRY_UNUSED, and separately invokes real deptry with NO
+    --requirements-files flag at all (the pre-2.2 argv shape) over the SAME
+    fixture -- the two must report the IDENTICAL hygiene finding, a genuine
+    regression pin on deptry's own documented -rf-ignoring behavior (never
+    just our own argv construction). deptry is a provisioned conda run-dep
+    of this package (unlike test_extraction_oracle.py's renderers, which are
+    test-only): a missing/failing binary here is a broken environment, so
+    this mirrors this file's own no-skip-guard convention (see
+    test_deptry_corpus_unparseable_rate_is_within_baseline above) rather
+    than test_extraction_oracle.py's explicit skip-if-unavailable one."""
+    from pyforge.warden.engines import _engine_env
+    from pyforge.warden.hygiene import parse_deptry_output
+
+    rc, out, err = run_scan(capsys, DEPTRY_UNUSED)
+    document = parse_report(out)
+    assert rc == 0
+    with_frontdoor_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+
+    text, error, _exit_code = _engine_env(
+        lambda output_path: ["deptry", ".", "-o", output_path, "--no-ansi"],
+        owner="deptry",
+        cwd=DEPTRY_UNUSED,
+    )
+    assert error is None, f"deptry failed: {error}"
+    assert text is not None
+    parse = parse_deptry_output(text)
+    assert parse.output_parsed
+    without_frontdoor_ids = {f.id for f in parse.findings}
+
+    assert with_frontdoor_ids == without_frontdoor_ids == {"hygiene:DEP002:requests"}
+
+
+def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
+    capsys, tmp_path
+):
+    """Follow-up review (2026-07-16), real deptry, no mocks:
+    ``--requirements-files`` REPLACES deptry's own native default
+    requirements source (``requirements.txt``) rather than merging with it
+    -- verified live: ``deptry .`` over a requirements.txt project is clean,
+    ``deptry . --requirements-files <other>`` reports DEP001 for every dep
+    the project's own requirements.txt declares. Before the merge fix, a
+    conda-sourced scan (this is a NEW 2.2 scan class -- pre-2.2 such a
+    project was not-applicable and deptry never ran) with a sibling
+    requirements.txt therefore false-DEP001'd all its pip-declared deps.
+    The scan root's requirements.txt is now re-appended to the flag's
+    comma-list; same no-skip-guard convention as the no-op test above."""
+    (tmp_path / "environment.yml").write_text(
+        "dependencies:\n  - numpy=1.20\n", encoding="utf-8"
+    )
+    (tmp_path / "requirements.txt").write_text("requests\n", encoding="utf-8")
+    (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
+    rc, out, _err = run_scan(capsys, tmp_path)
+    document = parse_report(out)
+    hygiene_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+    # requests is declared by the project's OWN requirements.txt -- merged,
+    # so no false DEP001; numpy (declared via the conda front-door, never
+    # imported) still surfaces deptry's real signal for this fixture.
+    assert "hygiene:DEP001:requests" not in hygiene_ids
+    assert "hygiene:DEP002:numpy" in hygiene_ids
+
+
+def test_deptry_frontdoor_merges_config_declared_requirements_files(
+    capsys, tmp_path
+):
+    """Second review pass (2026-07-16), real deptry, no mocks: deptry's
+    requirements source is its ``[tool.deptry].requirements_files`` config
+    when declared -- the flag REPLACES that setting too, not just the
+    ``requirements.txt`` default, so a conda-first project keeping pip deps
+    at a configured path false-DEP001'd every dep it declares (verified
+    live: bare ``deptry .`` green, with the flag red). The configured list
+    is now what gets re-appended; same no-skip-guard convention as the
+    other real-deptry tests."""
+    (tmp_path / "environment.yml").write_text(
+        "dependencies:\n  - numpy=1.20\n", encoding="utf-8"
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.deptry]\nrequirements_files = ["reqs/base.txt"]\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "reqs").mkdir()
+    (tmp_path / "reqs" / "base.txt").write_text("requests\n", encoding="utf-8")
+    (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
+    rc, out, _err = run_scan(capsys, tmp_path)
+    document = parse_report(out)
+    hygiene_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+    # requests is declared by the config-declared reqs/base.txt -- merged,
+    # so no false DEP001; numpy (declared via the conda front-door, never
+    # imported) still surfaces deptry's real signal.
+    assert "hygiene:DEP001:requests" not in hygiene_ids
+    assert "hygiene:DEP002:numpy" in hygiene_ids
+
+
 @pytest.mark.parametrize(
     "fixture",
     [DEPTRY_MISSING, DEPTRY_UNUSED, DEPTRY_STDLIB],

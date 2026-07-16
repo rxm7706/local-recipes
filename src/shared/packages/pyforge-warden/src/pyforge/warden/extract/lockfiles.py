@@ -7,6 +7,17 @@ is needed: ``inventory.merge_components``'s existing Gap-B fold already
 lets a lockfile's exact version subsume a looser ``pyproject.toml`` entry
 of the same identity.
 
+Story 2.2 factored this module's conda-identity component builders
+(``_conda_component``/``_pypi_component``/``_raw_malformed``/
+``_resolve_conda_pypi_identity``/``TRUSTED_MATCH_CONFIDENCE``) OUT into
+``extract/_identity.py`` (behavior-identical -- imported back in below) so
+all 6 extractors (this module's 2 plus the 4 new conda/pixi source-manifest
+ones) share one identity-resolution path instead of 4x-duplicating
+trust-sensitive mapping logic. ``load_conda_pypi_map`` is consulted from
+``_identity.py`` now, not from here directly -- tests that need to stub the
+bundled map patch ``pyforge.warden.extract._identity.load_conda_pypi_map``,
+not this module's (removed) own binding.
+
 Ownership decisions recorded:
 
 * pixi.lock ``conda:`` rows carry no ``name:``/``version:`` fields — the
@@ -62,23 +73,39 @@ from pathlib import Path
 import yaml
 
 from ..interfaces import Router
-from ..inventory import (
-    Component,
-    Provenance,
-    PypiIdentity,
-    canonical_name,
-    derive_purl,
-)
-from ..mapping import load_conda_pypi_map
-from ..models import (
-    CveMatchLevel,
-    Ecosystem,
-    ExtractionMode,
-    IdentitySource,
-    ScannedManifest,
-    WithholdReason,
-)
+from ..inventory import Component, Provenance
+from ..models import Ecosystem, ScannedManifest
 from . import UnparsableManifestError
+from ._identity import (
+    TRUSTED_MATCH_CONFIDENCE,
+    _conda_component,
+    _pypi_component,
+    _raw_malformed,
+    _resolve_conda_pypi_identity,
+)
+
+# Re-exported for backward compatibility: interfaces.py's
+# `from .extract.lockfiles import TRUSTED_MATCH_CONFIDENCE` (a "never touch"
+# module) keeps working unmodified now that the real definition lives in
+# `_identity.py` -- it is the plain `from ._identity import (...)` statement
+# ABOVE that actually makes that re-import work (any name bound at module
+# level, by any statement, is importable from this module regardless of
+# `__all__`). `__all__` below only affects `from .extract.lockfiles import *`
+# (nothing in this codebase does that); its real, narrower purpose here is
+# suppressing an unused-import lint warning on names this module re-exports
+# but does not itself reference (`_resolve_conda_pypi_identity` — imported
+# back in and re-exported purely for hypothetical external backward-compat;
+# unlike its 3 siblings, this module's own extractor classes below never
+# call it directly). `_conda_component`/`_pypi_component`/`_raw_malformed`/
+# `_resolve_conda_pypi_identity` are likewise imported back in (not
+# redefined) so this module's own extractor classes below are unchanged.
+__all__ = [
+    "TRUSTED_MATCH_CONFIDENCE",
+    "_conda_component",
+    "_pypi_component",
+    "_raw_malformed",
+    "_resolve_conda_pypi_identity",
+]
 
 # The 4 synthetic (kind, section) routing tokens (imported into routing.py
 # exactly as PROJECT_DEPENDENCIES_SECTION already is).
@@ -149,156 +176,6 @@ def _optional_str_field(
             f"string, got {type(value).__name__}"
         )
     return value
-
-
-# The one confidence tier trusted enough to set pypi_identity (Story 2.1
-# AC3). Exported (not module-private) so interfaces.py's dep001_trusted
-# gate reuses this exact value instead of a disconnected copy.
-TRUSTED_MATCH_CONFIDENCE = "verified"
-
-
-def _resolve_conda_pypi_identity(
-    name: str,
-) -> tuple[PypiIdentity, str | None] | None:
-    """Consult the conda→pypi map (Story 2.1) for ``name`` — ``None`` on a
-    miss. This defensively reads the two columns epics.md's own AC text
-    names (``pypi_name`` and ``match_confidence``) and falls back to a miss
-    on anything else — never guessed, never crashes."""
-    entry = load_conda_pypi_map().get(name)
-    if not isinstance(entry, dict):
-        return None
-    pypi_name = entry.get("pypi_name")
-    if not isinstance(pypi_name, str) or not pypi_name:
-        return None
-    confidence = entry.get("match_confidence")
-    return (
-        PypiIdentity(name=canonical_name(Ecosystem.PYPI, pypi_name), version=None),
-        confidence if isinstance(confidence, str) else None,
-    )
-
-
-def _unmapped_conda_component(
-    name: str,
-    version: str | None,
-    provenance: tuple[Provenance, ...],
-    mapping_confidence: str | None,
-) -> Component:
-    """The shared withhold shape for both a map miss and an
-    untrusted-confidence hit (see ``_conda_component``) — only
-    ``mapping_confidence`` differs between the two callers, so both share
-    one ``Component`` construction rather than drifting independently."""
-    return Component(
-        name=name,
-        version=version,
-        ecosystem=Ecosystem.CONDA,
-        pypi_identity=None,
-        identity_source=IdentitySource.NONE,
-        mapping_confidence=mapping_confidence,
-        cve_match_level=CveMatchLevel.NONE,
-        extraction_mode=ExtractionMode.PARSED,
-        purl=derive_purl(Ecosystem.CONDA, name, version),
-        provenance=provenance,
-        hygiene_covered=True,
-        vuln_matchable=False,
-        indeterminate_reason=WithholdReason.UNMAPPED_ECOSYSTEM,
-    )
-
-
-def _conda_component(
-    name: str, version: str | None, provenance: tuple[Provenance, ...]
-) -> Component:
-    """Build a conda-ecosystem ``Component``, consulting the conda→pypi map
-    (see ``_resolve_conda_pypi_identity``). Only a ``verified``-confidence
-    hit is trusted enough to set ``pypi_identity`` (Story 2.1 AC3) — a
-    ``likely``/untrusted hit or an outright miss both withhold as
-    ``UNMAPPED_ECOSYSTEM`` (never guessed), though a low-confidence hit's
-    raw tier is still recorded on ``mapping_confidence`` for observability."""
-    mapped = _resolve_conda_pypi_identity(name)
-    if mapped is None:
-        return _unmapped_conda_component(name, version, provenance, None)
-    identity, confidence = mapped
-    if confidence != TRUSTED_MATCH_CONFIDENCE:
-        return _unmapped_conda_component(name, version, provenance, confidence)
-    identity = PypiIdentity(name=identity.name, version=version)
-    return Component(
-        name=name,
-        version=version,
-        ecosystem=Ecosystem.CONDA,
-        pypi_identity=identity,
-        identity_source=IdentitySource.MAP,
-        mapping_confidence=confidence,
-        cve_match_level=CveMatchLevel.EXACT if version else CveMatchLevel.NAME_ONLY,
-        extraction_mode=ExtractionMode.PARSED,
-        purl=derive_purl(Ecosystem.CONDA, name, version),
-        provenance=provenance,
-        hygiene_covered=True,
-        vuln_matchable=bool(version),
-        indeterminate_reason=None if version else WithholdReason.NO_VERSION,
-    )
-
-
-def _pypi_component(
-    name: str, version: str | None, provenance: tuple[Provenance, ...]
-) -> Component:
-    """Build a PyPI-ecosystem ``Component`` from a lockfile's own
-    ``name``/``version`` (``identity_source=LOCK`` — already
-    PEP-503-canonical in practice)."""
-    identity_name = canonical_name(Ecosystem.PYPI, name)
-    if version:
-        return Component(
-            name=name,
-            version=version,
-            ecosystem=Ecosystem.PYPI,
-            pypi_identity=PypiIdentity(name=identity_name, version=version),
-            identity_source=IdentitySource.LOCK,
-            mapping_confidence=None,
-            cve_match_level=CveMatchLevel.EXACT,
-            extraction_mode=ExtractionMode.PARSED,
-            purl=derive_purl(Ecosystem.PYPI, name, version),
-            provenance=provenance,
-            hygiene_covered=True,
-            vuln_matchable=True,
-            indeterminate_reason=None,
-        )
-    return Component(
-        name=name,
-        version=None,
-        ecosystem=Ecosystem.PYPI,
-        pypi_identity=PypiIdentity(name=identity_name, version=None),
-        identity_source=IdentitySource.LOCK,
-        mapping_confidence=None,
-        cve_match_level=CveMatchLevel.NAME_ONLY,
-        extraction_mode=ExtractionMode.PARSED,
-        purl=derive_purl(Ecosystem.PYPI, name, None),
-        provenance=provenance,
-        hygiene_covered=True,
-        vuln_matchable=False,
-        indeterminate_reason=WithholdReason.NO_VERSION,
-    )
-
-
-def _raw_malformed(
-    ecosystem: Ecosystem, raw_name: str, provenance: tuple[Provenance, ...]
-) -> Component:
-    """A row that could not be identified at all — kept, marked, withheld;
-    never dropped silently (mirrors ``extract/pyproject.py``'s invalid-
-    requirement handling)."""
-    name = raw_name or "<unidentifiable-lockfile-entry>"
-    return Component(
-        name=name,
-        version=None,
-        ecosystem=ecosystem,
-        pypi_identity=None,
-        identity_source=IdentitySource.NONE,
-        mapping_confidence=None,
-        cve_match_level=CveMatchLevel.NONE,
-        extraction_mode=ExtractionMode.RAW_MALFORMED,
-        purl=derive_purl(ecosystem, name, None),
-        provenance=provenance,
-        hygiene_covered=False,
-        vuln_matchable=False,
-        indeterminate_reason=WithholdReason.NO_VERSION,
-    )
 
 
 class PixiLockExtractor:

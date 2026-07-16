@@ -4,11 +4,13 @@ OWNERSHIP DECISION (recorded): full FR1 discovery — multi-manifest
 enumeration, deterministic selection policy, and the manifest-kind
 vocabulary — is Story 1.9's. This module locates each of a FIXED list of
 manifest kinds directly in the scan target: ``pyproject.toml`` (1.2),
-``pixi.lock`` and ``conda-lock.yml`` (2.6 — additive, narrow: 2 more
+``pixi.lock`` and ``conda-lock.yml`` (2.6), ``recipe.yaml``, ``meta.yaml``,
+``environment.yml``, and ``pixi.toml`` (2.2 — additive, narrow: 4 more
 filenames, same stat-honesty pattern; NOT 1.9's precedence/recursive-search
-policy). Every manifest path is recorded RELATIVE to the target (report
-paths are target-relative, a determinism invariant); the kind token equals
-the filename.
+policy — a directory carrying BOTH ``recipe.yaml`` and ``meta.yaml`` is not
+this module's concern, it reports both). Every manifest path is recorded
+RELATIVE to the target (report paths are target-relative, a determinism
+invariant); the kind token equals the filename.
 
 Stat-error honesty (per kind): existence is determined via an EXPLICIT
 ``stat`` — ``Path.is_file()`` swallows every ``OSError`` (returns
@@ -44,9 +46,22 @@ from .models import ScannedManifest
 PYPROJECT_KIND = "pyproject.toml"
 PIXI_LOCK_KIND = "pixi.lock"
 CONDA_LOCK_KIND = "conda-lock.yml"
+# Story 2.2: the conda/pixi source-manifest wedge — 4 more fixed filenames.
+RECIPE_YAML_KIND = "recipe.yaml"
+META_YAML_KIND = "meta.yaml"
+ENVIRONMENT_YML_KIND = "environment.yml"
+PIXI_TOML_KIND = "pixi.toml"
 
 # Checked in this fixed order; the returned tuple preserves it.
-_DISCOVERED_KINDS = (PYPROJECT_KIND, PIXI_LOCK_KIND, CONDA_LOCK_KIND)
+_DISCOVERED_KINDS = (
+    PYPROJECT_KIND,
+    PIXI_LOCK_KIND,
+    CONDA_LOCK_KIND,
+    RECIPE_YAML_KIND,
+    META_YAML_KIND,
+    ENVIRONMENT_YML_KIND,
+    PIXI_TOML_KIND,
+)
 
 
 def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
