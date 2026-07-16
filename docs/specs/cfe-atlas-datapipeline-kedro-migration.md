@@ -5,7 +5,7 @@ display_name: cfe-atlas-datapipeline Kedro Migration Spec
 project_type_id: data
 date: 2026-06-20
 status: ready
-spec_updated: 2026-07-11
+spec_updated: 2026-07-16
 ---
 
 # Spec: cfe-atlas-datapipeline Kedro Migration
@@ -1035,3 +1035,37 @@ follow-up, not as part of this spec's execution.
 
 Per CLAUDE.md Rule 1, the BAD Linker subagents must invoke the conda-forge-expert skill for any work that touches recipe code or atlas tooling. Per Rule 2, close with a CFE-skill retro + CHANGELOG entry.
 ```
+
+---
+
+## 15. Recommendations from Live Analytics (2026-07-16)
+
+*Not yet gated or reviewed — proposed additions surfaced by a live, multi-stage ecosystem analysis (fleet-wide freshness sampling + a new external vulnerability source), reported in full at
+`gist.github.com/rxm7706/76eb84093c3408b26ed6156b037c6d80` (v1) and
+`gist.github.com/rxm7706/73db2b7ab8935f95ea6e549ed994c778` (v2, adds Basilisk).
+Every number below is from a live run against the current atlas + live external APIs, not estimated. These are candidates for Wave B (new data-pipeline sources) — promote to real FRs/stories at BMAD intake, do not treat as committed scope.*
+
+### FR-19 (candidate) — Conda-native vulnerability source: Basilisk (prefix.dev)
+
+**Why**: Phase G's vulnerability data is PyPI-identity-matched (vdb, keyed by the bundled conda↔pypi map). `api.basilisk.prefix.dev` is a live, no-auth, OSV-compatible REST API that matches against the actual conda-forge PURL (`pkg:conda/conda-forge/<name>@<version>`, CEP 63 form) — a different, complementary identity axis that catches vulnerabilities in packages Phase G's PyPI-keyed pipeline cannot see at all, because they were never PyPI packages: a live batch query of the full 21,163-package Python population found confirmed advisories on `libuuid` (203M downloads, CVE-2026-3184), `libtiff` (135M downloads), `libarchive` (57M downloads), `perl` (33M downloads) — all non-Python C/system libraries riding as transitive Python-environment dependencies.
+
+**What it would add**: `POST /v1/querybatch` (documented cap: 1,000 queries/request; a live run used 85 requests of 250 each against 21,163 packages with zero errors) as a new Phase (candidate: Phase U, next after Phase T) writing a `basilisk_vulns` table (conda_name, advisory_id, modified) — the lightweight batch shape (`{id, modified}` pairs only). `GET /v1/vulns/{id}` for full OSV detail (severity, `affected[].ranges[].events`) is a separate, boundedly-sized follow-up fetch (a live run pulled all 765 unique advisory IDs surfaced by the full-population batch query in one pass, no further batching needed).
+
+**Validated findings worth preserving in the implementation**:
+- Only 1.6% of packages (348/21,163) carry a confirmed match — but of those, **113 are already classified "current" by the existing `behind-upstream` lag logic**. Version-string currency and security currency are different measurements; a `current` verdict must not be read as "unaffected."
+- The raw OSV `affected[]` entries retain their **original** source ecosystem tag (typically `PyPI`), never `conda-forge` — any consumer matching by ecosystem field instead of by package name will silently find nothing. This was hit and fixed during the live analysis; document it as a gotcha for whoever builds the node.
+- A derived "fix-availability" signal is cheap and high-value: cross-referencing each advisory's `affected[].ranges[].events[].fixed` (name-matched, `packaging.version`-compared) against the package's current installed version found **85.3% of the 5,101 (package, advisory) matches are resolvable by upgrading to a version that already exists** — i.e. most of this signal is a scheduling/packaging-currency problem, not an open security-research problem. Recommend this as a `basilisk_vulns.fix_available` derived boolean column, joined at query time against `behind_upstream`'s upstream-version data (same join key, same package identity already required for Phase H).
+- ~48% of advisories carry no structured fix-version data at all (enumerated `versions` list only) — this is a data-completeness gap in the upstream OSV records, not proof no fix exists; the derived column must have a third state (`fix_available: unknown`), never collapse to `false`.
+
+### FR-20 (candidate) — Release-to-availability velocity + the rebuild-cadence-artifact guard
+
+**Why**: The atlas answers "is this package behind" (categorical, via `behind-upstream`'s lag classification) but not "how long does it typically take conda-forge to publish a matching build after upstream releases" (a rate/velocity metric). A live full-population sample (one representative package per feedstock, 19,726 of 19,765 feedstocks) found: **median 8.9 hours, 72.4% within 24h, 83.7% within 72h** — a strong, previously-unmeasured signal about conda-forge's actual release-pickup speed.
+
+**The gotcha this FR must encode, found the hard way**: a naive `latest_conda_upload - pypi_upload_time` delta is **not** a valid lag measurement on its own — conda-forge periodically rebuilds long-stable, version-unchanged packages for unrelated reasons (migrations, ABI/compiler bumps, Python-version-matrix expansion), and `latest_conda_upload` reflects the *most recent rebuild*, not *first availability*. A raw full-population sample showed 47% of packages "more than 10 days behind" on this naive metric; **83.7% of that ">10 day" bucket turned out to have a PyPI release itself over a year old** — the rebuild-artifact, not a real backlog. **Any implementation of this signal must restrict the "time to catch up" computation to packages whose upstream release is itself ≤90 days old** (the threshold validated live, at both a 5,000-package downloads-biased sample and the full 19,726-feedstock population — both landed within 1 percentage point of each other, cross-validating the threshold isn't an artifact of sample choice). Skipping this filter will silently reproduce a false 47%-behind headline.
+
+**What it would add**: a new derived column pair on the existing Phase H join (`release_lag_hours`, `release_lag_qualifies` where the 90-day recency gate passes) — no new external data source required, since this reuses Phase H's own PyPI JSON fetch (`upload_time_iso_8601` per release), just retaining a field Phase H currently discards after extracting `info.version`.
+
+### Smaller, lower-priority observations from the same analysis
+
+- **Ecosystem-composition-by-language** (Admin / Channel Health persona): of the 32,765 live conda-forge packages, R/CRAN (`r-*` naming convention) is 11.6% of the *entire channel* — the real second-largest ecosystem, not a rounding error — with Perl, Rust, Go, OCaml, Lua, Julia, Node.js core, and Haskell each under 1%. The atlas's existing cross-ecosystem columns (`npm_name`, `cran_name`, `cpan_name`, `luarocks_name`, `maven_coord`) were checked live and found almost entirely unpopulated at scale (136 of 11,602 non-Python packages matched `npm_name`; 0 for CRAN/CPAN) — a channel-health "composition by ecosystem" report would need conda-forge's naming-convention prefixes, not those columns, to be accurate.
+- **Multi-format manifest parsing**: building a "scope" population from 7 heterogeneous raw environment/manifest dumps required disambiguating pip `name==version`, bare-name-with-extras, conda-YAML `- name[version='...']`, verbose `conda list`/`pip list` output (including non-breaking-space-padded variants), and single-`=` conda specs — sometimes mixed within one file. Worth checking whether `scan_project.py` / `dependency-input-formats.md` already covers pasted raw-terminal-output formats (`conda list`, `pip list`); if not, this is a tested, reusable parser worth porting rather than re-deriving.
