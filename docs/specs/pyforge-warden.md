@@ -32,11 +32,11 @@ spec_updated: 2026-07-15
 > runs against this spec under the `pyforge-warden` BMAD project
 > (`_bmad-output/projects/pyforge-warden/`).
 >
-> Scope: `epics.md` currently encodes **5 epics / 20 stories** (a
-> hygiene+security shape). The v1 axis expansion (axes 3+4 enrichment + KEV
-> gate) grows that set; the PRD/architecture/epics reconciliation is **story
-> 0.1** (this spec's Reconciliation note describes the deltas; story 6.1
-> executes the schema amendment). Driven through the **full BMAD** flow (not
+> Scope: `epics.md` encodes **6 epics / 31 stories** (the D12 four-axis v1;
+> Epic 6 = 6.1–6.10, story 2.6 split from 2.1) — the story-0.1 replan that
+> grew it from the original 5-epic/20-story hygiene+security shape was
+> **executed 2026-07-15/16** and BMAD-verified (readiness: READY); story 6.1
+> executes the schema amendment. Driven through the **full BMAD** flow (not
 > Quick Flow).
 >
 > **Conda-forge tie-in (Rules 1 & 2 — now ENGAGED).** The engines are already
@@ -586,10 +586,10 @@ surfaces via the `warn` rung (exit 0, never a silent `clean`).)*
 > The four-epic table that stood here (E1 Manifest Resolution / E2 Deptry /
 > E3 OSV / E4 Reporting) was the original ~4-epic seed. The live breakdown is
 > **`_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md`**
-> (5 epics / 20 stories, hygiene+security shape). That set does **not** yet
-> encode axes 3+4 or the KEV gate — reconciling it to the § Reconciliation
-> scope is **story 0.1 (upgraded to a full replan — see § Status)**. See
-> § Release map below for the current v1 / v1.x / vision shape and the story map.
+> (**6 epics / 31 stories** — the D12 four-axis v1 incl. Epic 6's 6.1–6.10;
+> the story-0.1 replan that reconciled the earlier 5-epic/20-story shape was
+> executed 2026-07-15/16 and BMAD-verified). See § Release map below for the
+> current v1 / v1.x / vision shape and the story map.
 
 ---
 
