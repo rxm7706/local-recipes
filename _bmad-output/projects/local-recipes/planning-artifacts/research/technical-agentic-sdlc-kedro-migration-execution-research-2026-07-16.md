@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.2)'
   - 'docs/specs/bmad-loop-adoption.md'
@@ -129,3 +129,47 @@ The pragmatic join is **the artifact tree as the shared bus**: the loop and dev-
 ### ⚠️ The worktree × multi-project seam (new risk, surfaced by this research)
 
 The multi-project layout routes all planning/implementation writes through **gitignored repo-root symlinks** (`_bmad-output/{planning,implementation}-artifacts` → `projects/local-recipes/...`), and `implementation-artifacts/` itself is gitignored. The loop now runs `isolation = "worktree"` — and **a fresh git worktree contains neither the gitignored symlinks nor the gitignored implementation-artifacts directory**. The pyforge-warden pilot learnings predate the worktree switch (in-place mode), so this seam is **untested**: a dev-auto session in a worktree that writes its spec via the standard `{implementation_artifacts}` path would either fail or write to a literal new directory that the squash-merge ignores (gitignored) — silently stranding spec/status artifacts the orchestrator's contract depends on. **Mitigation to validate before Wave 0**: a worktree-bootstrap step (loop hook, `[scm]` hook, or story-spec preamble) that recreates the symlinks + target dirs inside each worktree (the same fix `scripts/bmad-switch` applies at repo root), plus one smoke story to prove spec round-trip from a worktree. Confidence: the layout facts are HIGH (repo-verified); the failure mode is MEDIUM (reasoned, not yet reproduced) — which is precisely why it needs the smoke test. _Sources: CLAUDE.md multi-project pattern ; .bmad-loop/policy.toml [scm] ; docs/specs/bmad-loop-adoption.md W2/pilot learnings_
+
+## Architectural Patterns and Design
+
+### System Architecture Patterns — three candidate execution architectures
+
+**Option A — Loop maximalism** (bmad-loop drives every story, `gates = none`/`per-epic` from day one). *Rejected.* Fails on verified facts: the deterministic verify gates the loop depends on don't exist until Waves A/B build them; keystone stories exceed session budgets unpredictably (pilot: 25.8M tokens burned at a 90-min cap); Q-gated stories (B4/B5/B8) and credentialed smokes structurally require humans; and `max_parallel = 1` removes the throughput argument that would justify the risk.
+
+**Option B — Graduated autonomy (RECOMMENDED)** — the same "Option B" posture the repo already selected for the pyforge-warden pilot, extended wave-wise:
+
+| Phase | Mode | Rationale |
+|---|---|---|
+| Wave 0 + A1–A3 | **Attended / dev-auto-inline** (no orchestrator) | These stories *build the harness the loop needs* (scaffold, catalog, TTL dataset class, verify tasks); fastest iteration is interactive; establishes the kedro verify commands |
+| Wave B (B1–B10) | **Loop, `per-story-spec-approval`** | Heavy, novel, contract-laden ports; spec-approval drains ambiguity pre-implementation; TEA `atdd` generates the fixture gates per story; B4 parity is an attended wave-boundary event |
+| Waves C–E | **Loop, relax toward `per-epic`** | Post-parity, gates are proven and the surface is additive (orchestration, BSL, dashboards, A2A); per-epic human review at PR boundaries |
+| Waves F–H | **Mixed** | F1 (engine swap) + G1/G2 (WASM) loop-drivable against fixtures; F4 gate + H factory stories carry cross-system integration better handled dev-auto-inline with attended checkpoints |
+
+**Option C — dev-auto-inline only** (no orchestrator ever). *Kept as the fallback + the Windows path.* Loses determinism, journaling, token accounting, and unattended throughput; wins on zero harness risk and OS-independence. It is the correct mode for Wave 0/A regardless (per the table) — so Option B *contains* Option C where it's strongest.
+
+### Design Principles and Best Practices
+
+1. **Verify-first sequencing** — every wave's first deliverable is its own deterministic gate (Wave A: `kedro-test` + catalog smoke; Wave B: per-pipeline fixture-diffs + parity harness; Wave C: schedule dry-run checks). The loop never enters a wave whose gate doesn't exist. This inverts the usual "tests follow features" instinct and is the single highest-leverage decision in this architecture.
+2. **Fixture-diff over live-run** (officially-blessed pattern): the 3–4 h rebuild, credentialed APIs, and network flakiness all stay out of gates; snapshot fixtures live in the *tracked* test tree (`tests/data/`), never in the gitignored `.claude/data/` runtime dir (which fresh worktrees don't have — see Data Architecture).
+3. **Frozen-lock everywhere in loop paths** (`pixi run --frozen ...`) — the pyforge precedent (worktree re-solve panics + lock rewrites) applies verbatim.
+4. **Budgets sized to the heaviest story per wave, pre-flight** (pilot learning #1): B1/B2 are this effort's keystones — assume ≥180 min / high token budgets from the start; consider per-stage `[adapter.dev]` overrides.
+5. **Humans at batch boundaries, reviewers on a leash**: spec-approval + wave-boundary events are the human surface; REVIEW sessions constrained to correctness-affecting findings (the verified over-engineering failure mode of long unattended runs).
+6. **Specs as the only channel**: dev-auto's frontmatter-status contract means all orchestration state lives in artifacts — which is also what makes the dashboards work for free.
+
+### Scalability and Performance Patterns
+
+- **Throughput model**: sequential stories (`max_parallel = 1`) × ~30 stories × (dev + review + verify cycles) — wave-level wall-clock is dominated by verify time and session budgets, not agent speed. Practical lever: keep gates fast (fixture-diffs in seconds/minutes; full `test-all` at wave boundaries only — the Ralph "scope tests to the changed unit" rule).
+- **Worktree economics (new finding)**: `.pixi/` envs are gitignored → **each fresh worktree needs its own pixi env materialization** before any `pixi run --frozen` verify (multi-GB local-recipes env; solve skipped with `--frozen` but download/link time is real, cache hardlinks help). Mitigations to evaluate in the Wave-0 smoke: shared pixi cache (default behavior — links from cache), `detached-environments` config, or a leaner dedicated `cf-atlas-kedro` env for the pipeline package so loop verifies don't materialize the fat env. The nebi-scaffolded project (Story A1) choosing its own lean env is the clean answer.
+- **Token economics**: 2M cost-weighted tokens/story budget vs the pilot's 25.8M burn on one killed attempt — the budget exists to stop runaway stories, but keystone stories need explicit budget raises, not silent failures.
+
+### Security Architecture Patterns
+
+As established in Integration (§ above): fixture-only gates; Phase P never loop-reachable; credentialed smokes attended; permission-bypass mode in unattended sessions raises the priority of FR-1 per-host credential scoping; worktrees + `keep_failed = true` mean failed-attempt branches can accumulate — periodic reconciliation (the loop does this at run/sweep start) plus no secrets ever written into worktree files.
+
+### Data Architecture Patterns
+
+Three data domains with different loop-visibility: **(1) artifacts** (`_bmad-output` tree) — the loop's own state, tracked (Tier 2) or symlinked (Tier 3, the worktree seam); **(2) test fixtures** — tracked, in-repo, the *only* data gates may touch; **(3) runtime data** (`.claude/data/`: cf_atlas.db, vdb, caches — gitignored, absent from worktrees) — never a gate dependency; stories that need realistic data get *sampled fixtures* generated attended, once, from the operator's runtime data (e.g., a 500-package cf_atlas.db slice for parity-harness development). This three-way split should be stated in the Tier-2 architecture doc.
+
+### Deployment and Operations Architecture
+
+Operator posture per run: launch via `bmad-loop run` (TUI attached or `tui` separately), desktop-notify + ATTENTION file as the interrupt channel, `bmad-dashboard` (bmad-ui env) for story/sprint state, journals in the run dir as the audit trail. Cadence recommendation: **supervised runs first** (operator present for Wave B's early stories), overnight unattended only after two clean supervised stories in a row; sweeps operator-invoked at wave ends (`auto = never` stays). One-time preconditions checklist: hooks approval, `bmad-switch local-recipes` (symlinks live), worktree-bootstrap smoke, heaviest-story budget review. _Sources for this section: all step-2/3 citations; pilot learnings (adoption spec); Ralph/Claude-Code best-practice docs (cited above)_
