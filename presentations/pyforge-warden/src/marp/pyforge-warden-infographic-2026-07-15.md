@@ -30,7 +30,7 @@ BMAD-METHOD Tech Spec · Full agentic AI-SDLC · Status: in progress, planning c
 
 `pyforge-warden`
 
-One CLI that guards both Python ecosystems — the **PyPI** world of applications and libraries, and the **conda / conda-forge** world of scientific computing, analytics and ML/AI data platforms. Warden runs pluggable engines across **six axes** — hygiene, security, license, currency, provenance and maintenance — and returns **one consolidated report**.
+One CLI that guards both Python ecosystems — the **PyPI** world of applications and libraries, and the **conda / conda-forge** world of scientific computing, analytics and ML/AI data platforms. Warden runs pluggable engines across **six axes of dependency trust** — **four shipping in v1 with their gates** (hygiene, security, license, currency), provenance + maintenance on the vision roadmap — and returns **one consolidated report**.
 
 SCA · not SAST · CI/CD quality gate · family naming `<language>-<hygiene-engine>-<vuln-engine>`
 
@@ -40,7 +40,7 @@ SCA · not SAST · CI/CD quality gate · family naming `<language>-<hygiene-engi
 
 | Owner | Language | CLI | Scope | Ecosystem |
 | --- | --- | --- | --- | --- |
-| rxm7706 | Python 3.12+ | argparse · stdlib | 5 epics · 20 stories | PyPI + conda-forge |
+| rxm7706 | Python 3.12+ | argparse · stdlib-lean | 6 epics · 31 stories | PyPI + conda-forge |
 
 ### Why Warden — one gate, both ecosystems, six axes of dependency trust
 
@@ -130,7 +130,7 @@ The manifest engine is the wedge: neither scanning engine parses conda/pixi mani
 
 - **Default policy** — v1 blocks on CVSS-critical CVEs **and the CISA-KEV tier** (any KEV-listed advisory on a pinned version blocks regardless of CVSS); high/med/low warn (DEP001 missing-dependency blocks on a confident mapping); license + currency gate **when configured** (`--allow/--deny-licenses` · `--max-lag`/`--require-lts`/`--fail-on-eol`), else surface as `warn`. Configurable via `--fail-on`, `max_critical`, `--fail-on-kev`, `--min-epss` — **all v1**.
 - **Waivers as code** — `--bypass --reason` emits an expiring stanza (default 14 days) the team commits. The tool reads it, never writes the repo.
-- **Typed errors** — `unparsable-manifest` · `engine-unavailable` · `engine-crash` · `internal-error`.
+- **Typed errors** — 9 `error_kind`s: `unparsable-manifest` · `engine-unavailable` · `engine-output-unrecognized`/`-unparseable` · `engine-execution-failed` · `engine-timeout` · `config-parse`/`config-validation` · `internal-error`.
 
 ---
 
@@ -158,7 +158,7 @@ Warden runs at three depths. The further out it scans, the more it **prevents** 
 
 - **Public upstream** *(vision)* — scan PyPI & conda-forge themselves: malicious packages, typosquats, name-squatting, stale/abandoned feedstocks. → *blocklists*
 - **Registry perimeter** *(v1.x)* — turn that intel into block / allow lists on Artifactory / JFrog; quarantine bad packages so they never cross the firewall. A census of everything that enters. → *clean pulls*
-- **Consumption edge** *(today)* — scan repos, desktops & CI: the six axes on what apps actually pull. Precise per-project, but only sees what you scan.
+- **Consumption edge** *(today)* — scan repos, desktops & CI: the four v1 axes on what apps actually pull. Precise per-project, but only sees what you scan.
 
 Scan the **edge** and you report what you found; scan the **supply** and you prevent what enters.
 
@@ -180,7 +180,7 @@ Local mode never softens the gate — same verdict lattice, same exit codes, TTY
 
 **Path A · PyPI project (native)** — DETECT `pyproject.toml`/`requirements.txt`/`*.lock` → DELEGATE deptry reads source, osv-scanner reads native lockfile → UNIFY one ComplianceReport → OUTCOME `clean` / `warn` / `policy-violation`.
 
-**Path B · Conda / Pixi project (the E1 wedge)** — DETECT `environment.yml`/`meta.yaml`/`recipe.yaml`/`pixi.toml` → BRIDGE manifest engine synthesizes a version-pinned `requirements.txt` from `pixi.lock` / `conda-lock` → UNIFY deptry + osv-scanner run over it → OUTCOME `coverage-flagged` / `indeterminate` (name-only fallback never a silent pass).
+**Path B · Conda / Pixi project (the E1 wedge)** — DETECT `environment.yml`/`meta.yaml`/`recipe.yaml`/`pixi.toml` → BRIDGE manifest engine synthesizes a version-pinned `requirements.txt` from `pixi.lock` / `conda-lock` → UNIFY deptry + osv-scanner run over it → OUTCOME a coverage-qualified `indeterminate` (name-only fallback never a silent pass).
 
 **Path C · Non-Python repo (out of scope)** — DETECT no supported manifest → SKIP both engines → REPORT honestly → OUTCOME `not-applicable`, `exit 0`.
 
@@ -319,12 +319,12 @@ A producer-agnostic report contract (purl + CycloneDX) lets tools slot in as an 
 | `PyPA Advisory DB` | PyPI advisory | Enrichment feed (OSV-format) | Candidate |
 | `NVD / CVE (MITRE)` · GHSA · CWE | Advisory DB / taxonomy | Enrichment feed | Planned / Candidate |
 | `EUVD` (ENISA) | EU vulnerability DB | Enrichment feed | Planned |
-| `CISA KEV` | Exploit intel | **v1 gate tier** + enrichment | Candidate |
-| `FIRST EPSS` · `VulnCheck` | Exploit intel | Prioritization enrichment | Candidate / Planned |
-| `license-expression` · SPDX list | License (SPDX) | v1 license engine + data (enrich) | Candidate |
-| `conda about:` + `importlib.metadata` | License data | v1 license inputs (no scan) | Candidate |
+| `CISA KEV` | Exploit intel | **v1 gate tier** + enrichment | **v1** (`--fail-on-kev`, in the default) |
+| `FIRST EPSS` · `VulnCheck` | Exploit intel | Prioritization + gate | **v1** (`--min-epss`) / Planned |
+| `license-expression` · SPDX list | License (SPDX) | v1 license engine + data | **v1** (gate flag-activated) |
+| `conda about:` + `importlib.metadata` | License data | v1 license inputs (no scan) | **v1** |
 | `OSS Review Toolkit (ORT)` · `ClearlyDefined` · `ScanCode` | License + policy | Engine / feed / deep scan | Candidate / Planned |
-| `endoflife.date` · `Repology` | Currency / EOL | Currency feed | Planned |
+| `endoflife.date` · `Repology` | Currency / EOL | Currency feed | **v1** (tier 2 of the ladder) / Planned |
 | OpenSSF Scorecard · criticality_score · Libraries.io · Tidelift | Health / sustainability | Health & sponsorship feed | Candidate / Planned |
 | `Sigstore / SLSA` · `in-toto / GUAC` · PyPI Trusted Publishing (PEP 740) · `model-transparency` | Provenance | Signing · attestation · graph | Planned |
 | Google Assured OSS · Anaconda Defaults | Vetted base | Trusted base + provenance | Planned |

@@ -65,7 +65,7 @@ The **resolved-inventory object** is the spine (this *is* Gap B): discovery + ex
 
 **Non-Functional Requirements — the dominant architectural drivers:**
 - **C0 (never false-green)** is the shaping force → fail-loud everywhere; verdict on report **content**, never an engine exit code; typed errors; no-meaningful-scan guards. Every module inherits it.
-- **Security S1–S8** split the design into a **stdlib-only, execution-free extractor** (AST-denylist, ReDoS line-bound, no template render) vs. a **hardened engine-runner** (input purity, secure temp, `_engine_env` normalization) vs. a **schema-aware serializer** (S7 output neutralization).
+- **Security S1–S9** split the design into a **stdlib-lean, execution-free extractor** (the library-policy revision — § NFR-S1 reframe — retired "stdlib-only") (AST-denylist, ReDoS line-bound, no template render) vs. a **hardened engine-runner** (input purity, secure temp, `_engine_env` normalization) vs. a **schema-aware serializer** (S7 output neutralization).
 - **NFR-R3b determinism** → report assembly canonicalizes (sort, pin volatile fields, `--deterministic` mode).
 - **NFR-P** → all v1 axes run **in parallel**; stdlib-lean; offline DB + cached KEV/EPSS/endoflife feeds. **NFR-I1/I3** → schema-validated report + CycloneDX 1.6 + pure-JSON stdout.
 
@@ -75,7 +75,7 @@ The **resolved-inventory object** is the spine (this *is* Gap B): discovery + ex
 - Complexity concentrates in exactly the three blocking gaps: the lossy E1 extractor, the resolved-inventory model (Gap B), and the osv/deptry output-orchestration + verdict math (Gaps A & C).
 
 ### Technical Constraints & Dependencies
-- **stdlib-only library** (argparse / tomllib / re) — confirmed by the scaffold's empty `dependencies`; `jsonschema` test-only; engines (`deptry`, `osv-scanner`) as **conda run-deps** (provisioned, not fetched — OD1).
+- **stdlib-lean library** (argparse / tomllib / re + the targeted safe deps: PyYAML `safe_load`, packaging, cyclonedx-python-lib, `jsonschema` — a RUNTIME dep per FR14; the original "empty `dependencies`" scaffold note is superseded, 4 runtime deps shipped); engines (`deptry`, `osv-scanner`) as **conda run-deps** (provisioned, not fetched — OD1).
 - **Pinned engine contracts (2026-07-11):** deptry = no-severity + `--json-output`; osv = `--format json` (JSON→stdout, else→stderr) + exit `{0 clean, 1 vulns-found=EXPECTED, 127 DB-load/coverage error, 128 no-packages}` — Story-1.4-reconciled: 127 is multiplexed and a DB-absent/empty 127 → `indeterminate` (coverage gap, gated by the content pre-flight below), other 127 → `error`; 128 → `indeterminate`.
 - python ≥ 3.12; pixi ≥ 0.72.2 (**a build/dev-env floor — the tool never invokes pixi at runtime**; `pixi.lock` is `safe_load`-parsed; clarified 2026-07-12); `pixi-build-python` packaging; never-writes-repo (NFR-R3a/S4); offline-first vuln data.
 - **Open dependency question (D1):** the waiver YAML writer may pull one small YAML lib *or* emit-for-human-to-commit — resolved in Architectural Decisions.
@@ -102,7 +102,7 @@ CLI tool — a **non-interactive, single-process, stdlib-only Python CLI**. No w
 
 ### Selected Starter: NONE — use the existing scaffold
 
-**Rationale:** the stdlib-only constraint is load-bearing (lightweight fleet gate + S1 security), so no third-party CLI framework is permissible. The existing scaffold at `src/shared/packages/pyforge-warden/` already establishes the entire foundation.
+**Rationale** *(wording superseded by the library-policy revision — the binding constraint is stdlib-LEAN + no-execution, § NFR-S1 reframe; the no-CLI-framework conclusion still holds)*: the lean-runtime constraint is load-bearing (lightweight fleet gate + S1 security), so no third-party CLI framework is permissible. The existing scaffold at `src/shared/packages/pyforge-warden/` already establishes the entire foundation.
 
 **Technical stack (locked — versions fixed by PRD + scaffold, nothing to verify):**
 - Language/runtime: Python ≥ 3.12

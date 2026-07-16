@@ -193,7 +193,7 @@ Axes 5–6 (Sigstore/SLSA provenance; OpenSSF Scorecard maintenance) · maliciou
 
 **Opening scene.** Priya maintains ~30 conda-forge feedstocks and a pixi analytics library. Her deps live in `recipe.yaml`, legacy `meta.yaml`, and `pixi.toml`. She wants the hygiene + CVE gate her PyPI-shipping colleagues have, but every time she reaches for `deptry` or `osv-scanner` she hits the same wall: neither parses her manifests. Her only option is to hand-translate the recipe into a fictional `requirements.txt` — lossy, stale the instant she edits the recipe, quietly wrong.
 
-**Rising action.** She adds one step: `pyforge-warden scan .`. The manifest engine walks the repo, two-pass-evaluates the `recipe.yaml` `${{ }}` and the `meta.yaml` `{% set %}` / `{{ compiler() }}` / `# [sel]` selectors stdlib-only, and extracts the dependency set — feeding deptry a synthesized requirements front-door and osv the version-pinned set from `pixi.lock` (name-only + marked where no version resolves).
+**Rising action.** She adds one step: `pyforge-warden scan .`. The manifest engine walks the repo, two-pass-evaluates the `recipe.yaml` `${{ }}` and the `meta.yaml` `{% set %}` / `{{ compiler() }}` / `# [sel]` selectors stdlib-lean (no execution of untrusted input), and extracts the dependency set — feeding deptry a synthesized requirements front-door and osv the version-pinned set from `pixi.lock` (name-only + marked where no version resolves).
 
 **Climax — the payoff is the *honest* verdict, not the clean one.** Her mixed repo can't be fully resolved: some deps come through with versions, some degrade to name-only, one `meta.yaml` uses a Jinja construct the extractor can't evaluate. The report doesn't paper over it — it renders a **coverage-qualified `indeterminate` (60% covered)**, with the coverage split into **hygiene-coverage vs vulnerability-coverage** (a manifest can be 100% hygiene-covered yet 0% vuln-covered when every dep is name-only), and it names the 40% it *couldn't* see. Critically: **the unresolved 40% routes to `indeterminate` (above `warn`) — the run exits non-zero by design** until Priya locks (`pixi.lock`), files a time-boxed waiver, or opts into `--warn-only`; empty-findings-at-partial-coverage is never `clean`. *(Corrected 2026-07-12 — the original "warn at minimum" predated the `indeterminate` state.)* Anyone can scan a clean `pixi.toml`; the wedge is trustworthy coverage on formats neither engine parses, and *this* is the demo that sells it.
 
@@ -308,7 +308,7 @@ Every one of these is **exit 2, explicitly not clean** — the absence of an exp
 
 The journeys resolve into these capability clusters, mapped to epics + the requirements they surface:
 
-- **Manifest resolution front-door (E1)** — 6 formats, two-pass eval, stdlib-only, split coverage, name-only+marked degrade, supported-construct matrix *(J1, J8)*
+- **Manifest resolution front-door (E1)** — 6 formats, two-pass eval, stdlib-lean (NFR-S1 no-execution), split coverage, name-only+marked degrade, supported-construct matrix *(J1, J8)*
 - **Dual extraction + delegation (E2/E3)** — PyPI native delegation; conda/pixi bridge to deptry + osv *(J1, J2)*
 - **Honest report + severity gate (E4)** — schema'd `ComplianceReport`, split coverage, verdict-composition, typed error taxonomy + ownership routing, CycloneDX SBOM *(J2, J3, J5, J9)*
 - **Auditable expiring bypass (FR9)** — waivers-as-code, `authorized_by`, `review_required`, expiry re-block, untrusted-input trust boundary *(J4)*

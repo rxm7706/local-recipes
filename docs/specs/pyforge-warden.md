@@ -624,7 +624,7 @@ story-0.1 replan):**
 
 - **0.1 — REPLAN: EXECUTED 2026-07-15; RE-BASELINED 2026-07-16 (D12).** The
   PRD (canonical FR32–**FR40** + NFR-S9), architecture (§ Multi-axis
-  reconciliation), and epics (Epic 6, stories **6.1–6.9**) were rebuilt from
+  reconciliation), and epics (Epic 6, stories **6.1–6.10**; story 2.6 split from 2.1) were rebuilt from
   this spec; readiness re-ran both days (READY-WITH-CONDITIONS). Ownership:
   engine version-range → story 6.6; KEV feed → 6.4; **EPSS feed + `--min-epss`
   → 6.7; baseline & grandfathering → 6.8; fix-PR actuator → 6.9** (all v1 per
