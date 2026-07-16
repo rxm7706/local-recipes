@@ -3,7 +3,11 @@ DB-cache resolution, the CONTENT pre-flight, ``name==version`` input
 synthesis (NFR-S6 purity guard), the CVSS-tier mapping table, and
 ``parse_osv_output``. Story 1.6 adds the severity->rung composition
 (``DEFAULT_VULN_SEVERITY_POLICY``, ``status_for_severity_tier``,
-``vuln_rung``), unit-tested here alongside the pre-existing coverage.
+``vuln_rung``), unit-tested here alongside the pre-existing coverage. Story
+2.5 adds the stale-DB honesty tier (``is_db_stale``/
+``stale_vuln_data_finding``) and the name-level CVE tier (``cvss_v31_base_
+score``, ``name_level_critical_advisory_ids``/``name_level_critical_cve_
+finding``).
 
 Synthetic osv JSON / hand-built zips in, ``Finding``s + booleans out — no
 real subprocess (``OsvEngine`` itself is exercised in
@@ -19,6 +23,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import zipfile
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -33,8 +38,10 @@ from pyforge.warden.models import (
     SeverityTier,
     Status,
     StatusDriver,
+    WithholdReason,
 )
 from pyforge.warden.vuln import (
+    DB_MAX_AGE_DAYS,
     DEFAULT_VULN_SEVERITY_POLICY,
     OSV_DB_CACHE_ENV_VAR,
     OsvParse,
@@ -43,10 +50,15 @@ from pyforge.warden.vuln import (
     _db_has_valid_advisory,
     _is_valid_osv_advisory,
     _synthesize_requirements,
+    cvss_v31_base_score,
     db_zip_path,
+    is_db_stale,
+    name_level_critical_advisory_ids,
+    name_level_critical_cve_finding,
     offline_db_unavailable_finding,
     parse_osv_output,
     resolve_cache_dir,
+    stale_vuln_data_finding,
     status_for_severity_tier,
     unsafe_identity_finding,
     vuln_rung,
@@ -56,6 +68,8 @@ FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 OSV_RECORDS_DIR = FIXTURES / "osv-db" / "pypi"
 FIXTURE_ADVISORY_ID = "PDOS-FIXTURE-0001"
 FIXTURE_PACKAGE = "pdos-vuln-fixture"
+FIXTURE_HIGH_ADVISORY_ID = "PDOS-FIXTURE-0002"
+FIXTURE_HIGH_PACKAGE = "pdos-vuln-fixture-high"
 
 
 def _load_builder():
@@ -672,3 +686,251 @@ def test_vuln_rung_with_no_severity_is_indeterminate():
     assert driver == StatusDriver(
         axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:leftpad"
     )
+
+
+# --- Story 2.5 (FR12): is_db_stale / stale_vuln_data_finding -----------------
+
+_NOW = datetime(2026, 7, 16, 12, 0, 0, tzinfo=UTC)
+
+
+def test_is_db_stale_exactly_at_the_boundary_is_not_stale():
+    """The decision record's non-strict boundary rule: exactly
+    ``now - DB_MAX_AGE_DAYS`` is NOT stale."""
+    snapshot_at = (_NOW - timedelta(days=DB_MAX_AGE_DAYS)).isoformat()
+    assert is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=_NOW) is False
+
+
+def test_is_db_stale_one_second_past_the_boundary_is_stale():
+    snapshot_at = (_NOW - timedelta(days=DB_MAX_AGE_DAYS, seconds=1)).isoformat()
+    assert is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=_NOW) is True
+
+
+def test_is_db_stale_a_fresh_snapshot_is_not_stale():
+    snapshot_at = (_NOW - timedelta(days=1)).isoformat()
+    assert is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=_NOW) is False
+
+
+def test_is_db_stale_future_dated_is_stale_never_fresh():
+    """Clock skew (a future snapshot_at) is treated as stale, never fresh
+    (decision record § 2)."""
+    snapshot_at = (_NOW + timedelta(hours=1)).isoformat()
+    assert is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=_NOW) is True
+
+
+def test_is_db_stale_none_snapshot_is_stale():
+    assert is_db_stale(None, DB_MAX_AGE_DAYS, now=_NOW) is True
+
+
+@pytest.mark.parametrize(
+    "snapshot_at",
+    ["not-a-timestamp", "", "2026-13-99T99:99:99+00:00"],
+)
+def test_is_db_stale_unparsable_snapshot_is_stale_never_raises(snapshot_at):
+    assert is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=_NOW) is True
+
+
+def test_is_db_stale_naive_snapshot_is_stale():
+    """A snapshot_at with no UTC offset is unsafe to compare against an
+    aware ``now`` -- degrades to stale, never guesses a timezone, never
+    raises a naive/aware TypeError."""
+    assert is_db_stale("2026-07-16T00:00:00", DB_MAX_AGE_DAYS, now=_NOW) is True
+
+
+def test_stale_vuln_data_finding_id_grammar():
+    finding = stale_vuln_data_finding()
+    assert finding.id == "indeterminate:vuln-data-stale:vuln-database"
+    assert finding.axis == AXIS_VULNERABILITY
+    assert finding.subject == "vuln-database"
+    assert finding.severity is None
+
+
+# --- Story 2.5 (FR13): cvss_v31_base_score -----------------------------------
+
+
+def _fixture_cvss_v3_vector(record_id: str) -> str:
+    """The CVSS_V3 vector from a REAL ``tests/fixtures/osv-db/pypi/<id>.json``
+    record's own top-level ``severity[]`` -- read from disk (never a
+    hand-duplicated literal) so this regression pin can never silently drift
+    from the fixture it claims to pin (review finding, 2026-07-16)."""
+    record = json.loads((OSV_RECORDS_DIR / f"{record_id}.json").read_text())
+    for entry in record["severity"]:
+        if entry.get("type") == "CVSS_V3":
+            return entry["score"]
+    raise AssertionError(f"{record_id}.json has no CVSS_V3 severity entry")
+
+
+FIXTURE_1_VECTOR = _fixture_cvss_v3_vector("PDOS-FIXTURE-0001")
+FIXTURE_2_VECTOR = _fixture_cvss_v3_vector("PDOS-FIXTURE-0002")
+
+
+def test_cvss_v31_base_score_fixture_1_is_9_8_critical():
+    """PDOS-FIXTURE-0001's own vector -- documented (fixture comment +
+    decision record) as computing to 9.8 (critical)."""
+    score = cvss_v31_base_score(FIXTURE_1_VECTOR)
+    assert score == 9.8
+    assert _cvss_score_to_tier(str(score)) is SeverityTier.CRITICAL
+
+
+def test_cvss_v31_base_score_fixture_2_is_8_8_high():
+    """PDOS-FIXTURE-0002's own vector -- documented in that fixture's own
+    comment as computing to 8.8 (high)."""
+    score = cvss_v31_base_score(FIXTURE_2_VECTOR)
+    assert score == 8.8
+    assert _cvss_score_to_tier(str(score)) is SeverityTier.HIGH
+
+
+def test_cvss_v31_base_score_scope_changed_formula_branch():
+    """A well-known public CVSS v3.1 Scope:Changed example (base score 9.6)
+    -- neither fixture vector exercises the Scope==C impact/PR-weight
+    branch, so this pins it independently."""
+    vector = "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H"
+    assert cvss_v31_base_score(vector) == 9.6
+
+
+@pytest.mark.parametrize(
+    "vector",
+    [
+        None,
+        "",
+        123,
+        9.8,
+        [],
+        {},
+        "not-a-vector-at-all",
+        "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",  # wrong CVSS version
+        "CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P",  # CVSS v2 shape entirely
+        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H",  # missing A
+        "CVSS:3.1/AV:N/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",  # duplicate AV
+        "CVSS:3.1/AV:X/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",  # unrecognized AV value
+        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:U",  # temporal metric
+    ],
+    ids=[
+        "none",
+        "empty-string",
+        "int",
+        "float",
+        "list",
+        "dict",
+        "garbage-string",
+        "wrong-cvss-version",
+        "cvss-v2-shape",
+        "missing-metric",
+        "duplicate-metric",
+        "unrecognized-value",
+        "temporal-metric-appended",
+    ],
+)
+def test_cvss_v31_base_score_unparsable_is_none(vector):
+    assert cvss_v31_base_score(vector) is None
+
+
+# --- Story 2.5 (FR13): name_level_critical_advisory_ids ----------------------
+
+
+def test_name_level_critical_advisory_ids_finds_the_critical_fixture(tmp_path):
+    builder = _load_builder()
+    cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
+    zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
+    assert name_level_critical_advisory_ids(zip_path, FIXTURE_PACKAGE) == (
+        FIXTURE_ADVISORY_ID,
+    )
+
+
+def test_name_level_critical_advisory_ids_is_empty_for_a_high_severity_advisory(
+    tmp_path,
+):
+    """PDOS-FIXTURE-0002 is HIGH (8.8), not CRITICAL -- never surfaced by
+    the name-level tier."""
+    builder = _load_builder()
+    cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
+    zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
+    assert name_level_critical_advisory_ids(zip_path, FIXTURE_HIGH_PACKAGE) == ()
+
+
+def test_name_level_critical_advisory_ids_is_empty_for_an_unrelated_name(tmp_path):
+    builder = _load_builder()
+    cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
+    zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
+    assert name_level_critical_advisory_ids(zip_path, "totally-unrelated-pkg") == ()
+
+
+def test_name_level_critical_advisory_ids_canonicalizes_the_target_name(tmp_path):
+    """PEP 503: `Pdos_Vuln_Fixture` and `pdos-vuln-fixture` are ONE identity."""
+    builder = _load_builder()
+    cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
+    zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
+    assert name_level_critical_advisory_ids(zip_path, "Pdos_Vuln_Fixture") == (
+        FIXTURE_ADVISORY_ID,
+    )
+
+
+def test_name_level_critical_advisory_ids_empty_on_an_absent_zip(tmp_path):
+    zip_path = db_zip_path(tmp_path / "does-not-exist", Ecosystem.PYPI)
+    assert name_level_critical_advisory_ids(zip_path, FIXTURE_PACKAGE) == ()
+
+
+def test_name_level_critical_advisory_ids_empty_on_an_unmapped_ecosystem(tmp_path):
+    builder = _load_builder()
+    cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
+    zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
+    assert (
+        name_level_critical_advisory_ids(zip_path, FIXTURE_PACKAGE, Ecosystem.CONDA)
+        == ()
+    )
+
+
+def test_name_level_critical_advisory_ids_tolerates_one_bad_entry(tmp_path):
+    """One malformed zip entry never aborts the scan of the rest of the
+    archive (mirrors ``_db_has_valid_advisory``'s own tolerance)."""
+    db_dir = tmp_path / "cache" / "osv-scanner" / "PyPI"
+    db_dir.mkdir(parents=True)
+    zip_path = db_dir / "all.zip"
+    good = {
+        "id": "GHSA-good",
+        "severity": [
+            {
+                "type": "CVSS_V3",
+                "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            }
+        ],
+        "affected": [
+            {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}
+        ],
+    }
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("GHSA-bad.json", b"{ not json ]")
+        zf.writestr("GHSA-good.json", json.dumps(good))
+    assert name_level_critical_advisory_ids(zip_path, "foo") == ("GHSA-good",)
+
+
+def test_name_level_critical_advisory_ids_never_counts_an_unparsable_vector(tmp_path):
+    db_dir = tmp_path / "cache" / "osv-scanner" / "PyPI"
+    db_dir.mkdir(parents=True)
+    zip_path = db_dir / "all.zip"
+    record = {
+        "id": "GHSA-bad-vector",
+        "severity": [{"type": "CVSS_V3", "score": "not-a-real-vector"}],
+        "affected": [
+            {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}
+        ],
+    }
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("GHSA-bad-vector.json", json.dumps(record))
+    assert name_level_critical_advisory_ids(zip_path, "foo") == ()
+
+
+def test_name_level_critical_cve_finding_id_grammar(component_factory):
+    component = component_factory(
+        name="pdos-vuln-fixture",
+        version=None,
+        pypi_identity=PypiIdentity(name="pdos-vuln-fixture", version=None),
+        indeterminate_reason=WithholdReason.NO_VERSION,
+    )
+    finding = name_level_critical_cve_finding(component, (FIXTURE_ADVISORY_ID,))
+    assert finding.id == (
+        "indeterminate:name-level-critical-cve:pdos-vuln-fixture@unspecified"
+    )
+    assert finding.axis == AXIS_VULNERABILITY
+    assert finding.subject == "pdos-vuln-fixture"
+    assert finding.severity is None
+    assert FIXTURE_ADVISORY_ID in finding.message

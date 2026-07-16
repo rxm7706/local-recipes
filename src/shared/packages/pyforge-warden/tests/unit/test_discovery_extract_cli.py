@@ -49,6 +49,7 @@ from pyforge.warden.extract.pyproject import (
     PROJECT_DEPENDENCIES_SECTION,
     PyprojectExtractor,
 )
+from pyforge.warden.inventory import merge_components
 from pyforge.warden.models import (
     CveMatchLevel,
     Ecosystem,
@@ -463,6 +464,44 @@ def test_router_does_not_cross_wire_pixi_lock_and_conda_lock_sections():
         DefaultRouter().route(PIXI_LOCK_KIND, CONDA_LOCK_CONDA_SECTION)
     with pytest.raises(ValueError):
         DefaultRouter().route(CONDA_LOCK_KIND, PIXI_LOCK_CONDA_SECTION)
+
+
+# --- cross-ecosystem non-merge (Story 2.5, FR7) -------------------------------
+
+
+def test_cross_ecosystem_same_name_stays_two_distinct_components(tmp_path):
+    """FR7 regression: ``inventory.identity()``'s ``(ecosystem,
+    canonical_name, version)`` key already keeps a same-named conda + PyPI
+    component distinct -- no production change, this pins the guarantee. A
+    ``pyproject.toml`` PyPI dep and a ``pixi.lock`` conda row both literally
+    named ``requests`` must never merge into one ``Component``."""
+    pyproject_path = write_pyproject(tmp_path, ["requests==2.31.0"])
+    (pypi_component,) = PyprojectExtractor(DefaultRouter()).extract(
+        pyproject_path, MANIFEST
+    )
+
+    lock_path = tmp_path / PIXI_LOCK_KIND
+    lock_path.write_text(
+        "version: 6\n"
+        "packages:\n"
+        "- conda: https://conda.anaconda.org/conda-forge/noarch/"
+        "requests-2.31.0-pyhd8ed1ab_0.conda\n",
+        encoding="utf-8",
+    )
+    lock_manifest = ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND)
+    (conda_component,) = PixiLockExtractor(DefaultRouter()).extract(
+        lock_path, lock_manifest
+    )
+
+    merged = merge_components((pypi_component, conda_component))
+
+    assert len(merged) == 2
+    by_ecosystem = {c.ecosystem: c for c in merged}
+    assert set(by_ecosystem) == {Ecosystem.PYPI, Ecosystem.CONDA}
+    assert by_ecosystem[Ecosystem.PYPI].name == "requests"
+    assert by_ecosystem[Ecosystem.PYPI].version == "2.31.0"
+    assert by_ecosystem[Ecosystem.CONDA].name == "requests"
+    assert by_ecosystem[Ecosystem.CONDA].version == "2.31.0"
 
 
 # --- CLI rows ----------------------------------------------------------------

@@ -26,6 +26,19 @@ but osv's exit code IS partly the gate: 0/1 are content (clean/vulns-found),
 127/128/other are typed operational failures — see the module's own
 docstring and the decision record for why the exit code must be observed at
 all for osv (the DB-absent cold start would otherwise false-green).
+
+Story 2.5 widens ``OsvEngine.run`` with two independent honesty tiers, both
+computed ONCE per scan right after the DB content pre-flight passes (this
+module owns the clock — ``vuln.py``/``cli.py``/``report.py`` stay clockless):
+``is_db_stale`` (FR12 — a stale/future-dated DB forces the WHOLE
+vulnerability axis to ``indeterminate`` via ``stale_vuln_data_finding``,
+merged into every exit-``{0,1}`` (and the name-level-only) result) and the
+name-level "any version" scan (FR13 — a mapped-but-unversioned component's
+name is checked directly against the SAME resolved DB zip, never a second
+``osv-scanner`` subprocess). The candidate guard widens to
+``not candidates and not name_level_candidates`` so a scan with ONLY
+name-level candidates still reaches the pre-flight instead of bailing out
+empty.
 """
 
 from __future__ import annotations
@@ -34,6 +47,7 @@ import os
 import subprocess
 import tempfile
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .hygiene import parse_deptry_output
@@ -50,13 +64,18 @@ from .models import (
     VulnData,
 )
 from .vuln import (
+    DB_MAX_AGE_DAYS,
     _db_has_valid_advisory,
     _synthesize_requirements,
     db_snapshot_at,
     db_zip_path,
+    is_db_stale,
+    name_level_critical_advisory_ids,
+    name_level_critical_cve_finding,
     offline_db_unavailable_finding,
     parse_osv_output,
     resolve_cache_dir,
+    stale_vuln_data_finding,
     unsafe_identity_finding,
 )
 
@@ -328,33 +347,74 @@ def _withheld_findings(candidates: list[Component]) -> tuple[Finding, ...]:
     """One ``indeterminate:offline-db-unavailable:<pkg>`` finding per
     candidate — shared by the pre-flight-failure and the osv-exit-128 (no
     packages found) paths, which the decision record treats identically
-    (coverage-skipped, never a confident clean)."""
+    (coverage-skipped, never a confident clean). Callers pass BOTH
+    exact-match and name-level candidates on a pre-flight failure (Story
+    2.5): with no usable DB, neither kind can be assessed."""
     return tuple(offline_db_unavailable_finding(component) for component in candidates)
+
+
+def _name_level_findings(
+    zip_path: Path, name_level_candidates: list[Component]
+) -> tuple[Finding, ...]:
+    """One ``indeterminate:name-level-critical-cve:<pkg>@unspecified``
+    finding per mapped-but-unversioned candidate whose resolved PyPI name
+    carries >=1 CRITICAL advisory in the offline DB at ANY version (FR13) —
+    an enrichment ADDED on top of the baseline withheld finding
+    ``DefaultPolicy`` already derives for it, never a replacement. Computed
+    via a direct zip read, never a second ``osv-scanner`` subprocess."""
+    findings: list[Finding] = []
+    for component in name_level_candidates:
+        if component.pypi_identity is None:
+            continue  # defensive: the caller's own filter already excludes this
+        advisory_ids = name_level_critical_advisory_ids(
+            zip_path, component.pypi_identity.name
+        )
+        if advisory_ids:
+            findings.append(name_level_critical_cve_finding(component, advisory_ids))
+    return tuple(sorted(findings, key=lambda f: f.id))
 
 
 class OsvEngine:
     """The second real engine: vulnerability matching via ``osv-scanner``,
-    fully offline (Story 1.5).
+    fully offline (Story 1.5), widened with two honesty tiers (Story 2.5).
 
-    Feeds ONLY already-``vuln_matchable`` ``Ecosystem.PYPI`` components
-    (Epic 2 wires conda). A CONTENT pre-flight against the resolved offline
-    DB (decision record § 4 — NOT a mere existence/non-emptiness check) runs
-    BEFORE any subprocess: a DB that fails it means osv is never invoked and
-    every candidate withholds via one
+    Feeds ``vuln_matchable`` ``Ecosystem.PYPI`` components (``candidates`` —
+    Epic 2 wires conda) through the real ``osv-scanner`` subprocess, AND
+    separately, mapped-but-unversioned PyPI components (``pypi_identity``
+    resolved, ``version is None`` — ``name_level_candidates``) through a
+    direct, offline, in-process read of the SAME resolved DB zip (FR13 —
+    osv-scanner has no "any version" query mode, so this is never a second
+    subprocess). The candidate guard is widened to cover BOTH: a scan with
+    ONLY name-level candidates still reaches the DB pre-flight rather than
+    bailing out empty.
+
+    A CONTENT pre-flight against the resolved offline DB (decision record
+    § 4 — NOT a mere existence/non-emptiness check) runs BEFORE any
+    subprocess: a DB that fails it means osv is never invoked and every
+    candidate (exact AND name-level) withholds via one
     ``indeterminate:offline-db-unavailable:<pkg>`` finding (never a
-    confident clean). An NFR-S6 purity guard excludes any candidate whose
-    resolved pypi identity is not a safe token, each with its own
-    ``indeterminate:unsafe-identity:<pkg>`` finding; the safe remainder is
-    synthesized into a sorted ``name==version`` temp input file and run
-    through ``_engine_env`` with the DB cache dir injected via ``extra_env``
-    and the pip-requirements parser forced via ``-L requirements.txt:<path>``
-    (decision record § 9 — the temp file's own name/extension is
-    irrelevant). osv's exit code is READ AS CONTENT beyond 0/1 (the
-    DB-absent cold start would otherwise false-green — decision record § 4):
-    0/1 parse for vulnerabilities, 127 (after a passing pre-flight — an
+    confident clean). Once the pre-flight passes, staleness (FR12) is
+    computed ONCE from that SAME ``zip_path``/``snapshot_at`` — a stale or
+    future-dated DB adds one whole-axis ``indeterminate:vuln-data-stale:
+    vuln-database`` finding, merged into every content-bearing (exit
+    ``{0,1}``, or name-level-only) result, so the WHOLE vulnerability axis
+    for that scan lands ``indeterminate`` rather than a trusted clean/
+    policy-violation off untrustworthy data. An NFR-S6 purity guard excludes
+    any exact-match candidate whose resolved pypi identity is not a safe
+    token, each with its own ``indeterminate:unsafe-identity:<pkg>``
+    finding; the safe remainder is synthesized into a sorted
+    ``name==version`` temp input file and run through ``_engine_env`` with
+    the DB cache dir injected via ``extra_env`` and the pip-requirements
+    parser forced via ``-L requirements.txt:<path>`` (decision record § 9 —
+    the temp file's own name/extension is irrelevant); when there are NO
+    exact-match candidates at all, this subprocess step is skipped
+    entirely. osv's exit code is READ AS CONTENT beyond 0/1 (the DB-absent
+    cold start would otherwise false-green — decision record § 4): 0/1
+    parse for vulnerabilities, 127 (after a passing pre-flight — an
     anomaly, e.g. TOCTOU) is a typed engine error, 128 (no packages found)
     mirrors the pre-flight-failure withholding, and any other code is a
-    typed engine error."""
+    typed engine error — the name-level findings, having been computed
+    independently of the subprocess, survive every one of these paths."""
 
     name: str = "osv-scanner"
 
@@ -364,17 +424,42 @@ class OsvEngine:
             for component in inventory.components
             if component.ecosystem is Ecosystem.PYPI and component.vuln_matchable
         ]
-        if not candidates:
+        name_level_candidates = [
+            component
+            for component in inventory.components
+            if component.ecosystem is Ecosystem.PYPI
+            and component.pypi_identity is not None
+            and component.version is None
+        ]
+        if not candidates and not name_level_candidates:
             return EngineResult(findings=(), errors=(), coverage=())
 
         cache_dir = resolve_cache_dir()
         zip_path = db_zip_path(cache_dir) if cache_dir is not None else None
         if cache_dir is None or zip_path is None or not _db_has_valid_advisory(zip_path):
             return EngineResult(
-                findings=_withheld_findings(candidates),
+                findings=_withheld_findings([*candidates, *name_level_candidates]),
                 errors=(),
                 coverage=(),
                 vuln_data=None,
+            )
+
+        snapshot_at = db_snapshot_at(zip_path)
+        stale = is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC))
+        name_level_findings = _name_level_findings(zip_path, name_level_candidates)
+        stale_findings = (stale_vuln_data_finding(),) if stale else ()
+
+        if not candidates:
+            # Name-level-only scan: osv-scanner has no "any version" query
+            # mode, so this never invokes the subprocess at all.
+            findings = tuple(
+                sorted((*name_level_findings, *stale_findings), key=lambda f: f.id)
+            )
+            vuln_data = VulnData(
+                source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale
+            )
+            return EngineResult(
+                findings=findings, errors=(), coverage=(), vuln_data=vuln_data
             )
 
         synthesized = _synthesize_requirements(candidates)
@@ -386,9 +471,25 @@ class OsvEngine:
         )
         if not synthesized.lines:
             # Every candidate was excluded by the purity guard: nothing left
-            # to feed osv.
+            # to feed osv, but the name-level scan already ran independently
+            # (NFR-S6/FR13 — never silently dropped). The DB was still
+            # genuinely consulted for that name-level scan (same zip_path/
+            # snapshot_at as every other content-bearing path), so vuln_data
+            # and any stale finding must survive here too — review finding,
+            # 2026-07-16: this branch previously dropped both, contradicting
+            # the AC that vuln_data records DB source+timestamp whenever the
+            # DB was actually read.
+            findings = tuple(
+                sorted(
+                    (*excluded_findings, *name_level_findings, *stale_findings),
+                    key=lambda f: f.id,
+                )
+            )
+            vuln_data = VulnData(
+                source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale
+            )
             return EngineResult(
-                findings=excluded_findings, errors=(), coverage=(), vuln_data=None
+                findings=findings, errors=(), coverage=(), vuln_data=vuln_data
             )
 
         try:
@@ -412,9 +513,13 @@ class OsvEngine:
             # The purity guard already ran (candidates are known before the
             # temp file is even created): its findings must not be lost
             # just because osv itself never got to run (NFR-S6 — never
-            # silently dropped).
+            # silently dropped). The independently-computed name-level
+            # findings survive too (FR13).
+            findings = tuple(
+                sorted((*excluded_findings, *name_level_findings), key=lambda f: f.id)
+            )
             return EngineResult(
-                findings=excluded_findings,
+                findings=findings,
                 errors=(mkstemp_error,),
                 coverage=(),
                 vuln_data=None,
@@ -450,9 +555,13 @@ class OsvEngine:
         if error is not None:
             # Mirrors DeptryEngine's own error path: a spawn/timeout/decode
             # failure propagates as a typed error; the purity guard's own
-            # findings survive regardless (NFR-S6 — never silently dropped).
+            # findings AND the independently-computed name-level findings
+            # survive regardless (NFR-S6/FR13 — never silently dropped).
+            findings = tuple(
+                sorted((*excluded_findings, *name_level_findings), key=lambda f: f.id)
+            )
             return EngineResult(
-                findings=excluded_findings,
+                findings=findings,
                 errors=(error,),
                 coverage=(),
                 vuln_data=None,
@@ -472,11 +581,19 @@ class OsvEngine:
             )
             vuln_data = VulnData(
                 source=str(zip_path),
-                snapshot_at=db_snapshot_at(zip_path),
-                max_age_ok=None,
+                snapshot_at=snapshot_at,
+                max_age_ok=not stale,
             )
             findings = tuple(
-                sorted((*excluded_findings, *parse.findings), key=lambda f: f.id)
+                sorted(
+                    (
+                        *excluded_findings,
+                        *parse.findings,
+                        *name_level_findings,
+                        *stale_findings,
+                    ),
+                    key=lambda f: f.id,
+                )
             )
             return EngineResult(
                 findings=findings,
@@ -497,8 +614,11 @@ class OsvEngine:
                     "mid-scan)"
                 ),
             )
+            findings = tuple(
+                sorted((*excluded_findings, *name_level_findings), key=lambda f: f.id)
+            )
             return EngineResult(
-                findings=excluded_findings,
+                findings=findings,
                 errors=(error_record,),
                 coverage=(),
                 vuln_data=None,
@@ -508,9 +628,17 @@ class OsvEngine:
             # osv found no packages to scan in the synthesized input — should
             # not normally happen given >=1 candidate, but the decision
             # record routes it identically to a failed pre-flight
-            # (coverage-skipped, never a confident clean).
+            # (coverage-skipped, never a confident clean). The name-level
+            # findings were computed independently of this subprocess call
+            # and survive (FR13).
+            findings = tuple(
+                sorted(
+                    (*_withheld_findings(candidates), *name_level_findings),
+                    key=lambda f: f.id,
+                )
+            )
             return EngineResult(
-                findings=_withheld_findings(candidates),
+                findings=findings,
                 errors=(),
                 coverage=(),
                 vuln_data=None,
@@ -521,8 +649,11 @@ class OsvEngine:
             owner=self.name,
             message=f"osv-scanner exited with unexpected code {exit_code!r}",
         )
+        findings = tuple(
+            sorted((*excluded_findings, *name_level_findings), key=lambda f: f.id)
+        )
         return EngineResult(
-            findings=excluded_findings,
+            findings=findings,
             errors=(error_record,),
             coverage=(),
             vuln_data=None,
