@@ -434,6 +434,10 @@ def classify(path: Path) -> str:
         return f"tracked:{TRACKED_CAT[rel]}"
     if rel.startswith("planning-artifacts/change-history/"):
         return "archive:change-history"
+    if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):
+        # PRFAQ kill-test records + distillates (bmad-prfaq): frozen stress-test
+        # outputs — no pin gating.
+        return "archive:prfaq"
     if re.fullmatch(r"planning-artifacts/research/[a-z0-9-]+-research-\d{4}-\d{2}-\d{2}\.md", rel):
         # Research reports (bmad-domain/market/technical-research skills, plus
         # backfilled distillations): dated point-in-time snapshots — never
