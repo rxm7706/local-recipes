@@ -22,13 +22,13 @@ style: |
 <!-- _class: lead -->
 
 WARDEN · `pyforge-warden`
-**Six-axis dependency governance gate**
+**Six-axis dependency governance gate — four axes shipping in v1, with their gates**
 
 # Catch risky dependencies before they ship.
 
 ### One gate. Both Python ecosystems.
 
-A single CI gate for both Python worlds — **PyPI** applications and the **conda / conda-forge** scientific, analytics and ML/AI data stacks. It checks every dependency across six axes — from unused code to unpatched CVEs, risky licenses and unmaintained upstreams — and blocks risky merges automatically.
+A single CI gate for both Python worlds — **PyPI** applications and the **conda / conda-forge** scientific, analytics and ML/AI data stacks. v1 checks every dependency across four gated axes — unused code, unpatched CVEs (incl. known-exploited + exploit-likely), risky licenses and end-of-life components — and blocks risky merges automatically; provenance and maintenance axes follow on the roadmap.
 
 <!-- Executive one-slide summary. Warden is a CI dependency-trust gate covering both Python ecosystems. -->
 
@@ -37,10 +37,10 @@ A single CI gate for both Python worlds — **PyPI** applications and the **cond
 ## Why it matters — three outcomes
 
 **Cover both worlds · PyPI + conda-forge**
-Application Python **and** the scientific / ML / AI data stack — one gate covers both, with pluggable engines (deptry + osv-scanner) behind one report.
+Application Python **and** the scientific / ML / AI data stack — one gate covers both, with pluggable engines (deptry, osv-scanner + the KEV/EPSS feeds, license-expression, the EOL tiers) behind one report.
 
 **Six axes · every dependency risk**
-Hygiene, security, license, currency, provenance and maintenance — checked in one pass, blocked before merge, never silently green.
+Hygiene, security, license and currency ship in v1 — checked in one pass, gated before merge, never silently green; provenance and maintenance complete the six on the vision roadmap.
 
 **Trust at scale · auditable, fleet-wide**
 Schema-validated reports and expiring, recorded waivers across a 20,000+ repo fleet — without ever mutating your source.
@@ -51,7 +51,7 @@ Schema-validated reports and expiring, recorded waivers across a 20,000+ repo fl
 
 | Metric | Value |
 | --- | --- |
-| Governance axes | **6** |
+| Governance axes (v1 · vision) | **4 · 6** |
 | Python ecosystems, one gate | **2** |
 | Consolidated report + SBOM | **1** |
 | Changes to your host or source | **0** |
