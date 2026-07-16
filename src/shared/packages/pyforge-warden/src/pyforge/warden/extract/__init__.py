@@ -22,7 +22,7 @@ extractor; the kind vocabulary is Story 1.9's — 1.2 knows exactly one kind.
 
 from __future__ import annotations
 
-from ..discovery import PYPROJECT_KIND
+from ..discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, PYPROJECT_KIND
 from ..interfaces import Extractor, Router
 
 
@@ -36,6 +36,7 @@ class UnparsableManifestError(ValueError):
 
 # Imported AFTER UnparsableManifestError so extractor modules can import the
 # class from this (then partially-initialized) package without a cycle.
+from .lockfiles import CondaLockExtractor, PixiLockExtractor  # noqa: E402
 from .pyproject import PyprojectExtractor  # noqa: E402
 
 
@@ -47,4 +48,8 @@ def extractor_for(kind: str, router: Router) -> Extractor:
     inconsistency, not a broken manifest."""
     if kind == PYPROJECT_KIND:
         return PyprojectExtractor(router)
+    if kind == PIXI_LOCK_KIND:
+        return PixiLockExtractor(router)
+    if kind == CONDA_LOCK_KIND:
+        return CondaLockExtractor(router)
     raise ValueError(f"no extractor registered for manifest kind {kind!r}")

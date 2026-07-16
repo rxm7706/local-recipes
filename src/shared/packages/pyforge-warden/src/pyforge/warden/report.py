@@ -20,6 +20,12 @@ Ownership decisions recorded:
   module has no clock and derives no vuln provenance itself; ``cli.py``
   derives it from ``engine_results`` (an all-``None`` ``VulnData`` when no
   engine populated one, e.g. under the null engine or a hygiene-only run).
+* ``has_locked_closure`` (Story 2.6, additive/defaulted) — this module has
+  no lockfile-kind vocabulary (that's ``discovery.py``'s domain), so the
+  caller (``cli.py``) states whether any parsed manifest was a lockfile.
+  ``True`` claims ``resolution_depth=ResolutionDepth.LOCKED_CLOSURE`` for
+  BOTH axes instead of the direct-only-if-parsed default; ``False`` (the
+  default) preserves every pre-2.6 caller/test byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -77,6 +83,7 @@ def assemble_report(
     manifests_parsed: int,
     vuln_data: VulnData,
     engine_results: Sequence[EngineResult] = (),
+    has_locked_closure: bool = False,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -99,7 +106,11 @@ def assemble_report(
     hardcoding it."""
     status, driver = compose(rungs)
     resolution_depth = (
-        ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
+        ResolutionDepth.LOCKED_CLOSURE.value
+        if has_locked_closure
+        else (
+            ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
+        )
     )
     # Highest per-axis deps_assessed any engine claims (honest max coverage).
     assessed_by_axis: dict[str, int] = {}

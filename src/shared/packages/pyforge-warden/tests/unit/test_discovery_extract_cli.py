@@ -27,10 +27,23 @@ import pytest
 
 from pyforge.warden import cli
 from pyforge.warden.cli import main
-from pyforge.warden.discovery import PYPROJECT_KIND, discover
+from pyforge.warden.discovery import (
+    CONDA_LOCK_KIND,
+    PIXI_LOCK_KIND,
+    PYPROJECT_KIND,
+    discover,
+)
 from pyforge.warden.extract import (
     UnparsableManifestError,
     extractor_for,
+)
+from pyforge.warden.extract.lockfiles import (
+    CONDA_LOCK_CONDA_SECTION,
+    CONDA_LOCK_PYPI_SECTION,
+    PIXI_LOCK_CONDA_SECTION,
+    PIXI_LOCK_PYPI_SECTION,
+    CondaLockExtractor,
+    PixiLockExtractor,
 )
 from pyforge.warden.extract.pyproject import (
     PROJECT_DEPENDENCIES_SECTION,
@@ -59,6 +72,20 @@ def write_pyproject(directory: Path, deps: list[str]) -> Path:
         f"dependencies = {json.dumps(deps)}\n"
     )
     path = directory / "pyproject.toml"
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def write_pixi_lock(directory: Path, name: str, version: str) -> Path:
+    body = (
+        "version: 6\n"
+        "packages:\n"
+        f"- pypi: https://files.pythonhosted.org/packages/aa/bb/"
+        f"{name}-{version}-py3-none-any.whl\n"
+        f"  name: {name}\n"
+        f"  version: {version}\n"
+    )
+    path = directory / PIXI_LOCK_KIND
     path.write_text(body, encoding="utf-8")
     return path
 
@@ -161,6 +188,60 @@ def test_discover_propagates_unexpected_stat_errors(tmp_path):
             discover(locked)
     finally:
         locked.chmod(0o755)
+
+
+# --- discovery: the 2 new lockfile kinds (Story 2.6, additive) ---------------
+
+
+def test_discover_finds_a_pixi_lock_manifest(tmp_path):
+    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND),
+    )
+
+
+def test_discover_finds_a_conda_lock_manifest(tmp_path):
+    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=CONDA_LOCK_KIND, kind=CONDA_LOCK_KIND),
+    )
+
+
+def test_discover_finds_all_three_kinds_together_in_fixed_order(tmp_path):
+    write_pyproject(tmp_path, [])
+    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
+    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=PYPROJECT_KIND, kind=PYPROJECT_KIND),
+        ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND),
+        ScannedManifest(path=CONDA_LOCK_KIND, kind=CONDA_LOCK_KIND),
+    )
+
+
+def test_discover_fails_closed_on_a_pixi_lock_directory(tmp_path):
+    (tmp_path / PIXI_LOCK_KIND).mkdir()
+    with pytest.raises(OSError, match="not a regular file"):
+        discover(tmp_path)
+
+
+def test_discover_fails_closed_on_a_conda_lock_directory(tmp_path):
+    (tmp_path / CONDA_LOCK_KIND).mkdir()
+    with pytest.raises(OSError, match="not a regular file"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_discover_fails_closed_on_a_dangling_pixi_lock_symlink(tmp_path):
+    (tmp_path / PIXI_LOCK_KIND).symlink_to(tmp_path / "no-such-target")
+    with pytest.raises(OSError, match="dangling symlink"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_discover_fails_closed_on_a_dangling_conda_lock_symlink(tmp_path):
+    (tmp_path / CONDA_LOCK_KIND).symlink_to(tmp_path / "no-such-target")
+    with pytest.raises(OSError, match="dangling symlink"):
+        discover(tmp_path)
 
 
 # --- extractor rows ----------------------------------------------------------
@@ -329,6 +410,16 @@ def test_unknown_manifest_kind_has_no_extractor():
         extractor_for("meta.yaml", DefaultRouter())
 
 
+def test_pixi_lock_kind_dispatches_to_pixi_lock_extractor():
+    extractor = extractor_for(PIXI_LOCK_KIND, DefaultRouter())
+    assert isinstance(extractor, PixiLockExtractor)
+
+
+def test_conda_lock_kind_dispatches_to_conda_lock_extractor():
+    extractor = extractor_for(CONDA_LOCK_KIND, DefaultRouter())
+    assert isinstance(extractor, CondaLockExtractor)
+
+
 # --- routing -----------------------------------------------------------------
 
 
@@ -345,6 +436,33 @@ def test_router_fails_loud_on_unknown_kind():
 def test_router_fails_loud_on_unknown_section():
     with pytest.raises(ValueError):
         DefaultRouter().route(PYPROJECT_KIND, "tool.pixi.dependencies")
+
+
+def test_router_routes_pixi_lock_conda_section_to_conda():
+    ecosystem = DefaultRouter().route(PIXI_LOCK_KIND, PIXI_LOCK_CONDA_SECTION)
+    assert ecosystem is Ecosystem.CONDA
+
+
+def test_router_routes_pixi_lock_pypi_section_to_pypi():
+    ecosystem = DefaultRouter().route(PIXI_LOCK_KIND, PIXI_LOCK_PYPI_SECTION)
+    assert ecosystem is Ecosystem.PYPI
+
+
+def test_router_routes_conda_lock_conda_section_to_conda():
+    ecosystem = DefaultRouter().route(CONDA_LOCK_KIND, CONDA_LOCK_CONDA_SECTION)
+    assert ecosystem is Ecosystem.CONDA
+
+
+def test_router_routes_conda_lock_pypi_section_to_pypi():
+    ecosystem = DefaultRouter().route(CONDA_LOCK_KIND, CONDA_LOCK_PYPI_SECTION)
+    assert ecosystem is Ecosystem.PYPI
+
+
+def test_router_does_not_cross_wire_pixi_lock_and_conda_lock_sections():
+    with pytest.raises(ValueError):
+        DefaultRouter().route(PIXI_LOCK_KIND, CONDA_LOCK_CONDA_SECTION)
+    with pytest.raises(ValueError):
+        DefaultRouter().route(CONDA_LOCK_KIND, PIXI_LOCK_CONDA_SECTION)
 
 
 # --- CLI rows ----------------------------------------------------------------
@@ -418,6 +536,31 @@ def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):
     captured = capsys.readouterr()
     assert rc == 0
     assert "status=not-applicable" in captured.out
+
+
+# --- resolution_depth: locked-closure (Story 2.6) -----------------------------
+
+
+def test_pixi_lock_presence_marks_resolution_depth_locked_closure(capsys, tmp_path):
+    """A parsed pixi.lock claims the full transitive closure on BOTH axes —
+    the I/O matrix's 'any lockfile parses successfully' row."""
+    write_pyproject(tmp_path, [])
+    write_pixi_lock(tmp_path, "requests", "2.31.0")
+    rc, document, _ = scan_json(capsys, tmp_path)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["hygiene"]["resolution_depth"] == "locked-closure"
+    assert by_axis["vulnerability"]["resolution_depth"] == "locked-closure"
+    assert rc == document["exit_code"]
+
+
+def test_pyproject_only_resolution_depth_stays_direct_only(capsys, tmp_path):
+    """No lockfile present: 1.2's direct-only behavior is unchanged."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])
+    rc, document, _ = scan_json(capsys, tmp_path)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["hygiene"]["resolution_depth"] == "direct-only"
+    assert by_axis["vulnerability"]["resolution_depth"] == "direct-only"
+    assert rc == document["exit_code"]
 
 
 def test_keyboard_interrupt_during_parse_args_returns_sigint(
