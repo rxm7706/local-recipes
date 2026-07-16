@@ -16,10 +16,12 @@ Ownership decisions recorded here:
   FALSE-GREEN BACKSTOP: ``register_engine`` is a public seam, so a
   findings-only engine result is reachable today, and a report carrying
   findings must never compose ``clean``/exit 0 (C0c). The finding→severity
-  policy mapping (which findings escalate to ``policy-violation``) is
-  Story 1.3/1.6 scope by plan; they REPLACE the backstop with the real
-  mapping and may only tighten (toward ``policy-violation``), never
-  loosen (toward ``clean``).
+  policy mapping (which findings escalate to ``policy-violation``) is now
+  real for BOTH v1 axes — Story 1.3's hygiene table and Story 1.6's
+  vulnerability table — each REPLACING the backstop for its own axis; both
+  may only tighten (toward ``policy-violation``), never loosen (toward
+  ``clean``). The backstop itself now only governs a hypothetical future
+  axis with no mapping of its own yet.
 * ``DefaultPolicy`` is the fail-closed inventory→verdict bridge: a withheld
   component (``indeterminate_reason`` set) becomes an
   ``indeterminate:<reason>:<pkg>`` finding plus a driver-carrying
@@ -210,8 +212,10 @@ class DefaultPolicy:
       is a report construction invariant, never a crash site. Each unique
       engine finding ALSO feeds one conservative ``indeterminate`` rung
       (driver = that finding) — the false-green backstop: a finding-carrying
-      report never composes ``clean``. Story 1.3/1.6 replace the backstop
-      with the real severity mapping (tighten-only).
+      report never composes ``clean``. Story 1.3 (hygiene) and Story 1.6
+      (vulnerability) have each replaced the backstop with their axis's real
+      severity mapping (tighten-only); the backstop itself now only fires
+      for a hypothetical future axis.
     * Engine ``ErrorRecord``s feed ``(error, driver)`` rungs: an engine
       failure must reach the verdict (composition yields status ``error`` →
       ``exit_code_for`` gives the error exit), while the report is still
@@ -242,10 +246,12 @@ class DefaultPolicy:
     def evaluate(
         self, inventory: ResolvedInventory, engine_results: Sequence[EngineResult]
     ) -> tuple[tuple[Finding, ...], tuple[tuple[Status, StatusDriver | None], ...]]:
-        # Lazy import breaks the interfaces<->hygiene cycle (hygiene.py imports
-        # _sanitize_id_segment from here); by the time evaluate() runs, both
-        # modules are fully loaded.
+        # Lazy imports break the interfaces<->hygiene and interfaces<->vuln
+        # cycles (both hygiene.py and vuln.py import _sanitize_id_segment
+        # from here); by the time evaluate() runs, all modules are fully
+        # loaded.
         from .hygiene import hygiene_rung
+        from .vuln import vuln_rung
 
         findings: list[Finding] = []
         rungs: list[tuple[Status, StatusDriver | None]] = []
@@ -265,12 +271,25 @@ class DefaultPolicy:
                     # backstop for the hygiene axis only — never mapping a
                     # finding to clean (C0 preserved).
                     rungs.append(hygiene_rung(finding))
+                elif finding.axis == AXIS_VULNERABILITY:
+                    # Story 1.6: vulnerability-axis engine findings route
+                    # through the real default severity->status table
+                    # (CRITICAL blocks; HIGH/MEDIUM/LOW/NONE warn; an
+                    # unmapped/absent severity, including UNKNOWN, still
+                    # degrades to indeterminate). This REPLACES the 1.2
+                    # indeterminate backstop for the vulnerability axis too —
+                    # never mapping a finding to clean (C0 preserved). The
+                    # axis's own indeterminate: withhold findings (severity
+                    # is None) still land on indeterminate via vuln_rung's
+                    # own fallback, unchanged from today.
+                    rungs.append(vuln_rung(finding))
                 else:
-                    # The false-green backstop still governs every other axis:
-                    # a finding-carrying report must never compose clean/exit 0
+                    # The false-green backstop now only governs a
+                    # hypothetical future axis with no mapping of its own: a
+                    # finding-carrying report must never compose clean/exit 0
                     # (C0c). One conservative indeterminate rung per engine
-                    # finding until that axis's producer story supplies a real
-                    # mapping (Story 2.4 for vulnerability; tighten-only).
+                    # finding until that axis gets its own real mapping
+                    # (tighten-only).
                     rungs.append(
                         (
                             Status.INDETERMINATE,
