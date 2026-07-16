@@ -13,19 +13,25 @@ inputDocuments:
   - planning-artifacts/implementation-readiness-report-2026-07-11.md
   - docs/specs/pyforge-warden.md
   - docs/specs/cfe-atlas-datapipeline-kedro-migration.md
-referenceImplementation: src/shared/packages/pyforge-warden/  # pixi build member; stdlib-only lib, deptry+osv-scanner conda run-deps; cli.py stub
+referenceImplementation: src/shared/packages/pyforge-warden/  # pixi build member; stories 1.1-1.4 shipped (14 modules incl. models/verdict/interfaces/report/hygiene/engines/inventory; 4 runtime deps); deptry+osv-scanner conda run-deps
 pinnedEngineContracts:  # grounded 2026-07-11 — the wrapped-engine contracts the design pins against
   deptry:
     docs: https://deptry.com/usage/
-    rules: "DEP001 missing / DEP002 unused / DEP003 transitive / DEP004 misplaced-dev / DEP005 unused-dev"
+    rules: "DEP001 missing / DEP002 unused / DEP003 transitive / DEP004 misplaced-dev / DEP005 stdlib-dependency (gloss corrected 2026-07-16 — verified against deptry 0.25.1; the original unused-dev label was wrong, see hygiene.py)"
     severity: "NONE — uniform violations, no CVSS (confirms Gap A: hygiene = separate warn-axis)"
     json: "--json-output / -o → array of {error:{code,message}, module, location:{file,line,column}}"
     config: "[tool.deptry] ignore / per_rule_ignores / exclude / extend_exclude (FR9)"
   osv-scanner:
     docs: https://google.github.io/osv-scanner/output/
     json: "--format json → JSON to stdout, all else to stderr; results[].packages[].{package{name,version,ecosystem}, vulnerabilities[]{id,aliases,...Full OSV}, groups[]{ids}}"
-    severity: "CVSS inside Full-OSV severity field; NO CISA-KEV flag (confirms KEV-deferral — must join ourselves)"
+    severity: "CVSS inside Full-OSV severity field; NO CISA-KEV flag — we join KEV ourselves (2026-07-15 replan reversed the deferral: v1 story 6.4 sources CISA KEV as a cached feed, FR36)"
     exitCodes: "0 no-vulns / 1 vulns-found (EXPECTED, not error) / 127 DB-load/coverage error (MULTIPLEXED: DB-absent|corrupt-zip|missing -L file|unknown parser) / 128 no-packages-found. Reconciled by the Story-1.4 spike: a DB-absent/empty 127 and 128 are COVERAGE GAPS -> indeterminate, not exit-2; any OTHER 127 -> error"
+axisDataContracts:  # added 2026-07-15 (story-0.1 replan) — the axis-3/4 + KEV data surfaces the design pins against
+  license-expression: "nexB/AboutCode SPDX normalizer (the ONE new runtime dep); inputs = conda about:license (pre-build) + importlib.metadata (PEP 639/legacy/trove); no source scanning (FR32)"
+  cisa-kev: "cached JSON feed; offline default, opt-in online never silent; per-feed provenance {source, snapshot_at, max_age_ok}; absent/stale under a KEV policy → indeterminate (FR36; cache/lifecycle owned by story 6.4)"
+  first-epss: "cached FIRST.org feed (D12 2026-07-16 — v1); same posture + provenance as cisa-kev; absent/stale under an active --min-epss policy → indeterminate (FR36; story 6.7; shared feeds.py layer)"
+  endoflife-date: "cached feed via the _http.py resolve_endoflife_urls() mirror pattern (FR34)"
+  lts-registry: "bundled src/pyforge/warden/data/lts-registry.yaml via importlib.resources; build-time snapshot_at + max_age_ok on every derived verdict (NFR-S9)"
 workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
@@ -43,22 +49,25 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements (31, 8 areas) — architecturally, a 7-stage pipeline over one shared object:**
+**Functional Requirements (40, 12 areas A–L — re-based 2026-07-16 per D12) — architecturally, a 7-stage pipeline over one shared object:**
 
 ```
-Discover(FR1) → Route-per-section(FR2) → Extract(FR3–7) → ┬─ Hygiene: deptry (FR8–9)
-                                                          └─ Vuln: osv-scanner (FR10–13)
-   → Coverage+Report assembly(FR14–17) → Verdict/Gate(FR18–23) → Waivers(FR24–26)
+Discover(FR1) → Route-per-section(FR2) → Extract(FR3–7) → ┬─ Axis 1 Hygiene: deptry (FR8–9)
+                                                          ├─ Axis 2 Security: osv-scanner + KEV feed (FR10–13, FR36)
+                                                          ├─ Axis 3 License: license-expression (FR32; gating:false → warn)
+                                                          └─ Axis 4 Currency: LTS/endoflife/N-1 tiers (FR34; gating:false → warn)
+   → Coverage+Report assembly(FR14–17; per-axis, FR38 amendment) → Verdict/Gate(FR18–23, FR37) → Waivers(FR24–26)
    → SBOM + machine contract(FR27–28)  ⟂  CLI + config wrapper(FR29–31)
+   (axes 3–4 + KEV added by the 2026-07-15 story-0.1 replan — § Multi-axis reconciliation)
 ```
 
 The **resolved-inventory object** is the spine (this *is* Gap B): discovery + extraction produce it; both engine paths annotate it; report, SBOM, verdict, and coverage all read it. "BOM component count == resolved-inventory count" is meaningful only because they share it.
 
 **Non-Functional Requirements — the dominant architectural drivers:**
 - **C0 (never false-green)** is the shaping force → fail-loud everywhere; verdict on report **content**, never an engine exit code; typed errors; no-meaningful-scan guards. Every module inherits it.
-- **Security S1–S8** split the design into a **stdlib-only, execution-free extractor** (AST-denylist, ReDoS line-bound, no template render) vs. a **hardened engine-runner** (input purity, secure temp, `_engine_env` normalization) vs. a **schema-aware serializer** (S7 output neutralization).
+- **Security S1–S9** split the design into a **stdlib-lean, execution-free extractor** (the library-policy revision — § NFR-S1 reframe — retired "stdlib-only") (AST-denylist, ReDoS line-bound, no template render) vs. a **hardened engine-runner** (input purity, secure temp, `_engine_env` normalization) vs. a **schema-aware serializer** (S7 output neutralization).
 - **NFR-R3b determinism** → report assembly canonicalizes (sort, pin volatile fields, `--deterministic` mode).
-- **NFR-P** → the two engines run **in parallel**; stdlib-only; offline DB. **NFR-I1/I3** → schema-validated report + CycloneDX 1.6 + pure-JSON stdout.
+- **NFR-P** → all v1 axes run **in parallel**; stdlib-lean; offline DB + cached KEV/EPSS/endoflife feeds. **NFR-I1/I3** → schema-validated report + CycloneDX 1.6 + pure-JSON stdout.
 
 ### Scale & Complexity
 - **Medium engineering, high stakes.** Single-process CLI — no service, database, network server, or UI. Domain: DevSecOps supply-chain tooling.
@@ -66,7 +75,7 @@ The **resolved-inventory object** is the spine (this *is* Gap B): discovery + ex
 - Complexity concentrates in exactly the three blocking gaps: the lossy E1 extractor, the resolved-inventory model (Gap B), and the osv/deptry output-orchestration + verdict math (Gaps A & C).
 
 ### Technical Constraints & Dependencies
-- **stdlib-only library** (argparse / tomllib / re) — confirmed by the scaffold's empty `dependencies`; `jsonschema` test-only; engines (`deptry`, `osv-scanner`) as **conda run-deps** (provisioned, not fetched — OD1).
+- **stdlib-lean library** (argparse / tomllib / re + the targeted safe deps: PyYAML `safe_load`, packaging, cyclonedx-python-lib, `jsonschema` — a RUNTIME dep per FR14; the original "empty `dependencies`" scaffold note is superseded, 4 runtime deps shipped); engines (`deptry`, `osv-scanner`) as **conda run-deps** (provisioned, not fetched — OD1).
 - **Pinned engine contracts (2026-07-11):** deptry = no-severity + `--json-output`; osv = `--format json` (JSON→stdout, else→stderr) + exit `{0 clean, 1 vulns-found=EXPECTED, 127 DB-load/coverage error, 128 no-packages}` — Story-1.4-reconciled: 127 is multiplexed and a DB-absent/empty 127 → `indeterminate` (coverage gap, gated by the content pre-flight below), other 127 → `error`; 128 → `indeterminate`.
 - python ≥ 3.12; pixi ≥ 0.72.2 (**a build/dev-env floor — the tool never invokes pixi at runtime**; `pixi.lock` is `safe_load`-parsed; clarified 2026-07-12); `pixi-build-python` packaging; never-writes-repo (NFR-R3a/S4); offline-first vuln data.
 - **Open dependency question (D1):** the waiver YAML writer may pull one small YAML lib *or* emit-for-human-to-commit — resolved in Architectural Decisions.
@@ -93,7 +102,7 @@ CLI tool — a **non-interactive, single-process, stdlib-only Python CLI**. No w
 
 ### Selected Starter: NONE — use the existing scaffold
 
-**Rationale:** the stdlib-only constraint is load-bearing (lightweight fleet gate + S1 security), so no third-party CLI framework is permissible. The existing scaffold at `src/shared/packages/pyforge-warden/` already establishes the entire foundation.
+**Rationale** *(wording superseded by the library-policy revision — the binding constraint is stdlib-LEAN + no-execution, § NFR-S1 reframe; the no-CLI-framework conclusion still holds)*: the lean-runtime constraint is load-bearing (lightweight fleet gate + S1 security), so no third-party CLI framework is permissible. The existing scaffold at `src/shared/packages/pyforge-warden/` already establishes the entire foundation.
 
 **Technical stack (locked — versions fixed by PRD + scaffold, nothing to verify):**
 - Language/runtime: Python ≥ 3.12
@@ -117,11 +126,24 @@ Three decisions are **only sound together** — fix one without the others and t
 
 Every non-`clean` status carries **`status.driver`** (axis + finding id) — an exit-2 that can't say "critical CVE" vs "blocking DEP001" is an incoherent contract.
 
+### Multi-axis reconciliation (2026-07-15 — story-0.1 replan)
+
+The spec re-tiered the product to a four-axis v1 (`docs/specs/pyforge-warden.md` § Reconciliation; canonical FR32–FR38). Architectural deltas, all additive to the shipped 1.1–1.4 contract:
+
+- **Axis registry = the open string mechanism that already shipped.** No `Axis` protocol exists or is needed (OD7 retired): license/currency producers register behind the existing `Engine` seam with `axis="license"` / `axis="currency"`. The one hard-coded seam is `report.py`'s `_REPORT_AXES` tuple — grown in the 6.1 amendment, without which a new axis's coverage claim is silently dropped.
+- **One sanctioned schema amendment (6.1, FR38 — scope hardened 2026-07-16 by the adversarial gate):** additive `schema_version` bump — per-axis `gating` bool · `license`/`currency` sections with per-section coverage/provenance (incl. bundled-data `snapshot_at`/`max_age_ok`, NFR-S9) · **the license/currency finding-ID families + typed verdict encoding** (schema-validated fields, never free-text `indeterminate:` reason tokens — policy tables and baseline/waiver matching key ONLY on these; closes adversarial F1) · **the post-verdict `actuation` section** (F3) · **the suppression rung-discriminator** (baseline vs waiver echo, F8) · `kev_date` + `epss {score,percentile}` + per-feed KEV/EPSS provenance. Coordinated set: `report-schema.json` · `models.py` · `report.py` (self-validation + `_REPORT_AXES` + **unknown-axis fail-loud**: a coverage claim for an unregistered axis is a hard error, never silently dropped — F6) · the exact-13 `Component` test (+ Gap-B merge/fold semantics for each new field) · fixtures. The producer re-closes behind it. **Hard sprint dependency (mechanical, not advisory): no 6.x producer story may land before 6.1 (F6).**
+- **Two-mode policy (FR37 + FR33/FR35 — D12; ownership pinned 2026-07-16):** on an axis whose policy flags are **unconfigured**, `unknown`/`denied`/`eol` feeds a `warn` rung (driver names the axis) — visible in status, exit 0; `--warn-as-error` escalates. **Configuring any axis policy flag activates that axis's gate in v1**: denied/eol → `policy-violation`, unknown → `indeterminate`. **Single-owner escalation (F2): stories 6.2/6.3 deliver producers + flag parsing into the FR30 tables ONLY — axis producers never feed a rung above `warn` (enforced by a producer meta-test); story 6.5 SOLELY owns the escalation mapping.** **`gating` bool single-writer (F7): `config.py` computes it from the parsed flags; producers and the report READ it — no second writer.** **Tighten-only, redefined (F4): the shipped 1.2 `indeterminate` backstop is a PLACEHOLDER pending each axis's real mapping, not a floor — a new axis's defined mapping (warn unconfigured / gate configured) supersedes the backstop for that axis; the C0 bound (never toward `clean`) is the invariant.** C0 and the verdict.py sole-ownership guard hold unchanged.
+- **Baseline & grandfathering (FR39, story 6.8 — D12):** `baseline.py` reads the committed, schema-validated `.warden-baseline.yaml`; suppression is keyed on the stable finding-ID grammar (the waiver key); expiry = waiver semantics; applied entries echo in the report; the gate blocks NEW findings only. Read-only (NFR-R3a); `--baseline-emit` prints, never writes.
+- **Fix-PR actuator (FR40, story 6.9 — D12; construction order pinned 2026-07-16):** `actuator.py` is the ONLY module permitted forge-API egress — opt-in (`--open-fix-prs`), env-credentialed; the scanned tree is never written. **Invocation order (F3): `cli.py` is the sole invoker — compose verdict (exit code FIXED here) → run actuator → assemble report including the `actuation` section (a 6.1 schema slot) → emit.** A failed PR-open lands in `actuation` + stderr — outside status/exit composition, never an FR20 rung; `actuation` content joins the NFR-R3b volatile-field set (excluded from `--deterministic` byte-identity). **Dry-run (F9): `--fix-prs-dry-run` shares the real code path up to the egress seam, writes its intent into the same `actuation` section (stdout stays ONE pure document, NFR-I3), and opens no sockets — the C0c carve-out applies ONLY to the real path.** **Carve-out rule (binding):** the socket-deny harness change is scoped to `actuator.py` under the real flag and lands IN story 6.9 — never a global loosening.
+- **Feed-cache layer (stories 6.4 → 6.3/6.7; ownership pinned 2026-07-16):** KEV + **EPSS** + endoflife.date are cached feeds under the NFR-S2 posture (offline default, opt-in online never silent, `_http.py` mirror chain); absent/stale KEV or EPSS under an active KEV/`--min-epss` policy → `indeterminate` (review-T1; D12). **`feeds.py` skeleton (one cache layout, one provenance shape) lands IN 6.4 and precedes 6.3/6.7 — no axis builds a private cache (F5). Staleness/max-age defaults live in `feeds.py`; overrides come only through the FR30 ConfigLoader; axes never compute staleness.** **Enrichment mutation point (F10): KEV/EPSS enrich findings at exactly one position — inside the vuln producer BEFORE findings enter policy dedup — never post-dedup.** Bundled data (LTS registry, conda→pypi map) carries build-time age provenance (NFR-S9, review-T4).
+- **Distribution gate (6.6):** engine run-deps move from `"*"` to tested version ranges (NFR-C1 — range, not pin); v1 JFrog / v1.x public publish block on it (review-T-a). **Publish mechanics (operational envelope, deferred-with-owner):** pixi-build wheel/conda artifacts pushed to the internal JFrog PyPI + conda repos per `docs/enterprise-deployment.md` routing — the how is 6.6's Dev Notes + the spec DoD, not an architecture invariant.
+- **CI consumption (operational envelope):** the fleet consumes Warden as exit code + the `ComplianceReport` artifact (machine stdout, NFR-I3); SARIF export is the v1.x bridge to code-scanning UIs. No CI-platform coupling is an invariant.
+
 ### GAP A — deptry-severity → verdict → **two-axis, per-rule ceiling**
 deptry emits *no severity* (uniform DEP001–005, confirmed from upstream docs). Both axes compute a status in the **same** lattice; "separate axis" = a separate **default ceiling** + `status.driver`:
 - **DEP001 (missing dependency) blocks by default** — but **gated on conda↔PyPI name-mapping confidence**: block on a high-confidence mapping, `warn` on an ambiguous one (a mapping miss must not become a false-red disable-driver, per this repo's known name-unreliability).
-- **DEP002 (unused) / DEP003 / DEP004 (misplaced) → `warn`** by default (false-positive-prone on conda recipes that legitimately carry deps deptry can't see).
-- The **hygiene→status table** and the **CVSS severity thresholds** are *our* policy artifacts (deptry has no severity, osv has no gate) → both live in the **FR30 `ConfigLoader`** (overridable via the config tables). The CVSS gate (FR18) reads only the vuln axis.
+- **DEP002 (unused) / DEP003 (transitive) / DEP004 (misplaced) / DEP005 (stdlib-dependency) → `warn`** by default (false-positive-prone on conda recipes that legitimately carry deps deptry can't see).
+- The **hygiene→status table** and the **CVSS severity thresholds** are *our* policy artifacts (deptry has no severity, osv has no gate) → both live in the **FR30 `ConfigLoader`** (overridable via the config tables). The CVSS gate (FR18) reads only the vuln axis. *(Status corrected 2026-07-16: story 1.3 landed `hygiene.py:hygiene_rung` with `DEFAULT_HYGIENE_POLICY` = **DEP001–005 all `warn`** — DEP001 is DELIBERATELY warn until story 2.1 ships the mapping-confidence gate that upgrades it to block-on-high-confidence (the Gap-A decision stands; only its activation is 2.1-owned). Unknown DEP code → indeterminate. FR30's ConfigLoader overrides remain E3 scope. DEP001-blocks-by-default re-confirmed by owner 2026-07-15 as the POST-2.1 default.)*
 
 ### GAP B — ComplianceReport ↔ CycloneDX → **one `ResolvedInventory`, two artifacts**
 One internal model, projected into two independent emitted artifacts:
@@ -197,22 +219,28 @@ pyforge/warden/
   extract/          # E1 — one submodule per format; NO execution primitives (S1)
     recipe_v1.py  meta_v0.py  environment_yml.py  pixi.py  pyproject.py  requirements.py
   inventory.py      # the ResolvedInventory + Component model (the spine)
+  interfaces.py     # SHIPPED (1.2) — strategy Protocols + EngineResult + DefaultPolicy (the Engine seam the multi-axis producers register behind)
   mapping.py        # bundled static conda→pypi map (v1 asset)
   engines.py        # _engine_env() + deptry/osv runners (parallel), output parse
   vuln.py           # osv input synthesis, name-level CVE tier, indeterminate classing
   hygiene.py        # deptry per-code join
+  license.py        # Axis 3 producer — SPDX via license-expression (FR32; 6.2)   [2026-07-15]
+  currency.py       # Axis 4 producer — LTS/endoflife/N-1 tiers + runtime_python (FR34; 6.3)   [2026-07-15]
+  feeds.py          # KEV + EPSS + endoflife cached-feed layer: cache, max-age, provenance (FR36; 6.4/6.7)   [2026-07-15/16]
+  baseline.py       # FR39 baseline & grandfathering — read-only, finding-ID-keyed, expiring (6.8)   [2026-07-16]
+  actuator.py       # FR40 fix-PR actuator — sole forge-egress module, opt-in, post-verdict (6.9)   [2026-07-16]
   report.py         # ComplianceReport assembly + jsonschema validation
   sbom.py           # CycloneDX 1.6 via cyclonedx-python-lib
-  verdict.py        # J9 lattice + 6→3 exit projection + status.driver
+  verdict.py        # J9 lattice + 7→4 exit projection {0,1,2,130} + status.driver
   waiver.py         # .yaml read (safe_load) + --bypass stanza emit (safe_dump)
-  errors.py         # exception hierarchy → error_kind → exit code
+  errors.py         # PLANNED — exception hierarchy → error_kind (shipped code currently keeps ErrorKind in models.py; consolidate or ratify at 1.7)
   determinism.py    # canonicalization + --deterministic pinning
 ```
 `tests/` mirrors it; fixtures in `tests/fixtures/{recipes,lockfiles,malicious}/`. *(Where this list and § Project Structure's tree differ — e.g. `models.py` — the § Project Structure tree is authoritative.)*
 
 ### The single-source-of-truth rules (highest-conflict)
 - **ONE `Component` + `ResolvedInventory`** (frozen dataclasses in `inventory.py`) — every stage annotates the *same* objects; no stage re-defines a parallel shape. Identity + merge logic lives **only** here.
-- **Canonical enums (StrEnum, never string literals):** `Status {clean, warn, policy-violation, error, bypassed, not-applicable, indeterminate}` · `ErrorKind {unparsable-manifest, engine-unavailable, engine-output-unrecognized, engine-output-unparseable, engine-execution-failed, engine-timeout, config-parse, config-validation, internal-error}` · `WithholdReason {no-version, unmapped-ecosystem, native-nonpypi, range-only}` · `Ecosystem {pypi, conda}`. Defined once; imported everywhere.
+- **Canonical enums (StrEnum, never string literals):** `Status {clean, warn, policy-violation, error, bypassed, not-applicable, indeterminate}` · `ErrorKind {unparsable-manifest, engine-unavailable, engine-output-unrecognized, engine-output-unparseable, engine-execution-failed, engine-timeout, config-parse, config-validation, internal-error}` · `WithholdReason {no-version, unmapped-ecosystem, native-nonpypi, range-only, ambiguous-identity}` *(grew additively 2026-07-13 — the sanctioned growable enum)* · `Ecosystem {pypi, conda}`. Defined once; imported everywhere.
 - **The verdict lattice + exit projection live only in `verdict.py`** — no other module maps a status to an exit code.
 
 ### Naming & typing
@@ -263,7 +291,7 @@ src/shared/packages/pyforge-warden/
 │   ├── vuln.py                 # E3 — osv input synth, name-level CVE tier, indeterminate classing
 │   ├── report.py               # E4 — ComplianceReport assembly + jsonschema self-validate
 │   ├── sbom.py                 # E4 — CycloneDX 1.6 via cyclonedx-python-lib
-│   ├── verdict.py              # E4 — J9 lattice + 6→3 exit projection + status.driver
+│   ├── verdict.py              # E4 — J9 lattice + 7→4 exit projection {0,1,2,130} + status.driver
 │   ├── waiver.py               # FR24-26 — .yaml read (safe_load) + --bypass stanza (safe_dump)
 │   ├── errors.py               # exception hierarchy → ErrorKind → exit code
 │   ├── determinism.py          # canonicalization + --deterministic pinning
@@ -282,27 +310,31 @@ src/shared/packages/pyforge-warden/
 - **Internal spine (module boundary):** `ResolvedInventory` is the *only* cross-stage object. Discovery/routing/extract **produce** it; hygiene/vuln **annotate** it; report/sbom/verdict **read** it. No stage reaches around it.
 - **Security boundary:** `extract/` is a **no-execution zone** — imports no execution primitive, no `jinja2`, `safe_load` only (AST-denylist meta-test). `engines.py` is the *only* module that spawns subprocesses, always via `_engine_env()`.
 - **External contracts (versioned):** `report-schema.json` (`ComplianceReport`, `schema_version`) → stdout/`--output`; CycloneDX 1.6 SBOM → `--sbom-output`; the frozen exit-code enum `{0,1,2,130}`; the `[tool.pyforge-warden]` config-key schema. cf_atlas (FR-16/18, post-v1) consumes the report contract.
-- **Trust boundary:** the waiver file + the offline OSV DB are **untrusted/verified inputs** — `waiver.py` validates schema + enforces expiry (integrity delegated to git/CODEOWNERS); the DB's trust-anchor is conda package integrity + build-date staleness.
+- **Trust boundary:** the waiver file + the offline OSV DB + the baseline file are **untrusted/verified inputs** — `waiver.py` validates schema + enforces expiry (integrity delegated to git/CODEOWNERS); the DB's trust-anchor is conda package integrity + build-date staleness.
+- **One suppression engine (F8, 2026-07-16):** matching-by-finding-ID + expiry is implemented ONCE (`waiver.py`'s core, consumed by `baseline.py` as a second input source — story 6.8 extends, never re-implements); the tie-break (waiver wins where both match; echoed once, via the 6.1 rung-discriminator) is decided there; pipeline position = policy evaluation, pre-verdict.
 
 ### Epic → structure mapping
 | Epic | Modules | FRs |
 |---|---|---|
-| **E1 — manifest bridge** | `discovery` · `routing` · `extract/*` · `mapping` · `inventory` | FR1–FR7 |
-| **E2 — hygiene** | `engines`(deptry) · `hygiene` | FR8–FR9 |
-| **E3 — vulnerability** | `engines`(osv) · `vuln` | FR10–FR13 |
-| **E4 — report + gate** | `report` · `sbom` · `verdict` · `waiver` · `cli` · `config` · `determinism` · `errors` | FR14–FR31 + C0 |
+| **Manifest bridge** *(delivery: epics.md E1/E2)* | `discovery` · `routing` · `extract/*` · `mapping` · `inventory` | FR1–FR7 |
+| **Hygiene axis** *(delivery: E1)* | `engines`(deptry) · `hygiene` | FR8–FR9 |
+| **Vulnerability axis** *(delivery: E1/E2)* | `engines`(osv) · `vuln` | FR10–FR13 |
+| **Report + gate** *(delivery: E1/E3/E4)* | `report` · `sbom` · `verdict` · `waiver` · `cli` · `config` · `determinism` · `errors` | FR14–FR31 + C0 |
+| **Multi-axis expansion** *(delivery: epics.md Epic 6, 2026-07-15/16)* | `license` · `currency` · `feeds` · `baseline` · `actuator` · `engines`(new producers) · `report`(6.1 amendment) · `models` | FR32–FR40 + NFR-S9 |
+
+*(Rows are capability groupings, deliberately un-numbered since 2026-07-16 — the earlier architecture-local E-numbers collided with epics.md's delivery-epic numbers; each row cites its delivery epics inline.)*
 
 ### Data flow
-`cli` → `config` → `discovery` → `routing` → `extract/*` → **`inventory`** → (`engines`: deptry ‖ osv in parallel) → `hygiene`/`vuln` annotate inventory → `report` + `sbom` (projections) + `verdict` (lattice → status + exit) → `cli` emits report (stdout) + exit code. Errors surface as typed `ErrorKind` at the CLI boundary; `--bypass` routes through `waiver`.
+`cli` → `config` → `discovery` → `routing` → `extract/*` → **`inventory`** → (`engines`: deptry ‖ osv ‖ license ‖ currency in parallel — all four axes, 2026-07-15) → `hygiene`/`vuln`/`license`/`currency` annotate inventory → `report` + `sbom` (projections) + `verdict` (lattice → status + exit; exit FIXED here) → [`--open-fix-prs`: `cli` invokes `actuator` post-verdict] → `cli` assembles the final report (incl. `actuation`) and emits it (stdout) + exit code. Suppression (`waiver` + `baseline` via the one engine) applies at policy evaluation, pre-verdict. Errors surface as typed `ErrorKind` at the CLI boundary; `--bypass` routes through `waiver`.
 
 ## Architecture Validation Results
 
 ### Coherence Validation ✅
-Decisions cohere: the 7-stage pipeline, the single `ResolvedInventory` spine, the two-axis verdict, the false-green triad, the library policy, and the non-rendering E1 all fit without contradiction. The one live tension — `indeterminate` vs `not-applicable` masking a clean sibling axis — was resolved by the roundtable (the new state sits above `warn`). Patterns support the decisions (one model, canonical enums, security/determinism invariants as meta-tests); the structure realizes them (extract = no-execution zone; engines = sole subprocess site; verdict = sole exit-code owner).
+Decisions cohere: the 7-stage pipeline, the single `ResolvedInventory` spine, the multi-axis verdict (four v1 axes, one lattice), the false-green triad, the library policy, and the non-rendering E1 all fit without contradiction. The one live tension — `indeterminate` vs `not-applicable` masking a clean sibling axis — was resolved by the roundtable (the new state sits above `warn`). Patterns support the decisions (one model, canonical enums, security/determinism invariants as meta-tests); the structure realizes them (extract = no-execution zone; engines = sole subprocess site; verdict = sole exit-code owner).
 
 ### Requirements Coverage Validation ✅
-- **FR1–FR31** each map to a module (Epic→structure table). No orphaned FR.
-- **NFRs:** C0 → verdict + guard suite; S1–S8 → extract-no-exec / engine-runner / schema-aware serializer boundaries; NFR-R3b → `determinism.py` + `--deterministic`; NFR-P → parallel engines + offline DB; NFR-I1/I3 → `report-schema.json` + cyclonedx-python-lib + pure-JSON stdout; NFR-U1/U2 → actionable diagnostics + warn-only.
+- **FR1–FR40** each map to a module (capability→structure table; FR32–FR40 → the multi-axis row). No orphaned FR.
+- **NFRs:** C0 → verdict + guard suite; S1–S8 → extract-no-exec / engine-runner / schema-aware serializer boundaries; NFR-R3b → `determinism.py` + `--deterministic`; NFR-P → parallel axes + offline DB; NFR-S9 → `feeds.py`/bundled-data age provenance (2026-07-15); NFR-I1/I3 → `report-schema.json` + cyclonedx-python-lib + pure-JSON stdout; NFR-U1/U2 → actionable diagnostics + warn-only.
 - **The 3 blocking Gaps (A/B/C) are resolved**; the connective-tissue open questions (discovery/routing/reconciliation/coverage-floor) are decided.
 
 ### Implementation Readiness Validation ✅
@@ -328,10 +360,10 @@ The false-green triad + the Gap-C ecosystem-identity predicate + the E1 non-rend
 **Project Structure** — [x] complete tree · [x] component boundaries · [x] integration points · [x] requirements→structure mapping
 
 ### Architecture Readiness Assessment
-**Overall Status: READY WITH MINOR GAPS** — all 16 checklist axes covered and no Critical Gaps; downgraded from fully-ready by the 4 bounded first-story items + the pending PRD reconciliation.
+**Overall Status: READY WITH MINOR GAPS** *(re-affirmed 2026-07-16 post-D12: the multi-axis expansion is additive to the spine — same lattice, same inventory, one sanctioned schema amendment)* — all 16 checklist axes covered and no Critical Gaps; the original 4 bounded first-story items are closed or story-owned (map → 2.1 · confidence threshold → FR18 · denominator → 1.9 · OSV DB → the 1.4 decision record); remaining minor gap = the actuator socket-deny carve-out (story 6.9, reviewed per-epic).
 **Confidence: HIGH** — the design was adversarially stress-tested (two roundtable rounds) and the sharpest defect (beachhead false-green) was caught and fixed before ratification.
 **Key strengths:** the never-false-green acceptance spine (C0 → triad → guards); the single-model + canonical-enum discipline; the non-rendering-by-construction security posture; the honest coverage contract grounded in real engine + recipe-format facts.
-**Future enhancement:** KEV gate tier · SARIF · cf_atlas promotion · full conda↔PyPI reconciliation · the baseline ratchet (all deferred-Growth).
+**Future enhancement (re-tiered 2026-07-16 per D12 — KEV/EPSS gates + the baseline ratchet moved INTO v1):** SARIF · registry perimeter · engine-swappability · cf_atlas promotion (backlog) · full conda↔PyPI reconciliation.
 
 ### Implementation Handoff
 **AI agent guidelines:** follow § Core Architectural Decisions + § Implementation Patterns exactly; use the single `ResolvedInventory` + canonical enums; keep `extract/` execution-free; route all subprocesses through `_engine_env()`; sort before every emit.
