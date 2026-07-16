@@ -17,10 +17,15 @@ Ownership decisions recorded:
   ``DefaultPolicy.evaluate()`` from ``inventory.components`` and threaded
   through ``hygiene_rung`` — see its docstring). deptry's ``module`` field is
   an import name, not a distribution name, so it can't be reliably
-  correlated to one component without Story 2.2's synthesized front-door
-  (not yet built); the trust gate is therefore scan-wide, not per-finding —
-  false only when the inventory shows a positive ambiguous-mapping signal
-  (a ``"likely"``-confidence conda component) anywhere. An UNKNOWN DEP code
+  correlated to one component even now that Story 2.2's synthesized
+  front-door (``_synthesize_deptry_frontdoor``, below) exists — a module
+  name is still not a distribution name; the trust gate is therefore
+  scan-wide, not per-finding — false only when the inventory shows a
+  positive ambiguous-mapping signal (a ``"likely"``-confidence conda
+  component) anywhere, which the front-door now makes REACHABLE for a
+  conda-sourced scan for the first time (previously only a
+  ``pyproject.toml``-native scan could ever populate the inventory this
+  gate reads). An UNKNOWN DEP code
   degrades to ``indeterminate`` (never a false-green — a new deptry code we
   have not classified must not silently pass). Story 3.1 lifts this default
   into an overridable config table; 1.3/2.1 keep it here.
@@ -28,6 +33,50 @@ Ownership decisions recorded:
   ``'argparse' is defined as a dependency but it is included in the Python
   standard library.``). The architecture's pinned "unused-dev" label was
   wrong; ``DEP005 → warn`` is still the correct ceiling.
+* ``_synthesize_deptry_frontdoor`` (Story 2.2, FR8's conda half):
+  ``engines.DeptryEngine.run`` unconditionally synthesizes a
+  ``--requirements-files`` input from EVERY component where
+  ``hygiene_covered and pypi_identity is not None`` — a materially
+  BROADER filter than ``vuln._synthesize_requirements``'s
+  ``vuln_matchable`` pre-filter (Gap-C's concrete-version-only rule is a
+  vuln-matching concern, not a hygiene one: deptry needs to know a
+  package's NAME is a declared dependency, not that its version is
+  exactly pinned). A component with a resolved identity but no concrete
+  version writes a BARE name line (deptry's own requirements parser
+  accepts a bare name — no version at all is still a valid "this is a
+  declared dependency" signal); a concrete version writes
+  ``name==version``. This is why DEP001 trust-gating (see above) is
+  scan-wide, not per-finding: it now also governs conda-sourced hygiene
+  findings this synthesized front-door makes possible for the first
+  time. The NFR-S6 safe-token purity guard (``_is_safe_token``/
+  ``_SAFE_TOKEN_CHARS``) is DUPLICATED here rather than imported from
+  ``vuln.py`` — a small, security-relevant guard stays locally auditable
+  in each producing module rather than cross-module-coupled. (The inert
+  ``SynthesizedInput`` carrier dataclass IS imported from ``vuln.py``:
+  it is a pure data shape with no guard logic, so sharing it is not the
+  coupling the guard-duplication rationale avoids.) Beyond the charset
+  guard, every line is also validated against ``packaging``'s OWN
+  ``Requirement`` grammar before it is written (2026-07-16): deptry
+  parses each front-door line with that same grammar and CRASHES the
+  whole run (exit 1, no output file — verified live against deptry
+  0.25.x) on the first invalid line, so one
+  conda-legal-but-PEP-440-illegal identity (``numpy==1.20rc1x``) used to
+  take the ENTIRE hygiene axis down with it. An invalid line is excluded
+  + surfaced exactly like a charset failure, never written.
+* ``unsafe_identity_finding`` (Fix 6, 2026-07-16): ``SynthesizedInput.
+  excluded`` (the NFR-S6-guard-excluded components above) was computed but
+  then silently discarded by ``engines.DeptryEngine.run`` — unlike
+  ``OsvEngine.run``, which always turns its own parallel-shaped
+  ``.excluded`` list into one ``indeterminate:unsafe-identity:<pkg>``
+  finding per component via ``vuln.unsafe_identity_finding``. This module's
+  own ``unsafe_identity_finding``/``_indeterminate_finding`` mirror that
+  shape but hardcode ``AXIS_HYGIENE`` and use the DISTINCT reason segment
+  ``unsafe-identity-hygiene`` (duplicated, not imported — same reasoning as
+  ``_is_safe_token`` above: a wrong-axis import would silently roll the
+  finding into the vulnerability axis's verdict instead of hygiene's; and a
+  shared id family would collide in ``DefaultPolicy.evaluate``'s id-keyed
+  dedupe when one component is excluded by BOTH front-doors, silently
+  dropping the vuln-axis record — fixed 2026-07-16).
 * A malformed/unmappable record (not a dict, or missing ``error.code`` /
   ``module``, or one whose finding id would violate the frozen id grammar)
   is COUNTED toward ``unparseable_rate`` AND surfaces a typed
@@ -49,9 +98,13 @@ This module parses JSON as DATA: no subprocess, no network, no exec.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 
+from packaging.requirements import InvalidRequirement, Requirement
+
 from .interfaces import _sanitize_id_segment
+from .inventory import Component
 from .models import (
     AXIS_HYGIENE,
     ErrorKind,
@@ -60,6 +113,7 @@ from .models import (
     Status,
     StatusDriver,
 )
+from .vuln import SynthesizedInput
 
 # The owner label every deptry-sourced error/finding carries.
 _OWNER = "deptry"
@@ -81,6 +135,141 @@ DEFAULT_HYGIENE_POLICY: dict[str, Status] = {
 # Ratchet baseline (NFR-R2): the fraction of deptry records we fail to map may
 # only ever decrease. A conformance test pins the real corpus at/below this.
 UNPARSEABLE_RATE_BASELINE = 0.0
+
+
+# --- Story 2.2 (FR8's conda half): the deptry front-door -----------------
+
+# NFR-S6 purity guard: a manifest-derived name/version must be exactly this
+# token shape to be written into the synthesized deptry input. DUPLICATED
+# from ``vuln._is_safe_token``/``_SAFE_TOKEN_CHARS`` rather than imported
+# (see module docstring) — a security-relevant guard stays locally
+# auditable in each producing module.
+_SAFE_TOKEN_CHARS = frozenset(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
+)
+
+
+def _is_safe_token(value: str) -> bool:
+    """NFR-S6: exactly the ``[A-Za-z0-9._-]+`` token shape AND not leading
+    with ``-`` (a pip-option-injection shape even though ``-`` is itself in
+    the allowed charset). Mirrors ``vuln._is_safe_token`` exactly."""
+    return (
+        bool(value)
+        and not value.startswith("-")
+        and all(char in _SAFE_TOKEN_CHARS for char in value)
+    )
+
+
+def _is_valid_requirement_line(line: str) -> bool:
+    """deptry parses each ``--requirements-files`` line with ``packaging``'s
+    own ``Requirement`` grammar and CRASHES the whole run (exit 1, no output
+    file — verified live against deptry 0.25.x) on the first invalid line,
+    taking the entire hygiene axis down with it. A conda-legal but
+    PEP-508/440-illegal identity (``numpy==1.20rc1x``, a trailing-hyphen
+    name) passes the charset-only ``_is_safe_token`` guard, so every
+    synthesized line must ALSO parse under that same grammar before it is
+    written (fixed 2026-07-16)."""
+    try:
+        Requirement(line)
+    except InvalidRequirement:
+        return False
+    return True
+
+
+def _synthesize_deptry_frontdoor(components: Sequence[Component]) -> SynthesizedInput:
+    """Turn every hygiene-covered, identified component into a sorted,
+    de-duplicated pip-requirements-style line for deptry's
+    ``--requirements-files`` front-door (Story 2.2): ``name==version`` when
+    a concrete version is known, a BARE ``name`` otherwise (deptry's own
+    requirements parser accepts a bare name — "this is a declared
+    dependency" doesn't require an exact pin the way vuln-matching does).
+    The filter is ``hygiene_covered and pypi_identity is not None`` —
+    deliberately NOT ``vuln_matchable`` (see module docstring): a
+    range-only or unversioned-but-mapped conda dependency still deserves a
+    hygiene signal. A component whose resolved name/version fails the
+    NFR-S6 safe-token purity guard — or whose synthesized line fails
+    ``packaging``'s own ``Requirement`` grammar, which would crash deptry
+    itself (see ``_is_valid_requirement_line``) — is excluded (never
+    written raw) and reported back via ``SynthesizedInput.excluded``."""
+    lines: list[str] = []
+    excluded: list[Component] = []
+    for component in components:
+        if not component.hygiene_covered or component.pypi_identity is None:
+            continue
+        identity = component.pypi_identity
+        if not _is_safe_token(identity.name):
+            excluded.append(component)
+            continue
+        if identity.version:
+            if not _is_safe_token(identity.version):
+                excluded.append(component)
+                continue
+            line = f"{identity.name}=={identity.version}"
+        else:
+            line = identity.name
+        if not _is_valid_requirement_line(line):
+            excluded.append(component)
+            continue
+        lines.append(line)
+    return SynthesizedInput(lines=tuple(sorted(set(lines))), excluded=tuple(excluded))
+
+
+def _indeterminate_finding(reason: str, component: Component, message: str) -> Finding:
+    """Mirrors ``vuln._indeterminate_finding``'s id family/subject shape
+    exactly (duplicated, not imported: ``vuln.py``'s own copy hardcodes
+    ``AXIS_VULNERABILITY``, and a finding this module produces must carry
+    ``AXIS_HYGIENE`` — the same axis its own front-door synthesis feeds —
+    or it would silently roll up into the WRONG axis's verdict; see
+    ``_is_safe_token``'s own duplication rationale above for why a small,
+    security-relevant/axis-relevant helper stays locally auditable in each
+    producing module rather than cross-module-coupled). The subject segment
+    carries BOTH name and version for the same reason ``vuln.py``'s copy
+    does: two components sharing a name but differing by version must not
+    collide onto one finding id."""
+    version_segment = (
+        _sanitize_id_segment(component.version)
+        if component.version
+        else "unspecified"
+    )
+    return Finding(
+        id=(
+            f"indeterminate:{reason}:"
+            f"{_sanitize_id_segment(component.name)}@{version_segment}"
+        ),
+        axis=AXIS_HYGIENE,
+        message=message,
+        subject=component.name,
+        severity=None,
+    )
+
+
+def unsafe_identity_finding(component: Component) -> Finding:
+    """One finding per NFR-S6-excluded component (Fix 6, 2026-07-16): its
+    resolved pypi identity failed the safe-token purity guard and was never
+    written into the synthesized deptry front-door input.
+    ``DeptryEngine.run`` previously discarded ``SynthesizedInput.excluded``
+    entirely for this front-door, so such a component just vanished from the
+    hygiene axis's input with zero surfaced record — unlike
+    ``vuln.unsafe_identity_finding``, which ``OsvEngine.run`` always turns
+    into a finding for its own (parallel-shaped) exclusion list.
+
+    The reason segment is ``unsafe-identity-hygiene`` — deliberately NOT the
+    vuln-axis counterpart's ``unsafe-identity`` (fixed 2026-07-16): a
+    component excluded by BOTH front-doors would otherwise mint two findings
+    with the IDENTICAL id on different axes, and ``DefaultPolicy.evaluate``'s
+    id-keyed engine-vs-engine dedupe (first registration wins) silently
+    dropped the vulnerability-axis record — destroying exactly the per-axis
+    attribution this module's duplicated helpers exist to protect (verified
+    live). A distinct id family keeps both axes' exclusion records and rung
+    drivers alive; ``hygiene_rung`` still degrades the unknown code to
+    ``indeterminate`` identically."""
+    return _indeterminate_finding(
+        "unsafe-identity-hygiene",
+        component,
+        f"{component.name}: excluded from the deptry front-door input — its "
+        "resolved pypi identity is not a safely-writable requirements line "
+        "(NFR-S6 safe-token purity guard / PEP 508 requirement grammar)",
+    )
 
 
 @dataclass(frozen=True)

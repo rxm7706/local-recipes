@@ -10,7 +10,7 @@ import pytest
 
 from pyforge.warden.discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND
 from pyforge.warden.extract import UnparsableManifestError
-from pyforge.warden.extract import lockfiles
+from pyforge.warden.extract import _identity, lockfiles
 from pyforge.warden.extract.lockfiles import (
     CONDA_LOCK_CONDA_SECTION,
     CONDA_LOCK_PYPI_SECTION,
@@ -63,7 +63,9 @@ def test_pixi_lock_conda_row_ordinary_url_is_unmapped_ecosystem(monkeypatch):
     # The real bundled map (Story 2.1) now maps "numpy" -- monkeypatch to a
     # deterministic empty map so this test keeps exercising the true-miss
     # path regardless of the bundled map's contents.
-    monkeypatch.setattr(lockfiles, "load_conda_pypi_map", lambda: {})
+    # Story 2.2: the map lookup now lives in extract/_identity.py (factored
+    # out of this module) -- patch it there, not on `lockfiles` itself.
+    monkeypatch.setattr(_identity, "load_conda_pypi_map", lambda: {})
     path = FIXTURES / "pixi_lock_basic" / "pixi.lock"
     components = _pixi_lock_extractor().extract(path, PIXI_LOCK_MANIFEST)
     numpy = next(c for c in components if c.name == "numpy")
@@ -84,7 +86,7 @@ def test_pixi_lock_conda_row_verified_map_hit_resolves_pypi_identity(monkeypatch
     """A verified-confidence map hit sets pypi_identity + vuln_matchable
     (Story 2.1 AC2)."""
     monkeypatch.setattr(
-        lockfiles,
+        _identity,
         "load_conda_pypi_map",
         lambda: {
             "numpy": {
@@ -111,7 +113,7 @@ def test_pixi_lock_conda_row_low_confidence_map_hit_withholds(monkeypatch):
     UNMAPPED_ECOSYSTEM (Story 2.1 AC3) -- never a silent clean/match --
     but the raw confidence tier survives on mapping_confidence."""
     monkeypatch.setattr(
-        lockfiles,
+        _identity,
         "load_conda_pypi_map",
         lambda: {
             "numpy": {
@@ -263,7 +265,9 @@ def test_conda_lock_manager_conda_row_is_unmapped_ecosystem(monkeypatch):
     # The real bundled map (Story 2.1) now maps "numpy" -- monkeypatch to a
     # deterministic empty map so this test keeps exercising the true-miss
     # path regardless of the bundled map's contents.
-    monkeypatch.setattr(lockfiles, "load_conda_pypi_map", lambda: {})
+    # Story 2.2: the map lookup now lives in extract/_identity.py (factored
+    # out of this module) -- patch it there, not on `lockfiles` itself.
+    monkeypatch.setattr(_identity, "load_conda_pypi_map", lambda: {})
     path = FIXTURES / "conda_lock_basic" / "conda-lock.yml"
     components = _conda_lock_extractor().extract(path, CONDA_LOCK_MANIFEST)
     numpy = next(c for c in components if c.name == "numpy")

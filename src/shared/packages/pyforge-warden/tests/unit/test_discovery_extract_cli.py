@@ -29,8 +29,12 @@ from pyforge.warden import cli
 from pyforge.warden.cli import main
 from pyforge.warden.discovery import (
     CONDA_LOCK_KIND,
+    ENVIRONMENT_YML_KIND,
+    META_YAML_KIND,
     PIXI_LOCK_KIND,
+    PIXI_TOML_KIND,
     PYPROJECT_KIND,
+    RECIPE_YAML_KIND,
     discover,
 )
 from pyforge.warden.extract import (
@@ -245,6 +249,70 @@ def test_discover_fails_closed_on_a_dangling_conda_lock_symlink(tmp_path):
         discover(tmp_path)
 
 
+# --- discovery: the 4 new conda/pixi source-manifest kinds (Story 2.2) -------
+
+
+@pytest.mark.parametrize(
+    "kind,body",
+    [
+        (RECIPE_YAML_KIND, "requirements:\n  run: []\n"),
+        (META_YAML_KIND, "requirements:\n  run: []\n"),
+        (ENVIRONMENT_YML_KIND, "dependencies: []\n"),
+        (PIXI_TOML_KIND, "[dependencies]\n"),
+    ],
+)
+def test_discover_finds_each_new_source_manifest_kind(tmp_path, kind, body):
+    (tmp_path / kind).write_text(body, encoding="utf-8")
+    assert discover(tmp_path) == (ScannedManifest(path=kind, kind=kind),)
+
+
+def test_discover_returns_empty_when_no_source_manifest_present(tmp_path):
+    assert discover(tmp_path) == ()
+
+
+def test_discover_finds_all_seven_kinds_together_in_fixed_order(tmp_path):
+    write_pyproject(tmp_path, [])
+    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
+    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
+    (tmp_path / RECIPE_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
+    (tmp_path / META_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
+    (tmp_path / ENVIRONMENT_YML_KIND).write_text("dependencies: []\n", encoding="utf-8")
+    (tmp_path / PIXI_TOML_KIND).write_text("[dependencies]\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=PYPROJECT_KIND, kind=PYPROJECT_KIND),
+        ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND),
+        ScannedManifest(path=CONDA_LOCK_KIND, kind=CONDA_LOCK_KIND),
+        ScannedManifest(path=RECIPE_YAML_KIND, kind=RECIPE_YAML_KIND),
+        ScannedManifest(path=META_YAML_KIND, kind=META_YAML_KIND),
+        ScannedManifest(path=ENVIRONMENT_YML_KIND, kind=ENVIRONMENT_YML_KIND),
+        ScannedManifest(path=PIXI_TOML_KIND, kind=PIXI_TOML_KIND),
+    )
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [RECIPE_YAML_KIND, META_YAML_KIND, ENVIRONMENT_YML_KIND, PIXI_TOML_KIND],
+)
+def test_discover_fails_closed_on_a_source_manifest_directory(tmp_path, kind):
+    """A source manifest that exists but is not a regular file is
+    found-but-refused: it must FAIL CLOSED, never read as absent (mirrors
+    the pyproject.toml/lockfile rows)."""
+    (tmp_path / kind).mkdir()
+    with pytest.raises(OSError, match="not a regular file"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+@pytest.mark.parametrize(
+    "kind",
+    [RECIPE_YAML_KIND, META_YAML_KIND, ENVIRONMENT_YML_KIND, PIXI_TOML_KIND],
+)
+def test_discover_fails_closed_on_a_dangling_source_manifest_symlink(tmp_path, kind):
+    (tmp_path / kind).symlink_to(tmp_path / "no-such-target")
+    with pytest.raises(OSError, match="dangling symlink"):
+        discover(tmp_path)
+
+
 # --- extractor rows ----------------------------------------------------------
 
 
@@ -407,8 +475,10 @@ def test_non_string_dependency_entry_raises_value_error(tmp_path):
 
 
 def test_unknown_manifest_kind_has_no_extractor():
+    # "meta.yaml" gained an extractor in Story 2.2 -- a genuinely-fictional
+    # kind token is the sentinel now.
     with pytest.raises(ValueError):
-        extractor_for("meta.yaml", DefaultRouter())
+        extractor_for("some-unknown-manifest.kind", DefaultRouter())
 
 
 def test_pixi_lock_kind_dispatches_to_pixi_lock_extractor():
@@ -736,7 +806,9 @@ def test_unknown_manifest_kind_is_internal_error_not_a_crash(
     discovery is an internal-error report, never a traceback — and never
     a false 'unparsable-manifest' diagnosis."""
     write_pyproject(tmp_path, ["requests==2.31.0"])
-    unknown = ScannedManifest(path="pyproject.toml", kind="meta.yaml")
+    # "meta.yaml" gained an extractor in Story 2.2 -- a genuinely-fictional
+    # kind token is the sentinel now.
+    unknown = ScannedManifest(path="pyproject.toml", kind="some-unknown-manifest.kind")
     monkeypatch.setattr(cli, "discover", lambda target: (unknown,))
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 2
