@@ -1,0 +1,41 @@
+[build-system]
+requires = [
+    "setuptools",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+requires-python = ">=3.10"
+name = "pyforge_atlas"
+readme = "README.md"
+dynamic = [
+    "version",
+]
+dependencies = [
+    "ipython>=8.10",
+    "jupyterlab>=3.0",
+    "notebook",
+    "kedro~=1.5.0",
+]
+
+[project.scripts]
+pyforge-atlas = "pyforge_atlas.__main__:main"
+
+[project.entry-points."kedro.hooks"]
+
+[tool.setuptools.dynamic.version]
+attr = "pyforge_atlas.__version__"
+
+[tool.setuptools.packages.find]
+where = [
+    "src",
+]
+namespaces = false
+
+[tool.kedro]
+package_name = "pyforge_atlas"
+project_name = "pyforge-atlas"
+kedro_init_version = "1.5.0"
+tools = "['None']"
+example_pipeline = "False"
+source_dir = "src"
