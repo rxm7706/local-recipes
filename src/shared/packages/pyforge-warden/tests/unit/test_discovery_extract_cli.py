@@ -3,11 +3,11 @@ routing, and the CLI surface (Story 1.2).
 
 The matrix is testable, not aspirational: every extractor row
 (pinned/range/arbitrary-equality/bare/invalid-string/markers-ignored,
-TOMLDecodeError path) and every CLI row (``--version``→0, usage error→2
-never 0, KeyboardInterrupt→130 in every window incl. parse_args,
-nonexistent/empty target → empty stdout + 2, text format single line,
-BrokenPipeError absorbed, error-taxonomy rows: unreadable manifest /
-unknown kind / internal ValueError / discovery OSError) has a
+TOMLDecodeError path) and every CLI row (``--version``/``--help``→0, usage
+error→2 never 0, KeyboardInterrupt→130 in every window incl. parse_args,
+nonexistent/empty target → empty stdout + 2, text format's human summary
+(Story 1.8), BrokenPipeError absorbed, error-taxonomy rows: unreadable
+manifest / unknown kind / internal ValueError / discovery OSError) has a
 deterministic unit test here.
 """
 
@@ -583,6 +583,15 @@ def test_version_flag_exits_zero(capsys):
     assert captured.out.startswith("warden ")
 
 
+def test_help_flag_exits_zero(capsys):
+    """FR31: --help is a stable, zero-exit contract (already shipped via
+    argparse's own action, untested before Story 1.8)."""
+    assert main(["--help"]) == 0
+    captured = capsys.readouterr()
+    assert "usage" in captured.out.lower()
+    assert "scan" in captured.out
+
+
 def test_missing_verb_is_a_usage_error(capsys):
     rc = main([])
     assert rc == 2
@@ -625,21 +634,27 @@ def test_keyboard_interrupt_returns_sigint_with_no_report(
     assert "SIGINT" in captured.err
 
 
-def test_text_format_emits_one_non_contract_summary_line(capsys, tmp_path):
+def test_text_format_emits_a_human_summary_with_driver_and_finding_lines(
+    capsys, tmp_path
+):
     # An adjacent .py module (Story 2.4, AC3: deptry only runs when Python
     # source exists) that never imports requests -- a declared-but-unused
     # dependency is flagged DEP002 by deptry (Story 1.3) -> status warn, one
-    # finding, exit 0. The text format still emits exactly ONE summary line.
+    # finding, exit 0. Story 1.8: the text format now emits a verdict line,
+    # a driver line, and one line per finding -- not a single debug line
+    # (see tests/conformance/test_scan_harness.py for the same assertion
+    # against real fixtures; this is the same behavior via a synthesized
+    # tmp_path project).
     write_pyproject(tmp_path, ["requests==2.31.0"])
     (tmp_path / "main.py").write_text("", encoding="utf-8")
     rc = main(["scan", str(tmp_path)])  # text is the default format
     captured = capsys.readouterr()
     assert rc == 0
-    assert captured.out.count("\n") == 1
-    line = captured.out.strip()
-    assert "status=warn" in line
-    assert "exit_code=0" in line
-    assert "findings=1" in line
+    lines = captured.out.splitlines()
+    assert len(lines) == 3
+    assert lines[0] == "warden: status=warn exit_code=0 findings=1"
+    assert lines[1] == "  driver: axis=hygiene id=hygiene:DEP002:requests"
+    assert lines[2].startswith("  [hygiene] none hygiene:DEP002:requests -- ")
 
 
 def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):
