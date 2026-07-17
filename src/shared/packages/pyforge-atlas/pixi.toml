@@ -1,0 +1,35 @@
+# pyforge-atlas (Atlas) — pixi build workspace member (warden mirror, Story A1).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.pyforge-atlas.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# The Kedro pipeline implementation (Waves A–H) is delivered story-by-story
+# against docs/specs/cfe-atlas-datapipeline-kedro-migration.md.
+
+[package]
+name = "pyforge-atlas"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.14"          # atlas floor is 3.14 BY DESIGN (warden's is 3.12 — do not "fix")
+hatchling = "*"
+
+# Conda-forge run set: what the lean `pyforge-atlas` env needs so `kedro-test`
+# (import smokes + Kedro bootstrap seam) passes. pyforge-warden here makes the
+# [gate] extra default-installed in-repo (AC-8 / A1-A5). Test-only tools
+# (pytest, python-build) live at FEATURE level in the root pixi.toml, mirroring
+# warden's split.
+[package.run-dependencies]
+python = ">=3.14"
+kedro = ">=1.5.0"
+kedro-datasets = ">=9.5.0"
+kedro-dagster = ">=0.7.0"    # py3.14-unclassified glue — kedro-test import smoke target (AD-16)
+pyforge-warden = { path = "../pyforge-warden" }
