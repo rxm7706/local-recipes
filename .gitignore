@@ -682,6 +682,9 @@ conda-bld/
 # Pixi
 .pixi/
 pixi.lock
+# ...except hand-authored pixi.lock test fixtures (Story 2.6) — these are
+# checked-in test data, never a real per-env resolved lockfile.
+!src/shared/packages/pyforge-warden/tests/fixtures/**/pixi.lock
 
 # Claude Code local settings
 .claude/settings.local.json

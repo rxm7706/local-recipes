@@ -22,7 +22,15 @@ extractor; the kind vocabulary is Story 1.9's — 1.2 knows exactly one kind.
 
 from __future__ import annotations
 
-from ..discovery import PYPROJECT_KIND
+from ..discovery import (
+    CONDA_LOCK_KIND,
+    ENVIRONMENT_YML_KIND,
+    META_YAML_KIND,
+    PIXI_LOCK_KIND,
+    PIXI_TOML_KIND,
+    PYPROJECT_KIND,
+    RECIPE_YAML_KIND,
+)
 from ..interfaces import Extractor, Router
 
 
@@ -36,7 +44,12 @@ class UnparsableManifestError(ValueError):
 
 # Imported AFTER UnparsableManifestError so extractor modules can import the
 # class from this (then partially-initialized) package without a cycle.
+from .lockfiles import CondaLockExtractor, PixiLockExtractor  # noqa: E402
 from .pyproject import PyprojectExtractor  # noqa: E402
+from .recipe_v1 import RecipeV1Extractor  # noqa: E402
+from .meta_v0 import MetaV0Extractor  # noqa: E402
+from .environment_yml import EnvironmentYmlExtractor  # noqa: E402
+from .pixi import PixiTomlExtractor  # noqa: E402
 
 
 def extractor_for(kind: str, router: Router) -> Extractor:
@@ -47,4 +60,16 @@ def extractor_for(kind: str, router: Router) -> Extractor:
     inconsistency, not a broken manifest."""
     if kind == PYPROJECT_KIND:
         return PyprojectExtractor(router)
+    if kind == PIXI_LOCK_KIND:
+        return PixiLockExtractor(router)
+    if kind == CONDA_LOCK_KIND:
+        return CondaLockExtractor(router)
+    if kind == RECIPE_YAML_KIND:
+        return RecipeV1Extractor(router)
+    if kind == META_YAML_KIND:
+        return MetaV0Extractor(router)
+    if kind == ENVIRONMENT_YML_KIND:
+        return EnvironmentYmlExtractor(router)
+    if kind == PIXI_TOML_KIND:
+        return PixiTomlExtractor(router)
     raise ValueError(f"no extractor registered for manifest kind {kind!r}")

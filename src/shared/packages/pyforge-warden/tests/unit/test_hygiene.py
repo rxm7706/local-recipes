@@ -16,9 +16,11 @@ from pyforge.warden.hygiene import (
     DEFAULT_HYGIENE_POLICY,
     UNPARSEABLE_RATE_BASELINE,
     DeptryParse,
+    _synthesize_deptry_frontdoor,
     hygiene_rung,
     parse_deptry_output,
     status_for_code,
+    unsafe_identity_finding,
 )
 from pyforge.warden.models import (
     AXIS_HYGIENE,
@@ -26,6 +28,7 @@ from pyforge.warden.models import (
     Finding,
     Status,
     StatusDriver,
+    WithholdReason,
 )
 
 
@@ -80,10 +83,10 @@ def test_clean_output_is_empty_and_decidable():
 
 
 def test_default_policy_table_is_exactly_the_five_dep_codes():
-    # DEP001 is WARN in 1.3 (its Gap-A block is gated on Story 2.1's
-    # name-mapping confidence — follow-up Opus review, 2026-07-14).
+    # DEP001 blocks by default (Story 2.1, Gap-A); hygiene_rung's
+    # dep001_trusted gate is what downgrades it to warn on ambiguity.
     assert DEFAULT_HYGIENE_POLICY == {
-        "DEP001": Status.WARN,
+        "DEP001": Status.POLICY_VIOLATION,
         "DEP002": Status.WARN,
         "DEP003": Status.WARN,
         "DEP004": Status.WARN,
@@ -91,10 +94,17 @@ def test_default_policy_table_is_exactly_the_five_dep_codes():
     }
 
 
+def test_default_policy_never_maps_to_clean():
+    """Structural guard (deferred-work.md, actionable once this module is
+    touched): the default hygiene policy must never contain Status.CLEAN --
+    an unclassified/degraded finding must never silently pass."""
+    assert Status.CLEAN not in DEFAULT_HYGIENE_POLICY.values()
+
+
 @pytest.mark.parametrize(
     "code,expected",
     [
-        ("DEP001", Status.WARN),  # gated block deferred to Story 2.1
+        ("DEP001", Status.POLICY_VIOLATION),
         ("DEP002", Status.WARN),
         ("DEP003", Status.WARN),
         ("DEP004", Status.WARN),
@@ -114,10 +124,9 @@ def test_unknown_code_degrades_to_indeterminate_never_clean():
 # --- rung derivation ---------------------------------------------------------
 
 
-def test_hygiene_rung_for_dep001_is_warn():
-    # DEP001 warns in 1.3 (Gap-A block gated on Story 2.1's name-mapping
-    # confidence; deptry DEP001 false-positives on guarded optional imports
-    # would otherwise produce a benign false-red). Follow-up Opus review.
+def test_hygiene_rung_for_dep001_is_policy_violation_when_trusted():
+    # DEP001 blocks by default (Story 2.1, Gap-A) when dep001_trusted is
+    # True (the default) -- no positive ambiguous-mapping signal.
     finding = Finding(
         id="hygiene:DEP001:foo",
         axis=AXIS_HYGIENE,
@@ -126,6 +135,22 @@ def test_hygiene_rung_for_dep001_is_warn():
         severity=None,
     )
     status, driver = hygiene_rung(finding)
+    assert status is Status.POLICY_VIOLATION
+    assert driver == StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:foo")
+
+
+def test_hygiene_rung_for_dep001_downgrades_to_warn_when_untrusted():
+    # dep001_trusted=False (a "likely"-confidence conda component somewhere
+    # in the scan's inventory) downgrades DEP001 to warn -- a mapping miss
+    # must not become a false-red disable-driver (Gap-A).
+    finding = Finding(
+        id="hygiene:DEP001:foo",
+        axis=AXIS_HYGIENE,
+        message="missing",
+        subject="foo",
+        severity=None,
+    )
+    status, driver = hygiene_rung(finding, dep001_trusted=False)
     assert status is Status.WARN
     assert driver == StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:foo")
 
@@ -365,3 +390,122 @@ def test_unrecognized_record_message_has_no_array_index():
     messages = {e.message for e in parse.errors}
     assert len(messages) == 1  # position-free → identical, dedupes to one
     assert not any(ch.isdigit() for ch in next(iter(messages)))
+
+
+# --- Story 2.2: the deptry front-door synthesis ------------------------------
+
+
+def test_frontdoor_writes_exact_version_when_known(component_factory):
+    component = component_factory(name="numpy", version="1.26.0")
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ("numpy==1.26.0",)
+    assert synthesized.excluded == ()
+
+
+def test_frontdoor_writes_bare_name_when_version_unknown(component_factory):
+    """Deliberately BROADER than vuln._synthesize_requirements's
+    vuln_matchable pre-filter: a hygiene-covered, identified-but-unversioned
+    component still deserves a hygiene signal (module docstring)."""
+    from pyforge.warden.inventory import PypiIdentity
+
+    component = component_factory(
+        name="numpy",
+        version=None,
+        pypi_identity=PypiIdentity(name="numpy", version=None),
+        indeterminate_reason=WithholdReason.RANGE_ONLY,
+        vuln_matchable=False,
+    )
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ("numpy",)
+
+
+def test_frontdoor_excludes_components_with_no_pypi_identity(component_factory):
+    component = component_factory(
+        name="somepkg", version=None, pypi_identity=None, vuln_matchable=False
+    )
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ()
+    assert synthesized.excluded == ()  # never considered, not "excluded"
+
+
+def test_frontdoor_excludes_components_not_hygiene_covered(component_factory):
+    component = component_factory(
+        name="numpy", version="1.26.0", hygiene_covered=False
+    )
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ()
+
+
+def test_frontdoor_deduplicates_and_sorts_lines(component_factory):
+    a = component_factory(
+        name="numpy",
+        version="1.26.0",
+        provenance=(("pyproject.toml", "dependencies"),),
+    )
+    b = component_factory(
+        name="numpy",
+        version="1.26.0",
+        provenance=(("recipe.yaml", "requirements.run"),),
+    )
+    c = component_factory(name="aardvark", version="1.0.0")
+    synthesized = _synthesize_deptry_frontdoor([a, b, c])
+    assert synthesized.lines == ("aardvark==1.0.0", "numpy==1.26.0")
+
+
+def test_frontdoor_excludes_unsafe_token_names(component_factory):
+    from pyforge.warden.inventory import PypiIdentity
+
+    component = component_factory(
+        name="evil",
+        version="1.0.0",
+        pypi_identity=PypiIdentity(name="-rf /", version="1.0.0"),
+    )
+    synthesized = _synthesize_deptry_frontdoor([component])
+    assert synthesized.lines == ()
+    assert synthesized.excluded == (component,)
+
+
+def test_frontdoor_excludes_pep440_invalid_lines_that_would_crash_deptry(
+    component_factory,
+):
+    """Follow-up review (2026-07-16): deptry parses each front-door line
+    with ``packaging``'s own ``Requirement`` grammar and CRASHES the whole
+    run (exit 1, no output file -- verified live against deptry 0.25.x) on
+    the first invalid line. A conda-legal but PEP-440-illegal exact version
+    (``1.20rc1x``) and a PEP-508-illegal trailing-hyphen name both pass the
+    charset-only safe-token guard, so they used to be written raw and take
+    the ENTIRE hygiene axis down with them."""
+    from pyforge.warden.inventory import PypiIdentity
+
+    bad_version = component_factory(
+        name="numpy",
+        version="1.20rc1x",
+        pypi_identity=PypiIdentity(name="numpy", version="1.20rc1x"),
+    )
+    bad_name = component_factory(
+        name="pkg-",
+        version="1.0.0",
+        pypi_identity=PypiIdentity(name="pkg-", version="1.0.0"),
+    )
+    good = component_factory(name="requests", version="2.31.0")
+    synthesized = _synthesize_deptry_frontdoor([bad_version, bad_name, good])
+    assert synthesized.lines == ("requests==2.31.0",)
+    assert synthesized.excluded == (bad_version, bad_name)
+
+
+# --- Fix 6 (2026-07-16 review): the NFR-S6-excluded finding, hygiene axis ---
+
+
+def test_unsafe_identity_finding_id_grammar(component_factory):
+    """Mirrors ``vuln.unsafe_identity_finding``'s id SHAPE but with the
+    DISTINCT reason segment ``unsafe-identity-hygiene`` and ``AXIS_HYGIENE``
+    -- a finding produced by this module must roll up into the hygiene
+    axis's own verdict, and a component excluded by BOTH front-doors must
+    mint two DIFFERENT ids (DefaultPolicy's id-keyed engine-vs-engine dedupe
+    would otherwise silently drop the vuln-axis record -- fixed
+    2026-07-16)."""
+    component = component_factory(name="-rf", version="1.0")
+    finding = unsafe_identity_finding(component)
+    assert finding.id == "indeterminate:unsafe-identity-hygiene:-rf@1.0"
+    assert finding.axis == AXIS_HYGIENE
+    assert finding.subject == "-rf"

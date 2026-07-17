@@ -27,15 +27,33 @@ import pytest
 
 from pyforge.warden import cli
 from pyforge.warden.cli import main
-from pyforge.warden.discovery import PYPROJECT_KIND, discover
+from pyforge.warden.discovery import (
+    CONDA_LOCK_KIND,
+    ENVIRONMENT_YML_KIND,
+    META_YAML_KIND,
+    PIXI_LOCK_KIND,
+    PIXI_TOML_KIND,
+    PYPROJECT_KIND,
+    RECIPE_YAML_KIND,
+    discover,
+)
 from pyforge.warden.extract import (
     UnparsableManifestError,
     extractor_for,
+)
+from pyforge.warden.extract.lockfiles import (
+    CONDA_LOCK_CONDA_SECTION,
+    CONDA_LOCK_PYPI_SECTION,
+    PIXI_LOCK_CONDA_SECTION,
+    PIXI_LOCK_PYPI_SECTION,
+    CondaLockExtractor,
+    PixiLockExtractor,
 )
 from pyforge.warden.extract.pyproject import (
     PROJECT_DEPENDENCIES_SECTION,
     PyprojectExtractor,
 )
+from pyforge.warden.inventory import merge_components
 from pyforge.warden.models import (
     CveMatchLevel,
     Ecosystem,
@@ -59,6 +77,20 @@ def write_pyproject(directory: Path, deps: list[str]) -> Path:
         f"dependencies = {json.dumps(deps)}\n"
     )
     path = directory / "pyproject.toml"
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def write_pixi_lock(directory: Path, name: str, version: str) -> Path:
+    body = (
+        "version: 6\n"
+        "packages:\n"
+        f"- pypi: https://files.pythonhosted.org/packages/aa/bb/"
+        f"{name}-{version}-py3-none-any.whl\n"
+        f"  name: {name}\n"
+        f"  version: {version}\n"
+    )
+    path = directory / PIXI_LOCK_KIND
     path.write_text(body, encoding="utf-8")
     return path
 
@@ -161,6 +193,124 @@ def test_discover_propagates_unexpected_stat_errors(tmp_path):
             discover(locked)
     finally:
         locked.chmod(0o755)
+
+
+# --- discovery: the 2 new lockfile kinds (Story 2.6, additive) ---------------
+
+
+def test_discover_finds_a_pixi_lock_manifest(tmp_path):
+    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND),
+    )
+
+
+def test_discover_finds_a_conda_lock_manifest(tmp_path):
+    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=CONDA_LOCK_KIND, kind=CONDA_LOCK_KIND),
+    )
+
+
+def test_discover_finds_all_three_kinds_together_in_fixed_order(tmp_path):
+    write_pyproject(tmp_path, [])
+    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
+    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=PYPROJECT_KIND, kind=PYPROJECT_KIND),
+        ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND),
+        ScannedManifest(path=CONDA_LOCK_KIND, kind=CONDA_LOCK_KIND),
+    )
+
+
+def test_discover_fails_closed_on_a_pixi_lock_directory(tmp_path):
+    (tmp_path / PIXI_LOCK_KIND).mkdir()
+    with pytest.raises(OSError, match="not a regular file"):
+        discover(tmp_path)
+
+
+def test_discover_fails_closed_on_a_conda_lock_directory(tmp_path):
+    (tmp_path / CONDA_LOCK_KIND).mkdir()
+    with pytest.raises(OSError, match="not a regular file"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_discover_fails_closed_on_a_dangling_pixi_lock_symlink(tmp_path):
+    (tmp_path / PIXI_LOCK_KIND).symlink_to(tmp_path / "no-such-target")
+    with pytest.raises(OSError, match="dangling symlink"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_discover_fails_closed_on_a_dangling_conda_lock_symlink(tmp_path):
+    (tmp_path / CONDA_LOCK_KIND).symlink_to(tmp_path / "no-such-target")
+    with pytest.raises(OSError, match="dangling symlink"):
+        discover(tmp_path)
+
+
+# --- discovery: the 4 new conda/pixi source-manifest kinds (Story 2.2) -------
+
+
+@pytest.mark.parametrize(
+    "kind,body",
+    [
+        (RECIPE_YAML_KIND, "requirements:\n  run: []\n"),
+        (META_YAML_KIND, "requirements:\n  run: []\n"),
+        (ENVIRONMENT_YML_KIND, "dependencies: []\n"),
+        (PIXI_TOML_KIND, "[dependencies]\n"),
+    ],
+)
+def test_discover_finds_each_new_source_manifest_kind(tmp_path, kind, body):
+    (tmp_path / kind).write_text(body, encoding="utf-8")
+    assert discover(tmp_path) == (ScannedManifest(path=kind, kind=kind),)
+
+
+def test_discover_returns_empty_when_no_source_manifest_present(tmp_path):
+    assert discover(tmp_path) == ()
+
+
+def test_discover_finds_all_seven_kinds_together_in_fixed_order(tmp_path):
+    write_pyproject(tmp_path, [])
+    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
+    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
+    (tmp_path / RECIPE_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
+    (tmp_path / META_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
+    (tmp_path / ENVIRONMENT_YML_KIND).write_text("dependencies: []\n", encoding="utf-8")
+    (tmp_path / PIXI_TOML_KIND).write_text("[dependencies]\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=PYPROJECT_KIND, kind=PYPROJECT_KIND),
+        ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND),
+        ScannedManifest(path=CONDA_LOCK_KIND, kind=CONDA_LOCK_KIND),
+        ScannedManifest(path=RECIPE_YAML_KIND, kind=RECIPE_YAML_KIND),
+        ScannedManifest(path=META_YAML_KIND, kind=META_YAML_KIND),
+        ScannedManifest(path=ENVIRONMENT_YML_KIND, kind=ENVIRONMENT_YML_KIND),
+        ScannedManifest(path=PIXI_TOML_KIND, kind=PIXI_TOML_KIND),
+    )
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [RECIPE_YAML_KIND, META_YAML_KIND, ENVIRONMENT_YML_KIND, PIXI_TOML_KIND],
+)
+def test_discover_fails_closed_on_a_source_manifest_directory(tmp_path, kind):
+    """A source manifest that exists but is not a regular file is
+    found-but-refused: it must FAIL CLOSED, never read as absent (mirrors
+    the pyproject.toml/lockfile rows)."""
+    (tmp_path / kind).mkdir()
+    with pytest.raises(OSError, match="not a regular file"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+@pytest.mark.parametrize(
+    "kind",
+    [RECIPE_YAML_KIND, META_YAML_KIND, ENVIRONMENT_YML_KIND, PIXI_TOML_KIND],
+)
+def test_discover_fails_closed_on_a_dangling_source_manifest_symlink(tmp_path, kind):
+    (tmp_path / kind).symlink_to(tmp_path / "no-such-target")
+    with pytest.raises(OSError, match="dangling symlink"):
+        discover(tmp_path)
 
 
 # --- extractor rows ----------------------------------------------------------
@@ -325,8 +475,20 @@ def test_non_string_dependency_entry_raises_value_error(tmp_path):
 
 
 def test_unknown_manifest_kind_has_no_extractor():
+    # "meta.yaml" gained an extractor in Story 2.2 -- a genuinely-fictional
+    # kind token is the sentinel now.
     with pytest.raises(ValueError):
-        extractor_for("meta.yaml", DefaultRouter())
+        extractor_for("some-unknown-manifest.kind", DefaultRouter())
+
+
+def test_pixi_lock_kind_dispatches_to_pixi_lock_extractor():
+    extractor = extractor_for(PIXI_LOCK_KIND, DefaultRouter())
+    assert isinstance(extractor, PixiLockExtractor)
+
+
+def test_conda_lock_kind_dispatches_to_conda_lock_extractor():
+    extractor = extractor_for(CONDA_LOCK_KIND, DefaultRouter())
+    assert isinstance(extractor, CondaLockExtractor)
 
 
 # --- routing -----------------------------------------------------------------
@@ -345,6 +507,71 @@ def test_router_fails_loud_on_unknown_kind():
 def test_router_fails_loud_on_unknown_section():
     with pytest.raises(ValueError):
         DefaultRouter().route(PYPROJECT_KIND, "tool.pixi.dependencies")
+
+
+def test_router_routes_pixi_lock_conda_section_to_conda():
+    ecosystem = DefaultRouter().route(PIXI_LOCK_KIND, PIXI_LOCK_CONDA_SECTION)
+    assert ecosystem is Ecosystem.CONDA
+
+
+def test_router_routes_pixi_lock_pypi_section_to_pypi():
+    ecosystem = DefaultRouter().route(PIXI_LOCK_KIND, PIXI_LOCK_PYPI_SECTION)
+    assert ecosystem is Ecosystem.PYPI
+
+
+def test_router_routes_conda_lock_conda_section_to_conda():
+    ecosystem = DefaultRouter().route(CONDA_LOCK_KIND, CONDA_LOCK_CONDA_SECTION)
+    assert ecosystem is Ecosystem.CONDA
+
+
+def test_router_routes_conda_lock_pypi_section_to_pypi():
+    ecosystem = DefaultRouter().route(CONDA_LOCK_KIND, CONDA_LOCK_PYPI_SECTION)
+    assert ecosystem is Ecosystem.PYPI
+
+
+def test_router_does_not_cross_wire_pixi_lock_and_conda_lock_sections():
+    with pytest.raises(ValueError):
+        DefaultRouter().route(PIXI_LOCK_KIND, CONDA_LOCK_CONDA_SECTION)
+    with pytest.raises(ValueError):
+        DefaultRouter().route(CONDA_LOCK_KIND, PIXI_LOCK_CONDA_SECTION)
+
+
+# --- cross-ecosystem non-merge (Story 2.5, FR7) -------------------------------
+
+
+def test_cross_ecosystem_same_name_stays_two_distinct_components(tmp_path):
+    """FR7 regression: ``inventory.identity()``'s ``(ecosystem,
+    canonical_name, version)`` key already keeps a same-named conda + PyPI
+    component distinct -- no production change, this pins the guarantee. A
+    ``pyproject.toml`` PyPI dep and a ``pixi.lock`` conda row both literally
+    named ``requests`` must never merge into one ``Component``."""
+    pyproject_path = write_pyproject(tmp_path, ["requests==2.31.0"])
+    (pypi_component,) = PyprojectExtractor(DefaultRouter()).extract(
+        pyproject_path, MANIFEST
+    )
+
+    lock_path = tmp_path / PIXI_LOCK_KIND
+    lock_path.write_text(
+        "version: 6\n"
+        "packages:\n"
+        "- conda: https://conda.anaconda.org/conda-forge/noarch/"
+        "requests-2.31.0-pyhd8ed1ab_0.conda\n",
+        encoding="utf-8",
+    )
+    lock_manifest = ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND)
+    (conda_component,) = PixiLockExtractor(DefaultRouter()).extract(
+        lock_path, lock_manifest
+    )
+
+    merged = merge_components((pypi_component, conda_component))
+
+    assert len(merged) == 2
+    by_ecosystem = {c.ecosystem: c for c in merged}
+    assert set(by_ecosystem) == {Ecosystem.PYPI, Ecosystem.CONDA}
+    assert by_ecosystem[Ecosystem.PYPI].name == "requests"
+    assert by_ecosystem[Ecosystem.PYPI].version == "2.31.0"
+    assert by_ecosystem[Ecosystem.CONDA].name == "requests"
+    assert by_ecosystem[Ecosystem.CONDA].version == "2.31.0"
 
 
 # --- CLI rows ----------------------------------------------------------------
@@ -418,6 +645,31 @@ def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):
     captured = capsys.readouterr()
     assert rc == 0
     assert "status=not-applicable" in captured.out
+
+
+# --- resolution_depth: locked-closure (Story 2.6) -----------------------------
+
+
+def test_pixi_lock_presence_marks_resolution_depth_locked_closure(capsys, tmp_path):
+    """A parsed pixi.lock claims the full transitive closure on BOTH axes —
+    the I/O matrix's 'any lockfile parses successfully' row."""
+    write_pyproject(tmp_path, [])
+    write_pixi_lock(tmp_path, "requests", "2.31.0")
+    rc, document, _ = scan_json(capsys, tmp_path)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["hygiene"]["resolution_depth"] == "locked-closure"
+    assert by_axis["vulnerability"]["resolution_depth"] == "locked-closure"
+    assert rc == document["exit_code"]
+
+
+def test_pyproject_only_resolution_depth_stays_direct_only(capsys, tmp_path):
+    """No lockfile present: 1.2's direct-only behavior is unchanged."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])
+    rc, document, _ = scan_json(capsys, tmp_path)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["hygiene"]["resolution_depth"] == "direct-only"
+    assert by_axis["vulnerability"]["resolution_depth"] == "direct-only"
+    assert rc == document["exit_code"]
 
 
 def test_keyboard_interrupt_during_parse_args_returns_sigint(
@@ -554,7 +806,9 @@ def test_unknown_manifest_kind_is_internal_error_not_a_crash(
     discovery is an internal-error report, never a traceback — and never
     a false 'unparsable-manifest' diagnosis."""
     write_pyproject(tmp_path, ["requests==2.31.0"])
-    unknown = ScannedManifest(path="pyproject.toml", kind="meta.yaml")
+    # "meta.yaml" gained an extractor in Story 2.2 -- a genuinely-fictional
+    # kind token is the sentinel now.
+    unknown = ScannedManifest(path="pyproject.toml", kind="some-unknown-manifest.kind")
     monkeypatch.setattr(cli, "discover", lambda target: (unknown,))
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 2

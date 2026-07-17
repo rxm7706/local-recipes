@@ -78,6 +78,12 @@ Ownership decisions recorded:
   exit 1) — a vanished diagnostic stream must not replace the computed
   exit code.
 * Strictly non-interactive: no prompts, stdin is never read.
+* ``has_locked_closure`` (Story 2.6): the extraction loop tracks
+  ``parsed_kinds`` — the set of manifest KINDS that actually parsed, not
+  just the count — and passes ``bool(parsed_kinds & {PIXI_LOCK_KIND,
+  CONDA_LOCK_KIND})`` to ``assemble_report``. ``report.py`` has no
+  lockfile-kind vocabulary of its own (that's ``discovery.py``'s domain),
+  so the caller states the claim.
 """
 
 from __future__ import annotations
@@ -91,7 +97,7 @@ import traceback
 from pathlib import Path
 
 from . import __version__
-from .discovery import discover
+from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
 from .engines import engine_factories
 from .extract import UnparsableManifestError, extractor_for
 from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
@@ -102,6 +108,7 @@ from .models import (
     ErrorRecord,
     Status,
     StatusDriver,
+    VulnData,
 )
 from .report import TOOL_NAME, assemble_report, render_json
 from .routing import DefaultRouter
@@ -249,6 +256,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     errors: list[ErrorRecord] = []
     rungs: list[tuple[Status, StatusDriver | None]] = []
     manifests_parsed = 0
+    parsed_kinds: set[str] = set()
     try:
         manifests = discover(target)
     except OSError as exc:
@@ -339,6 +347,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         else:
             components.extend(extracted)
             manifests_parsed += 1
+            parsed_kinds.add(manifest.kind)
 
     inventory = ResolvedInventory(
         components=merge_components(components),
@@ -408,6 +417,14 @@ def _run_scan(args: argparse.Namespace) -> int:
     findings, policy_rungs = DefaultPolicy().evaluate(inventory, engine_results)
     rungs.extend(policy_rungs)
 
+    # The first non-None vuln_data across engine results, in engine-
+    # registration order (Story 1.5: OsvEngine populates it on a completed
+    # 0/1 run; every other engine/path leaves it None) — else an all-None
+    # VulnData (no vulnerability-axis DB was consulted at all).
+    vuln_data = next(
+        (result.vuln_data for result in engine_results if result.vuln_data is not None),
+        VulnData(source=None, snapshot_at=None, max_age_ok=None),
+    )
     report = assemble_report(
         inventory=inventory,
         findings=findings,
@@ -415,7 +432,9 @@ def _run_scan(args: argparse.Namespace) -> int:
         errors=tuple(errors),
         manifests_found=len(manifests),
         manifests_parsed=manifests_parsed,
+        vuln_data=vuln_data,
         engine_results=engine_results,
+        has_locked_closure=bool(parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}),
     )
     try:
         if args.format == "json":
