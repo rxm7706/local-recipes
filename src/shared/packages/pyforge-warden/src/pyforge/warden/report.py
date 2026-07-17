@@ -26,6 +26,21 @@ Ownership decisions recorded:
   ``True`` claims ``resolution_depth=ResolutionDepth.LOCKED_CLOSURE`` for
   BOTH axes instead of the direct-only-if-parsed default; ``False`` (the
   default) preserves every pre-2.6 caller/test byte-for-byte.
+* ``hygiene_applicable`` (Story 2.4, AC3, additive/defaulted) — mirrors
+  ``has_locked_closure``'s precedent exactly: this module has no
+  filesystem-walk vocabulary (that's ``hygiene.has_adjacent_python_source``,
+  consulted by ``cli.py`` before ``DeptryEngine`` even runs), so the caller
+  states the claim. ``False`` overrides the hygiene axis's ``deps_total``/
+  ``deps_assessed``/``resolution_depth`` to the not-applicable shape
+  (``0``/``0``/``None``) regardless of what any engine's own coverage
+  claims — this module already ignores each engine's own ``deps_total``/
+  ``resolution_depth`` (see below) and recomputes them itself, so merely
+  having ``DeptryEngine`` not run only zeroes ``deps_assessed``, which
+  still reads as "0 of N assessed" (a coverage FAILURE) rather than "0
+  total, not applicable" (an honest scope exclusion) without this override.
+  ``manifests_found``/``manifests_parsed`` and the vulnerability axis are
+  untouched; the default ``True`` preserves every pre-2.4 caller/test
+  byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -84,6 +99,7 @@ def assemble_report(
     vuln_data: VulnData,
     engine_results: Sequence[EngineResult] = (),
     has_locked_closure: bool = False,
+    hygiene_applicable: bool = True,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -103,7 +119,13 @@ def assemble_report(
     ``vuln_data`` is caller-derived (Story 1.5: ``cli.py`` picks the first
     non-``None`` ``EngineResult.vuln_data`` across ``engine_results``, else
     an all-``None`` ``VulnData``) — this function stores it verbatim, never
-    hardcoding it."""
+    hardcoding it.
+
+    ``hygiene_applicable=False`` (Story 2.4, AC3) overrides the hygiene
+    axis's ``deps_total``/``deps_assessed``/``resolution_depth`` to the
+    not-applicable shape (``0``/``0``/``None``) regardless of what any
+    engine's own coverage claims; ``manifests_found``/``manifests_parsed``
+    and the vulnerability axis are untouched."""
     status, driver = compose(rungs)
     resolution_depth = (
         ResolutionDepth.LOCKED_CLOSURE.value
@@ -120,17 +142,29 @@ def assemble_report(
                 assessed_by_axis.get(engine_coverage.axis, 0),
                 engine_coverage.deps_assessed,
             )
-    coverage = tuple(
-        AxisCoverage(
-            axis=axis,
-            manifests_found=manifests_found,
-            manifests_parsed=manifests_parsed,
-            deps_total=inventory.count,
-            deps_assessed=min(assessed_by_axis.get(axis, 0), inventory.count),
-            resolution_depth=resolution_depth,
+    coverage = []
+    for axis in _REPORT_AXES:
+        # AC3: an inapplicable hygiene axis overrides deps_total/deps_assessed/
+        # resolution_depth to the not-applicable shape regardless of what any
+        # engine's own coverage claims (deps_assessed alone would still read
+        # as "0 of N assessed" -- a coverage FAILURE -- rather than "0 total,
+        # not applicable" -- an honest scope exclusion).
+        not_applicable = axis == AXIS_HYGIENE and not hygiene_applicable
+        coverage.append(
+            AxisCoverage(
+                axis=axis,
+                manifests_found=manifests_found,
+                manifests_parsed=manifests_parsed,
+                deps_total=0 if not_applicable else inventory.count,
+                deps_assessed=(
+                    0
+                    if not_applicable
+                    else min(assessed_by_axis.get(axis, 0), inventory.count)
+                ),
+                resolution_depth=None if not_applicable else resolution_depth,
+            )
         )
-        for axis in _REPORT_AXES
-    )
+    coverage = tuple(coverage)
     return ComplianceReport(
         schema_version=REPORT_SCHEMA_VERSION,
         tool_name=TOOL_NAME,
