@@ -626,10 +626,12 @@ def test_keyboard_interrupt_returns_sigint_with_no_report(
 
 
 def test_text_format_emits_one_non_contract_summary_line(capsys, tmp_path):
-    # A declared-but-never-imported dependency (this fixture ships no source)
-    # is flagged DEP002 by deptry (Story 1.3) -> status warn, one finding,
-    # exit 0. The text format still emits exactly ONE summary line.
+    # An adjacent .py module (Story 2.4, AC3: deptry only runs when Python
+    # source exists) that never imports requests -- a declared-but-unused
+    # dependency is flagged DEP002 by deptry (Story 1.3) -> status warn, one
+    # finding, exit 0. The text format still emits exactly ONE summary line.
     write_pyproject(tmp_path, ["requests==2.31.0"])
+    (tmp_path / "main.py").write_text("", encoding="utf-8")
     rc = main(["scan", str(tmp_path)])  # text is the default format
     captured = capsys.readouterr()
     assert rc == 0
@@ -652,9 +654,12 @@ def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):
 
 def test_pixi_lock_presence_marks_resolution_depth_locked_closure(capsys, tmp_path):
     """A parsed pixi.lock claims the full transitive closure on BOTH axes —
-    the I/O matrix's 'any lockfile parses successfully' row."""
+    the I/O matrix's 'any lockfile parses successfully' row. An adjacent
+    .py module keeps the hygiene axis applicable (Story 2.4, AC3) so this
+    stays a same-fixture, both-axes proof."""
     write_pyproject(tmp_path, [])
     write_pixi_lock(tmp_path, "requests", "2.31.0")
+    (tmp_path / "main.py").write_text("", encoding="utf-8")
     rc, document, _ = scan_json(capsys, tmp_path)
     by_axis = {block["axis"]: block for block in document["coverage"]}
     assert by_axis["hygiene"]["resolution_depth"] == "locked-closure"
@@ -663,8 +668,11 @@ def test_pixi_lock_presence_marks_resolution_depth_locked_closure(capsys, tmp_pa
 
 
 def test_pyproject_only_resolution_depth_stays_direct_only(capsys, tmp_path):
-    """No lockfile present: 1.2's direct-only behavior is unchanged."""
+    """No lockfile present: 1.2's direct-only behavior is unchanged. An
+    adjacent .py module keeps the hygiene axis applicable (Story 2.4, AC3)
+    so this stays a same-fixture, both-axes proof."""
     write_pyproject(tmp_path, ["requests==2.31.0"])
+    (tmp_path / "main.py").write_text("", encoding="utf-8")
     rc, document, _ = scan_json(capsys, tmp_path)
     by_axis = {block["axis"]: block for block in document["coverage"]}
     assert by_axis["hygiene"]["resolution_depth"] == "direct-only"
@@ -1050,7 +1058,11 @@ def test_poetry_only_deps_are_covered_by_deptry_natively(capsys, tmp_path):
     [tool.poetry.dependencies] NATIVELY (FR9), so the unused `requests`
     surfaces as a DEP002 warn: exit 0 but NOT the silent not-applicable
     false-green the pre-1.3 pipeline produced. When 1.9 lands section-aware
-    discovery the inventory (and vuln axis) will cover it too."""
+    discovery the inventory (and vuln axis) will cover it too. An adjacent
+    .py module is required for deptry to run at all (Story 2.4, AC3) — the
+    characterization is specifically about a Poetry project WITH source,
+    not the source-less case AC3 addresses."""
+    (tmp_path / "main.py").write_text("", encoding="utf-8")
     (tmp_path / "pyproject.toml").write_text(
         "[tool.poetry]\n"
         'name = "demo"\n'

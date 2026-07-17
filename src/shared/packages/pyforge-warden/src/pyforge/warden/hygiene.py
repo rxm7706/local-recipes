@@ -91,6 +91,19 @@ Ownership decisions recorded:
   keeps the raw deptry module name, the id segment is sanitized via the
   shared ``interfaces._sanitize_id_segment`` (single-line, colon-delimited
   grammar).
+* ``has_adjacent_python_source`` (Story 2.4, AC3): a bounded, non-recursive-
+  call ``os.walk`` predicate ``cli.py``'s orchestration consults BEFORE
+  deciding whether to run ``DeptryEngine`` at all -- deliberately NOT a
+  check inside ``DeptryEngine.run`` itself (``tests/unit/
+  test_engine_env_deptry.py`` calls the engine directly against bare
+  ``tmp_path`` dirs ~20 times to test its own argv/error-handling logic in
+  isolation; embedding the skip there would exercise the wrong branch in
+  every one of those tests -- see the story's Design Notes). A source-less
+  conda/pixi manifest (the fleet's majority feedstock shape) makes deptry
+  flag every conda-sourced dependency reaching the front-door as "unused"
+  (DEP002) -- a noise wall, not a signal -- so ``cli.py`` filters
+  ``DeptryEngine`` out of ``engines_to_run`` when this returns ``False`` and
+  tells ``report.assemble_report`` the hygiene axis is not-applicable.
 
 This module parses JSON as DATA: no subprocess, no network, no exec.
 """
@@ -98,8 +111,10 @@ This module parses JSON as DATA: no subprocess, no network, no exec.
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from packaging.requirements import InvalidRequirement, Requirement
 
@@ -135,6 +150,49 @@ DEFAULT_HYGIENE_POLICY: dict[str, Status] = {
 # Ratchet baseline (NFR-R2): the fraction of deptry records we fail to map may
 # only ever decrease. A conformance test pins the real corpus at/below this.
 UNPARSEABLE_RATE_BASELINE = 0.0
+
+
+# --- Story 2.4 (AC3): the "no adjacent Python source" predicate -----------
+
+# NFR-S5 bound: the max number of directory ENTRIES (files + subdirs,
+# summed across the whole walk) examined before giving up. A real project's
+# tree is orders of magnitude smaller; this exists so a pathological/huge
+# tree can never turn a cheap pre-scan check into an unbounded walk.
+_ADJACENT_PYTHON_SOURCE_ENTRY_CAP = 50_000
+
+
+def has_adjacent_python_source(target: Path) -> bool:
+    """Whether at least one ``*.py`` file exists anywhere under ``target``.
+
+    A bounded, early-exiting ``os.walk`` — never a subprocess, never
+    Jinja/execution (this is a pure filesystem-shape check, not
+    extraction). ``.git`` directories are pruned from the walk (never
+    genuinely a project's own Python source).
+
+    Two "can't tell" cases both resolve to ``True`` (never silently skip
+    the hygiene axis off an inconclusive answer — the same "more scrutiny,
+    not less" bias ``hygiene_rung``'s ``dep001_trusted`` default documents):
+    hitting ``_ADJACENT_PYTHON_SOURCE_ENTRY_CAP`` without a match, and
+    ``os.walk`` being unable to descend into a subdirectory at all
+    (permission-denied, vanished mid-walk — ``os.walk``'s default
+    ``onerror=None`` otherwise swallows the failure and just omits that
+    subtree, which reads identically to "genuinely no .py there"). Only an
+    EXHAUSTIVE negative walk returns ``False``."""
+    inconclusive = False
+
+    def _on_error(_exc: OSError) -> None:
+        nonlocal inconclusive
+        inconclusive = True
+
+    entries_visited = 0
+    for _dirpath, dirnames, filenames in os.walk(target, onerror=_on_error):
+        dirnames[:] = [name for name in dirnames if name != ".git"]
+        if any(name.endswith(".py") for name in filenames):
+            return True
+        entries_visited += len(dirnames) + len(filenames)
+        if entries_visited >= _ADJACENT_PYTHON_SOURCE_ENTRY_CAP:
+            return True
+    return inconclusive
 
 
 # --- Story 2.2 (FR8's conda half): the deptry front-door -----------------
