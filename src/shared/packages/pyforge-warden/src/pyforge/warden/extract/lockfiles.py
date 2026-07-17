@@ -82,6 +82,7 @@ from ._identity import (
     _pypi_component,
     _raw_malformed,
     _resolve_conda_pypi_identity,
+    yaml_safe_load_strict,
 )
 
 # Re-exported for backward compatibility: interfaces.py's
@@ -154,7 +155,7 @@ def _read_bounded(manifest_path: Path, manifest: ScannedManifest) -> str:
 def _load_yaml(manifest_path: Path, manifest: ScannedManifest) -> object:
     text = _read_bounded(manifest_path, manifest)
     try:
-        return yaml.safe_load(text)
+        return yaml_safe_load_strict(text)
     except yaml.YAMLError as exc:
         raise UnparsableManifestError(
             f"unparsable manifest {manifest.path}: {exc}"
