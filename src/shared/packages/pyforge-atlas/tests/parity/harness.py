@@ -22,7 +22,9 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from pyforge.atlas.pipelines.core import nodes as core_nodes
+from pyforge.atlas.pipelines.pypi_intelligence import nodes as pypi_nodes
 from pyforge.atlas.pipelines.vcs_health import nodes as vcs_nodes
+from pyforge.atlas.pipelines.vulnerability import nodes as vuln_nodes
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -99,6 +101,89 @@ NODE_REGISTRY: dict[str, tuple] = {
         vcs_nodes.fetch_live_health,
         ["vcs_github_api_raw"],
         ["vcs_live_health"],
+    ),
+    # -- pypi_intelligence (Story B2; SHAPE-ONLY seeds — B4 recaptures from a
+    #    credentialed legacy run, see PARITY_NOTES.md) --
+    "map_pypi_conda": (
+        pypi_nodes.map_pypi_conda,
+        ["pypi_parselmouth_mapping_raw", "core_packages_enumerated"],
+        ["pypi_conda_mapping_base"],
+    ),
+    "match_source_urls": (
+        pypi_nodes.match_source_urls,
+        ["pypi_conda_mapping_base", "pypi_json_raw"],
+        ["pypi_conda_mapping"],
+    ),
+    "enumerate_pypi_universe": (
+        pypi_nodes.enumerate_pypi_universe,
+        ["pypi_simple_index_raw"],
+        ["pypi_universe"],
+    ),
+    "fetch_pypi_current_versions": (
+        pypi_nodes.fetch_pypi_current_versions,
+        ["pypi_json_raw", "pypi_universe"],
+        ["pypi_current_versions"],
+    ),
+    "snapshot_pypi_serials": (
+        pypi_nodes.snapshot_pypi_serials,
+        ["pypi_simple_index_raw"],
+        ["pypi_universe_serial_snapshots"],
+    ),
+    "fetch_pypi_downloads": (
+        pypi_nodes.fetch_pypi_downloads,
+        ["pypi_bigquery_downloads_raw"],
+        ["pypi_downloads_monthly"],
+    ),
+    "flag_cross_channel": (
+        pypi_nodes.flag_cross_channel,
+        ["pypi_cross_channel_repodata_raw"],
+        ["pypi_cross_channel_flags"],
+    ),
+    "enrich_pypi_intelligence": (
+        pypi_nodes.enrich_pypi_intelligence,
+        ["pypi_json_raw"],
+        ["pypi_intelligence_enriched"],
+    ),
+    "score_pypi_readiness": (
+        pypi_nodes.score_pypi_readiness,
+        ["pypi_intelligence_enriched"],
+        ["pypi_intelligence_scored"],
+    ),
+    # -- vulnerability (Story B2; SHAPE-ONLY seeds — B4 recaptures) --
+    "ingest_cisa_kev": (
+        vuln_nodes.ingest_cisa_kev,
+        ["vulnerability_cisa_kev_raw"],
+        ["vulnerability_cisa_kev"],
+    ),
+    "ingest_epss": (
+        vuln_nodes.ingest_epss,
+        ["vulnerability_epss_raw"],
+        ["vulnerability_epss_scores"],
+    ),
+    "ingest_cwe_catalog": (
+        vuln_nodes.ingest_cwe_catalog,
+        ["vulnerability_cwe_catalog_raw"],
+        ["vulnerability_cwe_categories"],
+    ),
+    "summarize_vdb_vulns": (
+        vuln_nodes.summarize_vdb_vulns,
+        [
+            "vulnerability_vdb_store",
+            "vulnerability_cisa_kev",
+            "vulnerability_epss_scores",
+            "vulnerability_cwe_categories",
+        ],
+        ["vulnerability_package_rollup"],
+    ),
+    "per_version_vulns": (
+        vuln_nodes.per_version_vulns,
+        [
+            "vulnerability_vdb_store",
+            "core_version_download_history",
+            "vulnerability_cisa_kev",
+            "vulnerability_epss_scores",
+        ],
+        ["vulnerability_package_version_vulns"],
     ),
 }
 

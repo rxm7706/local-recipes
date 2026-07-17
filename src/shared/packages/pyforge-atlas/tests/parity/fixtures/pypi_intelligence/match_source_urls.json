@@ -1,0 +1,34 @@
+{
+  "phase": "match_source_urls",
+  "node": "match_source_urls",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_conda_mapping_base": [
+      {
+        "pypi_name": "numpy",
+        "conda_name": "numpy",
+        "match_source": "parselmouth"
+      }
+    ],
+    "pypi_json_raw": [
+      {
+        "pypi_name": "newpkg",
+        "conda_name": "newpkg-conda"
+      }
+    ]
+  },
+  "expected": {
+    "pypi_conda_mapping": [
+      {
+        "pypi_name": "numpy",
+        "conda_name": "numpy",
+        "match_source": "parselmouth"
+      },
+      {
+        "pypi_name": "newpkg",
+        "conda_name": "newpkg-conda",
+        "match_source": "recipe_source_url"
+      }
+    ]
+  }
+}

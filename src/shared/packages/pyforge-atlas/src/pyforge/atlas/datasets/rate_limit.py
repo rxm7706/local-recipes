@@ -174,6 +174,7 @@ class RateLimitedScheduler:
                 f"cannot acquire {n} tokens from a bucket of capacity {self.capacity}"
             )
         slept = 0.0
+        stalls = 0
         while True:
             self._refill()
             if self._tokens >= n:
@@ -181,8 +182,25 @@ class RateLimitedScheduler:
                 return slept
             deficit = n - self._tokens
             wait = deficit / self.rps
+            before = self._clock()
             self._sleep(wait)
             slept += wait
+            # Code ceiling (DW-B1-2): tokens refill only as the clock advances, so a
+            # FROZEN clock + a NO-OP sleep would spin this loop forever (the coupling
+            # the docstring warns about). If the injected sleep did not advance the
+            # clock, count a stall and RAISE after 2 consecutive stalls rather than
+            # hang. A real clock (or an advancing fake clock) advances after sleep, so
+            # legitimate slow refills never trip this.
+            if self._clock() <= before:
+                stalls += 1
+                if stalls >= 2:
+                    raise RuntimeError(
+                        "RateLimitedScheduler.acquire cannot make progress: the clock "
+                        "did not advance after sleep (frozen clock + no-op sleep). Use "
+                        "an advancing clock or bucket_capacity >= n."
+                    )
+            else:
+                stalls = 0
 
 
 @runtime_checkable

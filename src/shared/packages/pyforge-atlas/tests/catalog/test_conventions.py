@@ -135,7 +135,11 @@ def test_no_ttl_markers_are_valid_and_kev_is_covered(
             f"{feed}: neither a ttls key nor a NO-TTL marker — a TTL-less "
             "fetch feed must be deliberate and documented"
         )
-    assert "vulnerability_cisa_kev_raw" in markers  # the recorded A2 choice
+    # G-4(B2): the A2 NO-TTL placeholder for KEV was explicitly deferred to the
+    # vulnerability-pipeline port; B2 made the cadence decision (daily re-fetch),
+    # so KEV now carries a ttls key instead of a NO-TTL marker. Verify the VALUE
+    # (the recorded daily cadence), not just membership.
+    assert ttls.get("vulnerability_cisa_kev_raw") == 86400  # G-4 daily re-fetch
 
 
 def test_orphan_ttls_name_their_future_consumer(parameters, parameters_raw_text):
