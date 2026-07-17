@@ -174,7 +174,16 @@ def _serial_moved(serial_at_fetch, last_serial) -> bool:
     # current serial must NOT spuriously flag moved (`!=` on NaN is always True).
     if _is_missing(serial_at_fetch) or _is_missing(last_serial):
         return False
-    return last_serial != serial_at_fetch
+    # Coerce both sides before comparison (matches _safety_recheck): a Parquet/JSON
+    # round-trip can stringify a serial ("5"), and a raw `"5" != 5` would spuriously
+    # flag "moved" → a needless full re-fetch at atlas scale (B2 follow-up review).
+    saf = pd.to_numeric(serial_at_fetch, errors="coerce")
+    last = pd.to_numeric(last_serial, errors="coerce")
+    if pd.isna(saf) or pd.isna(last):
+        # An uncoercible serial can't be proven equal → fail safe (re-fetch), the
+        # pre-coercion behavior for non-numeric values.
+        return True
+    return last != saf
 
 
 def _safety_recheck(fetched_at, now: int) -> bool:
