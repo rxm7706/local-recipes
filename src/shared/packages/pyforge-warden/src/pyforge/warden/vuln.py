@@ -56,8 +56,13 @@ Ownership decisions recorded:
   ``indeterminate`` via ``status_for_severity_tier``'s
   ``.get(tier, Status.INDETERMINATE)`` fallback — never a silent downgrade
   (the same shape as ``hygiene.status_for_code``'s unknown-DEP-code
-  fallback). Story 3.1 lifts this default into an overridable config table;
-  1.6 keeps it here, hardcoded, like ``DEFAULT_HYGIENE_POLICY``.
+  fallback). Story 3.1: ``config.py``'s ``EffectiveConfig.
+  vuln_severity_policy`` (derived from ``--fail-on``) now supplies the
+  effective table ``DefaultPolicy`` threads through ``vuln_rung``'s
+  optional ``policy`` parameter; this dict remains the fallback default for
+  direct callers (unit tests, and the ``fail-on=critical`` default case,
+  which reproduces this table exactly) and is now ``MappingProxyType``-
+  wrapped (closes deferred-work.md's unprotected-mutable-dict finding).
 * Story 2.5 adds two independent honesty tiers, both consumed by
   ``engines.OsvEngine.run`` (this module owns no clock/subprocess of its
   own): ``is_db_stale``/``stale_vuln_data_finding`` (FR12 — the offline DB's
@@ -92,6 +97,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import MappingProxyType
 
 from .interfaces import _sanitize_id_segment
 from .inventory import Component, canonical_name
@@ -852,38 +858,52 @@ def parse_osv_output(raw: str) -> OsvParse:
 # default gate), HIGH/MEDIUM/LOW/NONE all warn (1.3's DEP001-005 ceiling).
 # UNKNOWN is deliberately absent (see module docstring). Keys are
 # SeverityTier members (NOT Status tokens), so the sole-ownership
-# rung-ordering guard does not fire on this literal.
-DEFAULT_VULN_SEVERITY_POLICY: dict[SeverityTier, Status] = {
-    SeverityTier.CRITICAL: Status.POLICY_VIOLATION,
-    SeverityTier.HIGH: Status.WARN,
-    SeverityTier.MEDIUM: Status.WARN,
-    SeverityTier.LOW: Status.WARN,
-    SeverityTier.NONE: Status.WARN,
-}
+# rung-ordering guard does not fire on this literal. MappingProxyType-
+# wrapped (Story 3.1, deferred-work.md): an unprotected mutable module
+# dict was a latent in-process-mutation risk with no exploit path
+# identified — now closed directly rather than merely noted.
+DEFAULT_VULN_SEVERITY_POLICY: Mapping[SeverityTier, Status] = MappingProxyType(
+    {
+        SeverityTier.CRITICAL: Status.POLICY_VIOLATION,
+        SeverityTier.HIGH: Status.WARN,
+        SeverityTier.MEDIUM: Status.WARN,
+        SeverityTier.LOW: Status.WARN,
+        SeverityTier.NONE: Status.WARN,
+    }
+)
 
 
-def status_for_severity_tier(tier: SeverityTier) -> Status:
-    """The default status for a CVSS severity tier — ``UNKNOWN`` (the only
-    tier absent from the table) degrades to ``indeterminate`` (never a
-    false-green): an unassessable severity is never treated as safely
-    non-blocking."""
-    return DEFAULT_VULN_SEVERITY_POLICY.get(tier, Status.INDETERMINATE)
+def status_for_severity_tier(
+    tier: SeverityTier, *, policy: Mapping[SeverityTier, Status] | None = None
+) -> Status:
+    """The status for a CVSS severity tier under ``policy`` (Story 3.1:
+    ``config.py``'s ``EffectiveConfig.vuln_severity_policy``, threaded by
+    ``DefaultPolicy``) — ``DEFAULT_VULN_SEVERITY_POLICY`` when ``policy`` is
+    ``None`` (every pre-3.1 direct caller, unchanged). ``UNKNOWN`` (absent
+    from every legal policy table — see the module docstring) degrades to
+    ``indeterminate`` (never a false-green): an unassessable severity is
+    never treated as safely non-blocking."""
+    return (policy or DEFAULT_VULN_SEVERITY_POLICY).get(tier, Status.INDETERMINATE)
 
 
-def vuln_rung(finding: Finding) -> tuple[Status, StatusDriver]:
+def vuln_rung(
+    finding: Finding, *, policy: Mapping[SeverityTier, Status] | None = None
+) -> tuple[Status, StatusDriver]:
     """Derive the ``(Status, StatusDriver)`` rung for one vulnerability-axis
     finding.
 
     A real ``vuln:`` finding carries a populated ``Finding.severity``, whose
-    ``.tier`` is looked up via ``status_for_severity_tier``. A finding with no
-    severity at all — the axis's own ``indeterminate:`` withhold findings
-    (no-version, unsafe-identity, offline-db-unavailable, ...) — yields
+    ``.tier`` is looked up via ``status_for_severity_tier(..., policy=
+    policy)`` — ``policy=None`` (every pre-3.1 caller) falls back to
+    ``DEFAULT_VULN_SEVERITY_POLICY`` there. A finding with no severity at
+    all — the axis's own ``indeterminate:`` withhold findings (no-version,
+    unsafe-identity, offline-db-unavailable, ...) — yields
     ``Status.INDETERMINATE`` directly, exactly as it did under the pre-1.6
-    backstop; this mirrors how ``hygiene_rung`` already handles a stray
-    ``indeterminate:`` id on the hygiene axis the same way. The driver
-    carries the finding's own axis and id."""
+    backstop, regardless of ``policy``; this mirrors how ``hygiene_rung``
+    already handles a stray ``indeterminate:`` id on the hygiene axis the
+    same way. The driver carries the finding's own axis and id."""
     status = (
-        status_for_severity_tier(finding.severity.tier)
+        status_for_severity_tier(finding.severity.tier, policy=policy)
         if finding.severity is not None
         else Status.INDETERMINATE
     )
