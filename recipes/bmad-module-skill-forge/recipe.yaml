@@ -18,16 +18,16 @@ build:
     - if: unix
       then:
         - set -ex
-        - pnpm install --ignore-scripts
         - npm pack --ignore-scripts
         - npm install --global "${SRC_DIR}/bmad-module-skill-forge-${{ version }}.tgz"
+        - pnpm install --prod --ignore-scripts
         - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
       else:
-        - call pnpm install --ignore-scripts
-        - if %ERRORLEVEL% neq 0 exit 1
         - call npm pack --ignore-scripts
         - if %ERRORLEVEL% neq 0 exit 1
         - call npm install --global %SRC_DIR%/bmad-module-skill-forge-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm install --prod --ignore-scripts
         - if %ERRORLEVEL% neq 0 exit 1
         - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
         - if %ERRORLEVEL% neq 0 exit 1
@@ -75,15 +75,16 @@ extra:
   cfe-source-kind: npm-registry
   cfe-noarch: compiled
   cfe-pip-check: "false:not-a-python-package"
-  cfe-on-conda-forge-status: local-only-pending-submission-conda-forge
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-17T14:35:00Z"
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34220
+  cfe-last-checked: "2026-07-17T10:05:00Z"
   cfe-generated-by-version: 8.78.0
-  cfe-generated-at-datetime: "2026-07-17T14:35:00Z"
+  cfe-generated-at-datetime: "2026-07-17T09:50:46Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-17T14:31:00Z"
+  cfe-local-build-datetime: "2026-07-17T09:50:46Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -96,4 +97,11 @@ extra:
 #   No existing conda-forge feedstock for this name (lookup_feedstock
 #   confirmed absent). Per-arch build (not noarch) per the canonical npm
 #   CLI pattern — npm lays down platform-native bin shims.
+# build:
+#   PR #34220's initial submission failed the osx_64 leg: rattler-build's
+#   rpath relink choked on a devDependency's (sharp) prebuilt macOS
+#   binary via install_name_tool ("larger updated load commands do not
+#   fit"). Fixed by the maintainer directly on the PR branch (commit
+#   544b130e52, "Switch from npm to pnpm for package installation") —
+#   all 3 platform legs + both linters green as of 2026-07-17.
 ####
