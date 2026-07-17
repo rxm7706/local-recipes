@@ -102,6 +102,16 @@ def test_default_policy_never_maps_to_clean():
     assert Status.CLEAN not in DEFAULT_HYGIENE_POLICY.values()
 
 
+def test_default_hygiene_policy_is_immutable():
+    """Story 3.1 (deferred-work.md): MappingProxyType-wrapped -- an
+    in-process mutation attempt fails loud instead of silently altering the
+    effective policy for the remainder of the run. This table stays
+    non-overridable in v1 (no `policy` parameter on hygiene_rung) -- the
+    wrap is the ownership/immutability half only (see Design Notes)."""
+    with pytest.raises(TypeError):
+        DEFAULT_HYGIENE_POLICY["DEP001"] = Status.WARN
+
+
 @pytest.mark.parametrize(
     "code,expected",
     [

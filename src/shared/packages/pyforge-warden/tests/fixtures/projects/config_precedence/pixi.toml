@@ -1,0 +1,9 @@
+# Config-precedence fixture (Story 3.1): ONLY [tool.pyforge-warden] --
+# no [workspace]/[dependencies] tables, so this file contributes zero
+# components to the scan (a table-less pixi.toml still parses and extracts
+# cleanly -- extract/pixi.py's None-table handling); the scan's real
+# dependency source stays pyproject.toml's [project] table (same
+# directory). fail-on="low" conflicts with pyproject.toml's fail-on="high"
+# -- pyproject.toml must win, surfaced as one stderr conflict warning.
+[tool.pyforge-warden]
+fail-on = "low"

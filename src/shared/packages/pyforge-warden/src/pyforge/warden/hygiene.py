@@ -112,9 +112,10 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 
 from packaging.requirements import InvalidRequirement, Requirement
 
@@ -139,13 +140,20 @@ _OWNER = "deptry"
 # DEP002-005 stay warn (deptry false-positive-prone, unrelated to mapping
 # confidence). Keys are deptry DEP codes (NOT Status tokens), so the
 # sole-ownership rung-ordering guard does not fire on this literal.
-DEFAULT_HYGIENE_POLICY: dict[str, Status] = {
-    "DEP001": Status.POLICY_VIOLATION,
-    "DEP002": Status.WARN,
-    "DEP003": Status.WARN,
-    "DEP004": Status.WARN,
-    "DEP005": Status.WARN,
-}
+# MappingProxyType-wrapped (Story 3.1, deferred-work.md): closes the same
+# unprotected-mutable-module-dict finding vuln.DEFAULT_VULN_SEVERITY_POLICY
+# closes; this table stays non-overridable in v1 (no `policy` parameter is
+# added to status_for_code/hygiene_rung — Design Notes explain why), so the
+# wrap is the ownership/immutability half only, never a config seam.
+DEFAULT_HYGIENE_POLICY: Mapping[str, Status] = MappingProxyType(
+    {
+        "DEP001": Status.POLICY_VIOLATION,
+        "DEP002": Status.WARN,
+        "DEP003": Status.WARN,
+        "DEP004": Status.WARN,
+        "DEP005": Status.WARN,
+    }
+)
 
 # Ratchet baseline (NFR-R2): the fraction of deptry records we fail to map may
 # only ever decrease. A conformance test pins the real corpus at/below this.
