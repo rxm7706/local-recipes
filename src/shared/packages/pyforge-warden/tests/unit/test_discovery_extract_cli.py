@@ -26,9 +26,11 @@ import jsonschema
 import pytest
 
 from pyforge.warden import cli
+from pyforge.warden import discovery as discovery_module
 from pyforge.warden.cli import main
 from pyforge.warden.discovery import (
     CONDA_LOCK_KIND,
+    ENVIRONMENT_YAML_KIND,
     ENVIRONMENT_YML_KIND,
     META_YAML_KIND,
     PIXI_LOCK_KIND,
@@ -40,6 +42,11 @@ from pyforge.warden.discovery import (
 from pyforge.warden.extract import (
     UnparsableManifestError,
     extractor_for,
+)
+from pyforge.warden.extract.environment_yml import (
+    ENVIRONMENT_YML_DEPENDENCIES_SECTION,
+    ENVIRONMENT_YML_PIP_SECTION,
+    EnvironmentYmlExtractor,
 )
 from pyforge.warden.extract.lockfiles import (
     CONDA_LOCK_CONDA_SECTION,
@@ -311,6 +318,210 @@ def test_discover_fails_closed_on_a_dangling_source_manifest_symlink(tmp_path, k
     (tmp_path / kind).symlink_to(tmp_path / "no-such-target")
     with pytest.raises(OSError, match="dangling symlink"):
         discover(tmp_path)
+
+
+# --- discovery: recursive multi-directory walk (Story 1.9) -------------------
+
+
+def test_discover_finds_manifests_in_nested_subdirectories(tmp_path):
+    """The I/O matrix's headline row: manifests in 2 subdirs, both
+    discovered, paths rewritten relative to the ORIGINAL target."""
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    write_pyproject(tmp_path / "a", [])
+    (tmp_path / "b" / RECIPE_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
+    manifests = discover(tmp_path)
+    assert manifests == (
+        ScannedManifest(path="a/pyproject.toml", kind=PYPROJECT_KIND),
+        ScannedManifest(path="b/recipe.yaml", kind=RECIPE_YAML_KIND),
+    )
+    for manifest in manifests:
+        assert not Path(manifest.path).is_absolute()
+
+
+def test_discover_same_tree_yields_the_same_set_every_time(tmp_path):
+    """Determinism: repeated calls against the identical tree produce
+    byte-identical (in the tuple-equality sense) resolved scan sets."""
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    write_pyproject(tmp_path / "a", [])
+    (tmp_path / "b" / META_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
+    first = discover(tmp_path)
+    second = discover(tmp_path)
+    assert first == second
+
+
+def test_discover_sorted_sibling_order_is_deterministic(tmp_path):
+    """Sibling subdirectories are visited in sorted-dirname order, not
+    filesystem/inode order."""
+    for name in ("zeta", "alpha", "mid"):
+        directory = tmp_path / name
+        directory.mkdir()
+        write_pyproject(directory, [])
+    manifests = discover(tmp_path)
+    assert [m.path for m in manifests] == [
+        "alpha/pyproject.toml",
+        "mid/pyproject.toml",
+        "zeta/pyproject.toml",
+    ]
+
+
+def test_discover_union_coverage_at_depth(tmp_path):
+    """Union coverage (never a precedence winner) holds at depth too: a
+    nested directory carrying BOTH recipe.yaml and meta.yaml scans both."""
+    subdir = tmp_path / "sub"
+    subdir.mkdir()
+    (subdir / RECIPE_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
+    (subdir / META_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
+    assert discover(tmp_path) == (
+        ScannedManifest(path="sub/recipe.yaml", kind=RECIPE_YAML_KIND),
+        ScannedManifest(path="sub/meta.yaml", kind=META_YAML_KIND),
+    )
+
+
+def test_discover_root_manifest_and_nested_manifest_together(tmp_path):
+    """The root's own pre-1.9 bare-kind path coexists with a nested hit —
+    root is visited first, in _DISCOVERED_KINDS order, then subdirectories
+    in sorted order."""
+    write_pyproject(tmp_path, [])
+    (tmp_path / "nested").mkdir()
+    (tmp_path / "nested" / PIXI_TOML_KIND).write_text(
+        "[dependencies]\n", encoding="utf-8"
+    )
+    assert discover(tmp_path) == (
+        ScannedManifest(path=PYPROJECT_KIND, kind=PYPROJECT_KIND),
+        ScannedManifest(path="nested/pixi.toml", kind=PIXI_TOML_KIND),
+    )
+
+
+def test_discover_prunes_git_directory(tmp_path):
+    """A manifest reachable only through .git must never surface — .git is
+    never genuinely a project's own manifests."""
+    git_dir = tmp_path / ".git"
+    git_dir.mkdir()
+    write_pyproject(git_dir, [])
+    assert discover(tmp_path) == ()
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
+def test_discover_fails_closed_on_permission_denied_nested_subdirectory(
+    tmp_path,
+):
+    """A manifest reachable only through a permission-denied nested
+    subdirectory must fail closed, never silently omit that subtree
+    (os.walk's default onerror=None would otherwise swallow the failure)."""
+    if os.geteuid() == 0:
+        pytest.skip("root ignores directory permission bits")
+    write_pyproject(tmp_path, [])
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    write_pyproject(locked, [])
+    locked.chmod(0)
+    try:
+        with pytest.raises(OSError):
+            discover(tmp_path)
+    finally:
+        locked.chmod(0o755)
+
+
+def test_discover_fails_closed_when_entry_cap_exceeded(tmp_path, monkeypatch):
+    """Exceeding the entry cap fails closed — never a silent partial scan.
+    The cap is monkeypatched tiny to stay fast (mirrors hygiene.py's own
+    cap-test convention)."""
+    monkeypatch.setattr(discovery_module, "_DISCOVERY_ENTRY_CAP", 2)
+    for i in range(5):
+        (tmp_path / f"dir{i}").mkdir()
+    with pytest.raises(OSError, match="entry bound"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_discover_fails_closed_on_a_symlinked_subdirectory(tmp_path):
+    """A manifest reachable only via a symlinked subdirectory must fail
+    closed, never silently invisible — os.walk's default followlinks=False
+    still classifies a symlinked directory into dirnames but simply never
+    recurses into it, with no signal at all (the exact false-green class
+    this story's Intent section names as the motivating bug)."""
+    real = tmp_path / "real"
+    real.mkdir()
+    write_pyproject(real, [])
+    (tmp_path / "link").symlink_to(real, target_is_directory=True)
+    with pytest.raises(OSError, match="symlinked subdirectory"):
+        discover(tmp_path)
+
+
+# --- discovery: environment.yaml (Story 1.9) ----------------------------------
+
+
+def test_discover_finds_environment_yaml_spelling(tmp_path):
+    (tmp_path / ENVIRONMENT_YAML_KIND).write_text(
+        "dependencies: []\n", encoding="utf-8"
+    )
+    assert discover(tmp_path) == (
+        ScannedManifest(path=ENVIRONMENT_YAML_KIND, kind=ENVIRONMENT_YAML_KIND),
+    )
+
+
+def test_discover_finds_both_environment_yml_spellings_together(tmp_path):
+    """Both spellings coexisting in one directory scan both (union
+    coverage) — mirrors recipe.yaml+meta.yaml's existing precedent."""
+    (tmp_path / ENVIRONMENT_YML_KIND).write_text(
+        "dependencies: []\n", encoding="utf-8"
+    )
+    (tmp_path / ENVIRONMENT_YAML_KIND).write_text(
+        "dependencies: []\n", encoding="utf-8"
+    )
+    assert discover(tmp_path) == (
+        ScannedManifest(path=ENVIRONMENT_YML_KIND, kind=ENVIRONMENT_YML_KIND),
+        ScannedManifest(
+            path=ENVIRONMENT_YAML_KIND, kind=ENVIRONMENT_YAML_KIND
+        ),
+    )
+
+
+def test_discover_fails_closed_on_an_environment_yaml_directory(tmp_path):
+    (tmp_path / ENVIRONMENT_YAML_KIND).mkdir()
+    with pytest.raises(OSError, match="not a regular file"):
+        discover(tmp_path)
+
+
+def test_environment_yaml_kind_dispatches_to_environment_yml_extractor():
+    extractor = extractor_for(ENVIRONMENT_YAML_KIND, DefaultRouter())
+    assert isinstance(extractor, EnvironmentYmlExtractor)
+
+
+def test_router_routes_environment_yaml_dependencies_to_conda():
+    ecosystem = DefaultRouter().route(
+        ENVIRONMENT_YAML_KIND, ENVIRONMENT_YML_DEPENDENCIES_SECTION
+    )
+    assert ecosystem is Ecosystem.CONDA
+
+
+def test_router_routes_environment_yaml_pip_to_pypi():
+    ecosystem = DefaultRouter().route(
+        ENVIRONMENT_YAML_KIND, ENVIRONMENT_YML_PIP_SECTION
+    )
+    assert ecosystem is Ecosystem.PYPI
+
+
+def test_environment_yaml_extracts_components_end_to_end(capsys, tmp_path):
+    (tmp_path / ENVIRONMENT_YAML_KIND).write_text(
+        "dependencies:\n  - requests\n", encoding="utf-8"
+    )
+    rc, document, _ = scan_json(capsys, tmp_path)
+    assert document["resolved_scan_set"] == [
+        {"path": ENVIRONMENT_YAML_KIND, "kind": ENVIRONMENT_YAML_KIND}
+    ]
+    assert document["inventory_count"] == 1
+    assert rc == document["exit_code"]
 
 
 # --- extractor rows ----------------------------------------------------------
@@ -662,6 +873,142 @@ def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):
     captured = capsys.readouterr()
     assert rc == 0
     assert "status=not-applicable" in captured.out
+
+
+# --- D2's split (Story 1.9): misconfiguration guard + empty-extraction -------
+
+
+def test_no_manifest_with_python_source_is_a_misconfiguration_error(
+    capsys, tmp_path
+):
+    """D2(a): Python signals exist but the recursive walk found nothing
+    recognized anywhere in the tree — never silently 'nothing to scan'
+    (exit 0); a fail-closed operational error (exit 2)."""
+    (tmp_path / "main.py").write_text("", encoding="utf-8")
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "unparsable-manifest"
+    assert "despite Python source present" in error["message"]
+    assert document["status"]["driver"]["axis"] == "ingestion"
+    assert err != ""
+
+
+def test_no_manifest_no_python_source_stays_not_applicable(capsys, tmp_path):
+    """D2(b): unchanged — truly nothing existed to scan."""
+    rc, document, _ = scan_json(capsys, tmp_path)
+    assert rc == 0
+    assert document["status"]["value"] == "not-applicable"
+
+
+def test_empty_extraction_is_indeterminate_by_default(capsys, tmp_path):
+    """D2(c): at least one manifest parses but the whole scan feeds zero
+    rungs — ambiguous/partial discovery, never a silent clean/
+    not-applicable. The driver's finding_id is paired with a matching
+    Finding (the ratified Story 1.7 two-namespace contract)."""
+    write_pyproject(tmp_path, [])
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == "indeterminate:empty-extraction:scan"
+    assert driver["axis"] == "ingestion"
+    assert driver["finding_id"] in {f["id"] for f in document["findings"]}
+    assert "manifest(s) parsed but zero dependencies/components" in err
+
+
+def test_empty_extraction_allow_empty_downgrades_exit_to_zero(
+    capsys, tmp_path
+):
+    write_pyproject(tmp_path, [])
+    capsys.readouterr()
+    rc = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    jsonschema.Draft202012Validator(load_schema()).validate(document)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"  # never 'clean'
+    for block in document["coverage"]:
+        assert block["resolution_depth"] is None  # coverage: none
+
+
+def test_empty_extraction_finding_id_is_invocation_stable(
+    capsys, tmp_path, monkeypatch
+):
+    """warden scan . and warden scan <absolute path> against the SAME
+    empty-extraction condition must produce the SAME finding_id (waiver
+    matching depends on it) — the id must never embed the raw CLI path."""
+    write_pyproject(tmp_path, [])
+    monkeypatch.chdir(tmp_path)
+    rc_rel, document_rel, _ = scan_json(capsys, ".")
+    rc_abs, document_abs, _ = scan_json(capsys, tmp_path)
+    assert rc_rel == rc_abs == 1
+    id_rel = document_rel["status"]["driver"]["finding_id"]
+    id_abs = document_abs["status"]["driver"]["finding_id"]
+    assert id_rel == id_abs == "indeterminate:empty-extraction:scan"
+    assert id_rel in {f["id"] for f in document_rel["findings"]}
+    assert id_abs in {f["id"] for f in document_abs["findings"]}
+
+
+def test_recipe_yaml_empty_extraction_stderr_is_manifest_agnostic(
+    capsys, tmp_path
+):
+    """A non-pyproject D2(c) case: the stderr diagnostic must not claim
+    '[project].dependencies' — that wording is pyproject.toml-specific and
+    misdescribes 7 of the 8 discovered manifest kinds."""
+    (tmp_path / RECIPE_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 1
+    assert document["status"]["value"] == "indeterminate"
+    assert "[project].dependencies" not in err
+    assert "manifest(s) parsed but zero dependencies/components" in err
+
+
+def test_text_format_for_empty_extraction_shows_indeterminate(
+    capsys, tmp_path
+):
+    """--format text regression for a D2(c) path (Story 1.9 review
+    finding: all prior new assertions used --format json only)."""
+    write_pyproject(tmp_path, [])
+    rc = main(["scan", str(tmp_path)])  # text is the default format
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "status=indeterminate" in captured.out
+    assert "exit_code=1" in captured.out
+    assert "indeterminate:empty-extraction:scan" in captured.out
+
+
+def test_text_format_for_allow_empty_downgrade_shows_exit_zero(
+    capsys, tmp_path
+):
+    """--format text regression for the --allow-empty downgrade path."""
+    write_pyproject(tmp_path, [])
+    rc = main(["scan", str(tmp_path), "--allow-empty"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "status=indeterminate" in captured.out
+    assert "exit_code=0" in captured.out
+
+
+def test_text_format_for_environment_yaml_scan(capsys, tmp_path):
+    """--format text regression for an environment.yaml-only scan (the new
+    kind's end-to-end wiring, not D2(c) specifically): bare 'requests'
+    withholds NO_VERSION via the ordinary component-withhold path (a real
+    component was extracted, so this is NOT the empty-extraction case)."""
+    (tmp_path / ENVIRONMENT_YAML_KIND).write_text(
+        "dependencies:\n  - requests\n", encoding="utf-8"
+    )
+    rc = main(["scan", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "status=indeterminate" in captured.out
 
 
 # --- resolution_depth: locked-closure (Story 2.6) -----------------------------

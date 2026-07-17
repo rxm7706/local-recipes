@@ -167,15 +167,28 @@
         "properties": {
           "status": {
             "required": ["value"],
-            "properties": {
-              "value": { "enum": ["policy-violation", "indeterminate"] }
-            }
+            "properties": { "value": { "const": "policy-violation" } }
           }
         }
       },
       "then": {
         "properties": { "exit_code": { "enum": [1, 130] } },
-        "description": "status/exit coherence: policy-violation and indeterminate exit 1 (or 130 if interrupted)."
+        "description": "status/exit coherence: policy-violation exits 1 (or 130 if interrupted)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": { "value": { "const": "indeterminate" } }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [0, 1, 130] } },
+        "description": "status/exit coherence: indeterminate exits 1 by default, or 0 under the one sanctioned --allow-empty exception (Story 1.9: the D2(c) empty-extraction driver only — status stays indeterminate, never clean), or 130 if interrupted."
       }
     },
     {

@@ -4,6 +4,28 @@
 CLI landed with 1.2. Renderers proper are Story 1.8; typed errors 1.7; full
 discovery 1.9.)
 
+* D2's split (Story 1.9): the ``if not manifests:`` branch (discovery found
+  NOTHING, no exception) splits on ``has_adjacent_python_source(target)`` —
+  Python signals present means the recursive walk should have found
+  something recognizable, so the run fails closed (``Status.ERROR``/exit 2,
+  ``ErrorKind.UNPARSABLE_MANIFEST``); no Python source anywhere keeps the
+  unchanged not-applicable/exit 0 stderr-only path. A SEPARATE, independent
+  D2 case (c): at least one manifest parses but the whole scan feeds zero
+  rungs (no components, no engine findings, no errors) — checked via
+  ``manifests_parsed > 0 and not rungs`` after policy evaluation — injects
+  one ``Status.INDETERMINATE`` rung with a paired ``Finding`` (the
+  ratified Story 1.7 two-namespace contract: every non-error driver must
+  reference an emitted finding) whose id is the FIXED literal
+  ``indeterminate:empty-extraction:scan`` — never ``args.path`` — so
+  ``warden scan .`` and ``warden scan <absolute path>`` against the same
+  condition produce the SAME id (invocation-stability; this driver is
+  whole-scan-scoped, not per-package, unlike the ``<pkg>``-shaped siblings
+  in this finding-id family). ``--allow-empty`` downgrades ONLY that exit
+  to 0 (``verdict.exit_code_for``'s sole-owned knob); ``status`` stays
+  ``indeterminate``, never ``clean``, and ``empty_extraction=True`` is
+  passed to ``assemble_report`` regardless of the flag, so ``coverage:
+  none`` is recorded whether or not the downgrade fired.
+
 Ownership decisions recorded:
 
 * Stream discipline (NFR-I3): in ``--format json`` stdout carries EXACTLY
@@ -130,6 +152,7 @@ from .models import (
     AXIS_INGESTION,
     ErrorKind,
     ErrorRecord,
+    Finding,
     Status,
     StatusDriver,
     VulnData,
@@ -178,6 +201,16 @@ def _build_parser() -> argparse.ArgumentParser:
             "report carries no volatile fields yet, so default output is "
             "already byte-identical (volatile-field pinning arrives with "
             "determinism.py)"
+        ),
+    )
+    scan.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help=(
+            "downgrade the exit code to 0 when at least one manifest "
+            "parses but extraction yields zero components/findings/errors "
+            "(D2(c)) — status stays 'indeterminate', never 'clean', and "
+            "coverage still records no resolution-depth claim"
         ),
     )
     return parser
@@ -309,11 +342,31 @@ def _run_scan(args: argparse.Namespace) -> int:
         )
     else:
         if not manifests:
-            # The not-applicable path says so on stderr; stdout stays pure.
-            _stderr(
-                f"{TOOL_NAME}: no manifest found under {args.path!r}; "
-                "nothing to scan"
-            )
+            if has_adjacent_python_source(target):
+                # D2's misconfiguration guard (Story 1.9): the recursive
+                # walk found NOTHING recognizable anywhere in the tree, yet
+                # Python source exists — never silently "nothing to scan"
+                # (exit 0); a fail-closed operational error (exit 2).
+                _record_error(
+                    errors,
+                    rungs,
+                    kind=ErrorKind.UNPARSABLE_MANIFEST,
+                    owner="discovery",
+                    subject=args.path,
+                    message=(
+                        f"no recognized manifest found under {args.path!r} "
+                        "despite Python source present (D2 misconfiguration "
+                        "guard)"
+                    ),
+                    axis=AXIS_INGESTION,
+                )
+            else:
+                # The not-applicable path says so on stderr; stdout stays
+                # pure.
+                _stderr(
+                    f"{TOOL_NAME}: no manifest found under {args.path!r}; "
+                    "nothing to scan"
+                )
     router = DefaultRouter()
     for manifest in manifests:
         try:
@@ -382,18 +435,16 @@ def _run_scan(args: argparse.Namespace) -> int:
         resolved_scan_set=manifests,
     )
     if manifests and manifests_parsed > 0 and not inventory.components:
-        # A parsed manifest with nothing extractable is honest
-        # not-applicable, but it must be distinguishable on stderr from the
-        # empty-dir case (the coverage block already distinguishes them).
-        # The wording names WHAT was scanned: a manifest whose deps live
-        # only outside [project].dependencies (poetry table, extras,
-        # dependency-groups) hits this path too, and "declares no
-        # dependencies" would be a false claim for it (section-aware
-        # discovery is Story 1.9's D2).
+        # A parsed manifest with nothing extractable must be distinguishable
+        # on stderr from the empty-dir case (the coverage block already
+        # distinguishes them). Manifest-kind-agnostic wording (Story 1.9):
+        # this notice now accompanies D2(c)'s actual gate failure
+        # (indeterminate/exit 1 by default) for ANY of the discovered
+        # manifest kinds, not just pyproject.toml — naming a specific
+        # section/format here would misdescribe 7 of 8 kinds.
         _stderr(
-            f"{TOOL_NAME}: manifest parsed but no dependencies found in "
-            f"[project].dependencies (the only section scanned in 1.2) "
-            f"under {args.path!r}; nothing to scan"
+            f"{TOOL_NAME}: manifest(s) parsed but zero dependencies/"
+            f"components extracted under {args.path!r}; nothing to scan"
         )
     engine_results: list[EngineResult] = []
     # AC3: a source-less scan target makes deptry flag every conda-sourced
@@ -495,6 +546,38 @@ def _run_scan(args: argparse.Namespace) -> int:
         )
     rungs.extend(policy_rungs)
 
+    # D2(c) (Story 1.9): at least one manifest parsed but the whole scan fed
+    # ZERO rungs (no components, no engine findings, no errors) — ambiguous/
+    # partial discovery, never a silent clean/not-applicable. A paired
+    # Finding is added (not just a driver) so the ratified Story 1.7
+    # two-namespace contract holds (every non-error status driver must
+    # reference an emitted finding). The id's third segment is a FIXED
+    # literal ("scan"), never args.path: this driver is whole-scan-scoped,
+    # not per-package, and the id must stay invocation-stable (`warden scan
+    # .` vs `warden scan <absolute path>` are the SAME condition).
+    empty_extraction = manifests_parsed > 0 and not rungs
+    if empty_extraction:
+        empty_extraction_id = "indeterminate:empty-extraction:scan"
+        findings = (
+            *findings,
+            Finding(
+                id=empty_extraction_id,
+                axis=AXIS_INGESTION,
+                message=(
+                    "manifest(s) parsed but zero dependencies/components "
+                    f"extracted under {args.path!r}"
+                ),
+                subject=args.path,
+                severity=None,
+            ),
+        )
+        rungs.append(
+            (
+                Status.INDETERMINATE,
+                StatusDriver(axis=AXIS_INGESTION, finding_id=empty_extraction_id),
+            )
+        )
+
     # The first non-None vuln_data across engine results, in engine-
     # registration order (Story 1.5: OsvEngine populates it on a completed
     # 0/1 run; every other engine/path leaves it None) — else an all-None
@@ -514,6 +597,8 @@ def _run_scan(args: argparse.Namespace) -> int:
         engine_results=engine_results,
         has_locked_closure=bool(parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}),
         hygiene_applicable=hygiene_applicable,
+        allow_empty=args.allow_empty,
+        empty_extraction=empty_extraction,
     )
     try:
         if args.format == "json":

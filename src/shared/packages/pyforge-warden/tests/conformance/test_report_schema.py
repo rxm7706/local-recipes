@@ -306,6 +306,37 @@ def test_error_status_with_exit_zero_rejected():
         validate(document)
 
 
+def test_indeterminate_status_with_exit_zero_accepted():
+    """Status/exit coherence (Story 1.9): indeterminate is the ONE status
+    that widened its legal-exit set — exit 0 is now a coherent pairing
+    (the --allow-empty exception), mirroring warn's existing two-exit
+    shape. Status stays 'indeterminate', never 'clean'."""
+    document = make_report(
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(
+            axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod"
+        ),
+        exit_code=0,
+    ).to_json_dict()
+    validate(document)
+    assert document["status"]["value"] == "indeterminate"
+
+
+def test_policy_violation_status_with_exit_zero_still_rejected():
+    """The indeterminate-only widening must not leak to policy-violation —
+    splitting the combined allOf clause must not accidentally widen its
+    sibling too."""
+    document = make_report().to_json_dict()
+    document["status"]["value"] = "policy-violation"
+    document["status"]["driver"] = {
+        "axis": AXIS_HYGIENE,
+        "finding_id": "hygiene:DEP001:missingmod",
+    }
+    document["exit_code"] = 0
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
 def test_epss_above_one_rejected():
     document = make_report().to_json_dict()
     document["findings"] = [

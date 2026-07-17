@@ -161,11 +161,21 @@ class ResolutionDepth(StrEnum):
 # interrupt can land during any verdict. Keys are deliberately ALPHABETICAL —
 # the sole-ownership guard forbids materializing the lattice ORDER outside
 # verdict.py, and validation needs the pair set, not the ordering.
+#
+# Status.INDETERMINATE widened {1,130} -> {0,1,130} (Story 1.9): the ONE
+# sanctioned --allow-empty exception (verdict.exit_code_for's driver-scoped
+# knob, see its docstring) needs exit 0 to be a coherent pairing with a
+# status that stays indeterminate — mirrors Status.WARN's existing
+# "one status, two legal exits, one caller-supplied knob decides which"
+# shape exactly. This does NOT add a value to the frozen {0,1,2,130} exit
+# set, reorder the lattice, or touch any Status/ErrorKind member — only
+# this one status's legal-exit-code coherence entry widened by one
+# already-existing code.
 _LEGAL_EXITS_BY_STATUS: dict[Status, frozenset[int]] = {
     Status.BYPASSED: frozenset({0, 130}),
     Status.CLEAN: frozenset({0, 130}),
     Status.ERROR: frozenset({2, 130}),
-    Status.INDETERMINATE: frozenset({1, 130}),
+    Status.INDETERMINATE: frozenset({0, 1, 130}),
     Status.NOT_APPLICABLE: frozenset({0, 130}),
     Status.POLICY_VIOLATION: frozenset({1, 130}),
     Status.WARN: frozenset({0, 1, 130}),

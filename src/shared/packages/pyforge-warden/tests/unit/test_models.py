@@ -394,7 +394,7 @@ def test_raw_string_error_kind_and_severity_tier_coerce_or_raise():
         (Status.ERROR, 0),
         (Status.ERROR, 1),
         (Status.POLICY_VIOLATION, 0),
-        (Status.INDETERMINATE, 0),
+        (Status.INDETERMINATE, 2),
         (Status.BYPASSED, 1),
     ],
 )
@@ -408,6 +408,26 @@ def test_incoherent_status_exit_pairs_fail_at_construction(status, exit_code):
         dataclasses.replace(
             _sample_report(), status=status, status_driver=driver, exit_code=exit_code
         )
+
+
+def test_indeterminate_exit_zero_is_coherent():
+    """Story 1.9: Status.INDETERMINATE widened its legal-exit set to
+    {0, 1, 130} (mirroring Status.WARN's existing two-legal-exit shape) —
+    the ONE sanctioned --allow-empty exception. Construction must accept
+    the pairing (not merely reject it, per the OLD, now-superseded
+    incoherence the parametrized test above used to pin at (INDETERMINATE,
+    0) — moved to (INDETERMINATE, 2), still genuinely incoherent)."""
+    driver = StatusDriver(
+        axis=AXIS_VULNERABILITY, finding_id="indeterminate:empty-extraction:scan"
+    )
+    report = dataclasses.replace(
+        _sample_report(),
+        status=Status.INDETERMINATE,
+        status_driver=driver,
+        exit_code=0,
+    )
+    assert report.status is Status.INDETERMINATE
+    assert report.exit_code == 0
 
 
 def test_sigint_exit_is_coherent_with_every_status():

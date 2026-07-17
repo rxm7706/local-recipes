@@ -545,32 +545,60 @@ def test_two_engines_failing_on_different_axes_both_surface(capsys, monkeypatch)
     assert any(e["owner"] == "crashing" for e in document["errors"])
 
 
-def test_zero_dependency_manifest_is_distinguishable_on_stderr(
+def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(
     capsys, tmp_path
 ):
-    """A parsed manifest declaring no dependencies is honest not-applicable
-    (nothing existed to scan) but must be distinguishable from the
-    empty-dir case: a dedicated stderr notice, and coverage that records
-    the manifest as found+parsed."""
+    """D2(c) (Story 1.9): a manifest that PARSES but yields zero components/
+    findings/errors is ambiguous/partial discovery, never a silent
+    not-applicable — the previous 1.2-era not-applicable/exit-0 reading for
+    this exact scenario is the false-green D2(c) exists to close. Status
+    lands indeterminate/exit 1 by default, distinguishable on stderr from
+    the empty-dir case, with coverage recording no resolution-depth claim
+    (``coverage: none``) despite the manifest having been found+parsed."""
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = []\n',
         encoding="utf-8",
     )
     rc, out, err = run_scan(capsys, tmp_path)
     document = parse_report(out)
-    assert rc == 0
-    assert document["status"]["value"] == "not-applicable"
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
     assert document["inventory_count"] == 0
-    # The notice names WHAT was scanned ([project].dependencies) instead of
-    # claiming "declares no dependencies" — a poetry-style manifest with
-    # deps only outside that section hits this path too, and the old
-    # wording was a false claim for it (section-aware discovery is 1.9's).
-    assert "no dependencies found in [project].dependencies" in err
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == "indeterminate:empty-extraction:scan"
+    assert driver["axis"] == "ingestion"
+    assert driver["finding_id"] in {f["id"] for f in document["findings"]}
+    # Manifest-kind-agnostic wording (Story 1.9): the old pyproject-specific
+    # "[project].dependencies" claim was a false claim for the 7 other
+    # manifest kinds once D2(c) made this an actual gate failure.
+    assert "manifest(s) parsed but zero dependencies/components" in err
     assert "no manifest found" not in err  # NOT the empty-dir notice
     for block in document["coverage"]:
         assert block["manifests_found"] == 1
         assert block["manifests_parsed"] == 1
         assert block["deps_total"] == 0
+        assert block["resolution_depth"] is None  # coverage: none
+
+
+def test_zero_dependency_manifest_allow_empty_downgrades_exit_only(
+    capsys, tmp_path
+):
+    """``--allow-empty`` downgrades D2(c)'s exit to 0 while ``status`` stays
+    ``indeterminate`` (never ``clean``) — the flag only widens the exit
+    projection, never the verdict itself."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = []\n',
+        encoding="utf-8",
+    )
+    rc, out, _ = run_scan(capsys, tmp_path, "--allow-empty")
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    for block in document["coverage"]:
+        assert block["resolution_depth"] is None
 
 
 # --- deptry end-to-end fixtures (the first real engine) ----------------------
