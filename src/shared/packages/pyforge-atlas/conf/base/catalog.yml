@@ -253,7 +253,9 @@ pypi_conda_mapping:
   metadata:
     layer: primary
 
-# Phase H (serial-gated; TTL column pypi_version_fetched_at).
+# Phase H (serial-gated). Legacy SQLite gate column was `pypi_version_fetched_at`
+# (historical provenance only); the Parquet TTL stamp is the generic `fetched_at`
+# (A3 P2 — standardized across all flipped datasets; ttl from ttls.pypi_current_versions).
 # A3: IncrementalParquetDataset
 pypi_current_versions:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
@@ -499,7 +501,9 @@ vcs_archived_feedstocks:
   metadata:
     layer: intermediate
 
-# Phase K (TTL column github_version_fetched_at; `last_error` column convention).
+# Phase K (`last_error` column convention). Legacy SQLite gate column was
+# `github_version_fetched_at` (historical provenance only); the Parquet TTL stamp is
+# the generic `fetched_at` (A3 P2 — standardized; ttl from ttls.vcs_upstream_versions).
 # A3: IncrementalParquetDataset
 vcs_upstream_versions:
   type: pyforge.atlas.datasets.IncrementalParquetDataset

@@ -33,13 +33,17 @@ Imports are restricted to ``pandas`` / ``kedro`` / ``kedro_datasets`` /
 
 from __future__ import annotations
 
+import logging
 import time
 from pathlib import PurePosixPath
 from typing import Any
 
 import pandas as pd
 from kedro.io import AbstractVersionedDataset
+from kedro.io.core import get_protocol_and_path
 from kedro_datasets.pandas import ParquetDataset
+
+logger = logging.getLogger(__name__)
 
 
 class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFrame]):
@@ -54,11 +58,28 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         Per-dataset time-to-live in seconds. OPTIONAL — when ``None`` the dataset
         treats every persisted row as fresh (``stale_mask`` is all-``False``); a
         runtime value is injected from ``params:ttls.<name>`` by the project hook.
+        A string like ``"3600"`` is coerced to ``int``; a non-numeric or negative
+        value raises ``ValueError`` (review-pass P3).
     fetched_at_column:
         Name of the epoch-seconds fetch-timestamp column (default ``fetched_at``,
-        the Spine timestamp convention).
-    load_args / save_args / version / credentials / fs_args / metadata:
+        the Spine timestamp convention). The generic ``fetched_at`` stamp is
+        standardized across ALL flipped datasets (review-pass P2): the persisted
+        Parquet is FRESH (B1+ writes it — there is no legacy SQLite Parquet to
+        migrate), so a cold first run re-fetching everything is EXPECTED
+        (FR-4/AD-5 cold-start). Legacy per-phase gate columns
+        (``downloads_fetched_at`` / ``pypi_version_fetched_at`` /
+        ``github_version_fetched_at``) are historical SQLite provenance ONLY — they
+        are NOT the Parquet stamp column. The override remains a supported feature
+        (a caller may pass a different column) but is unused by the 15 flips.
+    load_args / save_args / credentials / fs_args / metadata:
         Forwarded verbatim to the composed ``pandas.ParquetDataset``.
+    version:
+        UNSUPPORTED — outer catalog versioning (``version:`` / ``versioned: true``)
+        raises ``ValueError`` (review-pass P4). IO is delegated to a composed
+        ``pandas.ParquetDataset``; running the outer versioned machinery over a
+        delegated inner produces a double-version surface whose ``exists_function``
+        signature does not match, so the feature is rejected rather than shipped
+        half-wired.
     """
 
     DEFAULT_FETCHED_AT_COLUMN = "fetched_at"
@@ -76,40 +97,98 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         fs_args: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        self._ttl_seconds = ttl_seconds
+        # P4: outer versioning is delegated to the inner ParquetDataset and the
+        # outer versioned machinery is unsupported here — reject rather than
+        # construct a mis-wired double-version surface (the base's
+        # exists_function/glob_function would be called with a signature the
+        # composed dataset does not honor).
+        if version is not None:
+            raise ValueError(
+                "IncrementalParquetDataset does not support outer catalog "
+                "versioning (`version:` / `versioned: true`): IO is delegated to a "
+                "composed pandas.ParquetDataset. Remove the `version` key from the "
+                "catalog entry (persisted-Parquet + fetched_at round-trip is the "
+                "resumability primitive, not kedro file-versioning — FR-4/AD-5)."
+            )
+
+        # P3: validate/coerce the construction-time ttl (None is the legitimate
+        # "no ttl yet" default used by the offline resolution path).
+        self._ttl_seconds = self._coerce_ttl(ttl_seconds, warn_on_none=False)
         self._fetched_at_column = fetched_at_column
         self.metadata = metadata
 
-        # Compose the physical Parquet IO (fsspec + versioning owned here).
+        # Compose the physical Parquet IO (fsspec owned here). No version — see P4.
         self._inner = ParquetDataset(
             filepath=filepath,
             load_args=load_args,
             save_args=save_args,
-            version=version,
             credentials=credentials,
             fs_args=fs_args,
             metadata=metadata,
         )
 
-        # Wire the versioned base minimally, delegating existence to the inner
-        # dataset's fsspec probe. No network/disk touch at construction time.
+        # P12: strip the fsspec protocol before PurePosixPath — a bare
+        # PurePosixPath("s3://b/k") mangles to "s3:/b/k". kedro's
+        # get_protocol_and_path yields the protocol-less path the base expects.
+        _protocol, inner_path = get_protocol_and_path(filepath)
+        # Versioning disabled on the outer (P4): version=None means the base
+        # never invokes exists_function/glob_function, so none is wired.
         super().__init__(
-            filepath=PurePosixPath(filepath),
-            version=version,
-            exists_function=self._inner._exists,
-            glob_function=None,
+            filepath=PurePosixPath(inner_path),
+            version=None,
         )
+
+    # -- ttl validation (P3) -----------------------------------------------
+
+    @staticmethod
+    def _coerce_ttl(value: Any, *, warn_on_none: bool) -> int | None:
+        """Coerce/validate a ttl value. ``None`` is allowed (no ttl yet); a
+        string/float is coerced to ``int``; non-numeric or negative raises
+        ``ValueError``. ``warn_on_none`` distinguishes a runtime injection of
+        ``None`` (suspicious — a misconfigured ``params:ttls.<name>: null``) from
+        the legitimate construction-time default."""
+        if value is None:
+            if warn_on_none:
+                logger.warning(
+                    "ttl_seconds injected as None at runtime — distinct from the "
+                    "construction-time 'no ttl yet' default; the dataset will treat "
+                    "every row as fresh (never re-fetch). Check params:ttls.<name>."
+                )
+            return None
+        if isinstance(value, bool):
+            # bool is an int subclass but is never a meaningful ttl.
+            raise ValueError(f"ttl_seconds must be an integer number of seconds; got {value!r}")
+        try:
+            ttl = int(value)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"ttl_seconds must be an integer number of seconds (or int-coercible "
+                f"string); got {value!r}"
+            ) from None
+        if ttl < 0:
+            raise ValueError(f"ttl_seconds must be >= 0 (0 = everything stale); got {ttl}")
+        return ttl
 
     # -- kedro 1.5.0 public abstract methods -------------------------------
 
     def save(self, data: pd.DataFrame) -> None:
-        """Persist ``data`` as Parquet, stamping the ``fetched_at`` column with the
-        current epoch seconds on every row when the caller did not already supply
-        it. A caller-provided ``fetched_at`` is PRESERVED (so upstream fetch times
-        survive), enabling the freshness verdict to round-trip save→load."""
-        df = data.copy()
-        if self._fetched_at_column not in df.columns:
-            df[self._fetched_at_column] = int(time.time())
+        """Persist ``data`` as Parquet, ensuring every row carries a ``fetched_at``
+        epoch-seconds stamp. A caller-supplied ``fetched_at`` is PRESERVED (upstream
+        fetch times survive), but any MISSING/NaN entries are filled with the current
+        epoch seconds (review-pass P1): an incremental append leaves new rows NaN in
+        an already-present column, and stamping only at column level would persist
+        NaN forever → the row reads stale on every run → a perpetual re-fetch loop.
+        The copy is taken only when a stamp must be written (review-pass P9 — avoid
+        deep-copying 800k-row frames that need no change)."""
+        col = self._fetched_at_column
+        if col not in data.columns:
+            df = data.copy()
+            df[col] = int(time.time())
+        elif data[col].isna().any():
+            df = data.copy()
+            df[col] = df[col].fillna(int(time.time()))
+        else:
+            df = data  # no stamping needed → no copy (P9)
         self._inner.save(df)
 
     def load(self) -> pd.DataFrame:
@@ -117,6 +196,11 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         A node combines this with :meth:`stale_mask` to re-fetch only stale rows
         and skip fresh ones — the resumability primitive (FR-4/AD-5)."""
         return self._inner.load()
+
+    def _exists(self) -> bool:
+        """Delegate the existence probe to the composed Parquet dataset (the outer
+        versioned machinery is disabled — P4)."""
+        return self._inner._exists()
 
     def _describe(self) -> dict[str, Any]:
         inner = self._inner._describe()
@@ -138,7 +222,9 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
     def ttl_seconds(self, value: int | None) -> None:
         # Runtime injection point for pyforge.atlas.hooks.ProjectHooks
         # (params:ttls.<name>). Keeps parameters.yml the single source of truth.
-        self._ttl_seconds = value
+        # P3: coerce/validate exactly as the ctor does; a runtime None warns
+        # (distinct from the legitimate construction-time "no ttl yet" default).
+        self._ttl_seconds = self._coerce_ttl(value, warn_on_none=True)
 
     @property
     def fetched_at_column(self) -> str:
