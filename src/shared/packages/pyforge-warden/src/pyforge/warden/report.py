@@ -109,6 +109,7 @@ def assemble_report(
     engine_results: Sequence[EngineResult] = (),
     has_locked_closure: bool = False,
     hygiene_applicable: bool = True,
+    allow_empty: bool = False,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -134,7 +135,13 @@ def assemble_report(
     axis's ``deps_total``/``deps_assessed``/``resolution_depth`` to the
     not-applicable shape (``0``/``0``/``None``) regardless of what any
     engine's own coverage claims; ``manifests_found``/``manifests_parsed``
-    and the vulnerability axis are untouched."""
+    and the vulnerability axis are untouched.
+
+    ``allow_empty`` (Story 1.9) is threaded straight through to
+    ``verdict.exit_code_for`` alongside the composed ``driver`` — this
+    module has no empty-extraction vocabulary of its own (that decision is
+    ``cli.py``'s, which injects the ``empty-extraction`` rung), so it only
+    carries the caller's flag to the sole exit-code owner."""
     status, driver = compose(rungs)
     resolution_depth = (
         ResolutionDepth.LOCKED_CLOSURE.value
@@ -180,7 +187,7 @@ def assemble_report(
         tool_version=__version__,
         status=status,
         status_driver=driver,
-        exit_code=exit_code_for(status),
+        exit_code=exit_code_for(status, driver=driver, allow_empty=allow_empty),
         findings=tuple(findings),
         coverage=coverage,
         vuln_data=vuln_data,

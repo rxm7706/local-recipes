@@ -14,6 +14,7 @@ import pytest
 from pyforge.warden.inventory import Component, Provenance, PypiIdentity
 from pyforge.warden.models import (
     AXIS_HYGIENE,
+    AXIS_INGESTION,
     AXIS_VULNERABILITY,
     AxisCoverage,
     ComplianceReport,
@@ -394,7 +395,7 @@ def test_raw_string_error_kind_and_severity_tier_coerce_or_raise():
         (Status.ERROR, 0),
         (Status.ERROR, 1),
         (Status.POLICY_VIOLATION, 0),
-        (Status.INDETERMINATE, 0),
+        (Status.INDETERMINATE, 2),
         (Status.BYPASSED, 1),
     ],
 )
@@ -408,6 +409,25 @@ def test_incoherent_status_exit_pairs_fail_at_construction(status, exit_code):
         dataclasses.replace(
             _sample_report(), status=status, status_driver=driver, exit_code=exit_code
         )
+
+
+def test_indeterminate_exit_zero_is_coherent():
+    """Story 1.9: the ONE sanctioned --allow-empty exception —
+    verdict.exit_code_for's allow_empty knob may project indeterminate to
+    exit 0 for the empty-extraction driver, so (indeterminate, 0) must be
+    CONSTRUCTIBLE at the model layer (unlike every other non-{1,130} pairing,
+    which stays incoherent — see the parametrized case above)."""
+    report = dataclasses.replace(
+        _sample_report(),
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(
+            axis=AXIS_INGESTION,
+            finding_id="indeterminate:empty-extraction:sanitized-path",
+        ),
+        exit_code=0,
+    )
+    assert report.exit_code == 0
+    assert report.status is Status.INDETERMINATE
 
 
 def test_sigint_exit_is_coherent_with_every_status():

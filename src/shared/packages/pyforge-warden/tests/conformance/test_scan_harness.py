@@ -545,21 +545,28 @@ def test_two_engines_failing_on_different_axes_both_surface(capsys, monkeypatch)
     assert any(e["owner"] == "crashing" for e in document["errors"])
 
 
-def test_zero_dependency_manifest_is_distinguishable_on_stderr(
+def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(
     capsys, tmp_path
 ):
-    """A parsed manifest declaring no dependencies is honest not-applicable
-    (nothing existed to scan) but must be distinguishable from the
-    empty-dir case: a dedicated stderr notice, and coverage that records
-    the manifest as found+parsed."""
+    """Story 1.9 (D2 case c) flips this fixture's verdict: a manifest that
+    PARSES but feeds zero components/findings/errors is no longer an honest
+    not-applicable (a mismatch already flagged by this test's own
+    docstring pre-1.9) — it is a fail-closed `indeterminate`/exit-1 default,
+    still distinguishable on stderr from the empty-dir case, and coverage
+    still records the manifest as found+parsed. ``--allow-empty`` (not
+    exercised here) is the ONE sanctioned downgrade to exit 0."""
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = []\n',
         encoding="utf-8",
     )
     rc, out, err = run_scan(capsys, tmp_path)
     document = parse_report(out)
-    assert rc == 0
-    assert document["status"]["value"] == "not-applicable"
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    assert document["status"]["driver"]["finding_id"].startswith(
+        "indeterminate:empty-extraction:"
+    )
     assert document["inventory_count"] == 0
     # The notice names WHAT was scanned ([project].dependencies) instead of
     # claiming "declares no dependencies" — a poetry-style manifest with

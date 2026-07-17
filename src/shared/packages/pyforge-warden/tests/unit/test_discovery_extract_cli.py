@@ -29,6 +29,7 @@ from pyforge.warden import cli
 from pyforge.warden.cli import main
 from pyforge.warden.discovery import (
     CONDA_LOCK_KIND,
+    ENVIRONMENT_YAML_KIND,
     ENVIRONMENT_YML_KIND,
     META_YAML_KIND,
     PIXI_LOCK_KIND,
@@ -40,6 +41,11 @@ from pyforge.warden.discovery import (
 from pyforge.warden.extract import (
     UnparsableManifestError,
     extractor_for,
+)
+from pyforge.warden.extract.environment_yml import (
+    ENVIRONMENT_YML_DEPENDENCIES_SECTION,
+    ENVIRONMENT_YML_PIP_SECTION,
+    EnvironmentYmlExtractor,
 )
 from pyforge.warden.extract.lockfiles import (
     CONDA_LOCK_CONDA_SECTION,
@@ -311,6 +317,139 @@ def test_discover_fails_closed_on_a_dangling_source_manifest_symlink(tmp_path, k
     (tmp_path / kind).symlink_to(tmp_path / "no-such-target")
     with pytest.raises(OSError, match="dangling symlink"):
         discover(tmp_path)
+
+
+# --- discovery: Story 1.9 recursive walk + deterministic selection -----------
+
+
+def test_discover_finds_manifests_in_nested_subdirectories_sorted_by_path(tmp_path):
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    write_pyproject(tmp_path / "a", [])
+    (tmp_path / "b" / RECIPE_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
+    assert discover(tmp_path) == (
+        ScannedManifest(path="a/pyproject.toml", kind=PYPROJECT_KIND),
+        ScannedManifest(path="b/recipe.yaml", kind=RECIPE_YAML_KIND),
+    )
+
+
+def test_discover_is_deterministic_across_repeated_calls(tmp_path):
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    write_pyproject(tmp_path / "a", [])
+    (tmp_path / "b" / RECIPE_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
+    assert discover(tmp_path) == discover(tmp_path)
+
+
+def test_discover_union_coverage_at_a_nested_directory(tmp_path):
+    """recipe.yaml + meta.yaml coexisting keeps scanning both -- unchanged
+    from the single-directory behavior, now proven at depth too."""
+    sub = tmp_path / "feedstock"
+    sub.mkdir()
+    (sub / RECIPE_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
+    (sub / META_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path="feedstock/recipe.yaml", kind=RECIPE_YAML_KIND),
+        ScannedManifest(path="feedstock/meta.yaml", kind=META_YAML_KIND),
+    )
+
+
+def test_discover_prunes_git_directory_at_any_depth(tmp_path):
+    git_hooks = tmp_path / ".git" / "hooks"
+    git_hooks.mkdir(parents=True)
+    write_pyproject(git_hooks, [])
+    assert discover(tmp_path) == ()
+
+
+def test_discover_entry_cap_exceeded_fails_closed(tmp_path, monkeypatch):
+    from pyforge.warden import discovery as discovery_module
+
+    monkeypatch.setattr(discovery_module, "_DISCOVERY_ENTRY_CAP", 2)
+    for i in range(5):
+        (tmp_path / f"pkg{i}").mkdir()
+    with pytest.raises(OSError, match="entry cap"):
+        discover(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
+def test_discover_fails_closed_on_a_permission_denied_nested_subdirectory(tmp_path):
+    if os.geteuid() == 0:
+        pytest.skip("root ignores directory permission bits")
+    nested = tmp_path / "sub"
+    nested.mkdir()
+    locked = nested / "locked"
+    locked.mkdir()
+    locked.chmod(0)
+    try:
+        with pytest.raises(OSError):
+            discover(tmp_path)
+    finally:
+        locked.chmod(0o755)
+
+
+# --- discovery: Story 1.9 environment.yaml spelling ---------------------------
+
+
+def test_discover_finds_environment_yaml_spelling(tmp_path):
+    (tmp_path / ENVIRONMENT_YAML_KIND).write_text("dependencies: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=ENVIRONMENT_YAML_KIND, kind=ENVIRONMENT_YAML_KIND),
+    )
+
+
+def test_discover_finds_both_environment_yml_spellings_together(tmp_path):
+    (tmp_path / ENVIRONMENT_YML_KIND).write_text("dependencies: []\n", encoding="utf-8")
+    (tmp_path / ENVIRONMENT_YAML_KIND).write_text("dependencies: []\n", encoding="utf-8")
+    assert discover(tmp_path) == (
+        ScannedManifest(path=ENVIRONMENT_YML_KIND, kind=ENVIRONMENT_YML_KIND),
+        ScannedManifest(path=ENVIRONMENT_YAML_KIND, kind=ENVIRONMENT_YAML_KIND),
+    )
+
+
+def test_environment_yaml_kind_dispatches_to_environment_yml_extractor():
+    extractor = extractor_for(ENVIRONMENT_YAML_KIND, DefaultRouter())
+    assert isinstance(extractor, EnvironmentYmlExtractor)
+
+
+def test_router_routes_environment_yaml_dependencies_to_conda():
+    ecosystem = DefaultRouter().route(
+        ENVIRONMENT_YAML_KIND, ENVIRONMENT_YML_DEPENDENCIES_SECTION
+    )
+    assert ecosystem is Ecosystem.CONDA
+
+
+def test_router_routes_environment_yaml_pip_to_pypi():
+    ecosystem = DefaultRouter().route(ENVIRONMENT_YAML_KIND, ENVIRONMENT_YML_PIP_SECTION)
+    assert ecosystem is Ecosystem.PYPI
+
+
+def test_environment_yaml_extracts_a_component_via_the_cli(capsys, tmp_path):
+    (tmp_path / ENVIRONMENT_YAML_KIND).write_text(
+        "dependencies:\n  - numpy\n", encoding="utf-8"
+    )
+    rc, document, _ = scan_json(capsys, tmp_path)
+    assert document["inventory_count"] == 1
+    assert [m["kind"] for m in document["resolved_scan_set"]] == [ENVIRONMENT_YAML_KIND]
+    assert rc == document["exit_code"]
+
+
+def test_environment_yaml_and_yml_both_extract_in_the_same_directory(capsys, tmp_path):
+    (tmp_path / ENVIRONMENT_YML_KIND).write_text(
+        "dependencies:\n  - numpy\n", encoding="utf-8"
+    )
+    (tmp_path / ENVIRONMENT_YAML_KIND).write_text(
+        "dependencies:\n  - pandas\n", encoding="utf-8"
+    )
+    rc, document, _ = scan_json(capsys, tmp_path)
+    assert document["inventory_count"] == 2
+    assert sorted(m["kind"] for m in document["resolved_scan_set"]) == sorted(
+        [ENVIRONMENT_YML_KIND, ENVIRONMENT_YAML_KIND]
+    )
+    assert rc == document["exit_code"]
 
 
 # --- extractor rows ----------------------------------------------------------
@@ -895,6 +1034,82 @@ def test_permission_denied_discovery_is_an_error_report_not_a_false_green(
     assert "errno" in error["message"]
     assert err != ""
     assert "no manifest found" not in err  # not the not-applicable notice
+
+
+# --- D2 split (Story 1.9): no-manifest branches -------------------------------
+
+
+def test_no_manifest_with_python_source_is_the_d2_misconfiguration_error(
+    capsys, tmp_path
+):
+    (tmp_path / "main.py").write_text("", encoding="utf-8")
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "unparsable-manifest"
+    assert "Python source present" in error["message"]
+    assert "D2 misconfiguration guard" in error["message"]
+    assert err != ""
+
+
+def test_no_manifest_no_python_source_stays_not_applicable(capsys, tmp_path):
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "not-applicable"
+    assert document["errors"] == []
+
+
+# --- empty extraction + --allow-empty (Story 1.9, D2 case c) ------------------
+
+
+def test_empty_extraction_is_indeterminate_exit_one_by_default(capsys, tmp_path):
+    write_pyproject(tmp_path, [])
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    assert document["status"]["driver"]["finding_id"].startswith(
+        "indeterminate:empty-extraction:"
+    )
+    assert document["inventory_count"] == 0
+    assert document["errors"] == []
+
+
+def test_empty_extraction_with_allow_empty_downgrades_to_exit_zero(capsys, tmp_path):
+    write_pyproject(tmp_path, [])
+    capsys.readouterr()
+    rc = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    jsonschema.Draft202012Validator(load_schema()).validate(document)
+    assert rc == 0
+    assert document["exit_code"] == 0
+    assert document["status"]["value"] == "indeterminate"  # never clean
+    assert document["status"]["driver"]["finding_id"].startswith(
+        "indeterminate:empty-extraction:"
+    )
+
+
+def test_allow_empty_does_not_leak_to_an_unrelated_indeterminate_cause(
+    capsys, tmp_path
+):
+    """--allow-empty must never downgrade any OTHER indeterminate driver —
+    here a genuine range-only withhold, not an empty extraction."""
+    write_pyproject(tmp_path, ["requests>=2.0"])
+    capsys.readouterr()
+    rc = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    jsonschema.Draft202012Validator(load_schema()).validate(document)
+    assert rc == 1
+    assert document["exit_code"] == 1
+    assert document["status"]["value"] == "indeterminate"
+    assert not document["status"]["driver"]["finding_id"].startswith(
+        "indeterminate:empty-extraction:"
+    )
 
 
 # --- exit-path hardening rows --------------------------------------------------

@@ -165,7 +165,13 @@ _LEGAL_EXITS_BY_STATUS: dict[Status, frozenset[int]] = {
     Status.BYPASSED: frozenset({0, 130}),
     Status.CLEAN: frozenset({0, 130}),
     Status.ERROR: frozenset({2, 130}),
-    Status.INDETERMINATE: frozenset({1, 130}),
+    # 0 (Story 1.9): the ONE sanctioned `--allow-empty` exception —
+    # `verdict.exit_code_for`'s `allow_empty` knob returns 0 ONLY for the
+    # narrow `indeterminate:empty-extraction:*` driver, mirroring how
+    # `Status.WARN` below already carries two legal exits gated by its own
+    # `warn_is_error` knob. `status` itself never becomes `clean`; this
+    # table only states which (status, exit_code) PAIRS are constructible.
+    Status.INDETERMINATE: frozenset({0, 1, 130}),
     Status.NOT_APPLICABLE: frozenset({0, 130}),
     Status.POLICY_VIOLATION: frozenset({1, 130}),
     Status.WARN: frozenset({0, 1, 130}),
