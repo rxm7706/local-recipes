@@ -68,7 +68,11 @@ def test_jfrog_named_key_never_reachable_from_a_non_jfrog_host(catalog_config):
         cred_key = str(spec.get("credentials", ""))
         if not any(tok in cred_key.lower() for tok in _JFROG_KEY_TOKENS):
             continue
-        host = urlparse(str(spec.get("url", spec.get("filepath", "")))).netloc.lower()
+        # PartitionedDataset and friends carry the location under `path`, not
+        # `url`/`filepath` — include it so a future credentialed partitioned
+        # store can't resolve to an empty host and slip the check (Gemini PR-71).
+        location = spec.get("url", spec.get("filepath", spec.get("path", "")))
+        host = urlparse(str(location)).netloc.lower()
         if not _is_artifactory_host(host):
             offenders[name] = {"credentials": cred_key, "host": host}
     assert not offenders, (
