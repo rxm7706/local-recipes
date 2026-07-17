@@ -147,3 +147,23 @@ the workstation. Epic 1 done; next runnable story: **A1** (nebi scaffold,
 DEV-AUTO). Retro-ledger items for the Rule-2 closeout: D1 `_PARTITIONDATE`
 spec-vs-code divergence; D3/D4 symbol-location corrections; the
 fresh-container pixi `--frozen` + `build_artifacts` stub gotcha.
+
+### Gemini PR-#69 review fold — vendored-SKF findings (declined locally, upstream-report items)
+
+Three confirmed-valid findings, all in files vendored verbatim from
+`bmad-module-skill-forge@2.0.1` (mirrored `_bmad/skf/shared/scripts/` ↔
+`.claude/skills/shared/scripts/`, both manifest-tracked) — local patches
+declined to avoid desync with the module's `skf-update`/`skf-audit`
+lifecycle; report upstream to `armelhbobdad/bmad-module-skill-forge`:
+
+1. **HIGH** `skf-preapply.py:104` — `pattern.sub(fix, …)` treats backslashes
+   in a workaround `fix` string as escapes/backrefs (`re.error`/corruption);
+   upstream fix `lambda _: fix`. **Operational gotcha until fixed: no
+   backslashes in workaround fix strings.**
+2. **MED** `skf-detect-docs.py:250` — `file://` path via `url[7:]`, no
+   percent-decoding / Windows drive handling (`url2pathname` upstream fix).
+3. **MED** `skf-detect-docs.py:290` — same defect in
+   `_fetch_and_hash_reason`.
+
+No practical impact in this repo's current usage (Linux, space-free paths,
+no backslash workarounds in the cf-atlas-legacy forge run).
