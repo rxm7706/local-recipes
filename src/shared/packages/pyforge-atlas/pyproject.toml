@@ -1,0 +1,41 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "pyforge-atlas"
+version = "0.1.0"
+description = "Kedro/Dagster/DuckDB data-pipeline migration of the cf_atlas orchestrator (pyforge.atlas namespace package beside pyforge.warden)."
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "MIT" }
+authors = [{ name = "rxm7706" }]
+# Lean runtime deps (A1-A2): only what the package imports after Story A1 —
+# the full FR-15 stack lives in the pixi envs (root [feature.pyforge-atlas] +
+# local-recipes), not in wheel metadata, until stories actually import each
+# library (Simplicity First; warden lean-dep doctrine).
+dependencies = [
+    "kedro>=1.5.0",  # floor matches [tool.kedro] kedro_init_version + the conda run-dep
+]
+
+[project.optional-dependencies]
+# AC-8: the ONLY cross-package code edge — atlas -> warden (ComplianceReport
+# schema/validators, consumed at F4). Installed by default in the in-repo
+# `pyforge-atlas` pixi env; external installs may omit it (the F4 gate node
+# then fails with an install hint while everything else runs). No reverse
+# warden -> atlas import exists.
+gate = ["pyforge-warden"]
+
+[project.scripts]
+pyforge-atlas = "pyforge.atlas.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyforge"]
+
+[tool.kedro]
+package_name = "pyforge.atlas"
+project_name = "pyforge-atlas"
+kedro_init_version = "1.5.0"
+tools = "['None']"
+example_pipeline = "False"
+source_dir = "src"
