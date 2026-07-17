@@ -5,10 +5,15 @@ https://docs.kedro.org/en/stable/configure/configuration_basics/#configuration""
 import os
 
 # Instantiated project hooks.
-# For example, after creating a hooks.py and defining a ProjectHooks class there, do
-# from pyforge.atlas.hooks import ProjectHooks
+# Story A3 (assumption A3-1): ProjectHooks.after_catalog_created injects each
+# IncrementalParquetDataset's per-dataset TTL from params:ttls.<name>, keeping
+# parameters.yml the single source of truth (FR-3/AD-5). Decoupled from both A3
+# gates — the resolution test uses DataCatalog.from_config directly (hooks do not
+# run there) and the unit tests set ttl_seconds explicitly.
 # Hooks are executed in a Last-In-First-Out (LIFO) order.
-# HOOKS = (ProjectHooks(),)
+from pyforge.atlas.hooks import ProjectHooks
+
+HOOKS = (ProjectHooks(),)
 
 # Installed plugins for which to disable hook auto-registration.
 # DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)
