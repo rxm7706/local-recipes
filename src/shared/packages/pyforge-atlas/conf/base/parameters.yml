@@ -24,21 +24,27 @@ ttls:
   core_downloads_pyver_breakdown: 604800        # 7 d
   core_downloads_channel_breakdown: 604800      # 7 d
   core_version_download_history: 604800         # 7 d
-  core_cf_graph_raw: 86400                      # 1 d (ATLAS_CFGRAPH_TTL_DAYS cached tarball)
+  core_cf_graph_raw: 86400                      # 1 d (ATLAS_CFGRAPH_TTL_DAYS cached tarball) [future_consumer: B1 — core backbone nodes cache the tarball fetch]
   # -- pypi_intelligence
   pypi_universe: 604800                         # 7 d (PHASE_D_UNIVERSE_TTL_DAYS; spec FR-3)
   pypi_current_versions: 604800                 # 7 d (PHASE_H_TTL_DAYS; serial-gated, column pypi_version_fetched_at)
   pypi_downloads_monthly: 2592000               # 30 d (PHASE_P_TTL_DAYS; monthly partitions; admin-only)
   pypi_cross_channel_flags: 604800              # 7 d (PHASE_Q_TTL_DAYS)
   pypi_intelligence_enriched: 604800            # 7 d (PHASE_R_TTL_DAYS)
-  pypi_conda_map_store: 604800                  # 7 d (MAPPING_TTL_DAYS mapping cache; Q6 pending — B5)
-  pypi_endoflife_raw: 604800                    # 7 d (spec eol cache; lts_registry_gap ttl_days=7)
+  pypi_conda_map_store: 604800                  # 7 d (MAPPING_TTL_DAYS mapping cache; Q6 pending — B5) [future_consumer: B5 — external-refresh assets wrap the cache refresh]
+  pypi_endoflife_raw: 604800                    # 7 d (spec eol cache; lts_registry_gap ttl_days=7) [future_consumer: B2 — pypi_intelligence port gates the eol fetch]
   # -- vulnerability
+  # NO-TTL(vulnerability_cisa_kev_raw): no verified fetch-TTL source exists
+  # (story A2 Dev Agent Record do-not-guess rule — unlike EPSS/CWE the spec
+  # names no KEV cadence and the legacy tree has no KEV TTL env); the KEV
+  # cadence decision belongs to the vulnerability-pipeline port (B2).
+  # kedro-catalog-check recognizes this marker: a deliberate omission is
+  # explicit, an undocumented one fails the gate.
   vulnerability_package_rollup: 604800          # 7 d (PHASE_G_TTL_DAYS; gate column vdb_scanned_at)
   vulnerability_package_version_vulns: 2592000  # 30 d (PHASE_GP_TTL_DAYS; legacy reset = row absence)
-  vulnerability_epss_raw: 86400                 # 1 d (spec: EPSS daily CSV)
-  vulnerability_cwe_catalog_raw: 7776000        # 90 d (spec: CWE catalog)
-  vulnerability_osv_offline_store: 604800       # 7 d (cve_manager CVE_TTL_DAYS)
+  vulnerability_epss_raw: 86400                 # 1 d (spec: EPSS daily CSV) [future_consumer: B2 — vulnerability-pipeline port gates the EPSS fetch]
+  vulnerability_cwe_catalog_raw: 7776000        # 90 d (spec: CWE catalog) [future_consumer: B2 — vulnerability-pipeline port gates the CWE fetch]
+  vulnerability_osv_offline_store: 604800       # 7 d (cve_manager CVE_TTL_DAYS) [future_consumer: B5 — external-refresh assets wrap the OSV store refresh]
   # -- vcs_health
   vcs_upstream_versions: 604800                 # 7 d (PHASE_K_TTL_DAYS; column github_version_fetched_at)
   vcs_registry_versions: 604800                 # 7 d (PHASE_L_TTL_DAYS; legacy tracks per-registry *_fetched_at — a B-wave story may split per source)
