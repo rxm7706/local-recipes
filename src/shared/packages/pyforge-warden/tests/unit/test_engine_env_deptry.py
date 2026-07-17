@@ -585,6 +585,36 @@ def test_deptry_engine_merges_unsafe_identity_findings_with_parsed_findings(
     ]
 
 
+def test_deptry_engine_deps_assessed_excludes_purity_guard_exclusions(
+    monkeypatch, tmp_path, component_factory
+):
+    """Story 1.7 fix: ``deps_assessed`` must subtract front-door exclusions
+    — mirrors ``OsvEngine.run``'s own ``deps_assessed=len(synthesized.lines)``,
+    which already excludes the identical NFR-S6 purity-guard exclusions.
+    Before this fix, ``DeptryEngine`` over-claimed
+    ``deps_assessed == inventory.count`` even though the excluded component
+    never reached deptry's front-door at all (deferred-work.md)."""
+    from pyforge.warden.inventory import PypiIdentity
+
+    captured: dict = {}
+    monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
+    unsafe = component_factory(
+        name="evil",
+        version="1.0.0",
+        pypi_identity=PypiIdentity(name="-rf /", version="1.0.0"),
+    )
+    safe = component_factory(name="requests", version="2.31.0")
+    inventory = make_inventory(unsafe, safe)
+
+    result = DeptryEngine().run(tmp_path, inventory)
+
+    (coverage,) = result.coverage
+    assert inventory.count == 2
+    assert coverage.deps_total == 2
+    # 1 of 2 was excluded by the purity guard -- never reached the front-door.
+    assert coverage.deps_assessed == 1
+
+
 def test_deptry_engine_frontdoor_is_a_no_op_when_native_pyproject_present(
     monkeypatch, tmp_path, component_factory
 ):
