@@ -69,6 +69,69 @@ def test_exit_sigint_constant():
     assert EXIT_SIGINT == 130
 
 
+# --- allow_empty (Story 1.9): the ONE sanctioned empty-extraction exception ---
+
+
+def test_allow_empty_downgrades_the_empty_extraction_driver_to_zero():
+    driver = StatusDriver(
+        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:some-path"
+    )
+    assert exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=True) == 0
+
+
+def test_allow_empty_false_stays_one_even_with_the_matching_driver():
+    driver = StatusDriver(
+        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:some-path"
+    )
+    assert exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=False) == 1
+    assert exit_code_for(Status.INDETERMINATE, driver=driver) == 1
+
+
+def test_allow_empty_with_no_driver_stays_one():
+    assert exit_code_for(Status.INDETERMINATE, driver=None, allow_empty=True) == 1
+    assert exit_code_for(Status.INDETERMINATE, allow_empty=True) == 1
+
+
+@pytest.mark.parametrize(
+    "unrelated_finding_id",
+    [
+        "indeterminate:vuln-data-stale:osv",
+        "indeterminate:no-version:requests",
+        "indeterminate:unmatchable:numpy",
+        "indeterminate:range-only:leftpad",
+    ],
+    ids=str,
+)
+def test_allow_empty_never_leaks_to_an_unrelated_indeterminate_cause(
+    unrelated_finding_id,
+):
+    """The downgrade is scoped to the empty-extraction driver ONLY — a
+    stale-DB or low-confidence-mapping (or any other) indeterminate cause
+    must stay at exit 1 even with allow_empty=True."""
+    driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id=unrelated_finding_id)
+    assert exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=True) == 1
+
+
+def test_allow_empty_never_affects_non_indeterminate_statuses():
+    driver = StatusDriver(
+        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:some-path"
+    )
+    for status in Status:
+        if status is Status.INDETERMINATE:
+            continue
+        assert exit_code_for(status, driver=driver, allow_empty=True) == exit_code_for(
+            status
+        )
+
+
+@pytest.mark.parametrize("status", list(Status), ids=lambda s: s.value)
+def test_projection_stays_inside_frozen_exit_enum_with_allow_empty(status):
+    driver = StatusDriver(
+        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:some-path"
+    )
+    assert exit_code_for(status, driver=driver, allow_empty=True) in {0, 1, 2, 130}
+
+
 def test_compose_indeterminate_outranks_warn():
     warn_driver = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:leftpad")
     ind_driver = StatusDriver(

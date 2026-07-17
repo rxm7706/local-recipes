@@ -106,6 +106,20 @@ Ownership decisions recorded:
   ``tmp_path`` dirs to test its own argv/error-handling logic in isolation,
   and embedding the skip there would exercise the wrong branch in every one
   of those tests.
+* D2's split (Story 1.9): the empty-``discover()`` branch now calls
+  ``has_adjacent_python_source(target)`` a SECOND time (independent of
+  ``hygiene_applicable`` above, which only fires once ``manifests_parsed >
+  0`` and defaults ``True`` otherwise) to decide between the
+  misconfiguration guard (Python source present, nothing recognized to
+  scan → typed ``unparsable-manifest`` error, exit 2) and the unchanged
+  not-applicable stderr-only path (truly nothing anywhere → exit 0). A
+  SEPARATE case — at least one manifest parsed but the whole scan fed zero
+  components/findings/errors (``manifests_parsed > 0 and not rungs`` after
+  ``policy_rungs`` is folded in) — injects one ``indeterminate:
+  empty-extraction:<path>`` rung (axis ``AXIS_INGESTION``); ``--allow-empty``
+  downgrades ONLY that driver's exit to 0 via the ``allow_empty`` knob on
+  ``verdict.exit_code_for`` (the sole exit-code owner), ``status`` stays
+  ``indeterminate``.
 """
 
 from __future__ import annotations
@@ -178,6 +192,17 @@ def _build_parser() -> argparse.ArgumentParser:
             "report carries no volatile fields yet, so default output is "
             "already byte-identical (volatile-field pinning arrives with "
             "determinism.py)"
+        ),
+    )
+    scan.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help=(
+            "downgrade a parsed-but-empty extraction (D2 case c: at least "
+            "one manifest parsed but the scan fed zero components/findings/"
+            "errors) from exit 1 to exit 0; status stays 'indeterminate' "
+            "(never 'clean') — never downgrades any other indeterminate "
+            "cause"
         ),
     )
     return parser
@@ -309,11 +334,32 @@ def _run_scan(args: argparse.Namespace) -> int:
         )
     else:
         if not manifests:
-            # The not-applicable path says so on stderr; stdout stays pure.
-            _stderr(
-                f"{TOOL_NAME}: no manifest found under {args.path!r}; "
-                "nothing to scan"
-            )
+            # D2's split (Story 1.9): a Python signal present with no
+            # recognized manifest anywhere under the target is a
+            # misconfiguration, not an honest not-applicable — fail closed
+            # via the same typed-error machinery as every other discovery
+            # problem. Otherwise (no manifest AND no Python source
+            # anywhere) the not-applicable path is unchanged: a stderr
+            # notice only, stdout stays pure.
+            if has_adjacent_python_source(target):
+                _record_error(
+                    errors,
+                    rungs,
+                    kind=ErrorKind.UNPARSABLE_MANIFEST,
+                    owner="discovery",
+                    subject=args.path,
+                    message=(
+                        f"no recognized manifest found under {args.path!r} "
+                        "despite Python source present (D2 misconfiguration "
+                        "guard)"
+                    ),
+                    axis=AXIS_INGESTION,
+                )
+            else:
+                _stderr(
+                    f"{TOOL_NAME}: no manifest found under {args.path!r}; "
+                    "nothing to scan"
+                )
     router = DefaultRouter()
     for manifest in manifests:
         try:
@@ -495,6 +541,28 @@ def _run_scan(args: argparse.Namespace) -> int:
         )
     rungs.extend(policy_rungs)
 
+    if manifests_parsed > 0 and not rungs:
+        # D2 case (c) (Story 1.9): at least one manifest parsed, but the
+        # whole scan fed zero components/findings/errors -- distinguishable
+        # from an actual failure (which would already have populated
+        # rungs via _record_error/DefaultPolicy) and from a genuinely
+        # not-applicable target (manifests_parsed would be 0). Fail closed
+        # at indeterminate/exit-1 by default; --allow-empty (threaded via
+        # assemble_report -> verdict.exit_code_for, the sole exit-code
+        # owner) downgrades ONLY this driver's exit to 0, status unchanged.
+        rungs.append(
+            (
+                Status.INDETERMINATE,
+                StatusDriver(
+                    axis=AXIS_INGESTION,
+                    finding_id=(
+                        "indeterminate:empty-extraction:"
+                        f"{_sanitize_id_segment(args.path)}"
+                    ),
+                ),
+            )
+        )
+
     # The first non-None vuln_data across engine results, in engine-
     # registration order (Story 1.5: OsvEngine populates it on a completed
     # 0/1 run; every other engine/path leaves it None) — else an all-None
@@ -514,6 +582,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         engine_results=engine_results,
         has_locked_closure=bool(parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}),
         hygiene_applicable=hygiene_applicable,
+        allow_empty=args.allow_empty,
     )
     try:
         if args.format == "json":

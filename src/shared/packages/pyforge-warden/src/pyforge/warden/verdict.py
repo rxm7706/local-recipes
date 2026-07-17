@@ -4,7 +4,9 @@ Lattice order (fixed, strongest first):
 ``error > policy-violation > indeterminate > warn > bypassed > clean >
 not-applicable``. Exit projection (locked): ``{clean, not-applicable,
 bypassed} -> 0``; ``warn -> 0`` (the ``warn_is_error`` knob makes it
-non-zero); ``policy-violation -> 1``; ``indeterminate -> 1``; ``error -> 2``;
+non-zero); ``policy-violation -> 1``; ``indeterminate -> 1`` (the
+``allow_empty`` knob, Story 1.9, makes ONE narrow indeterminate cause —
+the ``empty-extraction`` driver — exit ``0`` instead); ``error -> 2``;
 SIGINT constant ``130`` (a signal-path constant for the CLI boundary, not a
 lattice rung).
 
@@ -87,16 +89,43 @@ def _driver_beats(candidate: StatusDriver | None, incumbent: StatusDriver | None
     )
 
 
-def exit_code_for(status: Status | str, *, warn_is_error: bool = False) -> int:
+_EMPTY_EXTRACTION_DRIVER_PREFIX = "indeterminate:empty-extraction:"
+
+
+def exit_code_for(
+    status: Status | str,
+    *,
+    warn_is_error: bool = False,
+    driver: StatusDriver | None = None,
+    allow_empty: bool = False,
+) -> int:
     """Project a status to its exit code — TOTAL over all 7 rungs (C0a).
 
     The input is coerced via ``Status(status)`` first, so a raw ``"warn"``
     string respects ``warn_is_error`` and an unknown string raises
     ``ValueError`` instead of silently projecting.
+
+    ``driver``/``allow_empty`` (Story 1.9) are the ONE flag-driven exit
+    exception beyond ``warn_is_error``: when ``status`` is
+    ``indeterminate``, ``allow_empty`` is true, and ``driver`` names the
+    ``empty-extraction`` cause (``driver.finding_id`` starting with
+    ``"indeterminate:empty-extraction:"``), this returns ``0`` instead of
+    the locked ``1`` — the caller-supplied-knob pattern ``warn_is_error``
+    already establishes, scoped narrowly by the driver's id prefix so the
+    downgrade can never leak to an unrelated indeterminate cause (e.g. a
+    stale vuln DB). Every other status/driver/flag combination is
+    unchanged.
     """
     status = Status(status)
     if status is Status.WARN and warn_is_error:
         return _EXIT_WARN_AS_ERROR
+    if (
+        status is Status.INDETERMINATE
+        and allow_empty
+        and driver is not None
+        and driver.finding_id.startswith(_EMPTY_EXTRACTION_DRIVER_PREFIX)
+    ):
+        return 0
     return _EXIT_BY_STATUS[status]
 
 
