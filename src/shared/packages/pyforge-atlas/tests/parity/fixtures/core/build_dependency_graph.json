@@ -1,0 +1,43 @@
+{
+  "phase": "J",
+  "node": "build_dependency_graph",
+  "inputs": {
+    "core_cf_graph_raw": [
+      {
+        "feedstock_name": "numpy",
+        "conda_name": "numpy",
+        "depends_on": "python",
+        "dep_type": "run",
+        "feedstock_archived": false
+      },
+      {
+        "feedstock_name": "numpy",
+        "conda_name": "numpy",
+        "depends_on": "libblas",
+        "dep_type": "host",
+        "feedstock_archived": false
+      },
+      {
+        "feedstock_name": "deadpkg",
+        "conda_name": "deadpkg",
+        "depends_on": "python",
+        "dep_type": "run",
+        "feedstock_archived": true
+      }
+    ]
+  },
+  "expected": {
+    "core_dependencies": [
+      {
+        "conda_name": "numpy",
+        "depends_on": "python",
+        "dep_type": "run"
+      },
+      {
+        "conda_name": "numpy",
+        "depends_on": "libblas",
+        "dep_type": "host"
+      }
+    ]
+  }
+}
