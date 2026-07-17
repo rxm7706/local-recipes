@@ -1,9 +1,9 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6]
 documentsIncluded:
-  prd: prds/prd-conda-forge-atlas-datapipeline-2026-07-17/prd.md
-  prdAddendum: prds/prd-conda-forge-atlas-datapipeline-2026-07-17/addendum.md
-  architecture: architecture/architecture-conda-forge-atlas-datapipeline-2026-07-17/ARCHITECTURE-SPINE.md
+  prd: prds/prd-pyforge-atlas-2026-07-17/prd.md
+  prdAddendum: prds/prd-pyforge-atlas-2026-07-17/addendum.md
+  architecture: architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md
   epics: epics.md
   ux: none (N/A per epics.md D-11 — data-pipeline effort, zero UX-DRs is correct)
   intakeSpec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ground truth)
@@ -16,15 +16,15 @@ mode: unattended (PM John + Architect Winston joint gate; iterate-to-pass)
 # Implementation Readiness Assessment Report
 
 **Date:** 2026-07-17
-**Project:** conda-forge-atlas-datapipeline
+**Project:** pyforge-atlas
 
 ## Document Inventory
 
 | Type | File | Status |
 |---|---|---|
-| PRD | `prds/prd-conda-forge-atlas-datapipeline-2026-07-17/prd.md` (45,925 B, 2026-07-17) | Found (whole) |
-| PRD addendum | `prds/prd-conda-forge-atlas-datapipeline-2026-07-17/addendum.md` (5,742 B) | Found |
-| Architecture | `architecture/architecture-conda-forge-atlas-datapipeline-2026-07-17/ARCHITECTURE-SPINE.md` (39,554 B) | Found (whole) |
+| PRD | `prds/prd-pyforge-atlas-2026-07-17/prd.md` (45,925 B, 2026-07-17) | Found (whole) |
+| PRD addendum | `prds/prd-pyforge-atlas-2026-07-17/addendum.md` (5,742 B) | Found |
+| Architecture | `architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md` (39,554 B) | Found (whole) |
 | Epics & Stories | `epics.md` (32 frozen-ID stories, 9 epics) | Found (whole) |
 | UX | — | N/A by design (epics.md D-11: data-pipeline effort, zero UX-DRs) |
 | Intake spec (ground truth) | `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` v5.6 | Found (repo Tier 1) |
@@ -82,7 +82,7 @@ The PRD carries no separately-numbered NFR list; NFR content is embedded in FR c
 
 ### Additional Requirements & Constraints
 
-- Execution-model constraints (binding, § 6.2): graduated autonomy; sequential loop (`max_parallel=1`); verify-first (loop never enters a wave whose gate doesn't exist); attended boundary events (B4, C1, D3, F1, G2); preconditions (hooks approval, `scripts/bmad-switch conda-forge-atlas-datapipeline`, worktree symlink bootstrap, keystone budget review B1/B2/F1).
+- Execution-model constraints (binding, § 6.2): graduated autonomy; sequential loop (`max_parallel=1`); verify-first (loop never enters a wave whose gate doesn't exist); attended boundary events (B4, C1, D3, F1, G2); preconditions (hooks approval, `scripts/bmad-switch pyforge-atlas`, worktree symlink bootstrap, keystone budget review B1/B2/F1).
 - CLAUDE.md Rule 1/2 integration: recipe/atlas-touching stories invoke `conda-forge-expert`; closeout CFE retro mandatory.
 - Frozen contracts: FR numbering, story IDs, § 12 out-of-scope boundary, exit-code enum {0,1,2,130}.
 - Open questions Q1–Q4, Q6, Q7 adopted at § 11 defaults, re-checked at gating waves; Q5 retired into FR-22.
@@ -239,7 +239,7 @@ OBS-1 wave-shaped epics (D-1, contract-mandated) · OBS-2 scaffold at A1 (D-12) 
 ### Recommended Next Steps
 
 1. Run `bmad-sprint-planning` keyed on the spec § 9 story IDs (D-2); reconcile D-6 (11th LOOP-S slot) against the spec § 13.4 drivability map during that run.
-2. Execute Wave-0 preconditions before story 0.1: hooks approval, live `bmad-groundtruth` re-check (+ trendshift Phase T status, D-15), `scripts/bmad-switch conda-forge-atlas-datapipeline`, worktree symlink bootstrap, keystone budget review (B1/B2/F1).
+2. Execute Wave-0 preconditions before story 0.1: hooks approval, live `bmad-groundtruth` re-check (+ trendshift Phase T status, D-15), `scripts/bmad-switch pyforge-atlas`, worktree symlink bootstrap, keystone budget review (B1/B2/F1).
 3. Schedule the CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`) ahead of D2, and carry OBS-3's B5→C1 follow-through check into the Wave-C boundary review.
 
 ### Final Note
