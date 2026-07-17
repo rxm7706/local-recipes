@@ -706,6 +706,17 @@ Recorded per the headless protocol; full audit trail in `.memlog.md`.
     (§ 11 risk table) is derived from two spec rules — `PHASE_P_ENABLED=1`
     admin-opt-in and non-credentialed loop gates — not stated verbatim in the
     spec.
+13. **Warden-alignment correct-course (2026-07-17, owner-approved):** the
+    product packages as `pyforge-atlas` in the shared `pyforge` namespace
+    beside `pyforge-warden` (workspace member, warden build pattern), with
+    exactly one optional code dependency (`pyforge-atlas[gate]` → warden's
+    ComplianceReport schema, F4 only) and pyforge-warden recorded as a
+    first-class *data* consumer of the atlas datasets (KEV/EPSS, Basilisk,
+    velocity, mapping) — relationship: atlas provides the data, warden uses
+    the data; both tools remain independently installable/runnable. Details:
+    epics D-16, spine Packaging & namespace row,
+    `sprint-change-proposal-2026-07-17.md`. No FR changes — FR-15/FR-18
+    already accommodate.
 
 ## 10. Why Now
 

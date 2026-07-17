@@ -728,3 +728,4 @@ _bmad-output/projects/*/.bmad-config.user.toml
 .junie/
 .bmad-loop/runs/
 .bmad-loop/cache/
+_bmad/_memory/

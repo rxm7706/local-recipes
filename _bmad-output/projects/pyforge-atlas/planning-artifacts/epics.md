@@ -90,7 +90,7 @@ NFR-12: Loop execution is sequential (`max_parallel = 1`); gates are never weake
 
 From the Architecture Spine (binding on story implementation):
 
-- **Starter template:** the project is scaffolded by `nebi` (Kedro project + own lean pixi env) — Story A1 is the scaffold story; physical naming (scaffold root, package name, Parquet store root) is deferred to the A1 story spec (Spine Deferred).
+- **Starter template:** the project is scaffolded by `nebi` (Kedro project + own lean pixi env) — Story A1 is the scaffold story; physical naming resolved 2026-07-17 (sprint-change-proposal, warden alignment): workspace member `src/shared/packages/pyforge-atlas/`, namespace package `pyforge.atlas`; Parquet-store detail stays A1-owned.
 - AD-1 import-direction meta-test (no Dagster/`kedro-mcp` imports in `pipelines/`, `datasets/`, `hooks/`, `mcp/`) ships with `kedro-catalog-check` (A2).
 - The Consistency Conventions table binds all stories: seven snake_case pipeline packages; `# legacy: Phase <ID>` provenance comments; `<domain>_<entity>` dataset names with layer tags; canonical join keys (`conda_name` / `pypi_name` / `(conda_name, advisory_id)`; purls never internal join keys); timestamps normalized to epoch seconds at ingest; additive-first schema evolution; degradation vocabulary `stale` / `unresolved` / `not-applicable` never interchanged; `conf/base` tracked vs `conf/local` gitignored; explicit env/run-config beats profile defaults.
 - Execution seam (AD-18): loop stories run in worktrees only after the symlink bootstrap; all BMAD writes resolve through the `_bmad-output` symlinks; switching only via `scripts/bmad-switch pyforge-atlas`; keystone stories B1/B2/F1 get pre-flight budget raises; REVIEW sessions constrained to correctness-affecting findings; PR-per-wave wraps local squash-merge; the effort closes with the CFE Rule-2 retro.
@@ -237,10 +237,13 @@ So that every later story lands in a provisioned, verifiable, worktree-affordabl
 **And** the FR-15 stack resolves at its pins on Python 3.14 (all conda-forge, no standalone binaries / JVM) and `pixi run` activates cleanly
 **And** `pixi run -e local-recipes llms-full-check` passes after any dependency change (library catalog updated in the same PR)
 **And** air-gapped provisioning is documented for both routing layers (`.pixi/config.toml [pypi-config]` and the `_http.py` overrides)
-**And** the scaffolded project ships its own lean pixi env (loop worktrees never materialize the fat `local-recipes` env) and the `kedro-test` verify task — Wave A's deterministic gate — including the import smoke for py3.14-unclassified glue (e.g. `kedro_dagster`, AD-16).
+**And** the scaffolded project ships its own lean pixi env (loop worktrees never materialize the fat `local-recipes` env) and the `kedro-test` verify task — Wave A's deterministic gate — including the import smoke for py3.14-unclassified glue (e.g. `kedro_dagster`, AD-16)
+**And** *(correct-course 2026-07-17)* the scaffold root is `src/shared/packages/pyforge-atlas/` — a pixi build workspace member mirroring `pyforge-warden` (hatchling; dual conda + wheel/sdist artifacts; dedicated `[feature.pyforge-atlas]` env + `pyforge-atlas-build-conda`/`-build-dist` tasks)
+**And** *(correct-course 2026-07-17)* the Python package is the `pyforge.atlas` namespace package (`src/pyforge/atlas/`, imports `pyforge.atlas.*` beside `pyforge.warden.*`); `kedro-test`'s import smoke covers the Kedro-project-in-namespace-package seam, with flat `pyforge_atlas` as the recorded fallback if nebi/Kedro tooling rejects the dotted form
+**And** *(correct-course 2026-07-17)* `pyforge-warden` is wired as the optional extra `pyforge-atlas[gate]` — the only cross-package code dependency (ComplianceReport schema/validators, consumed at F4); installed in the atlas env by default; no reverse warden→atlas import exists (both tools stay independently installable).
 
 - **FRs:** FR-15.
-- **Invariants:** AD-16, AD-11 (gate is a named story deliverable), AD-18. Physical scaffold naming resolves in this story's spec (Spine Deferred).
+- **Invariants:** AD-16, AD-11 (gate is a named story deliverable), AD-18, Packaging & namespace convention (warden-aligned — Spine Deferred slot RESOLVED 2026-07-17).
 - **Mode:** DEV-AUTO (harness-building, § 2.5).
 - **Gating question:** none.
 - **Verify gate:** **builds `kedro-test`**.
@@ -786,7 +789,7 @@ So that one schema-validated `ComplianceReport` and one frozen exit code replace
 **And** a policy breach (e.g. `max_critical=0` violated, or a KEV-affecting-current hit) exits with the frozen contract codes (1 policy-fail / 2 error), halts Dagster, and raises an A2A alert — identical failure semantics to an FR-10 violation
 **And** the assembled report validates against the four-axis `ComplianceReport` schema (hygiene + security populated; license/currency from atlas-native data or `not-applicable`), with the F4 terminal node as the single producer (AD-12)
 **And** the `inventory-match` exit-code flip lands with its one-release deprecation window (`INVENTORY_MATCH_LEGACY_EXIT=1`); CI consumers see the frozen convention
-**And** the report schema matches `pyforge-warden.md`'s `ComplianceReport`, so the planned promotion (MCP tool + pixi CLI) requires no schema change.
+**And** the report schema matches `pyforge-warden.md`'s `ComplianceReport` **by import** *(correct-course 2026-07-17)* — the gate node validates against `pyforge.warden`'s schema module via the `pyforge-atlas[gate]` extra, never a vendored copy (AD-12 schema-by-import); absent the extra, the gate node fails with an explicit install hint while all other pipelines run (independence preserved) — so the planned promotion (MCP tool + pixi CLI) requires no schema change.
 
 - **FRs:** FR-16, FR-18, FR-10.
 - **Invariants:** AD-12 (single producer; scope split; degradation-vocabulary mapping), AD-9, AD-20, AD-15.
@@ -1051,3 +1054,15 @@ or a minimal structural inference flagged as such.
     story; if it ships before Wave B completes it joins the migration surface
     per PRD § 6.1 — re-check at execution start alongside the live
     groundtruth (a Wave-0 precondition).
+16. **D-16 — Warden-alignment correct-course (2026-07-17, owner-approved,
+    attended)**: A1 gains the warden-pattern packaging ACs (workspace member
+    `src/shared/packages/pyforge-atlas/`, `pyforge.atlas` namespace package,
+    hatchling + dual artifacts, dedicated pixi feature/env); F4's
+    ComplianceReport conformance becomes schema-by-import via the optional
+    `pyforge-atlas[gate]` extra. Dependency inventory (per the owner's
+    independence requirement): atlas→warden = the one optional `[gate]`
+    code edge; warden→atlas = zero code edges (warden consumes atlas *data*
+    — KEV/EPSS/velocity/mapping datasets — optional-if-present, a future
+    warden-side story); shared third-party deps co-resolve at workspace
+    level. Both tools install and run independently. Proposal:
+    `sprint-change-proposal-2026-07-17.md`; spine Decisions § 10.
