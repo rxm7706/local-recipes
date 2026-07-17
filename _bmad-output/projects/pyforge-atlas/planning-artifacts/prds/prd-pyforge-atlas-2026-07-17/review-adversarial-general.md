@@ -82,9 +82,9 @@ explicitly where the spec's AC list is being extended.
 
 **Evidence**: Spec § 2.5 and § 14 hard-code `scripts/bmad-switch
 local-recipes` — written before this intake created the new project slug
-`conda-forge-atlas-datapipeline` (PRD § 9.6; addendum § 6:
+`pyforge-atlas` (PRD § 9.6; addendum § 6:
 `planning_artifacts` symlinked to
-`projects/conda-forge-atlas-datapipeline/planning-artifacts`). The PRD's
+`projects/pyforge-atlas/planning-artifacts`). The PRD's
 § 6.2 elides the slug entirely; nothing anywhere says "the spec's
 `local-recipes` switch target is superseded". CLAUDE.md documents precisely
 this failure mode as a live near-miss (2026-07-14): a marker/symlink pointing
@@ -94,7 +94,7 @@ overwrite) `local-recipes` artifacts. An executor following spec § 14
 literally will do the wrong thing.
 
 **Fix**: State normatively in § 6.2: "Loop precondition: `scripts/bmad-switch
-conda-forge-atlas-datapipeline` — supersedes spec § 2.5's pre-intake
+pyforge-atlas` — supersedes spec § 2.5's pre-intake
 `local-recipes` literal; deviation recorded." Add to the § 12 Assumptions
 Index.
 

@@ -1,6 +1,6 @@
 # Agents & Skills Lineup — cf_atlas Kedro-Migration Planning Phase
 
-**Project:** `conda-forge-atlas-datapipeline` · **Date:** 2026-07-17
+**Project:** `pyforge-atlas` · **Date:** 2026-07-17
 **Intake spec:** `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` (v5 reset, v5.6 analysis-complete, `spec_updated: 2026-07-17`)
 **Mode:** unattended BMAD Tier-2 planning; commit+push between stages; parallelism bounded by data dependencies (PRD → architecture → epics → readiness → sprint feed).
 
@@ -17,15 +17,15 @@ directly: `bmad-prd` → `bmad-architecture` → `bmad-create-epics-and-stories`
 followed by the readiness gate and per-wave sprint planning. This phase runs
 that chain unattended against the v5.6 spec (9 waves 0 + A–H, 22 FRs, seven-
 pipeline decomposition). Tier-2 outputs land in
-`_bmad-output/projects/conda-forge-atlas-datapipeline/planning-artifacts/`
+`_bmad-output/projects/pyforge-atlas/planning-artifacts/`
 (tracked); Tier-3 sprint feeds land in `implementation-artifacts/` (gitignored,
 regenerated per wave — never committed).
 
 Active-project state at time of writing: `_bmad/custom/.active-project` =
-`conda-forge-atlas-datapipeline`; project config layer at
-`_bmad-output/projects/conda-forge-atlas-datapipeline/.bmad-config.toml`
+`pyforge-atlas`; project config layer at
+`_bmad-output/projects/pyforge-atlas/.bmad-config.toml`
 (`status = "active"`). Switching is done only via `scripts/bmad-switch
-conda-forge-atlas-datapipeline` (marker + the two `_bmad-output` symlinks move
+pyforge-atlas` (marker + the two `_bmad-output` symlinks move
 atomically — see CLAUDE.md).
 
 ---
@@ -64,13 +64,13 @@ validation rather than a single-persona gate.
 ## 3. Stage → Skill → Artifact Map
 
 All artifact paths below are relative to
-`_bmad-output/projects/conda-forge-atlas-datapipeline/` unless noted.
+`_bmad-output/projects/pyforge-atlas/` unless noted.
 Commit+push after each stage completes (planning-artifacts are tracked;
 implementation-artifacts are never committed).
 
 | Stage | Persona | Skill invoked | Artifact produced | Notes |
 |---|---|---|---|---|
-| **0 — Scaffold / switch / groundtruth** | none (scripts) | none — `scripts/bmad-switch conda-forge-atlas-datapipeline`, then groundtruth verification per spec § 1 Groundtruth rule | `planning-artifacts/intake-groundtruth-2026-07-17.md` (done: § 3.3 snapshot at `58a6dcc` re-verified valid at intake HEAD `4cf1b74`; 23 phases / 28 read CLIs / schema v29 carry forward) | Marker + symlinks verified in agreement before any write-skill runs. |
+| **0 — Scaffold / switch / groundtruth** | none (scripts) | none — `scripts/bmad-switch pyforge-atlas`, then groundtruth verification per spec § 1 Groundtruth rule | `planning-artifacts/intake-groundtruth-2026-07-17.md` (done: § 3.3 snapshot at `58a6dcc` re-verified valid at intake HEAD `4cf1b74`; 23 phases / 28 read CLIs / schema v29 carry forward) | Marker + symlinks verified in agreement before any write-skill runs. |
 | **1a — PRD create + validate** | John (PM) | `bmad-prd` (create intent, then validate intent; `bmad-create-prd`/`bmad-validate-prd` are deprecated shims) | `planning-artifacts/prd.md` + PRD validation report | Input: the intake spec + intake-groundtruth. Unattended: Fast path, no elicitation pauses; assumptions recorded in the PRD itself. |
 | **1b — Lineup doc** | none (documentation step) | none | `planning-artifacts/agents-and-skills.md` (this file) | Runs parallel-safe alongside 1a (no data dependency on PRD content). |
 | **2 — Architecture** | Winston (Architect) | `bmad-architecture` ("lean spine of invariants"; `bmad-create-architecture` is a deprecated shim) | `planning-artifacts/architecture.md` | Depends on prd.md. Grounds against spec §§ 4–7 (Kedro/Dagster/DuckDB target, seven pipelines, MCP/A2A, BSL). |

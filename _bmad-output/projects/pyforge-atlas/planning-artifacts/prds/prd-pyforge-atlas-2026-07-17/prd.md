@@ -3,7 +3,7 @@ title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
 updated: 2026-07-17
-project: conda-forge-atlas-datapipeline
+project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 ---
 
@@ -527,7 +527,7 @@ are sequential. Wave B runs with TEA `atdd`-generated red-phase fixtures as
 the verify assets, per the spec § 14 per-wave operating loop (Q-drain → TEA
 test-design/atdd → loop → sweep → boundary event → PR per wave).
 Preconditions: hooks approval; **`scripts/bmad-switch
-conda-forge-atlas-datapipeline`** — this supersedes spec § 2.5/§ 14's
+pyforge-atlas`** — this supersedes spec § 2.5/§ 14's
 pre-intake `bmad-switch local-recipes` literal, since this effort's artifacts
 now live under the new project slug (deviation recorded, § 9.11); worktree
 symlink bootstrap (validated by A3); heaviest-story budget review (B1/B2/F1).
@@ -677,7 +677,7 @@ Recorded per the headless protocol; full audit trail in `.memlog.md`.
    B > C > A, no new FRs; scenario deltas remain § 12.1 candidates
    (OSV-export SIG-gated); SM-C4 guards against dashboard-breadth drift.
 6. **Config resolution without pixi:** run folder named with the project slug
-   `conda-forge-atlas-datapipeline` (from the project
+   `pyforge-atlas` (from the project
    `.bmad-config.toml`) rather than global `project_name: local-recipes`;
    customization resolved via `uv run resolve_customization.py`; live
    `bmad-groundtruth`/`bmad-drift-check` could not run in this container —
@@ -698,8 +698,8 @@ Recorded per the headless protocol; full audit trail in `.memlog.md`.
     `addendum.md` (downstream architecture input), not the PRD body.
 11. **Loop switch target superseded:** spec § 2.5/§ 14 predate this intake and
     say `bmad-switch local-recipes`; this effort's Tier-2/Tier-3 artifacts
-    live under the project slug `conda-forge-atlas-datapipeline`, so the loop
-    precondition is `scripts/bmad-switch conda-forge-atlas-datapipeline`
+    live under the project slug `pyforge-atlas`, so the loop
+    precondition is `scripts/bmad-switch pyforge-atlas`
     (§ 6.2). Recorded as a deviation from the spec's literal text — the
     CLAUDE.md marker/symlink desync hazard is exactly what this guards.
 12. **Derived hardening (not spec-literal):** "Phase P never loop-reachable"
@@ -754,13 +754,13 @@ tagged inline):
 - § 6.1 — trendshift Phase T remains conditional surface; re-check its status
   alongside groundtruth at execution start (spec § 3.3).
 - § 6.2/§ 9.11 — the loop's `bmad-switch` target is
-  `conda-forge-atlas-datapipeline`, superseding the spec's pre-intake
+  `pyforge-atlas`, superseding the spec's pre-intake
   `local-recipes` literal.
 
 ## 13. References
 
 - Contract: `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` (v5.6).
-- Groundtruth: `_bmad-output/projects/conda-forge-atlas-datapipeline/planning-artifacts/intake-groundtruth-2026-07-17.md`.
+- Groundtruth: `_bmad-output/projects/pyforge-atlas/planning-artifacts/intake-groundtruth-2026-07-17.md`.
 - PRFAQ (kill-test) + distillate:
   `_bmad-output/projects/local-recipes/planning-artifacts/prfaq-cfe-atlas-kedro-migration.md` / `-distillate.md`.
 - Research (2026-07-16, all under

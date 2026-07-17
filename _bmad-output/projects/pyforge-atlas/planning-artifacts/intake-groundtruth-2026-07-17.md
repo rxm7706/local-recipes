@@ -34,3 +34,21 @@ No cf_atlas phase, CLI, MCP tool, or schema changed — the § 3.3 counts
   in the Wave-0 preconditions (§ 14) before any loop run.
 - Skill version pin: § 3.3 states v8.78.0; no skill CHANGELOG entries landed
   after `58a6dcc`, so the pin is current.
+
+## Live-CLI verification (same day, post env-provisioning)
+
+The pixi `local-recipes` environment was provisioned in the remote container
+(pixi 0.73.0 via the conda-forge package; `pixi install --frozen`), and the
+previously environment-deferred checks were executed live:
+
+| Check | Result |
+|---|---|
+| `bmad-drift-check` | **OK — no findings** (53 files classified; run post-rename to `pyforge-atlas`) |
+| `bmad-drift-check --specs` | kedro-migration spec listed `in-progress` ✓ |
+| `bmad-groundtruth` | skill **v8.78.0**, schema **v29**, **46** MCP tools, **23** phases, gotchas G1–G106, 11 pixi envs — matches the § 3.3 snapshot and this note's git-surface verdict exactly |
+| `llms-full-check` | clean — 216 active deps all cataloged, no ghost entries / floor drift |
+
+The Wave-0 precondition items "live bmad-groundtruth / bmad-drift-check /
+llms-full-check" are therefore discharged for this container; the attended
+0.1 session re-runs them cheaply as a matter of course (they are
+deterministic and fast).

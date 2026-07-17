@@ -2,9 +2,9 @@
 
 - **Pass:** Finalize / input-reconciliation
 - **Date:** 2026-07-17
-- **Spine:** `_bmad-output/planning-artifacts/architecture/architecture-conda-forge-atlas-datapipeline-2026-07-17/ARCHITECTURE-SPINE.md`
+- **Spine:** `_bmad-output/planning-artifacts/architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md`
 - **Inputs checked:**
-  1. `_bmad-output/projects/conda-forge-atlas-datapipeline/planning-artifacts/prds/prd-conda-forge-atlas-datapipeline-2026-07-17/prd.md` + `addendum.md`
+  1. `_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` + `addendum.md`
   2. `_bmad-output/projects/local-recipes/planning-artifacts/research/technical-agentic-sdlc-kedro-migration-execution-research-2026-07-16.md`
 
 ## Verdict
@@ -65,7 +65,7 @@ wave throughput. Neither violates the spine as written.
 
 **R-4. Wave-0 precondition set in AD-18 is incomplete: hooks approval and the live groundtruth re-check are missing.**
 PRD § 6.2 lists the loop preconditions as: **hooks approval**; `bmad-switch
-conda-forge-atlas-datapipeline`; worktree symlink bootstrap (A3); heaviest-story budget review.
+pyforge-atlas`; worktree symlink bootstrap (A3); heaviest-story budget review.
 AD-18 carries the last three and omits the first — and selective enumeration reads as complete.
 The research grounds it: the one-time human hooks-approval "is a hard precondition for any run."
 Separately, PRD § 9.6/§ 12 record that intake groundtruth was git-surface-only ("live
