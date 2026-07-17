@@ -9,26 +9,28 @@ scans this module).
 
 Ownership decisions recorded:
 
-* ``DEFAULT_HYGIENE_POLICY`` is a MODULE DEFAULT: DEP001 is
-  ``policy-violation`` (Story 2.1), DEP002–005 stay ``warn``. Architecture
-  Gap-A required DEP001 blocking to be GATED on conda↔PyPI name-mapping
-  confidence ("a mapping miss must not become a false-red disable-driver");
-  that gate is ``dep001_trusted`` (computed once per scan in
-  ``DefaultPolicy.evaluate()`` from ``inventory.components`` and threaded
-  through ``hygiene_rung`` — see its docstring). deptry's ``module`` field is
-  an import name, not a distribution name, so it can't be reliably
-  correlated to one component even now that Story 2.2's synthesized
-  front-door (``_synthesize_deptry_frontdoor``, below) exists — a module
-  name is still not a distribution name; the trust gate is therefore
-  scan-wide, not per-finding — false only when the inventory shows a
-  positive ambiguous-mapping signal (a ``"likely"``-confidence conda
-  component) anywhere, which the front-door now makes REACHABLE for a
-  conda-sourced scan for the first time (previously only a
-  ``pyproject.toml``-native scan could ever populate the inventory this
-  gate reads). An UNKNOWN DEP code
-  degrades to ``indeterminate`` (never a false-green — a new deptry code we
-  have not classified must not silently pass). Story 3.1 lifts this default
-  into an overridable config table; 1.3/2.1 keep it here.
+* ``DEFAULT_HYGIENE_POLICY`` (Story 1.3/2.1 origin, RELOCATED to
+  ``config.py`` by Story 3.1 -- re-imported here so every existing
+  reference keeps resolving): DEP001 is ``policy-violation`` (Story 2.1),
+  DEP002–005 stay ``warn``. Architecture Gap-A required DEP001 blocking to
+  be GATED on conda↔PyPI name-mapping confidence ("a mapping miss must not
+  become a false-red disable-driver"); that gate is ``dep001_trusted``
+  (computed once per scan in ``DefaultPolicy.evaluate()`` from
+  ``inventory.components`` and threaded through ``hygiene_rung`` — see its
+  docstring). deptry's ``module`` field is an import name, not a
+  distribution name, so it can't be reliably correlated to one component
+  even now that Story 2.2's synthesized front-door
+  (``_synthesize_deptry_frontdoor``, below) exists — a module name is
+  still not a distribution name; the trust gate is therefore scan-wide,
+  not per-finding — false only when the inventory shows a positive
+  ambiguous-mapping signal (a ``"likely"``-confidence conda component)
+  anywhere, which the front-door now makes REACHABLE for a conda-sourced
+  scan for the first time (previously only a ``pyproject.toml``-native
+  scan could ever populate the inventory this gate reads). An UNKNOWN DEP
+  code degrades to ``indeterminate`` (never a false-green — a new deptry
+  code we have not classified must not silently pass). Story 3.1's
+  ``dep001_min_confidence`` config key widens/narrows the trusted-tier set
+  ``dep001_trusted`` checks against -- see ``interfaces.py``.
 * **DEP005 = stdlib dependency** (verified against deptry 0.25.1, 2026-07-13:
   ``'argparse' is defined as a dependency but it is included in the Python
   standard library.``). The architecture's pinned "unused-dev" label was
@@ -112,12 +114,13 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from packaging.requirements import InvalidRequirement, Requirement
 
+from .config import DEFAULT_HYGIENE_POLICY
 from .interfaces import _sanitize_id_segment
 from .inventory import Component
 from .models import (
@@ -132,20 +135,6 @@ from .vuln import SynthesizedInput
 
 # The owner label every deptry-sourced error/finding carries.
 _OWNER = "deptry"
-
-# The default hygiene policy: DEP-code → Status. DEP001 blocks by default
-# (Story 2.1, Gap-A); hygiene_rung downgrades it to warn on a per-scan
-# untrusted-mapping signal (dep001_trusted=False — see module docstring).
-# DEP002-005 stay warn (deptry false-positive-prone, unrelated to mapping
-# confidence). Keys are deptry DEP codes (NOT Status tokens), so the
-# sole-ownership rung-ordering guard does not fire on this literal.
-DEFAULT_HYGIENE_POLICY: dict[str, Status] = {
-    "DEP001": Status.POLICY_VIOLATION,
-    "DEP002": Status.WARN,
-    "DEP003": Status.WARN,
-    "DEP004": Status.WARN,
-    "DEP005": Status.WARN,
-}
 
 # Ratchet baseline (NFR-R2): the fraction of deptry records we fail to map may
 # only ever decrease. A conformance test pins the real corpus at/below this.
@@ -365,14 +354,22 @@ class DeptryParse:
         return self.records_unparseable / self.records_total
 
 
-def status_for_code(code: str) -> Status:
-    """The default status for a deptry DEP code — unknown codes degrade to
-    ``indeterminate`` (never a false-green)."""
-    return DEFAULT_HYGIENE_POLICY.get(code, Status.INDETERMINATE)
+def status_for_code(
+    code: str, *, policy: Mapping[str, Status] = DEFAULT_HYGIENE_POLICY
+) -> Status:
+    """The status for a deptry DEP code under ``policy`` — unknown codes
+    degrade to ``indeterminate`` (never a false-green). ``policy`` (Story
+    3.1, additive/defaulted) lets ``DefaultPolicy`` thread a per-scan
+    resolved table through; every un-wired caller/test keeps today's
+    ``DEFAULT_HYGIENE_POLICY`` behavior unchanged."""
+    return policy.get(code, Status.INDETERMINATE)
 
 
 def hygiene_rung(
-    finding: Finding, *, dep001_trusted: bool = True
+    finding: Finding,
+    *,
+    dep001_trusted: bool = True,
+    policy: Mapping[str, Status] = DEFAULT_HYGIENE_POLICY,
 ) -> tuple[Status, StatusDriver]:
     """Derive the ``(Status, StatusDriver)`` rung for one hygiene finding.
 
@@ -392,9 +389,12 @@ def hygiene_rung(
     never a silent pass), so an un-wired caller failing to the block, not
     the warn, matches every other default in this module. The sole
     production caller (``DefaultPolicy.evaluate()``) always computes and
-    passes the real per-scan value explicitly."""
+    passes the real per-scan value explicitly.
+
+    ``policy`` (Story 3.1, additive/defaulted) is threaded straight into
+    ``status_for_code`` — see its docstring."""
     code = finding.id.split(":", 2)[1] if finding.id.count(":") >= 2 else ""
-    status = status_for_code(code)
+    status = status_for_code(code, policy=policy)
     if code == "DEP001" and not dep001_trusted:
         status = Status.WARN
     return (

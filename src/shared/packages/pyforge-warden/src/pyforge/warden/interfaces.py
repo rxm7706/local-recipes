@@ -76,6 +76,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from .config import WardenConfig
 from .inventory import Component, ResolvedInventory
 from .models import (
     AXIS_HYGIENE,
@@ -205,6 +206,19 @@ class Policy(Protocol):
     ) -> tuple[tuple[Finding, ...], tuple[tuple[Status, StatusDriver | None], ...]]: ...
 
 
+# Story 3.1: the trusted mapping_confidence tier SET for each
+# dep001_min_confidence config value. "verified" reproduces Story 2.1's
+# original fixed trust bar exactly (only an exact TRUSTED_MATCH_CONFIDENCE
+# hit); "likely" is a deliberate widening an operator opts into. Owned here
+# (the consumer), not in config.py (which only carries/validates the raw
+# string) -- mirrors DefaultPolicy already being the fail-closed
+# inventory->verdict bridge for every other per-scan trust decision.
+_DEP001_TRUSTED_CONFIDENCES: dict[str, frozenset[str]] = {
+    "verified": frozenset({"verified"}),
+    "likely": frozenset({"verified", "likely"}),
+}
+
+
 class DefaultPolicy:
     """The 1.2 policy: engine pass-through + fail-closed inventory derivation.
 
@@ -242,31 +256,52 @@ class DefaultPolicy:
     * Every rung driver carries the referenced finding's axis (also when the
       id is reused from an engine finding), and every id segment built from
       a component name is CR/LF-sanitized (``_sanitize_id_segment``).
+    * ``config`` (Story 3.1, additive/defaulted — constructor-injected, not
+      a new ``Policy.evaluate()`` parameter, so the Protocol stays
+      untouched): resolves the hygiene/vuln severity tables, the
+      DEP001-block confidence threshold, and the coverage floor. ``None``
+      (every pre-3.1 caller/test, including every direct
+      ``DefaultPolicy()`` construction across the suite) resolves to
+      ``WardenConfig.defaults()`` — byte-identical to today's hardcoded
+      behavior.
     """
+
+    def __init__(self, config: WardenConfig | None = None) -> None:
+        self._config = config if config is not None else WardenConfig.defaults()
 
     def evaluate(
         self, inventory: ResolvedInventory, engine_results: Sequence[EngineResult]
     ) -> tuple[tuple[Finding, ...], tuple[tuple[Status, StatusDriver | None], ...]]:
-        # Lazy imports break the interfaces<->hygiene, interfaces<->vuln, and
-        # interfaces<->extract.lockfiles cycles (extract.lockfiles imports
-        # Router from here); by the time evaluate() runs, all modules are
-        # fully loaded.
-        from .extract.lockfiles import TRUSTED_MATCH_CONFIDENCE
+        # Lazy imports break the interfaces<->hygiene and interfaces<->vuln
+        # cycles (both import _sanitize_id_segment from here); by the time
+        # evaluate() runs, both modules are fully loaded. (Story 3.1 removed
+        # the interfaces<->extract.lockfiles lazy import that used to live
+        # here — TRUSTED_MATCH_CONFIDENCE is no longer consulted by this
+        # method; dep001_trusted now reads self._config instead, see below.)
         from .hygiene import hygiene_rung
         from .vuln import vuln_rung
 
-        # Story 2.1, Gap-A: DEP001 is trusted (blocks) unless the inventory
-        # carries a positive ambiguous-mapping signal — a "likely"-confidence
-        # conda component — anywhere. Computed once per scan, not per
-        # finding (see hygiene.hygiene_rung's docstring for why). A total
-        # map miss (mapping_confidence is None) does NOT count as ambiguous:
-        # most conda packages are legitimately non-Python/native and will
-        # NEVER have a pypi_identity, so treating every miss as a distrust
-        # signal would make this gate false almost universally — only a
-        # POSITIVE untrusted candidate (a "likely" hit) is evidence the
-        # mapping pipeline actually saw ambiguity for this scan.
+        # Story 2.1, Gap-A (widened by Story 3.1's dep001_min_confidence):
+        # DEP001 is trusted (blocks) unless the inventory carries an
+        # untrusted-confidence conda component anywhere. Computed once per
+        # scan, not per finding (see hygiene.hygiene_rung's docstring for
+        # why). A total map miss (mapping_confidence is None) does NOT
+        # count as untrusted: most conda packages are legitimately
+        # non-Python/native and will NEVER have a pypi_identity, so
+        # treating every miss as a distrust signal would make this gate
+        # false almost universally — only a POSITIVE untrusted candidate
+        # (a confidence tier below the configured threshold) is evidence
+        # the mapping pipeline actually saw ambiguity for this scan.
+        # ``dep001_min_confidence`` "verified" (default) reproduces 1.3/2.1's
+        # original fixed behavior exactly; "likely" additionally trusts a
+        # "likely"-confidence hit, a deliberate widening the operator opts
+        # into.
+        trusted_confidences = _DEP001_TRUSTED_CONFIDENCES[
+            self._config.dep001_min_confidence
+        ]
         dep001_trusted = all(
-            component.mapping_confidence in (None, TRUSTED_MATCH_CONFIDENCE)
+            component.mapping_confidence is None
+            or component.mapping_confidence in trusted_confidences
             for component in inventory.components
         )
 
@@ -287,7 +322,13 @@ class DefaultPolicy:
                     # indeterminate). This REPLACES the 1.2 indeterminate
                     # backstop for the hygiene axis only — never mapping a
                     # finding to clean (C0 preserved).
-                    rungs.append(hygiene_rung(finding, dep001_trusted=dep001_trusted))
+                    rungs.append(
+                        hygiene_rung(
+                            finding,
+                            dep001_trusted=dep001_trusted,
+                            policy=self._config.hygiene_policy,
+                        )
+                    )
                 elif finding.axis == AXIS_VULNERABILITY:
                     # Story 1.6: vulnerability-axis engine findings route
                     # through the real default severity->status table
@@ -299,7 +340,9 @@ class DefaultPolicy:
                     # axis's own indeterminate: withhold findings (severity
                     # is None) still land on indeterminate via vuln_rung's
                     # own fallback, unchanged from today.
-                    rungs.append(vuln_rung(finding))
+                    rungs.append(
+                        vuln_rung(finding, policy=self._config.vuln_severity_policy)
+                    )
                 else:
                     # The false-green backstop now only governs a
                     # hypothetical future axis with no mapping of its own: a
@@ -407,5 +450,59 @@ class DefaultPolicy:
                         ),
                     )
                 )
+
+        if self._config.fail_under_coverage is not None:
+            # Story 3.1 (FR19's resolution-role — see config.py's module
+            # docstring): a scan-wide, per-axis coverage floor, evaluated
+            # HERE (before compose()/report assembly run) so it can feed a
+            # real rung. Mirrors report.assemble_report's own per-axis
+            # max-claimed-assessed aggregation over engine_results —
+            # DUPLICATED rather than imported (an interfaces<->report
+            # import would cycle: report.py already imports EngineResult
+            # from here; see hygiene.py's _is_safe_token docstring for this
+            # codebase's established small-helper-duplication precedent).
+            # ``deps_total > 0`` guards the empty-inventory case (0/0 is not
+            # a floor breach). A hygiene-axis breach is fed unconditionally
+            # here; cli.py's existing hygiene_applicable post-filter (which
+            # this method has no vocabulary for) already drops any
+            # hygiene-axis finding/rung when the axis is not applicable, so
+            # no separate filtering is needed in this method.
+            assessed_by_axis: dict[str, int] = {}
+            for result in engine_results:
+                for coverage in result.coverage:
+                    assessed_by_axis[coverage.axis] = max(
+                        assessed_by_axis.get(coverage.axis, 0),
+                        coverage.deps_assessed,
+                    )
+            deps_total = inventory.count
+            if deps_total > 0:
+                for axis in (AXIS_HYGIENE, AXIS_VULNERABILITY):
+                    assessed = min(assessed_by_axis.get(axis, 0), deps_total)
+                    coverage_pct = (assessed / deps_total) * 100
+                    if coverage_pct >= self._config.fail_under_coverage:
+                        continue
+                    finding_id = f"indeterminate:coverage-floor:{axis}"
+                    if finding_id not in axis_by_id:
+                        findings.append(
+                            Finding(
+                                id=finding_id,
+                                axis=axis,
+                                message=(
+                                    f"{axis} axis coverage {coverage_pct:.1f}% "
+                                    "is below the configured floor of "
+                                    f"{self._config.fail_under_coverage}% "
+                                    f"({assessed}/{deps_total} assessed)"
+                                ),
+                                subject=axis,
+                                severity=None,
+                            )
+                        )
+                        axis_by_id[finding_id] = axis
+                    rungs.append(
+                        (
+                            Status.INDETERMINATE,
+                            StatusDriver(axis=axis, finding_id=finding_id),
+                        )
+                    )
 
         return (tuple(findings), tuple(rungs))

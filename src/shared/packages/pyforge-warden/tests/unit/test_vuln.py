@@ -737,6 +737,36 @@ def test_vuln_rung_with_no_severity_is_indeterminate():
     )
 
 
+# --- Story 3.1: policy override (config.py's ConfigLoader threads a
+# resolved table through DefaultPolicy -> vuln_rung) --------------------------
+
+
+def test_status_for_severity_tier_with_an_overriding_policy():
+    finding = Finding(
+        id="vuln:GHSA-xxxx:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-xxxx",
+        subject="foo",
+        severity=Severity(tier=SeverityTier.HIGH, raw=None),
+    )
+    # A --fail-on=high-shaped table: HIGH now escalates to policy-violation.
+    overriding_policy = {
+        SeverityTier.CRITICAL: Status.POLICY_VIOLATION,
+        SeverityTier.HIGH: Status.POLICY_VIOLATION,
+        SeverityTier.MEDIUM: Status.WARN,
+        SeverityTier.LOW: Status.WARN,
+        SeverityTier.NONE: Status.WARN,
+    }
+    assert (
+        status_for_severity_tier(SeverityTier.HIGH, policy=overriding_policy)
+        is Status.POLICY_VIOLATION
+    )
+    status, _ = vuln_rung(finding, policy=overriding_policy)
+    assert status is Status.POLICY_VIOLATION
+    # An un-wired caller (no policy=) keeps today's default unchanged.
+    assert status_for_severity_tier(SeverityTier.HIGH) is Status.WARN
+
+
 # --- Story 2.5 (FR12): is_db_stale / stale_vuln_data_finding -----------------
 
 _NOW = datetime(2026, 7, 16, 12, 0, 0, tzinfo=UTC)

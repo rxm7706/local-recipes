@@ -85,14 +85,19 @@ from ._identity import (
     yaml_safe_load_strict,
 )
 
-# Re-exported for backward compatibility: interfaces.py's
-# `from .extract.lockfiles import TRUSTED_MATCH_CONFIDENCE` (a "never touch"
-# module) keeps working unmodified now that the real definition lives in
-# `_identity.py` -- it is the plain `from ._identity import (...)` statement
-# ABOVE that actually makes that re-import work (any name bound at module
+# Re-exported for backward compatibility: `TRUSTED_MATCH_CONFIDENCE`'s real
+# definition lives in `_identity.py` (Story 2.2 factored it out -- see the
+# module docstring); this module re-exports it via the plain
+# `from ._identity import (...)` statement ABOVE (any name bound at module
 # level, by any statement, is importable from this module regardless of
-# `__all__`). `__all__` below only affects `from .extract.lockfiles import *`
-# (nothing in this codebase does that); its real, narrower purpose here is
+# `__all__`). No current importer reads it from HERE specifically anymore
+# (`interfaces.py` read `WardenConfig.dep001_min_confidence` off Story 3.1's
+# `config.py` instead as of that story, dropping its own
+# `from .extract.lockfiles import TRUSTED_MATCH_CONFIDENCE`; confirmed via a
+# repo-wide grep, 2026-07-17) -- the re-export is kept for hypothetical
+# external backward-compat, not an active internal caller relationship.
+# `__all__` below only affects `from .extract.lockfiles import *` (nothing
+# in this codebase does that); its real, narrower purpose here is
 # suppressing an unused-import lint warning on names this module re-exports
 # but does not itself reference (`_resolve_conda_pypi_identity` — imported
 # back in and re-exported purely for hypothetical external backward-compat;

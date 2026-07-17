@@ -198,6 +198,26 @@ def test_hygiene_rung_driver_carries_the_findings_axis():
     assert driver.finding_id == "indeterminate:no-version:leftpad"
 
 
+# --- Story 3.1: policy override (config.py's ConfigLoader threads a
+# resolved table through DefaultPolicy -> hygiene_rung) ----------------------
+
+
+def test_status_for_code_with_an_overriding_policy():
+    finding = Finding(
+        id="hygiene:DEP002:foo",
+        axis=AXIS_HYGIENE,
+        message="unused",
+        subject="foo",
+        severity=None,
+    )
+    overriding_policy = {"DEP002": Status.POLICY_VIOLATION}
+    assert status_for_code("DEP002", policy=overriding_policy) is Status.POLICY_VIOLATION
+    status, _ = hygiene_rung(finding, policy=overriding_policy)
+    assert status is Status.POLICY_VIOLATION
+    # An un-wired caller (no policy=) keeps today's default unchanged.
+    assert status_for_code("DEP002") is Status.WARN
+
+
 # --- malformed records are counted, never dropped (C0) -----------------------
 
 
