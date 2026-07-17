@@ -12,13 +12,20 @@ Every other module *feeds* rungs; only this module *projects* them to exit
 codes — enforced by the sole-ownership meta-test. The projection is TOTAL
 over all 7 rungs, and an unknown/weaker ``cve_match_level`` projects toward
 ``indeterminate``, never ``clean`` (the additive-growth safety rule).
+
+``exit_code_for``'s ``allow_empty`` parameter (Story 1.9) is the ONE
+sanctioned flag-driven exit exception: ``--allow-empty`` downgrades the
+D2(c) empty-extraction ``indeterminate`` verdict's exit to 0 while
+``status`` itself stays ``indeterminate`` (never ``clean``) — scoped
+narrowly to that one driver so it can never leak to an unrelated
+indeterminate cause. Still sole-owned here, never in ``cli.py``.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable
 
-from .models import CveMatchLevel, Status, StatusDriver
+from .models import EMPTY_EXTRACTION_DRIVER_ID, CveMatchLevel, Status, StatusDriver
 
 _RUNG_ORDER: tuple[Status, ...] = (
     Status.ERROR,
@@ -87,16 +94,41 @@ def _driver_beats(candidate: StatusDriver | None, incumbent: StatusDriver | None
     )
 
 
-def exit_code_for(status: Status | str, *, warn_is_error: bool = False) -> int:
+def exit_code_for(
+    status: Status | str,
+    *,
+    warn_is_error: bool = False,
+    driver: StatusDriver | None = None,
+    allow_empty: bool = False,
+) -> int:
     """Project a status to its exit code — TOTAL over all 7 rungs (C0a).
 
     The input is coerced via ``Status(status)`` first, so a raw ``"warn"``
     string respects ``warn_is_error`` and an unknown string raises
     ``ValueError`` instead of silently projecting.
+
+    ``driver``/``allow_empty`` (Story 1.9): the ONE flag-driven exit
+    exception, still sole-owned here. When ``status`` is ``indeterminate``,
+    ``allow_empty`` is true, and ``driver.finding_id`` EQUALS (not merely
+    starts with — never any other indeterminate cause, including a driver
+    that merely shares this one's namespace, may leak through this knob) the
+    D2(c) empty-extraction reason's fixed id, the exit downgrades to 0 while
+    the STATUS stays ``indeterminate`` (projection only; ``compose``'s
+    winner is untouched). Mirrors ``warn_is_error``'s existing shape: a
+    caller-supplied knob that adjusts one rung's projection without
+    touching the lattice. ``models.ComplianceReport.__post_init__`` enforces
+    the same exactness at construction time.
     """
     status = Status(status)
     if status is Status.WARN and warn_is_error:
         return _EXIT_WARN_AS_ERROR
+    if (
+        status is Status.INDETERMINATE
+        and allow_empty
+        and driver is not None
+        and driver.finding_id == EMPTY_EXTRACTION_DRIVER_ID
+    ):
+        return 0
     return _EXIT_BY_STATUS[status]
 
 

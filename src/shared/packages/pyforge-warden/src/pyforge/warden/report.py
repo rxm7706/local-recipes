@@ -48,6 +48,27 @@ Ownership decisions recorded:
   ``manifests_found``/``manifests_parsed`` and the vulnerability axis are
   untouched; the default ``True`` preserves every pre-2.4 caller/test
   byte-for-byte.
+* ``allow_empty`` (Story 1.9, additive/defaulted) — threaded straight
+  through into ``verdict.exit_code_for(status, driver=driver,
+  allow_empty=allow_empty)``; this module owns no exit-projection logic of
+  its own (``verdict.py`` is the sole owner), so its only role here is
+  plumbing the caller's flag alongside the composed driver.
+* ``empty_extraction`` (Story 1.9, D2(c), additive/defaulted) — mirrors
+  ``hygiene_applicable``'s override shape: this module has no rung-
+  counting vocabulary of its own (that's ``cli.py``'s domain — the
+  ``manifests_parsed > 0 and not rungs`` gate), so the caller states the
+  claim. ``True`` forces BOTH axes' ``resolution_depth`` to ``None`` (the
+  same "no claim" shape the not-applicable/empty-tree path already uses,
+  taking priority even over ``has_locked_closure``) instead of the
+  ``direct-only``/``locked-closure`` claim a positive ``manifests_parsed``/
+  ``has_locked_closure`` would otherwise produce — a manifest that parsed
+  but yielded nothing extractable has nothing honest to claim resolution
+  depth over. ``deps_total``/``deps_assessed`` need no separate override:
+  the D2(c) condition already implies ``inventory.count == 0``, so they
+  are already the honest 0/0 without this flag's help. This is the
+  mechanical realization of epics.md story 1.9's AC text "the exit
+  downgrades to 0 with ``coverage: none`` recorded". The default ``False``
+  preserves every pre-1.9 caller/test byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -109,12 +130,16 @@ def assemble_report(
     engine_results: Sequence[EngineResult] = (),
     has_locked_closure: bool = False,
     hygiene_applicable: bool = True,
+    allow_empty: bool = False,
+    empty_extraction: bool = False,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
     ``verdict.compose`` picks the winning rung; ``verdict.exit_code_for``
-    projects it. ``ComplianceReport.__post_init__`` then enforces the
-    status/exit/driver coherence invariants at construction.
+    projects it (now given ``driver``/``allow_empty`` too — Story 1.9's one
+    sanctioned flag-driven exit exception). ``ComplianceReport.__post_init__``
+    then enforces the status/exit/driver coherence invariants at
+    construction.
 
     Coverage ownership (recorded): manifest counts and ``deps_total`` are
     ORCHESTRATOR-derived here. ``deps_assessed`` is per-axis: Story 1.3
@@ -134,13 +159,20 @@ def assemble_report(
     axis's ``deps_total``/``deps_assessed``/``resolution_depth`` to the
     not-applicable shape (``0``/``0``/``None``) regardless of what any
     engine's own coverage claims; ``manifests_found``/``manifests_parsed``
-    and the vulnerability axis are untouched."""
+    and the vulnerability axis are untouched.
+
+    ``empty_extraction=True`` (Story 1.9, D2(c)) forces BOTH axes'
+    ``resolution_depth`` to ``None`` — see the module docstring."""
     status, driver = compose(rungs)
     resolution_depth = (
-        ResolutionDepth.LOCKED_CLOSURE.value
-        if has_locked_closure
+        None
+        if empty_extraction
         else (
-            ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
+            ResolutionDepth.LOCKED_CLOSURE.value
+            if has_locked_closure
+            else (
+                ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
+            )
         )
     )
     # Highest per-axis deps_assessed any engine claims (honest max coverage).
@@ -180,7 +212,7 @@ def assemble_report(
         tool_version=__version__,
         status=status,
         status_driver=driver,
-        exit_code=exit_code_for(status),
+        exit_code=exit_code_for(status, driver=driver, allow_empty=allow_empty),
         findings=tuple(findings),
         coverage=coverage,
         vuln_data=vuln_data,
