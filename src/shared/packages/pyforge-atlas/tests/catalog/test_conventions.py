@@ -6,10 +6,11 @@ from __future__ import annotations
 import re
 
 from .conftest import (
+    EXPECTED_FLIP_MARKERS,
     FLIP_LIST,
     LAYERS,
     OUTPUT_LAYERS,
-    parse_flip_markers,
+    parse_markers,
     pipeline_for,
 )
 
@@ -57,13 +58,27 @@ def test_output_filepaths_follow_data_layer_name_convention(catalog_config):
     assert not bad, f"filepath convention violations: {bad}"
 
 
-def test_flip_markers_match_declared_flip_list(catalog_raw_text):
+def test_a3_flip_markers_match_declared_flip_list(catalog_raw_text):
     """The `# A3: IncrementalParquetDataset` markers in catalog.yml ARE the
     A3 handoff flip list — drift in either direction fails."""
-    marked = parse_flip_markers(catalog_raw_text)
+    markers = parse_markers(catalog_raw_text)
+    marked = {name for name, m in markers.items() if m == "A3"}
     assert marked == FLIP_LIST, (
         f"marker/FLIP_LIST drift — only-in-yaml: {sorted(marked - FLIP_LIST)}, "
         f"only-in-declared-list: {sorted(FLIP_LIST - marked)}"
+    )
+
+
+def test_flip_story_markers_match_declared_map(catalog_raw_text):
+    """Review-pass P2: the GROWN flip list — every `# FLIP(<story>)` marker
+    (interim declarations a NAMED story re-declares) is pinned in
+    conftest.EXPECTED_FLIP_MARKERS; drift in either direction fails, so the
+    one-APIDataset-one-URL contradiction can never go implicit again."""
+    markers = parse_markers(catalog_raw_text)
+    flip_marked = {name: m for name, m in markers.items() if m != "A3"}
+    assert flip_marked == EXPECTED_FLIP_MARKERS, (
+        f"FLIP marker drift — in-yaml: {flip_marked}, "
+        f"declared: {EXPECTED_FLIP_MARKERS}"
     )
 
 
@@ -74,9 +89,75 @@ def test_every_ttl_gated_entry_has_a_ttl_parameter(parameters, catalog_config):
     # every ttls key must reference a real catalog entry (no orphan TTLs)
     orphans = sorted(k for k in ttls if k not in catalog_config)
     assert not orphans, f"ttls keys with no catalog entry: {orphans}"
-    # positive integer seconds only
-    bad = {k: v for k, v in ttls.items() if not isinstance(v, int) or v <= 0}
-    assert not bad, f"non-positive/non-integer TTLs: {bad}"
+    # positive integer seconds only — bools are ints in Python (P8), so
+    # `some_ttl: true` must be rejected explicitly, not coerced to 1s
+    bad = {
+        k: v
+        for k, v in ttls.items()
+        if isinstance(v, bool) or not isinstance(v, int) or v <= 0
+    }
+    assert not bad, f"non-positive/non-integer/boolean TTLs: {bad}"
+
+
+_NO_TTL_RE = re.compile(r"^#\s*NO-TTL\(([a-z][a-z0-9_]*)\):")
+
+
+def _no_ttl_markers(parameters_raw_text) -> set[str]:
+    return {
+        m.group(1)
+        for line in parameters_raw_text.splitlines()
+        if (m := _NO_TTL_RE.match(line.strip()))
+    }
+
+
+def test_no_ttl_markers_are_valid_and_kev_is_covered(
+    parameters, catalog_config, parameters_raw_text
+):
+    """Review-pass P8: a deliberately TTL-less fetch feed must say so with
+    an explicit `# NO-TTL(<entry>): <reason>` marker (the story's
+    do-not-guess rule made KEV's omission deliberate — this makes it
+    visible and gate-checked instead of indistinguishable from an
+    oversight). Markers must name a real catalog entry that has NO ttls
+    key (a stale marker on a now-TTL'd entry fails)."""
+    ttls = parameters.get("ttls") or {}
+    markers = _no_ttl_markers(parameters_raw_text)
+    unknown = sorted(m for m in markers if m not in catalog_config)
+    assert not unknown, f"NO-TTL markers naming unknown catalog entries: {unknown}"
+    stale = sorted(m for m in markers if m in ttls)
+    assert not stale, f"NO-TTL markers on entries that DO have a ttls key: {stale}"
+    # the three vulnerability side-feeds: each has a TTL or an explicit NO-TTL
+    for feed in (
+        "vulnerability_cisa_kev_raw",
+        "vulnerability_epss_raw",
+        "vulnerability_cwe_catalog_raw",
+    ):
+        assert feed in ttls or feed in markers, (
+            f"{feed}: neither a ttls key nor a NO-TTL marker — a TTL-less "
+            "fetch feed must be deliberate and documented"
+        )
+    assert "vulnerability_cisa_kev_raw" in markers  # the recorded A2 choice
+
+
+def test_orphan_ttls_name_their_future_consumer(parameters, parameters_raw_text):
+    """Review-pass P8: ttls keys outside the A3 FLIP_LIST are consumed by
+    NO shipped code yet — each must carry a `[future_consumer: B*]`
+    annotation naming the owning story, so they are visibly pending work,
+    not dead config."""
+    ttls = parameters.get("ttls") or {}
+    annotated = {
+        m.group(1): m.group(2)
+        for line in parameters_raw_text.splitlines()
+        if (m := re.match(
+            r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+)\b", line.strip()
+        ))
+    }
+    missing = sorted(k for k in ttls if k not in FLIP_LIST and k not in annotated)
+    assert not missing, (
+        f"orphan ttls keys (not in FLIP_LIST) without a [future_consumer: B*] "
+        f"annotation: {missing}"
+    )
+    stray = sorted(k for k in annotated if k in FLIP_LIST)
+    assert not stray, f"FLIP_LIST entries carrying a future_consumer annotation: {stray}"
 
 
 def test_freshness_contract_is_separate_from_fetch_ttls(parameters):

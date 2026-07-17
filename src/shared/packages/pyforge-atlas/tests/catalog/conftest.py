@@ -11,15 +11,21 @@ red-by-construction):
 - ``FLIP_LIST``           — the TTL-gated entries Story A3 flips to
   ``pyforge.atlas.datasets.IncrementalParquetDataset`` (the ``# A3:``
   markers in catalog.yml; part of the A2 -> A3 handoff).
+- ``EXPECTED_FLIP_MARKERS`` — the non-A3 ``# FLIP(<story>)`` markers: entries
+  declared with an interim standard type that a NAMED later story must
+  re-declare (factory/partitioned/custom dataset). Review-pass P2: the
+  flip list GREW — these contradictions are explicit, never implicit.
 - ``STUB_CREDENTIALS``    — per-host stub keys (zero network; NFR-2:
   the gate never touches a credentialed endpoint).
 
 Everything is fixture-based, offline, and non-credentialed (AD-11/NFR-1).
+Env scrubbing is PER-TEST via an autouse monkeypatch fixture (review-pass
+P5) — nothing leaks into sibling suites collected in the same run
+(kedro-test collects this package too).
 """
 
 from __future__ import annotations
 
-import os
 import re
 import sys
 from pathlib import Path
@@ -28,6 +34,7 @@ import pytest
 import yaml
 
 MEMBER_DIR = Path(__file__).resolve().parents[2]
+REPO_ROOT = MEMBER_DIR.parents[2].parent  # src/shared/packages -> repo root
 CONF_SOURCE = MEMBER_DIR / "conf"
 CATALOG_YML = CONF_SOURCE / "base" / "catalog.yml"
 GLOBALS_YML = CONF_SOURCE / "base" / "globals.yml"
@@ -35,10 +42,18 @@ PARAMETERS_YML = CONF_SOURCE / "base" / "parameters.yml"
 SRC_DIR = MEMBER_DIR / "src"
 ATLAS_PKG = SRC_DIR / "pyforge" / "atlas"
 
-# The four node-code dirs policed by the no-inline-IO + AD-1 meta-tests
-# (missing dirs are tolerated — the gate stays green against the A1
-# scaffold state and arms itself as Wave B lands node code).
-NODE_DIRS = ("pipelines", "datasets", "hooks", "mcp")
+# Files exempt from the whole-package no-inline-IO scan (review-pass P3:
+# the scan is now ``ATLAS_PKG.rglob('*.py')`` minus THIS set — coverage is
+# complete by construction; a new module anywhere in the package is scanned
+# automatically). Paths are relative to ATLAS_PKG; only the four known
+# root-level framework files are exempt — subpackage __init__.py files ARE
+# scanned (they can carry imports).
+NO_INLINE_IO_EXEMPT = {
+    "__init__.py",
+    "__main__.py",
+    "settings.py",
+    "pipeline_registry.py",
+}
 
 LAYERS = {"raw", "intermediate", "primary", "derived"}
 OUTPUT_LAYERS = {"intermediate", "primary", "derived"}
@@ -89,9 +104,24 @@ FLIP_LIST = {
     "vcs_live_health",
 }
 
-# AC-4 accounting: the 19 live resolve_*_urls helpers (verified at b18cbb5
-# AND against the live tree 2026-07-17) + the reserved 20th BASILISK_BASE_URL.
-EXPECTED_OVERRIDE_POINTS = {
+# Review-pass P2: the GROWN flip list — entries whose current declaration is
+# an honest interim that a NAMED story must re-declare. `# FLIP(<story>)`
+# markers in catalog.yml, pinned here (drift in either direction fails):
+#   - one APIDataset = one URL; path-parameterized feeds need a factory /
+#     partitioned dataset so nodes never build request URLs (AC-2);
+#   - the vdb store is path-only until B5 lands a real read-only VDB
+#     dataset class (its format is NOT pickle — see catalog.yml).
+EXPECTED_FLIP_MARKERS = {
+    "core_anaconda_downloads_raw": "B1",
+    "pypi_json_raw": "B2",
+    "pypi_bigquery_downloads_raw": "B3",
+    "vulnerability_vdb_store": "B5",
+}
+
+# AC-4 accounting (review-pass P7: pinned as 19 live + 1 reserved, not a
+# bare 20): the 19 live resolve_*_urls helpers (verified at b18cbb5 AND
+# against the live tree 2026-07-17)...
+EXPECTED_LIVE_OVERRIDE_POINTS = {
     "CONDA_FORGE_BASE_URL",
     "PYPI_BASE_URL",  # live name (corrected from the drafting inventory's PYPI_SIMPLE_BASE_URL)
     "PYPI_JSON_BASE_URL",
@@ -111,8 +141,11 @@ EXPECTED_OVERRIDE_POINTS = {
     "CODEBERG_API_BASE_URL",
     "ANACONDA_CHANNEL_BASE_URL",
     "S3_PARQUET_BASE_URL",
-    "BASILISK_BASE_URL",  # the reserved 20th (A2-A2 / FR-19; nodes = B8)
 }
+# ...plus the reserved 20th (A2-A2 / FR-19; nodes = B8 — no live helper
+# backs it yet, which is exactly why it is pinned SEPARATELY).
+RESERVED_OVERRIDE_POINTS = {"BASILISK_BASE_URL"}
+EXPECTED_OVERRIDE_POINTS = EXPECTED_LIVE_OVERRIDE_POINTS | RESERVED_OVERRIDE_POINTS
 
 # Extra overrides asserted SEPARATELY (current data access, not helper-backed).
 EXPECTED_EXTRA_OVERRIDES = {
@@ -120,6 +153,28 @@ EXPECTED_EXTRA_OVERRIDES = {
     "OSV_VULNS_BUCKET_URL",   # § 3.4 store 2 refresh endpoint (B5)
     "BIGQUERY_BASE_URL",      # Phase P connection base (A2-J1; B3 flips to GBQ)
 }
+
+# Full-URL fetcher settings (outside the 20-count) — set-pinned (P7).
+EXPECTED_FETCHER_URLS = {
+    "CISA_KEV_URL",
+    "EPSS_FEED_URL",
+    "CWE_CATALOG_URL",
+}
+
+# globals.yml `paths` — exact key -> env-var map (P6/P9; data_root became
+# env-overridable in the review pass, P9).
+PATHS_ENV_VARS = {
+    "data_root": "PYFORGE_ATLAS_DATA_ROOT",
+    "seed_root": "PYFORGE_ATLAS_SEED_ROOT",
+    "vdb_store": "VDB_STORE_PATH",
+    "osv_offline_store": "OSV_OFFLINE_STORE_PATH",
+    "pypi_conda_map": "PYPI_CONDA_MAP_PATH",
+}
+
+# Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
+# data_root): endpoint_bases 20 (19 live + 1 reserved) + extra_overrides 3
+# + fetcher_urls 3 + paths 5 = 31. Mirrored by a comment in globals.yml.
+EXPECTED_ENV_OVERRIDE_SURFACE = 31
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
 # key it may carry. No other entry may carry any credentials key, and the
@@ -136,55 +191,68 @@ STUB_CREDENTIALS = {
     "jfrog": ["stub-user", "stub-key"],
 }
 
-# All env vars that could perturb the deterministic default resolution —
-# scrubbed once at collection time so the gate always tests the shipped
-# public defaults (the env-override behavior has its own dedicated test).
+# All env vars that could perturb the deterministic default resolution.
+# Scrubbed PER-TEST by the autouse fixture below (review-pass P5 — the old
+# module-level os.environ.pop mutated the process env for the whole run and
+# leaked into kedro-test siblings; monkeypatch restores after every test).
 _SCRUB_ENV_VARS = sorted(
     EXPECTED_OVERRIDE_POINTS
     | EXPECTED_EXTRA_OVERRIDES
-    | {
-        "CISA_KEV_URL",
-        "EPSS_FEED_URL",
-        "CWE_CATALOG_URL",
-        "PYFORGE_ATLAS_SEED_ROOT",
-        "VDB_STORE_PATH",
-        "OSV_OFFLINE_STORE_PATH",
-        "PYPI_CONDA_MAP_PATH",
-    }
+    | EXPECTED_FETCHER_URLS
+    | set(PATHS_ENV_VARS.values())
 )
-for _var in _SCRUB_ENV_VARS:
-    os.environ.pop(_var, None)
 
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 
+@pytest.fixture(autouse=True)
+def _scrub_env(monkeypatch):
+    """Per-test env scrub (P5): the gate always tests the shipped public
+    defaults; restoration is automatic via monkeypatch, so the scrub never
+    leaks into sibling suites. Tests that assert the env-override behavior
+    simply setenv AFTER this fixture (ordinary monkeypatch usage)."""
+    for var in _SCRUB_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+    yield
+
+
 def make_config_loader(runtime_params: dict | None = None, **overrides):
     """Build an OmegaConfigLoader EXACTLY as the project wires it —
     through ``pyforge.atlas.settings.CONFIG_LOADER_ARGS`` (so the gate
-    exercises the real settings.py resolver wiring, A2-A4)."""
+    exercises the real settings.py resolver wiring, A2-A4) — EXCEPT that
+    the run env is pinned to ``base`` (review-pass P5: the gate must be
+    immune to whatever sits in conf/local; the project default stays
+    ``local`` for real runs)."""
     from kedro.config import OmegaConfigLoader
 
     from pyforge.atlas.settings import CONFIG_LOADER_ARGS
 
     kwargs = dict(CONFIG_LOADER_ARGS)
+    kwargs["default_run_env"] = "base"  # gate-pinned; overrides may still win
     kwargs.update(overrides)
     if runtime_params is not None:
         kwargs["runtime_params"] = runtime_params
     return OmegaConfigLoader(conf_source=str(CONF_SOURCE), **kwargs)
 
 
-@pytest.fixture(scope="session")
-def config_loader():
+# NOTE (P5): the config fixtures are FUNCTION-scoped on purpose — they must
+# materialize under the per-test scrub above (a session-scoped fixture would
+# be set up before a function-scoped autouse fixture and could capture an
+# unscrubbed environment). Config loading is cheap enough for the suite.
+
+
+@pytest.fixture()
+def config_loader(_scrub_env):
     return make_config_loader()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def catalog_config(config_loader) -> dict:
     return dict(config_loader["catalog"])
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def parameters(config_loader) -> dict:
     return dict(config_loader["parameters"])
 
@@ -202,26 +270,58 @@ def globals_raw() -> dict:
     return yaml.safe_load(GLOBALS_YML.read_text(encoding="utf-8"))
 
 
+@pytest.fixture(scope="session")
+def parameters_raw_text() -> str:
+    return PARAMETERS_YML.read_text(encoding="utf-8")
+
+
 _ENTRY_KEY_RE = re.compile(r"^([a-z][a-z0-9_]*):\s*$")
 _A3_MARKER = "# A3: IncrementalParquetDataset"
+_FLIP_MARKER_RE = re.compile(r"^# FLIP\(([A-Za-z0-9-]+)\):")
+
+
+def parse_markers(raw_text: str) -> dict[str, str]:
+    """All flip markers (``# A3: IncrementalParquetDataset`` and
+    ``# FLIP(<story>): ...``) mapped to the entry key each one annotates.
+
+    Hardened per review-pass P5: blank lines and comment lines (indented or
+    not) between marker and key are skipped; a marker that attaches to no
+    bare top-level entry key FAILS LOUDLY instead of being silently dropped.
+    """
+    marked: dict[str, str] = {}
+    lines = raw_text.splitlines()
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == _A3_MARKER:
+            marker = "A3"
+        else:
+            m = _FLIP_MARKER_RE.match(stripped)
+            if not m:
+                continue
+            marker = m.group(1)
+        attached = False
+        for follow in lines[i + 1 :]:
+            s = follow.strip()
+            if not s or s.startswith("#"):
+                continue  # blank/comment lines between marker and key: skip
+            key_match = _ENTRY_KEY_RE.match(follow)
+            if key_match is None:
+                break  # first payload line is not a bare entry key -> loud fail
+            marked[key_match.group(1)] = marker
+            attached = True
+            break
+        if not attached:
+            raise AssertionError(
+                f"flip marker on line {i + 1} ({stripped!r}) does not attach "
+                "to a bare top-level catalog entry key — fix the marker "
+                "placement (markers must sit directly above their entry)"
+            )
+    return marked
 
 
 def parse_flip_markers(raw_text: str) -> set[str]:
-    """Entries annotated with the A3 flip marker (marker line above the
-    entry key, comment lines in between tolerated)."""
-    marked: set[str] = set()
-    lines = raw_text.splitlines()
-    for i, line in enumerate(lines):
-        if line.strip() != _A3_MARKER:
-            continue
-        for follow in lines[i + 1 :]:
-            if follow.startswith("#") or not follow.strip():
-                continue
-            m = _ENTRY_KEY_RE.match(follow)
-            if m:
-                marked.add(m.group(1))
-            break
-    return marked
+    """Entries annotated with the A3 flip marker (back-compat wrapper)."""
+    return {name for name, marker in parse_markers(raw_text).items() if marker == "A3"}
 
 
 def pipeline_for(name: str) -> str | None:

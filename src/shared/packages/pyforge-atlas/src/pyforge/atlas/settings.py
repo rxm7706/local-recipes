@@ -42,8 +42,13 @@ def _env_or(var: str, default: str = "") -> str:
     Used by ``conf/base/globals.yml`` to make every ``<HOST>_BASE_URL``
     override point env-var-overridable without hardcoding hosts in the
     catalog (the legacy ``resolve_*_urls`` convention carried forward).
+
+    An EMPTY-string env var is treated as unset (review-pass P6):
+    ``export CONDA_FORGE_BASE_URL=""`` must fall back to the public
+    default, never inject an empty endpoint base into every URL.
     """
-    return os.environ.get(var, default)
+    val = os.environ.get(var)
+    return val if val else default
 
 
 # Keyword arguments to pass to the `CONFIG_LOADER_CLASS` constructor.

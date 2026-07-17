@@ -42,6 +42,15 @@ The Python package is the dotted namespace package `pyforge.atlas`
 seven pipelines (Story A2), with endpoint bases in `conf/base/globals.yml`
 and per-dataset TTLs in `conf/base/parameters.yml`.
 
+Relative dataset paths (the `data/<layer>/<dataset_name>/` outputs and the
+store/seed defaults in `globals.yml paths:`) resolve against the **process
+CWD**, and the documented invocation is the pixi task run from the **repo
+root** — every shipped path default is therefore repo-root-relative, and
+`kedro-catalog-check` asserts none resolves outside the repo. The data root
+and every store/seed path are env-overridable (`PYFORGE_ATLAS_DATA_ROOT`,
+`PYFORGE_ATLAS_SEED_ROOT`, `VDB_STORE_PATH`, `OSV_OFFLINE_STORE_PATH`,
+`PYPI_CONDA_MAP_PATH`).
+
 ## Air-gapped / enterprise provisioning (AC-4)
 
 Two routing layers cover everything this project fetches. Configure both when
@@ -98,16 +107,31 @@ exactly the dataset(s) whose host needs it:
 |---|---|---|
 | `github_token` | `vcs_github_api_raw` only | `GITHUB_TOKEN` / `GH_TOKEN` |
 | `bigquery_adc` | `pypi_bigquery_downloads_raw` only (admin/attended-only, NFR-2) | `GOOGLE_APPLICATION_CREDENTIALS` (ADC) |
-| `jfrog` | ONLY datasets whose endpoint-base actually resolves to an Artifactory host — with the shipped public defaults, none | `JFROG_API_KEY` or `JFROG_USERNAME`+`JFROG_PASSWORD` |
+| `jfrog` | no shipped entry (see below) | `JFROG_API_KEY` or `JFROG_USERNAME`+`JFROG_PASSWORD` |
+
+Credential references are **static, per-entry catalog config**: an entry
+carries a credential only because its `credentials:` key is written in
+`catalog.yml`. There is **no** mechanism that attaches the `jfrog` key
+dynamically to "hosts that resolve to Artifactory" — overriding a
+`*_BASE_URL` to point at your Artifactory mirror does *not* make requests
+authenticated. Today no shipped entry references `jfrog`; a JFrog-routed
+deployment must add the `credentials: jfrog` reference to the specific
+mirrored entries (the scoping test then requires the entry's hostname to
+suffix-match an Artifactory host). The dynamic per-host attachment
+mechanism is an **OPEN item** owned by Story B5 (external-refresh /
+enterprise routing — see `deferred-work.md`); until it lands, per-entry
+static references are the only supported route.
 
 `netrc` remains a per-host runtime fallback, never catalog config. Nothing
 credential-bearing is ever committed (`conf/local/**` + `conf/**/*credentials*`
 are gitignored; the per-host key convention is documented here instead of a
 tracked example file precisely because of that ignore pattern).
 `kedro-catalog-check`'s credential-scoping test enforces the allowlist —
-including that a JFrog key is never reachable from a non-JFrog host entry.
-Credentialed runs are attended-only (NFR-2); the gate itself uses stub
-credentials and never touches a live endpoint.
+including that a JFrog-**named** key (any key containing `jfrog`/`artifactory`,
+case-insensitive) is never reachable from an entry whose hostname does not
+suffix-match an Artifactory host. Credentialed runs are attended-only
+(NFR-2); the gate itself uses stub credentials and never touches a live
+endpoint.
 
 ## Task inventory
 

@@ -10,10 +10,16 @@
 # (spine "Endpoint overrides" row).
 #
 # `endpoint_bases` carries EXACTLY the 20 override points of Story A2
-# AC-4: the 19 live `resolve_*_urls` helpers (cf-atlas-legacy @ b18cbb5;
-# spot-verified against the live tree 2026-07-17) plus the reserved 20th,
-# BASILISK_BASE_URL (FR-19 — Story B8 lands the nodes).
-# `kedro-catalog-check` count-asserts this section at exactly 20 keys.
+# AC-4, pinned as a 19+1 STRUCTURE (review-pass P7): 19 LIVE
+# `resolve_*_urls` helpers (cf-atlas-legacy @ b18cbb5; spot-verified
+# against the live tree 2026-07-17) plus the RESERVED 20th,
+# BASILISK_BASE_URL (FR-19 — no live helper backs it; Story B8 lands the
+# nodes). `kedro-catalog-check` asserts the 19-live set and the 1-reserved
+# set separately, never a bare 20.
+#
+# Total env-override surface of this file (P7 accounting, +1 by P9's
+# data_root): endpoint_bases 20 + extra_overrides 3 + fetcher_urls 3 +
+# paths 5 = 31. Pinned by tests/catalog (EXPECTED_ENV_OVERRIDE_SURFACE).
 
 endpoint_bases:
   CONDA_FORGE_BASE_URL: ${env_or:CONDA_FORGE_BASE_URL,https://conda.anaconda.org/conda-forge}
@@ -70,11 +76,18 @@ fetcher_urls:
 # Filesystem roots. External stores + git-tracked seeds live OUTSIDE the
 # member (legacy homes; B5 wraps store refresh) — their paths are
 # env-overridable. Pipeline-owned persisted outputs live under the
-# member-local `data/<layer>/<dataset_name>/` root (spine Parquet-layout
-# row; nodes never choose physical layout).
+# `data/<layer>/<dataset_name>/` root (spine Parquet-layout row; nodes
+# never choose physical layout).
+#
+# Review-pass P9: relative dataset paths resolve against the PROCESS CWD,
+# not against conf/ — and the documented invocation is the pixi task run
+# from the REPO ROOT, so every default below is repo-root-relative (the
+# old `../../../../` escapes silently depended on a member-dir CWD nobody
+# uses). kedro-catalog-check asserts no resolved default escapes the repo
+# root. `data_root` is env-overridable like every other path (P9).
 paths:
-  data_root: data
-  seed_root: ${env_or:PYFORGE_ATLAS_SEED_ROOT,../../../../.claude/skills/conda-forge-expert/data}
-  vdb_store: ${env_or:VDB_STORE_PATH,../../../../.claude/data/conda-forge-expert/vdb}
-  osv_offline_store: ${env_or:OSV_OFFLINE_STORE_PATH,../../../../.claude/data/conda-forge-expert/cve}
-  pypi_conda_map: ${env_or:PYPI_CONDA_MAP_PATH,../../../../.claude/data/conda-forge-expert/pypi_conda_map.json}
+  data_root: ${env_or:PYFORGE_ATLAS_DATA_ROOT,data}
+  seed_root: ${env_or:PYFORGE_ATLAS_SEED_ROOT,.claude/skills/conda-forge-expert/data}
+  vdb_store: ${env_or:VDB_STORE_PATH,.claude/data/conda-forge-expert/vdb}
+  osv_offline_store: ${env_or:OSV_OFFLINE_STORE_PATH,.claude/data/conda-forge-expert/cve}
+  pypi_conda_map: ${env_or:PYPI_CONDA_MAP_PATH,.claude/data/conda-forge-expert/pypi_conda_map.json}
