@@ -73,7 +73,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 Available in every environment (the `python` feature + workspace `[dependencies]`).
 
 - **python** (3.14.*) — CPython interpreter. All Python libs below target 3.14.
-- **pixi** (>=0.72.2) — the package/environment manager itself, available *inside*
+- **pixi** (>=0.73.0) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
   `[package]`/build tables for workspace members like
   `src/shared/packages/pyforge-warden` and `src/shared/packages/pyforge-atlas`,
@@ -81,19 +81,19 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
 - **pip** (>=26.1.2) — standard Python installer (prefer `uv` for speed).
-- **uv** (>=0.11.28) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
+- **uv** (>=0.11.29) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
 - **nodejs** (24.x LTS) — `node` / `npm` / `npx`; runtime for the JS tools below.
 - **gh** (>=2.96.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
-- **gitpython** (>=3.1.51) — `import git`; programmatic Git (repos, diffs, commits,
+- **gitpython** (>=3.1.52) — `import git`; programmatic Git (repos, diffs, commits,
   remotes) when shelling out to `git` is awkward.
 - **truststore** (>=0.10.4) — `import truststore; truststore.inject_into_ssl()`; makes
   Python TLS use the OS trust store (corporate CAs, JFrog). Set `TRUSTSTORE=1` pattern
   used by the vuln-db tasks.
 - **bmad-method** (>=6.10.0,<7) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=0.12.11) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=0.12.17) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ---
@@ -106,12 +106,12 @@ per the table above; all of them coexist in `local-recipes`.
 Build engines & solvers:
 - **conda-build** (>=25.3.1) — v0 recipe engine: builds `meta.yaml` recipes, renders
   Jinja2, runs tests. Never mix v0 and v1 recipes in one build run.
-- **rattler-build** (>=0.68.0) — Rust-native v1 recipe engine: builds `recipe.yaml`,
+- **rattler-build** (>=0.69.1) — Rust-native v1 recipe engine: builds `recipe.yaml`,
   much faster than conda-build, first-class cross-compilation. Primary local build tool.
 - **py-rattler** (>=0.22.0) — `import rattler`; Python bindings to the rattler libs:
   solve environments, fetch/inspect .conda artifacts, repodata handling — programmatic
   conda operations without shelling out.
-- **py-rattler-build** (>=0.68.0) — Python bindings to rattler-build (drive v1 builds
+- **py-rattler-build** (>=0.69.1) — Python bindings to rattler-build (drive v1 builds
   from Python).
 - **conda-libmamba-solver** (>=24.9.0) — fast libmamba solver backend for conda.
 - **conda-index** (>=0.3.0) — generate `repodata.json` for local file:// channels
@@ -236,9 +236,11 @@ Core arrays/frames:
   polars, duckdb, dagster, daft.
 - **getdaft** (>=0.6.13) — `import daft`; distributed DataFrames for multimodal data
   (images/urls/embeddings as first-class columns), Rust engine, scales out.
-- **dask-core** (>=2026.7.0) — `import dask`; task-graph parallelism (`dask.delayed`,
+- **dask-core** (>=2026.7.1) — `import dask`; task-graph parallelism (`dask.delayed`,
   bags, dask.dataframe). NOTE: this is *core only* — the `distributed` scheduler is
   not installed; use the threaded/process schedulers.
+- **dbgpt** (>=0.8.1) — `import dbgpt`; open-source AI-native data-app development
+  framework (AWEL workflows + agents), aka DB-GPT.
 
 SQL engines & tooling:
 - **duckdb** (>=1.5.4) — embedded analytical (OLAP) SQL database; reads/writes
@@ -289,13 +291,13 @@ All in `local-recipes`.
 - **kedro-dagster** (>=0.7.0) — deploy Kedro pipelines onto Dagster.
 - **kedro-viz** (>=12.4.0) — interactive browser visualization of Kedro pipelines.
 - **kedro-mcp** (>=0.1.2, PyPI) — MCP server exposing Kedro prompts/tools to agents.
-- **great-expectations** (>=1.18.2) — data-quality contracts: expectations suites,
+- **great-expectations** (>=1.19.0) — data-quality contracts: expectations suites,
   validation, data docs (used inside Kedro nodes).
 - **pandera** (>=0.32.1) — lightweight statistical dataframe validation via typed
   schemas (pandas/dask/spark).
 - **openlineage-python** (>=1.51.0) — `import openlineage.client`; emit OpenLineage
   data-lineage events.
-- **opentelemetry-api / opentelemetry-sdk** (>=1.43.0) — traces/metrics/logs
+- **opentelemetry-api / opentelemetry-sdk** (>=1.44.0) — traces/metrics/logs
   instrumentation and export (OTLP).
 - **watchdog** (>=6.0.0) — filesystem event monitoring (`watchmedo` CLI); live-reload
   loops.
@@ -394,7 +396,7 @@ Search/ranking:
 All in `local-recipes` unless noted.
 
 Hugging Face stack:
-- **transformers** (>=5.13.1) — model hub + pipelines (text, vision, audio);
+- **transformers** (>=5.14.1) — model hub + pipelines (text, vision, audio);
   tokenizers; Trainer.
 - **accelerate** (>=1.14.0) — device placement / mixed precision / multi-GPU
   launching for HF models.
@@ -407,7 +409,7 @@ Hugging Face stack:
   `HF_HUB_ENABLE_HF_TRANSFER=1`.
 
 Local inference runtimes:
-- **llama.cpp** (>=9923) — `llama-cli` / `llama-server` binaries; GGUF model
+- **llama.cpp** (>=10003) — `llama-cli` / `llama-server` binaries; GGUF model
   inference on CPU/GPU; `llama-server` exposes an OpenAI-compatible API.
 - **ollama** (>=0.24.0) — the Ollama server binary (Go): `ollama serve`,
   `ollama run <model>`; local model registry + OpenAI-compatible endpoint.
@@ -421,7 +423,7 @@ Local inference runtimes:
 Knowledge & indexing for agents:
 - **cocoindex** (>=1.0.16) — incremental indexing/transformation engine for
   long-horizon agents (recompute only what changed).
-- **graphifyy** (>=0.9.13) — turn a folder of code/docs/papers/images into a
+- **graphifyy** (>=0.9.17) — turn a folder of code/docs/papers/images into a
   queryable knowledge graph for coding assistants.
 
 ---
@@ -433,15 +435,15 @@ All in `local-recipes`. This is the stack for *building* agents and agent server
 Provider SDKs:
 - **anthropic** (>=0.76.0) — official Claude SDK: Messages API, streaming, tool use,
   prompt caching.
-- **google-genai** (>=2.11.0) — `from google import genai`; Gemini API client.
-- **github-copilot-sdk** (>=1.0.6) — drive GitHub Copilot programmatically from
+- **google-genai** (>=2.12.1) — `from google import genai`; Gemini API client.
+- **github-copilot-sdk** (>=1.0.7) — drive GitHub Copilot programmatically from
   Python (see `docs/copilot-to-api.md` for the bridge patterns).
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
 - **lumen-ai-anthropic** (>=1.2.1) — Anthropic backend for HoloViz Lumen AI
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.9.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.12.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
@@ -456,10 +458,10 @@ Model Context Protocol (MCP):
 - **vizro-mcp** / **kedro-mcp** — domain MCP servers (§ 8 / § 7).
 
 Agent2Agent (A2A) & ACP:
-- **a2a-sdk** (>=1.1.0) — `import a2a`; official Python SDK for the Agent2Agent
+- **a2a-sdk** (>=1.1.1) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
 - **fasta2a** (>=0.6.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.58.1) — bridge the Claude Agent SDK to the Agent Client
+- **claude-agent-acp** (>=0.59.0) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -486,7 +488,7 @@ the planning/dev workflow documented in `CLAUDE.md` and `_bmad-output/`.
 - **bmad-labs-skills** (>=1.0.0.dev0) — community skills marketplace (21 skills).
 - **bmad-dashboard** (>=1.2.2.dev0) — VS Code extension installer for the BMAD
   dashboard UI.
-- **tmux** (>=3.4) — terminal multiplexer; **linux-64 + osx-arm64 only**; required by
+- **tmux** (>=3.7b_) — terminal multiplexer; **linux-64 + osx-arm64 only**; required by
   bmad-loop session spawning.
 
 ---
@@ -532,7 +534,7 @@ HTTP & APIs:
 All in `local-recipes`.
 
 Linters & formatters:
-- **ruff** (>=0.15.21) — extremely fast Python linter + formatter (flake8/isort/black
+- **ruff** (>=0.15.22) — extremely fast Python linter + formatter (flake8/isort/black
   replacement). Default Python QA tool here.
 - **yamllint** (>=1.38.0) — YAML linting.
 - **taplo** (>=0.10.0) — TOML linter/formatter/LSP (use on pixi.toml itself).
@@ -543,7 +545,7 @@ Linters & formatters:
 Type checkers (three available — pick one per task):
 - **pyright** (>=1.1.411) — Microsoft's fast type checker (the default for quick
   checks).
-- **mypy** (>=2.2.0) — the reference type checker (plugin ecosystem).
+- **mypy** (>=2.3.0) — the reference type checker (plugin ecosystem).
 - **pyrefly** (>=1.1.1) — Meta's Rust-based checker (fastest on big codebases).
 
 Testing:
@@ -561,10 +563,10 @@ Browser automation:
 Terminal & CLI building:
 - **rich** (>=14.3.4) — rich terminal output: tables, progress bars, markdown,
   syntax highlighting, tracebacks.
-- **typer** (>=0.26.8) — build CLIs from type-hinted functions (click-based).
+- **typer** (>=0.27.0) — build CLIs from type-hinted functions (click-based).
 
 Node package managers:
-- **pnpm** (>=11.11.0) — fast, disk-efficient npm alternative (default for JS builds
+- **pnpm** (>=11.13.1) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`).
 - **yarn** (>=4.17.1) — Yarn Berry.
 
