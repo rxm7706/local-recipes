@@ -141,6 +141,10 @@ gcloud = ["python", "gcloud-sdk"]
 # default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
 # carries only the built pyforge-warden package + its conda run-deps + pytest.
 pyforge-warden = { features = ["pyforge-warden"], no-default-feature = true }
+# Lean atlas env (Story A1, AD-16/§ 2.5): no-default-feature excludes the fat
+# default [dependencies]; loop worktrees materialize THIS env, never the fat
+# local-recipes env — this is the worktree-affordability claim A3 measures.
+pyforge-atlas = { features = ["pyforge-atlas"], no-default-feature = true }
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
@@ -1003,3 +1007,38 @@ cwd = "src/shared/packages/pyforge-warden"
 [feature.pyforge-warden.tasks.pyforge-warden-build]
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
+
+# --- pyforge-atlas (Atlas): pixi build workspace member (warden mirror, Story A1) -----
+# Source + package manifest live in ./src/shared/packages/pyforge-atlas (its
+# own [package] table, no [workspace]) — same src/shared/packages convention as
+# warden. One hatchling pyproject is the single Python build backend:
+#   * conda pkg  -> pixi-build-python wraps the hatchling wheel  (pyforge-atlas-build-conda)
+#   * wheel+sdist-> `python -m build` from the same pyproject     (pyforge-atlas-build-dist)
+# The path dependency below builds the CONDA package and installs it (plus
+# run-deps, incl. pyforge-warden — the [gate] extra default-installed in-repo,
+# AC-8) into the dedicated lean `pyforge-atlas` env.
+# Spec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9 Story A1.
+[feature.pyforge-atlas.dependencies]
+pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda pkg
+pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [gate] extra default-installed IN-REPO at feature level (A1-A5 alternative route) — NOT a pyforge-atlas package run-dep, so external conda installs stay warden-optional
+hatchling = "*"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = "*"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = "*"                       # test runner (kedro-test)
+
+[feature.pyforge-atlas.tasks.kedro-test]
+description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
+
+[feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
+description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
+cmd = "pixi build --output-dir dist-conda"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.pyforge-atlas-build-dist]
+description = "Build the pypi wheel (.whl) + sdist (.tar.gz) via hatchling"
+cmd = "python -m build --no-isolation --outdir dist"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.pyforge-atlas-build]
+description = "Build all three artifacts: conda + wheel + sdist"
+depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
