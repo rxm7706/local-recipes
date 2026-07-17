@@ -1279,6 +1279,25 @@ effort touches and the obligations they create:
   `osv-scanner` (E3), whereas the promoted atlas node sources the
   `security` section from `inventory-match`/`cve` rather than re-invoking
   it.
+- **Atlas data-consumption candidates (recorded 2026-07-17 — counterpart
+  of the pyforge-atlas correct-course; see that project's epics D-16 /
+  PRD § 9.13 / `sprint-change-proposal-2026-07-17.md`).** Relationship
+  fixed there: *atlas provides the data, warden uses the data*; exactly one
+  optional code edge exists (`pyforge-atlas[gate]` imports this spec's
+  `ComplianceReport` schema for the F4 gate), warden never imports
+  `pyforge.atlas`, and both tools stay independently installable. Once the
+  atlas Kedro datasets exist (its Wave B+), three optional-if-present
+  enhancements become available here, each a warden-side story consuming
+  atlas *data* (Parquet/DuckDB reads, never imports; standalone self-fetch
+  paths always remain):
+  1. *Security axis enrichment* — read atlas KEV / EPSS / Basilisk (B8)
+     datasets instead of always self-fetching.
+  2. *Currency axis source* — atlas behind-upstream / release-velocity
+     (B9) data feeding the flag-activated currency gate.
+  3. *Mapping refresh* — regenerate the vendored static
+     `pyforge/warden/data/conda_pypi_map.json` from atlas's live
+     pypi↔conda mapping datasets (ties into the existing "better
+     conda↔PyPI name reconciliation" v1.x roadmap row).
 - Alternate hygiene backends (`fawltydeps`, `pip-check-reqs` — both now in
   `recipes/`) behind a `--engine` flag.
 - **Optional light YAML dependency (OD3 contingency).** If stdlib `re`
