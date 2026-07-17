@@ -694,9 +694,13 @@ class OsvEngine:
             # temp file is even created): its findings must not be lost
             # just because osv itself never got to run (NFR-S6 — never
             # silently dropped). The independently-computed name-level
-            # findings survive too (FR13).
+            # findings survive too (FR13), and so does the staleness of the
+            # SAME DB they were read from (review finding, 2026-07-17).
             findings = tuple(
-                sorted((*excluded_findings, *name_level_findings), key=lambda f: f.id)
+                sorted(
+                    (*excluded_findings, *name_level_findings, *stale_findings),
+                    key=lambda f: f.id,
+                )
             )
             return EngineResult(
                 findings=findings,
@@ -736,9 +740,14 @@ class OsvEngine:
             # Mirrors DeptryEngine's own error path: a spawn/timeout/decode
             # failure propagates as a typed error; the purity guard's own
             # findings AND the independently-computed name-level findings
-            # survive regardless (NFR-S6/FR13 — never silently dropped).
+            # survive regardless (NFR-S6/FR13 — never silently dropped), and
+            # so does the staleness of the SAME DB they were read from
+            # (review finding, 2026-07-17).
             findings = tuple(
-                sorted((*excluded_findings, *name_level_findings), key=lambda f: f.id)
+                sorted(
+                    (*excluded_findings, *name_level_findings, *stale_findings),
+                    key=lambda f: f.id,
+                )
             )
             return EngineResult(
                 findings=findings,
@@ -795,7 +804,10 @@ class OsvEngine:
                 ),
             )
             findings = tuple(
-                sorted((*excluded_findings, *name_level_findings), key=lambda f: f.id)
+                sorted(
+                    (*excluded_findings, *name_level_findings, *stale_findings),
+                    key=lambda f: f.id,
+                )
             )
             return EngineResult(
                 findings=findings,
@@ -810,10 +822,15 @@ class OsvEngine:
             # record routes it identically to a failed pre-flight
             # (coverage-skipped, never a confident clean). The name-level
             # findings were computed independently of this subprocess call
-            # and survive (FR13).
+            # and survive (FR13), and so does the staleness of the SAME DB
+            # they were read from (review finding, 2026-07-17).
             findings = tuple(
                 sorted(
-                    (*_withheld_findings(candidates), *name_level_findings),
+                    (
+                        *_withheld_findings(candidates),
+                        *name_level_findings,
+                        *stale_findings,
+                    ),
                     key=lambda f: f.id,
                 )
             )
@@ -830,7 +847,10 @@ class OsvEngine:
             message=f"osv-scanner exited with unexpected code {exit_code!r}",
         )
         findings = tuple(
-            sorted((*excluded_findings, *name_level_findings), key=lambda f: f.id)
+            sorted(
+                (*excluded_findings, *name_level_findings, *stale_findings),
+                key=lambda f: f.id,
+            )
         )
         return EngineResult(
             findings=findings,
