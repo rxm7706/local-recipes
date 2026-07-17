@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.warden import engines as engines_module
+from pyforge.warden.config import EffectiveConfig
 from pyforge.warden.engines import (
     NullEngine,
     register_engine,
@@ -295,6 +296,107 @@ def test_severity_less_vuln_axis_finding_still_feeds_indeterminate(
     assert (
         Status.INDETERMINATE,
         StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+# --- Story 3.1: EffectiveConfig threading ------------------------------------
+
+
+def test_default_policy_no_config_arg_is_unchanged(component_factory):
+    """DefaultPolicy() (no config) reproduces every pre-3.1 caller's
+    behavior byte-for-byte -- CRITICAL still blocks, HIGH still warns."""
+    engine_finding = Finding(
+        id="vuln:GHSA-xxxx:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-xxxx",
+        subject="foo",
+        severity=Severity(tier=SeverityTier.HIGH, raw=None),
+    )
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+def test_default_policy_with_fail_on_high_escalates_a_high_severity_finding(
+    component_factory,
+):
+    """Story 3.1: EffectiveConfig(fail_on=HIGH) escalates a HIGH-severity
+    finding to policy-violation (default: warn)."""
+    engine_finding = Finding(
+        id="vuln:GHSA-xxxx:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-xxxx",
+        subject="foo",
+        severity=Severity(tier=SeverityTier.HIGH, raw=None),
+    )
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(fail_on=SeverityTier.HIGH)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+def test_default_policy_with_dep001_block_confidence_likely_keeps_dep001_blocking(
+    component_factory,
+):
+    """Story 3.1: EffectiveConfig(dep001_block_confidence="likely") keeps
+    DEP001 at policy-violation with a "likely"-confidence component present
+    (the default "verified" threshold downgrades it to warn instead)."""
+    engine_finding = Finding(
+        id="hygiene:DEP001:leftpad",
+        axis=AXIS_HYGIENE,
+        message="missing",
+        subject="leftpad",
+        severity=None,
+    )
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
+    inventory = make_inventory(
+        component_factory(name="pytorch", version="2.1.0", mapping_confidence="likely")
+    )
+    config = EffectiveConfig(dep001_block_confidence="likely")
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:leftpad"),
+    ) in rungs
+
+
+def test_default_policy_default_confidence_threshold_downgrades_on_a_likely_component(
+    component_factory,
+):
+    """The default (dep001_block_confidence="verified") reproduces today's
+    exact behavior: a "likely"-confidence component anywhere downgrades
+    DEP001 to warn."""
+    engine_finding = Finding(
+        id="hygiene:DEP001:leftpad",
+        axis=AXIS_HYGIENE,
+        message="missing",
+        subject="leftpad",
+        severity=None,
+    )
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
+    inventory = make_inventory(
+        component_factory(name="pytorch", version="2.1.0", mapping_confidence="likely")
+    )
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:leftpad"),
     ) in rungs
 
 
