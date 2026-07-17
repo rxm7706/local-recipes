@@ -1,0 +1,32 @@
+{% set name = "mypkg" %}
+{% set version = "1.2.3" %}
+
+package:
+  name: {{ name }}-split
+  version: {{ version }}
+
+outputs:
+  - name: {{ name }}-core
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ stdlib('c') }}
+      host:
+        - python
+      run:
+        - python
+        - winlib  # [win]
+        - unixlib  # [unix]
+
+  - name: {{ name }}-extra
+    requirements:
+      run:
+        - {{ pin_subpackage(name + '-core', exact=True) }}
+        - click
+
+about:
+  summary: >-
+    complex-construct v0 recipe fixture (Story 2.3): compiler/stdlib
+    build-tool exclude, selector-comment sibling-entry union, a second
+    output's pin_subpackage intra-recipe exclude -- live-verified via
+    conda_build.api.render before being wired into the oracle test.
