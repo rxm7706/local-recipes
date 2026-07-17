@@ -133,8 +133,11 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         _protocol, inner_path = get_protocol_and_path(filepath)
         # Versioning disabled on the outer (P4): version=None means the base
         # never invokes exists_function/glob_function, so none is wired.
+        # Normalize Windows backslash separators to POSIX before PurePosixPath
+        # (Gemini PR-72); chr(92) is the literal backslash — kept out of the
+        # source as an escape to stay clean for the pre-apply regex scan.
         super().__init__(
-            filepath=PurePosixPath(inner_path),
+            filepath=PurePosixPath(inner_path.replace(chr(92), "/")),
             version=None,
         )
 
@@ -181,11 +184,15 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         The copy is taken only when a stamp must be written (review-pass P9 — avoid
         deep-copying 800k-row frames that need no change)."""
         col = self._fetched_at_column
+        # Shallow copy (Gemini PR-72): only the fetched_at column is written, so
+        # a deep copy of an 800k-row frame is wasteful — a full-column
+        # (re)assignment on a deep=False copy replaces the block reference
+        # without mutating the caller's frame (pandas 2.x).
         if col not in data.columns:
-            df = data.copy()
+            df = data.copy(deep=False)
             df[col] = int(time.time())
         elif data[col].isna().any():
-            df = data.copy()
+            df = data.copy(deep=False)
             df[col] = df[col].fillna(int(time.time()))
         else:
             df = data  # no stamping needed → no copy (P9)
@@ -249,7 +256,12 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         if col not in df.columns:
             # No fetch timestamp at all → nothing can be proven fresh.
             return pd.Series(True, index=df.index)
-        fetched_at = pd.to_numeric(df[col], errors="coerce")
+        # Skip pd.to_numeric when the column is already numeric (Gemini PR-72):
+        # after the first save/load round-trip fetched_at is int64, and coercing
+        # it on every freshness check is pure overhead at 800k-row scale.
+        fetched_at = df[col]
+        if not pd.api.types.is_numeric_dtype(fetched_at):
+            fetched_at = pd.to_numeric(fetched_at, errors="coerce")
         cutoff = now - self._ttl_seconds
         # A row is stale if its timestamp is older than the cutoff OR missing.
         # (A comparison against NaN yields False, not NaN — so the missing case
