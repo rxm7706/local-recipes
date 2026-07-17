@@ -27,7 +27,14 @@ cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1
 # succeed, rewrites pixi.lock with worktree-absolute file:// channel paths that
 # the squash-merge would commit. Frozen mode uses the tracked lock as-is
 # (deferred-work.md, story 1.1).
-commands = ["pixi run --frozen -e pyforge-warden pyforge-warden-test"]
+commands = [
+  "pixi run --frozen -e pyforge-warden pyforge-warden-test",
+  # Wave A gate (pyforge-atlas Story A1, AD-11): import smokes + Kedro namespace
+  # seam + scaffold layout in the LEAN pyforge-atlas env. Requires pixi.lock to
+  # carry the pyforge-atlas env (workstation re-lock; see Story A1 Dev Agent
+  # Record — the container stub channel blocks the bmad-ui co-solve).
+  "pixi run --frozen -e pyforge-atlas kedro-test",
+]
 
 [notify]
 desktop = true               # notify-send, best-effort

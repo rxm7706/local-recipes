@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12. Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-17 (pyforge-atlas member env, Story A1). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -53,6 +53,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `conda-smithy` | python + conda-smithy + shellcheck                    | Recipe linting only (`lint` task) |
 | `vuln-db`      | python + vuln-db                                      | AppThreat multi-source CVE DB + SBOM work (kept out of local-recipes to stay lean) |
 | `gcloud`       | python + gcloud-sdk                                   | One-time `gcloud auth application-default login`; linux/macOS only |
+| `pyforge-atlas`| pyforge-atlas (no-default-feature)                    | Lean env for the `pyforge.atlas` Kedro pipeline member (`src/shared/packages/pyforge-atlas` path dep -> built conda pkg + kedro/kedro-datasets/kedro-dagster/pyforge-warden run-deps + pytest/hatchling/python-build). Loop worktrees materialize THIS env; gate: `kedro-test` |
 
 ### Version pins agents must respect (don't fight the resolver)
 
@@ -75,7 +76,8 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **pixi** (>=0.72.2) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
   `[package]`/build tables for workspace members like
-  `src/shared/packages/pyforge-warden`).
+  `src/shared/packages/pyforge-warden` and `src/shared/packages/pyforge-atlas`,
+  each pulled in as a path dependency by its own feature/env).
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
 - **pip** (>=26.1.2) — standard Python installer (prefer `uv` for speed).

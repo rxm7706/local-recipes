@@ -12,5 +12,8 @@ def register_pipelines() -> dict[str, Pipeline]:
         A mapping from pipeline names to ``Pipeline`` objects.
     """
     pipelines = find_pipelines(raise_errors=True)
-    pipelines["__default__"] = sum(pipelines.values())
+    # Empty-scaffold guard (Story A1 review): sum() over zero pipelines would
+    # yield int 0, not a Pipeline — seed with an empty Pipeline until A2/B1
+    # register real ones.
+    pipelines["__default__"] = sum(pipelines.values(), Pipeline([]))
     return pipelines
