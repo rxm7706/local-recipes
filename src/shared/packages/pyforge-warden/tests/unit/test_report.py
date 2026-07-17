@@ -134,6 +134,55 @@ def test_hygiene_not_applicable_overrides_an_engines_own_coverage_claim(
     assert by_axis["hygiene"].deps_assessed == 0
 
 
+# --- empty_extraction (Story 1.9, D2(c)) -----------------------------------
+
+
+def test_empty_extraction_forces_resolution_depth_none_on_both_axes(
+    component_factory,
+):
+    inventory = _inventory(component_factory)
+    report = _assemble(inventory, empty_extraction=True)
+    by_axis = {c.axis: c for c in report.coverage}
+    assert by_axis["hygiene"].resolution_depth is None
+    assert by_axis["vulnerability"].resolution_depth is None
+
+
+def test_empty_extraction_default_false_is_byte_identical_to_pre_amendment(
+    component_factory,
+):
+    inventory = _inventory(component_factory)
+    default_report = _assemble(inventory)
+    explicit_report = _assemble(inventory, empty_extraction=False)
+    assert explicit_report.coverage == default_report.coverage
+
+
+def test_empty_extraction_overrides_locked_closure_too(component_factory):
+    """A pathological case (an empty pixi.lock that still parses): a
+    positive has_locked_closure claim must not survive empty_extraction —
+    'nothing was actually resolved' outranks 'this manifest kind proves the
+    transitive closure when something IS resolved'."""
+    inventory = _inventory(component_factory)
+    report = _assemble(
+        inventory, empty_extraction=True, has_locked_closure=True
+    )
+    by_axis = {c.axis: c for c in report.coverage}
+    assert by_axis["hygiene"].resolution_depth is None
+    assert by_axis["vulnerability"].resolution_depth is None
+
+
+def test_empty_extraction_does_not_touch_deps_total_or_assessed(
+    component_factory,
+):
+    """Unlike hygiene_applicable, empty_extraction does not need to zero
+    deps_total/deps_assessed itself — the D2(c) condition already implies
+    inventory.count == 0, so those fields are already honest."""
+    inventory = ResolvedInventory(components=(), resolved_scan_set=())
+    report = _assemble(inventory, empty_extraction=True)
+    by_axis = {c.axis: c for c in report.coverage}
+    assert by_axis["hygiene"].deps_total == 0
+    assert by_axis["vulnerability"].deps_total == 0
+
+
 # --- render_text (Story 1.8) ---------------------------------------------
 
 

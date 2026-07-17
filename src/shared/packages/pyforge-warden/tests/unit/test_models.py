@@ -394,7 +394,7 @@ def test_raw_string_error_kind_and_severity_tier_coerce_or_raise():
         (Status.ERROR, 0),
         (Status.ERROR, 1),
         (Status.POLICY_VIOLATION, 0),
-        (Status.INDETERMINATE, 0),
+        (Status.INDETERMINATE, 2),
         (Status.BYPASSED, 1),
     ],
 )
@@ -407,6 +407,69 @@ def test_incoherent_status_exit_pairs_fail_at_construction(status, exit_code):
     with pytest.raises(ValueError, match="incoherent"):
         dataclasses.replace(
             _sample_report(), status=status, status_driver=driver, exit_code=exit_code
+        )
+
+
+def test_indeterminate_exit_zero_is_coherent():
+    """Story 1.9: Status.INDETERMINATE widened its legal-exit set to
+    {0, 1, 130} (mirroring Status.WARN's existing two-legal-exit shape) —
+    the ONE sanctioned --allow-empty exception. Construction must accept
+    the pairing (not merely reject it, per the OLD, now-superseded
+    incoherence the parametrized test above used to pin at (INDETERMINATE,
+    0) — moved to (INDETERMINATE, 2), still genuinely incoherent)."""
+    driver = StatusDriver(
+        axis=AXIS_VULNERABILITY, finding_id="indeterminate:empty-extraction:scan"
+    )
+    report = dataclasses.replace(
+        _sample_report(),
+        status=Status.INDETERMINATE,
+        status_driver=driver,
+        exit_code=0,
+    )
+    assert report.status is Status.INDETERMINATE
+    assert report.exit_code == 0
+
+
+@pytest.mark.parametrize(
+    "driver",
+    [
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id="hygiene:DEP001:missingmod"),
+        # Shares the empty-extraction NAMESPACE but not the exact id — the
+        # exception is an exact match, never a prefix (review finding,
+        # 2026-07-17 pass 2).
+        StatusDriver(
+            axis=AXIS_VULNERABILITY,
+            finding_id="indeterminate:empty-extraction:not-the-sanctioned-one",
+        ),
+    ],
+    ids=["unrelated-driver", "namespace-collision-not-exact-match"],
+)
+def test_indeterminate_exit_zero_rejected_for_non_empty_extraction_driver(driver):
+    """Review finding (2026-07-17 pass 2): the exit-0 exception must be
+    enforced at CONSTRUCTION time too (not just verdict.exit_code_for) —
+    a directly-built ComplianceReport must not be able to claim exit 0 for
+    an indeterminate cause other than the exact D2(c) empty-extraction
+    driver, including one that merely shares its id namespace."""
+    with pytest.raises(ValueError, match="empty-extraction"):
+        dataclasses.replace(
+            _sample_report(),
+            status=Status.INDETERMINATE,
+            status_driver=driver,
+            exit_code=0,
+        )
+
+
+def test_indeterminate_exit_zero_rejected_with_null_driver():
+    """A driverless indeterminate report already fails the earlier
+    'status requires a driver' check — this pins that the NEW
+    empty-extraction-exactness check doesn't crash (AttributeError on
+    None) ahead of that existing, more specific error."""
+    with pytest.raises(ValueError):
+        dataclasses.replace(
+            _sample_report(),
+            status=Status.INDETERMINATE,
+            status_driver=None,
+            exit_code=0,
         )
 
 
