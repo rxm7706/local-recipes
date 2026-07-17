@@ -132,6 +132,7 @@ def assemble_report(
     hygiene_applicable: bool = True,
     allow_empty: bool = False,
     empty_extraction: bool = False,
+    fail_under_coverage: float = 0.0,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -162,8 +163,22 @@ def assemble_report(
     and the vulnerability axis are untouched.
 
     ``empty_extraction=True`` (Story 1.9, D2(c)) forces BOTH axes'
-    ``resolution_depth`` to ``None`` — see the module docstring."""
-    status, driver = compose(rungs)
+    ``resolution_depth`` to ``None`` — see the module docstring.
+
+    ``fail_under_coverage`` (Story 3.1, default ``0.0``/off — FR19's
+    coverage-floor role): once per-axis coverage below is computed, an axis
+    with ``deps_total > 0`` whose ``deps_assessed/deps_total*100`` falls
+    below the floor composes one ``indeterminate:coverage-floor:<axis>``
+    rung with a paired ``Finding`` — closing deferred-work.md's remaining
+    zero-real-analysis gap (a project an engine can't resolve for reasons
+    internal to itself emits no findings, so the pre-3.1 report read fully-
+    covered/clean for that reason) whenever a caller actually configures a
+    floor. A ``deps_total == 0`` axis (not-applicable, or a genuinely empty
+    scan) is never flagged — a percentage has nothing to be computed over.
+    At the default (``0``), a percentage is never negative, so the
+    comparison structurally never fires (a no-op)."""
+    findings = list(findings)
+    rungs = list(rungs)
     resolution_depth = (
         None
         if empty_extraction
@@ -206,6 +221,42 @@ def assemble_report(
             )
         )
     coverage = tuple(coverage)
+
+    # Story 3.1 (FR19's coverage-floor role, opt-in): an axis whose assessed
+    # fraction falls below fail_under_coverage composes one
+    # indeterminate:coverage-floor:<axis> rung + paired Finding -- a real
+    # gate, never a silent pass on zero real analysis (deferred-work.md).
+    # deps_total == 0 (not-applicable, or a genuinely empty scan) is vacuous
+    # -- nothing to assess, never flagged.
+    for axis_coverage in coverage:
+        if axis_coverage.deps_total == 0:
+            continue
+        pct = axis_coverage.deps_assessed / axis_coverage.deps_total * 100
+        if pct < fail_under_coverage:
+            finding_id = f"indeterminate:coverage-floor:{axis_coverage.axis}"
+            findings.append(
+                Finding(
+                    id=finding_id,
+                    axis=axis_coverage.axis,
+                    message=(
+                        f"{axis_coverage.axis}: only {pct:.1f}% of "
+                        f"{axis_coverage.deps_total} dependencies assessed "
+                        f"({axis_coverage.deps_assessed} assessed) -- below "
+                        f"the configured {fail_under_coverage:.1f}% "
+                        "coverage floor"
+                    ),
+                    subject=axis_coverage.axis,
+                    severity=None,
+                )
+            )
+            rungs.append(
+                (
+                    Status.INDETERMINATE,
+                    StatusDriver(axis=axis_coverage.axis, finding_id=finding_id),
+                )
+            )
+
+    status, driver = compose(rungs)
     return ComplianceReport(
         schema_version=REPORT_SCHEMA_VERSION,
         tool_name=TOOL_NAME,
