@@ -5,7 +5,7 @@ purpose: build-substrate
 altitude: feature
 paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)'
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
-status: draft
+status: final
 created: '2026-07-17'
 updated: '2026-07-17'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
@@ -61,7 +61,7 @@ graph TD
 
 - **Binds:** all
 - **Prevents:** orchestrator/plugin lock-in (Dagster under Prefect acquisition; `kedro-dagster` bus factor ≈ 1; `kedro-mcp` 0.1.2; BSL 0.x)
-- **Rule:** pipeline structure, node logic, and dataset declarations live only in the Kedro project. `kedro-dagster`, `kedro-mcp`, and BSL bindings are thin adapters a story could swap (exit ramps: Dagster Components / Kedro's Prefect deployer) without touching nodes or catalog. No node, contract, or MCP tool may import Dagster or `kedro-mcp` APIs.
+- **Rule:** pipeline structure, node logic, and dataset declarations live only in the Kedro project. `kedro-dagster`, `kedro-mcp`, and BSL bindings are thin adapters a story could swap (exit ramps: Dagster Components / Kedro's Prefect deployer) without touching nodes or catalog. No node, contract, or MCP tool may import Dagster or `kedro-mcp` APIs — enforced by a meta-test (import-direction grep over `pipelines/`, `datasets/`, `hooks/`, `mcp/`) that ships with `kedro-catalog-check` (A2).
 
 ### AD-2 — Catalog-owned IO with per-host credential scoping (FR-1)
 
@@ -97,13 +97,13 @@ graph TD
 
 - **Binds:** the 23 atlas-relevant MCP tools; pipeline-trigger + dataset-read surface
 - **Prevents:** dependence on a 0.1.x guidance-scoped plugin; scope creep into the recipe-authoring tools
-- **Rule:** atlas MCP tools call Kedro session/catalog APIs directly (FastMCP patterns); the surface must work with `kedro-mcp` absent. Audit scope is `conda_forge_server.py` only; non-atlas recipe-authoring tools stay on the legacy FastMCP server; `library-futures`, `add-handoff`, and the 4 seed-gap suggesters stay CLI-only — no new MCP tools for them.
+- **Rule:** atlas MCP tools call Kedro session/catalog APIs directly (FastMCP patterns); the surface must work with `kedro-mcp` absent. MCP tool bodies carry **no metric/business logic** — they are dataset passthrough + pipeline triggers only (metric semantics live in exactly one place per era: the legacy CLIs/views until D1 lands, BSL after — `bsl-metric-check` anchors the handover). Audit scope is `conda_forge_server.py` only; non-atlas recipe-authoring tools stay on the legacy FastMCP server; `library-futures`, `add-handoff`, and the 4 seed-gap suggesters stay CLI-only — no new MCP tools for them.
 
 ### AD-8 — BSL is the single semantic translation interface (FR-8/FR-9)
 
 - **Binds:** every read surface (Vizro pages, Vizro-AI, MCP reads, A2A insights, WASM)
 - **Prevents:** 28-CLI-era metric logic re-fragmenting into per-surface SQL; inconsistent LLM-generated queries
-- **Rule:** metrics/dimensions (staleness, adoption stage, feedstock health, maintainer-role facts, …) are declared once as BSL models (Ibis → DuckDB); read surfaces consume BSL, never raw SQL against Parquet/DuckDB. The three FR-9 exceptions (`add-handoff`, `inventory-match`, `library-futures`) stay CLI-first and surface latest-report artifacts read-only. Pages meet the § 2.1 agent-legibility bar. Gate: `bsl-metric-check`.
+- **Rule:** metrics/dimensions (staleness, adoption stage, feedstock health, maintainer-role facts, …) are declared once as BSL models (Ibis → DuckDB); read surfaces consume BSL, never raw SQL against Parquet/DuckDB (catalog dataset passthrough for FR-7 reads is not a metric surface and computes nothing). The three FR-9 exceptions (`add-handoff`, `inventory-match`, `library-futures`) stay CLI-first and surface latest-report artifacts read-only. Pages meet the § 2.1 agent-legibility bar. Public-facing page breadth stays at D2's factory-status page (SM-C4: demand is feeds > pages). Gate: `bsl-metric-check`.
 
 ### AD-9 — Pandera-first contracts behind one validator-agnostic hook (FR-10)
 
@@ -121,19 +121,19 @@ graph TD
 
 - **Binds:** all waves, all loop execution, the six verify tasks
 - **Prevents:** the loop entering a wave whose gate doesn't exist; credentialed/live-network flakiness in gates; fixtures rotting in gitignored dirs
-- **Rule:** every wave's first deliverable is its own deterministic gate — `kedro-test` (A1), `kedro-catalog-check` (A2), `parity-diff` (built B1–B3, consumed at attended B4), `dagster-dryrun` (C1), `bsl-metric-check` (D1), `wasm-smoke` (G1). All gates are fixture-based, non-credentialed, run `--frozen`, and live in the tracked test tree (never `.claude/data/`). Attended events (B4 parity, C1 bring-up, D3 backend, F1 benchmark, G2 publish) are scheduled wave-boundary events. Credentialed runs are attended-only; loop paths never touch live credentialed endpoints.
+- **Rule:** every wave's first deliverable is its own deterministic gate — `kedro-test` (A1), `kedro-catalog-check` (A2), `parity-diff` (built B1–B3, consumed at attended B4), `dagster-dryrun` (C1), `bsl-metric-check` (D1), `wasm-smoke` (G1). All gates are fixture-based, non-credentialed, run `--frozen`, and live in the tracked test tree (never `.claude/data/`). The `[verify]` command set grows per wave and never shrinks; in-loop gates stay scoped to the changed unit + the story's fixtures, `test-all` runs at wave boundaries only. Wave-B verify assets are TEA `atdd` red-phase fixtures. Gates are never weakened, removed, or demoted from attended to unattended to raise the autonomy share (SM-C2 — attended events are features, not friction). Attended events (B4 parity, C1 bring-up, D3 backend, F1 benchmark, G2 publish) are scheduled wave-boundary events. Credentialed runs are attended-only; loop paths never touch live credentialed endpoints.
 
 ### AD-12 — One frozen exit-code convention; four-axis ComplianceReport (FR-16/FR-18)
 
 - **Binds:** the FR-18 terminal gate, `inventory-match`, CI consumers
 - **Prevents:** two competing exit-code enums (the shipped `inventory-match --policy` enum is inverted); schema drift vs pyforge-warden
-- **Rule:** exit 0 pass / 1 policy-fail / 2 error (full enum {0, 1, 2, 130}; `indeterminate` → 1). `inventory-match` flips to this convention with exactly one release of `INVENTORY_MATCH_LEGACY_EXIT=1`. The report is pyforge-warden's four-axis `ComplianceReport` schema unmodified: `hygiene` from the deptry node (source-less inputs → `not-applicable`, never failure), `security` from `inventory-match`/`cve` (the atlas never re-invokes osv-scanner), `license`/`currency` from atlas-native data or `not-applicable`.
+- **Rule:** exit 0 pass / 1 policy-fail / 2 error (full enum {0, 1, 2, 130}; `indeterminate` → 1). `inventory-match` flips to this convention with exactly one release of `INVENTORY_MATCH_LEGACY_EXIT=1`. The report is pyforge-warden's four-axis `ComplianceReport` schema unmodified, with **one producer**: the F4 terminal-gate node assembles every report — `hygiene` from the deptry node (source-less inputs → `not-applicable`, never failure), `security` from B7's matcher/`cve` datasets (the atlas never re-invokes osv-scanner; B7 produces inputs, never assembles), `license`/`currency` from atlas-native data or `not-applicable`. Scope split: per-invocation reports over user-supplied intake are entry-scoped artifacts; only the latest repo-scope report is the AD-15 derived-layer dataset.
 
 ### AD-13 — Offline degradation: skip-and-mark-stale, never fail (FR-1/FR-19/FR-21)
 
 - **Binds:** every external-source node/dataset; consumer profile
 - **Prevents:** air-gapped runs breaking; a pre-announcement API (Basilisk) taking the build down
-- **Rule:** when its endpoint is unreachable, an external-source node skips gracefully and marks its dataset stale — it never hard-fails the run. All endpoints route through the `resolve_*_urls` override convention (20 helpers; FR-19 adds `resolve_basilisk_urls`; FR-21 rides the existing `resolve_github_raw_urls` — no new helper). New-source nodes bind the standard rate-limit discipline (concurrency cap, `Retry-After` + jittered backoff, remaining quota surfaced to the schedule).
+- **Rule:** when its endpoint is unreachable, an external-source node skips gracefully — it **keeps the last-good dataset intact** (never writes an empty dataset over it) and stamps a machine-readable staleness marker in dataset metadata; it never hard-fails the run. Consumers surface the marker and apply the AD-15 freshness contract: data stale beyond its contract bound degrades the affected read/policy axis to `indeterminate` (→ exit 1 per AD-12), never a silent pass. All endpoints route through the `resolve_*_urls` override convention (20 helpers; FR-19 adds `resolve_basilisk_urls`; FR-21 rides the existing `resolve_github_raw_urls` — no new helper). New-source nodes bind the standard rate-limit discipline (concurrency cap, `Retry-After` + jittered backoff, remaining quota surfaced to the schedule).
 
 ### AD-14 — New signals are additive riders with fixture-enforced semantics (FR-19/20/21)
 
@@ -151,7 +151,7 @@ graph TD
 
 - **Binds:** all dependencies, the scaffolded project, loop worktrees
 - **Prevents:** stack drift off conda-forge/py3.14; worktree materialization of the fat `local-recipes` env; catalog drift
-- **Rule:** every component is conda-forge-sourced, pixi-managed, `nebi`-scaffolded; no standalone binaries or JVM; Python 3.14 floor (litellm excluded for exactly this). The scaffolded project ships its own lean pixi env and `kedro-test`. Any dependency change updates `docs/library-llms-full.md` in the same PR (`llms-full-check`). Air-gapped provisioning covers both routing layers (pipeline data endpoints AND `.pixi/config.toml [pypi-config]`).
+- **Rule:** every component is conda-forge-sourced, pixi-managed, `nebi`-scaffolded; no standalone binaries or JVM; Python 3.14 floor (litellm excluded for exactly this). Two recorded PyPI exceptions exist today (`boring-semantic-layer`, `kedro-mcp` — installed via pixi `pypi-dependencies`, not yet on conda-forge): packaging them is a candidate CFE task; no further PyPI additions without the same recorded-exception treatment. The scaffolded project ships its own lean pixi env and `kedro-test` (which includes an import smoke for the noarch py3.14-unclassified glue, e.g. `kedro_dagster`). Any dependency change updates `docs/library-llms-full.md` in the same PR (`llms-full-check`). Air-gapped provisioning covers both routing layers (pipeline data endpoints AND `.pixi/config.toml [pypi-config]`).
 
 ### AD-17 — Pipeline snapshots are advisory, never authoritative for authoring (§ 3.4)
 
@@ -163,19 +163,19 @@ graph TD
 
 - **Binds:** all loop-driven stories; all BMAD artifact writes
 - **Prevents:** the worktree × gitignored-symlink seam silently stranding spec/status artifacts; marker/symlink desync writing to the wrong project
-- **Rule:** loop stories run in worktrees only after the symlink bootstrap recreates `_bmad-output/{planning,implementation}-artifacts` links inside the worktree; Story A3 is the designated first loop story and worktree smoke. All BMAD writes resolve through the symlinks; switching is only via `scripts/bmad-switch conda-forge-atlas-datapipeline` (supersedes the spec's pre-intake `local-recipes` literal). Keystone stories (B1/B2/F1) get pre-flight budget raises.
+- **Rule:** loop stories run in worktrees only after the symlink bootstrap recreates `_bmad-output/{planning,implementation}-artifacts` links inside the worktree; Story A3 is the designated first loop story and worktree smoke. All BMAD writes resolve through the symlinks; switching is only via `scripts/bmad-switch conda-forge-atlas-datapipeline` (supersedes the spec's pre-intake `local-recipes` literal). Wave-0 preconditions additionally include the one-time hooks approval and the live `bmad-groundtruth` re-check (intake verified git-surface-only). Keystone stories (B1/B2/F1) get pre-flight budget raises. REVIEW sessions are constrained to correctness-affecting findings (the verified over-engineering failure mode of long unattended runs). Delivery seam: the loop ends at local squash-merge — PR-per-wave wraps it, with operator-invoked `bmad-loop-sweep` triage at wave boundaries; the effort closes with the CFE Rule-2 retro (attended, non-deferrable).
 
 ### AD-19 — Migration boundary and legacy retirement gate (Q1, § 3.4)
 
 - **Binds:** B4, F1, everything claiming migration scope
 - **Prevents:** premature legacy retirement; scope creep past § 3.3/§ 3.4
-- **Rule:** the legacy orchestrator runs in parallel until B4 proves parity — Q1 default: exact row-count + value parity on the `v_actionable_packages`-family views, timestamp/ordering-only diffs documented benign — with recorded evidence and attended sign-off; `phase_state` and `bootstrap-data` retire with it. Scope is fixed by § 3.3 + § 3.4: the three external-refresh assets are in; static seeds, template trees, live authoring-time fetches, and user-supplied inputs are declared inputs, never pipeline products. Anything not listed there is outside the migration's universe (no new external sources beyond the committed set).
+- **Rule:** the legacy orchestrator runs in parallel until B4 proves parity — Q1 default: exact row-count + value parity on the `v_actionable_packages`-family views, timestamp/ordering-only diffs documented benign — with recorded evidence and attended sign-off; `phase_state` and `bootstrap-data` retire with it. B4 is the abort ramp bounding sunk cost at Waves 0–B; if parity proves economically unreachable, the D/G read-surface value survives via the Ibis-over-SQLite severability ramp (fallback, not plan — spec § 4.6). Scope is fixed by § 3.3 + § 3.4: the three external-refresh assets are in; static seeds, template trees, live authoring-time fetches, and user-supplied inputs are declared inputs, never pipeline products. Anything not listed there is outside the migration's universe (no new external sources beyond the committed set).
 
 ### AD-20 — Observability and inter-agent channels are singular (FR-11/FR-12)
 
 - **Binds:** every node, run, DuckDB query; both agents
 - **Prevents:** untraceable failures; ad-hoc agent-to-agent side channels
-- **Rule:** every node emits OpenLineage events (rows, latency, cache hits) and participates in an end-to-end OTel trace resolving down to named API calls. The A2A surface is the sole structured inter-agent channel between the cf_atlas analytical agent and the `conda-forge-expert` authoring agent; contract violations (FR-10) and policy breaches (FR-18) raise A2A alerts on it.
+- **Rule:** every node emits OpenLineage events (rows, latency, cache hits) and participates in an end-to-end OTel trace resolving down to named API calls (fixture-verified: emitted-event/span fixtures are E2's gate assets). The A2A surface is the sole structured inter-agent channel between the cf_atlas analytical agent and the `conda-forge-expert` authoring agent; payload schemas live in the `a2a/` module — the single schema source for alerts and insights; contract violations (FR-10) and policy breaches (FR-18) raise A2A alerts on it.
 
 ### AD-21 — WASM read surface: static Parquet + HTTP Range, zero backend (FR-14)
 
@@ -187,7 +187,13 @@ graph TD
 
 - **Binds:** wiki scaffold, agno crews, Wagtail sync, H4 triggers
 - **Prevents:** the knowledge-base layer becoming a second writer into pipeline datasets
-- **Rule:** factory components read pipeline outputs via catalog/BSL and write only the `wiki/raw/ → compiled/ → outputs/` tree and the Wagtail CMS (REST, idempotent re-push). The 5 personas resolve through the BMAD customization layers; crews are Dagster-triggered (assets + sensors + schedules); PostgreSQL and MinIO are conda-forge-provisioned per AD-16.
+- **Rule:** factory components read pipeline outputs via catalog/BSL and write only the `wiki/raw/ → compiled/ → outputs/` tree and the Wagtail CMS (REST, idempotent re-push); wiki outputs carry their source datasets' staleness markers forward (AD-13) — republication never launders freshness. The 5 personas resolve through the BMAD customization layers; crews are Dagster-triggered (assets + sensors + schedules); PostgreSQL and MinIO are conda-forge-provisioned per AD-16 (note: only the MinIO Python SDK is in-env today — server provisioning is an H1 precondition, see Deferred).
+
+### AD-23 — One execution plane: every run rides the same Kedro job, budgets and hooks included
+
+- **Binds:** FR-6, FR-7, all pipeline triggers (Dagster schedules/sensors, MCP `run_*` tools, CLI)
+- **Prevents:** two concurrent writers to one dataset; MCP-triggered runs escaping per-node timeouts, contracts, profiles, and lineage
+- **Rule:** budgets (per-node timeout/retry), validation hooks, lineage/OTel instrumentation, and profile definitions are declared in Kedro run configuration — so every entry point (Dagster-compiled job, MCP trigger, CLI) executes the identical named pipeline with identical machinery; an MCP trigger names a profile explicitly or inherits the `maintainer` default. A dataset has one writing run at a time: run admission serializes on the target dataset set (concurrent trigger of an already-running pipeline is rejected/queued, never interleaved).
 
 ## Consistency Conventions
 
@@ -195,7 +201,12 @@ graph TD
 |---|---|
 | Pipeline/node/dataset naming | Pipelines: the seven § 5.2 names as snake_case packages (`core`, `pypi_intelligence`, `vulnerability`, `vcs_health`, `universal_sbom`, `seed_gaps`, `derived_artifacts`). Nodes: `<verb>_<subject>` pure functions; ported phases keep a `# legacy: Phase <ID>` provenance comment. Datasets: `<domain>_<entity>` snake_case (e.g. `basilisk_vulns`); layer tag (`raw`/`intermediate`/`primary`/`derived`) declared in catalog metadata. |
 | Endpoint overrides | Every external endpoint is overridable via its `<HOST>_BASE_URL`-style setting, declared in dataset config (the `resolve_*_urls` convention carried forward). New sources add exactly one override point. |
-| Identity & formats | Conda purls per CEP-63 draft form with `?channel=conda-forge`; `cfe:*` property namespace on BOMs (preserved, never stripped); versions compared via `packaging.version` (PEP 440); EPSS percentiles stored 0–100; timestamps as epoch seconds in `*_fetched_at`. |
+| Identity & formats | Conda purls per CEP-63 draft form with `?channel=conda-forge`; `cfe:*` property namespace on BOMs (preserved, never stripped); versions compared via `packaging.version` (PEP 440); EPSS percentiles stored 0–100; all timestamps normalized to **epoch seconds** at ingest (repodata per-build timestamps are milliseconds — convert once, at the dataset boundary). |
+| Join keys | Canonical entity keys, fixed across pipelines: conda-side datasets key on `conda_name` (+ `feedstock_name` where B.5 attribution applies); PyPI-side on `pypi_name`; the `conda_name↔pypi_name` bridge is only the mapping dataset (Phase C / Q6); vuln datasets key on `(conda_name, advisory_id)` (Basilisk batch shape). Purls are interchange/export identity, **never** internal join keys. |
+| Parquet layout | Partition columns and path scheme are declared per dataset in the catalog only (`data/<layer>/<dataset_name>/`); nodes never choose physical layout. The published WASM artifact layout (chunking, manifest) has a single owner: the G2 emitter. |
+| Dataset schema evolution | Additive-first (new columns nullable); a breaking change to a persisted dataset's schema requires, in the same story: catalog metadata version note + a migration node or re-materialization + updated contracts and fixtures. No shared `SCHEMA_VERSION` constant returns. |
+| Degradation vocabulary | Three distinct markers, never interchanged: `stale` (dataset-level freshness, AD-13/AD-15) · `unresolved` (resolver could not run, FR-17) · `not-applicable` (axis semantics, FR-16). FR-18 mapping: `not-applicable` → not-applicable verdict; `unresolved`/stale-beyond-contract → `indeterminate`. |
+| External-source governance | Source churn is a one-row edit in the spec § 13.1 slot/status matrix (Category · Slot · Override · Status); matrix reviews per spec § 13 are the sustainability tripwire (Anaconda ToS → S3-parquet consumer path already slotted). New sources only via the evidence-gating pattern (AD-19). |
 | State & errors | Nodes are pure — no retries, backoff, or checkpointing inside node bodies (dataset/orchestrator concerns per AD-5/AD-6). Failures raise native exceptions; per-row soft errors land in `last_error`-style columns, per legacy convention. Exit codes per AD-12 everywhere a CLI/gate exits. |
 | Config & profiles | Kedro `conf/base` (tracked) vs `conf/local` (gitignored, credentials); profile values are defaults, explicit env/run-config always wins (`os.environ.setdefault` semantics). |
 | Tests & fixtures | Fixtures in the tracked test tree; contract fixtures named for the invariant they guard (e.g. `test_no_thirty_gb_lie` carries over); sampled-data fixtures are generated attended, once, from operator runtime data — gates never read `.claude/data/`. |
@@ -209,17 +220,17 @@ Pins are floors from `pixi.toml` except where capped.
 
 | Name | Version |
 |---|---|
-| Python | 3.14 floor (repo-wide) |
+| Python | 3.14 (repo pins `3.14.*` exact-minor; "floor" is the policy statement) |
 | kedro / kedro-datasets / kedro-viz | ≥1.5.0 / ≥9.5.0 / ≥12.4.0 |
-| kedro-dagster | ≥0.7.0 (carries `dagster <2.0` pin — replaceable glue per AD-1) |
-| kedro-mcp | ≥0.1.2 (wrapped only, never load-bearing) |
+| kedro-dagster | ≥0.7.0 (carries `dagster <2.0` pin — replaceable glue per AD-1; py3.14 compat is solve-asserted only — `kedro-test` import smoke covers it, AD-16) |
+| kedro-mcp | ≥0.1.2 (wrapped only, never load-bearing; **PyPI-sourced** — recorded AD-16 exception) |
 | dagster (+ pipes, webserver) | ≥1.13.13 |
 | duckdb (+ `vss`) | ≥1.5.4 |
 | ibis-framework (+ ibis-duckdb) | ≥12.0.0 |
-| boring-semantic-layer | ≥0.3.15 (pins: structlog >24.2,<26 · sqlglot >26.32,<28.7) |
+| boring-semantic-layer | ≥0.3.15 (pins: structlog >24.2,<26 · sqlglot >26.32,<28.7; **PyPI-sourced** — recorded AD-16 exception) |
 | vizro / vizro-ai / vizro-mcp | ≥0.1.59 / ≥0.4.1 / ≥0.1.4 |
 | pandera | ≥0.32.1 (primary validator) |
-| great-expectations | 1.18.2 **cap** (upstream `<3.14` from 1.19.0 — no ≥1.19 features) |
+| great-expectations | pixi floor ≥1.18.2, lock at 1.18.2; the **cap is AD-9 policy**, not a pin (upstream `<3.14` from 1.19.0 — no ≥1.19 features even if a later build solves) |
 | deptry | ≥0.25.1 (conda-native; FR-16 engine) |
 | nebi-cli | ≥0.13 (scaffolding) |
 | openlineage-python / opentelemetry-sdk+api | ≥1.51.0 / ≥1.43.0 |
@@ -267,6 +278,7 @@ graph LR
   VULN --> SBOM
   CORE --> SEED["seed_gaps<br/>(4 read-only suggesters)"]
   PYPI --> SEED
+  VULN --> SEED
   CORE --> DER["derived_artifacts<br/>(export-purls, universe-sbom, freshness)"]
   PYPI --> DER
   VULN --> DER
@@ -276,11 +288,12 @@ graph LR
 Deployment & environments (the operational envelope this altitude owns):
 
 - **Operator workstation (primary)** — pixi envs; Dagster invoked on-demand/scheduled locally, no persistent daemon unless Wave-G sensors force the Q2 revisit; `pixi run viz` for the structural view; Dagster UI for run state; ~3 GB storage budget declared as a resource constraint (vdb 2.5 GB dominant).
-- **Loop execution plane** — bmad-loop v0.8.1, sequential, tmux, worktree isolation with the AD-18 bootstrap; verify gates per AD-11; linux-64/osx-arm64 only.
+- **Loop execution plane** — bmad-loop v0.8.1, sequential, tmux, worktree isolation with the AD-18 bootstrap; verify gates per AD-11; linux-64/osx-arm64 only. Supervised-first cadence (overnight-eligible only after clean supervised stories); long background test runs covered by per-wave `dev_stall_grace_s` tuning (raise for F1).
+- **Observation planes (three, deliberately unjoined)** — loop TUI = the only loop-session observer; BMAD dashboards (`bmad-dashboard`/MyBMAD) = artifact state via the `_bmad-output` tree; kedro-viz + Dagster UI = pipeline plane. A unified view is out of scope (upstream feature request).
 - **Static publish plane (Wave G)** — Parquet chunks + WASM bundle to a static host (Q4 default GitHub Pages), consumed browser-side with zero backend.
 - **Air-gapped/enterprise** — consumer profile fully offline (AD-13); mirror routing via override points (AD-2) + `.pixi/config.toml [pypi-config]` (AD-16).
 - **Wave-H services** — PostgreSQL + MinIO, conda-forge-provisioned, local to the factory layer (AD-22).
-- Data domains three ways (technical research): BMAD artifacts (symlinked, AD-18) · tracked test fixtures (the only gate-visible data, AD-11) · runtime data (`.claude/data/`, gitignored, never a gate dependency).
+- Data domains three ways (technical research): BMAD artifacts (symlinked, AD-18) · tracked test fixtures (the only gate-visible data, AD-11) · runtime data (`.claude/data/`, gitignored, never a gate dependency). The runtime Parquet store is fully rebuildable — no backup obligation beyond the ~3 GB budget; "CI" in AD-12 = the repo's own CI pipeline consuming the FR-18 exit code.
 
 ## Capability → Architecture Map
 
@@ -291,8 +304,8 @@ Deployment & environments (the operational envelope this altitude owns):
 | FR-3 TTL gating | `IncrementalParquetDataset` | AD-5 |
 | FR-4 phase_state removal / resumability | runner + persisted datasets | AD-5, AD-19 |
 | FR-5 DuckDB singularity | Parquet store + DuckDB | AD-4 |
-| FR-6 Dagster orchestration | `dagster/` compile target | AD-1, AD-6 |
-| FR-7 MCP surface | `src/<pkg>/mcp/` | AD-7 |
+| FR-6 Dagster orchestration | `dagster/` compile target | AD-1, AD-6, AD-23 |
+| FR-7 MCP surface | `src/<pkg>/mcp/` | AD-7, AD-23 |
 | FR-8 BSL | `src/<pkg>/bsl/` | AD-8 |
 | FR-9 Vizro read surface (28-CLI port, 3 exceptions, factory-status page) | `vizro_app/` | AD-8, AD-17 |
 | FR-10 data-quality contracts | node contracts + `hooks/` | AD-9 |
@@ -321,6 +334,7 @@ No human elicitation occurred; nothing was invented. Resolutions, per the headle
 6. **`bmad-switch conda-forge-atlas-datapipeline`** supersedes the spec's pre-intake `local-recipes` literal (deviation carried from PRD § 9.11 into AD-18).
 7. **Sensor tension recorded**: § 5.9 sensors vs Q2's no-daemon default — resolved as Deferred with a Wave-G revisit condition, not decided here.
 8. **Conditional Phase T** (trendshift Track A) joins the surface only if shipped before Wave B completes; re-check with live groundtruth at execution start. Not modeled as an AD.
+9. **Reviewer-gate deltas (2026-07-17)**: the gate (rubric walker + version lens + adversarial two-units lens + input reconciliation, artifacts in `reviews/`) added AD-23, six convention rows (join keys, Parquet layout, schema evolution, degradation vocabulary, external-source governance, timestamp normalization), the AD-13 last-good/staleness mechanism, the AD-12 single-producer scope split, and the AD-16 PyPI-exception record. Two reality tensions surfaced and recorded rather than resolved: `boring-semantic-layer`/`kedro-mcp` are PyPI-sourced today (vs FR-15's conda-forge-only doctrine), and MinIO exists in-env only as the Python SDK, not a server (Wave-H precondition).
 
 ## Deferred
 
@@ -333,7 +347,10 @@ Intentionally undecided, each with its owner/revisit condition:
 - **Q7 — Basilisk landing point** (interim legacy Phase U only if a pre-migration window matters) → before B8.
 - **Sensor event sources** (PyPI/GitHub webhooks vs RSS) and the daemon question they drag in → G3.
 - **A2A transport choice** (publish/subscribe vs direct message) and protocol library → E1 design; the invariant is only "structured payloads, single channel" (AD-20).
-- **F3 embedding model/strategy** for `vss` RAG → F3 story spec.
+- **F3 embedding model/strategy** for `vss` RAG → F3 story spec — including how the `vss` extension is provisioned offline (default is a network `INSTALL`, which collides with AD-13 for the consumer profile).
+- **Physical scaffold naming** (scaffold root dir, Python package name, Parquet store root) → A1 story spec (nebi scaffold is the single owner; partition/path conventions above already bind it).
+- **MinIO server provisioning** (only the Python SDK is in-env; conda-forge server package or documented alternative) → H1 precondition.
+- **Conda-forge packaging of the two PyPI exceptions** (`boring-semantic-layer`, `kedro-mcp`) → candidate CFE task; until then they remain recorded AD-16 exceptions.
 - **D2 page inventory/design detail** → the CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`) before frontend work, per spec § 2.4.
 - **F1 benchmark pass threshold** → fixed in the F1 story spec before the benchmark runs (SM-3); adjudicated at the attended event.
 - **Parity-diff comparison granularity beyond the Q1 views** → B4 evidence record.
