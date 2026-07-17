@@ -14,6 +14,7 @@ from pyforge.warden.extract import meta_v0
 from pyforge.warden.extract.meta_v0 import (
     META_V0_REQUIREMENTS_SECTION,
     MetaV0Extractor,
+    capture_selector_comments,
     neutralize_unquoted_braces,
     strip_jinja_statements,
 )
@@ -349,7 +350,12 @@ def test_selector_comment_on_a_templated_dep_line_never_becomes_a_version(
     """`- {{ nv }}  # [linux]` -- the defensive quoting used to swallow the
     selector comment INTO the quoted string (YAML can no longer strip what
     is inside quotes), so the component came back with the corrupted EXACT
-    version `'# [linux]'` (verified live before the fix)."""
+    version `'# [linux]'` (verified live before the fix). Since Story 2.3,
+    the trailing `# [linux]` is ALSO a real selector-comment capture (the
+    line is still a `- <content>  # [<cond>]` list-item line even though
+    its content is templated) -- correctly tagged `[sel:linux]` and
+    escalated to UNION_MARKED (superseding 2.2's assumption that a
+    selector comment has zero semantic effect on the component)."""
     body = (
         '{% set nv = "numpy" %}\n'
         "requirements:\n"
@@ -360,7 +366,8 @@ def test_selector_comment_on_a_templated_dep_line_never_becomes_a_version(
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "numpy"
     assert component.version is None
-    assert component.extraction_mode is ExtractionMode.PARSED
+    assert component.extraction_mode is ExtractionMode.UNION_MARKED
+    assert [p.section for p in component.provenance] == ["requirements.run[sel:linux]"]
 
 
 def test_per_output_test_requires_is_walked(tmp_path):
@@ -463,3 +470,224 @@ def test_branch_entries_inside_one_list_still_union(tmp_path):
     )
     components = _extractor().extract(path, MANIFEST)
     assert {c.name for c in components} == {"alwayspkg", "winpkg"}
+
+
+# --- Story 2.3: compiler()/stdlib()/pin_subpackage() build-tool exclude -------
+
+
+def test_compiler_and_stdlib_calls_are_excluded_entirely(tmp_path):
+    body = (
+        "requirements:\n"
+        "  build:\n"
+        "    - {{ compiler('c') }}\n"
+        "    - {{ stdlib('c') }}\n"
+        "    - python\n"
+    )
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "python"
+
+
+def test_pin_subpackage_call_is_excluded_entirely(tmp_path):
+    body = (
+        '{% set name = "mypkg" %}\n'
+        "requirements:\n"
+        "  run:\n"
+        "    - {{ pin_subpackage(name + '-core', exact=True) }}\n"
+        "    - click\n"
+    )
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "click"
+
+
+def test_build_tool_call_sharing_a_line_with_unrelated_text_degrades(tmp_path):
+    """The C0b silent-drop the `[^{}]*` regex fix closes: a SECOND,
+    unrelated `{{ }}` expression sharing the line with a
+    compiler()/stdlib()/pin_subpackage() call must NOT be swallowed whole
+    by the exclude regex's `fullmatch` -- it falls through to the generic
+    degrade ladder instead (kept, marked, never silently excluded)."""
+    body = (
+        "requirements:\n"
+        "  build:\n"
+        "    - {{ compiler('c') }} {{ pin_compatible('numpy') }}\n"
+    )
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
+
+
+# --- Story 2.3: `# [cond]` selector-comment union, line-number-correlated ----
+
+
+def test_selector_comment_sibling_entries_are_unioned_and_tagged(tmp_path):
+    body = (
+        "requirements:\n"
+        "  run:\n"
+        "    - pywin32  # [win]\n"
+        "    - unixlib  # [unix]\n"
+    )
+    path = write_meta(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
+    assert tagged == {
+        ("pywin32", "requirements.run[sel:win]", ExtractionMode.UNION_MARKED),
+        ("unixlib", "requirements.run[sel:unix]", ExtractionMode.UNION_MARKED),
+    }
+
+
+def test_uncommented_occurrence_walked_before_commented_is_not_swapped(tmp_path):
+    """THE exact review-pass-2 live-reproduced shape:
+    `requirements.run: [helper, "helper  # [win]"]` -- an uncommented
+    occurrence of the SAME dependency text, listed BEFORE a commented one,
+    in the SAME list. The content-keyed FIFO-queue mechanism review pass 1
+    shipped wrongly tagged the FIRST (uncommented) occurrence here (its
+    queue held exactly one entry, and ANY lookup by that content popped it
+    regardless of which occurrence actually carried the comment); the
+    line-number mechanism has zero collision risk and must not swap.
+
+    Asserted as an ORDERED list of per-entry (name, section, mode) tuples
+    (document order) -- never a sorted()-over-section-strings comparison,
+    which cannot detect a swapped attribution (the exact gap that let
+    review pass 2's bug slip through a "passing" test)."""
+    body = "requirements:\n  run:\n    - helper\n    - helper  # [win]\n"
+    path = write_meta(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    entries = [
+        (c.name, c.provenance[0].section, c.extraction_mode) for c in components
+    ]
+    assert entries == [
+        ("helper", "requirements.run", ExtractionMode.PARSED),
+        ("helper", "requirements.run[sel:win]", ExtractionMode.UNION_MARKED),
+    ]
+
+
+def test_same_text_in_two_sections_is_correctly_attributed(tmp_path):
+    body = (
+        "requirements:\n"
+        "  build:\n"
+        "    - helper\n"
+        "  run:\n"
+        "    - helper  # [win]\n"
+    )
+    path = write_meta(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
+    assert tagged == {
+        ("helper", "requirements.build", ExtractionMode.PARSED),
+        ("helper", "requirements.run[sel:win]", ExtractionMode.UNION_MARKED),
+    }
+
+
+def test_non_conventional_section_order_still_correctly_attributed(tmp_path):
+    """`run:` physically BEFORE `build:` in the raw text (the WALK order is
+    still the fixed ``(build, host, run)`` tuple, unaffected) -- proves
+    line-based correlation, unlike FIFO, doesn't depend on walk order
+    matching document order at all."""
+    body = (
+        "requirements:\n"
+        "  run:\n"
+        "    - helper  # [win]\n"
+        "  build:\n"
+        "    - helper\n"
+    )
+    path = write_meta(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
+    assert tagged == {
+        ("helper", "requirements.build", ExtractionMode.PARSED),
+        ("helper", "requirements.run[sel:win]", ExtractionMode.UNION_MARKED),
+    }
+
+
+def test_duplicate_pre_comment_text_different_conditions_both_attributed(
+    tmp_path,
+):
+    """Two DISTINCT source lines sharing identical dep text, each with its
+    OWN `# [cond]` comment -- both correctly attributed by line number (no
+    collision, no "last-wins" needed at all, unlike the superseded
+    content-keyed mechanisms)."""
+    body = (
+        "requirements:\n"
+        "  run:\n"
+        "    - helper  # [win]\n"
+        "    - helper  # [osx]\n"
+    )
+    path = write_meta(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
+    assert tagged == {
+        ("helper", "requirements.run[sel:win]", ExtractionMode.UNION_MARKED),
+        ("helper", "requirements.run[sel:osx]", ExtractionMode.UNION_MARKED),
+    }
+
+
+def test_selector_comment_on_a_non_list_item_line_is_never_captured(tmp_path):
+    """`skip: true  # [win]` -- a non-list-item line -- must NEVER be
+    captured as a selector comment (Boundaries' own "Never" clause)."""
+    body = (
+        "build:\n"
+        "  skip: true  # [win]\n"
+        "requirements:\n"
+        "  run:\n"
+        "    - helper\n"
+    )
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.PARSED
+    assert component.provenance[0].section == "requirements.run"
+
+
+def test_capture_selector_comments_ignores_non_list_item_lines():
+    comments = capture_selector_comments(
+        "build:\n  skip: true  # [win]\nrequirements:\n  run:\n    - helper  # [unix]\n"
+    )
+    assert comments == {4: "unix"}
+
+
+def test_capture_selector_comments_ignores_blank_bracket():
+    """Review Pass 3 fix: a blank/whitespace-only bracket (`# []`, a
+    plausible editing leftover) carries no real condition -- it must NOT
+    be captured, since tagging it would produce a meaningless `[sel:]`
+    suffix and wrongly escalate an otherwise-PARSED entry to
+    UNION_MARKED for a distinction that doesn't exist."""
+    comments = capture_selector_comments(
+        "requirements:\n  run:\n    - helper  # []\n    - other  # [   ]\n"
+    )
+    assert comments == {}
+
+
+def test_blank_selector_bracket_leaves_entry_untagged_parsed(tmp_path):
+    body = "requirements:\n  run:\n    - helper  # []\n"
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.PARSED
+    assert component.provenance[0].section == "requirements.run"
+
+
+def test_captured_condition_is_truncated_unconditionally(tmp_path):
+    """The captured `# [cond]` text is bounded via `truncate_for_name`
+    before being used in the `[sel:COND]` tag -- an arbitrarily long
+    condition must never embed unbounded into `Provenance.section`
+    (NFR-S5; mirrors recipe_v1.py's identical `if:` condition bound)."""
+    long_condition = "x" * 500
+    body = f"requirements:\n  run:\n    - helper  # [{long_condition}]\n"
+    path = write_meta(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    section = component.provenance[0].section
+    assert len(section) < 300
+    assert section.endswith("…[truncated]]")
+
+
+def test_deeply_nested_yaml_raises_unparsable_not_a_crash(tmp_path):
+    """v0 has no recursive WALKER of its own (that construct is v1-only),
+    but the shared RecursionError guard must still hold for a
+    pathologically nested (but well within the 5MB manifest cap) YAML
+    document -- never a raw crash (Story 2.3, Review Pass 1 correction #2,
+    mirrored onto meta_v0.py's own extract())."""
+    depth = 3000
+    nested = "[" * depth + "1" + "]" * depth
+    body = f"requirements:\n  run: []\nextra:\n  value: {nested}\n"
+    path = write_meta(tmp_path, body)
+    with pytest.raises(UnparsableManifestError):
+        _extractor().extract(path, MANIFEST)

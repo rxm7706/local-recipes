@@ -45,6 +45,11 @@ DEPTRY_IGNORE = FIXTURES / "deptry_ignore"
 VULN_CRITICAL = FIXTURES / "vuln_critical"
 VULN_HIGH = FIXTURES / "vuln_high"
 WARN_AND_INDETERMINATE = FIXTURES / "warn_and_indeterminate"
+RECIPE_COMMON = FIXTURES / "recipe_common"
+HYGIENE_NOT_APPLICABLE = FIXTURES / "hygiene_not_applicable"
+HYGIENE_NOT_APPLICABLE_MALFORMED = FIXTURES / "hygiene_not_applicable_malformed"
+PIXI_LOCK_BASIC = FIXTURES / "pixi_lock_basic"
+CONDA_LOCK_BASIC = FIXTURES / "conda_lock_basic"
 
 
 def load_schema() -> dict:
@@ -126,6 +131,24 @@ def test_sentinel_driver_references_an_emitted_finding(capsys):
     driver = document["status"]["driver"]
     assert driver["finding_id"] in {f["id"] for f in document["findings"]}
     assert driver["axis"] == "vulnerability"
+
+
+def test_sentinel_fixture_hygiene_axis_is_not_applicable(capsys):
+    """Story 2.4 (AC3), review finding, 2026-07-17: SENTINEL has zero
+    adjacent .py files, so DeptryEngine no longer runs against it at all --
+    the pre-2.4 shape (deps_total=2, deps_assessed=2, resolution_depth=
+    direct-only, driven only by the fixture's own [tool.deptry] ignore
+    silencing DEP002) must not silently regress back. Pinned separately
+    from test_sentinel_fixture_never_false_greens (which already proves NO
+    hygiene-axis finding leaks in) so a future change to the not-applicable
+    coverage shape itself is caught here specifically."""
+    _, out, _ = run_scan(capsys, SENTINEL)
+    document = parse_report(out)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["hygiene"]["deps_total"] == 0
+    assert by_axis["hygiene"]["deps_assessed"] == 0
+    assert by_axis["hygiene"]["resolution_depth"] is None
+    assert by_axis["vulnerability"]["deps_total"] == 2
 
 
 @pytest.mark.parametrize(
@@ -821,3 +844,154 @@ def test_severity_gate_fixture_twice_run_is_byte_identical(capsys, fixture):
     rc_two, out_two, _ = run_scan(capsys, fixture)
     assert rc_one == rc_two
     assert out_one.encode("utf-8") == out_two.encode("utf-8")
+
+
+# --- Story 2.4: honest split coverage + the indeterminate producer (C0b) ----
+
+
+def test_recipe_common_is_the_combined_ac1_ac2_ac3_conformance_proof(capsys):
+    """The single fixture that simultaneously proves AC1 (split coverage +
+    the coverage-qualified indeterminate verdict), AC2 (a withheld dep is
+    never dropped or defaulted to clean), and AC3 (a source-less conda
+    manifest never becomes a DEP002 noise wall) through the REAL cli.main()
+    pipeline over a real conda producer -- not a hand-built ComplianceReport.
+
+    ``recipe_common/recipe.yaml`` mixes a range-only dep (``numpy >=1.20``),
+    a bare no-version dep (``python``), and a conda-map-unresolvable dep
+    (``mypkg==1.2.3``) -- by construction it has zero adjacent ``.py``
+    files, so it doubles as the AC3 regression proof in the same test."""
+    rc, out, err = run_scan(capsys, RECIPE_COMMON)
+    document = parse_report(out)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert set(by_axis) == {"hygiene", "vulnerability"}
+    # AC3: no adjacent .py source anywhere -- the hygiene axis is honestly
+    # not-applicable, never a 100%-DEP002 noise wall.
+    assert by_axis["hygiene"]["deps_total"] == 0
+    assert by_axis["hygiene"]["deps_assessed"] == 0
+    assert by_axis["hygiene"]["resolution_depth"] is None
+    # Stronger than a DEP002-only check (review finding, 2026-07-17):
+    # DeptryEngine is filtered out of engines_to_run entirely when hygiene
+    # isn't applicable, so NO hygiene-family finding of any DEP code can
+    # appear -- assert that directly rather than a narrower proxy for it.
+    assert [f for f in document["findings"] if f["axis"] == "hygiene"] == []
+    # AC1/AC2: the vulnerability axis's coverage is real, and the withheld
+    # deps are never dropped or defaulted to clean.
+    assert by_axis["vulnerability"]["deps_total"] == document["inventory_count"]
+    assert document["errors"] == []
+    assert err == ""
+
+
+def test_hygiene_not_applicable_fixture_is_clean_and_isolated(capsys):
+    """AC3, isolated from any concurrent indeterminate noise: a fully
+    resolvable, source-less conda/pixi manifest stays genuinely clean --
+    hygiene-not-applicable never blocks an otherwise-clean scan."""
+    rc, out, err = run_scan(capsys, HYGIENE_NOT_APPLICABLE)
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "clean"
+    assert document["findings"] == []
+    assert document["errors"] == []
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["hygiene"]["deps_total"] == 0
+    assert by_axis["hygiene"]["deps_assessed"] == 0
+    assert by_axis["vulnerability"]["deps_total"] == 1
+    assert by_axis["vulnerability"]["deps_assessed"] == 1
+    assert err == ""
+
+
+@pytest.mark.parametrize(
+    ("fixture", "expected_status", "expected_rc"),
+    [
+        # ca-certificates is conda-map-unmapped -> indeterminate/exit 1.
+        (PIXI_LOCK_BASIC, "indeterminate", 1),
+        # numpy/requests are both exact-pinned and fully clean against the
+        # offline test DB -> genuinely clean/exit 0.
+        (CONDA_LOCK_BASIC, "clean", 0),
+    ],
+    ids=lambda v: v.name if isinstance(v, Path) else str(v),
+)
+def test_lockfile_presence_marks_resolution_depth_locked_closure_for_a_real_conda_producer(
+    capsys, fixture, expected_status, expected_rc
+):
+    """AC1: ``resolution_depth`` through a REAL conda/pixi producer end to
+    end (not the pyproject.toml-only proof in ``tests/unit/
+    test_discovery_extract_cli.py``) -- a committed lockfile (mixing real
+    conda: and pypi: rows) claims the full transitive closure on the
+    vulnerability axis. Neither lockfile fixture carries any adjacent ``.py``
+    source, so (AC3) the hygiene axis is honestly not-applicable here --
+    ``resolution_depth`` is the vulnerability axis's claim to make.
+
+    ``expected_status``/``expected_rc`` are explicit expected-value pins, not
+    a tautological self-consistency check (review finding, 2026-07-17) --
+    each verified live via ``cli.main`` under this suite's own conftest
+    fixtures (the two lockfiles genuinely differ: PIXI_LOCK_BASIC carries an
+    unmapped conda dep, CONDA_LOCK_BASIC's deps are fully clean)."""
+    rc, out, err = run_scan(capsys, fixture)
+    document = parse_report(out)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["hygiene"]["resolution_depth"] is None
+    assert by_axis["vulnerability"]["resolution_depth"] == "locked-closure"
+    assert rc == expected_rc
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == expected_status
+
+
+def test_recipe_common_without_a_lockfile_stays_direct_only(capsys):
+    """The direct-only counterpart to the lockfile row above, over the SAME
+    real conda producer (``recipe_common``, no lockfile present)."""
+    rc, out, err = run_scan(capsys, RECIPE_COMMON)
+    document = parse_report(out)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    # AC3: hygiene is not-applicable here (no adjacent .py source), so its
+    # own resolution_depth is None by construction -- the vulnerability axis
+    # is the one that carries the direct-only claim for this fixture.
+    assert by_axis["vulnerability"]["resolution_depth"] == "direct-only"
+    # An explicit expected-value pin (review finding, 2026-07-17): see the
+    # lockfile row above -- recipe_common's own range-only/no-version/
+    # unmapped deps make indeterminate/exit 1 the real, verified verdict.
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+
+
+def test_hygiene_not_applicable_never_leaks_a_hygiene_axis_finding(capsys):
+    """Review finding, 2026-07-17 (verified live before this fix): a
+    RAW_MALFORMED component's hygiene_covered=False is derived by
+    DefaultPolicy.evaluate purely from the component itself -- independent
+    of whether DeptryEngine ever ran -- so before this fix, a source-less
+    manifest with an unresolvable dep reported hygiene deps_total=0
+    (not-applicable) alongside a live `axis: "hygiene"` finding, a direct
+    self-contradiction of the not-applicable claim. cli.py now filters
+    hygiene-axis findings/rungs out of DefaultPolicy's output when
+    hygiene_applicable is False; this fixture's SAME malformed component
+    independently withholds on the vulnerability axis too, so the verdict
+    stays correctly indeterminate -- proving the filter never manufactures
+    a false clean by removing the sole non-clean signal."""
+    rc, out, err = run_scan(capsys, HYGIENE_NOT_APPLICABLE_MALFORMED)
+    document = parse_report(out)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["hygiene"]["deps_total"] == 0
+    assert by_axis["hygiene"]["deps_assessed"] == 0
+    assert [f for f in document["findings"] if f["axis"] == "hygiene"] == []
+    # The malformed component's OWN vulnerability-axis withhold still
+    # correctly drives a non-clean verdict -- never a false clean.
+    assert document["status"]["value"] == "indeterminate"
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert any(f["axis"] == "vulnerability" for f in document["findings"])
+
+
+def test_retired_clean_at_phrasing_never_appears_in_source():
+    """Ratchet: the retired 'clean at N%' phrasing (outlawed by FR16) must
+    never appear anywhere under the package's own source."""
+    package_root = Path(__file__).resolve().parent.parent.parent / "src" / "pyforge" / "warden"
+    offenders = []
+    for path in package_root.rglob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        if "clean at" in text.lower():
+            offenders.append(str(path))
+    assert offenders == []

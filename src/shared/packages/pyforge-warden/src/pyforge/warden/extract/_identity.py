@@ -30,6 +30,13 @@ Two families of helpers live here:
   new extractors don't each duplicate it -- ``lockfiles.py`` keeps its own
   pre-2.2 copy untouched, for the same byte-for-byte-test-stability reason
   its identity builders were factored out rather than edited in place).
+* **New in Story 2.3**: ``apply_union_tag`` -- the shared "tag a component's
+  ``Provenance.section`` with a ``[COND]`` suffix and escalate a clean
+  ``PARSED`` leaf to ``UNION_MARKED``" helper both ``recipe_v1.py``'s
+  ``if``/``then``/``else`` branch-walker and ``meta_v0.py``'s ``# [cond]``
+  selector-comment tagging use, so this one shape lives in exactly one place
+  despite the two callers' conditions coming from entirely different
+  sources (a parsed ``if:`` key vs. a raw-text-line-correlated comment).
 
 Ownership decisions recorded (new-in-2.2 pieces only; the factored pieces'
 decisions are unchanged, see their own docstrings):
@@ -97,6 +104,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Hashable
+from dataclasses import replace
 from pathlib import Path
 
 import yaml
@@ -535,11 +543,19 @@ def read_bounded_text(
                 f"{max_line_bytes}-byte length cap (NFR-S5)"
             )
     try:
-        return raw.decode("utf-8")
+        text = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise UnparsableManifestError(
             f"unparsable manifest {manifest.path}: {exc}"
         ) from exc
+    # Normalize CRLF -> LF (review finding, 2026-07-17): recipe_v1.py's and
+    # meta_v0.py's brace-neutralization regexes are `$`-anchored per split
+    # line -- a CRLF-authored manifest would otherwise leave a literal `\r`
+    # inside the captured `{{ ... }}` expression. YAML itself already
+    # normalizes line endings internally, so this is a no-op for the other
+    # 2 read_bounded_text callers (environment_yml.py/pixi.py's direct
+    # yaml_safe_load_strict).
+    return text.replace("\r\n", "\n")
 
 
 # --- new in Story 2.2 (review hardening, 2026-07-16): strict YAML loading ---
@@ -609,6 +625,40 @@ def yaml_safe_load_strict(text: str) -> object:
         return loader.get_single_data()
     finally:
         loader.dispose()
+
+
+# --- new in Story 2.3: the shared selector/branch union-tag helper ----------
+
+
+def apply_union_tag(component: Component, section_suffix: str) -> Component:
+    """Append a ``[COND]``-shaped SECTION SUFFIX (e.g. ``[if:linux]``,
+    ``[else:linux]``, ``[sel:win]``) to every entry of ``component
+    .provenance`` and escalate ``extraction_mode`` from ``PARSED`` to
+    ``UNION_MARKED`` (mirrors ``pyproject.py``'s ``requirement.marker is not
+    None`` precedent exactly) -- the ONE "build the suffix, tag the
+    provenance, escalate the mode" shape ``recipe_v1.py``'s ``if``/``then``/
+    ``else`` branch-walker and ``meta_v0.py``'s ``# [cond]`` selector-comment
+    tagging both need, factored here so it exists in exactly one place
+    (Story 2.3's non-blocking "duplicated selector-tag-lookup block" quality
+    ask) even though where each caller's CONDITION comes from differs
+    entirely (a parsed ``if:`` key vs. a line-number-correlated raw-text
+    comment).
+
+    A component that ALREADY degraded (``NAME_ONLY``/``RAW_MALFORMED``)
+    keeps its mode unchanged -- the degrade ladder is a more specific signal
+    than the union tag -- but the section suffix is still applied either
+    way (a degraded leaf inside a conditional branch is still THAT
+    branch's leaf, never silently unattributed)."""
+    tagged_provenance = tuple(
+        Provenance(manifest=p.manifest, section=p.section + section_suffix)
+        for p in component.provenance
+    )
+    extraction_mode = component.extraction_mode
+    if extraction_mode is ExtractionMode.PARSED:
+        extraction_mode = ExtractionMode.UNION_MARKED
+    return replace(
+        component, provenance=tagged_provenance, extraction_mode=extraction_mode
+    )
 
 
 def truncate_for_name(text: str, *, limit: int = 200) -> str:
