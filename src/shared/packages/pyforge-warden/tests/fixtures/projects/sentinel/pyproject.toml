@@ -10,6 +10,14 @@
 # the lattice regardless, but silencing deptry keeps the fixture's assertions
 # exactly about the withhold path. It does NOT touch [project].dependencies,
 # so the extractor path is unchanged.
+#
+# Story 2.4 (AC3): this fixture has zero adjacent .py files, so DeptryEngine
+# no longer runs against it at all via the real cli.main() pipeline -- the
+# [tool.deptry] ignore below is harmless vestige from before that fix, kept
+# because test_deptry_corpus_unparseable_rate_is_within_baseline still runs
+# the real deptry binary directly against this fixture (bypassing cli.main
+# and its hygiene_applicable gate entirely) and removing it would be an
+# unrelated cleanup, not required by this story.
 [project]
 name = "sentinel-fixture"
 version = "1.0.0"

@@ -84,6 +84,19 @@ Ownership decisions recorded:
   CONDA_LOCK_KIND})`` to ``assemble_report``. ``report.py`` has no
   lockfile-kind vocabulary of its own (that's ``discovery.py``'s domain),
   so the caller states the claim.
+* ``hygiene_applicable`` (Story 2.4, AC3): computed ONCE, via
+  ``hygiene.has_adjacent_python_source(target)``, right before
+  ``engines_to_run`` — a source-less scan target (the fleet's majority
+  feedstock shape) makes deptry flag every conda-sourced dependency
+  reaching the front-door as "unused" (a noise wall, never a signal), so
+  ``DeptryEngine`` is filtered out of ``engines_to_run`` when it is
+  ``False`` and the same value is threaded into ``assemble_report`` so the
+  hygiene axis honestly reports not-applicable. Deliberately NOT a check
+  inside ``DeptryEngine.run`` itself — ``tests/unit/
+  test_engine_env_deptry.py`` calls the engine directly against bare
+  ``tmp_path`` dirs to test its own argv/error-handling logic in isolation,
+  and embedding the skip there would exercise the wrong branch in every one
+  of those tests.
 """
 
 from __future__ import annotations
@@ -98,11 +111,13 @@ from pathlib import Path
 
 from . import __version__
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
-from .engines import engine_factories
+from .engines import DeptryEngine, engine_factories
 from .extract import UnparsableManifestError, extractor_for
+from .hygiene import has_adjacent_python_source
 from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
 from .models import (
+    AXIS_HYGIENE,
     AXIS_VULNERABILITY,
     ErrorKind,
     ErrorRecord,
@@ -368,11 +383,31 @@ def _run_scan(args: argparse.Namespace) -> int:
             f"under {args.path!r}; nothing to scan"
         )
     engine_results: list[EngineResult] = []
+    # AC3: a source-less scan target makes deptry flag every conda-sourced
+    # dependency reaching the front-door as "unused" (DEP002) -- a noise
+    # wall, never a signal -- so DeptryEngine is filtered out when no
+    # adjacent .py file exists anywhere under target. Computed once, up
+    # front, so both the engine filter below and the assemble_report call
+    # see the same value. Gated on manifests_parsed like the engine seam
+    # itself below (review finding, 2026-07-17): with nothing extractable,
+    # engines_to_run is already () and inventory.count is already 0, so the
+    # walk's result can never affect the output -- skip the wasted I/O.
+    hygiene_applicable = (
+        has_adjacent_python_source(target) if manifests_parsed > 0 else True
+    )
     # The engine seam runs only when a manifest actually parsed: with nothing
     # extractable (empty dir, or a manifest that failed to parse) there is no
     # project for a subprocess engine (deptry) to assess, and running it on an
     # absent/malformed manifest would only double the extractor's own error.
-    engines_to_run = engine_factories() if manifests_parsed > 0 else ()
+    engines_to_run = (
+        tuple(
+            factory
+            for factory in engine_factories()
+            if hygiene_applicable or factory is not DeptryEngine
+        )
+        if manifests_parsed > 0
+        else ()
+    )
     for factory in engines_to_run:
         try:
             engine = factory()
@@ -415,6 +450,27 @@ def _run_scan(args: argparse.Namespace) -> int:
     for result in engine_results:
         errors.extend(result.errors)
     findings, policy_rungs = DefaultPolicy().evaluate(inventory, engine_results)
+    if not hygiene_applicable:
+        # AC3 (review finding, 2026-07-17): DefaultPolicy derives a
+        # per-component `indeterminate:uncovered:<pkg>` (axis=hygiene)
+        # finding from `component.hygiene_covered` alone -- independent of
+        # whether any engine ran -- so a RAW_MALFORMED component still
+        # produced a hygiene-axis finding even though the axis's own
+        # AxisCoverage now honestly claims deps_total=0 (verified live: a
+        # source-less manifest with an unresolvable dep reported
+        # `hygiene: deps_total=0` alongside a `hygiene`-axis finding, a
+        # self-contradiction the not-applicable claim must not carry).
+        # Safe to drop unconditionally: a component whose name/version
+        # extraction failed badly enough to be hygiene-uncovered also has
+        # no resolved identity+version, so it independently produces its
+        # own vulnerability-axis indeterminate signal -- this filter never
+        # removes the sole driver of a non-clean verdict.
+        findings = tuple(f for f in findings if f.axis != AXIS_HYGIENE)
+        policy_rungs = tuple(
+            (status, driver)
+            for status, driver in policy_rungs
+            if driver is None or driver.axis != AXIS_HYGIENE
+        )
     rungs.extend(policy_rungs)
 
     # The first non-None vuln_data across engine results, in engine-
@@ -435,6 +491,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         vuln_data=vuln_data,
         engine_results=engine_results,
         has_locked_closure=bool(parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}),
+        hygiene_applicable=hygiene_applicable,
     )
     try:
         if args.format == "json":
