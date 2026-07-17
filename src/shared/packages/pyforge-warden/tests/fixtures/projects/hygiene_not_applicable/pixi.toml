@@ -1,0 +1,12 @@
+# AC3-isolation fixture (Story 2.4): zero adjacent .py files anywhere, one
+# already-verified-clean-against-the-offline-test-DB exact pin (the same
+# requests==2.31.0 pin the clean/pixi_toml_common fixtures use). Proves the
+# hygiene-not-applicable path never blocks an otherwise-clean scan, isolated
+# from any concurrent indeterminate noise.
+[workspace]
+name = "hygiene-not-applicable-fixture"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[pypi-dependencies]
+requests = "==2.31.0"
