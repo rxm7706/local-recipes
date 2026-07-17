@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.warden import engines as engines_module
+from pyforge.warden.config import WardenConfig
 from pyforge.warden.engines import (
     NullEngine,
     register_engine,
@@ -35,6 +36,7 @@ from pyforge.warden.models import (
     AXIS_HYGIENE,
     AXIS_INGESTION,
     AXIS_VULNERABILITY,
+    AxisCoverage,
     CveMatchLevel,
     Ecosystem,
     ErrorKind,
@@ -745,3 +747,142 @@ def test_engine_error_owner_segment_is_sanitized():
         "error:engine-execution-failed:dep%0Atry%3Ax"
     )
     assert "\n" not in driver.finding_id
+
+
+# --- Story 3.1: config-injected DEP001 confidence threshold ------------------
+
+
+def test_dep001_min_confidence_default_verified_matches_pre_3_1_behavior(
+    component_factory,
+):
+    """dep001_min_confidence="verified" (the default) reproduces Story
+    2.1's original fixed trust bar exactly: a "likely"-confidence conda
+    component untrusts the scan-wide gate, downgrading DEP001 to warn."""
+    ambiguous = component_factory(
+        name="ambiguous-pkg", ecosystem=Ecosystem.CONDA, mapping_confidence="likely"
+    )
+    finding = Finding(
+        id="hygiene:DEP001:foo",
+        axis=AXIS_HYGIENE,
+        message="missing",
+        subject="foo",
+        severity=None,
+    )
+    result = EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
+    _, rungs = DefaultPolicy(config=WardenConfig.defaults()).evaluate(
+        make_inventory(ambiguous), [result]
+    )
+    by_id = {driver.finding_id: status for status, driver in rungs if driver}
+    assert by_id["hygiene:DEP001:foo"] is Status.WARN
+
+
+def test_dep001_min_confidence_widened_to_likely_trusts_the_ambiguous_hit(
+    component_factory,
+):
+    """dep001_min_confidence="likely" is a deliberate operator opt-in: a
+    "likely"-confidence conda component no longer untrusts the gate, so
+    DEP001 stays policy-violation."""
+    ambiguous = component_factory(
+        name="ambiguous-pkg", ecosystem=Ecosystem.CONDA, mapping_confidence="likely"
+    )
+    finding = Finding(
+        id="hygiene:DEP001:foo",
+        axis=AXIS_HYGIENE,
+        message="missing",
+        subject="foo",
+        severity=None,
+    )
+    result = EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
+    config = WardenConfig(dep001_min_confidence="likely")
+    _, rungs = DefaultPolicy(config=config).evaluate(
+        make_inventory(ambiguous), [result]
+    )
+    by_id = {driver.finding_id: status for status, driver in rungs if driver}
+    assert by_id["hygiene:DEP001:foo"] is Status.POLICY_VIOLATION
+
+
+# --- Story 3.1: the coverage-floor gate (FR19) --------------------------------
+
+
+def _components(count: int, factory):
+    return [factory(name=f"pkg{i}", version="1.0.0") for i in range(count)]
+
+
+def test_coverage_floor_feeds_indeterminate_when_below_threshold(component_factory):
+    inventory = make_inventory(*_components(10, component_factory))
+    coverage = AxisCoverage(
+        axis=AXIS_VULNERABILITY,
+        manifests_found=1,
+        manifests_parsed=1,
+        deps_total=5,
+        deps_assessed=5,
+        resolution_depth=None,
+    )
+    result = EngineResult(
+        findings=(), errors=(), coverage=(coverage,), axis=AXIS_VULNERABILITY
+    )
+    config = WardenConfig(fail_under_coverage=90)
+    findings, rungs = DefaultPolicy(config=config).evaluate(inventory, [result])
+    floor_id = "indeterminate:coverage-floor:vulnerability"
+    assert any(f.id == floor_id for f in findings)
+    matching = [
+        (status, driver)
+        for status, driver in rungs
+        if driver is not None and driver.finding_id == floor_id
+    ]
+    assert len(matching) == 1
+    status, driver = matching[0]
+    assert status is Status.INDETERMINATE
+    assert driver.axis == AXIS_VULNERABILITY
+
+
+def test_coverage_floor_not_tripped_at_or_above_threshold(component_factory):
+    inventory = make_inventory(*_components(10, component_factory))
+    # Both axes fully covered -- an uncovered axis (0 claimed) would
+    # legitimately trip its own floor, so both must be claimed here for
+    # this "at-or-above threshold" scenario to hold end to end.
+    coverage = (
+        AxisCoverage(
+            axis=AXIS_VULNERABILITY,
+            manifests_found=1,
+            manifests_parsed=1,
+            deps_total=10,
+            deps_assessed=10,
+            resolution_depth=None,
+        ),
+        AxisCoverage(
+            axis=AXIS_HYGIENE,
+            manifests_found=1,
+            manifests_parsed=1,
+            deps_total=10,
+            deps_assessed=10,
+            resolution_depth=None,
+        ),
+    )
+    result = EngineResult(
+        findings=(), errors=(), coverage=coverage, axis=AXIS_VULNERABILITY
+    )
+    config = WardenConfig(fail_under_coverage=90)
+    findings, _ = DefaultPolicy(config=config).evaluate(inventory, [result])
+    assert not any(f.id.startswith("indeterminate:coverage-floor:") for f in findings)
+
+
+def test_coverage_floor_unset_feeds_nothing_even_at_zero_coverage(component_factory):
+    inventory = make_inventory(*_components(10, component_factory))
+    findings, _ = DefaultPolicy(config=WardenConfig.defaults()).evaluate(
+        inventory, [EMPTY_RESULT]
+    )
+    assert not any(f.id.startswith("indeterminate:coverage-floor:") for f in findings)
+
+
+def test_coverage_floor_skips_the_empty_inventory_case():
+    config = WardenConfig(fail_under_coverage=90)
+    findings, rungs = DefaultPolicy(config=config).evaluate(
+        make_inventory(), [EMPTY_RESULT]
+    )
+    assert not any(f.id.startswith("indeterminate:coverage-floor:") for f in findings)
+    assert rungs == ()

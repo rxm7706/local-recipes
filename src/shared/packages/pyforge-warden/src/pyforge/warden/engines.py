@@ -106,9 +106,9 @@ from .vuln import (
 # Bounded subprocess timeout (seconds) — a hung engine must fail loud
 # (engine-timeout), never wedge the scan. A fixed default in 1.3 (the
 # ``_engine_env`` ``timeout`` parameter accepts an override; a user-facing
-# config surface arrives with the ConfigLoader in Story 3.1). Not in
-# {1, 2, 130}, so the sole-ownership exit-literal guard never mistakes it for
-# an exit code.
+# config surface is deferred out of Story 3.1's scope — see
+# deferred-work.md). Not in {1, 2, 130}, so the sole-ownership exit-literal
+# guard never mistakes it for an exit code.
 DEPTRY_TIMEOUT_SECONDS = 120
 
 _ENGINE_FACTORIES: list[Callable[[], Engine]] = []
@@ -543,9 +543,9 @@ class DeptryEngine:
 
 # Bounded osv-scanner subprocess timeout (seconds). Offline scans are
 # sub-second in practice (empirically observed in the Story 1.4 spike); a
-# generous fixed default until Story 3.1's config surface lands. Not in
-# {1, 2, 130}, so the sole-ownership exit-literal guard never mistakes it for
-# an exit code.
+# generous fixed default — a user-facing config surface is deferred out of
+# Story 3.1's scope (see deferred-work.md). Not in {1, 2, 130}, so the
+# sole-ownership exit-literal guard never mistakes it for an exit code.
 OSV_TIMEOUT_SECONDS = 120
 
 

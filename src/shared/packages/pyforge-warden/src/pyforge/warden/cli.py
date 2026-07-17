@@ -108,6 +108,18 @@ Ownership decisions recorded:
   exception handlers, where a raise would escape ``main`` as interpreter
   exit 1) — a vanished diagnostic stream must not replace the computed
   exit code.
+* ``config.load_config`` (Story 3.1, FR30) runs first, before discovery —
+  its resolved ``WardenConfig`` is what ``DefaultPolicy`` gates on below.
+  A malformed ``[tool.pyforge-warden]`` key/value is
+  ``ErrorKind.CONFIG_VALIDATION`` via the SAME ``_record_error`` seam every
+  other pre-engine failure uses (typed record + error rung + stderr
+  diagnostic), with ``WardenConfig.defaults()`` as the fallback so the
+  rest of the scan still runs and a report is still emitted — the exit
+  code is orthogonal to emission, same as every other seam here. A
+  same-key ``pyproject.toml``/``pixi.toml`` conflict is NOT an error (FR30:
+  "conflicts surfaced, never failing the build") — one stderr line per
+  conflicting key, ``pyproject.toml``'s value already won inside
+  ``load_config``.
 * Strictly non-interactive: no prompts, stdin is never read.
 * ``has_locked_closure`` (Story 2.6): the extraction loop tracks
   ``parsed_kinds`` — the set of manifest KINDS that actually parsed, not
@@ -141,6 +153,14 @@ import traceback
 from pathlib import Path
 
 from . import __version__
+from .config import (
+    FAIL_ON_CHOICES,
+    FAIL_UNDER_COVERAGE_MAX,
+    FAIL_UNDER_COVERAGE_MIN,
+    ConfigValidationError,
+    WardenConfig,
+    load_config,
+)
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
 from .engines import DeptryEngine, engine_factories
 from .extract import UnparsableManifestError, extractor_for
@@ -169,6 +189,26 @@ _EMPTY_EXTRACTION_MESSAGE = (
     "manifest(s) parsed but zero dependencies/components extracted under "
     "{path!r}"
 )
+
+
+def _coverage_percentage(raw: str) -> int:
+    """argparse ``type=`` for ``--fail-under-coverage``: an integer in
+    ``[FAIL_UNDER_COVERAGE_MIN, FAIL_UNDER_COVERAGE_MAX]`` — argparse's own
+    usage-error path (exit 2) rejects anything else before ``_run_scan``
+    ever sees it (mirrors ``config._validate_fail_under_coverage``'s bound,
+    the single source of truth for both surfaces)."""
+    try:
+        value = int(raw)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"must be an integer, got {raw!r}"
+        ) from None
+    if not (FAIL_UNDER_COVERAGE_MIN <= value <= FAIL_UNDER_COVERAGE_MAX):
+        raise argparse.ArgumentTypeError(
+            f"must be in [{FAIL_UNDER_COVERAGE_MIN}, {FAIL_UNDER_COVERAGE_MAX}], "
+            f"got {value}"
+        )
+    return value
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -220,6 +260,31 @@ def _build_parser() -> argparse.ArgumentParser:
             "parses but extraction yields zero components/findings/errors "
             "(D2(c)) — status stays 'indeterminate', never 'clean', and "
             "coverage still records no resolution-depth claim"
+        ),
+    )
+    scan.add_argument(
+        "--fail-on",
+        choices=FAIL_ON_CHOICES,
+        default=None,
+        help=(
+            "CVSS severity threshold: this tier and every tier at least as "
+            "severe escalate to a blocking policy-violation, weaker tiers "
+            "stay warn (default: critical — from [tool.pyforge-warden] "
+            "'fail_on' if set, else 'critical'; omitting this flag falls "
+            "through to that resolved config value, never overriding it "
+            "with argparse's own default)"
+        ),
+    )
+    scan.add_argument(
+        "--fail-under-coverage",
+        type=_coverage_percentage,
+        default=None,
+        metavar="0-100",
+        help=(
+            "minimum per-axis coverage percentage (deps assessed / deps "
+            "total): below this floor the axis escalates to indeterminate "
+            "(default: off — from [tool.pyforge-warden] "
+            "'fail_under_coverage' if set, else unset; FR19)"
         ),
     )
     return parser
@@ -323,6 +388,36 @@ def _run_scan(args: argparse.Namespace) -> int:
     rungs: list[tuple[Status, StatusDriver | None]] = []
     manifests_parsed = 0
     parsed_kinds: set[str] = set()
+
+    # Story 3.1 (FR30): resolve [tool.pyforge-warden] before anything else
+    # runs — the resolved config feeds DefaultPolicy below. A malformed
+    # config key/value is a typed operational error (same seam doctrine as
+    # every other pre-engine failure): the report is STILL emitted, using
+    # WardenConfig.defaults() as the fallback, so one bad config key never
+    # silently blocks the whole scan from producing output. A same-key
+    # pyproject/pixi conflict is not an error — one stderr line per
+    # conflict, config.py already picked pyproject's value.
+    try:
+        config, conflicts = load_config(
+            target,
+            cli_fail_on=args.fail_on,
+            cli_fail_under_coverage=args.fail_under_coverage,
+        )
+    except ConfigValidationError as exc:
+        config = WardenConfig.defaults()
+        _record_error(
+            errors,
+            rungs,
+            kind=ErrorKind.CONFIG_VALIDATION,
+            owner="config",
+            subject=args.path,
+            message=str(exc),
+            axis=AXIS_INGESTION,
+        )
+    else:
+        for conflict in conflicts:
+            _stderr(f"{TOOL_NAME}: {conflict}")
+
     try:
         manifests = discover(target)
     except OSError as exc:
@@ -532,7 +627,9 @@ def _run_scan(args: argparse.Namespace) -> int:
             )
     for result in engine_results:
         errors.extend(result.errors)
-    findings, policy_rungs = DefaultPolicy().evaluate(inventory, engine_results)
+    findings, policy_rungs = DefaultPolicy(config=config).evaluate(
+        inventory, engine_results
+    )
     if not hygiene_applicable:
         # AC3 (review finding, 2026-07-17): DefaultPolicy derives a
         # per-component `indeterminate:uncovered:<pkg>` (axis=hygiene)

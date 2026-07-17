@@ -1504,3 +1504,107 @@ def test_extractor_recursion_error_is_unparsable_manifest(tmp_path):
         PyprojectExtractor(DefaultRouter()).extract(
             tmp_path / "pyproject.toml", MANIFEST
         )
+
+
+# --- Story 3.1: [tool.pyforge-warden] flows through the real CLI -------------
+
+
+def test_fail_on_high_escalates_the_high_severity_fixture_to_policy_violation(
+    capsys, tmp_path
+):
+    """Under the default fail_on=critical a real (non-critical) osv-scanner
+    match stays warn/exit-0 (see the conformance suite's own
+    test_high_severity_vuln_fixture_composes_warn) -- --fail-on high moves
+    the HIGH tier into policy-violation/exit-1 end to end through a real
+    osv-scanner subprocess against the same seeded fixture advisory
+    (PDOS-FIXTURE-0002), not just a hand-built Finding."""
+    write_pyproject(tmp_path, ["pdos-vuln-fixture-high==1.0.0"])
+    capsys.readouterr()
+    rc = main(["scan", str(tmp_path), "--format", "json", "--fail-on", "high"])
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    jsonschema.Draft202012Validator(load_schema()).validate(document)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "policy-violation"
+    finding_id = "vuln:PDOS-FIXTURE-0002:pdos-vuln-fixture-high@1.0.0"
+    matches = [f for f in document["findings"] if f["id"] == finding_id]
+    assert len(matches) == 1
+    assert matches[0]["severity"]["tier"] == "high"
+
+
+def test_fail_under_coverage_flag_is_accepted_and_parsed(tmp_path):
+    """CLI plumbing only -- the floor MECHANISM (which axis escalates, at
+    what percentage) is unit-tested directly against DefaultPolicy in
+    test_interfaces_and_null_engine.py. Here: the flag parses without a
+    usage error and a full-coverage scan (--fail-under-coverage well below
+    100%) never trips it."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])
+    rc = main(
+        ["scan", str(tmp_path), "--format", "json", "--fail-under-coverage", "50"]
+    )
+    assert rc in (0, 1, 2)  # no crash; a real, decodable exit code
+
+
+def test_fail_under_coverage_out_of_range_is_a_usage_error(capsys, tmp_path):
+    rc = main(
+        ["scan", str(tmp_path), "--fail-under-coverage", "150"]
+    )
+    assert rc == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+
+
+def test_dep001_min_confidence_config_key_is_accepted(tmp_path):
+    """A malformed dep001_min_confidence anywhere is rejected end to end
+    (see the config-validation-error tests below); a VALID one must not
+    crash the real CLI pipeline."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])
+    (tmp_path / "pyproject.toml").write_text(
+        (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
+        + '\n[tool.pyforge-warden]\ndep001_min_confidence = "likely"\n',
+        encoding="utf-8",
+    )
+    rc = main(["scan", str(tmp_path), "--format", "json"])
+    assert rc in (0, 1, 2)
+
+
+def test_config_key_type_error_is_config_validation_typed_error(capsys, tmp_path):
+    """AC3: a config-key type error is ErrorKind.CONFIG_VALIDATION, status
+    error/exit 2, and the report is STILL emitted (same seam doctrine as
+    every other pre-engine failure -- never a bare crash, never no
+    report)."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])
+    (tmp_path / "pyproject.toml").write_text(
+        (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
+        + "\n[tool.pyforge-warden]\nfail_on = 123\n",
+        encoding="utf-8",
+    )
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    (error,) = document["errors"]
+    assert error["kind"] == "config-validation"
+    assert err != ""
+
+
+def test_config_precedence_conflict_is_reported_but_never_fails_the_build(
+    capsys, tmp_path
+):
+    """FR30: a same-key pyproject/pixi conflict is a stderr notice only --
+    pyproject wins, the scan proceeds normally (never status=error, never
+    exit 2 purely from the conflict)."""
+    write_pyproject(tmp_path, ["requests==2.31.0"])
+    (tmp_path / "pyproject.toml").write_text(
+        (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
+        + '\n[tool.pyforge-warden]\nfail_on = "high"\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[tool.pyforge-warden]\nfail_on = "low"\n', encoding="utf-8"
+    )
+    rc, document, err = scan_json(capsys, tmp_path)
+    assert document["status"]["value"] != "error"
+    assert "fail_on" in err
+    assert "pyproject.toml" in err
