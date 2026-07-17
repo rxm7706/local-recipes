@@ -9,7 +9,12 @@ Ownership decisions recorded:
 * Stream discipline (NFR-I3): in ``--format json`` stdout carries EXACTLY
   one schema-valid ``ComplianceReport`` document or NOTHING; every
   diagnostic — including the empty-scan-set notice — goes to stderr.
-  ``--format text`` emits ONE non-contract summary line.
+  ``--format text`` emits ``report.render_text``'s non-contract human
+  summary (a verdict line, then a driver line and one line per finding/
+  error as applicable — Story 1.8) via the SAME ``sys.stdout.write`` call
+  json already used, inside the try/except that already guarded both
+  branches pre-1.8 — this story changed WHAT is printed on the text
+  branch, not the guard structure around it.
 * Exit codes come ONLY from ``verdict.exit_code_for`` / ``verdict.
   EXIT_SIGINT`` (the sole-ownership rule). argparse's own exits
   (``--version``/``--help`` → 0, usage errors → 2, never 0) surface via the
@@ -129,7 +134,7 @@ from .models import (
     StatusDriver,
     VulnData,
 )
-from .report import TOOL_NAME, assemble_report, render_json
+from .report import TOOL_NAME, assemble_report, render_json, render_text
 from .routing import DefaultRouter
 from .verdict import EXIT_SIGINT, exit_code_for
 
@@ -514,10 +519,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         if args.format == "json":
             sys.stdout.write(render_json(report) + "\n")
         else:
-            print(
-                f"{TOOL_NAME}: status={report.status.value} "
-                f"exit_code={report.exit_code} findings={len(report.findings)}"
-            )
+            sys.stdout.write(render_text(report) + "\n")
         # Flush INSIDE the guarded region: on a block-buffered pipe whose
         # consumer vanished, the BrokenPipeError must surface HERE (absorbed
         # below) — not at interpreter-exit flush (CPython exit 120).

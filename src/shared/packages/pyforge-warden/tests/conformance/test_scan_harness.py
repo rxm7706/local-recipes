@@ -18,6 +18,7 @@ stderr-only diagnostics, twice-run byte-identical stdout in default AND
 from __future__ import annotations
 
 import json
+import sys
 from importlib import resources
 from pathlib import Path
 
@@ -1057,3 +1058,75 @@ def test_retired_clean_at_phrasing_never_appears_in_source():
         if "clean at" in text.lower():
             offenders.append(str(path))
     assert offenders == []
+
+
+# --- Story 1.8: --format text renderer + NFR-I3 pseudo-TTY regression -------
+
+
+def test_text_format_clean_fixture_is_a_single_header_line(capsys):
+    """FR17: text is the default format; a clean scan emits only the
+    verdict line -- no driver/finding/error lines follow."""
+    rc = main(["scan", str(CLEAN)])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert captured.out == "warden: status=clean exit_code=0 findings=0\n"
+    assert captured.err == ""
+
+
+def test_text_format_findings_fixture_emits_driver_and_finding_lines(capsys):
+    """FR17: a real (non-clean) scan's text output carries the driver line
+    plus one line per finding -- the human summary the AC actually asks
+    for, not the pre-1.8 single debug line."""
+    rc = main(["scan", str(DEPTRY_UNUSED)])
+    captured = capsys.readouterr()
+    assert rc == 0
+    lines = captured.out.splitlines()
+    assert len(lines) == 3
+    assert lines[0] == "warden: status=warn exit_code=0 findings=1"
+    assert lines[1] == "  driver: axis=hygiene id=hygiene:DEP002:requests"
+    # line 2's message text is deptry's own; only the prefix is pinned here.
+    assert lines[2].startswith("  [hygiene] none hygiene:DEP002:requests -- ")
+
+
+def test_text_format_error_fixture_emits_driver_and_error_lines(capsys, tmp_path):
+    """FR17/error taxonomy: a Status.ERROR report's text output carries the
+    error:<kind>:<subject> driver line plus one line per error."""
+    (tmp_path / "pyproject.toml").write_text(
+        "[project\nname = 'broken", encoding="utf-8"
+    )
+    rc = main(["scan", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert rc == 2
+    lines = captured.out.splitlines()
+    assert len(lines) == 3
+    assert lines[0] == "warden: status=error exit_code=2 findings=0"
+    assert lines[1] == (
+        "  driver: axis=ingestion id=error:unparsable-manifest:pyproject.toml"
+    )
+    # line 2's message text is exception-derived; only the prefix is pinned.
+    assert lines[2].startswith("  [error:unparsable-manifest] extract -- ")
+
+
+def test_json_format_stays_pure_under_a_chatty_engine_and_a_pseudo_tty(
+    capsys, monkeypatch
+):
+    """NFR-I3 regression (spec's I/O matrix, Story 1.8): ``test_deptry_
+    output_never_leaks_onto_our_streams`` above already proves a chatty
+    real engine (DEPTRY_UNUSED) never contaminates stdout under an
+    ordinary (non-TTY) captured stream. Nothing in this codebase currently
+    branches on ``isatty()`` (verified: zero references under ``src/``;
+    ``_engine_env`` routes every engine subprocess's stdout/stderr to
+    ``DEVNULL`` unconditionally, never inspecting the parent's TTY status)
+    -- this test does NOT exercise a real TTY-conditional code path today.
+    It pins that fact as a forward regression guard: stdout stays exactly
+    one schema-valid JSON document, no engine chatter, even with
+    ``isatty()`` patched True, so a future change that starts branching on
+    TTY status (a progress bar, ANSI color) cannot silently reintroduce
+    stdout contamination without breaking this test first."""
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    assert sys.stdout.isatty() is True  # the patch actually took effect
+    rc, out, err = run_scan(capsys, DEPTRY_UNUSED)
+    document = parse_report(out)  # exactly one schema-valid JSON document
+    assert rc == document["exit_code"]
+    assert "Scanning" not in err
+    assert "deptry" not in err.lower()
