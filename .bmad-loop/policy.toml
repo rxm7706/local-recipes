@@ -34,6 +34,13 @@ commands = [
   # carry the pyforge-atlas env (workstation re-lock; see Story A1 Dev Agent
   # Record — the container stub channel blocks the bmad-ui co-solve).
   "pixi run --frozen -e pyforge-atlas kedro-test",
+  # Wave A gate 2 (pyforge-atlas Story A2, AD-11): kedro-catalog-check — full
+  # catalog resolution offline w/ stub credentials + the AC-2 no-inline-IO and
+  # AD-1 import-direction meta-tests + convention/override-point/credential-
+  # scoping assertions. Same workstation-re-lock precondition as kedro-test
+  # (deferred-work entry 1: the lean env is lock-unproven in containers; run
+  # content via the fat-env PYTHONPATH interim until the re-lock lands).
+  "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
 ]
 
 [notify]

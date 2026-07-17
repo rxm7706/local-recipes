@@ -1,0 +1,80 @@
+# pyforge-atlas — endpoint-base + path globals (Story A2; spine AD-2/AD-13, FR-1).
+#
+# Every external host the pipeline touches resolves through exactly one
+# `<HOST>_BASE_URL`-style setting below — the legacy `resolve_*_urls`
+# convention carried forward as dataset-level endpoint config. Each value
+# is env-var-overridable via the `env_or` resolver registered in
+# src/pyforge/atlas/settings.py (explicit env always beats the public
+# default). Catalog entries reference these via `${globals:...}` and
+# NEVER hardcode a host. New sources add exactly one override point
+# (spine "Endpoint overrides" row).
+#
+# `endpoint_bases` carries EXACTLY the 20 override points of Story A2
+# AC-4: the 19 live `resolve_*_urls` helpers (cf-atlas-legacy @ b18cbb5;
+# spot-verified against the live tree 2026-07-17) plus the reserved 20th,
+# BASILISK_BASE_URL (FR-19 — Story B8 lands the nodes).
+# `kedro-catalog-check` count-asserts this section at exactly 20 keys.
+
+endpoint_bases:
+  CONDA_FORGE_BASE_URL: ${env_or:CONDA_FORGE_BASE_URL,https://conda.anaconda.org/conda-forge}
+  # NOTE: the live resolver reads PYPI_BASE_URL (not PYPI_SIMPLE_BASE_URL as
+  # the drafting inventory proposed) — corrected against _http.py L456
+  # per AD-17 spot-verification (recorded in the Dev Agent Record).
+  PYPI_BASE_URL: ${env_or:PYPI_BASE_URL,https://pypi.org/simple}
+  PYPI_JSON_BASE_URL: ${env_or:PYPI_JSON_BASE_URL,https://pypi.org}
+  GITHUB_BASE_URL: ${env_or:GITHUB_BASE_URL,https://github.com}
+  GITHUB_RAW_BASE_URL: ${env_or:GITHUB_RAW_BASE_URL,https://raw.githubusercontent.com}
+  NPM_BASE_URL: ${env_or:NPM_BASE_URL,https://registry.npmjs.org}
+  CRAN_BASE_URL: ${env_or:CRAN_BASE_URL,https://crandb.r-pkg.org}
+  CPAN_BASE_URL: ${env_or:CPAN_BASE_URL,https://fastapi.metacpan.org}
+  LUAROCKS_BASE_URL: ${env_or:LUAROCKS_BASE_URL,https://luarocks.org}
+  CRATES_BASE_URL: ${env_or:CRATES_BASE_URL,https://crates.io}
+  RUBYGEMS_BASE_URL: ${env_or:RUBYGEMS_BASE_URL,https://rubygems.org}
+  MAVEN_BASE_URL: ${env_or:MAVEN_BASE_URL,https://search.maven.org}
+  NUGET_BASE_URL: ${env_or:NUGET_BASE_URL,https://api.nuget.org}
+  ENDOFLIFE_BASE_URL: ${env_or:ENDOFLIFE_BASE_URL,https://endoflife.date}
+  GITHUB_API_BASE_URL: ${env_or:GITHUB_API_BASE_URL,https://api.github.com}
+  GITLAB_API_BASE_URL: ${env_or:GITLAB_API_BASE_URL,https://gitlab.com/api/v4}
+  CODEBERG_API_BASE_URL: ${env_or:CODEBERG_API_BASE_URL,https://codeberg.org/api/v1}
+  ANACONDA_CHANNEL_BASE_URL: ${env_or:ANACONDA_CHANNEL_BASE_URL,https://conda.anaconda.org}
+  S3_PARQUET_BASE_URL: ${env_or:S3_PARQUET_BASE_URL,https://anaconda-package-data.s3.amazonaws.com}
+  BASILISK_BASE_URL: ${env_or:BASILISK_BASE_URL,https://api.basilisk.prefix.dev}
+
+# Additional overrides that ARE current data access but are NOT among the
+# 20 helper-backed points. kedro-catalog-check asserts these separately:
+#   ANACONDA_API_BASE_URL — Phase F's v7.8.0-era direct env override on the
+#     anaconda-api download path (gap A2-G2; live-verified 2026-07-17 at
+#     conda_forge_atlas.py L2651/2659/2816/3588).
+#   OSV_VULNS_BUCKET_URL — offline-OSV store refresh endpoint (§ 3.4
+#     store 2; cve_manager._osv_vulns_bucket_base; Story B5 wraps the
+#     refresh as a scheduled asset).
+#   BIGQUERY_BASE_URL — Phase P connection base (admin opt-in; the story
+#     inventory's "connection config" row — not a helper-backed point; the
+#     pypi_bigquery_downloads_raw entry stays a resolvable standard type
+#     until the Phase P port story flips it to pandas.GBQQueryDataset —
+#     judgment A2-J1).
+extra_overrides:
+  ANACONDA_API_BASE_URL: ${env_or:ANACONDA_API_BASE_URL,https://api.anaconda.org}
+  OSV_VULNS_BUCKET_URL: ${env_or:OSV_VULNS_BUCKET_URL,https://osv-vulnerabilities.storage.googleapis.com}
+  BIGQUERY_BASE_URL: ${env_or:BIGQUERY_BASE_URL,https://bigquery.googleapis.com/bigquery/v2}
+
+# Full feed URLs for the three vulnerability side-catalogs (the inventory's
+# "fetcher URL setting" rows — full URLs, not host bases, so they live
+# outside the 20-count). Values verified against the live fetcher scripts
+# (cisa_kev_fetcher.py / epss_fetcher.py / cwe_catalog_fetcher.py).
+fetcher_urls:
+  CISA_KEV_URL: ${env_or:CISA_KEV_URL,https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json}
+  EPSS_FEED_URL: ${env_or:EPSS_FEED_URL,https://epss.empiricalsecurity.com/epss_scores-current.csv.gz}
+  CWE_CATALOG_URL: ${env_or:CWE_CATALOG_URL,https://cwe.mitre.org/data/csv/1000.csv.zip}
+
+# Filesystem roots. External stores + git-tracked seeds live OUTSIDE the
+# member (legacy homes; B5 wraps store refresh) — their paths are
+# env-overridable. Pipeline-owned persisted outputs live under the
+# member-local `data/<layer>/<dataset_name>/` root (spine Parquet-layout
+# row; nodes never choose physical layout).
+paths:
+  data_root: data
+  seed_root: ${env_or:PYFORGE_ATLAS_SEED_ROOT,../../../../.claude/skills/conda-forge-expert/data}
+  vdb_store: ${env_or:VDB_STORE_PATH,../../../../.claude/data/conda-forge-expert/vdb}
+  osv_offline_store: ${env_or:OSV_OFFLINE_STORE_PATH,../../../../.claude/data/conda-forge-expert/cve}
+  pypi_conda_map: ${env_or:PYPI_CONDA_MAP_PATH,../../../../.claude/data/conda-forge-expert/pypi_conda_map.json}

@@ -16,6 +16,11 @@ authors = [{ name = "rxm7706" }]
 # library (Simplicity First; warden lean-dep doctrine).
 dependencies = [
     "kedro>=1.5.0",  # floor matches [tool.kedro] kedro_init_version + the conda run-dep
+    # Story A2 (A2-A5): conf/base/catalog.yml declares kedro_datasets types
+    # (api.APIDataset / pandas.ParquetDataset / partitions.PartitionedDataset /
+    # json / yaml / text) — catalog resolution imports kedro_datasets, so it is
+    # a real runtime dependency of the package, not just a pixi-env dep.
+    "kedro-datasets>=9.5.0",  # floor matches the member pixi.toml run-dep
 ]
 
 [project.optional-dependencies]
