@@ -1029,6 +1029,10 @@ pytest = "*"                       # test runner (kedro-test)
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
 cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
 
+[feature.pyforge-atlas.tasks.kedro-catalog-check]
+description = "Wave A gate 2 (Story A2, AD-11): catalog resolves offline w/ stub creds + no-inline-IO + AD-1 import-direction meta-tests + naming/layer/TTL/path conventions + 20 override points + per-host credential scoping (FR-1)"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/catalog -q"
+
 [feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
 cmd = "pixi build --output-dir dist-conda"
