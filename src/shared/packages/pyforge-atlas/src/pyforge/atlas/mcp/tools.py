@@ -61,12 +61,35 @@ def read_dataset(
     project_path: Path | str | None = None,
     env: str | None = None,
 ) -> Any:
-    """Pure ``catalog.load(<name>)`` passthrough (AD-7) — no transform.
+    """``catalog.load(<name>)`` + a JSON-serializable coercion (AD-7).
+
+    The load is the passthrough; the coercion is TRANSPORT plumbing, not
+    metric/business logic — most catalog datasets are Parquet-backed and load
+    as a pandas/polars DataFrame, which FastMCP cannot serialize (a raw
+    DataFrame return `TypeError`s at the MCP boundary). We coerce DataFrame /
+    Series / ndarray / set to JSON-native shapes by DUCK-TYPING on the class
+    name + public methods — never importing pandas/numpy — so the AD-7 no-
+    business-logic AST gate stays satisfied. Anything already JSON-native is
+    returned as-is.
 
     Raises whatever ``catalog.load`` raises on an unknown dataset name.
     """
     with _session.bootstrapped_session(project_path, env=env) as s:
-        return _session.loaded_catalog(s).load(name)
+        result = _session.loaded_catalog(s).load(name)
+    cls_name = result.__class__.__name__
+    if cls_name == "DataFrame":
+        # pandas: orient=records → list[row-dict]; polars: to_dicts().
+        try:
+            return result.to_dict(orient="records")
+        except TypeError:
+            return result.to_dicts()
+    if cls_name == "Series":
+        return result.to_dict()
+    if cls_name == "ndarray":
+        return result.tolist()
+    if cls_name == "set":
+        return list(result)
+    return result
 
 
 def list_pipelines(
