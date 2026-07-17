@@ -1,0 +1,30 @@
+{
+  "phase": "N",
+  "node": "fetch_live_health",
+  "inputs": {
+    "vcs_github_api_raw": [
+      {
+        "feedstock_name": "numpy",
+        "stars": 100,
+        "last_commit": "2026-07-01",
+        "open_issues": 3
+      },
+      {
+        "feedstock_name": "numpy",
+        "stars": 100,
+        "last_commit": "2026-07-01",
+        "open_issues": 3
+      }
+    ]
+  },
+  "expected": {
+    "vcs_live_health": [
+      {
+        "feedstock_name": "numpy",
+        "stars": 100,
+        "last_commit": "2026-07-01",
+        "open_issues": 3
+      }
+    ]
+  }
+}

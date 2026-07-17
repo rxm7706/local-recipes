@@ -1,0 +1,32 @@
+{
+  "phase": "M",
+  "node": "compute_feedstock_health",
+  "inputs": {
+    "core_cf_graph_raw": [
+      {
+        "feedstock_name": "numpy",
+        "ci_status": "green",
+        "open_prs": 0,
+        "open_issues": 1,
+        "feedstock_archived": false
+      },
+      {
+        "feedstock_name": "deadpkg",
+        "ci_status": "red",
+        "open_prs": 3,
+        "open_issues": 9,
+        "feedstock_archived": true
+      }
+    ]
+  },
+  "expected": {
+    "core_feedstock_health": [
+      {
+        "feedstock_name": "numpy",
+        "ci_status": "green",
+        "open_prs": 0,
+        "open_issues": 1
+      }
+    ]
+  }
+}

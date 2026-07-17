@@ -1,0 +1,125 @@
+{
+  "phase": "F",
+  "node": "compute_downloads",
+  "inputs": {
+    "core_anaconda_downloads_raw": [
+      {
+        "conda_name": "numpy",
+        "version": "1.0",
+        "downloads": 100
+      },
+      {
+        "conda_name": "numpy",
+        "version": "2.0",
+        "downloads": 200
+      },
+      {
+        "conda_name": "scipy",
+        "version": "1.0",
+        "downloads": 50
+      }
+    ],
+    "core_s3_download_stats_raw": [
+      {
+        "conda_name": "numpy",
+        "month": "2026-05",
+        "platform": "linux-64",
+        "pyver": "3.11",
+        "channel": "main",
+        "downloads": 10
+      },
+      {
+        "conda_name": "numpy",
+        "month": "2026-06",
+        "platform": "linux-64",
+        "pyver": "3.12",
+        "channel": "main",
+        "downloads": 20
+      },
+      {
+        "conda_name": "numpy",
+        "month": "2026-06",
+        "platform": "osx-64",
+        "pyver": "bad",
+        "channel": "main",
+        "downloads": 5
+      },
+      {
+        "conda_name": "pandas",
+        "month": "2026-06",
+        "platform": "linux-64",
+        "pyver": "3.11",
+        "channel": "main",
+        "downloads": 7
+      }
+    ]
+  },
+  "expected": {
+    "core_downloads": [
+      {
+        "conda_name": "numpy",
+        "downloads_total": 35.0,
+        "downloads_30d": 25.0,
+        "downloads_source": "s3-parquet"
+      },
+      {
+        "conda_name": "pandas",
+        "downloads_total": 7.0,
+        "downloads_30d": 7.0,
+        "downloads_source": "s3-parquet"
+      },
+      {
+        "conda_name": "scipy",
+        "downloads_total": 50.0,
+        "downloads_30d": null,
+        "downloads_source": "anaconda-api"
+      }
+    ],
+    "core_downloads_platform_breakdown": [
+      {
+        "conda_name": "numpy",
+        "platform": "linux-64",
+        "downloads": 30
+      },
+      {
+        "conda_name": "numpy",
+        "platform": "osx-64",
+        "downloads": 5
+      },
+      {
+        "conda_name": "pandas",
+        "platform": "linux-64",
+        "downloads": 7
+      }
+    ],
+    "core_downloads_pyver_breakdown": [
+      {
+        "conda_name": "numpy",
+        "pyver": "3.11",
+        "downloads": 10
+      },
+      {
+        "conda_name": "numpy",
+        "pyver": "3.12",
+        "downloads": 20
+      },
+      {
+        "conda_name": "pandas",
+        "pyver": "3.11",
+        "downloads": 7
+      }
+    ],
+    "core_downloads_channel_breakdown": [
+      {
+        "conda_name": "numpy",
+        "channel": "main",
+        "downloads": 35
+      },
+      {
+        "conda_name": "pandas",
+        "channel": "main",
+        "downloads": 7
+      }
+    ]
+  }
+}
