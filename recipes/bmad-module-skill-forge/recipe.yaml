@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.1"
+
+package:
+  name: bmad-module-skill-forge
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/bmad-module-skill-forge/-/bmad-module-skill-forge-${{ version }}.tgz
+  sha256: 5a291b8bf4632cfa06beef7764afb5458a533e66f2451a37dff719e17cca7da5
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        - set -ex
+        - pnpm install --ignore-scripts
+        - npm pack --ignore-scripts
+        - npm install --global "${SRC_DIR}/bmad-module-skill-forge-${{ version }}.tgz"
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+      else:
+        - call pnpm install --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --global %SRC_DIR%/bmad-module-skill-forge-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  build:
+    - nodejs >=22
+    - pnpm
+    - pnpm-licenses
+  host:
+    - nodejs >=22
+  run:
+    - nodejs >=22
+
+tests:
+  - script:
+      - bmad-module-skill-forge --help
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+  summary: BMAD module — Turn code and docs into instructions AI agents can actually follow. Progressive capability tiers (Quick/Forge/Forge+/Deep).
+  description: |
+    **Turn code and docs into instructions AI agents can actually follow.**
+  homepage: https://github.com/armelhbobdad/bmad-module-skill-forge
+  repository: https://github.com/armelhbobdad/bmad-module-skill-forge
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-module-skill-forge
+  cfe-upstream-registry: npm
+  cfe-upstream-name: bmad-module-skill-forge
+  cfe-purls:
+    - pkg:conda/bmad-module-skill-forge@${{ version }}?channel=conda-forge
+    - pkg:npm/bmad-module-skill-forge@${{ version }}
+  cfe-upstream-repo: https://github.com/armelhbobdad/bmad-module-skill-forge
+  cfe-upstream-homepage: https://armelhbobdad.github.io/bmad-module-skill-forge/
+  cfe-import-names: []
+  cfe-source-kind: npm-registry
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: local-only-pending-submission-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-17T14:35:00Z"
+  cfe-generated-by-version: 8.78.0
+  cfe-generated-at-datetime: "2026-07-17T14:35:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-17T14:31:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#   npm CLI installer for a BMAD module (agent-skill compiler). GitHub's
+#   license auto-detector reported NOASSERTION on this repo; verified
+#   directly against LICENSE — it's plain MIT with an appended trademark
+#   notice (BMad(TM) marks), which doesn't affect code distributability.
+#   No existing conda-forge feedstock for this name (lookup_feedstock
+#   confirmed absent). Per-arch build (not noarch) per the canonical npm
+#   CLI pattern — npm lays down platform-native bin shims.
+####
