@@ -69,6 +69,14 @@ Ownership decisions recorded:
   mechanical realization of epics.md story 1.9's AC text "the exit
   downgrades to 0 with ``coverage: none`` recorded". The default ``False``
   preserves every pre-1.9 caller/test byte-for-byte.
+* ``applied_waivers`` (Story 3.2, additive/defaulted) -- ``render_text``
+  appends one line per ``waiver.WaiverNotice`` (id, reason, authorized_by,
+  expires_at) after the finding/error lines. This module has no
+  waiver-matching vocabulary of its own (that's ``waiver.py``'s domain), so
+  the caller (``cli.py``) states which waivers actually suppressed a
+  finding this run. Every notice's ``reason`` passes through
+  ``_single_line`` first, same as every finding/error ``message``. The
+  default ``()`` preserves every pre-3.2 caller/test byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -101,6 +109,7 @@ from .models import (
     VulnData,
 )
 from .verdict import compose, exit_code_for
+from .waiver import WaiverNotice
 
 REPORT_SCHEMA_VERSION = "1.0.0"
 TOOL_NAME = "warden"
@@ -302,7 +311,9 @@ def _single_line(text: str) -> str:
     return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
 
 
-def render_text(report: ComplianceReport) -> str:
+def render_text(
+    report: ComplianceReport, *, applied_waivers: Sequence[WaiverNotice] = ()
+) -> str:
     """Render the report as a human-readable, explicitly NON-CONTRACT summary.
 
     Built from ``report.to_json_dict()`` — the same deterministically-sorted
@@ -311,8 +322,10 @@ def render_text(report: ComplianceReport) -> str:
     code, finding count), a driver line when the status carries one, then
     one line per finding (axis, severity tier, id, message) and one line
     per error (kind, owner, message), both in ``to_json_dict()``'s sorted
-    order. Free-format lines: unlike ``render_json``'s document, this
-    output is never schema-validated. Every ``message`` is passed through
+    order, then one line per ``applied_waivers`` notice (Story 3.2; id,
+    reason, authorized_by, expires_at) in caller-supplied order. Free-format
+    lines: unlike ``render_json``'s document, this output is never
+    schema-validated. Every ``message``/``reason`` is passed through
     ``_single_line`` first — see its docstring."""
     # to_json_dict()'s declared return type is dict[str, object] (every
     # nested value equally untyped) -- it is JSON-primitive data, not a
@@ -335,4 +348,10 @@ def render_text(report: ComplianceReport) -> str:
     for error in document["errors"]:
         message = _single_line(error["message"])
         lines.append(f"  [error:{error['kind']}] {error['owner']} -- {message}")
+    for notice in applied_waivers:
+        reason = _single_line(notice.reason)
+        lines.append(
+            f"  [waiver] {notice.id} -- reason={reason} "
+            f"authorized_by={notice.authorized_by} expires_at={notice.expires_at}"
+        )
     return "\n".join(lines)

@@ -54,6 +54,10 @@ Ownership decisions recorded:
   exists for it (epics.md's AC spells CLI flags for exactly ``--fail-on``/
   ``--fail-under-coverage``); ``ConfigLoader.load`` has no
   ``cli_dep001_block_confidence`` parameter to match.
+* ``waiver-default-expiry-days`` (Story 3.2, FR24) is likewise TOML-only —
+  no CLI flag exists for it either; ``cli.py``'s ``--bypass`` path reads
+  ``EffectiveConfig.waiver_default_expiry_days`` directly to compute a
+  waiver's default expiry window.
 
 This module parses TOML as DATA: no I/O beyond reading the two candidate
 files, no subprocess, no network, no exec.
@@ -71,14 +75,29 @@ from .models import SeverityTier, Status
 _PYPROJECT_FILENAME = "pyproject.toml"
 _PIXI_FILENAME = "pixi.toml"
 
-# The 3 recognized [tool.pyforge-warden] keys (hyphenated only — an
+# The 4 recognized [tool.pyforge-warden] keys (hyphenated only — an
 # underscore-spelled variant of any of these is UNRECOGNIZED, never
 # silently accepted as an alias).
 _RECOGNIZED_KEYS = frozenset(
-    {"fail-on", "fail-under-coverage", "dep001-block-confidence"}
+    {
+        "fail-on",
+        "fail-under-coverage",
+        "dep001-block-confidence",
+        "waiver-default-expiry-days",
+    }
 )
 
 _FAIL_ON_CHOICES = ("critical", "high", "medium", "low", "none")
+
+# Review finding (Story 3.2): an unbounded expiry window let a pathological
+# config value overflow ``datetime.timedelta`` deep inside
+# ``waiver.emit_bypass_stanza``, surfacing as an opaque uncaught
+# ``OverflowError`` (internal-error, exit 2) instead of a clear
+# config-validation failure at load time -- "fail at construction, not at
+# first use" (this module's own established principle). 3650 days (10
+# years) is far beyond any plausible waiver lifetime yet nowhere near
+# ``timedelta``'s real ~2.7e6-year ceiling.
+_MAX_WAIVER_DEFAULT_EXPIRY_DAYS = 3650
 
 # Tier STRENGTH order, strongest first — local to this module (Never: never
 # imported from vuln.py). Index doubles as "at-or-above" rank: a tier whose
@@ -142,6 +161,7 @@ class EffectiveConfig:
     fail_on: SeverityTier = SeverityTier.CRITICAL
     fail_under_coverage: float = 0.0
     dep001_block_confidence: str = "verified"
+    waiver_default_expiry_days: int = 14
 
     def __post_init__(self) -> None:
         """Fail at construction, not at first use (review finding: without
@@ -169,6 +189,16 @@ class EffectiveConfig:
             raise ValueError(
                 "fail_under_coverage must be a number in [0, 100], got "
                 f"{self.fail_under_coverage!r}"
+            )
+        if (
+            isinstance(self.waiver_default_expiry_days, bool)
+            or not isinstance(self.waiver_default_expiry_days, int)
+            or not (0 < self.waiver_default_expiry_days <= _MAX_WAIVER_DEFAULT_EXPIRY_DAYS)
+        ):
+            raise ValueError(
+                "waiver_default_expiry_days must be a positive int <= "
+                f"{_MAX_WAIVER_DEFAULT_EXPIRY_DAYS}, got "
+                f"{self.waiver_default_expiry_days!r}"
             )
 
     @classmethod
@@ -209,6 +239,7 @@ class EffectiveConfig:
             fail_on=fail_on,
             fail_under_coverage=fail_under_coverage,
             dep001_block_confidence=defaults.dep001_block_confidence,
+            waiver_default_expiry_days=defaults.waiver_default_expiry_days,
         )
 
     @property
@@ -313,6 +344,19 @@ def _coerce_dep001_block_confidence(value: object) -> str:
     return value
 
 
+def _coerce_waiver_default_expiry_days(value: object) -> int:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or not (0 < value <= _MAX_WAIVER_DEFAULT_EXPIRY_DAYS)
+    ):
+        raise ConfigValidationError(
+            "'waiver-default-expiry-days' must be a positive int <= "
+            f"{_MAX_WAIVER_DEFAULT_EXPIRY_DAYS}, got {value!r}"
+        )
+    return value
+
+
 class ConfigLoader:
     """Loads + merges ``[tool.pyforge-warden]`` from ``pyproject.toml``
     (primary) and ``pixi.toml`` (secondary) into one ``EffectiveConfig``
@@ -396,6 +440,11 @@ class ConfigLoader:
             if "dep001-block-confidence" in merged
             else defaults.dep001_block_confidence
         )
+        waiver_default_expiry_days = (
+            _coerce_waiver_default_expiry_days(merged["waiver-default-expiry-days"])
+            if "waiver-default-expiry-days" in merged
+            else defaults.waiver_default_expiry_days
+        )
 
         # CLI flags win over both files. Routed through the SAME _coerce_*
         # helpers the TOML-sourced values use (review finding: a bare
@@ -413,6 +462,7 @@ class ConfigLoader:
             fail_on=fail_on,
             fail_under_coverage=fail_under_coverage,
             dep001_block_confidence=dep001_block_confidence,
+            waiver_default_expiry_days=waiver_default_expiry_days,
         )
         return config, tuple(warnings)
 
