@@ -3,7 +3,7 @@
 - **Target:** `ARCHITECTURE-SPINE.md` (cf_atlas Kedro/Dagster/DuckDB Migration, 2026-07-17)
 - **Lens:** every committed decision web-researched or reality-checked rather than asserted from training data; Stack table cross-checked row-by-row against the live `pixi.toml` (+ `pixi.lock`); GX-cap and kedro-dagster-pin claims checked against spec § FR-15 / § 13.2 / § 5.8; existence spot-checks for the obscure named technologies via web.
 - **Reviewer date:** 2026-07-17
-- **Evidence base:** `/home/user/local-recipes/pixi.toml`, `/home/user/local-recipes/pixi.lock` (resolved versions — the strongest in-repo ground truth per FR-15 doctrine), `/home/user/local-recipes/docs/specs/cfe-atlas-datapipeline-kedro-migration.md`, `/home/user/local-recipes/_bmad-output/projects/conda-forge-atlas-datapipeline/planning-artifacts/intake-groundtruth-2026-07-17.md`, plus live web searches (proxy worked; kedro-dagster, boring-semantic-layer, kedro-mcp, nebi spot-checked).
+- **Evidence base:** `/home/user/local-recipes/pixi.toml`, `/home/user/local-recipes/pixi.lock` (resolved versions — the strongest in-repo ground truth per FR-15 doctrine), `/home/user/local-recipes/docs/specs/cfe-atlas-datapipeline-kedro-migration.md`, `/home/user/local-recipes/_bmad-output/projects/pyforge-atlas/planning-artifacts/intake-groundtruth-2026-07-17.md`, plus live web searches (proxy worked; kedro-dagster, boring-semantic-layer, kedro-mcp, nebi spot-checked).
 
 ## Verdict
 

@@ -1,6 +1,6 @@
 # Validation Report — cf_atlas Kedro/Dagster/DuckDB Migration PRD
 
-- **PRD:** `_bmad-output/planning-artifacts/prds/prd-conda-forge-atlas-datapipeline-2026-07-17/prd.md`
+- **PRD:** `_bmad-output/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md`
 - **Rubric:** `.claude/skills/bmad-prd/assets/prd-validation-checklist.md`
 - **Run at:** 2026-07-17T02:15:00Z (headless; browser-open skipped)
 - **Grade:** Good — *as-reviewed the strict rule gave Fair (2 distinct High
@@ -71,8 +71,8 @@ artifacts; the bar covers all 28.
 Fix applied: SM-11 (SBOM intake) and SM-12 (orchestration operations, AC-3)
 added; § 7 preamble discloses they extend the spec's AC list.
 
-**[Adversarial F3]** — `bmad-switch` slug never reconciled: spec § 2.5/§ 14 say `local-recipes`, the intake created `conda-forge-atlas-datapipeline`; CLAUDE.md documents this desync as an artifact-overwrite near-miss.
-Fix applied: § 6.2 now names `scripts/bmad-switch conda-forge-atlas-datapipeline`
+**[Adversarial F3]** — `bmad-switch` slug never reconciled: spec § 2.5/§ 14 say `local-recipes`, the intake created `pyforge-atlas`; CLAUDE.md documents this desync as an artifact-overwrite near-miss.
+Fix applied: § 6.2 now names `scripts/bmad-switch pyforge-atlas`
 as the loop precondition, explicitly superseding the spec literal; recorded
 as § 9.11 and in the Assumptions Index.
 

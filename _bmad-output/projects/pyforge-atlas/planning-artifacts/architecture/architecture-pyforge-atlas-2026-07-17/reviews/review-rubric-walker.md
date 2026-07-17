@@ -1,9 +1,9 @@
 # Reviewer Gate — Rubric Walker Review
 
-- **Artifact**: `_bmad-output/planning-artifacts/architecture/architecture-conda-forge-atlas-datapipeline-2026-07-17/ARCHITECTURE-SPINE.md`
+- **Artifact**: `_bmad-output/planning-artifacts/architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md`
 - **Lens**: Rubric Walker (good-spine checklist, item by item)
 - **Date**: 2026-07-17
-- **Inputs walked**: spec `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` (v5.6, full read of §§ 1–15 incl. all 22 FRs, § 5.2, § 3.3/3.4, § 2.5, § 11, § 13); PRD `prd-conda-forge-atlas-datapipeline-2026-07-17/prd.md` (§ 8/§ 9.11 spot-verified); brownfield `architecture-cf-atlas.md`; live `pixi.toml` (pin-by-pin spot-check); `intake-groundtruth-2026-07-17.md` (existence verified).
+- **Inputs walked**: spec `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` (v5.6, full read of §§ 1–15 incl. all 22 FRs, § 5.2, § 3.3/3.4, § 2.5, § 11, § 13); PRD `prd-pyforge-atlas-2026-07-17/prd.md` (§ 8/§ 9.11 spot-verified); brownfield `architecture-cf-atlas.md`; live `pixi.toml` (pin-by-pin spot-check); `intake-groundtruth-2026-07-17.md` (existence verified).
 
 ## Verdict
 
@@ -79,7 +79,7 @@ The things that *should* have been in Deferred but are nowhere: the physical-lay
 
 ## Rubric item 5 — Ratifies rather than contradicts the brownfield
 
-**PASS.** The brownfield `architecture-cf-atlas.md` carries older literals (SCHEMA_VERSION 28, 22 phases, 4 TTL-gated, 22 CLIs) vs the spec § 3.3 snapshot (v29, 23 cataloged phases incl. Phase I, 6 TTL-gated, 28 CLIs). The spine handles this correctly — Decision 5 explicitly subordinates the brownfield's stale literals to § 3.3 and records a sync note, not a conflict. Substantively, every brownfield mechanism is either ported with its contract intact (AD-10), replaced with the replacement named (AD-4/AD-5/AD-6 vs `phase_state` / `_TTL_GATED` / the 1800 s `cf_atlas_core` cap), or declared a non-product input along the § 3.4 boundary (AD-19). The `_http.py` credential defect is fixed-not-ported per FR-1, matching `docs/enterprise-deployment.md`'s documented workaround. The `bmad-switch conda-forge-atlas-datapipeline` supersession of the spec's pre-intake `local-recipes` literal is genuinely carried from PRD § 9.11 (verified at PRD L529–533, L700–704). No contradiction found.
+**PASS.** The brownfield `architecture-cf-atlas.md` carries older literals (SCHEMA_VERSION 28, 22 phases, 4 TTL-gated, 22 CLIs) vs the spec § 3.3 snapshot (v29, 23 cataloged phases incl. Phase I, 6 TTL-gated, 28 CLIs). The spine handles this correctly — Decision 5 explicitly subordinates the brownfield's stale literals to § 3.3 and records a sync note, not a conflict. Substantively, every brownfield mechanism is either ported with its contract intact (AD-10), replaced with the replacement named (AD-4/AD-5/AD-6 vs `phase_state` / `_TTL_GATED` / the 1800 s `cf_atlas_core` cap), or declared a non-product input along the § 3.4 boundary (AD-19). The `_http.py` credential defect is fixed-not-ported per FR-1, matching `docs/enterprise-deployment.md`'s documented workaround. The `bmad-switch pyforge-atlas` supersession of the spec's pre-intake `local-recipes` literal is genuinely carried from PRD § 9.11 (verified at PRD L529–533, L700–704). No contradiction found.
 
 ## Rubric item 6 — Spec drove the run; FR-1..FR-22 all mapped, none mis-governed
 
