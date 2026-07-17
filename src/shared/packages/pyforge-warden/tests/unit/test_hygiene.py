@@ -17,6 +17,7 @@ from pyforge.warden.hygiene import (
     UNPARSEABLE_RATE_BASELINE,
     DeptryParse,
     _synthesize_deptry_frontdoor,
+    has_adjacent_python_source,
     hygiene_rung,
     parse_deptry_output,
     status_for_code,
@@ -494,6 +495,63 @@ def test_frontdoor_excludes_pep440_invalid_lines_that_would_crash_deptry(
 
 
 # --- Fix 6 (2026-07-16 review): the NFR-S6-excluded finding, hygiene axis ---
+
+
+# --- Story 2.4 (AC3): the "no adjacent Python source" predicate -------------
+
+
+def test_returns_true_for_py_at_root(tmp_path):
+    (tmp_path / "main.py").write_text("", encoding="utf-8")
+    assert has_adjacent_python_source(tmp_path) is True
+
+
+def test_returns_true_for_py_nested_a_few_levels_deep(tmp_path):
+    nested = tmp_path / "a" / "b" / "c"
+    nested.mkdir(parents=True)
+    (nested / "mod.py").write_text("", encoding="utf-8")
+    assert has_adjacent_python_source(tmp_path) is True
+
+
+def test_returns_false_when_no_py_present(tmp_path):
+    (tmp_path / "recipe.yaml").write_text("package:\n  name: foo\n", encoding="utf-8")
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / "notes.txt").write_text("", encoding="utf-8")
+    assert has_adjacent_python_source(tmp_path) is False
+
+
+def test_git_only_tree_with_no_real_py_files_is_false(tmp_path):
+    """A .py-looking name INSIDE .git (e.g. a hook template) must not count
+    -- .git directories are pruned from the walk entirely."""
+    git_dir = tmp_path / ".git" / "hooks"
+    git_dir.mkdir(parents=True)
+    (git_dir / "pre-commit.py").write_text("", encoding="utf-8")
+    assert has_adjacent_python_source(tmp_path) is False
+
+
+def test_empty_directory_is_false(tmp_path):
+    assert has_adjacent_python_source(tmp_path) is False
+
+
+def test_returns_promptly_on_a_reasonably_large_synthetic_tree(tmp_path):
+    """Sanity check: a wide/deep tree with no .py anywhere still returns
+    (never hangs) -- built with plain os.makedirs/file-creation, not a
+    shell command."""
+    for i in range(50):
+        d = tmp_path / f"pkg{i}"
+        d.mkdir()
+        for j in range(50):
+            (d / f"file{j}.txt").write_text("", encoding="utf-8")
+    assert has_adjacent_python_source(tmp_path) is False
+
+
+def test_finds_py_even_deep_inside_a_large_tree(tmp_path):
+    for i in range(20):
+        d = tmp_path / f"pkg{i}"
+        d.mkdir()
+        for j in range(20):
+            (d / f"file{j}.txt").write_text("", encoding="utf-8")
+    (tmp_path / "pkg19" / "needle.py").write_text("", encoding="utf-8")
+    assert has_adjacent_python_source(tmp_path) is True
 
 
 def test_unsafe_identity_finding_id_grammar(component_factory):

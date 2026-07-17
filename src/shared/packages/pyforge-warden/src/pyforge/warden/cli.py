@@ -84,6 +84,19 @@ Ownership decisions recorded:
   CONDA_LOCK_KIND})`` to ``assemble_report``. ``report.py`` has no
   lockfile-kind vocabulary of its own (that's ``discovery.py``'s domain),
   so the caller states the claim.
+* ``hygiene_applicable`` (Story 2.4, AC3): computed ONCE, via
+  ``hygiene.has_adjacent_python_source(target)``, right before
+  ``engines_to_run`` — a source-less scan target (the fleet's majority
+  feedstock shape) makes deptry flag every conda-sourced dependency
+  reaching the front-door as "unused" (a noise wall, never a signal), so
+  ``DeptryEngine`` is filtered out of ``engines_to_run`` when it is
+  ``False`` and the same value is threaded into ``assemble_report`` so the
+  hygiene axis honestly reports not-applicable. Deliberately NOT a check
+  inside ``DeptryEngine.run`` itself — ``tests/unit/
+  test_engine_env_deptry.py`` calls the engine directly against bare
+  ``tmp_path`` dirs to test its own argv/error-handling logic in isolation,
+  and embedding the skip there would exercise the wrong branch in every one
+  of those tests.
 """
 
 from __future__ import annotations
@@ -98,8 +111,9 @@ from pathlib import Path
 
 from . import __version__
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
-from .engines import engine_factories
+from .engines import DeptryEngine, engine_factories
 from .extract import UnparsableManifestError, extractor_for
+from .hygiene import has_adjacent_python_source
 from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
 from .models import (
@@ -368,11 +382,26 @@ def _run_scan(args: argparse.Namespace) -> int:
             f"under {args.path!r}; nothing to scan"
         )
     engine_results: list[EngineResult] = []
+    # AC3: a source-less scan target makes deptry flag every conda-sourced
+    # dependency reaching the front-door as "unused" (DEP002) -- a noise
+    # wall, never a signal -- so DeptryEngine is filtered out when no
+    # adjacent .py file exists anywhere under target. Computed once, up
+    # front, so both the engine filter below and the assemble_report call
+    # see the same value.
+    hygiene_applicable = has_adjacent_python_source(target)
     # The engine seam runs only when a manifest actually parsed: with nothing
     # extractable (empty dir, or a manifest that failed to parse) there is no
     # project for a subprocess engine (deptry) to assess, and running it on an
     # absent/malformed manifest would only double the extractor's own error.
-    engines_to_run = engine_factories() if manifests_parsed > 0 else ()
+    engines_to_run = (
+        tuple(
+            factory
+            for factory in engine_factories()
+            if hygiene_applicable or factory is not DeptryEngine
+        )
+        if manifests_parsed > 0
+        else ()
+    )
     for factory in engines_to_run:
         try:
             engine = factory()
@@ -435,6 +464,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         vuln_data=vuln_data,
         engine_results=engine_results,
         has_locked_closure=bool(parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}),
+        hygiene_applicable=hygiene_applicable,
     )
     try:
         if args.format == "json":
