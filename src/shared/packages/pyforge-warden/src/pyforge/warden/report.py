@@ -16,6 +16,13 @@ Ownership decisions recorded:
   separators=(",", ": ")``) — byte-identical output is a construction
   property, not a mode. Story 1.8 owns renderers proper; this is 1.2
   plumbing.
+* ``render_text`` (Story 1.8) builds its lines from ``to_json_dict()`` — the
+  SAME deterministically-sorted shape ``render_json`` emits — instead of
+  iterating ``report.findings``/``report.errors`` directly: a second,
+  independently-maintained sort in this function would risk the two
+  renderers silently disagreeing on order across a future field-growth
+  event. Its output is explicitly NON-CONTRACT (free-format lines, never
+  schema-validated) — only ``render_json``'s document is the contract.
 * ``vuln_data`` is a REQUIRED caller-supplied parameter (Story 1.5) — this
   module has no clock and derives no vuln provenance itself; ``cli.py``
   derives it from ``engine_results`` (an all-``None`` ``VulnData`` when no
@@ -41,6 +48,27 @@ Ownership decisions recorded:
   ``manifests_found``/``manifests_parsed`` and the vulnerability axis are
   untouched; the default ``True`` preserves every pre-2.4 caller/test
   byte-for-byte.
+* ``allow_empty`` (Story 1.9, additive/defaulted) — threaded straight
+  through into ``verdict.exit_code_for(status, driver=driver,
+  allow_empty=allow_empty)``; this module owns no exit-projection logic of
+  its own (``verdict.py`` is the sole owner), so its only role here is
+  plumbing the caller's flag alongside the composed driver.
+* ``empty_extraction`` (Story 1.9, D2(c), additive/defaulted) — mirrors
+  ``hygiene_applicable``'s override shape: this module has no rung-
+  counting vocabulary of its own (that's ``cli.py``'s domain — the
+  ``manifests_parsed > 0 and not rungs`` gate), so the caller states the
+  claim. ``True`` forces BOTH axes' ``resolution_depth`` to ``None`` (the
+  same "no claim" shape the not-applicable/empty-tree path already uses,
+  taking priority even over ``has_locked_closure``) instead of the
+  ``direct-only``/``locked-closure`` claim a positive ``manifests_parsed``/
+  ``has_locked_closure`` would otherwise produce — a manifest that parsed
+  but yielded nothing extractable has nothing honest to claim resolution
+  depth over. ``deps_total``/``deps_assessed`` need no separate override:
+  the D2(c) condition already implies ``inventory.count == 0``, so they
+  are already the honest 0/0 without this flag's help. This is the
+  mechanical realization of epics.md story 1.9's AC text "the exit
+  downgrades to 0 with ``coverage: none`` recorded". The default ``False``
+  preserves every pre-1.9 caller/test byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -52,6 +80,7 @@ import json
 from collections.abc import Iterable, Sequence
 from functools import lru_cache
 from importlib import resources
+from typing import Any, cast
 
 import jsonschema
 
@@ -66,6 +95,7 @@ from .models import (
     ErrorRecord,
     Finding,
     ResolutionDepth,
+    SeverityTier,
     Status,
     StatusDriver,
     VulnData,
@@ -100,12 +130,16 @@ def assemble_report(
     engine_results: Sequence[EngineResult] = (),
     has_locked_closure: bool = False,
     hygiene_applicable: bool = True,
+    allow_empty: bool = False,
+    empty_extraction: bool = False,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
     ``verdict.compose`` picks the winning rung; ``verdict.exit_code_for``
-    projects it. ``ComplianceReport.__post_init__`` then enforces the
-    status/exit/driver coherence invariants at construction.
+    projects it (now given ``driver``/``allow_empty`` too — Story 1.9's one
+    sanctioned flag-driven exit exception). ``ComplianceReport.__post_init__``
+    then enforces the status/exit/driver coherence invariants at
+    construction.
 
     Coverage ownership (recorded): manifest counts and ``deps_total`` are
     ORCHESTRATOR-derived here. ``deps_assessed`` is per-axis: Story 1.3
@@ -125,13 +159,20 @@ def assemble_report(
     axis's ``deps_total``/``deps_assessed``/``resolution_depth`` to the
     not-applicable shape (``0``/``0``/``None``) regardless of what any
     engine's own coverage claims; ``manifests_found``/``manifests_parsed``
-    and the vulnerability axis are untouched."""
+    and the vulnerability axis are untouched.
+
+    ``empty_extraction=True`` (Story 1.9, D2(c)) forces BOTH axes'
+    ``resolution_depth`` to ``None`` — see the module docstring."""
     status, driver = compose(rungs)
     resolution_depth = (
-        ResolutionDepth.LOCKED_CLOSURE.value
-        if has_locked_closure
+        None
+        if empty_extraction
         else (
-            ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
+            ResolutionDepth.LOCKED_CLOSURE.value
+            if has_locked_closure
+            else (
+                ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
+            )
         )
     )
     # Highest per-axis deps_assessed any engine claims (honest max coverage).
@@ -171,7 +212,7 @@ def assemble_report(
         tool_version=__version__,
         status=status,
         status_driver=driver,
-        exit_code=exit_code_for(status),
+        exit_code=exit_code_for(status, driver=driver, allow_empty=allow_empty),
         findings=tuple(findings),
         coverage=coverage,
         vuln_data=vuln_data,
@@ -195,3 +236,52 @@ def render_json(report: ComplianceReport) -> str:
         indent=2,
         separators=(",", ": "),
     )
+
+
+def _single_line(text: str) -> str:
+    """Neutralize embedded line breaks so one finding/error's ``message``
+    can never fabricate extra ``render_text`` lines (Story 1.8 review
+    finding, 2026-07-17). Unlike ``Finding.id`` (regex-guarded against
+    ``\\n`` at construction), ``message`` is engine/exception-derived free
+    text — e.g. deptry's own JSON message field, or a raw ``str(exc)`` at a
+    ``cli.py`` error seam — with no such guarantee. A message containing
+    ``\\n  driver: axis=...`` would otherwise render as a second,
+    indistinguishable-from-real line in this explicitly human-facing,
+    non-schema-validated output."""
+    return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
+
+
+def render_text(report: ComplianceReport) -> str:
+    """Render the report as a human-readable, explicitly NON-CONTRACT summary.
+
+    Built from ``report.to_json_dict()`` — the same deterministically-sorted
+    shape ``render_json`` emits (see the module docstring) — never a second,
+    independently-maintained sort. One verdict line (tool, status, exit
+    code, finding count), a driver line when the status carries one, then
+    one line per finding (axis, severity tier, id, message) and one line
+    per error (kind, owner, message), both in ``to_json_dict()``'s sorted
+    order. Free-format lines: unlike ``render_json``'s document, this
+    output is never schema-validated. Every ``message`` is passed through
+    ``_single_line`` first — see its docstring."""
+    # to_json_dict()'s declared return type is dict[str, object] (every
+    # nested value equally untyped) -- it is JSON-primitive data, not a
+    # typed structure, so the cast is the honest boundary rather than
+    # threading `object` narrowing through every access below.
+    document = cast(dict[str, Any], report.to_json_dict())
+    status = document["status"]
+    lines = [
+        f"{TOOL_NAME}: status={status['value']} "
+        f"exit_code={document['exit_code']} findings={len(document['findings'])}"
+    ]
+    driver = status["driver"]
+    if driver is not None:
+        lines.append(f"  driver: axis={driver['axis']} id={driver['finding_id']}")
+    for finding in document["findings"]:
+        severity = finding["severity"]
+        tier = severity["tier"] if severity is not None else SeverityTier.NONE.value
+        message = _single_line(finding["message"])
+        lines.append(f"  [{finding['axis']}] {tier} {finding['id']} -- {message}")
+    for error in document["errors"]:
+        message = _single_line(error["message"])
+        lines.append(f"  [error:{error['kind']}] {error['owner']} -- {message}")
+    return "\n".join(lines)

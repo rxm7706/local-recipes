@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from ..discovery import (
     CONDA_LOCK_KIND,
+    ENVIRONMENT_YAML_KIND,
     ENVIRONMENT_YML_KIND,
     META_YAML_KIND,
     PIXI_LOCK_KIND,
@@ -69,6 +70,10 @@ def extractor_for(kind: str, router: Router) -> Extractor:
     if kind == META_YAML_KIND:
         return MetaV0Extractor(router)
     if kind == ENVIRONMENT_YML_KIND:
+        return EnvironmentYmlExtractor(router)
+    if kind == ENVIRONMENT_YAML_KIND:
+        # Story 1.9: the second environment.yml spelling — shares the SAME
+        # extractor class (routing.py's routes distinguish the two kinds).
         return EnvironmentYmlExtractor(router)
     if kind == PIXI_TOML_KIND:
         return PixiTomlExtractor(router)

@@ -79,6 +79,7 @@ from .interfaces import Engine, EngineResult
 from .inventory import Component, ResolvedInventory
 from .models import (
     AXIS_HYGIENE,
+    AXIS_INGESTION,
     AXIS_VULNERABILITY,
     AxisCoverage,
     ErrorKind,
@@ -301,9 +302,10 @@ class NullEngine:
     contributes."""
 
     name: str = "null"
+    axis: str = AXIS_INGESTION
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
-        return EngineResult(findings=(), errors=(), coverage=())
+        return EngineResult(findings=(), errors=(), coverage=(), axis=self.axis)
 
 
 def _deptry_requirements_sources(target: Path) -> list[str]:
@@ -376,7 +378,19 @@ class DeptryEngine:
     seam: deptry's own chatter never touches our streams). deptry's exit code
     is ignored; the DEP001–DEP005 records become ``hygiene:<code>:<module>``
     findings, and on a successful run the hygiene axis reports
-    ``deps_assessed == inventory.count``.
+    ``deps_assessed == len(synthesized.lines)`` (Story 1.7 — counts ONLY
+    what actually reached deptry's front-door, exactly mirroring
+    ``OsvEngine.run``'s own ``deps_assessed=len(synthesized.lines)``
+    formula byte-for-byte; deliberately NOT ``inventory.count -
+    len(excluded)``, which over-counts a THIRD bucket
+    ``_synthesize_deptry_frontdoor`` silently ``continue``s past —
+    ``hygiene_covered=False`` or no resolved ``pypi_identity`` — into
+    neither ``lines`` nor ``excluded``). Deptry silently resolving nothing
+    due to its OWN internal config/layout (a non-standard project layout,
+    or an over-broad ``exclude``) is a distinct, still-open gap this story
+    does NOT attempt to detect — deptry's JSON output carries no
+    analyzed-count signal for it; left to a future coverage-floor gate
+    (Story 3.1/FR19).
 
     Story 2.2 (FR8's conda half) ALWAYS additionally synthesizes a
     ``--requirements-files <tempfile>`` front-door from the inventory (see
@@ -404,6 +418,7 @@ class DeptryEngine:
     handling of its parallel-shaped ``excluded_findings``."""
 
     name: str = "deptry"
+    axis: str = AXIS_HYGIENE
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
         synthesized = _synthesize_deptry_frontdoor(inventory.components)
@@ -434,6 +449,7 @@ class DeptryEngine:
                     ),
                 ),
                 coverage=(),
+                axis=self.axis,
             )
         try:
             os.close(handle)
@@ -480,7 +496,10 @@ class DeptryEngine:
                 pass
         if error is not None:
             return EngineResult(
-                findings=excluded_findings, errors=(error,), coverage=()
+                findings=excluded_findings,
+                errors=(error,),
+                coverage=(),
+                axis=self.axis,
             )
         parse = parse_deptry_output(text or "")
         if not parse.output_parsed:
@@ -488,7 +507,10 @@ class DeptryEngine:
             # coverage claim (nothing was assessed) — the purity guard's own
             # findings still survive (never silently dropped).
             return EngineResult(
-                findings=excluded_findings, errors=parse.errors, coverage=()
+                findings=excluded_findings,
+                errors=parse.errors,
+                coverage=(),
+                axis=self.axis,
             )
         coverage = (
             AxisCoverage(
@@ -496,7 +518,15 @@ class DeptryEngine:
                 manifests_found=0,
                 manifests_parsed=0,
                 deps_total=inventory.count,
-                deps_assessed=inventory.count,
+                # Counts ONLY what actually reached deptry's front-door —
+                # exactly OsvEngine.run's own deps_assessed=len(synthesized
+                # .lines) formula (Story 1.7). NOT inventory.count -
+                # len(excluded): _synthesize_deptry_frontdoor also silently
+                # `continue`s past hygiene_covered=False / no-identity
+                # components into neither `lines` nor `excluded`, so that
+                # subtraction over-counts them as assessed (review finding,
+                # 2026-07-17) — len(lines) sidesteps the bucket entirely.
+                deps_assessed=len(synthesized.lines),
                 resolution_depth=None,
             ),
         )
@@ -507,6 +537,7 @@ class DeptryEngine:
             findings=findings,
             errors=parse.errors,
             coverage=coverage,
+            axis=self.axis,
         )
 
 
@@ -594,6 +625,7 @@ class OsvEngine:
     independently of the subprocess, survive every one of these paths."""
 
     name: str = "osv-scanner"
+    axis: str = AXIS_VULNERABILITY
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
         # Ecosystem-agnostic (Story 2.1): a resolved pypi_identity is the
@@ -612,7 +644,7 @@ class OsvEngine:
             if component.pypi_identity is not None and component.version is None
         ]
         if not candidates and not name_level_candidates:
-            return EngineResult(findings=(), errors=(), coverage=())
+            return EngineResult(findings=(), errors=(), coverage=(), axis=self.axis)
 
         cache_dir = resolve_cache_dir()
         zip_path = db_zip_path(cache_dir) if cache_dir is not None else None
@@ -621,6 +653,7 @@ class OsvEngine:
                 findings=_withheld_findings([*candidates, *name_level_candidates]),
                 errors=(),
                 coverage=(),
+                axis=self.axis,
                 vuln_data=None,
             )
 
@@ -639,7 +672,11 @@ class OsvEngine:
                 source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale
             )
             return EngineResult(
-                findings=findings, errors=(), coverage=(), vuln_data=vuln_data
+                findings=findings,
+                errors=(),
+                coverage=(),
+                axis=self.axis,
+                vuln_data=vuln_data,
             )
 
         synthesized = _synthesize_requirements(candidates)
@@ -669,7 +706,11 @@ class OsvEngine:
                 source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale
             )
             return EngineResult(
-                findings=findings, errors=(), coverage=(), vuln_data=vuln_data
+                findings=findings,
+                errors=(),
+                coverage=(),
+                axis=self.axis,
+                vuln_data=vuln_data,
             )
 
         try:
@@ -706,6 +747,7 @@ class OsvEngine:
                 findings=findings,
                 errors=(mkstemp_error,),
                 coverage=(),
+                axis=self.axis,
                 vuln_data=None,
             )
         try:
@@ -753,6 +795,7 @@ class OsvEngine:
                 findings=findings,
                 errors=(error,),
                 coverage=(),
+                axis=self.axis,
                 vuln_data=None,
             )
 
@@ -788,6 +831,7 @@ class OsvEngine:
                 findings=findings,
                 errors=parse.errors,
                 coverage=coverage,
+                axis=self.axis,
                 vuln_data=vuln_data,
             )
 
@@ -813,6 +857,7 @@ class OsvEngine:
                 findings=findings,
                 errors=(error_record,),
                 coverage=(),
+                axis=self.axis,
                 vuln_data=None,
             )
 
@@ -838,6 +883,7 @@ class OsvEngine:
                 findings=findings,
                 errors=(),
                 coverage=(),
+                axis=self.axis,
                 vuln_data=None,
             )
 
@@ -856,6 +902,7 @@ class OsvEngine:
             findings=findings,
             errors=(error_record,),
             coverage=(),
+            axis=self.axis,
             vuln_data=None,
         )
 

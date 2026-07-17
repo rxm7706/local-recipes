@@ -181,6 +181,63 @@ def test_only_exact_reaches_clean_across_current_members():
         assert match_level_rung(level) is expected
 
 
+# --- allow_empty: the ONE sanctioned flag-driven exit exception (1.9) -----
+
+
+def test_allow_empty_downgrades_the_empty_extraction_driver_to_zero():
+    driver = StatusDriver(
+        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan"
+    )
+    assert (
+        exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=True) == 0
+    )
+
+
+def test_allow_empty_false_leaves_the_empty_extraction_driver_at_one():
+    driver = StatusDriver(
+        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan"
+    )
+    assert exit_code_for(Status.INDETERMINATE, driver=driver) == 1
+    assert (
+        exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=False) == 1
+    )
+
+
+def test_allow_empty_with_no_driver_stays_at_one():
+    assert exit_code_for(Status.INDETERMINATE, allow_empty=True) == 1
+
+
+@pytest.mark.parametrize(
+    "finding_id",
+    [
+        "indeterminate:vuln-data-stale:vuln-database",
+        "indeterminate:offline-db-unavailable:requests",
+        "indeterminate:no-version:leftpad",
+        "indeterminate:unmatchable:somepkg",
+    ],
+    ids=str,
+)
+def test_allow_empty_never_leaks_to_an_unrelated_indeterminate_cause(finding_id):
+    """The downgrade is scoped NARROWLY to the empty-extraction driver — a
+    stale-DB or a withheld-component indeterminate cause (or any other
+    non-empty-extraction reason in this finding-id family) must never be
+    silently downgraded by the flag."""
+    driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding_id)
+    assert exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=True) == 1
+
+
+def test_allow_empty_never_affects_non_indeterminate_statuses():
+    driver = StatusDriver(
+        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan"
+    )
+    for status in Status:
+        if status is Status.INDETERMINATE:
+            continue
+        assert exit_code_for(
+            status, driver=driver, allow_empty=True
+        ) == exit_code_for(status)
+
+
 def test_all_clean_guard_socket_proven_total_not_dead(component_factory):
     """A fully-resolved all-exact inventory composes to clean with ZERO
     indeterminate rungs — and it exits 0."""
