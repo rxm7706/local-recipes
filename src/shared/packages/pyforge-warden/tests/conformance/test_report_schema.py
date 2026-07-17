@@ -17,6 +17,7 @@ import pytest
 
 from pyforge.warden.models import (
     AXIS_HYGIENE,
+    AXIS_INGESTION,
     AXIS_VULNERABILITY,
     AxisCoverage,
     ComplianceReport,
@@ -300,6 +301,63 @@ def test_error_status_with_exit_zero_rejected():
     document["status"]["driver"] = {
         "axis": AXIS_VULNERABILITY,
         "finding_id": "error:engine-timeout:osv-scanner",
+    }
+    document["exit_code"] = 0
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_indeterminate_status_with_exit_zero_accepted():
+    """Status/exit coherence (Story 1.9): indeterminate is the ONE status
+    that widened its legal-exit set — exit 0 is now a coherent pairing
+    when the driver is EXACTLY the D2(c) empty-extraction id (the
+    --allow-empty exception), mirroring warn's existing multi-exit shape.
+    Status stays 'indeterminate', never 'clean'. Uses the real
+    empty-extraction-shaped driver (review finding, 2026-07-17 pass 2) —
+    a differently-shaped driver no longer qualifies, see
+    test_indeterminate_status_with_exit_zero_rejected_for_unrelated_driver."""
+    document = make_report(
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(
+            axis=AXIS_INGESTION, finding_id="indeterminate:empty-extraction:scan"
+        ),
+        exit_code=0,
+    ).to_json_dict()
+    validate(document)
+    assert document["status"]["value"] == "indeterminate"
+
+
+def test_indeterminate_status_with_exit_zero_rejected_for_unrelated_driver():
+    """Review finding (2026-07-17, pass 2): the exit-0 exception must not
+    leak to every indeterminate cause — only the exact D2(c)
+    empty-extraction driver qualifies. A driver merely sharing its
+    namespace, or an unrelated indeterminate cause entirely, must still be
+    rejected at exit 0. Mutate the rendered dict — the model layer refuses
+    to CONSTRUCT this incoherent pairing (ComplianceReport.__post_init__,
+    also tightened this pass), so the schema check exercises the document,
+    not the dataclass (mirrors test_null_driver_rejected_for_non_clean_status's
+    established pattern)."""
+    document = make_report(
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(
+            axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod"
+        ),
+        exit_code=1,
+    ).to_json_dict()
+    document["exit_code"] = 0
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_policy_violation_status_with_exit_zero_still_rejected():
+    """The indeterminate-only widening must not leak to policy-violation —
+    splitting the combined allOf clause must not accidentally widen its
+    sibling too."""
+    document = make_report().to_json_dict()
+    document["status"]["value"] = "policy-violation"
+    document["status"]["driver"] = {
+        "axis": AXIS_HYGIENE,
+        "finding_id": "hygiene:DEP001:missingmod",
     }
     document["exit_code"] = 0
     with pytest.raises(jsonschema.ValidationError):

@@ -4,12 +4,39 @@
 CLI landed with 1.2. Renderers proper are Story 1.8; typed errors 1.7; full
 discovery 1.9.)
 
+* D2's split (Story 1.9): the ``if not manifests:`` branch (discovery found
+  NOTHING, no exception) splits on ``has_adjacent_python_source(target)`` —
+  Python signals present means the recursive walk should have found
+  something recognizable, so the run fails closed (``Status.ERROR``/exit 2,
+  ``ErrorKind.UNPARSABLE_MANIFEST``); no Python source anywhere keeps the
+  unchanged not-applicable/exit 0 stderr-only path. A SEPARATE, independent
+  D2 case (c): at least one manifest parses but the whole scan feeds zero
+  rungs (no components, no engine findings, no errors) — checked via
+  ``manifests_parsed > 0 and not rungs`` after policy evaluation — injects
+  one ``Status.INDETERMINATE`` rung with a paired ``Finding`` (the
+  ratified Story 1.7 two-namespace contract: every non-error driver must
+  reference an emitted finding) whose id is the FIXED literal
+  ``indeterminate:empty-extraction:scan`` — never ``args.path`` — so
+  ``warden scan .`` and ``warden scan <absolute path>`` against the same
+  condition produce the SAME id (invocation-stability; this driver is
+  whole-scan-scoped, not per-package, unlike the ``<pkg>``-shaped siblings
+  in this finding-id family). ``--allow-empty`` downgrades ONLY that exit
+  to 0 (``verdict.exit_code_for``'s sole-owned knob); ``status`` stays
+  ``indeterminate``, never ``clean``, and ``empty_extraction=True`` is
+  passed to ``assemble_report`` regardless of the flag, so ``coverage:
+  none`` is recorded whether or not the downgrade fired.
+
 Ownership decisions recorded:
 
 * Stream discipline (NFR-I3): in ``--format json`` stdout carries EXACTLY
   one schema-valid ``ComplianceReport`` document or NOTHING; every
   diagnostic — including the empty-scan-set notice — goes to stderr.
-  ``--format text`` emits ONE non-contract summary line.
+  ``--format text`` emits ``report.render_text``'s non-contract human
+  summary (a verdict line, then a driver line and one line per finding/
+  error as applicable — Story 1.8) via the SAME ``sys.stdout.write`` call
+  json already used, inside the try/except that already guarded both
+  branches pre-1.8 — this story changed WHAT is printed on the text
+  branch, not the guard structure around it.
 * Exit codes come ONLY from ``verdict.exit_code_for`` / ``verdict.
   EXIT_SIGINT`` (the sole-ownership rule). argparse's own exits
   (``--version``/``--help`` → 0, usage errors → 2, never 0) surface via the
@@ -60,7 +87,11 @@ Ownership decisions recorded:
 * Error-status drivers use the ``error:<kind>:<subject>`` grammar and do
   NOT reference ``findings[]`` — the error report's driver is a dangling
   id by design (``findings`` may be empty; the report stays schema-valid).
-  Story 1.7 (typed errors) owns the final error-driver grammar.
+  Story 1.7 ratified this as the final error-driver grammar, with the
+  driver's axis set to the actually-failing stage/engine (``AXIS_INGESTION``
+  for a pre-engine discovery/extract/routing failure, ``AXIS_HYGIENE``/
+  ``AXIS_VULNERABILITY`` for a crashing engine's own axis) — never a
+  blanket default.
 * ``KeyboardInterrupt`` ANYWHERE in ``main`` — argument parsing, the scan,
   or mid-emission — returns ``EXIT_SIGINT``; any partial stdout must not
   be consumed.
@@ -118,16 +149,26 @@ from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
 from .models import (
     AXIS_HYGIENE,
-    AXIS_VULNERABILITY,
+    AXIS_INGESTION,
+    EMPTY_EXTRACTION_DRIVER_ID,
     ErrorKind,
     ErrorRecord,
+    Finding,
     Status,
     StatusDriver,
     VulnData,
 )
-from .report import TOOL_NAME, assemble_report, render_json
+from .report import TOOL_NAME, assemble_report, render_json, render_text
 from .routing import DefaultRouter
 from .verdict import EXIT_SIGINT, exit_code_for
+
+# D2(c) empty-extraction (Story 1.9): one shared message stem for both the
+# stderr notice and the paired Finding below — kept as ONE literal so a
+# future wording edit can't silently drift the two apart.
+_EMPTY_EXTRACTION_MESSAGE = (
+    "manifest(s) parsed but zero dependencies/components extracted under "
+    "{path!r}"
+)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -169,6 +210,16 @@ def _build_parser() -> argparse.ArgumentParser:
             "report carries no volatile fields yet, so default output is "
             "already byte-identical (volatile-field pinning arrives with "
             "determinism.py)"
+        ),
+    )
+    scan.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help=(
+            "downgrade the exit code to 0 when at least one manifest "
+            "parses but extraction yields zero components/findings/errors "
+            "(D2(c)) — status stays 'indeterminate', never 'clean', and "
+            "coverage still records no resolution-depth claim"
         ),
     )
     return parser
@@ -296,14 +347,35 @@ def _run_scan(args: argparse.Namespace) -> int:
             owner="discovery",
             subject=args.path,
             message=f"discovery failed under {args.path!r}: {detail}",
+            axis=AXIS_INGESTION,
         )
     else:
         if not manifests:
-            # The not-applicable path says so on stderr; stdout stays pure.
-            _stderr(
-                f"{TOOL_NAME}: no manifest found under {args.path!r}; "
-                "nothing to scan"
-            )
+            if has_adjacent_python_source(target):
+                # D2's misconfiguration guard (Story 1.9): the recursive
+                # walk found NOTHING recognizable anywhere in the tree, yet
+                # Python source exists — never silently "nothing to scan"
+                # (exit 0); a fail-closed operational error (exit 2).
+                _record_error(
+                    errors,
+                    rungs,
+                    kind=ErrorKind.UNPARSABLE_MANIFEST,
+                    owner="discovery",
+                    subject=args.path,
+                    message=(
+                        f"no recognized manifest found under {args.path!r} "
+                        "despite Python source present (D2 misconfiguration "
+                        "guard)"
+                    ),
+                    axis=AXIS_INGESTION,
+                )
+            else:
+                # The not-applicable path says so on stderr; stdout stays
+                # pure.
+                _stderr(
+                    f"{TOOL_NAME}: no manifest found under {args.path!r}; "
+                    "nothing to scan"
+                )
     router = DefaultRouter()
     for manifest in manifests:
         try:
@@ -319,6 +391,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 owner="extract",
                 subject=manifest.path,
                 message=str(exc),
+                axis=AXIS_INGESTION,
             )
         except OSError as exc:
             # Reading the manifest failed (chmod-000, TOCTOU deletion): a
@@ -341,6 +414,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                     f"unreadable manifest {manifest.path}: [errno {code}] "
                     f"{exc.__class__.__name__}"
                 ),
+                axis=AXIS_INGESTION,
             )
         except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
             # doctrine applies to the EXTRACTOR seam exactly as to the
@@ -358,6 +432,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 owner="extract",
                 subject=manifest.path,
                 message=f"internal error extracting {manifest.path}: {exc!r}",
+                axis=AXIS_INGESTION,
             )
         else:
             components.extend(extracted)
@@ -369,18 +444,17 @@ def _run_scan(args: argparse.Namespace) -> int:
         resolved_scan_set=manifests,
     )
     if manifests and manifests_parsed > 0 and not inventory.components:
-        # A parsed manifest with nothing extractable is honest
-        # not-applicable, but it must be distinguishable on stderr from the
-        # empty-dir case (the coverage block already distinguishes them).
-        # The wording names WHAT was scanned: a manifest whose deps live
-        # only outside [project].dependencies (poetry table, extras,
-        # dependency-groups) hits this path too, and "declares no
-        # dependencies" would be a false claim for it (section-aware
-        # discovery is Story 1.9's D2).
+        # A parsed manifest with nothing extractable must be distinguishable
+        # on stderr from the empty-dir case (the coverage block already
+        # distinguishes them). Manifest-kind-agnostic wording (Story 1.9):
+        # this notice now accompanies D2(c)'s actual gate failure
+        # (indeterminate/exit 1 by default) for ANY of the discovered
+        # manifest kinds, not just pyproject.toml — naming a specific
+        # section/format here would misdescribe 7 of 8 kinds.
         _stderr(
-            f"{TOOL_NAME}: manifest parsed but no dependencies found in "
-            f"[project].dependencies (the only section scanned in 1.2) "
-            f"under {args.path!r}; nothing to scan"
+            f"{TOOL_NAME}: "
+            f"{_EMPTY_EXTRACTION_MESSAGE.format(path=args.path)}; "
+            "nothing to scan"
         )
     engine_results: list[EngineResult] = []
     # AC3: a source-less scan target makes deptry flag every conda-sourced
@@ -417,6 +491,13 @@ def _run_scan(args: argparse.Namespace) -> int:
             # class — typed record + error rung, report STILL emitted,
             # never a traceback with no report.
             factory_name = getattr(factory, "__name__", repr(factory))
+            # `factory` is typed as Callable[[] , Engine] (the registry's
+            # shape), but every REAL factory is the engine class itself, so
+            # `axis` is readable as a class attribute without instantiating
+            # (mirrors `factory_name` above) — getattr, not a direct
+            # attribute access, keeps mypy honest about the narrower
+            # Callable type while still reading the real class attribute.
+            factory_axis = getattr(factory, "axis", AXIS_INGESTION)
             _record_error(
                 errors,
                 rungs,
@@ -427,6 +508,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                     f"engine factory {factory_name!r} crashed at "
                     f"instantiation: {exc!r}"
                 ),
+                axis=factory_axis,
             )
             continue
         try:
@@ -446,6 +528,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 owner=engine_name,
                 subject=engine_name,
                 message=f"engine {engine_name!r} crashed: {exc!r}",
+                axis=engine.axis,
             )
     for result in engine_results:
         errors.extend(result.errors)
@@ -473,6 +556,38 @@ def _run_scan(args: argparse.Namespace) -> int:
         )
     rungs.extend(policy_rungs)
 
+    # D2(c) (Story 1.9): at least one manifest parsed but the whole scan fed
+    # ZERO rungs (no components, no engine findings, no errors) — ambiguous/
+    # partial discovery, never a silent clean/not-applicable. A paired
+    # Finding is added (not just a driver) so the ratified Story 1.7
+    # two-namespace contract holds (every non-error status driver must
+    # reference an emitted finding). The id is the FIXED literal
+    # EMPTY_EXTRACTION_DRIVER_ID (models.py; verdict.py's exit_code_for and
+    # ComplianceReport.__post_init__ both match it EXACTLY, never a prefix)
+    # -- this driver is whole-scan-scoped, not per-package, and the id must
+    # stay invocation-stable (`warden scan .` vs `warden scan <absolute
+    # path>` are the SAME condition).
+    empty_extraction = manifests_parsed > 0 and not rungs
+    if empty_extraction:
+        findings = (
+            *findings,
+            Finding(
+                id=EMPTY_EXTRACTION_DRIVER_ID,
+                axis=AXIS_INGESTION,
+                message=_EMPTY_EXTRACTION_MESSAGE.format(path=args.path),
+                subject=args.path,
+                severity=None,
+            ),
+        )
+        rungs.append(
+            (
+                Status.INDETERMINATE,
+                StatusDriver(
+                    axis=AXIS_INGESTION, finding_id=EMPTY_EXTRACTION_DRIVER_ID
+                ),
+            )
+        )
+
     # The first non-None vuln_data across engine results, in engine-
     # registration order (Story 1.5: OsvEngine populates it on a completed
     # 0/1 run; every other engine/path leaves it None) — else an all-None
@@ -492,15 +607,14 @@ def _run_scan(args: argparse.Namespace) -> int:
         engine_results=engine_results,
         has_locked_closure=bool(parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}),
         hygiene_applicable=hygiene_applicable,
+        allow_empty=args.allow_empty,
+        empty_extraction=empty_extraction,
     )
     try:
         if args.format == "json":
             sys.stdout.write(render_json(report) + "\n")
         else:
-            print(
-                f"{TOOL_NAME}: status={report.status.value} "
-                f"exit_code={report.exit_code} findings={len(report.findings)}"
-            )
+            sys.stdout.write(render_text(report) + "\n")
         # Flush INSIDE the guarded region: on a block-buffered pipe whose
         # consumer vanished, the BrokenPipeError must surface HERE (absorbed
         # below) — not at interpreter-exit flush (CPython exit 120).
@@ -536,20 +650,24 @@ def _record_error(
     owner: str,
     subject: str,
     message: str,
+    axis: str,
 ) -> None:
     """Surface one operational error: typed record + error rung + stderr
     diagnostic. The rung's driver id uses the ``error:<kind>:<subject>``
     grammar and deliberately does NOT reference ``findings[]`` (see the
-    module docstring; Story 1.7 owns the final grammar). The subject
-    segment is sanitized like every component-derived id segment — the id
-    grammar is single-line by contract even when the subject is a
-    user-supplied path."""
+    module docstring; Story 1.7 ratified this as the final grammar). The
+    caller states ``axis`` — the actually-failing stage/engine
+    (``AXIS_INGESTION`` for a pre-engine discovery/extract/routing failure,
+    or the crashing engine's/factory's own axis) — never a blanket default.
+    The subject segment is sanitized like every component-derived id
+    segment — the id grammar is single-line by contract even when the
+    subject is a user-supplied path."""
     errors.append(ErrorRecord(kind=kind, owner=owner, message=message))
     rungs.append(
         (
             Status.ERROR,
             StatusDriver(
-                axis=AXIS_VULNERABILITY,
+                axis=axis,
                 finding_id=f"error:{kind}:{_sanitize_id_segment(subject)}",
             ),
         )

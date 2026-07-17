@@ -167,15 +167,64 @@
         "properties": {
           "status": {
             "required": ["value"],
+            "properties": { "value": { "const": "policy-violation" } }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [1, 130] } },
+        "description": "status/exit coherence: policy-violation exits 1 (or 130 if interrupted)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value", "driver"],
             "properties": {
-              "value": { "enum": ["policy-violation", "indeterminate"] }
+              "value": { "const": "indeterminate" },
+              "driver": {
+                "type": "object",
+                "required": ["finding_id"],
+                "properties": {
+                  "finding_id": { "const": "indeterminate:empty-extraction:scan" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [0, 1, 130] } },
+        "description": "status/exit coherence: indeterminate WITH the D2(c) empty-extraction driver (Story 1.9, exact finding_id match) exits 1 by default, 0 under the one sanctioned --allow-empty exception, or 130 if interrupted. Status stays indeterminate, never clean."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": { "value": { "const": "indeterminate" } },
+            "not": {
+              "required": ["driver"],
+              "properties": {
+                "driver": {
+                  "type": "object",
+                  "required": ["finding_id"],
+                  "properties": {
+                    "finding_id": { "const": "indeterminate:empty-extraction:scan" }
+                  }
+                }
+              }
             }
           }
         }
       },
       "then": {
         "properties": { "exit_code": { "enum": [1, 130] } },
-        "description": "status/exit coherence: policy-violation and indeterminate exit 1 (or 130 if interrupted)."
+        "description": "status/exit coherence: indeterminate WITHOUT the D2(c) empty-extraction driver exits 1 (or 130 if interrupted) — exit 0 is reserved for that one sanctioned exception (Story 1.9 review pass 2: the exit-0 branch above must not leak to every indeterminate cause)."
       }
     },
     {

@@ -18,6 +18,7 @@ stderr-only diagnostics, twice-run byte-identical stdout in default AND
 from __future__ import annotations
 
 import json
+import sys
 from importlib import resources
 from pathlib import Path
 
@@ -30,6 +31,7 @@ from pyforge.warden.interfaces import EngineResult
 from pyforge.warden.mapping import load_conda_pypi_map
 from pyforge.warden.models import (
     AXIS_HYGIENE,
+    AXIS_VULNERABILITY,
     ErrorKind,
     ErrorRecord,
     Finding,
@@ -237,8 +239,11 @@ def test_empty_scan_set_emits_a_stderr_notice_in_both_formats(capsys, tmp_path):
 
 def test_error_report_driver_is_a_dangling_error_grammar_id(capsys, tmp_path):
     """Error-status drivers use the ``error:<kind>:<subject>`` grammar and
-    do NOT reference findings[] (Story 1.7 owns the final grammar): driver
-    non-null, findings possibly empty, report still schema-valid."""
+    do NOT reference findings[] (Story 1.7 ratified this as the final
+    grammar): driver non-null, findings possibly empty, report still
+    schema-valid. This fixture's failure is a malformed pyproject.toml — a
+    pre-engine EXTRACT-stage failure, so the driver's axis is "ingestion"
+    (never a blanket vulnerability default)."""
     (tmp_path / "pyproject.toml").write_text(
         "[project\nname = 'broken", encoding="utf-8"
     )
@@ -248,8 +253,32 @@ def test_error_report_driver_is_a_dangling_error_grammar_id(capsys, tmp_path):
     driver = document["status"]["driver"]
     assert driver is not None
     assert driver["finding_id"] == "error:unparsable-manifest:pyproject.toml"
+    assert driver["axis"] == "ingestion"
     assert document["findings"] == []
     assert driver["finding_id"] not in {f["id"] for f in document["findings"]}
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [WARN_AND_INDETERMINATE, VULN_CRITICAL, VULN_HIGH, DEPTRY_MISSING],
+    ids=lambda p: p.name,
+)
+def test_non_error_status_driver_references_an_emitted_finding(capsys, fixture):
+    """The two-namespace finding_id contract (ratified, Story 1.7): every
+    NON-error-status driver must equal an id present in that report's own
+    findings[] — only Status.ERROR's error:<kind>:<subject> grammar is
+    exempt (pinned separately by
+    test_error_report_driver_is_a_dangling_error_grammar_id above).
+    ``DEPTRY_MISSING`` (review finding, 2026-07-17) exercises the fourth
+    (status, axis) combination the contract claims to hold universally: a
+    hygiene-axis ``policy-violation`` (DEP001-block), not just the
+    vulnerability-axis/indeterminate cases above."""
+    _, out, _ = run_scan(capsys, fixture)
+    document = parse_report(out)
+    assert document["status"]["value"] != "error"
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] in {f["id"] for f in document["findings"]}
 
 
 # --- engine errors feed the verdict (the false-green seam) -------------------
@@ -267,6 +296,7 @@ def register_engine_for_test(monkeypatch, engine_cls) -> None:
 
 class FindingsOnlyEngine:
     name = "findings-only"
+    axis = AXIS_HYGIENE
 
     def run(self, target, inventory) -> EngineResult:
         return EngineResult(
@@ -281,11 +311,13 @@ class FindingsOnlyEngine:
             ),
             errors=(),
             coverage=(),
+            axis=self.axis,
         )
 
 
 class SysExitEngine:
     name = "sys-exit"
+    axis = AXIS_VULNERABILITY
 
     def run(self, target, inventory) -> EngineResult:
         raise SystemExit(0)
@@ -293,6 +325,7 @@ class SysExitEngine:
 
 class CrashingFactory:
     name = "crashing-factory"
+    axis = AXIS_HYGIENE
 
     def __init__(self) -> None:
         raise RuntimeError("factory blew up at instantiation")
@@ -303,6 +336,7 @@ class CrashingFactory:
 
 class ErrorsOnlyEngine:
     name = "errors-only"
+    axis = AXIS_VULNERABILITY
 
     def run(self, target, inventory) -> EngineResult:
         return EngineResult(
@@ -315,11 +349,13 @@ class ErrorsOnlyEngine:
                 ),
             ),
             coverage=(),
+            axis=self.axis,
         )
 
 
 class FindingAndErrorEngine:
     name = "finding-and-error"
+    axis = AXIS_HYGIENE
 
     def run(self, target, inventory) -> EngineResult:
         return EngineResult(
@@ -332,6 +368,7 @@ class FindingAndErrorEngine:
                     severity=None,
                 ),
             ),
+            axis=self.axis,
             errors=(
                 ErrorRecord(
                     kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
@@ -458,6 +495,7 @@ def test_erroring_engine_still_surfaces_its_findings(capsys, monkeypatch):
 
 class CrashingEngine:
     name = "crashing"
+    axis = AXIS_VULNERABILITY
 
     def run(self, target, inventory) -> EngineResult:
         raise RuntimeError("engine blew up mid-run")
@@ -482,32 +520,90 @@ def test_crashing_engine_still_emits_the_report(capsys, monkeypatch):
     assert err != ""
 
 
-def test_zero_dependency_manifest_is_distinguishable_on_stderr(
+def test_two_engines_failing_on_different_axes_both_surface(capsys, monkeypatch):
+    """Review finding (2026-07-17): axis is no longer a single hardcoded
+    constant across every error rung (Story 1.7) — a hygiene-axis crash
+    (``CrashingFactory``, instantiation) and a vulnerability-axis crash
+    (``CrashingEngine``, mid-run) in the SAME scan must BOTH reach the
+    verdict: composed status/exit are unaffected (still error/2), and
+    NEITHER typed error is dropped from errors[] regardless of which one
+    the verdict picks as status.driver (that choice was already arbitrary
+    pre-1.7 too, just via a different tie-break key)."""
+    register_engine_for_test(monkeypatch, CrashingFactory)
+    register_engine_for_test(monkeypatch, CrashingEngine)
+    rc, out, _ = run_scan(capsys, CLEAN)
+    document = parse_report(out)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    assert document["status"]["driver"] is not None
+    assert {e["kind"] for e in document["errors"]} == {
+        "engine-unavailable",
+        "engine-execution-failed",
+    }
+    assert any("CrashingFactory" in e["message"] for e in document["errors"])
+    assert any(e["owner"] == "crashing" for e in document["errors"])
+
+
+def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(
     capsys, tmp_path
 ):
-    """A parsed manifest declaring no dependencies is honest not-applicable
-    (nothing existed to scan) but must be distinguishable from the
-    empty-dir case: a dedicated stderr notice, and coverage that records
-    the manifest as found+parsed."""
+    """D2(c) (Story 1.9): a manifest that PARSES but yields zero components/
+    findings/errors is ambiguous/partial discovery, never a silent
+    not-applicable — the previous 1.2-era not-applicable/exit-0 reading for
+    this exact scenario is the false-green D2(c) exists to close. Status
+    lands indeterminate/exit 1 by default, distinguishable on stderr from
+    the empty-dir case, with coverage recording no resolution-depth claim
+    (``coverage: none``) despite the manifest having been found+parsed."""
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = []\n',
         encoding="utf-8",
     )
     rc, out, err = run_scan(capsys, tmp_path)
     document = parse_report(out)
-    assert rc == 0
-    assert document["status"]["value"] == "not-applicable"
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
     assert document["inventory_count"] == 0
-    # The notice names WHAT was scanned ([project].dependencies) instead of
-    # claiming "declares no dependencies" — a poetry-style manifest with
-    # deps only outside that section hits this path too, and the old
-    # wording was a false claim for it (section-aware discovery is 1.9's).
-    assert "no dependencies found in [project].dependencies" in err
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == "indeterminate:empty-extraction:scan"
+    assert driver["axis"] == "ingestion"
+    assert driver["finding_id"] in {f["id"] for f in document["findings"]}
+    # Manifest-kind-agnostic wording (Story 1.9): the old pyproject-specific
+    # "[project].dependencies" claim was a false claim for the 7 other
+    # manifest kinds once D2(c) made this an actual gate failure.
+    assert "manifest(s) parsed but zero dependencies/components" in err
     assert "no manifest found" not in err  # NOT the empty-dir notice
     for block in document["coverage"]:
         assert block["manifests_found"] == 1
         assert block["manifests_parsed"] == 1
         assert block["deps_total"] == 0
+        assert block["resolution_depth"] is None  # coverage: none
+
+
+def test_zero_dependency_manifest_allow_empty_downgrades_exit_only(
+    capsys, tmp_path
+):
+    """``--allow-empty`` downgrades D2(c)'s exit to 0 while ``status`` stays
+    ``indeterminate`` (never ``clean``) — the flag only widens the exit
+    projection, never the verdict itself."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = []\n',
+        encoding="utf-8",
+    )
+    rc, out, _ = run_scan(capsys, tmp_path, "--allow-empty")
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    for block in document["coverage"]:
+        assert block["resolution_depth"] is None
+    # Review finding (2026-07-17 pass 2): the two-namespace contract must
+    # hold on the --allow-empty branch too, not just the default exit-1
+    # path checked above.
+    driver = document["status"]["driver"]
+    assert driver["finding_id"] in {f["id"] for f in document["findings"]}
 
 
 # --- deptry end-to-end fixtures (the first real engine) ----------------------
@@ -995,3 +1091,75 @@ def test_retired_clean_at_phrasing_never_appears_in_source():
         if "clean at" in text.lower():
             offenders.append(str(path))
     assert offenders == []
+
+
+# --- Story 1.8: --format text renderer + NFR-I3 pseudo-TTY regression -------
+
+
+def test_text_format_clean_fixture_is_a_single_header_line(capsys):
+    """FR17: text is the default format; a clean scan emits only the
+    verdict line -- no driver/finding/error lines follow."""
+    rc = main(["scan", str(CLEAN)])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert captured.out == "warden: status=clean exit_code=0 findings=0\n"
+    assert captured.err == ""
+
+
+def test_text_format_findings_fixture_emits_driver_and_finding_lines(capsys):
+    """FR17: a real (non-clean) scan's text output carries the driver line
+    plus one line per finding -- the human summary the AC actually asks
+    for, not the pre-1.8 single debug line."""
+    rc = main(["scan", str(DEPTRY_UNUSED)])
+    captured = capsys.readouterr()
+    assert rc == 0
+    lines = captured.out.splitlines()
+    assert len(lines) == 3
+    assert lines[0] == "warden: status=warn exit_code=0 findings=1"
+    assert lines[1] == "  driver: axis=hygiene id=hygiene:DEP002:requests"
+    # line 2's message text is deptry's own; only the prefix is pinned here.
+    assert lines[2].startswith("  [hygiene] none hygiene:DEP002:requests -- ")
+
+
+def test_text_format_error_fixture_emits_driver_and_error_lines(capsys, tmp_path):
+    """FR17/error taxonomy: a Status.ERROR report's text output carries the
+    error:<kind>:<subject> driver line plus one line per error."""
+    (tmp_path / "pyproject.toml").write_text(
+        "[project\nname = 'broken", encoding="utf-8"
+    )
+    rc = main(["scan", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert rc == 2
+    lines = captured.out.splitlines()
+    assert len(lines) == 3
+    assert lines[0] == "warden: status=error exit_code=2 findings=0"
+    assert lines[1] == (
+        "  driver: axis=ingestion id=error:unparsable-manifest:pyproject.toml"
+    )
+    # line 2's message text is exception-derived; only the prefix is pinned.
+    assert lines[2].startswith("  [error:unparsable-manifest] extract -- ")
+
+
+def test_json_format_stays_pure_under_a_chatty_engine_and_a_pseudo_tty(
+    capsys, monkeypatch
+):
+    """NFR-I3 regression (spec's I/O matrix, Story 1.8): ``test_deptry_
+    output_never_leaks_onto_our_streams`` above already proves a chatty
+    real engine (DEPTRY_UNUSED) never contaminates stdout under an
+    ordinary (non-TTY) captured stream. Nothing in this codebase currently
+    branches on ``isatty()`` (verified: zero references under ``src/``;
+    ``_engine_env`` routes every engine subprocess's stdout/stderr to
+    ``DEVNULL`` unconditionally, never inspecting the parent's TTY status)
+    -- this test does NOT exercise a real TTY-conditional code path today.
+    It pins that fact as a forward regression guard: stdout stays exactly
+    one schema-valid JSON document, no engine chatter, even with
+    ``isatty()`` patched True, so a future change that starts branching on
+    TTY status (a progress bar, ANSI color) cannot silently reintroduce
+    stdout contamination without breaking this test first."""
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    assert sys.stdout.isatty() is True  # the patch actually took effect
+    rc, out, err = run_scan(capsys, DEPTRY_UNUSED)
+    document = parse_report(out)  # exactly one schema-valid JSON document
+    assert rc == document["exit_code"]
+    assert "Scanning" not in err
+    assert "deptry" not in err.lower()
