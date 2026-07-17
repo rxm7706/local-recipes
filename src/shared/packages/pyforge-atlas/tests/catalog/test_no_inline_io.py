@@ -77,10 +77,20 @@ def _imported_names(path: Path) -> set[str]:
             is_dynamic_import = (
                 isinstance(func, ast.Name) and func.id in ("__import__", "import_module")
             ) or (isinstance(func, ast.Attribute) and func.attr == "import_module")
-            if not is_dynamic_import or not node.args:
+            if not is_dynamic_import:
                 continue
-            arg = node.args[0]
-            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            # Resolve the module name from positional OR keyword form —
+            # `import_module(name="requests")` would otherwise slip the gate
+            # (Gemini PR-71).
+            arg = None
+            if node.args:
+                arg = node.args[0]
+            else:
+                for kw in node.keywords:
+                    if kw.arg == "name":
+                        arg = kw.value
+                        break
+            if arg is not None and isinstance(arg, ast.Constant) and isinstance(arg.value, str):
                 names.add(arg.value)
     return names
 

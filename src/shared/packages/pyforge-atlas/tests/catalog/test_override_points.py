@@ -95,10 +95,13 @@ def test_path_defaults_resolve_inside_the_repo_root(globals_raw):
     legitimately be absent in a fresh container, so they get the
     containment assertion only."""
     paths = globals_raw.get("paths") or {}
-    defaults = {
-        key: _ENV_OR_RE.match(str(value)).group(2)
-        for key, value in paths.items()
-    }
+    # A plain-string path (no ${env_or:...} wrapper) is still a valid default —
+    # fall back to the raw value so it gets containment-checked instead of
+    # crashing on `None.group(2)` (Gemini PR-71).
+    defaults = {}
+    for key, value in paths.items():
+        m = _ENV_OR_RE.match(str(value))
+        defaults[key] = m.group(2) if m else str(value)
     escapees = {}
     for key, default in defaults.items():
         resolved = (REPO_ROOT / default).resolve()
@@ -132,11 +135,16 @@ def test_catalog_never_hardcodes_a_host(catalog_config):
     (http/https/s3/gs/ftp) over the non-comment source lines so no literal
     endpoint of ANY scheme hides in values the url check does not reach."""
     raw_lines = CATALOG_YML.read_text(encoding="utf-8").splitlines()
-    hardcoded = [
-        (i + 1, line.strip())
-        for i, line in enumerate(raw_lines)
-        if not line.strip().startswith("#") and _SCHEME_RE.search(line)
-    ]
+    # Strip trailing inline comments before the scheme scan so a documentation
+    # URL in a `# ...` note does not false-positive (Gemini PR-71).
+    hardcoded = []
+    for i, line in enumerate(raw_lines):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        content = stripped.split(" #", 1)[0]
+        if _SCHEME_RE.search(content):
+            hardcoded.append((i + 1, stripped))
     assert not hardcoded, f"literal scheme://host in catalog.yml (non-comment): {hardcoded}"
 
     import yaml
