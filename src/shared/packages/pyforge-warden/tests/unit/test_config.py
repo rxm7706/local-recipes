@@ -337,6 +337,47 @@ def test_no_cli_flag_parameter_exists_for_dep001_block_confidence():
     assert "cli_dep001_block_confidence" not in params
 
 
+def test_waiver_default_expiry_days_default_and_toml_override(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.waiver_default_expiry_days == 14
+    _write(
+        tmp_path / "pyproject.toml",
+        "[tool.pyforge-warden]\nwaiver-default-expiry-days = 30\n",
+    )
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.waiver_default_expiry_days == 30
+
+
+@pytest.mark.parametrize(
+    "toml_value", ["0", "-1", '"30"', "30.0", "true", "3651"]
+)
+def test_wrong_or_out_of_range_waiver_default_expiry_days_raises_config_validation_error(
+    tmp_path, toml_value
+):
+    _write(
+        tmp_path / "pyproject.toml",
+        f"[tool.pyforge-warden]\nwaiver-default-expiry-days = {toml_value}\n",
+    )
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_waiver_default_expiry_days_accepts_the_upper_boundary(tmp_path):
+    _write(
+        tmp_path / "pyproject.toml",
+        "[tool.pyforge-warden]\nwaiver-default-expiry-days = 3650\n",
+    )
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.waiver_default_expiry_days == 3650
+
+
+def test_no_cli_flag_parameter_exists_for_waiver_default_expiry_days():
+    """TOML-only key (Design Notes): no CLI flag exists for the waiver
+    default expiry window either."""
+    params = inspect.signature(ConfigLoader.load).parameters
+    assert "cli_waiver_default_expiry_days" not in params
+
+
 def test_invalid_cli_fail_on_raises_config_validation_error_not_a_bare_value_error(
     tmp_path,
 ):
@@ -384,6 +425,18 @@ def test_effective_config_rejects_out_of_range_fail_under_coverage_at_constructi
 ):
     with pytest.raises(ValueError):
         EffectiveConfig(fail_under_coverage=value)
+
+
+@pytest.mark.parametrize("value", [0, -1, True, 3651])
+def test_effective_config_rejects_invalid_waiver_default_expiry_days_at_construction(
+    value,
+):
+    with pytest.raises(ValueError):
+        EffectiveConfig(waiver_default_expiry_days=value)
+
+
+def test_effective_config_accepts_waiver_default_expiry_days_upper_boundary():
+    assert EffectiveConfig(waiver_default_expiry_days=3650).waiver_default_expiry_days == 3650
 
 
 # --- EffectiveConfig.default_with_cli_overrides ------------------------------

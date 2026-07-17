@@ -128,16 +128,41 @@ Ownership decisions recorded:
   ``tmp_path`` dirs to test its own argv/error-handling logic in isolation,
   and embedding the skip there would exercise the wrong branch in every one
   of those tests.
+* Waiver wiring (Story 3.2, FR24-FR26): ``target / ".warden-waivers.yaml"``
+  is read AFTER the D2(c) empty-extraction append and BEFORE
+  ``assemble_report`` — every rung fed by ``DefaultPolicy``/D2(c) up to
+  that point (including the D2(c) driver) is present, so waiver matching
+  and ``--bypass`` see that picture. NOT covered (review finding,
+  documented rather than silently overclaimed): the
+  ``indeterminate:coverage-floor:<axis>`` rung ``report.assemble_report``
+  computes internally, strictly AFTER this point — that axis is
+  out-of-scope for waiver-matching in this story (opt-in, defaults off;
+  see the story's spec) and neither a committed waiver nor ``--bypass``
+  can suppress it. A malformed/schema-invalid file surfaces through the
+  SAME ``_record_error`` seam as every other ingestion-stage failure
+  (``owner="waiver"``); a missing file is normal (zero waivers, no error).
+  ``--bypass`` force-bypasses every remaining non-clean, Finding-backed
+  rung it can see (the same coverage-floor exclusion applies) and prints
+  ``waiver.emit_bypass_stanza``'s output to stdout BEFORE the report
+  itself — never to a file (the tool never writes into the scanned tree);
+  ``--bypass`` without ``--reason`` is the ONE usage error this module
+  adds beyond argparse's own (``scan_parser.error(...)``, exit 2, never
+  0). Under ``--format json``, the stanza is NOT written to stdout (NFR-I3:
+  stdout carries exactly one schema-valid document or nothing) — it is
+  written to stderr instead, so the audit-trail affordance is never
+  silently lost regardless of output format.
 """
 
 from __future__ import annotations
 
 import argparse
 import errno as errno_module
+import getpass
 import os
 import stat as stat_module
 import sys
 import traceback
+from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
@@ -167,6 +192,14 @@ from .models import (
 from .report import TOOL_NAME, assemble_report, render_json, render_text
 from .routing import DefaultRouter
 from .verdict import EXIT_SIGINT, exit_code_for
+from .waiver import (
+    WaiverParseError,
+    WaiverValidationError,
+    apply_waivers,
+    bypass_blocking,
+    emit_bypass_stanza,
+    load_waivers,
+)
 
 # D2(c) empty-extraction (Story 1.9): one shared message stem for both the
 # stderr notice and the paired Finding below — kept as ONE literal so a
@@ -175,6 +208,11 @@ _EMPTY_EXTRACTION_MESSAGE = (
     "manifest(s) parsed but zero dependencies/components extracted under "
     "{path!r}"
 )
+
+# Story 3.2: the one waiver-file name this tool ever reads, relative to the
+# scan target -- never written by the tool itself (--bypass prints its
+# stanza to stdout only, for a human to commit).
+_WAIVER_FILENAME = ".warden-waivers.yaml"
 
 
 def _coverage_floor(value: str) -> float:
@@ -197,7 +235,7 @@ def _coverage_floor(value: str) -> float:
     return numeric
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     parser = argparse.ArgumentParser(
         prog=TOOL_NAME,
         description=(
@@ -270,16 +308,38 @@ def _build_parser() -> argparse.ArgumentParser:
             "fail-under-coverage config value)"
         ),
     )
-    return parser
+    scan.add_argument(
+        "--bypass",
+        action="store_true",
+        help=(
+            "force every still-non-clean finding to 'bypassed' and print a "
+            ".warden-waivers.yaml-ready stanza to stdout for a human to "
+            "commit (requires --reason; never writes into the scanned "
+            "tree)"
+        ),
+    )
+    scan.add_argument(
+        "--reason",
+        default=None,
+        help=(
+            "the waiver reason recorded in the --bypass stanza (required "
+            "alongside --bypass; no prompts, ever)"
+        ),
+    )
+    return parser, scan
 
 
 def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
     try:
-        parser = _build_parser()
+        parser, scan_parser = _build_parser()
         try:
             args = parser.parse_args(argv)
+            if args.command == "scan" and args.bypass and args.reason is None:
+                # --bypass's own subparser (never the top-level parser) so
+                # the usage message names 'scan', not the whole tool.
+                scan_parser.error("--bypass requires --reason")
         except SystemExit as exc:
             # argparse exits itself: --version/--help -> 0, usage error -> 2
             # (never 0). Surface its code as a return value — a caught
@@ -677,6 +737,47 @@ def _run_scan(args: argparse.Namespace) -> int:
             )
         )
 
+    # Story 3.2 (FR24-FR26): a missing waiver file is normal (empty tuple,
+    # no error) -- mirrors config.py's own missing-file handling. A
+    # malformed/schema-invalid one is fail-closed: zero waivers apply, and
+    # a typed error rung/record surfaces via the SAME _record_error seam
+    # every other ingestion-stage failure uses.
+    try:
+        waivers = load_waivers(target / _WAIVER_FILENAME)
+    except (WaiverParseError, WaiverValidationError) as exc:
+        waivers = ()
+        _record_error(
+            errors,
+            rungs,
+            kind=(
+                ErrorKind.CONFIG_PARSE
+                if isinstance(exc, WaiverParseError)
+                else ErrorKind.CONFIG_VALIDATION
+            ),
+            owner="waiver",
+            subject=str(target),
+            message=str(exc),
+            axis=AXIS_INGESTION,
+        )
+    now = datetime.now(UTC)
+    rungs, applied_waivers = apply_waivers(rungs, waivers, now=now)
+    bypass_stanza: str | None = None
+    if args.bypass:
+        try:
+            authorized_by = getpass.getuser()
+        except Exception:  # noqa: BLE001 — no CLI flag exists for this;
+            # fall back rather than let an unusual host environment
+            # (no /etc/passwd entry, no *_NAME env vars) crash the scan.
+            authorized_by = "unknown"
+        bypass_stanza = emit_bypass_stanza(
+            rungs,
+            reason=args.reason,
+            authorized_by=authorized_by,
+            accepted_at=now,
+            expiry_days=config.waiver_default_expiry_days,
+        )
+        rungs = bypass_blocking(rungs)
+
     # The first non-None vuln_data across engine results, in engine-
     # registration order (Story 1.5: OsvEngine populates it on a completed
     # 0/1 run; every other engine/path leaves it None) — else an all-None
@@ -702,9 +803,26 @@ def _run_scan(args: argparse.Namespace) -> int:
     )
     try:
         if args.format == "json":
+            # NFR-I3 (Story 1.2, unchanged by this story): json-format
+            # stdout carries EXACTLY one schema-valid document or nothing --
+            # the stanza is a human-facing affordance (something to copy
+            # into a committed .warden-waivers.yaml) that would otherwise
+            # corrupt that guarantee for a machine consumer. The report
+            # itself already reflects the bypass fully (status=bypassed,
+            # exit_code=0); the stanza text itself still goes to stderr
+            # (review finding: silently dropping it entirely would leave a
+            # json-consuming caller with no way to recover the waiver text
+            # to commit) -- stderr carries no such purity contract.
+            if bypass_stanza is not None:
+                _stderr(bypass_stanza.rstrip("\n"))
             sys.stdout.write(render_json(report) + "\n")
         else:
-            sys.stdout.write(render_text(report) + "\n")
+            if bypass_stanza is not None:
+                # Printed BEFORE the report itself, for a human to copy
+                # into a committed .warden-waivers.yaml -- the tool never
+                # writes it into the scanned tree.
+                sys.stdout.write(bypass_stanza)
+            sys.stdout.write(render_text(report, applied_waivers=applied_waivers) + "\n")
         # Flush INSIDE the guarded region: on a block-buffered pipe whose
         # consumer vanished, the BrokenPipeError must surface HERE (absorbed
         # below) — not at interpreter-exit flush (CPython exit 120).
