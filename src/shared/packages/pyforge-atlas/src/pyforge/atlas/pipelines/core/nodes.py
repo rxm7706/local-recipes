@@ -169,10 +169,12 @@ def compute_downloads(
     """Compute download totals + the three breakdown tables, preserving the Phase F
     provenance discipline (engineering-contracts § Phase F):
 
-    - ``downloads_source`` ∈ {``anaconda-api``, ``s3-parquet``, ``merged``} —
-      correlated-but-distinct, never interchangeable (CFA:188). Per package:
-      present in both → ``merged``; s3 only → ``s3-parquet``; anaconda only →
-      ``anaconda-api``.
+    - ``downloads_source`` per row ∈ {``anaconda-api``, ``s3-parquet``} — the
+      two are correlated-but-distinct MEASUREMENTS, never interchangeable and
+      never summed (double-count). The value is the s3 total where s3 has the
+      package, else the anaconda fallback; the per-row tag reflects whichever
+      dataset populated the value. The run-summary label ``merged`` (auto path
+      mixed both sources in a run) is NEVER written per row (CFA:189-193).
     - The three breakdown tables (platform / pyver / channel) are written ONLY on the
       s3-parquet path (CFA:538/549/572); the anaconda-api fallback never touches them
       → empty (but correctly-columned) frames.
@@ -242,13 +244,15 @@ def compute_downloads(
         # additive — summing would double-count (CFA:188 "correlated-but-distinct"). The
         # downloads_source label preserves which source the value came from.
         merged["downloads_total"] = merged["downloads_total_s3"].fillna(merged["downloads_total_ana"])
-        s3_names = set(parts["s3-parquet"]["conda_name"])
-        ana_names = set(parts["anaconda-api"]["conda_name"])
-        merged["downloads_source"] = [
-            "merged" if (n in s3_names and n in ana_names)
-            else ("s3-parquet" if n in s3_names else "anaconda-api")
-            for n in merged["conda_name"]
-        ]
+        # Per-row provenance reflects the dataset that ACTUALLY populated
+        # downloads_total (s3 preferred, anaconda fallback) — the legacy contract
+        # is downloads_source ∈ {'s3-parquet', 'anaconda-api'} PER ROW; 'merged'
+        # is a run-summary label the schema explicitly NEVER writes per row
+        # (CFA:189-193). A both-present package whose value came from s3 is
+        # 's3-parquet'; only a row that fell back to anaconda is 'anaconda-api'.
+        merged["downloads_source"] = merged["downloads_total_s3"].notna().map(
+            {True: "s3-parquet", False: "anaconda-api"}
+        )
         downloads = merged[["conda_name", "downloads_total", "downloads_source"]]
     elif s3_present:
         downloads = parts["s3-parquet"].copy()

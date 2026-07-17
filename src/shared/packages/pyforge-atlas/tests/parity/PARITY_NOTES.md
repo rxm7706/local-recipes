@@ -20,7 +20,9 @@ B1→B3 and consumed at the attended B4 event** (AD-11 / AD-19).
 B1's fixtures are **representative legacy-shaped seeds** that encode the per-phase
 **engineering contracts** on small, hand-authored inputs (e.g. Phase B.5's
 `dbt-bigquery → dbt-bigquery` umbrella-vs-dedicated attribution; Phase F's
-`downloads_source` ∈ {anaconda-api, s3-parquet, merged}, s3-only breakdowns, and
+`downloads_source` per row ∈ {anaconda-api, s3-parquet} (never `merged` — that
+is a run-summary label only, CFA:189-193; corrected by the B1 follow-up review),
+s3-only breakdowns, and
 calendar-month `downloads_30d`). They prove the migrated node reproduces the legacy
 contract shape + values on the representative case.
 
