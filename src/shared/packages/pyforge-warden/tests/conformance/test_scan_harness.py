@@ -42,6 +42,9 @@ DEPTRY_MISSING = FIXTURES / "deptry_missing"
 DEPTRY_UNUSED = FIXTURES / "deptry_unused"
 DEPTRY_STDLIB = FIXTURES / "deptry_stdlib"
 DEPTRY_IGNORE = FIXTURES / "deptry_ignore"
+VULN_CRITICAL = FIXTURES / "vuln_critical"
+VULN_HIGH = FIXTURES / "vuln_high"
+WARN_AND_INDETERMINATE = FIXTURES / "warn_and_indeterminate"
 
 
 def load_schema() -> dict:
@@ -91,10 +94,12 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
         assert block["manifests_parsed"] == 1
         assert block["deps_total"] == 2
         assert block["resolution_depth"] == "direct-only"
-    # Story 1.3: deptry assessed all declared deps for hygiene; the
-    # vulnerability axis has no engine yet (Story 1.5), so it stays 0.
+    # Story 1.3: deptry assessed all declared deps for hygiene. Story 1.5:
+    # osv-scanner ran against the ambient test-session offline DB (conftest)
+    # and assessed both vuln-matchable deps too — a genuinely clean scan,
+    # not the pre-1.5 "no engine ever consulted" stub 0.
     assert by_axis["hygiene"]["deps_assessed"] == 2
-    assert by_axis["vulnerability"]["deps_assessed"] == 0
+    assert by_axis["vulnerability"]["deps_assessed"] == 2
 
 
 def test_sentinel_fixture_never_false_greens(capsys):
@@ -178,10 +183,16 @@ def test_malformed_toml_still_emits_an_error_report(capsys, tmp_path):
     assert err != ""  # the diagnostic went to stderr, not stdout
 
 
-def test_conda_pypi_map_stub_is_an_empty_mapping():
-    """The asset-loading plumbing works and the stub map is {} (the real
-    shape + generation are Story 2.1's)."""
-    assert load_conda_pypi_map() == {}
+def test_conda_pypi_map_is_populated_and_correctly_shaped():
+    """The asset-loading plumbing works and the bundled map is populated
+    (Story 2.1) with the {pypi_name, match_source, match_confidence} shape
+    per entry — never flattened to name->name."""
+    mapping = load_conda_pypi_map()
+    assert mapping
+    entry = mapping["numpy"]
+    assert isinstance(entry, dict)
+    assert entry.keys() == {"pypi_name", "match_source", "match_confidence"}
+    assert entry["pypi_name"] == "numpy"
 
 
 def test_empty_scan_set_emits_a_stderr_notice_in_both_formats(capsys, tmp_path):
@@ -490,19 +501,17 @@ def _one_hygiene_finding(document: dict, finding_id: str) -> dict:
     return matches[0]
 
 
-def test_deptry_missing_dependency_is_a_warning(capsys):
-    """DEP001 (imported-but-undeclared) WARNS in 1.3 (exit 0), not blocks:
-    Gap-A requires DEP001's block to be gated on name-mapping confidence,
-    which needs Story 2.1's conda->pypi map; deptry's DEP001 false-positives
-    (guarded optional imports) would otherwise produce a benign false-red.
-    The finding is still surfaced with a driver on the hygiene axis (never a
-    false-green) — 2.1 upgrades it to block-on-high-confidence. Follow-up
-    Opus review, 2026-07-14."""
+def test_deptry_missing_dependency_blocks_by_default(capsys):
+    """DEP001 (imported-but-undeclared) BLOCKS (exit 1) by default (Story
+    2.1, Gap-A): a pure-PyPI project has no conda-mapping ambiguity in its
+    inventory, so the scan-wide dep001_trusted gate stays True and DEP001's
+    upgraded default (policy-violation) applies. The finding is still
+    surfaced with a driver on the hygiene axis (never a false-green)."""
     rc, out, err = run_scan(capsys, DEPTRY_MISSING)
     document = parse_report(out)
-    assert rc == 0
+    assert rc == 1
     assert rc == document["exit_code"]
-    assert document["status"]["value"] == "warn"
+    assert document["status"]["value"] == "policy-violation"
     finding = _one_hygiene_finding(
         document, "hygiene:DEP001:totally_absent_pkg_xyz"
     )
@@ -578,7 +587,7 @@ def test_deptry_corpus_unparseable_rate_is_within_baseline():
         SENTINEL,
     ]
     for fixture in corpus:
-        text, error = _engine_env(
+        text, error, _exit_code = _engine_env(
             lambda output_path: ["deptry", ".", "-o", output_path, "--no-ansi"],
             owner="deptry",
             cwd=fixture,
@@ -591,6 +600,113 @@ def test_deptry_corpus_unparseable_rate_is_within_baseline():
         assert parse.unparseable_rate <= UNPARSEABLE_RATE_BASELINE, fixture.name
 
 
+def test_deptry_frontdoor_flag_is_a_genuine_no_op_against_real_deptry(capsys):
+    """Fix 8 regression (2026-07-16 review): the only existing test proving
+    the Story 2.2 front-door flag is a no-op for a native-pyproject.toml
+    target (test_deptry_engine_frontdoor_is_a_no_op_when_native_pyproject_
+    present, tests/unit/test_engine_env_deptry.py) fully mocks
+    subprocess.run -- it proves only that OUR OWN code always appends
+    --requirements-files, never that the REAL deptry binary actually still
+    ignores it. This runs the REAL production pipeline (``cli.main``, which
+    unconditionally synthesizes the front-door and passes the flag -- Story
+    2.2) against DEPTRY_UNUSED, and separately invokes real deptry with NO
+    --requirements-files flag at all (the pre-2.2 argv shape) over the SAME
+    fixture -- the two must report the IDENTICAL hygiene finding, a genuine
+    regression pin on deptry's own documented -rf-ignoring behavior (never
+    just our own argv construction). deptry is a provisioned conda run-dep
+    of this package (unlike test_extraction_oracle.py's renderers, which are
+    test-only): a missing/failing binary here is a broken environment, so
+    this mirrors this file's own no-skip-guard convention (see
+    test_deptry_corpus_unparseable_rate_is_within_baseline above) rather
+    than test_extraction_oracle.py's explicit skip-if-unavailable one."""
+    from pyforge.warden.engines import _engine_env
+    from pyforge.warden.hygiene import parse_deptry_output
+
+    rc, out, err = run_scan(capsys, DEPTRY_UNUSED)
+    document = parse_report(out)
+    assert rc == 0
+    with_frontdoor_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+
+    text, error, _exit_code = _engine_env(
+        lambda output_path: ["deptry", ".", "-o", output_path, "--no-ansi"],
+        owner="deptry",
+        cwd=DEPTRY_UNUSED,
+    )
+    assert error is None, f"deptry failed: {error}"
+    assert text is not None
+    parse = parse_deptry_output(text)
+    assert parse.output_parsed
+    without_frontdoor_ids = {f.id for f in parse.findings}
+
+    assert with_frontdoor_ids == without_frontdoor_ids == {"hygiene:DEP002:requests"}
+
+
+def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
+    capsys, tmp_path
+):
+    """Follow-up review (2026-07-16), real deptry, no mocks:
+    ``--requirements-files`` REPLACES deptry's own native default
+    requirements source (``requirements.txt``) rather than merging with it
+    -- verified live: ``deptry .`` over a requirements.txt project is clean,
+    ``deptry . --requirements-files <other>`` reports DEP001 for every dep
+    the project's own requirements.txt declares. Before the merge fix, a
+    conda-sourced scan (this is a NEW 2.2 scan class -- pre-2.2 such a
+    project was not-applicable and deptry never ran) with a sibling
+    requirements.txt therefore false-DEP001'd all its pip-declared deps.
+    The scan root's requirements.txt is now re-appended to the flag's
+    comma-list; same no-skip-guard convention as the no-op test above."""
+    (tmp_path / "environment.yml").write_text(
+        "dependencies:\n  - numpy=1.20\n", encoding="utf-8"
+    )
+    (tmp_path / "requirements.txt").write_text("requests\n", encoding="utf-8")
+    (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
+    rc, out, _err = run_scan(capsys, tmp_path)
+    document = parse_report(out)
+    hygiene_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+    # requests is declared by the project's OWN requirements.txt -- merged,
+    # so no false DEP001; numpy (declared via the conda front-door, never
+    # imported) still surfaces deptry's real signal for this fixture.
+    assert "hygiene:DEP001:requests" not in hygiene_ids
+    assert "hygiene:DEP002:numpy" in hygiene_ids
+
+
+def test_deptry_frontdoor_merges_config_declared_requirements_files(
+    capsys, tmp_path
+):
+    """Second review pass (2026-07-16), real deptry, no mocks: deptry's
+    requirements source is its ``[tool.deptry].requirements_files`` config
+    when declared -- the flag REPLACES that setting too, not just the
+    ``requirements.txt`` default, so a conda-first project keeping pip deps
+    at a configured path false-DEP001'd every dep it declares (verified
+    live: bare ``deptry .`` green, with the flag red). The configured list
+    is now what gets re-appended; same no-skip-guard convention as the
+    other real-deptry tests."""
+    (tmp_path / "environment.yml").write_text(
+        "dependencies:\n  - numpy=1.20\n", encoding="utf-8"
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.deptry]\nrequirements_files = ["reqs/base.txt"]\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "reqs").mkdir()
+    (tmp_path / "reqs" / "base.txt").write_text("requests\n", encoding="utf-8")
+    (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
+    rc, out, _err = run_scan(capsys, tmp_path)
+    document = parse_report(out)
+    hygiene_ids = {
+        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
+    }
+    # requests is declared by the config-declared reqs/base.txt -- merged,
+    # so no false DEP001; numpy (declared via the conda front-door, never
+    # imported) still surfaces deptry's real signal.
+    assert "hygiene:DEP001:requests" not in hygiene_ids
+    assert "hygiene:DEP002:numpy" in hygiene_ids
+
+
 @pytest.mark.parametrize(
     "fixture",
     [DEPTRY_MISSING, DEPTRY_UNUSED, DEPTRY_STDLIB],
@@ -599,6 +715,108 @@ def test_deptry_corpus_unparseable_rate_is_within_baseline():
 def test_deptry_fixture_twice_run_is_byte_identical(capsys, fixture):
     """Real-finding determinism: two scans of a deptry fixture emit
     byte-identical stdout."""
+    rc_one, out_one, _ = run_scan(capsys, fixture)
+    rc_two, out_two, _ = run_scan(capsys, fixture)
+    assert rc_one == rc_two
+    assert out_one.encode("utf-8") == out_two.encode("utf-8")
+
+
+# --- Story 1.6: severity gate + verdict composition end-to-end ---------------
+
+
+def test_critical_vuln_fixture_composes_policy_violation(capsys):
+    """AC1: a real cli.main() scan of a pin matching the seeded CRITICAL OSV
+    advisory (PDOS-FIXTURE-0001) composes policy-violation end to end -- the
+    severity gate, not just the unit-level vuln_rung."""
+    rc, out, err = run_scan(capsys, VULN_CRITICAL)
+    document = parse_report(out)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "policy-violation"
+    finding_id = "vuln:PDOS-FIXTURE-0001:pdos-vuln-fixture@1.0.0"
+    matches = [f for f in document["findings"] if f["id"] == finding_id]
+    assert len(matches) == 1
+    finding = matches[0]
+    assert finding["axis"] == "vulnerability"
+    assert finding["severity"]["tier"] == "critical"
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == finding_id
+    assert driver["axis"] == "vulnerability"
+    assert err == ""
+    # The fixture's own comment: the fictitious dependency is also flagged
+    # DEP002 (unused) by deptry -- policy-violation still outranks warn in
+    # the composed verdict. Verify that concurrent finding actually exists,
+    # not just that the top-level status survived it.
+    _one_hygiene_finding(document, "hygiene:DEP002:pdos-vuln-fixture")
+
+
+def test_high_severity_vuln_fixture_composes_warn(capsys):
+    """A real (non-critical) osv-scanner match must NOT block by default
+    (FR18: critical + KEV only) -- proves the warn side of the severity
+    gate through the real osv-scanner subprocess, not just a hand-built
+    Finding in the unit tests."""
+    rc, out, err = run_scan(capsys, VULN_HIGH)
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "warn"
+    finding_id = "vuln:PDOS-FIXTURE-0002:pdos-vuln-fixture-high@1.0.0"
+    matches = [f for f in document["findings"] if f["id"] == finding_id]
+    assert len(matches) == 1
+    finding = matches[0]
+    assert finding["axis"] == "vulnerability"
+    assert finding["severity"]["tier"] == "high"
+    # Two equal-rank warn rungs land here (this vuln: finding + deptry's own
+    # DEP002 on the same fictitious, never-imported dependency below) --
+    # verdict.compose's deterministic tie-break picks the smallest
+    # (axis, finding_id), and "hygiene" < "vulnerability" lexicographically.
+    _one_hygiene_finding(document, "hygiene:DEP002:pdos-vuln-fixture-high")
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == "hygiene:DEP002:pdos-vuln-fixture-high"
+    assert driver["axis"] == "hygiene"
+    assert err == ""
+
+
+def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
+    """AC2: one project composing a real hygiene warn rung (DEP002 on
+    requests) alongside a real vulnerability-axis indeterminate rung
+    (no-version withhold on leftpad) -- indeterminate outranks warn in the
+    composed verdict, end to end."""
+    rc, out, err = run_scan(capsys, WARN_AND_INDETERMINATE)
+    document = parse_report(out)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "indeterminate"
+    warn_finding = _one_hygiene_finding(document, "hygiene:DEP002:requests")
+    assert warn_finding["axis"] == "hygiene"
+    # The fixture's own comment: leftpad is ALSO unused, so it carries its
+    # own hygiene:DEP002 finding independent of its vulnerability-axis
+    # withhold -- both must coexist on the same package name.
+    _one_hygiene_finding(document, "hygiene:DEP002:leftpad")
+    indeterminate_finding_id = "indeterminate:no-version:leftpad"
+    matches = [
+        f for f in document["findings"] if f["id"] == indeterminate_finding_id
+    ]
+    assert len(matches) == 1
+    assert matches[0]["axis"] == "vulnerability"
+    assert len(document["findings"]) == 3
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == indeterminate_finding_id
+    assert driver["axis"] == "vulnerability"
+    assert err == ""
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [VULN_CRITICAL, VULN_HIGH, WARN_AND_INDETERMINATE],
+    ids=lambda p: p.name,
+)
+def test_severity_gate_fixture_twice_run_is_byte_identical(capsys, fixture):
+    """Determinism (NFR-I3), same standard every other real-finding fixture
+    in this module is held to."""
     rc_one, out_one, _ = run_scan(capsys, fixture)
     rc_two, out_two, _ = run_scan(capsys, fixture)
     assert rc_one == rc_two

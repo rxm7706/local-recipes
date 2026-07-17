@@ -7,6 +7,8 @@ fixture instead of importing across test files.
 
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -208,3 +210,57 @@ def socket_deny_error() -> type[SocketDenyError]:
     ``component_factory``: test modules take the fixture instead of
     importing across test files)."""
     return SocketDenyError
+
+
+# --- Story 1.5: ambient osv-scanner offline DB (keeps pre-1.5 fixtures green) -
+#
+# ``engines.OsvEngine`` is now live in the registry, so ANY test that invokes
+# ``cli.main`` (or ``OsvEngine.run``) for real against a vuln-matchable
+# component (an ==-pinned PyPI dependency) spawns a REAL osv-scanner
+# subprocess. Pre-1.5 fixtures/tests (``requests==2.31.0`` etc.) were
+# authored assuming vulnerability-axis silence — no engine had ever consulted
+# a DB, so those scans read "clean" trivially. Rather than rewrite every one
+# of them into an osv conformance test, EVERY test gets a harmless,
+# content-valid offline OSV database by default (an autouse fixture) so a
+# scan of an ordinary pinned dependency reads genuinely clean (osv ran,
+# consulted a real DB, found nothing) instead of
+# ``indeterminate:offline-db-unavailable:*``. Tests that specifically
+# exercise the DB-absent/corrupt/vulnerable-pin paths override the env var
+# themselves (``monkeypatch.setenv``/``delenv`` in the test body composes
+# with — and wins over — this fixture's own ``setenv``, since the test body
+# runs after fixture setup).
+#
+# The DB is built ONCE per test session (osv-scanner never mutates its own
+# offline cache) from the SAME Story 1.4 fixture records
+# (``tests/fixtures/osv-db/pypi``) — its one seeded advisory
+# (``PDOS-FIXTURE-0001``, package ``pdos-vuln-fixture``) never collides with
+# any real-world package name the fixture projects declare.
+
+
+def _load_osv_db_builder():
+    """Import ``fixtures/osv_db_builder`` by path (the fixtures dir is data,
+    not an importable package) — mirrors
+    ``test_osv_offline_db_spike.py``'s ``_load_builder()``."""
+    module_path = Path(__file__).resolve().parent / "fixtures" / "osv_db_builder.py"
+    spec = importlib.util.spec_from_file_location("osv_db_builder", module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture(scope="session")
+def _osv_ambient_cache_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    builder = _load_osv_db_builder()
+    records_dir = Path(__file__).resolve().parent / "fixtures" / "osv-db" / "pypi"
+    cache_root = tmp_path_factory.mktemp("osv-ambient-cache")
+    return builder.build_offline_db(records_dir, cache_root)
+
+
+@pytest.fixture(autouse=True)
+def _osv_ambient_db_env(
+    monkeypatch: pytest.MonkeyPatch, _osv_ambient_cache_root: Path
+) -> None:
+    monkeypatch.setenv(
+        "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(_osv_ambient_cache_root)
+    )

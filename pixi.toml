@@ -978,6 +978,9 @@ pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # -> built con
 hatchling = "*"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = "*"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = "*"                       # test runner
+py-rattler = ">=0.22.0"            # test-only oracle for extract/lockfiles.py (Story 2.6); NEVER a pyforge-warden runtime dep
+py-rattler-build = ">=0.68.0"      # test-only differential-oracle for extract/recipe_v1.py (Story 2.2, v1 recipe.yaml render); NEVER a pyforge-warden runtime dep
+conda-build = ">=25.3.1"           # test-only differential-oracle for extract/meta_v0.py (Story 2.2, v0 meta.yaml render); NEVER a pyforge-warden runtime dep
 
 [feature.pyforge-warden.tasks.warden-scan]
 description = "Run the Warden multi-axis dependency gate (hygiene + security [+ license/currency v1.x])"

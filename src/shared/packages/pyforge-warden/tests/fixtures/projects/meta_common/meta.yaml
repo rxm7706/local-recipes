@@ -1,0 +1,31 @@
+{# common-case fixture comment (Story 2.2 Fix 1, 2026-07-16) #}
+{% set name = "mypkg" %}
+{% set version = "1.2.3" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - numpy >=1.20
+    - otherpkg {{ version }}
+  run_constrained:
+    - scipy >=1.0
+
+test:
+  requires:
+    - pytest
+  imports:
+    - mypkg
+
+about:
+  summary: common-case v0 recipe fixture (Story 2.2)

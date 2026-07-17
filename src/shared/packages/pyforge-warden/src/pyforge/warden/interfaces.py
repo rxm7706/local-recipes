@@ -16,10 +16,12 @@ Ownership decisions recorded here:
   FALSE-GREEN BACKSTOP: ``register_engine`` is a public seam, so a
   findings-only engine result is reachable today, and a report carrying
   findings must never compose ``clean``/exit 0 (C0c). The finding→severity
-  policy mapping (which findings escalate to ``policy-violation``) is
-  Story 1.3/1.6 scope by plan; they REPLACE the backstop with the real
-  mapping and may only tighten (toward ``policy-violation``), never
-  loosen (toward ``clean``).
+  policy mapping (which findings escalate to ``policy-violation``) is now
+  real for BOTH v1 axes — Story 1.3's hygiene table and Story 1.6's
+  vulnerability table — each REPLACING the backstop for its own axis; both
+  may only tighten (toward ``policy-violation``), never loosen (toward
+  ``clean``). The backstop itself now only governs a hypothetical future
+  axis with no mapping of its own yet.
 * ``DefaultPolicy`` is the fail-closed inventory→verdict bridge: a withheld
   component (``indeterminate_reason`` set) becomes an
   ``indeterminate:<reason>:<pkg>`` finding plus a driver-carrying
@@ -85,6 +87,7 @@ from .models import (
     ScannedManifest,
     Status,
     StatusDriver,
+    VulnData,
 )
 from .verdict import match_level_rung
 
@@ -140,11 +143,20 @@ class EngineResult:
     starting Story 1.3 — the 1.2 orchestrator deliberately discards them
     and derives the report's coverage itself (``report.assemble_report``,
     ``deps_assessed=0`` under the null engine). The field exists now so the
-    seam's shape is frozen, not because 1.2 reads it."""
+    seam's shape is frozen, not because 1.2 reads it.
+
+    ``vuln_data`` (Story 1.5, additive/defaulted — ``NullEngine``/
+    ``DeptryEngine`` unaffected): populated ONLY by a vulnerability-axis
+    engine that successfully consulted a provenance-bearing DB
+    (``OsvEngine`` on a completed 0/1 osv-scanner run); ``None`` on every
+    other engine result, including osv's own DB-unavailable/error paths.
+    ``cli.py`` threads the first non-``None`` value across ``engine_results``
+    into ``report.assemble_report``."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
     coverage: tuple[AxisCoverage, ...]
+    vuln_data: VulnData | None = None
 
 
 @runtime_checkable
@@ -200,8 +212,10 @@ class DefaultPolicy:
       is a report construction invariant, never a crash site. Each unique
       engine finding ALSO feeds one conservative ``indeterminate`` rung
       (driver = that finding) — the false-green backstop: a finding-carrying
-      report never composes ``clean``. Story 1.3/1.6 replace the backstop
-      with the real severity mapping (tighten-only).
+      report never composes ``clean``. Story 1.3 (hygiene) and Story 1.6
+      (vulnerability) have each replaced the backstop with their axis's real
+      severity mapping (tighten-only); the backstop itself now only fires
+      for a hypothetical future axis.
     * Engine ``ErrorRecord``s feed ``(error, driver)`` rungs: an engine
       failure must reach the verdict (composition yields status ``error`` →
       ``exit_code_for`` gives the error exit), while the report is still
@@ -232,10 +246,28 @@ class DefaultPolicy:
     def evaluate(
         self, inventory: ResolvedInventory, engine_results: Sequence[EngineResult]
     ) -> tuple[tuple[Finding, ...], tuple[tuple[Status, StatusDriver | None], ...]]:
-        # Lazy import breaks the interfaces<->hygiene cycle (hygiene.py imports
-        # _sanitize_id_segment from here); by the time evaluate() runs, both
-        # modules are fully loaded.
+        # Lazy imports break the interfaces<->hygiene, interfaces<->vuln, and
+        # interfaces<->extract.lockfiles cycles (extract.lockfiles imports
+        # Router from here); by the time evaluate() runs, all modules are
+        # fully loaded.
+        from .extract.lockfiles import TRUSTED_MATCH_CONFIDENCE
         from .hygiene import hygiene_rung
+        from .vuln import vuln_rung
+
+        # Story 2.1, Gap-A: DEP001 is trusted (blocks) unless the inventory
+        # carries a positive ambiguous-mapping signal — a "likely"-confidence
+        # conda component — anywhere. Computed once per scan, not per
+        # finding (see hygiene.hygiene_rung's docstring for why). A total
+        # map miss (mapping_confidence is None) does NOT count as ambiguous:
+        # most conda packages are legitimately non-Python/native and will
+        # NEVER have a pypi_identity, so treating every miss as a distrust
+        # signal would make this gate false almost universally — only a
+        # POSITIVE untrusted candidate (a "likely" hit) is evidence the
+        # mapping pipeline actually saw ambiguity for this scan.
+        dep001_trusted = all(
+            component.mapping_confidence in (None, TRUSTED_MATCH_CONFIDENCE)
+            for component in inventory.components
+        )
 
         findings: list[Finding] = []
         rungs: list[tuple[Status, StatusDriver | None]] = []
@@ -254,13 +286,26 @@ class DefaultPolicy:
                     # indeterminate). This REPLACES the 1.2 indeterminate
                     # backstop for the hygiene axis only — never mapping a
                     # finding to clean (C0 preserved).
-                    rungs.append(hygiene_rung(finding))
+                    rungs.append(hygiene_rung(finding, dep001_trusted=dep001_trusted))
+                elif finding.axis == AXIS_VULNERABILITY:
+                    # Story 1.6: vulnerability-axis engine findings route
+                    # through the real default severity->status table
+                    # (CRITICAL blocks; HIGH/MEDIUM/LOW/NONE warn; an
+                    # unmapped/absent severity, including UNKNOWN, still
+                    # degrades to indeterminate). This REPLACES the 1.2
+                    # indeterminate backstop for the vulnerability axis too —
+                    # never mapping a finding to clean (C0 preserved). The
+                    # axis's own indeterminate: withhold findings (severity
+                    # is None) still land on indeterminate via vuln_rung's
+                    # own fallback, unchanged from today.
+                    rungs.append(vuln_rung(finding))
                 else:
-                    # The false-green backstop still governs every other axis:
-                    # a finding-carrying report must never compose clean/exit 0
+                    # The false-green backstop now only governs a
+                    # hypothetical future axis with no mapping of its own: a
+                    # finding-carrying report must never compose clean/exit 0
                     # (C0c). One conservative indeterminate rung per engine
-                    # finding until that axis's producer story supplies a real
-                    # mapping (Story 2.4 for vulnerability; tighten-only).
+                    # finding until that axis gets its own real mapping
+                    # (tighten-only).
                     rungs.append(
                         (
                             Status.INDETERMINATE,

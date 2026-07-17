@@ -16,8 +16,16 @@ Ownership decisions recorded:
   separators=(",", ": ")``) — byte-identical output is a construction
   property, not a mode. Story 1.8 owns renderers proper; this is 1.2
   plumbing.
-* No clock, no volatile fields: ``vuln_data`` is all-``None`` (no vuln data
-  was consulted under the null engine).
+* ``vuln_data`` is a REQUIRED caller-supplied parameter (Story 1.5) — this
+  module has no clock and derives no vuln provenance itself; ``cli.py``
+  derives it from ``engine_results`` (an all-``None`` ``VulnData`` when no
+  engine populated one, e.g. under the null engine or a hygiene-only run).
+* ``has_locked_closure`` (Story 2.6, additive/defaulted) — this module has
+  no lockfile-kind vocabulary (that's ``discovery.py``'s domain), so the
+  caller (``cli.py``) states whether any parsed manifest was a lockfile.
+  ``True`` claims ``resolution_depth=ResolutionDepth.LOCKED_CLOSURE`` for
+  BOTH axes instead of the direct-only-if-parsed default; ``False`` (the
+  default) preserves every pre-2.6 caller/test byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -73,7 +81,9 @@ def assemble_report(
     errors: Sequence[ErrorRecord],
     manifests_found: int,
     manifests_parsed: int,
+    vuln_data: VulnData,
     engine_results: Sequence[EngineResult] = (),
+    has_locked_closure: bool = False,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -86,11 +96,21 @@ def assemble_report(
     consumes an engine's ``EngineResult.coverage`` when it reports one for
     that axis (deptry raises the hygiene axis to ``deps_assessed ==
     inventory.count`` on a successful run), clamped to ``deps_total``; an
-    axis with no engine coverage claim (the vulnerability axis until Story
-    1.5) stays ``deps_assessed=0`` — the truthful "nothing assessed"."""
+    axis with no engine coverage claim stays ``deps_assessed=0`` — the
+    truthful "nothing assessed" (Story 1.5 gives ``OsvEngine`` the same
+    claim on the vulnerability axis).
+
+    ``vuln_data`` is caller-derived (Story 1.5: ``cli.py`` picks the first
+    non-``None`` ``EngineResult.vuln_data`` across ``engine_results``, else
+    an all-``None`` ``VulnData``) — this function stores it verbatim, never
+    hardcoding it."""
     status, driver = compose(rungs)
     resolution_depth = (
-        ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
+        ResolutionDepth.LOCKED_CLOSURE.value
+        if has_locked_closure
+        else (
+            ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
+        )
     )
     # Highest per-axis deps_assessed any engine claims (honest max coverage).
     assessed_by_axis: dict[str, int] = {}
@@ -120,7 +140,7 @@ def assemble_report(
         exit_code=exit_code_for(status),
         findings=tuple(findings),
         coverage=coverage,
-        vuln_data=VulnData(source=None, snapshot_at=None, max_age_ok=None),
+        vuln_data=vuln_data,
         inventory_count=inventory.count,
         resolved_scan_set=inventory.resolved_scan_set,
         errors=tuple(errors),
