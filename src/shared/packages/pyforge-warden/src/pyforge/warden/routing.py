@@ -12,8 +12,11 @@ requirements section a dep came from), 2 for environment.yml (conda
 dependencies + the nested pip: list), and 6 GENERIC tokens for pixi.toml
 (base + feature/target dependencies/pypi-dependencies — the feature/target
 NAME is never baked into these routing keys, only into
-``Provenance.section``). Unknown pairs raise ``ValueError`` (fail-loud; the
-typed exception net arrives with Story 1.7). The kind/section tokens are
+``Provenance.section``). Unknown pairs raise ``ValueError`` (fail-loud;
+already caught at ``cli.py``'s extract-stage seam — the
+``except (SystemExit, Exception)`` handler around ``extractor.extract(...)``
+— and converted to a typed ``internal-error`` record with the report still
+emitted, ratified by Story 1.7). The kind/section tokens are
 imported from their owning modules (single definition sites), never
 re-spelled here.
 
