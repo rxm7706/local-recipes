@@ -524,3 +524,236 @@ def test_templated_suffix_name_degrades_to_raw_malformed(tmp_path):
     )
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
+
+
+# --- Story 2.3: compiler()/stdlib()/pin_subpackage() build-tool exclude -------
+
+
+def test_compiler_and_stdlib_calls_are_excluded_entirely(tmp_path):
+    body = (
+        "requirements:\n"
+        "  build:\n"
+        '    - ${{ compiler("c") }}\n'
+        '    - ${{ stdlib("c") }}\n'
+        "    - python\n"
+    )
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "python"
+
+
+def test_pin_subpackage_call_is_excluded_entirely(tmp_path):
+    body = (
+        "context:\n"
+        "  name: mypkg\n"
+        "requirements:\n"
+        "  run:\n"
+        '    - ${{ pin_subpackage(name + "-core", exact=True) }}\n'
+        "    - click\n"
+    )
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "click"
+
+
+def test_build_tool_call_sharing_a_line_with_unrelated_text_degrades(tmp_path):
+    """The C0b silent-drop the `[^{}]*` regex fix closes: a SECOND,
+    unrelated `${{ }}` expression sharing the line with a
+    compiler()/stdlib()/pin_subpackage() call must NOT be swallowed whole
+    by the exclude regex's `fullmatch` -- it falls through to the generic
+    degrade ladder instead (kept, marked, never silently excluded)."""
+    body = (
+        "requirements:\n"
+        "  build:\n"
+        '    - ${{ compiler("c") }} ${{ pin_compatible("numpy") }}\n'
+    )
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
+
+
+# --- Story 2.3: if/then/else selector-union -----------------------------------
+
+
+def test_if_then_else_both_branches_are_unioned_and_tagged(tmp_path):
+    body = (
+        "requirements:\n"
+        "  run:\n"
+        "    - if: linux\n"
+        "      then:\n"
+        "        - numpy >=1.20\n"
+        "      else:\n"
+        "        - numpy\n"
+    )
+    path = write_recipe(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    # Per-entry (name, section, mode) tuples -- never a sorted()-over-
+    # section-strings comparison, which cannot detect a swapped attribution
+    # (the exact review-pass-2 test-quality fix, applied here too even
+    # though v1's condition never comes from comment-correlation).
+    tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
+    assert tagged == {
+        ("numpy", "requirements.run[if:linux]", ExtractionMode.UNION_MARKED),
+        ("numpy", "requirements.run[else:linux]", ExtractionMode.UNION_MARKED),
+    }
+
+
+def test_if_then_scalar_form_without_else_contributes_only_then(tmp_path):
+    """Real v1 syntax allows a single scalar `then` with no `else` at all
+    (e.g. conda-forge's actionlint recipe: `if: win / then: posix`) --
+    ordinary, valid, and must contribute exactly the `then` side, nothing
+    for the absent `else`."""
+    body = "requirements:\n  run:\n    - if: win\n      then: posix\n"
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "posix"
+    assert component.provenance[0].section == "requirements.run[if:win]"
+    assert component.extraction_mode is ExtractionMode.UNION_MARKED
+
+
+def test_nested_if_inside_then_concatenates_section_tags(tmp_path):
+    body = (
+        "requirements:\n"
+        "  run:\n"
+        "    - if: linux\n"
+        "      then:\n"
+        "        - if: x86_64\n"
+        "          then:\n"
+        "            - numpydeep\n"
+        "          else:\n"
+        "            - numpydeep-generic\n"
+        "      else:\n"
+        "        - numpylin\n"
+    )
+    path = write_recipe(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    tagged = {(c.name, c.provenance[0].section) for c in components}
+    assert tagged == {
+        ("numpydeep", "requirements.run[if:linux][if:x86_64]"),
+        ("numpydeep-generic", "requirements.run[if:linux][else:x86_64]"),
+        ("numpylin", "requirements.run[else:linux]"),
+    }
+
+
+def test_build_tool_call_inside_if_then_else_branch_is_excluded(tmp_path):
+    body = (
+        "requirements:\n"
+        "  build:\n"
+        "    - if: linux\n"
+        "      then:\n"
+        '        - ${{ compiler("c") }}\n'
+        "      else:\n"
+        "        - clang\n"
+    )
+    path = write_recipe(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    assert {c.name for c in components} == {"clang"}
+
+
+def test_degraded_leaf_inside_if_then_else_keeps_its_own_mode_but_is_tagged(
+    tmp_path,
+):
+    """A leaf that ALSO degrades (an unresolved nested construct) keeps its
+    NAME_ONLY mode -- the degrade ladder is a more specific signal than the
+    union tag -- but the section suffix still applies either way."""
+    body = (
+        "context:\n"
+        '  version: "1.2.3"\n'
+        "requirements:\n"
+        "  run:\n"
+        "    - if: linux\n"
+        "      then:\n"
+        "        - numpy ${{ version.replace('.', '_') }}\n"
+    )
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.name == "numpy"
+    assert component.extraction_mode is ExtractionMode.NAME_ONLY
+    assert component.provenance[0].section == "requirements.run[if:linux]"
+
+
+def test_if_only_entry_with_neither_then_nor_else_degrades_to_raw_malformed(
+    tmp_path,
+):
+    """Review Pass 2 correction: an `if`-dict entry carrying NEITHER a
+    `then` NOR an `else` key must still yield exactly ONE RAW_MALFORMED
+    component -- never silently zero."""
+    body = "requirements:\n  run:\n    - if: linux\n"
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
+    assert component.provenance[0].section == "requirements.run[if:linux]"
+
+
+def test_if_else_present_then_missing_degrades_then_side_only(tmp_path):
+    """`if`/`else` present with `then` missing (Review Pass 1 KEEP
+    instruction's regression test): the `then` side degrades to ONE
+    RAW_MALFORMED leaf (via the same "unrecognized shape" path a missing
+    key falls into), while `else` still contributes its own real,
+    correctly-tagged component(s)."""
+    body = "requirements:\n  run:\n    - if: linux\n      else:\n        - numpy\n"
+    path = write_recipe(tmp_path, body)
+    components = _extractor().extract(path, MANIFEST)
+    tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
+    assert (
+        "numpy",
+        "requirements.run[else:linux]",
+        ExtractionMode.UNION_MARKED,
+    ) in tagged
+    malformed = [c for c in components if c.extraction_mode is ExtractionMode.RAW_MALFORMED]
+    assert len(malformed) == 1
+    assert malformed[0].provenance[0].section == "requirements.run[if:linux]"
+
+
+def test_unrecognized_then_shape_degrades_to_raw_malformed(tmp_path):
+    """A `then` value that is neither a string, a list, nor an `if`-dict
+    (here a bare int) degrades to RAW_MALFORMED rather than vanishing."""
+    body = "requirements:\n  run:\n    - if: linux\n      then: 42\n"
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
+    assert component.provenance[0].section == "requirements.run[if:linux]"
+
+
+def test_then_empty_list_degrades_to_raw_malformed(tmp_path):
+    """Review Pass 3 fix: an explicitly EMPTY `then:` list (`then: []`) is
+    the same class of degenerate shape as a missing `then` key -- it must
+    NOT silently fall through the list-walking loop to a bare empty
+    return, contradicting "`then` ALWAYS contributes"."""
+    body = "requirements:\n  run:\n    - if: linux\n      then: []\n"
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
+    assert component.provenance[0].section == "requirements.run[if:linux]"
+
+
+def test_condition_label_is_truncated_unconditionally(tmp_path):
+    """The `if:` condition is bounded via `truncate_for_name`
+    unconditionally -- an arbitrarily long condition scalar must never
+    embed unbounded into `Provenance.section` (NFR-S5)."""
+    long_condition = "x" * 500
+    body = (
+        "requirements:\n"
+        "  run:\n"
+        f"    - if: {long_condition}\n"
+        "      then: posix\n"
+    )
+    path = write_recipe(tmp_path, body)
+    (component,) = _extractor().extract(path, MANIFEST)
+    section = component.provenance[0].section
+    assert len(section) < 300
+    assert section.endswith("…[truncated]]")
+
+
+def test_deeply_nested_if_then_else_raises_unparsable_not_a_crash(tmp_path):
+    """A pathologically nested (but well within the 5MB manifest cap)
+    if/then/else chain must degrade honestly via UnparsableManifestError,
+    never crash the process with a raw RecursionError (Review Pass 1
+    correction #2)."""
+    depth = 2000
+    opens = "".join(f'{{if: c{i}, then: [\n' for i in range(depth))
+    closes = "".join("]}\n" for _ in range(depth))
+    body = f"requirements:\n  run:\n    - {opens}mypkg{closes}"
+    path = write_recipe(tmp_path, body)
+    with pytest.raises(UnparsableManifestError):
+        _extractor().extract(path, MANIFEST)
