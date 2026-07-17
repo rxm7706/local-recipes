@@ -1,6 +1,10 @@
 ##########################
 # KEDRO PROJECT
 
+# pixi-build conda artifacts (pyforge-atlas-build-conda task output; wheel/sdist
+# `dist/` is covered by the Python section below)
+/dist-conda/
+
 # ignore all local configuration
 conf/local/**
 !conf/local/.gitkeep

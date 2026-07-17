@@ -23,13 +23,15 @@ python = ">=3.14"          # atlas floor is 3.14 BY DESIGN (warden's is 3.12 —
 hatchling = "*"
 
 # Conda-forge run set: what the lean `pyforge-atlas` env needs so `kedro-test`
-# (import smokes + Kedro bootstrap seam) passes. pyforge-warden here makes the
-# [gate] extra default-installed in-repo (AC-8 / A1-A5). Test-only tools
-# (pytest, python-build) live at FEATURE level in the root pixi.toml, mirroring
-# warden's split.
+# (import smokes + Kedro bootstrap seam) passes. Test-only tools (pytest,
+# python-build) live at FEATURE level in the root pixi.toml, mirroring warden's
+# split. pyforge-warden is deliberately NOT a package run-dep (review 2026-07-17,
+# A1-A5 alternative route): baking it into the built .conda would make the
+# optional [gate] extra mandatory for external consumers (AC-8: both tools stay
+# independently installable). In-repo default install happens at FEATURE level
+# in the root pixi.toml instead.
 [package.run-dependencies]
 python = ">=3.14"
 kedro = ">=1.5.0"
 kedro-datasets = ">=9.5.0"
 kedro-dagster = ">=0.7.0"    # py3.14-unclassified glue — kedro-test import smoke target (AD-16)
-pyforge-warden = { path = "../pyforge-warden" }

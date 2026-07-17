@@ -15,7 +15,7 @@ authors = [{ name = "rxm7706" }]
 # local-recipes), not in wheel metadata, until stories actually import each
 # library (Simplicity First; warden lean-dep doctrine).
 dependencies = [
-    "kedro",
+    "kedro>=1.5.0",  # floor matches [tool.kedro] kedro_init_version + the conda run-dep
 ]
 
 [project.optional-dependencies]

@@ -1020,6 +1020,7 @@ depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
 # Spec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9 Story A1.
 [feature.pyforge-atlas.dependencies]
 pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda pkg
+pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [gate] extra default-installed IN-REPO at feature level (A1-A5 alternative route) — NOT a pyforge-atlas package run-dep, so external conda installs stay warden-optional
 hatchling = "*"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = "*"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = "*"                       # test runner (kedro-test)
