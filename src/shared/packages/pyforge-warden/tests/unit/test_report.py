@@ -20,6 +20,7 @@ from pyforge.warden.inventory import ResolvedInventory
 from pyforge.warden.models import (
     AXIS_HYGIENE,
     AXIS_INGESTION,
+    AXIS_VULNERABILITY,
     AxisCoverage,
     ComplianceReport,
     ErrorKind,
@@ -181,6 +182,75 @@ def test_empty_extraction_does_not_touch_deps_total_or_assessed(
     by_axis = {c.axis: c for c in report.coverage}
     assert by_axis["hygiene"].deps_total == 0
     assert by_axis["vulnerability"].deps_total == 0
+
+
+# --- fail_under_coverage (Story 3.1, FR19's coverage-floor role) ----------
+
+
+def test_fail_under_coverage_flags_a_below_floor_axis(component_factory):
+    inventory = _inventory(component_factory)
+    report = _assemble(inventory, fail_under_coverage=50.0)
+    finding_ids = {f.id for f in report.findings}
+    assert "indeterminate:coverage-floor:hygiene" in finding_ids
+    assert "indeterminate:coverage-floor:vulnerability" in finding_ids
+    assert report.status is Status.INDETERMINATE
+    assert report.exit_code == 1
+
+
+def test_fail_under_coverage_at_or_above_floor_is_unaffected(component_factory):
+    inventory = _inventory(component_factory)
+    engine_result = EngineResult(
+        findings=(),
+        errors=(),
+        coverage=(
+            AxisCoverage(
+                axis=AXIS_HYGIENE,
+                manifests_found=1,
+                manifests_parsed=1,
+                deps_total=2,
+                deps_assessed=2,
+                resolution_depth=None,
+            ),
+            AxisCoverage(
+                axis=AXIS_VULNERABILITY,
+                manifests_found=1,
+                manifests_parsed=1,
+                deps_total=2,
+                deps_assessed=2,
+                resolution_depth=None,
+            ),
+        ),
+        axis=AXIS_HYGIENE,
+    )
+    unfloored = _assemble(inventory, engine_results=(engine_result,))
+    at_floor = _assemble(
+        inventory, fail_under_coverage=50.0, engine_results=(engine_result,)
+    )
+    # 100% assessed for both axes is at-or-above a 50% floor -- byte-for-
+    # byte unaffected, same report a caller who never set the floor gets.
+    assert at_floor == unfloored
+
+
+def test_fail_under_coverage_never_flags_a_deps_total_zero_axis(component_factory):
+    """A deps_total == 0 axis (here: hygiene, via hygiene_applicable=False)
+    is vacuous -- never flagged regardless of the floor, even a floor of
+    100. The vulnerability axis (deps_total=2, deps_assessed=0) still gets
+    flagged, proving the exclusion is deps_total==0-specific, not a blanket
+    'hygiene axis is exempt' special case."""
+    inventory = _inventory(component_factory)
+    report = _assemble(inventory, fail_under_coverage=100.0, hygiene_applicable=False)
+    finding_ids = {f.id for f in report.findings}
+    assert "indeterminate:coverage-floor:hygiene" not in finding_ids
+    assert "indeterminate:coverage-floor:vulnerability" in finding_ids
+
+
+def test_fail_under_coverage_default_is_byte_identical_to_omitting_the_param(
+    component_factory,
+):
+    inventory = _inventory(component_factory)
+    default_report = _assemble(inventory)
+    explicit_report = _assemble(inventory, fail_under_coverage=0.0)
+    assert explicit_report == default_report
 
 
 # --- render_text (Story 1.8) ---------------------------------------------
