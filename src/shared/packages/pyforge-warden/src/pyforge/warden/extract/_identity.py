@@ -543,11 +543,19 @@ def read_bounded_text(
                 f"{max_line_bytes}-byte length cap (NFR-S5)"
             )
     try:
-        return raw.decode("utf-8")
+        text = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise UnparsableManifestError(
             f"unparsable manifest {manifest.path}: {exc}"
         ) from exc
+    # Normalize CRLF -> LF (review finding, 2026-07-17): recipe_v1.py's and
+    # meta_v0.py's brace-neutralization regexes are `$`-anchored per split
+    # line -- a CRLF-authored manifest would otherwise leave a literal `\r`
+    # inside the captured `{{ ... }}` expression. YAML itself already
+    # normalizes line endings internally, so this is a no-op for the other
+    # 2 read_bounded_text callers (environment_yml.py/pixi.py's direct
+    # yaml_safe_load_strict).
+    return text.replace("\r\n", "\n")
 
 
 # --- new in Story 2.2 (review hardening, 2026-07-16): strict YAML loading ---
