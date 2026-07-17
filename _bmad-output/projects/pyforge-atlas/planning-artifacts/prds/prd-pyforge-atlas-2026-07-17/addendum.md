@@ -80,7 +80,7 @@ All fixture-based, non-credentialed, tracked in the test tree (never
 ## 6. Config values used by this run (pixi unavailable)
 
 - `planning_artifacts` = `_bmad-output/planning-artifacts` (symlinked to
-  `projects/conda-forge-atlas-datapipeline/planning-artifacts`).
-- Run folder: `prds/prd-conda-forge-atlas-datapipeline-2026-07-17/` (project
+  `projects/pyforge-atlas/planning-artifacts`).
+- Run folder: `prds/prd-pyforge-atlas-2026-07-17/` (project
   slug substituted for global `project_name` — see PRD § 9.6).
 - `user_name` Rxm7706; languages English; date 2026-07-17.

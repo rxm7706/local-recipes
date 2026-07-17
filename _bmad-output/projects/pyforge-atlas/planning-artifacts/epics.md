@@ -1,11 +1,11 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
-  - _bmad-output/projects/conda-forge-atlas-datapipeline/planning-artifacts/prds/prd-conda-forge-atlas-datapipeline-2026-07-17/prd.md
-  - _bmad-output/projects/conda-forge-atlas-datapipeline/planning-artifacts/prds/prd-conda-forge-atlas-datapipeline-2026-07-17/addendum.md
-  - _bmad-output/projects/conda-forge-atlas-datapipeline/planning-artifacts/architecture/architecture-conda-forge-atlas-datapipeline-2026-07-17/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md
+  - _bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/addendum.md
+  - _bmad-output/projects/pyforge-atlas/planning-artifacts/architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md
   - docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6 — §§ 2.5, 9, 10, 11, 14 binding)
-project: conda-forge-atlas-datapipeline
+project: pyforge-atlas
 status: final
 created: 2026-07-17
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
@@ -93,7 +93,7 @@ From the Architecture Spine (binding on story implementation):
 - **Starter template:** the project is scaffolded by `nebi` (Kedro project + own lean pixi env) — Story A1 is the scaffold story; physical naming (scaffold root, package name, Parquet store root) is deferred to the A1 story spec (Spine Deferred).
 - AD-1 import-direction meta-test (no Dagster/`kedro-mcp` imports in `pipelines/`, `datasets/`, `hooks/`, `mcp/`) ships with `kedro-catalog-check` (A2).
 - The Consistency Conventions table binds all stories: seven snake_case pipeline packages; `# legacy: Phase <ID>` provenance comments; `<domain>_<entity>` dataset names with layer tags; canonical join keys (`conda_name` / `pypi_name` / `(conda_name, advisory_id)`; purls never internal join keys); timestamps normalized to epoch seconds at ingest; additive-first schema evolution; degradation vocabulary `stale` / `unresolved` / `not-applicable` never interchanged; `conf/base` tracked vs `conf/local` gitignored; explicit env/run-config beats profile defaults.
-- Execution seam (AD-18): loop stories run in worktrees only after the symlink bootstrap; all BMAD writes resolve through the `_bmad-output` symlinks; switching only via `scripts/bmad-switch conda-forge-atlas-datapipeline`; keystone stories B1/B2/F1 get pre-flight budget raises; REVIEW sessions constrained to correctness-affecting findings; PR-per-wave wraps local squash-merge; the effort closes with the CFE Rule-2 retro.
+- Execution seam (AD-18): loop stories run in worktrees only after the symlink bootstrap; all BMAD writes resolve through the `_bmad-output` symlinks; switching only via `scripts/bmad-switch pyforge-atlas`; keystone stories B1/B2/F1 get pre-flight budget raises; REVIEW sessions constrained to correctness-affecting findings; PR-per-wave wraps local squash-merge; the effort closes with the CFE Rule-2 retro.
 - Wave-0 preconditions: one-time hooks approval; live `bmad-groundtruth` re-check (intake was git-surface-only); worktree symlink bootstrap (validated by A3); heaviest-story budget review.
 - Wave-B verify assets are TEA `atdd`-generated red-phase fixtures (§ 14 per-wave operating loop).
 - Deferred decisions with owners (Spine § Deferred) resolve inside the named story specs: A1 physical naming, E1 A2A transport, F3 embedding model + offline `vss` provisioning, F1 benchmark threshold, H1 MinIO server provisioning, D2 CIS two-spine design specs.
@@ -1001,7 +1001,7 @@ or a minimal structural inference flagged as such.
    addendum § 3 resolution, carried forward here.
 4. **D-4 — `bmad-switch` target.** Spec § 2.5/§ 14's pre-intake
    `bmad-switch local-recipes` literal is superseded by
-   `scripts/bmad-switch conda-forge-atlas-datapipeline` (PRD § 9.11, AD-18).
+   `scripts/bmad-switch pyforge-atlas` (PRD § 9.11, AD-18).
 5. **D-5 — Open questions** Q1–Q4, Q6, Q7 adopted at § 11 defaults (table
    above), each remaining a scheduled re-check drained at its gating
    wave/story before dependent work runs. Q5 retired (outcome = Wave H).

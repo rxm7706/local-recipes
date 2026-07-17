@@ -1,4 +1,4 @@
-# Tier-2 Planning Phase Closeout — conda-forge-atlas-datapipeline — 2026-07-17
+# Tier-2 Planning Phase Closeout — pyforge-atlas — 2026-07-17
 
 **Verdict: planning phase COMPLETE.** Readiness gate: **READY** (iteration 1,
 zero blocking findings). The effort is handed off to Tier-3 execution
@@ -15,8 +15,8 @@ re-verified valid at intake HEAD `4cf1b74`
 |---|---|---|
 | 0 | `intake-groundtruth-2026-07-17.md` | done |
 | 1b | `agents-and-skills.md` (persona/skill record) | done |
-| 1a | `prds/prd-conda-forge-atlas-datapipeline-2026-07-17/` — `prd.md` (status: final) + `addendum.md` + validation report + 2 reviewer artifacts | validated, 0 open findings (post-fix grade Good) |
-| 2 | `architecture/architecture-conda-forge-atlas-datapipeline-2026-07-17/` — `ARCHITECTURE-SPINE.md` (status: final, AD-1..AD-23) + 4 reviewer/reconcile artifacts | lint clean, 0 findings |
+| 1a | `prds/prd-pyforge-atlas-2026-07-17/` — `prd.md` (status: final) + `addendum.md` + validation report + 2 reviewer artifacts | validated, 0 open findings (post-fix grade Good) |
+| 2 | `architecture/architecture-pyforge-atlas-2026-07-17/` — `ARCHITECTURE-SPINE.md` (status: final, AD-1..AD-23) + 4 reviewer/reconcile artifacts | lint clean, 0 findings |
 | 3 | `epics.md` — 9 epics, 32 frozen-ID stories (0.1, A1–A3, B1–B10, C1–C2, D1–D3, E1–E2, F1–F4, G1–G3, H1–H4), decisions D-1..D-15 | validated 32/32, 22/22 FRs |
 | 4a | `implementation-readiness-report-2026-07-17.md` | **READY**, 7 non-blocking observations |
 | 4b | `../implementation-artifacts/sprint-status.yaml` | generated + validated (Tier-3, gitignored — see § 2) |
@@ -33,7 +33,7 @@ B8, B9, B10, F4) · 11 LOOP-E (C2, D1, E1, E2, F2, F3, G1, G3, H1, H3, H4).
 container is ephemeral, so the feed is **regenerable, not archival**:
 
 ```
-scripts/bmad-switch conda-forge-atlas-datapipeline
+scripts/bmad-switch pyforge-atlas
 # then invoke the bmad-sprint-planning skill (unattended; it re-parses
 # planning-artifacts/epics.md, carries modes + verify gates, wave-ordered,
 # and preserves existing statuses if the file already exists)
@@ -69,7 +69,7 @@ every wave start regardless.
    and the worktree symlink bootstrap.
 7. **`bmad-switch` supersession**: every § 2.5/§ 14 `bmad-switch
    local-recipes` literal is superseded by
-   `bmad-switch conda-forge-atlas-datapipeline` (PRD § 9.11 / AD-18 / D-4).
+   `bmad-switch pyforge-atlas` (PRD § 9.11 / AD-18 / D-4).
 
 ## 4. Next steps (execution phase)
 
@@ -111,3 +111,23 @@ Operational notes: BMAD create-skills spawn their own reviewer subagents and
 may yield mid-flow — re-wake them to collect reviews and apply fixes; keep
 WIP snapshots committable at any instant (stop-hook-clean); the sprint feed
 never gets tracked (Tier-3), its regeneration command gets recorded instead.
+
+---
+
+## Addendum — project slug rename (2026-07-17, post-merge)
+
+Owner decision after PR #66 merged: project slug renamed
+`conda-forge-atlas-datapipeline` → **`pyforge-atlas`** (aligns with the
+sibling `pyforge-warden` naming family). Applied as a rename-in-place, NOT a
+re-run: `git mv` of the project directory + both dated run folders
+(`prds/prd-pyforge-atlas-2026-07-17`, `architecture/architecture-pyforge-atlas-2026-07-17`),
+plus a global reference update across all planning artifacts, PROJECTS.md,
+CLAUDE.md, the spec § 1 status line, and the Tier-3 files (story 0.1,
+sprint-status.yaml). `scripts/bmad-switch pyforge-atlas` re-pointed marker +
+symlinks; repo-wide grep confirms zero stale references.
+
+**The readiness verdict (READY) carries over unchanged** — no artifact
+content was altered beyond the slug string; FR/story/AD numbering untouched.
+Every `bmad-switch conda-forge-atlas-datapipeline` instruction recorded in
+the artifacts (PRD § 9.11 / AD-18 / epics D-4 / story 0.1) now reads
+`bmad-switch pyforge-atlas`.
