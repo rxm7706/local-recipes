@@ -52,6 +52,21 @@ def test_custom_fetched_at_column(tmp_path):
     assert "downloads_fetched_at" in back.columns
 
 
+def test_ms_normalization_and_coercion_created_nan_is_filled(tmp_path):
+    """DW-A3-P10 + review regression: a fetched_at column mixing a ms-magnitude int
+    with a non-numeric junk cell must (a) normalize the ms value to seconds and (b)
+    FILL the NaN that coercion creates — persisting it would loop re-fetch forever.
+    needs_fill is computed pre-coercion (junk is not NaN), so the fill must re-check
+    AFTER _to_epoch_seconds."""
+    ds = IncrementalParquetDataset(filepath=_fp(tmp_path))
+    df = pd.DataFrame({"conda_name": ["ms", "junk"], "fetched_at": [1_700_000_000_000, "oops"]})
+    ds.save(df)
+    back = ds.load().set_index("conda_name")
+    assert back.loc["ms", "fetched_at"] == 1_700_000_000  # ms -> s
+    assert pd.notna(back.loc["junk", "fetched_at"])        # coercion-NaN was filled
+    assert back.loc["junk", "fetched_at"] > 0
+
+
 def test_partially_nan_fetched_at_column_is_fully_stamped(tmp_path):
     """Review-pass P1 (perpetual re-fetch loop): an incremental append leaves an
     already-present ``fetched_at`` column with existing rows stamped and NEW rows
@@ -94,8 +109,9 @@ def test_stale_mask_gates_old_stale_recent_fresh(tmp_path):
     df = pd.DataFrame(
         {
             "conda_name": ["old", "boundary", "recent"],
-            # old: well past ttl (stale); boundary: exactly at cutoff (fresh);
-            # recent: within window (fresh)
+            # old: well past ttl (stale); boundary: exactly at cutoff — FRESH under
+            # the DW-A3-TTL-parity STRICT `<` call (verified vs legacy eligibility SQL
+            # CFA:2803/5167 `COALESCE(fetched_at,0) < now-ttl`); recent: fresh
             "fetched_at": [now - 500, now - ttl, now - 10],
         }
     )

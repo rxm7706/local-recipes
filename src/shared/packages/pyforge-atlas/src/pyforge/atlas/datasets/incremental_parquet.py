@@ -84,6 +84,13 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
 
     DEFAULT_FETCHED_AT_COLUMN = "fetched_at"
 
+    # DW-A3-P10 (B1 owns the `fetched_at` unit): timestamps are normalized to epoch
+    # SECONDS at the dataset boundary ("convert once, at the dataset boundary"). Phase
+    # F/I are the first real ms-source writers (repodata per-build timestamps are ms),
+    # so this order-of-magnitude guard is no longer dead code. 1e12 cleanly separates
+    # epoch-seconds (~1.7e9 today) from epoch-milliseconds (~1.7e12 today).
+    _MS_EPOCH_THRESHOLD = 1_000_000_000_000
+
     def __init__(
         self,
         *,
@@ -172,6 +179,55 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
             raise ValueError(f"ttl_seconds must be >= 0 (0 = everything stale); got {ttl}")
         return ttl
 
+    # -- epoch-seconds boundary normalization (DW-A3-P10) ------------------
+
+    @classmethod
+    def _has_ms_magnitude(cls, series: pd.Series) -> bool:
+        """True if any non-null value has millisecond magnitude (>= 1e12)."""
+        s = series.dropna()
+        if s.empty:
+            return False
+        if not pd.api.types.is_numeric_dtype(s):
+            s = pd.to_numeric(s, errors="coerce").dropna()
+            if s.empty:
+                return False
+        return bool((s.abs() >= cls._MS_EPOCH_THRESHOLD).any())
+
+    @classmethod
+    def _to_epoch_seconds(cls, series: pd.Series) -> pd.Series:
+        """Coerce to numeric and divide any ms-magnitude value by 1000 — the single
+        dataset-boundary conversion (DW-A3-P10). Second-magnitude values pass
+        through untouched; NaN survives as NaN."""
+        s = series if pd.api.types.is_numeric_dtype(series) else pd.to_numeric(series, errors="coerce")
+        ms = s.abs() >= cls._MS_EPOCH_THRESHOLD
+        if ms.any():
+            logger.warning(
+                "normalizing %d ms-magnitude fetched_at value(s) to epoch seconds "
+                "at the dataset boundary (DW-A3-P10); Phase F/I write ms-source stamps.",
+                int(ms.sum()),
+            )
+            s = s.where(~ms, s // 1000)
+        return s
+
+    # -- kedro_datasets private-internal compat (DW-A3-P11) ----------------
+
+    def _inner_exists(self) -> bool:
+        """Prefer a PUBLIC ``exists()`` on the composed dataset; fall back to the
+        private ``_exists()``. DW-A3-P11: B1 is the first story to exercise the
+        flipped datasets through nodes — this de-risks the kedro_datasets private-
+        internal pin (verified working on kedro_datasets 9.5.0) against a future bump
+        that could rename/remove the underscored method."""
+        public = getattr(self._inner, "exists", None)
+        if callable(public):
+            return bool(public())
+        return bool(self._inner._exists())
+
+    def _inner_describe(self) -> dict[str, Any]:
+        public = getattr(self._inner, "describe", None)
+        if callable(public):
+            return dict(public())
+        return dict(self._inner._describe())
+
     # -- kedro 1.5.0 public abstract methods -------------------------------
 
     def save(self, data: pd.DataFrame) -> None:
@@ -184,18 +240,34 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         The copy is taken only when a stamp must be written (review-pass P9 — avoid
         deep-copying 800k-row frames that need no change)."""
         col = self._fetched_at_column
+        now = int(time.time())
         # Shallow copy (Gemini PR-72): only the fetched_at column is written, so
         # a deep copy of an 800k-row frame is wasteful — a full-column
         # (re)assignment on a deep=False copy replaces the block reference
         # without mutating the caller's frame (pandas 2.x).
         if col not in data.columns:
             df = data.copy(deep=False)
-            df[col] = int(time.time())
-        elif data[col].isna().any():
-            df = data.copy(deep=False)
-            df[col] = df[col].fillna(int(time.time()))
+            df[col] = now
         else:
-            df = data  # no stamping needed → no copy (P9)
+            # DW-A3-P10: normalize any ms-magnitude stamp to epoch seconds at THIS
+            # boundary (Phase F/I are the first ms-source writers), and fill any
+            # missing stamp with the current epoch seconds (P1 — an incremental
+            # append leaves new rows NaN; persisting NaN loops re-fetch forever).
+            needs_fill = data[col].isna().any()
+            needs_ms_fix = self._has_ms_magnitude(data[col])
+            if needs_fill or needs_ms_fix:
+                df = data.copy(deep=False)
+                series = df[col]
+                if needs_ms_fix:
+                    series = self._to_epoch_seconds(series)
+                # Re-check isna AFTER coercion: _to_epoch_seconds may have turned a
+                # non-null-but-unparseable cell into NaN; persisting that NaN would
+                # loop re-fetch forever (P1). Fill any NaN present at this point.
+                if needs_fill or series.isna().any():
+                    series = series.fillna(now)
+                df[col] = series
+            else:
+                df = data  # no stamping/normalization needed → no copy (P9)
         self._inner.save(df)
 
     def load(self) -> pd.DataFrame:
@@ -206,11 +278,12 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
 
     def _exists(self) -> bool:
         """Delegate the existence probe to the composed Parquet dataset (the outer
-        versioned machinery is disabled — P4)."""
-        return self._inner._exists()
+        versioned machinery is disabled — P4). Uses the public-first accessor
+        (DW-A3-P11)."""
+        return self._inner_exists()
 
     def _describe(self) -> dict[str, Any]:
-        inner = self._inner._describe()
+        inner = self._inner_describe()
         return {
             "filepath": inner.get("filepath"),
             "ttl_seconds": self._ttl_seconds,
@@ -247,6 +320,16 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         all-``False`` mask — so an un-wired dataset never forces a re-fetch.
         Rows whose ``fetched_at`` is missing/NaN are treated as STALE (they have
         no proof of freshness), matching the legacy NULL-gate-column semantics.
+
+        DW-A3-TTL-parity (deliberate boundary call, VERIFIED against the legacy
+        CODE — not the disposition's prose): the phases B1 ports gate eligibility with
+        ``WHERE COALESCE(<col>_fetched_at, 0) < cutoff`` where ``cutoff = now - ttl``
+        (Phase F ``conda_forge_atlas.py:2803``, Phase K ``:5167``, G/H/R likewise @
+        b18cbb5) — i.e. STALE iff ``fetched_at < now - ttl`` (STRICT ``<``), so a row
+        whose ``fetched_at`` equals ``now - ttl`` is FRESH. The DW-A3 disposition's
+        prose ("``age >= ttl``") is contradicted by the code; per the
+        engineering-contracts D1/D2 rule ("follow the CODE, not spec prose") this mask
+        keeps the STRICT ``<`` — exact parity with the legacy eligibility SQL.
         """
         if now is None:
             now = int(time.time())
@@ -262,10 +345,15 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         fetched_at = df[col]
         if not pd.api.types.is_numeric_dtype(fetched_at):
             fetched_at = pd.to_numeric(fetched_at, errors="coerce")
+        # DW-A3-P10: defensively normalize a ms-magnitude stamp that never passed
+        # through save() (convert once at the boundary — cheap no-op when seconds).
+        if self._has_ms_magnitude(fetched_at):
+            fetched_at = self._to_epoch_seconds(fetched_at)
         cutoff = now - self._ttl_seconds
-        # A row is stale if its timestamp is older than the cutoff OR missing.
-        # (A comparison against NaN yields False, not NaN — so the missing case
-        # must be OR-ed in explicitly rather than left to fillna.)
+        # A row is stale iff its timestamp is strictly older than the cutoff OR
+        # missing. STRICT `<` = legacy eligibility SQL parity (CFA:2803/5167 —
+        # `COALESCE(fetched_at,0) < now-ttl`). A comparison against NaN yields False,
+        # so the missing case is OR-ed in explicitly.
         stale = (fetched_at < cutoff) | fetched_at.isna()
         return stale.astype(bool)
 

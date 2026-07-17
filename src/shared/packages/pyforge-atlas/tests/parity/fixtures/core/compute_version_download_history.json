@@ -1,0 +1,42 @@
+{
+  "phase": "I",
+  "node": "compute_version_download_history",
+  "inputs": {
+    "core_anaconda_downloads_raw": [
+      {
+        "conda_name": "numpy",
+        "version": "1.0",
+        "downloads": 100
+      },
+      {
+        "conda_name": "numpy",
+        "version": "2.0",
+        "downloads": 200
+      },
+      {
+        "conda_name": "scipy",
+        "version": "1.0",
+        "downloads": 50
+      }
+    ]
+  },
+  "expected": {
+    "core_version_download_history": [
+      {
+        "conda_name": "numpy",
+        "version": "1.0",
+        "downloads": 100
+      },
+      {
+        "conda_name": "numpy",
+        "version": "2.0",
+        "downloads": 200
+      },
+      {
+        "conda_name": "scipy",
+        "version": "1.0",
+        "downloads": 50
+      }
+    ]
+  }
+}
