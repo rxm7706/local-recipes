@@ -165,9 +165,11 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
             return pd.Series(True, index=df.index)
         fetched_at = pd.to_numeric(df[col], errors="coerce")
         cutoff = now - self._ttl_seconds
-        stale = fetched_at < cutoff
-        # NaN (missing timestamp) → stale (legacy NULL-gate-column behavior).
-        return stale.fillna(True).astype(bool)
+        # A row is stale if its timestamp is older than the cutoff OR missing.
+        # (A comparison against NaN yields False, not NaN — so the missing case
+        # must be OR-ed in explicitly rather than left to fillna.)
+        stale = (fetched_at < cutoff) | fetched_at.isna()
+        return stale.astype(bool)
 
     def fresh_mask(self, df: pd.DataFrame, now: int | None = None) -> pd.Series:
         """Complement of :meth:`stale_mask` — ``True`` for rows that may be skipped."""
