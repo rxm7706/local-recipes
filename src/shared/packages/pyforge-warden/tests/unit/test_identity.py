@@ -227,6 +227,31 @@ def test_strict_loader_accepts_anchor_definitions_and_normal_documents():
     }
 
 
+# --- CRLF normalization (fixed 2026-07-17) ----------------------------------
+
+
+def test_read_bounded_text_normalizes_crlf_line_endings(tmp_path):
+    """recipe_v1.py's/meta_v0.py's brace-neutralization regexes are
+    `$`-anchored per split line -- a CRLF-authored manifest would otherwise
+    leave a literal `\\r` inside a captured `{{ ... }}` expression (verified
+    live: PyYAML then loads a trailing-`\\r` string scalar, breaking
+    substitute_bare_vars). Normalize once, here, for every
+    read_bounded_text caller."""
+    from pyforge.warden.extract._identity import read_bounded_text
+    from pyforge.warden.models import ScannedManifest
+
+    manifest_path = tmp_path / "meta.yaml"
+    manifest_path.write_bytes(b"package:\r\n  name: foo\r\n  version: 1.0\r\n")
+    manifest = ScannedManifest(path="meta.yaml", kind="meta-yaml")
+
+    text = read_bounded_text(
+        manifest_path, manifest, max_bytes=1_000_000, max_line_bytes=8_192
+    )
+
+    assert "\r" not in text
+    assert text == "package:\n  name: foo\n  version: 1.0\n"
+
+
 def test_truncate_for_name_bounds_stringified_entries():
     from pyforge.warden.extract._identity import truncate_for_name
 
