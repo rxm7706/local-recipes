@@ -170,25 +170,31 @@ pypi_simple_index_raw:
   metadata:
     layer: raw
 
-# Per-project JSON (Phases H/R). Review-pass P2: the /pypi/<name>/json
-# path is per-project — one APIDataset = one URL, and nodes may NOT build
-# request URLs (AC-2), so this single-URL declaration is an explicit
-# interim awaiting a factory/partitioned dataset.
-# FLIP(B2): factory/partitioned dataset (per-project /pypi/<name>/json parameterization)
+# Per-project JSON (Phases H/R). B2 LANDED the flip (was `# FLIP(B2)`): the
+# per-project `/pypi/<name>/json` parameterization + the DW-B1-2 scheduler
+# `acquire()` wiring now live in PyPIJsonRequestDataset (datasets/request_datasets.py,
+# AD-2) — request_path(name) builds the per-project path + load_many() is the
+# scheduler-gated fan-out, so a NODE never builds a request URL (AC-2). The `url:`
+# stays the PyPI JSON host base (request_path appends `/pypi/<name>/json`).
 pypi_json_raw:
-  type: api.APIDataset
-  url: ${globals:endpoint_bases.PYPI_JSON_BASE_URL}/pypi
+  type: pyforge.atlas.datasets.PyPIJsonRequestDataset
+  url: ${globals:endpoint_bases.PYPI_JSON_BASE_URL}
   metadata:
     layer: raw
 
 # Phase P BigQuery `pypi.file_downloads` (admin opt-in, PHASE_P_ENABLED=1;
 # credentialed runs attended-only per NFR-2 — the gate never touches it).
 # Declared with a standard resolvable type NOW (same A2-A1 rationale: the
-# lean env does not carry google-cloud-bigquery); the Phase P port story
-# flips this to pandas.GBQQueryDataset (query-parameterized — an APIDataset
-# cannot express BigQuery jobs). Judgment call recorded (A2-J1); marker
-# normalized to the FLIP convention in the review pass (P2).
-# FLIP(B3): pandas.GBQQueryDataset (query-parameterized Phase P port)
+# lean env does not carry google-cloud-bigquery); the credentialed
+# materialization flips this to pandas.GBQQueryDataset (query-parameterized —
+# an APIDataset cannot express BigQuery jobs). Judgment call recorded (A2-J1).
+# G-1(B2): marker CORRECTED B3->B2 — Phase P is a B2 pypi phase (B1 Dev Agent
+# Record G-2 flagged this "B2/B3's to reconcile"). B2 authored the two-layer
+# cost gate + BigQueryDownloadsDataset class (datasets/request_datasets.py) +
+# its fixture tests (test_no_thirty_gb_lie carried over); the catalog stays an
+# offline-resolvable interim because the credentialed GBQ run is attended-only
+# (NFR-2/AD-11), so the FLIP marker stays as an interim attributed to B2.
+# FLIP(B2): pandas.GBQQueryDataset (credentialed materialization; cost gate authored in B2)
 pypi_bigquery_downloads_raw:
   type: api.APIDataset
   url: ${globals:extra_overrides.BIGQUERY_BASE_URL}/projects

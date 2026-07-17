@@ -1,0 +1,28 @@
+{
+  "phase": "flag_cross_channel",
+  "node": "flag_cross_channel",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_cross_channel_repodata_raw": [
+      {
+        "conda_name": "torch",
+        "channel": "pytorch"
+      },
+      {
+        "conda_name": "torch",
+        "channel": "nvidia"
+      }
+    ]
+  },
+  "expected": {
+    "pypi_cross_channel_flags": [
+      {
+        "conda_name": "torch",
+        "in_bioconda": false,
+        "in_pytorch": true,
+        "in_nvidia": true,
+        "in_robostack": false
+      }
+    ]
+  }
+}

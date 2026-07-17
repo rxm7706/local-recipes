@@ -32,6 +32,32 @@ runtime data — is **NOT in B1 scope** (AD-19, attended). B4 replaces these see
 snapshots captured once, attended, from operator runtime data (spine "Tests &
 fixtures" row) and consumes this same harness.
 
+## B2 contribution — pypi_intelligence + vulnerability fixtures (SHAPE-ONLY SEEDS)
+
+B2 extends the harness with the 14 Wave-B PyPI + vulnerability nodes (9 pypi_intelligence
++ 5 vulnerability) under `fixtures/{pypi_intelligence,vulnerability}/*.json` and wires each
+into `harness.py::NODE_REGISTRY`.
+
+**These are SHAPE-ONLY SEEDS, marked as such** (`"provenance": "shape-only-seed-B2-needs-B4-recapture"`
+in every fixture; asserted by `test_*_fixtures_are_flagged_shape_only`). Their `expected`
+frame is the **node's OWN transform** of a representative input — NOT a credentialed legacy
+capture. This is the DW-B1-1 discipline made explicit: hand-authoring an `expected` value
+risks encoding an implementer belief as if it were legacy truth (the exact
+`downloads_source='merged'` incident B1's follow-up review caught). B2 has no access to a
+credentialed legacy run, so it does **NOT** fabricate legacy values — it seeds the harness
+dispatch + the node output SCHEMA (a genuine forward regression guard: a later change to a
+node's columns breaks its frozen seed), and flags every fixture for B4 recapture.
+
+**A green `parity-diff` in B2 is NOT evidence of legacy parity.** B4 (attended, credentialed,
+AD-19) replaces these seeds with real legacy snapshots and consumes the SAME harness. The
+harness under-check (column-set-from-expected-only + `check_dtype=False`, DW-B1-1) is
+**B4's** to tighten — B2 does not touch the frame-diff engine.
+
+The high-stakes CONTRACTS these nodes preserve (Phase H serial gate, Phase P two-layer cost
+gate, EPSS 0-100 normalization, KEV overlay + CVSS coercion, single-write-path, notes-survive)
+are proven directly in `tests/pipelines/**` + `tests/datasets/**` against fixtures — the
+parity seeds are the schema-shape layer, not the contract layer.
+
 ## AC-5 — the Phase E maintainer-universe delta (DOCUMENTED, not reconciled)
 
 Per AC-5's "reconciles — **or explicitly documents**" branch, B1 DOCUMENTS the delta
