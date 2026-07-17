@@ -127,7 +127,7 @@ graph TD
 
 - **Binds:** the FR-18 terminal gate, `inventory-match`, CI consumers
 - **Prevents:** two competing exit-code enums (the shipped `inventory-match --policy` enum is inverted); schema drift vs pyforge-warden
-- **Rule:** exit 0 pass / 1 policy-fail / 2 error (full enum {0, 1, 2, 130}; `indeterminate` → 1). `inventory-match` flips to this convention with exactly one release of `INVENTORY_MATCH_LEGACY_EXIT=1`. The report is pyforge-warden's four-axis `ComplianceReport` schema unmodified, with **one producer**: the F4 terminal-gate node assembles every report — `hygiene` from the deptry node (source-less inputs → `not-applicable`, never failure), `security` from B7's matcher/`cve` datasets (the atlas never re-invokes osv-scanner; B7 produces inputs, never assembles), `license`/`currency` from atlas-native data or `not-applicable`. Scope split: per-invocation reports over user-supplied intake are entry-scoped artifacts; only the latest repo-scope report is the AD-15 derived-layer dataset.
+- **Rule:** exit 0 pass / 1 policy-fail / 2 error (full enum {0, 1, 2, 130}; `indeterminate` → 1). `inventory-match` flips to this convention with exactly one release of `INVENTORY_MATCH_LEGACY_EXIT=1`. The report is pyforge-warden's four-axis `ComplianceReport` schema unmodified, with **one producer**: the F4 terminal-gate node assembles every report — `hygiene` from the deptry node (source-less inputs → `not-applicable`, never failure), `security` from B7's matcher/`cve` datasets (the atlas never re-invokes osv-scanner; B7 produces inputs, never assembles), `license`/`currency` from atlas-native data or `not-applicable`. Scope split: per-invocation reports over user-supplied intake are entry-scoped artifacts; only the latest repo-scope report is the AD-15 derived-layer dataset. Schema-by-import (2026-07-17): the F4 producer validates against `pyforge.warden`'s schema module via the `pyforge-atlas[gate]` extra (workspace-built conda pkg) — never a vendored schema copy (drift-proof by construction; independence semantics per the Packaging & namespace convention row).
 
 ### AD-13 — Offline degradation: skip-and-mark-stale, never fail (FR-1/FR-19/FR-21)
 
@@ -200,6 +200,7 @@ graph TD
 | Concern | Convention |
 |---|---|
 | Pipeline/node/dataset naming | Pipelines: the seven § 5.2 names as snake_case packages (`core`, `pypi_intelligence`, `vulnerability`, `vcs_health`, `universal_sbom`, `seed_gaps`, `derived_artifacts`). Nodes: `<verb>_<subject>` pure functions; ported phases keep a `# legacy: Phase <ID>` provenance comment. Datasets: `<domain>_<entity>` snake_case (e.g. `basilisk_vulns`); layer tag (`raw`/`intermediate`/`primary`/`derived`) declared in catalog metadata. |
+| Packaging & namespace (warden-aligned, 2026-07-17) | Workspace member `src/shared/packages/pyforge-atlas/` mirroring `pyforge-warden`: `pyforge.atlas` namespace package (`src/pyforge/atlas/`), hatchling backend, dual artifacts (conda pkg via pixi-build wrapping the wheel + wheel/sdist via `python -m build`), dedicated `[feature.pyforge-atlas]` env + `pyforge-atlas-build-conda`/`-build-dist` tasks. Python floors differ by design (atlas 3.14, warden ≥3.12 — namespace sharing needs no floor parity); shared third-party deps (`cyclonedx-python-lib`, `jsonschema`, `PyYAML`, `packaging`; `deptry` as a conda tool dep) co-resolve at workspace level. **Exactly one cross-package code dependency**: `pyforge-warden` as the OPTIONAL extra `pyforge-atlas[gate]` (ComplianceReport schema/validators, consumed only by the F4 terminal gate; the in-repo atlas env installs it by default — external installs may omit it, in which case the gate node fails with a hyper-clear install hint while every other pipeline runs). `pyforge-warden` NEVER imports `pyforge.atlas` (no cycles — warden consumes atlas *data* only, optional-if-present). Both tools install and run independently of each other. |
 | Endpoint overrides | Every external endpoint is overridable via its `<HOST>_BASE_URL`-style setting, declared in dataset config (the `resolve_*_urls` convention carried forward). New sources add exactly one override point. |
 | Identity & formats | Conda purls per CEP-63 draft form with `?channel=conda-forge`; `cfe:*` property namespace on BOMs (preserved, never stripped); versions compared via `packaging.version` (PEP 440); EPSS percentiles stored 0–100; all timestamps normalized to **epoch seconds** at ingest (repodata per-build timestamps are milliseconds — convert once, at the dataset boundary). |
 | Join keys | Canonical entity keys, fixed across pipelines: conda-side datasets key on `conda_name` (+ `feedstock_name` where B.5 attribution applies); PyPI-side on `pypi_name`; the `conda_name↔pypi_name` bridge is only the mapping dataset (Phase C / Q6); vuln datasets key on `(conda_name, advisory_id)` (Basilisk batch shape). Purls are interchange/export identity, **never** internal join keys. |
@@ -242,7 +243,7 @@ Pins are floors from `pixi.toml` except where capped.
 
 ## Structural Seed
 
-Kedro project scaffold (Story A1, nebi-generated — the code owns this once it exists):
+Kedro project scaffold (Story A1, nebi-generated — the code owns this once it exists). Placeholders resolved 2026-07-17 (`sprint-change-proposal-2026-07-17.md`, warden alignment): `<scaffold-root>` = `src/shared/packages/pyforge-atlas/` (pixi build workspace member beside `pyforge-warden`); `<pkg>` = the `pyforge.atlas` namespace package (`src/pyforge/atlas/`):
 
 ```text
 <scaffold-root>/                      # nebi-scaffolded Kedro project, own lean pixi env
@@ -336,6 +337,8 @@ No human elicitation occurred; nothing was invented. Resolutions, per the headle
 8. **Conditional Phase T** (trendshift Track A) joins the surface only if shipped before Wave B completes; re-check with live groundtruth at execution start. Not modeled as an AD.
 9. **Reviewer-gate deltas (2026-07-17)**: the gate (rubric walker + version lens + adversarial two-units lens + input reconciliation, artifacts in `reviews/`) added AD-23, six convention rows (join keys, Parquet layout, schema evolution, degradation vocabulary, external-source governance, timestamp normalization), the AD-13 last-good/staleness mechanism, the AD-12 single-producer scope split, and the AD-16 PyPI-exception record. Two reality tensions surfaced and recorded rather than resolved: `boring-semantic-layer`/`kedro-mcp` are PyPI-sourced today (vs FR-15's conda-forge-only doctrine), and MinIO exists in-env only as the Python SDK, not a server (Wave-H precondition).
 
+10. **Correct-course 2026-07-17 (owner-approved, attended)**: the deferred physical-scaffold-naming slot filled with the pyforge-warden-aligned packaging convention (new Packaging & namespace row; AD-12 schema-by-import; A1/F4 AC deltas in epics.md). Dependency inventory fixed: one optional code edge atlas→warden (`[gate]` extra), zero warden→atlas code edges, warden's consumption of atlas datasets (KEV/EPSS/velocity/mapping) is data-level and optional-if-present — both tools remain independently installable and runnable. Proposal: `sprint-change-proposal-2026-07-17.md`.
+
 ## Deferred
 
 Intentionally undecided, each with its owner/revisit condition:
@@ -348,7 +351,7 @@ Intentionally undecided, each with its owner/revisit condition:
 - **Sensor event sources** (PyPI/GitHub webhooks vs RSS) and the daemon question they drag in → G3.
 - **A2A transport choice** (publish/subscribe vs direct message) and protocol library → E1 design; the invariant is only "structured payloads, single channel" (AD-20).
 - **F3 embedding model/strategy** for `vss` RAG → F3 story spec — including how the `vss` extension is provisioned offline (default is a network `INSTALL`, which collides with AD-13 for the consumer profile).
-- **Physical scaffold naming** (scaffold root dir, Python package name, Parquet store root) → A1 story spec (nebi scaffold is the single owner; partition/path conventions above already bind it).
+- **Physical scaffold naming** — **RESOLVED 2026-07-17** (`sprint-change-proposal-2026-07-17.md`, warden alignment): root `src/shared/packages/pyforge-atlas/`, package `pyforge.atlas` (namespace, warden pattern); Parquet store root stays A1-owned within the member dir. A1 carries the namespace-Kedro import smoke + flat `pyforge_atlas` fallback.
 - **MinIO server provisioning** (only the Python SDK is in-env; conda-forge server package or documented alternative) → H1 precondition.
 - **Conda-forge packaging of the two PyPI exceptions** (`boring-semantic-layer`, `kedro-mcp`) → candidate CFE task; until then they remain recorded AD-16 exceptions.
 - **D2 page inventory/design detail** → the CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`) before frontend work, per spec § 2.4.
