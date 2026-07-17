@@ -161,15 +161,35 @@ class ResolutionDepth(StrEnum):
 # interrupt can land during any verdict. Keys are deliberately ALPHABETICAL —
 # the sole-ownership guard forbids materializing the lattice ORDER outside
 # verdict.py, and validation needs the pair set, not the ordering.
+#
+# Status.INDETERMINATE widened {1,130} -> {0,1,130} (Story 1.9): the ONE
+# sanctioned --allow-empty exception (verdict.exit_code_for's driver-scoped
+# knob, see its docstring) needs exit 0 to be a coherent pairing with a
+# status that stays indeterminate — mirrors Status.WARN's existing
+# "one status, three legal exits (two non-SIGINT + 130), one caller-supplied
+# knob decides which of the two non-SIGINT exits" shape exactly. This does
+# NOT add a value to the frozen {0,1,2,130} exit set, reorder the lattice,
+# or touch any Status/ErrorKind member — only this one status's
+# legal-exit-code coherence entry widened by one already-existing code.
 _LEGAL_EXITS_BY_STATUS: dict[Status, frozenset[int]] = {
     Status.BYPASSED: frozenset({0, 130}),
     Status.CLEAN: frozenset({0, 130}),
     Status.ERROR: frozenset({2, 130}),
-    Status.INDETERMINATE: frozenset({1, 130}),
+    Status.INDETERMINATE: frozenset({0, 1, 130}),
     Status.NOT_APPLICABLE: frozenset({0, 130}),
     Status.POLICY_VIOLATION: frozenset({1, 130}),
     Status.WARN: frozenset({0, 1, 130}),
 }
+
+# The ONE driver whose finding_id may pair Status.INDETERMINATE with exit 0
+# (Story 1.9's --allow-empty exception, sole-owned by verdict.exit_code_for).
+# An EXACT match, not a prefix: the review that widened _LEGAL_EXITS_BY_STATUS
+# above only ever intended this one specific whole-scan condition to unlock
+# exit 0, never any driver merely sharing its "indeterminate:empty-
+# extraction:" namespace — __post_init__ below enforces the same exactness
+# at construction time so a directly-built ComplianceReport (not just the
+# cli.py producer) cannot claim exit 0 for an unrelated indeterminate cause.
+EMPTY_EXTRACTION_DRIVER_ID = "indeterminate:empty-extraction:scan"
 
 
 @dataclass(frozen=True)
@@ -364,6 +384,20 @@ class ComplianceReport:
                 f"{self.exit_code!r} — legal exits: "
                 f"{sorted(_LEGAL_EXITS_BY_STATUS[self.status])} (the schema's "
                 "coherence clauses, enforced at construction)"
+            )
+        if (
+            self.status is Status.INDETERMINATE
+            and self.exit_code == 0
+            and (
+                self.status_driver is None
+                or self.status_driver.finding_id != EMPTY_EXTRACTION_DRIVER_ID
+            )
+        ):
+            raise ValueError(
+                "status 'indeterminate' may only pair with exit_code 0 when "
+                f"status_driver.finding_id == {EMPTY_EXTRACTION_DRIVER_ID!r} "
+                "(the one sanctioned --allow-empty exception) — got "
+                f"{self.status_driver!r}"
             )
         if (
             self.status not in (Status.CLEAN, Status.NOT_APPLICABLE)
