@@ -2,6 +2,8 @@
 from the Kedro defaults. For further information, including these default values, see
 https://docs.kedro.org/en/stable/configure/configuration_basics/#configuration"""
 
+import os
+
 # Instantiated project hooks.
 # For example, after creating a hooks.py and defining a ProjectHooks class there, do
 # from pyforge.atlas.hooks import ProjectHooks
@@ -31,10 +33,31 @@ https://docs.kedro.org/en/stable/configure/configuration_basics/#configuration""
 
 # CONFIG_LOADER_CLASS = OmegaConfigLoader
 
+
+def _env_or(var: str, default: str = "") -> str:
+    """Endpoint-override resolver (Story A2; spine AD-2/AD-13).
+
+    Explicit environment always beats the declared public default
+    (spine "Config & profiles" row — ``os.environ.setdefault`` semantics).
+    Used by ``conf/base/globals.yml`` to make every ``<HOST>_BASE_URL``
+    override point env-var-overridable without hardcoding hosts in the
+    catalog (the legacy ``resolve_*_urls`` convention carried forward).
+
+    An EMPTY-string env var is treated as unset (review-pass P6):
+    ``export CONDA_FORGE_BASE_URL=""`` must fall back to the public
+    default, never inject an empty endpoint base into every URL.
+    """
+    val = os.environ.get(var)
+    return val if val else default
+
+
 # Keyword arguments to pass to the `CONFIG_LOADER_CLASS` constructor.
 CONFIG_LOADER_ARGS = {
     "base_env": "base",
     "default_run_env": "local",
+    # A2 (AD-2/AD-13): the env_or resolver backing the endpoint-base
+    # globals. kedro-catalog-check exercises this exact wiring.
+    "custom_resolvers": {"env_or": _env_or},
     # "config_patterns": {
     #     "spark" : ["spark*/"],
     #     "parameters": ["parameters*", "parameters*/**", "**/parameters*"],
