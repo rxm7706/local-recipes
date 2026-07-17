@@ -45,8 +45,8 @@ Ownership decisions recorded here:
 * Engine ``ErrorRecord``s feed ``(error, driver)`` rungs so an engine
   failure can never be swallowed into a green verdict. The driver id uses
   the ``error:<kind>:<owner>`` grammar — the established 1.1/1.2 convention
-  — and carries ``AXIS_VULNERABILITY``; Story 1.7 (typed errors / error
-  grammar) owns the final grammar + axis choice.
+  — and carries the PRODUCING engine's own axis (``result.axis``; Story 1.7
+  landed the final grammar + axis choice), never a blanket default.
 * Finding-id segments derived from component names (and growable-enum
   tokens) are sanitized (``%`` -> ``%25`` FIRST — the escape scheme must
   escape its own escape character to stay injective — then ``%0D``/
@@ -156,6 +156,7 @@ class EngineResult:
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
     coverage: tuple[AxisCoverage, ...]
+    axis: str
     vuln_data: VulnData | None = None
 
 
@@ -180,6 +181,7 @@ class Engine(Protocol):
     """An assessment engine run against the target + inventory."""
 
     name: str
+    axis: str
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult: ...
 
@@ -220,9 +222,8 @@ class DefaultPolicy:
       failure must reach the verdict (composition yields status ``error`` →
       ``exit_code_for`` gives the error exit), while the report is still
       emitted — the exit code is orthogonal to emission. The driver id uses
-      the ``error:<kind>:<owner>`` grammar and carries
-      ``AXIS_VULNERABILITY``; the Story 1.7 error-grammar story owns the
-      final grammar + axis choice.
+      the ``error:<kind>:<owner>`` grammar and carries the PRODUCING
+      engine's own axis (Story 1.7 landed the final grammar + axis choice).
     * Each withheld component (``indeterminate_reason`` set) derives one
       ``indeterminate:<reason>:<pkg>`` finding (axis ``vulnerability``) and
       feeds an ``indeterminate`` rung whose driver references it.
@@ -313,15 +314,16 @@ class DefaultPolicy:
                         )
                     )
             for record in result.errors:
-                # An engine failure must reach the verdict. Axis choice and
-                # the error:<kind>:<owner> driver grammar are finalized by
-                # the Story 1.7 error-grammar story. The owner segment is
-                # sanitized like every id segment (single-line grammar).
+                # An engine failure must reach the verdict. The driver
+                # carries the PRODUCING engine's own axis (Story 1.7 landed
+                # the final error:<kind>:<owner> grammar + axis choice) —
+                # never a blanket default. The owner segment is sanitized
+                # like every id segment (single-line grammar).
                 rungs.append(
                     (
                         Status.ERROR,
                         StatusDriver(
-                            axis=AXIS_VULNERABILITY,
+                            axis=result.axis,
                             finding_id=(
                                 f"error:{record.kind}:"
                                 f"{_sanitize_id_segment(record.owner)}"
