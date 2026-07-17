@@ -112,28 +112,28 @@ core_latest_status:
 
 # A3: IncrementalParquetDataset
 core_downloads:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/core_downloads/core_downloads.parquet
   metadata:
     layer: primary
 
 # A3: IncrementalParquetDataset
 core_downloads_platform_breakdown:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/core_downloads_platform_breakdown/core_downloads_platform_breakdown.parquet
   metadata:
     layer: primary
 
 # A3: IncrementalParquetDataset
 core_downloads_pyver_breakdown:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/core_downloads_pyver_breakdown/core_downloads_pyver_breakdown.parquet
   metadata:
     layer: primary
 
 # A3: IncrementalParquetDataset
 core_downloads_channel_breakdown:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/core_downloads_channel_breakdown/core_downloads_channel_breakdown.parquet
   metadata:
     layer: primary
@@ -141,7 +141,7 @@ core_downloads_channel_breakdown:
 # Phase I per-version history — PROMOTED to an explicit declared output (FR-2).
 # A3: IncrementalParquetDataset
 core_version_download_history:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/core_version_download_history/core_version_download_history.parquet
   metadata:
     layer: primary
@@ -233,7 +233,7 @@ pypi_conda_map_store:
 # Phase D 7 d universe upsert.
 # A3: IncrementalParquetDataset
 pypi_universe:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/intermediate/pypi_universe/pypi_universe.parquet
   metadata:
     layer: intermediate
@@ -253,10 +253,12 @@ pypi_conda_mapping:
   metadata:
     layer: primary
 
-# Phase H (serial-gated; TTL column pypi_version_fetched_at).
+# Phase H (serial-gated). Legacy SQLite gate column was `pypi_version_fetched_at`
+# (historical provenance only); the Parquet TTL stamp is the generic `fetched_at`
+# (A3 P2 — standardized across all flipped datasets; ttl from ttls.pypi_current_versions).
 # A3: IncrementalParquetDataset
 pypi_current_versions:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/pypi_current_versions/pypi_current_versions.parquet
   metadata:
     layer: primary
@@ -264,14 +266,14 @@ pypi_current_versions:
 # Phase P 30 d monthly partitions (admin-only).
 # A3: IncrementalParquetDataset
 pypi_downloads_monthly:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/pypi_downloads_monthly/pypi_downloads_monthly.parquet
   metadata:
     layer: primary
 
 # A3: IncrementalParquetDataset
 pypi_cross_channel_flags:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/pypi_cross_channel_flags/pypi_cross_channel_flags.parquet
   metadata:
     layer: primary
@@ -279,7 +281,7 @@ pypi_cross_channel_flags:
 # Phase R top-N enrichment slice.
 # A3: IncrementalParquetDataset
 pypi_intelligence_enriched:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/pypi_intelligence_enriched/pypi_intelligence_enriched.parquet
   metadata:
     layer: primary
@@ -371,7 +373,7 @@ vulnerability_cwe_categories:
 # Phase G report-only rollup semantics preserved.
 # A3: IncrementalParquetDataset
 vulnerability_package_rollup:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/vulnerability_package_rollup/vulnerability_package_rollup.parquet
   metadata:
     layer: primary
@@ -379,7 +381,7 @@ vulnerability_package_rollup:
 # Phase G' (row-absence TTL).
 # A3: IncrementalParquetDataset
 vulnerability_package_version_vulns:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/vulnerability_package_version_vulns/vulnerability_package_version_vulns.parquet
   metadata:
     layer: primary
@@ -499,10 +501,12 @@ vcs_archived_feedstocks:
   metadata:
     layer: intermediate
 
-# Phase K (TTL column github_version_fetched_at; `last_error` column convention).
+# Phase K (`last_error` column convention). Legacy SQLite gate column was
+# `github_version_fetched_at` (historical provenance only); the Parquet TTL stamp is
+# the generic `fetched_at` (A3 P2 — standardized; ttl from ttls.vcs_upstream_versions).
 # A3: IncrementalParquetDataset
 vcs_upstream_versions:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/vcs_upstream_versions/vcs_upstream_versions.parquet
   metadata:
     layer: primary
@@ -510,7 +514,7 @@ vcs_upstream_versions:
 # Phase L (per-source TTLs).
 # A3: IncrementalParquetDataset
 vcs_registry_versions:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/vcs_registry_versions/vcs_registry_versions.parquet
   metadata:
     layer: primary
@@ -518,7 +522,7 @@ vcs_registry_versions:
 # Phase N live signals.
 # A3: IncrementalParquetDataset
 vcs_live_health:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/vcs_live_health/vcs_live_health.parquet
   metadata:
     layer: primary
