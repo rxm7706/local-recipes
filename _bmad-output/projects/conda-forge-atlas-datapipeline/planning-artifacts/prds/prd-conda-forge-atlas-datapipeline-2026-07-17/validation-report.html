@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRD Validation: cf_atlas Kedro/Dagster/DuckDB Migration</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+
+    --grade-exc: #16a34a;
+    --grade-good: #65a30d;
+    --grade-fair: #d97706;
+    --grade-poor: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .grade {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .grade-excellent { background: var(--grade-exc); }
+  .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .badge-resolved { background: rgba(22, 163, 74, 0.12); color: var(--verdict-strong); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>cf_atlas Kedro/Dagster/DuckDB Migration — Validation Report</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/prds/prd-conda-forge-atlas-datapipeline-2026-07-17/prd.md</div>
+      </div>
+      <div class="grade grade-good">Good (all findings fixed)</div>
+    </header>
+
+    <div class="synthesis">
+      <p>An unusually strong PRD for an unattended run: the agent-maintainability thesis is carried consistently from Vision through SM-2, UJ-5, and the counter-metrics; trade-offs are surfaced with real teeth (null alternative fairly priced, opportunity cost named once, PRFAQ CONDITIONAL PASS reflected in scoping rather than buried); and the unattended-intake decision log (§ 9) makes the headless provenance auditable. What was at risk was done-ness precision at the seams — the FR-9/SM-4 exception contradiction, a § 4 preamble promising per-FR testability a third of the FRs didn't carry, an adjective-bar metric — plus dangling references (Q5, the trendshift index entry).</p>
+      <p>The adversarial cross-check against spec v5.6 materially sharpened the picture: FR substance, story arithmetic (32), the five attended events, the six verify gates, Q-defaults, and the § 12 boundary all verify clean (no scope drift in either direction), but it caught a fabricated headline population figure ("~29,000 feedstocks"), an SM coverage hole (FR-13/16/17 and AC-3 had no validating metric), an unreconciled <code>bmad-switch</code> project-slug hazard, and three dropped spec § 2 obligations (TEA/atdd, CIS two-spine, agent-legibility). <strong>Every finding from both reviewers was applied to the PRD in the same run; as-reviewed grade was Fair (2 High, 0 Critical), post-fix no findings remain open.</strong></p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card"><div class="dim-name">Decision-readiness</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Substance over theater</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Strategic coherence</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Done-ness clarity</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div>
+      <div class="dim-card"><div class="dim-name">Scope honesty</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Downstream usability</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div>
+      <div class="dim-card"><div class="dim-name">Shape fit</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+    </div>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Decision-readiness</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Decisions are stated as decisions, with what was given up named. § 10 names the opportunity cost explicitly and states why it's acceptable, including the B4 abort ramp. § 11 pairs every major risk with a tripwire and a ramp. The addendum prices the null alternative honestly and states the exact condition under which rejecting it would be wrong. § 8's open questions are genuinely open (adopted default plus a scheduled re-check at the gating wave).</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">"None v1-blocking" vs per-wave gating language</h3><span class="finding-location">§ 8</span></header>
+            <div class="finding-note">A reader could not tell whether a story is blocked until the re-check completes or merely flagged.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> "gates" defined in the § 8 preamble — the named wave/story may not start until the re-check is recorded; nothing blocks PRD approval or earlier waves.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Substance over theater</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>No furniture detected. The four roles each drive identifiable decisions; Non-Users does real scoping work; the Vision could not swap into another PRD; NFR-adjacent content carries product-specific bounds. The counter-metrics (SM-C1..C4) are the strongest anti-theater device in the document.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Strategic coherence</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>The thesis (agent-maintainability) is stated in § 1 and load-bearing throughout: SM-2 validates exactly it, UJ-5 anchors it, § 4.10 subordinates the new-signal work to it ("riders, never the justification"). Counter-metrics are pointed at documented failure modes. MVP scope kind is coherent: a platform migration with severable waves and value at each boundary.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details open>
+        <summary><h2>Done-ness clarity</h2><span class="verdict-pill verdict-adequate">adequate</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>The best FRs are genuinely unforgiving (FR-1's per-host credential check, FR-5's grep gate, FR-17's NBSP fixture), and the named verify gates give most waves a deterministic pass/fail. The dimension's soft spots — the FR-9/SM-4 contradiction, the overpromising § 4 preamble, SM-3's adjective bar, SM-2's unadjudicable share — were all fixed in-run.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">FR-9/SM-4 contradict their own exceptions</h3><span class="finding-location">§ 4.5, § 7 SM-4</span></header>
+            <div class="finding-note">"Every read-only legacy CLI question is answerable from a page" vs the three CLI-first exceptions left the D2 acceptance bar ambiguous (28 vs 25 CLIs). Adversarial F5 concurred.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> both now state the exceptions count via surfaced latest-report artifacts; the bar covers all 28.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">§ 4 preamble overpromised per-FR testability</h3><span class="finding-location">§ 4 intro; FR-12/13/15/16/18/19/20/21/22</span></header>
+            <div class="finding-note">Nine FRs carried no consequence bullet despite the preamble's claim.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> 1–3 consequence bullets added to every bare FR (lifted from story ACs); preamble reworded; FR location map added.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">SM-3's bar was an adjective ("materially faster")</h3><span class="finding-location">§ 7 SM-3</span></header>
+            <div class="finding-note">A primary metric needs a decision rule; also adversarial F7's SM-3 half.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> threshold fixed in the F1 story spec before the benchmark; adjudication at the attended F1 event; operator sign-off is acceptance.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">SM-2's loop-share threshold not adjudicable</h3><span class="finding-location">§ 7 SM-2</span></header>
+            <div class="finding-note">"≥ the planned share (~21/32)" cannot be scored (adversarial F6: an invented quasi-target; the spec's ~21 is a drivability estimate, not a commitment).</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> floor pinned to the 11 committed LOOP-S stories; ~21/32 declared a recorded target, not a gate.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Scope honesty</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>§ 5 Non-Goals does real work (all 13 § 12 rows plus the market-scenario deferrals with re-entry conditions). § 9 opens with "No human elicitation occurred", tags the genuinely invented calibrations, and converts the un-runnable groundtruth CLIs into a Wave-0 precondition rather than papering over them. Post-fix it also discloses the two derived/superseding decisions (§ 9.11 slug switch, § 9.12 Phase-P hardening).</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details open>
+        <summary><h2>Downstream usability</h2><span class="verdict-pill verdict-adequate">adequate</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Chain-top PRD; the Glossary is genuinely load-bearing and SM↔FR↔AC cross-mapping is explicit. The dangling references that forced spec detours (Q5, "live-confirmed", the 83.7% literals, the interim-store gap, the broken trendshift index entry) were all fixed in-run.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">Q5 cited but never defined</h3><span class="finding-location">§ 4.11 vs § 8/§ 9.3</span></header>
+            <div class="finding-note">FR-22 opens "(Q5 resolution)" but § 8 listed only Q1–Q4/Q6/Q7 with no explanation of the gap.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> § 8 preamble states Q5 was resolved → FR-22/Wave H and retired; ordinals dropped.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">Assumptions Index roundtrip broken</h3><span class="finding-location">§ 12 vs § 6.1</span></header>
+            <div class="finding-note">The trendshift entry pointed at content that wasn't in the PRD body; two entries carried no inline tags.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> conditional-surface note added under the § 6.1 table; index split into tagged elicitation gaps vs recorded verification debt.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">"Live-confirmed", 83.7% literals, interim-store sequencing</h3><span class="finding-location">§ 4.5, § 4.10, § 4.2</span></header>
+            <div class="finding-note">Three spec-detour-forcing gaps.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> seven consumer CLIs named inline; both 83.7% measurements described with the § 15 evidence pointer; FR-5 states Parquet/DuckDB is canonical from Wave A and F1 is residue cleanup.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Shape fit</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Correct, explicitly declared shape for an internal, single-operator, chain-top capability spec: light named-role journeys, features grouped by domain, the execution model carried as a binding section because the loop is a first-class consumer. The restraint (four roles, five UJs, no invented personas) is a model for headless runs.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details open>
+        <summary><h2>Adversarial review (spec cross-check)</h2><span class="reviewer-source">review-adversarial-general.md</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Substantially faithful to the contract — all 22 FRs, the 32-story wave structure, five attended events, six gates, six Q-defaults, and the full § 12 boundary verify clean — but the document sabotaged its own loudest discipline claim: it fabricated a headline population figure, left the entire Universal SBOM FR family without a validating success metric while claiming AC-derivation, and never resolved which BMAD project slug the execution loop must switch to, in a repo whose CLAUDE.md documents that exact desync silently overwriting other projects' artifacts. 0 Critical, 1 High, 5 Medium, 6 Low — all resolved in-run.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">F1 — Fabricated "~29,000 feedstocks" literal</h3><span class="finding-location">§ 1 Vision</span></header>
+            <div class="finding-note">Appears nowhere in spec, groundtruth, or addendum; ~47% above the spec's own 19,726-feedstock figure; violates the PRD's § 9.9 volatile-count discipline in the Vision's first sentence.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> replaced with the spec-grounded 19,726 full-population figure.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">F2 — SM set orphaned FR-13/16/17 and AC-3</h3><span class="finding-location">§ 7</span></header>
+            <div class="finding-note">No SM validated the Universal SBOM family short of the FR-18 gate; AC-3's orchestration substance mapped to no SM.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> SM-11 (SBOM intake) + SM-12 (orchestration operations) added; preamble discloses the deliberate AC-list extension.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">F3 — bmad-switch slug never reconciled</h3><span class="finding-location">§ 6.2 vs spec § 2.5/§ 14</span></header>
+            <div class="finding-note">Spec hard-codes `bmad-switch local-recipes` (pre-intake); this effort lives under `conda-forge-atlas-datapipeline`; CLAUDE.md documents the desync as an artifact-overwrite near-miss.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> § 6.2 names the superseding switch target normatively; recorded as § 9.11 and in the Assumptions Index.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">F4 — Spec § 2 obligations dropped (TEA/atdd, CIS two-spine, agent-legibility)</h3><span class="finding-location">§§ 4.5, 6.2</span></header>
+            <div class="finding-note">Three spec-committed obligations appeared nowhere: TEA atdd fixtures for Wave B, CIS DESIGN.md+EXPERIENCE.md before frontend, § 2.1 semantic-HTML/ARIA bar for dashboards.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> TEA/atdd + per-wave loop in § 6.2; CIS two-spine sentence and agent-legibility consequence in FR-9.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><span class="badge badge-resolved">resolved</span><h3 class="finding-title">F7–F12 — inherited weasel, parity-diff span, invented Phase-P policy, Wave-E cell, § 8 ordinals, UJ-2 KEV conflation</h3><span class="finding-location">§§ 7, 6.1, 11, 8, 2.3</span></header>
+            <div class="finding-note">Six low-severity precision issues.</div>
+            <div class="finding-fix"><strong>Fix applied:</strong> Q1 operationalization inlined into SM-1; B1–B3-build/B4-consume reading stated with the spec discrepancy flagged; Phase-P hardening recorded as derived (§ 9.12); Wave-E "no new gate by design"; ordinals dropped; UJ-2 reworded (Basilisk advisory; KEV via cisa_kev overlay).</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li>FR-1..FR-22 present exactly once; FR location map added to § 4 preamble.</li>
+        <li>Story arithmetic 1+3+10+2+3+2+4+3+4 = 32; attended events = the spec's five; verify gates = the spec's six, correctly placed; Q-gating waves correct.</li>
+        <li>Glossary drift: none. UJ protagonists: all named.</li>
+        <li>Numbers verified green post-fix — see review-adversarial-general.md "Checked CLEAN" (exit enum {0,1,2,130}, TTLs, 46/23 MCP tools, 28 CLIs, schema v29, GX 1.18.2 cap, 8.9 h / 72.4% / 85.3% / 90-day / ≤1,000 batch, 1800 s cap, ECMA/CEP/CRA dates).</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: .claude/skills/bmad-prd/assets/prd-validation-checklist.md</span>
+        <span>Generated: 2026-07-17T02:15:00Z</span>
+        <span>Reviewers: review-rubric.md · review-adversarial-general.md</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

@@ -4,8 +4,8 @@ part_id: cf-atlas-datapipeline
 display_name: cfe-atlas-datapipeline Kedro Migration Spec
 project_type_id: data
 date: 2026-06-20
-status: ready
-spec_updated: 2026-07-16
+status: in-progress
+spec_updated: 2026-07-17
 ---
 
 # Spec: cfe-atlas-datapipeline Kedro Migration
@@ -30,7 +30,7 @@ spec_updated: 2026-07-16
 
 | Field | Value |
 |---|---|
-| Status | **v5.6 — reset + corpus sync + research folds + adversarial review + PRFAQ kill-test + market research, 2026-07-16; grounded on live surface main `58a6dcc` / skill v8.78.0; ANALYSIS COMPLETE (all instruments discharged, MR included) — ready for full BMAD execution intake.** 22 FRs; 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
+| Status | **v5.6 — reset + corpus sync + research folds + adversarial review + PRFAQ kill-test + market research, 2026-07-16; grounded on live surface main `58a6dcc` / skill v8.78.0; ANALYSIS COMPLETE (all instruments discharged, MR included). BMAD Tier-2 planning intake started 2026-07-17 under project slug `conda-forge-atlas-datapipeline` (groundtruth re-verified at `4cf1b74` — § 3.3 snapshot carries forward unchanged).** 22 FRs; 6 open questions (§ 11: Q1–Q4, Q6, Q7), none v1-blocking. |
 | Owner | rxm7706 |
 | Track | BMAD Full Flow (includes separate PRD/architecture phases) |
 | Scope | Migrate the hand-rolled `cf_atlas` orchestrator (`conda_forge_atlas.py` + `bootstrap_data.py`, ~10,000 LOC, 23 cataloged phases) to a Kedro pipeline + Dagster orchestration + DuckDB compute, with a Vizro/Vizro-AI read surface and a Boring-Semantic-Layer + MCP/A2A agent interface. Includes three committed new-signal sources (FR-19 Basilisk vulnerabilities, FR-20 release velocity, FR-21 migration readiness). |
