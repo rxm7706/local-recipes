@@ -30,6 +30,7 @@ from pyforge.warden.interfaces import EngineResult
 from pyforge.warden.mapping import load_conda_pypi_map
 from pyforge.warden.models import (
     AXIS_HYGIENE,
+    AXIS_VULNERABILITY,
     ErrorKind,
     ErrorRecord,
     Finding,
@@ -237,8 +238,11 @@ def test_empty_scan_set_emits_a_stderr_notice_in_both_formats(capsys, tmp_path):
 
 def test_error_report_driver_is_a_dangling_error_grammar_id(capsys, tmp_path):
     """Error-status drivers use the ``error:<kind>:<subject>`` grammar and
-    do NOT reference findings[] (Story 1.7 owns the final grammar): driver
-    non-null, findings possibly empty, report still schema-valid."""
+    do NOT reference findings[] (Story 1.7 ratified this as the final
+    grammar): driver non-null, findings possibly empty, report still
+    schema-valid. This fixture's failure is a malformed pyproject.toml — a
+    pre-engine EXTRACT-stage failure, so the driver's axis is "ingestion"
+    (never a blanket vulnerability default)."""
     (tmp_path / "pyproject.toml").write_text(
         "[project\nname = 'broken", encoding="utf-8"
     )
@@ -248,8 +252,28 @@ def test_error_report_driver_is_a_dangling_error_grammar_id(capsys, tmp_path):
     driver = document["status"]["driver"]
     assert driver is not None
     assert driver["finding_id"] == "error:unparsable-manifest:pyproject.toml"
+    assert driver["axis"] == "ingestion"
     assert document["findings"] == []
     assert driver["finding_id"] not in {f["id"] for f in document["findings"]}
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [WARN_AND_INDETERMINATE, VULN_CRITICAL, VULN_HIGH],
+    ids=lambda p: p.name,
+)
+def test_non_error_status_driver_references_an_emitted_finding(capsys, fixture):
+    """The two-namespace finding_id contract (ratified, Story 1.7): every
+    NON-error-status driver must equal an id present in that report's own
+    findings[] — only Status.ERROR's error:<kind>:<subject> grammar is
+    exempt (pinned separately by
+    test_error_report_driver_is_a_dangling_error_grammar_id above)."""
+    _, out, _ = run_scan(capsys, fixture)
+    document = parse_report(out)
+    assert document["status"]["value"] != "error"
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] in {f["id"] for f in document["findings"]}
 
 
 # --- engine errors feed the verdict (the false-green seam) -------------------
@@ -267,6 +291,7 @@ def register_engine_for_test(monkeypatch, engine_cls) -> None:
 
 class FindingsOnlyEngine:
     name = "findings-only"
+    axis = AXIS_HYGIENE
 
     def run(self, target, inventory) -> EngineResult:
         return EngineResult(
@@ -281,11 +306,13 @@ class FindingsOnlyEngine:
             ),
             errors=(),
             coverage=(),
+            axis=self.axis,
         )
 
 
 class SysExitEngine:
     name = "sys-exit"
+    axis = AXIS_VULNERABILITY
 
     def run(self, target, inventory) -> EngineResult:
         raise SystemExit(0)
@@ -293,6 +320,7 @@ class SysExitEngine:
 
 class CrashingFactory:
     name = "crashing-factory"
+    axis = AXIS_HYGIENE
 
     def __init__(self) -> None:
         raise RuntimeError("factory blew up at instantiation")
@@ -303,6 +331,7 @@ class CrashingFactory:
 
 class ErrorsOnlyEngine:
     name = "errors-only"
+    axis = AXIS_VULNERABILITY
 
     def run(self, target, inventory) -> EngineResult:
         return EngineResult(
@@ -315,11 +344,13 @@ class ErrorsOnlyEngine:
                 ),
             ),
             coverage=(),
+            axis=self.axis,
         )
 
 
 class FindingAndErrorEngine:
     name = "finding-and-error"
+    axis = AXIS_HYGIENE
 
     def run(self, target, inventory) -> EngineResult:
         return EngineResult(
@@ -332,6 +363,7 @@ class FindingAndErrorEngine:
                     severity=None,
                 ),
             ),
+            axis=self.axis,
             errors=(
                 ErrorRecord(
                     kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
@@ -458,6 +490,7 @@ def test_erroring_engine_still_surfaces_its_findings(capsys, monkeypatch):
 
 class CrashingEngine:
     name = "crashing"
+    axis = AXIS_VULNERABILITY
 
     def run(self, target, inventory) -> EngineResult:
         raise RuntimeError("engine blew up mid-run")

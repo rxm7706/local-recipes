@@ -106,6 +106,7 @@ def test_hygiene_not_applicable_overrides_an_engines_own_coverage_claim(
                 resolution_depth=None,
             ),
         ),
+        axis=AXIS_HYGIENE,
     )
     report = _assemble(
         inventory, hygiene_applicable=False, engine_results=(engine_result,)
