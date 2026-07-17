@@ -233,7 +233,7 @@ pyforge/warden/
   sbom.py           # CycloneDX 1.6 via cyclonedx-python-lib
   verdict.py        # J9 lattice + 7→4 exit projection {0,1,2,130} + status.driver
   waiver.py         # .yaml read (safe_load) + --bypass stanza emit (safe_dump)
-  errors.py         # PLANNED — exception hierarchy → error_kind (shipped code currently keeps ErrorKind in models.py; consolidate or ratify at 1.7)
+  errors.py         # NOT CREATED (ratified, Story 1.7) — the value-based ErrorKind/ErrorRecord in models.py, caught at the engine/CLI seam boundaries, IS the shipped FR21/NFR-R5 implementation; no raised-exception hierarchy
   determinism.py    # canonicalization + --deterministic pinning
 ```
 `tests/` mirrors it; fixtures in `tests/fixtures/{recipes,lockfiles,malicious}/`. *(Where this list and § Project Structure's tree differ — e.g. `models.py` — the § Project Structure tree is authoritative.)*
@@ -258,7 +258,7 @@ pyforge/warden/
 ### Error & stream discipline
 - **Content, never returncode:** the verdict reads report *content*; osv exit `1` is expected, `127`/`128` map to typed errors; a crash-with-no-output is a hard `error`, never empty-clean.
 - **Streams:** report → **stdout**, all diagnostics → **stderr**; in `--format json`, stdout is one valid document **or empty** (pure-JSON invariant).
-- **Errors:** one exception hierarchy in `errors.py`; each subtype carries its `ErrorKind` + owner; caught at the CLI boundary → typed report + exit code. No bare tracebacks reach stdout.
+- **Errors:** value-based `ErrorRecord` (kind + owner + message) in `models.py` — ratified at Story 1.7 as the shipped FR21/NFR-R5 implementation (no `errors.py` exception hierarchy); caught at the engine/CLI seam boundaries → typed report + exit code. No bare tracebacks reach stdout.
 
 ### Test conventions (the teeth)
 - **pytest**; the **corpus-conformance gate** (0 uncaught exceptions across ~1,950 `recipes/*/{recipe.yaml,meta.yaml}`, ratcheted `unparseable_rate` baseline) + the **differential-oracle** test (E1 dep-set ⊇ rattler-build/conda-build render) + the **false-green=0** adversarial fixture gate + **twice-run byte-identical in `--deterministic`**. Security tests assert enforced *mechanisms* (AST-denylist, socket-guard, `mkstemp`, injected-timeout), not unprovable negatives.
@@ -293,7 +293,7 @@ src/shared/packages/pyforge-warden/
 │   ├── sbom.py                 # E4 — CycloneDX 1.6 via cyclonedx-python-lib
 │   ├── verdict.py              # E4 — J9 lattice + 7→4 exit projection {0,1,2,130} + status.driver
 │   ├── waiver.py               # FR24-26 — .yaml read (safe_load) + --bypass stanza (safe_dump)
-│   ├── errors.py               # exception hierarchy → ErrorKind → exit code
+│   ├── errors.py               # NOT CREATED (ratified, Story 1.7) — ErrorKind/ErrorRecord in models.py is the shipped implementation instead
 │   ├── determinism.py          # canonicalization + --deterministic pinning
 │   └── data/
 │       ├── report-schema.json  # the report data contract (schema_version)
