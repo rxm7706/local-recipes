@@ -141,6 +141,12 @@ import traceback
 from pathlib import Path
 
 from . import __version__
+from .config import (
+    ConfigLoader,
+    ConfigParseError,
+    ConfigValidationError,
+    EffectiveConfig,
+)
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
 from .engines import DeptryEngine, engine_factories
 from .extract import UnparsableManifestError, extractor_for
@@ -169,6 +175,26 @@ _EMPTY_EXTRACTION_MESSAGE = (
     "manifest(s) parsed but zero dependencies/components extracted under "
     "{path!r}"
 )
+
+
+def _coverage_floor(value: str) -> float:
+    """``argparse`` ``type=`` for ``--fail-under-coverage``: a float in
+    ``[0, 100]`` — an out-of-range or unparsable value is a usage error
+    (argparse's own exit 2), not a scan-time ``ConfigValidationError`` (the
+    CLI flag is validated at parse time, before ``ConfigLoader.load`` ever
+    runs; a TOML-sourced value goes through ``config.py``'s own coercion
+    instead)."""
+    try:
+        numeric = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--fail-under-coverage must be a number in [0, 100], got {value!r}"
+        ) from None
+    if not (0.0 <= numeric <= 100.0):
+        raise argparse.ArgumentTypeError(
+            f"--fail-under-coverage must be in [0, 100], got {value!r}"
+        )
+    return numeric
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -220,6 +246,28 @@ def _build_parser() -> argparse.ArgumentParser:
             "parses but extraction yields zero components/findings/errors "
             "(D2(c)) — status stays 'indeterminate', never 'clean', and "
             "coverage still records no resolution-depth claim"
+        ),
+    )
+    scan.add_argument(
+        "--fail-on",
+        choices=("critical", "high", "medium", "low", "none"),
+        default=None,
+        help=(
+            "the vulnerability-axis severity tier at-or-above which a "
+            "finding composes 'policy-violation' rather than 'warn' "
+            "(default: critical — overrides any [tool.pyforge-warden] "
+            "fail-on config value)"
+        ),
+    )
+    scan.add_argument(
+        "--fail-under-coverage",
+        type=_coverage_floor,
+        default=None,
+        help=(
+            "per-axis coverage floor, 0-100 (default: 0/off) — an axis "
+            "whose deps_assessed/deps_total*100 falls below this composes "
+            "one 'indeterminate' rung (overrides any [tool.pyforge-warden] "
+            "fail-under-coverage config value)"
         ),
     )
     return parser
@@ -323,6 +371,36 @@ def _run_scan(args: argparse.Namespace) -> int:
     rungs: list[tuple[Status, StatusDriver | None]] = []
     manifests_parsed = 0
     parsed_kinds: set[str] = set()
+    # Story 3.1: config loads BEFORE discovery — DefaultPolicy/assemble_
+    # report below both need the resolved EffectiveConfig, and a config
+    # failure must not abort the scan (it still runs, report still emits,
+    # on EffectiveConfig.default() — see config.py's module docstring for
+    # the parse-vs-validation error taxonomy this maps).
+    try:
+        config, config_warnings = ConfigLoader().load(
+            target,
+            cli_fail_on=args.fail_on,
+            cli_fail_under_coverage=args.fail_under_coverage,
+        )
+    except (ConfigParseError, ConfigValidationError) as exc:
+        config = EffectiveConfig.default()
+        kind = (
+            ErrorKind.CONFIG_PARSE
+            if isinstance(exc, ConfigParseError)
+            else ErrorKind.CONFIG_VALIDATION
+        )
+        _record_error(
+            errors,
+            rungs,
+            kind=kind,
+            owner="config",
+            subject=str(target),
+            message=str(exc),
+            axis=AXIS_INGESTION,
+        )
+    else:
+        for warning in config_warnings:
+            _stderr(f"{TOOL_NAME}: {warning}")
     try:
         manifests = discover(target)
     except OSError as exc:
@@ -532,7 +610,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             )
     for result in engine_results:
         errors.extend(result.errors)
-    findings, policy_rungs = DefaultPolicy().evaluate(inventory, engine_results)
+    findings, policy_rungs = DefaultPolicy(config).evaluate(inventory, engine_results)
     if not hygiene_applicable:
         # AC3 (review finding, 2026-07-17): DefaultPolicy derives a
         # per-component `indeterminate:uncovered:<pkg>` (axis=hygiene)
@@ -609,6 +687,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         hygiene_applicable=hygiene_applicable,
         allow_empty=args.allow_empty,
         empty_extraction=empty_extraction,
+        fail_under_coverage=config.fail_under_coverage,
     )
     try:
         if args.format == "json":
