@@ -62,13 +62,13 @@ core_feedstock_outputs_raw:
 # Phases F/I anaconda.org download counts. Routes through the A2-G2 EXTRA
 # override (ANACONDA_API_BASE_URL — current data access, NOT one of the 20
 # helper-backed points; asserted separately by kedro-catalog-check).
-# Review-pass P2: one APIDataset = one URL, but this feed is per-package
-# path-parameterized (/package/<owner>/<name>) — nodes may NOT build
-# request URLs (AC-2), so the single-URL declaration is an explicit
-# interim, not an implicit contradiction.
-# FLIP(B1): factory/partitioned dataset (per-package request parameterization)
+# B1 LANDED the flip (was `# FLIP(B1)`): the per-package request
+# parameterization (/package/<owner>/<name>) + rate-limit discipline now live in
+# AnacondaDownloadsDataset (datasets/request_datasets.py, AD-2) — request_path()
+# builds the per-package path so a NODE never does (AC-2). The `url:` stays the
+# per-package base so the A2-G2 override + no-hardcoded-host gates still hold.
 core_anaconda_downloads_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.AnacondaDownloadsDataset
   url: ${globals:extra_overrides.ANACONDA_API_BASE_URL}/package
   metadata:
     layer: raw
@@ -401,15 +401,17 @@ vulnerability_basilisk_vulns:
 
 # GitHub REST + GraphQL (Phases E.5/K/N). The ONLY entry carrying the
 # per-host github_token credential (FR-1: attaches to this destination
-# host only). Review-pass P2: GraphQL requires POST — kedro-datasets 9.5.0
-# APIDataset takes `method` as a TOP-LEVEL constructor param (GET/POST/PUT;
-# verified live) and feeds `load_args` to requests.request, so the JSON
-# body goes in load_args. The query below is a benign placeholder; the
-# per-query parameterization (one dataset = one request body) lands with
-# the vcs port (B2) as a factory/custom dataset — nodes never build
-# requests (AC-2).
+# host only). GraphQL requires POST — the composed APIDataset takes `method`
+# as a top-level param and feeds `load_args.json` as the request body.
+# Gap G-2 (corrected in B1): A2's comment mis-attributed the per-query
+# request dataset to "the vcs port (B2)" — but E.5/K/N are B1 vcs_health
+# phases, so GitHubRequestDataset (datasets/request_datasets.py) is authored
+# HERE. It owns the per-query request-body parameterization (with_query()) +
+# the Phase K single-worker 3-RPS token bucket + Retry-After discipline at
+# dataset level, so a NODE never builds a request (AC-2). The query below is
+# a benign placeholder for the concrete per-query fan-out (dataset-owned).
 vcs_github_api_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.GitHubRequestDataset
   url: ${globals:endpoint_bases.GITHUB_API_BASE_URL}/graphql
   method: POST
   load_args:

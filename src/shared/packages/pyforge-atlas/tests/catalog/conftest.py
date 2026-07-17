@@ -111,8 +111,11 @@ FLIP_LIST = {
 #     partitioned dataset so nodes never build request URLs (AC-2);
 #   - the vdb store is path-only until B5 lands a real read-only VDB
 #     dataset class (its format is NOT pickle — see catalog.yml).
+# B1 LANDED core_anaconda_downloads_raw's flip (interim api.APIDataset ->
+# AnacondaDownloadsDataset), so its `# FLIP(B1)` marker is removed from
+# catalog.yml and dropped here. The remaining three are still interim, awaiting
+# their named story.
 EXPECTED_FLIP_MARKERS = {
-    "core_anaconda_downloads_raw": "B1",
     "pypi_json_raw": "B2",
     "pypi_bigquery_downloads_raw": "B3",
     "vulnerability_vdb_store": "B5",

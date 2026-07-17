@@ -1033,6 +1033,10 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
 description = "Wave A gate 2 (Story A2, AD-11): catalog resolves offline w/ stub creds + no-inline-IO + AD-1 import-direction meta-tests + naming/layer/TTL/path conventions + 20 override points + per-host credential scoping (FR-1)"
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/catalog -q"
 
+[feature.pyforge-atlas.tasks.parity-diff]
+description = "Wave B verify gate (Story B1, AC-7): fixture-mode parity diff — each migrated node's output DataFrame vs its captured legacy snapshot (offline, non-credentialed, --frozen; B1 seeds Core/VCS fixtures, B4 consumes it at the attended credentialed event)"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/parity -q"
+
 [feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
 cmd = "pixi build --output-dir dist-conda"
