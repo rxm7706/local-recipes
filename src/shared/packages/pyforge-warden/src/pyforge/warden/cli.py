@@ -60,7 +60,11 @@ Ownership decisions recorded:
 * Error-status drivers use the ``error:<kind>:<subject>`` grammar and do
   NOT reference ``findings[]`` — the error report's driver is a dangling
   id by design (``findings`` may be empty; the report stays schema-valid).
-  Story 1.7 (typed errors) owns the final error-driver grammar.
+  Story 1.7 ratified this as the final error-driver grammar, with the
+  driver's axis set to the actually-failing stage/engine (``AXIS_INGESTION``
+  for a pre-engine discovery/extract/routing failure, ``AXIS_HYGIENE``/
+  ``AXIS_VULNERABILITY`` for a crashing engine's own axis) — never a
+  blanket default.
 * ``KeyboardInterrupt`` ANYWHERE in ``main`` — argument parsing, the scan,
   or mid-emission — returns ``EXIT_SIGINT``; any partial stdout must not
   be consumed.
@@ -118,7 +122,7 @@ from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
 from .models import (
     AXIS_HYGIENE,
-    AXIS_VULNERABILITY,
+    AXIS_INGESTION,
     ErrorKind,
     ErrorRecord,
     Status,
@@ -296,6 +300,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             owner="discovery",
             subject=args.path,
             message=f"discovery failed under {args.path!r}: {detail}",
+            axis=AXIS_INGESTION,
         )
     else:
         if not manifests:
@@ -319,6 +324,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 owner="extract",
                 subject=manifest.path,
                 message=str(exc),
+                axis=AXIS_INGESTION,
             )
         except OSError as exc:
             # Reading the manifest failed (chmod-000, TOCTOU deletion): a
@@ -341,6 +347,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                     f"unreadable manifest {manifest.path}: [errno {code}] "
                     f"{exc.__class__.__name__}"
                 ),
+                axis=AXIS_INGESTION,
             )
         except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
             # doctrine applies to the EXTRACTOR seam exactly as to the
@@ -358,6 +365,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 owner="extract",
                 subject=manifest.path,
                 message=f"internal error extracting {manifest.path}: {exc!r}",
+                axis=AXIS_INGESTION,
             )
         else:
             components.extend(extracted)
@@ -417,6 +425,13 @@ def _run_scan(args: argparse.Namespace) -> int:
             # class — typed record + error rung, report STILL emitted,
             # never a traceback with no report.
             factory_name = getattr(factory, "__name__", repr(factory))
+            # `factory` is typed as Callable[[] , Engine] (the registry's
+            # shape), but every REAL factory is the engine class itself, so
+            # `axis` is readable as a class attribute without instantiating
+            # (mirrors `factory_name` above) — getattr, not a direct
+            # attribute access, keeps mypy honest about the narrower
+            # Callable type while still reading the real class attribute.
+            factory_axis = getattr(factory, "axis", AXIS_INGESTION)
             _record_error(
                 errors,
                 rungs,
@@ -427,6 +442,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                     f"engine factory {factory_name!r} crashed at "
                     f"instantiation: {exc!r}"
                 ),
+                axis=factory_axis,
             )
             continue
         try:
@@ -446,6 +462,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 owner=engine_name,
                 subject=engine_name,
                 message=f"engine {engine_name!r} crashed: {exc!r}",
+                axis=engine.axis,
             )
     for result in engine_results:
         errors.extend(result.errors)
@@ -536,20 +553,24 @@ def _record_error(
     owner: str,
     subject: str,
     message: str,
+    axis: str,
 ) -> None:
     """Surface one operational error: typed record + error rung + stderr
     diagnostic. The rung's driver id uses the ``error:<kind>:<subject>``
     grammar and deliberately does NOT reference ``findings[]`` (see the
-    module docstring; Story 1.7 owns the final grammar). The subject
-    segment is sanitized like every component-derived id segment — the id
-    grammar is single-line by contract even when the subject is a
-    user-supplied path."""
+    module docstring; Story 1.7 ratified this as the final grammar). The
+    caller states ``axis`` — the actually-failing stage/engine
+    (``AXIS_INGESTION`` for a pre-engine discovery/extract/routing failure,
+    or the crashing engine's/factory's own axis) — never a blanket default.
+    The subject segment is sanitized like every component-derived id
+    segment — the id grammar is single-line by contract even when the
+    subject is a user-supplied path."""
     errors.append(ErrorRecord(kind=kind, owner=owner, message=message))
     rungs.append(
         (
             Status.ERROR,
             StatusDriver(
-                axis=AXIS_VULNERABILITY,
+                axis=axis,
                 finding_id=f"error:{kind}:{_sanitize_id_segment(subject)}",
             ),
         )

@@ -29,9 +29,12 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 # The axis is an OPEN string mechanism (a license/SAST axis lands additively,
-# never as a schema break); these constants name the two v1 axes.
+# never as a schema break); these constants name the two v1 assessment axes
+# plus the pre-engine ingestion axis (Story 1.7 — discovery/extract/routing
+# failures that happen before any per-axis engine ever runs).
 AXIS_HYGIENE = "hygiene"
 AXIS_VULNERABILITY = "vulnerability"
+AXIS_INGESTION = "ingestion"
 
 # Core semver of the v1 report contract (no prerelease/build tags). Matched
 # with .fullmatch — "$" would accept a trailing newline (Python re).
@@ -208,7 +211,17 @@ class VulnData:
 @dataclass(frozen=True)
 class StatusDriver:
     """Why the verdict is what it is (axis + finding id) — an exit that can't
-    say why is an incoherent contract. Required for every non-clean status."""
+    say why is an incoherent contract. Required for every non-clean status.
+
+    Two-namespace ``finding_id`` contract (ratified, Story 1.7): for every
+    NON-error status that carries a driver (``policy-violation``/
+    ``indeterminate``/``warn``/``bypassed`` — a waiver suppresses a REAL
+    finding, so its driver references that same finding too), the id MUST
+    equal an id present in that report's own ``findings[]``. For
+    ``Status.ERROR``, the id instead uses the reserved, deliberately
+    EXEMPT ``error:<kind>:<subject>`` grammar (see ``cli.py``'s
+    ``_record_error``) and need not reference ``findings[]`` at all —
+    ``findings`` may be empty and the report still stays schema-valid."""
 
     axis: str
     finding_id: str
