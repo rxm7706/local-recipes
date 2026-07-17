@@ -113,11 +113,15 @@ FLIP_LIST = {
 #     dataset class (its format is NOT pickle — see catalog.yml).
 # B1 LANDED core_anaconda_downloads_raw's flip (interim api.APIDataset ->
 # AnacondaDownloadsDataset), so its `# FLIP(B1)` marker is removed from
-# catalog.yml and dropped here. The remaining three are still interim, awaiting
-# their named story.
+# catalog.yml and dropped here. B2 LANDED pypi_json_raw's flip (interim
+# api.APIDataset -> PyPIJsonRequestDataset, DW-B1-2 scheduler wiring), so its
+# `# FLIP(B2)` marker is removed from catalog.yml and dropped here.
+# G-1(B2): pypi_bigquery_downloads_raw's marker is CORRECTED B3 -> B2 (Phase P
+# is a B2 pypi phase); it stays an interim (the credentialed GBQ materialization
+# is attended-only, NFR-2/AD-11) while B2 authored the cost gate + dataset class
+# + fixtures. vulnerability_vdb_store's read-only VDB dataset-class flip is B5's.
 EXPECTED_FLIP_MARKERS = {
-    "pypi_json_raw": "B2",
-    "pypi_bigquery_downloads_raw": "B3",
+    "pypi_bigquery_downloads_raw": "B2",
     "vulnerability_vdb_store": "B5",
 }
 

@@ -62,6 +62,18 @@ def test_acquire_more_than_capacity_raises_not_hangs():
         sched.acquire(11)
 
 
+def test_acquire_frozen_clock_no_op_sleep_raises_not_spins():
+    # B2 review-hardening (DW-B1-2 code ceiling): a frozen clock + no-op sleep never
+    # refills tokens, so acquire() would spin forever once the bucket drains. The code
+    # ceiling RAISES instead of hanging.
+    sched = RateLimitedScheduler(
+        rps=3.0, bucket_capacity=1, clock=lambda: 0.0, sleep=lambda s: None
+    )
+    sched.acquire()  # first token is free (bucket starts full)
+    with pytest.raises(RuntimeError, match="did not advance"):
+        sched.acquire()  # bucket empty + clock frozen -> ceiling raises, no hang
+
+
 def test_refill_is_continuous():
     clk = _FakeClock()
     sched = RateLimitedScheduler(rps=3.0, bucket_capacity=10, clock=clk.now, sleep=clk.sleep)

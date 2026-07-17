@@ -1,0 +1,28 @@
+{
+  "phase": "fetch_pypi_downloads",
+  "node": "fetch_pypi_downloads",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_bigquery_downloads_raw": [
+      {
+        "pypi_name": "numpy",
+        "month": "2026-01",
+        "downloads": 100
+      },
+      {
+        "pypi_name": "numpy",
+        "month": "2026-01",
+        "downloads": 999
+      }
+    ]
+  },
+  "expected": {
+    "pypi_downloads_monthly": [
+      {
+        "pypi_name": "numpy",
+        "month": "2026-01",
+        "downloads": 100
+      }
+    ]
+  }
+}

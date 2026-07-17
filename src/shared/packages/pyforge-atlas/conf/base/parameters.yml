@@ -34,12 +34,12 @@ ttls:
   pypi_conda_map_store: 604800                  # 7 d (MAPPING_TTL_DAYS mapping cache; Q6 pending — B5) [future_consumer: B5 — external-refresh assets wrap the cache refresh]
   pypi_endoflife_raw: 604800                    # 7 d (spec eol cache; lts_registry_gap ttl_days=7) [future_consumer: B2 — pypi_intelligence port gates the eol fetch]
   # -- vulnerability
-  # NO-TTL(vulnerability_cisa_kev_raw): no verified fetch-TTL source exists
-  # (story A2 Dev Agent Record do-not-guess rule — unlike EPSS/CWE the spec
-  # names no KEV cadence and the legacy tree has no KEV TTL env); the KEV
-  # cadence decision belongs to the vulnerability-pipeline port (B2).
-  # kedro-catalog-check recognizes this marker: a deliberate omission is
-  # explicit, an undocumented one fails the gate.
+  # G-4(B2): KEV cadence decision — the A2 Dev Agent Record deferred the KEV
+  # fetch-TTL to the vulnerability-pipeline port (this story). CISA publishes
+  # the KEV catalog on a rolling basis (typically new entries multiple times a
+  # week); a DAILY re-fetch is the reasonable default — cheap (one small JSON),
+  # keeps KEV-affecting-current fresh, and matches the EPSS 1 d cadence.
+  vulnerability_cisa_kev_raw: 86400             # 1 d (G-4 B2 decision: daily KEV re-fetch) [future_consumer: B2 — vulnerability-pipeline KEV ingest gates the fetch]
   vulnerability_package_rollup: 604800          # 7 d (PHASE_G_TTL_DAYS; gate column vdb_scanned_at)
   vulnerability_package_version_vulns: 2592000  # 30 d (PHASE_GP_TTL_DAYS; legacy reset = row absence)
   vulnerability_epss_raw: 86400                 # 1 d (spec: EPSS daily CSV) [future_consumer: B2 — vulnerability-pipeline port gates the EPSS fetch]
