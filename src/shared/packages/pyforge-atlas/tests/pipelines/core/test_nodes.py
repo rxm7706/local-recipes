@@ -128,12 +128,15 @@ def _ana():
     )
 
 
-def test_f_source_merged_when_both_present():
+def test_f_per_row_source_is_never_merged():
+    # Legacy contract CFA:189-193: per-row downloads_source ∈ {s3-parquet,
+    # anaconda-api} ONLY — 'merged' is a run-summary label, never a row value.
     downloads, plat, pyv, chan = compute_downloads(_ana(), _s3())
     src = dict(zip(downloads["conda_name"], downloads["downloads_source"]))
-    assert src["numpy"] == "merged"    # in both s3 + anaconda
-    assert src["pandas"] == "s3-parquet"  # s3 only
-    assert src["scipy"] == "anaconda-api"  # anaconda only
+    assert "merged" not in set(downloads["downloads_source"])
+    assert src["numpy"] == "s3-parquet"    # in both → value came from s3
+    assert src["pandas"] == "s3-parquet"   # s3 only
+    assert src["scipy"] == "anaconda-api"  # anaconda only (fallback)
 
 
 def test_f_breakdowns_only_on_s3_path():

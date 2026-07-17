@@ -60,7 +60,7 @@
         "conda_name": "numpy",
         "downloads_total": 35.0,
         "downloads_30d": 25.0,
-        "downloads_source": "merged"
+        "downloads_source": "s3-parquet"
       },
       {
         "conda_name": "pandas",
