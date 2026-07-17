@@ -1,0 +1,27 @@
+{
+  "phase": "enrich_pypi_intelligence",
+  "node": "enrich_pypi_intelligence",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_json_raw": [
+      {
+        "pypi_name": "clean",
+        "pure_python": true,
+        "license_spdx": "MIT",
+        "license_raw": "MIT",
+        "notes": null
+      }
+    ]
+  },
+  "expected": {
+    "pypi_intelligence_enriched": [
+      {
+        "pypi_name": "clean",
+        "packaging_shape": "pure-python",
+        "license_spdx": "MIT",
+        "license_raw": "MIT",
+        "notes": null
+      }
+    ]
+  }
+}

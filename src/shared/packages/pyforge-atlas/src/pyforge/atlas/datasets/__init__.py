@@ -7,6 +7,12 @@ Story B1 — the two request-parameterized API datasets (the B1 catalog FLIPs): 
 package anaconda downloads + per-query GitHub requests, each owning the request
 parameterization + rate-limit discipline (AD-2, THE CRUX), plus the pure rate-limit
 scheduler / fetcher-client primitives they share.
+
+Story B2 — ``PyPIJsonRequestDataset`` (the pypi_json_raw FLIP: per-project
+``/pypi/<name>/json`` fan-out with the DW-B1-2 ``acquire()`` wiring) + the Phase P
+``BigQueryDownloadsDataset`` (the two-layer cost gate, authored + fixture-tested;
+credentialed materialization attended-only) + ``coerce_cvss_score`` (AC-3(b) vdb
+ScoreType unwrap, boundary layer).
 """
 
 from .incremental_parquet import IncrementalParquetDataset
@@ -18,12 +24,23 @@ from .rate_limit import (
     parse_retry_after,
     resolve_worker_count,
 )
-from .request_datasets import AnacondaDownloadsDataset, GitHubRequestDataset
+from .request_datasets import (
+    AnacondaDownloadsDataset,
+    BigQueryDownloadsDataset,
+    GitHubRequestDataset,
+    PhasePCostAbort,
+    PyPIJsonRequestDataset,
+)
+from .vdb_boundary import coerce_cvss_score
 
 __all__ = [
     "IncrementalParquetDataset",
     "AnacondaDownloadsDataset",
     "GitHubRequestDataset",
+    "PyPIJsonRequestDataset",
+    "BigQueryDownloadsDataset",
+    "PhasePCostAbort",
+    "coerce_cvss_score",
     "RateLimitedScheduler",
     "FetcherClient",
     "StubFetcherClient",
