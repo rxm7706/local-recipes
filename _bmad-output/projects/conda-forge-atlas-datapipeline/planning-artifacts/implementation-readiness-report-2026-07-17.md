@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 documentsIncluded:
   prd: prds/prd-conda-forge-atlas-datapipeline-2026-07-17/prd.md
   prdAddendum: prds/prd-conda-forge-atlas-datapipeline-2026-07-17/addendum.md
@@ -160,3 +160,94 @@ None. The three documents state the same substitute contract with no contradicti
 ### Warnings
 
 - (Non-blocking observation) The CIS two-spine specs do not exist yet — deliberately deferred to the D2 story spec (Spine Deferred, owner assigned). Not a readiness blocker: they are a Wave-D story-entry precondition, waves A–C are unaffected, and the deferral has a recorded owner + resolution point. Flagged so sprint planning schedules the CIS spec work before D2 opens.
+
+## Epic Quality Review
+
+Standards applied: create-epics-and-stories best practices (user value, epic independence, no forward dependencies, story sizing, AC quality, starter-template rule, entity-creation timing), adjudicated against the frozen contract (spec § 9 story IDs/waves immutable) and the recorded decision trail (epics D-1..D-15, PRD § 9, Spine Decisions).
+
+### A. Epic structure — user value & independence
+
+- **Epic titles/goals:** every epic carries an outcome-phrased goal naming its beneficiary (operator / agents / CI / consumers). Structurally the epics ARE waves — by classic standards Epics 1–2 ("Legacy Translation", "Scaffold & Catalog") read as technical milestones. **Adjudication:** D-1 records this as a deliberate, contract-mandated equivalence (waves are the value/risk boundaries; each ends standalone-valuable with its own gate, boundary event, and PR; IDs frozen). Accepted — recorded deviation, not a defect.
+- **Epic independence:** dependency chain is strictly backward (1→2→…→9). Verified per-story: no story in Epic N references an Epic >N deliverable. Epic 6's E1 depends on Epic 5 (prior) and B3; Epic 7's F1 depends on B4 + Epics 4–6 (all prior). PASS.
+
+### B. Story dependency analysis (all 32 edges walked)
+
+0.1→∅; A1→0.1; A2→A1; A3→A1,A2; B1→A1–A3; B2→B1; B3→B1,B2; B4→B1–B3; B5→B1/B2+Q6 (§ 14 position after B4); B6→B1,B2 (after B5); B7→B1,B2 (after B6); B8→B2; B9→B2; B10→B1,B2; C1→Epic 3; C2→C1; D1→Epic 4,B4; D2→D1; D3→D1,D2; E1→B3,Epic 5; E2→C1; F1→B4,Epics 4–6; F2→E1,C1; F3→F1; F4→B7,F2; G1→Epic 5,F1; G2→G1; G3→C1,G2; H1→Epic 8; H2→H1; H3→H1,H2; H4→H1–H3,C1.
+
+**Zero forward dependencies.** D-10 correctly documents that B5–B7's § 14 sequence positions are ordering conventions, not substance dependencies, and that B8/B9/B10 are not parity-gated (a B4 delay cannot block them). PASS.
+
+### C. Acceptance criteria quality
+
+All 32 stories restate spec § 9 ACs in Given/When/Then with the spec named as binding authority (no semantic fork risk). ACs are testable and fixture-specific (named fixtures: NBSP paste, tri-state `fix_available`, no-clobber, offline-skip, stub-validator, `test_no_thirty_gb_lie` carry-over, zero-code-change partitioning, idempotent re-push). Error/degradation paths are first-class (offline-skip → stale-not-fail; source-less → `not-applicable`; exit-code enum incl. error path 2). Each story carries FRs, AD invariants, mode, Q-gate, verify gate, and dependencies. PASS.
+
+### D. Special checks
+
+- **Starter template:** Spine names `nebi` as the starter; the scaffold story is A1 = Epic 2 Story 1, not Epic 1 Story 1. D-12 records the deviation as mandated by frozen Wave 0 (SKF enabler precedes by contract). Accepted.
+- **Entity-creation timing:** the full Data Catalog is authored upfront in A2 — deliberate paradigm choice (AD-2: catalog IS the harness; declarative dataflow), not the anti-pattern of eager table creation; per-dataset physical layout stays catalog-declared. Accepted.
+- **Sizing:** B1/B2/F1 are oversized keystones; splitting is forbidden (frozen IDs). Mitigation exists and is binding: AD-18 pre-flight budget raises + `dev_stall_grace_s` raise (F1). Accepted with observation.
+- **Mode/count integrity:** 32 stories total (1+3+10+2+3+2+4+3+4); mode table sums 6+4+11+11=32 and matches per-story tags; 22 loop-drivable vs spec "~21" recorded in-tolerance (D-7); D-6 flags the F4-as-11th-LOOP-S assumption with a named reconciliation authority (spec § 13.4 drivability map at sprint planning).
+- **Verify-gate wiring:** every wave's gate is a named story deliverable (A1 `kedro-test`, A2 `kedro-catalog-check`, B1–B3 build/B4 consume `parity-diff`, C1 `dagster-dryrun`, D1 `bsl-metric-check`, G1 `wasm-smoke`); Wave E's no-new-gate is spec-conformant (D-8). Matches Spine AD-11 and PRD addendum § 3 exactly.
+
+### E. Cross-artifact consistency (PM+Architect joint checks)
+
+- Epics ↔ Spine: all 23 ADs referenced by at least one story invariant list; Spine `binds` covers FR-1..22; Capability→Architecture map agrees with story placement (FR-20/21 in `vcs_health`, FR-19 in `vulnerability`, FR-16/18 terminal in `universal_sbom`).
+- Epics ↔ PRD: Q-gate table matches PRD § 8 (Q1–Q4, Q6, Q7; Q5 retired); execution modes match PRD § 6.1; B4 parity wording conflict resolved identically in both (D-3 = PRD § 6.1/addendum § 3); `bmad-switch` supersession recorded in all three (PRD § 9.11, AD-18, D-4).
+
+### Findings
+
+#### Critical violations (blocking)
+
+None.
+
+#### Major issues
+
+None.
+
+#### Minor concerns (non-blocking observations)
+
+1. **OBS-1 — Wave-shaped epics** (D-1): technical-milestone shape accepted under the frozen contract; noted for anyone auditing against vanilla BMAD standards.
+2. **OBS-2 — Scaffold story position** (D-12): A1 not Epic-1-Story-1; frozen Wave 0 mandates it.
+3. **OBS-3 — B5 "Dagster-scheduled asset" AC clause** is only fully demonstrable after C1 (Wave C) lands the Dagster repo; epics.md already scopes B5's in-wave verification to `kedro-test` fixtures with schedule assertions as fixtures and `dagster-dryrun` applying "once C1 exists". Spec-frozen AC text; sprint planning should carry a B5 follow-through check at C1. No fix possible without violating the frozen-AC constraint; correctly handled as written.
+4. **OBS-4 — PRD § 4.6 FR-10 cites "(Story F2.)"** while epics map FR-10 → F2 + F4 (F4's AC requires FR-10-identical failure semantics and tags FR-10). The PRD parenthetical is informative, the epics FR Coverage Map is the traceability authority, and the two are semantically compatible — cosmetic asymmetry only.
+5. **OBS-5 — Keystone sizing** (B1, B2, F1): oversized but unsplittable (frozen IDs); AD-18 budget mitigations are binding and sufficient on paper; token-budget risk remains real (pilot burned 25.8M on a keystone).
+6. **OBS-6 — D-6 `[ASSUMPTION]`** (F4 as the 11th LOOP-S slot): correctly flagged with reconciliation authority; must be re-checked at sprint planning.
+
+## Summary and Recommendations
+
+### Overall Readiness Status
+
+**READY** — gate PASS on iteration 1; zero blocking findings.
+
+- Document set complete (PRD final + addendum; Architecture Spine final, 23 ADs; epics final, 32/32 frozen-ID stories; UX N/A by recorded design).
+- FR traceability 100% (22/22 FRs → stories, verified both directions); NFRs bound via epics NFR-1..12 + AD invariants; whole-migration ACs mapped via SM-1..SM-12 (D-14).
+- No forward dependencies; epic chain strictly backward; verify-first gate wiring consistent across all three artifacts.
+- All cross-artifact contradiction hunts came back clean (Q-gates, execution modes, parity-harness wording D-3, `bmad-switch` supersession, gate inventory).
+
+### Critical Issues Requiring Immediate Action
+
+None.
+
+### Non-Blocking Observations (carried, no artifact edits required)
+
+OBS-1 wave-shaped epics (D-1, contract-mandated) · OBS-2 scaffold at A1 (D-12) · OBS-3 B5's Dagster-schedule AC clause completes verification at C1 (sprint-planning follow-through) · OBS-4 PRD FR-10 story citation narrower than epics map (cosmetic; epics map is authority) · OBS-5 keystone sizing B1/B2/F1 (AD-18 mitigations binding) · OBS-6 D-6 `[ASSUMPTION]` F4-as-11th-LOOP-S (re-check vs spec § 13.4 drivability map at sprint planning) · CIS two-spine specs must exist before D2 opens (UX section warning).
+
+### Environment-Deferred Checks (pixi unavailable in this session)
+
+- `pixi run -e local-recipes bmad-drift-check` / `bmad-groundtruth` not executed; intake groundtruth stands on the 2026-07-17 git-surface note. The live re-check is already a recorded Wave-0 precondition (AD-18) — no gap introduced.
+- `llms-full-check` / any pixi verify tasks: deferred to execution.
+
+### Recommended Next Steps
+
+1. Run `bmad-sprint-planning` keyed on the spec § 9 story IDs (D-2); reconcile D-6 (11th LOOP-S slot) against the spec § 13.4 drivability map during that run.
+2. Execute Wave-0 preconditions before story 0.1: hooks approval, live `bmad-groundtruth` re-check (+ trendshift Phase T status, D-15), `scripts/bmad-switch conda-forge-atlas-datapipeline`, worktree symlink bootstrap, keystone budget review (B1/B2/F1).
+3. Schedule the CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`) ahead of D2, and carry OBS-3's B5→C1 follow-through check into the Wave-C boundary review.
+
+### Final Note
+
+This assessment identified 0 blocking issues and 7 non-blocking observations across 4 categories (structure, traceability, UX substitute chain, execution risk). Iteration count: 1 (no fixes required — no artifact was edited). Assessor: unattended PM (John) + Architect (Winston) joint gate, 2026-07-17.
+
+### Gate Change Log (fixes applied during iterate-to-pass)
+
+| Iteration | Blocking findings | Artifact edited | Fix |
+|---|---|---|---|
+| 1 | none | — | — |
