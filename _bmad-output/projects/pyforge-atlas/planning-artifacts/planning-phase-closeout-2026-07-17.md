@@ -131,3 +131,19 @@ content was altered beyond the slug string; FR/story/AD numbering untouched.
 Every `bmad-switch conda-forge-atlas-datapipeline` instruction recorded in
 the artifacts (PRD § 9.11 / AD-18 / epics D-4 / story 0.1) now reads
 `bmad-switch pyforge-atlas`.
+
+---
+
+## Addendum — Wave 0 complete (2026-07-17, attended)
+
+Story 0.1 signed off by the owner: `cf-atlas-legacy` forged via
+**bmad-module-skill-forge@2.0.1** (SKF provisioned per owner decision;
+install commit `b18cbb5`, artifact commit `6658049`). Evidence: SKF gates
+100/100; 130-entry provenance map; independent fresh-agent battery PASS
+(all citations line-exact, negative probe correct); meta-tests 1009/0;
+drift-check green post-landing. Wave-0 preconditions ledger recorded in the
+Tier-3 story file — sole open item: per-machine bmad-loop hooks approval on
+the workstation. Epic 1 done; next runnable story: **A1** (nebi scaffold,
+DEV-AUTO). Retro-ledger items for the Rule-2 closeout: D1 `_PARTITIONDATE`
+spec-vs-code divergence; D3/D4 symbol-location corrections; the
+fresh-container pixi `--frozen` + `build_artifacts` stub gotcha.
