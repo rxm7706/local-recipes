@@ -19,6 +19,7 @@ dependencies = [
     "packaging",
     "cyclonedx-python-lib",
     "jsonschema",
+    "packageurl-python",
 ]
 
 [project.scripts]
