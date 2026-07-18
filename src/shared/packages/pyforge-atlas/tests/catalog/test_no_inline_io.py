@@ -362,6 +362,43 @@ def test_observability_libs_only_in_observability():
     )
 
 
+# AD-9 (Story F2): the ``kedro-great-expectations`` / ``kedro-pandera`` plugins are BANNED
+# EVERYWHERE — the data-validation hook is hand-rolled (``pyforge/atlas/validation.py``), never
+# a plugin dependency. ``great_expectations`` itself is additionally kept OUT of the shipped
+# hook path (version-capped at cf 1.18.2, AD-9): the GX boundary is a deferred stub that imports
+# no GX, so validation.py must not import ``great_expectations`` (pandera is the shipped inline
+# validator). Both are structural, whole-package scans with no exemption.
+BANNED_VALIDATION_PLUGINS = ("kedro_great_expectations", "kedro_pandera")
+
+
+def test_banned_validation_plugins_nowhere():
+    """AD-9 (Story F2): ``kedro_great_expectations`` / ``kedro_pandera`` are banned in every
+    package file — the F2 validation hook is hand-rolled, not a plugin (mirrors the C1
+    dagster / D1 BSL / E2 observability bans above)."""
+    violations = _violations(BANNED_VALIDATION_PLUGINS)
+    assert not violations, (
+        "AD-9 violation — the kedro-great-expectations / kedro-pandera plugins are banned "
+        f"(the F2 validation hook is hand-rolled): {violations}"
+    )
+
+
+def test_no_great_expectations_in_shipped_validation_path():
+    """AD-9 (Story F2): the shipped validation module must NOT import ``great_expectations``
+    — the in-env GX (1.19.0) can't be guaranteed to conda-forge-1.18.2-only features, so the
+    GX boundary is a deferred stub that imports no GX and pandera is the shipped inline
+    validator. (Positive: validation.py DOES import pandera — the seam genuinely lives there.)"""
+    val_mod = ATLAS_PKG / "validation.py"
+    assert val_mod.is_file(), "validation.py missing (Story F2 module)"
+    imports = _imported_names(val_mod)
+    assert not any(_denylisted(n, ("great_expectations",)) for n in imports), (
+        "validation.py imports great_expectations — AD-9 caps GX at cf 1.18.2 and prefers "
+        "no GX in the shipped hook path; keep the GX boundary a deferred stub"
+    )
+    assert any(_denylisted(n, ("pandera",)) for n in imports), (
+        "validation.py does not import pandera — it is the shipped inline validator (FR-10)"
+    )
+
+
 def test_dagster_only_in_glue():
     """Positive AD-1 assertion: the glue module DOES import the orchestration
     libs (so it is genuinely the seam) and NO OTHER package file does — the

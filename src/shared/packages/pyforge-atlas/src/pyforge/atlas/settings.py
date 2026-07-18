@@ -21,7 +21,16 @@ from pyforge.atlas.hooks import ProjectHooks
 # run); the gate injects in-memory captors. See pyforge.atlas.observability.
 from pyforge.atlas.observability import AtlasObservabilityHooks
 
-HOOKS = (ProjectHooks(), AtlasObservabilityHooks())
+# Story F2 (FR-10, AD-9/AD-20/AD-23): the data-validation hook rides EVERY entry
+# point too — a `kedro run` AND the C1 Dagster plane both validate node outputs
+# against their per-dataset pandera contract, halting BEFORE bad data persists and
+# raising an A2A alert. Constructed with no args → the shipped default: a pandera
+# validator over the (empty) DEFAULT_CONTRACTS registry with a no-op alert sink, so
+# the default path is offline and can never false-halt until a contract is declared.
+# See pyforge.atlas.validation.
+from pyforge.atlas.validation import DataValidationHooks
+
+HOOKS = (ProjectHooks(), AtlasObservabilityHooks(), DataValidationHooks())
 
 # Installed plugins for which to disable hook auto-registration.
 # DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)
