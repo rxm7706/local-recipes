@@ -247,3 +247,310 @@ def test_single_execution_plane_kedro_run_resource(defs):
     """AD-23 — the one execution plane is KedroSession.run, surfaced as the
     ``kedro_run`` resource from the translator; the glue never adds a second."""
     assert "kedro_run" in defs.resources
+
+
+# --------------------------------------------------------------------------- #
+# Story G3 (FR-6, § 5.9) — event-driven sensors.
+#
+# (a) sensors ENUMERATE in the Definitions + each targets a REAL existing job
+#     (AD-23 — the sensor rides the SAME job machinery C1 built, never a second
+#     execution plane); (b) a SIMULATED upstream event (injected offline source +
+#     ``build_sensor_context``) → a ``RunRequest`` for the right incremental job;
+#     a no-event tick → ``SkipReason``. No network anywhere (the source is a
+#     fixture callable). The LIVE sensor daemon is deferred (DW-G3).
+# --------------------------------------------------------------------------- #
+
+
+def test_sensors_enumerate_in_definitions(defs):
+    """The G3 sensors are declared in ``defs`` (else they do nothing at all)."""
+    sensor_names = {s.name for s in defs.sensors}
+    expected = {name for name, *_ in D.UPSTREAM_SENSORS}
+    assert expected <= sensor_names, f"missing sensors: {expected - sensor_names}"
+
+
+def test_each_sensor_targets_a_real_existing_job(defs):
+    """AD-23 — every sensor targets a job that actually exists in ``defs`` (it
+    rides an existing C1 job; it defines no second execution plane)."""
+    job_names = {j.name for j in defs.jobs}
+    for _name, target_job, *_ in D.UPSTREAM_SENSORS:
+        assert target_job in job_names, f"sensor target {target_job} is not a real job"
+    # and each SensorDefinition in defs resolves to a job present in defs.
+    for sensor in defs.sensors:
+        assert sensor.job_name in job_names, (
+            f"sensor {sensor.name} targets non-existent job {sensor.job_name}"
+        )
+
+
+def test_sensor_targets_are_the_incremental_upstream_jobs(defs):
+    """Pins the sensor targets to the two upstream jobs whose datasets A3 flipped
+    to ``IncrementalParquetDataset`` (Phase H PyPI versions + Phase K VCS upstream)
+    — a drift-guard so a sensor can't be re-pointed at a non-incremental job. The
+    AD-5 dataset coupling itself is proven by the A2/A3 catalog gate, not here."""
+    targets = {target for _n, target, *_ in D.UPSTREAM_SENSORS}
+    assert targets == {"phase_h_pypi_versions", "phase_k_vcs_upstream"}
+
+
+def test_sensors_ship_stopped(defs):
+    """Sensors never auto-start (mirrors the schedules' no-auto-start stance) —
+    turning them RUNNING against a live feed is the attended bring-up (DW-G3)."""
+    import dagster as dg  # local — the gate may import dagster freely (not scanned)
+
+    for sensor in defs.sensors:
+        assert sensor.default_status == dg.DefaultSensorStatus.STOPPED
+
+
+def _sim_source(*events):
+    """A fixture RSS/poll feed snapshot (no network) — a zero-arg callable."""
+    payload = list(events)
+    return lambda: payload
+
+
+def _pypi_job(defs):
+    return next(j for j in defs.jobs if j.name == "phase_h_pypi_versions")
+
+
+def test_simulated_event_yields_run_request_for_the_right_job(defs):
+    """AC (G3): a simulated upstream event → exactly ONE ``RunRequest`` for the
+    correct incremental job, and the cursor advances to the event's seq."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_sim_source({"seq": 7, "id": "requests"}),
+    )
+    ctx = dg.build_sensor_context()
+    results = list(sensor(ctx))
+    run_requests = [r for r in results if isinstance(r, dg.RunRequest)]
+    assert len(run_requests) == 1, results
+    assert run_requests[0].run_key == "pypi:7"
+    assert sensor.job_name == "phase_h_pypi_versions"
+    assert ctx.cursor == "7"  # advanced
+
+
+def test_no_event_yields_skip_reason(defs):
+    """A no-new-event tick yields ``SkipReason`` (never a spurious run), and the
+    cursor is left untouched."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=D.offline_event_source,  # returns []
+    )
+    ctx = dg.build_sensor_context(cursor="3")
+    results = list(sensor(ctx))
+    assert results and all(isinstance(r, dg.SkipReason) for r in results)
+    assert ctx.cursor == "3"  # untouched
+
+
+def test_duplicate_event_is_deduped_by_cursor(defs):
+    """A duplicate tick (cursor already past the event's seq) → ``SkipReason`` —
+    no double-trigger."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_sim_source({"seq": 2, "id": "a"}),
+    )
+    ctx = dg.build_sensor_context(cursor="2")  # already processed seq 2
+    results = list(sensor(ctx))
+    assert all(isinstance(r, dg.SkipReason) for r in results)
+
+
+def test_multiple_events_one_tick_coalesce_to_one_run(defs):
+    """Multiple new events in one tick → ONE coalesced ``RunRequest`` (the job is
+    incremental — one run drains all stale rows), cursor advances to the max seq."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_sim_source(
+            {"seq": 4, "id": "a"}, {"seq": 6, "id": "b"}, {"seq": 5, "id": "c"}
+        ),
+    )
+    ctx = dg.build_sensor_context()
+    run_requests = [r for r in sensor(ctx) if isinstance(r, dg.RunRequest)]
+    assert len(run_requests) == 1
+    assert run_requests[0].run_key == "pypi:6"  # keyed by the max seq
+    assert run_requests[0].tags["pyforge/event_count"] == "3"
+    assert ctx.cursor == "6"
+
+
+def test_malformed_event_payload_does_not_crash(defs):
+    """A malformed payload (missing/garbage fields) is dropped — a feed of only
+    malformed items yields ``SkipReason``, never an exception."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_sim_source({"nope": 1}, {"seq": "x", "id": "a"}, {"seq": -1, "id": "b"}),
+    )
+    results = list(sensor(dg.build_sensor_context()))
+    assert all(isinstance(r, dg.SkipReason) for r in results)
+
+
+def test_event_source_that_raises_degrades_not_crashes(defs):
+    """A source that raises must degrade to ``SkipReason`` — a flaky feed must not
+    crash the sensor daemon (Reviewer-B)."""
+    import dagster as dg
+
+    def _raising():
+        raise RuntimeError("feed unreachable")
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_raising,
+    )
+    results = list(sensor(dg.build_sensor_context()))
+    assert len(results) == 1 and isinstance(results[0], dg.SkipReason)
+    assert "feed unreachable" in results[0].skip_message
+
+
+def test_cursor_advances_across_successive_ticks(defs):
+    """The cursor advances monotonically across evals: a new event past the
+    persisted cursor fires; a later tick with only already-seen events skips."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    # tick 1: cursor at 5, a seq-8 event fires and advances to 8.
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_sim_source({"seq": 8, "id": "a"}),
+    )
+    ctx = dg.build_sensor_context(cursor="5")
+    assert any(isinstance(r, dg.RunRequest) for r in sensor(ctx))
+    assert ctx.cursor == "8"
+    # tick 2: same event, cursor now 8 → deduped.
+    ctx2 = dg.build_sensor_context(cursor="8")
+    assert all(isinstance(r, dg.SkipReason) for r in sensor(ctx2))
+
+
+def test_built_defs_sensors_are_offline_and_only_skip(defs):
+    """The sensors actually WIRED into ``defs`` ship the offline no-op source
+    (DW-G3): driving each one with a fresh context yields ONLY ``SkipReason`` and
+    fires no run — proving no network/live source leaked into the built
+    definitions (a sensor accidentally wired with a live source would fire or
+    error here)."""
+    import dagster as dg
+
+    for sensor in defs.sensors:
+        results = list(sensor(dg.build_sensor_context()))
+        assert results and all(isinstance(r, dg.SkipReason) for r in results), (
+            f"sensor {sensor.name} did not skip on the offline default: {results}"
+        )
+
+
+def test_offline_event_source_returns_empty(defs):
+    """The offline default source is a pure no-op (returns ``[]``, no network)."""
+    assert D.offline_event_source() == []
+
+
+def test_garbage_or_empty_cursor_is_treated_as_cold(defs):
+    """An empty-string or non-numeric cursor means "nothing processed yet" (cold),
+    so a first event still fires — a corrupt cursor must not silently swallow
+    events or raise."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_sim_source({"seq": 1, "id": "a"}),
+    )
+    for bad_cursor in ("", "abc"):
+        ctx = dg.build_sensor_context(cursor=bad_cursor)
+        run_requests = [r for r in sensor(ctx) if isinstance(r, dg.RunRequest)]
+        assert len(run_requests) == 1, f"cold cursor {bad_cursor!r} did not fire"
+        assert ctx.cursor == "1"
+
+
+def test_mix_of_new_and_already_seen_events_counts_only_the_new(defs):
+    """A snapshot mixing already-seen (seq <= cursor) and new (seq > cursor) events
+    triggers on the NEW ones only; run_key + cursor land on the max NEW seq and the
+    event_count excludes the already-seen items."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        # seq 3,4,5 already seen (cursor 5); 6,7 are new.
+        event_source=_sim_source(
+            {"seq": 3, "id": "a"}, {"seq": 5, "id": "b"},
+            {"seq": 6, "id": "c"}, {"seq": 7, "id": "d"},
+        ),
+    )
+    ctx = dg.build_sensor_context(cursor="5")
+    run_requests = [r for r in sensor(ctx) if isinstance(r, dg.RunRequest)]
+    assert len(run_requests) == 1
+    assert run_requests[0].run_key == "pypi:7"
+    assert run_requests[0].tags["pyforge/event_count"] == "2"  # only 6 and 7
+    assert ctx.cursor == "7"
+
+
+def test_duplicate_seq_within_one_snapshot_counts_once(defs):
+    """Two feed items sharing a ``seq`` collapse to one distinct change — the
+    coalesced run fires once and ``event_count`` reflects distinct seqs."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_sim_source({"seq": 6, "id": "a"}, {"seq": 6, "id": "a-dup"}),
+    )
+    ctx = dg.build_sensor_context()
+    run_requests = [r for r in sensor(ctx) if isinstance(r, dg.RunRequest)]
+    assert len(run_requests) == 1
+    assert run_requests[0].tags["pyforge/event_count"] == "1"
+    assert ctx.cursor == "6"
+
+
+def test_none_and_none_id_items_are_dropped(defs):
+    """A ``None`` snapshot item and an item with ``id=None`` are dropped (not
+    crashed, not kept with a ``"None"`` identifier) — a feed of only such items
+    skips."""
+    import dagster as dg
+
+    job = _pypi_job(defs)
+    sensor = D.build_upstream_sensor(
+        name="pypi_release_sensor",
+        job=job,
+        run_key_prefix="pypi",
+        description="test",
+        event_source=_sim_source(None, {"seq": 9, "id": None}),
+    )
+    results = list(sensor(dg.build_sensor_context()))
+    assert all(isinstance(r, dg.SkipReason) for r in results)

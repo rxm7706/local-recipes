@@ -42,6 +42,12 @@ from pathlib import Path
 import dagster as dg
 from kedro_dagster import KedroProjectTranslator
 
+from pyforge.atlas.orchestration.event_source import (
+    EventSource,
+    evaluate_events,
+    offline_event_source,
+)
+
 # --------------------------------------------------------------------------- #
 # Kedro project location (this package's project root — has conf/, settings.py,
 # pipeline_registry.py). Resolved from THIS file so it is cwd-independent.
@@ -233,6 +239,41 @@ DEFAULT_RETRY = dg.RetryPolicy(max_retries=2, delay=5, backoff=dg.Backoff.EXPONE
 JOB_TAGS = {"pyforge/orchestrator": "cf_atlas", "pyforge/phase_state": "observable"}
 
 # --------------------------------------------------------------------------- #
+# Event-driven sensors (Story G3, FR-6, § 5.9).
+#
+# Each entry maps an upstream RSS/poll feed to an EXISTING C1 job (AD-23 — the
+# sensor yields a RunRequest for that job; it defines NO second execution plane)
+# whose datasets are TTL-gated ``IncrementalParquetDataset`` (AD-5 — the sensor
+# only TRIGGERS; the incremental re-fetch-only-stale-rows is the dataset's job,
+# never a re-fetch-everything). The two feeds chosen are exactly the two upstream
+# job surfaces whose catalog entries A3 flipped to the incremental dataset:
+#   Phase H (``pypi_version_fetched_at``) and Phase K (``github_version_fetched_at``).
+#
+# Each: (sensor_name, target_job_name, run_key_prefix, description).
+# --------------------------------------------------------------------------- #
+UPSTREAM_SENSORS: tuple[tuple[str, str, str, str], ...] = (
+    (
+        "pypi_release_sensor",
+        "phase_h_pypi_versions",
+        "pypi",
+        "PyPI new-release feed (RSS/poll) → incremental Phase H "
+        "(fetch_pypi_current_versions; re-fetch is TTL-gated by the dataset, AD-5).",
+    ),
+    (
+        "vcs_release_sensor",
+        "phase_k_vcs_upstream",
+        "vcs",
+        "VCS upstream-release feed (GitHub/GitLab/Codeberg releases.atom) → "
+        "incremental Phase K (track_upstream_versions; TTL-gated re-fetch, AD-5).",
+    ),
+)
+
+# Sensors ship STOPPED (never auto-start) — mirrors the schedules' no-auto-start
+# stance (DW-C1-1). Turning them RUNNING against a live feed is the attended
+# daemon bring-up (DW-G3).
+SENSOR_DEFAULT_STATUS = dg.DefaultSensorStatus.STOPPED
+
+# --------------------------------------------------------------------------- #
 # Bootstrap profiles (AC-2) — named run configs with the guide's override
 # precedence. The profiles set per-phase scoping; the BINDING contract the gate
 # checks is the precedence: explicit run-config/env beats profile defaults.
@@ -362,9 +403,64 @@ def _with_per_op_budgets(graph: dg.GraphDefinition) -> dg.GraphDefinition:
     )
 
 
+def build_upstream_sensor(
+    *,
+    name: str,
+    job: dg.JobDefinition,
+    run_key_prefix: str,
+    description: str,
+    event_source: EventSource = offline_event_source,
+) -> dg.SensorDefinition:
+    """Build one upstream-event sensor over an EXISTING C1 ``job`` (Story G3).
+
+    The sensor polls ``event_source`` (an RSS/poll feed snapshot — offline no-op
+    by default, injectable for the gate), dedupes against the Dagster cursor, and:
+
+    * yields ONE :class:`dagster.RunRequest` for ``job`` when there are new events
+      (AD-23 — it triggers the SAME job machinery C1 built; it never defines a
+      second execution plane), advancing the cursor;
+    * yields a :class:`dagster.SkipReason` when there are no new events, a
+      duplicate tick, only malformed payloads, or the source itself raises
+      (degrade — a flaky feed must NOT crash the sensor daemon).
+
+    Incrementality is the target job's ``IncrementalParquetDataset`` (AD-5): the
+    sensor only triggers; the run re-fetches solely the TTL-stale rows.
+    """
+
+    @dg.sensor(
+        name=name,
+        job=job,
+        description=description,
+        default_status=SENSOR_DEFAULT_STATUS,
+    )
+    def _sensor(context: dg.SensorEvaluationContext):
+        try:
+            raw = list(event_source())
+        except Exception as exc:  # noqa: BLE001 — degrade, never crash the daemon
+            yield dg.SkipReason(f"event source error: {type(exc).__name__}: {exc}")
+            return
+        decision = evaluate_events(raw, context.cursor, run_key_prefix=run_key_prefix)
+        if decision.run:
+            context.update_cursor(decision.new_cursor)
+            yield dg.RunRequest(
+                run_key=decision.run_key,
+                tags={
+                    "pyforge/trigger": "sensor",
+                    "pyforge/event_count": str(len(decision.events)),
+                    "pyforge/sensor": name,
+                },
+            )
+        else:
+            # Leave the cursor exactly as-is on a skip (nothing advanced).
+            yield dg.SkipReason(decision.skip_reason)
+
+    return _sensor
+
+
 def build_definitions(
     env: str = DEFAULT_ENV,
     project_path: Path | None = None,
+    event_sources: Mapping[str, EventSource] | None = None,
 ) -> dg.Definitions:
     """Compile the Kedro project into Dagster ``Definitions`` (offline).
 
@@ -373,6 +469,12 @@ def build_definitions(
     ``kedro_run`` resource), injects per-op timeouts + retry, and derives the
     cadence + bootstrap + Phase-P jobs as op-subsets, each with its own
     schedule (Phase P deliberately gets none — AC-6).
+
+    Story G3 layers on **event-driven sensors** (:data:`UPSTREAM_SENSORS`): each
+    targets an existing incremental job by reference (AD-23) and fires a
+    ``RunRequest`` on a simulated/real upstream feed event. ``event_sources`` maps
+    a sensor name to an injected :data:`EventSource` (defaults to the offline
+    no-op — the live feed poller is the deferred daemon bring-up, DW-G3).
     """
     translator = KedroProjectTranslator(
         env=env, project_path=project_path or PROJECT_PATH
@@ -444,7 +546,32 @@ def build_definitions(
     # Phase P job — admin-config-only, NO schedule (AC-6).
     jobs.append(_make_job(PHASE_P_JOB_NAME, list(PHASE_P_OPS)))
 
-    return dg.Definitions(jobs=jobs, schedules=schedules, resources=resource_defs)
+    # Event-driven sensors (Story G3) — each targets an EXISTING job above by
+    # object reference (AD-23: same execution plane; the sensor only triggers).
+    # The event source is injectable (``event_sources[name]``); it defaults to the
+    # offline no-op (DW-G3 — the live feed poller is the attended daemon bring-up).
+    jobs_by_name = {j.name: j for j in jobs}
+    sources = event_sources or {}
+    sensors: list[dg.SensorDefinition] = []
+    for sensor_name, target_job, run_key_prefix, description in UPSTREAM_SENSORS:
+        if target_job not in jobs_by_name:
+            raise RuntimeError(
+                f"sensor {sensor_name!r} targets unknown job {target_job!r}; "
+                f"known jobs: {sorted(jobs_by_name)}"
+            )
+        sensors.append(
+            build_upstream_sensor(
+                name=sensor_name,
+                job=jobs_by_name[target_job],
+                run_key_prefix=run_key_prefix,
+                description=description,
+                event_source=sources.get(sensor_name, offline_event_source),
+            )
+        )
+
+    return dg.Definitions(
+        jobs=jobs, schedules=schedules, sensors=sensors, resources=resource_defs
+    )
 
 
 # Top-level Dagster object (``dagster dev -m pyforge.atlas.orchestration.definitions``
