@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from pyforge.atlas.mcp import session as _session
+from pyforge.atlas import nl as _nl
 
 # The authoritative registry mirror: the four registered pipelines from
 # B1/B2 (`find_pipelines()` discovers them from the pipelines/ package).
@@ -102,6 +103,19 @@ def read_dataset(
     if cls_name == "set":
         return list(result)
     return result
+
+
+def query_vizro_ai(query: str, *, env: Any | None = None) -> dict[str, Any]:
+    """Natural-language -> Vizro chart/insight over the BSL knowledge graph (D3, FR-9).
+
+    THIN delegation to the ``nl/`` seam (AD-7): the NL/LLM logic — backend resolution from
+    repo model-backend config (Q3 §11, never a hardcoded endpoint) and the BSL-grounded
+    (deferred) Vizro-AI call — lives in ``pyforge.atlas.nl``, not in this tool body. With no
+    backend configured (the in-container default) the seam returns a structured
+    "backend not configured — attended Q3 bring-up (DW-D3)" advisory: no network, no live LLM
+    call, no fabricated chart.
+    """
+    return _nl.query_vizro_ai(query, env=env)
 
 
 def list_pipelines(

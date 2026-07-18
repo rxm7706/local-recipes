@@ -31,6 +31,7 @@ from pyforge.atlas.mcp.tools import (
     AtlasMCPError,
     list_datasets,
     list_pipelines,
+    query_vizro_ai,
     read_dataset,
     run_pipeline,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "AtlasMCPError",
     "list_datasets",
     "list_pipelines",
+    "query_vizro_ai",
     "read_dataset",
     "run_pipeline",
 ]

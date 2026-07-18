@@ -75,6 +75,12 @@ PIPELINE_TRIGGER_TOOLS = (
     "run_derived_artifacts_pipeline",  # B7: universe-BOM pipeline trigger
 )
 
+# The NL capability D3 adds (no legacy equivalent): the Vizro-AI natural-language interface
+# over the BSL knowledge graph (FR-9). Its LLM backend routes through repo model-backend
+# config (Q3 §11) and the live NL->chart call is the attended Q3 event (DW-D3); the tool body
+# stays AD-7-thin, delegating to the pyforge.atlas.nl seam.
+NL_INTERFACE_TOOLS = ("query_vizro_ai",)
+
 
 def read_dataset_targets() -> set[str]:
     """The catalog dataset names referenced by ``read_dataset:`` verdicts."""

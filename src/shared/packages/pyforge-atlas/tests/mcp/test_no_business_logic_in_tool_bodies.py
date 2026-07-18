@@ -42,6 +42,9 @@ BUSINESS_LOGIC_NAMES = BUSINESS_LOGIC_LIBS | {"pd", "np"}
 # not aggregation).
 ALLOWED_CALL_ROOTS = {
     "_session",
+    "_nl",  # D3: the NL-interface seam (pyforge.atlas.nl) — like _session, a delegated
+            # seam; the query_vizro_ai tool body only calls _nl.query_vizro_ai (AD-7), the
+            # backend-resolution + BSL-grounded (deferred) Vizro-AI logic lives in nl/.
     "s",
     "result",
     "sorted",
