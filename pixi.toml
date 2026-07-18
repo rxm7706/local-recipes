@@ -195,6 +195,11 @@ description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashb
 cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/dashboard -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
 
+[feature.local-recipes.tasks.vizro-ai-dryrun]
+description = "Wave D verify gate (Story D3, FR-9 / AD-7 / AD-8 / Q3 §11): vizro-ai-dryrun — offline, no-network, no-live-LLM. Asserts the query_vizro_ai MCP tool is registered (FastMCP server + audit + package export) and callable; with NO backend env configured returns the structured 'backend not configured — attended Q3 bring-up (DW-D3)' advisory (no network, no crash, no fabricated chart); the backend resolver reads the endpoint from repo model-backend config (OPENAI_BASE_URL/ANTHROPIC_BASE_URL env) with NO hardcoded public host baked in (Q3 §11 load-bearing invariant); the tool body stays AD-7-thin (only the _nl seam); and the NL query is grounded in the D1 BSL models (AD-8). The live NL->chart invocation + the dashboard NL query field are the attended Q3 event (DW-D3). Offline, --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/nl -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
 
 [feature.local-recipes.tasks.submit-pr]
 description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first). Runs prepare-pr internally then opens the PR."
