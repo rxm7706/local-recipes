@@ -29,16 +29,28 @@ Ownership decisions recorded:
   testability convention. Exactly-at-the-boundary is NOT expired (a strict
   inequality), the same boundary rule ``vuln.is_db_stale`` uses for
   staleness.
-* ``apply_waivers``/``bypass_blocking`` only ever rewrite a rung's
-  ``Status`` to ``BYPASSED`` (or leave it untouched) -- never import a
-  private ``verdict.py`` name, call an exit primitive with a guarded
-  literal, or spell out the 7-rung lattice order
+* ``apply_waivers``/``bypass_blocking``/``warn_blocking`` only ever rewrite
+  a rung's ``Status`` to ``BYPASSED``/``WARN`` (or leave it untouched) --
+  never import a private ``verdict.py`` name, call an exit primitive with
+  a guarded literal, or spell out the 7-rung lattice order
   (``tests/meta/test_verdict_sole_ownership.py`` enforces this for every
   non-``verdict.py`` module, this one included).
 * This module reads/writes YAML as DATA: ``yaml.safe_load``/``yaml.
   safe_dump`` only, never ``yaml.load``/``yaml.unsafe_load``, never
   string-concatenation (NFR-S4/D1) -- no I/O beyond reading the one
   candidate file, no subprocess, no network, no exec.
+* Story 3.3 (FR23/FR25 -- waiver-expiry visibility + the ``--warn-only``
+  adoption on-ramp): ``apply_waivers`` now returns a 3-tuple -- the rungs,
+  applied notices (unchanged), and a NEW ``expired_notices`` list, one per
+  expired exact-id match (the rung itself is still left untouched -- the
+  already-correct re-block fall-through is unchanged; this only makes it
+  visible for review). ``warn_blocking`` is the ``--warn-only`` mechanism:
+  a ``bypass_blocking``-shaped rewrite targeting ``{Status.
+  POLICY_VIOLATION, Status.INDETERMINATE}`` -> ``Status.WARN`` (never
+  ``Status.ERROR``), returning both the updated rungs and how many it
+  actually rewrote -- ``cli.py`` threads that count into the text report's
+  graduate-to-enforcing nudge (see ``report.py``'s own docstring for the
+  nudge's precise gating rule).
 """
 
 from __future__ import annotations
@@ -304,40 +316,55 @@ def _is_expired(expires_at: str, *, now: datetime) -> bool:
     return now > datetime.fromisoformat(expires_at)
 
 
+def _waiver_notice(waiver: WaiverEntry) -> WaiverNotice:
+    """Factor the ``WaiverNotice`` construction shared between
+    ``apply_waivers``'s applied and expired branches (Story 3.3)."""
+    return WaiverNotice(
+        id=waiver.id,
+        reason=waiver.reason,
+        authorized_by=waiver.authorized_by,
+        expires_at=waiver.expires_at,
+    )
+
+
 def apply_waivers(
     rungs: Sequence[tuple[Status, StatusDriver | None]],
     waivers: Sequence[WaiverEntry],
     *,
     now: datetime,
-) -> tuple[list[tuple[Status, StatusDriver | None]], list[WaiverNotice]]:
+) -> tuple[
+    list[tuple[Status, StatusDriver | None]],
+    list[WaiverNotice],
+    list[WaiverNotice],
+]:
     """Exact finding-id match + not-expired -> rewrite that rung's
-    ``Status`` to ``BYPASSED`` and collect one notice; no match or expired
-    -> the rung is left untouched (an expired match is architecturally
-    identical to "no waiver exists" for this rung -- Story 3.3 adds
-    explicit review-visible flagging)."""
+    ``Status`` to ``BYPASSED`` and collect an applied notice; exact match +
+    expired -> the rung is left UNTOUCHED (the already-correct re-block
+    fall-through -- unchanged from pre-3.3) and an expired notice is
+    collected instead (Story 3.3 -- makes that fall-through visible for
+    review); no match at all -> untouched, no notice either way. Returns
+    ``(rungs, applied_notices, expired_notices)``; both notice lists are
+    deduplicated by waiver id and sorted by id."""
     by_id = {waiver.id: waiver for waiver in waivers}
     updated: list[tuple[Status, StatusDriver | None]] = []
-    notices: dict[str, WaiverNotice] = {}
+    applied: dict[str, WaiverNotice] = {}
+    expired: dict[str, WaiverNotice] = {}
     for status, driver in rungs:
         waiver = by_id.get(driver.finding_id) if driver is not None else None
-        if (
-            waiver is not None
-            and status not in _NON_BLOCKING_STATUSES
-            and not _is_expired(waiver.expires_at, now=now)
-        ):
-            updated.append((Status.BYPASSED, driver))
-            notices.setdefault(
-                waiver.id,
-                WaiverNotice(
-                    id=waiver.id,
-                    reason=waiver.reason,
-                    authorized_by=waiver.authorized_by,
-                    expires_at=waiver.expires_at,
-                ),
-            )
+        if waiver is not None and status not in _NON_BLOCKING_STATUSES:
+            if _is_expired(waiver.expires_at, now=now):
+                updated.append((status, driver))
+                expired.setdefault(waiver.id, _waiver_notice(waiver))
+            else:
+                updated.append((Status.BYPASSED, driver))
+                applied.setdefault(waiver.id, _waiver_notice(waiver))
         else:
             updated.append((status, driver))
-    return updated, sorted(notices.values(), key=lambda notice: notice.id)
+    return (
+        updated,
+        sorted(applied.values(), key=lambda notice: notice.id),
+        sorted(expired.values(), key=lambda notice: notice.id),
+    )
 
 
 def bypass_blocking(
@@ -359,6 +386,57 @@ def bypass_blocking(
         )
         for status, driver in rungs
     ]
+
+
+# --warn-only downgrades EXACTLY these two still-blocking statuses to WARN
+# -- never Status.ERROR (a tool malfunction must always surface honestly
+# regardless of adoption mode), never an already non-blocking/WARN rung. A
+# 2-element frozenset, not the full 7-status lattice order (guard-safe --
+# see tests/meta/test_verdict_sole_ownership.py).
+_WARN_ONLY_DOWNGRADE_STATUSES = frozenset(
+    {Status.POLICY_VIOLATION, Status.INDETERMINATE}
+)
+
+
+def warn_blocking(
+    rungs: Sequence[tuple[Status, StatusDriver | None]],
+) -> tuple[list[tuple[Status, StatusDriver | None]], int]:
+    """``--warn-only`` (Story 3.3, FR23/FR25): downgrade every still-
+    blocking, Finding-backed rung (``POLICY_VIOLATION``/``INDETERMINATE``)
+    to ``WARN`` -- mirrors ``bypass_blocking``'s shape (including its
+    ``driver is not None`` defense-in-depth guard) but targets ``WARN``
+    instead of ``BYPASSED`` and this module's narrow 2-status set instead
+    of ``_NON_BLOCKING_STATUSES``'s complement. Deliberately sweeps EVERY
+    ``INDETERMINATE`` cause it sees (including the D2(c) empty-extraction
+    rung and any other generic ``indeterminate:<reason>:<pkg>`` cause) --
+    a broad, adoption-oriented sweep per this story's own intent, not a
+    curated per-driver allowlist (unlike ``--allow-empty``'s narrow,
+    single-driver exit-code exception, which this is NOT the same
+    mechanism as).
+
+    Called in ``cli.py`` AFTER the existing ``apply_waivers``/``--bypass``
+    block, so a waiver still shows as ``bypassed`` distinctly and
+    warn-only only mops up whatever is still blocking. Returns the updated
+    rungs AND how many DISTINCT findings were actually rewritten -- counted
+    by ``finding_id``, not by rung, since ``interfaces.py``'s per-component
+    ``indeterminate:<reason>:<name>`` id carries no version segment: two
+    components sharing a name at different versions (``inventory.py``'s
+    documented "distinct versions stay distinct" merge policy) landing on
+    the same reason/token produce two rungs referencing the SAME one
+    ``Finding`` (itself already deduped by id in ``interfaces.py``) -- a
+    raw per-rung counter would overcount relative to ``report.findings``.
+    The text report's graduate-to-enforcing nudge names this exact,
+    finding-deduped count, never the report's total finding count (which
+    would also include findings warn-only never touched)."""
+    updated: list[tuple[Status, StatusDriver | None]] = []
+    downgraded_ids: set[str] = set()
+    for status, driver in rungs:
+        if driver is not None and status in _WARN_ONLY_DOWNGRADE_STATUSES:
+            updated.append((Status.WARN, driver))
+            downgraded_ids.add(driver.finding_id)
+        else:
+            updated.append((status, driver))
+    return updated, len(downgraded_ids)
 
 
 def emit_bypass_stanza(
