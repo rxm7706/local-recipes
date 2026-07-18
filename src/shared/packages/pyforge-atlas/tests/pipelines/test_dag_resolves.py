@@ -92,10 +92,11 @@ def test_pypi_intelligence_pipeline_has_ten_nodes():
     }
 
 
-def test_vulnerability_pipeline_has_seven_nodes():
+def test_vulnerability_pipeline_has_nine_nodes():
     # B5 added refresh_vdb_store + refresh_osv_offline_store (§ 3.4 refresh assets).
+    # B8 added the two Basilisk ingestion nodes (FR-19; ADDITIVE, not parity-gated AD-14).
     vuln = vuln_create()
-    assert len(vuln.nodes) == 7
+    assert len(vuln.nodes) == 9
     assert {n.name for n in vuln.nodes} == {
         "refresh_vdb_store",
         "refresh_osv_offline_store",
@@ -104,6 +105,8 @@ def test_vulnerability_pipeline_has_seven_nodes():
         "ingest_cwe_catalog",
         "summarize_vdb_vulns",
         "per_version_vulns",
+        "ingest_basilisk_advisories",
+        "fetch_basilisk_details",
     }
 
 
@@ -157,14 +160,13 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
         + sbom_create()
         + derived_create()
     )
-    # 7 core + 5 vcs + 10 pypi + 7 vuln + 4 seed_gaps + 2 universal_sbom
-    # + 1 derived_artifacts = 36 nodes (B7 added the SBOM intake/match + universe
-    # BOM). The runner orders them from declared inputs/outputs alone (no PHASES
-    # list driver, FR-2/AD-3): the universe BOM (derived-layer, AD-15) and the
-    # entry-scoped SBOM nodes resolve after their rebuild-produced inputs.
-    assert len(combined.nodes) == 36
+    # 7 core + 5 vcs + 10 pypi + 9 vuln + 4 seed_gaps + 2 universal_sbom
+    # + 1 derived_artifacts = 38 nodes (B7 added the SBOM intake/match + universe
+    # BOM; B8 added the two Basilisk ingestion nodes, FR-19). The runner orders
+    # them from declared inputs/outputs alone (no PHASES list driver, FR-2/AD-3).
+    assert len(combined.nodes) == 38
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 36
+    assert sum(len(g) for g in grouped) == 38
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():
