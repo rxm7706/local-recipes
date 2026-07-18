@@ -58,6 +58,34 @@ gate, EPSS 0-100 normalization, KEV overlay + CVSS coercion, single-write-path, 
 are proven directly in `tests/pipelines/**` + `tests/datasets/**` against fixtures — the
 parity seeds are the schema-shape layer, not the contract layer.
 
+## B4 contribution — the tightened diff + the credentialed-run mechanism (this story)
+
+**DW-B1-1 part b — RESOLVED.** The frame-diff under-check is fixed. The engine moved to the
+package (`pyforge.atlas.parity.frame_diff`) and the harness now calls `assert_frames_equal`,
+which asserts **column-SET equality both directions** (a spurious column now FAILS) and
+**tightens dtype where the JSON round-trip allows** (int64-vs-float64 now FAILS), while the
+order-independent, null-unified comparison is preserved so the honest shape-only seeds stay
+green. Proof it bites: `test_frame_diff_bites.py`.
+
+**DW-B1-1 part a — tool SHIPPED, recapture DEFERRED.** `capture_fixtures.py` is the recapture
+tooling: at the attended credentialed event it recaptures each fixture from a REAL legacy run
+and stamps `provenance: "credentialed-legacy-capture-<date>"`. **Until then the B1/B2 seeds
+stay flagged `shape-only-seed-...`** (asserted by `test_capture_tooling.py`), and **a green
+`parity-diff` remains NOT evidence of legacy parity.**
+
+**The credentialed-run mechanism (B4, AC-1/AC-3).** `parity_runner.py` compares the Kedro
+Parquet outputs of the legacy-surface (`v_actionable_packages`-family, Q1) views against the
+legacy `cf_atlas.db` tables — **FIXTURE mode** (synthetic, offline — the shipped in-loop gate)
+and **CREDENTIALED mode** (real DB + caller-supplied Kedro composition — the attended event,
+never a real DB in tests). The retirement gate `pyforge.atlas.parity.may_retire_legacy` permits
+legacy retirement (FR-4 `phase_state` removal) ONLY after every view has a credentialed,
+zero-material-drift, human-signed `ParityEvidenceRecord`. The evidence shape the event records
+is `PARITY_EVIDENCE_TEMPLATE.md`. **AD-14:** the compared set excludes basilisk/velocity/
+migration-readiness (B8/B9/B10) — `test_legacy_surface_scope.py`.
+
+**Still DEFERRED to the attended event (DW-B4):** the credentialed full parity run, the human
+sign-off + marking retirement, the fixture recapture, and the DW-B2-4 BigQuery-routing pre-flight.
+
 ## AC-5 — the Phase E maintainer-universe delta (DOCUMENTED, not reconciled)
 
 Per AC-5's "reconciles — **or explicitly documents**" branch, B1 DOCUMENTS the delta
