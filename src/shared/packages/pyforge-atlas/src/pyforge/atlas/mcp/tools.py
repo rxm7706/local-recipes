@@ -28,7 +28,15 @@ from pyforge.atlas.mcp import session as _session
 # the generic per-PIPELINE trigger the registry-mirror invariant requires —
 # the four seed-gap SUGGESTERS themselves stay CLI-only (AD-7): no per-tool
 # MCP read surface is added for them.
-PIPELINE_NAMES = ("core", "vcs_health", "pypi_intelligence", "vulnerability", "seed_gaps")
+PIPELINE_NAMES = (
+    "core",
+    "vcs_health",
+    "pypi_intelligence",
+    "vulnerability",
+    "seed_gaps",
+    "universal_sbom",  # B7: § 4.10 intake -> CycloneDX -> six-bucket match
+    "derived_artifacts",  # B7: full-universe CycloneDX BOM (AD-15 freshness)
+)
 
 
 class AtlasMCPError(RuntimeError):
