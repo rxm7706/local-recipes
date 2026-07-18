@@ -61,6 +61,16 @@ from .basilisk import (
     build_conda_purl,
     chunk_queries,
 )
+from .migration_status import (
+    ACTIVE_CATEGORIES,
+    BLOCKER_BUCKETS,
+    CATEGORY_FILES,
+    EXCLUDED_STATUS_FILES,
+    MIGRATION_BUCKETS,
+    MigrationCategoryDataset,
+    MigrationDetailDataset,
+    migration_names,
+)
 
 __all__ = [
     "IncrementalParquetDataset",
@@ -102,4 +112,13 @@ __all__ = [
     "chunk_queries",
     "build_conda_purl",
     "BASILISK_QUERYBATCH_MAX",
+    # Story B10 — conda-forge-bot-data migration-status source (FR-21)
+    "MigrationCategoryDataset",
+    "MigrationDetailDataset",
+    "migration_names",
+    "CATEGORY_FILES",
+    "ACTIVE_CATEGORIES",
+    "MIGRATION_BUCKETS",
+    "BLOCKER_BUCKETS",
+    "EXCLUDED_STATUS_FILES",
 ]
