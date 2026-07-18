@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyforge-atlas-kedro-viz"
+version = "0.1.0"
+description = "Illustrative Kedro model of the target-state cf_atlas pipeline — kedro-viz prototype for docs/specs/cfe-atlas-datapipeline-kedro-migration.md. Mirrors the pyforge namespace layout (pyforge.atlas_kedro_viz) of pyforge-atlas/pyforge-warden, but is a prototype so it lives under src/prototype/ rather than src/shared/."
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.kedro]
+package_name = "pyforge.atlas_kedro_viz"
+project_name = "pyforge-atlas-kedro-viz"
+kedro_init_version = "1.3.1"
+source_dir = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
+
+[tool.kedro_telemetry]
+project_id = "937a045583154457a3790b9124ac5253"
