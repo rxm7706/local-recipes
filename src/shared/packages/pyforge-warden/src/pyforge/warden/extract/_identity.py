@@ -181,6 +181,8 @@ def _unmapped_conda_component(
         provenance=provenance,
         hygiene_covered=True,
         vuln_matchable=False,
+        license_covered=True,
+        currency_covered=True,
         indeterminate_reason=WithholdReason.UNMAPPED_ECOSYSTEM,
     )
 
@@ -238,6 +240,8 @@ def _conda_component(
         provenance=provenance,
         hygiene_covered=True,
         vuln_matchable=bool(version),
+        license_covered=True,
+        currency_covered=True,
         indeterminate_reason=None if version else no_version_reason,
     )
 
@@ -263,6 +267,8 @@ def _pypi_component(
             provenance=provenance,
             hygiene_covered=True,
             vuln_matchable=True,
+            license_covered=True,
+            currency_covered=True,
             indeterminate_reason=None,
         )
     return Component(
@@ -278,6 +284,8 @@ def _pypi_component(
         provenance=provenance,
         hygiene_covered=True,
         vuln_matchable=False,
+        license_covered=True,
+        currency_covered=True,
         indeterminate_reason=WithholdReason.NO_VERSION,
     )
 
@@ -302,6 +310,8 @@ def _raw_malformed(
         provenance=provenance,
         hygiene_covered=False,
         vuln_matchable=False,
+        license_covered=True,
+        currency_covered=True,
         indeterminate_reason=WithholdReason.NO_VERSION,
     )
 
@@ -491,6 +501,8 @@ def pep508_pypi_component(
             provenance=provenance,
             hygiene_covered=True,
             vuln_matchable=True,
+            license_covered=True,
+            currency_covered=True,
             indeterminate_reason=None,
         )
     reason = (
@@ -511,6 +523,8 @@ def pep508_pypi_component(
         provenance=provenance,
         hygiene_covered=True,
         vuln_matchable=False,
+        license_covered=True,
+        currency_covered=True,
         indeterminate_reason=reason,
     )
 

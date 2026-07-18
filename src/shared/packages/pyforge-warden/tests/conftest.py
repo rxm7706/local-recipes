@@ -45,6 +45,8 @@ def make_component(
     extraction_mode: ExtractionMode = ExtractionMode.PARSED,
     hygiene_covered: bool = True,
     vuln_matchable: bool | None = None,
+    license_covered: bool = True,
+    currency_covered: bool = True,
 ) -> Component:
     has_version = bool(version)  # "" is version-less, same as None
     if cve_match_level is None:
@@ -71,6 +73,8 @@ def make_component(
         provenance=tuple(Provenance(manifest=m, section=s) for m, s in provenance),
         hygiene_covered=hygiene_covered,
         vuln_matchable=vuln_matchable,
+        license_covered=license_covered,
+        currency_covered=currency_covered,
         indeterminate_reason=indeterminate_reason,
     )
 
