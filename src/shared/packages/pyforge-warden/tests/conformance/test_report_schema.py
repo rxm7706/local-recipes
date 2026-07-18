@@ -16,19 +16,26 @@ import jsonschema
 import pytest
 
 from pyforge.warden.models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
     AXIS_INGESTION,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
     ComplianceReport,
+    CurrencyInfo,
+    CurrencyVerdict,
     ErrorKind,
     ErrorRecord,
     Finding,
+    LicenseInfo,
+    LicenseVerdict,
     ScannedManifest,
     Severity,
     SeverityTier,
     Status,
     StatusDriver,
+    SuppressedFinding,
     VulnData,
 )
 
@@ -364,18 +371,49 @@ def test_policy_violation_status_with_exit_zero_still_rejected():
         validate(document)
 
 
-def test_epss_above_one_rejected():
+def test_epss_object_score_above_one_rejected():
+    """Story 6.1: epss is now an {score, percentile} object; an out-of-range
+    score is rejected."""
     document = make_report().to_json_dict()
     document["findings"] = [
         {
             "id": "vuln:GHSA-abcd-1234:requests@2.31.0",
             "axis": AXIS_VULNERABILITY,
             "message": "known vulnerability",
-            "epss": 1.5,
+            "epss": {"score": 1.5, "percentile": 0.5},
         }
     ]
     with pytest.raises(jsonschema.ValidationError):
         validate(document)
+
+
+def test_epss_bare_float_rejected():
+    """The pre-6.1 bare-float epss no longer validates — it must be the
+    {score, percentile} object (or null)."""
+    document = make_report().to_json_dict()
+    document["findings"] = [
+        {
+            "id": "vuln:GHSA-abcd-1234:requests@2.31.0",
+            "axis": AXIS_VULNERABILITY,
+            "message": "known vulnerability",
+            "epss": 0.5,
+        }
+    ]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_epss_object_accepted():
+    document = make_report().to_json_dict()
+    document["findings"] = [
+        {
+            "id": "vuln:GHSA-abcd-1234:requests@2.31.0",
+            "axis": AXIS_VULNERABILITY,
+            "message": "known vulnerability",
+            "epss": {"score": 0.42, "percentile": 0.9},
+        }
+    ]
+    validate(document)
 
 
 def test_max_age_ok_with_null_source_rejected():
@@ -462,3 +500,232 @@ def test_twice_run_serialization_is_byte_identical():
     dump_one = json.dumps(first.to_json_dict(), sort_keys=True)
     dump_two = json.dumps(second.to_json_dict(), sort_keys=True)
     assert dump_one.encode("utf-8") == dump_two.encode("utf-8")
+
+
+# --- Story 6.1: license/currency families + coherence + suppressions ----------
+
+
+def test_license_finding_round_trips():
+    finding = Finding(
+        id="license:GPL-3.0-only:numpy@1.26.4",
+        axis=AXIS_LICENSE,
+        message="denied license",
+        subject="numpy",
+        severity=None,
+        license=LicenseInfo(
+            expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED
+        ),
+    )
+    report = make_report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    document = report.to_json_dict()
+    validate(document)
+    (rendered,) = document["findings"]
+    assert rendered["license"] == {
+        "expression": "GPL-3.0-only",
+        "family": None,
+        "verdict": "denied",
+    }
+
+
+def test_currency_finding_round_trips():
+    finding = Finding(
+        id="currency:eol:django@1.11.29",
+        axis=AXIS_CURRENCY,
+        message="eol",
+        subject="django",
+        severity=None,
+        currency=CurrencyInfo(
+            verdict=CurrencyVerdict.EOL,
+            latest="5.0",
+            lag=9,
+            eol_date="2020-04-01",
+            tier="endoflife-date",
+        ),
+    )
+    report = make_report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    validate(report.to_json_dict())
+
+
+def test_mis_axed_license_finding_rejected():
+    document = make_report().to_json_dict()
+    document["findings"] = [
+        {
+            "id": "license:MIT:x@1.0",
+            "axis": "hygiene",
+            "message": "m",
+            "license": {"expression": "MIT", "verdict": "denied"},
+        }
+    ]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_mis_axed_currency_finding_rejected():
+    document = make_report().to_json_dict()
+    document["findings"] = [
+        {
+            "id": "currency:unknown:x@1.0",
+            "axis": "hygiene",
+            "message": "m",
+            "currency": {"verdict": "unknown"},
+        }
+    ]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_license_id_without_license_subobject_rejected():
+    """Coherence clause (b): a license: finding MUST carry the license
+    sub-object (properties is vacuous on an absent key, so `then` requires it)."""
+    document = make_report().to_json_dict()
+    document["findings"] = [
+        {"id": "license:MIT:x@1.0", "axis": "license", "message": "m"}
+    ]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_currency_over_lag_finding_must_have_supported_verdict():
+    """Coherence clause (b): a currency:over-lag: id maps to verdict
+    'supported' (over-lag is an id reason token, never a 4th verdict)."""
+    document = make_report().to_json_dict()
+    document["findings"] = [
+        {
+            "id": "currency:over-lag:req@2.10.0",
+            "axis": "currency",
+            "message": "m",
+            "currency": {
+                "verdict": "eol",
+                "latest": "2.31.0",
+                "lag": 5,
+                "eol_date": "2020-01-01",
+            },
+        }
+    ]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_currency_eol_finding_requires_non_null_provenance():
+    """Coherence clause (c): for an eol/over-lag finding, latest/lag/eol_date
+    must be present AND non-null (not merely present)."""
+    document = make_report().to_json_dict()
+    document["findings"] = [
+        {
+            "id": "currency:eol:django@1.11",
+            "axis": "currency",
+            "message": "m",
+            "currency": {
+                "verdict": "eol",
+                "latest": None,
+                "lag": None,
+                "eol_date": None,
+            },
+        }
+    ]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_suppressions_round_trip():
+    finding = Finding(
+        id="hygiene:DEP002:leftpad",
+        axis=AXIS_HYGIENE,
+        message="unused",
+        subject="leftpad",
+        severity=None,
+    )
+    base = make_report(
+        status=Status.BYPASSED,
+        status_driver=StatusDriver(axis=AXIS_HYGIENE, finding_id=finding.id),
+        exit_code=0,
+        findings=(finding,),
+    )
+    report = ComplianceReport(
+        schema_version=base.schema_version,
+        tool_name=base.tool_name,
+        tool_version=base.tool_version,
+        status=base.status,
+        status_driver=base.status_driver,
+        exit_code=base.exit_code,
+        findings=base.findings,
+        coverage=base.coverage,
+        vuln_data=base.vuln_data,
+        inventory_count=base.inventory_count,
+        resolved_scan_set=base.resolved_scan_set,
+        errors=base.errors,
+        suppressions=(
+            SuppressedFinding(
+                finding_id=finding.id,
+                origin="waiver",
+                reason="tracked in JIRA-1",
+                authorized_by="alice",
+                expires_at="2027-01-01T00:00:00Z",
+            ),
+        ),
+    )
+    document = report.to_json_dict()
+    validate(document)
+    (suppression,) = document["suppressions"]
+    assert suppression["origin"] == "waiver"
+    assert suppression["finding_id"] == finding.id
+
+
+def test_dangling_suppression_rejected_at_construction():
+    """The suppressions[]<->findings[] cross-check is a model-layer invariant
+    (Draft 2020-12 has no cross-array keyword)."""
+    import dataclasses
+
+    with pytest.raises(ValueError, match="suppress"):
+        dataclasses.replace(
+            make_report(),
+            suppressions=(
+                SuppressedFinding(
+                    finding_id="vuln:GHSA-x:absent@1.0",
+                    origin="waiver",
+                    reason="r",
+                ),
+            ),
+        )
+
+
+def test_unknown_suppression_origin_rejected():
+    document = make_report().to_json_dict()
+    document["suppressions"] = [
+        {"finding_id": "hygiene:DEP002:x", "origin": "bypass", "reason": "r"}
+    ]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_currency_eol_finding_without_currency_key_rejected():
+    """P5: the currency-provenance-completeness clause is now self-standing --
+    a currency:eol: finding that OMITS the currency key entirely fails
+    (required:['currency'] added to its `then`, so it is no longer vacuously
+    satisfied by an absent key)."""
+    document = make_report().to_json_dict()
+    document["findings"] = [
+        {"id": "currency:eol:django@1.11", "axis": "currency", "message": "m"}
+    ]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(document)
+
+
+def test_schema_version_1_1_0_validates():
+    """P1: the Story 6.1 bump to 1.1.0 validates against the packaged schema
+    too -- both 1.x strings validate (the existing 1.0.0 make_report case,
+    test_minimal_report_validates, is deliberately left untouched)."""
+    document = make_report().to_json_dict()
+    assert document["schema_version"] == "1.0.0"  # make_report's baseline
+    document["schema_version"] = "1.1.0"
+    validate(document)

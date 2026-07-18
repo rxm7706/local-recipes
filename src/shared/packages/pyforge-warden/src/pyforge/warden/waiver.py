@@ -12,7 +12,7 @@ Ownership decisions recorded:
   id fails the finding-id family regex, so it is rejected as malformed
   before it can ever match anything -- matching itself is always plain
   string equality, never glob/prefix semantics.
-* The three finding-id family regexes are LOCALLY re-declared here
+* The finding-id family regexes are LOCALLY re-declared here
   (mirrors ``config.py``'s own precedent of locally re-declaring
   ``_SEVERITY_ORDER``/``_CONFIDENCE_RANK`` rather than importing across
   modules) -- ``models.py`` stays untouched (it is frozen; see its own
@@ -65,14 +65,18 @@ import yaml
 
 from .models import Status, StatusDriver
 
-# The three finding-ID families, mirrored verbatim from models.py's own
-# copy (locally re-declared per this module's docstring -- models.py is
-# frozen and must not be imported across for this). Matched with
-# .fullmatch; "[^:\n]" (not "[^:]") so an id can never embed a newline.
+# The finding-ID families, mirrored verbatim from models.py's own copy
+# (locally re-declared per this module's docstring -- models.py must not be
+# imported across for this). Matched with .fullmatch; "[^:\n]" (not "[^:]")
+# so an id can never embed a newline. The license/currency families
+# (Story 6.1) are kept in lockstep with models.py's tuple in the same commit
+# so those findings are waivable.
 _FINDING_ID_FAMILIES = (
     re.compile(r"vuln:[^:\n]+:.+@.+"),
     re.compile(r"hygiene:[^:\n]+:.+"),
     re.compile(r"indeterminate:[^:\n]+:.+"),
+    re.compile(r"license:[^:\n]+:.+@.+"),
+    re.compile(r"currency:(eol|over-lag|unknown):.+@.+"),
 )
 
 _SUPPORTED_VERSION = 1

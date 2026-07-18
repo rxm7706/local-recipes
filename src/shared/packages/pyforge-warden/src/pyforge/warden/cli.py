@@ -217,6 +217,7 @@ from .models import (
     Finding,
     Status,
     StatusDriver,
+    SuppressedFinding,
     VulnData,
 )
 from .report import TOOL_NAME, assemble_report, render_json, render_text
@@ -821,6 +822,22 @@ def _run_scan(args: argparse.Namespace) -> int:
         )
     now = datetime.now(UTC)
     rungs, applied_waivers, expired_waivers = apply_waivers(rungs, waivers, now=now)
+    # Story 6.1: echo each applied waiver into the JSON contract's
+    # suppressions[] (WaiverNotice -> SuppressedFinding, origin="waiver").
+    # Until now applied waivers echoed in --format text only; the baseline
+    # half (origin="baseline") is Story 6.8. Every notice.id exact-matched a
+    # blocking rung's driver.finding_id, which references a real findings[]
+    # entry, so ComplianceReport's suppressions[]<->findings[] cross-check holds.
+    suppressions = tuple(
+        SuppressedFinding(
+            finding_id=notice.id,
+            origin="waiver",
+            reason=notice.reason,
+            authorized_by=notice.authorized_by,
+            expires_at=notice.expires_at,
+        )
+        for notice in applied_waivers
+    )
     bypass_stanza: str | None = None
     if args.bypass:
         try:
@@ -870,6 +887,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         allow_empty=args.allow_empty,
         empty_extraction=empty_extraction,
         fail_under_coverage=config.fail_under_coverage,
+        suppressions=suppressions,
     )
     if args.sbom_output is not None:
         # Story 4.1: an independent sibling artifact -- rendering and

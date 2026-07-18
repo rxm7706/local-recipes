@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-warden:report-schema",
   "title": "ComplianceReport",
-  "description": "The frozen, producer-agnostic report contract for pyforge-warden (Warden) (the atlas FR-16/FR-18 gate is this schema's second producer). Closed sets: status.value (7-rung lattice), exit_code {0,1,2,130}, errors[].kind. additionalProperties is deliberately left open everywhere: additive growth (a new axis, KEV/EPSS population, new optional fields) is never a schema break. Finding-ID scheme (stable + deterministic): vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg>. Waiver-scope decision (recorded): all three finding families are waivable-with-expiry — an auditable, time-boxed acceptance; the graduated path for unscannable deps.",
+  "description": "The frozen, producer-agnostic report contract for pyforge-warden (Warden) (the atlas FR-16/FR-18 gate is this schema's second producer). Closed sets: status.value (7-rung lattice), exit_code {0,1,2,130}, errors[].kind. additionalProperties is deliberately left open everywhere: additive growth (a new axis, KEV/EPSS population, new optional fields) is never a schema break. Finding-ID scheme (stable + deterministic): vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg> | license:<spdx-or-unknown>:<pkg>@<ver> | currency:<reason>:<subject>@<ver> (Story 6.1 added the last two; currency's reason is a CLOSED 3-value set eol|over-lag|unknown). Waiver-scope decision (recorded): all five finding families are waivable-with-expiry — an auditable, time-boxed acceptance; the graduated path for unscannable deps.",
   "type": "object",
   "required": [
     "schema_version",
@@ -78,7 +78,7 @@
     "coverage": {
       "type": "array",
       "items": { "$ref": "#/$defs/axisCoverage" },
-      "description": "Keyed by the OPEN axis string ('hygiene'/'vulnerability' now; a license/SAST axis lands additively)."
+      "description": "Keyed by the OPEN axis string. Four rows are now always emitted: 'hygiene'/'vulnerability' (assessed by their v1 engines) plus 'license'/'currency' (Story 6.1 registers them as producer axes — always emitted, as honestly not-applicable until their Epic 6 producers land; a further SAST axis would still land additively)."
     },
     "vuln_data": {
       "type": "object",
@@ -143,6 +143,31 @@
           "message": { "type": "string" }
         }
       }
+    },
+    "suppressions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/suppressedFinding" },
+      "description": "Optional (Story 6.1, additive): findings suppressed by a waiver (origin='waiver') or baseline (origin='baseline'). Story 6.1 populates only the waiver half; absent/[] on a scan with no applied waivers."
+    },
+    "license_data": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
+      "description": "Optional license-feed provenance (Story 6.2/6.3 populate); null until then."
+    },
+    "currency_data": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
+      "description": "Optional currency/endoflife-feed provenance (Story 6.3 populates); null until then."
+    },
+    "kev_data": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
+      "description": "Optional CISA-KEV-feed provenance (Story 6.4 populates); null until then."
+    },
+    "epss_data": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
+      "description": "Optional EPSS-feed provenance (Story 6.7 populates); null until then."
+    },
+    "actuation": {
+      "type": ["object", "null"],
+      "description": "Optional, reserved open slot for the fix-PR actuator section (Story 6.9 populates); always null in Story 6.1."
     }
   },
   "allOf": [
@@ -281,9 +306,11 @@
           "anyOf": [
             { "pattern": "^vuln:[^:\\n]+:[^\\n]+@[^\\n]+$" },
             { "pattern": "^hygiene:[^:\\n]+:[^\\n]+$" },
-            { "pattern": "^indeterminate:[^:\\n]+:[^\\n]+$" }
+            { "pattern": "^indeterminate:[^:\\n]+:[^\\n]+$" },
+            { "pattern": "^license:[^:\\n]+:[^\\n]+@[^\\n]+$" },
+            { "pattern": "^currency:(eol|over-lag|unknown):[^\\n]+@[^\\n]+$" }
           ],
-          "description": "Stable, deterministic finding ID — one of the three families: vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg>. Waiver matching across runs depends on it; all three families are waivable-with-expiry."
+          "description": "Stable, deterministic finding ID — one of the families: vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg> | license:<spdx-or-unknown>:<pkg>@<ver> | currency:<reason>:<subject>@<ver> (reason is a CLOSED 3-value set). Waiver matching across runs depends on it; every family is waivable-with-expiry."
         },
         "axis": { "type": "string" },
         "message": { "type": "string" },
@@ -308,13 +335,60 @@
         },
         "kev": {
           "type": ["boolean", "null"],
-          "description": "Known-Exploited-Vulnerabilities slot — declared now, never populated by the v1 producer (the atlas producer will)."
+          "description": "Known-Exploited-Vulnerabilities slot — declared now, populated by Story 6.4."
+        },
+        "kev_date": {
+          "type": ["string", "null"],
+          "description": "CISA-KEV date-added slot — declared now, populated by Story 6.4."
         },
         "epss": {
-          "type": ["number", "null"],
-          "minimum": 0,
-          "maximum": 1,
-          "description": "EPSS score slot (a probability in [0, 1]) — declared now, never populated by the v1 producer (the atlas producer will)."
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["score", "percentile"],
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 1 },
+                "percentile": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          ],
+          "description": "EPSS {score, percentile} slot (both probabilities in [0, 1]) — declared now, populated by Story 6.7. The {score, percentile} object shape is a 1.1.0-sanctioned additive narrowing of the former number|null."
+        },
+        "license": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["expression", "verdict"],
+              "properties": {
+                "expression": { "type": "string" },
+                "family": { "type": ["string", "null"] },
+                "verdict": { "enum": ["allowed", "denied", "unknown"] }
+              }
+            }
+          ],
+          "description": "Per-component SPDX license verdict (Story 6.2 populates); no 'source' field — that name is section-level provenance elsewhere."
+        },
+        "currency": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["verdict"],
+              "properties": {
+                "verdict": { "enum": ["supported", "eol", "unknown"] },
+                "latest": { "type": ["string", "null"] },
+                "lag": { "type": ["integer", "null"], "minimum": 0 },
+                "eol_date": { "type": ["string", "null"] },
+                "tier": {
+                  "enum": ["lts-registry", "endoflife-date", "channel-n-n-1", "unknown", null],
+                  "description": "Which rung of the FR34 tier ladder resolved this verdict (NFR-S9 provenance)."
+                }
+              }
+            }
+          ],
+          "description": "Per-component currency verdict + tier-ladder provenance (Story 6.3 populates)."
         }
       },
       "allOf": [
@@ -334,6 +408,106 @@
           },
           "then": {
             "properties": { "axis": { "const": "hygiene" } }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^license:" } }
+          },
+          "then": {
+            "properties": { "axis": { "const": "license" } }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:" } }
+          },
+          "then": {
+            "properties": { "axis": { "const": "currency" } }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^license:" } }
+          },
+          "then": {
+            "required": ["license"],
+            "properties": {
+              "license": {
+                "type": "object",
+                "properties": { "verdict": { "enum": ["denied", "unknown"] } }
+              }
+            },
+            "description": "A license: finding is emitted only for denied/unknown (never allowed), and MUST carry the license sub-object (properties is vacuous on an absent key)."
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:eol:" } }
+          },
+          "then": {
+            "required": ["currency"],
+            "properties": {
+              "currency": {
+                "type": "object",
+                "properties": { "verdict": { "const": "eol" } }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:over-lag:" } }
+          },
+          "then": {
+            "required": ["currency"],
+            "properties": {
+              "currency": {
+                "type": "object",
+                "properties": { "verdict": { "const": "supported" } }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:unknown:" } }
+          },
+          "then": {
+            "required": ["currency"],
+            "properties": {
+              "currency": {
+                "type": "object",
+                "properties": { "verdict": { "const": "unknown" } }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:(eol|over-lag):" } }
+          },
+          "then": {
+            "required": ["currency"],
+            "properties": {
+              "currency": {
+                "type": "object",
+                "required": ["latest", "lag", "eol_date"],
+                "properties": {
+                  "latest": { "type": "string" },
+                  "lag": { "type": "integer" },
+                  "eol_date": { "type": "string" }
+                }
+              }
+            },
+            "description": "Currency-provenance completeness: for an eol/over-lag finding, the currency sub-object MUST be present (required:['currency'] — self-standing, not merely rescued by the verdict-const clause) with latest/lag/eol_date present AND non-null (types narrowed to exclude null, mirroring vuln_data.max_age_ok's if/then)."
           }
         }
       ]
@@ -356,9 +530,46 @@
         "resolution_depth": {
           "enum": ["direct-only", "locked-closure", null],
           "description": "The resolution-depth honesty claim: 'direct-only' vs 'locked-closure' (null when no claim is made)."
+        },
+        "gating": {
+          "type": "boolean",
+          "description": "Whether this axis's gate is active this run (Story 6.1 reserves the slot, default false; config.py is the sole writer — Story 6.2/6.3/6.5 compute it)."
         }
       },
       "description": "Coverage arithmetic (manifests_parsed <= manifests_found; deps_assessed <= deps_total) is enforced at the model layer (AxisCoverage.__post_init__) because JSON Schema cannot cross-compare sibling fields."
+    },
+    "suppressedFinding": {
+      "type": "object",
+      "required": ["finding_id", "origin", "reason"],
+      "properties": {
+        "finding_id": { "type": "string" },
+        "origin": { "enum": ["baseline", "waiver"] },
+        "reason": { "type": "string" },
+        "authorized_by": { "type": ["string", "null"] },
+        "expires_at": { "type": ["string", "null"] }
+      },
+      "description": "One suppressed finding echoed once (Story 6.1 wires the waiver half; Story 6.8 the baseline half). The discriminator is 'origin', NOT 'source'. authorized_by/expires_at are nullable because baseline entries are bulk-accepted. At-most-one-per-finding_id + finding_id references an existing findings[].id are enforced at the model layer (Draft 2020-12 has no cross-array uniqueness-by-key keyword)."
+    },
+    "feedProvenance": {
+      "type": "object",
+      "required": ["source", "snapshot_at", "max_age_ok"],
+      "properties": {
+        "source": { "type": ["string", "null"] },
+        "snapshot_at": { "type": ["string", "null"] },
+        "max_age_ok": { "type": ["boolean", "null"] }
+      },
+      "if": {
+        "required": ["max_age_ok"],
+        "properties": { "max_age_ok": { "type": "boolean" } }
+      },
+      "then": {
+        "properties": {
+          "source": { "type": "string" },
+          "snapshot_at": { "type": "string" }
+        },
+        "description": "A concrete max_age_ok verdict (true/false) implies the feed WAS consulted, so its provenance (source + snapshot_at) must be stated — mirrors vuln_data's own if/then."
+      },
+      "description": "Per-feed provenance for the license/currency/KEV/EPSS report sections (generic names ONLY), reusing vuln_data's shape + coherence rule."
     }
   }
 }
