@@ -55,3 +55,16 @@ ttls:
 # conflate the two.
 freshness:
   stale_after_days: 14
+
+# `refresh_cadences:` — the SCHEDULE cadence (seconds) for the three § 3.4
+# external-refresh assets (Story B5; spine AD-6). DECLARATIVE only: C1 consumes this
+# to emit the Dagster Schedules (DW-B5-2); B5 asserts it == the legacy TTLs as a
+# fixture (pyforge.atlas.datasets.LEGACY_REFRESH_TTLS; schedule-as-fixture, AC-1).
+# `dagster` is NEVER imported in package code (AD-1). Keyed by the catalog store
+# dataset name. NEVER conflate with `ttls:` (row-level fetch TTL) or `freshness:`
+# (AD-15 consumer gate). All three are WEEKLY (spec §5.4: vdb-refresh /
+# update-cve-db / update-mapping-cache weekly).
+refresh_cadences:
+  vulnerability_vdb_store: 604800          # 7 d (vdb-refresh weekly bootstrap; vuln-db env)
+  vulnerability_osv_offline_store: 604800  # 7 d (update-cve-db; cve_manager CVE_TTL_DAYS=7)
+  pypi_conda_map_store: 604800             # 7 d (update-mapping-cache; mapping_manager MAPPING_TTL_DAYS=7)

@@ -16,6 +16,7 @@ from kedro.pipeline import Pipeline, node
 from .nodes import (
     enrich_pypi_intelligence,
     enumerate_pypi_universe,
+    export_pypi_conda_map,
     fetch_pypi_current_versions,
     fetch_pypi_downloads,
     flag_cross_channel,
@@ -82,6 +83,15 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs="pypi_intelligence_enriched",
                 outputs="pypi_intelligence_scored",
                 name="score_pypi_readiness",
+            ),
+            # § 3.4 external-refresh asset (Story B5) — the Q6 flat-cache export shim.
+            # SINGLE writer of pypi_conda_map_store; reads the migrated Phase C mapping
+            # (offline-safe, no remote re-fetch) and preserves g10_spelling + no-clobber.
+            node(
+                func=export_pypi_conda_map,
+                inputs="pypi_conda_mapping",
+                outputs="pypi_conda_map_store",
+                name="export_pypi_conda_map",
             ),
         ]
     )

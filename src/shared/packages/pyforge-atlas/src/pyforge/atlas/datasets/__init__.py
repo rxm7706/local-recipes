@@ -16,6 +16,18 @@ ScoreType unwrap, boundary layer).
 """
 
 from .incremental_parquet import IncrementalParquetDataset
+from .refresh import (
+    LEGACY_REFRESH_TTLS,
+    VULN_DB_ENV_RESOURCE,
+    WEEKLY_SECONDS,
+    ExternalRefreshDataset,
+    MappingCacheDataset,
+    OSVOfflineStoreDataset,
+    RefreshRequest,
+    RequiredResource,
+    StalenessMarker,
+    VDBStoreDataset,
+)
 from .rate_limit import (
     FetcherClient,
     FetchError,
@@ -47,4 +59,15 @@ __all__ = [
     "FetchError",
     "parse_retry_after",
     "resolve_worker_count",
+    # Story B5 — external-refresh assets (§ 3.4)
+    "ExternalRefreshDataset",
+    "VDBStoreDataset",
+    "OSVOfflineStoreDataset",
+    "MappingCacheDataset",
+    "RequiredResource",
+    "RefreshRequest",
+    "StalenessMarker",
+    "VULN_DB_ENV_RESOURCE",
+    "LEGACY_REFRESH_TTLS",
+    "WEEKLY_SECONDS",
 ]
