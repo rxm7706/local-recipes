@@ -247,6 +247,52 @@ def test_vizro_only_in_dashboard_layer():
     )
 
 
+# AD-1/AD-6 (Story D3): ``vizro_ai`` is REPLACEABLE natural-language (LLM) glue — only the
+# ``nl/`` subpackage may import it, so the NL backend stays contained to one swappable layer
+# (mirrors the D2 vizro/dashboard containment above). ``vizro_ai`` does NOT match the ``vizro``
+# denylist entry — ``_denylisted`` matches ``vizro`` or ``vizro.`` prefixes, and ``vizro_ai``
+# is neither — so it needs its own ban. The import lives ONLY inside a lazily-guarded function
+# in nl/ (its top-level ``VizroAI`` is absent in the pinned version); the static AST scan still
+# sees it, so the containment + positive assertion both hold.
+VIZRO_AI_DENYLIST = ("vizro_ai",)
+NL_PREFIX = "nl/"
+
+
+def _vizro_ai_violations() -> dict[str, list[str]]:
+    found: dict[str, list[str]] = {}
+    for path in _iter_scanned_files():
+        rel = str(path.relative_to(ATLAS_PKG))
+        if rel.startswith(NL_PREFIX):
+            continue
+        hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, VIZRO_AI_DENYLIST)]
+        if hits:
+            found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
+    return found
+
+
+def test_vizro_ai_only_in_nl_layer():
+    """AD-1/AD-6 (Story D3): only ``pyforge/atlas/nl/*`` may import ``vizro_ai`` — the NL
+    (LLM) backend is replaceable glue confined to one subpackage."""
+    violations = _vizro_ai_violations()
+    assert not violations, (
+        "AD-1 violation — only the nl/ subpackage may import vizro_ai: "
+        f"{violations}"
+    )
+    # positive: the nl query module DOES import vizro_ai (lazy+guarded, but statically present)
+    # — so the glue genuinely lives there, not a dead exemption.
+    query_mod = ATLAS_PKG / "nl" / "query.py"
+    assert query_mod.is_file(), "nl/query.py missing"
+    assert any(_denylisted(n, VIZRO_AI_DENYLIST) for n in _imported_names(query_mod)), (
+        "nl/query.py does not import vizro_ai"
+    )
+    # AD-8 crossover: the nl layer consumes the semantic SEAM (pyforge.atlas.semantic), never
+    # boring_semantic_layer directly (the BSL ban above covers nl/, asserted here too).
+    for mod in ("query.py", "backend.py", "__init__.py"):
+        assert not any(
+            _denylisted(n, BSL_DENYLIST) for n in _imported_names(ATLAS_PKG / "nl" / mod)
+        ), f"nl/{mod} imports boring_semantic_layer directly — must go through semantic/"
+
+
 def test_dagster_only_in_glue():
     """Positive AD-1 assertion: the glue module DOES import the orchestration
     libs (so it is genuinely the seam) and NO OTHER package file does — the

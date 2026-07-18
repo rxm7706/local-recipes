@@ -75,4 +75,12 @@ def build_server(name: str = "pyforge-atlas-atlas"):
         """List the declared catalog dataset names."""
         return tools.list_datasets()
 
+    @mcp.tool()
+    def query_vizro_ai(query: str) -> dict:
+        """Natural-language query -> Vizro-AI chart/insight over the BSL knowledge graph
+        (D3, FR-9). The LLM backend routes through repo model-backend config (Q3 §11 — never
+        a hardcoded endpoint); with no backend configured it returns a structured
+        "backend not configured — attended Q3 bring-up (DW-D3)" advisory (no live LLM call)."""
+        return tools.query_vizro_ai(query)
+
     return mcp
